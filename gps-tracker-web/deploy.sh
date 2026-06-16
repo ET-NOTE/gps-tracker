@@ -1,16 +1,43 @@
 #!/usr/bin/env bash
-# deploy.sh — tar+scp source → build on server → reload nginx
+# deploy.sh — tar+scp source → build on server → static 산출물 배포
+#
+# 사용법:
+#   bash deploy.sh           # = prod (default) — seriallog.com + gps.serial.kr
+#   bash deploy.sh prod
+#   bash deploy.sh dev       # = dev-gps.serial.kr 단일 base
+#
+# 메모리: VPS RAM 2.9GB. dev/prod 빌드 동시 실행 금지 (직렬).
 set -e
 
-SERVER=mmm@210.114.18.16
-REMOTE_DIR=/home/mmm/gps-tracker-web
-TMP_TAR=/tmp/gps-tracker-web-src.tar.gz
+ENV="${1:-prod}"
+case "$ENV" in
+  prod)
+    SERVER=mmm@210.114.18.16
+    REMOTE_DIR=/home/mmm/gps-tracker-web
+    HEALTH_URLS=("https://seriallog.com/gps-tracker/app/" "https://gps.serial.kr/")
+    ;;
+  dev)
+    # gps-dev 계정 통로. junior + maintainer 양쪽 SSH 키 등록되어 있음.
+    SERVER=gps-dev@210.114.18.16
+    REMOTE_DIR=/home/gps-dev/gps-tracker-web-dev
+    HEALTH_URLS=("https://dev-gps.serial.kr/")
+    ;;
+  *)
+    echo "usage: $0 [prod|dev]" >&2
+    exit 2
+    ;;
+esac
+
+TMP_TAR=/tmp/gps-tracker-web-src-${ENV}.tar.gz
+
+echo "=== deploy target: ${ENV} ($REMOTE_DIR) ==="
 
 # ── 1. pack & upload source ───────────────────────────────────────────────
 echo "=== [1/3] uploading source ==="
 tar -czf "$TMP_TAR" \
   --exclude='./node_modules' \
   --exclude='./dist' \
+  --exclude='./dist-root' \
   --exclude='./.git' \
   -C . .
 scp "$TMP_TAR" $SERVER:/tmp/
@@ -23,8 +50,8 @@ ssh -T $SERVER <<ENDSSH
 set -e
 
 mkdir -p $REMOTE_DIR
-tar -xzf /tmp/gps-tracker-web-src.tar.gz -C $REMOTE_DIR
-rm -f /tmp/gps-tracker-web-src.tar.gz
+tar -xzf /tmp/gps-tracker-web-src-${ENV}.tar.gz -C $REMOTE_DIR
+rm -f /tmp/gps-tracker-web-src-${ENV}.tar.gz
 
 # load nvm if present; install if missing
 export NVM_DIR="\$HOME/.nvm"
@@ -41,24 +68,33 @@ echo "node: \$(node --version)  npm: \$(npm --version)"
 
 cd $REMOTE_DIR
 npm install
-# 1) seriallog.com/gps-tracker/app/ 용 (기본 base)
-npm run build
-# 2) gps.serial.kr/ 용 (root base, dist-root 로 출력)
-VITE_BASE=/ VITE_OUT=dist-root npm run build
-echo ">>> build OK (dist + dist-root)"
-ENDSSH
-
-# ── 3. nginx route (idempotent) ───────────────────────────────────────────
-echo "=== [3/3] nginx ==="
-ssh -T $SERVER <<'ENDSSH'
-if grep -q "gps-tracker-web static" /etc/nginx/sites-enabled/seriallog.com 2>/dev/null; then
-  echo "nginx block already present"
+if [ "$ENV" = "prod" ]; then
+  # 1) seriallog.com/gps-tracker/app/ 용 (기본 base)
+  npm run build
+  # 2) gps.serial.kr/ 용 (root base, dist-root 로 출력)
+  VITE_BASE=/ VITE_OUT=dist-root npm run build
+  echo ">>> build OK (dist + dist-root)"
 else
-  sudo python3 /home/mmm/gps-tracker-web/scripts/nginx_add_web_route.py
+  # dev — dev-gps.serial.kr 는 root base 만 필요
+  VITE_BASE=/ npm run build
+  echo ">>> build OK (dist)"
 fi
 ENDSSH
 
+# ── 3. nginx route (prod 만 — idempotent. dev 는 nginx 별도 셋업됨) ──────
+echo "=== [3/3] nginx ==="
+if [ "$ENV" = "prod" ]; then
+  ssh -T $SERVER <<'ENDSSH'
+  if grep -q "gps-tracker-web static" /etc/nginx/sites-enabled/seriallog.com 2>/dev/null; then
+    echo "nginx block already present"
+  else
+    sudo python3 /home/mmm/gps-tracker-web/scripts/nginx_add_web_route.py
+  fi
+ENDSSH
+else
+  echo "dev: nginx /etc/nginx/sites-enabled/dev-gps.serial.kr.conf 가 dist 를 serve"
+fi
+
 echo ""
 echo "=== deploy complete ==="
-echo ">>> https://seriallog.com/gps-tracker/app/"
-echo ">>> https://gps.serial.kr/   (서브도메인 nginx 설정 + 인증서 필요)"
+for u in "${HEALTH_URLS[@]}"; do echo ">>> $u"; done
