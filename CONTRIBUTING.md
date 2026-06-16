@@ -9,7 +9,7 @@
 회사 GitHub 계정 (협업자로 초대받은 계정) 으로 SSH 키 등록 후:
 
 ```bash
-git clone git@github.com:ETC11111/gps-tracker.git
+git clone git@github.com:ET-NOTE/gps-tracker.git
 cd gps-tracker
 ```
 
