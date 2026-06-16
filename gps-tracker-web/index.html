@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover: env(safe-area-inset-*) 가 실제 시스템바 높이로 채워지도록.
+         Android 15+(targetSdk 35) edge-to-edge 강제 환경에서 필수. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#1A7681" />
+
+    <!-- ── 기본 SEO ── -->
+    <title>시리얼링크 위치추적기 - 실시간 GPS 추적 · 운행 기록 · 지오펜스</title>
+    <meta name="description" content="GPS 트래커로 단말기의 실시간 위치 추적, 운행 일지 자동 기록, 지오펜스 진입·이탈 알림, 공유 링크 발급까지 — 시리얼링크 위치추적기." />
+    <meta name="keywords" content="GPS 추적, 위치 추적, 차량 위치 추적, 운행 기록, 운행 일지, 지오펜스, GPS 트래커, 단말기 위치, 시리얼링크" />
+    <meta name="author" content="시리얼링크" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://gps.serial.kr/" />
+
+    <!-- ── 파비콘 / 앱 아이콘 ── -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- ── Open Graph (Facebook, KakaoTalk, NAVER 등) ── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="시리얼링크 위치추적기" />
+    <meta property="og:title" content="시리얼링크 위치추적기 - 실시간 GPS 추적 · 운행 기록 · 지오펜스" />
+    <meta property="og:description" content="GPS 트래커로 단말기의 실시간 위치 추적, 운행 일지 자동 기록, 지오펜스 진입·이탈 알림, 공유 링크 발급까지." />
+    <meta property="og:image" content="https://gps.serial.kr/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="시리얼링크 위치추적기 로고" />
+    <meta property="og:url" content="https://gps.serial.kr/" />
+    <meta property="og:locale" content="ko_KR" />
+
+    <!-- ── Twitter Card ── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="시리얼링크 위치추적기" />
+    <meta name="twitter:description" content="실시간 GPS 추적 · 운행 일지 · 지오펜스 알림 · 공유 링크" />
+    <meta name="twitter:image" content="https://gps.serial.kr/og-image.png" />
+    <!-- 인앱 WebView 우회 — 카톡/네이버는 외부 브라우저로 강제 redirect.
+         앱이 아직 출시 안 된 응급 조치. App Links 등록 후에도 카톡 인앱뷰는
+         App Link 검증을 우회하므로 이 스크립트는 계속 필요. -->
+    <script>
+      (function() {
+        // Flutter 앱 자체의 WebView 면 스킵 — JS 채널 존재로 식별
+        if (window.FlutterAppOpenUrl) return;
+        var ua = navigator.userAgent || '';
+        var url = location.href;
+        if (/KAKAOTALK/i.test(ua)) {
+          location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
+          return;
+        }
+        if (/NAVER\(inapp/i.test(ua)) {
+          location.href = 'naversearchapp://inappbrowser/close?autoOpenInNewTab=true&url=' + encodeURIComponent(url);
+          return;
+        }
+        // FB/Instagram/Line/Twitter — 외부 강제 스킴이 없거나 비공식.
+        // DOM 준비되면 상단에 안내 배너 노출.
+        if (/Instagram|FBAN|FBAV|FBIOS|Twitter|Line\//i.test(ua)) {
+          var show = function() {
+            if (document.getElementById('inapp-banner')) return;
+            var d = document.createElement('div');
+            d.id = 'inapp-banner';
+            d.style.cssText = [
+              'position:fixed','top:0','left:0','right:0','z-index:99999',
+              'background:#1A1A2E','color:#fff','padding:14px 16px',
+              'font-size:13px','font-family:-apple-system,system-ui,sans-serif',
+              'line-height:1.5','box-shadow:0 2px 8px rgba(0,0,0,.3)',
+            ].join(';');
+            d.innerHTML =
+              '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+                '<div>인앱 브라우저는 일부 기능이 제한됩니다.<br>' +
+                  '<b>오른쪽 위 메뉴 → Chrome/Safari로 열기</b> 를 눌러주세요.' +
+                '</div>' +
+                '<button id="inapp-banner-x" style="background:transparent;border:none;color:#aaa;font-size:18px;cursor:pointer;padding:0 4px">×</button>' +
+              '</div>';
+            document.body.appendChild(d);
+            document.getElementById('inapp-banner-x').onclick = function(){ d.remove(); };
+          };
+          if (document.readyState === 'loading')
+            document.addEventListener('DOMContentLoaded', show);
+          else show();
+        }
+      })();
+    </script>
+    <script type="text/javascript"
+      src="//dapi.kakao.com/v2/maps/sdk.js?appkey=760ec0841163d1ee2cc5fef220a9df0b&libraries=services,clusterer&autoload=false">
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

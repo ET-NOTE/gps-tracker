@@ -1,0 +1,70 @@
+[package]
+name    = "gps-tracker-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web framework + async runtime
+axum            = { version = "0.7", features = ["ws", "macros"] }
+tokio           = { version = "1",   features = ["full"] }
+tower           = "0.5"
+tower-http      = { version = "0.6", features = ["cors", "trace", "compression-gzip", "timeout"] }
+futures-util    = { version = "0.3", default-features = false, features = ["std", "sink"] }
+
+# Serialization
+serde           = { version = "1",   features = ["derive"] }
+serde_json      = "1"
+
+# Database (Postgres, async, runtime tokio + rustls TLS)
+sqlx            = { version = "0.8", default-features = false, features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "chrono",
+    "json",
+    "macros",
+    "migrate"
+] }
+chrono          = { version = "0.4", default-features = false, features = ["serde", "clock"] }
+
+# Auth
+jsonwebtoken    = "9"
+argon2          = "0.5"
+rand            = "0.8"
+sha2            = "0.10"
+
+# HTTP client (FCM REST 호출용)
+reqwest         = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+
+# Logging / tracing
+tracing         = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Errors
+anyhow          = "1"
+thiserror       = "1"
+
+# Validation
+validator       = { version = "0.18", features = ["derive"] }
+
+# Env / config
+dotenvy         = "0.15"
+
+# Utilities
+uuid            = { version = "1", features = ["v4", "serde"] }
+base64          = "0.22"
+subtle          = "2"     # constant-time 비교 (OTP 등)
+hmac            = "0.12"  # webhook 서명 검증 (Toss)
+
+[profile.release]
+opt-level     = 3
+lto           = "thin"     # 빌드 시간 적당히, 최적화 충분
+codegen-units = 1
+strip         = "symbols"  # 바이너리 작게
+
+[[example]]
+name = "ws_smoke"
+path = "examples/ws_smoke.rs"
+
+[dev-dependencies]
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+url               = "2"

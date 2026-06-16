@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPS 비교 보고서 (L80-R vs SIM7080G GNSS)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fafafa; color: #222; display: flex; flex-direction: column; }
+  header { padding: .6rem 1rem; border-bottom: 1px solid #e5e5e5; background: #fff; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 1rem; font-weight: 600; }
+  header .meta { font-size: .85rem; color: #666; font-family: ui-monospace, monospace; }
+  header .spacer { flex: 1; }
+  header button {
+    font-size: .8rem;
+    padding: .35rem .7rem;
+    border: 1px solid #c33;
+    background: #fff;
+    color: #c33;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  header button:hover { background: #fee; }
+  header button:active { background: #fdd; }
+  header button.amber { border-color: #c80; color: #c80; }
+  header button.amber:hover { background: #ffe8c7; }
+  header button.amber:active { background: #ffd9a3; }
+
+  #map-wrap { position: relative; flex: 1 1 60vh; min-height: 400px; }
+  #map { width: 100%; height: 100%; }
+
+  #info-hud {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    max-width: min(90vw, 560px);
+    background: rgba(255, 255, 255, .97);
+    padding: .55rem .8rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .82rem;
+    line-height: 1.45;
+    border-left: 4px solid #aaa;
+    pointer-events: none;
+  }
+  #info-hud.hidden { display: none; }
+  #info-hud.l80  { border-left-color: #1a7a55; }
+  #info-hud.lte  { border-left-color: #2855c8; }
+  #info-hud.pair { border-left-color: #e22; }
+  #info-hud .title { font-weight: 700; font-size: .9rem; margin-bottom: 3px; }
+  #info-hud .title.l80  { color: #1a7a55; }
+  #info-hud .title.lte  { color: #2855c8; }
+  #info-hud .title.pair { color: #e22; }
+  #info-hud hr { border: none; border-top: 1px solid #ddd; margin: 5px 0; }
+  #info-hud .other { color: #555; }
+  #info-hud .delta { color: #e22; margin-top: 3px; font-weight: 700; }
+
+  .tbl-wrap { flex: 0 0 auto; max-height: 35vh; overflow: auto; background: #fff; border-top: 1px solid #e5e5e5; }
+  table { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; border-collapse: collapse; }
+  th, td { padding: .3rem .5rem; text-align: left; border-bottom: 1px solid #eee; white-space: nowrap; }
+  th { background: #fafafa; position: sticky; top: 0; z-index: 1; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #fff7f0; }
+  tbody tr.active { background: #ffecec; outline: 1px solid #e22; }
+  .ok { color: #1a7a55; font-weight: 600; }
+  .no { color: #aaa; }
+  .lbl-l80 { color: #1a7a55; font-weight: 600; }
+  .lbl-lte { color: #2855c8; font-weight: 600; }
+  .legend { background: #fff; padding: .4rem .6rem; border-radius: 4px; font-size: .8rem; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .legend .ring { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; vertical-align: middle; border: 2px solid #e22; box-sizing: border-box; }
+
+  .dist-badge { pointer-events: none; }
+  .dist-badge > span {
+    display: inline-block;
+    background: #fff;
+    color: #e22;
+    border: 1.5px solid #e22;
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-family: ui-monospace, monospace;
+    font-size: .72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,.2);
+  }
+
+  @keyframes dashShift { to { stroke-dashoffset: -24; } }
+  .pair-line { animation: dashShift 1s linear infinite; }
+</style>
+</head>
+<body>
+<header>
+  <h1>GPS 비교 보고서</h1>
+  <span class="meta" id="age">loading…</span>
+  <span class="meta" id="summary"></span>
+  <span class="spacer"></span>
+  <button id="btn-purge" class="amber" title="L80과 LTE 모두 fix된 레코드만 남기고, 짝 없는 것 삭제">✂ 짝 없는 것 삭제</button>
+  <button id="btn-clear" title="서버의 모든 포인트/레코드를 삭제">🗑 전부 삭제</button>
+</header>
+
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="info-hud" class="hidden"></div>
+</div>
+
+<div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>시각 (KST)</th>
+        <th>L80</th>
+        <th class="lbl-l80">L80-R 위/경도</th>
+        <th>LTE</th>
+        <th class="lbl-lte">LTE GNSS 위/경도</th>
+        <th>Δ거리</th>
+      </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+  </table>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map').setView([37.5, 127.0], 4);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap', maxZoom: 19
+}).addTo(map);
+
+const legendCtrl = L.control({position: 'bottomright'});
+legendCtrl.onAdd = () => {
+  const d = L.DomUtil.create('div', 'legend');
+  d.innerHTML = '<span class="dot" style="background:#1a7a55"></span>L80-R (외장)<br><span class="dot" style="background:#2855c8"></span>LTE GNSS (내장)<br><span class="ring"></span>선택/비교 강조';
+  return d;
+};
+legendCtrl.addTo(map);
+
+const layerL80 = L.layerGroup().addTo(map);
+const layerLte = L.layerGroup().addTo(map);
+const layerHi  = L.layerGroup().addTo(map);
+
+const hudEl = document.getElementById('info-hud');
+const infoHud = {
+  show(html, kind) {
+    hudEl.className = '';
+    if (kind) hudEl.classList.add(kind);
+    hudEl.innerHTML = html;
+  },
+  hide() { hudEl.className = 'hidden'; hudEl.innerHTML = ''; }
+};
+
+function normalize(p) {
+  if (!p.l80 && p.lat != null) p.l80 = {fix: !!p.fix, lat: p.lat, lng: p.lng, sat: p.sat};
+  if (!p.l80) p.l80 = {};
+  if (!p.lte) p.lte = {};
+  return p;
+}
+function fmtAge(ms) {
+  const s = Math.max(0, Math.floor(ms/1000));
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
+  return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
+}
+function haversine(a, b) {
+  const R = 6371008.8;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat), lat2 = toRad(b.lat);
+  const s = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+function fmtLL(o) { return o.lat.toFixed(6) + ', ' + o.lng.toFixed(6); }
+
+// ISO 시각 문자열을 KST (Asia/Seoul) HH:MM:SS로 변환
+function fmtKstTime(isoStr) {
+  return new Date(isoStr).toLocaleTimeString('en-GB', {
+    timeZone: 'Asia/Seoul', hour12: false
+  });
+}
+
+// Hover용: 한쪽(self)에서 본 비교. 상대가 없으면 "no fix" 표기.
+function makeHoverHudHTML(isL80, selfObj, otherObj, ts) {
+  const selfLbl  = isL80 ? 'L80-R'    : 'LTE GNSS';
+  const otherLbl = isL80 ? 'LTE GNSS' : 'L80-R';
+  const selfCls  = isL80 ? 'l80' : 'lte';
+  let html = '<div class="title ' + selfCls + '">● ' + selfLbl + ' @ ' + ts + ' KST</div>';
+  html += '<div>좌표: ' + fmtLL(selfObj) + '</div>';
+  html += '<hr>';
+  if (otherObj && otherObj.fix) {
+    const d = haversine(selfObj, otherObj);
+    html += '<div class="other"><i>' + otherLbl + '</i>: ' + fmtLL(otherObj) + '</div>';
+    html += '<div class="delta">Δ ' + d.toFixed(1) + ' m</div>';
+  } else {
+    html += '<div class="other"><i>' + otherLbl + '</i>: no fix</div>';
+  }
+  return html;
+}
+
+// 행 클릭용: 양쪽 대등하게 나열
+function makePairHudHTML(pp, ts) {
+  let html = '<div class="title pair">● 비교 쌍 @ ' + ts + ' KST</div>';
+  html += '<div><span class="lbl-l80">L80-R   </span>: ' + (pp.l80.fix ? fmtLL(pp.l80) : '<span class="no">no fix</span>') + '</div>';
+  html += '<div><span class="lbl-lte">LTE GNSS</span>: ' + (pp.lte.fix ? fmtLL(pp.lte) : '<span class="no">no fix</span>') + '</div>';
+  if (pp.l80.fix && pp.lte.fix) {
+    html += '<hr><div class="delta">Δ ' + haversine(pp.l80, pp.lte).toFixed(1) + ' m</div>';
+  }
+  return html;
+}
+
+// --- 하이라이트 상태 ---
+let pulseTimer = null;
+let clickClearTimer = null;
+let activeRow = null;
+let curAll = null;   // {latlngA, latlngB} 또는 {latlngA} (솔로) — 줌시 재계산
+let rings = [];      // [{ring: circleMarker, baseR: number}]
+let navToken = 0;    // clearHover 시마다 증가 → 지연된 viz 취소 토큰
+
+function shrinkSegment(a, b, pxA, pxB) {
+  const pa = map.latLngToContainerPoint(a);
+  const pb = map.latLngToContainerPoint(b);
+  const dx = pb.x - pa.x, dy = pb.y - pa.y;
+  const len = Math.hypot(dx, dy);
+  if (len < pxA + pxB + 2) return [a, b];
+  const ux = dx / len, uy = dy / len;
+  return [
+    map.containerPointToLatLng(L.point(pa.x + ux * pxA, pa.y + uy * pxA)),
+    map.containerPointToLatLng(L.point(pb.x - ux * pxB, pb.y - uy * pxB))
+  ];
+}
+
+function drawLink() {
+  // 기존 pair-line polyline 제거 후 재생성 (링은 유지)
+  layerHi.eachLayer(l => {
+    if (l instanceof L.Polyline) layerHi.removeLayer(l);
+  });
+  if (!curAll || !curAll.latlngA || !curAll.latlngB) return;
+
+  const shrinkPx = 12;  // base 8 + pulse 4 max
+  const [a2, b2] = shrinkSegment(curAll.latlngA, curAll.latlngB, shrinkPx, shrinkPx);
+  L.polyline([a2, b2], {
+    color:'#e22', weight:3, opacity:.9, dashArray:'8,4', interactive:false, className:'pair-line'
+  }).addTo(layerHi);
+}
+
+map.on('zoomend', drawLink);
+
+function clearHover() {
+  navToken++;   // 대기중인 row-click viz 스케줄 취소
+  if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+  rings = [];
+  curAll = null;
+  layerHi.clearLayers();
+  infoHud.hide();
+  if (activeRow) { activeRow.classList.remove('active'); activeRow = null; }
+  if (clickClearTimer) { clearTimeout(clickClearTimer); clickClearTimer = null; }
+}
+
+// 마커를 덮지 않고 테두리 링을 "추가"로 얹음. 원본 마커 색 그대로 보임.
+function addRing(marker) {
+  const baseR = (marker.getRadius() || 5) + 3;
+  const ring = L.circleMarker(marker.getLatLng(), {
+    radius: baseR,
+    color: '#e22',
+    weight: 2,
+    fill: false,
+    interactive: false
+  }).addTo(layerHi);
+  rings.push({ring, baseR});
+}
+
+function startPulse() {
+  let t = 0;
+  pulseTimer = setInterval(() => {
+    t += 0.15;
+    const d = (Math.sin(t) + 1) / 2 * 4;   // 0 ~ 4 px pulse
+    for (const e of rings) e.ring.setRadius(e.baseR + d);
+  }, 60);
+}
+
+// Hover: self(커서 위)는 그대로, 반대편만 링. 짝 없으면 self에 링(솔로).
+function showHover(selfMarker, partnerMarker) {
+  clearHover();
+  if (!selfMarker) return;
+
+  if (!partnerMarker) {
+    addRing(selfMarker);
+    startPulse();
+    curAll = { latlngA: selfMarker.getLatLng() };
+    return;
+  }
+  addRing(partnerMarker);
+  startPulse();
+  curAll = { latlngA: selfMarker.getLatLng(), latlngB: partnerMarker.getLatLng() };
+  drawLink();
+}
+
+// Row click: 양쪽 대등 → 둘 다 링.
+function showBoth(mA, mB) {
+  clearHover();
+  if (!mA && !mB) return;
+  if (mA) addRing(mA);
+  if (mB) addRing(mB);
+  startPulse();
+
+  if (mA && mB) {
+    curAll = { latlngA: mA.getLatLng(), latlngB: mB.getLatLng() };
+    drawLink();
+  } else {
+    curAll = { latlngA: (mA || mB).getLatLng() };
+  }
+}
+
+const recordMarkers = new Map();
+let firstFit = true;
+
+function onRowClick(idx, tr) {
+  const r = recordMarkers.get(idx);
+  if (!r) return;
+  const { mL, mT, pp, ts } = r;
+  if (!mL && !mT) return;
+
+  clearHover();                    // 이전 상태/토큰 무효화
+
+  // active 표시는 즉시 (즉각 피드백)
+  tr.classList.add('active');
+  activeRow = tr;
+
+  const myToken = navToken;        // 이 클릭의 고유 토큰
+  const center = (mL && mT)
+    ? L.latLng((mL.getLatLng().lat + mT.getLatLng().lat)/2, (mL.getLatLng().lng + mT.getLatLng().lng)/2)
+    : (mL || mT).getLatLng();
+  const targetZoom = Math.max(map.getZoom(), 17);
+
+  // flyTo 완료(moveend) 후에 비교 viz 시작 — 움직임과 겹치지 않게
+  map.once('moveend', () => {
+    if (myToken !== navToken) return;   // 그 사이 다른 클릭/호버로 대체됨
+    showBoth(mL, mT);
+    // showBoth가 clearHover 호출하므로 activeRow/토큰 재복원
+    tr.classList.add('active');
+    activeRow = tr;
+    infoHud.show(makePairHudHTML(pp, ts), 'pair');
+    if (clickClearTimer) clearTimeout(clickClearTimer);
+    clickClearTimer = setTimeout(clearHover, 8000);
+  });
+  map.flyTo(center, targetZoom, { duration: .4 });
+}
+
+async function refresh() {
+  try {
+    const r = await fetch('recent?limit=500', {cache: 'no-store'});
+    const arr = await r.json();
+    if (!arr.length) { document.getElementById('age').textContent = '(no data yet)'; return; }
+
+    const latest = arr[arr.length - 1];
+    const t = new Date(latest.received_at).getTime();
+    document.getElementById('age').textContent = fmtAge(Date.now() - t) + ' ago · ' + arr.length + ' records';
+
+    let both = 0, sumD = 0;
+    for (const rec of arr) {
+      const pp = normalize(rec.payload || {});
+      if (pp.l80.fix && pp.lte.fix) { both++; sumD += haversine(pp.l80, pp.lte); }
+    }
+    document.getElementById('summary').textContent =
+      '동시 fix ' + both + '건' + (both ? ' · 평균 Δ ' + (sumD/both).toFixed(1) + 'm' : '');
+
+    clearHover();
+    layerL80.clearLayers();
+    layerLte.clearLayers();
+    recordMarkers.clear();
+
+    const l80Line = [], lteLine = [];
+
+    for (let i = 0; i < arr.length; i++) {
+      const rec = arr[i];
+      const pp = normalize(rec.payload || {});
+      const ts = fmtKstTime(rec.received_at);
+      let mL = null, mT = null;
+
+      if (pp.l80.fix) {
+        mL = L.circleMarker([pp.l80.lat, pp.l80.lng], {radius:5, color:'#1a7a55', fillColor:'#1a7a55', fillOpacity:.85, weight:1});
+        mL._hudHTML = makeHoverHudHTML(true, pp.l80, pp.lte, ts);
+        mL._hudKind = 'l80';
+        mL.addTo(layerL80);
+        l80Line.push([pp.l80.lat, pp.l80.lng]);
+      }
+      if (pp.lte.fix) {
+        mT = L.circleMarker([pp.lte.lat, pp.lte.lng], {radius:5, color:'#2855c8', fillColor:'#2855c8', fillOpacity:.85, weight:1});
+        mT._hudHTML = makeHoverHudHTML(false, pp.lte, pp.l80, ts);
+        mT._hudKind = 'lte';
+        mT.addTo(layerLte);
+        lteLine.push([pp.lte.lat, pp.lte.lng]);
+      }
+
+      if (mL || mT) recordMarkers.set(i, { mL, mT, pp, ts });
+
+      if (mL) {
+        mL.on('mouseover', () => { showHover(mL, mT); infoHud.show(mL._hudHTML, mL._hudKind); });
+        mL.on('mouseout',  clearHover);
+      }
+      if (mT) {
+        mT.on('mouseover', () => { showHover(mT, mL); infoHud.show(mT._hudHTML, mT._hudKind); });
+        mT.on('mouseout',  clearHover);
+      }
+    }
+    if (l80Line.length > 1) L.polyline(l80Line, {color:'#1a7a55', weight:2, opacity:.5}).addTo(layerL80);
+    if (lteLine.length > 1) L.polyline(lteLine, {color:'#2855c8', weight:2, opacity:.5, dashArray:'4,4'}).addTo(layerLte);
+
+    const all = l80Line.concat(lteLine);
+    if (all.length && firstFit) { map.fitBounds(L.latLngBounds(all).pad(0.2)); firstFit = false; }
+
+    const tb = document.getElementById('tb');
+    tb.innerHTML = '';
+    const sliceStart = Math.max(0, arr.length - 80);
+    for (let k = arr.length - 1; k >= sliceStart; k--) {
+      const rec = arr[k];
+      const pp = normalize(rec.payload || {});
+      const ts = fmtKstTime(rec.received_at);
+      const l80ll = pp.l80.fix ? fmtLL(pp.l80) : '';
+      const lteLL = pp.lte.fix ? fmtLL(pp.lte) : '';
+      const dd = (pp.l80.fix && pp.lte.fix) ? haversine(pp.l80, pp.lte).toFixed(1) + ' m' : '';
+      const hasAny = pp.l80.fix || pp.lte.fix;
+      tb.insertAdjacentHTML('beforeend',
+        '<tr data-idx="' + k + '"' + (hasAny ? '' : ' style="cursor:default;color:#bbb"') + '>' +
+        '<td style="color:#888">' + ts + '</td>' +
+        '<td>' + (pp.l80.fix ? '<span class="ok">✓</span>' : '<span class="no">·</span>') + '</td>' +
+        '<td>' + l80ll + '</td>' +
+        '<td>' + (pp.lte.fix ? '<span class="ok">✓</span>' : '<span class="no">·</span>') + '</td>' +
+        '<td>' + lteLL + '</td>' +
+        '<td>' + dd + '</td>' +
+        '</tr>');
+    }
+  } catch (e) {
+    console.error(e);
+    document.getElementById('age').textContent = 'fetch error';
+  }
+}
+
+document.getElementById('tb').addEventListener('click', (e) => {
+  const tr = e.target.closest('tr[data-idx]');
+  if (!tr) return;
+  const idx = parseInt(tr.dataset.idx, 10);
+  if (Number.isFinite(idx)) onRowClick(idx, tr);
+});
+
+document.getElementById('btn-purge').addEventListener('click', async () => {
+  if (!confirm('L80과 LTE 중 어느 한 쪽이라도 fix 없는 레코드를 삭제합니다.\n(양쪽 동시 fix 있는 것만 남김)\n계속?')) return;
+  const btn = document.getElementById('btn-purge');
+  btn.disabled = true;
+  btn.textContent = '삭제 중...';
+  try {
+    const r = await fetch('purge-unpaired', { method: 'POST' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (!j.ok) throw new Error('server returned not-ok');
+    clearHover();
+    firstFit = true;
+    await refresh();
+    btn.textContent = '✓ ' + j.removed + '건 삭제';
+    setTimeout(() => { btn.textContent = '✂ 짝 없는 것 삭제'; btn.disabled = false; }, 2000);
+  } catch (e) {
+    alert('삭제 실패: ' + e.message);
+    btn.textContent = '✂ 짝 없는 것 삭제';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('btn-clear').addEventListener('click', async () => {
+  if (!confirm('서버의 모든 GPS 기록을 삭제합니다. 계속?')) return;
+  const btn = document.getElementById('btn-clear');
+  btn.disabled = true;
+  btn.textContent = '삭제 중...';
+  try {
+    const r = await fetch('clear', { method: 'POST' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (!j.ok) throw new Error('server returned not-ok');
+    // 로컬 상태도 리셋
+    clearHover();
+    firstFit = true;
+    await refresh();
+    btn.textContent = '✓ 삭제됨';
+    setTimeout(() => { btn.textContent = '🗑 전부 삭제'; btn.disabled = false; }, 1500);
+  } catch (e) {
+    alert('삭제 실패: ' + e.message);
+    btn.textContent = '🗑 전부 삭제';
+    btn.disabled = false;
+  }
+});
+
+refresh();
+setInterval(refresh, 10000);
+</script>
+</body>
+</html>

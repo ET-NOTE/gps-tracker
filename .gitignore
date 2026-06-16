@@ -1,0 +1,47 @@
+# ===== secrets — NEVER commit =====
+gps-tracker-e21be-firebase-adminsdk-*.json
+**/firebase-adminsdk*.json
+**/*serviceAccount*.json
+**/.env
+**/.env.local
+**/.env.production
+*.pem
+*.key
+*.keystore
+!**/debug.keystore.example
+
+# ===== this repo only holds web+api+arduino — flutter app and unrelated projects elsewhere =====
+flutter_app/
+weca-twa/
+
+# ===== Rust =====
+target/
+**/target/
+Cargo.lock.bak
+
+# ===== Node / Vite =====
+node_modules/
+dist/
+dist-root/
+*.tsbuildinfo
+.vite/
+
+# ===== Arduino =====
+**/build/
+*.bin
+*.elf
+*.map
+*.hex
+
+# ===== OS / IDE =====
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+*.swp
+*~
+
+# ===== build / cache =====
+.cache/
+*.log

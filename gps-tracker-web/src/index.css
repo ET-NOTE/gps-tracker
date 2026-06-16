@@ -1,0 +1,136 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  /* BottomNav 와 같은 surface 색으로 — 모바일에서 패널 닫힘/스크롤 등으로 body 가
+     일순간 노출될 때 BottomNav 와 색차이로 빈 공간처럼 보이는 현상 방지. */
+  background: var(--surface);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+input, button, textarea, select { font-family: inherit; color: inherit; }
+button { user-select: none; }
+
+/* 전역 색상 보조 클래스 */
+.surface  { background: var(--surface); }
+.surface2 { background: var(--surface-2); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--surface-2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* 카카오맵 인포윈도우는 라이트/다크 안 따라감 (kakao native) — 그대로 둠 */
+
+/* 사이드바 옆 패널 슬라이드인 + 플로팅 윈도우 페이드인 */
+@keyframes slideInLeft {
+  from { transform: translateX(-12px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { transform: translateY(8px);   opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+@keyframes fadeInDown {
+  from { transform: translateY(-8px);  opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
+}
+/* 중앙 정렬(translate(-50%, -50%))이 박힌 요소용 — transform 안 건드리고 opacity 만 페이드. */
+@keyframes fadeInOnly {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+/* 색상 변경 (selected ↔ unselected) 부드럽게 페이드. */
+@keyframes fadeSwap {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 1초 토스트 — 빠르게 in 0.15s, 끝나기 직전 0.2s 페이드아웃 */
+@keyframes toastFade {
+  0%   { opacity: 0; transform: translate(-50%, -45%); }
+  15%  { opacity: 1; transform: translate(-50%, -50%); }
+  80%  { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(-50%, -52%); }
+}
+
+/* ───────────────────────────────────────────────────────────
+   인터랙티브 폴리시 — 통일된 press / hover 피드백.
+   `.btn-bounce` : 누를 때 살짝 줄어드는 마이크로 인터랙션 (transform).
+   `.btn-hover-bg` : 데스크톱 hover 시 배경 살짝 톤업.
+   `.fade-color` : 배경/글자/테두리 색상 변화를 0.18s 페이드 (선택 토글 등).
+   `.fade-swap` : key 변경 등으로 마운트 될 때 한 번 페이드-슬라이드.
+   ─────────────────────────────────────────────────────────── */
+.btn-bounce {
+  transition: background-color .15s ease, color .15s ease,
+              border-color .15s ease, transform .08s ease, box-shadow .15s ease;
+}
+.btn-bounce:active:not(:disabled) { transform: scale(0.96); }
+
+.btn-hover-bg { transition: background-color .15s ease, color .15s ease; }
+@media (hover: hover) {
+  .btn-hover-bg:hover:not(:disabled) { background: var(--surface-2); }
+}
+
+.fade-color {
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+.fade-swap { animation: fadeSwap .18s ease-out; }
+
+/* 가로/세로 스크롤이 자주 일어나는 strip 류 — 부드러운 스크롤 + 모바일 스냅 같은 자연스러움 */
+.smooth-scroll-x { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+
+/* 인쇄: 리포트만 보이게 — nav, sidebar, controls 다 숨김. .report-area 만 풀-페이지 */
+@media print {
+  /* 모든 요소 숨기고 .report-area 만 노출 */
+  body * { visibility: hidden !important; }
+  .report-area, .report-area * { visibility: visible !important; }
+
+  .report-area {
+    position: absolute; left: 0; top: 0;
+    width: 100% !important;
+    border: none !important;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    font-size: 9pt !important;
+  }
+  .report-area * {
+    color: black !important;
+  }
+  .report-area th, .report-area td {
+    background: white !important;
+    border: 1px solid #999 !important;
+    padding: 4px 6px !important;
+    font-size: 9pt !important;
+    /* 한 행이 페이지 사이에 잘리지 않도록 */
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .report-area th {
+    background: #e8e8e8 !important;
+    font-weight: 700 !important;
+  }
+  /* thead 가 페이지마다 반복되도록 */
+  .report-area thead { display: table-header-group !important; }
+  .report-area tbody { display: table-row-group !important; }
+  .report-area tr    { page-break-inside: avoid !important; break-inside: avoid !important; }
+
+  .no-print { display: none !important; }
+  .editable-cell { cursor: default !important; }
+
+  /* A4 가로 — 컬럼 많은 운행일지에 적합. 여백 12mm 표준 */
+  @page { size: A4 landscape; margin: 12mm; }
+}

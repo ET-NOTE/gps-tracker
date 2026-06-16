@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /devices
+Disallow: /profile
+Disallow: /payments
+
+# 공유 링크 (/s/<token>) 는 공개 기본 — 그러나 토큰 자체가 비밀이라 검색 노출 차단.
+Disallow: /s/
+
+Sitemap: https://gps.serial.kr/sitemap.xml
