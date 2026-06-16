@@ -1,0 +1,14 @@
+# CODEOWNERS — PR 자동 reviewer 지정.
+# Branch protection 의 "Require review from Code Owners" 켜져 있어야 강제됨.
+
+# 기본 — 모든 변경은 ETC11111 가 자동 리뷰어
+*       @ETC11111
+
+# 운영 민감 영역 — 별도 명시 (보호 강화 의미. 이미 위에서 잡혔지만 명확하게)
+/gps-tracker-api/migrations/   @ETC11111
+/gps-tracker-api/deploy/       @ETC11111
+/gps-tracker-api/.env.example  @ETC11111
+/gps-tracker-web/deploy.sh     @ETC11111
+/.github/                      @ETC11111
+/CONTRIBUTING.md               @ETC11111
+/STATUS.md                     @ETC11111
