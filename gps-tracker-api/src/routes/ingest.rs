@@ -369,7 +369,25 @@ pub async fn ingest(
         }
     }
 
-    Ok(Json(json!({ "ok": true })))
+    // ── 부저 원격 트리거 atomic claim ──
+    // UI 가 set 한 beep_pending=true 를 atomic 으로 FALSE 로 클리어하면서 응답에 cmd 실어 보냄.
+    // RETURNING 으로 진짜 한 번만 claim — 동시에 들어온 ingest 두 개가 둘 다 cmd 받는 일 없음.
+    let beep_claimed: Option<(i64,)> = sqlx::query_as(
+        r#"UPDATE devices
+              SET beep_pending = FALSE
+            WHERE id = $1 AND beep_pending = TRUE
+        RETURNING id"#,
+    )
+    .bind(device_id)
+    .fetch_optional(&state.db).await
+    .ok().flatten();
+
+    let mut resp = json!({ "ok": true });
+    if beep_claimed.is_some() {
+        resp["cmd"] = json!("beep");
+        tracing::info!(device_id, "ingest: dispatched beep cmd");
+    }
+    Ok(Json(resp))
 }
 
 fn broadcast_location(

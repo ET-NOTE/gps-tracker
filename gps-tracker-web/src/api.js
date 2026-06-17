@@ -210,6 +210,7 @@ export const api = {
   refreshSimInfo:(id) => req('POST', `/devices/${id}/sim/refresh`),
   getAuditLog:   (id) => req('GET',  `/devices/${id}/audit`),
   wipeDevice:    (id) => req('POST', `/devices/${id}/wipe`),
+  beepDevice:    (id) => req('POST', `/devices/${id}/beep`),
 
   // Round 4: lifecycle 이벤트 (wake/sleep/low_batt/offline 등)
   getDeviceEvents: (id) => req('GET', `/devices/${id}/events`),

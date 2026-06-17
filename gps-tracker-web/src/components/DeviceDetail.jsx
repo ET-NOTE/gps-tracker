@@ -41,6 +41,8 @@ export default function DeviceDetail({ device, onWiped }) {
 
   const [tab, setTab] = useState('stats');           // 'stats' | 'manage'
   const [wiping, setWiping] = useState(false);
+  const [beeping, setBeeping] = useState(false);
+  const [beepNote, setBeepNote] = useState(null);    // 마지막 결과 표시용
 
   async function handleWipe() {
     if (!confirm('이 디바이스의 모든 데이터(위치 기록, 이벤트 등)를 영구히 삭제합니다.\n계속하시겠습니까?')) return;
@@ -53,6 +55,19 @@ export default function DeviceDetail({ device, onWiped }) {
       alert(e.message);
     } finally {
       setWiping(false);
+    }
+  }
+
+  async function handleBeep() {
+    setBeeping(true);
+    setBeepNote(null);
+    try {
+      await api.beepDevice(device.id);
+      setBeepNote({ ok: true, at: Date.now() });
+    } catch (e) {
+      setBeepNote({ ok: false, msg: e.message });
+    } finally {
+      setBeeping(false);
     }
   }
 
@@ -107,6 +122,36 @@ export default function DeviceDetail({ device, onWiped }) {
             <SectionAsync title="페어링 이력" q={auditQ} skeletonH={40}>
               {(data) => <AuditBody audit={data} />}
             </SectionAsync>
+
+            {/* 현장 식별 — 부저 원격 트리거 */}
+            <Section title="현장 식별">
+              <button onClick={handleBeep} disabled={beeping}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  width: '100%', padding: 9,
+                  background: 'var(--primary)', color: 'white',
+                  border: 'none', borderRadius: 6,
+                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                  opacity: beeping ? 0.6 : 1,
+                }}>
+                <Icon name="volume2" size={14} />
+                {beeping ? '명령 전송 중...' : '🔊 부저 울리기'}
+              </button>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>
+                다음 ingest 시 (~15초 이내) 디바이스 부저가 울립니다. 여러 단말기 동시 휴대 시 어느 보드가
+                서버상 어떤 ID 인지 확인할 때 사용.
+                {beepNote && beepNote.ok && (
+                  <div style={{ marginTop: 4, color: 'var(--success, #2da44e)' }}>
+                    ✅ 명령 등록됨 — 15초 안에 울려요
+                  </div>
+                )}
+                {beepNote && !beepNote.ok && (
+                  <div style={{ marginTop: 4, color: 'var(--danger)' }}>
+                    ❌ {beepNote.msg}
+                  </div>
+                )}
+              </div>
+            </Section>
 
             {/* 위험 영역 */}
             <Section title="위험 영역" danger>

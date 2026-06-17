@@ -32,6 +32,11 @@ dist-root/
 *.elf
 *.map
 *.hex
+arduino/*.zip                          # sketch zip 보관본 (협업자 전달 임시)
+
+# ===== Vite cache =====
+**/vite.config.js.timestamp-*.mjs
+**/vite.config.ts.timestamp-*.mjs
 
 # ===== OS / IDE =====
 .DS_Store
