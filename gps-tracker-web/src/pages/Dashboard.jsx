@@ -422,7 +422,7 @@ export default function Dashboard({ onLogout }) {
           });
         });
       }
-      if (!isNaN(targetId)) mapRef.current?.focusDevice(targetId);
+      if (!isNaN(targetId)) mapRef.current?.filterToDevice(targetId);
       else                  mapRef.current?.fitToAllMarkers(60);
     } catch (e) { console.error('loadDevices', e); }
   }, []);
