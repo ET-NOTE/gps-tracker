@@ -85,15 +85,16 @@ export default function Auth({ onLogin }) {
 
   return (
     <div style={st.root}>
-      <div style={st.bgGlow} />
       <div style={st.card}>
+        {/* 로고 + 타이틀 */}
         <div style={st.hero}>
           <img src={`${import.meta.env.BASE_URL}logo.png`} alt="시리얼링크"
             style={st.heroLogo} />
-          <div style={st.heroTitle}>시리얼링크 위치추적기</div>
-          <div style={st.heroSub}>실시간 위치 · 운행 기록 · 알림</div>
+          <div style={st.heroTitle}>시리얼링크</div>
+          <div style={st.heroSub}>실시간 위치추적 서비스</div>
         </div>
 
+        {/* 로그인 / 회원가입 탭 */}
         <div style={st.tabs}>
           {['login', 'register'].map(t => (
             <button key={t} type="button" onClick={() => switchTab(t)}
@@ -103,36 +104,71 @@ export default function Auth({ onLogin }) {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} style={{ marginTop: 18 }}>
-          <Field icon={<MailIcon />}>
-            <input type="email" placeholder="이메일" value={email} required
-              onChange={e => setEmail(e.target.value)} style={st.input} />
-          </Field>
+        {/* 소셜 로그인 — 로그인 탭에서만 */}
+        {tab === 'login' && (
+          <>
+            <div style={st.socialRow}>
+              <button type="button" style={st.kakaoBtn}
+                onClick={() => alert('카카오 로그인은 준비 중입니다.')}>
+                <KakaoIcon /> 카카오로 시작하기
+              </button>
+              <button type="button" style={st.naverBtn}
+                onClick={() => alert('네이버 로그인은 준비 중입니다.')}>
+                <NaverIcon /> 네이버로 시작하기
+              </button>
+            </div>
+            <div style={st.divider}>
+              <div style={st.dividerLine} />
+              <span style={st.dividerText}>또는 이메일로</span>
+              <div style={st.dividerLine} />
+            </div>
+          </>
+        )}
 
-          <Field icon={<LockIcon />} style={{ marginTop: 10 }}>
-            <input type="password" placeholder="비밀번호 (8자 이상)" value={password} required minLength={8}
-              onChange={e => setPassword(e.target.value)} style={st.input} />
-          </Field>
+        <form onSubmit={handleSubmit} style={{ marginTop: tab === 'register' ? 18 : 0 }}>
+          <div style={st.fieldWrap}>
+            <label style={st.fieldLabel}>이메일</label>
+            <Field icon={<MailIcon />}>
+              <input type="email" placeholder="example@email.com" value={email} required
+                onChange={e => setEmail(e.target.value)} style={st.input} />
+            </Field>
+          </div>
+
+          <div style={{ ...st.fieldWrap, marginTop: 10 }}>
+            <label style={st.fieldLabel}>비밀번호</label>
+            <Field icon={<LockIcon />}>
+              <input type="password" placeholder="8자 이상" value={password} required minLength={8}
+                onChange={e => setPassword(e.target.value)} style={st.input} />
+            </Field>
+          </div>
 
           {tab === 'register' && (
             <>
-              <Field icon={<LockIcon />} style={{ marginTop: 10 }}>
-                <input type="password" placeholder="비밀번호 확인" value={passwordConfirm} required
-                  onChange={e => setPasswordConfirm(e.target.value)} style={st.input} />
-              </Field>
+              <div style={{ ...st.fieldWrap, marginTop: 10 }}>
+                <label style={st.fieldLabel}>비밀번호 확인</label>
+                <Field icon={<LockIcon />}>
+                  <input type="password" placeholder="비밀번호 재입력" value={passwordConfirm} required
+                    onChange={e => setPasswordConfirm(e.target.value)} style={st.input} />
+                </Field>
+              </div>
               {passwordConfirm && password !== passwordConfirm && (
                 <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4, paddingLeft: 4 }}>
                   비밀번호 확인이 일치하지 않습니다.
                 </div>
               )}
-              <Field icon={<UserIcon />} style={{ marginTop: 10 }}>
-                <input type="text" placeholder="이름 (예: 홍길동)" value={displayName}
-                  required maxLength={20}
-                  onChange={e => setDisplayName(e.target.value)} style={st.input} />
-              </Field>
-              <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+              <div style={{ ...st.fieldWrap, marginTop: 10 }}>
+                <label style={st.fieldLabel}>이름</label>
+                <Field icon={<UserIcon />}>
+                  <input type="text" placeholder="홍길동" value={displayName}
+                    required maxLength={20}
+                    onChange={e => setDisplayName(e.target.value)} style={st.input} />
+                </Field>
+              </div>
+              <div style={{ ...st.fieldWrap, marginTop: 10 }}>
+                <label style={st.fieldLabel}>휴대폰 번호</label>
+                <div style={{ display: 'flex', gap: 6 }}>
                 <Field icon={<PhoneIcon />} style={{ flex: 1 }}>
-                  <input type="tel" placeholder="휴대폰 (010...)"
+                  <input type="tel" placeholder="010-0000-0000"
                     value={phone}
                     onChange={e => setPhone(e.target.value.replace(/[^0-9-]/g, ''))}
                     required
@@ -148,6 +184,7 @@ export default function Auth({ onLogin }) {
                   }}>
                   {otpSent && !otpExpired ? `${Math.floor(otpSecondsLeft/60)}:${String(otpSecondsLeft%60).padStart(2,'0')}` : (otpSent ? '재발송' : '인증번호')}
                 </button>
+                </div>
               </div>
               {otpSent && (
                 <>
@@ -505,57 +542,78 @@ function UserIcon() {
   );
 }
 
+function KakaoIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.738 1.717 5.14 4.318 6.615L5.2 21l4.382-2.908C10.176 18.356 11.077 18.5 12 18.5c5.523 0 10-3.477 10-7.7S17.523 3 12 3z"/>
+    </svg>
+  );
+}
+
+function NaverIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16.273 12.845L7.376 3H3v18h7.727V11.155L19.624 21H24V3h-7.727z"/>
+    </svg>
+  );
+}
+
 const st = {
   root: {
-    minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'var(--bg)', padding: 16, position: 'relative', overflow: 'hidden',
-  },
-  bgGlow: {
-    position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)',
-    width: 800, height: 800, borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0) 60%)',
-    pointerEvents: 'none',
+    minHeight: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+    background: 'var(--bg)', padding: '40px 16px', position: 'relative',
   },
   card: {
-    width: '100%', maxWidth: 500,
-    background: 'var(--surface)', borderRadius: 16, padding: 32,
-    boxShadow: '0 10px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)',
+    width: '100%', maxWidth: 460,
+    background: 'var(--surface)', borderRadius: 20, padding: '32px 28px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04)',
     border: '1px solid var(--border)',
-    position: 'relative', zIndex: 1,
   },
-  hero: {
-    textAlign: 'center', marginBottom: 22,
-  },
-  heroIcon: {
-    width: 56, height: 56, borderRadius: 14, margin: '0 auto 10px',
-    background: 'linear-gradient(135deg, var(--primary) 0%, #8B5CF6 100%)',
-    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 8px 20px rgba(59,130,246,0.35)',
-  },
+  hero: { textAlign: 'center', marginBottom: 24 },
   heroLogo: {
-    width: 80, height: 80, margin: '0 auto 12px',
-    display: 'block',
-    // 로고 PNG 자체에 둥근 사각 모양이 박혀있으므로 CSS borderRadius 추가하지 않음
-    // (이중 마스킹 시 가장자리 흰 슬라이버 발생).
-    filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.15))',
+    width: 72, height: 72, margin: '0 auto 12px', display: 'block',
+    filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.12))',
   },
-  heroTitle: { fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.4 },
-  heroSub:   { fontSize: 12, color: 'var(--text-3)', marginTop: 4 },
+  heroTitle: { fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.3 },
+  heroSub:   { fontSize: 13, color: 'var(--text-3)', marginTop: 3 },
 
   tabs: {
     display: 'flex', gap: 4, padding: 4,
-    background: 'var(--surface-2)', borderRadius: 10,
+    background: 'var(--surface-2)', borderRadius: 12, marginBottom: 20,
   },
   tab: {
-    flex: 1, padding: '8px 0', background: 'transparent', color: 'var(--text-3)',
-    border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-    transition: 'all .2s',
+    flex: 1, padding: '9px 0', background: 'transparent', color: 'var(--text-3)',
+    border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+    transition: 'all .18s',
   },
   tabActive: {
     color: 'var(--text)', background: 'var(--surface)',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
   },
 
+  /* 소셜 로그인 */
+  socialRow: { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 },
+  kakaoBtn: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    width: '100%', padding: '11px 0',
+    background: '#FEE500', color: '#191919',
+    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+  },
+  naverBtn: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    width: '100%', padding: '11px 0',
+    background: '#03C75A', color: '#fff',
+    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+  },
+
+  /* 구분선 */
+  divider: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1, background: 'var(--border)' },
+  dividerText: { fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' },
+
+  /* 레이블 + 필드 */
+  fieldWrap: { display: 'flex', flexDirection: 'column' },
+  fieldLabel: { fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 5 },
   field: {
     display: 'flex', alignItems: 'center', gap: 8,
     background: 'var(--surface-2)', border: '1px solid var(--border)',
@@ -564,19 +622,19 @@ const st = {
   },
   fieldIcon: { color: 'var(--text-3)', display: 'flex', alignItems: 'center' },
   input: {
-    flex: 1, padding: '12px 0', background: 'transparent', border: 'none',
+    flex: 1, padding: '11px 0', background: 'transparent', border: 'none',
     fontSize: 14, color: 'var(--text)', outline: 'none', width: '100%',
   },
 
   error: {
     color: 'var(--danger)', fontSize: 13, marginTop: 10,
-    background: 'rgba(239,68,68,0.08)', padding: '8px 10px', borderRadius: 6,
+    background: 'rgba(239,68,68,0.08)', padding: '8px 10px', borderRadius: 8,
   },
   btn: {
-    display: 'block', width: '100%', padding: 12,
+    display: 'block', width: '100%', padding: 13,
     background: 'var(--primary)', color: 'var(--primary-fg)',
     border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 14,
-    transition: 'transform .05s',
+    transition: 'opacity .15s',
   },
   btnGhost: {
     background: 'var(--surface-2)', color: 'var(--text)',

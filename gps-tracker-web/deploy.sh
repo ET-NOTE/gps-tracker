@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# deploy.sh â€” tar+scp source â†’ build on server â†’ static ì‚°ì¶œë¬¼ ë°°í¬
+# deploy.sh ??tar+scp source ??build on server ??static ?°ì¶œë¬?ë°°í¬
 #
-# ì‚¬ìš©ë²•:
-#   bash deploy.sh           # = prod (default) â€” seriallog.com + gps.serial.kr
+# ?¬ìš©ë²?
+#   bash deploy.sh           # = prod (default) ??seriallog.com + gps.serial.kr
 #   bash deploy.sh prod
-#   bash deploy.sh dev       # = dev-gps.serial.kr ë‹¨ì¼ base
+#   bash deploy.sh dev       # = dev-gps.serial.kr ?¨ì¼ base
 #
-# ë©”ëª¨ë¦¬: VPS RAM 2.9GB. dev/prod ë¹Œë“œ ë™ì‹œ ì‹¤í–‰ ê¸ˆì§€ (ì§ë ¬).
+# ë©”ëª¨ë¦? VPS RAM 2.9GB. dev/prod ë¹Œë“œ ?™ì‹œ ?¤í–‰ ê¸ˆì? (ì§ë ¬).
 set -e
 
 ENV="${1:-prod}"
@@ -17,7 +17,7 @@ case "$ENV" in
     HEALTH_URLS=("https://seriallog.com/gps-tracker/app/" "https://gps.serial.kr/")
     ;;
   dev)
-    # gps-dev ê³„ì • í†µë¡œ. junior + maintainer ì–‘ìª½ SSH í‚¤ ë“±ë¡ë˜ì–´ ìˆìŒ.
+    # gps-dev ê³„ì • ?µë¡œ. junior + maintainer ?‘ìª½ SSH ???±ë¡?˜ì–´ ?ˆìŒ.
     SERVER=gps-dev@210.114.18.16
     REMOTE_DIR=/home/gps-dev/gps-tracker-web-dev
     HEALTH_URLS=("https://dev-gps.serial.kr/")
@@ -32,7 +32,7 @@ TMP_TAR=/tmp/gps-tracker-web-src-${ENV}.tar.gz
 
 echo "=== deploy target: ${ENV} ($REMOTE_DIR) ==="
 
-# â”€â”€ 1. pack & upload source â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ?€?€ 1. pack & upload source ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
 echo "=== [1/3] uploading source ==="
 tar -czf "$TMP_TAR" \
   --exclude='./node_modules' \
@@ -44,7 +44,7 @@ scp "$TMP_TAR" $SERVER:/tmp/
 rm -f "$TMP_TAR"
 echo "upload done"
 
-# â”€â”€ 2. install deps + build on server â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ?€?€ 2. install deps + build on server ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
 echo "=== [2/3] building on server ==="
 ssh -T $SERVER <<ENDSSH
 set -e
@@ -69,19 +69,19 @@ echo "node: \$(node --version)  npm: \$(npm --version)"
 cd $REMOTE_DIR
 npm install
 if [ "$ENV" = "prod" ]; then
-  # 1) seriallog.com/gps-tracker/app/ ìš© (ê¸°ë³¸ base)
+  # 1) seriallog.com/gps-tracker/app/ ??(ê¸°ë³¸ base)
   npm run build
-  # 2) gps.serial.kr/ ìš© (root base, dist-root ë¡œ ì¶œë ¥)
+  # 2) gps.serial.kr/ ??(root base, dist-root ë¡?ì¶œë ¥)
   VITE_BASE=/ VITE_OUT=dist-root npm run build
   echo ">>> build OK (dist + dist-root)"
 else
-  # dev â€” dev-gps.serial.kr ëŠ” root base ë§Œ í•„ìš”
+  # dev ??dev-gps.serial.kr ??root base ë§??„ìš”
   VITE_BASE=/ npm run build
   echo ">>> build OK (dist)"
 fi
 ENDSSH
 
-# â”€â”€ 3. nginx route (prod ë§Œ â€” idempotent. dev ëŠ” nginx ë³„ë„ ì…‹ì—…ë¨) â”€â”€â”€â”€â”€â”€
+# ?€?€ 3. nginx route (prod ë§???idempotent. dev ??nginx ë³„ë„ ?‹ì—…?? ?€?€?€?€?€?€
 echo "=== [3/3] nginx ==="
 if [ "$ENV" = "prod" ]; then
   ssh -T $SERVER <<'ENDSSH'
@@ -92,7 +92,7 @@ if [ "$ENV" = "prod" ]; then
   fi
 ENDSSH
 else
-  echo "dev: nginx /etc/nginx/sites-enabled/dev-gps.serial.kr.conf ê°€ dist ë¥¼ serve"
+  echo "dev: nginx /etc/nginx/sites-enabled/dev-gps.serial.kr.conf ê°€ dist ë¥?serve"
 fi
 
 echo ""

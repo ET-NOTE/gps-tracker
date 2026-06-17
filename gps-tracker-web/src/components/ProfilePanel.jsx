@@ -1,6 +1,6 @@
 // 내정보 패널 — 서브탭 구조: 계정 / 포인트 / 채팅 / 알림 / 테마.
 // 채팅 탭은 admin 본인은 노출 안 함 (자기 자신과의 채팅 thread 가 admin inbox 에 잡히지 않게).
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, clearTokens } from '../api';
 import Icon from './Icon';
@@ -20,10 +20,41 @@ export default function ProfilePanel({ onLogout }) {
   const [tab, setTabRaw] = useState(initialProfileTab);
   const setTab = (v) => { setTabRaw(v); try { localStorage.setItem('profile_tab', v); } catch {} };
   const [chatUnread, setChatUnread] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 600);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const bodyRef = useRef(null);
 
   useEffect(() => {
     api.getMe().then(setMe).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 600);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  // 메뉴 열릴 때 body 스크롤 잠금
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  // 바디 스크롤 인디케이터 감지
+  function onBodyScroll(e) {
+    const el = e.currentTarget;
+    setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+  }
+  function initBodyScroll(el) {
+    if (!el) return;
+    bodyRef.current = el;
+    setCanScrollDown(el.scrollHeight > el.clientHeight + 4);
+  }
 
   // 채팅 unread 폴링 — 탭 뱃지용
   useEffect(() => {
@@ -44,48 +75,111 @@ export default function ProfilePanel({ onLogout }) {
 
   const isAdmin = me.role === 'admin';
   const tabs = [
-    { id: 'account',  label: '계정',     icon: 'user' },
-    { id: 'credit',   label: '포인트',   icon: 'coin' },
+    { id: 'account',  label: '계정',        icon: 'user',    color: '#4f46e5' },
+    { id: 'credit',   label: '포인트',      icon: 'coin',    color: '#f59e0b' },
     ...(isAdmin ? [] : [
-      { id: 'chat',   label: '관리자 채팅', icon: 'message', badge: chatUnread },
+      { id: 'chat',   label: '관리자 채팅', icon: 'message', color: '#0891b2', badge: chatUnread },
     ]),
-    { id: 'notif',    label: '알림',     icon: 'warn' },
-    { id: 'theme',    label: '테마',     icon: currentTheme() === 'dark' ? 'moon' : 'sun' },
-    // 연구소 — 실험적 / 옵트인 기능. 안정화되면 다른 곳으로 옮겨가거나 default 화.
-    { id: 'lab',      label: '연구소',   icon: 'spark' },
+    { id: 'notif',    label: '알림',        icon: 'warn',    color: '#ef4444' },
+    { id: 'theme',    label: '테마',        icon: currentTheme() === 'dark' ? 'moon' : 'sun', color: '#8b5cf6' },
+    { id: 'lab',      label: '연구소',      icon: 'spark',   color: '#10b981' },
   ];
+
+  const avatarLetter = (me.display_name || me.email || '?')[0].toUpperCase();
+  const avatarColors = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed'];
+  const avatarBg = avatarColors[(avatarLetter.charCodeAt(0) || 0) % avatarColors.length];
 
   return (
     <div style={st.wrap}>
-      <div style={st.tabBar}>
-        {tabs.map(t => {
-          const on = tab === t.id;
-          return (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              style={{
-                ...st.tabBtn,
-                color: on ? 'var(--primary)' : 'var(--text-2)',
-                background: on ? 'var(--surface-2)' : 'transparent',
-                fontWeight: on ? 600 : 500,
-                borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
-              }}>
-              <Icon name={t.icon} size={14} />
-              <span>{t.label}</span>
-              {t.badge > 0 && (
-                <span style={st.badge}>{t.badge}</span>
-              )}
-            </button>
-          );
-        })}
+      {/* ── 프로필 헤더 ── */}
+      <div style={st.header}>
+        <div style={{ ...st.avatar, background: avatarBg }}>{avatarLetter}</div>
+        <div style={st.headerInfo}>
+          <div style={st.headerName}>{me.display_name || '이름 없음'}</div>
+          <div style={st.headerEmail}>{me.email}</div>
+        </div>
+        {isMobile && (
+          <button onClick={() => setMenuOpen(v => !v)} style={st.burgerBtn}>
+            <Icon name={menuOpen ? 'close' : 'menu'} size={22} />
+          </button>
+        )}
       </div>
 
-      <div style={tab === 'chat' ? st.bodyFill : st.body}>
-        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} />}
-        {tab === 'credit'  && <CreditTab />}
-        {tab === 'chat'    && !isAdmin && <ChatTab onRead={() => setChatUnread(0)} />}
-        {tab === 'notif'   && <NotifTab />}
-        {tab === 'theme'   && <ThemeTab />}
-        {tab === 'lab'     && <LabTab />}
+      {/* ── 탭 바 (데스크톱) ── */}
+      {!isMobile && (
+        <div style={st.tabBar}>
+          {tabs.map(t => {
+            const on = tab === t.id;
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{
+                  ...st.tabBtn,
+                  color: on ? 'var(--primary)' : 'var(--text-3)',
+                  borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
+                }}>
+                <div style={{ position: 'relative', display: 'inline-flex' }}>
+                  <Icon name={t.icon} size={20} />
+                  {t.badge > 0 && (
+                    <span style={st.badge}>{t.badge > 9 ? '9+' : t.badge}</span>
+                  )}
+                </div>
+                <span style={st.tabLabel}>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── 모바일 드롭다운 ── */}
+      {isMobile && menuOpen && (
+        <>
+          <div style={st.menuOverlay} onClick={() => setMenuOpen(false)} />
+          <div style={st.menuSheet}>
+            {tabs.map(t => {
+              const on = tab === t.id;
+              return (
+                <button key={t.id}
+                  onClick={() => { setTab(t.id); setMenuOpen(false); }}
+                  style={{
+                    ...st.menuItem,
+                    background: on ? 'var(--primary)' : 'transparent',
+                    color: on ? 'var(--primary-fg)' : 'var(--text)',
+                  }}>
+                  <span style={{
+                    ...st.menuItemIcon,
+                    color: on ? 'var(--primary-fg)' : t.color,
+                  }}>
+                    <Icon name={t.icon} size={16} stroke={on ? 2.2 : 1.75} />
+                  </span>
+                  <span style={st.menuItemLabel}>{t.label}</span>
+                  {t.badge > 0 && (
+                    <span style={st.menuBadge}>{t.badge > 9 ? '9+' : t.badge}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* 스크롤 영역 + 바닥 페이드 인디케이터 */}
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+        <div
+          ref={initBodyScroll}
+          onScroll={onBodyScroll}
+          style={tab === 'chat' ? st.bodyFill : st.body}
+        >
+          {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} />}
+          {tab === 'credit'  && <CreditTab />}
+          {tab === 'chat'    && !isAdmin && <ChatTab onRead={() => setChatUnread(0)} />}
+          {tab === 'notif'   && <NotifTab />}
+          {tab === 'theme'   && <ThemeTab />}
+          {tab === 'lab'     && <LabTab />}
+        </div>
+        {/* 아래 스크롤 더 있을 때 페이드 힌트 */}
+        {canScrollDown && tab !== 'chat' && (
+          <div style={st.scrollFade} />
+        )}
       </div>
     </div>
   );
@@ -140,7 +234,7 @@ function AccountTab({ me, setMe, onLogout }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <Card>
         <Field label="이메일" value={me.email} />
-        <Field label="권한"   value={me.role} />
+        <Field label="회원 등급" value={{ user: '일반 회원', admin: '관리자', corporate: '법인 회원' }[me.role] ?? me.role} />
       </Card>
 
       <AccountTypeCard />
@@ -304,10 +398,10 @@ function CheckRow({ checked, onChange, label, desc }) {
 // rentcar / corporate_fleet / delivery / unspecified
 // 유형마다 특화 메뉴 (예: corporate_fleet → 법인운행 리포트) 가 활성화됨.
 const TYPE_META = {
-  unspecified:     { label: '미지정',         icon: 'spark', desc: '운영 성격을 정하면 맞춤 메뉴가 활성화됩니다.' },
-  rentcar:         { label: '렌트카 운영',    icon: 'list',  desc: '렌탈 차량 — 차량별 사용자 매칭/대여 이력 관리 (개발 중)' },
-  corporate_fleet: { label: '법인차 운영',    icon: 'list',  desc: '회사 차량 — 운행일지, 운전자/유류 관리, 인쇄 가능한 운행 리포트' },
-  delivery:        { label: '배달 운영',      icon: 'list',  desc: '배달 — 건별 추적, 평균 운행 시간 (개발 중)' },
+  unspecified:     { label: '미설정',    icon: 'spark',  color: '#6b7280', desc: '운영 유형을 선택하면 맞춤 기능이 활성화됩니다.' },
+  rentcar:         { label: '렌트카',    icon: 'route',  color: '#f59e0b', desc: '단기 렌탈 차량 — 고객별 대여·반납 이력 관리 (개발 중)' },
+  corporate_fleet: { label: '법인차',   icon: 'list',   color: '#3b82f6', desc: '법인 차량 — 운행일지·운전자·유류 관리, 보고서 출력' },
+  delivery:        { label: '배달',     icon: 'mapPin', color: '#10b981', desc: '배달 기사 — 건별 추적·평균 운행 시간 분석 (개발 중)' },
 };
 
 // ─── 휴대폰 (다중 번호 + OTP 인증) ─────────────────────
@@ -537,27 +631,48 @@ function AccountTypeCard() {
 
   if (!cur) return null;
 
+  const curMeta = TYPE_META[cur];
+
   return (
-    <Card title="계정 유형">
-      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>
-        {TYPE_META[cur]?.desc || ''}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+    <Card title="운영 유형">
+      {curMeta?.desc && (
+        <div style={{
+          fontSize: 11, color: 'var(--text-3)', marginBottom: 10,
+          padding: '8px 10px', borderRadius: 8,
+          background: 'var(--surface)',
+          borderLeft: `3px solid ${curMeta.color}`,
+          lineHeight: 1.5,
+        }}>
+          {curMeta.desc}
+        </div>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {Object.entries(TYPE_META).map(([id, meta]) => {
           const on = cur === id;
           return (
             <button key={id} onClick={() => pick(id)} disabled={busy}
               style={{
-                padding: '10px 8px',
-                background: on ? 'var(--primary)' : 'var(--surface)',
-                color:      on ? 'var(--primary-fg)' : 'var(--text)',
-                border: on ? 'none' : '1px solid var(--border)',
-                borderRadius: 8,
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 12px',
+                background: on ? meta.color + '18' : 'var(--surface)',
+                color: on ? meta.color : 'var(--text-2)',
+                border: `1.5px solid ${on ? meta.color : 'var(--border)'}`,
+                borderRadius: 10,
                 cursor: busy ? 'not-allowed' : 'pointer',
-                fontSize: 12, fontWeight: on ? 700 : 500,
+                fontSize: 13, fontWeight: on ? 700 : 500,
                 textAlign: 'left',
                 opacity: busy ? 0.6 : 1,
+                transition: 'all .15s',
               }}>
+              <span style={{
+                width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                background: on ? meta.color : 'var(--surface-2)',
+                color: on ? 'white' : meta.color,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all .15s',
+              }}>
+                <Icon name={meta.icon} size={15} stroke={2} />
+              </span>
               {meta.label}
             </button>
           );
@@ -1192,29 +1307,107 @@ const st = {
   wrap: {
     display: 'flex', flexDirection: 'column',
     height: '100%', minHeight: 0,
+    position: 'relative',
   },
+  // ─── 프로필 헤더 ───
+  header: {
+    display: 'flex', alignItems: 'center', gap: 14,
+    padding: '20px 16px 16px',
+    background: 'var(--surface)',
+    borderBottom: '1px solid var(--border)',
+    flexShrink: 0,
+  },
+  avatar: {
+    width: 52, height: 52, borderRadius: 14,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 22, fontWeight: 700, color: 'white',
+    flexShrink: 0,
+    letterSpacing: '-0.5px',
+  },
+  headerInfo: {
+    display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0,
+  },
+  headerName: {
+    fontSize: 16, fontWeight: 700, color: 'var(--text)',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
+  headerEmail: {
+    fontSize: 12, color: 'var(--text-3)',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
+  burgerBtn: {
+    marginLeft: 'auto', flexShrink: 0,
+    background: 'transparent', border: 'none',
+    color: 'var(--text-2)', cursor: 'pointer',
+    padding: 6, borderRadius: 8,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  // ─── 모바일 드롭다운 (A 스타일) ───
+  menuOverlay: {
+    position: 'fixed', inset: 0, zIndex: 200,
+    background: 'rgba(0,0,0,0.30)',
+    backdropFilter: 'blur(5px)',
+    WebkitBackdropFilter: 'blur(5px)',
+  },
+  menuSheet: {
+    position: 'absolute', top: 8, right: 8,
+    zIndex: 201,
+    background: 'var(--surface)',
+    borderRadius: 14,
+    border: '1px solid var(--border)',
+    boxShadow: '0 8px 28px rgba(0,0,0,0.16)',
+    overflow: 'hidden',
+    minWidth: 160,
+  },
+  menuItem: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    width: '100%', padding: '11px 16px',
+    border: 'none', cursor: 'pointer',
+    fontSize: 14, fontWeight: 500,
+    textAlign: 'left', transition: 'background .12s',
+  },
+  menuItemIcon: {
+    display: 'flex', alignItems: 'center',
+    flexShrink: 0,
+  },
+  menuItemLabel: {
+    flex: 1,
+  },
+  menuBadge: {
+    minWidth: 16, height: 16, padding: '0 4px',
+    background: 'var(--danger)', color: 'white',
+    borderRadius: 8, fontSize: 9, fontWeight: 700,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  // ─── 탭 바 ───
   tabBar: {
     display: 'flex', overflowX: 'auto',
     background: 'var(--surface)',
     borderBottom: '1px solid var(--border)',
     flexShrink: 0,
-    scrollbarWidth: 'thin',
+    scrollbarWidth: 'none',
   },
   tabBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: 5,
-    padding: '10px 12px',
+    display: 'inline-flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    gap: 3, padding: '10px 14px',
     background: 'transparent',
-    border: 'none',
-    fontSize: 12, cursor: 'pointer',
+    border: 'none', borderTop: '2px solid transparent',
+    cursor: 'pointer',
     whiteSpace: 'nowrap', flexShrink: 0,
-    transition: 'background .12s, color .12s',
+    transition: 'color .12s',
+    minWidth: 56,
+  },
+  tabLabel: {
+    fontSize: 10, fontWeight: 500, lineHeight: 1,
   },
   badge: {
-    minWidth: 16, height: 16, padding: '0 5px',
+    position: 'absolute', top: -4, right: -6,
+    minWidth: 14, height: 14, padding: '0 3px',
     background: 'var(--danger)', color: 'white',
-    borderRadius: 8, fontSize: 9, fontWeight: 700,
+    borderRadius: 7, fontSize: 8, fontWeight: 700,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    marginLeft: 2,
   },
   badgeOk: {
     fontSize: 9, fontWeight: 700,
@@ -1227,12 +1420,19 @@ const st = {
     borderRadius: 4, padding: '2px 6px',
   },
   body: {
-    flex: 1, minHeight: 0, overflowY: 'auto', padding: 12,
+    height: '100%', overflowY: 'auto', padding: 12,
+    WebkitOverflowScrolling: 'touch',
+    boxSizing: 'border-box',
   },
-  // 채팅 탭 전용 — 안 스크롤 + flex 컨테이너로 자식이 남은 높이 다 차지하게.
   bodyFill: {
-    flex: 1, minHeight: 0, padding: 12,
+    height: '100%', padding: 12,
     display: 'flex', flexDirection: 'column',
+    boxSizing: 'border-box',
+  },
+  scrollFade: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    height: 48, pointerEvents: 'none',
+    background: 'linear-gradient(to bottom, transparent, var(--surface, #fff))',
   },
   card: {
     background: 'var(--surface-2)',
@@ -1267,10 +1467,41 @@ const st = {
     fontSize: 13, cursor: 'pointer',
   },
   btnDanger: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-    width: '100%', padding: 9,
-    background: 'transparent', color: 'var(--danger)',
-    border: '1px solid var(--danger)', borderRadius: 6,
-    fontSize: 13, cursor: 'pointer', fontWeight: 600,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    gap: 6, width: '100%', padding: 9,
+    background: 'var(--danger, #ef4444)', color: 'white',
+    border: 'none', borderRadius: 6,
+    fontWeight: 600, fontSize: 13, cursor: 'pointer',
+  },
+  cancelBtn: {
+    padding: '6px 12px',
+    background: 'var(--surface)', color: 'var(--text)',
+    border: '1px solid var(--border)', borderRadius: 6,
+    fontSize: 12, cursor: 'pointer',
+  },
+  modal: {
+    position: 'fixed', inset: 0, zIndex: 300,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: 16,
+  },
+  backdrop: {
+    position: 'absolute', inset: 0,
+    background: 'rgba(0,0,0,0.45)',
+    backdropFilter: 'blur(4px)',
+  },
+  title: {
+    fontSize: 15, fontWeight: 700, color: 'var(--text)',
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 12, color: 'var(--text-3)',
+    marginBottom: 8, lineHeight: 1.5,
+   },
+  methodBtn: {
+    flex: 1, padding: '10px 6px',
+    border: '1px solid var(--border)', borderRadius: 8,
+    background: 'var(--surface)', color: 'var(--text)',
+    fontSize: 12, cursor: 'pointer',
+    transition: 'all .12s',
   },
 };

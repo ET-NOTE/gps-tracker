@@ -45,6 +45,7 @@ const PATHS = {
   clock:  'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
   target: 'M12 2v4M12 18v4M2 12h4M18 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
   bar:    'M3 21h18M7 21V10M12 21V4M17 21v-7',
+  menu:   'M3 12h18M3 6h18M3 18h18',
 };
 
 export default function Icon({ name, size = 18, stroke = 1.75, fill = 'none', style }) {
