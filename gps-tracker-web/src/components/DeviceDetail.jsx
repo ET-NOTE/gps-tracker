@@ -1,10 +1,10 @@
-// 디바이스 카드 하단에 펼쳐지는 상세 패널 — SIM 정보, 감사 로그, 공유 링크, Wipe 버튼.
-// 섹션마다 독립 로딩: 1NCE SIM 호출이 느려도 운행통계/이벤트/감사로그는 즉시 렌더.
+// 디바이스 카드 하단에 펼쳐지는 상세 패널 — B 스타일: 다크 헤더 + 섹션 카드.
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import ShareLinkPanel from './ShareLinkPanel';
 import Icon from './Icon';
 import { confirmDialog, alertDialog } from './Dialog';
+import { ageString } from '../colors';
 
 const KIND_META = {
   pair:         { icon: 'link',   label: '페어링' },
@@ -15,7 +15,6 @@ const KIND_META = {
   owner_change: { icon: 'user',   label: '소유자 변경' },
 };
 
-// 섹션별 비동기 로더 훅 — device.id 가 바뀌면 즉시 reset 후 재호출.
 function useSection(loader, deviceId) {
   const [state, setState] = useState({ loading: true, data: null, error: null });
   useEffect(() => {
@@ -25,21 +24,18 @@ function useSection(loader, deviceId) {
       .then(d => { if (!cancelled) setState({ loading: false, data: d, error: null }); })
       .catch(e => { if (!cancelled) setState({ loading: false, data: null, error: e }); });
     return () => { cancelled = true; };
-  // loader 는 매 렌더 새로 만들어지지만, deviceId 만 deps 로 — id 가 같으면 재호출 안 함.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceId]);
   return state;
 }
 
-export default function DeviceDetail({ device, onWiped }) {
-  // 통계 탭 — 자주 봄. 빠른 자체 DB 집계.
+export default function DeviceDetail({ device, onWiped, deviceColor, deviceMeta, deviceStatus }) {
   const statsQ  = useSection(() => api.getDailyStats(device.id, { limit: 7 }), device.id);
   const eventsQ = useSection(() => api.getDeviceEvents(device.id),             device.id);
-  // 관리 탭 — 가끔. SIM 외부 API 는 느릴 수 있음.
   const auditQ  = useSection(() => api.getAuditLog(device.id),                 device.id);
   const simQ    = useSection(() => api.getSimInfo(device.id),                  device.id);
 
-  const [tab, setTab] = useState('stats');           // 'stats' | 'manage'
+  const [tab, setTab] = useState('stats');
   const [wiping, setWiping] = useState(false);
 
   async function handleWipe() {
@@ -56,9 +52,38 @@ export default function DeviceDetail({ device, onWiped }) {
     }
   }
 
+  const name = device.display_name || device.device_uid;
+
   return (
     <div style={dt.shell}>
-      {/* 탭 헤더 */}
+      {/* ── 다크 헤더 ── */}
+      <div style={dt.head}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+          {deviceColor && (
+            <span style={{ width: 10, height: 10, borderRadius: 5, background: deviceColor, flexShrink: 0 }} />
+          )}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={dt.headName}>{name}</div>
+            <div style={dt.headMeta}>
+              <Icon name="refresh" size={10} />
+              {' '}{ageString(device.last_seen_at)}
+              {deviceMeta?.vbatMv && <> · <Icon name="battery" size={10} /> {deviceMeta.vbatMv}mV</>}
+              {deviceMeta?.sat != null && <> · sat {deviceMeta.sat}</>}
+            </div>
+          </div>
+        </div>
+        {deviceStatus && (
+          <span style={{
+            fontSize: 10, fontWeight: 600, padding: '3px 9px', borderRadius: 99,
+            background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)',
+            flexShrink: 0,
+          }}>
+            {deviceStatus.label}
+          </span>
+        )}
+      </div>
+
+      {/* ── 탭 ── */}
       <div style={dt.tabs}>
         <button onClick={() => setTab('stats')}
           style={{ ...dt.tab, ...(tab === 'stats' ? dt.tabOn : null) }}>
@@ -73,17 +98,12 @@ export default function DeviceDetail({ device, onWiped }) {
       <div style={dt.body}>
         {tab === 'stats' && (
           <>
-            {/* 운행 통계 — 자체 DB 집계, 빠름 */}
             <SectionAsync title="운행 통계" q={statsQ} skeletonH={70}>
               {(data) => <StatsBody stats={data} />}
             </SectionAsync>
-
-            {/* deep sleep 카운트다운 — 펌웨어 13_1+ stationary 진단 */}
             <Section title="정지 감지 / Deep Sleep">
               <StationaryBody s={device.last_stationary} />
             </Section>
-
-            {/* 동작 이력 — 자체 DB, 빠름 */}
             <SectionAsync title="동작 이력" q={eventsQ} skeletonH={50}>
               {(data) => <LifecycleBody events={data} />}
             </SectionAsync>
@@ -92,30 +112,21 @@ export default function DeviceDetail({ device, onWiped }) {
 
         {tab === 'manage' && (
           <>
-            {/* SIM 정보 — 1NCE 외부 API, 느림. 따로 로드되므로 위 섹션 블록 안 함 */}
             <SectionAsync title="SIM 정보" q={simQ} skeletonH={80}>
               {(data) => <SimBody sim={data} deviceId={device.id} />}
             </SectionAsync>
-
-            {/* SIM 충전 요청 — 사용자가 보유 포인트로 데이터 충전 신청 */}
             <SimTopupRequest deviceId={device.id} simReady={!simQ.loading && simQ.data?.configured} />
-
-            {/* 공유 링크 */}
             <ShareLinkPanel deviceId={device.id} />
-
-            {/* 감사 로그 — 페어링 / 모뎀 교체 등 */}
             <SectionAsync title="페어링 이력" q={auditQ} skeletonH={40}>
               {(data) => <AuditBody audit={data} />}
             </SectionAsync>
-
-            {/* 위험 영역 */}
             <Section title="위험 영역" danger>
               <button onClick={handleWipe} disabled={wiping}
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   width: '100%', padding: 9,
                   background: 'transparent', color: 'var(--danger)',
-                  border: '1px solid var(--danger)', borderRadius: 6,
+                  border: '1px solid var(--danger)', borderRadius: 8,
                   cursor: 'pointer', fontSize: 12, fontWeight: 600,
                   opacity: wiping ? 0.6 : 1,
                 }}>
@@ -130,11 +141,27 @@ export default function DeviceDetail({ device, onWiped }) {
   );
 }
 
+const INDIGO = '#4f46e5';
+
 const dt = {
   shell: {
-    marginTop: 8, borderRadius: 6,
-    background: 'var(--surface-2)', border: '1px solid var(--border)',
+    marginTop: 10,
+    borderRadius: 14,
     overflow: 'hidden',
+    border: '0.5px solid var(--border)',
+  },
+  head: {
+    background: '#1e1b4b',
+    padding: '12px 14px',
+    display: 'flex', alignItems: 'center', gap: 8,
+  },
+  headName: {
+    fontSize: 14, fontWeight: 600, color: 'white',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
+  headMeta: {
+    fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 2,
+    display: 'inline-flex', alignItems: 'center', gap: 3, flexWrap: 'wrap',
   },
   tabs: {
     display: 'flex',
@@ -144,19 +171,21 @@ const dt = {
   tab: {
     flex: 1,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-    padding: '8px 0',
+    padding: '10px 0',
     background: 'transparent', color: 'var(--text-3)',
     border: 'none', borderBottom: '2px solid transparent',
-    cursor: 'pointer',
-    fontSize: 12, fontWeight: 500,
+    cursor: 'pointer', fontSize: 12, fontWeight: 500,
     transition: 'color .15s, border-color .15s',
   },
   tabOn: {
-    color: 'var(--primary)', borderBottomColor: 'var(--primary)',
+    background: '#eef2ff',
+    color: INDIGO,
+    borderBottomColor: INDIGO,
     fontWeight: 600,
   },
   body: {
-    padding: 8,
+    padding: 12,
+    background: 'var(--surface)',
   },
 };
 
@@ -167,7 +196,7 @@ function AuditBody({ audit }) {
       {audit.slice(0, 5).map(e => {
         const meta = KIND_META[e.event_type];
         return (
-          <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '4px 0', color: 'var(--text)' }}>
+          <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '5px 0', borderBottom: '1px solid var(--border)', color: 'var(--text)' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-2)' }}>
               {meta && <Icon name={meta.icon} size={14} />}
               <span>{meta?.label || e.event_type}</span>
@@ -183,7 +212,7 @@ function AuditBody({ audit }) {
 
 const LIFECYCLE_KIND = {
   wake:           { label: '깨어남',     color: 'var(--accent)' },
-  sleep_enter:    { label: '잠듦',       color: 'var(--primary)' },
+  sleep_enter:    { label: '잠듦',       color: INDIGO },
   low_batt:       { label: '저전압',     color: '#f87171' },
   offline:        { label: '오프라인',   color: 'var(--danger)' },
   online:         { label: '복구',       color: 'var(--accent)' },
@@ -198,7 +227,7 @@ function eventRow(e) {
   return (
     <div key={e.id} style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      fontSize: 12, padding: '5px 0',
+      fontSize: 12, padding: '6px 0',
       borderBottom: '1px solid var(--border)',
     }}>
       <span style={{ color: meta.color, fontWeight: 500 }}>
@@ -215,19 +244,14 @@ function LifecycleBody({ events }) {
   const [showAll, setShowAll] = useState(false);
   if (!events?.length) return <Muted>아직 sleep/wake 이벤트 기록이 없습니다.</Muted>;
 
-  // 최신 wake 의 diag 카운터를 우선 표시
   const latestWake = events.find(e => e.kind === 'wake' && e.data?.diag);
   const diag = latestWake?.data?.diag;
   const more = Math.max(0, events.length - 5);
 
   return (
     <>
-      {/* 누적 카운터 */}
       {diag && (
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-          gap: 6, marginBottom: 8,
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 8 }}>
           <Counter label="총 부팅"    v={diag.boots} />
           <Counter label="모션 깨움"  v={diag.motion_wakes} />
           <Counter label="스위치 깨움" v={diag.switch_wakes} />
@@ -236,29 +260,22 @@ function LifecycleBody({ events }) {
           <Counter label="브라운아웃" v={diag.brownouts}         warn={diag.brownouts > 0} />
         </div>
       )}
-
-      {/* 최근 이벤트 5건 */}
       {events.slice(0, 5).map(eventRow)}
-
       {more > 0 && (
         <button onClick={() => setShowAll(true)} style={{
-          marginTop: 8, padding: '6px 10px', width: '100%',
-          background: 'var(--surface-2)', color: 'var(--text-2)',
-          border: '1px solid var(--border)', borderRadius: 6,
-          fontSize: 11, fontWeight: 600, cursor: 'pointer',
+          marginTop: 8, padding: '7px 10px', width: '100%',
+          background: '#eef2ff', color: INDIGO,
+          border: `1px solid ${INDIGO}44`, borderRadius: 8,
+          fontSize: 12, fontWeight: 600, cursor: 'pointer',
         }}>
           전체 보기 ({events.length}건)
         </button>
       )}
-
-      {showAll && (
-        <EventListModal events={events} onClose={() => setShowAll(false)} />
-      )}
+      {showAll && <EventListModal events={events} onClose={() => setShowAll(false)} />}
     </>
   );
 }
 
-// 전체 이벤트 모달 — backdrop 탭 또는 X 버튼으로 닫기.
 function EventListModal({ events, onClose }) {
   return (
     <div onClick={onClose} style={{
@@ -272,20 +289,21 @@ function EventListModal({ events, onClose }) {
       <div onClick={e => e.stopPropagation()} style={{
         width: '100%', maxWidth: 480, maxHeight: '80vh',
         background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 12, padding: 16,
+        borderRadius: 14, overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 8, flexShrink: 0,
+          padding: '12px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0,
+          background: '#1e1b4b',
         }}>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>동작 이력 — 전체 ({events.length}건)</div>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'white' }}>동작 이력 ({events.length}건)</div>
           <button onClick={onClose} style={{
-            background: 'transparent', border: '1px solid var(--border)', borderRadius: 6,
-            padding: '4px 8px', cursor: 'pointer', color: 'var(--text-2)', fontSize: 12,
+            background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 6,
+            padding: '4px 10px', cursor: 'pointer', color: 'white', fontSize: 12,
           }}>닫기</button>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '0 16px' }}>
           {events.map(eventRow)}
         </div>
       </div>
@@ -297,21 +315,18 @@ function Counter({ label, v, warn }) {
   if (v === undefined || v === null) return null;
   return (
     <div style={{
-      background: 'var(--surface-2)', borderRadius: 6, padding: '6px 8px',
-      border: warn ? '1px solid #f87171' : '1px solid transparent',
+      background: warn ? '#fef2f2' : 'var(--surface-2)',
+      borderRadius: 8, padding: '7px 8px',
+      border: warn ? '1px solid #fca5a5' : '1px solid var(--border)',
     }}>
       <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: warn ? '#f87171' : 'var(--text)' }}>{v}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: warn ? '#dc2626' : 'var(--text)' }}>{v}</div>
     </div>
   );
 }
 
-// 펌웨어 13_1+ stationary 진단 — devices.last_stationary JSONB.
-// 매 POST 마다 덮어씌워지며 deep sleep 까지 N초 카운트다운 + GPS drift 경계 + LIS 헬스를 한눈에.
 function StationaryBody({ s }) {
-  if (!s) {
-    return <Muted>아직 stationary 진단 데이터가 없습니다 (펌웨어 13_1 이상 필요)</Muted>;
-  }
+  if (!s) return <Muted>아직 stationary 진단 데이터가 없습니다 (펌웨어 13_1 이상 필요)</Muted>;
 
   const active     = !!s.active;
   const heldS      = s.held_s ?? 0;
@@ -333,76 +348,57 @@ function StationaryBody({ s }) {
     ? (sleepInS === 0 ? 'deep sleep 진입 임박' : 'deep sleep 카운트다운')
     : '움직임 감지 중';
   const stateColor = active
-    ? (sleepInS === 0 ? 'var(--accent)' : 'var(--primary)')
+    ? (sleepInS === 0 ? 'var(--accent)' : INDIGO)
     : 'var(--text-2)';
 
   return (
-    <>
-      {/* 상태 + 카운트다운 */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 8, marginBottom: 6,
-      }}>
+    <div style={{ background: '#eef2ff', border: `1px solid ${INDIGO}33`, borderRadius: 10, padding: '10px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{
-            width: 8, height: 8, borderRadius: 4, background: stateColor,
-            boxShadow: active ? `0 0 6px ${stateColor}` : 'none',
-          }} />
+          <span style={{ width: 8, height: 8, borderRadius: 4, background: stateColor, boxShadow: active ? `0 0 6px ${stateColor}` : 'none' }} />
           <span style={{ fontSize: 12, fontWeight: 600, color: stateColor }}>{stateLabel}</span>
         </div>
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>갱신 {updatedAge}</span>
       </div>
 
-      {/* 카운트다운 바: held_s / window_s */}
       <div style={{ marginBottom: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-2)' }}>
           <span>{active ? `${sleepInS}초 후 진입` : `움직임 ${motionAge}초 전`}</span>
           <span>{heldS}s / {windowS}s</span>
         </div>
-        <div style={{ width: '100%', height: 6, background: 'var(--border)', borderRadius: 3, marginTop: 4 }}>
-          <div style={{
-            width: `${heldPct}%`, height: '100%',
-            background: active ? 'var(--primary)' : 'var(--text-3)',
-            borderRadius: 3, transition: 'width .3s',
-          }} />
+        <div style={{ width: '100%', height: 5, background: `${INDIGO}22`, borderRadius: 3, marginTop: 4 }}>
+          <div style={{ width: `${heldPct}%`, height: '100%', background: active ? INDIGO : 'var(--text-3)', borderRadius: 3, transition: 'width .3s' }} />
         </div>
       </div>
 
-      {/* GPS drift 게이지 */}
-      <div style={{ marginBottom: 6 }}>
+      <div style={{ marginBottom: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-2)' }}>
           <span>GPS drift {gpsAvail ? '' : '(no fix)'}</span>
-          <span style={{ color: driftOver ? 'var(--danger)' : 'var(--text-2)' }}>
-            {driftM.toFixed(1)} m / {thresholdM} m
-          </span>
+          <span style={{ color: driftOver ? 'var(--danger)' : 'var(--text-2)' }}>{driftM.toFixed(1)} m / {thresholdM} m</span>
         </div>
-        <div style={{ width: '100%', height: 6, background: 'var(--border)', borderRadius: 3, marginTop: 4 }}>
-          <div style={{
-            width: `${driftPct}%`, height: '100%',
-            background: driftOver ? 'var(--danger)' : driftPct > 70 ? '#fbbf24' : 'var(--accent)',
-            borderRadius: 3, transition: 'width .3s',
-          }} />
+        <div style={{ width: '100%', height: 5, background: `${INDIGO}22`, borderRadius: 3, marginTop: 4 }}>
+          <div style={{ width: `${driftPct}%`, height: '100%', background: driftOver ? 'var(--danger)' : driftPct > 70 ? '#fbbf24' : 'var(--accent)', borderRadius: 3, transition: 'width .3s' }} />
         </div>
       </div>
 
-      {/* 보조 카운터 — fixes / LIS 헬스 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <MiniStat label="GPS fixes" v={fixes} sub={gpsAvail ? 'avail' : 'no fix'} warn={!gpsAvail} />
         <MiniStat label="LIS 가속도계" v={lisOk ? 'OK' : 'FAIL'} sub={`재초기화 ${lisReinits}`} warn={!lisOk} />
         <MiniStat label="모션 경과" v={`${motionAge}s`} sub="마지막 움직임" />
       </div>
-    </>
+    </div>
   );
 }
 
 function MiniStat({ label, v, sub, warn }) {
   return (
     <div style={{
-      background: 'var(--surface-2)', borderRadius: 6, padding: '6px 8px',
-      border: warn ? '1px solid #f87171' : '1px solid transparent',
+      background: warn ? '#fef2f2' : 'rgba(255,255,255,0.7)',
+      borderRadius: 8, padding: '6px 8px',
+      border: warn ? '1px solid #fca5a5' : '1px solid rgba(99,102,241,0.15)',
     }}>
       <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: warn ? '#f87171' : 'var(--text)' }}>{v}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: warn ? '#dc2626' : 'var(--text)' }}>{v}</div>
       {sub && <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{sub}</div>}
     </div>
   );
@@ -410,7 +406,6 @@ function MiniStat({ label, v, sub, warn }) {
 
 function StatsBody({ stats }) {
   if (!stats?.length) return <Muted>아직 집계된 데이터가 없습니다 (최초 5분 후 반영)</Muted>;
-  // 최신 (오늘) + 7일 합계
   const today = stats[0];
   const sum7 = stats.reduce((a, s) => ({
     distance_m: a.distance_m + s.distance_m,
@@ -444,16 +439,14 @@ function StatsBody({ stats }) {
 
 function Stat({ label, today, sum }) {
   return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 6, padding: 8 }}>
-      <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 700 }}>{today}</div>
-      <div style={{ fontSize: 10, color: 'var(--text-2)' }}>주: {sum}</div>
+    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px' }}>
+      <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{today}</div>
+      <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>주: {sum}</div>
     </div>
   );
 }
 
-// 사용자가 자기 디바이스 SIM 데이터 충전을 신청. 보유 포인트에서 차감.
-// 1NCE 충전은 단일 단위 (500MB ~ $15) 고정 — 가격/MB 모두 서버 pricing API 에서 받음.
 function SimTopupRequest({ deviceId, simReady }) {
   const [pricing, setPricing] = useState(null);
   const [balance, setBalance] = useState(null);
@@ -482,7 +475,6 @@ function SimTopupRequest({ deviceId, simReady }) {
   if (!simReady) return null;
   if (!pricing)  return null;
 
-  // 1NCE 정책 — 1회 충전 = 500MB 고정 가격. pricing.topup_cost 가 그대로 비용.
   const cost = pricing.topup_cost;
   const insufficient = balance != null && cost > balance;
 
@@ -500,11 +492,7 @@ function SimTopupRequest({ deviceId, simReady }) {
       setBalance(res.balance);
       const list = await api.listMySimRequests();
       setRecent((list || []).filter(r => r.device_id === deviceId).slice(0, 3));
-      await alertDialog({
-        title: '요청 완료',
-        body: `요청 #${res.request_id} 가 접수됐습니다.\n관리자 승인 후 1NCE 에 충전 적용됩니다.`,
-        tone: 'success',
-      });
+      await alertDialog({ title: '요청 완료', body: `요청 #${res.request_id} 가 접수됐습니다.\n관리자 승인 후 1NCE 에 충전 적용됩니다.`, tone: 'success' });
     } catch (e) {
       await alertDialog({ title: '요청 실패', body: e.message, tone: 'danger' });
     } finally {
@@ -512,21 +500,12 @@ function SimTopupRequest({ deviceId, simReady }) {
     }
   }
 
-  const STATUS_LABEL = {
-    pending: '승인 대기', processing: '처리 중', done: '완료',
-    failed: '실패 (환불됨)', cancelled: '취소됨',
-  };
-  const STATUS_COLOR = {
-    pending: 'var(--text-2)', processing: 'var(--primary)', done: 'var(--accent)',
-    failed: 'var(--danger)', cancelled: 'var(--text-3)',
-  };
+  const STATUS_LABEL = { pending: '승인 대기', processing: '처리 중', done: '완료', failed: '실패 (환불됨)', cancelled: '취소됨' };
+  const STATUS_COLOR = { pending: 'var(--text-2)', processing: INDIGO, done: 'var(--accent)', failed: 'var(--danger)', cancelled: 'var(--text-3)' };
 
   async function refreshAll() {
     try {
-      const [b, list] = await Promise.all([
-        api.getCreditBalance(),
-        api.listMySimRequests(),
-      ]);
+      const [b, list] = await Promise.all([api.getCreditBalance(), api.listMySimRequests()]);
       setBalance(b.balance);
       setRecent((list || []).filter(r => r.device_id === deviceId).slice(0, 5));
     } catch { /* noop */ }
@@ -534,107 +513,49 @@ function SimTopupRequest({ deviceId, simReady }) {
 
   return (
     <Section title="SIM 데이터 충전 요청">
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8, fontSize: 12,
-        color: 'var(--text-2)', marginBottom: 6, flexWrap: 'wrap',
-      }}>
-        <span>보유: <b style={{ color: 'var(--text)' }}>
-          {balance != null ? balance.toLocaleString() : '—'} 포인트
-        </b></span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-2)', marginBottom: 6, flexWrap: 'wrap' }}>
+        <span>보유: <b style={{ color: 'var(--text)' }}>{balance != null ? balance.toLocaleString() : '—'} 포인트</b></span>
         <span style={{ color: 'var(--text-3)' }}>·</span>
         <span>1회: <b style={{ color: 'var(--text)' }}>{pricing.topup_mb}MB</b> = {pricing.topup_cost.toLocaleString()} 포인트</span>
       </div>
-
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <div style={{
-          flex: 1, padding: '8px 10px', fontSize: 13,
-          background: 'var(--surface-2)', color: 'var(--text)',
-          border: '1px solid var(--border)', borderRadius: 6,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
+        <div style={{ flex: 1, padding: '8px 10px', fontSize: 13, background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 600 }}>{mb} MB</span>
           <span style={{ fontSize: 10, color: 'var(--text-3)' }}>1NCE 정책 고정</span>
         </div>
         <button onClick={submit} disabled={busy || insufficient}
-          style={{
-            padding: '8px 12px', fontSize: 12, fontWeight: 600,
-            background: insufficient ? 'var(--surface-2)' : 'var(--primary)',
-            color: insufficient ? 'var(--text-3)' : 'white',
-            border: 'none', borderRadius: 6, cursor: insufficient ? 'not-allowed' : 'pointer',
-            opacity: busy ? 0.6 : 1, whiteSpace: 'nowrap',
-          }}>
+          style={{ padding: '8px 12px', fontSize: 12, fontWeight: 600, background: insufficient ? 'var(--surface-2)' : INDIGO, color: insufficient ? 'var(--text-3)' : 'white', border: 'none', borderRadius: 8, cursor: insufficient ? 'not-allowed' : 'pointer', opacity: busy ? 0.6 : 1, whiteSpace: 'nowrap' }}>
           {busy ? '요청 중...' : `${cost.toLocaleString()} 포인트 요청`}
         </button>
       </div>
-      {insufficient && (
-        <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4 }}>
-          포인트가 부족합니다. 내정보 → 포인트 충전을 먼저 진행하세요.
-        </div>
-      )}
-
+      {insufficient && <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4 }}>포인트가 부족합니다. 내정보 → 포인트 충전을 먼저 진행하세요.</div>}
       {recent.length > 0 && (
         <div style={{ marginTop: 8 }}>
           <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 4 }}>최근 요청</div>
-          {recent.map(r => (
-            <SimReqRow key={r.id} r={r} STATUS_LABEL={STATUS_LABEL} STATUS_COLOR={STATUS_COLOR}
-              onCancelled={refreshAll} />
-          ))}
+          {recent.map(r => <SimReqRow key={r.id} r={r} STATUS_LABEL={STATUS_LABEL} STATUS_COLOR={STATUS_COLOR} onCancelled={refreshAll} />)}
         </div>
       )}
     </Section>
   );
 }
 
-// SIM 요청 한 줄 — pending 이면 취소 버튼.
 function SimReqRow({ r, STATUS_LABEL, STATUS_COLOR, onCancelled }) {
   const [busy, setBusy] = useState(false);
-
   async function cancel() {
-    const ok = await confirmDialog({
-      title: 'SIM 충전 요청 취소',
-      body: `요청 #${r.id} (${r.data_mb}MB · ${r.cost_credits.toLocaleString()}원) 을(를) 취소하면 즉시 환불됩니다.`,
-      confirmLabel: '취소하고 환불받기',
-      cancelLabel: '닫기',
-      danger: true,
-    });
+    const ok = await confirmDialog({ title: 'SIM 충전 요청 취소', body: `요청 #${r.id} (${r.data_mb}MB · ${r.cost_credits.toLocaleString()}원) 을(를) 취소하면 즉시 환불됩니다.`, confirmLabel: '취소하고 환불받기', cancelLabel: '닫기', danger: true });
     if (!ok) return;
     setBusy(true);
-    try {
-      await api.cancelMySimRequest(r.id);
-      onCancelled?.();
-    } catch (e) {
-      // 409 = 그 사이 관리자가 처리 시작. 새로고침해서 최신 상태 보여줌
-      await alertDialog({
-        title: '취소 실패',
-        body: e.message || '이미 처리가 시작된 요청일 수 있습니다.',
-        tone: 'warn',
-      });
-      onCancelled?.();
-    } finally {
-      setBusy(false);
-    }
+    try { await api.cancelMySimRequest(r.id); onCancelled?.(); }
+    catch (e) { await alertDialog({ title: '취소 실패', body: e.message || '이미 처리가 시작된 요청일 수 있습니다.', tone: 'warn' }); onCancelled?.(); }
+    finally { setBusy(false); }
   }
-
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      fontSize: 11, padding: '3px 0', gap: 6,
-    }}>
-      <span style={{ color: 'var(--text-2)' }}>
-        {r.data_mb}MB · {r.cost_credits.toLocaleString()}원
-      </span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, padding: '3px 0', gap: 6 }}>
+      <span style={{ color: 'var(--text-2)' }}>{r.data_mb}MB · {r.cost_credits.toLocaleString()}원</span>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ color: STATUS_COLOR[r.status] || 'var(--text-3)' }}>
-          {STATUS_LABEL[r.status] || r.status}
-        </span>
+        <span style={{ color: STATUS_COLOR[r.status] || 'var(--text-3)' }}>{STATUS_LABEL[r.status] || r.status}</span>
         {r.status === 'pending' && (
-          <button onClick={cancel} disabled={busy}
-            style={{
-              padding: '2px 6px', fontSize: 10,
-              background: 'transparent', color: 'var(--danger)',
-              border: '1px solid var(--danger)', borderRadius: 3,
-              cursor: 'pointer', opacity: busy ? 0.5 : 1,
-            }}>
+          <button onClick={cancel} disabled={busy} style={{ padding: '2px 6px', fontSize: 10, background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', borderRadius: 4, cursor: 'pointer', opacity: busy ? 0.5 : 1 }}>
             {busy ? '...' : '취소'}
           </button>
         )}
@@ -644,33 +565,24 @@ function SimReqRow({ r, STATUS_LABEL, STATUS_COLOR, onCancelled }) {
 }
 
 function SimBody({ sim: initialSim, deviceId }) {
-  // 부모 useSection 의 결과를 시작값으로 받고, 강제 갱신 시 로컬 교체.
   const [sim, setSim] = useState(initialSim);
   const [refreshing, setRefreshing] = useState(false);
-
-  // initialSim 이 바뀌면 (deviceId 변경 등) 동기화
   useEffect(() => { setSim(initialSim); }, [initialSim]);
 
   async function handleRefresh() {
     if (refreshing) return;
     setRefreshing(true);
-    try {
-      const fresh = await api.refreshSimInfo(deviceId);
-      setSim(fresh);
-    } catch (e) {
-      alert(`갱신 실패: ${e.message || e}`);
-    } finally {
-      setRefreshing(false);
-    }
+    try { setSim(await api.refreshSimInfo(deviceId)); }
+    catch (e) { alert(`갱신 실패: ${e.message || e}`); }
+    finally { setRefreshing(false); }
   }
 
   if (!sim) return <Muted>SIM 정보를 불러오지 못했습니다</Muted>;
   if (!sim.configured) return <Muted>1NCE API 자격증명 미설정</Muted>;
 
-  const info = sim.info || {};
+  const info  = sim.info || {};
   const stats = sim.usage?.stats || [];
   const total = stats.find(s => s.date === 'TOTAL');
-  // 오늘 — 1NCE 가 자기 시스템 시각 기준 yyyy-mm-dd 행을 줌. UTC 기준이라 KST 오늘과 약간 어긋날 수 있음.
   const todayKey = new Date().toISOString().slice(0, 10);
   const today = stats.find(s => s.date === todayKey);
   const usedMb  = total ? parseFloat(total.data?.volume || '0') : 0;
@@ -687,39 +599,20 @@ function SimBody({ sim: initialSim, deviceId }) {
       <Row k="ICCID" v={sim.iccid || '—'} mono />
       <div style={{ marginTop: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-2)' }}>
-          <span>누적 데이터 사용량</span>
-          <span>{usedMb.toFixed(2)} / {quotaMb} MB</span>
+          <span>누적 데이터 사용량</span><span>{usedMb.toFixed(2)} / {quotaMb} MB</span>
         </div>
-        <div style={{ width: '100%', height: 6, background: 'var(--border)', borderRadius: 3, marginTop: 4 }}>
-          <div style={{
-            width: `${pct}%`, height: '100%',
-            background: pct > 80 ? 'var(--danger)' : pct > 50 ? '#fbbf24' : 'var(--accent)',
-            borderRadius: 3, transition: 'width .3s',
-          }} />
+        <div style={{ width: '100%', height: 5, background: 'var(--border)', borderRadius: 3, marginTop: 4 }}>
+          <div style={{ width: `${pct}%`, height: '100%', background: pct > 80 ? 'var(--danger)' : pct > 50 ? '#fbbf24' : 'var(--accent)', borderRadius: 3, transition: 'width .3s' }} />
         </div>
-        {/* 오늘 사용량 — 1NCE 가 동일 응답에 일별 행을 주므로 추출 */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', fontSize: 11,
-          color: 'var(--text-3)', marginTop: 6,
-        }}>
-          <span>오늘</span>
-          <span>{todayMb.toFixed(2)} MB</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>
+          <span>오늘</span><span>{todayMb.toFixed(2)} MB</span>
         </div>
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          fontSize: 10, color: 'var(--text-3)', marginTop: 4, gap: 8,
-        }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, color: 'var(--text-3)', marginTop: 4, gap: 8 }}>
           <span>누적 비용 {cost}</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <span>갱신: {formatRelativeTime(sim.fetched_at)}</span>
-            <button onClick={handleRefresh} disabled={refreshing}
-              title="1NCE 직접 호출로 즉시 갱신"
-              style={{
-                background: 'transparent', border: '1px solid var(--border)',
-                color: 'var(--text-2)', borderRadius: 4,
-                padding: '2px 7px', fontSize: 10, cursor: refreshing ? 'wait' : 'pointer',
-                opacity: refreshing ? 0.5 : 1,
-              }}>
+            <button onClick={handleRefresh} disabled={refreshing} title="1NCE 직접 호출로 즉시 갱신"
+              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-2)', borderRadius: 4, padding: '2px 7px', fontSize: 10, cursor: refreshing ? 'wait' : 'pointer', opacity: refreshing ? 0.5 : 1 }}>
               {refreshing ? '갱신 중...' : '↻ 새로고침'}
             </button>
           </span>
@@ -729,7 +622,6 @@ function SimBody({ sim: initialSim, deviceId }) {
   );
 }
 
-// 갱신 시각을 "방금" / "N분 전" / "N시간 전" / "N일 전" 형식으로.
 function formatRelativeTime(isoTs) {
   if (!isoTs) return '—';
   const t = new Date(isoTs).getTime();
@@ -740,21 +632,14 @@ function formatRelativeTime(isoTs) {
   if (min < 60) return `${min}분 전`;
   const hr = Math.floor(min / 60);
   if (hr < 24) return `${hr}시간 전`;
-  const d = Math.floor(hr / 24);
-  return `${d}일 전`;
+  return `${Math.floor(hr / 24)}일 전`;
 }
 
-// 비동기 섹션 래퍼 — loading 동안 회색 스켈레톤, error 면 짧은 메시지, 그 외 children(data) 렌더.
 function SectionAsync({ title, q, skeletonH = 50, danger, children }) {
   return (
     <Section title={title} danger={danger}>
       {q.loading && (
-        <div style={{
-          height: skeletonH, borderRadius: 6,
-          background: 'linear-gradient(90deg, var(--surface-2) 0%, var(--surface) 50%, var(--surface-2) 100%)',
-          backgroundSize: '200% 100%',
-          animation: 'shimmer 1.2s infinite',
-        }} />
+        <div style={{ height: skeletonH, borderRadius: 8, background: 'linear-gradient(90deg, var(--surface-2) 0%, var(--surface) 50%, var(--surface-2) 100%)', backgroundSize: '200% 100%', animation: 'shimmer 1.2s infinite' }} />
       )}
       {!q.loading && q.error && <Muted>불러오기 실패</Muted>}
       {!q.loading && !q.error && children(q.data)}
@@ -764,12 +649,8 @@ function SectionAsync({ title, q, skeletonH = 50, danger, children }) {
 
 function Section({ title, children, danger }) {
   return (
-    <div style={{ marginTop: 8 }}>
-      <div style={{
-        fontSize: 11, fontWeight: 'bold',
-        color: danger ? 'var(--danger)' : 'var(--text-2)',
-        textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4,
-      }}>{title}</div>
+    <div style={{ marginTop: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: danger ? 'var(--danger)' : 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{title}</div>
       {children}
     </div>
   );
@@ -777,13 +658,9 @@ function Section({ title, children, danger }) {
 
 function Row({ k, v, mono }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '2px 0' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
       <span style={{ color: 'var(--text-2)' }}>{k}</span>
-      <span style={{
-        color: 'var(--text)',
-        fontFamily: mono ? 'monospace' : 'inherit',
-        fontSize: mono ? 11 : 12,
-      }}>{v}</span>
+      <span style={{ color: 'var(--text)', fontFamily: mono ? 'monospace' : 'inherit', fontSize: mono ? 11 : 12 }}>{v}</span>
     </div>
   );
 }

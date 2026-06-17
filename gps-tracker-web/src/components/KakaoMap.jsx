@@ -382,7 +382,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         }
       });
       if (!pointsRef.current[deviceId]) pointsRef.current[deviceId] = [];
-      pointsRef.current[deviceId].push({ marker, color: c, isStop });
+      pointsRef.current[deviceId].push({ marker, color: c, isStop, recordedAt: meta.recordedAt });
     },
 
     /** 디바이스의 history 점들을 모두 제거 (loadDevices 직전 호출용). */
@@ -453,10 +453,24 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // bounds 재조정
       sharedIwRef.current?.close();
       if (targetId !== null) {
-        const pts = pointsRef.current[targetId] || [];
+        const pts  = pointsRef.current[targetId] || [];
         const main = markersRef.current[targetId];
         const bounds = new window.kakao.maps.LatLngBounds();
-        pts.forEach(({ marker }) => bounds.extend(marker.getPosition()));
+
+        // 가장 최근 날짜(KST 기준)의 점만 포함
+        const KST = 9 * 3600 * 1000;
+        const mainDate = main?.meta?.recordedAt
+          ? new Date(new Date(main.meta.recordedAt).getTime() + KST).toISOString().slice(0, 10)
+          : null;
+
+        const filtered = mainDate
+          ? pts.filter(p => {
+              if (!p.recordedAt) return false;
+              return new Date(new Date(p.recordedAt).getTime() + KST).toISOString().slice(0, 10) === mainDate;
+            })
+          : pts;
+
+        filtered.forEach(({ marker }) => bounds.extend(marker.getPosition()));
         if (main) bounds.extend(main.marker.getPosition());
         if (!bounds.isEmpty()) mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
       } else {

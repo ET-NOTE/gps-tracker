@@ -661,186 +661,191 @@ export default function Dashboard({ onLogout }) {
   const panel = (
     <>
 
-        {/* 단말기 */}
+        {/* 단말기 — B 스타일: indigo 배너 헤더 + 카드형 디바이스 목록 */}
         {view === 'devices' && (
-          <div style={s.page}>
-            <div style={s.section}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: pairOpen ? 8 : 0 }}>
-                <div style={{ ...s.sectionTitle, marginBottom: 0 }}>디바이스 추가</div>
-                <button onClick={() => { setPairOpen(o => !o); setPairError(''); }}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '5px 10px', fontSize: 11, fontWeight: 600,
-                    background: pairOpen ? 'var(--surface-2)' : 'var(--primary)',
-                    color:      pairOpen ? 'var(--text)'      : 'var(--primary-fg)',
-                    border: 'none', borderRadius: 6, cursor: 'pointer',
-                  }}>
-                  <Icon name={pairOpen ? 'close' : 'plus'} size={12} />
-                  {pairOpen ? '닫기' : '추가'}
-                </button>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
+
+            {/* ── 배너 헤더 ── */}
+            <div style={sd.banner}>
+              <div>
+                <div style={sd.bannerTitle}>내 디바이스</div>
+                <div style={sd.bannerSub}>{devices.length}개 등록됨</div>
               </div>
-
-              {pairOpen && (
-                <>
-                  <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-                    {[
-                      { id: 'iccid', label: 'SIM 번호' },
-                      { id: 'uid',   label: 'device_uid' },
-                    ].map(t => {
-                      const on = pairMode === t.id;
-                      return (
-                        <button key={t.id} onClick={() => setPairMode(t.id)} style={{
-                          flex: 1, padding: 6, fontSize: 12, borderRadius: 4, cursor: 'pointer', border: 'none',
-                          background: on ? 'var(--primary)' : 'var(--surface-2)',
-                          color:      on ? 'var(--primary-fg)' : 'var(--text-2)',
-                          fontWeight: on ? 600 : 400,
-                        }}>{t.label}</button>
-                      );
-                    })}
-                  </div>
-
-                  {pairMode === 'iccid' ? (
-                    <>
-                      <input placeholder="SIM 끝 8자리 또는 전체 ICCID"
-                        value={pairIccid}
-                        onChange={e => setPairIccid(e.target.value.replace(/[^0-9A-Fa-f]/g, ''))}
-                        style={s.input} />
-                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-                        OLED 첫 줄 「SIM ...12345678」 의 숫자
-                      </div>
-                    </>
-                  ) : (
-                    <input placeholder="device_uid  예) esp-aabbccddeeff"
-                      value={pairUid} onChange={e => setPairUid(e.target.value)}
-                      style={s.input} />
-                  )}
-                  <input placeholder="단말기 별명 (필수, 예: 1호차)"
-                    value={pairLabel} required maxLength={32}
-                    onChange={e => setPairLabel(e.target.value)}
-                    style={{ ...s.input, marginTop: 6 }} />
-                  {pairError && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{pairError}</div>}
-                  <button onClick={async () => { const ok = await handlePair(); if (ok) setPairOpen(false); }} disabled={pairLoading}
-                    style={{ ...s.btn, marginTop: 8, opacity: pairLoading ? 0.6 : 1 }}>
-                    {pairLoading ? '...' : '페어링'}
-                  </button>
-                </>
-              )}
+              <button onClick={() => { setPairOpen(o => !o); setPairError(''); }}
+                style={sd.bannerAddBtn}>
+                <Icon name={pairOpen ? 'close' : 'plus'} size={13} />
+                {pairOpen ? '닫기' : '추가'}
+              </button>
             </div>
 
-            <div style={s.sectionTitle}>내 디바이스 ({devices.length})</div>
-            {devices.length === 0 && (
-              <div style={{ color: 'var(--text-3)', fontSize: 13, padding: '8px 0' }}>
-                아직 등록된 디바이스가 없습니다.
+            {/* ── 페어링 폼 ── */}
+            {pairOpen && (
+              <div style={sd.pairBox}>
+                <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                  {[
+                    { id: 'iccid', label: 'SIM 번호' },
+                    { id: 'uid',   label: 'device_uid' },
+                  ].map(t => {
+                    const on = pairMode === t.id;
+                    return (
+                      <button key={t.id} onClick={() => setPairMode(t.id)} style={{
+                        flex: 1, padding: '6px 0', fontSize: 12, borderRadius: 8, cursor: 'pointer', border: 'none',
+                        background: on ? 'var(--primary)' : 'var(--surface-2)',
+                        color:      on ? 'var(--primary-fg)' : 'var(--text-2)',
+                        fontWeight: on ? 600 : 400,
+                      }}>{t.label}</button>
+                    );
+                  })}
+                </div>
+                {pairMode === 'iccid' ? (
+                  <>
+                    <input placeholder="SIM 끝 8자리 또는 전체 ICCID"
+                      value={pairIccid}
+                      onChange={e => setPairIccid(e.target.value.replace(/[^0-9A-Fa-f]/g, ''))}
+                      style={s.input} />
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                      OLED 첫 줄 「SIM ...12345678」 의 숫자
+                    </div>
+                  </>
+                ) : (
+                  <input placeholder="device_uid  예) esp-aabbccddeeff"
+                    value={pairUid} onChange={e => setPairUid(e.target.value)}
+                    style={s.input} />
+                )}
+                <input placeholder="단말기 별명 (필수, 예: 1호차)"
+                  value={pairLabel} required maxLength={32}
+                  onChange={e => setPairLabel(e.target.value)}
+                  style={{ ...s.input, marginTop: 6 }} />
+                {pairError && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{pairError}</div>}
+                <button onClick={async () => { const ok = await handlePair(); if (ok) setPairOpen(false); }} disabled={pairLoading}
+                  style={{ ...s.btn, marginTop: 8, borderRadius: 10, opacity: pairLoading ? 0.6 : 1 }}>
+                  {pairLoading ? '...' : '페어링'}
+                </button>
               </div>
             )}
 
-            {devices.map(d => {
-              const color = getDeviceColor(d);
-              const stale = isStale(d.last_seen_at);
-              const meta  = lastMetaRef.current[d.id];
-              const status = classifyDevice(d, meta);
+            {/* ── 디바이스 목록 ── */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 24px' }}>
+              {devices.length === 0 && (
+                <div style={{ color: 'var(--text-3)', fontSize: 13, padding: '24px 0', textAlign: 'center' }}>
+                  아직 등록된 디바이스가 없습니다.
+                </div>
+              )}
 
-              return (
-                <div key={d.id} style={{
-                  ...s.deviceCard, borderLeft: `4px solid ${color}`,
-                  opacity: stale && status.id !== 'sleeping' ? 0.6 : 1,
-                }}>
-                  {editId === d.id ? (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <input value={editLabel} onChange={e => setEditLabel(e.target.value)}
-                        style={{ ...s.input, flex: 1 }} autoFocus />
-                      <button onClick={() => handleRename(d.id)} style={s.smallBtn}>저장</button>
-                      <button onClick={() => setEditId(null)} style={{ ...s.smallBtn, background: 'var(--surface-2)', color: 'var(--text)' }}>취소</button>
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div onClick={() => {
-                          // 데스크톱은 패널 유지 (지도가 옆에 보임). 모바일은 home 으로 전환해야
-                          // 지도가 보이므로 그때만 view 변경.
-                          if (!isDesktop) setView('home');
-                          persistFilterDevice(d.id);
-                        }}
-                          style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}>
-                          <div style={{ fontWeight: 'bold', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <span>{d.display_name || d.device_uid}</span>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 4,
-                              padding: '1px 7px', borderRadius: 8,
-                              background: 'var(--surface-2)',
-                              fontSize: 10, fontWeight: 500,
-                              color: status.color,
-                              border: `1px solid ${status.color}33`,
-                            }}>
-                              <span style={{ width: 6, height: 6, borderRadius: 3, background: status.color }} />
-                              {status.label}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{d.device_uid}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                              <Icon name="refresh" size={11} /> {ageString(d.last_seen_at)}
-                            </span>
-                            {meta?.vbatMv && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                <Icon name="battery" size={11} /> {meta.vbatMv}mV
-                              </span>
-                            )}
-                            {meta?.sat !== undefined && meta?.sat !== null && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                <Icon name="sat" size={11} /> sat {meta.sat}
-                              </span>
-                            )}
-                          </div>
+              {devices.map(d => {
+                const color = getDeviceColor(d);
+                const stale = isStale(d.last_seen_at);
+                const meta  = lastMetaRef.current[d.id];
+                const status = classifyDevice(d, meta);
+
+                return (
+                  <div key={d.id} style={{
+                    ...sd.deviceCard,
+                    background: color + '40',
+                    border: `1.5px solid ${color}cc`,
+                    opacity: stale && status.id !== 'sleeping' ? 0.5 : 1,
+                  }}>
+                    {editId === d.id ? (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <input value={editLabel} onChange={e => setEditLabel(e.target.value)}
+                          style={{ ...s.input, flex: 1 }} autoFocus />
+                        <button onClick={() => handleRename(d.id)} style={s.smallBtn}>저장</button>
+                        <button onClick={() => setEditId(null)} style={{ ...s.smallBtn, background: 'var(--surface-2)', color: 'var(--text)' }}>취소</button>
+                      </div>
+                    ) : (
+                      <>
+                        {/* 상단: 색점 + 이름 + 상태 배지 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, cursor: 'pointer' }}
+                          onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
+                          <span style={{ width: 10, height: 10, borderRadius: 5, background: color, flexShrink: 0 }} />
+                          <span style={{ fontSize: 15, fontWeight: 700, color: color, filter: 'brightness(0.45)', flex: 1 }}>
+                            {d.display_name || d.device_uid}
+                          </span>
+                          <span style={{
+                            fontSize: 11, fontWeight: 700,
+                            padding: '3px 9px', borderRadius: 99,
+                            background: status.color + '33',
+                            border: `1px solid ${status.color}88`,
+                            color: status.color, filter: 'brightness(0.75)',
+                          }}>
+                            {status.label}
+                          </span>
                         </div>
-                        <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+
+                        {/* 메타 정보 */}
+                        <div style={{ display: 'flex', gap: 10, fontSize: 12, color: color, filter: 'brightness(0.55)', marginBottom: 10, flexWrap: 'wrap', cursor: 'pointer' }}
+                          onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <Icon name="refresh" size={10} /> {ageString(d.last_seen_at)}
+                          </span>
+                          {meta?.vbatMv && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                              <Icon name="battery" size={10} /> {meta.vbatMv}mV
+                            </span>
+                          )}
+                          {meta?.sat !== undefined && meta?.sat !== null && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                              <Icon name="sat" size={10} /> sat {meta.sat}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 액션 버튼 행 */}
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           <button onClick={() => setDetailId(detailId === d.id ? null : d.id)}
                             style={{
-                              ...s.detailBtn,
-                              ...(detailId === d.id ? s.detailBtnActive : {}),
-                            }}
-                            title="통계 / 상세 정보">
-                            <Icon name="bar" size={13} />
-                            <span>통계</span>
+                              ...sd.statBtn,
+                              background: detailId === d.id ? color : 'rgba(255,255,255,0.55)',
+                              color: detailId === d.id ? 'white' : color,
+                              border: `1px solid ${color}66`,
+                            }}>
+                            <Icon name="bar" size={12} />
+                            통계
                           </button>
                           <button onClick={() => setColorPickerId(colorPickerId === d.id ? null : d.id)}
-                            style={{ background: color, width: 18, height: 18, borderRadius: 9, padding: 0,
-                                     border: '2px solid var(--surface)', boxShadow: '0 0 0 1px var(--border)',
-                                     cursor: 'pointer', flexShrink: 0 }}
-                            title="색상 변경" />
+                            style={{ ...sd.iconAction, background: 'rgba(255,255,255,0.55)', border: `1px solid ${color}66` }}
+                            title="색상 변경">
+                            <span style={{ width: 10, height: 10, borderRadius: 5, background: color }} />
+                          </button>
                           <button onClick={() => { setEditId(d.id); setEditLabel(d.display_name || ''); }}
-                            style={s.iconBtnSmall} title="이름 변경"><Icon name="edit" size={13} /></button>
+                            style={{ ...sd.iconAction, background: 'rgba(255,255,255,0.55)', border: `1px solid ${color}66` }} title="이름 변경">
+                            <Icon name="edit" size={13} />
+                          </button>
                           <button onClick={() => handleUnpair(d.id)}
-                            style={{ ...s.iconBtnSmall, color: 'var(--danger)' }} title="페어링 해제"><Icon name="unlink" size={13} /></button>
+                            style={{ ...sd.iconAction, background: 'rgba(255,255,255,0.55)', border: `1px solid ${color}66`, color: 'var(--danger)' }} title="페어링 해제">
+                            <Icon name="unlink" size={13} />
+                          </button>
                         </div>
-                      </div>
 
-                      {colorPickerId === d.id && (
-                        <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                          {PALETTE.map(c => (
-                            <button key={c} onClick={() => handlePickColor(d.id, c)}
-                              style={{
-                                width: 24, height: 24, borderRadius: 12, padding: 0,
-                                background: c, border: c === color ? '2px solid var(--text)' : '1px solid var(--border)',
-                                cursor: 'pointer',
-                              }} />
-                          ))}
-                        </div>
-                      )}
+                        {/* 색상 피커 */}
+                        {colorPickerId === d.id && (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                            {PALETTE.map(c => (
+                              <button key={c} onClick={() => handlePickColor(d.id, c)}
+                                style={{
+                                  width: 24, height: 24, borderRadius: 12, padding: 0,
+                                  background: c, border: c === color ? '2px solid var(--text)' : '1px solid var(--border)',
+                                  cursor: 'pointer',
+                                }} />
+                            ))}
+                          </div>
+                        )}
 
-                      {detailId === d.id && (
-                        <DeviceDetail device={d} onWiped={async (id) => {
-                          mapRef.current?.removeMarker(id);
-                          delete lastMetaRef.current[id];
-                          setDetailId(null);
-                          await loadDevices();
-                        }} />
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
+                        {/* 통계 상세 */}
+                        {detailId === d.id && (
+                          <DeviceDetail device={d} deviceColor={color} deviceMeta={meta} deviceStatus={status} onWiped={async (id) => {
+                            mapRef.current?.removeMarker(id);
+                            delete lastMetaRef.current[id];
+                            setDetailId(null);
+                            await loadDevices();
+                          }} />
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -1236,6 +1241,58 @@ export default function Dashboard({ onLogout }) {
     </div>
   );
 }
+
+// 단말기 탭 — B 스타일 전용 스타일
+const sd = {
+  banner: {
+    background: 'var(--primary)',
+    padding: '16px 16px 14px',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    flexShrink: 0,
+  },
+  bannerTitle: {
+    fontSize: 15, fontWeight: 700, color: 'white', marginBottom: 2,
+  },
+  bannerSub: {
+    fontSize: 11, color: 'rgba(255,255,255,0.65)',
+  },
+  bannerAddBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    padding: '6px 12px', fontSize: 12, fontWeight: 600,
+    background: 'rgba(255,255,255,0.2)', color: 'white',
+    border: 'none', borderRadius: 8, cursor: 'pointer',
+  },
+  pairBox: {
+    margin: '0 14px 4px',
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: 12, padding: 12,
+  },
+  deviceCard: {
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderRadius: 12, padding: '12px 14px',
+    marginBottom: 10,
+  },
+  statBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    flex: 1, padding: '7px 0',
+    background: '#EEF2FF', color: 'var(--primary)',
+    border: 'none', borderRadius: 8,
+    fontSize: 12, fontWeight: 600, cursor: 'pointer',
+    justifyContent: 'center',
+  },
+  statBtnActive: {
+    background: 'var(--primary)', color: 'white',
+  },
+  iconAction: {
+    width: 32, height: 32, borderRadius: 8,
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    color: 'var(--text-2)', cursor: 'pointer',
+  },
+};
 
 const s = {
   page: {
