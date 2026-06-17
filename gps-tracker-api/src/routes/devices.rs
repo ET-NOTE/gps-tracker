@@ -9,7 +9,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use sqlx::FromRow;
 use validator::Validate;
 
@@ -77,6 +77,41 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/sim", get(sim_info))                // 1NCE SIM 잔량 (캐시)
         .route("/devices/:id/sim/refresh", post(sim_info_refresh)) // 1NCE 강제 즉시 갱신
         .route("/devices/:id/events", get(events_log))           // 최근 lifecycle 이벤트
+        .route("/devices/:id/beep",   post(beep_device))         // 부저 원격 트리거 (현장 식별)
+}
+
+// ─── 부저 원격 트리거 ──────────────────────────────────────
+//
+// 현장 검증 시 여러 디바이스 동시 휴대할 때 어느 보드가 어느 단말인지 구분하기 위함.
+// UI 버튼 → 이 endpoint → devices.beep_pending = TRUE.
+// 다음 ingest 호출 시 응답에 {"cmd":"beep"} 가 실려 가고, 펌웨어가 받자마자 부저.
+//
+// owner 만 호출 가능 (admin 은 impersonate 후 사용). 멱등 — 이미 pending 이어도 다시 set 만.
+async fn beep_device(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    // 소유권 확인 + atomic set (한 쿼리)
+    let updated: Option<(i64,)> = sqlx::query_as(
+        r#"UPDATE devices
+              SET beep_pending      = TRUE,
+                  beep_requested_at = NOW()
+            WHERE id = $1 AND owner_id = $2
+        RETURNING id"#,
+    )
+    .bind(id).bind(user.user_id)
+    .fetch_optional(&state.db).await?;
+
+    if updated.is_none() {
+        return Err(AppError::NotFound);
+    }
+
+    Ok(Json(json!({
+        "ok": true,
+        "device_id": id,
+        "note": "다음 ingest (보통 15초 이내) 시 디바이스 부저 울림"
+    })))
 }
 
 async fn list(

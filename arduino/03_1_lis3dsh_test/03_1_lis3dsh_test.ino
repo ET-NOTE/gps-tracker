@@ -23,8 +23,18 @@
 #define PIN_SDA       8
 #define PIN_SCL       9
 #define PIN_INT       5
+#define PIN_PWR_EN    6     // L80+SIM7080 공통 전원 (LOW=ON, HIGH=OFF). 멀티미터로 voltage 확인.
 
 #define OLED_ADDR     0x3C
+
+// --- 모션-aware 전원 제어 ---
+#define AWAKE_DURATION_MS    30000   // 마지막 모션 이후 30초 AWAKE 유지
+enum PwrState { PWR_AWAKE, PWR_SLEEP };
+PwrState  pwrState        = PWR_AWAKE;   // 부팅 직후 AWAKE 로 시작 (30s 후 자동 SLEEP)
+uint32_t  awakeUntilMs    = 0;
+uint32_t  lastSeenHwMotion= 0;
+uint32_t  awakeEnterCount = 0;
+uint32_t  sleepEnterCount = 0;
 
 // --- LIS3DH 레지스터 ---
 #define REG_WHO_AM_I    0x0F   // expect 0x33
@@ -232,7 +242,17 @@ void setup() {
   delay(5000);
   Serial.println();
   Serial.println(F("=== 03_1 LIS3DH motion test ==="));
-  Serial.printf("SDA=GPIO%d  SCL=GPIO%d  INT=GPIO%d\n", PIN_SDA, PIN_SCL, PIN_INT);
+  Serial.printf("SDA=GPIO%d  SCL=GPIO%d  INT=GPIO%d  PWR_EN=GPIO%d\n",
+                PIN_SDA, PIN_SCL, PIN_INT, PIN_PWR_EN);
+  Serial.println(F("AWAKE 시작 — GPIO6 LOW. 30초 무 모션 → SLEEP (GPIO6 HIGH). 모션 → AWAKE 갱신."));
+
+  // ── PWR_EN: AWAKE 로 시작 (LOW = 모듈 ON, 멀티미터로 voltage 확인) ──
+  pinMode(PIN_PWR_EN, OUTPUT);
+  digitalWrite(PIN_PWR_EN, LOW);
+  pwrState        = PWR_AWAKE;
+  awakeUntilMs    = millis() + AWAKE_DURATION_MS;
+  awakeEnterCount = 1;
+  Serial.printf("[PWR] 🚀 AWAKE 시작 (GPIO%d=LOW, %lums 동안 유지)\n", PIN_PWR_EN, (unsigned long)AWAKE_DURATION_MS);
 
   pinMode(PIN_INT, INPUT_PULLDOWN);
   attachInterrupt(digitalPinToInterrupt(PIN_INT), onIntChange, CHANGE);
@@ -365,16 +385,44 @@ void loop() {
   display.print(F(" lp:")); display.print(loopCount);
   display.display();
 
+  // ─── 모션-aware 전원 상태머신 ─────────────────────
+  // 새 HW 모션 발생 → AWAKE 타이머 갱신 (이미 AWAKE 면 연장, SLEEP 면 즉시 깨움)
+  if (hwMotionCount > lastSeenHwMotion) {
+    lastSeenHwMotion = hwMotionCount;
+    if (pwrState == PWR_SLEEP) {
+      pwrState = PWR_AWAKE;
+      digitalWrite(PIN_PWR_EN, LOW);
+      awakeEnterCount++;
+      Serial.printf("[PWR] 🚀 모션 감지 → AWAKE (GPIO%d=LOW). 30s 타이머 시작\n", PIN_PWR_EN);
+    } else {
+      Serial.printf("[PWR] 🔄 AWAKE 중 모션 — 타이머 리셋 (남은 30s)\n");
+    }
+    awakeUntilMs = now + AWAKE_DURATION_MS;
+  }
+  // AWAKE 타이머 만료 → SLEEP 진입
+  if (pwrState == PWR_AWAKE && (int32_t)(now - awakeUntilMs) >= 0) {
+    pwrState = PWR_SLEEP;
+    digitalWrite(PIN_PWR_EN, HIGH);
+    sleepEnterCount++;
+    Serial.printf("[PWR] 💤 30s 무 모션 → SLEEP (GPIO%d=HIGH, 모듈 OFF). 모션 대기...\n", PIN_PWR_EN);
+  }
+
   // 시리얼: 1초마다 한 줄
   static uint32_t lastLog = 0;
   if (now - lastLog >= 1000) {
     lastLog = now;
-    Serial.printf("[%lus] x=%+.2f y=%+.2f z=%+.2f |v|=%.2f maxMag=%.2f hw=%lu sw=%lu src=0x%02X int=%c R=%lu F=%lu badI2C=%lu reinit=%lu\n",
-                  now / 1000UL, gx, gy, gz, mag, maxMag,
+    int32_t remain = (int32_t)(awakeUntilMs - now);
+    if (pwrState != PWR_AWAKE || remain < 0) remain = 0;
+    Serial.printf("[%lus] x=%+.2f y=%+.2f z=%+.2f |v|=%.2f hw=%lu sw=%lu src=0x%02X int=%c R=%lu F=%lu | PWR=%s GPIO%d=%c remain=%ds (wake=%lu sleep=%lu)\n",
+                  now / 1000UL, gx, gy, gz, mag,
                   (unsigned long)hwMotionCount, (unsigned long)swMotionCount,
                   lastSrc, digitalRead(PIN_INT) ? 'H' : 'L',
                   (unsigned long)r, (unsigned long)f,
-                  (unsigned long)i2cBadStreak, (unsigned long)i2cReinitCount);
+                  pwrState == PWR_AWAKE ? "AWAKE" : "SLEEP",
+                  PIN_PWR_EN,
+                  pwrState == PWR_AWAKE ? 'L' : 'H',
+                  (int)(remain / 1000),
+                  (unsigned long)awakeEnterCount, (unsigned long)sleepEnterCount);
   }
 
   delay(50);
