@@ -767,7 +767,7 @@ export default function Dashboard({ onLogout }) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, cursor: 'pointer' }}
                           onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
                           <span style={{ width: 10, height: 10, borderRadius: 5, background: color, flexShrink: 0 }} />
-                          <span style={{ fontSize: 15, fontWeight: 700, color: color, filter: 'brightness(0.45)', flex: 1 }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: color, flex: 1 }}>
                             {d.display_name || d.device_uid}
                           </span>
                           <span style={{
@@ -775,14 +775,14 @@ export default function Dashboard({ onLogout }) {
                             padding: '3px 9px', borderRadius: 99,
                             background: status.color + '33',
                             border: `1px solid ${status.color}88`,
-                            color: status.color, filter: 'brightness(0.75)',
+                            color: status.color, 
                           }}>
                             {status.label}
                           </span>
                         </div>
 
                         {/* 메타 정보 */}
-                        <div style={{ display: 'flex', gap: 10, fontSize: 12, color: color, filter: 'brightness(0.55)', marginBottom: 10, flexWrap: 'wrap', cursor: 'pointer' }}
+                        <div style={{ display: 'flex', gap: 10, fontSize: 12, color: color, marginBottom: 10, flexWrap: 'wrap', cursor: 'pointer' }}
                           onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                             <Icon name="refresh" size={10} /> {ageString(d.last_seen_at)}
@@ -804,7 +804,7 @@ export default function Dashboard({ onLogout }) {
                           <button onClick={() => setDetailId(detailId === d.id ? null : d.id)}
                             style={{
                               ...sd.statBtn,
-                              background: detailId === d.id ? color : 'rgba(255,255,255,0.55)',
+                              background: detailId === d.id ? color : 'white',
                               color: detailId === d.id ? 'white' : color,
                               border: `1px solid ${color}66`,
                             }}>
@@ -812,16 +812,16 @@ export default function Dashboard({ onLogout }) {
                             통계
                           </button>
                           <button onClick={() => setColorPickerId(colorPickerId === d.id ? null : d.id)}
-                            style={{ ...sd.iconAction, background: 'rgba(255,255,255,0.55)', border: `1px solid ${color}66` }}
+                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}66` }}
                             title="색상 변경">
                             <span style={{ width: 10, height: 10, borderRadius: 5, background: color }} />
                           </button>
                           <button onClick={() => { setEditId(d.id); setEditLabel(d.display_name || ''); }}
-                            style={{ ...sd.iconAction, background: 'rgba(255,255,255,0.55)', border: `1px solid ${color}66` }} title="이름 변경">
+                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}66` }} title="이름 변경">
                             <Icon name="edit" size={13} />
                           </button>
                           <button onClick={() => handleUnpair(d.id)}
-                            style={{ ...sd.iconAction, background: 'rgba(255,255,255,0.55)', border: `1px solid ${color}66`, color: 'var(--danger)' }} title="페어링 해제">
+                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}66`, color: 'var(--danger)' }} title="페어링 해제">
                             <Icon name="unlink" size={13} />
                           </button>
                         </div>
