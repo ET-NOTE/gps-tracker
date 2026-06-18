@@ -470,7 +470,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
             })
           : pts;
 
-        filtered.forEach(({ marker }) => bounds.extend(marker.getPosition()));
+        const safePoints = filtered.length > 0 ? filtered : pts;
+        safePoints.forEach(({ marker }) => bounds.extend(marker.getPosition()));
         if (main) bounds.extend(main.marker.getPosition());
         if (!bounds.isEmpty()) mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
       } else {
