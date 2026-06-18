@@ -473,7 +473,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         const safePoints = filtered.length > 0 ? filtered : pts;
         safePoints.forEach(({ marker }) => bounds.extend(marker.getPosition()));
         if (main) bounds.extend(main.marker.getPosition());
-        if (!bounds.isEmpty()) mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
+        if (!bounds.isEmpty()) {
+          mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
+          const MIN_LEVEL = 7;
+          if (mapRef.current.getLevel() < MIN_LEVEL) mapRef.current.setLevel(MIN_LEVEL);
+        }
       } else {
         const bounds = new window.kakao.maps.LatLngBounds();
         Object.values(markersRef.current).forEach(({ marker }) => bounds.extend(marker.getPosition()));
