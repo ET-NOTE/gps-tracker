@@ -91,7 +91,7 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
               }}>
                 <div>속도는 인접 GPS 좌표 간 거리/시간으로 계산됩니다.</div>
                 <div style={{ marginTop: 4 }}>
-                  위성: {satStr || '정보 없음'} · GPS: {meta?.fix === false ? '신호 약함' : '신호 양호'}
+                  {satStr || '위성 정보 없음'} · GPS: {meta?.fix === false ? '신호 약함' : '신호 양호'}
                 </div>
               </div>
             )}
