@@ -1004,7 +1004,16 @@ export default function Dashboard({ onLogout }) {
                       색상은 userTrackPref(사용자 의도) 반영 — 시커가 일시 정지 중이라도 ON 으로 보임 (시커 닫히면 즉시 부활).
                       paused 면 미세하게 작은 구분선 표시. */}
                   {view === 'home' && filterDeviceId !== null && (
-                    <button onClick={() => setUserTrackPref(p => !p)}
+                    <button onClick={() => {
+                      const next = !userTrackPref;
+                      setUserTrackPref(next);
+                      if (next && filterDeviceId !== null) {
+                        const dev = devices.find(d => d.id === filterDeviceId);
+                        if (dev?.last_lat && dev?.last_lng) {
+                          mapRef.current?.zoomToCoord?.(dev.last_lat, dev.last_lng, 1);
+                        }
+                      }
+                    }}
                       className="btn-bounce"
                       style={{
                       position: 'absolute', right: 16,

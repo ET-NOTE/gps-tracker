@@ -542,6 +542,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (!mapRef.current) return;
       mapRef.current.panTo(new window.kakao.maps.LatLng(lat, lng));
     },
+    /** 좌표로 이동 + 줌 레벨 지정 (라이브 추적 ON 시 사용). */
+    zoomToCoord(lat, lng, level) {
+      if (!mapRef.current) return;
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(lat, lng));
+      mapRef.current.setLevel(level);
+    },
 
     /**
      * Seeker 전용 history path 그리기.
