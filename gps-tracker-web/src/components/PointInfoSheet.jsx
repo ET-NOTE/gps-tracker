@@ -7,9 +7,11 @@
 // compact 모드: 홈+간이 시커 활성 시 사용. 날짜 박스 (좌하단) 옆 + 시간 strip 위에 위치.
 //   생략: 쓸어내리기 핸들, "선택 지점" 텍스트, 위경도, 위성 (간이 시커 컨텍스트에서 군더더기).
 //   글자 ~1pt 작게.
+import { useState } from 'react';
 import Icon from './Icon';
 
 export default function PointInfoSheet({ info, onClose, onRoadview, compact = false, bottomOffset = 0, leftOffset = 0 }) {
+  const [showSpeedInfo, setShowSpeedInfo] = useState(false);
   if (!info) return null;
   const { kind, label, color, meta, addr, lat, lng } = info;
   const recAt   = meta?.recordedAt ? new Date(meta.recordedAt) : null;
@@ -75,7 +77,26 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
 
       <div style={compact ? st.statsSmall : st.stats}>
         {battStr && <span style={st.stat}><Icon name="battery" size={compact ? 11 : 12} /> {battStr}</span>}
-        {speedStr && <span style={st.stat}><Icon name="route" size={compact ? 11 : 12} /> {speedStr}</span>}
+        {speedStr && (
+          <span style={{ ...st.stat, cursor: 'pointer', position: 'relative' }}
+            onClick={() => setShowSpeedInfo(v => !v)}>
+            <Icon name="route" size={compact ? 11 : 12} /> {speedStr}
+            {showSpeedInfo && (
+              <div style={{
+                position: 'absolute', bottom: '100%', left: 0, marginBottom: 6,
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: 8, padding: '8px 10px', fontSize: 11, lineHeight: 1.5,
+                color: 'var(--text-2)', whiteSpace: 'normal', width: 220,
+                boxShadow: '0 4px 12px rgba(0,0,0,.15)', zIndex: 20,
+              }}>
+                <div>속도는 인접 GPS 좌표 간 거리/시간으로 계산됩니다.</div>
+                <div style={{ marginTop: 4 }}>
+                  위성: {satStr || '정보 없음'} · GPS: {meta?.fix === false ? '신호 약함' : '신호 양호'}
+                </div>
+              </div>
+            )}
+          </span>
+        )}
         {/* compact 모드: 위성 / 위경도 생략 — 군더더기 정보 */}
         {!compact && satStr && <span style={st.stat}><Icon name="sat" size={12} /> {satStr}</span>}
         {!compact && (
