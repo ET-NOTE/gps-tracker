@@ -389,6 +389,15 @@ export default function Dashboard({ onLogout }) {
       const targetId = targetIdRaw ? parseInt(targetIdRaw, 10) : NaN;
 
       const list = await api.listDevices();
+      let effectiveTargetId = targetId;
+      if (isNaN(effectiveTargetId) && list.length > 0) {
+        const mostRecent = list.reduce((a, b) => {
+          const ta = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
+          const tb = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
+          return tb > ta ? b : a;
+        });
+        effectiveTargetId = mostRecent.id;
+      }
       setDevices(list);
       setDevicesLoaded(true);
       devRef.current = list;
@@ -422,7 +431,7 @@ export default function Dashboard({ onLogout }) {
           });
         });
       }
-      if (!isNaN(targetId)) mapRef.current?.filterToDevice(targetId);
+      if (!isNaN(effectiveTargetId)) mapRef.current?.filterToDevice(effectiveTargetId);
       else                  mapRef.current?.fitToAllMarkers(60);
     } catch (e) { console.error('loadDevices', e); }
   }, []);

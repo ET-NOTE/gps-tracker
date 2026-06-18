@@ -477,7 +477,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
           const MIN_LEVEL = 7;
           const curLevel = mapRef.current.getLevel();
-          console.log('[DEBUG zoom]', { curLevel, MIN_LEVEL, willSet: curLevel < MIN_LEVEL });
           if (curLevel < MIN_LEVEL) mapRef.current.setLevel(MIN_LEVEL);
         }
       } else {
