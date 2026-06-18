@@ -750,7 +750,7 @@ export default function Dashboard({ onLogout }) {
                 return (
                   <div key={d.id} style={{
                     ...sd.deviceCard,
-                    background: color + '40',
+                    background: color + '99',
                     border: `1.5px solid ${color}cc`,
                     opacity: stale && status.id !== 'sleeping' ? 0.5 : 1,
                   }}>
