@@ -84,8 +84,11 @@ function MiniChart({ data, color }) {
   const linePts = pts.join(' ');
   const pathD = data.map(([, v], i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
   const areaD = `${pathD} L${toX(data.length-1).toFixed(1)},${H} L${toX(0).toFixed(1)},${H} Z`;
+  const firstDay = new Date(data[0][0]).getDate();
+  const lastDay  = new Date(data[data.length - 1][0]).getDate();
   return (
-    <svg width="100%" viewBox={`0 -2 ${W} ${H + padB + 2}`} style={{ display: 'block', overflow: 'visible' }} aria-hidden="true">
+    <>
+    <svg width="100%" viewBox={`0 -2 ${W} ${H + 2}`} style={{ display: 'block', overflow: 'visible' }} aria-hidden="true">
       {/* 차트 배경 — 카드 배경과 분리되도록 흰 반투명 */}
       <rect x="0" y="-2" width={W} height={H + 2} fill="rgba(255,255,255,0.35)" rx="4" />
       {/* 면적 채우기 — 라인 색의 30% */}
@@ -93,15 +96,13 @@ function MiniChart({ data, color }) {
       {/* 라인 */}
       <polyline points={linePts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       {/* X축 날짜 레이블 — CSS 변수 대신 고정 어두운 색 (SVG는 CSS변수 미지원) */}
-      {data.map(([date], i) => {
-        const show = data.length <= 4 || i === 0 || i === data.length - 1 || i % Math.ceil(data.length / 4) === 0;
-        if (!show) return null;
-        const day = new Date(date).getDate();
-        return (
-          <text key={i} x={toX(i)} y={H + padB} textAnchor="middle" fontSize="9" fill="#666">{day}일</text>
-        );
-      })}
+      
     </svg>
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#666', marginTop: 4, padding: '0 2px' }}>
+      <span>{firstDay}일</span>
+      <span>{lastDay}일</span>
+    </div>
+    </>
   );
 }
 
