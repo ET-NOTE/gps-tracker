@@ -65,6 +65,46 @@ function viewToPath(v) {
   return v === 'home' ? '/' : `/${v}`;
 }
 
+// 디바이스 카드 미니 배터리 트렌드 차트 (SVG)
+function MiniChart({ data, color }) {
+  if (!data || data.length < 2) {
+    return (
+      <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>기록 없음</span>
+      </div>
+    );
+  }
+  const W = 200, H = 44, padB = 14;
+  const vals = data.map(([, v]) => v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || 1;
+  const toX = i => (i / (data.length - 1)) * W;
+  const toY = v => H - ((v - min) / range) * H;
+  const pts = data.map(([, v], i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`);
+  const linePts = pts.join(' ');
+  const pathD = data.map(([, v], i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+  const areaD = `${pathD} L${toX(data.length-1).toFixed(1)},${H} L${toX(0).toFixed(1)},${H} Z`;
+  return (
+    <svg width="100%" viewBox={`0 -2 ${W} ${H + padB + 2}`} style={{ display: 'block', overflow: 'visible' }} aria-hidden="true">
+      {/* 차트 배경 — 카드 배경과 분리되도록 흰 반투명 */}
+      <rect x="0" y="-2" width={W} height={H + 2} fill="rgba(255,255,255,0.35)" rx="4" />
+      {/* 면적 채우기 — 라인 색의 30% */}
+      <path d={areaD} fill={color + '30'} />
+      {/* 라인 */}
+      <polyline points={linePts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {/* X축 날짜 레이블 — CSS 변수 대신 고정 어두운 색 (SVG는 CSS변수 미지원) */}
+      {data.map(([date], i) => {
+        const show = data.length <= 4 || i === 0 || i === data.length - 1 || i % Math.ceil(data.length / 4) === 0;
+        if (!show) return null;
+        const day = new Date(date).getDate();
+        return (
+          <text key={i} x={toX(i)} y={H + padB} textAnchor="middle" fontSize="9" fill="#666">{day}일</text>
+        );
+      })}
+    </svg>
+  );
+}
+
 export default function Dashboard({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -114,6 +154,7 @@ export default function Dashboard({ onLogout }) {
   const [roadview, setRoadview]       = useState(null);    // {lat, lng, panoId} or null
   const [toast, setToast]             = useState(null);     // 가벼운 중앙 토스트 메시지 (1초)
   const [filterDeviceId, setFilterDeviceId] = useState(null);  // null=전체, 또는 device id
+  const [deviceChartData, setDeviceChartData] = useState({});   // deviceId → [[date, mV], ...]
   const [, setTick]                   = useState(0);
   const bp        = useBreakpoint();
   const isDesktop = bp === 'desktop';
@@ -430,6 +471,16 @@ export default function Dashboard({ onLogout }) {
             speedKmh: loc._speed, isStop: loc._isStop,
           });
         });
+        // 일별 배터리 트렌드 (추가 API 요청 없이 기존 locs 활용)
+        const KST = 9 * 3600 * 1000;
+        const byDay = {};
+        ordered.forEach(loc => {
+          if (!loc.recorded_at || !loc.vbat_mv) return;
+          const date = new Date(new Date(loc.recorded_at).getTime() + KST).toISOString().slice(0, 10);
+          byDay[date] = loc.vbat_mv;
+        });
+        const chartDays = Object.entries(byDay).sort(([a],[b]) => a.localeCompare(b)).slice(-7);
+        setDeviceChartData(prev => ({ ...prev, [d.id]: chartDays }));
       }
       if (!isNaN(effectiveTargetId)) mapRef.current?.filterToDevice(effectiveTargetId);
       else                  mapRef.current?.fitToAllMarkers(60);
@@ -751,7 +802,7 @@ export default function Dashboard({ onLogout }) {
                   <div key={d.id} style={{
                     ...sd.deviceCard,
                     background: color + '99',
-                    border: `1.5px solid ${color}cc`,
+                    border: `1.5px solid ${color}88`,
                     opacity: stale && status.id !== 'sleeping' ? 0.5 : 1,
                   }}>
                     {editId === d.id ? (
@@ -763,66 +814,68 @@ export default function Dashboard({ onLogout }) {
                       </div>
                     ) : (
                       <>
-                        {/* 상단: 색점 + 이름 + 상태 배지 */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, cursor: 'pointer' }}
+                        {/* 디바이스 이름 */}
+                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 6, cursor: 'pointer' }}
                           onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
-                          <span style={{ width: 10, height: 10, borderRadius: 5, background: color, flexShrink: 0 }} />
-                          <span style={{ fontSize: 15, fontWeight: 700, color: color, flex: 1 }}>
-                            {d.display_name || d.device_uid}
-                          </span>
-                          <span style={{
-                            fontSize: 11, fontWeight: 700,
-                            padding: '3px 9px', borderRadius: 99,
-                            background: status.color + '33',
-                            border: `1px solid ${status.color}88`,
-                            color: status.color, 
-                          }}>
-                            {status.label}
-                          </span>
+                          {d.display_name || d.device_uid}
                         </div>
 
-                        {/* 메타 정보 */}
-                        <div style={{ display: 'flex', gap: 10, fontSize: 12, color: color, marginBottom: 10, flexWrap: 'wrap', cursor: 'pointer' }}
+                        {/* 미니 배터리 트렌드 차트 */}
+                        <div style={{ marginBottom: 8, cursor: 'pointer' }}
                           onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                            <Icon name="refresh" size={10} /> {ageString(d.last_seen_at)}
-                          </span>
-                          {meta?.vbatMv && (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                              <Icon name="battery" size={10} /> {meta.vbatMv}mV
-                            </span>
-                          )}
-                          {meta?.sat !== undefined && meta?.sat !== null && (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                              <Icon name="sat" size={10} /> sat {meta.sat}
-                            </span>
-                          )}
+                          <div style={{ fontSize: 11, color: '#333', marginBottom: 2 }}>사용량 추세</div>
+                          <MiniChart data={deviceChartData[d.id]} color={color} />
                         </div>
 
-                        {/* 액션 버튼 행 */}
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <button onClick={() => setDetailId(detailId === d.id ? null : d.id)}
-                            style={{
-                              ...sd.statBtn,
-                              background: detailId === d.id ? color : 'white',
-                              color: detailId === d.id ? 'white' : color,
-                              border: `1px solid ${color}66`,
-                            }}>
-                            <Icon name="bar" size={12} />
-                            통계
-                          </button>
+                        {/* 하단 바: 메타 + 아이콘 버튼 + 통계 보기 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {/* 메타 정보 */}
+                          <div style={{ flex: 1, display: 'flex', gap: 8, fontSize: 11, color: '#333', alignItems: 'center', flexWrap: 'wrap', cursor: 'pointer' }}
+                            onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                              <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+                              {ageString(d.last_seen_at)}
+                            </span>
+                            {meta?.vbatMv && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                <Icon name="battery" size={10} /> {meta.vbatMv}mV
+                              </span>
+                            )}
+                            {meta?.sat !== undefined && meta?.sat !== null && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                <Icon name="sat" size={10} /> sat {meta.sat}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* 아이콘 버튼들 */}
                           <button onClick={() => setColorPickerId(colorPickerId === d.id ? null : d.id)}
-                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}66` }}
+                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}44` }}
                             title="색상 변경">
                             <span style={{ width: 10, height: 10, borderRadius: 5, background: color }} />
                           </button>
                           <button onClick={() => { setEditId(d.id); setEditLabel(d.display_name || ''); }}
-                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}66` }} title="이름 변경">
+                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}44` }}
+                            title="이름 변경">
                             <Icon name="edit" size={13} />
                           </button>
                           <button onClick={() => handleUnpair(d.id)}
-                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}66`, color: 'var(--danger)' }} title="페어링 해제">
+                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}44`, color: 'var(--danger)' }}
+                            title="페어링 해제">
                             <Icon name="unlink" size={13} />
+                          </button>
+
+                          {/* 통계 보기 버튼 */}
+                          <button onClick={() => setDetailId(detailId === d.id ? null : d.id)}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 3,
+                              padding: '6px 11px', borderRadius: 8, cursor: 'pointer',
+                              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+                              background: detailId === d.id ? color : 'white',
+                              color: detailId === d.id ? 'white' : color,
+                              border: `1px solid ${color}55`,
+                            }}>
+                            통계 보기 ›
                           </button>
                         </div>
 
