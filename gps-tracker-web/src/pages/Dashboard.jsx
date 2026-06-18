@@ -803,7 +803,6 @@ export default function Dashboard({ onLogout }) {
                     ...sd.deviceCard,
                     background: color + '99',
                     border: `1.5px solid ${color}88`,
-                    opacity: stale && status.id !== 'sleeping' ? 0.5 : 1,
                   }}>
                     {editId === d.id ? (
                       <div style={{ display: 'flex', gap: 6 }}>
