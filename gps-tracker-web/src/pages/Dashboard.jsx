@@ -139,9 +139,13 @@ export default function Dashboard({ onLogout }) {
   // ── 사용자 UI 환경설정 (계정 귀속) ────────────────────────
   // prefs.filter_device_id — 다른 PC 에서 로그인해도 마지막 선택 디바이스 복원
   const [userPrefs, setUserPrefs]   = useState(null);
+  const userPrefsRef                = useRef(null);
   const [mapReady, setMapReady]     = useState(false);
   const filterAppliedRef            = useRef(false);
   const filterSaveTimerRef          = useRef(null);
+  // 사용자가 마지막으로 본 지도 view (center+level). 새로고침 후 복원에 사용.
+  const mapViewSaveTimerRef         = useRef(null);
+  const lastSavedMapViewRef         = useRef(null);    // 중복 PATCH 방지
 
   // 펜스: 시트 열림 여부와 무관하게 항상 동기화
   const [fences, setFences]   = useState([]);
@@ -217,6 +221,7 @@ export default function Dashboard({ onLogout }) {
   //  drawSeekerPath 재호출 → setBounds 가 카메라 리셋. ref 로 의존성 끊음.)
   const devicesRef = useRef(devices);
   useEffect(() => { devicesRef.current = devices; }, [devices]);
+  useEffect(() => { userPrefsRef.current = userPrefs; }, [userPrefs]);
 
   // 시커 열림/닫힘에 따라 seekerPaused 자동 토글 — 시커 닫으면 userTrackPref 복원.
   useEffect(() => {
@@ -365,7 +370,7 @@ export default function Dashboard({ onLogout }) {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
           const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale }
+            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading }
             : { stale };
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
           if (isLast) lastMetaRef.current[d.id] = meta;
@@ -406,7 +411,7 @@ export default function Dashboard({ onLogout }) {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
           const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale }
+            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading }
             : { stale };
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
           if (isLast) lastMetaRef.current[d.id] = meta;
@@ -422,8 +427,15 @@ export default function Dashboard({ onLogout }) {
           });
         });
       }
-      if (!isNaN(targetId)) mapRef.current?.focusDevice(targetId);
-      else                  mapRef.current?.fitToAllMarkers(60);
+      // 사용자가 저장한 view 가 있으면 그걸 우선 복원. (focusDevice/fitToAllMarkers 가 setBounds 로 zoom 리셋하는 것 차단)
+      const sv = userPrefsRef.current?.map_view;
+      if (sv && sv.lat != null && sv.lng != null) {
+        mapRef.current?.setView?.(sv.lat, sv.lng, sv.level);
+      } else if (!isNaN(targetId)) {
+        mapRef.current?.focusDevice(targetId);
+      } else {
+        mapRef.current?.fitToAllMarkers(60);
+      }
     } catch (e) { console.error('loadDevices', e); }
   }, []);
 
@@ -439,7 +451,9 @@ export default function Dashboard({ onLogout }) {
     const stored = userPrefs.filter_device_id;
     if (stored != null && devices.some(d => d.id === stored)) {
       setFilterDeviceId(stored);
-      mapRef.current?.filterToDevice(stored);
+      // 저장된 map_view 가 있으면 filterToDevice 의 setBounds 로 zoom 리셋되지 않게 fit skip.
+      const hasSavedView = userPrefs.map_view?.lat != null;
+      mapRef.current?.filterToDevice(stored, { fit: !hasSavedView });
     }
     filterAppliedRef.current = true;
   }, [mapReady, userPrefs, devices]);
@@ -464,6 +478,24 @@ export default function Dashboard({ onLogout }) {
   const handleUserPan = useCallback(() => {
     if (seekerActiveRef.current) return;
     setUserTrackPref(false);
+  }, []);
+
+  // KakaoMap 이 사용자 조작 (drag/zoom) 으로 view 가 바뀌었음을 알려옴 → userPrefs 에 저장.
+  // 초기 복원 중엔 저장 skip (filterAppliedRef.current === false 일 때).
+  // 같은 값 재저장 방지 (네트워크 절약).
+  const handleMapViewChange = useCallback((view) => {
+    if (!filterAppliedRef.current) return;
+    if (!view || view.lat == null || view.lng == null) return;
+    const last = lastSavedMapViewRef.current;
+    if (last
+      && Math.abs(last.lat - view.lat) < 1e-6
+      && Math.abs(last.lng - view.lng) < 1e-6
+      && last.level === view.level) return;
+    lastSavedMapViewRef.current = view;
+    clearTimeout(mapViewSaveTimerRef.current);
+    mapViewSaveTimerRef.current = setTimeout(() => {
+      api.patchMyPrefs({ map_view: view }).catch(() => {});
+    }, 1200);
   }, []);
 
   // 디바운스 useEffect — 안전장치 (다른 코드 경로에서 setFilterDeviceId 호출돼도 따라잡음)
@@ -540,7 +572,7 @@ export default function Dashboard({ onLogout }) {
       const color = getDeviceColor(dev || { id: msg.device_id });
       const meta = {
         recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv,
-        fix: msg.fix, stale: false,
+        fix: msg.fix, stale: false, heading: msg.heading,
       };
       mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
       lastMetaRef.current[msg.device_id] = meta;
@@ -928,7 +960,8 @@ export default function Dashboard({ onLogout }) {
                   miniSeekerRef.current?.selectByTime(info.meta.recordedAt, { skipPin: true });
                 }
               } : undefined}
-              onUserPan={handleUserPan} />
+              onUserPan={handleUserPan}
+              onViewChange={handleMapViewChange} />
             <MapControls mapRef={mapRef} onOpenRoadview={openRoadview} />
             {devices.length > 0 && (
               <DeviceFilter

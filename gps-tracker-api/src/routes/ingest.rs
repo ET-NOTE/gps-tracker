@@ -66,6 +66,8 @@ pub struct GpsFix {
     pub sat_used: Option<i32>,
     pub sat_view: Option<i32>,
     pub ttff_s: Option<i32>,
+    /// NMEA $GPRMC course over ground, 0~360°. 정지 시/no-fix 시 None.
+    pub heading: Option<f32>,
 }
 
 impl GpsFix {
@@ -408,6 +410,7 @@ fn broadcast_location(
         sat: fix.sat_count().map(|v| v as i16),
         ttff_s: fix.ttff_s,
         vbat_mv: parsed.vbat_mv,
+        heading: fix.heading,
     });
 }
 
@@ -425,9 +428,9 @@ async fn insert_location(
         INSERT INTO location_records (
             device_id, recorded_at, device_uptime_s, source,
             fix, lat, lng, sat, ttff_s,
-            csq, reg, vbat_mv, raw, user_id
+            csq, reg, vbat_mv, raw, heading, user_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
                 (SELECT owner_id FROM devices WHERE id = $1))
         ON CONFLICT (device_id, recorded_at, source) DO NOTHING
         "#,
@@ -445,6 +448,7 @@ async fn insert_location(
     .bind(parsed.reg)
     .bind(parsed.vbat_mv)
     .bind(raw)
+    .bind(fix.heading)
     .execute(&state.db)
     .await?;
     Ok(())

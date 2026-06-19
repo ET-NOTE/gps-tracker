@@ -29,6 +29,7 @@ pub struct LocationView {
     pub reg: Option<i16>,
     pub vbat_mv: Option<i32>,
     pub device_uptime_s: Option<i32>,
+    pub heading: Option<f32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -79,7 +80,7 @@ async fn latest(
     // user_id 가 일치하므로 자동 복구).
     let row = sqlx::query_as::<_, LocationView>(
         r#"SELECT recorded_at, source, fix, lat, lng, sat, ttff_s,
-                  csq, reg, vbat_mv, device_uptime_s
+                  csq, reg, vbat_mv, device_uptime_s, heading
              FROM location_records
             WHERE device_id = $1 AND user_id = $2
             ORDER BY recorded_at DESC
@@ -105,7 +106,7 @@ async fn history(
     // 조건이 NULL이면 무시되도록 COALESCE 패턴 사용.
     let rows = sqlx::query_as::<_, LocationView>(
         r#"SELECT recorded_at, source, fix, lat, lng, sat, ttff_s,
-                  csq, reg, vbat_mv, device_uptime_s
+                  csq, reg, vbat_mv, device_uptime_s, heading
              FROM location_records
             WHERE device_id = $1 AND user_id = $7
               AND ($2::timestamptz IS NULL OR recorded_at >= $2)

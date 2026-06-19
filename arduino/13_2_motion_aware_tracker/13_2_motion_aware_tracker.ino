@@ -60,14 +60,20 @@
 
 #define PIN_BUZZER     1     // passive 마그네틱 부저 — tone() PWM 으로 구동
 #define BUZZER_FREQ    2700  // Hz — 마그네틱 부저 공진주파수 근처
+#define BUZZER_ENABLED 0     // 배터리 운영 시 LEDC PWM 이 brownout 후에도 살아남아 멈추지 않는
+                             // 하드웨어 잔존 이슈 — 보드 hardware fix 전까지 무음. PCB 차원 정리 필요.
 
 // =================================================================
 // 동작 파라미터
 // =================================================================
 #define APN_NAME            "iot.1nce.net"
-#define POST_URL_HOST       "http://gps.serial.kr"
+// 운영 단계에서 swap. 라인 한 줄만 주석 토글하면 됨. POST_PATH 는 양쪽 모두 /ingest.
+// #define POST_URL_HOST    "http://gps.serial.kr"        // prod
+#define POST_URL_HOST       "http://dev-gps.serial.kr"   // dev (테스트 단계)
 #define POST_PATH           "/ingest"
-#define POST_INTERVAL_MS    15000UL
+// 테스트 기간: 10초 (실시간 추적 검증용). 5초로 더 줄이면 LTE TX 피크 빈도 2배 ↑ → 브라운아웃 위험 ↑.
+// 운영 안정화 후엔 15000 또는 30000 으로 되돌릴 것.
+#define POST_INTERVAL_MS    10000UL
 #define BAT_DIV_RATIO       2.0f
 
 #define BRINGUP_RETRY_MS              30000UL
@@ -144,10 +150,15 @@ static uint32_t cyc_post_fail        = 0;
 static bool     wake_diag_pending    = true;
 
 // ── 부저 ─────────────────────────────────────────────────────────
-// 이 사이클(부팅~sleep)에서 마일스톤 비프가 이미 울렸는지 추적. RTC 보존 안 함 — 매 wake 마다
-// 첫 fix / 첫 POST 200 시점에 한 번 울려서 현장 검증 도움.
-static bool     buzz_first_fix_done  = false;
-static bool     buzz_first_post_done = false;
+// 마일스톤 비프 플래그 — RTC_DATA_ATTR 로 deep sleep wake / brownout reset 거쳐도 보존.
+// 한 device 세션 (전원 인가 ~ 완전 정전) 동안 트리플 비프는 각 1회.
+// 운행 중 트리플이 자주 들리던 원인: brownout 으로 ESP 리셋 → static 변수 false → 매 부팅마다 다시 울림.
+// RTC_DATA_ATTR 는 brownout 후에도 보존되므로 진짜 power-off 까지만 리셋됨.
+// 부트 비프도 RTC 가드 — 배터리 운영 시 LTE bring-up 직전의 brownout-reboot 루프가
+// "삐——" 10초 연속음 만들던 증상 fix. flag=set 을 beep 호출 *전에* 해서 beep 중 brownout 도 차단.
+RTC_DATA_ATTR bool buzz_boot_done       = false;
+RTC_DATA_ATTR bool buzz_first_fix_done  = false;
+RTC_DATA_ATTR bool buzz_first_post_done = false;
 
 // 부저 non-blocking 상태머신.
 static uint8_t  buzzerRemaining  = 0;
@@ -161,6 +172,10 @@ static uint32_t buzzerNextEdgeMs = 0;
 // loop 가 LTE bring-up/HTTP POST 등으로 1-2분 블로킹되면 그 사이 updateBuzzer 가 안 불려서
 // 비프가 그 시간 내내 울리는 버그가 됨. duration 을 주면 hardware 가 정확히 pulseMs 후 자동 정지.
 static void beep(uint8_t count, uint16_t pulseMs, uint16_t gapMs) {
+#if !BUZZER_ENABLED
+  (void)count; (void)pulseMs; (void)gapMs;
+  return;
+#endif
   buzzerRemaining = count;
   buzzerPulseMs   = pulseMs;
   buzzerGapMs     = gapMs;
@@ -879,10 +894,16 @@ static void buildPayload(char *out, size_t cap) {
   buildStationaryFragment(stat, sizeof(stat));
 
   if (l80fix) {
+    // heading: NMEA $GPRMC course over ground (0-360°). 정지 시 isValid()=false → null 로 보냄.
+    float heading = gps.course.isValid() ? gps.course.deg() : -1.0f;
+    char headingFrag[24];
+    if (heading >= 0) snprintf(headingFrag, sizeof(headingFrag), ",\"heading\":%.1f", heading);
+    else              headingFrag[0] = 0;
+
     snprintf(out, cap,
       "{\"device_uid\":\"%s\"%s,\"ts\":%lu,\"awake\":%lu,\"csq\":%d,\"reg\":%d,"
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
-      "\"l80\":{\"fix\":true,\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"ttff_s\":%lu},"
+      "\"l80\":{\"fix\":true,\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"ttff_s\":%lu%s},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
       "\"wake\":\"%s\"%s}",
       deviceUid, sim,
@@ -892,6 +913,7 @@ static void buildPayload(char *out, size_t cap) {
       gps.location.lat(), gps.location.lng(),
       (int)gps.satellites.value(),
       (unsigned long)(ttL80GnssMs / 1000),
+      headingFrag,
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
       stat,
       wakeReasonStr, diag);
@@ -1069,6 +1091,12 @@ static const char *resetReasonStr(esp_reset_reason_t r) {
 // setup / loop
 // =================================================================
 void setup() {
+  // ⚠️ 안전장치: 이전 부팅에서 brownout 직전 호출된 tone() 의 LEDC PWM 이 잔존할 수 있음.
+  // Serial 시작 전에 강제 정지. BUZZER_ENABLED=0 이어도 하드웨어 잔존 PWM 차단 위해 무조건 호출.
+  pinMode(PIN_BUZZER, OUTPUT);
+  noTone(PIN_BUZZER);
+  digitalWrite(PIN_BUZZER, LOW);
+
   bootMs = millis();
 
   Serial.begin(115200);
@@ -1170,12 +1198,18 @@ void setup() {
   digitalWrite(PIN_BUZZER, LOW);
   {
     esp_sleep_wakeup_cause_t wc = esp_sleep_get_wakeup_cause();
-    if (wc == ESP_SLEEP_WAKEUP_GPIO || wc == ESP_SLEEP_WAKEUP_EXT0 || wc == ESP_SLEEP_WAKEUP_EXT1) {
-      DBGLN(F("[BUZ] 🚀 wake from sleep (motion) — double beep"));
-      beep(2, 100, 100);
+    // ⚠️ RTC 가드 — brownout 으로 인한 부팅 루프 시 비프 반복 차단. flag set 을 beep 전에 함.
+    if (buzz_boot_done) {
+      DBGLN(F("[BUZ] (skip) boot/wake 비프 이미 이 세션에서 울림 — brownout 재부팅 추정"));
     } else {
-      DBGLN(F("[BUZ] 🚀 cold boot — long beep"));
-      beep(1, 400, 0);
+      buzz_boot_done = true;   // ← 진짜 power-off 까지 RTC 보존
+      if (wc == ESP_SLEEP_WAKEUP_GPIO || wc == ESP_SLEEP_WAKEUP_EXT0 || wc == ESP_SLEEP_WAKEUP_EXT1) {
+        DBGLN(F("[BUZ] 🚀 wake from sleep (motion) — double beep"));
+        beep(2, 100, 100);
+      } else {
+        DBGLN(F("[BUZ] 🚀 cold boot — long beep"));
+        beep(1, 400, 0);
+      }
     }
     waitBuzzerFlush();
   }

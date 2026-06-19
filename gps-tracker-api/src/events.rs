@@ -18,6 +18,7 @@ pub enum Event {
         sat: Option<i16>,
         ttff_s: Option<i32>,
         vbat_mv: Option<i32>,
+        heading: Option<f32>,
     },
     DeviceEvent {
         device_id: i64,
