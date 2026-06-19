@@ -4,13 +4,14 @@
 //   ② 월간: 그 달 전체 — 히트맵 달력 + 그 달 모든 점 지도 표시. 날짜 클릭 → 일간으로.
 //
 // 옵션 (속도별 색상, 정지 강조) 은 localStorage 영속.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import { getDeviceColor } from '../colors';
 import Icon from './Icon';
 import useBreakpoint from '../useBreakpoint';
 import useSwipeDownClose from '../useSwipeDownClose';
 import { enrichWithSpeedStops as enrich, haversineM } from '../lib/stops';
+import { offlineCache } from '../lib/offlineCache';
 
 const KST_TZ = 9 * 3600 * 1000;
 
@@ -141,7 +142,7 @@ function reverseGeocode(lat, lng) {
 // ════════════════════════════════════════════════════════════
 // SeekerSheet
 // ════════════════════════════════════════════════════════════
-export default function SeekerSheet({ device, mapRef, onClose }) {
+export default function SeekerSheet({ device, mapRef, onClose, serverPrefs, onPrefSave }) {
   const bp = useBreakpoint();
   const isDesktop = bp === 'desktop';
   const [mode, setMode]   = useState('day');           // 'day' | 'month'
@@ -157,31 +158,59 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [compareMode, setCompareMode] = useState(false);
   const [compareIdxs, setCompareIdxs] = useState([]);  // up to 2 trip indices
 
-  // 영속 옵션 — default OFF (시각적 노이즈 줄이기 위해 사용자가 명시 ON 했을 때만 적용)
-  const [speedColor, setSpeedColor] = useState(() => {
+  // 영속 옵션 — serverPrefs 있으면 서버값 우선, 없으면 localStorage fallback
+  const [speedColor, setSpeedColorRaw] = useState(() => {
+    if (serverPrefs?.seeker_speed_color != null) return !!serverPrefs.seeker_speed_color;
     return localStorage.getItem(PREF_SPEED_COLOR) === 'true';
   });
-  const [showStops, setShowStops]   = useState(() => {
-    // 기본값 ON — cluster (5+ 점이 좁은 범위로 뭉침) 을 한눈에 보고 싶은 게 보통.
-    // 사용자가 명시적으로 false 로 저장한 경우만 OFF.
+  const [showStops, setShowStopsRaw]   = useState(() => {
+    if (serverPrefs?.seeker_show_stops != null) return !!serverPrefs.seeker_show_stops;
     const v = localStorage.getItem(PREF_SHOW_STOPS);
     return v === null ? true : (v === 'true');
   });
-  const [speedLimit, setSpeedLimit] = useState(() => {
+  const [speedLimit, setSpeedLimitRaw] = useState(() => {
+    if (serverPrefs?.seeker_speed_limit != null) return Number(serverPrefs.seeker_speed_limit) || null;
     const v = localStorage.getItem(PREF_SPEED_LIMIT);
-    return v != null ? Number(v) : null;  // null = 비활성
+    return v != null ? Number(v) : null;
   });
-  const [showSatWarning, setShowSatWarning] = useState(() =>
-    localStorage.getItem(PREF_SAT_WARNING) === 'true'
-  );
+  const [showSatWarning, setShowSatWarningRaw] = useState(() => {
+    if (serverPrefs?.seeker_sat_warning != null) return !!serverPrefs.seeker_sat_warning;
+    return localStorage.getItem(PREF_SAT_WARNING) === 'true';
+  });
 
-  useEffect(() => { localStorage.setItem(PREF_SPEED_COLOR, String(speedColor)); }, [speedColor]);
-  useEffect(() => { localStorage.setItem(PREF_SHOW_STOPS,  String(showStops)); },  [showStops]);
+  // 서버 prefs 초기 로드 (마운트 이후 도착) — 한 번만 적용
+  const serverPrefsApplied = useRef(false);
   useEffect(() => {
-    if (speedLimit == null) localStorage.removeItem(PREF_SPEED_LIMIT);
-    else localStorage.setItem(PREF_SPEED_LIMIT, String(speedLimit));
-  }, [speedLimit]);
-  useEffect(() => { localStorage.setItem(PREF_SAT_WARNING, String(showSatWarning)); }, [showSatWarning]);
+    if (!serverPrefs || serverPrefsApplied.current) return;
+    serverPrefsApplied.current = true;
+    if (serverPrefs.seeker_speed_color != null) setSpeedColorRaw(!!serverPrefs.seeker_speed_color);
+    if (serverPrefs.seeker_show_stops  != null) setShowStopsRaw(!!serverPrefs.seeker_show_stops);
+    if (serverPrefs.seeker_speed_limit != null) setSpeedLimitRaw(Number(serverPrefs.seeker_speed_limit) || null);
+    if (serverPrefs.seeker_sat_warning != null) setShowSatWarningRaw(!!serverPrefs.seeker_sat_warning);
+  }, [serverPrefs]);
+
+  // 변경 시: localStorage + 서버 동기화
+  const setSpeedColor = useCallback((v) => {
+    setSpeedColorRaw(v);
+    localStorage.setItem(PREF_SPEED_COLOR, String(v));
+    onPrefSave?.({ seeker_speed_color: v });
+  }, [onPrefSave]);
+  const setShowStops = useCallback((v) => {
+    setShowStopsRaw(v);
+    localStorage.setItem(PREF_SHOW_STOPS, String(v));
+    onPrefSave?.({ seeker_show_stops: v });
+  }, [onPrefSave]);
+  const setSpeedLimit = useCallback((v) => {
+    setSpeedLimitRaw(v);
+    if (v == null) localStorage.removeItem(PREF_SPEED_LIMIT);
+    else localStorage.setItem(PREF_SPEED_LIMIT, String(v));
+    onPrefSave?.({ seeker_speed_limit: v ?? null });
+  }, [onPrefSave]);
+  const setShowSatWarning = useCallback((v) => {
+    setShowSatWarningRaw(v);
+    localStorage.setItem(PREF_SAT_WARNING, String(v));
+    onPrefSave?.({ seeker_sat_warning: v });
+  }, [onPrefSave]);
 
   // 일간/월간 별로 분리된 raw 데이터 — 모드 전환 시 재패치 안 일어남
   const [dayPoints, setDayPoints]     = useState([]);  // 그 날짜의 24h 전체
@@ -297,9 +326,18 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     .then(rows => {
       const sorted = rows.filter(r => r.lat != null && r.lng != null)
         .slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+      offlineCache.savePoints(device.id, date, sorted);
       setDayPoints(enrich(sorted));
     })
-    .catch(e => setError(e.message || '데이터를 불러올 수 없습니다.'))
+    .catch(() => {
+      const cached = offlineCache.loadPoints(device.id, date);
+      if (cached) {
+        setDayPoints(enrich(cached));
+        setError('오프라인 — 캐시된 데이터');
+      } else {
+        setError('데이터를 불러올 수 없습니다. (캐시 없음)');
+      }
+    })
     .finally(() => setLoading(false));
   }, [device?.id, mode, date]);
 
@@ -319,9 +357,18 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
       setMonthCapped(rows.length >= MONTH_CAP);
       const sorted = rows.filter(r => r.lat != null && r.lng != null)
         .slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+      offlineCache.savePoints(device.id, month, sorted);
       setMonthPoints(enrich(sorted));
     })
-    .catch(e => setError(e.message || '데이터를 불러올 수 없습니다.'))
+    .catch(() => {
+      const cached = offlineCache.loadPoints(device.id, month);
+      if (cached) {
+        setMonthPoints(enrich(cached));
+        setError('오프라인 — 캐시된 데이터');
+      } else {
+        setError('데이터를 불러올 수 없습니다. (캐시 없음)');
+      }
+    })
     .finally(() => setLoading(false));
   }, [device?.id, mode, month]);
 
@@ -505,6 +552,41 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const stopCount = useMemo(() => points.filter(p => p._isStop).length, [points]);
   const speedViolations = useMemo(() => speedLimit != null ? points.filter(p => p._speed > speedLimit).length : 0, [points, speedLimit]);
   const weakGpsCount = useMemo(() => showSatWarning ? points.filter(p => (p.sat ?? 99) < 4).length : 0, [points, showSatWarning]);
+
+  const drivingAnalysis = useMemo(() => {
+    if (points.length < 2) return null;
+    const toRad = d => d * Math.PI / 180;
+    const calcBearing = (la1, ln1, la2, ln2) => {
+      const dL = toRad(ln2 - ln1), φ1 = toRad(la1), φ2 = toRad(la2);
+      const y = Math.sin(dL) * Math.cos(φ2);
+      const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dL);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    };
+    let braking = 0, accel = 0, turns = 0;
+    let prevBearing = null;
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1], b = points[i];
+      if (a._speed == null || b._speed == null) { prevBearing = null; continue; }
+      const dt = (new Date(b.recorded_at) - new Date(a.recorded_at)) / 1000;
+      if (dt <= 0 || dt > 30) { prevBearing = null; continue; }
+      const dv = b._speed - a._speed;
+      if (dv < -20 && dt <= 5) braking++;
+      if (dv >  20 && dt <= 5) accel++;
+      if (b._speed > 20 && a._speed > 20) {
+        const bear = calcBearing(a.lat, a.lng, b.lat, b.lng);
+        if (prevBearing !== null) {
+          let diff = Math.abs(bear - prevBearing);
+          if (diff > 180) diff = 360 - diff;
+          if (diff > 45) turns++;
+        }
+        prevBearing = bear;
+      } else { prevBearing = null; }
+    }
+    const score = Math.max(0, Math.round(100 - braking * 8 - accel * 5 - turns * 3 - (speedLimit != null ? Math.floor(speedViolations / 5) * 2 : 0)));
+    const grade = score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : score >= 40 ? 'D' : 'F';
+    const gradeColor = score >= 90 ? '#22C55E' : score >= 75 ? '#84CC16' : score >= 60 ? '#F59E0B' : score >= 40 ? '#F97316' : '#EF4444';
+    return { score, grade, gradeColor, braking, accel, turns };
+  }, [points, speedLimit, speedViolations]);
   const maxSpeed = useMemo(() => {
     let s = 0; for (const p of points) if (p._speed > s) s = p._speed; return s;
   }, [points]);
@@ -831,7 +913,31 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                   <Kpi label="GPS약신호" value={weakGpsCount > 0 ? `${weakGpsCount}회` : '없음'} accent={weakGpsCount > 0 ? '#F59E0B' : undefined} />
                 )}
               </div>
-            ) : (
+            ) : null}
+
+            {/* ── 운전 습관 분석 ── */}
+            {drivingAnalysis && (
+              <div style={{ margin: '10px 0 4px', padding: '12px 14px', background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {/* 점수 원형 */}
+                  <div style={{ flexShrink: 0, width: 56, height: 56, borderRadius: '50%', border: `3px solid ${drivingAnalysis.gradeColor}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: drivingAnalysis.gradeColor, lineHeight: 1 }}>{drivingAnalysis.grade}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{drivingAnalysis.score}점</div>
+                  </div>
+                  {/* 이벤트 목록 */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>운전 습관 분석</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
+                      <DriveEvent icon="warn" label="급감속" count={drivingAnalysis.braking} badColor="#EF4444" />
+                      <DriveEvent icon="spark" label="급가속" count={drivingAnalysis.accel} badColor="#F97316" />
+                      <DriveEvent icon="route" label="급커브" count={drivingAnalysis.turns} badColor="#F59E0B" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {points.length === 0 ? (
               <EmptyState loading={loading} error={error}
                 msg={dayPoints.length > 0
                   ? '이 시간 범위에 데이터 없음'
@@ -860,7 +966,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                   }
                   return acts;
                 })()} />
-            )}
+            ) : null}
 
             {/* 속도 sparkline + 슬라이더 */}
             {points.length > 0 && (
@@ -1415,6 +1521,17 @@ function DataCalendar({ value, availDates, onChange }) {
 }
 
 // ─── 작은 sub-컴포넌트 ───────────────────────────────────
+function DriveEvent({ icon, label, count, badColor }) {
+  const bad = count > 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
+      <Icon name={icon} size={11} style={{ color: bad ? badColor : 'var(--text-3)' }} />
+      <span style={{ color: 'var(--text-2)' }}>{label}</span>
+      <span style={{ fontWeight: 700, color: bad ? badColor : 'var(--text-3)' }}>{count}회</span>
+    </div>
+  );
+}
+
 function Kpi({ label, value, accent }) {
   return (
     <div style={sty.kpiCell}>

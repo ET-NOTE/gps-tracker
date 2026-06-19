@@ -121,6 +121,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const iwReqIdRef   = useRef(0);    // InfoWindow 비동기 갱신용 시퀀스
   const seekerRef    = useRef({ poly: [], pts: [], cursor: null });   // history seeker 임시 렌더링
   const seekerPinRef = useRef(null);   // 시커 슬롯 선택 표시용 단일 핀 마커
+  const routePlanRef = useRef({ markers: [], polys: [] }); // 경로 계획 마커 + 폴리라인
 
   useEffect(() => { onRoadviewRef.current = onRoadview; }, [onRoadview]);
   useEffect(() => { onPointInfoRef.current = onPointInfo; }, [onPointInfo]);
@@ -155,10 +156,18 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           zoomLevelRef.current = lvl;
           applyZoomStyles();
         });
-        // 사용자 직접 드래그 (panTo 같은 프로그램적 이동에는 발생 안 함) → 라이브 추적 종료 신호.
+        // 사용자 직접 드래그/줌 → 라이브 추적 종료 신호.
+        // zoom_changed 는 프로그램적 줌(zoomToCoord) 도 발생하므로 플래그로 구분.
+        let programmaticZoom = false;
         window.kakao.maps.event.addListener(mapRef.current, 'dragend', () => {
           onUserPanRef.current?.();
         });
+        window.kakao.maps.event.addListener(mapRef.current, 'zoom_changed', () => {
+          if (programmaticZoom) { programmaticZoom = false; return; }
+          onUserPanRef.current?.();
+        });
+        // zoomToCoord 에서 호출 전에 플래그 세트할 수 있도록 외부에 노출.
+        mapRef.current.__setProgrammaticZoom = () => { programmaticZoom = true; };
         onReady?.();
       });
     };
@@ -602,6 +611,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     /** 좌표로 이동 + 줌 레벨 지정 (라이브 추적 ON 시 사용). */
     zoomToCoord(lat, lng, level) {
       if (!mapRef.current) return;
+      mapRef.current.__setProgrammaticZoom?.();
       mapRef.current.setCenter(new window.kakao.maps.LatLng(lat, lng));
       mapRef.current.setLevel(level);
     },
@@ -969,6 +979,56 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     clearAllGeofences() {
       Object.values(fenceRef.current).forEach(e => e.circle.setMap(null));
       fenceRef.current = {};
+    },
+
+    // ── 경로 계획 (Route Planner) ─────────────────────────────
+    drawRoutePlan(waypoints) {
+      // 기존 route 제거
+      routePlanRef.current.markers.forEach(m => m.setMap(null));
+      routePlanRef.current.polys.forEach(p => p.setMap(null));
+      routePlanRef.current = { markers: [], polys: [] };
+      if (!mapRef.current || !waypoints?.length) return;
+
+      const kakao = window.kakao.maps;
+      const latLngs = waypoints.map(w => new kakao.LatLng(w.lat, w.lng));
+
+      // 번호 마커 (캔버스 기반)
+      waypoints.forEach((w, i) => {
+        const c = document.createElement('canvas');
+        c.width = 32; c.height = 32;
+        const ctx = c.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(16, 16, 14, 0, Math.PI * 2);
+        ctx.fillStyle = i === 0 ? '#10B981' : i === waypoints.length - 1 ? '#EF4444' : '#4f46e5';
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), 16, 17);
+        const img = new kakao.MarkerImage(c.toDataURL(), new kakao.Size(32, 32), { offset: new kakao.Point(16, 16) });
+        const marker = new kakao.Marker({ map: mapRef.current, position: latLngs[i], image: img, zIndex: 300 });
+        routePlanRef.current.markers.push(marker);
+      });
+
+      // 경로 폴리라인
+      if (latLngs.length >= 2) {
+        const poly = new kakao.Polyline({
+          map: mapRef.current, path: latLngs,
+          strokeWeight: 4, strokeColor: '#4f46e5',
+          strokeOpacity: 0.85, strokeStyle: 'solid',
+        });
+        routePlanRef.current.polys.push(poly);
+      }
+
+      // 바운드 맞추기
+      const bounds = new kakao.LatLngBounds();
+      latLngs.forEach(ll => bounds.extend(ll));
+      mapRef.current.setBounds(bounds, 60);
+    },
+
+    clearRoutePlan() {
+      routePlanRef.current.markers.forEach(m => m.setMap(null));
+      routePlanRef.current.polys.forEach(p => p.setMap(null));
+      routePlanRef.current = { markers: [], polys: [] };
     },
 
     removeMarker(deviceId) {

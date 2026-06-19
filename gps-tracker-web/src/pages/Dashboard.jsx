@@ -14,6 +14,7 @@ import { confirmDialog, alertDialog } from '../components/Dialog';
 import DeviceFilter from '../components/DeviceFilter';
 import GeofenceSheet from '../components/GeofenceSheet';
 import SeekerSheet from '../components/SeekerSheet';
+import RoutePlannerSheet from '../components/RoutePlannerSheet';
 import MiniSeekerOverlay, { MINI_SEEKER_BOTTOM_HEIGHT } from '../components/MiniSeekerOverlay';
 import HomeFenceQuick from '../components/HomeFenceQuick';
 import YesterdaySummaryDialog from '../components/YesterdaySummaryDialog';
@@ -25,6 +26,8 @@ import UnpairModal from '../components/UnpairModal';
 import Icon from '../components/Icon';
 import useBreakpoint from '../useBreakpoint';
 import { PALETTE, getDeviceColor, setDeviceColorLocal, isStale, ageString, classifyDevice } from '../colors';
+import { offlineCache } from '../lib/offlineCache';
+import { useOnline } from '../hooks/useOnline';
 
 // 펜스에 적용 디바이스 한 대라도 안에 있으면 true.
 function isAnyDeviceInsideFence(fence, devices) {
@@ -161,6 +164,7 @@ export default function Dashboard({ onLogout }) {
   const [, setTick]                   = useState(0);
   const bp        = useBreakpoint();
   const isDesktop = bp === 'desktop';
+  const isOnline  = useOnline();
   const [showGeofence, setShowGeofence] = useState(false);
   const [showSeeker,  setShowSeeker]    = useState(false);
   // 컴팩트 시커 — 좌측 날짜 + 하단 시간 슬롯 오버레이. 지오펜스/패널 시커와 mutex.
@@ -194,6 +198,7 @@ export default function Dashboard({ onLogout }) {
     setShowFencesRaw(prev => {
       const next = typeof v === 'function' ? v(prev) : v;
       localStorage.setItem('show_fences', String(next));
+      api.patchMyPrefs({ show_fences: next }).catch(() => {});
       return next;
     });
   }, []);
@@ -208,10 +213,33 @@ export default function Dashboard({ onLogout }) {
     api.getAccountType().then(r => setAccountType(r.account_type)).catch(() => {});
   }, []);
 
-  // 사용자 prefs — filter_device_id 복원용
+  // 사용자 prefs — filter_device_id 복원용 + show_fences + seeker prefs 서버 동기화
   useEffect(() => {
-    api.getMyPrefs().then(p => setUserPrefs(p || {})).catch(() => setUserPrefs({}));
+    api.getMyPrefs().then(p => {
+      const prefs = p || {};
+      setUserPrefs(prefs);
+      // 서버값이 있으면 show_fences 복원
+      if (prefs.show_fences != null) {
+        setShowFencesRaw(!!prefs.show_fences);
+        localStorage.setItem('show_fences', String(!!prefs.show_fences));
+      }
+    }).catch(() => setUserPrefs({}));
   }, []);
+
+  // Seeker prefs 서버 저장 (debounce 1s)
+  const seekerPrefSaveTimer = useRef(null);
+  const pendingSeekerPatch  = useRef({});
+  const handleSeekerPrefSave = useCallback((patch) => {
+    Object.assign(pendingSeekerPatch.current, patch);
+    clearTimeout(seekerPrefSaveTimer.current);
+    seekerPrefSaveTimer.current = setTimeout(() => {
+      api.patchMyPrefs({ ...pendingSeekerPatch.current }).catch(() => {});
+      pendingSeekerPatch.current = {};
+    }, 1000);
+  }, []);
+
+  // Route Planner
+  const [showRoutePlanner, setShowRoutePlanner] = useState(false);
 
   // 펜스 알림 master switch — 서버 notification_settings.geofence_alert 와 연동.
   // off 면 푸시도 발송 안 되고 지도 표시도 강제 off (상위 호환).
@@ -445,6 +473,7 @@ export default function Dashboard({ onLogout }) {
       setDevices(list);
       setDevicesLoaded(true);
       devRef.current = list;
+      offlineCache.saveDevices(list);
       wsRef.current?.subscribe(list.map(d => d.id));
 
       for (const d of list) {
@@ -487,7 +516,16 @@ export default function Dashboard({ onLogout }) {
       }
       if (!isNaN(effectiveTargetId)) mapRef.current?.filterToDevice(effectiveTargetId);
       else                  mapRef.current?.fitToAllMarkers(60);
-    } catch (e) { console.error('loadDevices', e); }
+    } catch (e) {
+      console.error('loadDevices', e);
+      // 오프라인이면 캐시에서 디바이스 목록 복원
+      const cached = offlineCache.loadDevices();
+      if (cached && cached.length > 0) {
+        setDevices(cached);
+        setDevicesLoaded(true);
+        devRef.current = cached;
+      }
+    }
   }, []);
 
   const handleMapReady = useCallback(() => {
@@ -1133,6 +1171,19 @@ export default function Dashboard({ onLogout }) {
           flex: 1, position: 'relative', minWidth: 0,
           display: ((view === 'admin' && isAdmin) || (view === 'corporate' && isCorporate)) ? 'none' : 'block',
         }}>
+          {/* 오프라인 배너 */}
+          {!isOnline && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, zIndex: 9999,
+              background: '#F59E0B', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '6px 12px', fontSize: 12, fontWeight: 600,
+            }}>
+              <Icon name="warn" size={13} />
+              오프라인 — 캐시된 데이터를 표시 중입니다. 인터넷 연결을 확인하세요.
+            </div>
+          )}
+
           <div style={{ position: 'absolute', inset: 0, visibility: mapVisible ? 'visible' : 'hidden' }}>
             <KakaoMap ref={mapRef} onReady={handleMapReady}
               onRoadview={({ lat, lng }) => tryOpenRoadview(lat, lng)}
@@ -1213,9 +1264,11 @@ export default function Dashboard({ onLogout }) {
                       paused 면 미세하게 작은 구분선 표시. */}
                   {view === 'home' && filterDeviceId !== null && (
                     <button onClick={() => {
-                      const next = !userTrackPref;
-                      setUserTrackPref(next);
-                      if (next && filterDeviceId !== null) {
+                      // 이미 ON 이면 OFF, OFF(또는 사용자가 지도를 이동해서 꺼진 경우)면 항상 ON + 즉시 이동.
+                      if (userTrackPref) {
+                        setUserTrackPref(false);
+                      } else {
+                        setUserTrackPref(true);
                         const dev = devices.find(d => d.id === filterDeviceId);
                         if (dev?.last_lat && dev?.last_lng) {
                           mapRef.current?.zoomToCoord?.(dev.last_lat, dev.last_lng, 1);
@@ -1310,6 +1363,28 @@ export default function Dashboard({ onLogout }) {
                     </button>
                   )}
 
+                  {/* 경로 계획 FAB — '운행' 탭에서만 노출. */}
+                  {view === 'tools' && (
+                    <button onClick={() => setShowRoutePlanner(s => !s)}
+                      className="btn-bounce"
+                      style={{
+                      position: 'absolute', right: 16,
+                      bottom: baseBottom + 60,
+                      width: 48, height: 48, borderRadius: 24,
+                      background: showRoutePlanner ? '#4f46e5' : 'var(--surface)',
+                      color:      showRoutePlanner ? '#fff' : '#4f46e5',
+                      border: showRoutePlanner ? 'none' : '1px solid var(--border)',
+                      cursor: 'pointer',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(0,0,0,.25)',
+                      zIndex: 12,
+                      transform: fabTransform, opacity: fabOpacity, pointerEvents: fabPointer,
+                      transition: fabTransition,
+                    }} title="경로 계획">
+                      <Icon name="navigation" size={20} />
+                    </button>
+                  )}
+
                   {/* 지오펜스 FAB — '운행' 탭에서만 노출. */}
                   {view === 'tools' && (
                     <button onClick={() => {
@@ -1355,9 +1430,20 @@ export default function Dashboard({ onLogout }) {
               <SeekerSheet
                 device={devices.find(d => d.id === filterDeviceId)}
                 mapRef={mapRef}
+                serverPrefs={userPrefs}
+                onPrefSave={handleSeekerPrefSave}
                 onClose={() => {
                   setShowSeeker(false);
                   mapRef.current?.clearSeekerPath();
+                }} />
+            )}
+
+            {showRoutePlanner && view === 'tools' && (
+              <RoutePlannerSheet
+                mapRef={mapRef}
+                onClose={() => {
+                  setShowRoutePlanner(false);
+                  mapRef.current?.clearRoutePlan?.();
                 }} />
             )}
 
