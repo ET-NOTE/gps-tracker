@@ -122,7 +122,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const seekerRef    = useRef({ poly: [], pts: [], cursor: null });   // history seeker 임시 렌더링
   const seekerPinRef = useRef(null);   // 시커 슬롯 선택 표시용 단일 핀 마커
   const routePlanRef = useRef({ markers: [], polys: [] }); // 경로 계획 마커 + 폴리라인
-  const navRef       = useRef({ poly: null, carMarker: null, destMarker: null }); // 실시간 내비게이션
 
   useEffect(() => { onRoadviewRef.current = onRoadview; }, [onRoadview]);
   useEffect(() => { onPointInfoRef.current = onPointInfo; }, [onPointInfo]);
@@ -1030,78 +1029,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       routePlanRef.current.markers.forEach(m => m.setMap(null));
       routePlanRef.current.polys.forEach(p => p.setMap(null));
       routePlanRef.current = { markers: [], polys: [] };
-    },
-
-    // ── 실시간 내비게이션 ─────────────────────────────────────
-    drawNavRoute(coords) {
-      if (!mapRef.current) return;
-      navRef.current.poly?.setMap(null);
-      const kakao = window.kakao.maps;
-      const path = coords.map(([lng, lat]) => new kakao.LatLng(lat, lng));
-      navRef.current.poly = new kakao.Polyline({
-        map: mapRef.current, path,
-        strokeWeight: 6, strokeColor: '#4f46e5',
-        strokeOpacity: 0.9, strokeStyle: 'solid',
-      });
-    },
-    setNavDestination(lat, lng) {
-      if (!mapRef.current) return;
-      navRef.current.destMarker?.setMap(null);
-      const kakao = window.kakao.maps;
-      navRef.current.destMarker = new kakao.Marker({
-        map: mapRef.current,
-        position: new kakao.LatLng(lat, lng),
-        image: pinImage('#EF4444'),
-        zIndex: 350,
-      });
-    },
-    setNavPosition(lat, lng, headingDeg) {
-      if (!mapRef.current) return;
-      const kakao = window.kakao.maps;
-      const c = document.createElement('canvas');
-      c.width = 44; c.height = 44;
-      const ctx = c.getContext('2d');
-      ctx.save();
-      ctx.translate(22, 22);
-      ctx.rotate((headingDeg || 0) * Math.PI / 180);
-      ctx.translate(-22, -22);
-      // 외부 원 (반투명)
-      ctx.beginPath();
-      ctx.arc(22, 22, 20, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(79,70,229,0.18)';
-      ctx.fill();
-      // 내부 원
-      ctx.beginPath();
-      ctx.arc(22, 22, 13, 0, Math.PI * 2);
-      ctx.fillStyle = '#4f46e5';
-      ctx.fill();
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-      // 방향 삼각형 (북쪽 = 위)
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.moveTo(22, 8); ctx.lineTo(27, 20); ctx.lineTo(17, 20);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-      const img = new kakao.MarkerImage(c.toDataURL(), new kakao.Size(44, 44), { offset: new kakao.Point(22, 22) });
-      if (navRef.current.carMarker) {
-        navRef.current.carMarker.setPosition(new kakao.LatLng(lat, lng));
-        navRef.current.carMarker.setImage(img);
-      } else {
-        navRef.current.carMarker = new kakao.Marker({
-          map: mapRef.current,
-          position: new kakao.LatLng(lat, lng),
-          image: img,
-          zIndex: 400,
-        });
-      }
-      mapRef.current.setCenter(new kakao.LatLng(lat, lng));
-    },
-    clearNavigation() {
-      navRef.current.poly?.setMap(null);
-      navRef.current.carMarker?.setMap(null);
-      navRef.current.destMarker?.setMap(null);
-      navRef.current = { poly: null, carMarker: null, destMarker: null };
     },
 
     removeMarker(deviceId) {

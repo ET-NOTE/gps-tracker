@@ -15,7 +15,6 @@ import DeviceFilter from '../components/DeviceFilter';
 import GeofenceSheet from '../components/GeofenceSheet';
 import SeekerSheet from '../components/SeekerSheet';
 import RoutePlannerSheet from '../components/RoutePlannerSheet';
-import NavigationSheet from '../components/NavigationSheet';
 import MiniSeekerOverlay, { MINI_SEEKER_BOTTOM_HEIGHT } from '../components/MiniSeekerOverlay';
 import HomeFenceQuick from '../components/HomeFenceQuick';
 import YesterdaySummaryDialog from '../components/YesterdaySummaryDialog';
@@ -241,8 +240,6 @@ export default function Dashboard({ onLogout }) {
 
   // Route Planner
   const [showRoutePlanner, setShowRoutePlanner] = useState(false);
-  // Navigation
-  const [showNavigation, setShowNavigation] = useState(false);
 
   // 펜스 알림 master switch — 서버 notification_settings.geofence_alert 와 연동.
   // off 면 푸시도 발송 안 되고 지도 표시도 강제 off (상위 호환).
@@ -1366,27 +1363,6 @@ export default function Dashboard({ onLogout }) {
                     </button>
                   )}
 
-                  {/* 내비게이션 FAB — home 탭에서만. 지도 위 주행 안내. */}
-                  {view === 'home' && (
-                    <button onClick={() => setShowNavigation(s => !s)}
-                      className="btn-bounce"
-                      style={{
-                      position: 'absolute', right: 16,
-                      bottom: baseBottom + 120 + fenceCreatorLift,
-                      width: 48, height: 48, borderRadius: 24,
-                      background: showNavigation ? '#4f46e5' : 'var(--surface)',
-                      color:      showNavigation ? '#fff' : '#4f46e5',
-                      border: showNavigation ? 'none' : '1px solid var(--border)',
-                      cursor: 'pointer',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 4px 12px rgba(0,0,0,.25)',
-                      zIndex: 12,
-                      transition: fabTransition,
-                    }} title="내비게이션">
-                      <Icon name="navigation" size={20} />
-                    </button>
-                  )}
-
                   {/* 경로 계획 FAB — '운행' 탭에서만 노출. */}
                   {view === 'tools' && (
                     <button onClick={() => setShowRoutePlanner(s => !s)}
@@ -1468,15 +1444,6 @@ export default function Dashboard({ onLogout }) {
                 onClose={() => {
                   setShowRoutePlanner(false);
                   mapRef.current?.clearRoutePlan?.();
-                }} />
-            )}
-
-            {showNavigation && view === 'home' && (
-              <NavigationSheet
-                mapRef={mapRef}
-                onClose={() => {
-                  setShowNavigation(false);
-                  mapRef.current?.clearNavigation?.();
                 }} />
             )}
 
