@@ -22,6 +22,37 @@ function dotSizeForLevel(level) {
   return 20;
 }
 // Seeker 라인 속도 버킷 — 빨강 (정지/매우 느림) / 노랑 / 녹 / 청 / 자 (고속)
+const KAKAO_MAP_SDK_SRC = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=760ec0841163d1ee2cc5fef220a9df0b&libraries=services,clusterer&autoload=false';
+
+function ensureKakaoMapSdk() {
+  if (typeof window === 'undefined') return Promise.reject(new Error('window is unavailable'));
+  if (window.kakao?.maps) return Promise.resolve(window.kakao);
+  const existing = document.querySelector('script[data-kakao-map-sdk="true"], script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      const startedAt = Date.now();
+      const timer = setInterval(() => {
+        if (window.kakao?.maps) {
+          clearInterval(timer);
+          resolve(window.kakao);
+        } else if (Date.now() - startedAt > 8000) {
+          clearInterval(timer);
+          reject(new Error('Kakao Maps SDK did not become available'));
+        }
+      }, 100);
+    });
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.async = true;
+    script.dataset.kakaoMapSdk = 'true';
+    script.src = KAKAO_MAP_SDK_SRC;
+    script.onload = () => (window.kakao?.maps ? resolve(window.kakao) : reject(new Error('Kakao Maps SDK loaded without maps')));
+    script.onerror = () => reject(new Error('Failed to load Kakao Maps SDK'));
+    document.head.appendChild(script);
+  });
+}
 const BUCKET_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
 function speedBucket(p) {
   if (p._isStop || p._speed == null || p._speed < 5) return 0;       // 정지/도보 미만
@@ -197,10 +228,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         onReady?.();
       });
     };
-    const wait = setInterval(() => {
-      if (window.kakao?.maps) { clearInterval(wait); initMap(); }
-    }, 100);
-    return () => { cancelled = true; clearInterval(wait); };
+    ensureKakaoMapSdk()
+      .then(() => { if (!cancelled) initMap(); })
+      .catch(error => console.error('Kakao Maps SDK load failed', error));
+    return () => { cancelled = true; };
   }, []);
 
   // zoom 변경 시 — 모든 polylines + dot markers 일괄 갱신.
@@ -447,6 +478,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         arr.forEach(({ marker }) => marker.setMap(visible ? mapRef.current : null));
       });
     },
+    setLiveTrailsVisible(visible) {
+      if (!mapRef.current) return;
+      Object.values(polyRef.current).forEach(poly => {
+        poly.setMap(visible ? mapRef.current : null);
+      });
+    },
 
     setMarkerColor(deviceId, color) {
       const entry = markersRef.current[deviceId];
@@ -493,6 +530,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
      * opts.fit (default true) — false 면 setBounds 안 함 (사용자 저장 view 복원과 결합).
      */
     filterToDevice(targetId, opts = {}) {
+      if (!mapRef.current || !window.kakao?.maps) return;
       const all = mapRef.current;
       Object.entries(markersRef.current).forEach(([id, { marker }]) => {
         marker.setMap((targetId === null || +id === targetId) ? all : null);
