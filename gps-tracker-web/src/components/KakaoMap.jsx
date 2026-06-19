@@ -30,6 +30,60 @@ function speedBucket(p) {
   if (p._speed < 100) return 3;                                       // 고속도로
   return 4;                                                            // 초고속
 }
+function distanceM(a, b) {
+  const r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r;
+  const dLng = (b.lng - a.lng) * r;
+  const lat1 = a.lat * r;
+  const lat2 = b.lat * r;
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 12742000 * Math.asin(Math.sqrt(h));
+}
+
+function compactStopMarkerIndexes(pts, indexes, radiusM) {
+  const total = pts.length;
+  if (total <= 2 || radiusM <= 0) return indexes;
+
+  const sorted = Array.from(indexes).sort((a, b) => a - b);
+  const compacted = new Set();
+  let cluster = [];
+  let center = null;
+
+  const flushCluster = () => {
+    if (cluster.length === 0) return;
+    compacted.add(cluster[Math.floor(cluster.length / 2)]);
+    cluster = [];
+    center = null;
+  };
+
+  sorted.forEach(idx => {
+    const p = pts[idx];
+    if (!p) return;
+
+    if (idx === 0 || idx === total - 1 || !p._isStop) {
+      flushCluster();
+      compacted.add(idx);
+      return;
+    }
+
+    if (!center || distanceM(center, p) > radiusM) {
+      flushCluster();
+      cluster = [idx];
+      center = { lat: p.lat, lng: p.lng };
+      return;
+    }
+
+    cluster.push(idx);
+    center = {
+      lat: (center.lat * (cluster.length - 1) + p.lat) / cluster.length,
+      lng: (center.lng * (cluster.length - 1) + p.lng) / cluster.length,
+    };
+  });
+
+  flushCluster();
+  return compacted;
+}
 function cursorImage(color) {
   const sz = 18;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">
@@ -599,6 +653,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         color = '#5B7CFF', speedColor = false, showStops = true,
         showCursor = false, onPointClick = null,
         maxMarkers = 300,        // 마커 폭주 방지 — 폴리라인은 그대로, 마커만 캡
+        stopMergeRadiusM = 35,   // nearby stop markers are absorbed into one representative marker
         minBucketRun = 3,        // 노이즈 단일 버킷 전환 무시 (>=3 점 연속이어야 새 segment)
       } = opts;
 
@@ -681,7 +736,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       }
       // 정렬은 불필요 — Set 순회로 충분
 
-      renderIdxSet.forEach(idx => {
+      const markerIdxSet = showStops
+        ? compactStopMarkerIndexes(pts, renderIdxSet, stopMergeRadiusM)
+        : renderIdxSet;
+
+      markerIdxSet.forEach(idx => {
         const p = pts[idx];
         if (!p) return;
         const isStop = !!p._isStop && showStops;
