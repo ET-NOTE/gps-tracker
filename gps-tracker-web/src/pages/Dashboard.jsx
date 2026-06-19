@@ -233,6 +233,7 @@ export default function Dashboard({ onLogout }) {
   useEffect(() => {
     const seekerActive = !!(showSeeker || showMiniSeeker);
     mapRef.current?.setHistoryPointsVisible?.(!seekerActive);
+    mapRef.current?.setLiveTrailsVisible?.(!seekerActive);
   }, [showSeeker, showMiniSeeker]);
 
   // 추적이 효과적으로 ON 으로 전환되는 순간 (켜자마자 / 시커 닫고 부활) 즉시 카메라를 디바이스 마지막 위치로.
