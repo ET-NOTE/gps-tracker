@@ -10,6 +10,7 @@
 - [docs/FCM_SETUP.md](docs/FCM_SETUP.md) — Firebase / FCM / APNs 종단간 셋업
 - [docs/API_CONTRACT.md](docs/API_CONTRACT.md) — REST + WebSocket + ESP ingest 스키마
 - [docs/1NCE_INTEGRATION.md](docs/1NCE_INTEGRATION.md) — 1NCE eSIM 인증/충전/조회/캐시
+- [docs/DB_RESPONSIBILITY.md](docs/DB_RESPONSIBILITY.md) — main↔dev DB 스키마 sync 책임 + 부사수 prod 차단 4계층
 - [architecture.md](architecture.md) — 전체 시스템 아키텍처
 - [DATA_BOUNDARIES.md](DATA_BOUNDARIES.md) — 데이터 책임 경계
 - 모바일 앱: [yeyebee/gps-tracker-app](https://github.com/yeyebee/gps-tracker-app) (Flutter, iOS/Android)

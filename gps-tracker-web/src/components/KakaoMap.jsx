@@ -44,11 +44,22 @@ function cursorImage(color) {
 
 // Drop-pin (위치 핀) — 라이브 마커 + 시커 선택 표시 공용. 32×40, 그림자 + 흰 테두리.
 const pinImageCache = new Map();
-function pinImage(color) {
+function pinImage(color, heading) {
+  // heading: 0~360°. null/undefined/NaN 이면 기본 circle (정지).
+  // 5° bucket 캐시 — 회전 단계가 너무 잘게 쪼개지면 SVG 생성/이미지 디코드 부담.
+  const hasHeading = Number.isFinite(heading);
+  const hBucket = hasHeading ? Math.round(((heading % 360 + 360) % 360) / 5) * 5 : null;
   const c = color || '#5B7CFF';
-  let img = pinImageCache.get(c);
+  const key = hasHeading ? `${c}|h${hBucket}` : c;
+  let img = pinImageCache.get(key);
   if (img) return img;
   const w = 32, h = 40;
+  // heading 있으면 흰색 삼각형 화살표 (위쪽 = 진행방향), 회전. 없으면 기존 원형 indicator.
+  const indicator = hasHeading
+    ? `<g transform="rotate(${hBucket} 16 14)">
+         <polygon points="16,6 12,17 16,15 20,17" fill="white"/>
+       </g>`
+    : `<circle cx="16" cy="14" r="5" fill="white"/>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
     <defs>
       <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
@@ -58,14 +69,14 @@ function pinImage(color) {
     <path filter="url(#sh)"
           d="M16 1c-7.18 0-13 5.82-13 13 0 9.5 13 25 13 25s13-15.5 13-25C29 6.82 23.18 1 16 1z"
           fill="${c}" stroke="white" stroke-width="2"/>
-    <circle cx="16" cy="14" r="5" fill="white"/>
+    ${indicator}
   </svg>`;
   img = new window.kakao.maps.MarkerImage(
     'data:image/svg+xml;base64,' + btoa(svg),
     new window.kakao.maps.Size(w, h),
     { offset: new window.kakao.maps.Point(w / 2, h - 1) },   // 핀 끝(아래)이 위치점
   );
-  pinImageCache.set(c, img);
+  pinImageCache.set(key, img);
   return img;
 }
 
@@ -94,7 +105,7 @@ function dotImageCached(color, isStop, size) {
   return img;
 }
 
-const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo, onUserPan }, ref) {
+const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo, onUserPan, onViewChange }, ref) {
   // onPointInfo 가 제공되면 마커 클릭 시 kakao InfoWindow 대신 그 콜백을 호출.
   // 부모(Dashboard) 가 React 기반 bottom-sheet 으로 표시 (모바일 친화적).
   // 콜백 시그니처: ({ kind: 'main'|'point', label, color, meta, addr, lat, lng }) => void
@@ -103,6 +114,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   // onUserPan: 사용자가 직접 지도를 드래그(또는 더블탭/핀치)했을 때 호출.
   // 라이브 추적 토글을 끄는 데 사용. panTo (프로그램적) 는 dragend 안 발생시키므로 안전.
   const onUserPanRef = useRef(onUserPan);
+  // onViewChange: 사용자 조작에 의한 view (center+level) 변경. 새로고침 후 복원에 사용.
+  // 시그니처: ({ lat, lng, level }) => void. 디바운스 600ms.
+  // 프로그램적 setBounds/setLevel 직후 1s 안에 발생한 변경은 skip (자동 fit 결과를 user pref 로 잘못 저장 방지).
+  const onViewChangeRef = useRef(onViewChange);
+  const lastProgrammaticAtRef = useRef(0);
+  const viewChangeTimerRef    = useRef(null);
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
   const markersRef   = useRef({});   // deviceId → { marker, color, meta }
@@ -122,6 +139,24 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   useEffect(() => { onRoadviewRef.current = onRoadview; }, [onRoadview]);
   useEffect(() => { onPointInfoRef.current = onPointInfo; }, [onPointInfo]);
   useEffect(() => { onUserPanRef.current = onUserPan; }, [onUserPan]);
+  useEffect(() => { onViewChangeRef.current = onViewChange; }, [onViewChange]);
+
+  // 프로그램적 setBounds/setLevel 직전에 호출 — onViewChange 가드 트리거.
+  const markProgrammatic = () => { lastProgrammaticAtRef.current = Date.now(); };
+  // 디바운스된 view-change 통지. 최근 1s 안에 markProgrammatic() 호출이 있었으면 skip.
+  const fireViewChange = () => {
+    clearTimeout(viewChangeTimerRef.current);
+    viewChangeTimerRef.current = setTimeout(() => {
+      if (!mapRef.current || !onViewChangeRef.current) return;
+      if (Date.now() - lastProgrammaticAtRef.current < 1000) return;   // 자동 fit 영향 제외
+      const c = mapRef.current.getCenter();
+      onViewChangeRef.current({
+        lat: c.getLat(),
+        lng: c.getLng(),
+        level: mapRef.current.getLevel(),
+      });
+    }, 600);
+  };
 
   // 글로벌 콜백 — InfoWindow 안의 onclick에서 호출.
   useEffect(() => {
@@ -148,13 +183,16 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         // 줌 변경 — 라인 두께 + dot 마커 이미지 재계산.
         window.kakao.maps.event.addListener(mapRef.current, 'zoom_changed', () => {
           const lvl = mapRef.current.getLevel();
-          if (lvl === zoomLevelRef.current) return;
-          zoomLevelRef.current = lvl;
-          applyZoomStyles();
+          if (lvl !== zoomLevelRef.current) {
+            zoomLevelRef.current = lvl;
+            applyZoomStyles();
+          }
+          fireViewChange();
         });
         // 사용자 직접 드래그 (panTo 같은 프로그램적 이동에는 발생 안 함) → 라이브 추적 종료 신호.
         window.kakao.maps.event.addListener(mapRef.current, 'dragend', () => {
           onUserPanRef.current?.();
+          fireViewChange();
         });
         onReady?.();
       });
@@ -292,8 +330,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (markersRef.current[deviceId]) {
         const e = markersRef.current[deviceId];
         e.marker.setPosition(pos);
-        // 색 바뀐 경우 핀 이미지도 갱신.
-        if (e.color !== color) e.marker.setImage(pinImage(color || '#5B7CFF'));
+        // color 또는 heading (5° bucket) 변화 시 핀 이미지 재생성. 캐시되어있어 거의 즉시.
+        const newH5 = Number.isFinite(meta.heading)
+          ? Math.round(((meta.heading % 360 + 360) % 360) / 5) * 5 : null;
+        if (e.color !== color || e.headingBucket !== newH5) {
+          e.marker.setImage(pinImage(color || '#5B7CFF', meta.heading));
+          e.headingBucket = newH5;
+        }
         e.color = color;
         e.meta = meta;
         e.label = label;
@@ -302,7 +345,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           map: mapRef.current,
           position: pos,
           title: label,
-          image: pinImage(color || '#5B7CFF'),
+          image: pinImage(color || '#5B7CFF', meta.heading),
           // 라이브 위치 마커 — 옛 history 점(1~3) / cursor(99) 보다 명확히 위로.
           zIndex: 200,
         });
@@ -433,11 +476,23 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (entries.length === 0) return;
       const bounds = new window.kakao.maps.LatLngBounds();
       entries.forEach(({ marker }) => bounds.extend(marker.getPosition()));
+      markProgrammatic();
       mapRef.current.setBounds(bounds, padding, padding, padding, padding);
     },
 
-    /** 특정 디바이스만 보이게 / null이면 전체 보이기. */
-    filterToDevice(targetId) {
+    /** 저장된 사용자 view (center+level) 로 복원 — 새로고침 후 호출. */
+    setView(lat, lng, level) {
+      if (!mapRef.current) return;
+      markProgrammatic();
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(lat, lng));
+      if (level != null) mapRef.current.setLevel(level);
+    },
+
+    /**
+     * 특정 디바이스만 보이게 / null이면 전체 보이기.
+     * opts.fit (default true) — false 면 setBounds 안 함 (사용자 저장 view 복원과 결합).
+     */
+    filterToDevice(targetId, opts = {}) {
       const all = mapRef.current;
       Object.entries(markersRef.current).forEach(([id, { marker }]) => {
         marker.setMap((targetId === null || +id === targetId) ? all : null);
@@ -450,19 +505,27 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         arr.forEach(({ marker }) => marker.setMap(vis ? all : null));
       });
 
-      // bounds 재조정
+      // bounds 재조정 — opts.fit=false 면 skip (사용자 저장 view 복원 시 zoom 보존)
       sharedIwRef.current?.close();
+      const { fit = true } = opts;
+      if (!fit) return;
       if (targetId !== null) {
         const pts = pointsRef.current[targetId] || [];
         const main = markersRef.current[targetId];
         const bounds = new window.kakao.maps.LatLngBounds();
         pts.forEach(({ marker }) => bounds.extend(marker.getPosition()));
         if (main) bounds.extend(main.marker.getPosition());
-        if (!bounds.isEmpty()) mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
+        if (!bounds.isEmpty()) {
+          markProgrammatic();
+          mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
+        }
       } else {
         const bounds = new window.kakao.maps.LatLngBounds();
         Object.values(markersRef.current).forEach(({ marker }) => bounds.extend(marker.getPosition()));
-        if (!bounds.isEmpty()) mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
+        if (!bounds.isEmpty()) {
+          markProgrammatic();
+          mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
+        }
       }
     },
 
