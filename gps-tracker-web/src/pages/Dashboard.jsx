@@ -9,7 +9,7 @@ import BottomNav from '../components/BottomNav';
 import SideRail from '../components/SideRail';
 import MapControls from '../components/MapControls';
 import RoadviewModal, { probeRoadview } from '../components/RoadviewModal';
-import { enrichWithSpeedStops } from '../lib/stops';
+import { enrichWithSpeedStops, haversineM } from '../lib/stops';
 import { confirmDialog, alertDialog } from '../components/Dialog';
 import DeviceFilter from '../components/DeviceFilter';
 import GeofenceSheet from '../components/GeofenceSheet';
@@ -63,6 +63,23 @@ function pathToView(p) {
 }
 function viewToPath(v) {
   return v === 'home' ? '/' : `/${v}`;
+}
+function calcSpeedKmh(prev, next) {
+  if (!prev?.lat || !prev?.lng || !prev?.recordedAt || !next?.lat || !next?.lng || !next?.recordedAt) return null;
+  const dt = new Date(next.recordedAt).getTime() - new Date(prev.recordedAt).getTime();
+  if (!(dt > 0)) return null;
+  const distM = haversineM(prev.lat, prev.lng, next.lat, next.lng);
+  if (distM < 3) return 0;
+  const speed = (distM / (dt / 1000)) * 3.6;
+  return Number.isFinite(speed) ? Math.min(speed, 240) : null;
+}
+
+function speedTone(speedKmh) {
+  if (speedKmh == null) return '#94A3B8';
+  if (speedKmh < 5) return '#64748B';
+  if (speedKmh < 30) return '#10B981';
+  if (speedKmh < 70) return '#3B82F6';
+  return '#F97316';
 }
 
 export default function Dashboard({ onLogout }) {
@@ -124,6 +141,7 @@ export default function Dashboard({ onLogout }) {
   const [showMiniSeeker, setShowMiniSeeker] = useState(false);
   // 모바일 친화 마커 클릭 정보 sheet (kakao InfoWindow 대체).
   const [pointInfo, setPointInfo] = useState(null);
+  const [liveSpeed, setLiveSpeed] = useState(null);
   // 라이브 추적 — 두 상태 분리:
   //   userTrackPref: 사용자가 의도한 ON/OFF (버튼·디바이스 선택으로만 변경)
   //   seekerPaused : 시커 활성 동안 일시 정지 — 시커 닫히면 자동 복원
@@ -255,6 +273,18 @@ export default function Dashboard({ onLogout }) {
   useEffect(() => { trackLiveRef.current = trackLive; }, [trackLive]);
   useEffect(() => { filterDeviceIdRef.current = filterDeviceId; }, [filterDeviceId]);
   useEffect(() => {
+    if (filterDeviceId == null) { setLiveSpeed(null); return; }
+    const dev = devicesRef.current.find(d => d.id === filterDeviceId);
+    const meta = lastMetaRef.current[filterDeviceId];
+    setLiveSpeed(meta ? {
+      deviceId: filterDeviceId,
+      label: dev?.display_name || dev?.device_uid || `#${filterDeviceId}`,
+      color: dev ? getDeviceColor(dev) : '#5B7CFF',
+      speedKmh: meta.speedKmh,
+      recordedAt: meta.recordedAt,
+    } : null);
+  }, [filterDeviceId]);
+  useEffect(() => {
     seekerActiveRef.current = !!(showSeeker || showMiniSeeker);
   }, [showSeeker, showMiniSeeker]);
 
@@ -371,7 +401,7 @@ export default function Dashboard({ onLogout }) {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
           const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading }
+            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }) }
             : { stale };
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
           if (isLast) lastMetaRef.current[d.id] = meta;
@@ -412,7 +442,7 @@ export default function Dashboard({ onLogout }) {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
           const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading }
+            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }) }
             : { stale };
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
           if (isLast) lastMetaRef.current[d.id] = meta;
@@ -571,12 +601,20 @@ export default function Dashboard({ onLogout }) {
       const dev = devRef.current.find(d => d.id === msg.device_id);
       const label = dev?.display_name || dev?.device_uid || `#${msg.device_id}`;
       const color = getDeviceColor(dev || { id: msg.device_id });
+      const prevMeta = lastMetaRef.current[msg.device_id];
+      const speedKmh = msg.speed_kmh ?? msg.speedKmh ?? calcSpeedKmh(prevMeta, {
+        lat: msg.lat, lng: msg.lng, recordedAt: msg.recorded_at,
+      });
       const meta = {
         recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv,
-        fix: msg.fix, stale: false, heading: msg.heading,
+        fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
+        lat: msg.lat, lng: msg.lng,
       };
       mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
       lastMetaRef.current[msg.device_id] = meta;
+      if (filterDeviceIdRef.current === msg.device_id) {
+        setLiveSpeed({ deviceId: msg.device_id, label, color, speedKmh, recordedAt: msg.recorded_at });
+      }
       setDevices(prev => prev.map(d =>
         d.id === msg.device_id
           ? { ...d, last_seen_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng }
@@ -970,6 +1008,34 @@ export default function Dashboard({ onLogout }) {
                 selected={filterDeviceId}
                 onChange={persistFilterDevice}
               />
+            )}
+            {view === 'home' && trackLive && filterDeviceId !== null && liveSpeed && (
+              <div style={{
+                position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+                zIndex: 13, minWidth: 168, padding: '10px 14px', borderRadius: 16,
+                background: 'rgba(255,255,255,.94)', border: '1px solid var(--border)',
+                boxShadow: '0 8px 24px rgba(15,23,42,.18)', display: 'flex',
+                alignItems: 'center', gap: 10, backdropFilter: 'blur(10px)', pointerEvents: 'none',
+              }}>
+                <span style={{
+                  width: 10, height: 10, borderRadius: 999, flexShrink: 0,
+                  background: liveSpeed.color || speedTone(liveSpeed.speedKmh),
+                  boxShadow: '0 0 0 4px rgba(59,130,246,.12)',
+                }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                  <span style={{
+                    maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
+                  }}>{liveSpeed.label || '실시간 추적'}</span>
+                  <span style={{
+                    fontSize: 24, lineHeight: 1, fontWeight: 800, letterSpacing: '-.03em',
+                    fontVariantNumeric: 'tabular-nums', color: speedTone(liveSpeed.speedKmh),
+                  }}>
+                    {liveSpeed.speedKmh == null ? '--' : Math.round(liveSpeed.speedKmh)}
+                    <small style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}> km/h</small>
+                  </span>
+                </div>
+              </div>
             )}
 
             {/* 홈 — 지도 가장자리 활용 지오펜스 레이어.
