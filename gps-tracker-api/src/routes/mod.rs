@@ -19,6 +19,7 @@ pub mod stats;
 pub mod ws;
 
 use axum::{routing::{get, post}, Router};
+use tower_http::services::ServeDir;
 
 use crate::state::AppState;
 
@@ -54,5 +55,6 @@ pub fn build_router(state: AppState) -> Router {
         .route("/gps-tracker/ingest", post(ingest::ingest))
         .nest("/gps-tracker/api/v1", api_v1)
         .nest("/gps-tracker/ws", ws::router())
+        .nest_service("/uploads", ServeDir::new("/home/gps-dev/uploads"))
         .with_state(state)
 }

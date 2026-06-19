@@ -15,8 +15,10 @@ import { enrichWithSpeedStops as enrich, haversineM } from '../lib/stops';
 const KST_TZ = 9 * 3600 * 1000;
 
 // 옵션 영속 키
-const PREF_SPEED_COLOR = 'seeker_speed_color';
-const PREF_SHOW_STOPS  = 'seeker_show_stops';
+const PREF_SPEED_COLOR    = 'seeker_speed_color';
+const PREF_SHOW_STOPS     = 'seeker_show_stops';
+const PREF_SPEED_LIMIT    = 'seeker_speed_limit';
+const PREF_SAT_WARNING    = 'seeker_sat_warning';
 
 function dayWindow(dateStr, startHour = 0, hours = 24) {
   const start = new Date(`${dateStr}T${String(startHour).padStart(2,'0')}:00:00+09:00`);
@@ -165,8 +167,21 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     const v = localStorage.getItem(PREF_SHOW_STOPS);
     return v === null ? true : (v === 'true');
   });
+  const [speedLimit, setSpeedLimit] = useState(() => {
+    const v = localStorage.getItem(PREF_SPEED_LIMIT);
+    return v != null ? Number(v) : null;  // null = 비활성
+  });
+  const [showSatWarning, setShowSatWarning] = useState(() =>
+    localStorage.getItem(PREF_SAT_WARNING) === 'true'
+  );
+
   useEffect(() => { localStorage.setItem(PREF_SPEED_COLOR, String(speedColor)); }, [speedColor]);
   useEffect(() => { localStorage.setItem(PREF_SHOW_STOPS,  String(showStops)); },  [showStops]);
+  useEffect(() => {
+    if (speedLimit == null) localStorage.removeItem(PREF_SPEED_LIMIT);
+    else localStorage.setItem(PREF_SPEED_LIMIT, String(speedLimit));
+  }, [speedLimit]);
+  useEffect(() => { localStorage.setItem(PREF_SAT_WARNING, String(showSatWarning)); }, [showSatWarning]);
 
   // 일간/월간 별로 분리된 raw 데이터 — 모드 전환 시 재패치 안 일어남
   const [dayPoints, setDayPoints]     = useState([]);  // 그 날짜의 24h 전체
@@ -396,6 +411,8 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     }
     handleRef.current = mapRef.current.drawSeekerPath(points, {
       color, speedColor, showStops,
+      speedLimit: speedLimit,
+      showSatWarning,
       showCursor: mode === 'day',
       onPointClick: (p) => {
         if (mode === 'month') {
@@ -408,7 +425,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         }
       },
     });
-  }, [points, color, speedColor, showStops, mode]);
+  }, [points, color, speedColor, showStops, speedLimit, showSatWarning, mode]);
 
   useEffect(() => () => mapRef.current?.clearSeekerPath(), []);
 
@@ -486,6 +503,8 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
 
   const cur = points[idx];
   const stopCount = useMemo(() => points.filter(p => p._isStop).length, [points]);
+  const speedViolations = useMemo(() => speedLimit != null ? points.filter(p => p._speed > speedLimit).length : 0, [points, speedLimit]);
+  const weakGpsCount = useMemo(() => showSatWarning ? points.filter(p => (p.sat ?? 99) < 4).length : 0, [points, showSatWarning]);
   const maxSpeed = useMemo(() => {
     let s = 0; for (const p of points) if (p._speed > s) s = p._speed; return s;
   }, [points]);
@@ -693,7 +712,24 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         <ChipToggle label="속도별 색상" icon="spark"  on={speedColor}    onClick={() => setSpeedColor(v => !v)} />
         <ChipToggle label="정지 강조"   icon="mapPin" on={showStops}     onClick={() => setShowStops(v => !v)} />
         <ChipToggle label="카메라 따라가기" icon="target" on={cameraFollow} onClick={() => setCameraFollow(v => !v)} />
+        <ChipToggle
+          label={speedLimit != null ? `속도초과 ${speedLimit}km/h` : '속도초과 표시'}
+          icon="warn"
+          on={speedLimit != null}
+          onClick={() => setSpeedLimit(v => v == null ? 80 : null)}
+        />
+        <ChipToggle label="GPS약신호" icon="sat" on={showSatWarning} onClick={() => setShowSatWarning(v => !v)} />
       </div>
+      {/* 속도 한계 조절 슬라이더 */}
+      {speedLimit != null && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px 8px', fontSize: 12 }}>
+          <span style={{ color: 'var(--text-2)', whiteSpace: 'nowrap' }}>한계</span>
+          <input type="range" min={30} max={150} step={10} value={speedLimit}
+            onChange={e => setSpeedLimit(Number(e.target.value))}
+            style={{ flex: 1, accentColor: '#EF4444' }} />
+          <span style={{ color: '#EF4444', fontWeight: 700, minWidth: 44 }}>{speedLimit} km/h</span>
+        </div>
+      )}
 
       <div style={sty.body}>
 
@@ -788,6 +824,12 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                 <Kpi label="최고속도" value={`${maxSpeed.toFixed(0)} km/h`} />
                 <Kpi label="공회전" value={idleSec > 0 ? fmtDuration(idleSec) : '—'} />
                 <Kpi label="정지 횟수" value={`${stopCount}회`} />
+                {speedLimit != null && (
+                  <Kpi label="속도초과" value={speedViolations > 0 ? `${speedViolations}회` : '없음'} accent={speedViolations > 0 ? '#EF4444' : undefined} />
+                )}
+                {showSatWarning && (
+                  <Kpi label="GPS약신호" value={weakGpsCount > 0 ? `${weakGpsCount}회` : '없음'} accent={weakGpsCount > 0 ? '#F59E0B' : undefined} />
+                )}
               </div>
             ) : (
               <EmptyState loading={loading} error={error}
@@ -1373,11 +1415,11 @@ function DataCalendar({ value, availDates, onChange }) {
 }
 
 // ─── 작은 sub-컴포넌트 ───────────────────────────────────
-function Kpi({ label, value }) {
+function Kpi({ label, value, accent }) {
   return (
     <div style={sty.kpiCell}>
       <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 700 }}>{value}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: accent ?? 'var(--text)' }}>{value}</div>
     </div>
   );
 }

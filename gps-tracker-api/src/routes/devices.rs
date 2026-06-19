@@ -3,7 +3,7 @@
 // Phase 2 (TODO): SIM7080G ICCID/IMSI/IMEI 기반 자동 페어링.
 
 use axum::{
-    extract::{Path, State},
+    extract::{Multipart, Path, State},
     routing::{delete, get, patch, post},
     Json, Router,
 };
@@ -11,6 +11,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::FromRow;
+use std::path::PathBuf;
+use tokio::fs;
 use validator::Validate;
 
 use crate::{
@@ -43,6 +45,17 @@ pub struct DeviceView {
     pub last_event_at:   Option<DateTime<Utc>>,
     // 펌웨어 13_1+ stationary 진단 (deep sleep 카운트다운 + GPS drift + LIS 헬스)
     pub last_stationary: Option<serde_json::Value>,
+
+    // 차량 정비 및 서류
+    pub next_service_date:  Option<chrono::NaiveDate>,
+    pub next_service_km:    Option<i32>,
+    pub insurance_expiry:   Option<chrono::NaiveDate>,
+    pub inspection_expiry:  Option<chrono::NaiveDate>,
+
+    // 차량 식별 정보
+    pub car_plate:     Option<String>,
+    pub car_model:     Option<String>,
+    pub car_image_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -65,6 +78,15 @@ pub struct UpdateRequest {
     pub color: Option<String>,        // 예: "#e8b4b8"
     #[validate(length(min = 1, max = 32))]
     pub icon:  Option<String>,        // 예: "car", "person", "pet"
+
+    pub next_service_date:  Option<chrono::NaiveDate>,
+    pub next_service_km:    Option<i32>,
+    pub insurance_expiry:   Option<chrono::NaiveDate>,
+    pub inspection_expiry:  Option<chrono::NaiveDate>,
+
+    pub car_plate:     Option<String>,
+    pub car_model:     Option<String>,
+    pub car_image_url: Option<String>,
 }
 
 pub fn router() -> Router<AppState> {
@@ -77,6 +99,7 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/sim", get(sim_info))                // 1NCE SIM 잔량 (캐시)
         .route("/devices/:id/sim/refresh", post(sim_info_refresh)) // 1NCE 강제 즉시 갱신
         .route("/devices/:id/events", get(events_log))           // 최근 lifecycle 이벤트
+        .route("/devices/:id/car-image", post(upload_car_image)) // 차량 이미지 업로드
 }
 
 async fn list(
@@ -88,6 +111,9 @@ async fn list(
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
+                  d.next_service_date, d.next_service_km,
+                  d.insurance_expiry, d.inspection_expiry,
+                  d.car_plate, d.car_model, d.car_image_url,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at
              FROM devices d
@@ -230,14 +256,28 @@ async fn update(
 
     let res = sqlx::query(
         r#"UPDATE devices
-              SET display_name = COALESCE($1, display_name),
-                  color        = COALESCE($2, color),
-                  icon         = COALESCE($3, icon)
-            WHERE id = $4 AND owner_id = $5"#,
+              SET display_name      = COALESCE($1, display_name),
+                  color             = COALESCE($2, color),
+                  icon              = COALESCE($3, icon),
+                  next_service_date = COALESCE($4, next_service_date),
+                  next_service_km   = COALESCE($5, next_service_km),
+                  insurance_expiry  = COALESCE($6, insurance_expiry),
+                  inspection_expiry = COALESCE($7, inspection_expiry),
+                  car_plate         = COALESCE($8, car_plate),
+                  car_model         = COALESCE($9, car_model),
+                  car_image_url     = COALESCE($10, car_image_url)
+            WHERE id = $11 AND owner_id = $12"#,
     )
     .bind(&req.display_name)
     .bind(&req.color)
     .bind(&req.icon)
+    .bind(req.next_service_date)
+    .bind(req.next_service_km)
+    .bind(req.insurance_expiry)
+    .bind(req.inspection_expiry)
+    .bind(&req.car_plate)
+    .bind(&req.car_model)
+    .bind(&req.car_image_url)
     .bind(id)
     .bind(user.user_id)
     .execute(&state.db)
@@ -559,6 +599,9 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
+                  d.next_service_date, d.next_service_km,
+                  d.insurance_expiry, d.inspection_expiry,
+                  d.car_plate, d.car_model, d.car_image_url,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at
              FROM devices d
@@ -577,4 +620,55 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
     .await?
     .ok_or(AppError::NotFound)?;
     Ok(Json(row))
+}
+
+async fn upload_car_image(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    mut multipart: Multipart,
+) -> AppResult<Json<serde_json::Value>> {
+    // 소유권 확인
+    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
+        .bind(id).fetch_optional(&state.db).await?.flatten();
+    if owner != Some(user.user_id) {
+        return Err(AppError::NotFound);
+    }
+
+    let upload_dir = PathBuf::from("/home/gps-dev/uploads/car-images");
+    fs::create_dir_all(&upload_dir).await
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("mkdir failed: {e}")))?;
+
+    while let Some(field) = multipart.next_field().await
+        .map_err(|e| AppError::BadRequest(e.to_string()))?
+    {
+        if field.name() != Some("image") { continue; }
+
+        let content_type = field.content_type().unwrap_or("").to_string();
+        let ext = match content_type.as_str() {
+            "image/jpeg" => "jpg",
+            "image/png"  => "png",
+            "image/webp" => "webp",
+            _ => return Err(AppError::BadRequest("jpeg/png/webp only".into())),
+        };
+
+        let data = field.bytes().await
+            .map_err(|e| AppError::BadRequest(e.to_string()))?;
+        if data.len() > 5 * 1024 * 1024 {
+            return Err(AppError::BadRequest("5MB limit".into()));
+        }
+
+        let filename = format!("dev_{id}_{}.{ext}", uuid::Uuid::new_v4().simple());
+        let filepath = upload_dir.join(&filename);
+        fs::write(&filepath, &data).await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("write failed: {e}")))?;
+
+        let url = format!("/uploads/car-images/{filename}");
+        sqlx::query("UPDATE devices SET car_image_url = $1 WHERE id = $2")
+            .bind(&url).bind(id).execute(&state.db).await?;
+
+        return Ok(Json(json!({ "url": url })));
+    }
+
+    Err(AppError::BadRequest("no image field".into()))
 }

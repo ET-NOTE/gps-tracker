@@ -151,6 +151,8 @@ export default function Dashboard({ onLogout }) {
   const [editLabel, setEditLabel]     = useState('');
   const [colorPickerId, setColorPickerId] = useState(null);
   const [detailId, setDetailId]       = useState(null);
+  const [maintId, setMaintId]         = useState(null);
+  const [maintForm, setMaintForm]     = useState({});
   const [wsStatus, setWsStatus]       = useState('disconnected');
   const [roadview, setRoadview]       = useState(null);    // {lat, lng, panoId} or null
   const [toast, setToast]             = useState(null);     // 가벼운 중앙 토스트 메시지 (1초)
@@ -802,8 +804,7 @@ export default function Dashboard({ onLogout }) {
                 return (
                   <div key={d.id} style={{
                     ...sd.deviceCard,
-                    background: color + '99',
-                    border: `1.5px solid ${color}88`,
+                    borderLeft: `4px solid ${color}`,
                   }}>
                     {editId === d.id ? (
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -814,23 +815,83 @@ export default function Dashboard({ onLogout }) {
                       </div>
                     ) : (
                       <>
-                        {/* 디바이스 이름 */}
-                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 6, cursor: 'pointer' }}
+                        {/* 차량 헤더: 이미지 썸네일 + 이름/번호판 */}
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8, cursor: 'pointer' }}
                           onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
-                          {d.display_name || d.device_uid}
+                          {d.car_image_url ? (
+                            <img src={d.car_image_url} alt="차량"
+                              style={{ width: 52, height: 40, objectFit: 'cover', borderRadius: 6, flexShrink: 0, border: '1px solid var(--border)' }} />
+                          ) : (
+                            <div style={{ width: 52, height: 40, borderRadius: 6, flexShrink: 0, background: color + '22', border: `1px dashed ${color}66`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Icon name="car" size={18} color={color} />
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>
+                              {d.display_name || d.device_uid}
+                            </div>
+                            {(d.car_plate || d.car_model) && (
+                              <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2 }}>
+                                {d.car_plate && <span style={{ fontWeight: 600, marginRight: 6 }}>{d.car_plate}</span>}
+                                {d.car_model && <span>{d.car_model}</span>}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* 미니 배터리 트렌드 차트 */}
                         <div style={{ marginBottom: 8, cursor: 'pointer' }}
                           onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
-                          <div style={{ fontSize: 11, color: '#333', marginBottom: 2 }}>사용량 추세</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 2 }}>사용량 추세</div>
                           <MiniChart data={deviceChartData[d.id]} color={color} />
                         </div>
+
+                        {/* 정비/서류 만료 배지 */}
+                        {(d.next_service_date || d.next_service_km || d.insurance_expiry || d.inspection_expiry) && (() => {
+                          const today = new Date(); today.setHours(0,0,0,0);
+                          const daysLeft = (dateStr) => {
+                            if (!dateStr) return null;
+                            const diff = Math.ceil((new Date(dateStr) - today) / 86400000);
+                            return diff;
+                          };
+                          const badges = [];
+                          const svcDays = daysLeft(d.next_service_date);
+                          if (svcDays !== null) badges.push({
+                            label: `정비 D${svcDays >= 0 ? '-' : '+'}${Math.abs(svcDays)}`,
+                            warn: svcDays <= 7,
+                          });
+                          const insDays = daysLeft(d.insurance_expiry);
+                          if (insDays !== null) badges.push({
+                            label: `보험 D${insDays >= 0 ? '-' : '+'}${Math.abs(insDays)}`,
+                            warn: insDays <= 14,
+                          });
+                          const inpDays = daysLeft(d.inspection_expiry);
+                          if (inpDays !== null) badges.push({
+                            label: `검사 D${inpDays >= 0 ? '-' : '+'}${Math.abs(inpDays)}`,
+                            warn: inpDays <= 14,
+                          });
+                          if (d.next_service_km) badges.push({
+                            label: `정비 ${d.next_service_km.toLocaleString()}km`,
+                            warn: false,
+                          });
+                          return (
+                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+                              {badges.map((b, i) => (
+                                <span key={i} style={{
+                                  fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 20,
+                                  background: b.warn ? '#fee2e2' : 'var(--surface-2)',
+                                  color: b.warn ? '#dc2626' : 'var(--text-2)',
+                                  border: b.warn ? '1px solid #fca5a5' : '1px solid var(--border)',
+                                }}>{b.label}</span>
+                              ))}
+                            </div>
+                          );
+                        })()}
 
                         {/* 하단 바: 메타 + 아이콘 버튼 + 통계 보기 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           {/* 메타 정보 */}
-                          <div style={{ flex: 1, display: 'flex', gap: 8, fontSize: 11, color: '#333', alignItems: 'center', flexWrap: 'wrap', cursor: 'pointer' }}
+                          <div style={{ flex: 1, display: 'flex', gap: 8, fontSize: 11, color: 'var(--text-2)', alignItems: 'center', flexWrap: 'wrap', cursor: 'pointer' }}
                             onClick={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                               <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
@@ -850,17 +911,33 @@ export default function Dashboard({ onLogout }) {
 
                           {/* 아이콘 버튼들 */}
                           <button onClick={() => setColorPickerId(colorPickerId === d.id ? null : d.id)}
-                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}44` }}
+                            style={{ ...sd.iconAction }}
                             title="색상 변경">
                             <span style={{ width: 10, height: 10, borderRadius: 5, background: color }} />
                           </button>
                           <button onClick={() => { setEditId(d.id); setEditLabel(d.display_name || ''); }}
-                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}44` }}
+                            style={{ ...sd.iconAction }}
                             title="이름 변경">
                             <Icon name="edit" size={13} />
                           </button>
+                          <button onClick={() => {
+                            if (maintId === d.id) { setMaintId(null); return; }
+                            setMaintId(d.id);
+                            setMaintForm({
+                              car_plate:         d.car_plate || '',
+                              car_model:         d.car_model || '',
+                              next_service_date: d.next_service_date?.slice(0,10) || '',
+                              next_service_km:   d.next_service_km ?? '',
+                              insurance_expiry:  d.insurance_expiry?.slice(0,10) || '',
+                              inspection_expiry: d.inspection_expiry?.slice(0,10) || '',
+                            });
+                          }}
+                            style={{ ...sd.iconAction, color: maintId === d.id ? color : 'var(--text-2)' }}
+                            title="정비/서류 관리">
+                            <Icon name="wrench" size={13} />
+                          </button>
                           <button onClick={() => handleUnpair(d.id)}
-                            style={{ ...sd.iconAction, background: 'white', border: `1px solid ${color}44`, color: 'var(--danger)' }}
+                            style={{ ...sd.iconAction, color: 'var(--danger)' }}
                             title="페어링 해제">
                             <Icon name="unlink" size={13} />
                           </button>
@@ -871,9 +948,9 @@ export default function Dashboard({ onLogout }) {
                               display: 'inline-flex', alignItems: 'center', gap: 3,
                               padding: '6px 11px', borderRadius: 8, cursor: 'pointer',
                               fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
-                              background: detailId === d.id ? color : 'white',
-                              color: detailId === d.id ? 'white' : color,
-                              border: `1px solid ${color}55`,
+                              background: detailId === d.id ? color : 'var(--surface-2)',
+                              color: detailId === d.id ? 'white' : 'var(--text)',
+                              border: `1px solid ${detailId === d.id ? color : 'var(--border)'}`,
                             }}>
                             통계 보기 ›
                           </button>
@@ -890,6 +967,84 @@ export default function Dashboard({ onLogout }) {
                                   cursor: 'pointer',
                                 }} />
                             ))}
+                          </div>
+                        )}
+
+                        {/* 정비/서류 관리 폼 */}
+                        {maintId === d.id && (
+                          <div style={{ marginTop: 10, padding: 10, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border)' }}>
+
+                            {/* 차량 정보 */}
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>차량 정보</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 10 }}>
+                              {[
+                                { key: 'car_plate', label: '번호판', type: 'text', placeholder: '12가 3456' },
+                                { key: 'car_model', label: '차종',   type: 'text', placeholder: '소나타 2023' },
+                              ].map(f => (
+                                <div key={f.key}>
+                                  <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 2 }}>{f.label}</div>
+                                  <input type={f.type} placeholder={f.placeholder}
+                                    value={maintForm[f.key] || ''}
+                                    onChange={e => setMaintForm(p => ({ ...p, [f.key]: e.target.value }))}
+                                    style={{ ...s.input, fontSize: 12, padding: '5px 8px' }} />
+                                </div>
+                              ))}
+                            </div>
+                            {/* 차량 이미지 */}
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 4 }}>차량 이미지</div>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                {(d.car_image_url || maintForm._imgPreview) && (
+                                  <img src={maintForm._imgPreview || d.car_image_url} alt="차량"
+                                    style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }} />
+                                )}
+                                <label style={{ ...s.btn, width: 'auto', padding: '6px 12px', fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  <Icon name="upload" size={13} />
+                                  사진 선택
+                                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+                                    onChange={e => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      setMaintForm(p => ({ ...p, _imgFile: file, _imgPreview: URL.createObjectURL(file) }));
+                                    }} />
+                                </label>
+                              </div>
+                            </div>
+
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>정비 · 서류</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                              {[
+                                { key: 'next_service_date', label: '정비 예정일', type: 'date' },
+                                { key: 'next_service_km',   label: '정비 km',    type: 'number' },
+                                { key: 'insurance_expiry',  label: '보험 만료일', type: 'date' },
+                                { key: 'inspection_expiry', label: '검사 만료일', type: 'date' },
+                              ].map(f => (
+                                <div key={f.key}>
+                                  <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 2 }}>{f.label}</div>
+                                  <input
+                                    type={f.type}
+                                    value={maintForm[f.key] || ''}
+                                    onChange={e => setMaintForm(p => ({ ...p, [f.key]: e.target.value }))}
+                                    style={{ ...s.input, fontSize: 12, padding: '5px 8px' }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            <button onClick={async () => {
+                              const patch = {};
+                              if (maintForm.car_plate)         patch.car_plate         = maintForm.car_plate;
+                              if (maintForm.car_model)         patch.car_model         = maintForm.car_model;
+                              if (maintForm.next_service_date) patch.next_service_date = maintForm.next_service_date;
+                              if (maintForm.next_service_km)   patch.next_service_km   = parseInt(maintForm.next_service_km, 10);
+                              if (maintForm.insurance_expiry)  patch.insurance_expiry  = maintForm.insurance_expiry;
+                              if (maintForm.inspection_expiry) patch.inspection_expiry = maintForm.inspection_expiry;
+                              if (maintForm._imgFile) await api.uploadCarImage(d.id, maintForm._imgFile);
+                              await api.updateDevice(d.id, patch);
+                              await loadDevices();
+                              setMaintId(null);
+                            }} style={{ ...s.btn, marginTop: 8, borderRadius: 8, fontSize: 12, padding: '7px 0' }}>
+                              저장
+                            </button>
                           </div>
                         )}
 

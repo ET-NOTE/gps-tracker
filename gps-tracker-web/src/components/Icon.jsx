@@ -46,6 +46,8 @@ const PATHS = {
   target: 'M12 2v4M12 18v4M2 12h4M18 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
   bar:    'M3 21h18M7 21V10M12 21V4M17 21v-7',
   menu:   'M3 12h18M3 6h18M3 18h18',
+  upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+  car:    'M5 17H3v-6l2.5-6h13L21 11v6h-2M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM15 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z',
 };
 
 export default function Icon({ name, size = 18, stroke = 1.75, fill = 'none', style }) {

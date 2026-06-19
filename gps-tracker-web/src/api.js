@@ -176,6 +176,18 @@ export const api = {
   listDevices:  ()                      => req('GET',    '/devices'),
   pairDevice:   (params) => req('POST', '/devices/pair', params),  // { device_uid?, iccid?, display_name? }
   updateDevice: (id, patch)             => req('PATCH',  `/devices/${id}`, patch),
+  uploadCarImage: async (id, file) => {
+    const form = new FormData();
+    form.append('image', file);
+    const token = getToken();
+    const res = await fetch(`${BASE}/devices/${id}/car-image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
   unpairDevice: (id, opts = {}) => {
     const purge = opts.purge ? '?purge=true' : '';
     return req('DELETE', `/devices/${id}${purge}`);

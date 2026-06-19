@@ -1,0 +1,4 @@
+ALTER TABLE devices
+  ADD COLUMN IF NOT EXISTS car_plate     TEXT,
+  ADD COLUMN IF NOT EXISTS car_model     TEXT,
+  ADD COLUMN IF NOT EXISTS car_image_url TEXT;

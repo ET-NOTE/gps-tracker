@@ -1,4 +1,5 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { haversineM } from '../lib/stops';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const MAX_HISTORY_POINTS = 500;
@@ -109,6 +110,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const polyRef      = useRef({});   // deviceId → Polyline
   const coordsRef    = useRef({});   // deviceId → LatLng[]
   const pointsRef    = useRef({});   // deviceId → [{ marker, color, isStop }]
+  const arrowsRef    = useRef({});   // deviceId → [marker] 방향 화살표
+  const arrowStateRef= useRef({});   // deviceId → { lastPos:{lat,lng}, distAcc:number }
   const fenceRef     = useRef({});   // geofenceId → { circle, name }
   const sharedIwRef  = useRef(null); // single InfoWindow shared by all markers/points
   const onRoadviewRef= useRef(onRoadview);
@@ -383,6 +386,51 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       });
       if (!pointsRef.current[deviceId]) pointsRef.current[deviceId] = [];
       pointsRef.current[deviceId].push({ marker, color: c, isStop, recordedAt: meta.recordedAt });
+
+      // 방향 화살표 — 200m 마다 1개
+      {
+        const ARROW_INTERVAL_M = 200;
+        const st = arrowStateRef.current[deviceId];
+        if (st) {
+          const dist = haversineM(st.lastPos.lat, st.lastPos.lng, lat, lng);
+          st.distAcc += dist;
+          if (st.distAcc >= ARROW_INTERVAL_M) {
+            st.distAcc = 0;
+            const toRad = d => d * Math.PI / 180;
+            const dLng = toRad(lng - st.lastPos.lng);
+            const φ1 = toRad(st.lastPos.lat), φ2 = toRad(lat);
+            const y = Math.sin(dLng) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLng);
+            const angle = Math.round(((Math.atan2(y, x) * 180 / Math.PI + 360) % 360) / 5) * 5;
+            const cv = document.createElement('canvas');
+            cv.width = 20; cv.height = 20;
+            const ctx2 = cv.getContext('2d');
+            ctx2.save();
+            ctx2.translate(10, 10);
+            ctx2.rotate(angle * Math.PI / 180);
+            ctx2.translate(-10, -10);
+            ctx2.beginPath();
+            ctx2.moveTo(10, 2); ctx2.lineTo(16, 18); ctx2.lineTo(10, 13); ctx2.lineTo(4, 18);
+            ctx2.closePath();
+            ctx2.fillStyle = c; ctx2.fill();
+            ctx2.strokeStyle = 'rgba(255,255,255,0.9)'; ctx2.lineWidth = 1.5; ctx2.lineJoin = 'round'; ctx2.stroke();
+            ctx2.restore();
+            const imgUrl = cv.toDataURL('image/png');
+            const am = new window.kakao.maps.Marker({
+              map: mapRef.current,
+              position: pos,
+              image: new window.kakao.maps.MarkerImage(imgUrl, new window.kakao.maps.Size(20, 20), { offset: new window.kakao.maps.Point(10, 10) }),
+              clickable: false,
+              zIndex: 4,
+            });
+            if (!arrowsRef.current[deviceId]) arrowsRef.current[deviceId] = [];
+            arrowsRef.current[deviceId].push(am);
+          }
+          st.lastPos = { lat, lng };
+        } else {
+          arrowStateRef.current[deviceId] = { lastPos: { lat, lng }, distAcc: 0 };
+        }
+      }
     },
 
     /** 디바이스의 history 점들을 모두 제거 (loadDevices 직전 호출용). */
@@ -392,6 +440,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         arr.forEach(({ marker }) => marker.setMap(null));
         delete pointsRef.current[deviceId];
       }
+      const arrows = arrowsRef.current[deviceId];
+      if (arrows) {
+        arrows.forEach(m => m.setMap(null));
+        delete arrowsRef.current[deviceId];
+      }
+      delete arrowStateRef.current[deviceId];
     },
 
     /**
@@ -402,6 +456,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (!mapRef.current) return;
       Object.values(pointsRef.current).forEach(arr => {
         arr.forEach(({ marker }) => marker.setMap(visible ? mapRef.current : null));
+      });
+      Object.values(arrowsRef.current).forEach(arr => {
+        arr.forEach(m => m.setMap(visible ? mapRef.current : null));
       });
     },
 
@@ -563,6 +620,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         showCursor = false, onPointClick = null,
         maxMarkers = 300,        // 마커 폭주 방지 — 폴리라인은 그대로, 마커만 캡
         minBucketRun = 3,        // 노이즈 단일 버킷 전환 무시 (>=3 점 연속이어야 새 segment)
+        speedLimit = null,       // km/h — 초과 구간 빨강 오버레이. null = 비활성
+        showSatWarning = false,  // sat<4 구간 노란 점선 오버레이
       } = opts;
 
       const pts = points.filter(p => p.lat != null && p.lng != null);
@@ -611,12 +670,34 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           }
         }
       } else {
-        const path = pts.map(p => new window.kakao.maps.LatLng(p.lat, p.lng));
-        const poly = new window.kakao.maps.Polyline({
-          map: mapRef.current, path,
-          strokeWeight: sw, strokeColor: color, strokeOpacity: 0.8, strokeStyle: 'solid',
+        // 시간 간격 30분 이상이면 새 trip segment — 왕복 구간 시각 분리.
+        const TRIP_GAP_MS = 30 * 60 * 1000;
+        const trips = [];
+        let cur = [pts[0]];
+        for (let i = 1; i < pts.length; i++) {
+          const gap = new Date(pts[i].recorded_at) - new Date(pts[i - 1].recorded_at);
+          if (gap > TRIP_GAP_MS) {
+            trips.push(cur);
+            cur = [];
+          }
+          cur.push(pts[i]);
+        }
+        trips.push(cur);
+
+        trips.forEach((trip, ti) => {
+          if (trip.length < 2) return;
+          const path = trip.map(p => new window.kakao.maps.LatLng(p.lat, p.lng));
+          // 짝수 trip: solid 진함 / 홀수 trip: dashed + 반투명 (왕복 귀로)
+          const isReturn = ti % 2 === 1;
+          const poly = new window.kakao.maps.Polyline({
+            map: mapRef.current, path,
+            strokeWeight: isReturn ? Math.max(2, sw - 1) : sw,
+            strokeColor: color,
+            strokeOpacity: isReturn ? 0.4 : 0.85,
+            strokeStyle: isReturn ? 'shortdot' : 'solid',
+          });
+          seekerRef.current.poly.push(poly);
         });
-        seekerRef.current.poly.push(poly);
       }
 
       // ── dot markers ──
@@ -644,10 +725,24 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       }
       // 정렬은 불필요 — Set 순회로 충분
 
+      // 인접 기반 중복 마커 제거 — stop 이 아닌 일반 점은 이미 그린 점 15m 이내면 생략.
+      const DEDUP_M = 15;
+      const renderedPositions = [];
+
       renderIdxSet.forEach(idx => {
         const p = pts[idx];
         if (!p) return;
         const isStop = !!p._isStop && showStops;
+
+        // 중복 마커 제거: stop 이 아닌 점이 이미 렌더된 점 15m 이내이면 건너뜀.
+        if (!isStop) {
+          const tooClose = renderedPositions.some(r =>
+            haversineM(p.lat, p.lng, r.lat, r.lng) <= DEDUP_M
+          );
+          if (tooClose) return;
+        }
+        renderedPositions.push({ lat: p.lat, lng: p.lng });
+
         const dotColor = isStop
           ? '#EF4444'
           : (speedColor ? (BUCKET_COLORS[speedBucket(p)] || color) : color);
@@ -684,6 +779,147 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         }
         seekerRef.current.pts.push(marker);
       });
+
+      // ── 방향 화살표 마커 ─────────────────────────────────────────
+      // 누적 거리 기준 ARROW_INTERVAL_M 마다 진행 방향 화살표 1개.
+      // Canvas PNG 방식 — SVG data URL 은 Kakao MarkerImage 에서 불안정.
+      {
+        const ARROW_INTERVAL_M = 200;
+        const arrowCache = {};
+        const makeArrowImage = (angleDeg, arrowColor) => {
+          const r = Math.round(angleDeg / 5) * 5;
+          const key = `${r}_${arrowColor}`;
+          if (arrowCache[key]) return arrowCache[key];
+          const c = document.createElement('canvas');
+          c.width = 20; c.height = 20;
+          const ctx = c.getContext('2d');
+          ctx.save();
+          ctx.translate(10, 10);
+          ctx.rotate(r * Math.PI / 180);
+          ctx.translate(-10, -10);
+          ctx.beginPath();
+          ctx.moveTo(10, 2);   // 위 꼭짓점 (진행방향 끝)
+          ctx.lineTo(16, 18);  // 오른쪽 아래
+          ctx.lineTo(10, 13);  // 중간 오목
+          ctx.lineTo(4, 18);   // 왼쪽 아래
+          ctx.closePath();
+          ctx.fillStyle = arrowColor;
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+          ctx.lineWidth = 1.5;
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+          ctx.restore();
+          const url = c.toDataURL('image/png');
+          arrowCache[key] = new window.kakao.maps.MarkerImage(
+            url,
+            new window.kakao.maps.Size(20, 20),
+            { offset: new window.kakao.maps.Point(10, 10) }
+          );
+          return arrowCache[key];
+        };
+        const calcBearing = (lat1, lng1, lat2, lng2) => {
+          const toRad = d => d * Math.PI / 180;
+          const dLng = toRad(lng2 - lng1);
+          const φ1 = toRad(lat1), φ2 = toRad(lat2);
+          const y = Math.sin(dLng) * Math.cos(φ2);
+          const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLng);
+          return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+        };
+        let distAcc = 0;
+        let nextArrowAt = ARROW_INTERVAL_M;
+        for (let i = 1; i < pts.length; i++) {
+          const prev = pts[i - 1], cur = pts[i];
+          const segDist = haversineM(prev.lat, prev.lng, cur.lat, cur.lng);
+          distAcc += segDist;
+          if (distAcc >= nextArrowAt) {
+            nextArrowAt = distAcc + ARROW_INTERVAL_M;
+            const angle = calcBearing(prev.lat, prev.lng, cur.lat, cur.lng);
+            const arrowColor = speedColor ? (BUCKET_COLORS[speedBucket(cur)] || color) : color;
+            const m = new window.kakao.maps.Marker({
+              map: mapRef.current,
+              position: new window.kakao.maps.LatLng(cur.lat, cur.lng),
+              image: makeArrowImage(angle, arrowColor),
+              clickable: false,
+              zIndex: 4,
+            });
+            seekerRef.current.pts.push(m);
+          }
+        }
+      }
+
+      // ── 속도 초과 오버레이 (C) ──────────────────────────────────
+      if (speedLimit != null) {
+        let seg = null;
+        const flushSpeedSeg = () => {
+          if (seg && seg.length >= 2) {
+            const poly = new window.kakao.maps.Polyline({
+              map: mapRef.current, path: seg,
+              strokeWeight: sw + 2,
+              strokeColor: '#EF4444',
+              strokeOpacity: 0.9,
+              strokeStyle: 'solid',
+              zIndex: 10,
+            });
+            seekerRef.current.poly.push(poly);
+          }
+          seg = null;
+        };
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i];
+          if (p._speed != null && p._speed > speedLimit) {
+            if (!seg) seg = [];
+            // 이전 점도 포함해야 선이 이어짐
+            if (seg.length === 0 && i > 0) {
+              seg.push(new window.kakao.maps.LatLng(pts[i-1].lat, pts[i-1].lng));
+            }
+            seg.push(new window.kakao.maps.LatLng(p.lat, p.lng));
+          } else {
+            if (seg) {
+              // 초과 구간 끝 — 다음 점까지 포함해 연결
+              seg.push(new window.kakao.maps.LatLng(p.lat, p.lng));
+              flushSpeedSeg();
+            }
+          }
+        }
+        flushSpeedSeg();
+      }
+
+      // ── GPS 약신호 오버레이 (A) — sat < 4 ──────────────────────
+      if (showSatWarning) {
+        let satSeg = null;
+        const flushSatSeg = () => {
+          if (satSeg && satSeg.length >= 2) {
+            const poly = new window.kakao.maps.Polyline({
+              map: mapRef.current, path: satSeg,
+              strokeWeight: sw + 1,
+              strokeColor: '#F59E0B',
+              strokeOpacity: 0.85,
+              strokeStyle: 'shortdot',
+              zIndex: 9,
+            });
+            seekerRef.current.poly.push(poly);
+          }
+          satSeg = null;
+        };
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i];
+          const weakSat = p.sat != null && p.sat < 4;
+          if (weakSat) {
+            if (!satSeg) satSeg = [];
+            if (satSeg.length === 0 && i > 0) {
+              satSeg.push(new window.kakao.maps.LatLng(pts[i-1].lat, pts[i-1].lng));
+            }
+            satSeg.push(new window.kakao.maps.LatLng(p.lat, p.lng));
+          } else {
+            if (satSeg) {
+              satSeg.push(new window.kakao.maps.LatLng(p.lat, p.lng));
+              flushSatSeg();
+            }
+          }
+        }
+        flushSatSeg();
+      }
 
       // cursor (재생용 큰 마커)
       if (showCursor && pts[0]) {
