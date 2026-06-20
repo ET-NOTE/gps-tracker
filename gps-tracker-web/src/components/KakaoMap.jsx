@@ -54,17 +54,13 @@ function ensureKakaoMapSdk() {
   });
 }
 const BUCKET_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
-const TIME_SEGMENT_COLORS = ['#2563EB', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'];
+const TIME_SEGMENT_OPACITIES = [0.36, 0.48, 0.6, 0.72, 0.84];
 function speedBucket(p) {
   if (p._isStop || p._speed == null || p._speed < 5) return 0;       // 정지/도보 미만
   if (p._speed < 30)  return 1;                                       // 시내 저속
   if (p._speed < 60)  return 2;                                       // 일반 시내
   if (p._speed < 100) return 3;                                       // 고속도로
   return 4;                                                            // 초고속
-}
-function timeSegmentIndex(idx, total, segmentCount) {
-  if (total <= 1) return 0;
-  return Math.min(segmentCount - 1, Math.floor((idx / (total - 1)) * segmentCount));
 }
 function distanceM(a, b) {
   const r = Math.PI / 180;
@@ -747,7 +743,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           }
         }
       } else if (timeColor && pts.length >= 2) {
-        const segmentCount = Math.max(2, Math.min(timeSegments, TIME_SEGMENT_COLORS.length, pts.length - 1));
+        const segmentCount = Math.max(2, Math.min(timeSegments, TIME_SEGMENT_OPACITIES.length, pts.length - 1));
         for (let seg = 0; seg < segmentCount; seg++) {
           const start = Math.floor((pts.length - 1) * seg / segmentCount);
           const end = Math.floor((pts.length - 1) * (seg + 1) / segmentCount);
@@ -759,8 +755,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
             const poly = new window.kakao.maps.Polyline({
               map: mapRef.current, path: segPath,
               strokeWeight: sw,
-              strokeColor: TIME_SEGMENT_COLORS[seg] || color,
-              strokeOpacity: 0.68,
+              strokeColor: color,
+              strokeOpacity: TIME_SEGMENT_OPACITIES[seg] ?? 0.68,
               strokeStyle: 'solid',
             });
             seekerRef.current.poly.push(poly);
@@ -812,9 +808,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           ? '#EF4444'
           : speedColor
             ? (BUCKET_COLORS[speedBucket(p)] || color)
-            : timeColor
-              ? (TIME_SEGMENT_COLORS[timeSegmentIndex(idx, total, Math.min(timeSegments, TIME_SEGMENT_COLORS.length))] || color)
-              : color;
+            : color;
         // 클릭 허용 조건:
         //   - onPointClick(SeekerSheet 재생용): 부담 줄이기 위해 isStop 또는 total <= 200 일 때만
         //   - onPointInfo(모바일 sheet): 항상 (이미 maxMarkers 캡으로 렌더링 제한됨)
