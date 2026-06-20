@@ -37,9 +37,18 @@ export function setDeviceColorLocal(deviceId, color) {
 // 5분 이상 무소식이면 stale (회색 처리 대상)
 export const STALE_THRESHOLD_MS = 5 * 60 * 1000;
 
+// 좌표 (GPS fix) 는 LTE 보다 잠시 잃기 쉬워 더 관대한 임계.
+// 30분 이상 새 fix 없으면 경고 색 표시.
+export const FIX_STALE_THRESHOLD_MS = 30 * 60 * 1000;
+
 export function isStale(lastSeenAt) {
   if (!lastSeenAt) return true;
   return (Date.now() - new Date(lastSeenAt).getTime()) > STALE_THRESHOLD_MS;
+}
+
+export function isFixStale(lastFixAt) {
+  if (!lastFixAt) return true;
+  return (Date.now() - new Date(lastFixAt).getTime()) > FIX_STALE_THRESHOLD_MS;
 }
 
 export function ageString(lastSeenAt) {

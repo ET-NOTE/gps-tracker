@@ -24,7 +24,7 @@ import PairTutorial, { shouldShowPairTutorial } from '../components/PairTutorial
 import UnpairModal from '../components/UnpairModal';
 import Icon from '../components/Icon';
 import useBreakpoint from '../useBreakpoint';
-import { PALETTE, getDeviceColor, setDeviceColorLocal, isStale, ageString, classifyDevice } from '../colors';
+import { PALETTE, getDeviceColor, setDeviceColorLocal, isStale, isFixStale, ageString, classifyDevice } from '../colors';
 
 // 펜스에 적용 디바이스 한 대라도 안에 있으면 true.
 function isAnyDeviceInsideFence(fence, devices) {
@@ -850,8 +850,15 @@ export default function Dashboard({ onLogout }) {
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{d.device_uid}</div>
                           <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                  title="마지막 LTE 통신">
                               <Icon name="refresh" size={11} /> {ageString(d.last_seen_at)}
+                            </span>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              color: isFixStale(d.last_fix_at) ? 'var(--danger)' : undefined,
+                            }} title="마지막 GPS 좌표 수신">
+                              <Icon name="mapPin" size={11} /> {ageString(d.last_fix_at)}
                             </span>
                             {meta?.vbatMv && (
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>

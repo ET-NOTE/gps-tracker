@@ -5,6 +5,7 @@ import { api } from '../api';
 import ShareLinkPanel from './ShareLinkPanel';
 import Icon from './Icon';
 import { confirmDialog, alertDialog } from './Dialog';
+import { ageString, isStale, isFixStale } from '../colors';
 
 const KIND_META = {
   pair:         { icon: 'link',   label: '페어링' },
@@ -88,6 +89,11 @@ export default function DeviceDetail({ device, onWiped }) {
       <div style={dt.body}>
         {tab === 'stats' && (
           <>
+            {/* 수신 상태 — LTE 마지막 통신 / GPS 마지막 좌표 / 마지막 위치 */}
+            <Section title="수신 상태">
+              <ReceiveStatusBody device={device} />
+            </Section>
+
             {/* 운행 통계 — 자체 DB 집계, 빠름 */}
             <SectionAsync title="운행 통계" q={statsQ} skeletonH={70}>
               {(data) => <StatsBody stats={data} />}
@@ -238,8 +244,13 @@ const LIFECYCLE_KIND = {
 };
 
 function eventRow(e) {
-  const meta = LIFECYCLE_KIND[e.kind] || { label: e.kind, color: 'var(--text-2)' };
+  let meta = LIFECYCLE_KIND[e.kind] || { label: e.kind, color: 'var(--text-2)' };
   const reason = e.data?.sleep_reason || e.data?.wake_cause;
+  // wake event 의 wake_cause 가 'boot'/'other' 면 deep sleep wake 가 아닌 ESP cold boot
+  // = brownout / watchdog / power-on 등 비정상 재부팅. 정상 wake 와 시각적으로 분리.
+  if (e.kind === 'wake' && (reason === 'boot' || reason === 'other')) {
+    meta = { label: '재부팅', color: '#f59e0b' };
+  }
   return (
     <div key={e.id} style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -256,6 +267,63 @@ function eventRow(e) {
   );
 }
 
+// 재부팅 패턴 분석 — wake_cause 'boot'/'other' 는 deep sleep wake 가 아닌 비정상 cold boot.
+// brownout / 짧은 sleep_uptime / cold boot 비율로 ESP 안정성 판정.
+function diagnoseRebootPattern(events) {
+  const wakes = events.filter(e => e.kind === 'wake');
+  if (!wakes.length) return null;
+  const recent = wakes.slice(0, 30);
+  const coldBoots   = recent.filter(e => ['boot', 'other'].includes(e.data?.wake_cause));
+  const motionWakes = recent.filter(e => e.data?.wake_cause === 'motion');
+  const shortUptimes = recent.filter(e => {
+    const s = e.data?.diag?.last_sleep_uptime_s;
+    return s != null && s > 0 && s < 60;
+  });
+  const latestDiag = wakes[0]?.data?.diag ?? {};
+  const brownouts = latestDiag.brownouts ?? 0;
+  const coldRatio = coldBoots.length / recent.length;
+  let status, label, hint;
+  if (brownouts > 0 || coldRatio > 0.3 || shortUptimes.length > 3) {
+    status = 'danger';
+    label = '재부팅 사이클 의심';
+    hint = `최근 ${recent.length}회 wake 중 cold boot ${coldBoots.length}회 / brownout ${brownouts}회. PCB VBAT 보강 점검 필요.`;
+  } else if (coldRatio > 0.1 || coldBoots.length > 1) {
+    status = 'warn';
+    label = '간헐적 cold boot';
+    hint = `최근 ${recent.length}회 wake 중 cold boot ${coldBoots.length}회. 전원 안정성 관찰.`;
+  } else {
+    status = 'ok';
+    label = '안정';
+    hint = `motion wake ${motionWakes.length} / cold boot ${coldBoots.length} (최근 ${recent.length}회).`;
+  }
+  return { status, label, hint, coldBoots: coldBoots.length, motionWakes: motionWakes.length,
+           brownouts, shortUptimes: shortUptimes.length, recentN: recent.length };
+}
+
+function RebootPatternCard({ d }) {
+  const color = d.status === 'danger' ? 'var(--danger)'
+              : d.status === 'warn' ? '#f59e0b'
+              : '#10b981';
+  return (
+    <div style={{
+      background: 'var(--surface-2)', borderRadius: 6, padding: '8px 10px',
+      borderLeft: `3px solid ${color}`, marginBottom: 8,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 4, background: color }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color }}>{d.label}</span>
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text-2)', lineHeight: 1.4, marginBottom: 6 }}>{d.hint}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 4 }}>
+        <MiniStat label="cold boot" v={d.coldBoots}    sub={`/${d.recentN}회`} warn={d.coldBoots > 2} />
+        <MiniStat label="motion"    v={d.motionWakes}  sub="정상" />
+        <MiniStat label="brownout"  v={d.brownouts}    warn={d.brownouts > 0} />
+        <MiniStat label="짧은 sleep" v={d.shortUptimes} sub="<60s" warn={d.shortUptimes > 1} />
+      </div>
+    </div>
+  );
+}
+
 function LifecycleBody({ events }) {
   const [showAll, setShowAll] = useState(false);
   if (!events?.length) return <Muted>아직 sleep/wake 이벤트 기록이 없습니다.</Muted>;
@@ -264,9 +332,13 @@ function LifecycleBody({ events }) {
   const latestWake = events.find(e => e.kind === 'wake' && e.data?.diag);
   const diag = latestWake?.data?.diag;
   const more = Math.max(0, events.length - 5);
+  const diagnosis = diagnoseRebootPattern(events);
 
   return (
     <>
+      {/* 재부팅 패턴 진단 — wake_cause + brownout 카운터로 정상 sleep cycle vs 비정상 reset 분리 */}
+      {diagnosis && <RebootPatternCard d={diagnosis} />}
+
       {/* 누적 카운터 */}
       {diag && (
         <div style={{
@@ -437,6 +509,20 @@ function StationaryBody({ s }) {
         <MiniStat label="모션 경과" v={`${motionAge}s`} sub="마지막 움직임" />
       </div>
     </>
+  );
+}
+
+function ReceiveStatusBody({ device }) {
+  const seenWarn = isStale(device?.last_seen_at);
+  const fixWarn  = isFixStale(device?.last_fix_at);
+  const lat = device?.last_lat, lng = device?.last_lng;
+  const coordStr = (lat != null && lng != null) ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : '—';
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+      <MiniStat label="LTE 통신"   v={ageString(device?.last_seen_at)} sub="마지막 ingest" warn={seenWarn} />
+      <MiniStat label="GPS 좌표"   v={ageString(device?.last_fix_at)}  sub="마지막 fix"    warn={fixWarn} />
+      <MiniStat label="마지막 위치" v={coordStr}                       sub="lat, lng" />
+    </div>
   );
 }
 

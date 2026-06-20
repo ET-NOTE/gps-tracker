@@ -4,7 +4,8 @@
 //   - 실내: SIM/안테나/네트워크 등록은 별개. AT 응답은 모듈 UART/전원 OK 면 무조건 옴.
 //   - "device found" 수준 = "OK" 또는 "AT" echo 한 번이라도 들어오면 통과.
 //
-// 핀: PWR_EN=GPIO6 (LOW=ON, GPS 와 공유), PWRKEY=GPIO7, RX=GPIO4, TX=GPIO2, DTR=GPIO10, baud 115200.
+// 핀: PWR_EN=GPIO6 (LOW=ON, GPS 와 공유), PWRKEY=GPIO7, RX=GPIO2, TX=GPIO4, DTR=GPIO10, baud 115200.
+//      (PCB rev 후 13_2 firmware 와 동일: ESP RX=GPIO2 ← SIM TX, ESP TX=GPIO4 → SIM RX)
 //
 // 전원 시퀀스:
 //   1) PWR_EN LOW (VBAT 공급)
@@ -22,8 +23,8 @@
 #define PIN_PWR_EN  6
 #define PIN_PWRKEY  7
 #define PIN_DTR    10
-#define PIN_LTE_RX  4   // ESP 받는 쪽 (SIM TX -> ESP RX)
-#define PIN_LTE_TX  2   // ESP 보내는 쪽 (ESP TX -> SIM RX)
+#define PIN_LTE_RX  2   // ESP 받는 쪽 (SIM TX -> ESP RX)  ← rev (was 4)
+#define PIN_LTE_TX  4   // ESP 보내는 쪽 (ESP TX -> SIM RX) ← rev (was 2)
 #define LTE_BAUD   115200UL
 
 HardwareSerial lte(1);
