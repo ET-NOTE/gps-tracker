@@ -928,6 +928,7 @@ function buildMainInfoHTML(label, color, m, addr, lat, lng) {
   const ageTxt = m.recordedAt ? new Date(m.recordedAt).toLocaleString('ko-KR') : '—';
   const sat    = m.sat ?? '—';
   const vbat   = m.vbatMv ? `${m.vbatMv} mV` : '—';
+  const speed  = m.speedKmh != null ? ROW(SVG_RUN, `${m.speedKmh.toFixed(1)} km/h`) : '';
   return `
     <div style="padding:12px 14px;font-size:12px;font-family:-apple-system,system-ui,sans-serif;min-width:240px;line-height:1.55;color:#1a1a2e">
       <div style="font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
@@ -937,6 +938,7 @@ function buildMainInfoHTML(label, color, m, addr, lat, lng) {
       ${ROW(SVG_PIN, addrLine(addr))}
       ${ROW(SVG_SAT, `${fixTxt} · sat ${sat}`)}
       ${ROW(SVG_BAT, vbat)}
+      ${speed}
       <div style="color:#888;font-size:11px;margin:4px 0 10px">${ageTxt}</div>
       ${roadviewBtn(lat, lng)}
     </div>
