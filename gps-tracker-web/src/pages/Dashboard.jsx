@@ -1017,34 +1017,42 @@ export default function Dashboard({ onLogout }) {
                 onChange={persistFilterDevice}
               />
             )}
-            {view === 'home' && trackLive && filterDeviceId !== null && liveSpeed && (
-              <div style={{
-                position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-                zIndex: 13, minWidth: 168, padding: '10px 14px', borderRadius: 16,
-                background: 'rgba(255,255,255,.94)', border: '1px solid var(--border)',
-                boxShadow: '0 8px 24px rgba(15,23,42,.18)', display: 'flex',
-                alignItems: 'center', gap: 10, backdropFilter: 'blur(10px)', pointerEvents: 'none',
-              }}>
-                <span style={{
-                  width: 10, height: 10, borderRadius: 999, flexShrink: 0,
-                  background: liveSpeed.color || speedTone(liveSpeed.speedKmh),
-                  boxShadow: '0 0 0 4px rgba(59,130,246,.12)',
-                }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+            {view === 'home' && trackLive && filterDeviceId !== null && (() => {
+              // 알약 항상 표시 — liveSpeed 가 아직 없을 때도 device 정보로 fallback.
+              // WS msg 한 번도 안 받았거나 sleep 중이라 데이터 없어도 운영자가 기능 인지 가능.
+              const dev = devices.find(d => d.id === filterDeviceId);
+              const label = liveSpeed?.label || dev?.display_name || dev?.device_uid || '실시간 추적';
+              const color = liveSpeed?.color || (dev ? getDeviceColor(dev) : '#5B7CFF');
+              const speedKmh = liveSpeed?.speedKmh;
+              return (
+                <div style={{
+                  position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+                  zIndex: 13, minWidth: 168, padding: '10px 14px', borderRadius: 16,
+                  background: 'rgba(255,255,255,.94)', border: '1px solid var(--border)',
+                  boxShadow: '0 8px 24px rgba(15,23,42,.18)', display: 'flex',
+                  alignItems: 'center', gap: 10, backdropFilter: 'blur(10px)', pointerEvents: 'none',
+                }}>
                   <span style={{
-                    maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
-                  }}>{liveSpeed.label || '실시간 추적'}</span>
-                  <span style={{
-                    fontSize: 24, lineHeight: 1, fontWeight: 800, letterSpacing: '-.03em',
-                    fontVariantNumeric: 'tabular-nums', color: speedTone(liveSpeed.speedKmh),
-                  }}>
-                    {liveSpeed.speedKmh == null ? '--' : Math.round(liveSpeed.speedKmh)}
-                    <small style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}> km/h</small>
-                  </span>
+                    width: 10, height: 10, borderRadius: 999, flexShrink: 0,
+                    background: color || speedTone(speedKmh),
+                    boxShadow: '0 0 0 4px rgba(59,130,246,.12)',
+                  }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                    <span style={{
+                      maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
+                    }}>{label}</span>
+                    <span style={{
+                      fontSize: 24, lineHeight: 1, fontWeight: 800, letterSpacing: '-.03em',
+                      fontVariantNumeric: 'tabular-nums', color: speedTone(speedKmh),
+                    }}>
+                      {speedKmh == null ? '--' : Math.round(speedKmh)}
+                      <small style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}> km/h</small>
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* 홈 — 지도 가장자리 활용 지오펜스 레이어.
                   우하단 FAB 칼럼: 펜스 ON/OFF 토글 + 새 펜스 만들기 (토글 ON 일 때만)
