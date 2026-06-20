@@ -300,6 +300,7 @@ export default function Dashboard({ onLogout }) {
     mapRef.current?.drawSeekerPath?.(pts, {
       maxMarkers: opts.dense === false ? 150 : 300,
       showCursor: false,
+      timeColor: opts.dense !== false,
     });
   }, []);
   const seekerOnPathClear = useCallback(() =>

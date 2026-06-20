@@ -54,12 +54,17 @@ function ensureKakaoMapSdk() {
   });
 }
 const BUCKET_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
+const TIME_SEGMENT_COLORS = ['#2563EB', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'];
 function speedBucket(p) {
   if (p._isStop || p._speed == null || p._speed < 5) return 0;       // 정지/도보 미만
   if (p._speed < 30)  return 1;                                       // 시내 저속
   if (p._speed < 60)  return 2;                                       // 일반 시내
   if (p._speed < 100) return 3;                                       // 고속도로
   return 4;                                                            // 초고속
+}
+function timeSegmentIndex(idx, total, segmentCount) {
+  if (total <= 1) return 0;
+  return Math.min(segmentCount - 1, Math.floor((idx / (total - 1)) * segmentCount));
 }
 function distanceM(a, b) {
   const r = Math.PI / 180;
@@ -681,18 +686,19 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     /**
      * Seeker 전용 history path 그리기.
      * points: [{ lat, lng, recorded_at, _speed?, _isStop? }] (시간 오름차순)
-     * opts: { color, speedColor, showStops, showCursor, onPointClick(point, idx) }
+     * opts: { color, speedColor, timeColor, showStops, showCursor, onPointClick(point, idx) }
      * 반환: 동일 시그니처로 cursor 위치만 업데이트할 수 있는 헬퍼들 (setCursor, fitBounds).
      */
     drawSeekerPath(points, opts = {}) {
       if (!mapRef.current) return null;
       this.clearSeekerPath();
       const {
-        color = '#5B7CFF', speedColor = false, showStops = true,
+        color = '#5B7CFF', speedColor = false, timeColor = false, showStops = true,
         showCursor = false, onPointClick = null,
         maxMarkers = 300,        // 마커 폭주 방지 — 폴리라인은 그대로, 마커만 캡
         stopMergeRadiusM = 35,   // nearby stop markers are absorbed into one representative marker
         minBucketRun = 3,        // 노이즈 단일 버킷 전환 무시 (>=3 점 연속이어야 새 segment)
+        timeSegments = 5,       // 하루 왕복 경로가 겹칠 때 시간대별 선 색상 분리
       } = opts;
 
       const pts = points.filter(p => p.lat != null && p.lng != null);
@@ -735,6 +741,26 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
               strokeWeight: sw,
               strokeColor: BUCKET_COLORS[seg.bucket] || color,
               strokeOpacity: 0.85,
+              strokeStyle: 'solid',
+            });
+            seekerRef.current.poly.push(poly);
+          }
+        }
+      } else if (timeColor && pts.length >= 2) {
+        const segmentCount = Math.max(2, Math.min(timeSegments, TIME_SEGMENT_COLORS.length, pts.length - 1));
+        for (let seg = 0; seg < segmentCount; seg++) {
+          const start = Math.floor((pts.length - 1) * seg / segmentCount);
+          const end = Math.floor((pts.length - 1) * (seg + 1) / segmentCount);
+          const segPath = [];
+          for (let i = start; i <= end; i++) {
+            segPath.push(new window.kakao.maps.LatLng(pts[i].lat, pts[i].lng));
+          }
+          if (segPath.length >= 2) {
+            const poly = new window.kakao.maps.Polyline({
+              map: mapRef.current, path: segPath,
+              strokeWeight: sw,
+              strokeColor: TIME_SEGMENT_COLORS[seg] || color,
+              strokeOpacity: 0.68,
               strokeStyle: 'solid',
             });
             seekerRef.current.poly.push(poly);
@@ -784,7 +810,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         const isStop = !!p._isStop && showStops;
         const dotColor = isStop
           ? '#EF4444'
-          : (speedColor ? (BUCKET_COLORS[speedBucket(p)] || color) : color);
+          : speedColor
+            ? (BUCKET_COLORS[speedBucket(p)] || color)
+            : timeColor
+              ? (TIME_SEGMENT_COLORS[timeSegmentIndex(idx, total, Math.min(timeSegments, TIME_SEGMENT_COLORS.length))] || color)
+              : color;
         // 클릭 허용 조건:
         //   - onPointClick(SeekerSheet 재생용): 부담 줄이기 위해 isStop 또는 total <= 200 일 때만
         //   - onPointInfo(모바일 sheet): 항상 (이미 maxMarkers 캡으로 렌더링 제한됨)
