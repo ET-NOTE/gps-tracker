@@ -59,21 +59,21 @@
 #define LTE_BAUD       115200
 
 #define PIN_BUZZER     1     // passive 마그네틱 부저 — tone() PWM 으로 구동
-#define BUZZER_FREQ    2700  // Hz — 마그네틱 부저 공진주파수 근처
-#define BUZZER_ENABLED 0     // 배터리 운영 시 LEDC PWM 이 brownout 후에도 살아남아 멈추지 않는
-                             // 하드웨어 잔존 이슈 — 보드 hardware fix 전까지 무음. PCB 차원 정리 필요.
+#define BUZZER_FREQ    2700  // Hz — 마그네틱 부저 공진주파수 근처 (최대 효율 + audible).
+                             // 1800Hz 로 낮춰 봤으나 공진 외 효율 너무 낮아 inaudible → 복원.
+#define BUZZER_ENABLED 1     // 부저 인프라 ON — 서버 cmd:beep + 마일스톤 비프 모두 동작.
 
 // =================================================================
 // 동작 파라미터
 // =================================================================
 #define APN_NAME            "iot.1nce.net"
 // 운영 단계에서 swap. 라인 한 줄만 주석 토글하면 됨. POST_PATH 는 양쪽 모두 /ingest.
-// #define POST_URL_HOST    "http://gps.serial.kr"        // prod
-#define POST_URL_HOST       "http://dev-gps.serial.kr"   // dev (테스트 단계)
+#define POST_URL_HOST       "http://gps.serial.kr"        // prod ← 현재
+// #define POST_URL_HOST    "http://dev-gps.serial.kr"   // dev (테스트 단계)
 #define POST_PATH           "/ingest"
-// 테스트 기간: 10초 (실시간 추적 검증용). 5초로 더 줄이면 LTE TX 피크 빈도 2배 ↑ → 브라운아웃 위험 ↑.
-// 운영 안정화 후엔 15000 또는 30000 으로 되돌릴 것.
-#define POST_INTERVAL_MS    10000UL
+// 15초 — LTE TX peak 빈도 (= brownout 트리거 빈도) 와 실시간 추적 응답성의 trade-off.
+// 10초로 줄이면 brownout 빈도 ↑. 30초+ 면 추적 응답성 ↓.
+#define POST_INTERVAL_MS    15000UL
 #define BAT_DIV_RATIO       2.0f
 
 #define BRINGUP_RETRY_MS              30000UL
@@ -91,7 +91,7 @@
 //   GPS_STALE_MS                 : 마지막 fix 가 이 시간 넘게 오래면 GPS unavailable 간주
 //   STATIONARY_BOOT_GRACE_MS     : 부팅/wake 직후 정지 판정 보류 (모듈 안정화 + first fix 대기)
 // ──────────────────────────────────────────────────────────────────
-#define STATIONARY_WINDOW_MS       (5UL * 60UL * 1000UL)
+#define STATIONARY_WINDOW_MS       (10UL * 60UL * 1000UL)  // 정지 10분 → 자동 sleep (LTE 꺼져 brownout 차단)
 #define MOTION_QUIET_MS            30000UL
 #define GPS_DRIFT_THRESHOLD_M      50.0f
 #define GPS_STALE_MS               60000UL
@@ -159,6 +159,9 @@ static bool     wake_diag_pending    = true;
 RTC_DATA_ATTR bool buzz_boot_done       = false;
 RTC_DATA_ATTR bool buzz_first_fix_done  = false;
 RTC_DATA_ATTR bool buzz_first_post_done = false;
+RTC_DATA_ATTR bool buzz_low_batt_done   = false;   // 저전압 8-beep 경고 — RTC 가드로 반복 방지
+
+#define LOW_BATT_BEEP_MV     3500   // vbat < 3500mV 면 1회 8-beep 경고
 
 // 부저 non-blocking 상태머신.
 static uint8_t  buzzerRemaining  = 0;
@@ -456,7 +459,10 @@ static void printStatus() {
   uint32_t now = millis();
   uint32_t up_s = (now - bootMs) / 1000;
 
-  bool fix = gps.location.isValid();
+  // .isValid() 는 첫 fix 후 영구 true — sat 잃어도 stale 좌표 반환. age + sat 으로 freshness 강제.
+  bool fix = gps.location.isValid()
+          && gps.location.age() < 5000
+          && gps.satellites.value() >= 4;
   uint32_t fixAge = lastFixMs ? (now - lastFixMs) / 1000 : 0;
   uint32_t motTotal = motionEvents;
   uint32_t motAgeS  = lastMotionMs ? (now - lastMotionMs) / 1000 : 0;
@@ -793,12 +799,17 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
     if (len > 0 && len < 512) {
       char readCmd[40];
       snprintf(readCmd, sizeof(readCmd), "AT+SHREAD=0,%d", len);
-      if (sendAT(readCmd, "OK", 5000)) {
+      // SIM7080G 의 SHREAD: "OK" 즉시 응답 + body 는 별도 "+SHREAD: <len>\r\n<body>" URC 로
+      // 늦게 도착. expect="OK" 로 잡으면 body 도착 전 return → cmd:beep parse 실패.
+      // expect="+SHREAD:" 으로 URC 기다리고, 그 후 body 까지 추가 drain.
+      if (sendAT(readCmd, "+SHREAD:", 5000)) {
+        uint32_t t0 = millis();
+        while (millis() - t0 < 500) { drainLte(); delay(10); }
         // ── 서버가 cmd: beep 보냈으면 부저 트리거 ──
         if (lastResp.indexOf("\"cmd\":\"beep\"") >= 0
          || lastResp.indexOf("\"cmd\": \"beep\"") >= 0) {
           DBGLN(F("[BUZ] 🔔 server cmd: beep — 현장 식별 트리거"));
-          // 구별되게 길고 또렷한 패턴 (5×200ms, 100ms gap, 총 ~1.4s)
+          // 이전 작동 확인된 패턴 — 변경하지 말 것.
           beep(5, 200, 100);
         }
       }
@@ -879,7 +890,11 @@ static void buildDiagFragment(char *out, size_t cap, bool include_wake_extras) {
 
 static void buildPayload(char *out, size_t cap) {
   uint32_t vbatMv = readVbatMv();
-  bool l80fix = gps.location.isValid();
+  // sticky-fix 방어: .isValid() 만 보면 첫 fix 후 sat 0 이어도 true 유지 → 백엔드가 stale 좌표를
+  // 새 fix 처럼 인식. age (마지막 NMEA update) + sat 카운트로 freshness 강제.
+  bool l80fix = gps.location.isValid()
+             && gps.location.age() < 5000
+             && gps.satellites.value() >= 4;
   uint32_t motTotal = motionEvents;
   uint32_t motDelta = motTotal - motionEventsAtLastPost;
   uint32_t motAgeS  = lastMotionMs ? (millis() - lastMotionMs) / 1000 : 0;
@@ -978,8 +993,8 @@ static void doPost() {
       wake_diag_pending = false;
       if (!buzz_first_post_done) {
         buzz_first_post_done = true;
-        DBGLN(F("[BUZ] 🎉 첫 POST 200 — triple beep"));
-        beep(3, 80, 80);
+        DBGLN(F("[BUZ] 🎉 첫 POST 200 — 4-beep"));
+        beep(4, 80, 80);
       }
     } else {
       cyc_post_fail++;
@@ -995,6 +1010,13 @@ static void doPost() {
     S.failStreak    = 0;
     S.nextBringUpAt = millis() + UNDER_VOLT_COOLDOWN_MS;
   }
+
+  // 저전압 경고 — 한 device 세션 동안 1회. POST cycle 직후 vbat 측정 (LTE peak 직후라 droop 반영).
+  if (!buzz_low_batt_done && readVbatMv() < LOW_BATT_BEEP_MV) {
+    buzz_low_batt_done = true;
+    DBGLN(F("[BUZ] 🪫 low battery — 8-beep"));
+    beep(8, 80, 80);
+  }
 }
 
 // =================================================================
@@ -1007,8 +1029,8 @@ static void enterDeepSleep(const char *reason) {
   DBGP(F("[SLEEP] entering deep sleep — wake on LIS motion (reason="));
   DBGP(reason); DBGLN(F(")"));
 
-  DBGLN(F("[BUZ] 💤 sleep — long beep"));
-  beep(1, 600, 0);
+  DBGLN(F("[BUZ] 💤 sleep — 6-beep"));
+  beep(6, 50, 50);
   waitBuzzerFlush();
 
   if (cyc_fix_count == 0 && cyc_no_fix_count > 0) rtc_no_fix_cycles++;
@@ -1385,6 +1407,8 @@ void loop() {
       if (S.bringUpFails >= BRINGUP_FAIL_HARD_RESET) {
         S.bringUpFails = 0;
         S.hardResets++;
+        DBGLN(F("[BUZ] ⚠️ LTE hard reset — 7-beep"));
+        beep(7, 60, 60);
         if (S.hardResets > HARD_RESET_LIMIT) {
           hardPowerCycle();
           S.hardResets = 0;
