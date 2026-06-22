@@ -303,7 +303,22 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   // 글로벌 콜백 — InfoWindow 안의 onclick에서 호출.
   useEffect(() => {
     window.__btw_openRoadview = (lat, lng) => onRoadviewRef.current?.({ lat, lng });
-    return () => { delete window.__btw_openRoadview; };
+    // gap 정보 복사 — 큰 텍스트를 onclick attribute 에 넣으면 따옴표 escape 가 깨져서
+    // (Unexpected end of input) 별도 전역 store 에 보관 후 id 로 lookup.
+    window.__btw_gapTexts = window.__btw_gapTexts || {};
+    window.__btw_copyGap = (id, btn) => {
+      const txt = window.__btw_gapTexts[id];
+      if (!txt || !btn) return;
+      navigator.clipboard.writeText(txt).then(() => {
+        btn.textContent = '✅ 복사됨';
+        setTimeout(() => { btn.textContent = '📋 보고 정보 복사'; }, 1500);
+      });
+    };
+    return () => {
+      delete window.__btw_openRoadview;
+      delete window.__btw_copyGap;
+      delete window.__btw_gapTexts;
+    };
   }, []);
 
   useEffect(() => {
@@ -1120,6 +1135,19 @@ function escHtml(s) {
   }[c]));
 }
 
+// gap 복사 버튼용 — 텍스트를 글로벌 store 에 보관 후 id 반환. onclick attribute 안에 큰
+// JSON 문자열을 직접 넣으면 따옴표 escape 가 깨져서 (Unexpected end of input) 안전한
+// id-lookup 방식 사용. window.__btw_copyGap(id, this) 가 store 에서 읽어 클립보드 복사.
+let __gapTextSeq = 0;
+function registerGapCopyText(text) {
+  const id = `g${++__gapTextSeq}`;
+  if (typeof window !== 'undefined') {
+    window.__btw_gapTexts = window.__btw_gapTexts || {};
+    window.__btw_gapTexts[id] = text;
+  }
+  return id;
+}
+
 // gap (통신 두절) 구간 InfoWindow HTML — 양 끝 timestamp + 좌표 + 복사 가능 텍스트.
 // device_id + recorded_at 자연 키만으로 server location_records 와 정확 매칭 가능.
 function buildGapInfoHTML(info) {
@@ -1144,7 +1172,7 @@ function buildGapInfoHTML(info) {
       </div>
       <div style="font-size:11px;color:#666;margin-bottom:6px">두 좌표 사이 ingest 가 ${gapStr} 끊김 (sleep / reset / signal_loss 등)</div>
       <div style="background:#f5f5f7;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-family:ui-monospace,monospace;font-size:11px;white-space:pre-wrap;user-select:all">${escHtml(copyText)}</div>
-      <button onclick="navigator.clipboard.writeText(${JSON.stringify(copyText)}).then(()=>{this.textContent='✅ 복사됨'; setTimeout(()=>{this.textContent='📋 복사'},1500)})" style="background:#1a1a2e;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%">📋 복사</button>
+      <button onclick="window.__btw_copyGap('${registerGapCopyText(copyText)}',this)" style="background:#1a1a2e;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%">📋 복사</button>
     </div>
   `;
 }
@@ -1228,12 +1256,12 @@ function buildGapInPointBlock(m, lat, lng) {
           `from: ${peerISO} (${it.peerLat.toFixed(6)}, ${it.peerLng.toFixed(6)})`,
           `to:   ${thisISO} (${lat.toFixed(6)}, ${lng.toFixed(6)})`,
         ];
-    const copyJson = JSON.stringify(lines.join('\n'));
+    const copyId = registerGapCopyText(lines.join('\n'));
     return `
       <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:8px 10px;margin-bottom:6px">
         <div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:3px">${label}와 ${gapStr} 통신 두절</div>
         <div style="font-size:11px;color:#666;margin-bottom:6px">${peerKr}</div>
-        <button onclick="navigator.clipboard.writeText(${copyJson}).then(()=>{this.textContent='✅ 복사됨';setTimeout(()=>{this.textContent='📋 보고 정보 복사'},1500)})" style="background:#1a1a2e;color:#fff;border:none;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;width:100%">📋 보고 정보 복사</button>
+        <button onclick="window.__btw_copyGap('${copyId}',this)" style="background:#1a1a2e;color:#fff;border:none;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;width:100%">📋 보고 정보 복사</button>
       </div>
     `;
   }).join('');
