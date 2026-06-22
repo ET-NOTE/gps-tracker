@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { TrackerWS } from '../ws';
 import KakaoMap from '../components/KakaoMap';
+import { useDevices } from '../hooks/useDevices';
+import { useTrackerWS } from '../hooks/useTrackerWS';
+import { useGeofences } from '../hooks/useGeofences';
+import { useLiveTracking } from '../hooks/useLiveTracking';
 import ProfilePanel from '../components/ProfilePanel';
 import DeviceDetail from '../components/DeviceDetail';
 import BottomNav from '../components/BottomNav';
 import SideRail from '../components/SideRail';
 import MapControls from '../components/MapControls';
 import RoadviewModal, { probeRoadview } from '../components/RoadviewModal';
-import { enrichWithSpeedStops } from '../lib/stops';
+import { enrichWithSpeedStops, haversineM } from '../lib/stops';
 import { confirmDialog, alertDialog } from '../components/Dialog';
 import DeviceFilter from '../components/DeviceFilter';
 import GeofenceSheet from '../components/GeofenceSheet';
@@ -156,12 +159,14 @@ export default function Dashboard({ onLogout }) {
   const [detailId, setDetailId]       = useState(null);
   const [maintId, setMaintId]         = useState(null);
   const [maintForm, setMaintForm]     = useState({});
-  const [wsStatus, setWsStatus]       = useState('disconnected');
+  const [maintSaving, setMaintSaving] = useState(false);
+  // wsStatus useTrackerWS hook'idan keladi — pastda e'lon qilinadi
   const [roadview, setRoadview]       = useState(null);    // {lat, lng, panoId} or null
   const [toast, setToast]             = useState(null);     // 가벼운 중앙 토스트 메시지 (1초)
   const [filterDeviceId, setFilterDeviceId] = useState(null);  // null=전체, 또는 device id
   const [deviceChartData, setDeviceChartData] = useState({});   // deviceId → [[date, mV], ...]
-  const [, setTick]                   = useState(0);
+  // ageString ko'rinishini yangilash uchun — setTick anti-pattern o'rniga semantik state
+  const [, setNow] = useState(() => Date.now());
   const bp        = useBreakpoint();
   const isDesktop = bp === 'desktop';
   const isOnline  = useOnline();
@@ -263,6 +268,11 @@ export default function Dashboard({ onLogout }) {
   const wsRef      = useRef(null);
   const devRef     = useRef([]);
   const lastMetaRef = useRef({});
+
+  // 실시간 속도계
+  const [liveSpeedKmh, setLiveSpeedKmh] = useState(null);
+  const liveSpeedRef   = useRef(null);   // meta 빌드 시 동기 접근용
+  const prevLivePosRef = useRef(null);   // { lat, lng, time }
   // 간이 시커의 imperative handle — 지도 마커 클릭 시 selectByTime 으로 슬롯/월 drill 동기화.
   const miniSeekerRef = useRef(null);
 
@@ -390,7 +400,7 @@ export default function Dashboard({ onLogout }) {
       const now = Date.now();
       if (!force && now - lastRefreshAt < 8000) return;
       lastRefreshAt = now;
-      setTick(x => x + 1);
+      setNow(Date.now()); // ageString ko'rinishini yangilash (setTick anti-pattern o'rniga)
       loadDevicesIncremental();
       loadFences();
     };
@@ -639,9 +649,26 @@ export default function Dashboard({ onLogout }) {
       const dev = devRef.current.find(d => d.id === msg.device_id);
       const label = dev?.display_name || dev?.device_uid || `#${msg.device_id}`;
       const color = getDeviceColor(dev || { id: msg.device_id });
+      // 실시간 속도 계산 (이전→현재 위치 거리 / 시간)
+      let speedKmh = null;
+      if (trackLiveRef.current && filterDeviceIdRef.current === msg.device_id) {
+        const now = new Date(msg.recorded_at).getTime();
+        if (prevLivePosRef.current) {
+          const { lat: pLat, lng: pLng, time: pTime } = prevLivePosRef.current;
+          const distM = haversineM(pLat, pLng, msg.lat, msg.lng);
+          const dtS   = (now - pTime) / 1000;
+          if (dtS > 0 && dtS < 300) {
+            speedKmh = Math.min((distM / dtS) * 3.6, 250);
+          }
+        }
+        prevLivePosRef.current = { lat: msg.lat, lng: msg.lng, time: now };
+        liveSpeedRef.current = speedKmh;
+        setLiveSpeedKmh(speedKmh);
+      }
+
       const meta = {
         recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv,
-        fix: msg.fix, stale: false,
+        fix: msg.fix, stale: false, speedKmh,
       };
       mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
       lastMetaRef.current[msg.device_id] = meta;
@@ -1010,34 +1037,40 @@ export default function Dashboard({ onLogout }) {
 
                         {/* 정비/서류 관리 폼 */}
                         {maintId === d.id && (
-                          <div style={{ marginTop: 10, padding: 10, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                          <div style={{ marginTop: 10, background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
 
-                            {/* 차량 정보 */}
-                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>차량 정보</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 10 }}>
-                              {[
-                                { key: 'car_plate', label: '번호판', type: 'text', placeholder: '12가 3456' },
-                                { key: 'car_model', label: '차종',   type: 'text', placeholder: '소나타 2023' },
-                              ].map(f => (
-                                <div key={f.key}>
-                                  <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 2 }}>{f.label}</div>
-                                  <input type={f.type} placeholder={f.placeholder}
-                                    value={maintForm[f.key] || ''}
-                                    onChange={e => setMaintForm(p => ({ ...p, [f.key]: e.target.value }))}
-                                    style={{ ...s.input, fontSize: 12, padding: '5px 8px' }} />
-                                </div>
-                              ))}
-                            </div>
-                            {/* 차량 이미지 */}
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 4 }}>차량 이미지</div>
-                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                {(d.car_image_url || maintForm._imgPreview) && (
+                            {/* 차량 정보 섹션 */}
+                            <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid var(--border)' }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <Icon name="car" size={12} style={{ color: 'var(--text-2)' }} />
+                                차량 정보
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                                {[
+                                  { key: 'car_plate', label: '번호판', type: 'text', placeholder: '12가 3456' },
+                                  { key: 'car_model', label: '차종',   type: 'text', placeholder: '소나타 2023' },
+                                ].map(f => (
+                                  <div key={f.key}>
+                                    <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4 }}>{f.label}</div>
+                                    <input type={f.type} placeholder={f.placeholder}
+                                      value={maintForm[f.key] || ''}
+                                      onChange={e => setMaintForm(p => ({ ...p, [f.key]: e.target.value }))}
+                                      style={{ ...s.input, fontSize: 13, padding: '8px 10px', borderRadius: 8 }} />
+                                  </div>
+                                ))}
+                              </div>
+                              {/* 차량 이미지 */}
+                              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                {(d.car_image_url || maintForm._imgPreview) ? (
                                   <img src={maintForm._imgPreview || d.car_image_url} alt="차량"
-                                    style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }} />
+                                    style={{ width: 72, height: 52, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)', flexShrink: 0 }} />
+                                ) : (
+                                  <div style={{ width: 72, height: 52, borderRadius: 8, border: '1.5px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Icon name="image" size={18} style={{ color: 'var(--text-3)' }} />
+                                  </div>
                                 )}
-                                <label style={{ ...s.btn, width: 'auto', padding: '6px 12px', fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                  <Icon name="upload" size={13} />
+                                <label style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text)', cursor: 'pointer' }}>
+                                  <Icon name="upload" size={14} />
                                   사진 선택
                                   <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
                                     onChange={e => {
@@ -1049,39 +1082,53 @@ export default function Dashboard({ onLogout }) {
                               </div>
                             </div>
 
-                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>정비 · 서류</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                              {[
-                                { key: 'next_service_date', label: '정비 예정일', type: 'date' },
-                                { key: 'next_service_km',   label: '정비 km',    type: 'number' },
-                                { key: 'insurance_expiry',  label: '보험 만료일', type: 'date' },
-                                { key: 'inspection_expiry', label: '검사 만료일', type: 'date' },
-                              ].map(f => (
-                                <div key={f.key}>
-                                  <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 2 }}>{f.label}</div>
-                                  <input
-                                    type={f.type}
-                                    value={maintForm[f.key] || ''}
-                                    onChange={e => setMaintForm(p => ({ ...p, [f.key]: e.target.value }))}
-                                    style={{ ...s.input, fontSize: 12, padding: '5px 8px' }}
-                                  />
-                                </div>
-                              ))}
+                            {/* 정비·서류 섹션 */}
+                            <div style={{ padding: '14px 14px 10px' }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <Icon name="tool" size={12} style={{ color: 'var(--text-2)' }} />
+                                정비 · 서류
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                {[
+                                  { key: 'next_service_date', label: '정비 예정일', type: 'date' },
+                                  { key: 'next_service_km',   label: '정비 km',    type: 'number' },
+                                  { key: 'insurance_expiry',  label: '보험 만료일', type: 'date' },
+                                  { key: 'inspection_expiry', label: '검사 만료일', type: 'date' },
+                                ].map(f => (
+                                  <div key={f.key}>
+                                    <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4 }}>{f.label}</div>
+                                    <input type={f.type}
+                                      value={maintForm[f.key] || ''}
+                                      onChange={e => setMaintForm(p => ({ ...p, [f.key]: e.target.value }))}
+                                      style={{ ...s.input, fontSize: 13, padding: '8px 10px', borderRadius: 8 }} />
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                             <button onClick={async () => {
-                              const patch = {};
-                              if (maintForm.car_plate)         patch.car_plate         = maintForm.car_plate;
-                              if (maintForm.car_model)         patch.car_model         = maintForm.car_model;
-                              if (maintForm.next_service_date) patch.next_service_date = maintForm.next_service_date;
-                              if (maintForm.next_service_km)   patch.next_service_km   = parseInt(maintForm.next_service_km, 10);
-                              if (maintForm.insurance_expiry)  patch.insurance_expiry  = maintForm.insurance_expiry;
-                              if (maintForm.inspection_expiry) patch.inspection_expiry = maintForm.inspection_expiry;
-                              if (maintForm._imgFile) await api.uploadCarImage(d.id, maintForm._imgFile);
-                              await api.updateDevice(d.id, patch);
-                              await loadDevices();
-                              setMaintId(null);
-                            }} style={{ ...s.btn, marginTop: 8, borderRadius: 8, fontSize: 12, padding: '7px 0' }}>
-                              저장
+                              if (maintSaving) return;
+                              setMaintSaving(true);
+                              try {
+                                const patch = {};
+                                if (maintForm.car_plate)         patch.car_plate         = maintForm.car_plate;
+                                if (maintForm.car_model)         patch.car_model         = maintForm.car_model;
+                                if (maintForm.next_service_date) patch.next_service_date = maintForm.next_service_date;
+                                if (maintForm.next_service_km !== '' && maintForm.next_service_km != null)
+                                  patch.next_service_km = parseInt(maintForm.next_service_km, 10);
+                                if (maintForm.insurance_expiry)  patch.insurance_expiry  = maintForm.insurance_expiry;
+                                if (maintForm.inspection_expiry) patch.inspection_expiry = maintForm.inspection_expiry;
+                                if (maintForm._imgFile) await api.uploadCarImage(d.id, maintForm._imgFile);
+                                await api.updateDevice(d.id, patch);
+                                await loadDevices();
+                                setMaintId(null);
+                                setToast('저장됐습니다 ✓');
+                              } catch (e) {
+                                await alertDialog({ title: '저장 실패', body: e.message || '알 수 없는 오류', tone: 'danger' });
+                              } finally {
+                                setMaintSaving(false);
+                              }
+                            }} disabled={maintSaving} style={{ ...s.btn, display: 'block', width: 'calc(100% - 28px)', margin: '4px 14px 14px', borderRadius: 10, fontSize: 14, fontWeight: 700, padding: '12px 0', opacity: maintSaving ? 0.6 : 1, cursor: maintSaving ? 'not-allowed' : 'pointer' }}>
+                              {maintSaving ? '저장 중...' : '저장'}
                             </button>
                           </div>
                         )}
@@ -1185,6 +1232,10 @@ export default function Dashboard({ onLogout }) {
           )}
 
           <div style={{ position: 'absolute', inset: 0, visibility: mapVisible ? 'visible' : 'hidden' }}>
+            {/* 실시간 속도계 오버레이 */}
+            {trackLive && filterDeviceId !== null && (
+              <LiveSpeedOverlay kmh={liveSpeedKmh} />
+            )}
             <KakaoMap ref={mapRef} onReady={handleMapReady}
               onRoadview={({ lat, lng }) => tryOpenRoadview(lat, lng)}
               // 지도 마커 클릭 → 모바일: 컴팩트 PointInfoSheet + 간이 시커 슬롯 동기화 동시.
@@ -1674,3 +1725,53 @@ const s = {
     transition: 'opacity .2s',
   },
 };
+
+// ── 실시간 속도계 오버레이 ───────────────────────────────────────────
+function LiveSpeedOverlay({ kmh }) {
+  // 속도 구간별 색상
+  const color = kmh == null ? '#6b7280'
+    : kmh < 30  ? '#10b981'   // 저속 녹
+    : kmh < 80  ? '#f59e0b'   // 중속 앰버
+    : '#ef4444';              // 고속 빨강
+
+  const display = kmh != null ? Math.round(kmh) : '—';
+
+  return (
+    <div style={{
+      position: 'absolute', top: 12, left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 15, pointerEvents: 'none',
+      display: 'flex', alignItems: 'center', gap: 8,
+      background: 'rgba(255,255,255,0.92)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
+      border: `1.5px solid ${color}`,
+      borderRadius: 24,
+      padding: '6px 16px 6px 12px',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+      transition: 'border-color .3s',
+    }}>
+      {/* 속도 dot 인디케이터 */}
+      <div style={{
+        width: 8, height: 8, borderRadius: '50%',
+        background: color,
+        boxShadow: `0 0 6px ${color}`,
+        flexShrink: 0,
+        transition: 'background .3s, box-shadow .3s',
+      }} />
+      {/* 속도 숫자 */}
+      <span style={{
+        fontSize: 22, fontWeight: 800, lineHeight: 1,
+        color, fontVariantNumeric: 'tabular-nums',
+        letterSpacing: '-0.5px',
+        transition: 'color .3s',
+        minWidth: 36, textAlign: 'right',
+      }}>
+        {display}
+      </span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginTop: 2 }}>
+        km/h
+      </span>
+    </div>
+  );
+}

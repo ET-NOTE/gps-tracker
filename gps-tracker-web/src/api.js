@@ -1,3 +1,24 @@
+// 이미지 Canvas 압축 — maxPx: 긴 변 최대 픽셀, quality: JPEG 품질 0~1.
+// 결과 크기가 대략 300~700KB 수준으로 유지돼 nginx 1MB 제한을 통과함.
+function compressImage(file, maxPx = 900, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const ratio = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width  * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob ?? file), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 // 도메인 감지: gps.serial.kr 은 prefix 없이 /api/v1, 그 외 (seriallog.com 등) 는 /gps-tracker/api/v1
 const BASE = (typeof window !== 'undefined' && window.location.hostname === 'gps.serial.kr')
   ? '/api/v1'
@@ -177,8 +198,10 @@ export const api = {
   pairDevice:   (params) => req('POST', '/devices/pair', params),  // { device_uid?, iccid?, display_name? }
   updateDevice: (id, patch)             => req('PATCH',  `/devices/${id}`, patch),
   uploadCarImage: async (id, file) => {
+    // 업로드 전 Canvas로 압축 — nginx 1MB 제한 대응.
+    const compressed = await compressImage(file, 900, 0.82);
     const form = new FormData();
-    form.append('image', file);
+    form.append('image', compressed, 'car.jpg');
     const token = getToken();
     const res = await fetch(`${BASE}/devices/${id}/car-image`, {
       method: 'POST',

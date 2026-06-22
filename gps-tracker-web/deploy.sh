@@ -92,7 +92,8 @@ if [ "$ENV" = "prod" ]; then
   fi
 ENDSSH
 else
-  echo "dev: nginx /etc/nginx/sites-enabled/dev-gps.serial.kr.conf ъ░А dist ые?serve"
+  echo "dev: uploads symlink restore"
+  ssh -T $SERVER "ln -sfn /home/gps-dev/uploads /home/gps-dev/gps-tracker-web-dev/dist/uploads && echo 'uploads symlink OK'"
 fi
 
 echo ""

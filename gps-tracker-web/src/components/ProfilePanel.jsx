@@ -86,81 +86,54 @@ export default function ProfilePanel({ onLogout }) {
   ];
 
   const avatarLetter = (me.display_name || me.email || '?')[0].toUpperCase();
-  const avatarColors = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed'];
-  const avatarBg = avatarColors[(avatarLetter.charCodeAt(0) || 0) % avatarColors.length];
+  const ROLE_LABEL = { user: '일반 회원', admin: '관리자', corporate: '법인 회원' };
+  const roleLabel = ROLE_LABEL[me.role] ?? me.role;
 
   return (
     <div style={st.wrap}>
-      {/* ── 프로필 헤더 ── */}
-      <div style={st.header}>
-        <div style={{ ...st.avatar, background: avatarBg }}>{avatarLetter}</div>
-        <div style={st.headerInfo}>
-          <div style={st.headerName}>{me.display_name || '이름 없음'}</div>
-          <div style={st.headerEmail}>{me.email}</div>
-        </div>
-        {isMobile && (
-          <button onClick={() => setMenuOpen(v => !v)} style={st.burgerBtn}>
-            <Icon name={menuOpen ? 'close' : 'menu'} size={22} />
+      {/* ── 프로필 히어로 헤더 ── */}
+      <div style={st.hero}>
+        <div style={st.heroTopRow}>
+          <div style={st.roleBadge}>
+            <Icon name="shield-check" size={11} />
+            {roleLabel}
+          </div>
+          <button onClick={() => { clearTokens(); onLogout?.(); }} style={st.logoutBtn}>
+            <Icon name="logout" size={14} />
+            로그아웃
           </button>
-        )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={st.avatar}>{avatarLetter}</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={st.heroName}>{me.display_name || '이름 없음'}</div>
+            <div style={st.heroEmail}>{me.email}</div>
+          </div>
+        </div>
       </div>
 
-      {/* ── 탭 바 (데스크톱) ── */}
-      {!isMobile && (
-        <div style={st.tabBar}>
-          {tabs.map(t => {
-            const on = tab === t.id;
-            return (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                style={{
-                  ...st.tabBtn,
-                  color: on ? 'var(--primary)' : 'var(--text-3)',
-                  borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
-                }}>
-                <div style={{ position: 'relative', display: 'inline-flex' }}>
-                  <Icon name={t.icon} size={20} />
-                  {t.badge > 0 && (
-                    <span style={st.badge}>{t.badge > 9 ? '9+' : t.badge}</span>
-                  )}
-                </div>
-                <span style={st.tabLabel}>{t.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── 모바일 드롭다운 ── */}
-      {isMobile && menuOpen && (
-        <>
-          <div style={st.menuOverlay} onClick={() => setMenuOpen(false)} />
-          <div style={st.menuSheet}>
-            {tabs.map(t => {
-              const on = tab === t.id;
-              return (
-                <button key={t.id}
-                  onClick={() => { setTab(t.id); setMenuOpen(false); }}
-                  style={{
-                    ...st.menuItem,
-                    background: on ? 'var(--primary)' : 'transparent',
-                    color: on ? 'var(--primary-fg)' : 'var(--text)',
-                  }}>
-                  <span style={{
-                    ...st.menuItemIcon,
-                    color: on ? 'var(--primary-fg)' : t.color,
-                  }}>
-                    <Icon name={t.icon} size={16} stroke={on ? 2.2 : 1.75} />
-                  </span>
-                  <span style={st.menuItemLabel}>{t.label}</span>
-                  {t.badge > 0 && (
-                    <span style={st.menuBadge}>{t.badge > 9 ? '9+' : t.badge}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
+      {/* ── 탭 바 (항상 보임) ── */}
+      <div style={st.tabBar}>
+        {tabs.map(t => {
+          const on = tab === t.id;
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{
+                ...st.tabBtn,
+                color: on ? 'var(--primary)' : 'var(--text-3)',
+                borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
+              }}>
+              <div style={{ position: 'relative', display: 'inline-flex' }}>
+                <Icon name={t.icon} size={18} />
+                {t.badge > 0 && (
+                  <span style={st.badge}>{t.badge > 9 ? '9+' : t.badge}</span>
+                )}
+              </div>
+              <span style={st.tabLabel}>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* 스크롤 영역 + 바닥 페이드 인디케이터 */}
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
@@ -273,7 +246,6 @@ function AccountTab({ me, setMe, onLogout }) {
       <CleanupCard />
 
       <Card title="계정">
-        <button onClick={() => { clearTokens(); onLogout(); }} style={st.btnSecondary}>로그아웃</button>
         {!delOpen ? (
           <button onClick={() => setDelOpen(true)} style={{ ...st.btnDanger, marginTop: 8 }}>
             <Icon name="trash2" size={14} /> 회원탈퇴
@@ -1210,43 +1182,53 @@ function LabTab() {
 
   return (
     <>
-      <Card>
-        <div style={{ ...st.cardTitle, marginBottom: 8 }}>실험 기능</div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 12 }}>
-          ⚗️ 안정화되지 않은 기능들. 사용해보고 어색하면 끄세요.
+      {/* 실험 기능 카드 */}
+      <div style={st.iconCard}>
+        <div style={st.iconCardHeader}>
+          <div style={{ ...st.iconCardBadge, background: '#10b98115' }}>
+            <Icon name="flask" size={17} style={{ color: '#10b981' }} />
+          </div>
+          <div>
+            <div style={st.iconCardTitle}>실험 기능</div>
+            <div style={st.iconCardSub}>안정화되지 않은 기능들</div>
+          </div>
         </div>
-
         <LabToggleRow
-          label="오늘 첫 열람 — 어제 운행 요약 팝업"
-          desc={
-            <>
-              디바이스를 잡으면 어제 운행 요약 (이동거리 · 운행시간 · 정지구간 · 최고속도) 을 띄움.<br />
-              <b>OFF</b>: 디바이스별 최초 1회만 노출 (인트로).&nbsp;
-              <b>ON</b>: 디바이스를 잡을 때마다 매번 노출.
-            </>
-          }
+          label="어제 운행 요약 팝업"
+          desc="디바이스를 잡으면 어제 운행 요약 (이동거리 · 운행시간 · 정지구간 · 최고속도) 을 띄움"
           on={!!prefs.lab_first_view_summary}
           onChange={(v) => togglePref('lab_first_view_summary', v)}
           busy={busy}
         />
-      </Card>
+      </div>
 
-      <Card>
-        <div style={{ ...st.cardTitle, marginBottom: 8 }}>도구</div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>
-          1회성 인트로 / 튜토리얼을 다시 보거나 reset 합니다.
+      {/* 도구 카드 */}
+      <div style={st.iconCard}>
+        <div style={st.iconCardHeader}>
+          <div style={{ ...st.iconCardBadge, background: '#f59e0b15' }}>
+            <Icon name="tool" size={17} style={{ color: '#f59e0b' }} />
+          </div>
+          <div>
+            <div style={st.iconCardTitle}>도구</div>
+            <div style={st.iconCardSub}>인트로 / 튜토리얼 관리</div>
+          </div>
         </div>
-        <button
-          onClick={() => navigate('/devices/pair?tutorial=1')}
-          className="btn-bounce"
-          style={{
-            ...st.btnSecondary,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          }}>
-          <Icon name="route" size={14} />
-          페어링 튜토리얼 다시 보기
-        </button>
-      </Card>
+        <div style={{ padding: '0 16px 14px' }}>
+          <button
+            onClick={() => navigate('/devices/pair?tutorial=1')}
+            className="btn-bounce"
+            style={st.toolRow}>
+            <div style={{ ...st.toolIcon, background: '#4f46e515' }}>
+              <Icon name="route" size={15} style={{ color: '#4f46e5' }} />
+            </div>
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>페어링 튜토리얼</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>다시 보기 / 초기화</div>
+            </div>
+            <Icon name="chevron-right" size={15} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+          </button>
+        </div>
+      </div>
     </>
   );
 }
@@ -1309,20 +1291,58 @@ const st = {
     height: '100%', minHeight: 0,
     position: 'relative',
   },
-  // ─── 프로필 헤더 ───
+  // ─── 히어로 헤더 ───
+  hero: {
+    background: '#4f46e5',
+    padding: '16px 16px 20px',
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  heroTopRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  },
+  roleBadge: {
+    display: 'inline-flex', alignItems: 'center', gap: 4,
+    background: 'rgba(255,255,255,0.18)',
+    color: 'rgba(255,255,255,0.9)',
+    borderRadius: 20, padding: '3px 8px',
+    fontSize: 11, fontWeight: 600,
+  },
+  logoutBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    background: 'rgba(255,255,255,0.15)',
+    color: 'rgba(255,255,255,0.85)',
+    border: '1px solid rgba(255,255,255,0.25)',
+    borderRadius: 8, padding: '4px 10px',
+    fontSize: 12, fontWeight: 500, cursor: 'pointer',
+  },
+  avatar: {
+    width: 56, height: 56, borderRadius: '50%',
+    border: '2.5px solid rgba(255,255,255,0.8)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 24, fontWeight: 700, color: '#4f46e5',
+    background: 'white',
+    flexShrink: 0,
+    letterSpacing: '-0.5px',
+  },
+  heroName: {
+    fontSize: 17, fontWeight: 700, color: 'white',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
+  heroEmail: {
+    fontSize: 12, color: 'rgba(255,255,255,0.65)',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    marginTop: 2,
+  },
+  // ─── (구) 프로필 헤더 (하위 호환 유지) ───
   header: {
     display: 'flex', alignItems: 'center', gap: 14,
     padding: '20px 16px 16px',
     background: 'var(--surface)',
     borderBottom: '1px solid var(--border)',
     flexShrink: 0,
-  },
-  avatar: {
-    width: 52, height: 52, borderRadius: 14,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 22, fontWeight: 700, color: 'white',
-    flexShrink: 0,
-    letterSpacing: '-0.5px',
   },
   headerInfo: {
     display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0,
@@ -1438,6 +1458,39 @@ const st = {
     background: 'var(--surface-2)',
     border: '1px solid var(--border)',
     borderRadius: 10, padding: 12,
+  },
+  // ─── LabTab 아이콘 카드 ───
+  iconCard: {
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  iconCardHeader: {
+    display: 'flex', alignItems: 'center', gap: 12,
+    padding: '14px 16px',
+    borderBottom: '1px solid var(--border)',
+  },
+  iconCardBadge: {
+    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  iconCardTitle: {
+    fontSize: 14, fontWeight: 700, color: 'var(--text)',
+  },
+  iconCardSub: {
+    fontSize: 11, color: 'var(--text-3)', marginTop: 2,
+  },
+  toolRow: {
+    display: 'flex', alignItems: 'center', gap: 12,
+    width: '100%', padding: '10px 0',
+    background: 'none', border: 'none', cursor: 'pointer',
+    borderRadius: 8,
+  },
+  toolIcon: {
+    width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   cardTitle: {
     fontWeight: 700, fontSize: 11, color: 'var(--text-2)',

@@ -56,31 +56,43 @@ export default function DeviceDetail({ device, onWiped, deviceColor, deviceMeta,
 
   return (
     <div style={dt.shell}>
-      {/* ── 다크 헤더 ── */}
+      {/* ── 헤더 ── */}
       <div style={dt.head}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+        {/* 상단: 이름 + 상태 뱃지 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           {deviceColor && (
             <span style={{ width: 10, height: 10, borderRadius: 5, background: deviceColor, flexShrink: 0 }} />
           )}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={dt.headName}>{name}</div>
-            <div style={dt.headMeta}>
-              <Icon name="refresh" size={10} />
-              {' '}{ageString(device.last_seen_at)}
-              {deviceMeta?.vbatMv && <> · <Icon name="battery" size={10} /> {deviceMeta.vbatMv}mV</>}
-              {deviceMeta?.sat != null && <> · sat {deviceMeta.sat}</>}
-            </div>
           </div>
+          {deviceStatus && (
+            <span style={{
+              fontSize: 10, fontWeight: 600, padding: '3px 9px', borderRadius: 99,
+              background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)',
+              flexShrink: 0,
+            }}>
+              {deviceStatus.label}
+            </span>
+          )}
         </div>
-        {deviceStatus && (
-          <span style={{
-            fontSize: 10, fontWeight: 600, padding: '3px 9px', borderRadius: 99,
-            background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)',
-            flexShrink: 0,
-          }}>
-            {deviceStatus.label}
-          </span>
-        )}
+        {/* 하단: 4개 메타 항목 — 2×2 그리드 (좁은 화면 대응) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 10, gap: '8px 0' }}>
+          {[
+            { icon: 'refresh', label: '마지막 갱신', val: ageString(device.last_seen_at) },
+            { icon: 'clock',   label: '마지막 이동', val: deviceMeta?.recordedAt ? new Date(deviceMeta.recordedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—' },
+            { icon: 'battery', label: '배터리',      val: deviceMeta?.vbatMv ? `${deviceMeta.vbatMv}mV` : '—' },
+            { icon: 'sat',     label: 'GPS',          val: deviceMeta?.sat != null ? `sat ${deviceMeta.sat}` : '—' },
+          ].map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 6px', borderLeft: i % 2 === 1 ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
+              <Icon name={item.icon} size={14} style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.9)', lineHeight: 1.2 }}>{item.val}</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>{item.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── 탭 ── */}
@@ -221,20 +233,34 @@ const LIFECYCLE_KIND = {
   geofence_armed: { label: '펜스 활성화', color: 'var(--text-2)' },
 };
 
+const KIND_ICON = {
+  wake:           { icon: 'sun',     bg: '#EAF3DE', fg: '#3B6D11' },
+  sleep_enter:    { icon: 'moon',    bg: '#E6F1FB', fg: '#185FA5' },
+  low_batt:       { icon: 'battery', bg: '#FAECE7', fg: '#993C1D' },
+  offline:        { icon: 'unlink',  bg: '#fef2f2', fg: '#dc2626' },
+  online:         { icon: 'link',    bg: '#EAF3DE', fg: '#3B6D11' },
+  geofence_in:    { icon: 'mapPin',  bg: '#EAF3DE', fg: '#3B6D11' },
+  geofence_out:   { icon: 'mapPin',  bg: '#FAECE7', fg: '#993C1D' },
+  geofence_armed: { icon: 'fence',   bg: 'var(--surface-2)', fg: 'var(--text-2)' },
+};
+
 function eventRow(e) {
   const meta = LIFECYCLE_KIND[e.kind] || { label: e.kind, color: 'var(--text-2)' };
+  const iconMeta = KIND_ICON[e.kind] || { icon: 'refresh', bg: 'var(--surface-2)', fg: 'var(--text-2)' };
   const reason = e.data?.sleep_reason || e.data?.wake_cause;
   return (
     <div key={e.id} style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      fontSize: 12, padding: '6px 0',
-      borderBottom: '1px solid var(--border)',
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '8px 0', borderBottom: '0.5px solid var(--border)',
     }}>
-      <span style={{ color: meta.color, fontWeight: 500 }}>
+      <div style={{ width: 28, height: 28, borderRadius: 14, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: iconMeta.bg, color: iconMeta.fg }}>
+        <Icon name={iconMeta.icon} size={13} />
+      </div>
+      <span style={{ flex: 1, fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>
         {meta.label}{reason ? ` (${reason})` : ''}
       </span>
-      <span style={{ color: 'var(--text-3)', fontSize: 11 }}>
-        {new Date(e.occurred_at).toLocaleString('ko-KR')}
+      <span style={{ color: 'var(--text-3)', fontSize: 11, flexShrink: 0 }}>
+        {new Date(e.occurred_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </span>
     </div>
   );
@@ -316,11 +342,12 @@ function Counter({ label, v, warn }) {
   return (
     <div style={{
       background: warn ? '#fef2f2' : 'var(--surface-2)',
-      borderRadius: 8, padding: '7px 8px',
-      border: warn ? '1px solid #fca5a5' : '1px solid var(--border)',
+      borderRadius: 8, padding: '8px 6px',
+      border: warn ? '1px solid #fca5a5' : '0.5px solid var(--border)',
+      textAlign: 'center',
     }}>
-      <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{label}</div>
-      <div style={{ fontSize: 15, fontWeight: 600, color: warn ? '#dc2626' : 'var(--text)' }}>{v}</div>
+      <div style={{ fontSize: 15, fontWeight: 500, color: warn ? '#dc2626' : v > 0 ? '#1D9E75' : 'var(--text)' }}>{v}</div>
+      <div style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -439,10 +466,10 @@ function StatsBody({ stats }) {
 
 function Stat({ label, today, sum }) {
   return (
-    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px' }}>
+    <div style={{ background: 'var(--surface-2)', border: '0.5px solid var(--border)', borderRadius: 10, padding: '10px 12px', borderLeft: `3px solid ${INDIGO}`, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
       <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{today}</div>
-      <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>주: {sum}</div>
+      <div style={{ fontSize: 17, fontWeight: 500, color: 'var(--text)' }}>{today}</div>
+      <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>주: {sum}</div>
     </div>
   );
 }
@@ -649,8 +676,8 @@ function SectionAsync({ title, q, skeletonH = 50, danger, children }) {
 
 function Section({ title, children, danger }) {
   return (
-    <div style={{ marginTop: 10 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: danger ? 'var(--danger)' : 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{title}</div>
+    <div style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 10, fontWeight: 500, color: danger ? 'var(--danger)' : 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   );
