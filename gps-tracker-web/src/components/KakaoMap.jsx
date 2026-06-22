@@ -185,23 +185,13 @@ function cursorImage(color) {
 }
 
 // Drop-pin (위치 핀) — 라이브 마커 + 시커 선택 표시 공용. 32×40, 그림자 + 흰 테두리.
+// 진행 방향 표기는 별도 (200m 누적 화살표 마커) 가 담당 — 핀 자체엔 원형 indicator 만.
 const pinImageCache = new Map();
-function pinImage(color, heading) {
-  // heading: 0~360°. null/undefined/NaN 이면 기본 circle (정지).
-  // 5° bucket 캐시 — 회전 단계가 너무 잘게 쪼개지면 SVG 생성/이미지 디코드 부담.
-  const hasHeading = Number.isFinite(heading);
-  const hBucket = hasHeading ? Math.round(((heading % 360 + 360) % 360) / 5) * 5 : null;
+function pinImage(color) {
   const c = color || '#5B7CFF';
-  const key = hasHeading ? `${c}|h${hBucket}` : c;
-  let img = pinImageCache.get(key);
+  let img = pinImageCache.get(c);
   if (img) return img;
   const w = 32, h = 40;
-  // heading 있으면 흰색 삼각형 화살표 (위쪽 = 진행방향), 회전. 없으면 기존 원형 indicator.
-  const indicator = hasHeading
-    ? `<g transform="rotate(${hBucket} 16 14)">
-         <polygon points="16,6 12,17 16,15 20,17" fill="white"/>
-       </g>`
-    : `<circle cx="16" cy="14" r="5" fill="white"/>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
     <defs>
       <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
@@ -211,14 +201,14 @@ function pinImage(color, heading) {
     <path filter="url(#sh)"
           d="M16 1c-7.18 0-13 5.82-13 13 0 9.5 13 25 13 25s13-15.5 13-25C29 6.82 23.18 1 16 1z"
           fill="${c}" stroke="white" stroke-width="2"/>
-    ${indicator}
+    <circle cx="16" cy="14" r="5" fill="white"/>
   </svg>`;
   img = new window.kakao.maps.MarkerImage(
     'data:image/svg+xml;base64,' + btoa(svg),
     new window.kakao.maps.Size(w, h),
     { offset: new window.kakao.maps.Point(w / 2, h - 1) },   // 핀 끝(아래)이 위치점
   );
-  pinImageCache.set(key, img);
+  pinImageCache.set(c, img);
   return img;
 }
 
@@ -476,12 +466,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (markersRef.current[deviceId]) {
         const e = markersRef.current[deviceId];
         e.marker.setPosition(pos);
-        // color 또는 heading (5° bucket) 변화 시 핀 이미지 재생성. 캐시되어있어 거의 즉시.
-        const newH5 = Number.isFinite(meta.heading)
-          ? Math.round(((meta.heading % 360 + 360) % 360) / 5) * 5 : null;
-        if (e.color !== color || e.headingBucket !== newH5) {
-          e.marker.setImage(pinImage(color || '#5B7CFF', meta.heading));
-          e.headingBucket = newH5;
+        // color 변화 시 핀 이미지 재생성. 캐시되어있어 거의 즉시.
+        if (e.color !== color) {
+          e.marker.setImage(pinImage(color || '#5B7CFF'));
         }
         e.color = color;
         e.meta = meta;
@@ -491,7 +478,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           map: mapRef.current,
           position: pos,
           title: label,
-          image: pinImage(color || '#5B7CFF', meta.heading),
+          image: pinImage(color || '#5B7CFF'),
           // 라이브 위치 마커 — 옛 history 점(1~3) / cursor(99) 보다 명확히 위로.
           zIndex: 200,
         });
