@@ -112,6 +112,11 @@ export default function DeviceDetail({ device, onWiped }) {
               <StationaryBody s={device.last_stationary} />
             </Section>
 
+            {/* 부저음 패턴 — 현장에서 단말 상태 청각 식별. 횟수로 시나리오 구분. */}
+            <Section title="부저음 패턴">
+              <BuzzerPatternsBody />
+            </Section>
+
             {/* 동작 이력 — 자체 DB, 빠름 */}
             <SectionAsync title="동작 이력" q={eventsQ} skeletonH={50}>
               {(data) => <LifecycleBody events={data} />}
@@ -139,20 +144,23 @@ export default function DeviceDetail({ device, onWiped }) {
 
             {/* 현장 식별 — 부저 원격 트리거 */}
             <Section title="현장 식별">
-              <button onClick={handleBeep} disabled={beeping}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  width: '100%', padding: 9,
-                  background: 'var(--primary)', color: 'white',
-                  border: 'none', borderRadius: 6,
-                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  opacity: beeping ? 0.6 : 1,
-                }}>
-                <Icon name="volume2" size={14} />
-                {beeping ? '명령 전송 중...' : '🔊 부저 울리기'}
-              </button>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'stretch', gap: 6 }}>
+                <button onClick={handleBeep} disabled={beeping}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    flex: 1, padding: 9,
+                    background: 'var(--primary)', color: 'white',
+                    border: 'none', borderRadius: 6,
+                    cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                    opacity: beeping ? 0.6 : 1,
+                  }}>
+                  <Icon name="volume2" size={14} />
+                  {beeping ? '명령 전송 중...' : '🔊 부저 울리기'}
+                </button>
+                <BeepInfoTip />
+              </div>
               <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>
-                다음 ingest 시 (~15초 이내) 디바이스 부저가 울립니다. 여러 단말기 동시 휴대 시 어느 보드가
+                다음 ingest 시 (~15초 이내) 디바이스 부저가 울립니다 (5비프). 여러 단말기 동시 휴대 시 어느 보드가
                 서버상 어떤 ID 인지 확인할 때 사용.
                 {beepNote && beepNote.ok && (
                   <div style={{ marginTop: 4, color: 'var(--success, #2da44e)' }}>
@@ -433,6 +441,97 @@ function Counter({ label, v, warn }) {
 
 // 펌웨어 13_1+ stationary 진단 — devices.last_stationary JSONB.
 // 매 POST 마다 덮어씌워지며 deep sleep 까지 N초 카운트다운 + GPS drift 경계 + LIS 헬스를 한눈에.
+// 부저 패턴 — 펌웨어 13_2 에서 시나리오마다 비프 횟수 다름. 현장에서 청각으로 단말 상태 판단.
+// 각 시나리오의 트리거 조건과 톤 길이까지 같이 표기. arduino/13_2_motion_aware_tracker.ino 와 동기 유지.
+const BEEP_PATTERNS = [
+  { beeps: 1, tone: '400ms × 1',  label: 'Cold boot',        desc: '진짜 power-off 후 첫 부팅 (RTC 메모리 초기화됨). brownout 재부팅 루프 시엔 첫 1회만 울리고 이후 차단.' },
+  { beeps: 2, tone: '100ms × 2',  label: 'Sleep 진입',       desc: '운행 정지 3분 후 또는 시리얼 \'a\' 입력 시 deep sleep 진입.' },
+  { beeps: 3, tone: '120ms × 3',  label: '첫 GPS fix',       desc: '부팅/wake 후 GPS 가 첫 좌표를 잡으면 한 번 (wake 마다 reset).' },
+  { beeps: 4, tone: '120ms × 4',  label: '첫 LTE POST 200',  desc: 'LTE 가 살아 서버 ingest 첫 성공 시 한 번 (wake 마다 reset).' },
+  { beeps: 5, tone: '200ms × 5',  label: 'cmd:beep (현장식별)', desc: '관리 탭의 🔊 부저 울리기 클릭 시 서버가 다음 ingest 에 명령 첨부 → ~15초 안에 울림.' },
+  { beeps: 6, tone: '50ms × 6',   label: 'Motion wake',      desc: 'Deep sleep 상태에서 LIS3DH 가 움직임 감지 → wake. 매번 무조건 울림 (가드 없음).' },
+  { beeps: 7, tone: '80ms × 7',   label: 'LTE hard reset',   desc: 'SIM7080G 가 SHCONN 등에서 30초 이상 응답 안 하면 PWR_EN 토글로 hard reset.' },
+  { beeps: 8, tone: '60ms × 8',   label: '저전압 경고',       desc: 'VBAT 3.4V 미만으로 떨어지면. 충전 또는 교체 알림.' },
+];
+// 버튼 옆 (i) 아이콘 — 호버 / 클릭 (모바일) 시 비프 패턴 요약 카드 표시.
+function BeepInfoTip() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-label="비프 패턴 안내"
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 36, padding: 0,
+          background: 'transparent', color: 'var(--text-2)',
+          border: '1px solid var(--border, #d0d0d8)', borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        <Icon name="info" size={15} />
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+          zIndex: 10, minWidth: 240,
+          background: '#1a1a2e', color: 'white',
+          padding: '8px 10px', borderRadius: 6,
+          fontSize: 11, lineHeight: 1.6,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+        }}>
+          <div style={{ fontWeight: 700, marginBottom: 4, color: '#fbbf24' }}>비프 패턴 요약</div>
+          {BEEP_PATTERNS.map(p => (
+            <div key={p.beeps} style={{ display: 'flex', gap: 8 }}>
+              <span style={{ color: '#fbbf24', fontWeight: 700, minWidth: 14 }}>{p.beeps}</span>
+              <span>{p.label}</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 6, fontSize: 10, color: '#a0a0c0' }}>
+            자세한 톤·트리거 → 통계 탭 ‘부저음 패턴’
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BuzzerPatternsBody() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 2, lineHeight: 1.5 }}>
+        펌웨어 13_2 기준. 비프 횟수로 단말 상태를 청각 식별.
+      </div>
+      {BEEP_PATTERNS.map(p => (
+        <div key={p.beeps} style={{
+          display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 10, rowGap: 2,
+          padding: '6px 8px', borderRadius: 6, background: 'var(--surface-2, #f6f7fa)',
+        }}>
+          <div style={{
+            gridRow: '1 / 3', alignSelf: 'center',
+            minWidth: 28, height: 28, borderRadius: 14,
+            background: '#1a1a2e', color: '#fbbf24',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, fontWeight: 700, letterSpacing: '.02em',
+          }}>{p.beeps}</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>
+            {p.label}
+            <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 500, color: 'var(--text-3, #888)' }}>
+              {p.tone}
+            </span>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', lineHeight: 1.5 }}>{p.desc}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function StationaryBody({ s }) {
   if (!s) {
     return <Muted>아직 stationary 진단 데이터가 없습니다 (펌웨어 13_1 이상 필요)</Muted>;
