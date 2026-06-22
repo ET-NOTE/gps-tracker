@@ -36,7 +36,7 @@ case "$ENV" in
     ;;
 esac
 
-REMOTE_SRC=${REMOTE_HOME}/src-deploy$( [ "$ENV" = dev ] && echo -dev )
+REMOTE_SRC=${REMOTE_HOME}/src-deploy$( [ "$ENV" = dev ] && echo -dev || true )
 REMOTE_BIN_DIR=${REMOTE_HOME}/bin
 TMP_TAR=/tmp/gps-tracker-api-src-${ENV}.tar.gz
 
