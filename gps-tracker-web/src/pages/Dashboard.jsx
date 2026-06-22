@@ -96,6 +96,53 @@ function computeGapMap(ordered) {
   return map;
 }
 
+// 클릭 가능한 dot 마커로 표시할 인덱스 선정 — priority sampling.
+// 모든 점에 dot 을 깔면 (1) 화살표 마커 (zIndex 4) 에 가려져 안 보이고 (2) 정지 구간 점이 겹쳐
+// 시각 노이즈. 의미있는 점만 클릭 가능 dot 으로 띄움. 그 외 점은 화살표 accumulator 만 갱신.
+//
+// 우선순위 (high → low):
+//   1) gap 양끝 (통신 두절 양쪽) — 항상 picked, isGapEndpoint=true (좀 크게 + 주황 ring + zIndex 5)
+//   2) 정지 클러스터 대표 — 인접 _isStop true run 의 첫 인덱스 하나만 (나머지는 흡수)
+//   3) 이동 구간 샘플링 — non-stop 점에서 CLICKABLE_SAMPLE_INTERVAL_M 누적될 때마다 1개
+// 첫 점은 궤적 시작 표시로 항상 포함.
+const CLICKABLE_SAMPLE_INTERVAL_M = 150;
+function computeClickableIndices(enriched, gapMap) {
+  const picked = new Set();
+  const gapEndpoints = new Set();
+  const n = enriched.length;
+  if (n === 0) return { picked, gapEndpoints };
+
+  for (const k in gapMap) {
+    const i = +k;
+    picked.add(i);
+    gapEndpoints.add(i);
+  }
+
+  let prevWasStop = false;
+  for (let i = 0; i < n; i++) {
+    const isStop = enriched[i]._isStop;
+    if (isStop && !prevWasStop) picked.add(i);
+    prevWasStop = isStop;
+  }
+
+  let acc = 0;
+  for (let i = 1; i < n; i++) {
+    const p = enriched[i - 1], q = enriched[i];
+    if (p.lat && p.lng && q.lat && q.lng) {
+      acc += haversineM(p.lat, p.lng, q.lat, q.lng);
+    }
+    if (picked.has(i)) { acc = 0; continue; }
+    if (enriched[i]._isStop) continue;
+    if (acc >= CLICKABLE_SAMPLE_INTERVAL_M) {
+      picked.add(i);
+      acc = 0;
+    }
+  }
+  if (n > 0) picked.add(0);
+
+  return { picked, gapEndpoints };
+}
+
 function speedTone(speedKmh) {
   if (speedKmh == null) return '#94A3B8';
   if (speedKmh < 5) return '#64748B';
@@ -433,6 +480,8 @@ export default function Dashboard({ onLogout }) {
         });
         mapRef.current?.clearHistoryPoints(d.id);
         const enriched = enrichWithSpeedStops(ordered);
+        // priority sampling — gap 양끝 + stop cluster rep + 150m 간격 이동 sample 만 클릭 가능 dot.
+        const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap);
         enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
@@ -440,6 +489,8 @@ export default function Dashboard({ onLogout }) {
             recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix,
             speedKmh: loc._speed, isStop: loc._isStop,
             deviceId: d.id, deviceLabel: label,
+            skipMarker: !picked.has(i),
+            isGapEndpoint: gapEndpoints.has(i),
             ...(g || {}),
           });
         });
@@ -480,6 +531,8 @@ export default function Dashboard({ onLogout }) {
         // 클릭 가능한 history dot 마커 — 마지막 점 제외 (메인 마커가 그 자리에 있음)
         mapRef.current?.clearHistoryPoints(d.id);
         const enriched = enrichWithSpeedStops(ordered);
+        // priority sampling — gap 양끝 + stop cluster rep + 150m 간격 이동 sample 만 클릭 가능 dot.
+        const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap);
         enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
@@ -487,6 +540,8 @@ export default function Dashboard({ onLogout }) {
             recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix,
             speedKmh: loc._speed, isStop: loc._isStop,
             deviceId: d.id, deviceLabel: label,
+            skipMarker: !picked.has(i),
+            isGapEndpoint: gapEndpoints.has(i),
             ...(g || {}),
           });
         });

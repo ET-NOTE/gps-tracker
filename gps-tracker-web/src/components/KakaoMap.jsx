@@ -217,23 +217,30 @@ function pinImage(color) {
 
 // 새 이미지 만들 필요 있는지 — 동일 size+isStop+color 캐시
 const dotImageCache = new Map();
-function dotImageCached(color, isStop, size) {
-  const key = `${color}|${isStop ? 1 : 0}|${size}`;
+function dotImageCached(color, isStop, size, isGapEndpoint = false) {
+  const key = `${color}|${isStop ? 1 : 0}|${size}|${isGapEndpoint ? 'g' : ''}`;
   let img = dotImageCache.get(key);
   if (img) return img;
-  const half = size / 2;
+  // gap 양끝 점은 약간 크게 + 주황 ring → 통신두절 시각 강조 (그리고 클릭 hit-area 도 자연히 커짐).
+  const realSize = isGapEndpoint ? size + 6 : size;
+  const half = realSize / 2;
   const r    = Math.max(3, half - 2);
   const svg = isStop
-    ? `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-        <rect x="2" y="2" width="${size-4}" height="${size-4}" rx="2" fill="${color}" stroke="white" stroke-width="1.5"/>
+    ? `<svg xmlns="http://www.w3.org/2000/svg" width="${realSize}" height="${realSize}">
+        <rect x="2" y="2" width="${realSize-4}" height="${realSize-4}" rx="2" fill="${color}" stroke="white" stroke-width="1.5"/>
         <circle cx="${half}" cy="${half}" r="${Math.max(2, r/3)}" fill="white"/>
       </svg>`
-    : `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    : isGapEndpoint
+    ? `<svg xmlns="http://www.w3.org/2000/svg" width="${realSize}" height="${realSize}">
+        <circle cx="${half}" cy="${half}" r="${r}" fill="${color}" stroke="#fb923c" stroke-width="2.5"/>
+        <circle cx="${half}" cy="${half}" r="${Math.max(1, r/3)}" fill="white"/>
+      </svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" width="${realSize}" height="${realSize}">
         <circle cx="${half}" cy="${half}" r="${r}" fill="${color}" stroke="white" stroke-width="1.5"/>
       </svg>`;
   const url = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   img = new window.kakao.maps.MarkerImage(
-    url, new window.kakao.maps.Size(size, size),
+    url, new window.kakao.maps.Size(realSize, realSize),
     { offset: new window.kakao.maps.Point(half, half) },
   );
   dotImageCache.set(key, img);
@@ -377,8 +384,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     });
   }
 
-  function makeDotImage(color, isStop = false) {
-    return dotImageCached(color || '#888', isStop, dotSizeForLevel(zoomLevelRef.current));
+  function makeDotImage(color, isStop = false, isGapEndpoint = false) {
+    return dotImageCached(color || '#888', isStop, dotSizeForLevel(zoomLevelRef.current), isGapEndpoint);
   }
 
   function openInfo(marker, html) {
@@ -592,38 +599,48 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
     /**
      * 궤적 위의 개별 fix 점에 작은 클릭가능한 마커를 추가.
-     * meta: { recordedAt, sat, vbatMv, fix }
+     * meta: { recordedAt, sat, vbatMv, fix, skipMarker?, isGapEndpoint? }
+     *
+     * meta.skipMarker=true → dot 마커 생성 안 함, 진행방향 화살표 accumulator 만 갱신.
+     *   호출자 (Dashboard) 가 priority sampling 으로 일부만 클릭 가능하게 만들 때 사용.
+     *   화살표 흐름은 모든 점 기준으로 계속 정확하게 유지됨.
+     * meta.isGapEndpoint=true → gap 양끝 점. 화살표(zIndex 4) 위로 올라오게 zIndex 5 + 살짝 큰 점.
      */
     addHistoryPoint(deviceId, lat, lng, color, meta = {}) {
       if (!mapRef.current) return;
       const pos = new window.kakao.maps.LatLng(lat, lng);
       const isStop = !!meta.isStop;
       const c = color || '#888';
-      // cluster (5+ 점 좁은 범위 뭉침) 은 디바이스 색 무시하고 강제 빨강 — 시각적 경고.
-      const dotColor = isStop ? '#EF4444' : c;
-      const marker = new window.kakao.maps.Marker({
-        map: mapRef.current,
-        position: pos,
-        image: makeDotImage(dotColor, isStop),
-        clickable: true,
-        zIndex: isStop ? 2 : 1,
-      });
-      window.kakao.maps.event.addListener(marker, 'click', () => {
-        const p = marker.getPosition();
-        const la = p.getLat(), ln = p.getLng();
-        if (onPointInfoRef.current) {
-          const base = { kind: 'point', color: c, meta, lat: la, lng: ln };
-          onPointInfoRef.current({ ...base, addr: null });
-          resolveAddress(la, ln).then(addr => {
-            onPointInfoRef.current?.({ ...base, addr });
-          });
-        } else {
-          openInfoWithAddr(marker, la, ln,
-            (addr) => buildPointInfoHTML(meta, c, addr, la, ln));
-        }
-      });
-      if (!pointsRef.current[deviceId]) pointsRef.current[deviceId] = [];
-      pointsRef.current[deviceId].push({ marker, color: c, isStop });
+
+      if (!meta.skipMarker) {
+        // cluster (5+ 점 좁은 범위 뭉침) 은 디바이스 색 무시하고 강제 빨강 — 시각적 경고.
+        const dotColor = isStop ? '#EF4444' : c;
+        // gap 양끝 점은 화살표(zIndex 4) 보다 위로 올라와야 클릭 가능. stop / 일반은 그대로.
+        const zIdx = meta.isGapEndpoint ? 5 : (isStop ? 2 : 1);
+        const marker = new window.kakao.maps.Marker({
+          map: mapRef.current,
+          position: pos,
+          image: makeDotImage(dotColor, isStop, meta.isGapEndpoint),
+          clickable: true,
+          zIndex: zIdx,
+        });
+        window.kakao.maps.event.addListener(marker, 'click', () => {
+          const p = marker.getPosition();
+          const la = p.getLat(), ln = p.getLng();
+          if (onPointInfoRef.current) {
+            const base = { kind: 'point', color: c, meta, lat: la, lng: ln };
+            onPointInfoRef.current({ ...base, addr: null });
+            resolveAddress(la, ln).then(addr => {
+              onPointInfoRef.current?.({ ...base, addr });
+            });
+          } else {
+            openInfoWithAddr(marker, la, ln,
+              (addr) => buildPointInfoHTML(meta, c, addr, la, ln));
+          }
+        });
+        if (!pointsRef.current[deviceId]) pointsRef.current[deviceId] = [];
+        pointsRef.current[deviceId].push({ marker, color: c, isStop });
+      }
 
       // 진행 방향 화살표 — deviceId 별 누적 distance, ARROW_INTERVAL_M 마다 1개.
       const st = arrowStateRef.current[deviceId];
