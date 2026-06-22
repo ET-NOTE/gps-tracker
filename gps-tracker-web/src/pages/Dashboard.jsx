@@ -403,7 +403,7 @@ export default function Dashboard({ onLogout }) {
           const isLast = (i === ordered.length - 1);
           const meta = isLast
             ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }) }
-            : { stale };
+            : { stale, recordedAt: loc.recorded_at };   // gap polyline 분리 위해 모든 점에 timestamp 전달
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
           if (isLast) lastMetaRef.current[d.id] = meta;
         });
@@ -444,7 +444,7 @@ export default function Dashboard({ onLogout }) {
           const isLast = (i === ordered.length - 1);
           const meta = isLast
             ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }) }
-            : { stale };
+            : { stale, recordedAt: loc.recorded_at };   // gap polyline 분리 위해 모든 점에 timestamp 전달
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
           if (isLast) lastMetaRef.current[d.id] = meta;
         });
