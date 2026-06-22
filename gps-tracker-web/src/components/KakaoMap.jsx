@@ -2,6 +2,9 @@ import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const MAX_HISTORY_POINTS = 500;
+// 좌표 사이 timestamp gap 이 이 시간 넘으면 segment 분리 + gap 구간은 점선 polyline.
+// 운영 흐름: 일반 POST 간격 15s. sleep/reset/통신두절 시 갭 수십s~분 → split 정확히 감지.
+const POLYLINE_GAP_THRESHOLD_S = 60;
 
 // 카카오 zoom level 기반 두께 — 숫자가 클수록 더 축소(넓게)된 상태.
 // 축소되면 굵게, 확대되면 얇게.
@@ -255,8 +258,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
   const markersRef   = useRef({});   // deviceId → { marker, color, meta }
-  const polyRef      = useRef({});   // deviceId → Polyline
-  const coordsRef    = useRef({});   // deviceId → LatLng[]
+  // deviceId → { segments: [{ coords: LatLng[], poly: Polyline }], gaps: Polyline[] }
+  // segments: 연속된 좌표 묶음 (solid polyline). gaps: segment 끝-시작 잇는 dashed polyline.
+  // timestamp gap > POLYLINE_GAP_THRESHOLD_S 시 새 segment + dashed.
+  const polyRef      = useRef({});
+  const lastRecordedAtRef = useRef({});   // deviceId → 직전 좌표 recordedAt (ms epoch)
   const pointsRef    = useRef({});   // deviceId → [{ marker, color, isStop }]
   // live history 의 진행 방향 화살표 — 누적 ARROW_INTERVAL_M (200m) 마다 1개.
   // 화살표 marker 자체는 arrowsRef, 누적 distance / 직전 lat,lng 는 arrowStateRef 에.
@@ -344,7 +350,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     const lvl = zoomLevelRef.current;
     const sw  = strokeWeightForLevel(lvl);
     const sz  = dotSizeForLevel(lvl);
-    Object.values(polyRef.current).forEach(p => p.setOptions({ strokeWeight: sw }));
+    Object.values(polyRef.current).forEach(entry => {
+      entry.segments.forEach(s => s.poly.setOptions({ strokeWeight: sw }));
+      entry.gaps.forEach(g => g.setOptions({ strokeWeight: Math.max(1, sw - 1) }));
+    });
     Object.values(pointsRef.current).forEach(arr => {
       arr.forEach(({ marker, color, isStop }) => {
         const dotColor = isStop ? '#EF4444' : (color || '#888');
@@ -502,27 +511,58 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         markersRef.current[deviceId] = { marker, color, meta, label };
       }
 
-      // append trail coords
-      if (!coordsRef.current[deviceId]) coordsRef.current[deviceId] = [];
-      coordsRef.current[deviceId].push(pos);
-      if (coordsRef.current[deviceId].length > MAX_HISTORY_POINTS) coordsRef.current[deviceId].shift();
-
+      // ── trail polyline (segment + gap 분리) ─────────────────────────
+      // recordedAt 시간 gap > POLYLINE_GAP_THRESHOLD_S 면 sleep/reset/통신두절 추정.
+      // 새 solid segment 시작 + 직전 segment 끝 → 현재 좌표 잇는 dashed polyline 추가.
       const stroke = color || '#888';
       const opacity = meta.stale ? 0.35 : 0.85;
       const sw = strokeWeightForLevel(zoomLevelRef.current);
-      if (polyRef.current[deviceId]) {
-        polyRef.current[deviceId].setPath(coordsRef.current[deviceId]);
-        polyRef.current[deviceId].setOptions({ strokeColor: stroke, strokeOpacity: opacity, strokeWeight: sw });
-      } else {
-        polyRef.current[deviceId] = new window.kakao.maps.Polyline({
+      const newRecordedAt = meta.recordedAt ? new Date(meta.recordedAt).getTime() : Date.now();
+      const prevRecordedAt = lastRecordedAtRef.current[deviceId];
+      const gapS = prevRecordedAt ? (newRecordedAt - prevRecordedAt) / 1000 : 0;
+      const isGap = prevRecordedAt && gapS > POLYLINE_GAP_THRESHOLD_S;
+
+      if (!polyRef.current[deviceId]) {
+        polyRef.current[deviceId] = { segments: [], gaps: [] };
+      }
+      const entry = polyRef.current[deviceId];
+
+      if (isGap || entry.segments.length === 0) {
+        // gap 발견 → 직전 segment 끝 좌표 ↔ 현재 좌표 잇는 dashed
+        if (isGap && entry.segments.length > 0) {
+          const lastSeg = entry.segments[entry.segments.length - 1];
+          const lastPos = lastSeg.coords[lastSeg.coords.length - 1];
+          if (lastPos) {
+            const dashed = new window.kakao.maps.Polyline({
+              map: mapRef.current,
+              path: [lastPos, pos],
+              strokeWeight: Math.max(1, sw - 1),
+              strokeColor: stroke,
+              strokeOpacity: 0.45,
+              strokeStyle: 'shortdash',
+            });
+            entry.gaps.push(dashed);
+          }
+        }
+        const coords = [pos];
+        const poly = new window.kakao.maps.Polyline({
           map: mapRef.current,
-          path: coordsRef.current[deviceId],
+          path: coords,
           strokeWeight: sw,
           strokeColor: stroke,
           strokeOpacity: opacity,
           strokeStyle: 'solid',
         });
+        entry.segments.push({ coords, poly });
+      } else {
+        // 기존 마지막 segment 연속 — coords append + path 갱신
+        const lastSeg = entry.segments[entry.segments.length - 1];
+        lastSeg.coords.push(pos);
+        lastSeg.poly.setPath(lastSeg.coords);
+        lastSeg.poly.setOptions({ strokeColor: stroke, strokeOpacity: opacity, strokeWeight: sw });
       }
+
+      lastRecordedAtRef.current[deviceId] = newRecordedAt;
     },
 
     /**
@@ -614,16 +654,20 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     },
     setLiveTrailsVisible(visible) {
       if (!mapRef.current) return;
-      Object.values(polyRef.current).forEach(poly => {
-        poly.setMap(visible ? mapRef.current : null);
+      Object.values(polyRef.current).forEach(entry => {
+        entry.segments.forEach(s => s.poly.setMap(visible ? mapRef.current : null));
+        entry.gaps.forEach(g => g.setMap(visible ? mapRef.current : null));
       });
     },
 
     setMarkerColor(deviceId, color) {
-      const entry = markersRef.current[deviceId];
-      if (entry) entry.color = color;
-      const poly = polyRef.current[deviceId];
-      if (poly) poly.setOptions({ strokeColor: color });
+      const me = markersRef.current[deviceId];
+      if (me) me.color = color;
+      const entry = polyRef.current[deviceId];
+      if (entry) {
+        entry.segments.forEach(s => s.poly.setOptions({ strokeColor: color }));
+        entry.gaps.forEach(g => g.setOptions({ strokeColor: color }));
+      }
       // history dots 색깔 변경 — isStop 점은 디바이스 색 변경에도 빨강 유지.
       const arr = pointsRef.current[deviceId];
       if (arr) {
@@ -669,8 +713,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       Object.entries(markersRef.current).forEach(([id, { marker }]) => {
         marker.setMap((targetId === null || +id === targetId) ? all : null);
       });
-      Object.entries(polyRef.current).forEach(([id, poly]) => {
-        poly.setMap((targetId === null || +id === targetId) ? all : null);
+      Object.entries(polyRef.current).forEach(([id, entry]) => {
+        const vis = (targetId === null || +id === targetId);
+        entry.segments.forEach(s => s.poly.setMap(vis ? all : null));
+        entry.gaps.forEach(g => g.setMap(vis ? all : null));
       });
       Object.entries(pointsRef.current).forEach(([id, arr]) => {
         const vis = (targetId === null || +id === targetId);
@@ -1008,10 +1054,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         entry.marker.setMap(null);
         delete markersRef.current[deviceId];
       }
-      if (polyRef.current[deviceId]) {
-        polyRef.current[deviceId].setMap(null);
+      const polyEntry = polyRef.current[deviceId];
+      if (polyEntry) {
+        polyEntry.segments.forEach(s => s.poly.setMap(null));
+        polyEntry.gaps.forEach(g => g.setMap(null));
         delete polyRef.current[deviceId];
       }
+      delete lastRecordedAtRef.current[deviceId];
       const pts = pointsRef.current[deviceId];
       if (pts) {
         pts.forEach(({ marker }) => marker.setMap(null));
@@ -1023,7 +1072,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         delete arrowsRef.current[deviceId];
       }
       delete arrowStateRef.current[deviceId];
-      delete coordsRef.current[deviceId];
     },
   }));
 
