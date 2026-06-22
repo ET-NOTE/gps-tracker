@@ -74,6 +74,28 @@ function calcSpeedKmh(prev, next) {
   return Number.isFinite(speed) ? Math.min(speed, 240) : null;
 }
 
+// 폴리라인 dashed gap 기준 (KakaoMap.POLYLINE_GAP_THRESHOLD_S 와 동일)
+const POLYLINE_GAP_THRESHOLD_S = 60;
+
+// ordered (시간 오름차순 fix 점들) 을 훑어 각 인덱스에 gap 양끝 메타 부여.
+// 결과: idx → { gapBefore?: {gapS, peerTs, peerLat, peerLng},
+//              gapAfter?:  {gapS, peerTs, peerLat, peerLng} }
+// gap 양끝 두 점이 dashed polyline 으로 묶인 양쪽. 둘 다 동일 정보 (방향만 반전).
+function computeGapMap(ordered) {
+  const map = {};
+  for (let i = 1; i < ordered.length; i++) {
+    const a = ordered[i - 1], b = ordered[i];
+    if (!a.recorded_at || !b.recorded_at) continue;
+    const gapS = (new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()) / 1000;
+    if (gapS <= POLYLINE_GAP_THRESHOLD_S) continue;
+    const aPeer = { gapS, peerTs: b.recorded_at, peerLat: b.lat, peerLng: b.lng };
+    const bPeer = { gapS, peerTs: a.recorded_at, peerLat: a.lat, peerLng: a.lng };
+    (map[i - 1] ??= {}).gapAfter  = aPeer;   // 이전 점 입장: 다음(b) 과 두절
+    (map[i]     ??= {}).gapBefore = bPeer;   // 다음 점 입장: 이전(a) 과 두절
+  }
+  return map;
+}
+
 function speedTone(speedKmh) {
   if (speedKmh == null) return '#94A3B8';
   if (speedKmh < 5) return '#64748B';
@@ -392,28 +414,33 @@ export default function Dashboard({ onLogout }) {
       wsRef.current?.subscribe(list.map(d => d.id));
       for (const d of list) {
         if (oldIds.has(d.id)) continue;
-        const locs = await api.listLocations(d.id, { limit: 500, fix_only: true });
+        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true });
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
         const color = getDeviceColor(d);
         const stale = isStale(d.last_seen_at);
+        const gapMap = computeGapMap(ordered);
         ordered.forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
+          const g = gapMap[i];
           const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }) }
+            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
             : { stale, recordedAt: loc.recorded_at };   // gap polyline 분리 위해 모든 점에 timestamp 전달
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
           if (isLast) lastMetaRef.current[d.id] = meta;
         });
         mapRef.current?.clearHistoryPoints(d.id);
         const enriched = enrichWithSpeedStops(ordered);
-        enriched.slice(0, -1).forEach(loc => {
+        enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
+          const g = gapMap[i];
           mapRef.current?.addHistoryPoint(d.id, loc.lat, loc.lng, color, {
             recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix,
             speedKmh: loc._speed, isStop: loc._isStop,
+            deviceId: d.id, deviceLabel: label,
+            ...(g || {}),
           });
         });
       }
@@ -432,18 +459,20 @@ export default function Dashboard({ onLogout }) {
       wsRef.current?.subscribe(list.map(d => d.id));
 
       for (const d of list) {
-        const locs = await api.listLocations(d.id, { limit: 500, fix_only: true });
+        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true });
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
         const color = getDeviceColor(d);
         const stale = isStale(d.last_seen_at);
+        const gapMap = computeGapMap(ordered);
         // 폴리라인/메인 마커 갱신용
         ordered.forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
+          const g = gapMap[i];
           const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }) }
+            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
             : { stale, recordedAt: loc.recorded_at };   // gap polyline 분리 위해 모든 점에 timestamp 전달
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
           if (isLast) lastMetaRef.current[d.id] = meta;
@@ -451,11 +480,14 @@ export default function Dashboard({ onLogout }) {
         // 클릭 가능한 history dot 마커 — 마지막 점 제외 (메인 마커가 그 자리에 있음)
         mapRef.current?.clearHistoryPoints(d.id);
         const enriched = enrichWithSpeedStops(ordered);
-        enriched.slice(0, -1).forEach(loc => {
+        enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
+          const g = gapMap[i];
           mapRef.current?.addHistoryPoint(d.id, loc.lat, loc.lng, color, {
             recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix,
             speedKmh: loc._speed, isStop: loc._isStop,
+            deviceId: d.id, deviceLabel: label,
+            ...(g || {}),
           });
         });
       }
