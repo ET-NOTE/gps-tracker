@@ -74,10 +74,33 @@ function calcSpeedKmh(prev, next) {
   return Number.isFinite(speed) ? Math.min(speed, 240) : null;
 }
 
-// 홈 탭은 "오늘" 데이터만 (전날 이전은 seeker 로). 로컬 자정 → ISO UTC 문자열로 listLocations since 에 전달.
-function todaySinceISO() {
+// 홈 탭 since 계산.
+// 기본은 "오늘 0시" 인데, 자정 직전 60분 안에 sleep_enter 이벤트가 없으면 단말기가 자정에도
+// 운행 중이었던 것 → 그 운행 시작점 (= 자정 이전 마지막 sleep_enter occurred_at + 1ms) 까지
+// since 를 앞당겨서 자정 걸친 운행이 끊겨 보이지 않게.
+// 50개 events 안에 자정 이전 sleep 이 없으면 안전하게 자정 fallback.
+const TRIP_CARRYOVER_WINDOW_MS = 60 * 60 * 1000;
+function localMidnightMs() {
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+}
+async function computeHomeSinceISO(deviceId) {
+  const midnightMs = localMidnightMs();
+  const midnightISO = new Date(midnightMs).toISOString();
+  try {
+    const events = await api.getDeviceEvents(deviceId);
+    let lastSleepMs = -Infinity;
+    for (const e of events) {
+      if (e.kind !== 'sleep_enter') continue;
+      const t = new Date(e.occurred_at).getTime();
+      if (t < midnightMs && t > lastSleepMs) lastSleepMs = t;
+    }
+    if (!Number.isFinite(lastSleepMs)) return midnightISO;
+    if (midnightMs - lastSleepMs < TRIP_CARRYOVER_WINDOW_MS) return midnightISO;
+    return new Date(lastSleepMs + 1).toISOString();
+  } catch {
+    return midnightISO;
+  }
 }
 
 // 폴리라인 dashed gap 기준 (KakaoMap.POLYLINE_GAP_THRESHOLD_S 와 동일)
@@ -467,7 +490,8 @@ export default function Dashboard({ onLogout }) {
       wsRef.current?.subscribe(list.map(d => d.id));
       for (const d of list) {
         if (oldIds.has(d.id)) continue;
-        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since: todaySinceISO() });
+        const since = await computeHomeSinceISO(d.id);
+        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since });
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
@@ -515,8 +539,12 @@ export default function Dashboard({ onLogout }) {
       devRef.current = list;
       wsRef.current?.subscribe(list.map(d => d.id));
 
-      for (const d of list) {
-        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since: todaySinceISO() });
+      // 디바이스마다 since 를 events 로 산출 (자정 걸친 운행 carry-over). 디바이스 간엔 병렬.
+      const sinces = await Promise.all(list.map(d => computeHomeSinceISO(d.id)));
+      for (let li = 0; li < list.length; li++) {
+        const d = list[li];
+        const since = sinces[li];
+        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since });
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
