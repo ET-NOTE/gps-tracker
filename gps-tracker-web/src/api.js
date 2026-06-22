@@ -212,8 +212,14 @@ export const api = {
   wipeDevice:    (id) => req('POST', `/devices/${id}/wipe`),
   beepDevice:    (id) => req('POST', `/devices/${id}/beep`),
 
-  // Round 4: lifecycle 이벤트 (wake/sleep/low_batt/offline 등)
-  getDeviceEvents: (id) => req('GET', `/devices/${id}/events`),
+  // Round 4: lifecycle 이벤트 (wake/sleep/low_batt/offline 등). 진단 페이지가 since/limit 사용.
+  getDeviceEvents: (id, params = {}) => {
+    const q = new URLSearchParams();
+    if (params.since) q.set('since', params.since);
+    if (params.limit) q.set('limit', params.limit);
+    const qs = q.toString();
+    return req('GET', `/devices/${id}/events${qs ? '?' + qs : ''}`);
+  },
 
   // 운행 통계 (Phase D)
   getDailyStats: (id, params = {}) => {
