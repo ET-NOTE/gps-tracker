@@ -427,6 +427,15 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     });
   }
 
+  // gap (통신 두절) 구간 클릭 시 — 양 끝 timestamp + 좌표를 자연 키로 표시.
+  // 복사 버튼은 글로벌 함수 등록 (InfoWindow 의 inline onclick 한정 사용).
+  function openInfoWithGap(lat, lng, info) {
+    if (!sharedIwRef.current) return;
+    sharedIwRef.current.setContent(buildGapInfoHTML(info));
+    sharedIwRef.current.setPosition(new window.kakao.maps.LatLng(lat, lng));
+    sharedIwRef.current.open(mapRef.current);
+  }
+
   useImperativeHandle(ref, () => ({
     /**
      * 컨테이너 크기·display 가 바뀐 뒤 호출 — kakao Map 이 새 dimension 에 맞춰 다시 그림.
@@ -540,6 +549,30 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
               strokeColor: stroke,
               strokeOpacity: 0.45,
               strokeStyle: 'shortdash',
+            });
+            // 클릭 시 gap info 모달 — 자연 키 (device_id + from/to recorded_at)
+            // 별도 UUID 없이 server location_records 와 정확히 매칭 가능.
+            const fromTs = prevRecordedAt;
+            const toTs = newRecordedAt;
+            const fromLatLng = { lat: lastPos.getLat(), lng: lastPos.getLng() };
+            const toLatLng = { lat: pos.getLat(), lng: pos.getLng() };
+            window.kakao.maps.event.addListener(dashed, 'click', (e) => {
+              const clickLat = e?.latLng?.getLat?.() ?? toLatLng.lat;
+              const clickLng = e?.latLng?.getLng?.() ?? toLatLng.lng;
+              if (onPointInfoRef.current) {
+                onPointInfoRef.current({
+                  kind: 'gap', deviceId,
+                  fromTs, toTs, fromLatLng, toLatLng,
+                  lat: clickLat, lng: clickLng,
+                  meta: { label, color: stroke, gapS: (toTs - fromTs) / 1000 },
+                });
+              } else {
+                openInfoWithGap(dashed, clickLat, clickLng, {
+                  deviceId, label, color: stroke,
+                  fromTs, toTs, fromLatLng, toLatLng,
+                  gapS: (toTs - fromTs) / 1000,
+                });
+              }
             });
             entry.gaps.push(dashed);
           }
@@ -1108,6 +1141,35 @@ function escHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
   }[c]));
+}
+
+// gap (통신 두절) 구간 InfoWindow HTML — 양 끝 timestamp + 좌표 + 복사 가능 텍스트.
+// device_id + recorded_at 자연 키만으로 server location_records 와 정확 매칭 가능.
+function buildGapInfoHTML(info) {
+  const { deviceId, label, color, fromTs, toTs, fromLatLng, toLatLng, gapS } = info;
+  const fromISO = new Date(fromTs).toISOString();
+  const toISO = new Date(toTs).toISOString();
+  const fromKr = new Date(fromTs).toLocaleString('ko-KR');
+  const toKr = new Date(toTs).toLocaleString('ko-KR');
+  const gapMin = Math.round(gapS / 60);
+  const gapStr = gapMin >= 60 ? `${Math.floor(gapMin/60)}시간 ${gapMin%60}분` : `${gapMin}분`;
+  const copyText = [
+    `device_id: ${deviceId} (${label})`,
+    `gap: ${gapStr}`,
+    `from: ${fromISO}  (${fromLatLng.lat.toFixed(6)}, ${fromLatLng.lng.toFixed(6)})`,
+    `to:   ${toISO}  (${toLatLng.lat.toFixed(6)}, ${toLatLng.lng.toFixed(6)})`,
+  ].join('\n');
+  return `
+    <div style="padding:12px 14px;font-size:12px;font-family:-apple-system,system-ui,sans-serif;min-width:280px;line-height:1.55;color:#1a1a2e">
+      <div style="font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${color || '#888'}"></span>
+        📡 통신 두절 구간 · ${escHtml(label)}
+      </div>
+      <div style="font-size:11px;color:#666;margin-bottom:6px">두 좌표 사이 ingest 가 ${gapStr} 끊김 (sleep / reset / signal_loss 등)</div>
+      <div style="background:#f5f5f7;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-family:ui-monospace,monospace;font-size:11px;white-space:pre-wrap;user-select:all">${escHtml(copyText)}</div>
+      <button onclick="navigator.clipboard.writeText(${JSON.stringify(copyText)}).then(()=>{this.textContent='✅ 복사됨'; setTimeout(()=>{this.textContent='📋 복사'},1500)})" style="background:#1a1a2e;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%">📋 복사</button>
+    </div>
+  `;
 }
 
 function buildMainInfoHTML(label, color, m, addr, lat, lng) {
