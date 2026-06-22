@@ -55,6 +55,8 @@ pub struct IngestPayload {
     // 진짜 정지 시각 — sleep_enter 페이로드 보낼 때 펌웨어가 마지막 모션 후 경과 초 첨부.
     // 백엔드: occurred_at - offset = stopped_at. (펌웨어가 epoch 시각 못 가져도 보낼 수 있음)
     pub stopped_offset_s: Option<i64>,
+    // 14_* 진단 sketch 식별자 — events.data 에 저장 → /diagnostic 페이지가 사이클별 분류.
+    pub build_tag: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -308,6 +310,9 @@ pub async fn ingest(
             if let Some(off) = parsed.stopped_offset_s {
                 data.insert("stopped_offset_s".into(), off.into());
             }
+            if let Some(bt) = &parsed.build_tag {
+                data.insert("build_tag".into(), Value::String(bt.clone()));
+            }
             let _ = sqlx::query(
                 "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM devices WHERE id = $1))",
             )
@@ -332,8 +337,9 @@ pub async fn ingest(
                     d.get("last_sleep_uptime_s").and_then(|v| v.as_i64()).unwrap_or(-1),
                 ))
                 .unwrap_or((-1, -1, -1, -1, -1));
+            let build_tag = parsed.build_tag.as_deref().unwrap_or("-");
             tracing::info!(
-                device_id, kind,
+                device_id, kind, build_tag,
                 wake_cause, sleep_reason,
                 uptime_s, vbat_mv,
                 boots, wakes, motion_wakes, brownouts, last_sleep_uptime_s, stopped_offset_s,

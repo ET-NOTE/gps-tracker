@@ -23,6 +23,7 @@ import Dashboard from './pages/Dashboard';
 import SharePage from './pages/SharePage';
 import PaymentResult from './pages/PaymentResult';
 import LegalPage from './pages/LegalPage';
+import DiagnosticPage from './pages/DiagnosticPage';
 import DialogHost from './components/Dialog';
 
 const BASENAME = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
@@ -63,6 +64,11 @@ function Shell() {
         authed
           ? <Navigate to={readNext() || '/'} replace />
           : <AuthRoute onLogin={() => setAuthed(true)} />
+      } />
+
+      {/* 14_* 진단 콘솔 — Dashboard 외부 풀스크린 */}
+      <Route path="/diagnostic" element={
+        authed ? <DiagnosticPage /> : <RequireAuthRedirect />
       } />
 
       {/* 보호된 영역 — 미인증이면 로그인으로 (next 보존) */}

@@ -3,7 +3,7 @@
 // Phase 2 (TODO): SIM7080G ICCID/IMSI/IMEI 기반 자동 페어링.
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{delete, get, patch, post},
     Json, Router,
 };
@@ -439,26 +439,37 @@ pub struct DeviceEvent {
     pub occurred_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Deserialize, Default)]
+pub struct EventsQuery {
+    /// recorded_at >= since (RFC3339).
+    pub since: Option<DateTime<Utc>>,
+    /// 결과 row 상한. 기본 50, 최대 1000 (진단 페이지가 긴 벤치 세션에서도 cover).
+    pub limit: Option<i64>,
+}
+
 async fn events_log(
     State(state): State<AppState>,
     user: AuthUser,
     Path(id): Path<i64>,
+    Query(q): Query<EventsQuery>,
 ) -> AppResult<Json<Vec<DeviceEvent>>> {
     let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
         .bind(id).fetch_optional(&state.db).await?.flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
+    let limit = q.limit.unwrap_or(50).clamp(1, 1000);
     let rows = sqlx::query_as::<_, DeviceEvent>(
         r#"SELECT id, kind, data, occurred_at
              FROM events
             WHERE device_id = $1 AND user_id = $2
               AND kind IN ('wake','sleep_enter','low_batt','offline','online','signal_loss',
                            'geofence_in','geofence_out','geofence_armed','brownout','gps_anomaly','lost')
+              AND ($3::timestamptz IS NULL OR occurred_at >= $3)
             ORDER BY occurred_at DESC
-            LIMIT 50"#,
+            LIMIT $4"#,
     )
-    .bind(id).bind(user.user_id)
+    .bind(id).bind(user.user_id).bind(q.since).bind(limit)
     .fetch_all(&state.db).await?;
     Ok(Json(rows))
 }

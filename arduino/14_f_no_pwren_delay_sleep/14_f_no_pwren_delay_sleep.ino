@@ -43,6 +43,7 @@
 #define PIN_SCL        9
 
 #define PIN_PWR_EN     6
+#define BUILD_TAG      "14_f"   // [diagnostic] /diagnostic sketch ID
 #define PIN_PWRKEY     7
 #define PIN_DTR        10
 #define PIN_BAT        3
@@ -920,7 +921,7 @@ static void buildPayload(char *out, size_t cap) {
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
       "\"l80\":{\"fix\":true,\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"ttff_s\":%lu%s},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
-      "\"wake\":\"%s\"%s}",
+      "\"wake\":\"%s\"%s,\"build_tag\":\"" BUILD_TAG "\"}",
       deviceUid, sim,
       (unsigned long)((millis() - bootMs) / 1000),
       (unsigned long)S.bringUpCount,
@@ -938,7 +939,7 @@ static void buildPayload(char *out, size_t cap) {
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
       "\"l80\":{\"fix\":false,\"sat\":%d},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
-      "\"wake\":\"%s\"%s}",
+      "\"wake\":\"%s\"%s,\"build_tag\":\"" BUILD_TAG "\"}",
       deviceUid, sim,
       (unsigned long)((millis() - bootMs) / 1000),
       (unsigned long)S.bringUpCount,
@@ -965,7 +966,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
     "\"event\":\"sleep_enter\",\"sleep_reason\":\"%s\",\"stopped_offset_s\":%lu,"
     "\"diag\":{\"boots\":%lu,\"wakes\":%lu,\"motion_wakes\":%lu,\"switch_wakes\":%lu,"
     "\"no_fix_cycles\":%lu,\"modem_fail_cycles\":%lu,\"brownouts\":%lu,"
-    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu}}",
+    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu,\"build_tag\":\"" BUILD_TAG "\"}}",
     deviceUid, sim, (unsigned long)uptime_s,
     S.csq, S.reg, (unsigned long)vbatMv,
     reason, (unsigned long)stopped_offset_s,
