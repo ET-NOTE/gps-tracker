@@ -352,8 +352,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     const sz  = dotSizeForLevel(lvl);
     Object.values(polyRef.current).forEach(entry => {
       entry.segments.forEach(s => s.poly.setOptions({ strokeWeight: sw }));
-      // visible dashed 만 zoom 따라 두께 변경. hit 는 항상 16 고정 (클릭 영역).
-      entry.gaps.forEach(g => g.visible.setOptions({ strokeWeight: Math.max(1, sw - 1) }));
+      entry.gaps.forEach(g => g.setOptions({ strokeWeight: Math.max(1, sw - 1) }));
     });
     Object.values(pointsRef.current).forEach(arr => {
       arr.forEach(({ marker, color, isStop }) => {
@@ -538,7 +537,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const entry = polyRef.current[deviceId];
 
       if (isGap || entry.segments.length === 0) {
-        // gap 발견 → 직전 segment 끝 좌표 ↔ 현재 좌표 잇는 dashed + 클릭용 두꺼운 hit polyline
+        // gap 발견 → 직전 segment 끝 좌표 ↔ 현재 좌표 잇는 dashed (시각 전용, 클릭 X)
+        // 클릭 가능한 정보는 gap 양끝 history point marker 에서 (meta.gapBefore/gapAfter) 처리.
         if (isGap && entry.segments.length > 0) {
           const lastSeg = entry.segments[entry.segments.length - 1];
           const lastPos = lastSeg.coords[lastSeg.coords.length - 1];
@@ -551,51 +551,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
               strokeOpacity: 0.45,
               strokeStyle: 'shortdash',
             });
-            // hit-area 용 두꺼운 투명 polyline — dashed 자체는 얇아 클릭 hit 어려움 + Kakao 가 지도
-            // pan 을 우선. 같은 path 의 두꺼운 (16px) opacity 0 polyline 깔아 클릭 영역 확장.
-            const hit = new window.kakao.maps.Polyline({
-              map: mapRef.current,
-              path: [lastPos, pos],
-              strokeWeight: 16,
-              strokeColor: stroke,
-              strokeOpacity: 0,
-              strokeStyle: 'solid',
-              zIndex: 10,
-            });
-            // 클릭 시 gap info 모달 — 자연 키 (device_id + from/to recorded_at)
-            // 별도 UUID 없이 server location_records 와 정확히 매칭 가능.
-            const fromTs = prevRecordedAt;
-            const toTs = newRecordedAt;
-            const fromLatLng = { lat: lastPos.getLat(), lng: lastPos.getLng() };
-            const toLatLng = { lat: pos.getLat(), lng: pos.getLng() };
-            const onClick = (e) => {
-              const clickLat = e?.latLng?.getLat?.() ?? toLatLng.lat;
-              const clickLng = e?.latLng?.getLng?.() ?? toLatLng.lng;
-              if (onPointInfoRef.current) {
-                onPointInfoRef.current({
-                  kind: 'gap', deviceId,
-                  fromTs, toTs, fromLatLng, toLatLng,
-                  lat: clickLat, lng: clickLng,
-                  meta: { label, color: stroke, gapS: (toTs - fromTs) / 1000 },
-                });
-              } else {
-                openInfoWithGap(clickLat, clickLng, {
-                  deviceId, label, color: stroke,
-                  fromTs, toTs, fromLatLng, toLatLng,
-                  gapS: (toTs - fromTs) / 1000,
-                });
-              }
-            };
-            window.kakao.maps.event.addListener(hit, 'click', onClick);
-            window.kakao.maps.event.addListener(dashed, 'click', onClick);
-            // cursor 변경 — mouseover 시 hit 영역에서 포인터 표시 (지도 손 커서 → 손가락)
-            window.kakao.maps.event.addListener(hit, 'mouseover', () => {
-              if (mapRef.current?.getNode) mapRef.current.getNode().style.cursor = 'pointer';
-            });
-            window.kakao.maps.event.addListener(hit, 'mouseout', () => {
-              if (mapRef.current?.getNode) mapRef.current.getNode().style.cursor = '';
-            });
-            entry.gaps.push({ visible: dashed, hit });
+            entry.gaps.push(dashed);
           }
         }
         const coords = [pos];
@@ -710,10 +666,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (!mapRef.current) return;
       Object.values(polyRef.current).forEach(entry => {
         entry.segments.forEach(s => s.poly.setMap(visible ? mapRef.current : null));
-        entry.gaps.forEach(g => {
-          g.visible.setMap(visible ? mapRef.current : null);
-          g.hit.setMap(visible ? mapRef.current : null);
-        });
+        entry.gaps.forEach(g => g.setMap(visible ? mapRef.current : null));
       });
     },
 
@@ -723,10 +676,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const entry = polyRef.current[deviceId];
       if (entry) {
         entry.segments.forEach(s => s.poly.setOptions({ strokeColor: color }));
-        entry.gaps.forEach(g => {
-          g.visible.setOptions({ strokeColor: color });
-          g.hit.setOptions({ strokeColor: color });
-        });
+        entry.gaps.forEach(g => g.setOptions({ strokeColor: color }));
       }
       // history dots 색깔 변경 — isStop 점은 디바이스 색 변경에도 빨강 유지.
       const arr = pointsRef.current[deviceId];
@@ -776,10 +726,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       Object.entries(polyRef.current).forEach(([id, entry]) => {
         const vis = (targetId === null || +id === targetId);
         entry.segments.forEach(s => s.poly.setMap(vis ? all : null));
-        entry.gaps.forEach(g => {
-          g.visible.setMap(vis ? all : null);
-          g.hit.setMap(vis ? all : null);
-        });
+        entry.gaps.forEach(g => g.setMap(vis ? all : null));
       });
       Object.entries(pointsRef.current).forEach(([id, arr]) => {
         const vis = (targetId === null || +id === targetId);
@@ -1120,7 +1067,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const polyEntry = polyRef.current[deviceId];
       if (polyEntry) {
         polyEntry.segments.forEach(s => s.poly.setMap(null));
-        polyEntry.gaps.forEach(g => { g.visible.setMap(null); g.hit.setMap(null); });
+        polyEntry.gaps.forEach(g => g.setMap(null));
         delete polyRef.current[deviceId];
       }
       delete lastRecordedAtRef.current[deviceId];
@@ -1208,6 +1155,8 @@ function buildMainInfoHTML(label, color, m, addr, lat, lng) {
   const sat    = m.sat ?? '—';
   const vbat   = m.vbatMv ? `${m.vbatMv} mV` : '—';
   const speed  = m.speedKmh != null ? ROW(SVG_RUN, `${m.speedKmh.toFixed(1)} km/h`) : '';
+  // 라이브 마커도 gap 양끝점일 수 있음 — gap 정보 노출.
+  const gapBlock = (m.gapBefore || m.gapAfter) ? buildGapInPointBlock(m, lat, lng) : '';
   return `
     <div style="padding:12px 14px;font-size:12px;font-family:-apple-system,system-ui,sans-serif;min-width:240px;line-height:1.55;color:#1a1a2e">
       <div style="font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
@@ -1219,6 +1168,7 @@ function buildMainInfoHTML(label, color, m, addr, lat, lng) {
       ${ROW(SVG_BAT, vbat)}
       ${speed}
       <div style="color:#888;font-size:11px;margin:4px 0 10px">${ageTxt}</div>
+      ${gapBlock}
       ${roadviewBtn(lat, lng)}
     </div>
   `;
@@ -1232,6 +1182,10 @@ function buildPointInfoHTML(m, color, addr, lat, lng) {
   const stopBadge = m.isStop
     ? `<span style="display:inline-block;background:#1a1a2e;color:#fbbf24;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600;margin-left:6px;letter-spacing:.04em">정지</span>`
     : '';
+  // gap 정보 — 이 점이 통신 두절 구간의 시작점 또는 끝점인 경우 표시 + 복사 버튼.
+  const gapBlock = (m.gapBefore || m.gapAfter)
+    ? buildGapInPointBlock(m, lat, lng)
+    : '';
   return `
     <div style="padding:12px 14px;font-size:12px;font-family:-apple-system,system-ui,sans-serif;min-width:240px;line-height:1.55;color:#1a1a2e">
       <div style="font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
@@ -1242,9 +1196,48 @@ function buildPointInfoHTML(m, color, addr, lat, lng) {
       ${ROW(SVG_SAT, `sat ${sat} · ${vbat}`)}
       ${speed}
       <div style="color:#888;font-size:11px;margin:4px 0 10px">${ageTxt}</div>
+      ${gapBlock}
       ${roadviewBtn(lat, lng)}
     </div>
   `;
+}
+
+// 포인터 InfoWindow 내 gap (통신 두절) 정보 + 복사 버튼.
+// m.gapBefore / m.gapAfter = { gapS, peerTs, peerLat, peerLng } (peer = gap 반대편 좌표).
+function buildGapInPointBlock(m, lat, lng) {
+  const items = [];
+  if (m.gapBefore) items.push({ ...m.gapBefore, side: 'before' });
+  if (m.gapAfter)  items.push({ ...m.gapAfter,  side: 'after' });
+  const blocks = items.map(it => {
+    const peerKr  = new Date(it.peerTs).toLocaleString('ko-KR');
+    const peerISO = new Date(it.peerTs).toISOString();
+    const thisISO = m.recordedAt ? new Date(m.recordedAt).toISOString() : '';
+    const gapMin  = Math.round(it.gapS / 60);
+    const gapStr  = gapMin >= 60 ? `${Math.floor(gapMin/60)}시간 ${gapMin%60}분` : `${gapMin}분`;
+    const label   = it.side === 'before' ? '⬅ 이전 좌표' : '➡ 다음 좌표';
+    const lines = it.side === 'after'
+      ? [
+          `device: ${m.deviceLabel || '-'} (id=${m.deviceId || '-'})`,
+          `gap: ${gapStr} (${it.side})`,
+          `from: ${thisISO} (${lat.toFixed(6)}, ${lng.toFixed(6)})`,
+          `to:   ${peerISO} (${it.peerLat.toFixed(6)}, ${it.peerLng.toFixed(6)})`,
+        ]
+      : [
+          `device: ${m.deviceLabel || '-'} (id=${m.deviceId || '-'})`,
+          `gap: ${gapStr} (${it.side})`,
+          `from: ${peerISO} (${it.peerLat.toFixed(6)}, ${it.peerLng.toFixed(6)})`,
+          `to:   ${thisISO} (${lat.toFixed(6)}, ${lng.toFixed(6)})`,
+        ];
+    const copyJson = JSON.stringify(lines.join('\n'));
+    return `
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:8px 10px;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:3px">${label}와 ${gapStr} 통신 두절</div>
+        <div style="font-size:11px;color:#666;margin-bottom:6px">${peerKr}</div>
+        <button onclick="navigator.clipboard.writeText(${copyJson}).then(()=>{this.textContent='✅ 복사됨';setTimeout(()=>{this.textContent='📋 보고 정보 복사'},1500)})" style="background:#1a1a2e;color:#fff;border:none;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;width:100%">📋 보고 정보 복사</button>
+      </div>
+    `;
+  }).join('');
+  return `<div style="margin:6px 0 8px">${blocks}</div>`;
 }
 
 function roadviewBtn(lat, lng) {

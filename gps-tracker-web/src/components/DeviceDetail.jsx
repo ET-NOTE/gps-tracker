@@ -17,25 +17,33 @@ const KIND_META = {
 };
 
 // 섹션별 비동기 로더 훅 — device.id 가 바뀌면 즉시 reset 후 재호출.
-function useSection(loader, deviceId) {
+// pollMs > 0 면 그 주기로 재호출 (loading 상태 안 만들고 silent refresh).
+function useSection(loader, deviceId, pollMs = 0) {
   const [state, setState] = useState({ loading: true, data: null, error: null });
   useEffect(() => {
     let cancelled = false;
-    setState({ loading: true, data: null, error: null });
-    loader()
-      .then(d => { if (!cancelled) setState({ loading: false, data: d, error: null }); })
-      .catch(e => { if (!cancelled) setState({ loading: false, data: null, error: e }); });
-    return () => { cancelled = true; };
-  // loader 는 매 렌더 새로 만들어지지만, deviceId 만 deps 로 — id 가 같으면 재호출 안 함.
+    let intervalId = null;
+    const fetchOnce = (silent = false) => {
+      if (!silent) setState({ loading: true, data: null, error: null });
+      loader()
+        .then(d => { if (!cancelled) setState({ loading: false, data: d, error: null }); })
+        .catch(e => { if (!cancelled) setState(s => silent ? s : { loading: false, data: null, error: e }); });
+    };
+    fetchOnce(false);
+    if (pollMs > 0) {
+      intervalId = setInterval(() => fetchOnce(true), pollMs);
+    }
+    return () => { cancelled = true; if (intervalId) clearInterval(intervalId); };
+  // loader 는 매 렌더 새로 만들어지지만, deviceId/pollMs 만 deps.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deviceId]);
+  }, [deviceId, pollMs]);
   return state;
 }
 
 export default function DeviceDetail({ device, onWiped }) {
   // 통계 탭 — 자주 봄. 빠른 자체 DB 집계.
   const statsQ  = useSection(() => api.getDailyStats(device.id, { limit: 7 }), device.id);
-  const eventsQ = useSection(() => api.getDeviceEvents(device.id),             device.id);
+  const eventsQ = useSection(() => api.getDeviceEvents(device.id),             device.id, 10000);  // 10초 폴링 — 동적 갱신
   // 관리 탭 — 가끔. SIM 외부 API 는 느릴 수 있음.
   const auditQ  = useSection(() => api.getAuditLog(device.id),                 device.id);
   const simQ    = useSection(() => api.getSimInfo(device.id),                  device.id);

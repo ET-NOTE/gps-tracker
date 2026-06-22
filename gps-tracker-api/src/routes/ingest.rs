@@ -317,7 +317,28 @@ pub async fn ingest(
             .bind(Value::Object(data))
             .execute(&state.db)
             .await;
-            tracing::info!(device_id, kind, "lifecycle event ingested");
+            // 진단 핵심 필드 같이 찍기 — server log 만 봐도 sleep cycle 분석 가능.
+            let wake_cause = parsed.wake.as_deref().unwrap_or("-");
+            let sleep_reason = parsed.sleep_reason.as_deref().unwrap_or("-");
+            let stopped_offset_s = parsed.stopped_offset_s.unwrap_or(-1);
+            let uptime_s = parsed.ts.unwrap_or(-1);
+            let vbat_mv = parsed.vbat_mv.unwrap_or(-1);
+            let (boots, wakes, motion_wakes, brownouts, last_sleep_uptime_s) = parsed.diag.as_ref()
+                .map(|d| (
+                    d.get("boots").and_then(|v| v.as_i64()).unwrap_or(-1),
+                    d.get("wakes").and_then(|v| v.as_i64()).unwrap_or(-1),
+                    d.get("motion_wakes").and_then(|v| v.as_i64()).unwrap_or(-1),
+                    d.get("brownouts").and_then(|v| v.as_i64()).unwrap_or(-1),
+                    d.get("last_sleep_uptime_s").and_then(|v| v.as_i64()).unwrap_or(-1),
+                ))
+                .unwrap_or((-1, -1, -1, -1, -1));
+            tracing::info!(
+                device_id, kind,
+                wake_cause, sleep_reason,
+                uptime_s, vbat_mv,
+                boots, wakes, motion_wakes, brownouts, last_sleep_uptime_s, stopped_offset_s,
+                "lifecycle event ingested"
+            );
         }
     }
 

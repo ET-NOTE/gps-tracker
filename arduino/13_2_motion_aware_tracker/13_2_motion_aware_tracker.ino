@@ -91,7 +91,7 @@
 //   GPS_STALE_MS                 : 마지막 fix 가 이 시간 넘게 오래면 GPS unavailable 간주
 //   STATIONARY_BOOT_GRACE_MS     : 부팅/wake 직후 정지 판정 보류 (모듈 안정화 + first fix 대기)
 // ──────────────────────────────────────────────────────────────────
-#define STATIONARY_WINDOW_MS       (10UL * 60UL * 1000UL)  // 정지 10분 → 자동 sleep (LTE 꺼져 brownout 차단)
+#define STATIONARY_WINDOW_MS       (3UL * 60UL * 1000UL)  // 정지 3분 → 자동 sleep
 #define MOTION_QUIET_MS            30000UL
 #define GPS_DRIFT_THRESHOLD_M      50.0f
 #define GPS_STALE_MS               60000UL
@@ -1029,8 +1029,8 @@ static void enterDeepSleep(const char *reason) {
   DBGP(F("[SLEEP] entering deep sleep — wake on LIS motion (reason="));
   DBGP(reason); DBGLN(F(")"));
 
-  DBGLN(F("[BUZ] 💤 sleep — 6-beep"));
-  beep(6, 50, 50);
+  DBGLN(F("[BUZ] 💤 sleep — 2-beep (이전 작동 확인된 짧은 패턴 — 6-beep 의 빠른 PWM transient 가 PWR_EN HIGH 전 brownout 트리거 의심)"));
+  beep(2, 100, 100);
   waitBuzzerFlush();
 
   if (cyc_fix_count == 0 && cyc_no_fix_count > 0) rtc_no_fix_cycles++;
@@ -1151,6 +1151,11 @@ void setup() {
     uint64_t status = esp_sleep_get_gpio_wakeup_status();
     if (status & (1ULL << PIN_LIS_INT)) { wakeReasonStr = "motion"; rtc_wake_motion++; }
     else                                  wakeReasonStr = "gpio";
+    // 정상 deep sleep wake — wake 마다 첫 fix / 첫 POST milestone beep 다시 들리게 reset.
+    // 운영자가 매 wake 후 "LTE 살았는지 / GPS 잡혔는지" 청각 확인. brownout reset 은 RTC 보존이라
+    // 영향 없음 (이 분기는 진짜 motion/gpio wake 일 때만).
+    buzz_first_fix_done  = false;
+    buzz_first_post_done = false;
   } else {
     wakeReasonStr = wakeCauseStr(wc);
   }
@@ -1210,7 +1215,8 @@ void setup() {
   skip_bounce_check: ;
 
   pinMode(PIN_PWR_EN, OUTPUT);
-  digitalWrite(PIN_PWR_EN, LOW);   // L80+LTE 전원 ON
+  digitalWrite(PIN_PWR_EN, LOW);   // L80+LTE 공유 전원 ON (분리 control 불가)
+  delay(300);                       // L80 inrush 안정 대기 — 그 후 LTE PWRKEY 시점과 peak 시간차 분리
 
   // ── 부저 init + 부팅/wake 비프 ──
   // ⚠️ LTE bring-up 직전이라 이 비프가 끝날 때까지 명시적으로 기다림.
@@ -1220,18 +1226,17 @@ void setup() {
   digitalWrite(PIN_BUZZER, LOW);
   {
     esp_sleep_wakeup_cause_t wc = esp_sleep_get_wakeup_cause();
-    // ⚠️ RTC 가드 — brownout 으로 인한 부팅 루프 시 비프 반복 차단. flag set 을 beep 전에 함.
-    if (buzz_boot_done) {
-      DBGLN(F("[BUZ] (skip) boot/wake 비프 이미 이 세션에서 울림 — brownout 재부팅 추정"));
-    } else {
+    // motion wake (정상 deep sleep 후 LIS 트리거) 는 매번 울림 — wake_cause=GPIO 면 진짜 wake.
+    // cold boot 는 RTC 가드 — brownout 재부팅 루프 시 반복 차단.
+    if (wc == ESP_SLEEP_WAKEUP_GPIO || wc == ESP_SLEEP_WAKEUP_EXT0 || wc == ESP_SLEEP_WAKEUP_EXT1) {
+      DBGLN(F("[BUZ] 🚀 wake from sleep (motion) — 6-beep"));
+      beep(6, 50, 50);
+    } else if (!buzz_boot_done) {
       buzz_boot_done = true;   // ← 진짜 power-off 까지 RTC 보존
-      if (wc == ESP_SLEEP_WAKEUP_GPIO || wc == ESP_SLEEP_WAKEUP_EXT0 || wc == ESP_SLEEP_WAKEUP_EXT1) {
-        DBGLN(F("[BUZ] 🚀 wake from sleep (motion) — double beep"));
-        beep(2, 100, 100);
-      } else {
-        DBGLN(F("[BUZ] 🚀 cold boot — long beep"));
-        beep(1, 400, 0);
-      }
+      DBGLN(F("[BUZ] 🚀 cold boot — long beep"));
+      beep(1, 400, 0);
+    } else {
+      DBGLN(F("[BUZ] (skip) cold boot 비프 이미 울림 — brownout 재부팅 추정"));
     }
     waitBuzzerFlush();
   }
@@ -1458,6 +1463,17 @@ void loop() {
   if (millis() - lastStatusMs > STATUS_PRINT_MS) {
     lastStatusMs = millis();
     printStatus();
+  }
+
+  // ── 시리얼 'a' 입력 → 강제 sleep 진입 (하드웨어 진단용) ──
+  // sleep 진입 후 USB-CDC 끊김 → 시리얼 잠시 보이지 않음. 자이로 흔들기로 motion wake.
+  // hardware 개발자가 sleep 동작 (PWR_EN HIGH / 모듈 OFF / wake 복귀) 직접 검증 가능.
+  if (Serial.available()) {
+    int c = Serial.read();
+    if (c == 'a' || c == 'A') {
+      DBGLN(F("[TEST] 'a' 입력 → 강제 sleep 진입"));
+      enterDeepSleep("manual_test");
+    }
   }
 
   drainLte();
