@@ -352,7 +352,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     const sz  = dotSizeForLevel(lvl);
     Object.values(polyRef.current).forEach(entry => {
       entry.segments.forEach(s => s.poly.setOptions({ strokeWeight: sw }));
-      entry.gaps.forEach(g => g.setOptions({ strokeWeight: Math.max(1, sw - 1) }));
+      // visible dashed 만 zoom 따라 두께 변경. hit 는 항상 16 고정 (클릭 영역).
+      entry.gaps.forEach(g => g.visible.setOptions({ strokeWeight: Math.max(1, sw - 1) }));
     });
     Object.values(pointsRef.current).forEach(arr => {
       arr.forEach(({ marker, color, isStop }) => {
@@ -537,7 +538,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const entry = polyRef.current[deviceId];
 
       if (isGap || entry.segments.length === 0) {
-        // gap 발견 → 직전 segment 끝 좌표 ↔ 현재 좌표 잇는 dashed
+        // gap 발견 → 직전 segment 끝 좌표 ↔ 현재 좌표 잇는 dashed + 클릭용 두꺼운 hit polyline
         if (isGap && entry.segments.length > 0) {
           const lastSeg = entry.segments[entry.segments.length - 1];
           const lastPos = lastSeg.coords[lastSeg.coords.length - 1];
@@ -550,13 +551,24 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
               strokeOpacity: 0.45,
               strokeStyle: 'shortdash',
             });
+            // hit-area 용 두꺼운 투명 polyline — dashed 자체는 얇아 클릭 hit 어려움 + Kakao 가 지도
+            // pan 을 우선. 같은 path 의 두꺼운 (16px) opacity 0 polyline 깔아 클릭 영역 확장.
+            const hit = new window.kakao.maps.Polyline({
+              map: mapRef.current,
+              path: [lastPos, pos],
+              strokeWeight: 16,
+              strokeColor: stroke,
+              strokeOpacity: 0,
+              strokeStyle: 'solid',
+              zIndex: 10,
+            });
             // 클릭 시 gap info 모달 — 자연 키 (device_id + from/to recorded_at)
             // 별도 UUID 없이 server location_records 와 정확히 매칭 가능.
             const fromTs = prevRecordedAt;
             const toTs = newRecordedAt;
             const fromLatLng = { lat: lastPos.getLat(), lng: lastPos.getLng() };
             const toLatLng = { lat: pos.getLat(), lng: pos.getLng() };
-            window.kakao.maps.event.addListener(dashed, 'click', (e) => {
+            const onClick = (e) => {
               const clickLat = e?.latLng?.getLat?.() ?? toLatLng.lat;
               const clickLng = e?.latLng?.getLng?.() ?? toLatLng.lng;
               if (onPointInfoRef.current) {
@@ -567,14 +579,23 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
                   meta: { label, color: stroke, gapS: (toTs - fromTs) / 1000 },
                 });
               } else {
-                openInfoWithGap(dashed, clickLat, clickLng, {
+                openInfoWithGap(clickLat, clickLng, {
                   deviceId, label, color: stroke,
                   fromTs, toTs, fromLatLng, toLatLng,
                   gapS: (toTs - fromTs) / 1000,
                 });
               }
+            };
+            window.kakao.maps.event.addListener(hit, 'click', onClick);
+            window.kakao.maps.event.addListener(dashed, 'click', onClick);
+            // cursor 변경 — mouseover 시 hit 영역에서 포인터 표시 (지도 손 커서 → 손가락)
+            window.kakao.maps.event.addListener(hit, 'mouseover', () => {
+              if (mapRef.current?.getNode) mapRef.current.getNode().style.cursor = 'pointer';
             });
-            entry.gaps.push(dashed);
+            window.kakao.maps.event.addListener(hit, 'mouseout', () => {
+              if (mapRef.current?.getNode) mapRef.current.getNode().style.cursor = '';
+            });
+            entry.gaps.push({ visible: dashed, hit });
           }
         }
         const coords = [pos];
@@ -689,7 +710,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (!mapRef.current) return;
       Object.values(polyRef.current).forEach(entry => {
         entry.segments.forEach(s => s.poly.setMap(visible ? mapRef.current : null));
-        entry.gaps.forEach(g => g.setMap(visible ? mapRef.current : null));
+        entry.gaps.forEach(g => {
+          g.visible.setMap(visible ? mapRef.current : null);
+          g.hit.setMap(visible ? mapRef.current : null);
+        });
       });
     },
 
@@ -699,7 +723,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const entry = polyRef.current[deviceId];
       if (entry) {
         entry.segments.forEach(s => s.poly.setOptions({ strokeColor: color }));
-        entry.gaps.forEach(g => g.setOptions({ strokeColor: color }));
+        entry.gaps.forEach(g => {
+          g.visible.setOptions({ strokeColor: color });
+          g.hit.setOptions({ strokeColor: color });
+        });
       }
       // history dots 색깔 변경 — isStop 점은 디바이스 색 변경에도 빨강 유지.
       const arr = pointsRef.current[deviceId];
@@ -749,7 +776,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       Object.entries(polyRef.current).forEach(([id, entry]) => {
         const vis = (targetId === null || +id === targetId);
         entry.segments.forEach(s => s.poly.setMap(vis ? all : null));
-        entry.gaps.forEach(g => g.setMap(vis ? all : null));
+        entry.gaps.forEach(g => {
+          g.visible.setMap(vis ? all : null);
+          g.hit.setMap(vis ? all : null);
+        });
       });
       Object.entries(pointsRef.current).forEach(([id, arr]) => {
         const vis = (targetId === null || +id === targetId);
@@ -1090,7 +1120,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const polyEntry = polyRef.current[deviceId];
       if (polyEntry) {
         polyEntry.segments.forEach(s => s.poly.setMap(null));
-        polyEntry.gaps.forEach(g => g.setMap(null));
+        polyEntry.gaps.forEach(g => { g.visible.setMap(null); g.hit.setMap(null); });
         delete polyRef.current[deviceId];
       }
       delete lastRecordedAtRef.current[deviceId];
