@@ -1,4 +1,4 @@
-// ESP32 디바이스 위치 업로드 엔드포인트 (레거시 호환).
+// ESP32 디바이스 위치 업로드 엔드포인트.
 //
 // 호환 페이로드 (현재 11_final_tracker.ino):
 // {
@@ -10,8 +10,8 @@
 //   "lte": { ... }            // optional
 // }
 //
-// 향후 ESP 펌웨어 업데이트 시 device_uid + api_key 필드 추가 → 인증 활성화.
-// 지금은 익명 ingest (서버 측 device row 자동 생성/매칭).
+// Xavfsizlik: device_uid YOKI iccid majburiy. Ro'yxatdan o'tmagan qurilma 401 oladi.
+// Yangi qurilma yaratilmaydi — faqat juftlashtirilgan (owner_id != NULL) qurilmalar qabul qilinadi.
 
 use axum::{extract::State, http::HeaderMap, Json};
 use chrono::Utc;
@@ -87,33 +87,41 @@ pub async fn ingest(
         .unwrap_or("unknown")
         .to_string();
 
-    // 명시적 device_uid가 없으면 IP 기반 임시 식별자
     let parsed: IngestPayload = serde_json::from_value(payload.clone())
         .map_err(|e| AppError::BadRequest(format!("invalid payload: {e}")))?;
 
-    let device_uid = parsed
-        .device_uid
-        .clone()
-        .unwrap_or_else(|| format!("anon-{}", remote_ip));
+    // device_uid yoki iccid majburiy — ikkalasi ham yo'q bo'lsa 401
+    let device_uid = match parsed.device_uid.as_deref() {
+        Some(uid) if !uid.trim().is_empty() => uid.to_string(),
+        _ if parsed.iccid.is_some() => String::new(), // iccid bilan topiladi
+        _ => {
+            tracing::warn!(remote_ip = %remote_ip, "ingest rejected: no device_uid or iccid");
+            return Err(AppError::Unauthorized);
+        }
+    };
 
-    // 식별자 우선순위 (production-ready):
+    // 식별자 우선순위:
     //   1) ICCID 일치 (= SIM 정체성. 동일 SIM은 어떤 모뎀에 있든 같은 logical device)
     //   2) device_uid 일치 (legacy 디바이스 호환)
-    //   3) 새로 INSERT (anon)
+    // 매칭 실패(미등록 qurilma) → 401. Yangi qurilma avtomatik yaratilmaydi.
     //
     // ※ IMEI는 매칭 키로 쓰지 않음. 모뎀이 같아도 SIM이 바뀌면 다른 디바이스로 취급.
     //   IMEI는 fingerprint로만 저장 (도난 추적, 모뎀 식별 보조).
     let mut device_id: Option<i64> = None;
     if let Some(iccid) = parsed.iccid.as_deref() {
-        device_id = sqlx::query_scalar("SELECT id FROM devices WHERE iccid = $1 LIMIT 1")
-            .bind(iccid).fetch_optional(&state.db).await?;
+        device_id = sqlx::query_scalar(
+            "SELECT id FROM devices WHERE iccid = $1 AND owner_id IS NOT NULL LIMIT 1"
+        )
+        .bind(iccid).fetch_optional(&state.db).await?;
     }
-    if device_id.is_none() {
-        device_id = sqlx::query_scalar("SELECT id FROM devices WHERE device_uid = $1")
-            .bind(&device_uid).fetch_optional(&state.db).await?;
+    if device_id.is_none() && !device_uid.is_empty() {
+        device_id = sqlx::query_scalar(
+            "SELECT id FROM devices WHERE device_uid = $1 AND owner_id IS NOT NULL"
+        )
+        .bind(&device_uid).fetch_optional(&state.db).await?;
     }
 
-    // 매칭된 행이 있으면 갱신, 없으면 INSERT. IMEI 변경 감지 시 audit 기록.
+    // 매칭된 행이 있으면 갱신, 없으면 401 (미등록 qurilma).
     let device_id: i64 = match device_id {
         Some(id) => {
             // 갱신 전 기존 IMEI 조회 (변경 여부 비교용)
@@ -159,24 +167,15 @@ pub async fn ingest(
 
             id
         }
-        None => sqlx::query_scalar(
-            // ON CONFLICT 로 동시 ingest race 방어. 동일 device_uid 두 ingest 가
-            // 동시에 INSERT 시도 → 한쪽은 UPDATE 경로로 진입해 id 반환.
-            r#"INSERT INTO devices (device_uid, api_key_hash, last_seen_at, iccid, imei, imsi)
-               VALUES ($1, '', now(), $2, $3, $4)
-               ON CONFLICT (device_uid) DO UPDATE
-                  SET last_seen_at = now(),
-                      iccid = COALESCE(devices.iccid, EXCLUDED.iccid),
-                      imei  = COALESCE(EXCLUDED.imei, devices.imei),
-                      imsi  = COALESCE(EXCLUDED.imsi, devices.imsi)
-               RETURNING id"#,
-        )
-        .bind(&device_uid)
-        .bind(&parsed.iccid)
-        .bind(&parsed.imei)
-        .bind(&parsed.imsi)
-        .fetch_one(&state.db)
-        .await?,
+        None => {
+            tracing::warn!(
+                device_uid = %device_uid,
+                iccid = ?parsed.iccid,
+                remote_ip = %remote_ip,
+                "ingest rejected: unregistered device"
+            );
+            return Err(AppError::Unauthorized);
+        }
     };
 
     // l80 / lte 각각 location_records로 INSERT (있는 것만)

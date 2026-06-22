@@ -387,7 +387,7 @@ export const api = {
     if (params.from) q.set('from', params.from);
     if (params.to)   q.set('to',   params.to);
     const qs = q.toString();
-    const tok = localStorage.getItem('access_token');
+    const tok = getToken(); // activeStorage() orqali — sessionStorage foydalanuvchilari uchun ham ishlaydi
     const res = await fetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`, {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });

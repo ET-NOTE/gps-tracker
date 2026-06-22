@@ -265,7 +265,7 @@ export default function Dashboard({ onLogout }) {
   }, []);
 
   const mapRef     = useRef(null);
-  const wsRef      = useRef(null);
+  // wsRef — useTrackerWS hook'idan keladi (pastda e'lon qilinadi)
   const devRef     = useRef([]);
   const lastMetaRef = useRef({});
 
@@ -388,19 +388,19 @@ export default function Dashboard({ onLogout }) {
     mapRef.current?.panToCoord?.(p.lat, p.lng);
   }, [filterDeviceId]);
 
-  useEffect(() => {
-    const ws = new TrackerWS(handleWsEvent, setWsStatus);
-    ws.connect(localStorage.getItem('access_token'));
-    wsRef.current = ws;
+  // WS ulanishi — handleWsEvent hoisted function, onEventRef orqali stale closure yo'q
+  const { wsRef, status: wsStatus } = useTrackerWS(handleWsEvent);
 
-    // 새로고침 호출 디바운스 — 30초 인터벌 + visibility/focus 이벤트가 동시에 떨어지면
-    // 같은 API 가 한 번에 여러 번 호출되어 quota 낭비 + 백엔드 부하. 최소 8초 간격 보장.
+  // Davriy yangilash + visibility/focus debounce — WS yaratilishidan alohida.
+  // 새로고침 호출 디바운스 — 30초 인터벌 + visibility/focus 이벤트가 동시에 떨어지면
+  // 같은 API 가 한 번에 여러 번 호출되어 quota 낭비 + 백엔드 부하. 최소 8초 간격 보장.
+  useEffect(() => {
     let lastRefreshAt = 0;
     const refresh = (force = false) => {
       const now = Date.now();
       if (!force && now - lastRefreshAt < 8000) return;
       lastRefreshAt = now;
-      setNow(Date.now()); // ageString ko'rinishini yangilash (setTick anti-pattern o'rniga)
+      setNow(Date.now()); // ageString ko'rinishini yangilash
       loadDevicesIncremental();
       loadFences();
     };
@@ -414,12 +414,11 @@ export default function Dashboard({ onLogout }) {
     window.addEventListener('focus', onVisible);
 
     return () => {
-      ws.disconnect();
       clearInterval(t);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadDevicesIncremental() {
     try {

@@ -4,6 +4,10 @@ import { haversineM } from '../lib/stops';
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const MAX_HISTORY_POINTS = 500;
 
+// Modul darajasidagi arrow image cache — drawSeekerPath har chaqirilganda qayta yaratilmaydi.
+// Map<"angleDeg_color", kakao.maps.MarkerImage>
+const _arrowImageCache = new Map();
+
 // 카카오 zoom level 기반 두께 — 숫자가 클수록 더 축소(넓게)된 상태.
 // 축소되면 굵게, 확대되면 얇게.
 function strokeWeightForLevel(level) {
@@ -127,10 +131,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   useEffect(() => { onPointInfoRef.current = onPointInfo; }, [onPointInfo]);
   useEffect(() => { onUserPanRef.current = onUserPan; }, [onUserPan]);
 
-  // 글로벌 콜백 — InfoWindow 안의 onclick에서 호출.
+  // InfoWindow innerHTML onclick → CustomEvent — window.__ global pollution yo'q.
   useEffect(() => {
-    window.__btw_openRoadview = (lat, lng) => onRoadviewRef.current?.({ lat, lng });
-    return () => { delete window.__btw_openRoadview; };
+    const handler = (e) => onRoadviewRef.current?.(e.detail);
+    document.addEventListener('btw:openRoadview', handler);
+    return () => document.removeEventListener('btw:openRoadview', handler);
   }, []);
 
   useEffect(() => {
@@ -795,11 +800,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // Canvas PNG 방식 — SVG data URL 은 Kakao MarkerImage 에서 불안정.
       {
         const ARROW_INTERVAL_M = 200;
-        const arrowCache = {};
         const makeArrowImage = (angleDeg, arrowColor) => {
           const r = Math.round(angleDeg / 5) * 5;
           const key = `${r}_${arrowColor}`;
-          if (arrowCache[key]) return arrowCache[key];
+          if (_arrowImageCache.has(key)) return _arrowImageCache.get(key);
           const c = document.createElement('canvas');
           c.width = 20; c.height = 20;
           const ctx = c.getContext('2d');
@@ -821,12 +825,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           ctx.stroke();
           ctx.restore();
           const url = c.toDataURL('image/png');
-          arrowCache[key] = new window.kakao.maps.MarkerImage(
+          _arrowImageCache.set(key, new window.kakao.maps.MarkerImage(
             url,
             new window.kakao.maps.Size(20, 20),
             { offset: new window.kakao.maps.Point(10, 10) }
-          );
-          return arrowCache[key];
+          ));
+          return _arrowImageCache.get(key);
         };
         const calcBearing = (lat1, lng1, lat2, lng2) => {
           const toRad = d => d * Math.PI / 180;
@@ -1133,7 +1137,7 @@ function buildPointInfoHTML(m, color, addr, lat, lng) {
 }
 
 function roadviewBtn(lat, lng) {
-  return `<button onclick="window.__btw_openRoadview(${lat},${lng})" style="
+  return `<button onclick="document.dispatchEvent(new CustomEvent('btw:openRoadview',{detail:{lat:${lat},lng:${lng}}}))" style="
     box-sizing:border-box;
     width:100%;padding:7px 10px;margin-top:2px;
     background:#1a1a2e;color:white;border:none;border-radius:6px;
