@@ -74,6 +74,12 @@ function calcSpeedKmh(prev, next) {
   return Number.isFinite(speed) ? Math.min(speed, 240) : null;
 }
 
+// 홈 탭은 "오늘" 데이터만 (전날 이전은 seeker 로). 로컬 자정 → ISO UTC 문자열로 listLocations since 에 전달.
+function todaySinceISO() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+}
+
 // 폴리라인 dashed gap 기준 (KakaoMap.POLYLINE_GAP_THRESHOLD_S 와 동일)
 const POLYLINE_GAP_THRESHOLD_S = 60;
 
@@ -461,7 +467,7 @@ export default function Dashboard({ onLogout }) {
       wsRef.current?.subscribe(list.map(d => d.id));
       for (const d of list) {
         if (oldIds.has(d.id)) continue;
-        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true });
+        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since: todaySinceISO() });
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
@@ -510,7 +516,7 @@ export default function Dashboard({ onLogout }) {
       wsRef.current?.subscribe(list.map(d => d.id));
 
       for (const d of list) {
-        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true });
+        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since: todaySinceISO() });
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
