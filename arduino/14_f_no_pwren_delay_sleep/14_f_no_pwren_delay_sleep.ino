@@ -378,7 +378,9 @@ static void IRAM_ATTR onLisInt() {
 // ──────────────────────────────────────────────────────────────────
 static void checkStationarySleep() {
   if (inSleepProcedure) return;
-  if (!lisOk) return;                                   // wake 수단 없음 → sleep 안 함
+  if (!lisOk) return;
+  // [forced cycle] LTE 첫 POST 전엔 STATIONARY auto-sleep 차단 — 안 그러면 LTE 불발도 sleep 2-beep 으로 보이는 결과
+  if (cyc_post_ok == 0) return;                                   // wake 수단 없음 → sleep 안 함
   uint32_t now = millis();
   if (now - bootMs < STATIONARY_BOOT_GRACE_MS) return;  // boot grace
 
