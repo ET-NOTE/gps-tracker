@@ -1281,8 +1281,8 @@ void setup() {
 
 void loop() {
   // [14_j] 강제 sleep 사이클 — 첫 POST 성공 시 즉시 sleep, 8s timer wake 로 반복.
+  // [수정] LTE 못 잡으면 sleep 안 함 — 불발 패턴 가청 식별용 (2-beep 안 들리면 LTE 실패)
   if (cyc_post_ok > 0) enterDeepSleep("test_after_first_post");
-  else if (millis() > 120000UL) enterDeepSleep("test_timeout_120s");
 
   // GPS 피드 — NMEA 문자 카운트로 UART 정상 여부 진단 + fix 시 history 에 push
   static uint32_t lastGpsHistPushMs = 0;
