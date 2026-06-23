@@ -53,9 +53,18 @@
 #define PIN_GPS_TX     21
 #define GPS_BAUD       9600
 
-// PCB rev 2026-06-17 — RX/TX swap
-#define PIN_LTE_RX     2     // ESP RX  ← SIM TX
-#define PIN_LTE_TX     4     // ESP TX  → SIM RX
+// PCB rev 빌드 플래그 — 동일 13_2 소스로 구/신 PCB 모두 지원.
+//   default (#define USE_OLD_PCB 미설정) = 신 PCB rev (2026-06-17~), RX=2, TX=4
+//   #define USE_OLD_PCB                   = 구 PCB (pre-2026-06-17), RX=4, TX=2
+// 구 PCB 보드에 flash 할 땐 아래 한 줄 주석 해제 후 컴파일.
+// #define USE_OLD_PCB
+#ifdef USE_OLD_PCB
+  #define PIN_LTE_RX     4     // 구 PCB: ESP RX ← SIM TX
+  #define PIN_LTE_TX     2     // 구 PCB: ESP TX → SIM RX
+#else
+  #define PIN_LTE_RX     2     // 신 PCB: ESP RX ← SIM TX (RX/TX swap)
+  #define PIN_LTE_TX     4     // 신 PCB: ESP TX → SIM RX
+#endif
 #define LTE_BAUD       115200
 
 #define PIN_BUZZER     1     // passive 마그네틱 부저 — tone() PWM 으로 구동
