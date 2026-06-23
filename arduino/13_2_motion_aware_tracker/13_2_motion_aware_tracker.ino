@@ -160,6 +160,9 @@ RTC_DATA_ATTR uint32_t rtc_lis_reinits       = 0;   // I2C wedge → LIS reinit 
 static uint32_t cyc_fix_count        = 0;
 static uint32_t cyc_no_fix_count     = 0;
 static uint32_t cyc_post_ok          = 0;
+// 13_2 stuck watchdog — 마지막 성공 POST 후 STUCK_POST_TIMEOUT_MS 무응답 시 강제 hardPowerCycle.
+static uint32_t lastSuccessPostMs    = 0;
+#define STUCK_POST_TIMEOUT_MS (60UL * 1000UL)
 static uint32_t cyc_post_fail        = 0;
 static bool     wake_diag_pending    = true;
 
@@ -826,6 +829,14 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
           // 이전 작동 확인된 패턴 — 변경하지 말 것.
           beep(5, 200, 100);
         }
+        if (lastResp.indexOf("\"cmd\":\"reset\"") >= 0
+         || lastResp.indexOf("\"cmd\": \"reset\"") >= 0) {
+          DBGLN(F("[RESET] 🔄 server cmd: reset — hardPowerCycle + restart"));
+          sendAT("AT+SHDISC", "OK", 1500);
+          hardPowerCycle();
+          delay(500);
+          esp_restart();
+        }
       }
     }
   }
@@ -1004,6 +1015,7 @@ static void doPost() {
     if (status == 200) {
       S.postOks++;
       cyc_post_ok++;
+      lastSuccessPostMs = millis();
       wake_diag_pending = false;
       if (!buzz_first_post_done) {
         buzz_first_post_done = true;
@@ -1476,6 +1488,16 @@ void loop() {
         }
       } else {
         S.failStreak = 0;
+      }
+
+      // 13_2 stuck watchdog: 마지막 성공 POST 후 60s 넘어가면 LTE module hardPowerCycle.
+      if (lastSuccessPostMs > 0 && (millis() - lastSuccessPostMs) > STUCK_POST_TIMEOUT_MS) {
+        DBGLN(F("[LTE] 🚨 60s 무응답 stuck → hardPowerCycle"));
+        S.lteReady      = false;
+        S.failStreak    = 0;
+        hardPowerCycle();
+        S.nextBringUpAt = millis() + 1000;
+        lastSuccessPostMs = millis();
       }
     }
   }
