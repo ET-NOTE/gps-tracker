@@ -17,6 +17,7 @@ export default function DiagnosticPage() {
   const [deviceId, setDeviceId] = useState(null);
   const [windowMs, setWindowMs] = useState(WINDOWS[0].ms);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [taggedOnly, setTaggedOnly] = useState(true);   // build_tag 있는 것만 (= 14_X 진단 세션만)
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -51,9 +52,15 @@ export default function DiagnosticPage() {
     return () => clearInterval(pollRef.current);
   }, [autoRefresh, deviceId, windowMs]);
 
+  // build_tag 필터 — 켜져있으면 14_* 진단 sketch 이벤트만 (legacy 13_2 prod 이벤트 제외).
+  const filteredEvents = useMemo(() => {
+    if (!taggedOnly) return events;
+    return events.filter(e => e.data?.build_tag);
+  }, [events, taggedOnly]);
+
   // 사이클 묶음 — events 가 occurred_at DESC 로 들어옴 (서버 기준).
   // 시간 ASC 로 뒤집어 wake → ... → sleep_enter 패턴으로 grouping.
-  const cycles = useMemo(() => groupByCycle(events), [events]);
+  const cycles = useMemo(() => groupByCycle(filteredEvents), [filteredEvents]);
 
   const dev = devices.find(d => d.id === deviceId);
 
@@ -90,6 +97,10 @@ export default function DiagnosticPage() {
             <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)} />
             <span style={{ fontSize: 12 }}>5초 자동 갱신</span>
           </label>
+          <label style={{ ...lab, flexDirection: 'row', alignItems: 'center', gap: 6 }} title="build_tag 가 있는 이벤트만 (= 14_* 진단 sketch 세션). 끄면 prod 13_2 같은 legacy 이벤트도 표시.">
+            <input type="checkbox" checked={taggedOnly} onChange={e => setTaggedOnly(e.target.checked)} />
+            <span style={{ fontSize: 12 }}>build_tag 있는 것만</span>
+          </label>
           <button onClick={refresh} disabled={loading} style={btn}>🔄 새로고침</button>
           {dev && (
             <div style={{ marginLeft: 'auto', fontSize: 11, color: '#666' }}>
@@ -101,17 +112,21 @@ export default function DiagnosticPage() {
         {error && <div style={errBox}>⚠ {error}</div>}
 
         {/* 사이클 요약 */}
-        <SectionCard title={`사이클 (${cycles.length})`}>
+        <SectionCard title={`사이클 (${cycles.length})${taggedOnly && filteredEvents.length < events.length ? ` — legacy ${events.length - filteredEvents.length}개 제외` : ''}`}>
           {cycles.length === 0 ? (
-            <Muted>이 윈도우에 wake/sleep 이벤트 없음.</Muted>
+            <Muted>
+              {taggedOnly && events.length > 0
+                ? `이 윈도우에 build_tag 있는 이벤트 없음. (legacy ${events.length}개는 위 체크 끄면 보임)`
+                : '이 윈도우에 wake/sleep 이벤트 없음.'}
+            </Muted>
           ) : (
             <CycleTable cycles={cycles} />
           )}
         </SectionCard>
 
         {/* 원본 이벤트 */}
-        <SectionCard title={`원본 이벤트 (${events.length})`}>
-          <EventsTable events={events} />
+        <SectionCard title={`원본 이벤트 (${filteredEvents.length}${taggedOnly && filteredEvents.length < events.length ? ` / 전체 ${events.length}` : ''})`}>
+          <EventsTable events={filteredEvents} />
         </SectionCard>
       </div>
     </div>
