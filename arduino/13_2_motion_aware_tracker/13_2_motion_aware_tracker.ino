@@ -855,11 +855,16 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
         }
         if (lastResp.indexOf("\"cmd\":\"reset\"") >= 0
          || lastResp.indexOf("\"cmd\": \"reset\"") >= 0) {
-          DBGLN(F("[RESET] 🔄 server cmd: reset — hardPowerCycle + restart"));
+          DBGLN(F("[RESET] 🔄 server cmd: reset — module-only hardPowerCycle (ESP 보존)"));
           sendAT("AT+SHDISC", "OK", 1500);
           hardPowerCycle();
-          delay(500);
-          esp_restart();
+          // esp_restart() 안 함 — ESP 의 RTC counter / sticky 상태 보존.
+          // 다음 loop() iteration 에서 lteBringUp() 자동 호출되어 재등록.
+          S.lteReady      = false;
+          S.failStreak    = 0;
+          softResetStreak = 0;
+          lastSuccessPostMs = millis();
+          S.nextBringUpAt = millis() + 1000;
         }
       }
     }
