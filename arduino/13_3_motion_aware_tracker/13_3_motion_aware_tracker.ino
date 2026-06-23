@@ -165,6 +165,13 @@ static uint32_t cyc_post_ok          = 0;
 // 0 = 부팅 후 한 번도 성공 POST 없음 (= bringup 단계로 따로 처리, BRINGUP_FAIL_HARD_RESET 가 cover).
 static uint32_t lastSuccessPostMs    = 0;
 #define STUCK_POST_TIMEOUT_MS (60UL * 1000UL)
+// REG (network attached) 모니터 — REG_OK 지속 추적. 30s 연속 not-registered 면 soft reset.
+static uint32_t lastRegOkMs          = 0;
+static uint32_t lastRegPollMs        = 0;
+static uint8_t  softResetStreak      = 0;
+#define REG_POLL_INTERVAL_MS  (10UL * 1000UL)
+#define REG_LOST_TIMEOUT_MS   (30UL * 1000UL)
+#define SOFT_RESET_TO_HARD_THRESHOLD 2
 static uint32_t cyc_post_fail        = 0;
 static bool     wake_diag_pending    = true;
 
@@ -634,6 +641,20 @@ static void hardPowerCycle() {
 // =================================================================
 // LTE bring-up + HTTP (13_ 동일)
 // =================================================================
+// AT+CFUN=0 → AT+CFUN=1: radio off → on. PWRKEY/PWR_EN 안 건드리고 ~5s 내 fresh registration.
+// stale PLMN cache / PSM 누락 회복용 — hardPowerCycle 보다 가볍고 빠름.
+static bool lteSoftReset() {
+  DBGLN(F("[LTE] 🔧 soft reset (AT+CFUN=0 → 1)"));
+  sendAT("AT+CFUN=0", "OK", 3000);
+  delay(500);
+  bool ok = sendAT("AT+CFUN=1", "OK", 5000);
+  delay(1000);
+  S.lteReady = false;
+  S.csq = -1;
+  S.reg = -1;
+  return ok;
+}
+
 static bool lteBringUp() {
   if (!sendAT("AT", "OK", 2000)) return false;
   if (ttAtOkMs == 0) ttAtOkMs = millis();
@@ -1019,7 +1040,9 @@ static void doPost() {
     if (status == 200) {
       S.postOks++;
       cyc_post_ok++;
-      lastSuccessPostMs = millis();   // watchdog reset — 60s 무응답 stuck 가드
+      lastSuccessPostMs = millis();
+      softResetStreak = 0;
+      if (lastRegOkMs == 0) lastRegOkMs = millis();   // watchdog reset — 60s 무응답 stuck 가드
       wake_diag_pending = false;
       if (!buzz_first_post_done) {
         buzz_first_post_done = true;
@@ -1494,15 +1517,46 @@ void loop() {
         S.failStreak = 0;
       }
 
-      // 13_3 stuck watchdog: 마지막 성공 POST 후 60s 넘어가면 LTE module hardPowerCycle 강제.
-      // bringup 단계는 BRINGUP_FAIL_HARD_RESET 가 cover 하므로 lastSuccessPostMs > 0 일 때만 동작.
+      // 13_3 stuck watchdog (escalation): 마지막 성공 POST 후 60s 넘어가면 우선 soft reset.
+      // soft reset 했는데 또 60s 안에 무응답 → hardPowerCycle 로 escalate.
       if (lastSuccessPostMs > 0 && (millis() - lastSuccessPostMs) > STUCK_POST_TIMEOUT_MS) {
-        DBGLN(F("[LTE] 🚨 60s 무응답 stuck → hardPowerCycle"));
+        if (softResetStreak < SOFT_RESET_TO_HARD_THRESHOLD) {
+          DBGLN(F("[LTE] 🚨 60s 무응답 → soft reset"));
+          softResetStreak++;
+          lteSoftReset();
+        } else {
+          DBGLN(F("[LTE] 🚨 soft reset 반복 실패 → hardPowerCycle"));
+          softResetStreak = 0;
+          hardPowerCycle();
+        }
         S.lteReady      = false;
         S.failStreak    = 0;
-        hardPowerCycle();
         S.nextBringUpAt = millis() + 1000;
-        lastSuccessPostMs = millis();   // watchdog rearm (cooldown)
+        lastSuccessPostMs = millis();   // rearm cooldown
+      }
+
+      // REG 주기 모니터 — 10s 마다 AT+CEREG?. REG=0 가 30s 연속이면 soft reset 강제.
+      // bringup 단계 (lteReady 아직 false) 는 lteBringUp 자체가 처리. ready 후 운영 중에만 동작.
+      if (S.lteReady && (millis() - lastRegPollMs) > REG_POLL_INTERVAL_MS) {
+        lastRegPollMs = millis();
+        if (sendAT("AT+CEREG?", "OK", 2000)) {
+          int p = lastResp.indexOf("+CEREG:");
+          if (p >= 0) {
+            int comma = lastResp.indexOf(',', p);
+            if (comma > 0) {
+              int reg = lastResp.substring(comma + 1).toInt();
+              S.reg = reg;
+              if (reg == 1 || reg == 5) {
+                lastRegOkMs = millis();
+              } else if (lastRegOkMs > 0 && (millis() - lastRegOkMs) > REG_LOST_TIMEOUT_MS) {
+                DBGLN(F("[LTE] 🚨 REG=0 30s+ → soft reset"));
+                lastRegOkMs = millis();   // rearm
+                lteSoftReset();
+                S.nextBringUpAt = millis() + 1000;
+              }
+            }
+          }
+        }
       }
     }
   }
