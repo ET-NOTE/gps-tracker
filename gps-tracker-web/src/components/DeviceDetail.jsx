@@ -80,6 +80,21 @@ export default function DeviceDetail({ device, onWiped }) {
     }
   }
 
+  const [resetting, setResetting] = useState(false);
+  const [resetNote, setResetNote] = useState(null);
+  async function handleReset() {
+    setResetting(true);
+    setResetNote(null);
+    try {
+      await api.resetDevice(device.id);
+      setResetNote({ ok: true });
+    } catch (e) {
+      setResetNote({ ok: false, msg: e.message });
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <div style={dt.shell}>
       {/* 탭 헤더 */}
@@ -170,6 +185,37 @@ export default function DeviceDetail({ device, onWiped }) {
                 {beepNote && !beepNote.ok && (
                   <div style={{ marginTop: 4, color: 'var(--danger)' }}>
                     ❌ {beepNote.msg}
+                  </div>
+                )}
+              </div>
+            </Section>
+
+            {/* 원격 reset — LTE stuck 회복 */}
+            <Section title="원격 reset (LTE stuck 회복)">
+              <button onClick={handleReset} disabled={resetting}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  width: '100%', padding: 9,
+                  background: 'var(--warn, #c2410c)', color: 'white',
+                  border: 'none', borderRadius: 6,
+                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                  opacity: resetting ? 0.6 : 1,
+                }}>
+                <Icon name="refresh" size={14} />
+                {resetting ? '명령 전송 중...' : '🔄 디바이스 hardPowerCycle'}
+              </button>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>
+                다음 ingest 시 (~15초 이내) 디바이스가 PWR_EN 토글 + ESP 재시작. LTE 모듈 stuck (PSM/PLMN cache stale) 또는 SHCONN 소켓 누락 회복.
+                <br />
+                ⚠️ <b>한계</b>: 디바이스 POST 자체가 안 닿는 totally-stuck 상태에선 cmd 전달 불가. 그땐 firmware 60s 무응답 watchdog 가 자동 처리.
+                {resetNote && resetNote.ok && (
+                  <div style={{ marginTop: 4, color: 'var(--success, #2da44e)' }}>
+                    ✅ 명령 등록됨 — 다음 ingest 시 처리
+                  </div>
+                )}
+                {resetNote && !resetNote.ok && (
+                  <div style={{ marginTop: 4, color: 'var(--danger)' }}>
+                    ❌ {resetNote.msg}
                   </div>
                 )}
               </div>

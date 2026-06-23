@@ -211,6 +211,7 @@ export const api = {
   getAuditLog:   (id) => req('GET',  `/devices/${id}/audit`),
   wipeDevice:    (id) => req('POST', `/devices/${id}/wipe`),
   beepDevice:    (id) => req('POST', `/devices/${id}/beep`),
+  resetDevice:   (id) => req('POST', `/devices/${id}/reset`),
 
   // 사이클 단위 range 삭제 (연구소 토글). from/until = RFC3339 ISO.
   deleteDeviceRange: (id, from, until) => {

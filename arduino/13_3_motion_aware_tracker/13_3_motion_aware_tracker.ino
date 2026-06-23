@@ -160,6 +160,11 @@ RTC_DATA_ATTR uint32_t rtc_lis_reinits       = 0;   // I2C wedge → LIS reinit 
 static uint32_t cyc_fix_count        = 0;
 static uint32_t cyc_no_fix_count     = 0;
 static uint32_t cyc_post_ok          = 0;
+// 13_3: stuck watchdog — 마지막 성공 POST (status=200) 후 STUCK_POST_TIMEOUT_MS 넘어가면
+// LTE 모듈 stale registration / SHCONN 누락 등 stuck 상태로 보고 강제 hardPowerCycle.
+// 0 = 부팅 후 한 번도 성공 POST 없음 (= bringup 단계로 따로 처리, BRINGUP_FAIL_HARD_RESET 가 cover).
+static uint32_t lastSuccessPostMs    = 0;
+#define STUCK_POST_TIMEOUT_MS (60UL * 1000UL)
 static uint32_t cyc_post_fail        = 0;
 static bool     wake_diag_pending    = true;
 
@@ -826,6 +831,16 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
           // 이전 작동 확인된 패턴 — 변경하지 말 것.
           beep(5, 200, 100);
         }
+        // ── 서버가 cmd: reset 보냈으면 hardPowerCycle ──
+        // LTE stuck (PSM/PLMN cache stale, SHCONN 소켓 누락) 회복용 원격 명령.
+        if (lastResp.indexOf("\"cmd\":\"reset\"") >= 0
+         || lastResp.indexOf("\"cmd\": \"reset\"") >= 0) {
+          DBGLN(F("[RESET] 🔄 server cmd: reset — hardPowerCycle + restart"));
+          sendAT("AT+SHDISC", "OK", 1500);
+          hardPowerCycle();   // PWR_EN 토글 → 모듈 OFF
+          delay(500);
+          esp_restart();      // ESP 도 재시작 — fresh cold boot
+        }
       }
     }
   }
@@ -1004,6 +1019,7 @@ static void doPost() {
     if (status == 200) {
       S.postOks++;
       cyc_post_ok++;
+      lastSuccessPostMs = millis();   // watchdog reset — 60s 무응답 stuck 가드
       wake_diag_pending = false;
       if (!buzz_first_post_done) {
         buzz_first_post_done = true;
@@ -1476,6 +1492,17 @@ void loop() {
         }
       } else {
         S.failStreak = 0;
+      }
+
+      // 13_3 stuck watchdog: 마지막 성공 POST 후 60s 넘어가면 LTE module hardPowerCycle 강제.
+      // bringup 단계는 BRINGUP_FAIL_HARD_RESET 가 cover 하므로 lastSuccessPostMs > 0 일 때만 동작.
+      if (lastSuccessPostMs > 0 && (millis() - lastSuccessPostMs) > STUCK_POST_TIMEOUT_MS) {
+        DBGLN(F("[LTE] 🚨 60s 무응답 stuck → hardPowerCycle"));
+        S.lteReady      = false;
+        S.failStreak    = 0;
+        hardPowerCycle();
+        S.nextBringUpAt = millis() + 1000;
+        lastSuccessPostMs = millis();   // watchdog rearm (cooldown)
       }
     }
   }

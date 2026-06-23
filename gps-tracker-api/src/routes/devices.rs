@@ -78,6 +78,7 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/sim/refresh", post(sim_info_refresh)) // 1NCE 강제 즉시 갱신
         .route("/devices/:id/events", get(events_log))           // 최근 lifecycle 이벤트
         .route("/devices/:id/beep",   post(beep_device))         // 부저 원격 트리거 (현장 식별)
+        .route("/devices/:id/reset",  post(reset_device))        // 원격 hardPowerCycle (LTE stuck 회복)
         .route("/devices/:id/range",  delete(delete_range))      // 사이클 단위 range 삭제 (연구소 토글)
 }
 
@@ -112,6 +113,38 @@ async fn beep_device(
         "ok": true,
         "device_id": id,
         "note": "다음 ingest (보통 15초 이내) 시 디바이스 부저 울림"
+    })))
+}
+
+// ─── 원격 reset (hardPowerCycle) ─────────────────────────────
+//
+// LTE stale registration / SHCONN socket 누락 등 "응답하지만 stuck" 상태 회복용.
+// UI 버튼 → 이 endpoint → devices.reset_pending = TRUE.
+// 다음 ingest 호출 시 응답에 {"cmd":"reset"} 실어 보냄. 펌웨어가 받자마자 PWR_EN 토글 + ESP restart.
+// 한계: 완전 stuck (POST 자체 무응답) 상태에선 cmd 전달 불가 → firmware-side 60s 무응답 watchdog 가 cover.
+async fn reset_device(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let updated: Option<(i64,)> = sqlx::query_as(
+        r#"UPDATE devices
+              SET reset_pending      = TRUE,
+                  reset_requested_at = NOW()
+            WHERE id = $1 AND owner_id = $2
+        RETURNING id"#,
+    )
+    .bind(id).bind(user.user_id)
+    .fetch_optional(&state.db).await?;
+
+    if updated.is_none() {
+        return Err(AppError::NotFound);
+    }
+
+    Ok(Json(json!({
+        "ok": true,
+        "device_id": id,
+        "note": "다음 ingest (보통 15초 이내) 시 디바이스 hardPowerCycle. 완전 stuck 상태면 firmware watchdog 가 60s 후 자동 처리."
     })))
 }
 
@@ -464,7 +497,7 @@ async fn events_log(
         r#"SELECT id, kind, data, occurred_at
              FROM events
             WHERE device_id = $1 AND user_id = $2
-              AND kind IN ('wake','sleep_enter','low_batt','offline','online','signal_loss',
+              AND kind IN ('wake','sleep_enter','low_batt','offline','online','signal_loss','stuck',
                            'geofence_in','geofence_out','geofence_armed','brownout','gps_anomaly','lost')
               AND ($3::timestamptz IS NULL OR occurred_at >= $3)
             ORDER BY occurred_at DESC

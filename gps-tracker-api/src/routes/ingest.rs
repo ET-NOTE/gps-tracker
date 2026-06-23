@@ -414,8 +414,23 @@ pub async fn ingest(
     .fetch_optional(&state.db).await
     .ok().flatten();
 
+    // 원격 reset atomic claim — beep 과 동일 패턴.
+    // reset 이 우선 (둘 다 pending 이면 reset 만 dispatch. reset 후 부저는 다음 사이클에서 다시 트리거 가능).
+    let reset_claimed: Option<(i64,)> = sqlx::query_as(
+        r#"UPDATE devices
+              SET reset_pending = FALSE
+            WHERE id = $1 AND reset_pending = TRUE
+        RETURNING id"#,
+    )
+    .bind(device_id)
+    .fetch_optional(&state.db).await
+    .ok().flatten();
+
     let mut resp = json!({ "ok": true });
-    if beep_claimed.is_some() {
+    if reset_claimed.is_some() {
+        resp["cmd"] = json!("reset");
+        tracing::info!(device_id, "ingest: dispatched reset cmd");
+    } else if beep_claimed.is_some() {
         resp["cmd"] = json!("beep");
         tracing::info!(device_id, "ingest: dispatched beep cmd");
     }

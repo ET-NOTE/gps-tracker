@@ -175,6 +175,32 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
         ).bind(device_id).fetch_optional(pool).await?;
         if last_event.as_deref() == Some("sleep_enter") { continue; }
 
+        // ── 'stuck' 단계 (1분+, 활성 상태에서 갑자기 무응답) ─────────
+        // 운영 중 LTE module hang / SHCONN 누락 등 — signal_loss (5분) 전에 빠른 가시화.
+        // 24h 내 stuck 없을 때만 한 번. signal_loss/offline 으로 넘어가면 stuck 은 자동 만료.
+        if silence_min >= 1 {
+            let recent_stuck: Option<bool> = sqlx::query_scalar(
+                r#"SELECT TRUE FROM events
+                    WHERE device_id = $1
+                      AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
+                      AND kind = 'stuck'
+                      AND occurred_at > now() - interval '24 hours'
+                    ORDER BY occurred_at DESC LIMIT 1"#,
+            )
+            .bind(device_id).fetch_optional(pool).await?;
+            if recent_stuck.is_none() {
+                sqlx::query(
+                    r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
+                       VALUES ($1, 'stuck', now(), $2,
+                               (SELECT owner_id FROM devices WHERE id = $1))"#,
+                )
+                .bind(device_id)
+                .bind(json!({ "silence_min": silence_min, "last_event": last_event }))
+                .execute(pool).await?;
+                tracing::info!(device_id, silence_min, ?last_event, "stuck event inserted (active state silent)");
+            }
+        }
+
         // 어떤 단계 알림을 발사할지 결정
         if silence_min >= offline_min as i64 {
             // OFFLINE 단계 (30분+) — 직전 24h 내 offline 없을 때만 한 번 발사
