@@ -338,10 +338,13 @@ pub async fn ingest(
                 ))
                 .unwrap_or((-1, -1, -1, -1, -1));
             let build_tag = parsed.build_tag.as_deref().unwrap_or("-");
+            let gps_fix = parsed.l80.as_ref().map(|l| l.fix).unwrap_or(false);
+            let gps_sat = parsed.l80.as_ref().and_then(|l| l.sat_count()).unwrap_or(-1);
             tracing::info!(
                 device_id, kind, build_tag,
                 wake_cause, sleep_reason,
                 uptime_s, vbat_mv,
+                gps_fix, gps_sat,
                 boots, wakes, motion_wakes, brownouts, last_sleep_uptime_s, stopped_offset_s,
                 "lifecycle event ingested"
             );
