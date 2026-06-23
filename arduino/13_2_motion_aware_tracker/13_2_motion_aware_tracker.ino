@@ -61,7 +61,12 @@
 #define PIN_BUZZER     1     // passive 마그네틱 부저 — tone() PWM 으로 구동
 #define BUZZER_FREQ    2700  // Hz — 마그네틱 부저 공진주파수 근처 (최대 효율 + audible).
                              // 1800Hz 로 낮춰 봤으나 공진 외 효율 너무 낮아 inaudible → 복원.
-#define BUZZER_ENABLED 1     // 부저 인프라 ON — 서버 cmd:beep + 마일스톤 비프 모두 동작.
+// ⚠️ 2026-06-23 진단 결과: 부저 (마그네틱, GPIO1 PWM 직결) 가 LTE bringup 깨뜨림.
+// 신 PCB rev (2026-06-17~) 에선 deterministic 차단 (30분 0 events). firmware safe sleep
+// sequence + boot beep 제거 모두 무효 → hardware 결합 문제 (back-EMF + GPIO1 직접 구동).
+// 영구 fix 는 PCB 에 플라이백 다이오드 + driver TR. 그때까지 BUZZER_ENABLED 0 default.
+// 자세한 진단 라운드는 memory/project_buzzer_lte_diagnostic.md.
+#define BUZZER_ENABLED 0     // 부저 OFF default — hardware fix 전까지 LTE 안정성 우선.
 
 // =================================================================
 // 동작 파라미터
@@ -1114,10 +1119,16 @@ static const char *resetReasonStr(esp_reset_reason_t r) {
 // =================================================================
 void setup() {
   // ⚠️ 안전장치: 이전 부팅에서 brownout 직전 호출된 tone() 의 LEDC PWM 이 잔존할 수 있음.
-  // Serial 시작 전에 강제 정지. BUZZER_ENABLED=0 이어도 하드웨어 잔존 PWM 차단 위해 무조건 호출.
+  // Serial 시작 전에 강제 정지.
+#if BUZZER_ENABLED
   pinMode(PIN_BUZZER, OUTPUT);
   noTone(PIN_BUZZER);
   digitalWrite(PIN_BUZZER, LOW);
+#else
+  // 부저 OFF 시 GPIO1 high-Z (INPUT_PULLDOWN) 로 격리 — LTE bringup 간섭 차단.
+  // 진단 결과 (memory) GPIO1 OUTPUT LOW 보다 INPUT_PULLDOWN 이 더 안전.
+  pinMode(PIN_BUZZER, INPUT_PULLDOWN);
+#endif
 
   bootMs = millis();
 
@@ -1222,8 +1233,10 @@ void setup() {
   // ⚠️ LTE bring-up 직전이라 이 비프가 끝날 때까지 명시적으로 기다림.
   // 안 그러면 LTE 30s+ 블로킹 동안 updateBuzzer 가 안 불려도 hardware 는 duration 자동 정지로 안전한데
   // 그래도 시퀀스 (2-pulse wake) 의 두번째 비프 타이밍이 어긋날 수 있어서 flush.
+#if BUZZER_ENABLED
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
+#endif
   {
     esp_sleep_wakeup_cause_t wc = esp_sleep_get_wakeup_cause();
     // motion wake (정상 deep sleep 후 LIS 트리거) 는 매번 울림 — wake_cause=GPIO 면 진짜 wake.
