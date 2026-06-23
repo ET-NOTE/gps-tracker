@@ -264,6 +264,9 @@ char lastAntennaStatus[16] = "?";  // "OK" / "OPEN" / "SHORT" / "?"
 
 char deviceUid[32] = "esp-unknown";
 const char *wakeReasonStr = "boot";
+// 13_3: esp_reset_reason() 값 보존 — 첫 wake event payload 에 reset_cause 필드로 전송.
+// brownout / panic / wdt / poweron 등 구분 가능. 첫 POST 후엔 wake_diag_pending=false → 안 보냄.
+const char *resetCauseStr = "?";
 
 char simIccid[24] = "";
 char simImei[20]  = "";
@@ -966,7 +969,7 @@ static void buildPayload(char *out, size_t cap) {
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
       "\"l80\":{\"fix\":true,\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"ttff_s\":%lu%s},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
-      "\"wake\":\"%s\"%s}",
+      "\"wake\":\"%s\",\"reset_cause\":\"%s\"%s}",
       deviceUid, sim,
       (unsigned long)((millis() - bootMs) / 1000),
       (unsigned long)S.bringUpCount,
@@ -977,14 +980,14 @@ static void buildPayload(char *out, size_t cap) {
       headingFrag,
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
       stat,
-      wakeReasonStr, diag);
+      wakeReasonStr, resetCauseStr, diag);
   } else {
     snprintf(out, cap,
       "{\"device_uid\":\"%s\"%s,\"ts\":%lu,\"awake\":%lu,\"csq\":%d,\"reg\":%d,"
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
       "\"l80\":{\"fix\":false,\"sat\":%d},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
-      "\"wake\":\"%s\"%s}",
+      "\"wake\":\"%s\",\"reset_cause\":\"%s\"%s}",
       deviceUid, sim,
       (unsigned long)((millis() - bootMs) / 1000),
       (unsigned long)S.bringUpCount,
@@ -992,7 +995,7 @@ static void buildPayload(char *out, size_t cap) {
       (int)gps.satellites.value(),
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
       stat,
-      wakeReasonStr, diag);
+      wakeReasonStr, resetCauseStr, diag);
   }
 }
 
@@ -1011,7 +1014,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
     "\"event\":\"sleep_enter\",\"sleep_reason\":\"%s\",\"stopped_offset_s\":%lu,"
     "\"diag\":{\"boots\":%lu,\"wakes\":%lu,\"motion_wakes\":%lu,\"switch_wakes\":%lu,"
     "\"no_fix_cycles\":%lu,\"modem_fail_cycles\":%lu,\"brownouts\":%lu,"
-    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu}}",
+    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu,\"reset_cause\":\"%s\"}}",
     deviceUid, sim, (unsigned long)uptime_s,
     S.csq, S.reg, (unsigned long)vbatMv,
     reason, (unsigned long)stopped_offset_s,
@@ -1020,7 +1023,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
     (unsigned long)rtc_no_fix_cycles, (unsigned long)rtc_modem_fail_cycles,
     (unsigned long)rtc_brownout_count,
     (unsigned long)cyc_no_fix_count, (unsigned long)cyc_fix_count,
-    (unsigned long)cyc_post_ok, (unsigned long)cyc_post_fail);
+    (unsigned long)cyc_post_ok, (unsigned long)cyc_post_fail, resetCauseStr);
 }
 
 static void doPost() {
@@ -1182,7 +1185,8 @@ void setup() {
   DBGLN(F("=== 13_1_motion_aware_tracker (OLED-less, verbose serial) ==="));
 
   esp_reset_reason_t rr = esp_reset_reason();
-  DBGP(F("[BOOT] reset_reason=")); DBGLN(resetReasonStr(rr));
+  resetCauseStr = resetReasonStr(rr);
+  DBGP(F("[BOOT] reset_reason=")); DBGLN(resetCauseStr);
 
   if (rr == ESP_RST_POWERON) {
     rtc_boot_count        = 1;
