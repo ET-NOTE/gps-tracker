@@ -202,10 +202,11 @@ export default function DeviceDetail({ device, onWiped }) {
                   opacity: resetting ? 0.6 : 1,
                 }}>
                 <Icon name="refresh" size={14} />
-                {resetting ? '명령 전송 중...' : '🔄 디바이스 hardPowerCycle'}
+                {resetting ? '명령 전송 중...' : '🔄 LTE 모듈만 power cycle'}
               </button>
               <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>
-                다음 ingest 시 (~15초 이내) 디바이스가 PWR_EN 토글 + ESP 재시작. LTE 모듈 stuck (PSM/PLMN cache stale) 또는 SHCONN 소켓 누락 회복.
+                다음 ingest 시 (~15초 이내) 디바이스가 <b>PWR_EN 토글로 LTE 모듈만 재시작</b>.
+                ESP 는 그대로 (RTC 카운터 / sticky 상태 보존). LTE 모듈 stuck (PSM/PLMN cache stale, SHCONN 소켓 누락) 회복.
                 <br />
                 ⚠️ <b>한계</b>: 디바이스 POST 자체가 안 닿는 totally-stuck 상태에선 cmd 전달 불가. 그땐 firmware 60s 무응답 watchdog 가 자동 처리.
                 {resetNote && resetNote.ok && (
