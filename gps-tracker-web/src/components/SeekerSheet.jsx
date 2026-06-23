@@ -11,6 +11,7 @@ import Icon from './Icon';
 import useBreakpoint from '../useBreakpoint';
 import useSwipeDownClose from '../useSwipeDownClose';
 import { enrichWithSpeedStops as enrich, haversineM } from '../lib/stops';
+import { confirmDialog, alertDialog } from './Dialog';
 
 const KST_TZ = 9 * 3600 * 1000;
 
@@ -193,6 +194,12 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [selectedAiId, setSelectedAiId] = useState(null);
 
   const color = device ? getDeviceColor(device) : '#5B7CFF';
+
+  // 연구소 토글 — 사이클 seeker
+  const [labCycleOn, setLabCycleOn] = useState(false);
+  useEffect(() => {
+    api.getMyPrefs().then(p => setLabCycleOn(!!p?.lab_cycle_seeker)).catch(() => {});
+  }, []);
 
   // ─── 일별 통계 (365일) — 한 번만 ─────────────────────────
   // active-dates 와 union: daily_stats 가 catchup 안 된 날짜도 시커가 인식하도록.
@@ -696,6 +703,23 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
       </div>
 
       <div style={sty.body}>
+
+        {labCycleOn && device && (
+          <CycleListSection
+            deviceId={device.id}
+            color={color}
+            onSeek={(c) => {
+              const d = new Date(c.start);
+              const yyyy = d.getFullYear();
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const dd = String(d.getDate()).padStart(2, '0');
+              setMode('day');
+              setDate(`${yyyy}-${mm}-${dd}`);
+              setStartSlot(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
+              setHours(Math.max(1, Math.ceil(c.durationS / 3600) + 1));
+            }}
+          />
+        )}
 
         {/* ──────────────── 일간 모드 ──────────────── */}
         {mode === 'day' && (
@@ -1987,3 +2011,130 @@ const cal = {
     alignItems: 'center', justifyContent: 'center',
   },
 };
+
+// ─── 사이클 seeker (연구소 토글) ─────────────────────────
+// device 의 lifecycle events 를 wake → sleep_enter 묶음 (cycle) 으로 grouping.
+// 사이클별 [보기] = seeker 를 그 시간대로 이동. [삭제] = 해당 사이클의 events + location_records 영구 삭제.
+function CycleListSection({ deviceId, color, onSeek }) {
+  const [cycles, setCycles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() {
+    if (!deviceId) return;
+    setLoading(true);
+    try {
+      // 최근 7일 + 최대 1000 events (긴 진단 세션도 cover).
+      const since = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
+      const evs = await api.getDeviceEvents(deviceId, { since, limit: 1000 });
+      setCycles(groupCycles(evs || []));
+      setError(null);
+    } catch (e) {
+      setError(e?.message || 'events load failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => { refresh(); }, [deviceId]);
+
+  async function handleDelete(c) {
+    const ok = await confirmDialog({
+      title: '사이클 삭제',
+      body: `${new Date(c.start).toLocaleString('ko-KR')} 부터 ${new Date(c.end).toLocaleString('ko-KR')} 까지의 events + 좌표 모두 영구 삭제. 되돌릴 수 없음.`,
+      confirmText: '삭제',
+      danger: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const r = await api.deleteDeviceRange(deviceId, c.start, c.end);
+      await refresh();
+      alertDialog({ title: '삭제 완료', body: `좌표 ${r.deleted_locations}개 · 이벤트 ${r.deleted_events}개 삭제됨.` });
+    } catch (e) {
+      alertDialog({ title: '삭제 실패', body: e?.message || '알 수 없는 오류' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{
+      marginBottom: 12, padding: 10, background: 'var(--surface-2, #f6f7fa)',
+      border: '1px solid var(--border, #e5e7eb)', borderRadius: 8,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
+          ⚗️ 사이클 ({cycles.length}) · 최근 7일
+        </div>
+        <button onClick={refresh} disabled={loading || busy} style={{
+          fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)',
+          background: 'transparent', borderRadius: 4, cursor: 'pointer',
+        }}>{loading ? '⏳' : '🔄'}</button>
+      </div>
+      {error && <div style={{ fontSize: 11, color: 'var(--danger)', marginBottom: 6 }}>⚠ {error}</div>}
+      {cycles.length === 0 ? (
+        <div style={{ fontSize: 11, color: 'var(--text-3)', padding: '4px 0' }}>이 윈도우에 사이클 없음</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto' }}>
+          {cycles.map((c, i) => (
+            <div key={c.start} style={{
+              display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: 6,
+              padding: '5px 8px', background: 'white', borderRadius: 5, fontSize: 11,
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: 'var(--text-1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span style={{ color, marginRight: 4 }}>●</span>
+                  {new Date(c.start).toLocaleString('ko-KR')}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+                  {c.endKnown ? `${Math.round(c.durationS / 60)}분` : '진행중'}
+                  {c.sleepReason && c.sleepReason !== '-' ? ` · ${c.sleepReason}` : ''}
+                  {c.wakeCause && c.wakeCause !== '-' ? ` · wake:${c.wakeCause}` : ''}
+                </div>
+              </div>
+              <button onClick={() => onSeek(c)} disabled={busy} style={{
+                fontSize: 11, padding: '3px 8px', border: 'none', background: 'var(--primary)',
+                color: 'white', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
+              }}>▶ 보기</button>
+              <button onClick={() => handleDelete(c)} disabled={busy} style={{
+                fontSize: 11, padding: '3px 6px', border: '1px solid var(--danger)',
+                background: 'transparent', color: 'var(--danger)', borderRadius: 4, cursor: 'pointer',
+              }} title="이 사이클 삭제">🗑</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// events (occurred_at DESC) → wake → sleep_enter 단위 그룹.
+function groupCycles(events) {
+  const asc = [...events].sort((a, b) => new Date(a.occurred_at) - new Date(b.occurred_at));
+  const out = [];
+  let cur = null;
+  for (const e of asc) {
+    const d = e.data || {};
+    if (e.kind === 'wake' || cur == null) {
+      if (cur) out.push(cur);
+      cur = {
+        start: e.occurred_at,
+        end: e.occurred_at,
+        endKnown: false,
+        wakeCause: d.wake_cause || (e.kind === 'wake' ? 'wake' : '-'),
+        sleepReason: null,
+        durationS: 0,
+      };
+    } else {
+      cur.end = e.occurred_at;
+      if (e.kind === 'sleep_enter') {
+        cur.endKnown = true;
+        cur.sleepReason = d.sleep_reason || '-';
+      }
+      cur.durationS = (new Date(cur.end) - new Date(cur.start)) / 1000;
+    }
+  }
+  if (cur) out.push(cur);
+  return out.reverse();   // 최신 위로
+}

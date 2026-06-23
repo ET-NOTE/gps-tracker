@@ -78,6 +78,7 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/sim/refresh", post(sim_info_refresh)) // 1NCE 강제 즉시 갱신
         .route("/devices/:id/events", get(events_log))           // 최근 lifecycle 이벤트
         .route("/devices/:id/beep",   post(beep_device))         // 부저 원격 트리거 (현장 식별)
+        .route("/devices/:id/range",  delete(delete_range))      // 사이클 단위 range 삭제 (연구소 토글)
 }
 
 // ─── 부저 원격 트리거 ──────────────────────────────────────
@@ -472,6 +473,49 @@ async fn events_log(
     .bind(id).bind(user.user_id).bind(q.since).bind(limit)
     .fetch_all(&state.db).await?;
     Ok(Json(rows))
+}
+
+// ===========================================================================
+// 사이클 단위 range 삭제 — 연구소 토글에서 호출.
+// from / until (RFC3339) 사이의 events + location_records 를 user-scope 로 삭제.
+// 디바이스 자체는 보존 (페어링 유지).
+// ===========================================================================
+#[derive(Debug, Deserialize)]
+pub struct DeleteRangeQuery {
+    pub from: DateTime<Utc>,
+    pub until: DateTime<Utc>,
+}
+
+async fn delete_range(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Query(q): Query<DeleteRangeQuery>,
+) -> AppResult<Json<Value>> {
+    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
+        .bind(id).fetch_optional(&state.db).await?.flatten();
+    if owner != Some(user.user_id) {
+        return Err(AppError::NotFound);
+    }
+    if q.until < q.from {
+        return Err(AppError::BadRequest("until < from".into()));
+    }
+    let mut tx = state.db.begin().await?;
+    let locs = sqlx::query(
+        "DELETE FROM location_records WHERE device_id = $1 AND user_id = $2 \
+           AND recorded_at >= $3 AND recorded_at <= $4",
+    )
+    .bind(id).bind(user.user_id).bind(q.from).bind(q.until)
+    .execute(&mut *tx).await?.rows_affected();
+    let evs = sqlx::query(
+        "DELETE FROM events WHERE device_id = $1 AND user_id = $2 \
+           AND occurred_at >= $3 AND occurred_at <= $4",
+    )
+    .bind(id).bind(user.user_id).bind(q.from).bind(q.until)
+    .execute(&mut *tx).await?.rows_affected();
+    tx.commit().await?;
+    tracing::info!(device_id = id, user_id = user.user_id, from = %q.from, until = %q.until, locs, evs, "cycle range deleted");
+    Ok(Json(json!({ "deleted_locations": locs, "deleted_events": evs })))
 }
 
 // ===========================================================================
