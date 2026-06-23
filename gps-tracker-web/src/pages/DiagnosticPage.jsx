@@ -194,15 +194,29 @@ function CycleTable({ cycles }) {
         <tbody>
           {cycles.map((c, i) => {
             const startMs = new Date(c.start).getTime();
-            const endMs = c.end ? new Date(c.end).getTime() : Date.now();
-            const dur = Math.round((endMs - startMs) / 1000);
+            // cycle 의 마지막 이벤트 시각 (sleep_enter 또는 그 사이클의 가장 최근 이벤트).
+            const lastEvMs = c.events.length
+              ? Math.max(...c.events.map(e => new Date(e.occurred_at).getTime()))
+              : startMs;
+            const sinceLastS = Math.round((Date.now() - lastEvMs) / 1000);
+            // "진행중" 표시는 마지막 이벤트가 최근 (≤ 3분) 일 때만. 그 외엔 "끊김 N분".
+            const isLive = !c.end && sinceLastS < 180;
+            const dur = c.end
+              ? Math.round((new Date(c.end).getTime() - startMs) / 1000)
+              : Math.round((lastEvMs - startMs) / 1000);
+            const status = c.end
+              ? ''
+              : isLive
+                ? ' (진행중)'
+                : ` (끊김 · ${Math.round(sinceLastS/60)}분 전 마지막)`;
+            const staleStyle = (!c.end && !isLive) ? { color: '#c2410c' } : {};
             return (
               <tr key={c.start} style={{ background: i % 2 ? '#fafafa' : 'white' }}>
                 <td style={td}>{cycles.length - i}</td>
                 <td style={{ ...td, ...badge(c.buildTag) }}>{c.buildTag}</td>
                 <td style={td}>{c.wakeCause}</td>
                 <td style={td}>{new Date(c.start).toLocaleString('ko-KR')}</td>
-                <td style={td}>{dur}s {c.end ? '' : '(진행중)'}</td>
+                <td style={{ ...td, ...staleStyle }}>{dur}s{status}</td>
                 <td style={td}>{c.sleepReason || '-'}</td>
                 <td style={td}>{c.vbat_mv ? `${c.vbat_mv} mV` : '-'}</td>
                 <td style={td}>{c.events.length}</td>
