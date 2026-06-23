@@ -212,6 +212,12 @@ export const api = {
   wipeDevice:    (id) => req('POST', `/devices/${id}/wipe`),
   beepDevice:    (id) => req('POST', `/devices/${id}/beep`),
 
+  // 사이클 단위 range 삭제 (연구소 토글). from/until = RFC3339 ISO.
+  deleteDeviceRange: (id, from, until) => {
+    const q = new URLSearchParams({ from, until });
+    return req('DELETE', `/devices/${id}/range?${q}`);
+  },
+
   // Round 4: lifecycle 이벤트 (wake/sleep/low_batt/offline 등). 진단 페이지가 since/limit 사용.
   getDeviceEvents: (id, params = {}) => {
     const q = new URLSearchParams();

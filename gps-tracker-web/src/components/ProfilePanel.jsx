@@ -1114,6 +1114,19 @@ function LabTab() {
           onChange={(v) => togglePref('lab_first_view_summary', v)}
           busy={busy}
         />
+
+        <LabToggleRow
+          label="사이클 seeker — wake/sleep 단위 탐색 + 삭제"
+          desc={
+            <>
+              seeker 에 사이클 목록 추가. boot/wake → sleep_enter 묶음별로 보기 / 삭제 가능.<br />
+              테스트 사이클 누적 데이터 정리에 유용. <b>주의:</b> 삭제 시 해당 사이클 events + location_records 모두 영구 삭제.
+            </>
+          }
+          on={!!prefs.lab_cycle_seeker}
+          onChange={(v) => togglePref('lab_cycle_seeker', v)}
+          busy={busy}
+        />
       </Card>
 
       <Card>
