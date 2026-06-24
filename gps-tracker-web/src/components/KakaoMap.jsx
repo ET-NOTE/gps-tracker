@@ -276,6 +276,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const arrowsRef      = useRef({});  // deviceId → Marker[]
   const arrowStateRef  = useRef({});  // deviceId → { lastPos:{lat,lng}, distAcc }
   const fenceRef     = useRef({});   // geofenceId → { circle, name }
+  // 현재 단말기 필터 — null = 전체. updateMarker/addHistoryPoint 가 새 마커/폴리라인 생성 시 이걸 참조해
+  // 필터에 안 맞는 디바이스 데이터는 map=null 로 숨겨둠 (filterToDevice 가 명시 호출되지 않아도).
+  const currentFilterIdRef = useRef(null);
   const sharedIwRef  = useRef(null); // single InfoWindow shared by all markers/points
   const onRoadviewRef= useRef(onRoadview);
   const zoomLevelRef = useRef(10);   // 현재 zoom level — 마커/라인 두께 계산용
@@ -514,8 +517,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         e.meta = meta;
         e.label = label;
       } else {
+        // 필터 적용 — 다른 디바이스 데이터가 필터 무시하고 그려지는 것 방지.
+        const visible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
         const marker = new window.kakao.maps.Marker({
-          map: mapRef.current,
+          map: visible ? mapRef.current : null,
           position: pos,
           title: label,
           image: pinImage(color || '#5B7CFF'),
@@ -565,8 +570,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           const lastSeg = entry.segments[entry.segments.length - 1];
           const lastPos = lastSeg.coords[lastSeg.coords.length - 1];
           if (lastPos) {
+            const dashedVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
             const dashed = new window.kakao.maps.Polyline({
-              map: mapRef.current,
+              map: dashedVisible ? mapRef.current : null,
               path: [lastPos, pos],
               strokeWeight: Math.max(1, sw - 1),
               strokeColor: stroke,
@@ -577,8 +583,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           }
         }
         const coords = [pos];
+        const polyVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
         const poly = new window.kakao.maps.Polyline({
-          map: mapRef.current,
+          map: polyVisible ? mapRef.current : null,
           path: coords,
           strokeWeight: sw,
           strokeColor: stroke,
@@ -612,13 +619,14 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const isStop = !!meta.isStop;
       const c = color || '#888';
 
+      const dotVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
       if (!meta.skipMarker) {
         // cluster (5+ 점 좁은 범위 뭉침) 은 디바이스 색 무시하고 강제 빨강 — 시각적 경고.
         const dotColor = isStop ? '#EF4444' : c;
         // gap 양끝 점은 화살표(zIndex 4) 보다 위로 올라와야 클릭 가능. stop / 일반은 그대로.
         const zIdx = meta.isGapEndpoint ? 5 : (isStop ? 2 : 1);
         const marker = new window.kakao.maps.Marker({
-          map: mapRef.current,
+          map: dotVisible ? mapRef.current : null,
           position: pos,
           image: makeDotImage(dotColor, isStop, meta.isGapEndpoint),
           clickable: true,
@@ -651,7 +659,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           st.distAcc = 0;
           const angle = calcBearing(st.lastPos.lat, st.lastPos.lng, lat, lng);
           const am = new window.kakao.maps.Marker({
-            map: mapRef.current,
+            map: dotVisible ? mapRef.current : null,
             position: pos,
             image: makeArrowImage(angle, c),
             clickable: false,
@@ -751,6 +759,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
      */
     filterToDevice(targetId, opts = {}) {
       if (!mapRef.current || !window.kakao?.maps) return;
+      currentFilterIdRef.current = targetId;   // 새 마커 생성 시 참조
       const all = mapRef.current;
       Object.entries(markersRef.current).forEach(([id, { marker }]) => {
         marker.setMap((targetId === null || +id === targetId) ? all : null);
