@@ -1035,7 +1035,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
     "\"event\":\"sleep_enter\",\"sleep_reason\":\"%s\",\"stopped_offset_s\":%lu,"
     "\"diag\":{\"boots\":%lu,\"wakes\":%lu,\"motion_wakes\":%lu,\"switch_wakes\":%lu,"
     "\"no_fix_cycles\":%lu,\"modem_fail_cycles\":%lu,\"brownouts\":%lu,"
-    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu,\"reset_cause\":\"%s\",\"last_op\":\"%s\"}}",
+    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu},\"reset_cause\":\"%s\",\"last_op\":\"%s\"}",
     deviceUid, sim, (unsigned long)uptime_s,
     S.csq, S.reg, (unsigned long)vbatMv,
     reason, (unsigned long)stopped_offset_s,
