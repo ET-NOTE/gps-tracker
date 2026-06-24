@@ -877,7 +877,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         timeSegments = 5,       // 하루 왕복 경로가 겹칠 때 시간대별 선 색상 분리
       } = opts;
 
-      const pts = points.filter(p => p.lat != null && p.lng != null);
+      // 호출자에 따라 server DESC 순서로 그대로 넘어올 수 있음 (MiniSeekerOverlay) → 화살표 방향 역전.
+      // 여기서 recorded_at ASC 로 강제 정렬 (이미 ASC 면 빠르게 통과). 모든 호출자에 안전.
+      const pts = points
+        .filter(p => p.lat != null && p.lng != null)
+        .slice()
+        .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
       if (pts.length === 0) return null;
 
       const sw = strokeWeightForLevel(zoomLevelRef.current);
