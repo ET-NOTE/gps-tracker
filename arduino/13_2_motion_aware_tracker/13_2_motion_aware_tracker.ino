@@ -132,7 +132,7 @@ static uint8_t LIS_ADDR = 0x19;
 #define LIS_INT1_THS    0x32
 #define LIS_INT1_DUR    0x33
 
-#define LIS_MOT_THS     0x10
+#define LIS_MOT_THS     0x08   // 128mg threshold (이전 0x10=256mg 의 2배 민감)
 #define LIS_MOT_DUR     0x06
 
 #define LIS_EDGE_FILTER_MS  100UL
