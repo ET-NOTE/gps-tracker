@@ -270,6 +270,15 @@ const char *wakeReasonStr = "boot";
 // brownout / panic / wdt / poweron 등 구분 가능. 첫 POST 후엔 wake_diag_pending=false → 안 보냄.
 const char *resetCauseStr = "?";
 
+// RTC breadcrumb — 죽기 직전 어느 phase 에서 죽었는지 추적.
+// RTC_DATA_ATTR 라 deep sleep / soft reset / brownout / WDT / panic 모두 보존 (POWERON 만 erase).
+// 의미있는 boundary 에서만 update (loop idle 같이 빈번한 곳은 skip).
+RTC_DATA_ATTR char lastOpStr[24] = "?";
+static void breadcrumb(const char *op) {
+  strncpy(lastOpStr, op, sizeof(lastOpStr) - 1);
+  lastOpStr[sizeof(lastOpStr) - 1] = ' ';
+}
+
 char simIccid[24] = "";
 char simImei[20]  = "";
 char simImsi[20]  = "";
@@ -633,6 +642,7 @@ static void ltePowerOff() {
 }
 
 static void hardPowerCycle() {
+  breadcrumb("hardcycle");
   DBGLN(F("[LTE] PWR_EN cycle"));
   digitalWrite(PIN_PWR_EN, HIGH);
   delay(2000);
@@ -647,6 +657,7 @@ static void hardPowerCycle() {
 // AT+CFUN=0 → AT+CFUN=1: radio off → on. PWRKEY/PWR_EN 안 건드리고 ~5s 내 fresh registration.
 // stale PLMN cache / PSM 누락 회복용 — hardPowerCycle 보다 가볍고 빠름.
 static bool lteSoftReset() {
+  breadcrumb("softreset");
   DBGLN(F("[LTE] 🔧 soft reset (AT+CFUN=0 → 1)"));
   sendAT("AT+CFUN=0", "OK", 3000);
   delay(500);
@@ -659,6 +670,7 @@ static bool lteSoftReset() {
 }
 
 static bool lteBringUp() {
+  breadcrumb("lte_bringup");
   if (!sendAT("AT", "OK", 2000)) return false;
   if (ttAtOkMs == 0) ttAtOkMs = millis();
   sendAT("ATE0", "OK", 1000);
@@ -978,7 +990,7 @@ static void buildPayload(char *out, size_t cap) {
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
       "\"l80\":{\"fix\":true,\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"ttff_s\":%lu%s},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
-      "\"wake\":\"%s\",\"reset_cause\":\"%s\"%s}",
+      "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\"%s}",
       deviceUid, sim,
       (unsigned long)((millis() - bootMs) / 1000),
       (unsigned long)S.bringUpCount,
@@ -989,14 +1001,14 @@ static void buildPayload(char *out, size_t cap) {
       headingFrag,
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
       stat,
-      wakeReasonStr, resetCauseStr, diag);
+      wakeReasonStr, resetCauseStr, lastOpStr, diag);
   } else {
     snprintf(out, cap,
       "{\"device_uid\":\"%s\"%s,\"ts\":%lu,\"awake\":%lu,\"csq\":%d,\"reg\":%d,"
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
       "\"l80\":{\"fix\":false,\"sat\":%d},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
-      "\"wake\":\"%s\",\"reset_cause\":\"%s\"%s}",
+      "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\"%s}",
       deviceUid, sim,
       (unsigned long)((millis() - bootMs) / 1000),
       (unsigned long)S.bringUpCount,
@@ -1004,7 +1016,7 @@ static void buildPayload(char *out, size_t cap) {
       (int)gps.satellites.value(),
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
       stat,
-      wakeReasonStr, resetCauseStr, diag);
+      wakeReasonStr, resetCauseStr, lastOpStr, diag);
   }
 }
 
@@ -1023,7 +1035,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
     "\"event\":\"sleep_enter\",\"sleep_reason\":\"%s\",\"stopped_offset_s\":%lu,"
     "\"diag\":{\"boots\":%lu,\"wakes\":%lu,\"motion_wakes\":%lu,\"switch_wakes\":%lu,"
     "\"no_fix_cycles\":%lu,\"modem_fail_cycles\":%lu,\"brownouts\":%lu,"
-    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu,\"reset_cause\":\"%s\"}}",
+    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu,\"reset_cause\":\"%s\",\"last_op\":\"%s\"}}",
     deviceUid, sim, (unsigned long)uptime_s,
     S.csq, S.reg, (unsigned long)vbatMv,
     reason, (unsigned long)stopped_offset_s,
@@ -1032,10 +1044,11 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
     (unsigned long)rtc_no_fix_cycles, (unsigned long)rtc_modem_fail_cycles,
     (unsigned long)rtc_brownout_count,
     (unsigned long)cyc_no_fix_count, (unsigned long)cyc_fix_count,
-    (unsigned long)cyc_post_ok, (unsigned long)cyc_post_fail, resetCauseStr);
+    (unsigned long)cyc_post_ok, (unsigned long)cyc_post_fail, resetCauseStr, lastOpStr);
 }
 
 static void doPost() {
+  breadcrumb("do_post");
   char body[1280];   // stationary fragment 추가 (~250B) 로 1024 → 1280
   buildPayload(body, sizeof(body));
   if (DBG) { Serial.print(F("[POST body] ")); Serial.println(body); }
@@ -1051,6 +1064,7 @@ static void doPost() {
       lastSuccessPostMs = millis();
       softResetStreak = 0;
       if (lastRegOkMs == 0) lastRegOkMs = millis();   // watchdog reset — 60s 무응답 stuck 가드
+      breadcrumb("post_ok");
       wake_diag_pending = false;
       if (!buzz_first_post_done) {
         buzz_first_post_done = true;
@@ -1084,6 +1098,7 @@ static void doPost() {
 // Deep sleep
 // =================================================================
 static void enterDeepSleep(const char *reason) {
+  breadcrumb("enter_sleep");
   if (inSleepProcedure) return;
   inSleepProcedure = true;
 
@@ -1174,6 +1189,7 @@ static const char *resetReasonStr(esp_reset_reason_t r) {
 // setup / loop
 // =================================================================
 void setup() {
+  breadcrumb("setup");
   // ⚠️ 안전장치: 이전 부팅에서 brownout 직전 호출된 tone() 의 LEDC PWM 이 잔존할 수 있음.
   // Serial 시작 전에 강제 정지.
 #if BUZZER_ENABLED
