@@ -460,13 +460,20 @@ static void checkStationarySleep() {
     stationaryLastDriftM     = 0;
   }
 
+  // Recovery in progress 면 sleep window 4배 연장 — 서버 cmd:reset 도달 시간 + 자체 회복 시간 확보.
+  bool recoveryActive = (softResetStreak > 0)
+                     || (cyc_post_ok == 0 && S.bringUpCount > 0)
+                     || (lastSuccessPostMs > 0 && (now - lastSuccessPostMs) > 60000UL);
+  uint32_t effectiveWindow = recoveryActive ? (STATIONARY_WINDOW_MS * 4) : STATIONARY_WINDOW_MS;
+
   // 3) 윈도우 시작 / 만료
   if (stationarySinceMs == 0) {
     stationarySinceMs = now;
-    Serial.printf("[STAT] window start (gps=%s drift=%.1fm fixes=%d)\n",
+    Serial.printf("[STAT] window start (gps=%s drift=%.1fm fixes=%d%s)\n",
       gpsAvail ? "avail" : "stale",
-      stationaryLastDriftM, stationaryLastValidFixes);
-  } else if (now - stationarySinceMs >= STATIONARY_WINDOW_MS) {
+      stationaryLastDriftM, stationaryLastValidFixes,
+      recoveryActive ? " RECOVERY-EXTENDED" : "");
+  } else if (now - stationarySinceMs >= effectiveWindow) {
     const char *reason = gpsAvail ? "stationary" : "stationary_lis_only";
     Serial.printf("[STAT] %lus stationary → sleep (reason=%s)\n",
       (unsigned long)((now - stationarySinceMs) / 1000), reason);
@@ -1208,6 +1215,13 @@ void setup() {
   esp_reset_reason_t rr = esp_reset_reason();
   resetCauseStr = resetReasonStr(rr);
   DBGP(F("[BOOT] reset_reason=")); DBGLN(resetCauseStr);
+  // 직전 reset 이 crash 면 INT_WDT/TASK_WDT/PANIC/BROWNOUT cascade boot loop 방지 settle delay.
+  // 배터리 droop 회복 시간 + LTE 모듈 capacitor discharge 시간 확보 + WDT 직후 즉시 do_post 재시도 방지.
+  if (rr == ESP_RST_INT_WDT || rr == ESP_RST_TASK_WDT || rr == ESP_RST_PANIC
+      || rr == ESP_RST_WDT || rr == ESP_RST_BROWNOUT) {
+    DBGLN(F("[BOOT] ⚠️ previous reset was crash — 15s settle delay before init"));
+    delay(15000);
+  }
 
   if (rr == ESP_RST_POWERON) {
     rtc_boot_count        = 1;
