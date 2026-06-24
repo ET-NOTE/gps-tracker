@@ -59,6 +59,8 @@ pub struct IngestPayload {
     pub build_tag: Option<String>,
     // esp_reset_reason() — brownout / panic / wdt / poweron 등 reboot 원인 진단.
     pub reset_cause: Option<String>,
+    // RTC breadcrumb — 죽기 직전 어느 phase 였는지. POWERON 만 erase 됨.
+    pub last_op: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -318,6 +320,9 @@ pub async fn ingest(
             if let Some(rc) = &parsed.reset_cause {
                 data.insert("reset_cause".into(), Value::String(rc.clone()));
             }
+            if let Some(lo) = &parsed.last_op {
+                data.insert("last_op".into(), Value::String(lo.clone()));
+            }
             let _ = sqlx::query(
                 "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM devices WHERE id = $1))",
             )
@@ -344,10 +349,11 @@ pub async fn ingest(
                 .unwrap_or((-1, -1, -1, -1, -1));
             let build_tag = parsed.build_tag.as_deref().unwrap_or("-");
             let reset_cause = parsed.reset_cause.as_deref().unwrap_or("-");
+            let last_op = parsed.last_op.as_deref().unwrap_or("-");
             let gps_fix = parsed.l80.as_ref().map(|l| l.fix).unwrap_or(false);
             let gps_sat = parsed.l80.as_ref().and_then(|l| l.sat_count()).unwrap_or(-1);
             tracing::info!(
-                device_id, kind, build_tag, reset_cause,
+                device_id, kind, build_tag, reset_cause, last_op,
                 wake_cause, sleep_reason,
                 uptime_s, vbat_mv,
                 gps_fix, gps_sat,
