@@ -998,7 +998,7 @@ static void buildPayload(char *out, size_t cap) {
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
       "\"l80\":{\"fix\":true,\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"ttff_s\":%lu%s},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
-      "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\"%s}",
+      "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\"%s}",
       deviceUid, sim,
       (unsigned long)((millis() - bootMs) / 1000),
       (unsigned long)S.bringUpCount,
@@ -1009,14 +1009,14 @@ static void buildPayload(char *out, size_t cap) {
       headingFrag,
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
       stat,
-      wakeReasonStr, resetCauseStr, lastOpStr, diag);
+      wakeReasonStr, resetCauseStr, lastOpStr, lastAntennaStatus, diag);
   } else {
     snprintf(out, cap,
       "{\"device_uid\":\"%s\"%s,\"ts\":%lu,\"awake\":%lu,\"csq\":%d,\"reg\":%d,"
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
       "\"l80\":{\"fix\":false,\"sat\":%d},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
-      "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\"%s}",
+      "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\"%s}",
       deviceUid, sim,
       (unsigned long)((millis() - bootMs) / 1000),
       (unsigned long)S.bringUpCount,
@@ -1024,7 +1024,7 @@ static void buildPayload(char *out, size_t cap) {
       (int)gps.satellites.value(),
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
       stat,
-      wakeReasonStr, resetCauseStr, lastOpStr, diag);
+      wakeReasonStr, resetCauseStr, lastOpStr, lastAntennaStatus, diag);
   }
 }
 
@@ -1043,7 +1043,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
     "\"event\":\"sleep_enter\",\"sleep_reason\":\"%s\",\"stopped_offset_s\":%lu,"
     "\"diag\":{\"boots\":%lu,\"wakes\":%lu,\"motion_wakes\":%lu,\"switch_wakes\":%lu,"
     "\"no_fix_cycles\":%lu,\"modem_fail_cycles\":%lu,\"brownouts\":%lu,"
-    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu},\"reset_cause\":\"%s\",\"last_op\":\"%s\"}",
+    "\"cyc_no_fix\":%lu,\"cyc_fix\":%lu,\"cyc_post_ok\":%lu,\"cyc_post_fail\":%lu},\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\"}",
     deviceUid, sim, (unsigned long)uptime_s,
     S.csq, S.reg, (unsigned long)vbatMv,
     reason, (unsigned long)stopped_offset_s,
@@ -1052,7 +1052,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
     (unsigned long)rtc_no_fix_cycles, (unsigned long)rtc_modem_fail_cycles,
     (unsigned long)rtc_brownout_count,
     (unsigned long)cyc_no_fix_count, (unsigned long)cyc_fix_count,
-    (unsigned long)cyc_post_ok, (unsigned long)cyc_post_fail, resetCauseStr, lastOpStr);
+    (unsigned long)cyc_post_ok, (unsigned long)cyc_post_fail, resetCauseStr, lastOpStr, lastAntennaStatus);
 }
 
 static void doPost() {
@@ -1191,6 +1191,19 @@ static const char *resetReasonStr(esp_reset_reason_t r) {
     case ESP_RST_SDIO:       return "SDIO";
     default:                 return "UNKNOWN";
   }
+}
+
+// =================================================================
+// 13_4: LC86G NMEA 명령 전송 helper — checksum (XOR) 자동 계산 + CRLF 첨부.
+// body 는 '$' 부터 ','-구분 인자 끝까지. '*XX\r\n' 자동 부착.
+// =================================================================
+static void sendGpsNmea(const char *body) {
+  uint8_t cs = 0;
+  const char *p = body;
+  if (*p == '$') p++;
+  while (*p && *p != '*') { cs ^= (uint8_t)*p++; }
+  gpsSerial.printf("%s*%02X\r\n", body, cs);
+  DBGP(F("[LC86G TX] ")); DBGLN(body);
 }
 
 // =================================================================
@@ -1365,6 +1378,18 @@ void setup() {
 
   gpsSerial.setRxBufferSize(4096);   // LTE bringup 동안 NMEA overflow 방지 (~4s 분량)
   gpsSerial.begin(GPS_BAUD, SERIAL_8N1, PIN_GPS_RX, PIN_GPS_TX);
+
+  // 13_4: LC86G init — EASY (ephemeris 예측 — TTFF 단축) + 불필요 NMEA 차단.
+  // 모듈 부팅 안정화 1.5s 후 명령 전송. checksum + CRLF 자동.
+  delay(1500);
+  sendGpsNmea("$PAIR025,1");      // EASY 활성 — cold/warm start TTFF 5~10s 단축.
+  delay(100);
+  sendGpsNmea("$PAIR062,1,0");    // GLL 비활성 (위경도 중복, RMC/GGA 로 충분).
+  delay(100);
+  sendGpsNmea("$PAIR062,5,0");    // VTG 비활성 (heading 은 RMC course-over-ground 에 있음).
+  delay(100);
+  sendGpsNmea("$PAIR062,3,5");    // GSV 5초마다 (default 1초) — 시야 위성 모니터 충분, UART 부하 ↓.
+  delay(100);
 
   lteSerial.begin(LTE_BAUD, SERIAL_8N1, PIN_LTE_RX, PIN_LTE_TX);
   ltePowerOn();
