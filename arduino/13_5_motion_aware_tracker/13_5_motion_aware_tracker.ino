@@ -1,4 +1,10 @@
-// 13_2_motion_aware_tracker — 13_1 기반 + 신규 PCB 핀 + 부저 (2026-06-17)
+// 13_5_motion_aware_tracker — 13_3 base + LC86G 호환 변경을 단계적으로 추가 (2026-06-25~26)
+// step-1: GPS_BAUD 9600 → 115200.
+// step-Z: + PMTK741 Hot start hint (RTC last fix). 안정 확인.
+// step-AZ: + A안 (esp_task_wdt_reset feed) base + PAIR062 NMEA cull (GLL OFF / VTG OFF / GSV 5s).
+// step-AZE: + PAIR025,1 EASY 활성 (ephemeris 예측 → TTFF 단축).
+// step-AZEBE: + fix 판정 완화 (sat>=3, age<10s, hdop<5.0) + GSV 5s → 1s.
+// step-AZEBEP: + PQTMANTENNASTATUS 파싱 (line buffer + status/source → OK_EXT/OK_INT/OPEN/SHORT). 13_4 binary 동등성.
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -35,7 +41,7 @@
 #include <WiFi.h>
 #include <esp_sleep.h>
 #include <esp_system.h>
-#include <esp_task_wdt.h>   // A안: POST 경로에 명시 feed → INT-WDT cascade 회피.
+#include <esp_task_wdt.h>   // 13_5 A안: POST 경로에 명시 feed → INT-WDT cascade 회피.
 
 // =================================================================
 // 핀 정의
@@ -52,7 +58,7 @@
 
 #define PIN_GPS_RX     20
 #define PIN_GPS_TX     21
-#define GPS_BAUD       9600
+#define GPS_BAUD       115200    // 13_5 step-1 (LC86G): boot default. (L80 은 9600 였음.) 그 외 변경 0건.
 
 // PCB rev 빌드 플래그 — 동일 13_2 소스로 구/신 PCB 모두 지원.
 //   default (#define USE_OLD_PCB 미설정) = 신 PCB rev (2026-06-17~), RX=2, TX=4
@@ -68,7 +74,7 @@
 #endif
 #define LTE_BAUD       115200
 
-#define PIN_BUZZER     1     // passive 마그네틱 부저 — tone() PWM 으로 구동
+#define PIN_BUZZER     1     // 액티브 부저 (digitalWrite HIGH=on / LOW=off) — LEDC PWM 회피
 #define BUZZER_FREQ    2700  // Hz — 마그네틱 부저 공진주파수 근처 (최대 효율 + audible).
                              // 1800Hz 로 낮춰 봤으나 공진 외 효율 너무 낮아 inaudible → 복원.
 // ⚠️ 2026-06-23 진단 결과: 부저 (마그네틱, GPIO1 PWM 직결) 가 LTE bringup 깨뜨림.
@@ -76,7 +82,7 @@
 // sequence + boot beep 제거 모두 무효 → hardware 결합 문제 (back-EMF + GPIO1 직접 구동).
 // 영구 fix 는 PCB 에 플라이백 다이오드 + driver TR. 그때까지 BUZZER_ENABLED 0 default.
 // 자세한 진단 라운드는 memory/project_buzzer_lte_diagnostic.md.
-#define BUZZER_ENABLED 0     // 부저 OFF default — hardware fix 전까지 LTE 안정성 우선.
+#define BUZZER_ENABLED 1     // 13_3: digitalWrite driver 로 LEDC PWM 회피 — LTE 영향 검증
 
 // =================================================================
 // 동작 파라미터
@@ -158,10 +164,23 @@ RTC_DATA_ATTR uint32_t rtc_last_sleep_uptime = 0;
 RTC_DATA_ATTR uint32_t rtc_last_sleep_unix   = 0;
 RTC_DATA_ATTR uint32_t rtc_lis_reinits       = 0;   // I2C wedge → LIS reinit 누적 (HW 결선 불안 진단)
 
+// 13_5 step-Z: Hot start hint 용 마지막 fix 백업 (deep sleep 보존). 다음 boot 에서 LC86G 에 PMTK741 hint 전달.
+RTC_DATA_ATTR float    rtc_last_lat     = 0;
+RTC_DATA_ATTR float    rtc_last_lng     = 0;
+RTC_DATA_ATTR float    rtc_last_alt_m   = 0;
+RTC_DATA_ATTR uint16_t rtc_last_fix_y   = 0;   // UTC year (2025…). 0 = invalid
+RTC_DATA_ATTR uint8_t  rtc_last_fix_mo  = 0;
+RTC_DATA_ATTR uint8_t  rtc_last_fix_d   = 0;
+RTC_DATA_ATTR uint8_t  rtc_last_fix_h   = 0;
+RTC_DATA_ATTR uint8_t  rtc_last_fix_mi  = 0;
+RTC_DATA_ATTR uint8_t  rtc_last_fix_s   = 0;
+
 static uint32_t cyc_fix_count        = 0;
 static uint32_t cyc_no_fix_count     = 0;
 static uint32_t cyc_post_ok          = 0;
-// 13_2 stuck watchdog — 마지막 성공 POST 후 STUCK_POST_TIMEOUT_MS 무응답 시 강제 hardPowerCycle.
+// 13_3: stuck watchdog — 마지막 성공 POST (status=200) 후 STUCK_POST_TIMEOUT_MS 넘어가면
+// LTE 모듈 stale registration / SHCONN 누락 등 stuck 상태로 보고 강제 hardPowerCycle.
+// 0 = 부팅 후 한 번도 성공 POST 없음 (= bringup 단계로 따로 처리, BRINGUP_FAIL_HARD_RESET 가 cover).
 static uint32_t lastSuccessPostMs    = 0;
 #define STUCK_POST_TIMEOUT_MS (60UL * 1000UL)
 // REG (network attached) 모니터 — REG_OK 지속 추적. 30s 연속 not-registered 면 soft reset.
@@ -208,7 +227,7 @@ static void beep(uint8_t count, uint16_t pulseMs, uint16_t gapMs) {
   buzzerPulseMs   = pulseMs;
   buzzerGapMs     = gapMs;
   if (count == 0) return;
-  tone(PIN_BUZZER, BUZZER_FREQ, pulseMs);
+  digitalWrite(PIN_BUZZER, HIGH);   // 13_3
   buzzerIsOn = true;
   buzzerNextEdgeMs = millis() + pulseMs;
 }
@@ -218,12 +237,12 @@ static void updateBuzzer() {
   uint32_t now = millis();
   if ((int32_t)(now - buzzerNextEdgeMs) < 0) return;
   if (buzzerIsOn) {
-    noTone(PIN_BUZZER);   // hardware 가 이미 멈췄어도 state cleanup
+    digitalWrite(PIN_BUZZER, LOW);   // 13_3
     buzzerIsOn = false;
     if (buzzerRemaining > 0) buzzerRemaining--;
     if (buzzerRemaining > 0) buzzerNextEdgeMs = now + buzzerGapMs;
   } else if (buzzerRemaining > 0) {
-    tone(PIN_BUZZER, BUZZER_FREQ, buzzerPulseMs);
+    digitalWrite(PIN_BUZZER, HIGH);   // 13_3
     buzzerIsOn = true;
     buzzerNextEdgeMs = now + buzzerPulseMs;
   }
@@ -236,7 +255,7 @@ static void waitBuzzerFlush(uint32_t maxMs = 1500) {
     updateBuzzer();
     delay(5);
   }
-  noTone(PIN_BUZZER);
+  digitalWrite(PIN_BUZZER, LOW);
   buzzerIsOn = false;
   buzzerRemaining = 0;
 }
@@ -462,6 +481,7 @@ static void checkStationarySleep() {
   }
 
   // Recovery in progress 면 sleep window 4배 연장 — 서버 cmd:reset 도달 시간 + 자체 회복 시간 확보.
+  // 절전 들어가면 motion 외엔 wake 안 되니 (사용자 개입 필요해짐) 그 전에 회복 기회 더 줌.
   bool recoveryActive = (softResetStreak > 0)
                      || (cyc_post_ok == 0 && S.bringUpCount > 0)
                      || (lastSuccessPostMs > 0 && (now - lastSuccessPostMs) > 60000UL);
@@ -504,9 +524,12 @@ static void printStatus() {
   uint32_t up_s = (now - bootMs) / 1000;
 
   // .isValid() 는 첫 fix 후 영구 true — sat 잃어도 stale 좌표 반환. age + sat 으로 freshness 강제.
+  // 13_5 step-B: LC86G multi-GNSS 라 sat 많지만 dropout 잦음 → age<10s, sat>=3 완화 + HDOP<5.0 threshold.
+  uint32_t hdopv = gps.hdop.value();
   bool fix = gps.location.isValid()
-          && gps.location.age() < 5000
-          && gps.satellites.value() >= 4;
+          && gps.location.age() < 10000
+          && gps.satellites.value() >= 3
+          && (hdopv == 0 || hdopv < 500);
   uint32_t fixAge = lastFixMs ? (now - lastFixMs) / 1000 : 0;
   uint32_t motTotal = motionEvents;
   uint32_t motAgeS  = lastMotionMs ? (now - lastMotionMs) / 1000 : 0;
@@ -590,7 +613,7 @@ static bool sendAT(const char *cmd, const char *expect, uint32_t timeoutMs) {
   }
   uint32_t t0 = millis();
   while (millis() - t0 < timeoutMs) {
-    esp_task_wdt_reset();   // A안: 긴 AT wait 동안 WDT cascade 방지
+    esp_task_wdt_reset();   // 13_5 A안: 긴 AT wait 동안 WDT cascade 방지
     drainLte();
     if (!lteHealthy()) {
       if (DBG) { Serial.print(F("<< (UV abort) ")); Serial.println(lastResp); }
@@ -612,7 +635,7 @@ static void waitUartIdle(uint32_t idleMs, uint32_t maxWaitMs) {
   uint32_t lastByte = millis();
   uint32_t t0       = millis();
   while (millis() - t0 < maxWaitMs) {
-    esp_task_wdt_reset();   // A안
+    esp_task_wdt_reset();   // 13_5 A안
     while (lteSerial.available()) { lteSerial.read(); lastByte = millis(); }
     if (millis() - lastByte >= idleMs) return;
     delay(10);
@@ -795,7 +818,7 @@ static bool sendBodyAfterPrompt(const char *body, uint32_t len) {
   uint32_t t0 = millis();
   lastResp = "";
   while (millis() - t0 < 3000) {
-    esp_task_wdt_reset();   // A안
+    esp_task_wdt_reset();   // 13_5 A안
     drainLte();
     if (lastResp.indexOf('>') >= 0) break;
     delay(5);
@@ -876,12 +899,14 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
           // 이전 작동 확인된 패턴 — 변경하지 말 것.
           beep(5, 200, 100);
         }
+        // ── 서버가 cmd: reset 보냈으면 module-only hardPowerCycle ──
+        // LTE stuck (PSM/PLMN cache stale, SHCONN 소켓 누락) 회복용 원격 명령.
+        // esp_restart() 안 함 — ESP 의 RTC counter / sticky 상태 보존, LTE 모듈만 reset.
         if (lastResp.indexOf("\"cmd\":\"reset\"") >= 0
          || lastResp.indexOf("\"cmd\": \"reset\"") >= 0) {
           DBGLN(F("[RESET] 🔄 server cmd: reset — module-only hardPowerCycle (ESP 보존)"));
           sendAT("AT+SHDISC", "OK", 1500);
-          hardPowerCycle();
-          // esp_restart() 안 함 — ESP 의 RTC counter / sticky 상태 보존.
+          hardPowerCycle();   // PWR_EN 토글 → 모듈만 OFF/ON
           // 다음 loop() iteration 에서 lteBringUp() 자동 호출되어 재등록.
           S.lteReady      = false;
           S.failStreak    = 0;
@@ -969,9 +994,12 @@ static void buildPayload(char *out, size_t cap) {
   uint32_t vbatMv = readVbatMv();
   // sticky-fix 방어: .isValid() 만 보면 첫 fix 후 sat 0 이어도 true 유지 → 백엔드가 stale 좌표를
   // 새 fix 처럼 인식. age (마지막 NMEA update) + sat 카운트로 freshness 강제.
+  // 13_5 step-B: age<10s, sat>=3 완화 + HDOP<5.0.
+  uint32_t hdopv = gps.hdop.value();
   bool l80fix = gps.location.isValid()
-             && gps.location.age() < 5000
-             && gps.satellites.value() >= 4;
+             && gps.location.age() < 10000
+             && gps.satellites.value() >= 3
+             && (hdopv == 0 || hdopv < 500);
   uint32_t motTotal = motionEvents;
   uint32_t motDelta = motTotal - motionEventsAtLastPost;
   uint32_t motAgeS  = lastMotionMs ? (millis() - lastMotionMs) / 1000 : 0;
@@ -1056,7 +1084,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
 
 static void doPost() {
   breadcrumb("do_post");
-  esp_task_wdt_reset();   // A안: doPost 시작 전 fresh feed
+  esp_task_wdt_reset();   // 13_5 A안: doPost 시작 전 fresh feed
   char body[1280];   // stationary fragment 추가 (~250B) 로 1024 → 1280
   buildPayload(body, sizeof(body));
   if (DBG) { Serial.print(F("[POST body] ")); Serial.println(body); }
@@ -1070,9 +1098,9 @@ static void doPost() {
       S.postOks++;
       cyc_post_ok++;
       lastSuccessPostMs = millis();
-      breadcrumb("post_ok");
       softResetStreak = 0;
-      if (lastRegOkMs == 0) lastRegOkMs = millis();
+      if (lastRegOkMs == 0) lastRegOkMs = millis();   // watchdog reset — 60s 무응답 stuck 가드
+      breadcrumb("post_ok");
       wake_diag_pending = false;
       if (!buzz_first_post_done) {
         buzz_first_post_done = true;
@@ -1193,6 +1221,15 @@ static const char *resetReasonStr(esp_reset_reason_t r) {
   }
 }
 
+// 13_5 step-Z+: LC86G NMEA 명령 helper — XOR checksum (start char '$' 제외) + CRLF 자동.
+static void sendGpsNmea(const char* body) {
+  uint8_t cs = 0;
+  for (const char* p = body + 1; *p; p++) cs ^= (uint8_t)*p;  // body[0] = '$' 는 skip
+  char line[180];
+  snprintf(line, sizeof(line), "%s*%02X\r\n", body, cs);
+  gpsSerial.print(line);
+}
+
 // =================================================================
 // setup / loop
 // =================================================================
@@ -1202,7 +1239,7 @@ void setup() {
   // Serial 시작 전에 강제 정지.
 #if BUZZER_ENABLED
   pinMode(PIN_BUZZER, OUTPUT);
-  noTone(PIN_BUZZER);
+  digitalWrite(PIN_BUZZER, LOW);
   digitalWrite(PIN_BUZZER, LOW);
 #else
   // 부저 OFF 시 GPIO1 high-Z (INPUT_PULLDOWN) 로 격리 — LTE bringup 간섭 차단.
@@ -1366,6 +1403,38 @@ void setup() {
   gpsSerial.setRxBufferSize(4096);   // LTE bringup 동안 NMEA overflow 방지 (~4s 분량)
   gpsSerial.begin(GPS_BAUD, SERIAL_8N1, PIN_GPS_RX, PIN_GPS_TX);
 
+  // LC86G boot 안정화. 이후 모든 PAIR/PMTK 명령은 sendGpsNmea() helper 사용.
+  delay(1500);
+
+  // 13_5 step-E: PAIR025 EASY 활성 — LC86G 의 ephemeris 예측 사용, TTFF 단축. (13_4 에 있던 명령.)
+  sendGpsNmea("$PAIR025,1");
+  delay(100);
+
+  // 13_5 step-A (PAIR062 NMEA cull): GLL/VTG 비활성, GSV 5초 — UART 부하 ↓, LC86G internal scheduling 영향 검증.
+  sendGpsNmea("$PAIR062,1,0");    // GLL OFF
+  delay(100);
+  sendGpsNmea("$PAIR062,5,0");    // VTG OFF
+  delay(100);
+  sendGpsNmea("$PAIR062,3,1");    // GSV 1초 (step-E)
+  delay(100);
+
+  // 13_5 step-Z: Hot start hint — RTC 의 직전 fix 가 valid 면 PMTK741 전송.
+  if (rtc_last_fix_y >= 2025) {
+    char buf[140];
+    snprintf(buf, sizeof(buf),
+      "$PMTK741,%.6f,%.6f,%.0f,%u,%u,%u,%u,%u,%u",
+      (double)rtc_last_lat, (double)rtc_last_lng, (double)rtc_last_alt_m,
+      (unsigned)rtc_last_fix_y, (unsigned)rtc_last_fix_mo, (unsigned)rtc_last_fix_d,
+      (unsigned)rtc_last_fix_h, (unsigned)rtc_last_fix_mi, (unsigned)rtc_last_fix_s);
+    sendGpsNmea(buf);
+    Serial.printf("[GPS] hot-start hint sent: %.4f,%.4f @%u-%02u-%02uZ\n",
+      (double)rtc_last_lat, (double)rtc_last_lng,
+      (unsigned)rtc_last_fix_y, (unsigned)rtc_last_fix_mo, (unsigned)rtc_last_fix_d);
+    delay(100);
+  } else {
+    Serial.println(F("[GPS] no RTC hot-start hint (first boot or hint stale)"));
+  }
+
   lteSerial.begin(LTE_BAUD, SERIAL_8N1, PIN_LTE_RX, PIN_LTE_TX);
   ltePowerOn();
   if (lteBringUp()) {
@@ -1391,6 +1460,10 @@ void loop() {
   static char     antStatusBuf[12];
   static uint8_t  antStatusIdx = 0;
 
+  // 13_5 step-PQTM: NMEA 라인 버퍼 — $PQTMANTENNASTATUS (LC86G) 파싱용.
+  static char nmeaLine[200];
+  static uint16_t nmeaLineLen = 0;
+
   while (gpsSerial.available()) {
     char c = (char)gpsSerial.read();
     if (!gpsFirstCharMs) {
@@ -1398,6 +1471,42 @@ void loop() {
       Serial.printf("[L80] first NMEA char @+%.1fs\n", (gpsFirstCharMs - bootMs) / 1000.0f);
     }
     gpsCharsRx++;
+
+    // ── 13_5 step-PQTM: NMEA 라인 누적 + LC86G PQTMANTENNASTATUS 파싱 ─────
+    if (c == '\n' || c == '\r') {
+      if (nmeaLineLen > 18 && strncmp(nmeaLine, "$PQTMANTENNASTATUS", 18) == 0) {
+        nmeaLine[nmeaLineLen] = 0;
+        // 포맷: $PQTMANTENNASTATUS,<ver>,<mode>,<status>,<source>*XX
+        // status: 0=OPEN, 1=SHORT, 2=NORMAL, 3=NOT_CONNECTED. source: 1=internal, 2=external.
+        int commas = 0, statusVal = -1, sourceVal = -1;
+        const char* p = nmeaLine;
+        while (*p && *p != '*') {
+          if (*p == ',') {
+            commas++;
+            if (commas == 3) statusVal = atoi(p + 1);
+            if (commas == 4) sourceVal = atoi(p + 1);
+          }
+          p++;
+        }
+        const char* tag = "?";
+        if (statusVal == 3)                   tag = "NOT_CONN";
+        else if (statusVal == 0)              tag = "OPEN";
+        else if (statusVal == 1)              tag = "SHORT";
+        else if (statusVal == 2)              tag = (sourceVal == 2 ? "OK_EXT" : (sourceVal == 1 ? "OK_INT" : "OK"));
+        bool changed = strncmp(lastAntennaStatus, tag, sizeof(lastAntennaStatus)) != 0;
+        strncpy(lastAntennaStatus, tag, sizeof(lastAntennaStatus) - 1);
+        lastAntennaStatus[sizeof(lastAntennaStatus) - 1] = 0;
+        if (changed) {
+          Serial.printf("[LC86G] antenna=%s (status=%d source=%d, boot+%.1fs)\n",
+            lastAntennaStatus, statusVal, sourceVal, (millis() - bootMs) / 1000.0f);
+        }
+      }
+      nmeaLineLen = 0;
+    } else if (nmeaLineLen < sizeof(nmeaLine) - 1) {
+      nmeaLine[nmeaLineLen++] = c;
+    } else {
+      nmeaLineLen = 0;   // overflow → drop
+    }
 
     // ── 안테나 키워드 매칭 (NMEA 구조와 무관, 매 char 적용) ─────────────
     if (antCollecting) {
@@ -1451,6 +1560,19 @@ void loop() {
           }
         }
         lastFixMs = now;
+        // 13_5 step-Z: Hot start hint — fresh fix (sat>=4 + age<3s + date valid) 마다 RTC 갱신.
+        if (gps.satellites.value() >= 4 && gps.location.age() < 3000
+         && gps.date.isValid() && gps.time.isValid() && gps.date.year() >= 2025) {
+          rtc_last_lat    = (float)gps.location.lat();
+          rtc_last_lng    = (float)gps.location.lng();
+          rtc_last_alt_m  = gps.altitude.isValid() ? (float)gps.altitude.meters() : 0;
+          rtc_last_fix_y  = gps.date.year();
+          rtc_last_fix_mo = gps.date.month();
+          rtc_last_fix_d  = gps.date.day();
+          rtc_last_fix_h  = gps.time.hour();
+          rtc_last_fix_mi = gps.time.minute();
+          rtc_last_fix_s  = gps.time.second();
+        }
         // 정지 판정용 history 에 ~10초마다 push (너무 빠르면 fix 노이즈가 윈도우를 흔듦)
         if (now - lastGpsHistPushMs >= 10000) {
           lastGpsHistPushMs = now;
@@ -1557,7 +1679,7 @@ void loop() {
         S.failStreak = 0;
       }
 
-      // 13_2 stuck watchdog (escalation): 마지막 성공 POST 후 60s 넘어가면 우선 soft reset.
+      // 13_3 stuck watchdog (escalation): 마지막 성공 POST 후 60s 넘어가면 우선 soft reset.
       // soft reset 했는데 또 60s 안에 무응답 → hardPowerCycle 로 escalate.
       if (lastSuccessPostMs > 0 && (millis() - lastSuccessPostMs) > STUCK_POST_TIMEOUT_MS) {
         if (softResetStreak < SOFT_RESET_TO_HARD_THRESHOLD) {

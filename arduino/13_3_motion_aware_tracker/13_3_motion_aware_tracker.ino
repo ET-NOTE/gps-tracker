@@ -1,4 +1,4 @@
-// 13_3_motion_aware_tracker (= 13_2 + 부저 tone()/noTone() → digitalWrite HIGH/LOW) — 13_1 기반 + 신규 PCB 핀 + 부저 (2026-06-17)
+// 13_3_motion_aware_tracker — LC86G 최신 단말기 base (= 13_2 + 부저 digitalWrite + GPS_BAUD 115200 + A안 WDT feed). (2026-06-26)
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -35,6 +35,7 @@
 #include <WiFi.h>
 #include <esp_sleep.h>
 #include <esp_system.h>
+#include <esp_task_wdt.h>   // A안: POST 경로에 명시 feed → INT-WDT cascade 회피.
 
 // =================================================================
 // 핀 정의
@@ -51,7 +52,7 @@
 
 #define PIN_GPS_RX     20
 #define PIN_GPS_TX     21
-#define GPS_BAUD       9600
+#define GPS_BAUD       115200    // LC86G boot default (구 L80-R 은 9600).
 
 // PCB rev 빌드 플래그 — 동일 13_2 소스로 구/신 PCB 모두 지원.
 //   default (#define USE_OLD_PCB 미설정) = 신 PCB rev (2026-06-17~), RX=2, TX=4
@@ -592,6 +593,7 @@ static bool sendAT(const char *cmd, const char *expect, uint32_t timeoutMs) {
   }
   uint32_t t0 = millis();
   while (millis() - t0 < timeoutMs) {
+    esp_task_wdt_reset();   // A안: 긴 AT wait 동안 WDT cascade 방지
     drainLte();
     if (!lteHealthy()) {
       if (DBG) { Serial.print(F("<< (UV abort) ")); Serial.println(lastResp); }
@@ -613,6 +615,7 @@ static void waitUartIdle(uint32_t idleMs, uint32_t maxWaitMs) {
   uint32_t lastByte = millis();
   uint32_t t0       = millis();
   while (millis() - t0 < maxWaitMs) {
+    esp_task_wdt_reset();   // A안
     while (lteSerial.available()) { lteSerial.read(); lastByte = millis(); }
     if (millis() - lastByte >= idleMs) return;
     delay(10);
@@ -795,6 +798,7 @@ static bool sendBodyAfterPrompt(const char *body, uint32_t len) {
   uint32_t t0 = millis();
   lastResp = "";
   while (millis() - t0 < 3000) {
+    esp_task_wdt_reset();   // A안
     drainLte();
     if (lastResp.indexOf('>') >= 0) break;
     delay(5);
@@ -867,7 +871,7 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
       // expect="+SHREAD:" 으로 URC 기다리고, 그 후 body 까지 추가 drain.
       if (sendAT(readCmd, "+SHREAD:", 5000)) {
         uint32_t t0 = millis();
-        while (millis() - t0 < 500) { drainLte(); delay(10); }
+        while (millis() - t0 < 500) { esp_task_wdt_reset(); drainLte(); delay(10); }
         // ── 서버가 cmd: beep 보냈으면 부저 트리거 ──
         if (lastResp.indexOf("\"cmd\":\"beep\"") >= 0
          || lastResp.indexOf("\"cmd\": \"beep\"") >= 0) {
@@ -1057,6 +1061,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
 
 static void doPost() {
   breadcrumb("do_post");
+  esp_task_wdt_reset();   // A안: doPost 시작 전 fresh feed
   char body[1280];   // stationary fragment 추가 (~250B) 로 1024 → 1280
   buildPayload(body, sizeof(body));
   if (DBG) { Serial.print(F("[POST body] ")); Serial.println(body); }
