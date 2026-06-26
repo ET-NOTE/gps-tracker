@@ -43,6 +43,9 @@ pub struct DeviceView {
     pub last_event_at:   Option<DateTime<Utc>>,
     // 펌웨어 13_1+ stationary 진단 (deep sleep 카운트다운 + GPS drift + LIS 헬스)
     pub last_stationary: Option<serde_json::Value>,
+    // 13_4 LC86G: 마지막 POST 의 안테나 상태 ("OK_EXT"/"OK_INT"/"OPEN"/"SHORT"/"?")
+    // GPS fix 없어도 LTE POST 만 되면 갱신 — 안테나 결선 즉시 진단.
+    pub last_antenna: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -158,7 +161,8 @@ async fn list(
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
                   le.kind        AS last_event_kind,
-                  le.occurred_at AS last_event_at
+                  le.occurred_at AS last_event_at,
+                  la.antenna     AS last_antenna
              FROM devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
@@ -167,6 +171,14 @@ async fn list(
                 ORDER BY occurred_at DESC
                    LIMIT 1
              ) le ON TRUE
+        LEFT JOIN LATERAL (
+                  SELECT raw->>'antenna' AS antenna
+                    FROM location_records
+                   WHERE device_id = d.id
+                     AND raw ? 'antenna'
+                ORDER BY recorded_at DESC
+                   LIMIT 1
+             ) la ON TRUE
             WHERE d.owner_id = $1
             ORDER BY COALESCE(d.last_seen_at, d.created_at) DESC"#,
     )
@@ -683,7 +695,8 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
                   le.kind        AS last_event_kind,
-                  le.occurred_at AS last_event_at
+                  le.occurred_at AS last_event_at,
+                  la.antenna     AS last_antenna
              FROM devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
@@ -692,6 +705,14 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                 ORDER BY occurred_at DESC
                    LIMIT 1
              ) le ON TRUE
+        LEFT JOIN LATERAL (
+                  SELECT raw->>'antenna' AS antenna
+                    FROM location_records
+                   WHERE device_id = d.id
+                     AND raw ? 'antenna'
+                ORDER BY recorded_at DESC
+                   LIMIT 1
+             ) la ON TRUE
             WHERE d.id = $1 AND d.owner_id = $2"#,
     )
     .bind(id)
