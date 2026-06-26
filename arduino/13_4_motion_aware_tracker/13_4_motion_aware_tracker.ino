@@ -1,4 +1,4 @@
-// 13_4_motion_aware_tracker — 13_3 + LC86G 호환. (2026-06-26 cleanup) 가벼운 변경만 유지: baud 115200, PAIR025 EASY, PAIR062 GLL/VTG OFF, GSV 5s, A안 WDT feed, STATIONARY 3분, fix 판정 완화 (sat>=3/age<10s/hdop<5), payload hdop. 제거됨: PMTK741 Hot-start hint, PQTMANTENNASTATUS 파싱, GSV 1s.
+// 13_4_motion_aware_tracker — 13_3 + LC86G 호환. (2026-06-26 cleanup) 가벼운 변경만 유지: PAIR025 EASY, PAIR062 GLL/VTG OFF, GSV 5s, STATIONARY 3분, fix 판정 완화 (sat>=3/age<10s/hdop<5), payload hdop, PQTMANTENNASTATUS 파싱 (안테나 진단 UI 의 데이터 원천). 제거됨: PMTK741 Hot-start hint, GSV 1s.
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -1431,6 +1431,10 @@ void loop() {
   static char     antStatusBuf[12];
   static uint8_t  antStatusIdx = 0;
 
+  // 13_4: NMEA 라인 버퍼 — $PQTMANTENNASTATUS (LC86G) 파싱용. PMTK741/PQTM cleanup 후 복원 (안테나 진단 UI 의 데이터 원천).
+  static char nmeaLine[200];
+  static uint16_t nmeaLineLen = 0;
+
   while (gpsSerial.available()) {
     char c = (char)gpsSerial.read();
     if (!gpsFirstCharMs) {
@@ -1438,6 +1442,41 @@ void loop() {
       Serial.printf("[L80] first NMEA char @+%.1fs\n", (gpsFirstCharMs - bootMs) / 1000.0f);
     }
     gpsCharsRx++;
+
+    // ── 13_4: NMEA 라인 누적 + LC86G PQTMANTENNASTATUS 파싱 ─────────────
+    if (c == '\n' || c == '\r') {
+      if (nmeaLineLen > 18 && strncmp(nmeaLine, "$PQTMANTENNASTATUS", 18) == 0) {
+        nmeaLine[nmeaLineLen] = 0;
+        // 포맷: $PQTMANTENNASTATUS,<ver>,<mode>,<status>,<source>*XX
+        // status: 0=OPEN, 1=SHORT, 2=NORMAL, 3=NOT_CONNECTED. source: 1=internal, 2=external.
+        int commas = 0, statusVal = -1, sourceVal = -1;
+        const char* p = nmeaLine;
+        while (*p && *p != '*') {
+          if (*p == ',') {
+            commas++;
+            if (commas == 3)      statusVal = atoi(p + 1);
+            else if (commas == 4) sourceVal = atoi(p + 1);
+          }
+          p++;
+        }
+        const char* tag = "?";
+        if (statusVal == 0 || statusVal == 3) tag = "OPEN";
+        else if (statusVal == 1)              tag = "SHORT";
+        else if (statusVal == 2)              tag = (sourceVal == 2 ? "OK_EXT" : (sourceVal == 1 ? "OK_INT" : "OK"));
+        bool changed = strncmp(lastAntennaStatus, tag, sizeof(lastAntennaStatus)) != 0;
+        strncpy(lastAntennaStatus, tag, sizeof(lastAntennaStatus) - 1);
+        lastAntennaStatus[sizeof(lastAntennaStatus) - 1] = 0;
+        if (changed) {
+          Serial.printf("[LC86G] antenna=%s (status=%d source=%d, boot+%.1fs)\n",
+            lastAntennaStatus, statusVal, sourceVal, (millis() - bootMs) / 1000.0f);
+        }
+      }
+      nmeaLineLen = 0;
+    } else if (nmeaLineLen < sizeof(nmeaLine) - 1) {
+      nmeaLine[nmeaLineLen++] = c;
+    } else {
+      nmeaLineLen = 0;   // overflow → drop
+    }
 
     // ── 안테나 키워드 매칭 (NMEA 구조와 무관, 매 char 적용) ─────────────
     if (antCollecting) {
