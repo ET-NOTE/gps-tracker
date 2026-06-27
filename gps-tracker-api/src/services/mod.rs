@@ -3,7 +3,7 @@ pub mod credits;
 pub mod fcm;
 pub mod geofence;
 pub mod housekeeping;
-pub mod partition_worker;
+// partition_worker 제거 — TimescaleDB hypertable 도입 후 chunk 자동 관리 (migration 0040).
 pub mod kakao_geo;
 pub mod nce;
 pub mod openai;

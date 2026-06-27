@@ -4,75 +4,93 @@
 
 ## 현재 상태 (2026-06-27)
 
-- ✓ Step 1 — BRIN index (PR #49 → migration 0038): 시계열 range scan 가속
-- ✓ Step 2 — Monthly partitioning (PR #50 → migration 0039): drop partition 으로 디스크 회수, partition pruning 가속
+- ✓ Step 1 — BRIN index (PR #52 → migration 0038): 시계열 range scan 가속
+- ✓ Step 2 — Monthly partitioning (PR #52 → migration 0039): 임시 단계. TimescaleDB 도입과 함께 hypertable 로 흡수됨
 - ✓ Step bonus — fixes batch dedup 2s (was 500ms): batch 30 → 15 fix per POST, DB row 절반
+- ✓ **Step 3 — TimescaleDB hypertable + compression + retention** (migration 0040): partitioning 흡수, 7일 chunk compression (10~20x), 1년 retention
+
+## TimescaleDB 도입 결과
+
+### 활성 정책 (운영 중)
+
+**Compression policy**: 7일 이전 chunk 자동 compress
+- `segmentby = device_id` → device 별 contiguous column-store
+- `orderby = recorded_at DESC` → 시계열 순서 보존
+- Expected ratio 10~20x
+
+**Retention policy**: 1년 이전 chunk 자동 drop
+- 변경 방법:
+  ```sql
+  SELECT remove_retention_policy('location_records');
+  SELECT add_retention_policy('location_records', INTERVAL '6 months');   -- 또는 다른 값
+  ```
+- 영구 보관 원하면 retention policy 제거만 하면 됨
+- 운영 중 retention 도달 직전 사용자에게 통보 / archive 검토 필요
+
+### Chunk 자동 관리
+- Default chunk interval: 7일
+- TimescaleDB 가 자동 생성 (별도 worker 불필요 — partition_worker 제거됨)
+- 변경 방법:
+  ```sql
+  SELECT set_chunk_time_interval('location_records', INTERVAL '14 days');
+  ```
+
+### Background workers (TimescaleDB 내장)
+- Compression policy worker (자동)
+- Retention policy worker (자동)
+- 추가 cron / app worker 필요 없음
 
 ## To-Do (우선순위 순)
 
-### 1. TimescaleDB migration (P0 — 다음 작업)
+### 1. Continuous aggregates (P1 — 후속)
 
-**왜 down-sampling 보다 먼저인가**: 데이터 양이 적을 때 migration 비용 작음. 100GB 도달 후엔 다운타임 + 비용 큼. 지금 ~40MB 라 거의 무료.
-
-작업:
-- VPS 에 `CREATE EXTENSION timescaledb` 설치 (apt repo + extension 활성)
-- 기존 monthly partition → hypertable 로 conversion (`create_hypertable` migration 함수)
-- Compression policy: 7일 이전 chunk 자동 compress (10~20x 절감)
-- Retention policy: 1년 이전 chunk 자동 drop (optional, 의사결정 필요)
-- Continuous aggregates: 1분/5분/1시간 평균 자동 갱신 view — DiagnosticPage / Dashboard 의 historical chart 가속
-
-**Trade-off**:
-- 장점: native column-store 압축 10~20x, retention 자동, continuous aggregates
-- 단점: PG fork extension — 일부 PG 기능 호환성 (대부분 OK), VPS 운영 복잡도 +1
-- partition 작업 (Step 2) 이 헛수고는 아님 — TimescaleDB 가 PG declarative partition 그대로 인식. step 2 의 효과는 step 1+TimescaleDB 도입 전까지 유효
-
-**Estimated effort**: 1주
-- Day 1: VPS extension 설치 + dev 환경 검증
-- Day 2~3: migration script (hypertable conversion) + compression policy
-- Day 4~5: continuous aggregates + UI 코드 활용
-- Day 6~7: 운영 모니터링 + retention 정책 결정
-
-### 2. fixes array 1 POST → 1 row (P1)
-
-현재: 1 POST = N (1~30) location_records row (각 fix 별).
-변경: 1 POST = 1 row + fix array 가 jsonb 컬럼에 저장.
-효과: DB row ~30배 절감 + INSERT 부담 ↓.
-
-**Trade-off**:
-- 장점: row 수 크게 감소, INSERT 빠름
-- 단점: query 패턴 변경 (`jsonb_array_elements` 로 풀어야), DiagnosticPage / Dashboard / 지도 polyline 모든 코드 변경 — **breaking change**
-- TimescaleDB compression 도입 시 row 압축이 이미 효과적 → 이 작업 의미 약화 가능
-
-**의사결정**: TimescaleDB 도입 후 효과 측정. row 압축이 충분하면 skip.
-
-### 3. legacy table DROP (P2 — 24h 안정성 검증 후)
-
-현재 `location_records_legacy` 가 39MB 차지 (검증용 보존).
-24h+ 안정성 확인 후 별도 migration 으로 DROP. 디스크 즉시 회수.
+DiagnosticPage / Dashboard 의 historical chart 가속용.
+- 1분 평균 / 5분 평균 / 1시간 평균 자동 갱신 view
+- 시간 범위 큰 쿼리 (예: "지난 1주일 위치") 가 raw 대신 aggregate scan → ms 단위 응답
 
 ```sql
-DROP TABLE location_records_legacy;
+CREATE MATERIALIZED VIEW location_1min
+WITH (timescaledb.continuous) AS
+SELECT device_id,
+       time_bucket('1 minute', recorded_at) AS bucket,
+       AVG(lat) AS lat, AVG(lng) AS lng,
+       AVG(sat) AS sat, COUNT(*) AS fix_count
+FROM location_records WHERE fix = true
+GROUP BY device_id, bucket;
+
+SELECT add_continuous_aggregate_policy('location_1min',
+    start_offset => INTERVAL '7 days',
+    end_offset   => INTERVAL '1 minute',
+    schedule_interval => INTERVAL '1 minute');
 ```
 
-### 4. Down-sampling worker (P3 — TimescaleDB 도입 안 하기로 결정 시)
+**Trade-off**: storage 약간 증가 (aggregate cache), query 응답 크게 빨라짐.
 
-TimescaleDB 의 continuous aggregates 가 자동화하는 작업의 수동 버전.
-30일+ raw 1Hz → 1분 평균으로 압축 + raw drop.
+### 2. fixes array 1 POST → 1 row (P2 — 효과 측정 후 결정)
 
-**Trade-off**:
-- 장점: 디스크 ~60배 절감
-- 단점: **정확도 손실 (non-reversible)** — 옛 사이클의 1초 단위 좌표 사라짐
-- TimescaleDB compression 이 정확도 보존하면서 더 큰 압축 — 우월
+TimescaleDB compression 도입 후 row 압축이 이미 효과적이라 의미 약화 가능.
+1주일 정도 compression ratio 측정 후 결정.
 
-**의사결정**: TimescaleDB 도입 결정 시 skip. 도입 안 하면 P1.
+### 3. Continuous aggregates 활용 UI (P3 — P1 후)
+
+DiagnosticPage / Dashboard 의 historical chart 가 raw 대신 aggregate scan 하도록 코드 변경.
+- listLocations(range='week') → 1분 평균 view 활용
+- listLocations(range='day') → raw 활용
 
 ## 운영 모니터링 To-Do
 
-- partition_worker tick 매일 정상 동작 확인 (다음 3개월 partition 미리 생성)
-- `location_records_default` 가 채워지면 alert (partition worker 실패 신호)
-- TimescaleDB 도입 후 compression ratio 추적
+- Compression ratio 추적:
+  ```sql
+  SELECT chunk_schema, chunk_name,
+         pg_size_pretty(uncompressed_total_bytes) AS before,
+         pg_size_pretty(compressed_total_bytes)   AS after,
+         ROUND(uncompressed_total_bytes::numeric / NULLIF(compressed_total_bytes, 0), 1) AS ratio
+  FROM chunks_detailed_size('location_records');
+  ```
+- Chunk 수 / 디스크 사용량 추세
+- Retention policy 동작 (1년 이전 chunk drop 로그 확인)
 
 ## 의사결정 보류
 
-- **1 year retention** vs 영구 보관 — TimescaleDB compression 도입 후 디스크 곡선 측정해서 결정
-- **fixes array 1 row** vs N row — TimescaleDB 효과 측정 후 결정
+- **Retention 1년 vs 영구**: 1년 동안 디스크 추세 측정 후 결정. 영구 원하면 retention policy 제거.
+- **continuous aggregates 도입 시점**: 사용자가 historical chart 사용 빈도 확인 후.
