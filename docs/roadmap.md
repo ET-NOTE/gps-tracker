@@ -18,14 +18,12 @@
 - `orderby = recorded_at DESC` → 시계열 순서 보존
 - Expected ratio 10~20x
 
-**Retention policy**: 1년 이전 chunk 자동 drop
-- 변경 방법:
+**Retention policy**: 영구 보관 (2026-06-27 결정)
+- 장치 수 적은 초기 단계 — 영구 보관 우선. 추후 디스크 추세 보고 재검토.
+- 다시 활성화하려면:
   ```sql
-  SELECT remove_retention_policy('location_records');
-  SELECT add_retention_policy('location_records', INTERVAL '6 months');   -- 또는 다른 값
+  SELECT add_retention_policy('location_records', INTERVAL '1 year');
   ```
-- 영구 보관 원하면 retention policy 제거만 하면 됨
-- 운영 중 retention 도달 직전 사용자에게 통보 / archive 검토 필요
 
 ### Chunk 자동 관리
 - Default chunk interval: 7일
@@ -79,5 +77,4 @@ DiagnosticPage 의 "시간대 추세" bar chart 가 aggregate view 활용.
 
 ## 의사결정 보류
 
-- **Retention 1년 vs 영구**: 1년 동안 디스크 추세 측정 후 결정. 영구 원하면 `SELECT remove_retention_policy('location_records')`.
-- **fixes array 1 POST → 1 row (P2)**: TimescaleDB compression ratio 1주일 측정 후 결정.
+- **fixes array 1 POST → 1 row (P2)**: 별개 layer 변경 — backend 저장 방식 (현재 1 POST = 15 rows → 변경 후 1 POST = 1 row + jsonb array). batch size 와 무관. TimescaleDB compression ratio 1주일 측정 후, 효과 충분하면 skip.
