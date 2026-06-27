@@ -25,20 +25,21 @@ WHERE fix = true
 GROUP BY device_id, bucket
 WITH NO DATA;
 
--- 1시간 평균 — 1min view 위에 계층화 (refresh 빠름).
+-- 1시간 평균 — raw 에서 직접 (TimescaleDB 의 hierarchical aggregate 가 time_bucket 인식 제약 있어 raw scan).
 CREATE MATERIALIZED VIEW location_1hour
 WITH (timescaledb.continuous) AS
 SELECT
     device_id,
-    time_bucket(INTERVAL '1 hour', bucket) AS bucket,
-    AVG(lat_avg)        AS lat_avg,
-    AVG(lng_avg)        AS lng_avg,
-    last(lat_last,  bucket) AS lat_last,
-    last(lng_last,  bucket) AS lng_last,
-    AVG(sat_avg)::real  AS sat_avg,
-    AVG(vbat_avg)::int  AS vbat_avg,
-    SUM(fix_count)      AS fix_count
-FROM location_1min
+    time_bucket(INTERVAL '1 hour', recorded_at) AS bucket,
+    AVG(lat)      AS lat_avg,
+    AVG(lng)      AS lng_avg,
+    last(lat,  recorded_at) AS lat_last,
+    last(lng,  recorded_at) AS lng_last,
+    AVG(sat)::real      AS sat_avg,
+    AVG(vbat_mv)::int   AS vbat_avg,
+    COUNT(*)            AS fix_count
+FROM location_records
+WHERE fix = true
 GROUP BY device_id, bucket
 WITH NO DATA;
 
@@ -58,6 +59,7 @@ SELECT add_continuous_aggregate_policy('location_1hour',
     schedule_interval => INTERVAL '30 minutes',
     if_not_exists     => TRUE);
 
--- 초기 데이터 채우기 (WITH NO DATA 라 비어있음).
-CALL refresh_continuous_aggregate('location_1min',  NULL, NULL);
-CALL refresh_continuous_aggregate('location_1hour', NULL, NULL);
+-- 초기 데이터 — refresh policy 가 5분 / 30분 주기로 자동 채움. 즉시 채우려면 prod 에서 직접:
+--   CALL refresh_continuous_aggregate('location_1min',  NULL, NULL);
+--   CALL refresh_continuous_aggregate('location_1hour', NULL, NULL);
+-- (refresh_continuous_aggregate 는 transaction 밖에서만 가능 → migration 안에서 못 함)

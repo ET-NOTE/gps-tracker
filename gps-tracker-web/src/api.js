@@ -241,6 +241,9 @@ export const api = {
     return req('GET', `/devices/${id}/locations/aggregated?${q.toString()}`);
   },
 
+  // P2: TimescaleDB 운영 지표 — hypertable size, compression ratio, chunk 수. (장치 무관 global)
+  getTimescaleDbStats: () => req('GET', '/timescaledb/storage-stats'),
+
   // 운행 통계 (Phase D)
   getDailyStats: (id, params = {}) => {
     const q = new URLSearchParams();
