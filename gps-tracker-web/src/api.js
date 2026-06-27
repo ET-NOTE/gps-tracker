@@ -262,7 +262,7 @@ export const api = {
   // 디바이스가 fix 데이터를 남긴 KST 날짜 목록 (daily_stats catchup 대비 fallback)
   getActiveDates: (deviceId) => req('GET', `/devices/${deviceId}/active-dates`),
 
-  // locations
+  // locations (legacy flat schema — 호환용. 점진적으로 listLocationsGrouped 로 전환.)
   listLocations: (deviceId, params = {}) => {
     const q = new URLSearchParams();
     if (params.limit)    q.set('limit',    params.limit);
@@ -272,6 +272,29 @@ export const api = {
     const qs = q.toString();
     return req('GET', `/devices/${deviceId}/locations${qs ? '?' + qs : ''}`);
   },
+
+  // Phase 1 schema — POST 단위 grouping. consumer 가 sampling / marker / polyline 로직 짤 때 활용.
+  // 응답: [{ post_at, uptime_s, vbat_mv, csq, reg, batch_size, fixes: [{ recorded_at, source, fix, lat, lng, sat, ttff_s, heading }] }, ...]
+  listLocationsGrouped: (deviceId, params = {}) => {
+    const q = new URLSearchParams({ grouped: 'true' });
+    if (params.limit)    q.set('limit',    params.limit);
+    if (params.since)    q.set('since',    params.since);
+    if (params.until)    q.set('until',    params.until);
+    if (params.fix_only) q.set('fix_only', 'true');
+    return req('GET', `/devices/${deviceId}/locations?${q.toString()}`);
+  },
+
+  // helper: grouped 응답을 legacy flat 형태로 unpack. 기존 consumer 코드 최소 변경용.
+  // 각 fix 에 post_at / batch_size / vbat_mv 등 group metadata 도 함께 부여 → grouping 정보 보존.
+  flattenGrouped: (groups) => groups.flatMap(g => g.fixes.map(f => ({
+    ...f,
+    post_at:    g.post_at,
+    batch_size: g.batch_size,
+    vbat_mv:    g.vbat_mv,
+    uptime_s:   g.uptime_s,
+    csq:        g.csq,
+    reg:        g.reg,
+  }))),
 
   // 공유 링크 (Phase D Round 2)
   listShares:   (deviceId)              => req('GET',    `/devices/${deviceId}/shares`),
