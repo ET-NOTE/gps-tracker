@@ -210,6 +210,8 @@ pub async fn ingest(
     // P1: batch broadcast 용 — DB insert 는 fix 별 1 row 그대로 (storage 변경 X),
     // WS broadcast 는 batch 끝에 1회만 (이전 N회 → 1회).
     let mut batch_for_ws: Vec<crate::events::LocationFix> = Vec::new();
+    // Phase 6B: anchor row (= 가장 최근 fix 의 row) 에 fixes_jsonb 채우기 위해 (time, lat, lng, sat) 모음.
+    let mut fix_records: Vec<(chrono::DateTime<Utc>, f64, f64, Option<i32>)> = Vec::new();
     if let Some(fixes) = &parsed.fixes {
         for f in fixes {
             let age_ms = f.age_ms.unwrap_or(0);
@@ -226,8 +228,36 @@ pub async fn ingest(
                 lng: Some(f.lng),
                 sat: f.sat.map(|v| v as i16),
             });
+            fix_records.push((fix_at, f.lat, f.lng, f.sat));
             let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, f.lat, f.lng).await;
         }
+
+        // Phase 6B dual-write: anchor row (MAX(fix_at)) 에 fixes_jsonb 업데이트.
+        // 다른 14개 row 는 fixes_jsonb=NULL 유지 → 6C read 가 anchor row 만 batch 로 인식 가능.
+        // at_ms = (fix_at - anchor_at).ms — anchor 는 0, 그보다 오래된 fix 는 음수.
+        if let Some(&(anchor_at, _, _, _)) = fix_records.iter().max_by_key(|r| r.0) {
+            let jsonb_array: Vec<serde_json::Value> = fix_records.iter().map(|(at, lat, lng, sat)| {
+                let at_ms = (*at - anchor_at).num_milliseconds();
+                serde_json::json!({
+                    "at_ms": at_ms,
+                    "lat":   lat,
+                    "lng":   lng,
+                    "sat":   sat,
+                })
+            }).collect();
+            let _ = sqlx::query(
+                "UPDATE location_records
+                    SET fixes_jsonb = $4
+                  WHERE device_id = $1 AND recorded_at = $2 AND source = $3"
+            )
+            .bind(device_id)
+            .bind(anchor_at)
+            .bind("l80")
+            .bind(serde_json::Value::Array(jsonb_array))
+            .execute(&state.db)
+            .await;
+        }
+
         // batch 끝에 1회 broadcast — 마지막 fix metadata 를 top-level 에, 모두를 fixes array 로.
         if let (Some(last_fix), Some(last_meta)) = (batch_for_ws.last().cloned(), parsed.fixes.as_ref().and_then(|v| v.last())) {
             broadcast_batch(&state, device_id, last_fix.recorded_at, "l80",
