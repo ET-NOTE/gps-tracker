@@ -744,6 +744,13 @@ export default function Dashboard({ onLogout }) {
         lat: msg.lat, lng: msg.lng,
       };
       mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
+      // Phase 4C: history polyline 도 실시간 자라남. skipMarker=true 라 marker burst 방지 (실시간 marker 는 updateMarker 가 1개 유지).
+      mapRef.current?.addHistoryPoint(msg.device_id, msg.lat, msg.lng, color, {
+        recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv, fix: msg.fix,
+        speedKmh, isStop: false,
+        deviceId: msg.device_id, deviceLabel: label,
+        skipMarker: true,
+      });
       lastMetaRef.current[msg.device_id] = meta;
       if (filterDeviceIdRef.current === msg.device_id) {
         setLiveSpeed({ deviceId: msg.device_id, label, color, speedKmh, recordedAt: msg.recorded_at });
