@@ -283,13 +283,22 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     if (!device?.id || mode !== 'day') return;
     setLoading(true); setError(null);
     const w = dayWindow(date, 0, 24);
-    api.listLocationsGrouped(device.id, {
-      since: w.since, until: w.until, fix_only: true, limit: 5000,
-    })
-    .then(groups => {
-      const rows = api.flattenGrouped(groups);
-      const sorted = rows.filter(r => r.lat != null && r.lng != null)
-        .slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+    // Phase 4B: day 24h = 86,400 fix → raw 5000 cap 으로 누락.
+    // 1m aggregate (1440/day) — lat_last (그 구간 마지막 fix) 사용해 polyline 정확도 보존.
+    api.getDeviceLocationsAggregated(device.id, '1m', w.since, w.until)
+    .then(rows => {
+      const normalized = (rows || [])
+        .filter(r => r.lat_last != null && r.lng_last != null)
+        .map(r => ({
+          recorded_at: r.bucket,
+          lat:         r.lat_last,
+          lng:         r.lng_last,
+          sat:         r.sat_avg != null ? Math.round(r.sat_avg) : null,
+          fix:         true,
+          vbat_mv:     r.vbat_avg,
+          batch_size:  r.fix_count,
+        }));
+      const sorted = normalized.slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
       setDayPoints(enrich(sorted));
     })
     .catch(e => setError(e.message || '데이터를 불러올 수 없습니다.'))
@@ -307,13 +316,13 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     const w = monthWindow(month);
     api.getDeviceLocationsAggregated(device.id, '1h', w.since, w.until)
     .then(rows => {
-      // aggregate 응답 → enrich 입력 형태로 normalize.
+      // aggregate 응답 → enrich 입력 형태로 normalize. lat_last 사용 (구간 마지막 fix).
       const normalized = (rows || [])
-        .filter(r => r.lat_avg != null && r.lng_avg != null)
+        .filter(r => r.lat_last != null && r.lng_last != null)
         .map(r => ({
           recorded_at: r.bucket,
-          lat:         r.lat_avg,
-          lng:         r.lng_avg,
+          lat:         r.lat_last,
+          lng:         r.lng_last,
           sat:         r.sat_avg != null ? Math.round(r.sat_avg) : null,
           fix:         true,
           vbat_mv:     r.vbat_avg,
