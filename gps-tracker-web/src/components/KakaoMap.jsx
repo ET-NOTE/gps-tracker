@@ -564,11 +564,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const entry = polyRef.current[deviceId];
 
       if (isGap || entry.segments.length === 0) {
-        // gap 발견 → dashed polyline (시각 전용, 클릭 X).
-        // 2026-06-27: dashed 숨김 (user 요청 — 구버전 단말기에서 순간이동 라인 시각 노이즈).
-        //   다시 보려면 SHOW_GAP_DASHED 를 true 로.
-        const SHOW_GAP_DASHED = false;
-        if (SHOW_GAP_DASHED && isGap && entry.segments.length > 0) {
+        // gap 발견 → 직전 segment 끝 좌표 ↔ 현재 좌표 잇는 dashed (시각 전용, 클릭 X).
+        // 클릭 가능한 정보는 gap 양끝 history point marker 에서 (meta.gapBefore/gapAfter) 처리.
+        if (isGap && entry.segments.length > 0) {
           const lastSeg = entry.segments[entry.segments.length - 1];
           const lastPos = lastSeg.coords[lastSeg.coords.length - 1];
           if (lastPos) {
