@@ -36,9 +36,10 @@ export default function RoutePlayback({ devices }) {
     setIdx(0);
     const start = `${date}T00:00:00+09:00`;
     const end   = `${date}T23:59:59+09:00`;
-    api.listLocations(deviceId, {
+    api.listLocationsGrouped(deviceId, {
       since: start, until: end, fix_only: true, limit: 1000,
-    }).then(rows => {
+    }).then(groups => {
+      const rows = api.flattenGrouped(groups);
       // recorded_at 오름차순으로 정렬
       const sorted = rows
         .filter(p => p.lat != null && p.lng != null)
