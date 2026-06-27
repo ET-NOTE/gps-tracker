@@ -297,22 +297,30 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   }, [device?.id, mode, date]);
 
   // ─── 월간 — 그 달 전체 fetch ────────────────────────────
-  // limit=10000 cap. 매우 활발한 달은 점이 잘릴 수 있음 → KPI 는 daily_stats 로 정확,
-  // 지도는 표본만 (배너로 안내).
+  // Phase 5: 월 단위 범위 → 1시간 aggregate view (TimescaleDB continuous aggregate, ms 응답).
+  // 이전 raw 10000 cap → 지금 ~720 row (24h × 30day). 정확도 trade 작음 (1h 평균 위치).
   const MONTH_CAP = 10000;
   const [monthCapped, setMonthCapped] = useState(false);
   useEffect(() => {
     if (!device?.id || mode !== 'month') return;
     setLoading(true); setError(null);
     const w = monthWindow(month);
-    api.listLocationsGrouped(device.id, {
-      since: w.since, until: w.until, fix_only: true, limit: MONTH_CAP,
-    })
-    .then(groups => {
-      const rows = api.flattenGrouped(groups);
-      setMonthCapped(rows.length >= MONTH_CAP);
-      const sorted = rows.filter(r => r.lat != null && r.lng != null)
-        .slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+    api.getDeviceLocationsAggregated(device.id, '1h', w.since, w.until)
+    .then(rows => {
+      // aggregate 응답 → enrich 입력 형태로 normalize.
+      const normalized = (rows || [])
+        .filter(r => r.lat_avg != null && r.lng_avg != null)
+        .map(r => ({
+          recorded_at: r.bucket,
+          lat:         r.lat_avg,
+          lng:         r.lng_avg,
+          sat:         r.sat_avg != null ? Math.round(r.sat_avg) : null,
+          fix:         true,
+          vbat_mv:     r.vbat_avg,
+          batch_size:  r.fix_count,
+        }));
+      const sorted = normalized.slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+      setMonthCapped(sorted.length >= MONTH_CAP);
       setMonthPoints(enrich(sorted));
     })
     .catch(e => setError(e.message || '데이터를 불러올 수 없습니다.'))
