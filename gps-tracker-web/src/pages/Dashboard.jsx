@@ -410,11 +410,11 @@ export default function Dashboard({ onLogout }) {
   const seekerLoadDayPoints = useCallback((d) =>
     filterDeviceId == null
       ? Promise.resolve([])
-      : api.listLocations(filterDeviceId, {
+      : api.listLocationsGrouped(filterDeviceId, {
           since: `${d}T00:00:00+09:00`,
           until: `${d}T23:59:59+09:00`,
           fix_only: true, limit: 5000,
-        }),
+        }).then(api.flattenGrouped),
   [filterDeviceId]);
 
   // 월 wizard 용 — 해당 월의 모든 fix 점 (sample 은 drawSeekerPath 가 maxMarkers 로 처리)
@@ -423,11 +423,11 @@ export default function Dashboard({ onLogout }) {
     const [y, m] = monthYM.split('-').map(Number);
     const ny = m === 12 ? y + 1 : y;
     const nm = m === 12 ? 1 : m + 1;
-    return api.listLocations(filterDeviceId, {
+    return api.listLocationsGrouped(filterDeviceId, {
       since: `${monthYM}-01T00:00:00+09:00`,
       until: `${ny}-${String(nm).padStart(2, '0')}-01T00:00:00+09:00`,
       fix_only: true, limit: 10000,
-    });
+    }).then(api.flattenGrouped);
   }, [filterDeviceId]);
 
   // opts.dense=false (month 뷰) 는 마커 적당히 (sample ~150), true (day 뷰, 기본) 는 많이 (300).
@@ -500,7 +500,8 @@ export default function Dashboard({ onLogout }) {
       for (const d of list) {
         if (oldIds.has(d.id)) continue;
         const since = await computeHomeSinceISO(d);
-        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since });
+        const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
+        const locs = api.flattenGrouped(groups);
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
@@ -553,7 +554,8 @@ export default function Dashboard({ onLogout }) {
       for (let li = 0; li < list.length; li++) {
         const d = list[li];
         const since = sinces[li];
-        const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since });
+        const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
+        const locs = api.flattenGrouped(groups);
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
