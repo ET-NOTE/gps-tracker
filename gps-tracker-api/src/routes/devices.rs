@@ -86,6 +86,7 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/batch-stats", get(batch_stats))     // sss 24h: fixes array (batch) 통계
         .route("/devices/:id/post-interval", post(set_post_interval))   // POST 주기 원격 조정 (5~300s)
         .route("/devices/:id/locations/aggregated", get(locations_aggregated))   // TimescaleDB continuous aggregate (1m/1h bucket)
+        .route("/timescaledb/storage-stats", get(timescaledb_storage_stats))      // P2: hypertable size + compression ratio
 }
 
 // ─── 부저 원격 트리거 ──────────────────────────────────────
@@ -894,4 +895,76 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
     .await?
     .ok_or(AppError::NotFound)?;
     Ok(Json(row))
+}
+
+// ===========================================================================
+// P2: TimescaleDB 운영 지표 — hypertable size + compression ratio + chunk 수
+//
+// DiagnosticPage 의 "🗄️ TimescaleDB 운영 지표" 카드용. Phase 6 (storage 1 row +
+// jsonb) 결정의 데이터 근거 — compression 만으로 충분하면 Phase 6 skip 가능.
+//
+// 인증된 사용자라면 누구나 조회 가능 (장치 무관 hypertable 전체 통계).
+// ===========================================================================
+async fn timescaledb_storage_stats(
+    State(state): State<AppState>,
+    _user: AuthUser,
+) -> AppResult<Json<Value>> {
+    // hypertable 전체 size (bytes) + chunk 수 + row 수 — 항상 가능
+    let total_bytes: Option<i64> = sqlx::query_scalar(
+        "SELECT hypertable_size('location_records')::bigint"
+    ).fetch_one(&state.db).await.ok();
+
+    let chunk_count: Option<i64> = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM show_chunks('location_records')"
+    ).fetch_one(&state.db).await.ok();
+
+    let row_count: Option<i64> = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM location_records"
+    ).fetch_one(&state.db).await.ok();
+
+    // compression stats — hypertable_compression_stats 가 hypertable 단위 합계 1행 반환
+    // (compression policy 미적용 시에는 모든 컬럼 NULL — 즉 압축된 chunk 가 없는 상태)
+    let compression: Option<(Option<i64>, Option<i64>, Option<i64>, Option<i64>)> = sqlx::query_as(
+        r#"SELECT
+              total_chunks::bigint,
+              number_compressed_chunks::bigint,
+              before_compression_total_bytes::bigint,
+              after_compression_total_bytes::bigint
+             FROM hypertable_compression_stats('location_records')"#
+    ).fetch_one(&state.db).await.ok();
+
+    // continuous aggregate view 의 size (참고용)
+    let cagg_sizes: Vec<(String, Option<i64>)> = sqlx::query_as(
+        r#"SELECT view_name::text, hypertable_size(format('%I.%I', materialization_hypertable_schema, materialization_hypertable_name)::regclass)::bigint
+             FROM timescaledb_information.continuous_aggregates
+            WHERE view_name IN ('location_1min', 'location_5min', 'location_1hour')"#
+    ).fetch_all(&state.db).await.unwrap_or_default();
+
+    let mut aggregates = serde_json::Map::new();
+    for (name, size) in cagg_sizes {
+        aggregates.insert(name, json!(size));
+    }
+
+    let compression_json = compression.map(|(total, n, before, after)| {
+        let ratio = match (before, after) {
+            (Some(b), Some(a)) if a > 0 => Some((b as f64 / a as f64 * 10.0).round() / 10.0),
+            _ => None,
+        };
+        json!({
+            "total_chunks":      total,
+            "compressed_chunks": n,
+            "before_bytes":      before,
+            "after_bytes":       after,
+            "ratio":             ratio,
+        })
+    });
+
+    Ok(Json(json!({
+        "total_bytes":   total_bytes,
+        "chunk_count":   chunk_count,
+        "row_count":     row_count,
+        "compression":   compression_json,
+        "aggregates":    Value::Object(aggregates),
+        "retention":     "permanent",  // 2026-06-27 결정 — 1년 retention policy 제거됨
+    })))
 }

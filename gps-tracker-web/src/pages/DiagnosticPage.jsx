@@ -22,6 +22,7 @@ export default function DiagnosticPage() {
   const [batchStats, setBatchStats] = useState(null);
   const [aggregated, setAggregated] = useState(null);
   const [bucketOverride, setBucketOverride] = useState(null);   // 'auto' | '1m' | '5m' | '1h'
+  const [tsdbStats, setTsdbStats] = useState(null);            // P2: TimescaleDB 운영 지표
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const pollRef = useRef(null);
@@ -43,14 +44,16 @@ export default function DiagnosticPage() {
       // 자동 규칙: <=6h → 1m, 6~24h → 5m, 24h+ → 1h.
       const autoBucket = hours <= 6 ? '1m' : hours <= 24 ? '5m' : '1h';
       const aggBucket = bucketOverride && bucketOverride !== 'auto' ? bucketOverride : autoBucket;
-      const [rows, bstats, agg] = await Promise.all([
+      const [rows, bstats, agg, ts] = await Promise.all([
         api.getDeviceEvents(deviceId, { since, limit: 1000 }),
         api.getDeviceBatchStats(deviceId, hours).catch(() => null),
         api.getDeviceLocationsAggregated(deviceId, aggBucket, since).catch(() => null),
+        api.getTimescaleDbStats().catch(() => null),
       ]);
       setEvents(rows || []);
       setBatchStats(bstats);
       setAggregated(agg ? { rows: agg, bucket: aggBucket } : null);
+      setTsdbStats(ts);
       setError(null);
     } catch (e) {
       setError(e?.message || 'getDeviceEvents failed');
@@ -159,6 +162,14 @@ export default function DiagnosticPage() {
               ))}
             </div>
             <AggregateChart rows={aggregated.rows} bucket={aggregated.bucket} />
+          </SectionCard>
+        )}
+
+        {/* P2: TimescaleDB 운영 지표 — hypertable size, compression ratio, chunk 수.
+            Phase 6 (storage 1 row + jsonb) 결정의 데이터 근거. compression 만으로 충분하면 Phase 6 skip. */}
+        {tsdbStats && (
+          <SectionCard title="🗄️ TimescaleDB 운영 지표 (hypertable: location_records)">
+            <TimescaleDbStatsBody stats={tsdbStats} />
           </SectionCard>
         )}
 
@@ -494,6 +505,63 @@ function BatchStatTile({ label, value, sub }) {
       <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{sub}</div>
     </div>
   );
+}
+
+// P2: TimescaleDB 운영 지표 카드 본체.
+// compression 효과 + chunk 추이를 보고 Phase 6 (storage 1 row + jsonb) 필요성 판단.
+function TimescaleDbStatsBody({ stats }) {
+  const c = stats.compression || {};
+  const ratio = c.ratio;
+  const aggs = stats.aggregates || {};
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+        <BatchStatTile
+          label="hypertable 총 size"
+          value={fmtBytes(stats.total_bytes)}
+          sub={`${fmtInt(stats.row_count)} rows`}
+        />
+        <BatchStatTile
+          label="chunk 수"
+          value={fmtInt(stats.chunk_count)}
+          sub={`기본 7일/chunk`}
+        />
+        <BatchStatTile
+          label="압축된 chunk"
+          value={`${fmtInt(c.compressed_chunks)} / ${fmtInt(c.total_chunks)}`}
+          sub={c.compressed_chunks > 0 ? '7일 경과 chunk 자동 압축' : '아직 압축 대상 없음'}
+        />
+        <BatchStatTile
+          label="압축 비율"
+          value={ratio != null ? `${ratio}×` : '—'}
+          sub={ratio != null ? `${fmtBytes(c.before_bytes)} → ${fmtBytes(c.after_bytes)}` : '7일 후 측정'}
+        />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        <BatchStatTile label="1m aggregate"  value={fmtBytes(aggs.location_1min)}  sub="continuous aggregate" />
+        <BatchStatTile label="5m aggregate"  value={fmtBytes(aggs.location_5min)}  sub="continuous aggregate" />
+        <BatchStatTile label="1h aggregate"  value={fmtBytes(aggs.location_1hour)} sub="continuous aggregate" />
+        <BatchStatTile label="retention"     value="영구" sub="2026-06-27 결정" />
+      </div>
+      <div style={{ fontSize: 10, color: '#888', marginTop: 10, lineHeight: 1.5 }}>
+        압축 정책: 7일 이전 chunk 자동 압축 (segmentby=device_id, orderby=recorded_at DESC). 예상 비율 10~20×.
+        {' '}<strong>Phase 6</strong> (1 POST → 1 row + jsonb) 결정은 1주일 후 실측 압축 비율 기준.
+      </div>
+    </div>
+  );
+}
+
+function fmtBytes(b) {
+  if (b == null) return '—';
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  if (b < 1024 * 1024 * 1024) return `${(b / 1024 / 1024).toFixed(1)} MB`;
+  return `${(b / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+function fmtInt(n) {
+  if (n == null) return '—';
+  return Number(n).toLocaleString('ko-KR');
 }
 
 const lab = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: '#555' };
