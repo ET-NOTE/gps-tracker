@@ -21,6 +21,7 @@ export default function DiagnosticPage() {
   const [events, setEvents] = useState([]);
   const [batchStats, setBatchStats] = useState(null);
   const [aggregated, setAggregated] = useState(null);
+  const [bucketOverride, setBucketOverride] = useState(null);   // 'auto' | '1m' | '5m' | '1h'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const pollRef = useRef(null);
@@ -38,8 +39,10 @@ export default function DiagnosticPage() {
     try {
       const since = new Date(Date.now() - windowMs).toISOString();
       const hours = Math.max(1, Math.round(windowMs / 3600000));
-      // 윈도우 크기에 따라 bucket 선택: <=24h 면 1m, 그 외 1h.
-      const aggBucket = hours <= 24 ? '1m' : '1h';
+      // Phase 4A: bucketOverride 가 명시되면 그것, 아니면 윈도우 자동 선택.
+      // 자동 규칙: <=6h → 1m, 6~24h → 5m, 24h+ → 1h.
+      const autoBucket = hours <= 6 ? '1m' : hours <= 24 ? '5m' : '1h';
+      const aggBucket = bucketOverride && bucketOverride !== 'auto' ? bucketOverride : autoBucket;
       const [rows, bstats, agg] = await Promise.all([
         api.getDeviceEvents(deviceId, { since, limit: 1000 }),
         api.getDeviceBatchStats(deviceId, hours).catch(() => null),
@@ -56,7 +59,7 @@ export default function DiagnosticPage() {
     }
   };
 
-  useEffect(() => { refresh(); }, [deviceId, windowMs]);
+  useEffect(() => { refresh(); }, [deviceId, windowMs, bucketOverride]);
   useEffect(() => {
     if (!autoRefresh || deviceId == null) return;
     pollRef.current = setInterval(refresh, 5000);
@@ -139,6 +142,22 @@ export default function DiagnosticPage() {
         {/* TimescaleDB continuous aggregate — 시간대별 fix 수 / 평균 위성 추세 (raw 대신 view scan, ms 응답). */}
         {aggregated && aggregated.rows.length > 0 && (
           <SectionCard title={`📈 시간대 추세 (${aggregated.bucket} bucket — TimescaleDB continuous aggregate)`}>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, fontSize: 11, alignItems: 'center' }}>
+              <span style={{ color: '#666' }}>간격:</span>
+              {['auto', '1m', '5m', '1h'].map(b => (
+                <button key={b}
+                  onClick={() => setBucketOverride(b)}
+                  style={{
+                    padding: '4px 10px',
+                    border: '1px solid ' + (bucketOverride === b || (!bucketOverride && b === 'auto') ? '#1a1a2e' : '#ddd'),
+                    background: bucketOverride === b || (!bucketOverride && b === 'auto') ? '#1a1a2e' : 'white',
+                    color: bucketOverride === b || (!bucketOverride && b === 'auto') ? 'white' : '#1a1a2e',
+                    borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                  }}>
+                  {b}
+                </button>
+              ))}
+            </div>
             <AggregateChart rows={aggregated.rows} bucket={aggregated.bucket} />
           </SectionCard>
         )}
