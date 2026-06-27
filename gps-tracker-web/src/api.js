@@ -286,15 +286,22 @@ export const api = {
 
   // helper: grouped 응답을 legacy flat 형태로 unpack. 기존 consumer 코드 최소 변경용.
   // 각 fix 에 post_at / batch_size / vbat_mv 등 group metadata 도 함께 부여 → grouping 정보 보존.
-  flattenGrouped: (groups) => groups.flatMap(g => g.fixes.map(f => ({
-    ...f,
-    post_at:    g.post_at,
-    batch_size: g.batch_size,
-    vbat_mv:    g.vbat_mv,
-    uptime_s:   g.uptime_s,
-    csq:        g.csq,
-    reg:        g.reg,
-  }))),
+  // is_last_in_post: 같은 POST 내 마지막 fix (대표 점 — marker 표시 / heading 화살표 anchor 용).
+  // post_idx: POST 내 fix 의 순서 (0 = 첫 fix, batch_size-1 = 마지막).
+  flattenGrouped: (groups) => groups.flatMap(g => {
+    const last = g.fixes.length - 1;
+    return g.fixes.map((f, i) => ({
+      ...f,
+      post_at:    g.post_at,
+      batch_size: g.batch_size,
+      vbat_mv:    g.vbat_mv,
+      uptime_s:   g.uptime_s,
+      csq:        g.csq,
+      reg:        g.reg,
+      post_idx:        i,
+      is_last_in_post: i === last,
+    }));
+  }),
 
   // 공유 링크 (Phase D Round 2)
   listShares:   (deviceId)              => req('GET',    `/devices/${deviceId}/shares`),
