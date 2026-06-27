@@ -20,6 +20,7 @@ export default function DiagnosticPage() {
   const [taggedOnly, setTaggedOnly] = useState(true);   // build_tag 있는 것만 (= 14_X 진단 세션만)
   const [events, setEvents] = useState([]);
   const [batchStats, setBatchStats] = useState(null);
+  const [aggregated, setAggregated] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const pollRef = useRef(null);
@@ -37,12 +38,16 @@ export default function DiagnosticPage() {
     try {
       const since = new Date(Date.now() - windowMs).toISOString();
       const hours = Math.max(1, Math.round(windowMs / 3600000));
-      const [rows, bstats] = await Promise.all([
+      // 윈도우 크기에 따라 bucket 선택: <=24h 면 1m, 그 외 1h.
+      const aggBucket = hours <= 24 ? '1m' : '1h';
+      const [rows, bstats, agg] = await Promise.all([
         api.getDeviceEvents(deviceId, { since, limit: 1000 }),
         api.getDeviceBatchStats(deviceId, hours).catch(() => null),
+        api.getDeviceLocationsAggregated(deviceId, aggBucket, since).catch(() => null),
       ]);
       setEvents(rows || []);
       setBatchStats(bstats);
+      setAggregated(agg ? { rows: agg, bucket: aggBucket } : null);
       setError(null);
     } catch (e) {
       setError(e?.message || 'getDeviceEvents failed');
@@ -128,6 +133,13 @@ export default function DiagnosticPage() {
         {batchStats && batchStats.total_batches > 0 && (
           <SectionCard title={`📦 Batch 통계 — ${batchStats.total_batches}개 POST / ${batchStats.total_fixes}개 fix`}>
             <BatchStatsBody stats={batchStats} />
+          </SectionCard>
+        )}
+
+        {/* TimescaleDB continuous aggregate — 시간대별 fix 수 / 평균 위성 추세 (raw 대신 view scan, ms 응답). */}
+        {aggregated && aggregated.rows.length > 0 && (
+          <SectionCard title={`📈 시간대 추세 (${aggregated.bucket} bucket — TimescaleDB continuous aggregate)`}>
+            <AggregateChart rows={aggregated.rows} bucket={aggregated.bucket} />
           </SectionCard>
         )}
 
@@ -398,6 +410,59 @@ function PostIntervalControl({ deviceId, batchStats }) {
         </div>
       </div>
       {msg && <div style={{ marginTop: 10, fontSize: 12, color: msg.startsWith('✓') ? '#059669' : '#dc2626' }}>{msg}</div>}
+    </div>
+  );
+}
+
+function AggregateChart({ rows, bucket }) {
+  // bar chart — fix_count bar 위에 sat_avg overlay. CSS only, 외부 라이브러리 X.
+  const maxFix = Math.max(...rows.map(r => r.fix_count), 1);
+  const totalFix = rows.reduce((s, r) => s + r.fix_count, 0);
+  const avgSat = rows.length
+    ? (rows.reduce((s, r) => s + (r.sat_avg || 0), 0) / rows.length).toFixed(1)
+    : '—';
+  // 너무 많으면 maxBars 만 표시.
+  const maxBars = 80;
+  const slice = rows.length > maxBars
+    ? rows.filter((_, i) => i % Math.ceil(rows.length / maxBars) === 0)
+    : rows;
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+        <BatchStatTile label="총 fix" value={totalFix} sub={`${rows.length} bucket`} />
+        <BatchStatTile label="평균 위성" value={avgSat} sub="bucket 평균" />
+        <BatchStatTile label="max bucket fix" value={maxFix} sub="가장 활발한 bucket" />
+      </div>
+      <div style={{
+        display: 'flex', alignItems: 'flex-end', height: 80, gap: 2,
+        background: '#f9fafb', padding: 6, borderRadius: 6,
+      }}>
+        {slice.map((r, i) => {
+          const h = Math.max(2, (r.fix_count / maxFix) * 70);
+          const satColor = !r.sat_avg ? '#d1d5db'
+            : r.sat_avg >= 8 ? '#10b981'
+            : r.sat_avg >= 4 ? '#f59e0b'
+            : '#ef4444';
+          const time = new Date(r.bucket).toLocaleTimeString('ko-KR', { hour12: false });
+          return (
+            <div key={i}
+              title={`${time}\nfix_count=${r.fix_count} sat_avg=${r.sat_avg?.toFixed(1) ?? '—'}`}
+              style={{
+                flex: '1 1 auto',
+                height: `${h}px`,
+                background: satColor,
+                borderRadius: 1,
+                cursor: 'help',
+              }}
+            />
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#888', marginTop: 4 }}>
+        <span>{slice[0] ? new Date(slice[0].bucket).toLocaleString('ko-KR') : ''}</span>
+        <span>색: 🟢 sat≥8, 🟠 4~7, 🔴 &lt;4</span>
+        <span>{slice[slice.length - 1] ? new Date(slice[slice.length - 1].bucket).toLocaleString('ko-KR') : ''}</span>
+      </div>
     </div>
   );
 }
