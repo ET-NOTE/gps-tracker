@@ -1488,11 +1488,10 @@ void loop() {
           }
         }
         lastFixMs = now;
-        // sss 24h 테스트: fresh fix (sat>=4, age<2s) 모두 batch_buf 에 push — POST 시 array 송신.
-        // dedup: 마지막 push 와 500ms+ 차이 또는 좌표 0.5m+ 차이 시만.
+        // sss 24h 테스트: fresh fix (sat>=4, age<2s). dedup 2s — 30s 사이클 ≈ 15 fix per batch.
         if (gps.satellites.value() >= 4 && gps.location.age() < 2000 && batch_count < BATCH_BUF_N) {
           bool push = (batch_count == 0)
-                   || (now - batch_buf[batch_count - 1].at_ms >= 500);
+                   || (now - batch_buf[batch_count - 1].at_ms >= 2000);
           if (push) {
             batch_buf[batch_count].lat  = (float)gps.location.lat();
             batch_buf[batch_count].lng  = (float)gps.location.lng();

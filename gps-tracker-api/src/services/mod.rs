@@ -3,6 +3,7 @@ pub mod credits;
 pub mod fcm;
 pub mod geofence;
 pub mod housekeeping;
+pub mod partition_worker;
 pub mod kakao_geo;
 pub mod nce;
 pub mod openai;

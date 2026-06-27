@@ -58,6 +58,7 @@ async fn main() -> anyhow::Result<()> {
     services::geofence::spawn_offline_worker(pool.clone());
     services::stats::spawn_worker(pool.clone());
     services::housekeeping::spawn_worker(pool.clone());
+    services::partition_worker::spawn_worker(pool.clone());
     services::nce::spawn_cache_worker(pool);
 
     // ── CORS ──────────────────────────────────────────────
