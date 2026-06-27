@@ -1,4 +1,5 @@
 // 13_4_motion_aware_tracker — 13_3 + LC86G 호환. (2026-06-26 cleanup) 가벼운 변경만 유지: PAIR025 EASY, PAIR062 GLL/VTG OFF, GSV 5s, STATIONARY 3분, fix 판정 완화 (sat>=3/age<10s/hdop<5), payload hdop, PQTMANTENNASTATUS 파싱 (안테나 진단 UI 의 데이터 원천). 제거됨: PMTK741 Hot-start hint, GSV 1s.
+// (2026-06-28) batch dedup 2s → 1s — Phase 6D ingest 후 batch ≈ 30 fix per POST. DB 는 1 row + jsonb 라 row 수 영향 없음. jsonb array size 만 2배.
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -1624,10 +1625,11 @@ void loop() {
           }
         }
         lastFixMs = now;
-        // 24h 테스트: fresh fix (sat>=4, age<5s). dedup 2s — 30s 사이클 ≈ 15 fix per batch (DB row 절반).
+        // Phase 6 후속 테스트: fresh fix (sat>=4, age<5s). dedup 1s → 30s 사이클 ≈ 30 fix per batch.
+        // 6D ingest 가 batch 를 1 row + jsonb 로 저장하므로 DB row 수 증가 없음. jsonb array 만 2배.
         if (gps.satellites.value() >= 4 && gps.location.age() < 5000 && batch_count < BATCH_BUF_N) {
           bool push = (batch_count == 0)
-                   || (now - batch_buf[batch_count - 1].at_ms >= 2000);
+                   || (now - batch_buf[batch_count - 1].at_ms >= 1000);
           if (push) {
             batch_buf[batch_count].lat  = (float)gps.location.lat();
             batch_buf[batch_count].lng  = (float)gps.location.lng();
