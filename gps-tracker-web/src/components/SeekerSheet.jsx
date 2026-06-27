@@ -283,10 +283,11 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     if (!device?.id || mode !== 'day') return;
     setLoading(true); setError(null);
     const w = dayWindow(date, 0, 24);
-    api.listLocations(device.id, {
+    api.listLocationsGrouped(device.id, {
       since: w.since, until: w.until, fix_only: true, limit: 5000,
     })
-    .then(rows => {
+    .then(groups => {
+      const rows = api.flattenGrouped(groups);
       const sorted = rows.filter(r => r.lat != null && r.lng != null)
         .slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
       setDayPoints(enrich(sorted));
@@ -304,10 +305,11 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     if (!device?.id || mode !== 'month') return;
     setLoading(true); setError(null);
     const w = monthWindow(month);
-    api.listLocations(device.id, {
+    api.listLocationsGrouped(device.id, {
       since: w.since, until: w.until, fix_only: true, limit: MONTH_CAP,
     })
-    .then(rows => {
+    .then(groups => {
+      const rows = api.flattenGrouped(groups);
       setMonthCapped(rows.length >= MONTH_CAP);
       const sorted = rows.filter(r => r.lat != null && r.lng != null)
         .slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
