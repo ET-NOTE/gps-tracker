@@ -107,9 +107,37 @@ DiagnosticPage 의 "시간대 추세" bar chart 가 aggregate view 활용.
 - 1h continuous aggregate view 사용 (raw 10000 cap → 720 bucket)
 - ms 단위 응답 (column-store + pre-computed)
 
-### Phase 6 — P2 결정 (storage 1 POST → 1 row + jsonb)
+### Phase 6 — Storage 결정 (1 POST → 1 row + jsonb)
 - 1주일 compression ratio 측정 후 결정
 - 효과 충분하면 skip, 의미 크면 ingest.rs 의 fixes 처리만 변경 (API contract 그대로 → 무중단)
+
+---
+
+## ✓ 연계 작업 라운드 (2026-06-27)
+
+라운드 종료 후 버그 hunt + 효율 개선.
+
+### ✓ flattenGrouped DESC sort 버그 (PR #66)
+- backend listLocations?grouped=true 응답: groups DESC, group 안 fixes ASC
+- flatMap 결과: group 사이 DESC, group 안 ASC (hybrid)
+- consumer reverse() 후 한 사이클 polyline 거꾸로 → "순간이동" cross-section 직선
+- 수정: flattenGrouped 끝에 recorded_at DESC sort
+
+### ✓ P1 — WS batch broadcast + dedup (PR #68)
+- backend: `events::Event::Location` 에 `fixes: Option<Vec<LocationFix>>` 추가
+- ingest: 1 POST 의 N fix broadcast 를 N회 → 1회 (배열 묶음)
+- frontend `KakaoMap.addHistoryPoint`: `recorded_at` 기반 dedup (initial + WS race 해결)
+- frontend `Dashboard.handleWsEvent`: msg.fixes 활용 (legacy single fix 호환)
+- 효과: WS 메시지 1/15, handler 진입 1/15, polyline redraw burst 해결
+
+### P2 — 운영 지표 카드 (DiagnosticPage)
+- compression ratio: `chunks_detailed_size('location_records')` before/after
+- chunk 수 + 디스크 사용량
+- hypertable 총 size + row 수
+- 목적: **Phase 6 결정의 데이터 근거** — compression 충분하면 Phase 6 skip
+
+### P3 — WS 멀티플렉싱 검토 (필요 시)
+- device 별 별도 channel 인지 확인. 다수 device 시 효율
 
 ## 라운드 적용 결과
 - POST grouping (batch dimension), 시간 필터 (sensor 차트 dimension), 거리 sampling (seeker dimension) 셋 모두 적용
