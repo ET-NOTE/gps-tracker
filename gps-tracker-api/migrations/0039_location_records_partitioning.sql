@@ -67,6 +67,16 @@ INSERT INTO location_records_new
 ALTER TABLE location_records         RENAME TO location_records_legacy;
 ALTER TABLE location_records_new     RENAME TO location_records;
 
+-- 4-1. legacy 의 indexes / constraints 정리 — 이름이 schema-wide unique 라 새 table 의 같은 이름 충돌 방지.
+--      legacy 데이터 자체는 보존 (검증 후 별도 migration 에서 DROP TABLE).
+ALTER TABLE location_records_legacy DROP CONSTRAINT IF EXISTS location_records_pkey;
+ALTER TABLE location_records_legacy DROP CONSTRAINT IF EXISTS location_records_device_id_fkey;
+ALTER TABLE location_records_legacy DROP CONSTRAINT IF EXISTS location_records_user_id_fkey;
+DROP INDEX IF EXISTS idx_location_records_user_time;
+DROP INDEX IF EXISTS location_device_recent_idx;
+DROP INDEX IF EXISTS location_fix_recent;
+DROP INDEX IF EXISTS location_records_recorded_at_brin;
+
 -- 5. PK + indexes + FK 재생성. partition table 의 PK 는 partition column 포함 필수.
 ALTER TABLE location_records
     ADD PRIMARY KEY (device_id, recorded_at, source);
