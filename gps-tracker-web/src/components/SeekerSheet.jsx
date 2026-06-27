@@ -148,6 +148,8 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [date, setDate]   = useState(todayKstStr());
   const [startSlot, setStartSlot] = useState('00:00');  // "HH:MM" 10분 버킷
   const [hours, setHours] = useState(24);
+  // Phase 4B-2: 정밀도 토글. day default '1m', month default '1h'. user 가 override.
+  const [precision, setPrecision] = useState('auto');   // 'auto' | '1m' | '5m' | '1h'
   // 카메라 follow — 재생 중 cursor 가 화면 밖으로 나가면 자동 panTo. default ON.
   const [cameraFollow, setCameraFollow] = useState(true);
   // 선택된 trip (null = 전체). client-side detect.
@@ -284,8 +286,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     setLoading(true); setError(null);
     const w = dayWindow(date, 0, 24);
     // Phase 4B: day 24h = 86,400 fix → raw 5000 cap 으로 누락.
-    // 1m aggregate (1440/day) — lat_last (그 구간 마지막 fix) 사용해 polyline 정확도 보존.
-    api.getDeviceLocationsAggregated(device.id, '1m', w.since, w.until)
+    // 정밀도 override: auto/1m/5m → aggregate, '1h' → 1h aggregate.
+    const dayBucket = precision === 'auto' ? '1m' : precision;
+    api.getDeviceLocationsAggregated(device.id, dayBucket, w.since, w.until)
     .then(rows => {
       const normalized = (rows || [])
         .filter(r => r.lat_last != null && r.lng_last != null)
@@ -303,7 +306,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     })
     .catch(e => setError(e.message || '데이터를 불러올 수 없습니다.'))
     .finally(() => setLoading(false));
-  }, [device?.id, mode, date]);
+  }, [device?.id, mode, date, precision]);
 
   // ─── 월간 — 그 달 전체 fetch ────────────────────────────
   // Phase 5: 월 단위 범위 → 1시간 aggregate view (TimescaleDB continuous aggregate, ms 응답).
@@ -314,7 +317,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     if (!device?.id || mode !== 'month') return;
     setLoading(true); setError(null);
     const w = monthWindow(month);
-    api.getDeviceLocationsAggregated(device.id, '1h', w.since, w.until)
+    // 정밀도 override: month default 1h, user 가 5m 선택 시 더 정밀.
+    const monthBucket = precision === 'auto' || precision === '1m' ? '1h' : precision;
+    api.getDeviceLocationsAggregated(device.id, monthBucket, w.since, w.until)
     .then(rows => {
       // aggregate 응답 → enrich 입력 형태로 normalize. lat_last 사용 (구간 마지막 fix).
       const normalized = (rows || [])
@@ -334,7 +339,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     })
     .catch(e => setError(e.message || '데이터를 불러올 수 없습니다.'))
     .finally(() => setLoading(false));
-  }, [device?.id, mode, month]);
+  }, [device?.id, mode, month, precision]);
 
   // ─── 일간 데이터의 10분 버킷 — 시작 시각 드롭다운 옵션 ──
   const availableSlots = useMemo(() => {
@@ -719,6 +724,20 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         <ChipToggle label="속도별 색상" icon="spark"  on={speedColor}    onClick={() => setSpeedColor(v => !v)} />
         <ChipToggle label="정지 강조"   icon="mapPin" on={showStops}     onClick={() => setShowStops(v => !v)} />
         <ChipToggle label="카메라 따라가기" icon="target" on={cameraFollow} onClick={() => setCameraFollow(v => !v)} />
+      </div>
+
+      {/* ── 정밀도 토글 (Phase 4B-2) — day default 1m, month default 1h, user 가 override ── */}
+      <div style={{ display: 'flex', gap: 4, padding: '4px 8px', alignItems: 'center', fontSize: 10, color: '#888' }}>
+        <span>정밀도:</span>
+        {['auto', '1m', '5m', '1h'].map(p => (
+          <button key={p} onClick={() => setPrecision(p)} style={{
+            padding: '2px 8px',
+            border: '1px solid ' + (precision === p ? '#1a1a2e' : '#ddd'),
+            background: precision === p ? '#1a1a2e' : 'white',
+            color: precision === p ? 'white' : '#666',
+            borderRadius: 3, cursor: 'pointer', fontSize: 10, fontWeight: 600,
+          }}>{p}</button>
+        ))}
       </div>
 
       <div style={sty.body}>
