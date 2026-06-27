@@ -83,6 +83,8 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/beep",   post(beep_device))         // 부저 원격 트리거 (현장 식별)
         .route("/devices/:id/reset",  post(reset_device))        // 원격 hardPowerCycle (LTE stuck 회복)
         .route("/devices/:id/range",  delete(delete_range))      // 사이클 단위 range 삭제 (연구소 토글)
+        .route("/devices/:id/batch-stats", get(batch_stats))     // sss 24h: fixes array (batch) 통계
+        .route("/devices/:id/post-interval", post(set_post_interval))   // POST 주기 원격 조정 (5~300s)
 }
 
 // ─── 부저 원격 트리거 ──────────────────────────────────────
@@ -561,6 +563,119 @@ async fn delete_range(
     tx.commit().await?;
     tracing::info!(device_id = id, user_id = user.user_id, from = %q.from, until = %q.until, locs, evs, "cycle range deleted");
     Ok(Json(json!({ "deleted_locations": locs, "deleted_events": evs })))
+}
+
+// ===========================================================================
+// POST 주기 원격 조정 — 24h 테스트용
+// ===========================================================================
+//
+// 진단 페이지에서 N초 입력 → devices.post_interval_pending = N. 다음 ingest 응답에
+// post_interval_s 동봉 + atomic 으로 NULL 토글. firmware 변수는 RAM only — reset/wake
+// 시 자동 default 복귀라 hang 후 자동 회복.
+#[derive(Debug, Deserialize)]
+pub struct SetPostIntervalRequest {
+    pub seconds: i32,
+}
+
+async fn set_post_interval(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Json(req): Json<SetPostIntervalRequest>,
+) -> AppResult<Json<Value>> {
+    if !(5..=300).contains(&req.seconds) {
+        return Err(AppError::BadRequest("seconds must be 5~300".into()));
+    }
+    let updated: Option<(i64,)> = sqlx::query_as(
+        "UPDATE devices SET post_interval_pending = $3 \
+         WHERE id = $1 AND owner_id = $2 RETURNING id"
+    )
+    .bind(id).bind(user.user_id).bind(req.seconds)
+    .fetch_optional(&state.db).await?;
+    if updated.is_none() { return Err(AppError::NotFound); }
+    Ok(Json(json!({
+        "ok": true, "device_id": id, "seconds": req.seconds,
+        "note": "다음 ingest 시 device 가 받음. reset/wake 시 default 30s 자동 복귀."
+    })))
+}
+
+// ===========================================================================
+// sss 24h 테스트 — fixes array (batch) 통계
+// ===========================================================================
+//
+// 한 ingest POST 안에 들어온 fix 들이 location_records 에 individual row 로 저장됨.
+// 같은 POST 의 row 들은 raw->>'ts' + raw->>'at_ms' 가 같음 (== firmware 의 ingest payload 메타).
+// 그 두 값으로 그룹화 → 각 POST 의 batch_size, avg_sat, recorded_at 범위 산출.
+#[derive(Debug, Deserialize)]
+pub struct BatchStatsQuery {
+    #[serde(default = "default_batch_hours")]
+    pub hours: i32,
+}
+fn default_batch_hours() -> i32 { 24 }
+
+async fn batch_stats(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    axum::extract::Query(q): axum::extract::Query<BatchStatsQuery>,
+) -> AppResult<Json<Value>> {
+    // 소유 확인
+    let owner_ok: Option<i64> = sqlx::query_scalar(
+        "SELECT id FROM devices WHERE id = $1 AND owner_id = $2"
+    ).bind(id).bind(user.user_id).fetch_optional(&state.db).await?;
+    if owner_ok.is_none() { return Err(AppError::NotFound); }
+
+    let hours = q.hours.clamp(1, 168);
+
+    // 최근 N batch (각 POST 별 통계)
+    let rows: Vec<(Option<String>, Option<String>, i64, Option<f64>, DateTime<Utc>, DateTime<Utc>)> = sqlx::query_as(
+        r#"SELECT
+              raw->>'ts'      AS uptime_s,
+              raw->>'at_ms'   AS at_ms,
+              COUNT(*)        AS batch_size,
+              AVG(NULLIF(sat, 0))::float8 AS avg_sat,
+              MIN(recorded_at) AS first_at,
+              MAX(recorded_at) AS last_at
+            FROM location_records
+           WHERE device_id = $1
+             AND raw ? 'fixes'
+             AND recorded_at > now() - make_interval(hours => $2)
+        GROUP BY raw->>'ts', raw->>'at_ms'
+        ORDER BY MAX(recorded_at) DESC
+        LIMIT 200"#,
+    )
+    .bind(id).bind(hours)
+    .fetch_all(&state.db)
+    .await?;
+
+    // 집계
+    let total_batches = rows.len() as i64;
+    let total_fixes: i64 = rows.iter().map(|r| r.2).sum();
+    let avg_batch = if total_batches > 0 { total_fixes as f64 / total_batches as f64 } else { 0.0 };
+    let max_batch = rows.iter().map(|r| r.2).max().unwrap_or(0);
+    let min_batch = rows.iter().map(|r| r.2).min().unwrap_or(0);
+
+    let recent: Vec<Value> = rows.into_iter().map(|(uptime, _at_ms, sz, avg_sat, first, last)| {
+        let span_s = (last - first).num_milliseconds() as f64 / 1000.0;
+        json!({
+            "uptime_s": uptime,
+            "batch_size": sz,
+            "avg_sat": avg_sat.map(|v| (v * 10.0).round() / 10.0),
+            "first_at": first,
+            "last_at": last,
+            "span_s": (span_s * 10.0).round() / 10.0,
+        })
+    }).collect();
+
+    Ok(Json(json!({
+        "hours": hours,
+        "total_batches": total_batches,
+        "total_fixes": total_fixes,
+        "avg_batch": (avg_batch * 100.0).round() / 100.0,
+        "max_batch": max_batch,
+        "min_batch": min_batch,
+        "recent": recent,
+    })))
 }
 
 // ===========================================================================

@@ -87,9 +87,13 @@
 #define POST_URL_HOST       "http://gps.serial.kr"        // prod ← 현재
 // #define POST_URL_HOST    "http://dev-gps.serial.kr"   // dev (테스트 단계)
 #define POST_PATH           "/ingest"
-// 15초 — LTE TX peak 빈도 (= brownout 트리거 빈도) 와 실시간 추적 응답성의 trade-off.
-// 10초로 줄이면 brownout 빈도 ↑. 30초+ 면 추적 응답성 ↓.
-#define POST_INTERVAL_MS    15000UL
+// 30초 — aa LC86G 24h 테스트. 사이 GPS fix 는 array 로 모아서 일괄 송신.
+// POST_INTERVAL — 변수 (서버 cmd 로 5~300s 조정 가능). RAM only → reset/wake 시 자동 default 복귀.
+#define POST_INTERVAL_DEFAULT_MS  30000UL
+static uint32_t post_interval_ms = POST_INTERVAL_DEFAULT_MS;
+
+// 24h 안정성 테스트 — STATIONARY 자동 sleep 비활성.
+#define SLEEP_DISABLED 1
 #define BAT_DIV_RATIO       2.0f
 
 #define BRINGUP_RETRY_MS              30000UL
@@ -171,6 +175,13 @@ static uint32_t lastSuccessPostMs    = 0;
 static uint32_t lastRegOkMs          = 0;
 static uint32_t lastRegPollMs        = 0;
 static uint8_t  softResetStreak      = 0;
+
+// 24h 테스트: 30초 LTE 주기 사이 모든 fresh fix 모아 array 송신.
+#define BATCH_BUF_N 60
+struct BatchFix { float lat; float lng; int8_t sat; uint32_t at_ms; };
+static BatchFix batch_buf[BATCH_BUF_N];
+static uint8_t  batch_count = 0;
+
 #define REG_POLL_INTERVAL_MS  (10UL * 1000UL)
 #define REG_LOST_TIMEOUT_MS   (30UL * 1000UL)
 #define SOFT_RESET_TO_HARD_THRESHOLD 2
@@ -416,6 +427,9 @@ static void IRAM_ATTR onLisInt() {
 //  · 어느 한 조건이라도 깨지면 윈도우 즉시 reset.
 // ──────────────────────────────────────────────────────────────────
 static void checkStationarySleep() {
+#if SLEEP_DISABLED
+  return;   // 24h 테스트 모드: STATIONARY 자동 sleep 비활성.
+#endif
   if (inSleepProcedure) return;
   if (!lisOk) return;                                   // wake 수단 없음 → sleep 안 함
   uint32_t now = millis();
@@ -849,7 +863,7 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
   }
 
   snprintf(cmd, sizeof(cmd), "AT+SHREQ=\"%s\",3", path);
-  if (!sendAT(cmd, "+SHREQ:", 30000)) {
+  if (!sendAT(cmd, "+SHREQ:", 10000)) {   // 30s → 10s (LTE 평상시 빠름. 응답성 ↑)
     DBGLN(F("[POST] SHREQ fail"));
     sendAT("AT+SHDISC", "OK", 3000);
     return false;
@@ -898,6 +912,19 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
           softResetStreak = 0;
           lastSuccessPostMs = millis();
           S.nextBringUpAt = millis() + 1000;
+        }
+        // ── 서버가 post_interval_s 보냈으면 POST 주기 변경 (RAM only — reset 시 default 복귀) ──
+        int pi = lastResp.indexOf("\"post_interval_s\":");
+        if (pi < 0) pi = lastResp.indexOf("\"post_interval_s\" :");
+        if (pi >= 0) {
+          int colon = lastResp.indexOf(':', pi);
+          if (colon > 0) {
+            int seconds = lastResp.substring(colon + 1).toInt();
+            if (seconds >= 5 && seconds <= 300) {
+              post_interval_ms = (uint32_t)seconds * 1000UL;
+              Serial.printf("[POST] interval ← %ds (server cmd, RAM only)\n", seconds);
+            }
+          }
         }
       }
     }
@@ -1072,8 +1099,32 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
 static void doPost() {
   breadcrumb("do_post");
   esp_task_wdt_reset();   // A안: doPost 시작 전 fresh feed (직전 cycle 잔여 시간 클리어)
-  char body[1280];   // stationary fragment 추가 (~250B) 로 1024 → 1280
+  char body[2560];   // 24h: fixes array 추가 여유 (60×~50B + 기존 ~1280 ~ 2K).
   buildPayload(body, sizeof(body));
+
+  // 24h: 30s 사이 batch_buf 의 모든 fresh fix 를 "fixes":[...] 로 closing } 직전 삽입.
+  if (batch_count > 0) {
+    int blen = strlen(body);
+    if (blen > 0 && body[blen - 1] == '}') {
+      uint32_t now = millis();
+      int p = blen - 1;
+      int n = snprintf(body + p, sizeof(body) - p, ",\"fixes\":[");
+      if (n > 0) p += n;
+      for (uint8_t i = 0; i < batch_count && p < (int)sizeof(body) - 80; i++) {
+        n = snprintf(body + p, sizeof(body) - p,
+          "%s{\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"age_ms\":%lu}",
+          (i == 0 ? "" : ","),
+          (double)batch_buf[i].lat, (double)batch_buf[i].lng,
+          (int)batch_buf[i].sat,
+          (unsigned long)(now - batch_buf[i].at_ms));
+        if (n < 0) break;
+        p += n;
+      }
+      snprintf(body + p, sizeof(body) - p, "]}");
+    }
+    Serial.printf("[POST] batch fixes=%u\n", batch_count);
+    batch_count = 0;
+  }
   if (DBG) { Serial.print(F("[POST body] ")); Serial.println(body); }
 
   S.postTries++;
@@ -1399,6 +1450,8 @@ void setup() {
   delay(1500);
   sendGpsNmea("$PAIR025,1");      // EASY 활성 — cold/warm start TTFF 5~10s 단축.
   delay(100);
+  sendGpsNmea("$PAIR050,1000");   // GPS fix rate 1Hz 강제 (default 가 변경됐을 가능성 대비).
+  delay(100);
   sendGpsNmea("$PAIR062,1,0");    // GLL 비활성 (위경도 중복, RMC/GGA 로 충분).
   delay(100);
   sendGpsNmea("$PAIR062,5,0");    // VTG 비활성 (heading 은 RMC course-over-ground 에 있음).
@@ -1530,6 +1583,18 @@ void loop() {
           }
         }
         lastFixMs = now;
+        // 24h 테스트: fresh fix (sat>=4, age<5s) 모두 batch_buf 에 push — GSV 5s burst 사이 GGA 공백도 통과.
+        if (gps.satellites.value() >= 4 && gps.location.age() < 5000 && batch_count < BATCH_BUF_N) {
+          bool push = (batch_count == 0)
+                   || (now - batch_buf[batch_count - 1].at_ms >= 500);
+          if (push) {
+            batch_buf[batch_count].lat  = (float)gps.location.lat();
+            batch_buf[batch_count].lng  = (float)gps.location.lng();
+            batch_buf[batch_count].sat  = (int8_t)gps.satellites.value();
+            batch_buf[batch_count].at_ms = now;
+            batch_count++;
+          }
+        }
         // 정지 판정용 history 에 ~10초마다 push (너무 빠르면 fix 노이즈가 흔듦)
         if (now - lastGpsHistPushMs >= 10000) {
           lastGpsHistPushMs = now;
@@ -1622,7 +1687,7 @@ void loop() {
   } else {
     if ((int32_t)(millis() - S.nextPostAt) >= 0) {
       doPost();
-      S.nextPostAt = millis() + POST_INTERVAL_MS;
+      S.nextPostAt = millis() + post_interval_ms;
 
       if (S.lastStatus != 200) {
         S.failStreak++;

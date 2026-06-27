@@ -76,7 +76,7 @@
 // sequence + boot beep 제거 모두 무효 → hardware 결합 문제 (back-EMF + GPIO1 직접 구동).
 // 영구 fix 는 PCB 에 플라이백 다이오드 + driver TR. 그때까지 BUZZER_ENABLED 0 default.
 // 자세한 진단 라운드는 memory/project_buzzer_lte_diagnostic.md.
-#define BUZZER_ENABLED 0     // 부저 OFF default — hardware fix 전까지 LTE 안정성 우선.
+#define BUZZER_ENABLED 1     // 부저 hardware 교체 (LTE 영향 없는 부품) 후 ON. 2026-06-26.
 
 // =================================================================
 // 동작 파라미터
@@ -86,9 +86,11 @@
 #define POST_URL_HOST       "http://gps.serial.kr"        // prod ← 현재
 // #define POST_URL_HOST    "http://dev-gps.serial.kr"   // dev (테스트 단계)
 #define POST_PATH           "/ingest"
-// 15초 — LTE TX peak 빈도 (= brownout 트리거 빈도) 와 실시간 추적 응답성의 trade-off.
-// 10초로 줄이면 brownout 빈도 ↑. 30초+ 면 추적 응답성 ↓.
-#define POST_INTERVAL_MS    15000UL
+// 30초 — sss 24h 안정성 테스트용. LTE 부하 ↓, 30초 사이 GPS fix 는 array 로 모아서 일괄 송신.
+#define POST_INTERVAL_MS    30000UL
+
+// sss 24h 테스트 — STATIONARY 자동 sleep 비활성화 (계속 active 유지).
+#define SLEEP_DISABLED 1
 #define BAT_DIV_RATIO       2.0f
 
 #define BRINGUP_RETRY_MS              30000UL
@@ -168,6 +170,14 @@ static uint32_t lastSuccessPostMs    = 0;
 static uint32_t lastRegOkMs          = 0;
 static uint32_t lastRegPollMs        = 0;
 static uint8_t  softResetStreak      = 0;
+
+// sss 24h 테스트: 30초 LTE 주기 사이 모든 fresh fix 모아 array 송신.
+// 1Hz GPS rate × 30s = ~30 entries. 여유 60 entries (~720B body 추가).
+#define BATCH_BUF_N 60
+struct BatchFix { float lat; float lng; int8_t sat; uint32_t at_ms; };
+static BatchFix batch_buf[BATCH_BUF_N];
+static uint8_t  batch_count = 0;
+
 #define REG_POLL_INTERVAL_MS  (10UL * 1000UL)
 #define REG_LOST_TIMEOUT_MS   (30UL * 1000UL)
 #define SOFT_RESET_TO_HARD_THRESHOLD 2
@@ -413,6 +423,9 @@ static void IRAM_ATTR onLisInt() {
 //  · 어느 한 조건이라도 깨지면 윈도우 즉시 reset.
 // ──────────────────────────────────────────────────────────────────
 static void checkStationarySleep() {
+#if SLEEP_DISABLED
+  return;   // sss 24h 테스트 모드: STATIONARY 자동 sleep 비활성.
+#endif
   if (inSleepProcedure) return;
   if (!lisOk) return;                                   // wake 수단 없음 → sleep 안 함
   uint32_t now = millis();
@@ -1057,8 +1070,32 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
 static void doPost() {
   breadcrumb("do_post");
   esp_task_wdt_reset();   // A안: doPost 시작 전 fresh feed
-  char body[1280];   // stationary fragment 추가 (~250B) 로 1024 → 1280
+  char body[2560];   // sss 24h: fixes array 추가 여유 (60×~50B + 기존 1280 ~ 2K).
   buildPayload(body, sizeof(body));
+
+  // sss 24h: 30s 사이 batch_buf 의 모든 fresh fix 를 "fixes":[...] 로 끼워 closing } 직전 삽입.
+  if (batch_count > 0) {
+    int blen = strlen(body);
+    if (blen > 0 && body[blen - 1] == '}') {
+      uint32_t now = millis();
+      int p = blen - 1;   // closing } 위치 — 그 자리부터 덮어쓰고 마지막에 다시 } 넣음.
+      int n = snprintf(body + p, sizeof(body) - p, ",\"fixes\":[");
+      if (n > 0) p += n;
+      for (uint8_t i = 0; i < batch_count && p < (int)sizeof(body) - 80; i++) {
+        n = snprintf(body + p, sizeof(body) - p,
+          "%s{\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"age_ms\":%lu}",
+          (i == 0 ? "" : ","),
+          (double)batch_buf[i].lat, (double)batch_buf[i].lng,
+          (int)batch_buf[i].sat,
+          (unsigned long)(now - batch_buf[i].at_ms));
+        if (n < 0) break;
+        p += n;
+      }
+      snprintf(body + p, sizeof(body) - p, "]}");
+    }
+    Serial.printf("[POST] batch fixes=%u\n", batch_count);
+    batch_count = 0;
+  }
   if (DBG) { Serial.print(F("[POST body] ")); Serial.println(body); }
 
   S.postTries++;
@@ -1451,6 +1488,19 @@ void loop() {
           }
         }
         lastFixMs = now;
+        // sss 24h 테스트: fresh fix (sat>=4, age<2s) 모두 batch_buf 에 push — POST 시 array 송신.
+        // dedup: 마지막 push 와 500ms+ 차이 또는 좌표 0.5m+ 차이 시만.
+        if (gps.satellites.value() >= 4 && gps.location.age() < 2000 && batch_count < BATCH_BUF_N) {
+          bool push = (batch_count == 0)
+                   || (now - batch_buf[batch_count - 1].at_ms >= 500);
+          if (push) {
+            batch_buf[batch_count].lat  = (float)gps.location.lat();
+            batch_buf[batch_count].lng  = (float)gps.location.lng();
+            batch_buf[batch_count].sat  = (int8_t)gps.satellites.value();
+            batch_buf[batch_count].at_ms = now;
+            batch_count++;
+          }
+        }
         // 정지 판정용 history 에 ~10초마다 push (너무 빠르면 fix 노이즈가 윈도우를 흔듦)
         if (now - lastGpsHistPushMs >= 10000) {
           lastGpsHistPushMs = now;

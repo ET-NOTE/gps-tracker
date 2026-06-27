@@ -228,6 +228,12 @@ export const api = {
     return req('GET', `/devices/${id}/events${qs ? '?' + qs : ''}`);
   },
 
+  // sss 24h: 한 ingest 안의 fixes array (batch) 통계.
+  getDeviceBatchStats: (id, hours = 24) => req('GET', `/devices/${id}/batch-stats?hours=${hours}`),
+
+  // 24h: POST 주기 원격 조정 (5~300s, RAM only — reset 시 default 30s 복귀).
+  setDevicePostInterval: (id, seconds) => req('POST', `/devices/${id}/post-interval`, { seconds }),
+
   // 운행 통계 (Phase D)
   getDailyStats: (id, params = {}) => {
     const q = new URLSearchParams();

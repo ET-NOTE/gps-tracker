@@ -19,6 +19,7 @@ export default function DiagnosticPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [taggedOnly, setTaggedOnly] = useState(true);   // build_tag 있는 것만 (= 14_X 진단 세션만)
   const [events, setEvents] = useState([]);
+  const [batchStats, setBatchStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const pollRef = useRef(null);
@@ -35,8 +36,13 @@ export default function DiagnosticPage() {
     setLoading(true);
     try {
       const since = new Date(Date.now() - windowMs).toISOString();
-      const rows = await api.getDeviceEvents(deviceId, { since, limit: 1000 });
+      const hours = Math.max(1, Math.round(windowMs / 3600000));
+      const [rows, bstats] = await Promise.all([
+        api.getDeviceEvents(deviceId, { since, limit: 1000 }),
+        api.getDeviceBatchStats(deviceId, hours).catch(() => null),
+      ]);
       setEvents(rows || []);
+      setBatchStats(bstats);
       setError(null);
     } catch (e) {
       setError(e?.message || 'getDeviceEvents failed');
@@ -110,6 +116,20 @@ export default function DiagnosticPage() {
         </div>
 
         {error && <div style={errBox}>⚠ {error}</div>}
+
+        {/* 24h 테스트: POST 주기 원격 조정 (5~300s). RAM only — reset/wake 시 default 30s 자동 복귀. */}
+        {deviceId != null && (
+          <SectionCard title="⏱ POST 주기 원격 조정 (24h 테스트)">
+            <PostIntervalControl deviceId={deviceId} batchStats={batchStats} />
+          </SectionCard>
+        )}
+
+        {/* sss 24h 테스트: fixes batch 통계 — 한 ingest 안의 fix 수 분포, 누락 갭 진단. */}
+        {batchStats && batchStats.total_batches > 0 && (
+          <SectionCard title={`📦 Batch 통계 — ${batchStats.total_batches}개 POST / ${batchStats.total_fixes}개 fix`}>
+            <BatchStatsBody stats={batchStats} />
+          </SectionCard>
+        )}
 
         {/* 사이클 요약 */}
         <SectionCard title={`사이클 (${cycles.length})${taggedOnly && filteredEvents.length < events.length ? ` — legacy ${events.length - filteredEvents.length}개 제외` : ''}`}>
@@ -278,6 +298,119 @@ function SectionCard({ title, children }) {
 }
 
 function Muted({ children }) { return <div style={{ color: '#888', fontSize: 12 }}>{children}</div>; }
+
+function BatchStatsBody({ stats }) {
+  const recent = stats.recent || [];
+  // 시간순 정렬 (DESC) 그대로 보여줌 — 최신 batch 가 위.
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+        <BatchStatTile label="평균 batch" value={stats.avg_batch?.toFixed(1) ?? '—'} sub="POST 당 fix 수" />
+        <BatchStatTile label="최대" value={stats.max_batch} sub="가장 많은 batch" />
+        <BatchStatTile label="최소" value={stats.min_batch} sub="가장 적은 batch" />
+        <BatchStatTile label="총 fix" value={stats.total_fixes} sub={`${stats.total_batches} POST`} />
+      </div>
+      <table style={tbl}>
+        <thead>
+          <tr>
+            <th style={th}>uptime</th>
+            <th style={th}>batch size</th>
+            <th style={th}>avg sat</th>
+            <th style={th}>span</th>
+            <th style={th}>first</th>
+            <th style={th}>last</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recent.slice(0, 50).map((r, i) => (
+            <tr key={i}>
+              <td style={td}>{r.uptime_s ?? '—'}s</td>
+              <td style={{ ...td, fontWeight: 600, color: r.batch_size < 10 ? '#dc2626' : '#1a1a2e' }}>{r.batch_size}</td>
+              <td style={td}>{r.avg_sat ?? '—'}</td>
+              <td style={td}>{r.span_s}s</td>
+              <td style={{ ...td, fontFamily: 'ui-monospace,monospace', fontSize: 10, color: '#666' }}>
+                {new Date(r.first_at).toLocaleTimeString('ko-KR', { hour12: false })}
+              </td>
+              <td style={{ ...td, fontFamily: 'ui-monospace,monospace', fontSize: 10, color: '#666' }}>
+                {new Date(r.last_at).toLocaleTimeString('ko-KR', { hour12: false })}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {recent.length === 0 && <Muted>이 윈도우에 fixes array 가 들어온 POST 가 없습니다.</Muted>}
+    </div>
+  );
+}
+function PostIntervalControl({ deviceId, batchStats }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  // 실제 측정 평균 gap (recent 의 인접 last_at 차이).
+  const measuredAvgGap = useMemo(() => {
+    if (!batchStats?.recent || batchStats.recent.length < 2) return null;
+    const sorted = [...batchStats.recent].sort((a, b) => new Date(a.last_at) - new Date(b.last_at));
+    let sum = 0, n = 0;
+    for (let i = 1; i < sorted.length; i++) {
+      const d = (new Date(sorted[i].last_at) - new Date(sorted[i-1].last_at)) / 1000;
+      if (d > 0 && d < 600) { sum += d; n++; }
+    }
+    return n > 0 ? sum / n : null;
+  }, [batchStats]);
+
+  const send = async (seconds) => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await api.setDevicePostInterval(deviceId, seconds);
+      setMsg(`✓ ${seconds}s 명령 큐잉됨. 다음 ingest 응답에 실려 device 가 받음. (reset 시 default 30s 자동 복귀)`);
+    } catch (e) {
+      setMsg(`⚠ ${e?.message || 'failed'}`);
+    } finally {
+      setBusy(false);
+      setTimeout(() => setMsg(null), 6000);
+    }
+  };
+
+  const presets = [5, 15, 30, 60, 120, 300];
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+        {presets.map(s => (
+          <button key={s} onClick={() => send(s)} disabled={busy}
+            style={{ ...btn, background: s === 30 ? '#10b981' : '#1a1a2e' }}>
+            {s}s{s === 30 ? ' (기본)' : ''}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
+        <div style={{ background: '#f9fafb', padding: 10, borderRadius: 6 }}>
+          <div style={{ color: '#666', fontSize: 10, marginBottom: 4 }}>실제 측정 평균 POST 간격</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#1a1a2e' }}>
+            {measuredAvgGap != null ? `${measuredAvgGap.toFixed(1)}s` : '—'}
+          </div>
+          <div style={{ color: '#888', fontSize: 10, marginTop: 2 }}>
+            {batchStats?.recent?.length ? `최근 ${Math.min(batchStats.recent.length, 50)}개 POST 평균` : '데이터 없음'}
+          </div>
+        </div>
+        <div style={{ background: '#fef3c7', padding: 10, borderRadius: 6, fontSize: 11, color: '#78350f' }}>
+          <strong>주의</strong>: 짧은 주기 (5~15s) 일수록 LTE 점유율이 올라 GPS push 비율이 떨어집니다.
+          firmware hang/wake 시 RAM 변수 자동 default 30s 복귀 — 안전망 동작.
+        </div>
+      </div>
+      {msg && <div style={{ marginTop: 10, fontSize: 12, color: msg.startsWith('✓') ? '#059669' : '#dc2626' }}>{msg}</div>}
+    </div>
+  );
+}
+
+function BatchStatTile({ label, value, sub }) {
+  return (
+    <div style={{ background: '#f9fafb', borderRadius: 6, padding: 10, textAlign: 'center' }}>
+      <div style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a2e' }}>{value}</div>
+      <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{sub}</div>
+    </div>
+  );
+}
 
 const lab = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: '#555' };
 const sel = { fontSize: 12, padding: '5px 8px', border: '1px solid #d0d0d8', borderRadius: 5, background: 'white' };

@@ -63,6 +63,18 @@ pub struct IngestPayload {
     pub last_op: Option<String>,
     // 13_4: LC86G PQTMANTENNASTATUS 파싱 결과 — OK_EXT / OK_INT / OPEN / SHORT 등.
     pub antenna: Option<String>,
+    // sss 24h 테스트 (13_2): LTE 30s 주기 안에 잡은 fresh fix 들을 모아 보낸 array.
+    //   각 element: { lat, lng, sat, age_ms } — age_ms = ingest 도착 시점 대비 그 fix 가 잡힌 시간 차 (ms).
+    //   fixes 가 있으면 그 array 의 각 element 가 별도 location_records insert 됨.
+    pub fixes: Option<Vec<BatchFix>>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct BatchFix {
+    pub lat: f64,
+    pub lng: f64,
+    pub sat: Option<i32>,
+    pub age_ms: Option<i64>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -192,11 +204,31 @@ pub async fn ingest(
     // l80 / lte 각각 location_records로 INSERT (있는 것만)
     let recorded_at = Utc::now();
 
-    if let Some(l80) = &parsed.l80 {
-        insert_location(&state, device_id, recorded_at, "l80", l80, &parsed, &payload).await?;
-        broadcast_location(&state, device_id, recorded_at, "l80", l80, &parsed);
-        if let (true, Some(lat), Some(lng)) = (l80.fix, l80.lat, l80.lng) {
-            let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
+    // sss 24h 테스트: fixes array 가 있으면 각 fix 별로 별도 insert (recorded_at - age_ms).
+    // 이 경우 기존 l80 단일 fix 는 array 의 마지막 element 와 동일 → skip (중복 방지).
+    let has_batch = parsed.fixes.as_ref().map_or(false, |f| !f.is_empty());
+    if let Some(fixes) = &parsed.fixes {
+        for f in fixes {
+            let age_ms = f.age_ms.unwrap_or(0);
+            let fix_at = recorded_at - chrono::Duration::milliseconds(age_ms);
+            let synthetic = GpsFix {
+                fix: true, lat: Some(f.lat), lng: Some(f.lng),
+                sat: f.sat, sat_used: None, sat_view: None,
+                ttff_s: None, heading: None,
+            };
+            insert_location(&state, device_id, fix_at, "l80", &synthetic, &parsed, &payload).await?;
+            broadcast_location(&state, device_id, fix_at, "l80", &synthetic, &parsed);
+            let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, f.lat, f.lng).await;
+        }
+    }
+
+    if !has_batch {
+        if let Some(l80) = &parsed.l80 {
+            insert_location(&state, device_id, recorded_at, "l80", l80, &parsed, &payload).await?;
+            broadcast_location(&state, device_id, recorded_at, "l80", l80, &parsed);
+            if let (true, Some(lat), Some(lng)) = (l80.fix, l80.lat, l80.lng) {
+                let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
+            }
         }
     }
     if let Some(lte) = &parsed.lte {
@@ -204,6 +236,33 @@ pub async fn ingest(
         broadcast_location(&state, device_id, recorded_at, "lte_gnss", lte, &parsed);
         if let (true, Some(lat), Some(lng)) = (lte.fix, lte.lat, lte.lng) {
             let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
+        }
+    }
+
+    // 0036: cycle_first_fix — wake 후 첫 fix 도착 시 1회 발송.
+    // wake 이벤트 분기에서 pending=TRUE 마킹됨. 첫 fix=true 도착 시 atomic 토글 + event insert.
+    let first_fix_xy: Option<(f64, f64)> = parsed.l80.as_ref()
+        .and_then(|l| if l.fix { Some((l.lat?, l.lng?)) } else { None })
+        .or_else(|| parsed.lte.as_ref()
+            .and_then(|l| if l.fix { Some((l.lat?, l.lng?)) } else { None }));
+    if let Some((lat, lng)) = first_fix_xy {
+        let claimed: Option<(i64,)> = sqlx::query_as(
+            "UPDATE devices SET cycle_first_fix_pending = FALSE \
+             WHERE id = $1 AND cycle_first_fix_pending = TRUE \
+             RETURNING id"
+        ).bind(device_id).fetch_optional(&state.db).await.ok().flatten();
+        if claimed.is_some() {
+            let sat = parsed.l80.as_ref().and_then(|l| l.sat_count()).unwrap_or(-1);
+            let data = json!({ "lat": lat, "lng": lng, "sat": sat });
+            let _ = sqlx::query(
+                "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'cycle_first_fix', $3, (SELECT owner_id FROM devices WHERE id = $1))"
+            )
+            .bind(device_id)
+            .bind(recorded_at)
+            .bind(&data)
+            .execute(&state.db)
+            .await;
+            tracing::info!(device_id, lat, lng, sat, "cycle_first_fix event inserted");
         }
     }
 
@@ -366,6 +425,17 @@ pub async fn ingest(
                 boots, wakes, motion_wakes, brownouts, last_sleep_uptime_s, stopped_offset_s,
                 "lifecycle event ingested"
             );
+
+            // 0036: wake → 다음 fix 1회 알림 (cycle_first_fix). pending=TRUE 마킹만,
+            // 실제 fix 도착은 일반 POST 의 location_records insert 분기에서 atomic 토글.
+            if kind == "wake" {
+                let _ = sqlx::query(
+                    "UPDATE devices SET cycle_first_fix_pending = TRUE WHERE id = $1"
+                )
+                .bind(device_id)
+                .execute(&state.db)
+                .await;
+            }
         }
     }
 
@@ -444,6 +514,19 @@ pub async fn ingest(
     .fetch_optional(&state.db).await
     .ok().flatten();
 
+    // POST 주기 원격 조정 atomic claim — cmd 와 독립적으로 동봉 가능 (별도 키).
+    // 단일 device 24h 테스트라 SELECT+UPDATE 2-step (race 무시).
+    let interval_seconds: Option<i32> = {
+        let s: Option<i32> = sqlx::query_scalar(
+            "SELECT post_interval_pending FROM devices WHERE id = $1"
+        ).bind(device_id).fetch_optional(&state.db).await.ok().flatten();
+        if s.is_some() {
+            let _ = sqlx::query("UPDATE devices SET post_interval_pending = NULL WHERE id = $1")
+                .bind(device_id).execute(&state.db).await;
+        }
+        s
+    };
+
     let mut resp = json!({ "ok": true });
     if reset_claimed.is_some() {
         resp["cmd"] = json!("reset");
@@ -451,6 +534,10 @@ pub async fn ingest(
     } else if beep_claimed.is_some() {
         resp["cmd"] = json!("beep");
         tracing::info!(device_id, "ingest: dispatched beep cmd");
+    }
+    if let Some(s) = interval_seconds {
+        resp["post_interval_s"] = json!(s);
+        tracing::info!(device_id, seconds = s, "ingest: dispatched post_interval");
     }
     Ok(Json(resp))
 }
