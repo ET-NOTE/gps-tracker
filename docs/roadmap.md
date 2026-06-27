@@ -45,27 +45,10 @@
 ### ✓ 1. Continuous aggregates (P1 — 완료, migration 0041)
 
 DiagnosticPage 의 historical chart 가속용.
-- `location_1min` — 1분 평균 (lat/lng/sat/vbat + fix_count). Refresh 5분 주기, 7일 window.
-- `location_1hour` — 1시간 평균 (1min view 위에 계층화). Refresh 30분 주기, 30일 window.
-- DiagnosticPage 에 "📈 시간대 추세" 카드 추가 (bar chart, 색=평균 위성 quality).
-- API endpoint: `/devices/:id/locations/aggregated?bucket=1m|1h&since=...`
-- 윈도우 ≤24h → 1m bucket, 초과 → 1h bucket 자동 선택.
-
-```sql
-CREATE MATERIALIZED VIEW location_1min
-WITH (timescaledb.continuous) AS
-SELECT device_id,
-       time_bucket('1 minute', recorded_at) AS bucket,
-       AVG(lat) AS lat, AVG(lng) AS lng,
-       AVG(sat) AS sat, COUNT(*) AS fix_count
-FROM location_records WHERE fix = true
-GROUP BY device_id, bucket;
-
-SELECT add_continuous_aggregate_policy('location_1min',
-    start_offset => INTERVAL '7 days',
-    end_offset   => INTERVAL '1 minute',
-    schedule_interval => INTERVAL '1 minute');
-```
+- `location_1min` — 1분 평균 (lat/lng/sat/vbat + fix_count). raw scan, refresh 5분 주기, 7일 window.
+- `location_1hour` — 1시간 평균. raw scan, refresh 30분 주기, 30일 window.
+- (참고: TimescaleDB 의 hierarchical CAGG 가 time_bucket 인식 제약 있어 둘 다 raw 에서 직접 집계.)
+- API endpoint: `/devices/:id/locations/aggregated?bucket=1m|1h&since=...`.
 
 **Trade-off**: storage 약간 증가 (aggregate cache), query 응답 크게 빨라짐.
 
@@ -96,5 +79,5 @@ DiagnosticPage 의 "시간대 추세" bar chart 가 aggregate view 활용.
 
 ## 의사결정 보류
 
-- **Retention 1년 vs 영구**: 1년 동안 디스크 추세 측정 후 결정. 영구 원하면 retention policy 제거.
-- **continuous aggregates 도입 시점**: 사용자가 historical chart 사용 빈도 확인 후.
+- **Retention 1년 vs 영구**: 1년 동안 디스크 추세 측정 후 결정. 영구 원하면 `SELECT remove_retention_policy('location_records')`.
+- **fixes array 1 POST → 1 row (P2)**: TimescaleDB compression ratio 1주일 측정 후 결정.
