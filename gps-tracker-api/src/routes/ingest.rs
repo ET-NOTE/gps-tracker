@@ -207,6 +207,9 @@ pub async fn ingest(
     // sss 24h 테스트: fixes array 가 있으면 각 fix 별로 별도 insert (recorded_at - age_ms).
     // 이 경우 기존 l80 단일 fix 는 array 의 마지막 element 와 동일 → skip (중복 방지).
     let has_batch = parsed.fixes.as_ref().map_or(false, |f| !f.is_empty());
+    // P1: batch broadcast 용 — DB insert 는 fix 별 1 row 그대로 (storage 변경 X),
+    // WS broadcast 는 batch 끝에 1회만 (이전 N회 → 1회).
+    let mut batch_for_ws: Vec<crate::events::LocationFix> = Vec::new();
     if let Some(fixes) = &parsed.fixes {
         for f in fixes {
             let age_ms = f.age_ms.unwrap_or(0);
@@ -217,8 +220,19 @@ pub async fn ingest(
                 ttff_s: None, heading: None,
             };
             insert_location(&state, device_id, fix_at, "l80", &synthetic, &parsed, &payload).await?;
-            broadcast_location(&state, device_id, fix_at, "l80", &synthetic, &parsed);
+            batch_for_ws.push(crate::events::LocationFix {
+                recorded_at: fix_at,
+                lat: Some(f.lat),
+                lng: Some(f.lng),
+                sat: f.sat.map(|v| v as i16),
+            });
             let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, f.lat, f.lng).await;
+        }
+        // batch 끝에 1회 broadcast — 마지막 fix metadata 를 top-level 에, 모두를 fixes array 로.
+        if let (Some(last_fix), Some(last_meta)) = (batch_for_ws.last().cloned(), parsed.fixes.as_ref().and_then(|v| v.last())) {
+            broadcast_batch(&state, device_id, last_fix.recorded_at, "l80",
+                last_meta.lat, last_meta.lng, last_meta.sat.map(|v| v as i16),
+                &parsed, batch_for_ws.clone());
         }
     }
 
@@ -561,6 +575,35 @@ fn broadcast_location(
         ttff_s: fix.ttff_s,
         vbat_mv: parsed.vbat_mv,
         heading: fix.heading,
+        fixes: None,
+    });
+}
+
+/// P1: batch broadcast — 1 POST 의 모든 fix 를 단일 message 로.
+/// top-level fields 는 마지막 fix (legacy consumer 호환), fixes array 에 전체.
+fn broadcast_batch(
+    state: &AppState,
+    device_id: i64,
+    last_at: chrono::DateTime<Utc>,
+    source: &str,
+    last_lat: Option<f64>,
+    last_lng: Option<f64>,
+    last_sat: Option<i16>,
+    parsed: &IngestPayload,
+    fixes: Vec<crate::events::LocationFix>,
+) {
+    let _ = state.events.send(Event::Location {
+        device_id,
+        recorded_at: last_at,
+        source: source.to_string(),
+        fix: true,
+        lat: last_lat,
+        lng: last_lng,
+        sat: last_sat,
+        ttff_s: None,
+        vbat_mv: parsed.vbat_mv,
+        heading: None,
+        fixes: Some(fixes),
     });
 }
 

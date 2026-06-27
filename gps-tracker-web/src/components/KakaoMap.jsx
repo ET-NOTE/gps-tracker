@@ -615,6 +615,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
      */
     addHistoryPoint(deviceId, lat, lng, color, meta = {}) {
       if (!mapRef.current) return;
+      // P1 dedup: initial fetch + WS broadcast 가 같은 fix 두 번 추가하던 케이스 방지.
+      // 새 fix 의 recorded_at 이 마지막 fix 와 같거나 과거면 skip.
+      if (meta.recordedAt) {
+        const newAt = new Date(meta.recordedAt).getTime();
+        const lastAt = lastRecordedAtRef.current[deviceId];
+        if (lastAt && newAt <= lastAt) return;
+      }
       const pos = new window.kakao.maps.LatLng(lat, lng);
       const isStop = !!meta.isStop;
       const c = color || '#888';
