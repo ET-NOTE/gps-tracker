@@ -1,5 +1,6 @@
 // 13_4_motion_aware_tracker — 13_3 + LC86G 호환. (2026-06-26 cleanup) 가벼운 변경만 유지: PAIR025 EASY, PAIR062 GLL/VTG OFF, GSV 5s, STATIONARY 3분, fix 판정 완화 (sat>=3/age<10s/hdop<5), payload hdop, PQTMANTENNASTATUS 파싱 (안테나 진단 UI 의 데이터 원천). 제거됨: PMTK741 Hot-start hint, GSV 1s.
 // (2026-06-28) batch dedup 2s → 1s — Phase 6D ingest 후 batch ≈ 30 fix per POST. DB 는 1 row + jsonb 라 row 수 영향 없음. jsonb array size 만 2배.
+// (2026-06-28) STATIONARY 자동 sleep 활성화 (SLEEP_DISABLED 0) + window 3분 → 5분.
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -93,8 +94,8 @@
 #define POST_INTERVAL_DEFAULT_MS  30000UL
 static uint32_t post_interval_ms = POST_INTERVAL_DEFAULT_MS;
 
-// 24h 안정성 테스트 — STATIONARY 자동 sleep 비활성.
-#define SLEEP_DISABLED 1
+// (2026-06-28) STATIONARY 자동 sleep 활성화 — 5분 정지 시 deep sleep.
+#define SLEEP_DISABLED 0
 #define BAT_DIV_RATIO       2.0f
 
 #define BRINGUP_RETRY_MS              30000UL
@@ -112,7 +113,7 @@ static uint32_t post_interval_ms = POST_INTERVAL_DEFAULT_MS;
 //   GPS_STALE_MS                 : 마지막 fix 가 이 시간 넘게 오래면 GPS unavailable 간주
 //   STATIONARY_BOOT_GRACE_MS     : 부팅/wake 직후 정지 판정 보류 (모듈 안정화 + first fix 대기)
 // ──────────────────────────────────────────────────────────────────
-#define STATIONARY_WINDOW_MS       (3UL * 60UL * 1000UL)   // 정지 3분 → 자동 sleep
+#define STATIONARY_WINDOW_MS       (5UL * 60UL * 1000UL)   // 정지 5분 → 자동 sleep
 #define MOTION_QUIET_MS            30000UL
 #define GPS_DRIFT_THRESHOLD_M      50.0f
 #define GPS_STALE_MS               60000UL
