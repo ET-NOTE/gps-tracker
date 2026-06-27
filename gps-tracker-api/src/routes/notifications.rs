@@ -28,6 +28,7 @@ pub struct NotificationSettings {
     pub online_alert:          bool,
     pub sleep_alert:           bool,
     pub wake_alert:            bool,
+    pub cycle_first_fix_alert: bool,    // 0036: 매 사이클 첫 fix 알림 (default FALSE)
     pub low_batt_threshold_mv: i32,
     pub offline_minutes:       i32,
     pub signal_loss_minutes:   i32,
@@ -47,6 +48,7 @@ pub struct UpdateSettings {
     pub online_alert:          Option<bool>,
     pub sleep_alert:           Option<bool>,
     pub wake_alert:            Option<bool>,
+    pub cycle_first_fix_alert: Option<bool>,
     pub low_batt_threshold_mv: Option<i32>,
     pub offline_minutes:       Option<i32>,
     pub signal_loss_minutes:   Option<i32>,
@@ -59,7 +61,7 @@ pub fn router() -> Router<AppState> {
 const SELECT_COLS: &str = r#"
     user_id, motion_alert, low_batt_alert, offline_alert, geofence_alert,
     device_health_alert, lost_alert,
-    signal_loss_alert, online_alert, sleep_alert, wake_alert,
+    signal_loss_alert, online_alert, sleep_alert, wake_alert, cycle_first_fix_alert,
     low_batt_threshold_mv, offline_minutes, signal_loss_minutes,
     created_at, updated_at
 "#;
@@ -105,9 +107,10 @@ async fn update_settings(
                   online_alert          = COALESCE($9,  online_alert),
                   sleep_alert           = COALESCE($10, sleep_alert),
                   wake_alert            = COALESCE($11, wake_alert),
-                  low_batt_threshold_mv = COALESCE($12, low_batt_threshold_mv),
-                  offline_minutes       = COALESCE($13, offline_minutes),
-                  signal_loss_minutes   = COALESCE($14, signal_loss_minutes),
+                  cycle_first_fix_alert = COALESCE($12, cycle_first_fix_alert),
+                  low_batt_threshold_mv = COALESCE($13, low_batt_threshold_mv),
+                  offline_minutes       = COALESCE($14, offline_minutes),
+                  signal_loss_minutes   = COALESCE($15, signal_loss_minutes),
                   updated_at            = now()
             WHERE user_id = $1"#,
     )
@@ -122,6 +125,7 @@ async fn update_settings(
     .bind(req.online_alert)
     .bind(req.sleep_alert)
     .bind(req.wake_alert)
+    .bind(req.cycle_first_fix_alert)
     .bind(req.low_batt_threshold_mv)
     .bind(req.offline_minutes)
     .bind(req.signal_loss_minutes)

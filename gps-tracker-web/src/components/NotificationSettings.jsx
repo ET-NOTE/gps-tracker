@@ -65,6 +65,10 @@ export default function NotificationSettings() {
           sub="모션·스위치로 다시 동작 시작"
           value={s.wake_alert}
           onChange={v => patch({ wake_alert: v })} />
+        <Toggle label="📍 사이클 첫 좌표"
+          sub="깨어남 후 GPS 가 좌표 잡힌 시점 1회 (외출 시작 신호)"
+          value={s.cycle_first_fix_alert ?? false}
+          onChange={v => patch({ cycle_first_fix_alert: v })} />
         <Toggle label="❗ 장기 무응답 (꺼진 후 무소식)"
           sub="sleep 후 24시간 넘게 안 깨어났을 때"
           value={s.lost_alert ?? true}
