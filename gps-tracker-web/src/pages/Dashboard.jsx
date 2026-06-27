@@ -75,29 +75,38 @@ function calcSpeedKmh(prev, next) {
 }
 
 // 홈 탭 since 계산.
-// 기본은 "오늘 0시" 인데, 자정 직전 60분 안에 sleep_enter 이벤트가 없으면 단말기가 자정에도
-// 운행 중이었던 것 → 그 운행 시작점 (= 자정 이전 마지막 sleep_enter occurred_at + 1ms) 까지
-// since 를 앞당겨서 자정 걸친 운행이 끊겨 보이지 않게.
-// 50개 events 안에 자정 이전 sleep 이 없으면 안전하게 자정 fallback.
+//  · 기본은 "오늘 0시".
+//  · 자정 직전 60분 안에 sleep_enter 가 없으면 단말기가 자정에도 운행 중이었던 것 → 그 운행 시작점 (= 자정 이전 마지막 sleep_enter + 1ms) 까지 앞당김.
+//  · 단말기가 어제 sleep 으로 들어간 후 아직 안 깨어났으면 (today 데이터 0건) → 어제 마지막 wake 시점부터 표시 (= 전날 마지막 사이클).
+//  · 50개 events 로 부족하면 자정 fallback.
 const TRIP_CARRYOVER_WINDOW_MS = 60 * 60 * 1000;
 function localMidnightMs() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 }
-async function computeHomeSinceISO(deviceId) {
+async function computeHomeSinceISO(device) {
   const midnightMs = localMidnightMs();
   const midnightISO = new Date(midnightMs).toISOString();
+  // 오늘 자정 이후 fix 데이터 유무 (device 의 last_fix_at 기준).
+  const lastFixMs = device?.last_fix_at ? new Date(device.last_fix_at).getTime() : 0;
+  const todayHasFix = lastFixMs >= midnightMs;
   try {
-    const events = await api.getDeviceEvents(deviceId);
-    let lastSleepMs = -Infinity;
+    const events = await api.getDeviceEvents(device.id);
+    let lastWakeBeforeMidnight = -Infinity;
+    let lastSleepBeforeMidnight = -Infinity;
     for (const e of events) {
-      if (e.kind !== 'sleep_enter') continue;
       const t = new Date(e.occurred_at).getTime();
-      if (t < midnightMs && t > lastSleepMs) lastSleepMs = t;
+      if (t >= midnightMs) continue;
+      if (e.kind === 'wake' && t > lastWakeBeforeMidnight) lastWakeBeforeMidnight = t;
+      if (e.kind === 'sleep_enter' && t > lastSleepBeforeMidnight) lastSleepBeforeMidnight = t;
     }
-    if (!Number.isFinite(lastSleepMs)) return midnightISO;
-    if (midnightMs - lastSleepMs < TRIP_CARRYOVER_WINDOW_MS) return midnightISO;
-    return new Date(lastSleepMs + 1).toISOString();
+    // 오늘 fix 0건 → 전날 마지막 사이클 (= 마지막 wake) 부터 표시.
+    if (!todayHasFix && Number.isFinite(lastWakeBeforeMidnight)) {
+      return new Date(lastWakeBeforeMidnight).toISOString();
+    }
+    if (!Number.isFinite(lastSleepBeforeMidnight)) return midnightISO;
+    if (midnightMs - lastSleepBeforeMidnight < TRIP_CARRYOVER_WINDOW_MS) return midnightISO;
+    return new Date(lastSleepBeforeMidnight + 1).toISOString();
   } catch {
     return midnightISO;
   }
@@ -490,7 +499,7 @@ export default function Dashboard({ onLogout }) {
       wsRef.current?.subscribe(list.map(d => d.id));
       for (const d of list) {
         if (oldIds.has(d.id)) continue;
-        const since = await computeHomeSinceISO(d.id);
+        const since = await computeHomeSinceISO(d);
         const locs = await api.listLocations(d.id, { limit: 2000, fix_only: true, since });
         if (!locs?.length) continue;
         const ordered = [...locs].reverse();
@@ -540,7 +549,7 @@ export default function Dashboard({ onLogout }) {
       wsRef.current?.subscribe(list.map(d => d.id));
 
       // 디바이스마다 since 를 events 로 산출 (자정 걸친 운행 carry-over). 디바이스 간엔 병렬.
-      const sinces = await Promise.all(list.map(d => computeHomeSinceISO(d.id)));
+      const sinces = await Promise.all(list.map(d => computeHomeSinceISO(d)));
       for (let li = 0; li < list.length; li++) {
         const d = list[li];
         const since = sinces[li];

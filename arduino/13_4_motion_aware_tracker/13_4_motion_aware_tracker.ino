@@ -1,4 +1,4 @@
-// 13_4_motion_aware_tracker (= 13_3 + LC86G GPS 모듈 지원: baud 115200 + PQTMANTENNASTATUS 파싱) — 13_1 기반 + 신규 PCB 핀 + 부저 (2026-06-17)
+// 13_4_motion_aware_tracker — 13_3 + LC86G 호환. (2026-06-26 cleanup) 가벼운 변경만 유지: PAIR025 EASY, PAIR062 GLL/VTG OFF, GSV 5s, STATIONARY 3분, fix 판정 완화 (sat>=3/age<10s/hdop<5), payload hdop, PQTMANTENNASTATUS 파싱 (안테나 진단 UI 의 데이터 원천). 제거됨: PMTK741 Hot-start hint, GSV 1s.
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -35,6 +35,8 @@
 #include <WiFi.h>
 #include <esp_sleep.h>
 #include <esp_system.h>
+#include <esp_task_wdt.h>   // A안 (2026-06-25): POST 경로에 명시 feed → INT-WDT cascade 회피.
+                            // 결정 컨텍스트 → memory/project_int_wdt_bypass_decision.md
 
 // =================================================================
 // 핀 정의
@@ -85,9 +87,13 @@
 #define POST_URL_HOST       "http://gps.serial.kr"        // prod ← 현재
 // #define POST_URL_HOST    "http://dev-gps.serial.kr"   // dev (테스트 단계)
 #define POST_PATH           "/ingest"
-// 15초 — LTE TX peak 빈도 (= brownout 트리거 빈도) 와 실시간 추적 응답성의 trade-off.
-// 10초로 줄이면 brownout 빈도 ↑. 30초+ 면 추적 응답성 ↓.
-#define POST_INTERVAL_MS    15000UL
+// 30초 — aa LC86G 24h 테스트. 사이 GPS fix 는 array 로 모아서 일괄 송신.
+// POST_INTERVAL — 변수 (서버 cmd 로 5~300s 조정 가능). RAM only → reset/wake 시 자동 default 복귀.
+#define POST_INTERVAL_DEFAULT_MS  30000UL
+static uint32_t post_interval_ms = POST_INTERVAL_DEFAULT_MS;
+
+// 24h 안정성 테스트 — STATIONARY 자동 sleep 비활성.
+#define SLEEP_DISABLED 1
 #define BAT_DIV_RATIO       2.0f
 
 #define BRINGUP_RETRY_MS              30000UL
@@ -105,7 +111,7 @@
 //   GPS_STALE_MS                 : 마지막 fix 가 이 시간 넘게 오래면 GPS unavailable 간주
 //   STATIONARY_BOOT_GRACE_MS     : 부팅/wake 직후 정지 판정 보류 (모듈 안정화 + first fix 대기)
 // ──────────────────────────────────────────────────────────────────
-#define STATIONARY_WINDOW_MS       (3UL * 60UL * 1000UL)  // 정지 3분 → 자동 sleep
+#define STATIONARY_WINDOW_MS       (3UL * 60UL * 1000UL)   // 정지 3분 → 자동 sleep
 #define MOTION_QUIET_MS            30000UL
 #define GPS_DRIFT_THRESHOLD_M      50.0f
 #define GPS_STALE_MS               60000UL
@@ -169,6 +175,13 @@ static uint32_t lastSuccessPostMs    = 0;
 static uint32_t lastRegOkMs          = 0;
 static uint32_t lastRegPollMs        = 0;
 static uint8_t  softResetStreak      = 0;
+
+// 24h 테스트: 30초 LTE 주기 사이 모든 fresh fix 모아 array 송신.
+#define BATCH_BUF_N 60
+struct BatchFix { float lat; float lng; int8_t sat; uint32_t at_ms; };
+static BatchFix batch_buf[BATCH_BUF_N];
+static uint8_t  batch_count = 0;
+
 #define REG_POLL_INTERVAL_MS  (10UL * 1000UL)
 #define REG_LOST_TIMEOUT_MS   (30UL * 1000UL)
 #define SOFT_RESET_TO_HARD_THRESHOLD 2
@@ -414,6 +427,9 @@ static void IRAM_ATTR onLisInt() {
 //  · 어느 한 조건이라도 깨지면 윈도우 즉시 reset.
 // ──────────────────────────────────────────────────────────────────
 static void checkStationarySleep() {
+#if SLEEP_DISABLED
+  return;   // 24h 테스트 모드: STATIONARY 자동 sleep 비활성.
+#endif
   if (inSleepProcedure) return;
   if (!lisOk) return;                                   // wake 수단 없음 → sleep 안 함
   uint32_t now = millis();
@@ -506,9 +522,13 @@ static void printStatus() {
   uint32_t up_s = (now - bootMs) / 1000;
 
   // .isValid() 는 첫 fix 후 영구 true — sat 잃어도 stale 좌표 반환. age + sat 으로 freshness 강제.
+  // 13_4 LC86G: multi-GNSS 라 sat 많지만 간헐 dropout 잦음. age<10s, sat>=3 으로 완화 (L80 대비).
+  // HDOP < 5.0 (== 500) 만 인정 (0 = 아직 GSA 못 받음, 통과). 품질 나쁜 fix 거름.
+  uint32_t hdopv = gps.hdop.value();
   bool fix = gps.location.isValid()
-          && gps.location.age() < 5000
-          && gps.satellites.value() >= 4;
+          && gps.location.age() < 10000
+          && gps.satellites.value() >= 3
+          && (hdopv == 0 || hdopv < 500);
   uint32_t fixAge = lastFixMs ? (now - lastFixMs) / 1000 : 0;
   uint32_t motTotal = motionEvents;
   uint32_t motAgeS  = lastMotionMs ? (now - lastMotionMs) / 1000 : 0;
@@ -592,6 +612,7 @@ static bool sendAT(const char *cmd, const char *expect, uint32_t timeoutMs) {
   }
   uint32_t t0 = millis();
   while (millis() - t0 < timeoutMs) {
+    esp_task_wdt_reset();   // A안: 30s SHREQ 같은 긴 wait 에서도 WDT cascade 방지
     drainLte();
     if (!lteHealthy()) {
       if (DBG) { Serial.print(F("<< (UV abort) ")); Serial.println(lastResp); }
@@ -613,6 +634,7 @@ static void waitUartIdle(uint32_t idleMs, uint32_t maxWaitMs) {
   uint32_t lastByte = millis();
   uint32_t t0       = millis();
   while (millis() - t0 < maxWaitMs) {
+    esp_task_wdt_reset();   // A안: UART drain 동안 WDT cascade 방지
     while (lteSerial.available()) { lteSerial.read(); lastByte = millis(); }
     if (millis() - lastByte >= idleMs) return;
     delay(10);
@@ -795,6 +817,7 @@ static bool sendBodyAfterPrompt(const char *body, uint32_t len) {
   uint32_t t0 = millis();
   lastResp = "";
   while (millis() - t0 < 3000) {
+    esp_task_wdt_reset();   // A안: prompt wait 동안 WDT cascade 방지
     drainLte();
     if (lastResp.indexOf('>') >= 0) break;
     delay(5);
@@ -840,7 +863,7 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
   }
 
   snprintf(cmd, sizeof(cmd), "AT+SHREQ=\"%s\",3", path);
-  if (!sendAT(cmd, "+SHREQ:", 30000)) {
+  if (!sendAT(cmd, "+SHREQ:", 10000)) {   // 30s → 10s (LTE 평상시 빠름. 응답성 ↑)
     DBGLN(F("[POST] SHREQ fail"));
     sendAT("AT+SHDISC", "OK", 3000);
     return false;
@@ -867,7 +890,7 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
       // expect="+SHREAD:" 으로 URC 기다리고, 그 후 body 까지 추가 drain.
       if (sendAT(readCmd, "+SHREAD:", 5000)) {
         uint32_t t0 = millis();
-        while (millis() - t0 < 500) { drainLte(); delay(10); }
+        while (millis() - t0 < 500) { esp_task_wdt_reset(); drainLte(); delay(10); }
         // ── 서버가 cmd: beep 보냈으면 부저 트리거 ──
         if (lastResp.indexOf("\"cmd\":\"beep\"") >= 0
          || lastResp.indexOf("\"cmd\": \"beep\"") >= 0) {
@@ -889,6 +912,19 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
           softResetStreak = 0;
           lastSuccessPostMs = millis();
           S.nextBringUpAt = millis() + 1000;
+        }
+        // ── 서버가 post_interval_s 보냈으면 POST 주기 변경 (RAM only — reset 시 default 복귀) ──
+        int pi = lastResp.indexOf("\"post_interval_s\":");
+        if (pi < 0) pi = lastResp.indexOf("\"post_interval_s\" :");
+        if (pi >= 0) {
+          int colon = lastResp.indexOf(':', pi);
+          if (colon > 0) {
+            int seconds = lastResp.substring(colon + 1).toInt();
+            if (seconds >= 5 && seconds <= 300) {
+              post_interval_ms = (uint32_t)seconds * 1000UL;
+              Serial.printf("[POST] interval ← %ds (server cmd, RAM only)\n", seconds);
+            }
+          }
         }
       }
     }
@@ -970,9 +1006,12 @@ static void buildPayload(char *out, size_t cap) {
   uint32_t vbatMv = readVbatMv();
   // sticky-fix 방어: .isValid() 만 보면 첫 fix 후 sat 0 이어도 true 유지 → 백엔드가 stale 좌표를
   // 새 fix 처럼 인식. age (마지막 NMEA update) + sat 카운트로 freshness 강제.
+  // 13_4 LC86G: multi-GNSS 라 sat 많지만 간헐 dropout 잦음. age<10s, sat>=3 + HDOP<5.0 으로 완화.
+  uint32_t hdopv = gps.hdop.value();
   bool l80fix = gps.location.isValid()
-             && gps.location.age() < 5000
-             && gps.satellites.value() >= 4;
+             && gps.location.age() < 10000
+             && gps.satellites.value() >= 3
+             && (hdopv == 0 || hdopv < 500);
   uint32_t motTotal = motionEvents;
   uint32_t motDelta = motTotal - motionEventsAtLastPost;
   uint32_t motAgeS  = lastMotionMs ? (millis() - lastMotionMs) / 1000 : 0;
@@ -996,7 +1035,7 @@ static void buildPayload(char *out, size_t cap) {
     snprintf(out, cap,
       "{\"device_uid\":\"%s\"%s,\"ts\":%lu,\"awake\":%lu,\"csq\":%d,\"reg\":%d,"
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
-      "\"l80\":{\"fix\":true,\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"ttff_s\":%lu%s},"
+      "\"l80\":{\"fix\":true,\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"hdop\":%.2f,\"ttff_s\":%lu%s},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
       "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\"%s}",
       deviceUid, sim,
@@ -1005,6 +1044,7 @@ static void buildPayload(char *out, size_t cap) {
       S.csq, S.reg, (unsigned long)vbatMv, (unsigned long)ttAtOkMs,
       gps.location.lat(), gps.location.lng(),
       (int)gps.satellites.value(),
+      hdopv / 100.0f,
       (unsigned long)(ttL80GnssMs / 1000),
       headingFrag,
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
@@ -1014,7 +1054,7 @@ static void buildPayload(char *out, size_t cap) {
     snprintf(out, cap,
       "{\"device_uid\":\"%s\"%s,\"ts\":%lu,\"awake\":%lu,\"csq\":%d,\"reg\":%d,"
       "\"vbat_mv\":%lu,\"at_ms\":%lu,"
-      "\"l80\":{\"fix\":false,\"sat\":%d},"
+      "\"l80\":{\"fix\":false,\"sat\":%d,\"hdop\":%.2f},"
       "\"motion\":{\"total\":%lu,\"delta\":%lu,\"age_s\":%lu}%s,"
       "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\"%s}",
       deviceUid, sim,
@@ -1022,6 +1062,7 @@ static void buildPayload(char *out, size_t cap) {
       (unsigned long)S.bringUpCount,
       S.csq, S.reg, (unsigned long)vbatMv, (unsigned long)ttAtOkMs,
       (int)gps.satellites.value(),
+      hdopv / 100.0f,
       (unsigned long)motTotal, (unsigned long)motDelta, (unsigned long)motAgeS,
       stat,
       wakeReasonStr, resetCauseStr, lastOpStr, lastAntennaStatus, diag);
@@ -1057,8 +1098,33 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
 
 static void doPost() {
   breadcrumb("do_post");
-  char body[1280];   // stationary fragment 추가 (~250B) 로 1024 → 1280
+  esp_task_wdt_reset();   // A안: doPost 시작 전 fresh feed (직전 cycle 잔여 시간 클리어)
+  char body[2560];   // 24h: fixes array 추가 여유 (60×~50B + 기존 ~1280 ~ 2K).
   buildPayload(body, sizeof(body));
+
+  // 24h: 30s 사이 batch_buf 의 모든 fresh fix 를 "fixes":[...] 로 closing } 직전 삽입.
+  if (batch_count > 0) {
+    int blen = strlen(body);
+    if (blen > 0 && body[blen - 1] == '}') {
+      uint32_t now = millis();
+      int p = blen - 1;
+      int n = snprintf(body + p, sizeof(body) - p, ",\"fixes\":[");
+      if (n > 0) p += n;
+      for (uint8_t i = 0; i < batch_count && p < (int)sizeof(body) - 80; i++) {
+        n = snprintf(body + p, sizeof(body) - p,
+          "%s{\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"age_ms\":%lu}",
+          (i == 0 ? "" : ","),
+          (double)batch_buf[i].lat, (double)batch_buf[i].lng,
+          (int)batch_buf[i].sat,
+          (unsigned long)(now - batch_buf[i].at_ms));
+        if (n < 0) break;
+        p += n;
+      }
+      snprintf(body + p, sizeof(body) - p, "]}");
+    }
+    Serial.printf("[POST] batch fixes=%u\n", batch_count);
+    batch_count = 0;
+  }
   if (DBG) { Serial.print(F("[POST body] ")); Serial.println(body); }
 
   S.postTries++;
@@ -1384,11 +1450,13 @@ void setup() {
   delay(1500);
   sendGpsNmea("$PAIR025,1");      // EASY 활성 — cold/warm start TTFF 5~10s 단축.
   delay(100);
+  sendGpsNmea("$PAIR050,1000");   // GPS fix rate 1Hz 강제 (default 가 변경됐을 가능성 대비).
+  delay(100);
   sendGpsNmea("$PAIR062,1,0");    // GLL 비활성 (위경도 중복, RMC/GGA 로 충분).
   delay(100);
   sendGpsNmea("$PAIR062,5,0");    // VTG 비활성 (heading 은 RMC course-over-ground 에 있음).
   delay(100);
-  sendGpsNmea("$PAIR062,3,5");    // GSV 5초마다 (default 1초) — 시야 위성 모니터 충분, UART 부하 ↓.
+  sendGpsNmea("$PAIR062,3,5");    // GSV 5초 — UART 부하 ↓. (1초는 시각화 좋지만 main loop 부담.)
   delay(100);
 
   lteSerial.begin(LTE_BAUD, SERIAL_8N1, PIN_LTE_RX, PIN_LTE_TX);
@@ -1416,7 +1484,7 @@ void loop() {
   static char     antStatusBuf[12];
   static uint8_t  antStatusIdx = 0;
 
-  // 13_4: NMEA 라인 버퍼 — $PQTMANTENNASTATUS (LC86G) 파싱용. byte stream 그대로 gps.encode 도 호출.
+  // 13_4: NMEA 라인 버퍼 — $PQTMANTENNASTATUS (LC86G) 파싱용. PMTK741/PQTM cleanup 후 복원 (안테나 진단 UI 의 데이터 원천).
   static char nmeaLine[200];
   static uint16_t nmeaLineLen = 0;
 
@@ -1515,7 +1583,19 @@ void loop() {
           }
         }
         lastFixMs = now;
-        // 정지 판정용 history 에 ~10초마다 push (너무 빠르면 fix 노이즈가 윈도우를 흔듦)
+        // 24h 테스트: fresh fix (sat>=4, age<5s) 모두 batch_buf 에 push — GSV 5s burst 사이 GGA 공백도 통과.
+        if (gps.satellites.value() >= 4 && gps.location.age() < 5000 && batch_count < BATCH_BUF_N) {
+          bool push = (batch_count == 0)
+                   || (now - batch_buf[batch_count - 1].at_ms >= 500);
+          if (push) {
+            batch_buf[batch_count].lat  = (float)gps.location.lat();
+            batch_buf[batch_count].lng  = (float)gps.location.lng();
+            batch_buf[batch_count].sat  = (int8_t)gps.satellites.value();
+            batch_buf[batch_count].at_ms = now;
+            batch_count++;
+          }
+        }
+        // 정지 판정용 history 에 ~10초마다 push (너무 빠르면 fix 노이즈가 흔듦)
         if (now - lastGpsHistPushMs >= 10000) {
           lastGpsHistPushMs = now;
           gpsHistPush(gps.location.lat(), gps.location.lng(), now);
@@ -1607,7 +1687,7 @@ void loop() {
   } else {
     if ((int32_t)(millis() - S.nextPostAt) >= 0) {
       doPost();
-      S.nextPostAt = millis() + POST_INTERVAL_MS;
+      S.nextPostAt = millis() + post_interval_ms;
 
       if (S.lastStatus != 200) {
         S.failStreak++;

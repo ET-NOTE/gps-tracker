@@ -315,6 +315,7 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
                        WHEN 'online'         THEN COALESCE(ns.online_alert,      TRUE)
                        WHEN 'sleep_enter'    THEN COALESCE(ns.sleep_alert,       FALSE)
                        WHEN 'wake'           THEN COALESCE(ns.wake_alert,        FALSE)
+                       WHEN 'cycle_first_fix' THEN COALESCE(ns.cycle_first_fix_alert, FALSE)
                        WHEN 'geofence_in'    THEN COALESCE(ns.geofence_alert,    TRUE)
                        WHEN 'geofence_out'   THEN COALESCE(ns.geofence_alert,    TRUE)
                        WHEN 'geofence_armed' THEN COALESCE(ns.geofence_alert,    TRUE)
@@ -403,13 +404,14 @@ fn title_for_kind(kind: &str, _device_id: i64) -> String {
         "online"          => "✅ 통신 복구".into(),
         "sleep_enter"     => "🌙 디바이스 절전 진입".into(),
         "wake"            => "☀️ 디바이스 깨어남".into(),
+        "cycle_first_fix" => "📍 좌표 잡힘 (첫 fix)".into(),
         "geofence_in"     => "📍 지오펜스 진입".into(),
         "geofence_out"    => "📍 지오펜스 이탈".into(),
         "geofence_armed"  => "📍 지오펜스 활성화".into(),
         "brownout"        => "⚡ 전원 이슈".into(),
         "gps_anomaly"     => "🛰️ GPS 신호 약함".into(),
         "lost"            => "❗ 디바이스 점검 필요".into(),
-        _                 => format!("발자취: {kind}"),
+        _                 => format!("🔔 시리얼링크 위치추적기"),
     }
 }
 
@@ -494,6 +496,16 @@ fn body_for_event(ev: &PendingEvent) -> String {
                 format!("{dev}: 절전 모드에서 깨어났습니다")
             } else {
                 format!("{dev}: 깨어남 — 원인: {cause}")
+            }
+        }
+        "cycle_first_fix" => {
+            let lat = ev.data.as_ref().and_then(|x| x.get("lat")).and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let lng = ev.data.as_ref().and_then(|x| x.get("lng")).and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let sat = ev.data.as_ref().and_then(|x| x.get("sat")).and_then(|v| v.as_i64()).unwrap_or(-1);
+            if sat >= 0 {
+                format!("{dev}: 새 사이클 첫 좌표 {lat:.4}, {lng:.4} (위성 {sat}개)")
+            } else {
+                format!("{dev}: 새 사이클 첫 좌표 {lat:.4}, {lng:.4}")
             }
         }
         _ => format!("{dev} 알림"),
