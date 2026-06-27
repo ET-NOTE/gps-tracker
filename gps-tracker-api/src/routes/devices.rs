@@ -629,12 +629,19 @@ async fn batch_stats(
 
     let hours = q.hours.clamp(1, 168);
 
-    // 최근 N batch (각 POST 별 통계)
+    // 최근 N batch (각 POST 별 통계).
+    // Phase 6C-3: batch_size 는 column row COUNT(*) 대신 anchor 의 jsonb_array_length 사용
+    // (column row 가 1개일 수도, N개일 수도 있음 — jsonb 가 진실).
+    //   - 6B 이후 batch: anchor jsonb 가 있음 → COALESCE(jsonb_array_length, COUNT(*))
+    //   - 6B 이전 batch: anchor jsonb 없음 → COUNT(*) 그대로 (legacy)
     let rows: Vec<(Option<String>, Option<String>, i64, Option<f64>, DateTime<Utc>, DateTime<Utc>)> = sqlx::query_as(
         r#"SELECT
               raw->>'ts'      AS uptime_s,
               raw->>'at_ms'   AS at_ms,
-              COUNT(*)        AS batch_size,
+              COALESCE(
+                  MAX(jsonb_array_length(fixes_jsonb))::bigint,
+                  COUNT(*)
+              )               AS batch_size,
               AVG(NULLIF(sat, 0))::float8 AS avg_sat,
               MIN(recorded_at) AS first_at,
               MAX(recorded_at) AS last_at

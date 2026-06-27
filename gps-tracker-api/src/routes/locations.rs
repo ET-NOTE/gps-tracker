@@ -224,14 +224,52 @@ async fn history(
         groups.sort_by(|a, b| b.post_at.cmp(&a.post_at));   // 최신 POST 먼저
         Ok(Json(json!(groups)))
     } else {
-        // Legacy flat — LocationView 와 schema 동일.
-        let legacy: Vec<LocationView> = rows.into_iter().map(|r| LocationView {
-            recorded_at: r.recorded_at, source: r.source, fix: r.fix,
-            lat: r.lat, lng: r.lng, sat: r.sat, ttff_s: r.ttff_s,
-            csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv,
-            device_uptime_s: r.device_uptime_s, heading: r.heading,
-        }).collect();
-        Ok(Json(json!(legacy)))
+        // Legacy flat — LocationView schema. Phase 6C-3: anchor row 의 fixes_jsonb 가 있으면
+        // unnest 해서 flat 결과에 넣고, 같은 그룹의 column-sibling 14 row 는 skip.
+        // 그룹 키는 grouped 경로와 동일 (uptime_s, at_ms).
+        // 비 batch row (anchor 없음) 는 그대로 1 fix.
+        let mut anchor_keys: std::collections::HashSet<(i64, i64)> = std::collections::HashSet::new();
+        for r in &rows {
+            if r.fixes_jsonb.is_some() {
+                let at_ms = r.raw.as_ref().and_then(|j| j.get("at_ms")).and_then(|v| v.as_i64()).unwrap_or(-1);
+                let ts    = r.raw.as_ref().and_then(|j| j.get("ts"   )).and_then(|v| v.as_i64()).unwrap_or(-1);
+                if at_ms >= 0 || ts >= 0 { anchor_keys.insert((at_ms, ts)); }
+            }
+        }
+
+        let mut flat: Vec<LocationView> = Vec::with_capacity(rows.len());
+        for r in rows {
+            let at_ms = r.raw.as_ref().and_then(|j| j.get("at_ms")).and_then(|v| v.as_i64()).unwrap_or(-1);
+            let ts    = r.raw.as_ref().and_then(|j| j.get("ts"   )).and_then(|v| v.as_i64()).unwrap_or(-1);
+            let key   = (at_ms, ts);
+            if let Some(jsonb) = &r.fixes_jsonb {
+                // anchor row — jsonb 의 모든 fix 를 flat 에 추가
+                for fix in unnest_jsonb_fixes(jsonb, r.recorded_at, r.ttff_s, r.heading) {
+                    flat.push(LocationView {
+                        recorded_at: fix.recorded_at,
+                        source: fix.source, fix: fix.fix,
+                        lat: fix.lat, lng: fix.lng, sat: fix.sat,
+                        ttff_s: fix.ttff_s,
+                        csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv,
+                        device_uptime_s: r.device_uptime_s,
+                        heading: fix.heading,
+                    });
+                }
+            } else if (at_ms >= 0 || ts >= 0) && anchor_keys.contains(&key) {
+                // 같은 batch 의 sibling column row — anchor jsonb 가 이미 담음 → skip
+            } else {
+                // 비 batch row (legacy) — 그대로
+                flat.push(LocationView {
+                    recorded_at: r.recorded_at, source: r.source, fix: r.fix,
+                    lat: r.lat, lng: r.lng, sat: r.sat, ttff_s: r.ttff_s,
+                    csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv,
+                    device_uptime_s: r.device_uptime_s, heading: r.heading,
+                });
+            }
+        }
+        // recorded_at DESC 보장 (jsonb unnest 가 ASC 순서 만들 수 있음).
+        flat.sort_by(|a, b| b.recorded_at.cmp(&a.recorded_at));
+        Ok(Json(json!(flat)))
     }
 }
 
