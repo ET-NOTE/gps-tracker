@@ -1624,10 +1624,10 @@ void loop() {
           }
         }
         lastFixMs = now;
-        // 24h 테스트: fresh fix (sat>=4, age<5s) 모두 batch_buf 에 push — GSV 5s burst 사이 GGA 공백도 통과.
+        // 24h 테스트: fresh fix (sat>=4, age<5s). dedup 2s — 30s 사이클 ≈ 15 fix per batch (DB row 절반).
         if (gps.satellites.value() >= 4 && gps.location.age() < 5000 && batch_count < BATCH_BUF_N) {
           bool push = (batch_count == 0)
-                   || (now - batch_buf[batch_count - 1].at_ms >= 500);
+                   || (now - batch_buf[batch_count - 1].at_ms >= 2000);
           if (push) {
             batch_buf[batch_count].lat  = (float)gps.location.lat();
             batch_buf[batch_count].lng  = (float)gps.location.lng();
