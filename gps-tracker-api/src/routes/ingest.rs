@@ -231,7 +231,7 @@ pub async fn ingest(
         // batch 끝에 1회 broadcast — 마지막 fix metadata 를 top-level 에, 모두를 fixes array 로.
         if let (Some(last_fix), Some(last_meta)) = (batch_for_ws.last().cloned(), parsed.fixes.as_ref().and_then(|v| v.last())) {
             broadcast_batch(&state, device_id, last_fix.recorded_at, "l80",
-                last_meta.lat, last_meta.lng, last_meta.sat.map(|v| v as i16),
+                Some(last_meta.lat), Some(last_meta.lng), last_meta.sat.map(|v| v as i16),
                 &parsed, batch_for_ws.clone());
         }
     }
