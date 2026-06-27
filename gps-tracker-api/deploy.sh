@@ -74,6 +74,9 @@ fi
 echo "cargo: \$(cargo --version)"
 
 cd $REMOTE_SRC
+# sqlx::migrate! macro 가 cargo 캐시에 의해 새 migration 파일을 못 보고 지나갈 때가 있음.
+# main.rs 를 touch 해서 macro 재실행 강제 (Phase 6A 0043 mig 가 이 함정에 빠진 적 있음).
+touch src/main.rs
 cargo build --release --bin gps-tracker-api
 echo ">>> build OK"
 ENDSSH
