@@ -81,35 +81,38 @@ DiagnosticPage 의 "시간대 추세" bar chart 가 aggregate view 활용.
 
 ---
 
-## 차기 라운드 — Frontend UX 강화 (Phase별 PR)
+## ✓ Frontend UX 라운드 완료 (2026-06-27)
 
-### Phase 1 — Backend: listLocations grouped response schema (foundation)
-- 응답을 POST 단위 grouping: `[{ post_at, vbat_mv, uptime_s, batch_size, fixes: [...] }, ...]`
-- Storage 는 변경 X (현재 N rows 그대로) — `raw->>'ts'` 또는 `raw->>'at_ms'` 로 group by
-- backward compat: query param `?grouped=true` 옵션 (UI 마이그레이션 끝나면 default)
-- 이게 P2 (storage 변경) 의 contract 미리 확보 → frontend 변경 한 번만
+### ✓ Phase 1 — Backend grouped schema (PR #55)
+- `listLocations?grouped=true` 응답: `[{ post_at, vbat_mv, uptime_s, batch_size, fixes: [...] }, ...]`
+- Storage 변경 X — `raw->>'at_ms'` + `raw->>'ts'` 로 group by
+- Backward compat 유지 (legacy flat 응답 default). P2 시 storage 만 변경 → 무중단
 
-### Phase 2 — Frontend: KakaoMap / Dashboard / DeviceDetail 가 새 schema 사용
-- polyline / marker / heading 화살표 모두 grouped fix set 활용
-- POST grouping 정보 활용 — 같은 사이클 좌표끼리 polyline gap 없이 연결, 다른 사이클 사이 dashed gap
-- 영향 파일: KakaoMap.jsx, Dashboard.jsx, DeviceDetail.jsx, SeekerSheet.jsx
+### ✓ Phase 2 — Frontend consumers (PR #56, #57)
+- Dashboard, SeekerSheet, RoutePlayback 모두 `listLocationsGrouped` + `flattenGrouped` 사용
+- `flattenGrouped` 가 fix 마다 `post_at`, `batch_size`, `is_last_in_post`, `post_idx` metadata 부여
 
-### Phase 3 — 마커 / 포인터 매칭 일관화
-- 현재: **heading 화살표 (방향)** 와 **포인터 sampling** 이 별개 로직 — 같은 fix 가 화살표 위치 ≠ 점 위치 가능
-- 변경: 두 표시가 동일 fix set 에서 derive
+### ✓ Phase 3 — 마커 / 화살표 일관화 (PR #58, #59)
+- KakaoMap 의 heading 화살표를 `picked marker` (skipMarker=false) 와 같은 fix 위치에 align
+- ARROW_INTERVAL_M (별도 거리) 제거 — sampling 알고리즘이 이미 거리 처리
+- `is_last_in_post` metadata 로 같은 POST 묶음 인지 가능
 
-### Phase 4 — Seeker / 실시간 source 통합
-- 현재: seeker (과거 재현) / 실시간 (WS broadcast) / 지도 polyline (initial fetch) — 세 source 가 별도 path
-- 변경: 단일 store + WS append 패턴. seeker 가 같은 store 의 시간 cursor
-- Race condition 조심 — 초기 fetch 와 WS 첫 broadcast ordering 보장
+### ✓ Phase 4 — Aggregate + 정밀도 + WS polyline (PR #61, #62, #63, #64)
+- **4A**: `location_5min` continuous aggregate view + DiagnosticPage 간격 토글 (1m/5m/1h)
+- **4B-1**: SeekerSheet day 모드 1m aggregate (24h × 1Hz = 86,400 raw → 1440 bucket, 누락 해결) + month 의 `lat_last` 정정
+- **4B-2**: SeekerSheet 정밀도 토글 (auto / 1m / 5m / 1h)
+- **4C**: WS broadcast 시 history polyline 도 자동 자라남 (`skipMarker: true` 라 marker burst 방지)
 
-### Phase 5 — 줌별 자동 bucket 선택 (sensor 차트 stack 정점)
-- 줌 멀면 (도시) → `/aggregated?bucket=1h` (continuous aggregate ms 응답)
-- 줌 중간 (동네) → `/aggregated?bucket=1m`
-- 줌 가까이 (블록) → `/locations?grouped=true` (raw)
-- 추가 aggregate view (5min, 1day) 필요 시 migration 1줄
-- Gap-fill (LOCF / linear) — LTE 두절 구간 자연스럽게 보간
+### ✓ Phase 5 — SeekerSheet 월간 aggregate (PR #60)
+- 1h continuous aggregate view 사용 (raw 10000 cap → 720 bucket)
+- ms 단위 응답 (column-store + pre-computed)
 
-### Phase 6 — P2 결정 (storage 변경)
-- Phase 1~5 검증 후 row 수 / compression ratio / query 부담 측정
+### Phase 6 — P2 결정 (storage 1 POST → 1 row + jsonb)
+- 1주일 compression ratio 측정 후 결정
 - 효과 충분하면 skip, 의미 크면 ingest.rs 의 fixes 처리만 변경 (API contract 그대로 → 무중단)
+
+## 라운드 적용 결과
+- POST grouping (batch dimension), 시간 필터 (sensor 차트 dimension), 거리 sampling (seeker dimension) 셋 모두 적용
+- 모든 consumer 단일 API contract 사용 — P2 시 backend storage 만 변경 가능
+- TimescaleDB continuous aggregate (1m / 5m / 1h) — 시간 범위 큰 query ms 응답
+- WS broadcast → 실시간 polyline 자라남 (이전엔 marker 만 갱신, 30s refresh 까지 polyline stale)
