@@ -234,6 +234,13 @@ export const api = {
   // 24h: POST 주기 원격 조정 (5~300s, RAM only — reset 시 default 30s 복귀).
   setDevicePostInterval: (id, seconds) => req('POST', `/devices/${id}/post-interval`, { seconds }),
 
+  // TimescaleDB continuous aggregate query (bucket = "1m" | "1h"). historical chart 가속용.
+  getDeviceLocationsAggregated: (id, bucket, since, until) => {
+    const q = new URLSearchParams({ bucket, since });
+    if (until) q.set('until', until);
+    return req('GET', `/devices/${id}/locations/aggregated?${q.toString()}`);
+  },
+
   // 운행 통계 (Phase D)
   getDailyStats: (id, params = {}) => {
     const q = new URLSearchParams();

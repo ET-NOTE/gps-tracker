@@ -42,11 +42,14 @@
 
 ## To-Do (우선순위 순)
 
-### 1. Continuous aggregates (P1 — 후속)
+### ✓ 1. Continuous aggregates (P1 — 완료, migration 0041)
 
-DiagnosticPage / Dashboard 의 historical chart 가속용.
-- 1분 평균 / 5분 평균 / 1시간 평균 자동 갱신 view
-- 시간 범위 큰 쿼리 (예: "지난 1주일 위치") 가 raw 대신 aggregate scan → ms 단위 응답
+DiagnosticPage 의 historical chart 가속용.
+- `location_1min` — 1분 평균 (lat/lng/sat/vbat + fix_count). Refresh 5분 주기, 7일 window.
+- `location_1hour` — 1시간 평균 (1min view 위에 계층화). Refresh 30분 주기, 30일 window.
+- DiagnosticPage 에 "📈 시간대 추세" 카드 추가 (bar chart, 색=평균 위성 quality).
+- API endpoint: `/devices/:id/locations/aggregated?bucket=1m|1h&since=...`
+- 윈도우 ≤24h → 1m bucket, 초과 → 1h bucket 자동 선택.
 
 ```sql
 CREATE MATERIALIZED VIEW location_1min
@@ -71,11 +74,12 @@ SELECT add_continuous_aggregate_policy('location_1min',
 TimescaleDB compression 도입 후 row 압축이 이미 효과적이라 의미 약화 가능.
 1주일 정도 compression ratio 측정 후 결정.
 
-### 3. Continuous aggregates 활용 UI (P3 — P1 후)
+### ✓ 3. Continuous aggregates 활용 UI (P3 — 완료)
 
-DiagnosticPage / Dashboard 의 historical chart 가 raw 대신 aggregate scan 하도록 코드 변경.
-- listLocations(range='week') → 1분 평균 view 활용
-- listLocations(range='day') → raw 활용
+DiagnosticPage 의 "시간대 추세" bar chart 가 aggregate view 활용.
+- 윈도우 1h/6h/24h → 1m bucket
+- 그 외 → 1h bucket
+- 추후 Dashboard 나 별도 history 페이지에도 적용 가능 (`api.getDeviceLocationsAggregated` 호출).
 
 ## 운영 모니터링 To-Do
 

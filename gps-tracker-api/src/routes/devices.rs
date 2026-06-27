@@ -85,6 +85,7 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/range",  delete(delete_range))      // 사이클 단위 range 삭제 (연구소 토글)
         .route("/devices/:id/batch-stats", get(batch_stats))     // sss 24h: fixes array (batch) 통계
         .route("/devices/:id/post-interval", post(set_post_interval))   // POST 주기 원격 조정 (5~300s)
+        .route("/devices/:id/locations/aggregated", get(locations_aggregated))   // TimescaleDB continuous aggregate (1m/1h bucket)
 }
 
 // ─── 부저 원격 트리거 ──────────────────────────────────────
@@ -676,6 +677,62 @@ async fn batch_stats(
         "min_batch": min_batch,
         "recent": recent,
     })))
+}
+
+// ===========================================================================
+// Continuous aggregate 쿼리 — TimescaleDB 의 location_1min / location_1hour view.
+// 시간 범위가 큰 historical chart 가속용. 사용자가 bucket 명시 (1m | 1h).
+// ===========================================================================
+#[derive(Debug, Deserialize)]
+pub struct AggregatedQuery {
+    pub bucket: String,                       // "1m" | "1h"
+    pub since:  DateTime<Utc>,
+    pub until:  Option<DateTime<Utc>>,
+}
+
+async fn locations_aggregated(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    axum::extract::Query(q): axum::extract::Query<AggregatedQuery>,
+) -> AppResult<Json<Vec<Value>>> {
+    let owner_ok: Option<i64> = sqlx::query_scalar(
+        "SELECT id FROM devices WHERE id = $1 AND owner_id = $2"
+    ).bind(id).bind(user.user_id).fetch_optional(&state.db).await?;
+    if owner_ok.is_none() { return Err(AppError::NotFound); }
+
+    let table = match q.bucket.as_str() {
+        "1m" => "location_1min",
+        "1h" => "location_1hour",
+        _    => return Err(AppError::BadRequest("bucket must be '1m' or '1h'".into())),
+    };
+    let until = q.until.unwrap_or_else(Utc::now);
+
+    let rows: Vec<(DateTime<Utc>, Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<f32>, Option<i32>, i64)> = sqlx::query_as(&format!(
+        "SELECT bucket, lat_avg, lng_avg, lat_last, lng_last, sat_avg, vbat_avg, fix_count
+           FROM {table}
+          WHERE device_id = $1 AND bucket >= $2 AND bucket <= $3
+          ORDER BY bucket ASC
+          LIMIT 5000"
+    ))
+    .bind(id).bind(q.since).bind(until)
+    .fetch_all(&state.db)
+    .await?;
+
+    let out: Vec<Value> = rows.into_iter().map(|(b, lat_a, lng_a, lat_l, lng_l, sat, vbat, count)| {
+        json!({
+            "bucket":     b,
+            "lat_avg":    lat_a,
+            "lng_avg":    lng_a,
+            "lat_last":   lat_l,
+            "lng_last":   lng_l,
+            "sat_avg":    sat,
+            "vbat_avg":   vbat,
+            "fix_count":  count,
+        })
+    }).collect();
+
+    Ok(Json(out))
 }
 
 // ===========================================================================
