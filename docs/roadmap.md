@@ -77,4 +77,29 @@ DiagnosticPage 의 "시간대 추세" bar chart 가 aggregate view 활용.
 
 ## 의사결정 보류
 
-- **fixes array 1 POST → 1 row (P2)**: 별개 layer 변경 — backend 저장 방식 (현재 1 POST = 15 rows → 변경 후 1 POST = 1 row + jsonb array). batch size 와 무관. TimescaleDB compression ratio 1주일 측정 후, 효과 충분하면 skip.
+- **fixes array 1 POST → 1 row (P2)**: 별개 layer 변경 — backend 저장 방식 (현재 1 POST = 15 rows → 변경 후 1 POST = 1 row + jsonb array). batch size 와 무관. 차기 Frontend UX 라운드에서 sampling 로직과 같이 결정.
+
+---
+
+## 차기 라운드 — Frontend UX 강화
+
+### 1. 줌 레벨별 좌표 샘플링
+- 줌 멀면 (도시 단위) → 1시간 aggregate view 활용
+- 줌 중간 (동네 단위) → 1분 aggregate
+- 줌 가까이 (블록 단위) → raw (1초 단위 fix)
+- 자동 전환 로직 + 사용자 토글 가능
+
+### 2. 마커 / 포인터 매칭
+- 현재: **heading 화살표 (방향 표기)** 와 **포인터 sampling** 이 별개 로직 — 같은 fix 가 화살표 위치 ≠ 점 위치 가능
+- 변경: 두 표시가 동일 fix set 에서 derive — 같은 좌표/방향 보장
+- 영향: KakaoMap.jsx 의 marker/polyline/arrow 생성 로직 통합
+
+### 3. Seeker / 실시간 데이터 source 일관화
+- 현재: seeker (과거 재현), 실시간 (WS broadcast), 지도 polyline (initial fetch) — 세 source 가 다른 path
+- 변경: 단일 store + WS append 패턴. seeker 가 같은 store 의 시간 cursor.
+- Race condition 조심 — 초기 fetch 와 WS 첫 broadcast 사이 ordering 보장.
+
+### 4. P2 결정 (이 라운드와 함께)
+위 sampling 로직을 raw flatten 가정 vs jsonb array 가정 둘 다 검토. backend 응답 schema 통일하면 자유.
+- 결정 시점: sampling 코드 draft 후
+- 영향: ingest.rs / DiagnosticPage / Dashboard / KakaoMap / seeker — 모든 좌표 처리 path
