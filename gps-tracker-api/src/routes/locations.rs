@@ -67,6 +67,8 @@ struct LocationRowRaw {
     device_uptime_s: Option<i32>,
     heading: Option<f32>,
     raw: Option<Value>,
+    // Phase 6: anchor row 만 NOT NULL. batch 의 14 sibling row 는 NULL.
+    fixes_jsonb: Option<Value>,
 }
 
 pub fn router() -> Router<AppState> {
@@ -127,10 +129,10 @@ async fn history(
     let limit = q.limit.unwrap_or(100).clamp(1, 10000);
     let grouped = q.grouped.unwrap_or(false);
 
-    // 조건이 NULL이면 무시되도록 COALESCE 패턴 사용. raw 까지 가져옴 (grouped=true 시 사용).
+    // 조건이 NULL이면 무시되도록 COALESCE 패턴 사용. raw + fixes_jsonb 까지 가져옴 (grouped=true 시 사용).
     let rows = sqlx::query_as::<_, LocationRowRaw>(
         r#"SELECT recorded_at, source, fix, lat, lng, sat, ttff_s,
-                  csq, reg, vbat_mv, device_uptime_s, heading, raw
+                  csq, reg, vbat_mv, device_uptime_s, heading, raw, fixes_jsonb
              FROM location_records
             WHERE device_id = $1 AND user_id = $7
               AND ($2::timestamptz IS NULL OR recorded_at >= $2)
@@ -153,26 +155,44 @@ async fn history(
     if grouped {
         // Phase 1: POST 단위 grouping. key = (raw.at_ms, raw.ts).
         // 둘 중 하나라도 None 이면 legacy/anonymous row — group key 에 recorded_at 도 포함해서 사실상 row 별 unique group.
+        //
+        // Phase 6C: anchor row (fixes_jsonb NOT NULL) 가 그룹에 있으면 그 jsonb 만 unnest
+        // 해서 fixes 채움. 같은 그룹의 14 column-sibling 은 무시 (이미 jsonb 에 포함됨).
+        // anchor 없으면 legacy column 경로 그대로 — backward compat 100%.
+        //
         // 결과는 post_at DESC.
-        let mut buckets: BTreeMap<(i64, i64, i64), GroupedPost> = BTreeMap::new();
+        let mut buckets: BTreeMap<(i64, i64, i64), GroupedPostBuilder> = BTreeMap::new();
         for row in rows {
             let at_ms = row.raw.as_ref().and_then(|r| r.get("at_ms")).and_then(|v| v.as_i64()).unwrap_or(-1);
             let ts    = row.raw.as_ref().and_then(|r| r.get("ts"   )).and_then(|v| v.as_i64()).unwrap_or(-1);
             // legacy row (at_ms/ts 없음) → recorded_at 자체를 key 에 넣어 row 별 group.
             let row_unique = if at_ms < 0 && ts < 0 { row.recorded_at.timestamp_micros() } else { 0 };
             let key = (at_ms, ts, row_unique);
-            let group = buckets.entry(key).or_insert_with(|| GroupedPost {
+            let group = buckets.entry(key).or_insert_with(|| GroupedPostBuilder {
                 post_at:    row.recorded_at,
                 uptime_s:   row.raw.as_ref().and_then(|r| r.get("ts")).and_then(|v| v.as_i64()).map(|v| v as i32),
                 vbat_mv:    row.vbat_mv,
                 csq:        row.csq,
                 reg:        row.reg,
-                batch_size: 0,
-                fixes:      Vec::new(),
+                ttff_s:     row.ttff_s,
+                heading:    row.heading,
+                column_fixes: Vec::new(),
+                anchor_jsonb: None,
+                anchor_at:    None,
             });
             if row.recorded_at > group.post_at { group.post_at = row.recorded_at; }
-            group.batch_size += 1;
-            group.fixes.push(GroupedFix {
+            if let Some(jsonb) = &row.fixes_jsonb {
+                // anchor row — jsonb + anchor metadata 보존 (모든 fix 에 공유).
+                group.anchor_jsonb = Some(jsonb.clone());
+                group.anchor_at    = Some(row.recorded_at);
+                group.ttff_s       = row.ttff_s;
+                group.heading      = row.heading;
+                group.vbat_mv      = row.vbat_mv;
+                group.csq          = row.csq;
+                group.reg          = row.reg;
+            }
+            // column_fixes — anchor 없을 때 fallback 으로 사용. anchor 있으면 무시.
+            group.column_fixes.push(GroupedFix {
                 recorded_at: row.recorded_at,
                 source:      row.source,
                 fix:         row.fix,
@@ -184,9 +204,22 @@ async fn history(
             });
         }
         // fixes 는 시간순 ASC 가 polyline 그리기 자연.
-        let mut groups: Vec<GroupedPost> = buckets.into_values().map(|mut g| {
-            g.fixes.sort_by(|a, b| a.recorded_at.cmp(&b.recorded_at));
-            g
+        let mut groups: Vec<GroupedPost> = buckets.into_values().map(|b| {
+            let fixes = match (b.anchor_jsonb.as_ref(), b.anchor_at) {
+                (Some(jsonb), Some(anchor_at)) => unnest_jsonb_fixes(jsonb, anchor_at, b.ttff_s, b.heading),
+                _ => b.column_fixes,
+            };
+            let mut sorted = fixes;
+            sorted.sort_by(|a, b| a.recorded_at.cmp(&b.recorded_at));
+            GroupedPost {
+                post_at:    b.post_at,
+                uptime_s:   b.uptime_s,
+                vbat_mv:    b.vbat_mv,
+                csq:        b.csq,
+                reg:        b.reg,
+                batch_size: sorted.len() as i32,
+                fixes:      sorted,
+            }
         }).collect();
         groups.sort_by(|a, b| b.post_at.cmp(&a.post_at));   // 최신 POST 먼저
         Ok(Json(json!(groups)))
@@ -200,6 +233,46 @@ async fn history(
         }).collect();
         Ok(Json(json!(legacy)))
     }
+}
+
+/// Phase 6C: 그룹 빌더. anchor row 의 jsonb 가 있으면 그것을 unnest, 없으면 column_fixes 사용.
+struct GroupedPostBuilder {
+    post_at:      DateTime<Utc>,
+    uptime_s:     Option<i32>,
+    vbat_mv:      Option<i32>,
+    csq:          Option<i16>,
+    reg:          Option<i16>,
+    ttff_s:       Option<i32>,
+    heading:      Option<f32>,
+    column_fixes: Vec<GroupedFix>,
+    anchor_jsonb: Option<Value>,
+    anchor_at:    Option<DateTime<Utc>>,
+}
+
+/// jsonb 포맷 A unnest: anchor_at + at_ms (음 offset) = fix recorded_at.
+/// jsonb 에 없는 source/ttff_s/heading 은 anchor row 의 column 값에서 복사.
+fn unnest_jsonb_fixes(
+    jsonb: &Value,
+    anchor_at: DateTime<Utc>,
+    ttff_s: Option<i32>,
+    heading: Option<f32>,
+) -> Vec<GroupedFix> {
+    let arr = match jsonb.as_array() { Some(a) => a, None => return Vec::new() };
+    arr.iter().filter_map(|item| {
+        let at_ms = item.get("at_ms").and_then(|v| v.as_i64()).unwrap_or(0);
+        let lat   = item.get("lat").and_then(|v| v.as_f64());
+        let lng   = item.get("lng").and_then(|v| v.as_f64());
+        let sat   = item.get("sat").and_then(|v| v.as_i64()).map(|v| v as i16);
+        if lat.is_none() || lng.is_none() { return None; }
+        Some(GroupedFix {
+            recorded_at: anchor_at + chrono::Duration::milliseconds(at_ms),
+            source:      "l80".to_string(),  // batch fix 는 항상 GNSS (ingest.rs 참고)
+            fix:         true,
+            lat, lng, sat,
+            ttff_s,
+            heading,
+        })
+    }).collect()
 }
 
 #[derive(Debug, Serialize)]
