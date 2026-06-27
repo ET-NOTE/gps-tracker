@@ -703,8 +703,9 @@ async fn locations_aggregated(
 
     let table = match q.bucket.as_str() {
         "1m" => "location_1min",
+        "5m" => "location_5min",
         "1h" => "location_1hour",
-        _    => return Err(AppError::BadRequest("bucket must be '1m' or '1h'".into())),
+        _    => return Err(AppError::BadRequest("bucket must be '1m' | '5m' | '1h'".into())),
     };
     let until = q.until.unwrap_or_else(Utc::now);
 
