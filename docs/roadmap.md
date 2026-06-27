@@ -130,11 +130,13 @@ DiagnosticPage 의 "시간대 추세" bar chart 가 aggregate view 활용.
 - frontend `Dashboard.handleWsEvent`: msg.fixes 활용 (legacy single fix 호환)
 - 효과: WS 메시지 1/15, handler 진입 1/15, polyline redraw burst 해결
 
-### P2 — 운영 지표 카드 (DiagnosticPage)
-- compression ratio: `chunks_detailed_size('location_records')` before/after
-- chunk 수 + 디스크 사용량
-- hypertable 총 size + row 수
-- 목적: **Phase 6 결정의 데이터 근거** — compression 충분하면 Phase 6 skip
+### ✓ P2 — 운영 지표 카드 (DiagnosticPage) — PR #69
+- 새 endpoint `GET /timescaledb/storage-stats` (인증된 user 전체 hypertable 통계)
+- 8 tile 카드 — hypertable size / chunk 수 / 압축된 chunk / **압축 비율** / 1m·5m·1h aggregate size / retention
+- 5초 polling (다른 진단 데이터와 동기)
+
+**1차 실측 (2026-06-27, migration 0040 적용 7일 후)**: 9/11 chunk 자동 압축, **35.1MB → 2.48MB = 14.1×**
+→ **Phase 6 skip 결정 (예정)** — 1주일 더 관찰 후 최종 확정. compression 만으로 디스크 부담 해소됨.
 
 ### P3 — WS 멀티플렉싱 검토 (필요 시)
 - device 별 별도 channel 인지 확인. 다수 device 시 효율
