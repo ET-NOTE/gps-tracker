@@ -207,21 +207,17 @@ pub async fn ingest(
     // sss 24h 테스트: fixes array 가 있으면 각 fix 별로 별도 insert (recorded_at - age_ms).
     // 이 경우 기존 l80 단일 fix 는 array 의 마지막 element 와 동일 → skip (중복 방지).
     let has_batch = parsed.fixes.as_ref().map_or(false, |f| !f.is_empty());
-    // P1: batch broadcast 용 — DB insert 는 fix 별 1 row 그대로 (storage 변경 X),
-    // WS broadcast 는 batch 끝에 1회만 (이전 N회 → 1회).
+    // P1: WS broadcast 는 batch 끝에 1회 (N회 → 1회).
     let mut batch_for_ws: Vec<crate::events::LocationFix> = Vec::new();
-    // Phase 6B: anchor row (= 가장 최근 fix 의 row) 에 fixes_jsonb 채우기 위해 (time, lat, lng, sat) 모음.
+    // Phase 6D: batch 는 1 row + fixes_jsonb 만 INSERT (이전 N row → 1 row).
+    //   column lat/lng/sat/heading/ttff_s = anchor (가장 최근) fix 값 → devices.last_lat trigger 호환.
+    //   geofence check 는 fix 별 그대로.
+    //   WS broadcast 도 fix 별 그대로 (frontend dedup 가 처리).
     let mut fix_records: Vec<(chrono::DateTime<Utc>, f64, f64, Option<i32>)> = Vec::new();
     if let Some(fixes) = &parsed.fixes {
         for f in fixes {
             let age_ms = f.age_ms.unwrap_or(0);
             let fix_at = recorded_at - chrono::Duration::milliseconds(age_ms);
-            let synthetic = GpsFix {
-                fix: true, lat: Some(f.lat), lng: Some(f.lng),
-                sat: f.sat, sat_used: None, sat_view: None,
-                ttff_s: None, heading: None,
-            };
-            insert_location(&state, device_id, fix_at, "l80", &synthetic, &parsed, &payload).await?;
             batch_for_ws.push(crate::events::LocationFix {
                 recorded_at: fix_at,
                 lat: Some(f.lat),
@@ -232,10 +228,9 @@ pub async fn ingest(
             let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, f.lat, f.lng).await;
         }
 
-        // Phase 6B dual-write: anchor row (MAX(fix_at)) 에 fixes_jsonb 업데이트.
-        // 다른 14개 row 는 fixes_jsonb=NULL 유지 → 6C read 가 anchor row 만 batch 로 인식 가능.
-        // at_ms = (fix_at - anchor_at).ms — anchor 는 0, 그보다 오래된 fix 는 음수.
-        if let Some(&(anchor_at, _, _, _)) = fix_records.iter().max_by_key(|r| r.0) {
+        // Phase 6D: 1 row + jsonb INSERT.
+        // anchor = MAX(fix_at) — recorded_at + column lat/lng/sat 자리. at_ms 는 anchor 기준 음 offset.
+        if let Some(&(anchor_at, anchor_lat, anchor_lng, anchor_sat)) = fix_records.iter().max_by_key(|r| r.0) {
             let jsonb_array: Vec<serde_json::Value> = fix_records.iter().map(|(at, lat, lng, sat)| {
                 let at_ms = (*at - anchor_at).num_milliseconds();
                 serde_json::json!({
@@ -245,17 +240,33 @@ pub async fn ingest(
                     "sat":   sat,
                 })
             }).collect();
-            let _ = sqlx::query(
-                "UPDATE location_records
-                    SET fixes_jsonb = $4
-                  WHERE device_id = $1 AND recorded_at = $2 AND source = $3"
+            sqlx::query(
+                r#"INSERT INTO location_records (
+                       device_id, recorded_at, device_uptime_s, source,
+                       fix, lat, lng, sat, ttff_s,
+                       csq, reg, vbat_mv, raw, heading, user_id, fixes_jsonb
+                   )
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+                           (SELECT owner_id FROM devices WHERE id = $1), $15)
+                   ON CONFLICT (device_id, recorded_at, source) DO NOTHING"#,
             )
             .bind(device_id)
             .bind(anchor_at)
+            .bind(parsed.ts)
             .bind("l80")
+            .bind(true)
+            .bind(anchor_lat)
+            .bind(anchor_lng)
+            .bind(anchor_sat)
+            .bind::<Option<i32>>(None)               // ttff_s — batch fix 에 없음
+            .bind(parsed.csq)
+            .bind(parsed.reg)
+            .bind(parsed.vbat_mv)
+            .bind(&payload)
+            .bind::<Option<f32>>(None)               // heading — batch fix 에 없음
             .bind(serde_json::Value::Array(jsonb_array))
             .execute(&state.db)
-            .await;
+            .await?;
         }
 
         // batch 끝에 1회 broadcast — 마지막 fix metadata 를 top-level 에, 모두를 fixes array 로.
