@@ -679,6 +679,7 @@ static void hardPowerCycle() {
   digitalWrite(PIN_PWR_EN, LOW);
   delay(2000);
   ltePowerOn();
+  resetHttpKeepalive();   // 모듈 power-cycle → 모든 HTTP state 초기화 필요
 }
 
 // =================================================================
@@ -696,6 +697,7 @@ static bool lteSoftReset() {
   S.lteReady = false;
   S.csq = -1;
   S.reg = -1;
+  resetHttpKeepalive();   // CFUN cycle → SHCONN 끊김. 다음 cycle 에서 재연결.
   return ok;
 }
 
@@ -827,26 +829,58 @@ static bool sendBodyAfterPrompt(const char *body, uint32_t len) {
   return sendAT("", "OK", 8000);
 }
 
+// keepalive state — 첫 호출 시 SHCONF/SHSSL, SHCONN 후 유지. fail 또는 lte reset 시 reset.
+//   lte_http_configured: URL/BODYLEN/HEADERLEN/SSL 설정 완료 — 매번 안 해도 됨.
+//   lte_http_connected:  SHCONN 활성 — 매번 reconnect 안 함. 다음 SHREQ 즉시.
+// fail 시 둘 다 reset 해서 다음 cycle 에서 reconfigure + reconnect.
+// hardPowerCycle / lteBringUp 실패 시도 reset (모듈 상태 날아갔으므로).
+static bool lte_http_configured = false;
+static bool lte_http_connected  = false;
+
+static void resetHttpKeepalive() {
+  lte_http_configured = false;
+  lte_http_connected  = false;
+}
+
 static bool httpPostJson(const char *host, const char *path, const char *body, int *statusOut) {
   char cmd[96];
   *statusOut = -1;
 
   if (!sendAT("AT", "OK", 1500)) { DBGLN(F("[POST] module unresponsive")); return false; }
-  sendAT("AT+CGNSPWR=0", "OK", 1000);
-  waitUartIdle(200, 1000);
-  sendAT("AT+SHDISC", nullptr, 800);
-  waitUartIdle(200, 1000);
 
-  snprintf(cmd, sizeof(cmd), "AT+SHCONF=\"URL\",\"%s\"", host);
-  if (!sendAT(cmd, "OK", 2000)) return false;
-  sendAT("AT+SHCONF=\"BODYLEN\",1024",  "OK", 2000);
-  sendAT("AT+SHCONF=\"HEADERLEN\",350", "OK", 2000);
-  sendAT("AT+SHSSL=0,\"\"", "OK", 2000);
+  // SHCONF + SHSSL — 첫 호출만 (host 안 바뀜).
+  if (!lte_http_configured) {
+    sendAT("AT+CGNSPWR=0", "OK", 1000);
+    waitUartIdle(200, 1000);
+    sendAT("AT+SHDISC", nullptr, 800);   // 잔류 연결 정리
+    waitUartIdle(200, 1000);
+    snprintf(cmd, sizeof(cmd), "AT+SHCONF=\"URL\",\"%s\"", host);
+    if (!sendAT(cmd, "OK", 2000)) return false;
+    sendAT("AT+SHCONF=\"BODYLEN\",4096",  "OK", 2000);   // fixes array 포함 시 ~2.5KB. 여유 4K.
+    sendAT("AT+SHCONF=\"HEADERLEN\",350", "OK", 2000);
+    sendAT("AT+SHSSL=0,\"\"", "OK", 2000);
+    lte_http_configured = true;
+  }
 
-  if (!sendAT("AT+SHCONN", "OK", 10000)) {
-    DBGLN(F("[POST] SHCONN fail"));
-    sendAT("AT+SHDISC", nullptr, 1500);
-    return false;
+  // SHSTATE? 로 우리 keepalive 가정 vs 실제 conn 상태 sync. SIM7080G 가 매 SHREQ 후 자동 disconnect 하는 경우 대비.
+  // 응답: "+SHSTATE: 1" = connected, 0 = disconnected.
+  if (lte_http_connected) {
+    sendAT("AT+SHSTATE?", "+SHSTATE:", 1500);
+    if (lastResp.indexOf("+SHSTATE: 1") < 0 && lastResp.indexOf("+SHSTATE:1") < 0) {
+      DBGLN(F("[POST] SHSTATE 0 — server-side close. reconnect."));
+      lte_http_connected = false;
+    }
+  }
+
+  // SHCONN — keepalive. 끊겨 있으면 reconnect.
+  if (!lte_http_connected) {
+    if (!sendAT("AT+SHCONN", "OK", 10000)) {
+      DBGLN(F("[POST] SHCONN fail"));
+      sendAT("AT+SHDISC", nullptr, 1500);
+      resetHttpKeepalive();
+      return false;
+    }
+    lte_http_connected = true;
   }
 
   sendAT("AT+SHCHEAD", "OK", 2000);
@@ -859,13 +893,15 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
   if (!sendBodyAfterPrompt(body, len)) {
     DBGLN(F("[POST] SHBOD fail"));
     sendAT("AT+SHDISC", "OK", 3000);
+    resetHttpKeepalive();
     return false;
   }
 
   snprintf(cmd, sizeof(cmd), "AT+SHREQ=\"%s\",3", path);
-  if (!sendAT(cmd, "+SHREQ:", 10000)) {   // 30s → 10s (LTE 평상시 빠름. 응답성 ↑)
+  if (!sendAT(cmd, "+SHREQ:", 10000)) {   // 30s → 10s.
     DBGLN(F("[POST] SHREQ fail"));
     sendAT("AT+SHDISC", "OK", 3000);
+    resetHttpKeepalive();   // 다음 사이클에서 reconnect
     return false;
   }
 
@@ -912,6 +948,7 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
           softResetStreak = 0;
           lastSuccessPostMs = millis();
           S.nextBringUpAt = millis() + 1000;
+          resetHttpKeepalive();   // 모듈 reset → SHCONF/SHCONN 재설정 필요
         }
         // ── 서버가 post_interval_s 보냈으면 POST 주기 변경 (RAM only — reset 시 default 복귀) ──
         int pi = lastResp.indexOf("\"post_interval_s\":");
@@ -930,7 +967,8 @@ static bool httpPostJson(const char *host, const char *path, const char *body, i
     }
   }
 
-  sendAT("AT+SHDISC", "OK", 3000);
+  // SHDISC 제거 — keepalive. 다음 사이클에서 SHREQ 즉시 재사용.
+  // 만약 server-side timeout 으로 끊겼으면 다음 SHREQ 가 fail → resetHttpKeepalive() → 재연결.
   return true;
 }
 
@@ -1097,6 +1135,7 @@ static void buildSleepPayload(char *out, size_t cap, const char *reason) {
 }
 
 static void doPost() {
+  uint32_t do_post_t0 = millis();
   breadcrumb("do_post");
   esp_task_wdt_reset();   // A안: doPost 시작 전 fresh feed (직전 cycle 잔여 시간 클리어)
   char body[2560];   // 24h: fixes array 추가 여유 (60×~50B + 기존 ~1280 ~ 2K).
@@ -1159,6 +1198,8 @@ static void doPost() {
     S.failStreak    = 0;
     S.nextBringUpAt = millis() + UNDER_VOLT_COOLDOWN_MS;
   }
+  Serial.printf("[POST] elapsed=%lums status=%d ok=%d shconn=%d\n",
+    (unsigned long)(millis() - do_post_t0), status, (int)ok, (int)lte_http_connected);
 
   // 저전압 경고 — 한 device 세션 동안 1회. POST cycle 직후 vbat 측정 (LTE peak 직후라 droop 반영).
   if (!buzz_low_batt_done && readVbatMv() < LOW_BATT_BEEP_MV) {
