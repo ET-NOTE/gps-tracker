@@ -648,15 +648,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         });
         if (!pointsRef.current[deviceId]) pointsRef.current[deviceId] = [];
         pointsRef.current[deviceId].push({ marker, color: c, isStop });
-      }
 
-      // 진행 방향 화살표 — deviceId 별 누적 distance, ARROW_INTERVAL_M 마다 1개.
-      const st = arrowStateRef.current[deviceId];
-      if (st) {
-        const segDist = distanceM({ lat: st.lastPos.lat, lng: st.lastPos.lng }, { lat, lng });
-        st.distAcc += segDist;
-        if (st.distAcc >= ARROW_INTERVAL_M) {
-          st.distAcc = 0;
+        // Phase 3 일관화: 화살표는 marker 와 같은 fix 위치에 그림 — picked fix 만.
+        // 직전 picked fix → 현재 picked fix 사이 bearing.
+        const st = arrowStateRef.current[deviceId];
+        if (st) {
           const angle = calcBearing(st.lastPos.lat, st.lastPos.lng, lat, lng);
           const am = new window.kakao.maps.Marker({
             map: dotVisible ? mapRef.current : null,
@@ -668,9 +664,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           if (!arrowsRef.current[deviceId]) arrowsRef.current[deviceId] = [];
           arrowsRef.current[deviceId].push(am);
         }
-        st.lastPos = { lat, lng };
-      } else {
-        arrowStateRef.current[deviceId] = { lastPos: { lat, lng }, distAcc: 0 };
+        arrowStateRef.current[deviceId] = { lastPos: { lat, lng } };
       }
     },
 
