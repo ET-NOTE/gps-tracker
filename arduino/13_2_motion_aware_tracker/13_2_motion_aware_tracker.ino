@@ -1,5 +1,6 @@
 // 13_2_motion_aware_tracker — 13_1 기반 + 신규 PCB 핀 + 부저 (2026-06-17)
-// (2026-06-29) 13_4 와 일관성: batch dedup 2s → 1s (≈30 fix/POST), STATIONARY sleep 활성화 + 5분 window. aa 단말기 데드라인 (LTE POST 일시 실패로 fix 손실) 해결 목적 — Phase 6D ingest 가 batch 를 1 row + jsonb 로 저장하므로 POST 실패해도 fix 가 다음 batch 의 jsonb 안에 retained.
+// (2026-06-29) 13_4 와 일관성: batch dedup 2s → 1s (≈30 fix/POST), STATIONARY sleep 활성화 + 5분 window.
+// (2026-06-29) batch retry — POST 시도 전 batch_count = 0 제거. 성공 시에만 posted_count 만큼 drop. 실패 시 batch 유지 → 다음 cycle 에 재전송. push 시 FIFO drop oldest 도입 (buf 차면 최신 위치 우선). aa 데드라인 (LTE 일시 실패로 fix 손실) 진짜 해결.
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -1074,7 +1075,9 @@ static void doPost() {
   char body[2560];   // sss 24h: fixes array 추가 여유 (60×~50B + 기존 1280 ~ 2K).
   buildPayload(body, sizeof(body));
 
-  // sss 24h: 30s 사이 batch_buf 의 모든 fresh fix 를 "fixes":[...] 로 끼워 closing } 직전 삽입.
+  // 30s 사이 batch_buf 의 모든 fresh fix 를 "fixes":[...] 로 끼워 closing } 직전 삽입.
+  // (2026-06-29) retry: posted_count 만 보내고, POST 성공 시에만 그 만큼 drop. 실패 시 batch 유지 → 다음 cycle 에 새 fix 와 함께 재전송.
+  uint8_t posted_count = batch_count;
   if (batch_count > 0) {
     int blen = strlen(body);
     if (blen > 0 && body[blen - 1] == '}') {
@@ -1082,7 +1085,7 @@ static void doPost() {
       int p = blen - 1;   // closing } 위치 — 그 자리부터 덮어쓰고 마지막에 다시 } 넣음.
       int n = snprintf(body + p, sizeof(body) - p, ",\"fixes\":[");
       if (n > 0) p += n;
-      for (uint8_t i = 0; i < batch_count && p < (int)sizeof(body) - 80; i++) {
+      for (uint8_t i = 0; i < posted_count && p < (int)sizeof(body) - 80; i++) {
         n = snprintf(body + p, sizeof(body) - p,
           "%s{\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"age_ms\":%lu}",
           (i == 0 ? "" : ","),
@@ -1094,8 +1097,7 @@ static void doPost() {
       }
       snprintf(body + p, sizeof(body) - p, "]}");
     }
-    Serial.printf("[POST] batch fixes=%u\n", batch_count);
-    batch_count = 0;
+    Serial.printf("[POST] batch fixes=%u\n", posted_count);
   }
   if (DBG) { Serial.print(F("[POST body] ")); Serial.println(body); }
 
@@ -1112,6 +1114,12 @@ static void doPost() {
       softResetStreak = 0;
       if (lastRegOkMs == 0) lastRegOkMs = millis();
       wake_diag_pending = false;
+      // (2026-06-29) retry: POST 성공 시 posted_count 만 drop. 그 사이 새로 들어온 fix 는 보존.
+      if (posted_count > 0) {
+        uint8_t kept = (batch_count > posted_count) ? (batch_count - posted_count) : 0;
+        if (kept > 0) memmove(batch_buf, batch_buf + posted_count, sizeof(BatchFix) * kept);
+        batch_count = kept;
+      }
       if (!buzz_first_post_done) {
         buzz_first_post_done = true;
         DBGLN(F("[BUZ] 🎉 첫 POST 200 — 4-beep"));
@@ -1119,10 +1127,12 @@ static void doPost() {
       }
     } else {
       cyc_post_fail++;
+      // POST 실패 (non-200) — batch_count 유지. 다음 cycle 에 재전송.
     }
   } else {
     S.lastStatus = -1;
     cyc_post_fail++;
+    // LTE 자체 실패 — batch_count 유지.
   }
 
   if (lastResp.indexOf("UNDER-VOLTAGE") >= 0 || lastResp.indexOf("POWER DOWN") >= 0) {
@@ -1491,9 +1501,14 @@ void loop() {
         lastFixMs = now;
         // Phase 6 후속: fresh fix (sat>=4, age<2s). dedup 1s → 30s 사이클 ≈ 30 fix per batch (13_4 와 일관).
         // Phase 6D ingest 가 batch 를 1 row + jsonb 로 저장하므로 DB row 수 증가 없음.
-        if (gps.satellites.value() >= 4 && gps.location.age() < 2000 && batch_count < BATCH_BUF_N) {
+        // (2026-06-29) FIFO drop oldest — LTE 끊긴 동안 buf 차면 oldest 밀어내고 새 fix 보존 (최신 위치 우선).
+        if (gps.satellites.value() >= 4 && gps.location.age() < 2000) {
           bool push = (batch_count == 0)
                    || (now - batch_buf[batch_count - 1].at_ms >= 1000);
+          if (push && batch_count >= BATCH_BUF_N) {
+            memmove(batch_buf, batch_buf + 1, sizeof(BatchFix) * (BATCH_BUF_N - 1));
+            batch_count = BATCH_BUF_N - 1;
+          }
           if (push) {
             batch_buf[batch_count].lat  = (float)gps.location.lat();
             batch_buf[batch_count].lng  = (float)gps.location.lng();

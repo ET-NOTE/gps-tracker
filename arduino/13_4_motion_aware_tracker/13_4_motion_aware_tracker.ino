@@ -1,6 +1,7 @@
 // 13_4_motion_aware_tracker — 13_3 + LC86G 호환. (2026-06-26 cleanup) 가벼운 변경만 유지: PAIR025 EASY, PAIR062 GLL/VTG OFF, GSV 5s, STATIONARY 3분, fix 판정 완화 (sat>=3/age<10s/hdop<5), payload hdop, PQTMANTENNASTATUS 파싱 (안테나 진단 UI 의 데이터 원천). 제거됨: PMTK741 Hot-start hint, GSV 1s.
 // (2026-06-28) batch dedup 2s → 1s — Phase 6D ingest 후 batch ≈ 30 fix per POST. DB 는 1 row + jsonb 라 row 수 영향 없음. jsonb array size 만 2배.
 // (2026-06-28) STATIONARY 자동 sleep 활성화 (SLEEP_DISABLED 0) + window 3분 → 5분.
+// (2026-06-29) batch retry — POST 시도 전 batch_count = 0 제거. 성공 시에만 posted_count 만큼 drop, POST 도중 새로 들어온 fix 는 보존. 실패 시 batch 유지 → 다음 cycle 에 재전송. push 시 FIFO drop oldest 도입 (buf 차면 최신 위치 우선).
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -1143,7 +1144,9 @@ static void doPost() {
   char body[2560];   // 24h: fixes array 추가 여유 (60×~50B + 기존 ~1280 ~ 2K).
   buildPayload(body, sizeof(body));
 
-  // 24h: 30s 사이 batch_buf 의 모든 fresh fix 를 "fixes":[...] 로 closing } 직전 삽입.
+  // 30s 사이 batch_buf 의 모든 fresh fix 를 "fixes":[...] 로 closing } 직전 삽입.
+  // (2026-06-29) retry: posted_count 만 보내고, POST 성공 시에만 그 만큼 drop. 실패 시 batch 유지 → 다음 cycle 에 새 fix 와 함께 재전송.
+  uint8_t posted_count = batch_count;
   if (batch_count > 0) {
     int blen = strlen(body);
     if (blen > 0 && body[blen - 1] == '}') {
@@ -1151,7 +1154,7 @@ static void doPost() {
       int p = blen - 1;
       int n = snprintf(body + p, sizeof(body) - p, ",\"fixes\":[");
       if (n > 0) p += n;
-      for (uint8_t i = 0; i < batch_count && p < (int)sizeof(body) - 80; i++) {
+      for (uint8_t i = 0; i < posted_count && p < (int)sizeof(body) - 80; i++) {
         n = snprintf(body + p, sizeof(body) - p,
           "%s{\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"age_ms\":%lu}",
           (i == 0 ? "" : ","),
@@ -1163,8 +1166,7 @@ static void doPost() {
       }
       snprintf(body + p, sizeof(body) - p, "]}");
     }
-    Serial.printf("[POST] batch fixes=%u\n", batch_count);
-    batch_count = 0;
+    Serial.printf("[POST] batch fixes=%u\n", posted_count);
   }
   if (DBG) { Serial.print(F("[POST body] ")); Serial.println(body); }
 
@@ -1181,6 +1183,12 @@ static void doPost() {
       if (lastRegOkMs == 0) lastRegOkMs = millis();   // watchdog reset — 60s 무응답 stuck 가드
       breadcrumb("post_ok");
       wake_diag_pending = false;
+      // (2026-06-29) retry: POST 성공 시 posted_count 만 drop. 그 사이 새로 들어온 fix 는 보존.
+      if (posted_count > 0) {
+        uint8_t kept = (batch_count > posted_count) ? (batch_count - posted_count) : 0;
+        if (kept > 0) memmove(batch_buf, batch_buf + posted_count, sizeof(BatchFix) * kept);
+        batch_count = kept;
+      }
       if (!buzz_first_post_done) {
         buzz_first_post_done = true;
         DBGLN(F("[BUZ] 🎉 첫 POST 200 — 4-beep"));
@@ -1188,10 +1196,12 @@ static void doPost() {
       }
     } else {
       cyc_post_fail++;
+      // POST 실패 (non-200) — batch_count 유지. 다음 cycle 에 재전송.
     }
   } else {
     S.lastStatus = -1;
     cyc_post_fail++;
+    // LTE 자체 실패 — batch_count 유지.
   }
 
   if (lastResp.indexOf("UNDER-VOLTAGE") >= 0 || lastResp.indexOf("POWER DOWN") >= 0) {
@@ -1628,10 +1638,15 @@ void loop() {
         lastFixMs = now;
         // Phase 6 후속 테스트: fresh fix (sat>=4, age<5s). dedup 1s → 30s 사이클 ≈ 30 fix per batch.
         // 6D ingest 가 batch 를 1 row + jsonb 로 저장하므로 DB row 수 증가 없음. jsonb array 만 2배.
-        if (gps.satellites.value() >= 4 && gps.location.age() < 5000 && batch_count < BATCH_BUF_N) {
+        // (2026-06-29) FIFO drop oldest — LTE 끊긴 동안 buf 차면 oldest 밀어내고 새 fix 보존 (최신 위치 우선).
+        if (gps.satellites.value() >= 4 && gps.location.age() < 5000) {
           bool push = (batch_count == 0)
                    || (now - batch_buf[batch_count - 1].at_ms >= 1000);
           if (push) {
+            if (batch_count >= BATCH_BUF_N) {
+              memmove(batch_buf, batch_buf + 1, sizeof(BatchFix) * (BATCH_BUF_N - 1));
+              batch_count = BATCH_BUF_N - 1;
+            }
             batch_buf[batch_count].lat  = (float)gps.location.lat();
             batch_buf[batch_count].lng  = (float)gps.location.lng();
             batch_buf[batch_count].sat  = (int8_t)gps.satellites.value();
