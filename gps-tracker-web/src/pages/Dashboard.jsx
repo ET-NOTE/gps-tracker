@@ -172,7 +172,10 @@ function computeClickableIndices(enriched, gapMap) {
       acc += haversineM(p.lat, p.lng, q.lat, q.lng);
     }
     if (picked.has(i)) { acc = 0; continue; }
-    if (enriched[i]._isStop) continue;
+    // (2026-06-29) `_isStop continue` 제거 — cluster 알고리즘이 25km/h 운행도 정차로 분류
+    // (windowSize=30, radius=150m, min=5 → 25km/h × 5s = 35m < 150m 안 5 fix 면 stop).
+    // 진짜 정차 구간은 acc 누적 거리 = 0 이라 자동 skip — 가드 불필요. 잘못 분류된 운행
+    // stop 도 거리 누적 30m 넘으면 picked.
     if (acc >= CLICKABLE_SAMPLE_INTERVAL_M) {
       picked.add(i);
       acc = 0;
