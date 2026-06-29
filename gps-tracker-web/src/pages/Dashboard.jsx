@@ -143,7 +143,9 @@ function computeGapMap(ordered) {
 //   2) 정지 클러스터 대표 — 인접 _isStop true run 의 첫 인덱스 하나만 (나머지는 흡수)
 //   3) 이동 구간 샘플링 — non-stop 점에서 CLICKABLE_SAMPLE_INTERVAL_M 누적될 때마다 1개
 // 첫 점은 궤적 시작 표시로 항상 포함.
-const CLICKABLE_SAMPLE_INTERVAL_M = 150;
+// (2026-06-29) 150 → 30m — 사거리 통과 등 운행 구간에 dot 너무 sparse 해서 클릭/툴팁 불가했음.
+// 60km/h 운행 시 약 1.8초 간격, 30km/h 시 3.6초 간격. batch 30 fix/30s 정합.
+const CLICKABLE_SAMPLE_INTERVAL_M = 30;
 function computeClickableIndices(enriched, gapMap) {
   const picked = new Set();
   const gapEndpoints = new Set();
