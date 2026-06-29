@@ -1822,16 +1822,16 @@ void loop() {
     printStatus();
   }
 
-  // ── 시리얼 'a' 입력 → 강제 sleep 진입 (하드웨어 진단용) ──
-  // sleep 진입 후 USB-CDC 끊김 → 시리얼 잠시 보이지 않음. 자이로 흔들기로 motion wake.
-  // hardware 개발자가 sleep 동작 (PWR_EN HIGH / 모듈 OFF / wake 복귀) 직접 검증 가능.
-  if (Serial.available()) {
-    int c = Serial.read();
-    if (c == 'a' || c == 'A') {
-      DBGLN(F("[TEST] 'a' 입력 → 강제 sleep 진입"));
-      enterDeepSleep("manual_test");
-    }
-  }
+  // (2026-06-29) DISABLED — 'a' 자동 트리거 사고로 비활성. USB host (PC/driver/monitor) 가
+  // spurious byte 송신 → 'a'/'A' 매칭 → enterDeepSleep("manual_test") 호출 → 의문의 1분 sleep
+  // (aa + sss 양쪽 단말기 발생). 추후 진단 필요 시 더 강한 sequence (e.g. 4-byte magic) 로 변경.
+  // if (Serial.available()) {
+  //   int c = Serial.read();
+  //   if (c == 'a' || c == 'A') {
+  //     DBGLN(F("[TEST] 'a' 입력 → 강제 sleep 진입"));
+  //     enterDeepSleep("manual_test");
+  //   }
+  // }
 
   drainLte();
   updateBuzzer();
