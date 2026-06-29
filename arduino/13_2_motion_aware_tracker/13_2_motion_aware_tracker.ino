@@ -142,10 +142,7 @@ static uint8_t LIS_ADDR = 0x19;
 
 #define LIS_EDGE_FILTER_MS  100UL
 #define WAKE_BOUNCE_OBSERVE_MS  1000UL
-// (2026-06-29) 0.55 → 2.0 = 사실상 비활성. 차량 운행 = sustained vibration → 0.55 임계 쉽게 넘어 re-sleep
-// 무한 loop 발생 (aa 단말기 LTE 잡기 전 sleep 사고). ratio 는 0~1 이라 2.0 은 절대 trigger X.
-// LIS3DH stuck LOW HW 보호는 lisInit health check 에 위임.
-#define WAKE_BOUNCE_LOW_RATIO    2.0f
+#define WAKE_BOUNCE_LOW_RATIO    0.55f
 
 #define DBG  1
 #define DBGLN(...)  do { if (DBG) Serial.println(__VA_ARGS__); } while (0)
