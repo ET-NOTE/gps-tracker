@@ -179,8 +179,9 @@ static uint32_t lastRegOkMs          = 0;
 static uint32_t lastRegPollMs        = 0;
 static uint8_t  softResetStreak      = 0;
 
-// 24h 테스트: 30초 LTE 주기 사이 모든 fresh fix 모아 array 송신.
-#define BATCH_BUF_N 60
+// 30초 LTE 주기 사이 모든 fresh fix 모아 array 송신.
+// (2026-06-29) BUF 60 → 120 — retry 시 4 POST 연속 실패까지 0 손실 보존 (이전 2 POST 한계). RAM +780B.
+#define BATCH_BUF_N 120
 struct BatchFix { float lat; float lng; int8_t sat; uint32_t at_ms; };
 static BatchFix batch_buf[BATCH_BUF_N];
 static uint8_t  batch_count = 0;
@@ -1141,7 +1142,7 @@ static void doPost() {
   uint32_t do_post_t0 = millis();
   breadcrumb("do_post");
   esp_task_wdt_reset();   // A안: doPost 시작 전 fresh feed (직전 cycle 잔여 시간 클리어)
-  char body[2560];   // 24h: fixes array 추가 여유 (60×~50B + 기존 ~1280 ~ 2K).
+  static char body[8192];   // (2026-06-29) BUF 60→120 — 120×~55B + 기존 ~1280 + 여유 ~1K. static = .bss 영구 할당 (stack overflow 회피).
   buildPayload(body, sizeof(body));
 
   // 30s 사이 batch_buf 의 모든 fresh fix 를 "fixes":[...] 로 closing } 직전 삽입.
