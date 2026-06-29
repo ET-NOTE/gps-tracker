@@ -116,9 +116,10 @@
 #define GPS_STALE_MS               60000UL
 #define STATIONARY_BOOT_GRACE_MS   60000UL
 #define GPS_HISTORY_N              16
-// (2026-06-29) GPS unavailable + 짧은 LIS quiet 동안만 sleep 금지. 운행 종료 후 실내 등 30분+ LIS
+// (2026-06-29) GPS unavailable + 짧은 LIS quiet 동안만 sleep 금지. 운행 종료 후 실내 등 10분+ LIS
 // quiet 면 GPS 없어도 sleep 허용 — battery 영구 소모 방지 (PR #84 trade-off 완화).
-#define NO_GPS_SLEEP_GRACE_MS      (30UL * 60UL * 1000UL)
+// (PR #88 30분 → PR #89 10분 — 30분은 over-correction. 신호등 정지는 GPS 가용이라 Path A 가 처리.)
+#define NO_GPS_SLEEP_GRACE_MS      (10UL * 60UL * 1000UL)
 
 // 시리얼 STATUS 라인 주기
 #define STATUS_PRINT_MS       1000UL
