@@ -480,6 +480,13 @@ static void checkStationarySleep() {
   } else {
     stationaryLastValidFixes = 0;
     stationaryLastDriftM     = 0;
+    // (2026-06-29) GPS unavailable 시 sleep 진입 절대 금지.
+    //   - 운행 중 지하/터널 등 GPS no-fix 누적 + LIS3DH 가 차량 진동 못 잡는 케이스에서
+    //     LIS 단독 판정으로 sleep 진입 → wake INT 도 못 잡아 영구 두절 사고 (2026-06-29 sss).
+    //   - 차고 (GPS 잡힘) 에선 정상 5분 sleep 가능.
+    if (stationarySinceMs) DBGLN(F("[STAT] gps unavailable → reset"));
+    stationarySinceMs = 0;
+    return;
   }
 
   // Recovery in progress 면 sleep window 4배 연장 — 서버 cmd:reset 도달 시간 + 자체 회복 시간 확보.
