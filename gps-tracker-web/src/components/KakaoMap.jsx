@@ -630,8 +630,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (!meta.skipMarker) {
         // cluster (5+ 점 좁은 범위 뭉침) 은 디바이스 색 무시하고 강제 빨강 — 시각적 경고.
         const dotColor = isStop ? '#EF4444' : c;
-        // gap 양끝 점은 화살표(zIndex 4) 보다 위로 올라와야 클릭 가능. stop / 일반은 그대로.
-        const zIdx = meta.isGapEndpoint ? 5 : (isStop ? 2 : 1);
+        // (2026-06-29) 모든 dot 을 화살표(zIndex 4) 위로 — 이전 일반=1/stop=2 라 화살표에 가려져
+        // 클릭 불가했음 (사거리 통과 등 운행 구간 dot 안 보이는 버그). gap 양끝은 더 위 zIdx 6.
+        const zIdx = meta.isGapEndpoint ? 6 : 5;
         const marker = new window.kakao.maps.Marker({
           map: dotVisible ? mapRef.current : null,
           position: pos,
