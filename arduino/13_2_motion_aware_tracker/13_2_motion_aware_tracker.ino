@@ -1,4 +1,5 @@
 // 13_2_motion_aware_tracker — 13_1 기반 + 신규 PCB 핀 + 부저 (2026-06-17)
+// (2026-06-29) 13_4 와 일관성: batch dedup 2s → 1s (≈30 fix/POST), STATIONARY sleep 활성화 + 5분 window. aa 단말기 데드라인 (LTE POST 일시 실패로 fix 손실) 해결 목적 — Phase 6D ingest 가 batch 를 1 row + jsonb 로 저장하므로 POST 실패해도 fix 가 다음 batch 의 jsonb 안에 retained.
 //
 // 13_1 대비 변경점:
 //   1) PCB rev — LTE RX/TX swap (RX=GPIO2, TX=GPIO4)
@@ -89,8 +90,8 @@
 // 30초 — sss 24h 안정성 테스트용. LTE 부하 ↓, 30초 사이 GPS fix 는 array 로 모아서 일괄 송신.
 #define POST_INTERVAL_MS    30000UL
 
-// sss 24h 테스트 — STATIONARY 자동 sleep 비활성화 (계속 active 유지).
-#define SLEEP_DISABLED 1
+// (2026-06-29) STATIONARY 자동 sleep 활성화 — 5분 정지 시 deep sleep (13_4 와 일관).
+#define SLEEP_DISABLED 0
 #define BAT_DIV_RATIO       2.0f
 
 #define BRINGUP_RETRY_MS              30000UL
@@ -108,7 +109,7 @@
 //   GPS_STALE_MS                 : 마지막 fix 가 이 시간 넘게 오래면 GPS unavailable 간주
 //   STATIONARY_BOOT_GRACE_MS     : 부팅/wake 직후 정지 판정 보류 (모듈 안정화 + first fix 대기)
 // ──────────────────────────────────────────────────────────────────
-#define STATIONARY_WINDOW_MS       (3UL * 60UL * 1000UL)  // 정지 3분 → 자동 sleep
+#define STATIONARY_WINDOW_MS       (5UL * 60UL * 1000UL)  // 정지 5분 → 자동 sleep
 #define MOTION_QUIET_MS            30000UL
 #define GPS_DRIFT_THRESHOLD_M      50.0f
 #define GPS_STALE_MS               60000UL
@@ -1488,10 +1489,11 @@ void loop() {
           }
         }
         lastFixMs = now;
-        // sss 24h 테스트: fresh fix (sat>=4, age<2s). dedup 2s — 30s 사이클 ≈ 15 fix per batch.
+        // Phase 6 후속: fresh fix (sat>=4, age<2s). dedup 1s → 30s 사이클 ≈ 30 fix per batch (13_4 와 일관).
+        // Phase 6D ingest 가 batch 를 1 row + jsonb 로 저장하므로 DB row 수 증가 없음.
         if (gps.satellites.value() >= 4 && gps.location.age() < 2000 && batch_count < BATCH_BUF_N) {
           bool push = (batch_count == 0)
-                   || (now - batch_buf[batch_count - 1].at_ms >= 2000);
+                   || (now - batch_buf[batch_count - 1].at_ms >= 1000);
           if (push) {
             batch_buf[batch_count].lat  = (float)gps.location.lat();
             batch_buf[batch_count].lng  = (float)gps.location.lng();
