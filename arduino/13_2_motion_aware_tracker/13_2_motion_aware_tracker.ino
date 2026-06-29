@@ -116,6 +116,9 @@
 #define GPS_STALE_MS               60000UL
 #define STATIONARY_BOOT_GRACE_MS   60000UL
 #define GPS_HISTORY_N              16
+// (2026-06-29) GPS unavailable + 짧은 LIS quiet 동안만 sleep 금지. 운행 종료 후 실내 등 30분+ LIS
+// quiet 면 GPS 없어도 sleep 허용 — battery 영구 소모 방지 (PR #84 trade-off 완화).
+#define NO_GPS_SLEEP_GRACE_MS      (30UL * 60UL * 1000UL)
 
 // 시리얼 STATUS 라인 주기
 #define STATUS_PRINT_MS       1000UL
@@ -474,13 +477,18 @@ static void checkStationarySleep() {
   } else {
     stationaryLastValidFixes = 0;
     stationaryLastDriftM     = 0;
-    // (2026-06-29) GPS unavailable 시 sleep 진입 절대 금지.
-    //   - 운행 중 지하/터널 등 GPS no-fix 누적 + LIS3DH 가 차량 진동 못 잡는 케이스에서
-    //     LIS 단독 판정으로 sleep 진입 → wake INT 도 못 잡아 영구 두절 사고 (2026-06-29 sss).
-    //   - 차고 (GPS 잡힘) 에선 정상 5분 sleep 가능.
-    if (stationarySinceMs) DBGLN(F("[STAT] gps unavailable → reset"));
-    stationarySinceMs = 0;
-    return;
+    // (2026-06-29) GPS unavailable + 짧은 LIS quiet 동안만 sleep 금지 (PR #84 trade-off 완화).
+    //   - 운행 중 지하/터널 등 GPS no-fix + LIS3DH 가 차량 진동 못 잡는 경우 (LIS quiet 짧음)
+    //     → LIS 단독 판정으로 sleep 진입 시 wake INT 도 못 잡아 영구 두절. → sleep 금지.
+    //   - 운행 종료 후 실내 등 LIS quiet 30분+ → 진짜 정지 상태. GPS 없어도 sleep 허용 (battery 보호).
+    uint32_t motionQuietDur = (lastMotionMs == 0) ? (now - bootMs) : (now - lastMotionMs);
+    if (motionQuietDur < NO_GPS_SLEEP_GRACE_MS) {
+      if (stationarySinceMs) DBGLN(F("[STAT] gps unavailable + recent motion → reset"));
+      stationarySinceMs = 0;
+      return;
+    }
+    // 긴 quiet (30분+) — 운행 종료 후 정지 추정. STATIONARY 진행 (아래 윈도우 로직 통과).
+    DBGLN(F("[STAT] gps unavailable but quiet 30min+ → allow stationary"));
   }
 
   // Recovery in progress 면 sleep window 4배 연장 — 서버 cmd:reset 도달 시간 + 자체 회복 시간 확보.
