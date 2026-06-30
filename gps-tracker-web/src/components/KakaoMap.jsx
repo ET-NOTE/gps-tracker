@@ -17,12 +17,8 @@ function strokeWeightForLevel(level) {
   return 8;                         // very zoomed out
 }
 function dotSizeForLevel(level) {
-  if (level <= 3)  return 10;
-  if (level <= 5)  return 12;
-  if (level <= 7)  return 14;
-  if (level <= 9)  return 16;
-  if (level <= 11) return 18;
-  return 20;
+  // [DEBUG] 시각 진단용 — 모든 zoom 에서 50px 빨강. 진단 후 원복.
+  return 50;
 }
 // Seeker 라인 속도 버킷 — 빨강 (정지/매우 느림) / 노랑 / 녹 / 청 / 자 (고속)
 const KAKAO_MAP_SDK_SRC = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=760ec0841163d1ee2cc5fef220a9df0b&libraries=services,clusterer&autoload=false';
@@ -627,9 +623,15 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const c = color || '#888';
 
       const dotVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
+      // [DEBUG] addHistoryPoint 진입 trace — skipMarker / picked 추적
+      if (typeof window !== 'undefined') {
+        window.__dotDebug ||= { calls: 0, marker_drawn: 0, skipped: 0 };
+        window.__dotDebug.calls++;
+        if (meta.skipMarker) window.__dotDebug.skipped++;
+      }
       if (!meta.skipMarker) {
-        // cluster (5+ 점 좁은 범위 뭉침) 은 디바이스 색 무시하고 강제 빨강 — 시각적 경고.
-        const dotColor = isStop ? '#EF4444' : c;
+        // [DEBUG] 시각 진단용 — 모든 dot 빨강 강제. 진단 후 원복.
+        const dotColor = '#FF0000';
         // (2026-06-29) 모든 dot 을 화살표(zIndex 4) 위로 — 이전 일반=1/stop=2 라 화살표에 가려져
         // 클릭 불가했음 (사거리 통과 등 운행 구간 dot 안 보이는 버그). gap 양끝은 더 위 zIdx 6.
         const zIdx = meta.isGapEndpoint ? 6 : 5;
@@ -640,6 +642,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           clickable: true,
           zIndex: zIdx,
         });
+        if (typeof window !== 'undefined') window.__dotDebug.marker_drawn++;
         window.kakao.maps.event.addListener(marker, 'click', () => {
           const p = marker.getPosition();
           const la = p.getLat(), ln = p.getLng();
