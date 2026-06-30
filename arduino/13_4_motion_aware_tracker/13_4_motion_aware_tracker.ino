@@ -1,3 +1,7 @@
+// ⚠️ 컴파일/플래시 FQBN: esp32:esp32:esp32c3 (CDCOnBoot=default 필수. CDC=cdc 금지)
+//    이유: CDC=cdc 시 Serial.print 가 USB CDC buffer full 로 blocking → lteBringUp 못 도달
+//    → LTE 영구 stuck (2026-06-30 sss 1h+ 사고). memory: project-cdc-default-required.
+//
 // 13_4_motion_aware_tracker — 13_3 + LC86G 호환. (2026-06-26 cleanup) 가벼운 변경만 유지: PAIR025 EASY, PAIR062 GLL/VTG OFF, GSV 5s, STATIONARY 3분, fix 판정 완화 (sat>=3/age<10s/hdop<5), payload hdop, PQTMANTENNASTATUS 파싱 (안테나 진단 UI 의 데이터 원천). 제거됨: PMTK741 Hot-start hint, GSV 1s.
 // (2026-06-28) batch dedup 2s → 1s — Phase 6D ingest 후 batch ≈ 30 fix per POST. DB 는 1 row + jsonb 라 row 수 영향 없음. jsonb array size 만 2배.
 // (2026-06-28) STATIONARY 자동 sleep 활성화 (SLEEP_DISABLED 0) + window 3분 → 5분.
