@@ -1231,6 +1231,9 @@ static void enterDeepSleep(const char *reason) {
   }
   uint64_t mask = (1ULL << PIN_LIS_INT);
   esp_deep_sleep_enable_gpio_wakeup(mask, ESP_GPIO_WAKEUP_GPIO_LOW);
+  // (2026-06-30) Timer wake 10분 — LIS3DH 가 차량 진동 못 잡아 영구 sleep 사고 (2026-06-29 4h47m,
+  // 2026-06-30 4h 재발) 방지. 10분 마다 강제 wake → LTE 체크 → motion 없으면 다시 sleep.
+  esp_sleep_enable_timer_wakeup(10ULL * 60 * 1000000ULL);
 
   Serial.flush();
   esp_deep_sleep_start();
@@ -1374,6 +1377,7 @@ void setup() {
         }
         uint64_t mask = (1ULL << PIN_LIS_INT);
         esp_deep_sleep_enable_gpio_wakeup(mask, ESP_GPIO_WAKEUP_GPIO_LOW);
+        esp_sleep_enable_timer_wakeup(10ULL * 60 * 1000000ULL);   // (2026-06-30) 10분 timer wake fallback
         Serial.flush();
         esp_deep_sleep_start();
       }
