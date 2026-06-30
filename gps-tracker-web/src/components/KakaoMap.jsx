@@ -17,8 +17,12 @@ function strokeWeightForLevel(level) {
   return 8;                         // very zoomed out
 }
 function dotSizeForLevel(level) {
-  // [DEBUG] 시각 진단용 — 모든 zoom 에서 50px 빨강. 진단 후 원복.
-  return 50;
+  if (level <= 3)  return 10;
+  if (level <= 5)  return 12;
+  if (level <= 7)  return 14;
+  if (level <= 9)  return 16;
+  if (level <= 11) return 18;
+  return 20;
 }
 // Seeker 라인 속도 버킷 — 빨강 (정지/매우 느림) / 노랑 / 녹 / 청 / 자 (고속)
 const KAKAO_MAP_SDK_SRC = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=760ec0841163d1ee2cc5fef220a9df0b&libraries=services,clusterer&autoload=false';
@@ -623,33 +627,19 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const c = color || '#888';
 
       const dotVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
-      // [DEBUG] addHistoryPoint 진입 trace — skipMarker / picked 추적
-      if (typeof window !== 'undefined') {
-        window.__dotDebug ||= { calls: 0, marker_drawn: 0, skipped: 0 };
-        window.__dotDebug.calls++;
-        if (meta.skipMarker) window.__dotDebug.skipped++;
-      }
       if (!meta.skipMarker) {
-        // [DEBUG] 시각 진단용 — 모든 dot 빨강 강제. 진단 후 원복.
-        const dotColor = '#FF0000';
+        // cluster (5+ 점 좁은 범위 뭉침) 은 디바이스 색 무시하고 강제 빨강 — 시각적 경고.
+        const dotColor = isStop ? '#EF4444' : c;
         // (2026-06-29) 모든 dot 을 화살표(zIndex 4) 위로 — 이전 일반=1/stop=2 라 화살표에 가려져
         // 클릭 불가했음 (사거리 통과 등 운행 구간 dot 안 보이는 버그). gap 양끝은 더 위 zIdx 6.
         const zIdx = meta.isGapEndpoint ? 6 : 5;
-        // [DEBUG] map 옵션 강제 mapRef.current — dotVisible 조건 우회
-        const dotMap = mapRef.current;
         const marker = new window.kakao.maps.Marker({
-          map: dotMap,
+          map: dotVisible ? mapRef.current : null,
           position: pos,
           image: makeDotImage(dotColor, isStop, meta.isGapEndpoint),
           clickable: true,
           zIndex: zIdx,
         });
-        if (typeof window !== 'undefined') {
-          window.__dotDebug.marker_drawn++;
-          if (window.__dotDebug.marker_drawn <= 3) {
-            console.log('[DEBUG marker]', { deviceId, lat, lng, dotVisible, hasMap: !!dotMap, isGapEnd: meta.isGapEndpoint, isStop });
-          }
-        }
         window.kakao.maps.event.addListener(marker, 'click', () => {
           const p = marker.getPosition();
           const la = p.getLat(), ln = p.getLng();
@@ -686,7 +676,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       }
     },
 
-    /** 디바이스의 history 점들 + 방향 화살표를 모두 제거 (loadDevices 직전 호출용). */
+    /** 디바이스의 history 점들 + 방향 화살표 + polyline + 거리 누적 상태 모두 제거 (loadDevices 직전 호출용). */
     clearHistoryPoints(deviceId) {
       const arr = pointsRef.current[deviceId];
       if (arr) {
@@ -699,6 +689,14 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         delete arrowsRef.current[deviceId];
       }
       delete arrowStateRef.current[deviceId];
+      // (2026-06-30) polyline + dedup ref 도 clear — 안 하면 refresh 시 모든 새 호출이 dedup early return.
+      const entry = polyRef.current[deviceId];
+      if (entry) {
+        entry.segments?.forEach(seg => seg.poly?.setMap(null));
+        entry.gaps?.forEach(g => g.setMap(null));
+        delete polyRef.current[deviceId];
+      }
+      delete lastRecordedAtRef.current[deviceId];
     },
 
     /**
