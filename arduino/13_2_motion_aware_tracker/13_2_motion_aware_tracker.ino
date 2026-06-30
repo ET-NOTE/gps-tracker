@@ -1,3 +1,7 @@
+// ⚠️ 컴파일/플래시 FQBN: esp32:esp32:esp32c3 (CDCOnBoot=default 필수. CDC=cdc 금지)
+//    이유: CDC=cdc 시 Serial.print 가 USB CDC buffer full 로 blocking → lteBringUp 못 도달
+//    → LTE 영구 stuck (2026-06-30 sss 1h+ 사고). memory: project-cdc-default-required.
+//
 // 13_2_motion_aware_tracker — 13_1 기반 + 신규 PCB 핀 + 부저 (2026-06-17)
 // (2026-06-29) 13_4 와 일관성: batch dedup 2s → 1s (≈30 fix/POST), STATIONARY sleep 활성화 + 5분 window.
 // (2026-06-29) batch retry — POST 시도 전 batch_count = 0 제거. 성공 시에만 posted_count 만큼 drop. 실패 시 batch 유지 → 다음 cycle 에 재전송. push 시 FIFO drop oldest 도입 (buf 차면 최신 위치 우선). aa 데드라인 (LTE 일시 실패로 fix 손실) 진짜 해결.
