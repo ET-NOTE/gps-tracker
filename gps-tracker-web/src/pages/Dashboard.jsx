@@ -325,6 +325,9 @@ export default function Dashboard({ onLogout }) {
   const wsRef      = useRef(null);
   const devRef     = useRef([]);
   const lastMetaRef = useRef({});
+  // (2026-06-30) WS 실시간 path 의 priority sampling — device 별 마지막 dot 위치 + 누적 거리.
+  // history fetch 의 computeClickableIndices 와 동일한 30m 간격 → 사거리 통과 dot 클릭 가능.
+  const wsDotAccRef = useRef({});  // { [deviceId]: { lat, lng, accM } }
   // 간이 시커의 imperative handle — 지도 마커 클릭 시 selectByTime 으로 슬롯/월 drill 동기화.
   const miniSeekerRef = useRef(null);
 
@@ -751,23 +754,35 @@ export default function Dashboard({ onLogout }) {
       mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
       // P1: msg.fixes (batch — 1 POST 의 모든 fix) 가 있으면 모두 polyline 에. 없으면 top-level fix 만 (legacy).
       // dedup 은 KakaoMap.addHistoryPoint 의 recorded_at 기준 — initial fetch + WS 가 같은 fix 두 번 안 들어옴.
+      // (2026-06-30) priority sampling — 30m 누적될 때마다 1 dot (= skipMarker=false). history fetch 의
+      // computeClickableIndices 와 동일 임계. 사거리 통과 등 운행 구간에서 dot 클릭/툴팁 가능.
+      const addPoint = (lat, lng, recordedAt, sat, fixVal, speedKmh) => {
+        const acc = wsDotAccRef.current[msg.device_id];
+        let skipMarker = true;
+        if (!acc) {
+          skipMarker = false;  // 첫 fix 는 항상 dot
+        } else {
+          acc.accM += haversineM(acc.lat, acc.lng, lat, lng);
+          if (acc.accM >= CLICKABLE_SAMPLE_INTERVAL_M) {
+            skipMarker = false;
+            acc.accM = 0;
+          }
+        }
+        wsDotAccRef.current[msg.device_id] = { lat, lng, accM: acc ? acc.accM : 0 };
+        mapRef.current?.addHistoryPoint(msg.device_id, lat, lng, color, {
+          recordedAt, sat, vbatMv: msg.vbat_mv, fix: fixVal,
+          speedKmh, isStop: false,
+          deviceId: msg.device_id, deviceLabel: label,
+          skipMarker,
+        });
+      };
       if (Array.isArray(msg.fixes) && msg.fixes.length > 0) {
         for (const f of msg.fixes) {
           if (f.lat == null || f.lng == null) continue;
-          mapRef.current?.addHistoryPoint(msg.device_id, f.lat, f.lng, color, {
-            recordedAt: f.recorded_at, sat: f.sat, vbatMv: msg.vbat_mv, fix: true,
-            speedKmh: null, isStop: false,
-            deviceId: msg.device_id, deviceLabel: label,
-            skipMarker: true,
-          });
+          addPoint(f.lat, f.lng, f.recorded_at, f.sat, true, null);
         }
       } else {
-        mapRef.current?.addHistoryPoint(msg.device_id, msg.lat, msg.lng, color, {
-          recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv, fix: msg.fix,
-          speedKmh, isStop: false,
-          deviceId: msg.device_id, deviceLabel: label,
-          skipMarker: true,
-        });
+        addPoint(msg.lat, msg.lng, msg.recorded_at, msg.sat, msg.fix, speedKmh);
       }
       lastMetaRef.current[msg.device_id] = meta;
       if (filterDeviceIdRef.current === msg.device_id) {
