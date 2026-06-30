@@ -635,14 +635,21 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         // (2026-06-29) 모든 dot 을 화살표(zIndex 4) 위로 — 이전 일반=1/stop=2 라 화살표에 가려져
         // 클릭 불가했음 (사거리 통과 등 운행 구간 dot 안 보이는 버그). gap 양끝은 더 위 zIdx 6.
         const zIdx = meta.isGapEndpoint ? 6 : 5;
+        // [DEBUG] map 옵션 강제 mapRef.current — dotVisible 조건 우회
+        const dotMap = mapRef.current;
         const marker = new window.kakao.maps.Marker({
-          map: dotVisible ? mapRef.current : null,
+          map: dotMap,
           position: pos,
           image: makeDotImage(dotColor, isStop, meta.isGapEndpoint),
           clickable: true,
           zIndex: zIdx,
         });
-        if (typeof window !== 'undefined') window.__dotDebug.marker_drawn++;
+        if (typeof window !== 'undefined') {
+          window.__dotDebug.marker_drawn++;
+          if (window.__dotDebug.marker_drawn <= 3) {
+            console.log('[DEBUG marker]', { deviceId, lat, lng, dotVisible, hasMap: !!dotMap, isGapEnd: meta.isGapEndpoint, isStop });
+          }
+        }
         window.kakao.maps.event.addListener(marker, 'click', () => {
           const p = marker.getPosition();
           const la = p.getLat(), ln = p.getLng();
