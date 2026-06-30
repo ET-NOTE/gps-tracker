@@ -17,12 +17,13 @@ function strokeWeightForLevel(level) {
   return 8;                         // very zoomed out
 }
 function dotSizeForLevel(level) {
-  if (level <= 3)  return 10;
-  if (level <= 5)  return 12;
-  if (level <= 7)  return 14;
+  // Kakao Maps zoom — 낮을수록 확대. 확대일수록 dot 크게 (이전 거꾸로였음).
+  if (level <= 3)  return 22;   // 최대 확대 — 가장 크게
+  if (level <= 5)  return 20;
+  if (level <= 7)  return 18;
   if (level <= 9)  return 16;
-  if (level <= 11) return 18;
-  return 20;
+  if (level <= 11) return 14;
+  return 12;                    // 최대 축소 — 가장 작게 (다만 12 유지)
 }
 // Seeker 라인 속도 버킷 — 빨강 (정지/매우 느림) / 노랑 / 녹 / 청 / 자 (고속)
 const KAKAO_MAP_SDK_SRC = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=760ec0841163d1ee2cc5fef220a9df0b&libraries=services,clusterer&autoload=false';
@@ -269,7 +270,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   // segments: 연속된 좌표 묶음 (solid polyline). gaps: segment 끝-시작 잇는 dashed polyline.
   // timestamp gap > POLYLINE_GAP_THRESHOLD_S 시 새 segment + dashed.
   const polyRef      = useRef({});
-  const lastRecordedAtRef = useRef({});   // deviceId → 직전 좌표 recordedAt (ms epoch)
+  const lastRecordedAtRef = useRef({});   // deviceId → 직전 좌표 recordedAt (ms epoch). updateMarker 의 polyline gap 계산용
+  const lastDotAtRef      = useRef({});   // deviceId → addHistoryPoint 의 dedup 전용. clearHistoryPoints 시 reset
   const pointsRef    = useRef({});   // deviceId → [{ marker, color, isStop }]
   // live history 의 진행 방향 화살표 — 누적 ARROW_INTERVAL_M (200m) 마다 1개.
   // 화살표 marker 자체는 arrowsRef, 누적 distance / 직전 lat,lng 는 arrowStateRef 에.
@@ -615,12 +617,14 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
      */
     addHistoryPoint(deviceId, lat, lng, color, meta = {}) {
       if (!mapRef.current) return;
-      // P1 dedup: initial fetch + WS broadcast 가 같은 fix 두 번 추가하던 케이스 방지.
-      // 새 fix 의 recorded_at 이 마지막 fix 와 같거나 과거면 skip.
+      // P1 dedup (PR #68): initial fetch + WS broadcast 가 같은 fix 두 번 추가하던 케이스 방지.
+      // (2026-06-30) dedup ref 를 lastDotAtRef 로 분리 — lastRecordedAtRef 는 updateMarker 의 polyline
+      // gap 계산용이라 reset 하면 polyline 망가짐. addHistoryPoint 만의 dedup 으로 격리.
       if (meta.recordedAt) {
         const newAt = new Date(meta.recordedAt).getTime();
-        const lastAt = lastRecordedAtRef.current[deviceId];
+        const lastAt = lastDotAtRef.current[deviceId];
         if (lastAt && newAt <= lastAt) return;
+        lastDotAtRef.current[deviceId] = newAt;
       }
       const pos = new window.kakao.maps.LatLng(lat, lng);
       const isStop = !!meta.isStop;
@@ -689,14 +693,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         delete arrowsRef.current[deviceId];
       }
       delete arrowStateRef.current[deviceId];
-      // (2026-06-30) polyline + dedup ref 도 clear — 안 하면 refresh 시 모든 새 호출이 dedup early return.
-      const entry = polyRef.current[deviceId];
-      if (entry) {
-        entry.segments?.forEach(seg => seg.poly?.setMap(null));
-        entry.gaps?.forEach(g => g.setMap(null));
-        delete polyRef.current[deviceId];
-      }
-      delete lastRecordedAtRef.current[deviceId];
+      // (2026-06-30) addHistoryPoint 의 dedup ref 만 reset — polyRef + lastRecordedAtRef 는
+      // updateMarker 의 polyline gap 계산에 필요하므로 안 건드림.
+      delete lastDotAtRef.current[deviceId];
     },
 
     /**
