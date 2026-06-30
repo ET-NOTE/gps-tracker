@@ -530,8 +530,6 @@ export default function Dashboard({ onLogout }) {
         const enriched = enrichWithSpeedStops(ordered);
         // priority sampling — gap 양끝 + stop cluster rep + 150m 간격 이동 sample 만 클릭 가능 dot.
         const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap);
-        // [DEBUG] dot 안 보이는 원인 추적 — picked size + isStop 개수 + 첫 10개 인덱스
-        console.log('[DEBUG dot]', d.id, label, 'enriched.length=', enriched.length, 'picked.size=', picked.size, 'gapEnd.size=', gapEndpoints.size, 'picked sample=', [...picked].slice(0, 10), 'isStop 개수=', enriched.filter(e => e._isStop).length);
         enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
@@ -588,8 +586,6 @@ export default function Dashboard({ onLogout }) {
         const enriched = enrichWithSpeedStops(ordered);
         // priority sampling — gap 양끝 + stop cluster rep + 150m 간격 이동 sample 만 클릭 가능 dot.
         const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap);
-        // [DEBUG] dot 안 보이는 원인 추적 — picked size + isStop 개수 + 첫 10개 인덱스
-        console.log('[DEBUG dot]', d.id, label, 'enriched.length=', enriched.length, 'picked.size=', picked.size, 'gapEnd.size=', gapEndpoints.size, 'picked sample=', [...picked].slice(0, 10), 'isStop 개수=', enriched.filter(e => e._isStop).length);
         enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
