@@ -274,8 +274,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const lastDotAtRef      = useRef({});   // deviceId → addHistoryPoint 의 dedup 전용. clearHistoryPoints 시 reset
   const pointsRef    = useRef({});   // deviceId → [{ marker, color, isStop }]
   // live history 의 진행 방향 화살표 — 누적 ARROW_INTERVAL_M (200m) 마다 1개.
-  // 화살표 marker 자체는 arrowsRef, 누적 distance / 직전 lat,lng 는 arrowStateRef 에.
-  const arrowsRef      = useRef({});  // deviceId → Marker[]
+  // (2026-07-01) dot + arrow 이중 marker 통일 → arrowsRef 삭제. pointsRef 안 marker 가 화살표 겸용.
+  // arrowStateRef 는 직전 fix 좌표 (heading 계산용) 만 유지.
   const arrowStateRef  = useRef({});  // deviceId → { lastPos:{lat,lng}, distAcc }
   const fenceRef     = useRef({});   // geofenceId → { circle, name }
   // 현재 단말기 필터 — null = 전체. updateMarker/addHistoryPoint 가 새 마커/폴리라인 생성 시 이걸 참조해
@@ -372,22 +372,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     return () => { cancelled = true; };
   }, []);
 
-  // zoom 변경 시 — 모든 polylines + dot markers 일괄 갱신.
+  // zoom 변경 시 — 모든 polylines 두께 갱신. (2026-07-01) 화살표 marker 는 zoom 무관 20px 고정.
   function applyZoomStyles() {
     const lvl = zoomLevelRef.current;
     const sw  = strokeWeightForLevel(lvl);
-    const sz  = dotSizeForLevel(lvl);
     Object.values(polyRef.current).forEach(entry => {
       entry.segments.forEach(s => s.poly.setOptions({ strokeWeight: sw }));
       entry.gaps.forEach(g => g.setOptions({ strokeWeight: Math.max(1, sw - 1) }));
-    });
-    Object.values(pointsRef.current).forEach(arr => {
-      arr.forEach(({ marker, color, isStop }) => {
-        // (2026-07-01) stop 빨강 제거 — enrichWithSpeedStops cluster 오분류로 운행 dot 이
-        // 전부 빨강 되는 이슈. 첫 로드 후 fitToAllMarkers → zoom_changed 트리거 시 여기서
-        // dot 을 다시 빨강으로 덮어써 사용자가 "초기 로드 = 이미지1 (빨강)" 목격.
-        marker.setImage(dotImageCached(color || '#888', isStop, sz));
-      });
     });
   }
 
@@ -637,18 +628,16 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
       const dotVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
       if (!meta.skipMarker) {
-        // (2026-07-01) stop 빨강 제거 — enrichWithSpeedStops 의 cluster 알고리즘이 25km/h 운행도
-        // stop 으로 오분류해서 운행 dot 이 전부 빨강 되던 이슈. 항상 device color.
-        const dotColor = c;
-        // (2026-07-01) 일반 dot 5 (화살표 6 아래), gap endpoint 7 (화살표 위 강조).
-        // 화살표 clickable=false 라 dot 클릭 그대로 hit.
-        const zIdx = meta.isGapEndpoint ? 7 : 5;
+        // (2026-07-01) dot + arrow 이중 marker 통일 — 화살표 marker 하나로 (clickable + tooltip).
+        // 첫 fix 는 heading 미확정 → angle=0 (북쪽 화살표). polyline 시작점 인식.
+        const st = arrowStateRef.current[deviceId];
+        const angle = st ? calcBearing(st.lastPos.lat, st.lastPos.lng, lat, lng) : 0;
         const marker = new window.kakao.maps.Marker({
           map: dotVisible ? mapRef.current : null,
           position: pos,
-          image: makeDotImage(dotColor, isStop, meta.isGapEndpoint),
+          image: makeArrowImage(angle, c),
           clickable: true,
-          zIndex: zIdx,
+          zIndex: meta.isGapEndpoint ? 7 : 5,
         });
         window.kakao.maps.event.addListener(marker, 'click', () => {
           const p = marker.getPosition();
@@ -665,38 +654,17 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           }
         });
         if (!pointsRef.current[deviceId]) pointsRef.current[deviceId] = [];
-        pointsRef.current[deviceId].push({ marker, color: c, isStop });
-
-        // Phase 3 일관화: 화살표는 marker 와 같은 fix 위치에 그림 — picked fix 만.
-        // 직전 picked fix → 현재 picked fix 사이 bearing.
-        const st = arrowStateRef.current[deviceId];
-        if (st) {
-          const angle = calcBearing(st.lastPos.lat, st.lastPos.lng, lat, lng);
-          const am = new window.kakao.maps.Marker({
-            map: dotVisible ? mapRef.current : null,
-            position: pos,
-            image: makeArrowImage(angle, c),
-            clickable: false,
-            zIndex: 4,   // (2026-07-01) 6 → 4 원복: dot (5) 이 위여야 클릭 가능. 화살표 삐져나온 부분만 보임.
-          });
-          if (!arrowsRef.current[deviceId]) arrowsRef.current[deviceId] = [];
-          arrowsRef.current[deviceId].push(am);
-        }
+        pointsRef.current[deviceId].push({ marker, color: c, isStop, angle });
         arrowStateRef.current[deviceId] = { lastPos: { lat, lng } };
       }
     },
 
-    /** 디바이스의 history 점들 + 방향 화살표 + polyline + 거리 누적 상태 모두 제거 (loadDevices 직전 호출용). */
+    /** 디바이스의 history 화살표 marker + heading 누적 상태 모두 제거 (loadDevices 직전 호출용). */
     clearHistoryPoints(deviceId) {
       const arr = pointsRef.current[deviceId];
       if (arr) {
         arr.forEach(({ marker }) => marker.setMap(null));
         delete pointsRef.current[deviceId];
-      }
-      const arrows = arrowsRef.current[deviceId];
-      if (arrows) {
-        arrows.forEach(m => m.setMap(null));
-        delete arrowsRef.current[deviceId];
       }
       delete arrowStateRef.current[deviceId];
       // (2026-06-30) addHistoryPoint 의 dedup ref 만 reset — polyRef + lastRecordedAtRef 는
@@ -726,9 +694,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       Object.values(pointsRef.current).forEach(arr => {
         arr.forEach(({ marker }) => marker.setMap(visible ? mapRef.current : null));
       });
-      Object.values(arrowsRef.current).forEach(arr => {
-        arr.forEach(m => m.setMap(visible ? mapRef.current : null));
-      });
     },
     setLiveTrailsVisible(visible) {
       if (!mapRef.current) return;
@@ -746,13 +711,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         entry.segments.forEach(s => s.poly.setOptions({ strokeColor: color }));
         entry.gaps.forEach(g => g.setOptions({ strokeColor: color }));
       }
-      // (2026-07-01) stop 빨강 제거 — 항상 device color.
+      // (2026-07-01) 화살표 marker — angle 유지 + device color 로 새 화살표 이미지.
       const arr = pointsRef.current[deviceId];
       if (arr) {
-        const sz = dotSizeForLevel(zoomLevelRef.current);
         arr.forEach(o => {
           o.color = color;
-          o.marker.setImage(dotImageCached(color, o.isStop, sz));
+          o.marker.setImage(makeArrowImage(o.angle, color));
         });
       }
     },
@@ -799,10 +763,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       Object.entries(pointsRef.current).forEach(([id, arr]) => {
         const vis = (targetId === null || +id === targetId);
         arr.forEach(({ marker }) => marker.setMap(vis ? all : null));
-      });
-      Object.entries(arrowsRef.current).forEach(([id, arr]) => {
-        const vis = (targetId === null || +id === targetId);
-        arr.forEach(m => m.setMap(vis ? all : null));
       });
 
       // bounds 재조정 — opts.fit=false 면 skip (사용자 저장 view 복원 시 zoom 보존)
@@ -1148,11 +1108,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (pts) {
         pts.forEach(({ marker }) => marker.setMap(null));
         delete pointsRef.current[deviceId];
-      }
-      const arrows = arrowsRef.current[deviceId];
-      if (arrows) {
-        arrows.forEach(m => m.setMap(null));
-        delete arrowsRef.current[deviceId];
       }
       delete arrowStateRef.current[deviceId];
     },
