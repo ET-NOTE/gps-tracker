@@ -675,7 +675,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
             position: pos,
             image: makeArrowImage(angle, c),
             clickable: false,
-            zIndex: 6,   // (2026-07-01) 4 → 6: dot (5) 위. clickable=false 라 dot 클릭 pass through.
+            zIndex: 4,   // (2026-07-01) 6 → 4 원복: dot (5) 이 위여야 클릭 가능. 화살표 삐져나온 부분만 보임.
           });
           if (!arrowsRef.current[deviceId]) arrowsRef.current[deviceId] = [];
           arrowsRef.current[deviceId].push(am);

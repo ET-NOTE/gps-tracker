@@ -671,16 +671,13 @@ export default function Dashboard({ onLogout }) {
   // 초기 복원 중엔 저장 skip (filterAppliedRef.current === false 일 때).
   // 같은 값 재저장 방지 (네트워크 절약).
   const handleMapViewChange = useCallback((view) => {
-    // (2026-07-01) [DEBUG] zoom 감지 진단 + zoom re-render 는 filterApplied 무관 처리.
-    console.log('[DEBUG mapView]', { level: view?.level, lastZoom: lastZoomLevelRef.current, filterApplied: filterAppliedRef.current });
+    // (2026-07-01) zoom re-render 는 filterApplied 무관. 500ms debounce (pinch/scroll 렌더링 폭주 억제).
     if (view && view.level != null && lastZoomLevelRef.current !== view.level) {
-      console.log('[DEBUG zoomChanged] level:', lastZoomLevelRef.current, '→', view.level, 'scheduling refresh');
       lastZoomLevelRef.current = view.level;
       clearTimeout(zoomRefreshTimerRef.current);
       zoomRefreshTimerRef.current = setTimeout(() => {
-        console.log('[DEBUG zoomChanged] refresh() 호출, refreshFn=', !!refreshFnRef.current);
-        refreshFnRef.current?.(true);   // force — 8초 debounce 우회
-      }, 300);
+        refreshFnRef.current?.(true);
+      }, 500);
     }
     // 아래 userPrefs 저장은 filterApplied + view 좌표 필요.
     if (!filterAppliedRef.current) return;
