@@ -383,8 +383,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     });
     Object.values(pointsRef.current).forEach(arr => {
       arr.forEach(({ marker, color, isStop }) => {
-        const dotColor = isStop ? '#EF4444' : (color || '#888');
-        marker.setImage(dotImageCached(dotColor, isStop, sz));
+        // (2026-07-01) stop 빨강 제거 — enrichWithSpeedStops cluster 오분류로 운행 dot 이
+        // 전부 빨강 되는 이슈. 첫 로드 후 fitToAllMarkers → zoom_changed 트리거 시 여기서
+        // dot 을 다시 빨강으로 덮어써 사용자가 "초기 로드 = 이미지1 (빨강)" 목격.
+        marker.setImage(dotImageCached(color || '#888', isStop, sz));
       });
     });
   }
@@ -744,14 +746,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         entry.segments.forEach(s => s.poly.setOptions({ strokeColor: color }));
         entry.gaps.forEach(g => g.setOptions({ strokeColor: color }));
       }
-      // history dots 색깔 변경 — isStop 점은 디바이스 색 변경에도 빨강 유지.
+      // (2026-07-01) stop 빨강 제거 — 항상 device color.
       const arr = pointsRef.current[deviceId];
       if (arr) {
         const sz = dotSizeForLevel(zoomLevelRef.current);
         arr.forEach(o => {
           o.color = color;
-          const dotColor = o.isStop ? '#EF4444' : color;
-          o.marker.setImage(dotImageCached(dotColor, o.isStop, sz));
+          o.marker.setImage(dotImageCached(color, o.isStop, sz));
         });
       }
     },
