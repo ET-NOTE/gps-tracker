@@ -143,10 +143,16 @@ function computeGapMap(ordered) {
 //   2) 정지 클러스터 대표 — 인접 _isStop true run 의 첫 인덱스 하나만 (나머지는 흡수)
 //   3) 이동 구간 샘플링 — non-stop 점에서 CLICKABLE_SAMPLE_INTERVAL_M 누적될 때마다 1개
 // 첫 점은 궤적 시작 표시로 항상 포함.
-// (2026-06-29) 150 → 30m — 사거리 통과 등 운행 구간에 dot 너무 sparse 해서 클릭/툴팁 불가했음.
-// 60km/h 운행 시 약 1.8초 간격, 30km/h 시 3.6초 간격. batch 30 fix/30s 정합.
-const CLICKABLE_SAMPLE_INTERVAL_M = 30;
-function computeClickableIndices(enriched, gapMap) {
+// (2026-07-01) Zoom level 별 dot 간격 — 확대 시 촘촘, 축소 시 sparse. Kakao level 낮을수록 확대.
+// 이전 30m 고정 → 축소 시 dot 너무 촘촘 (시각 노이즈). 확대 시 UX 유지 + 축소 시 자동 sparse.
+function clickableIntervalM(zoomLevel) {
+  if (zoomLevel <= 3)  return 30;    // 최대 확대 — 30m (60km/h 1.8초, 30km/h 3.6초)
+  if (zoomLevel <= 5)  return 60;
+  if (zoomLevel <= 7)  return 120;
+  if (zoomLevel <= 9)  return 250;
+  return 500;                         // 최대 축소
+}
+function computeClickableIndices(enriched, gapMap, intervalM = 30) {
   const picked = new Set();
   const gapEndpoints = new Set();
   const n = enriched.length;
@@ -175,8 +181,8 @@ function computeClickableIndices(enriched, gapMap) {
     // (2026-06-29) `_isStop continue` 제거 — cluster 알고리즘이 25km/h 운행도 정차로 분류
     // (windowSize=30, radius=150m, min=5 → 25km/h × 5s = 35m < 150m 안 5 fix 면 stop).
     // 진짜 정차 구간은 acc 누적 거리 = 0 이라 자동 skip — 가드 불필요. 잘못 분류된 운행
-    // stop 도 거리 누적 30m 넘으면 picked.
-    if (acc >= CLICKABLE_SAMPLE_INTERVAL_M) {
+    // stop 도 거리 누적 넘으면 picked.
+    if (acc >= intervalM) {
       picked.add(i);
       acc = 0;
     }
@@ -528,8 +534,9 @@ export default function Dashboard({ onLogout }) {
         });
         mapRef.current?.clearHistoryPoints(d.id);
         const enriched = enrichWithSpeedStops(ordered);
-        // priority sampling — gap 양끝 + stop cluster rep + 150m 간격 이동 sample 만 클릭 가능 dot.
-        const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap);
+        // priority sampling — gap 양끝 + stop cluster rep + zoom 별 간격 이동 sample 만 클릭 가능 dot.
+        const zoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
+        const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap, clickableIntervalM(zoomLvl));
         enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
@@ -584,8 +591,9 @@ export default function Dashboard({ onLogout }) {
         // 클릭 가능한 history dot 마커 — 마지막 점 제외 (메인 마커가 그 자리에 있음)
         mapRef.current?.clearHistoryPoints(d.id);
         const enriched = enrichWithSpeedStops(ordered);
-        // priority sampling — gap 양끝 + stop cluster rep + 150m 간격 이동 sample 만 클릭 가능 dot.
-        const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap);
+        // priority sampling — gap 양끝 + stop cluster rep + zoom 별 간격 이동 sample 만 클릭 가능 dot.
+        const zoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
+        const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap, clickableIntervalM(zoomLvl));
         enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
@@ -754,8 +762,10 @@ export default function Dashboard({ onLogout }) {
       mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
       // P1: msg.fixes (batch — 1 POST 의 모든 fix) 가 있으면 모두 polyline 에. 없으면 top-level fix 만 (legacy).
       // dedup 은 KakaoMap.addHistoryPoint 의 recorded_at 기준 — initial fetch + WS 가 같은 fix 두 번 안 들어옴.
-      // (2026-06-30) priority sampling — 30m 누적될 때마다 1 dot (= skipMarker=false). history fetch 의
-      // computeClickableIndices 와 동일 임계. 사거리 통과 등 운행 구간에서 dot 클릭/툴팁 가능.
+      // (2026-06-30) priority sampling — zoom 별 간격 누적될 때마다 1 dot (= skipMarker=false).
+      // history fetch 의 computeClickableIndices 와 동일 임계. 사거리 통과 등 운행 구간 dot 클릭.
+      const wsZoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
+      const wsIntervalM = clickableIntervalM(wsZoomLvl);
       const addPoint = (lat, lng, recordedAt, sat, fixVal, speedKmh) => {
         const acc = wsDotAccRef.current[msg.device_id];
         let skipMarker = true;
@@ -763,7 +773,7 @@ export default function Dashboard({ onLogout }) {
           skipMarker = false;  // 첫 fix 는 항상 dot
         } else {
           acc.accM += haversineM(acc.lat, acc.lng, lat, lng);
-          if (acc.accM >= CLICKABLE_SAMPLE_INTERVAL_M) {
+          if (acc.accM >= wsIntervalM) {
             skipMarker = false;
             acc.accM = 0;
           }
