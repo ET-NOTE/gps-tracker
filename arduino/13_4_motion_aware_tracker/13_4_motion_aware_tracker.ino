@@ -297,6 +297,9 @@ char lastAntennaStatus[16] = "?";  // "OK" / "OPEN" / "SHORT" / "?"
 
 char deviceUid[32] = "esp-unknown";
 const char *wakeReasonStr = "boot";
+// (2026-07-01) Timer wake heartbeat 모드 — 이 wake 세션 은 LTE POST 성공 하나만 하고 즉시 re-sleep.
+// 정상 wake (motion) 는 5분 post_interval 유지, timer wake 는 heartbeat 목적이라 배터리 소모 최소화.
+static bool timerWakeMode = false;
 // 13_3: esp_reset_reason() 값 보존 — 첫 wake event payload 에 reset_cause 필드로 전송.
 // brownout / panic / wdt / poweron 등 구분 가능. 첫 POST 후엔 wake_diag_pending=false → 안 보냄.
 const char *resetCauseStr = "?";
@@ -1222,6 +1225,12 @@ static void doPost() {
         DBGLN(F("[BUZ] 🎉 첫 POST 200 — 4-beep"));
         beep(4, 80, 80);
       }
+      // (2026-07-01) Timer wake heartbeat 완료 — 즉시 re-sleep. 5분 post_interval 유지 안 함.
+      if (timerWakeMode) {
+        DBGLN(F("[TIMER-WAKE] heartbeat POST 200 → 즉시 re-sleep"));
+        timerWakeMode = false;
+        enterDeepSleep("timer_hb");
+      }
     } else {
       cyc_post_fail++;
       // POST 실패 (non-200) — batch_count 유지. 다음 cycle 에 재전송.
@@ -1418,6 +1427,11 @@ void setup() {
     // 영향 없음 (이 분기는 진짜 motion/gpio wake 일 때만).
     buzz_first_fix_done  = false;
     buzz_first_post_done = false;
+  } else if (wc == ESP_SLEEP_WAKEUP_TIMER) {
+    // (2026-07-01) 10분 timer wake — LIS 안 잡히는 케이스 heartbeat check. LTE POST 성공 하나만
+    // 하고 즉시 re-sleep. 정상 motion wake 처럼 5분 post_interval 유지 안 함.
+    wakeReasonStr = "timer";
+    timerWakeMode = true;
   } else {
     wakeReasonStr = wakeCauseStr(wc);
   }
