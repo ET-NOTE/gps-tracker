@@ -1273,9 +1273,14 @@ static void enterDeepSleep(const char *reason) {
   DBGP(F("[SLEEP] entering deep sleep — wake on LIS motion (reason="));
   DBGP(reason); DBGLN(F(")"));
 
-  DBGLN(F("[BUZ] 💤 sleep — 2-beep (이전 작동 확인된 짧은 패턴 — 6-beep 의 빠른 PWM transient 가 PWR_EN HIGH 전 brownout 트리거 의심)"));
-  beep(2, 100, 100);
-  waitBuzzerFlush();
+  // (2026-07-01) timer wake heartbeat sleep 은 조용히 — 매 10분 사이클 마다 실외 삐삐 방지.
+  // 성공 (timer_hb) / 실패 (timer_hb_fail) 둘 다 skip.
+  bool quietSleep = (strcmp(reason, "timer_hb") == 0 || strcmp(reason, "timer_hb_fail") == 0);
+  if (!quietSleep) {
+    DBGLN(F("[BUZ] 💤 sleep — 2-beep (이전 작동 확인된 짧은 패턴 — 6-beep 의 빠른 PWM transient 가 PWR_EN HIGH 전 brownout 트리거 의심)"));
+    beep(2, 100, 100);
+    waitBuzzerFlush();
+  }
 
   if (cyc_fix_count == 0 && cyc_no_fix_count > 0) rtc_no_fix_cycles++;
   if (S.csq <= 0)                                 rtc_modem_fail_cycles++;
@@ -1437,7 +1442,12 @@ void setup() {
     wakeReasonStr = "timer";
     timerWakeMode = true;
   } else {
-    wakeReasonStr = wakeCauseStr(wc);
+    // (2026-07-01) wc == UNDEFINED (deep sleep 아닌 재부팅) 은 rr 로 세분화. 이전엔 전부 "boot" 로
+    // 표시되어 cold boot vs esp_restart (PR #108) vs brownout vs crash 구분 안 됨.
+    if      (rr == ESP_RST_SW)                                                 wakeReasonStr = "sw_reset";
+    else if (rr == ESP_RST_BROWNOUT)                                           wakeReasonStr = "brownout";
+    else if (rr == ESP_RST_TASK_WDT || rr == ESP_RST_INT_WDT || rr == ESP_RST_PANIC || rr == ESP_RST_WDT) wakeReasonStr = "crash";
+    else                                                                       wakeReasonStr = wakeCauseStr(wc);
   }
   Serial.printf("[BOOT] wake=%s boots=%lu wakes=%lu motion_wakes=%lu brown=%lu\n",
     wakeReasonStr,
