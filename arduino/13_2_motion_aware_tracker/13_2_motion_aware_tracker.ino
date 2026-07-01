@@ -291,6 +291,9 @@ char deviceUid[32] = "esp-unknown";
 const char *wakeReasonStr = "boot";
 // (2026-07-01) Timer wake heartbeat 모드 — 첫 성공 POST 후 즉시 re-sleep. 5분 유지 안 함.
 static bool timerWakeMode = false;
+// (2026-07-01) Timer wake 최대 지속 — LTE 실패해도 2분 지나면 즉시 sleep. 지하 등 두절 지역
+// 매 10분 사이클 마다 5분+ 소모 방지.
+#define TIMER_WAKE_MAX_MS (120UL * 1000UL)
 // 13_3: esp_reset_reason() 값 보존 — 첫 wake event payload 에 reset_cause 필드로 전송.
 // brownout / panic / wdt / poweron 등 구분 가능. 첫 POST 후엔 wake_diag_pending=false → 안 보냄.
 const char *resetCauseStr = "?";
@@ -1469,6 +1472,15 @@ void setup() {
 }
 
 void loop() {
+  // (2026-07-01) Timer wake timeout guard — 2분 안 성공 POST 못 하면 stuck escalation 안 거치고
+  // 즉시 sleep. 지하주차장 등 LTE 두절 지역에서 매 10분 사이클 마다 5분 loop 유지 = 배터리 50%+
+  // 소모 방지. 정말 stuck 상태면 motion wake 로 정상 loop 진입 시 stuck watchdog 이 esp_restart 처리.
+  if (timerWakeMode && (millis() - bootMs) > TIMER_WAKE_MAX_MS) {
+    DBGLN(F("[TIMER-WAKE] 2분 timeout — 성공 POST 없이 re-sleep"));
+    timerWakeMode = false;
+    enterDeepSleep("timer_hb_fail");
+  }
+
   // GPS 피드 — NMEA 문자 카운트로 UART 정상 여부 진단 + fix 시 history 에 push
   static uint32_t lastGpsHistPushMs = 0;
   // 안테나 상태 스캐너 — NMEA 스트림 어디에 "ANTENNA <상태>" 가 나오든 즉시 잡음.
