@@ -176,6 +176,10 @@ static uint32_t cyc_post_ok          = 0;
 // 13_2 stuck watchdog — 마지막 성공 POST 후 STUCK_POST_TIMEOUT_MS 무응답 시 강제 hardPowerCycle.
 static uint32_t lastSuccessPostMs    = 0;
 #define STUCK_POST_TIMEOUT_MS (60UL * 1000UL)
+// (2026-07-01) stuck escalation ceiling — soft/hard reset 이 못 걷어내는 케이스 (2026-07-01 sss
+// 09:22-11:11 1h48m 사고, 13_4). 5분+ 지속 시 ESP 자체 재부팅 → setup() 부터 lteBringUp 다시.
+#define STUCK_ESP_RESTART_TIMEOUT_MS (5UL * 60UL * 1000UL)
+static uint32_t stuckSinceMs         = 0;   // stuck 시작 시각 (성공 POST 시 0으로 rearm)
 // REG (network attached) 모니터 — REG_OK 지속 추적. 30s 연속 not-registered 면 soft reset.
 static uint32_t lastRegOkMs          = 0;
 static uint32_t lastRegPollMs        = 0;
@@ -1130,6 +1134,7 @@ static void doPost() {
       S.postOks++;
       cyc_post_ok++;
       lastSuccessPostMs = millis();
+      stuckSinceMs      = 0;   // (2026-07-01) stuck escalation rearm
       breadcrumb("post_ok");
       softResetStreak = 0;
       if (lastRegOkMs == 0) lastRegOkMs = millis();
@@ -1650,6 +1655,18 @@ void loop() {
       // 13_2 stuck watchdog (escalation): 마지막 성공 POST 후 60s 넘어가면 우선 soft reset.
       // soft reset 했는데 또 60s 안에 무응답 → hardPowerCycle 로 escalate.
       if (lastSuccessPostMs > 0 && (millis() - lastSuccessPostMs) > STUCK_POST_TIMEOUT_MS) {
+        // (2026-07-01) stuck 시작 시각 마킹 — 성공 POST 시 rearm.
+        if (stuckSinceMs == 0) stuckSinceMs = millis();
+
+        // (2026-07-01) escalation ceiling — soft/hard reset 이 stuck 못 걷어내는 케이스.
+        // 5분+ 지속 시 ESP 자체 재부팅 → setup() 부터 lteBringUp 다시.
+        if ((millis() - stuckSinceMs) > STUCK_ESP_RESTART_TIMEOUT_MS) {
+          DBGLN(F("[LTE] 🚨🚨 stuck 5분+ → ESP 재부팅"));
+          breadcrumb("stuck_restart");
+          delay(200);
+          esp_restart();
+        }
+
         if (softResetStreak < SOFT_RESET_TO_HARD_THRESHOLD) {
           DBGLN(F("[LTE] 🚨 60s 무응답 → soft reset"));
           softResetStreak++;
@@ -1662,7 +1679,7 @@ void loop() {
         S.lteReady      = false;
         S.failStreak    = 0;
         S.nextBringUpAt = millis() + 1000;
-        lastSuccessPostMs = millis();   // rearm cooldown
+        lastSuccessPostMs = millis();   // rearm 60s cooldown (stuckSinceMs 유지)
       }
 
       // REG 주기 모니터 — 10s 마다 AT+CEREG?. REG=0 가 30s 연속이면 soft reset 강제.

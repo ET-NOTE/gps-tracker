@@ -182,6 +182,12 @@ static uint32_t cyc_post_ok          = 0;
 // 0 = 부팅 후 한 번도 성공 POST 없음 (= bringup 단계로 따로 처리, BRINGUP_FAIL_HARD_RESET 가 cover).
 static uint32_t lastSuccessPostMs    = 0;
 #define STUCK_POST_TIMEOUT_MS (60UL * 1000UL)
+// (2026-07-01) stuck escalation ceiling — soft/hard reset 이 stuck 못 걷어내는 케이스 (LTE 모듈만
+// reset 해도 회복 안 되는 지역/신호). 5분 지속 시 ESP 자체 재부팅 → setup() 부터 lteBringUp 다시.
+// 2026-07-01 sss 09:22-11:11 (1h48m) 두절 사고 원인 = ESP 는 loop 계속 → deep sleep 안 들어감 →
+// PR #99 timer wake 도 무효. esp_restart 로 setup() 재실행 강제.
+#define STUCK_ESP_RESTART_TIMEOUT_MS (5UL * 60UL * 1000UL)
+static uint32_t stuckSinceMs         = 0;   // stuck 시작 시각 (성공 POST 시 0으로 rearm)
 // REG (network attached) 모니터 — REG_OK 지속 추적. 30s 연속 not-registered 면 soft reset.
 static uint32_t lastRegOkMs          = 0;
 static uint32_t lastRegPollMs        = 0;
@@ -1200,6 +1206,7 @@ static void doPost() {
       S.postOks++;
       cyc_post_ok++;
       lastSuccessPostMs = millis();
+      stuckSinceMs      = 0;   // (2026-07-01) stuck escalation rearm
       softResetStreak = 0;
       if (lastRegOkMs == 0) lastRegOkMs = millis();   // watchdog reset — 60s 무응답 stuck 가드
       breadcrumb("post_ok");
@@ -1788,6 +1795,18 @@ void loop() {
       // 13_3 stuck watchdog (escalation): 마지막 성공 POST 후 60s 넘어가면 우선 soft reset.
       // soft reset 했는데 또 60s 안에 무응답 → hardPowerCycle 로 escalate.
       if (lastSuccessPostMs > 0 && (millis() - lastSuccessPostMs) > STUCK_POST_TIMEOUT_MS) {
+        // (2026-07-01) stuck 시작 시각 마킹 — 성공 POST 시 rearm (line 1209 근처).
+        if (stuckSinceMs == 0) stuckSinceMs = millis();
+
+        // (2026-07-01) escalation ceiling — soft/hard reset 이 stuck 못 걷어내는 케이스 (2026-07-01
+        // sss 09:22-11:11 1h48m 사고). 5분+ 지속 시 ESP 자체 재부팅 → setup() 부터 lteBringUp 다시.
+        if ((millis() - stuckSinceMs) > STUCK_ESP_RESTART_TIMEOUT_MS) {
+          DBGLN(F("[LTE] 🚨🚨 stuck 5분+ → ESP 재부팅"));
+          breadcrumb("stuck_restart");
+          delay(200);   // breadcrumb NVS flush 시간
+          esp_restart();
+        }
+
         if (softResetStreak < SOFT_RESET_TO_HARD_THRESHOLD) {
           DBGLN(F("[LTE] 🚨 60s 무응답 → soft reset"));
           softResetStreak++;
@@ -1800,7 +1819,7 @@ void loop() {
         S.lteReady      = false;
         S.failStreak    = 0;
         S.nextBringUpAt = millis() + 1000;
-        lastSuccessPostMs = millis();   // rearm cooldown
+        lastSuccessPostMs = millis();   // rearm 60s cooldown (stuckSinceMs 는 유지 — 총 stuck 시간)
       }
 
       // REG 주기 모니터 — 10s 마다 AT+CEREG?. REG=0 가 30s 연속이면 soft reset 강제.
