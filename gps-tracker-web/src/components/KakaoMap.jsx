@@ -702,6 +702,19 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       delete lastDotAtRef.current[deviceId];
     },
 
+    // (2026-07-01) refresh(force=true) 용 — polyline + lastRecordedAtRef 완전 reset.
+    // updateMarker 는 시간 오름차순 append 만 처리 → refresh 시 최신 상태의 polyline 에
+    // 오래된 fix 들 append 되면 역방향 라인 그려짐. force refresh 전 이 함수로 클린 시작.
+    clearLiveTrail(deviceId) {
+      const entry = polyRef.current[deviceId];
+      if (entry) {
+        entry.segments.forEach(s => s.poly.setMap(null));
+        entry.gaps.forEach(g => g.setMap(null));
+        delete polyRef.current[deviceId];
+      }
+      delete lastRecordedAtRef.current[deviceId];
+    },
+
     /**
      * 모든 디바이스의 history 점들을 일시적으로 숨김/노출 (지우지 않고 visibility 만).
      * 시커 활성 시 호출하면 라이브 trail (초록) 가 seeker path (파랑) 와 시각 충돌 없이 정리됨.
