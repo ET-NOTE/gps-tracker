@@ -10,6 +10,8 @@ import { api } from '../api';
 export default function NotificationSettings() {
   const [s, setS]       = useState(null);
   const [busy, setBusy] = useState(false);
+  // (2026-07-01) 저장 결과 UI — auto-save 가 조용히 실패하던 케이스 진단용.
+  const [saveMsg, setSaveMsg] = useState(null);   // {ok: bool, text: string}
 
   useEffect(() => {
     api.getNotificationSettings().then(setS).catch(console.error);
@@ -18,11 +20,49 @@ export default function NotificationSettings() {
   async function patch(updates) {
     setS(prev => ({ ...prev, ...updates }));   // optimistic
     setBusy(true);
+    setSaveMsg(null);
     try {
       const next = await api.updateNotificationSettings(updates);
       setS(next);
     } catch (e) {
-      alert(e.message);
+      // (2026-07-01) alert 대신 화면에 남는 error msg — 사용자가 놓치지 않게.
+      console.error('[NotificationSettings] auto-save failed:', e);
+      setSaveMsg({ ok: false, text: `자동 저장 실패: ${e.message}` });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // (2026-07-01) 명시적 저장 — auto-save 실패 시 사용자가 강제로 현재 UI 상태 전체를 backend 에 재전송.
+  // 원인 진단: patch() 는 매 토글 마다 호출되지만 network / auth / silent 401 등 이유로 fail 시 UI 만 켜져
+  // 있고 backend 는 반영 안 됨. 이 버튼으로 명시적 flush + 결과 표시.
+  async function saveAll() {
+    if (!s) return;
+    setBusy(true);
+    setSaveMsg(null);
+    const payload = {
+      motion_alert:          s.motion_alert,
+      low_batt_alert:        s.low_batt_alert,
+      offline_alert:         s.offline_alert,
+      geofence_alert:        s.geofence_alert,
+      device_health_alert:   s.device_health_alert,
+      lost_alert:            s.lost_alert,
+      signal_loss_alert:     s.signal_loss_alert,
+      online_alert:          s.online_alert,
+      sleep_alert:           s.sleep_alert,
+      wake_alert:            s.wake_alert,
+      cycle_first_fix_alert: s.cycle_first_fix_alert,
+      low_batt_threshold_mv: s.low_batt_threshold_mv,
+      offline_minutes:       s.offline_minutes,
+      signal_loss_minutes:   s.signal_loss_minutes,
+    };
+    try {
+      const next = await api.updateNotificationSettings(payload);
+      setS(next);
+      setSaveMsg({ ok: true, text: '저장 완료 — backend 반영됨' });
+    } catch (e) {
+      console.error('[NotificationSettings] explicit save failed:', e);
+      setSaveMsg({ ok: false, text: `저장 실패: ${e.message}` });
     } finally {
       setBusy(false);
     }
@@ -100,7 +140,36 @@ export default function NotificationSettings() {
           onChange={v => patch({ geofence_alert: v })} />
       </Group>
 
-      {busy && <div style={{ color: 'var(--text-3)', fontSize: 11, textAlign: 'right' }}>저장 중...</div>}
+      {/* (2026-07-01) 명시적 저장 — auto-save 조용히 fail 하는 경우 강제 재-flush */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 8,
+        padding: '12px 0', marginTop: 4,
+        borderTop: '1px solid var(--border)',
+      }}>
+        <button
+          onClick={saveAll}
+          disabled={busy || !s}
+          style={{
+            width: '100%', padding: '12px 16px',
+            background: busy ? 'var(--surface-2)' : 'var(--accent)',
+            color: busy ? 'var(--text-3)' : 'white',
+            border: 'none', borderRadius: 8,
+            fontSize: 14, fontWeight: 600,
+            cursor: busy ? 'default' : 'pointer',
+          }}>
+          {busy ? '저장 중...' : '💾 저장'}
+        </button>
+        {saveMsg && (
+          <div style={{
+            fontSize: 12, padding: '8px 12px', borderRadius: 6,
+            background: saveMsg.ok ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+            color: saveMsg.ok ? '#16a34a' : '#dc2626',
+            border: `1px solid ${saveMsg.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+          }}>
+            {saveMsg.text}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
