@@ -294,6 +294,21 @@ pub async fn ingest(
         }
     }
 
+    // (2026-07-01) cycle_first_fix 중복 push fix — wake pending=TRUE 마킹을 first_fix 판정 *전*
+    // 으로 이동. 이전 순서 (lifecycle event 분기 안 line 486 근처) 는 첫 fix 감지 → 이전 wake 의
+    // pending 소진 → 같은 POST 안 wake 로 pending 재-set → 다음 POST 의 fix 로 재-발행 = 2번.
+    // 이 위치로 옮기면: 이번 wake pending=TRUE → 같은 POST 의 fix 로 소진 = 1번만 발행.
+    if let Some(kind_str) = parsed.event.as_deref() {
+        if kind_str == "wake" {
+            let _ = sqlx::query(
+                "UPDATE devices SET cycle_first_fix_pending = TRUE WHERE id = $1"
+            )
+            .bind(device_id)
+            .execute(&state.db)
+            .await;
+        }
+    }
+
     // 0036: cycle_first_fix — wake 후 첫 fix 도착 시 1회 발송.
     // wake 이벤트 분기에서 pending=TRUE 마킹됨. 첫 fix=true 도착 시 atomic 토글 + event insert.
     let first_fix_xy: Option<(f64, f64)> = parsed.l80.as_ref()
@@ -481,16 +496,8 @@ pub async fn ingest(
                 "lifecycle event ingested"
             );
 
-            // 0036: wake → 다음 fix 1회 알림 (cycle_first_fix). pending=TRUE 마킹만,
-            // 실제 fix 도착은 일반 POST 의 location_records insert 분기에서 atomic 토글.
-            if kind == "wake" {
-                let _ = sqlx::query(
-                    "UPDATE devices SET cycle_first_fix_pending = TRUE WHERE id = $1"
-                )
-                .bind(device_id)
-                .execute(&state.db)
-                .await;
-            }
+            // 0036: wake → 다음 fix 1회 알림 (cycle_first_fix). pending=TRUE 마킹은
+            // (2026-07-01) first_fix 판정 *전* (line 297 위) 로 이동 — 같은 POST 안 wake+fix 재-발행 방지.
         }
     }
 
