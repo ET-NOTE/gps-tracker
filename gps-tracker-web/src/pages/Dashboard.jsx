@@ -331,6 +331,10 @@ export default function Dashboard({ onLogout }) {
   const wsRef      = useRef(null);
   const devRef     = useRef([]);
   const lastMetaRef = useRef({});
+  // (2026-07-01) zoom 변경 시 dot 재-render 위해 refresh 함수 노출
+  const refreshFnRef      = useRef(null);
+  const lastZoomLevelRef  = useRef(null);
+  const zoomRefreshTimerRef = useRef(null);
   // (2026-06-30) WS 실시간 path 의 priority sampling — device 별 마지막 dot 위치 + 누적 거리.
   // history fetch 의 computeClickableIndices 와 동일한 30m 간격 → 사거리 통과 dot 클릭 가능.
   const wsDotAccRef = useRef({});  // { [deviceId]: { lat, lng, accM } }
@@ -480,6 +484,8 @@ export default function Dashboard({ onLogout }) {
       loadDevicesIncremental();
       loadFences();
     };
+    // zoom 변경 시 handleMapViewChange 에서 호출용 (debounce 300ms)
+    refreshFnRef.current = refresh;
 
     const t = setInterval(() => refresh(true), 30000);
 
@@ -666,6 +672,14 @@ export default function Dashboard({ onLogout }) {
   const handleMapViewChange = useCallback((view) => {
     if (!filterAppliedRef.current) return;
     if (!view || view.lat == null || view.lng == null) return;
+    // (2026-07-01) zoom level 변경 감지 → dot re-render (300ms debounce, pinch/scroll 중간 제외)
+    if (lastZoomLevelRef.current !== view.level) {
+      lastZoomLevelRef.current = view.level;
+      clearTimeout(zoomRefreshTimerRef.current);
+      zoomRefreshTimerRef.current = setTimeout(() => {
+        refreshFnRef.current?.(true);   // force — 8초 debounce 우회
+      }, 300);
+    }
     const last = lastSavedMapViewRef.current;
     if (last
       && Math.abs(last.lat - view.lat) < 1e-6
