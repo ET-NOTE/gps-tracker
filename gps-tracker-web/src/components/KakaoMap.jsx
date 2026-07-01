@@ -464,6 +464,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   }
 
   useImperativeHandle(ref, () => ({
+    /** 현재 Kakao map zoom level (1=최대 확대 ~ 14=최대 축소). Dashboard 의 clickable dot 간격 계산용. */
+    getZoomLevel() { return zoomLevelRef.current; },
+
     /**
      * 컨테이너 크기·display 가 바뀐 뒤 호출 — kakao Map 이 새 dimension 에 맞춰 다시 그림.
      * display: none → block 전환 후 (예: corporate 탭 → home 복귀) 안 부르면 회색 화면.
@@ -632,11 +635,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
       const dotVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
       if (!meta.skipMarker) {
-        // cluster (5+ 점 좁은 범위 뭉침) 은 디바이스 색 무시하고 강제 빨강 — 시각적 경고.
-        const dotColor = isStop ? '#EF4444' : c;
-        // (2026-06-29) 모든 dot 을 화살표(zIndex 4) 위로 — 이전 일반=1/stop=2 라 화살표에 가려져
-        // 클릭 불가했음 (사거리 통과 등 운행 구간 dot 안 보이는 버그). gap 양끝은 더 위 zIdx 6.
-        const zIdx = meta.isGapEndpoint ? 6 : 5;
+        // (2026-07-01) stop 빨강 제거 — enrichWithSpeedStops 의 cluster 알고리즘이 25km/h 운행도
+        // stop 으로 오분류해서 운행 dot 이 전부 빨강 되던 이슈. 항상 device color.
+        const dotColor = c;
+        // (2026-07-01) 일반 dot 5 (화살표 6 아래), gap endpoint 7 (화살표 위 강조).
+        // 화살표 clickable=false 라 dot 클릭 그대로 hit.
+        const zIdx = meta.isGapEndpoint ? 7 : 5;
         const marker = new window.kakao.maps.Marker({
           map: dotVisible ? mapRef.current : null,
           position: pos,
@@ -671,7 +675,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
             position: pos,
             image: makeArrowImage(angle, c),
             clickable: false,
-            zIndex: 4,
+            zIndex: 6,   // (2026-07-01) 4 → 6: dot (5) 위. clickable=false 라 dot 클릭 pass through.
           });
           if (!arrowsRef.current[deviceId]) arrowsRef.current[deviceId] = [];
           arrowsRef.current[deviceId].push(am);
