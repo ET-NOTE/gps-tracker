@@ -529,6 +529,9 @@ export default function Dashboard({ onLogout }) {
         const color = getDeviceColor(d);
         const stale = isStale(d.last_seen_at);
         const gapMap = computeGapMap(ordered);
+        // (2026-07-01) force refresh 면 polyline 도 완전 reset — updateMarker 는 시간 오름차순
+        // append 만 하므로 기존 polyline (최신까지) 에 오래된 fix 이어붙이면 역방향 라인 생김.
+        if (force) mapRef.current?.clearLiveTrail?.(d.id);
         ordered.forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
