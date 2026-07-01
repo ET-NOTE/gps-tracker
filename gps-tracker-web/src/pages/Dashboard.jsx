@@ -481,7 +481,7 @@ export default function Dashboard({ onLogout }) {
       if (!force && now - lastRefreshAt < 8000) return;
       lastRefreshAt = now;
       setTick(x => x + 1);
-      loadDevicesIncremental();
+      loadDevicesIncremental(force);   // force → 기존 device 도 dot 재-render
       loadFences();
     };
     // zoom 변경 시 handleMapViewChange 에서 호출용 (debounce 300ms)
@@ -503,7 +503,7 @@ export default function Dashboard({ onLogout }) {
     };
   }, []);
 
-  async function loadDevicesIncremental() {
+  async function loadDevicesIncremental(force = false) {
     try {
       const list = await api.listDevices();
       const oldIds = new Set(devRef.current.map(d => d.id));
@@ -518,7 +518,8 @@ export default function Dashboard({ onLogout }) {
       devRef.current = list;
       wsRef.current?.subscribe(list.map(d => d.id));
       for (const d of list) {
-        if (oldIds.has(d.id)) continue;
+        // (2026-07-01) force=true (zoom re-render 등) 면 기존 device 도 dot 재그림
+        if (!force && oldIds.has(d.id)) continue;
         const since = await computeHomeSinceISO(d);
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
         const locs = api.flattenGrouped(groups);
