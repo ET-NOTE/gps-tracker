@@ -46,6 +46,19 @@
                             // 결정 컨텍스트 → memory/project_int_wdt_bypass_decision.md
 
 // =================================================================
+// (2026-07-01) OLED 디버그 레이어 — 지하주차장 통과 등 현장 진단용.
+//   자동차 안에서 시리얼 monitor = CDC=cdc 위험 (LTE 방해). OLED = 안전.
+//   활성화: 아래 매크로 1 로. 비활성화: 0 으로 하면 컴파일에서 완전 배제 → 배터리 영향 0.
+//   I2C: SDA=8, SCL=9 (LIS3DH 와 공유), SSD1306 128×64 @ 0x3C.
+//   소모: 활성화 시 ~5-15mA 추가 (STATUS 라인만큼 갱신). sleep 진입 시 자동 OFF.
+// =================================================================
+#define OLED_DEBUG_ENABLED 1
+#if OLED_DEBUG_ENABLED
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+#endif
+
+// =================================================================
 // 핀 정의
 // =================================================================
 #define PIN_SDA        8
@@ -58,15 +71,18 @@
 #define PIN_LIS_INT    5
 // (PIN_SWITCH removed — 테스트 스위치 하드웨어 제거)
 
-// LTE pin 극성 (sss 하드웨어 기준). aa 신 하드웨어 (극성 반전 + 마그네틱 부저) 는 별도 fork
-// (13_4_aa_motion_aware_tracker) 참조. sss 전용 코드가 aa 조건으로 오염되지 않게 분리.
+// (2026-07-01) aa 전용 fork — 03_4 진단으로 확정된 극성.
+// sss: DTR idle=LOW, PWRKEY idle=HIGH pulse=LOW, 부저 driver → BUZZER_ENABLED=1
+// aa : DTR idle=LOW (sss 와 동일), PWRKEY idle=LOW pulse=HIGH (반전), 마그네틱 부저 (LTE 방해) → BUZZER_ENABLED=0
+//   * DTR 은 처음 사용자 정보 "반전" 이었지만 실측 결과 SIM7080 datasheet default (LOW=active) 가 맞음.
+//     HIGH 로 세팅 시 첫 AT 만 응답 후 sleep 진입 → 전체 명령 침묵. LOW 로 원복 시 CGATT/IP 모두 정상.
 #define LTE_DTR_IDLE      LOW
-#define LTE_PWRKEY_IDLE   HIGH
-#define LTE_PWRKEY_PULSE  LOW
+#define LTE_PWRKEY_IDLE   LOW
+#define LTE_PWRKEY_PULSE  HIGH
 
 #define PIN_GPS_RX     20
 #define PIN_GPS_TX     21
-#define GPS_BAUD       115200    // 13_4: LC86G default (이전 L80 9600)
+#define GPS_BAUD       9600      // (2026-07-01) aa 신 하드웨어 LC86G default. persistence 롤백 위험 회피 — 사용자 지시 "9600 유지 절대 원칙".
 
 // PCB rev 빌드 플래그 — 동일 13_2 소스로 구/신 PCB 모두 지원.
 //   default (#define USE_OLD_PCB 미설정) = 신 PCB rev (2026-06-17~), RX=2, TX=4
@@ -90,7 +106,7 @@
 // sequence + boot beep 제거 모두 무효 → hardware 결합 문제 (back-EMF + GPIO1 직접 구동).
 // 영구 fix 는 PCB 에 플라이백 다이오드 + driver TR. 그때까지 BUZZER_ENABLED 0 default.
 // 자세한 진단 라운드는 memory/project_buzzer_lte_diagnostic.md.
-#define BUZZER_ENABLED 1     // sss: digitalWrite driver 로 LEDC PWM 회피 — LTE 영향 검증
+#define BUZZER_ENABLED 0     // aa: 마그네틱 부저 (GPIO1 PWM 직결, back-EMF) → LTE 방해. 무조건 OFF.
 
 // =================================================================
 // 동작 파라미터
@@ -553,6 +569,123 @@ static uint16_t readVbatMv() {
 }
 
 // =================================================================
+// OLED 디버그 함수 — OLED_DEBUG_ENABLED=1 시만 컴파일. 0 이면 no-op 3개로 스텁.
+// oledInit()   : setup 안 Wire.begin() 이후 1회
+// oledUpdate() : printStatus() 안에서 매 1초 갱신 (표시 데이터 = STATUS 라인 요약)
+// oledSleep()  : enterDeepSleep() 안에서 sleep 진입 직전 (display OFF)
+// =================================================================
+#if OLED_DEBUG_ENABLED
+  #define OLED_ADDR 0x3C
+  static Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+  static bool oledOk = false;
+
+  static void oledInit() {
+    if (!oled.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
+      Serial.println(F("[OLED] init fail — 진단 layer 없이 진행"));
+      return;
+    }
+    oledOk = true;
+    oled.setTextSize(1);
+    oled.setTextColor(SSD1306_WHITE);
+    oled.setTextWrap(false);
+    oled.clearDisplay();
+    oled.setCursor(0, 0);
+    oled.println(F("13_4_aa boot"));
+    oled.println(deviceUid);
+    oled.printf("wake=%s\n", wakeReasonStr);
+    oled.printf("rst=%s\n", resetCauseStr);
+    oled.display();
+  }
+
+  static void oledUpdate() {
+    if (!oledOk) return;
+    uint32_t now = millis();
+    uint32_t up_s = (now - bootMs) / 1000;
+
+    // fix 판정 (printStatus 와 동일)
+    uint32_t hdopv = gps.hdop.value();
+    bool fix = gps.location.isValid()
+            && gps.location.age() < 10000
+            && gps.satellites.value() >= 3
+            && (hdopv == 0 || hdopv < 500);
+    uint32_t motAgeS = lastMotionMs ? (now - lastMotionMs) / 1000 : 0;
+
+    oled.clearDisplay();
+    oled.setCursor(0, 0);
+
+    // L1: uptime + wake + boots (RTC 유지 확인 = boots 계속 증가해야 정상)
+    oled.printf("%lus %s b%lu\n",
+      (unsigned long)up_s, wakeReasonStr, (unsigned long)rtc_boot_count);
+
+    // L2: LTE — 지하 진입 시 이 라인 관찰 (CSQ 99=신호없음, REG 잃음)
+    oled.printf("LTE:%s csq%d r%d\n",
+      S.lteReady ? "OK" : "--", S.csq, S.reg);
+
+    // L3: POST — 성공/시도 카운트, failStreak, 마지막 status
+    oled.printf("P %lu/%lu fs%u s%d\n",
+      (unsigned long)S.postOks, (unsigned long)S.postTries,
+      (unsigned)S.failStreak, S.lastStatus);
+
+    // L4: GPS — fix / sat / hdop
+    oled.printf("GPS:%s s%d h%.1f\n",
+      fix ? "FIX" : "--", (int)gps.satellites.value(), hdopv / 100.0f);
+
+    // L5: motion + LIS + bring-up count + hard resets (LTE 재시작 반복 진단)
+    oled.printf("m%lu a%lus b%u h%u\n",
+      (unsigned long)motionEvents, (unsigned long)motAgeS,
+      (unsigned)S.bringUpCount, (unsigned)S.hardResets);
+
+    // L6: vbat + antenna (배터리 droop / 안테나 상태)
+    oled.printf("V%u ant:%s\n",
+      (unsigned)readVbatMv(), lastAntennaStatus);
+
+    // L7: escalation / stationary / breadcrumb (지금 firmware 가 뭐 하고 있는지)
+    //   우선순위: STUCK > NOPOST > STAT > TIMER_HB > breadcrumb
+    if (stuckSinceMs > 0) {
+      uint32_t stuck_s = (now - stuckSinceMs) / 1000;
+      uint32_t ceil_s  = STUCK_ESP_RESTART_TIMEOUT_MS / 1000;
+      oled.printf("STUCK %lu/%lus\n", (unsigned long)stuck_s, (unsigned long)ceil_s);
+    } else if (!timerWakeMode
+               && lastSuccessPostMs == 0
+               && up_s > (STUCK_POST_TIMEOUT_MS / 1000)) {
+      // (2026-07-01 저녁) 부팅 후 60s+ 성공 POST 없음 = boot stuck 카운트다운.
+      // 5분 (STUCK_ESP_RESTART_TIMEOUT_MS) 도달 시 esp_restart 발동 예정.
+      uint32_t ceil_s = STUCK_ESP_RESTART_TIMEOUT_MS / 1000;
+      oled.printf("NOPOST %lu/%lus\n", (unsigned long)up_s, (unsigned long)ceil_s);
+    } else if (stationarySinceMs > 0) {
+      uint32_t held_s = (now - stationarySinceMs) / 1000;
+      uint32_t win_s  = STATIONARY_WINDOW_MS / 1000;
+      oled.printf("STAT %lu/%lus\n", (unsigned long)held_s, (unsigned long)win_s);
+    } else if (timerWakeMode) {
+      oled.printf("TIMER_HB mode\n");
+    } else {
+      oled.printf("op:%s\n", lastOpStr);
+    }
+
+    // L8: SIM device_uid 뒤 8자 (identity 확인용)
+    size_t n = strlen(deviceUid);
+    const char *tail = (n > 12) ? deviceUid + (n - 12) : deviceUid;
+    oled.printf("%s", tail);
+
+    oled.display();
+  }
+
+  static void oledSleep() {
+    if (!oledOk) return;
+    oled.clearDisplay();
+    oled.setCursor(0, 0);
+    oled.printf("SLEEP %lus\n", (unsigned long)((millis() - bootMs) / 1000));
+    oled.display();
+    delay(50);
+    oled.ssd1306_command(SSD1306_DISPLAYOFF);
+  }
+#else
+  static inline void oledInit()   {}
+  static inline void oledUpdate() {}
+  static inline void oledSleep()  {}
+#endif
+
+// =================================================================
 // 상세 시리얼 STATUS — OLED 대체 단일 라인 (1초 주기).
 //
 // 형식:
@@ -627,6 +760,9 @@ static void printStatus() {
     Serial.printf(" | SIM ...%s", suffix);
   }
   Serial.println();
+
+  // (2026-07-01) OLED 진단 layer — printStatus 와 동기 갱신 (매 1초).
+  oledUpdate();
 }
 
 // =================================================================
@@ -1182,8 +1318,7 @@ static void doPost() {
   breadcrumb("do_post");
   esp_task_wdt_reset();   // A안: doPost 시작 전 fresh feed (직전 cycle 잔여 시간 클리어)
 
-  // (2026-07-02) CSQ + REG 재조회 — 이전엔 lteBringUp 초반 값만 저장 → stale (대부분 99).
-  // buildPayload 직전에 조회해 payload 에 실시간 신호 강도 반영. 지하 진입 등 진단 정확도 개선.
+  // (2026-07-02) CSQ + REG 재조회 — 이전엔 lteBringUp 초반 값만 저장 → stale.
   if (sendAT("AT+CSQ", "+CSQ:", 1500)) {
     int p = lastResp.indexOf("+CSQ:");
     S.csq = lastResp.substring(p + 5).toInt();
@@ -1290,6 +1425,9 @@ static void enterDeepSleep(const char *reason) {
   breadcrumb("enter_sleep");
   if (inSleepProcedure) return;
   inSleepProcedure = true;
+
+  // (2026-07-01) OLED 마지막 표시 + display OFF (배터리 절약).
+  oledSleep();
 
   DBGP(F("[SLEEP] entering deep sleep — wake on LIS motion (reason="));
   DBGP(reason); DBGLN(F(")"));
@@ -1567,6 +1705,10 @@ void setup() {
   Wire.begin(PIN_SDA, PIN_SCL);
   Wire.setClock(400000);
 
+  // (2026-07-01) OLED 진단 layer 초기화 — LIS 보다 먼저 붙여 boot 화면 표시.
+  //   OLED_DEBUG_ENABLED=0 이면 no-op.
+  oledInit();
+
   // LIS3DH init (OLED 없이 I2C 단일 소비자)
   lisOk = lisInit();
   if (lisOk) {
@@ -1609,10 +1751,10 @@ void setup() {
 void loop() {
   // (2026-07-01 저녁) 부팅 후 5분+ 성공 POST 0회 = INT-WDT crash 기다리지 말고 능동 재부팅.
   // 시나리오: 지하주차장 진입 or 하드웨어 배터리 홀더 접촉 loss → POWERON reset 반복 → static
-  //           변수 lastSuccessPostMs=0 유지 → 기존 stuck watchdog 의 `lastSuccessPostMs > 0`
-  //           조건 못 만족 → escalation 아예 안 걸림.
-  // 실측 (2026-07-01 sss): 20:20 이후 POWERON 반복 → 21:13 offline → 22:22 INT-WDT crash 로
-  //                       1h9m 만에 자체 회복. 그 사이 firmware 아무것도 못 함.
+  //           변수 lastSuccessPostMs=0 유지 → 기존 stuck watchdog (line 하단 STUCK_POST_TIMEOUT_MS)
+  //           의 `lastSuccessPostMs > 0` 조건 못 만족 → escalation 아예 안 걸림.
+  // 실측 (2026-07-01 sss): 20:20 이후 POWERON 반복 → 21:13 offline → 22:22 INT-WDT crash
+  //                        로 1h9m 만에 자체 회복. 그 사이 firmware 아무것도 못 함.
   // 이 로직으로 5분에 자동 esp_restart → setup() 부터 다시 lteBringUp. 최악 case 회복 시간 상한 5분.
   // 예외: timerWakeMode 는 별도 2분 timeout guard 로 처리.
   if (!timerWakeMode
@@ -1656,7 +1798,10 @@ void loop() {
     }
     gpsCharsRx++;
 
-    // ── 13_4: NMEA 라인 누적 + LC86G PQTMANTENNASTATUS 파싱 ─────────────
+    // ── 13_4: NMEA 라인 누적 + 안테나 URC 파싱 ─────────────
+    //   · LC86G (Quectel 신형): $PQTMANTENNASTATUS,<ver>,<mode>,<status>,<source>*XX
+    //   · L86   (Quectel 구형, MediaTek MTK 기반): $GPTXT,01,01,02,ANTSTATUS=OK/OPEN/SHORT*XX
+    //   두 모듈이 하드웨어별로 다르지만 payload 는 동일 lastAntennaStatus 로 통일.
     if (c == '\n' || c == '\r') {
       if (nmeaLineLen > 18 && strncmp(nmeaLine, "$PQTMANTENNASTATUS", 18) == 0) {
         nmeaLine[nmeaLineLen] = 0;
@@ -1682,6 +1827,27 @@ void loop() {
         if (changed) {
           Serial.printf("[LC86G] antenna=%s (status=%d source=%d, boot+%.1fs)\n",
             lastAntennaStatus, statusVal, sourceVal, (millis() - bootMs) / 1000.0f);
+        }
+      }
+      // (2026-07-01) L86 (aa 신 하드웨어) — $GPTXT 안 "ANTSTATUS=OK/OPEN/SHORT" 파싱.
+      // ANTENNA 8자 패턴 매칭은 legacy L80 형식 (`ANTENNA OK`) 이라 여기 안 잡힘.
+      else if (nmeaLineLen > 6 && nmeaLine[0] == '$'
+               && strncmp(nmeaLine + 3, "TXT,", 4) == 0) {
+        nmeaLine[nmeaLineLen] = 0;
+        const char* ants = strstr(nmeaLine, "ANTSTATUS=");
+        if (ants) {
+          ants += 10;   // strlen("ANTSTATUS=")
+          const char* tag = "?";
+          if      (strncmp(ants, "OK",    2) == 0) tag = "OK";
+          else if (strncmp(ants, "OPEN",  4) == 0) tag = "OPEN";
+          else if (strncmp(ants, "SHORT", 5) == 0) tag = "SHORT";
+          bool changed = strncmp(lastAntennaStatus, tag, sizeof(lastAntennaStatus)) != 0;
+          strncpy(lastAntennaStatus, tag, sizeof(lastAntennaStatus) - 1);
+          lastAntennaStatus[sizeof(lastAntennaStatus) - 1] = 0;
+          if (changed) {
+            Serial.printf("[L86] antenna=%s (GPTXT ANTSTATUS, boot+%.1fs)\n",
+              lastAntennaStatus, (millis() - bootMs) / 1000.0f);
+          }
         }
       }
       nmeaLineLen = 0;
