@@ -300,12 +300,18 @@ pub async fn ingest(
     // 이 위치로 옮기면: 이번 wake pending=TRUE → 같은 POST 의 fix 로 소진 = 1번만 발행.
     if let Some(kind_str) = parsed.event.as_deref() {
         if kind_str == "wake" {
-            let _ = sqlx::query(
-                "UPDATE devices SET cycle_first_fix_pending = TRUE WHERE id = $1"
-            )
-            .bind(device_id)
-            .execute(&state.db)
-            .await;
+            // (2026-07-02) timer wake (heartbeat) 는 GPS 초기화 시간 없어 fix 못 잡음.
+            // pending 마킹 시 매 10분마다 cycle_first_fix push 알림 flood (2026-07-02 01~02시 실측).
+            // motion/boot/sw_reset/brownout/crash 만 마킹.
+            let wc = parsed.wake.as_deref().unwrap_or("");
+            if wc != "timer" {
+                let _ = sqlx::query(
+                    "UPDATE devices SET cycle_first_fix_pending = TRUE WHERE id = $1"
+                )
+                .bind(device_id)
+                .execute(&state.db)
+                .await;
+            }
         }
     }
 
@@ -441,6 +447,8 @@ pub async fn ingest(
             if let Some(r) = &parsed.sleep_reason { data.insert("sleep_reason".into(), Value::String(r.clone())); }
             if let Some(v) = parsed.vbat_mv { data.insert("vbat_mv".into(), v.into()); }
             if let Some(c) = parsed.csq { data.insert("csq".into(), c.into()); }
+            // (2026-07-02) reg 도 저장 — 이전엔 payload 는 오는데 event data 에 안 담겼음.
+            if let Some(r) = parsed.reg { data.insert("reg".into(), r.into()); }
             if let Some(t) = parsed.ts { data.insert("uptime_s".into(), t.into()); }
             if let Some(off) = parsed.stopped_offset_s {
                 data.insert("stopped_offset_s".into(), off.into());
