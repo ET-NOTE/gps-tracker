@@ -176,12 +176,21 @@ async fn list(
                    LIMIT 1
              ) le ON TRUE
         LEFT JOIN LATERAL (
-                  SELECT raw->>'antenna' AS antenna
-                    FROM location_records
-                   WHERE device_id = d.id
-                     AND raw ? 'antenna'
-                ORDER BY recorded_at DESC
-                   LIMIT 1
+                  -- (2026-07-03) location_records + events 통합. Timer wake heartbeat 사이클은
+                  --   fix 없이 wake event 만 발행 → events 에만 antenna 저장 → 이전 로직은
+                  --   location_records 만 참조해 last_antenna=null (미보고) 표시. 두 소스 최신값.
+                  SELECT antenna FROM (
+                    SELECT raw ->>'antenna' AS antenna, recorded_at AS at
+                      FROM location_records
+                     WHERE device_id = d.id AND raw ? 'antenna'
+                    UNION ALL
+                    SELECT data->>'antenna' AS antenna, occurred_at AS at
+                      FROM events
+                     WHERE device_id = d.id AND data ? 'antenna'
+                  ) x
+                  WHERE x.antenna IS NOT NULL AND x.antenna <> ''
+                  ORDER BY x.at DESC
+                  LIMIT 1
              ) la ON TRUE
             WHERE d.owner_id = $1
             ORDER BY COALESCE(d.last_seen_at, d.created_at) DESC"#,
@@ -887,12 +896,21 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                    LIMIT 1
              ) le ON TRUE
         LEFT JOIN LATERAL (
-                  SELECT raw->>'antenna' AS antenna
-                    FROM location_records
-                   WHERE device_id = d.id
-                     AND raw ? 'antenna'
-                ORDER BY recorded_at DESC
-                   LIMIT 1
+                  -- (2026-07-03) location_records + events 통합. Timer wake heartbeat 사이클은
+                  --   fix 없이 wake event 만 발행 → events 에만 antenna 저장 → 이전 로직은
+                  --   location_records 만 참조해 last_antenna=null (미보고) 표시. 두 소스 최신값.
+                  SELECT antenna FROM (
+                    SELECT raw ->>'antenna' AS antenna, recorded_at AS at
+                      FROM location_records
+                     WHERE device_id = d.id AND raw ? 'antenna'
+                    UNION ALL
+                    SELECT data->>'antenna' AS antenna, occurred_at AS at
+                      FROM events
+                     WHERE device_id = d.id AND data ? 'antenna'
+                  ) x
+                  WHERE x.antenna IS NOT NULL AND x.antenna <> ''
+                  ORDER BY x.at DESC
+                  LIMIT 1
              ) la ON TRUE
             WHERE d.id = $1 AND d.owner_id = $2"#,
     )

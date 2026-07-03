@@ -52,7 +52,7 @@
 //   I2C: SDA=8, SCL=9 (LIS3DH 와 공유), SSD1306 128×64 @ 0x3C.
 //   소모: 활성화 시 ~5-15mA 추가 (STATUS 라인만큼 갱신). sleep 진입 시 자동 OFF.
 // =================================================================
-#define OLED_DEBUG_ENABLED 1
+#define OLED_DEBUG_ENABLED 0   // (2026-07-02) 임시 0 — 24s INT-WDT crash 원인 진단 (OLED 로직 배제 후 재현 확인)
 #if OLED_DEBUG_ENABLED
   #include <Adafruit_GFX.h>
   #include <Adafruit_SSD1306.h>
@@ -315,7 +315,11 @@ uint32_t gpsFirstCharMs = 0;
 
 // L80-R 가 부팅 직후 emit 하는 $GPTXT 안테나 상태 ("ANTENNA OK"/"OPEN"/"SHORT").
 // 시리얼 디버그에 한 번만 출력. STATUS 라인에 lastAntennaStatus 짧게 포함.
-char lastAntennaStatus[16] = "?";  // "OK" / "OPEN" / "SHORT" / "?"
+// (2026-07-03) RTC_DATA_ATTR — wake 간 값 유지. L86 (aa) 은 부팅 후 GPTXT emit 순서가
+// OPEN → OK 로 시간 걸리는 특성. Timer wake heartbeat 사이클 (uptime 2초) 은 OK 감지
+// 완료 전 sleep → 매 사이클 payload OPEN. Motion wake (긴 세션) 에서 OK 감지되면
+// RTC 로 유지 → 이후 timer wake 도 OK payload 유지.
+RTC_DATA_ATTR char lastAntennaStatus[16] = "?";  // "OK" / "OPEN" / "SHORT" / "?"
 
 char deviceUid[32] = "esp-unknown";
 const char *wakeReasonStr = "boot";
