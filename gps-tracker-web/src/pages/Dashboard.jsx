@@ -617,11 +617,8 @@ export default function Dashboard({ onLogout }) {
           });
         });
       }
-      // 사용자가 저장한 view 가 있으면 그걸 우선 복원. (focusDevice/fitToAllMarkers 가 setBounds 로 zoom 리셋하는 것 차단)
-      const sv = userPrefsRef.current?.map_view;
-      if (sv && sv.lat != null && sv.lng != null) {
-        mapRef.current?.setView?.(sv.lat, sv.lng, sv.level);
-      } else if (!isNaN(targetId)) {
+      // (2026-07-03) map_view (lat/lng/level) 저장/복원 제거. 매번 auto fit — 사용자 요청.
+      if (!isNaN(targetId)) {
         mapRef.current?.focusDevice(targetId);
       } else {
         mapRef.current?.fitToAllMarkers(60);
@@ -641,9 +638,8 @@ export default function Dashboard({ onLogout }) {
     const stored = userPrefs.filter_device_id;
     if (stored != null && devices.some(d => d.id === stored)) {
       setFilterDeviceId(stored);
-      // 저장된 map_view 가 있으면 filterToDevice 의 setBounds 로 zoom 리셋되지 않게 fit skip.
-      const hasSavedView = userPrefs.map_view?.lat != null;
-      mapRef.current?.filterToDevice(stored, { fit: !hasSavedView });
+      // (2026-07-03) map_view 저장 제거 → 항상 fit (selected device 전체 화면 auto zoom).
+      mapRef.current?.filterToDevice(stored, { fit: true });
     }
     filterAppliedRef.current = true;
   }, [mapReady, userPrefs, devices]);
@@ -670,12 +666,12 @@ export default function Dashboard({ onLogout }) {
     setUserTrackPref(false);
   }, []);
 
-  // KakaoMap 이 사용자 조작 (drag/zoom) 으로 view 가 바뀌었음을 알려옴 → userPrefs 에 저장.
-  // 초기 복원 중엔 저장 skip (filterAppliedRef.current === false 일 때).
-  // 같은 값 재저장 방지 (네트워크 절약).
+  // KakaoMap 이 사용자 조작 (drag/zoom) 으로 view 가 바뀌었음을 알려옴 → zoom re-render 만 트리거.
+  // (2026-07-03) map_view 저장 로직 제거 — 사용자 요청 "위치는 기억할 필요 없음".
+  //   hard reload = 매번 auto fit (position + zoom 모두 selected device 전체 보이도록).
+  //   세션 중 zoom 조작은 UI 상 유지되지만 새로고침 시 잊음. 실수로 빈 화면 봤을 때 다음 진입도
+  //   빈 화면 되는 문제 해결.
   const handleMapViewChange = useCallback((view) => {
-    // (2026-07-01) zoom re-render 는 filterApplied 무관. 200ms debounce — 화살표 하나로 통일 후
-    // marker 수 절반 (dot + arrow → arrow 만) 이라 refresh 도 빨라짐.
     if (view && view.level != null && lastZoomLevelRef.current !== view.level) {
       lastZoomLevelRef.current = view.level;
       clearTimeout(zoomRefreshTimerRef.current);
@@ -683,19 +679,6 @@ export default function Dashboard({ onLogout }) {
         refreshFnRef.current?.(true);
       }, 200);
     }
-    // 아래 userPrefs 저장은 filterApplied + view 좌표 필요.
-    if (!filterAppliedRef.current) return;
-    if (!view || view.lat == null || view.lng == null) return;
-    const last = lastSavedMapViewRef.current;
-    if (last
-      && Math.abs(last.lat - view.lat) < 1e-6
-      && Math.abs(last.lng - view.lng) < 1e-6
-      && last.level === view.level) return;
-    lastSavedMapViewRef.current = view;
-    clearTimeout(mapViewSaveTimerRef.current);
-    mapViewSaveTimerRef.current = setTimeout(() => {
-      api.patchMyPrefs({ map_view: view }).catch(() => {});
-    }, 1200);
   }, []);
 
   // 디바운스 useEffect — 안전장치 (다른 코드 경로에서 setFilterDeviceId 호출돼도 따라잡음)
