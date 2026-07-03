@@ -671,12 +671,14 @@ function ReceiveStatusBody({ device }) {
   const fixWarn  = isFixStale(device?.last_fix_at);
   const lat = device?.last_lat, lng = device?.last_lng;
   const coordStr = (lat != null && lng != null) ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : '—';
-  // 13_4 LC86G: OK_EXT/OK_INT = 정상, OPEN/SHORT = 결선 이상, ? 또는 null = 미보고.
+  // 13_4 LC86G: OK_EXT/OK_INT = 외부/내부 정상. L86 (aa): OK = 정상 (내부/외부 구분 없음).
+  //             OPEN/SHORT = 결선 이상. ? 또는 null = 미보고.
   const ant = device?.last_antenna;
+  const antOk = (ant === 'OK_EXT' || ant === 'OK_INT' || ant === 'OK');
   const antWarn = (ant === 'OPEN' || ant === 'SHORT');
-  const ANT_LABEL = { OK_EXT: '외부 안테나', OK_INT: '내부 안테나', OPEN: '단선', SHORT: '단락' };
+  const ANT_LABEL = { OK_EXT: '외부 안테나', OK_INT: '내부 안테나', OK: '정상', OPEN: '단선', SHORT: '단락' };
   const antDisplay = ANT_LABEL[ant] || '—';
-  const antSub = (ant === 'OK_EXT' || ant === 'OK_INT') ? '정상' : antWarn ? '결선 이상' : '미보고';
+  const antSub = antOk ? '정상' : antWarn ? '결선 이상' : '미보고';
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
       <MiniStat label="LTE 통신"   v={ageString(device?.last_seen_at)} sub="마지막 ingest" warn={seenWarn} />
