@@ -779,11 +779,10 @@ export default function Dashboard({ onLogout }) {
         fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
         lat: msg.lat, lng: msg.lng,
       };
-      mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
-      // P1: msg.fixes (batch — 1 POST 의 모든 fix) 가 있으면 모두 polyline 에. 없으면 top-level fix 만 (legacy).
-      // dedup 은 KakaoMap.addHistoryPoint 의 recorded_at 기준 — initial fetch + WS 가 같은 fix 두 번 안 들어옴.
-      // (2026-06-30) priority sampling — zoom 별 간격 누적될 때마다 1 dot (= skipMarker=false).
-      // history fetch 의 computeClickableIndices 와 동일 임계. 사거리 통과 등 운행 구간 dot 클릭.
+      // (2026-07-03) msg.fixes (batch) 가 있으면 각 fix 마다 updateMarker + addPoint 호출.
+      // 이전엔 top-level lat/lng 하나만 updateMarker → 폴리라인 30초에 좌표 하나만 append
+      // → 자동차 500m 이동해도 직선 하나로 표시 = 사용자 관점 "순간이동".
+      // Fix: 배치 안 fix 를 시간 순서로 순차 updateMarker → 실제 곡선 반영.
       const wsZoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
       const wsIntervalM = clickableIntervalM(wsZoomLvl);
       const addPoint = (lat, lng, recordedAt, sat, fixVal, speedKmh) => {
@@ -807,11 +806,21 @@ export default function Dashboard({ onLogout }) {
         });
       };
       if (Array.isArray(msg.fixes) && msg.fixes.length > 0) {
-        for (const f of msg.fixes) {
+        for (let i = 0; i < msg.fixes.length; i++) {
+          const f = msg.fixes[i];
           if (f.lat == null || f.lng == null) continue;
+          const isLast = (i === msg.fixes.length - 1);
+          const fMeta = isLast ? meta : {
+            recordedAt: f.recorded_at, sat: f.sat, fix: true, stale: false,
+            deviceId: msg.device_id, deviceLabel: label,
+          };
+          // 각 fix 마다 marker + polyline 갱신 → 폴리라인이 batch 안 좌표 모두 이어붙임.
+          mapRef.current?.updateMarker(msg.device_id, f.lat, f.lng, label, color, fMeta);
           addPoint(f.lat, f.lng, f.recorded_at, f.sat, true, null);
         }
       } else {
+        // legacy: batch 없음 (구 firmware). top-level 하나만.
+        mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
         addPoint(msg.lat, msg.lng, msg.recorded_at, msg.sat, msg.fix, speedKmh);
       }
       lastMetaRef.current[msg.device_id] = meta;
