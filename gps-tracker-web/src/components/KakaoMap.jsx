@@ -654,7 +654,14 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           }
         });
         if (!pointsRef.current[deviceId]) pointsRef.current[deviceId] = [];
-        pointsRef.current[deviceId].push({ marker, color: c, isStop, angle });
+        const arr = pointsRef.current[deviceId];
+        // (2026-07-03) FIFO cap — MAX_HISTORY_POINTS 초과 시 오래된 marker 삭제. 이전엔 선언만
+        // 있고 실제 로직 없어 무한 축적 → 시간 지날수록 zoom refresh 느려짐 (실사용 피드백).
+        while (arr.length >= MAX_HISTORY_POINTS) {
+          const old = arr.shift();
+          if (old?.marker) old.marker.setMap(null);
+        }
+        arr.push({ marker, color: c, isStop, angle });
         arrowStateRef.current[deviceId] = { lastPos: { lat, lng } };
       }
     },
