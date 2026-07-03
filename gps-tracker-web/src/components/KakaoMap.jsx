@@ -554,6 +554,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const newRecordedAt = meta.recordedAt ? new Date(meta.recordedAt).getTime() : Date.now();
       const prevRecordedAt = lastRecordedAtRef.current[deviceId];
       const gapS = prevRecordedAt ? (newRecordedAt - prevRecordedAt) / 1000 : 0;
+      // (2026-07-03) out-of-order 방어 — newRecordedAt < prevRecordedAt (음수 gap) 인 fix 는
+      // polyline 에 이으면 역방향 라인 생김 ("deadline 으로 엮이는" 이슈). Backend 는 오름차순
+      // 보내지만 WS 재접속 replay / 병렬 device 큐 순서 flip 등에서 방어. skip 대신 새 segment
+      // 시작 (gap 로 표시하지도 않고 조용히 새 시작).
+      if (prevRecordedAt && newRecordedAt < prevRecordedAt) {
+        return;   // stale fix — polyline 오염 방지
+      }
       const isGap = prevRecordedAt && gapS > POLYLINE_GAP_THRESHOLD_S;
 
       if (!polyRef.current[deviceId]) {
