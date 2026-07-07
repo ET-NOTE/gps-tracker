@@ -664,12 +664,14 @@ export default function Dashboard({ onLogout }) {
 
       // 디바이스마다 since 를 events 로 산출 (자정 걸친 운행 carry-over). 디바이스 간엔 병렬.
       const sinces = await Promise.all(list.map(d => computeHomeSinceISO(d)));
-      for (let li = 0; li < list.length; li++) {
-        const d = list[li];
+      // (2026-07-07) 디바이스별 fetch + 렌더도 병렬 — 이전엔 순차 for-loop 라
+      // device N 개면 wall clock 이 N × (API RTT + render) 였음. Kakao 조작은 JS
+      // single thread 라 실제 실행 순서는 순차지만, fetch 대기 겹치기로 큰 개선.
+      await Promise.all(list.map(async (d, li) => {
         const since = sinces[li];
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
         const locs = api.flattenGrouped(groups);
-        if (!locs?.length) continue;
+        if (!locs?.length) return;
         const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
         const color = getDeviceColor(d);
@@ -705,7 +707,7 @@ export default function Dashboard({ onLogout }) {
             ...(g || {}),
           });
         });
-      }
+      }));
       // (2026-07-03) map_view (lat/lng/level) 저장/복원 제거. 매번 auto fit — 사용자 요청.
       if (!isNaN(targetId)) {
         mapRef.current?.focusDevice(targetId);
