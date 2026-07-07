@@ -618,16 +618,18 @@ export default function Dashboard({ onLogout }) {
         // (2026-07-01) force refresh 면 polyline 도 완전 reset — updateMarker 는 시간 오름차순
         // append 만 하므로 기존 polyline (최신까지) 에 오래된 fix 이어붙이면 역방향 라인 생김.
         if (force) mapRef.current?.clearLiveTrail?.(d.id);
+        // bulk 로드 — polyline setPath 는 마지막에 한 번만 (O(N²)→O(N))
         ordered.forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
           const g = gapMap[i];
           const meta = isLast
             ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
-            : { stale, recordedAt: loc.recorded_at };   // gap polyline 분리 위해 모든 점에 timestamp 전달
-          mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
+            : { stale, recordedAt: loc.recorded_at };
+          mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta, { deferPolyline: !isLast });
           if (isLast) lastMetaRef.current[d.id] = meta;
         });
+        mapRef.current?.flushLiveTrail?.(d.id);
         mapRef.current?.clearHistoryPoints(d.id);
         const enriched = enrichWithSpeedStops(ordered);
         // priority sampling — gap 양끝 + stop cluster rep + zoom 별 간격 이동 sample 만 클릭 가능 dot.
@@ -673,17 +675,18 @@ export default function Dashboard({ onLogout }) {
         const color = getDeviceColor(d);
         const stale = isStale(d.last_seen_at);
         const gapMap = computeGapMap(ordered);
-        // 폴리라인/메인 마커 갱신용
+        // 폴리라인/메인 마커 갱신용 — bulk 로드 (setPath 는 마지막에 한 번만)
         ordered.forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const isLast = (i === ordered.length - 1);
           const g = gapMap[i];
           const meta = isLast
             ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
-            : { stale, recordedAt: loc.recorded_at };   // gap polyline 분리 위해 모든 점에 timestamp 전달
-          mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta);
+            : { stale, recordedAt: loc.recorded_at };
+          mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta, { deferPolyline: !isLast });
           if (isLast) lastMetaRef.current[d.id] = meta;
         });
+        mapRef.current?.flushLiveTrail?.(d.id);
         // 클릭 가능한 history dot 마커 — 마지막 점 제외 (메인 마커가 그 자리에 있음)
         mapRef.current?.clearHistoryPoints(d.id);
         const enriched = enrichWithSpeedStops(ordered);

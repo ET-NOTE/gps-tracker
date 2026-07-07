@@ -500,12 +500,15 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
      * Place / move main marker for deviceId, append to trail with given color.
      * meta: { recordedAt, sat, vbatMv, fix, stale }
      */
-    updateMarker(deviceId, lat, lng, label, color, meta = {}) {
+    updateMarker(deviceId, lat, lng, label, color, meta = {}, opts = {}) {
       if (!mapRef.current) return;
       // 유효성 방어 — undefined/null/NaN lat|lng 는 kakao.maps.LatLng 을 invalid 로 만들어
       // 후속 setBounds/extend 시 "Cannot read properties of undefined (reading 'x')" 폭포수.
       if (typeof lat !== 'number' || typeof lng !== 'number'
           || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      // deferPolyline=true 면 coords 만 push 하고 setPath skip — bulk 로드 시 O(N²) 재렌더 회피.
+      // 마지막 fix 나 별도 flushLiveTrail(deviceId) 호출로 한 번만 setPath 하면 O(N).
+      const deferPoly = opts.deferPolyline === true;
       const pos = new window.kakao.maps.LatLng(lat, lng);
 
       if (markersRef.current[deviceId]) {
@@ -606,8 +609,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         // 기존 마지막 segment 연속 — coords append + path 갱신
         const lastSeg = entry.segments[entry.segments.length - 1];
         lastSeg.coords.push(pos);
-        lastSeg.poly.setPath(lastSeg.coords);
-        lastSeg.poly.setOptions({ strokeColor: stroke, strokeOpacity: opacity, strokeWeight: sw });
+        if (!deferPoly) {
+          lastSeg.poly.setPath(lastSeg.coords);
+          lastSeg.poly.setOptions({ strokeColor: stroke, strokeOpacity: opacity, strokeWeight: sw });
+        }
       }
 
       lastRecordedAtRef.current[deviceId] = newRecordedAt;
@@ -691,6 +696,15 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // (2026-06-30) addHistoryPoint 의 dedup ref 만 reset — polyRef + lastRecordedAtRef 는
       // updateMarker 의 polyline gap 계산에 필요하므로 안 건드림.
       delete lastDotAtRef.current[deviceId];
+    },
+
+    // updateMarker(..., { deferPolyline:true }) 로 누적한 coords 를 한 번에 setPath.
+    // 대량 fix (initial load 2000+) 시 O(N²) → O(N). 마지막 fix 후 반드시 호출.
+    flushLiveTrail(deviceId) {
+      const entry = polyRef.current[deviceId];
+      if (!entry) return;
+      const lastSeg = entry.segments[entry.segments.length - 1];
+      if (lastSeg) lastSeg.poly.setPath(lastSeg.coords);
     },
 
     // (2026-07-01) refresh(force=true) 용 — polyline + lastRecordedAtRef 완전 reset.
