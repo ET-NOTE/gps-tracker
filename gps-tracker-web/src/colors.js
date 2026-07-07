@@ -1,37 +1,54 @@
-// Per-device color persistence (localStorage).
-// 사용자가 디바이스 카드에서 색을 고를 수 있고, 안 고르면 device_id 해시로 자동 배정.
+// Per-device color persistence — userPrefs.device_colors (server sync) 우선.
+// 렌더 hot-path 에서 sync 로 호출되기 때문에 module-level 캐시 두고,
+// Dashboard 가 getMyPrefs 응답으로 hydrate. legacy dev_color_* localStorage 는
+// 마이그레이션 완료 전 잔여 사용자 대응용 read-only fallback.
 
 export const PALETTE = [
   '#e8b4b8', '#5fc9c9', '#ffd166', '#a78bfa', '#f87171',
   '#34d399', '#60a5fa', '#fb923c', '#f472b6', '#facc15',
 ];
 
-const KEY = (id) => `dev_color_${id}`;
+const LEGACY_KEY = (id) => `dev_color_${id}`;
+
+let _deviceColorsCache = null;   // { [id: string]: '#rrggbb' } — userPrefs.device_colors mirror
+
+export function hydrateDeviceColors(map) {
+  _deviceColorsCache = map && typeof map === 'object' ? { ...map } : null;
+}
+
+export function getDeviceColorsCache() {
+  return _deviceColorsCache;
+}
+
+function pickCached(id) {
+  const sid = String(id);
+  if (_deviceColorsCache && _deviceColorsCache[sid]) return _deviceColorsCache[sid];
+  const legacy = localStorage.getItem(LEGACY_KEY(id));
+  if (legacy) return legacy;
+  return PALETTE[Math.abs(Number(id)) % PALETTE.length];
+}
 
 /**
  * 우선순위:
  *   1) 서버 응답 device.color (있으면 모든 기기에서 동일)
- *   2) 로컬 캐시 (예전 사용자가 골랐던 값)
- *   3) device_id 해시로 자동 배정
- * dev: { id, color? } 형태의 device 객체.
+ *   2) userPrefs.device_colors 캐시 (계정 sync)
+ *   3) legacy localStorage (마이그레이션 예정 값)
+ *   4) device_id 해시 자동 배정
  */
 export function getDeviceColor(dev) {
   if (typeof dev === 'object' && dev !== null) {
     if (dev.color) return dev.color;
-    const cached = localStorage.getItem(KEY(dev.id));
-    if (cached) return cached;
-    return PALETTE[Math.abs(Number(dev.id)) % PALETTE.length];
+    return pickCached(dev.id);
   }
-  // 호환: id만 넘긴 경우
-  const id = dev;
-  const cached = localStorage.getItem(KEY(id));
-  if (cached) return cached;
-  return PALETTE[Math.abs(Number(id)) % PALETTE.length];
+  return pickCached(dev);
 }
 
-export function setDeviceColorLocal(deviceId, color) {
-  if (color) localStorage.setItem(KEY(deviceId), color);
-  else localStorage.removeItem(KEY(deviceId));
+// 캐시만 즉시 갱신 (서버 patch 는 caller 가 patchMyPrefs 로 별도 수행).
+export function setDeviceColorCache(deviceId, color) {
+  if (!_deviceColorsCache) _deviceColorsCache = {};
+  const sid = String(deviceId);
+  if (color) _deviceColorsCache[sid] = color;
+  else delete _deviceColorsCache[sid];
 }
 
 // 5분 이상 무소식이면 stale (회색 처리 대상)

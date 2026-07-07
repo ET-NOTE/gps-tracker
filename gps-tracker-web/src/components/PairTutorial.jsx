@@ -1,22 +1,12 @@
 // 신규 사용자 페어링 가이드 — /devices/pair 진입 + (디바이스 0개 OR ?tutorial=1) 시 표시.
-// localStorage 'pair_tutorial_seen' 으로 1회만 표시.
+// 상태 (userPrefs.pair_tutorial_seen sync) 로직은 pairTutorialSeen.js 로 분리.
 // 2 step: 환영 → 입력하기 (입력하기 누르면 닫고 페어링 모달 포커스).
 
 import { useState } from 'react';
+import { markPairTutorialSeen } from '../pairTutorialSeen';
 
-const STORAGE_KEY = 'pair_tutorial_seen';
-
-export function shouldShowPairTutorial(deviceCount, forceQuery = false) {
-  if (forceQuery) return true;
-  try {
-    if (localStorage.getItem(STORAGE_KEY) === '1') return false;
-  } catch { /* noop */ }
-  return deviceCount === 0;
-}
-
-export function markPairTutorialSeen() {
-  try { localStorage.setItem(STORAGE_KEY, '1'); } catch { /* noop */ }
-}
+// legacy re-export — 기존 import 경로 (Dashboard.jsx) 호환.
+export { shouldShowPairTutorial, hydratePairTutorialSeen, markPairTutorialSeen } from '../pairTutorialSeen';
 
 export default function PairTutorial({ onClose, onStart }) {
   const [step, setStep] = useState(1);

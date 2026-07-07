@@ -15,16 +15,25 @@
 //
 // 이중 base 지원: vite base = '/gps-tracker/app/' OR '/' (gps.serial.kr 빌드).
 // BrowserRouter basename 으로 흡수.
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
-import Auth from './pages/Auth';
+// Dashboard 는 홈이라 critical — sync import 유지.
 import Dashboard from './pages/Dashboard';
-import SharePage from './pages/SharePage';
-import PaymentResult from './pages/PaymentResult';
-import LegalPage from './pages/LegalPage';
-import DiagnosticPage from './pages/DiagnosticPage';
 import DialogHost from './components/Dialog';
+
+// 나머지 라우트는 각자 진입할 때만 로드 — 초기 bundle 축소.
+const Auth           = lazy(() => import('./pages/Auth'));
+const SharePage      = lazy(() => import('./pages/SharePage'));
+const PaymentResult  = lazy(() => import('./pages/PaymentResult'));
+const LegalPage      = lazy(() => import('./pages/LegalPage'));
+const DiagnosticPage = lazy(() => import('./pages/DiagnosticPage'));
+
+const LazyFallback = () => (
+  <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+    로딩 중…
+  </div>
+);
 
 const BASENAME = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
@@ -51,33 +60,35 @@ function Shell() {
   }, []);
 
   return (
-    <Routes>
-      {/* 공개 */}
-      <Route path="/s/:token" element={<ShareRoute />} />
-      <Route path="/payments/toss/success" element={<PaymentResult kind="success" />} />
-      <Route path="/payments/toss/fail"    element={<PaymentResult kind="fail" />} />
-      <Route path="/privacy" element={<LegalPage kind="privacy" />} />
-      <Route path="/terms"   element={<LegalPage kind="terms" />} />
+    <Suspense fallback={<LazyFallback />}>
+      <Routes>
+        {/* 공개 */}
+        <Route path="/s/:token" element={<ShareRoute />} />
+        <Route path="/payments/toss/success" element={<PaymentResult kind="success" />} />
+        <Route path="/payments/toss/fail"    element={<PaymentResult kind="fail" />} />
+        <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+        <Route path="/terms"   element={<LegalPage kind="terms" />} />
 
-      {/* 로그인 */}
-      <Route path="/login" element={
-        authed
-          ? <Navigate to={readNext() || '/'} replace />
-          : <AuthRoute onLogin={() => setAuthed(true)} />
-      } />
+        {/* 로그인 */}
+        <Route path="/login" element={
+          authed
+            ? <Navigate to={readNext() || '/'} replace />
+            : <AuthRoute onLogin={() => setAuthed(true)} />
+        } />
 
-      {/* 14_* 진단 콘솔 — Dashboard 외부 풀스크린 */}
-      <Route path="/diagnostic" element={
-        authed ? <DiagnosticPage /> : <RequireAuthRedirect />
-      } />
+        {/* 14_* 진단 콘솔 — Dashboard 외부 풀스크린 */}
+        <Route path="/diagnostic" element={
+          authed ? <DiagnosticPage /> : <RequireAuthRedirect />
+        } />
 
-      {/* 보호된 영역 — 미인증이면 로그인으로 (next 보존) */}
-      <Route path="/*" element={
-        authed
-          ? <Dashboard onLogout={() => setAuthed(false)} />
-          : <RequireAuthRedirect />
-      } />
-    </Routes>
+        {/* 보호된 영역 — 미인증이면 로그인으로 (next 보존) */}
+        <Route path="/*" element={
+          authed
+            ? <Dashboard onLogout={() => setAuthed(false)} />
+            : <RequireAuthRedirect />
+        } />
+      </Routes>
+    </Suspense>
   );
 }
 

@@ -1,5 +1,9 @@
 // 라이트/다크 테마 + CSS 변수.
 // HTML <html data-theme="light|dark"> 로 상태 표시.
+// 우선순위: userPrefs.theme (서버 sync) > localStorage (부트 seed / offline) > OS prefers.
+// localStorage 는 flash 방지용 seed 로 유지 — 재로드 시 서버 응답 오기 전에도 사용자 취향 반영.
+
+import { api } from './api';
 
 export const THEMES = {
   light: {
@@ -32,18 +36,35 @@ export const THEMES = {
   },
 };
 
-export function applyTheme(name) {
+/**
+ * @param {string} name  'light' | 'dark'
+ * @param {object} opts
+ *   - persist: localStorage 저장 여부 (기본 true). SharePage 임시 라이트 적용 시 false.
+ *   - syncServer: userPrefs.theme 로 서버 push 여부 (기본 true). 로그인 안 됐으면 자동 skip.
+ */
+export function applyTheme(name, opts = {}) {
+  const { persist = true, syncServer = true } = opts;
   const map = THEMES[name] || THEMES.dark;
   const root = document.documentElement;
   Object.entries(map).forEach(([k, v]) => root.style.setProperty(k, v));
   root.setAttribute('data-theme', name);
-  localStorage.setItem('theme', name);
+  if (persist) localStorage.setItem('theme', name);
+  if (syncServer && hasAuth()) {
+    api.patchMyPrefs({ theme: name }).catch(() => { /* offline OK */ });
+  }
+}
+
+function hasAuth() {
+  try {
+    return !!(localStorage.getItem('access_token') || sessionStorage.getItem('access_token'));
+  } catch { return false; }
 }
 
 export function initTheme() {
   const saved = localStorage.getItem('theme');
   const prefers = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  applyTheme(saved || prefers);
+  // 부트 seed — 서버 patch 안 함 (아직 auth 없거나 서버 값 fetch 전).
+  applyTheme(saved || prefers, { syncServer: false });
 }
 
 export function toggleTheme() {
