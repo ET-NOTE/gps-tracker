@@ -46,9 +46,10 @@ export default function SharePage({ token }) {
   // (사용자가 본 dashboard 가서 다시 다크로 토글 가능).
   useEffect(() => {
     const prev = localStorage.getItem('theme');
-    applyTheme('light');
+    // 공유 뷰어는 사용자 계정 theme 오염 방지 — persist/syncServer 둘 다 skip.
+    applyTheme('light', { persist: false, syncServer: false });
     return () => {
-      if (prev) applyTheme(prev);
+      if (prev) applyTheme(prev, { persist: false, syncServer: false });
     };
   }, []);
 

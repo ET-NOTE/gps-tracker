@@ -502,6 +502,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
      */
     updateMarker(deviceId, lat, lng, label, color, meta = {}) {
       if (!mapRef.current) return;
+      // 유효성 방어 — undefined/null/NaN lat|lng 는 kakao.maps.LatLng 을 invalid 로 만들어
+      // 후속 setBounds/extend 시 "Cannot read properties of undefined (reading 'x')" 폭포수.
+      if (typeof lat !== 'number' || typeof lng !== 'number'
+          || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
       const pos = new window.kakao.maps.LatLng(lat, lng);
 
       if (markersRef.current[deviceId]) {
@@ -620,6 +624,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
      */
     addHistoryPoint(deviceId, lat, lng, color, meta = {}) {
       if (!mapRef.current) return;
+      // 유효성 방어 — invalid lat/lng 면 kakao LatLng 이 손상돼 이후 bounds/polyline 캐스케이드 폭발.
+      if (typeof lat !== 'number' || typeof lng !== 'number'
+          || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
       // P1 dedup (PR #68): initial fetch + WS broadcast 가 같은 fix 두 번 추가하던 케이스 방지.
       // (2026-06-30) dedup ref 를 lastDotAtRef 로 분리 — lastRecordedAtRef 는 updateMarker 의 polyline
       // gap 계산용이라 reset 하면 polyline 망가짐. addHistoryPoint 만의 dedup 으로 격리.

@@ -20,11 +20,12 @@ import YesterdaySummaryDialog from '../components/YesterdaySummaryDialog';
 import PointInfoSheet from '../components/PointInfoSheet';
 import AdminDashboard from '../components/AdminDashboard';
 import CorporatePanel from '../components/CorporatePanel';
-import PairTutorial, { shouldShowPairTutorial } from '../components/PairTutorial';
+import PairTutorial, { shouldShowPairTutorial, hydratePairTutorialSeen } from '../components/PairTutorial';
 import UnpairModal from '../components/UnpairModal';
 import Icon from '../components/Icon';
 import useBreakpoint from '../useBreakpoint';
-import { PALETTE, getDeviceColor, setDeviceColorLocal, isStale, isFixStale, ageString, classifyDevice } from '../colors';
+import { PALETTE, getDeviceColor, hydrateDeviceColors, setDeviceColorCache, getDeviceColorsCache, isStale, isFixStale, ageString, classifyDevice } from '../colors';
+import { applyTheme, currentTheme } from '../theme';
 
 // 펜스에 적용 디바이스 한 대라도 안에 있으면 true.
 function isAnyDeviceInsideFence(fence, devices) {
@@ -304,9 +305,94 @@ export default function Dashboard({ onLogout }) {
     api.getAccountType().then(r => setAccountType(r.account_type)).catch(() => {});
   }, []);
 
-  // 사용자 prefs — filter_device_id 복원용
+  // legacy `lab_summary_seen:{userId}:{deviceId}` → userPrefs.summary_seen 마이그레이션.
+  // me.id 알아야 하므로 별도 effect. 서버 값과 병합해서 push.
   useEffect(() => {
-    api.getMyPrefs().then(p => setUserPrefs(p || {})).catch(() => setUserPrefs({}));
+    if (!me?.id) return;
+    const legacyPrefix = `lab_summary_seen:${me.id}:`;
+    const collected = {};
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(legacyPrefix)) continue;
+      const deviceId = k.slice(legacyPrefix.length);
+      if (localStorage.getItem(k) === '1') collected[deviceId] = '2000-01-01';   // 과거 마킹 (오늘 이전 truthy)
+      keysToRemove.push(k);
+    }
+    if (keysToRemove.length === 0) return;
+    (async () => {
+      let prefs;
+      try { prefs = (await api.getMyPrefs()) || {}; } catch { return; }
+      const merged = { ...(prefs.summary_seen || {}), ...collected };
+      try {
+        const updated = await api.patchMyPrefs({ summary_seen: merged });
+        setUserPrefs(prev => ({ ...(prev || {}), ...(updated || {}) }));
+        keysToRemove.forEach(k => { try { localStorage.removeItem(k); } catch {} });
+      } catch { /* 다음 부트 재시도 */ }
+    })();
+  }, [me?.id]);
+
+  // 사용자 prefs — filter_device_id + device_colors + pair_tutorial_seen 복원.
+  // legacy localStorage (dev_color_*, pair_tutorial_seen) 는 1회 서버 push 후 삭제.
+  useEffect(() => {
+    (async () => {
+      let prefs = {};
+      try { prefs = (await api.getMyPrefs()) || {}; } catch { prefs = {}; }
+
+      const patch = {};
+
+      // dev_color_* → device_colors (기존 사용자 색 지정 유지)
+      if (!prefs.device_colors) {
+        const collected = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k || !k.startsWith('dev_color_')) continue;
+          const id = k.slice('dev_color_'.length);
+          const v = localStorage.getItem(k);
+          if (v) collected[id] = v;
+        }
+        if (Object.keys(collected).length > 0) {
+          patch.device_colors = collected;
+          prefs = { ...prefs, device_colors: collected };
+        }
+      }
+
+      // pair_tutorial_seen (레거시 localStorage='1' 이면 서버로 승격)
+      if (prefs.pair_tutorial_seen == null) {
+        try {
+          if (localStorage.getItem('pair_tutorial_seen') === '1') {
+            patch.pair_tutorial_seen = true;
+            prefs = { ...prefs, pair_tutorial_seen: true };
+          }
+        } catch { /* noop */ }
+      }
+
+      // theme — 서버 값 있으면 apply, 없으면 현재(로컬 seed) 를 서버 push.
+      if (prefs.theme && prefs.theme !== currentTheme()) {
+        applyTheme(prefs.theme, { syncServer: false });   // 서버 값 이미 있음 — 재-push 안 함
+      } else if (!prefs.theme) {
+        const local = currentTheme();
+        patch.theme = local;
+        prefs = { ...prefs, theme: local };
+      }
+
+      hydrateDeviceColors(prefs.device_colors || null);
+      hydratePairTutorialSeen(prefs.pair_tutorial_seen);
+      setUserPrefs(prefs);
+
+      if (Object.keys(patch).length > 0) {
+        try {
+          await api.patchMyPrefs(patch);
+          if (patch.device_colors) {
+            Object.keys(patch.device_colors)
+              .forEach(id => { try { localStorage.removeItem(`dev_color_${id}`); } catch {} });
+          }
+          if (patch.pair_tutorial_seen) {
+            try { localStorage.removeItem('pair_tutorial_seen'); } catch {}
+          }
+        } catch { /* 다음 번 부트에서 재시도 — legacy 유지 */ }
+      }
+    })();
   }, []);
 
   // 펜스 알림 master switch — 서버 notification_settings.geofence_alert 와 연동.
@@ -694,18 +780,23 @@ export default function Dashboard({ onLogout }) {
   }, [filterDeviceId]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // 연구소: 디바이스 필터 (non-null) 시 어제 운행 요약 팝업.
-  // 토글 OFF (default): 디바이스별 1회만 노출 (인트로). localStorage 키로 영구 기억.
+  // 토글 OFF (default): 디바이스별 1회만 노출 (인트로). userPrefs.summary_seen 로 영구 기억.
   // 토글 ON: 디바이스를 잡을 때마다 매번 노출 (대신 OFF 로 돌아가도 다시 인트로는 안 봄).
   useEffect(() => {
-    if (!me?.id) return;   // me 로드 전엔 key 가 'anon' 으로 잡혀 중복 노출 위험
+    if (!me?.id) return;   // me 로드 전엔 매핑 애매
     if (filterDeviceId == null) return;
     if (view !== 'home') return;   // 홈 탭에서 잡았을 때만
     const on = !!userPrefs?.lab_first_view_summary;
-    const key = `lab_summary_seen:${me.id}:${filterDeviceId}`;
+    const seen = userPrefs?.summary_seen?.[String(filterDeviceId)];
     // OFF 모드: 이미 본 적 있으면 skip
-    if (!on && localStorage.getItem(key) === '1') return;
-    // 마크 — 양쪽 모드 다 set (OFF 로 돌아가도 다시 인트로 안 보게)
-    localStorage.setItem(key, '1');
+    if (!on && seen) return;
+    // 마크 — 오늘 날짜로 저장 (양쪽 모드 다 set, OFF 로 돌아가도 인트로 안 보게)
+    const KST_TZ = 9 * 3600 * 1000;
+    const todayKst = new Date(Date.now() + KST_TZ).toISOString().slice(0, 10);
+    const nextSeen = { ...(userPrefs?.summary_seen || {}), [String(filterDeviceId)]: todayKst };
+    api.patchMyPrefs({ summary_seen: nextSeen })
+       .then(p => setUserPrefs(p))
+       .catch(() => {});
 
     const KST = 9 * 3600 * 1000;
     const yesterday = new Date(Date.now() + KST - 86400000).toISOString().slice(0, 10);
@@ -801,8 +892,9 @@ export default function Dashboard({ onLogout }) {
           mapRef.current?.updateMarker(msg.device_id, f.lat, f.lng, label, color, fMeta);
           addPoint(f.lat, f.lng, f.recorded_at, f.sat, true, null);
         }
-      } else {
+      } else if (msg.lat != null && msg.lng != null) {
         // legacy: batch 없음 (구 firmware). top-level 하나만.
+        // sleep_enter/geofence_out 등 fix 없는 이벤트는 lat/lng 없이 옴 → skip (Kakao LatLng 오염 방지).
         mapRef.current?.updateMarker(msg.device_id, msg.lat, msg.lng, label, color, meta);
         addPoint(msg.lat, msg.lng, msg.recorded_at, msg.sat, msg.fix, speedKmh);
       }
@@ -889,10 +981,21 @@ export default function Dashboard({ onLogout }) {
   }
 
   async function handlePickColor(deviceId, color) {
-    setDeviceColorLocal(deviceId, color);
+    // optimistic: 로컬 캐시 + 지도 마커 + state 즉시 반영
+    setDeviceColorCache(deviceId, color);
     mapRef.current?.setMarkerColor(deviceId, color);
     setDevices(prev => prev.map(d => d.id === deviceId ? { ...d, color } : d));
     setColorPickerId(null);
+
+    // userPrefs.device_colors 서버 sync (계정 단위 — 다른 device 로그인 시 자동 반영)
+    const nextMap = { ...(getDeviceColorsCache() || {}) };   // 이미 setDeviceColorCache 로 반영됨
+    try {
+      const updated = await api.patchMyPrefs({ device_colors: nextMap });
+      if (updated?.device_colors) hydrateDeviceColors(updated.device_colors);
+      setUserPrefs(prev => ({ ...(prev || {}), ...(updated || {}) }));
+    } catch { /* offline — 다음 부트에서 서버 값 우세 처리 */ }
+
+    // device.color (per-device 서버 값) 는 legacy — 유지 중이면 sync
     try { await api.updateDevice(deviceId, { color }); } catch {}
   }
 

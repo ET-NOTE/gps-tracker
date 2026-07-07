@@ -1,3 +1,6 @@
+import { hydrateDeviceColors } from './colors';
+import { hydratePairTutorialSeen } from './pairTutorialSeen';
+
 // 도메인 감지: gps.serial.kr 은 prefix 없이 /api/v1, 그 외 (seriallog.com 등) 는 /gps-tracker/api/v1
 const BASE = (typeof window !== 'undefined' && window.location.hostname === 'gps.serial.kr')
   ? '/api/v1'
@@ -36,6 +39,9 @@ export function clearTokens() {
   sessionStorage.removeItem('refresh_token');
   clearTimeout(refreshTimer);
   refreshTimer = null;
+  // 사용자 계정에 매인 module cache 무효화 — 다른 계정 재로그인 시 이전 값 노출 방지.
+  hydrateDeviceColors(null);
+  hydratePairTutorialSeen(null);
 }
 
 // ── 사전 refresh ─────────────────────────────────────────────────────
@@ -50,6 +56,13 @@ function decodeExp(accessToken) {
     const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
     return typeof json.exp === 'number' ? json.exp * 1000 : null;
   } catch { return null; }
+}
+
+// WS 등 fetch 밖 소비자용 — access 토큰이 marginMs 이내 만료면 true (파싱 실패도 true 로 취급, refresh 유도).
+export function isTokenExpiringSoon(accessToken, marginMs = 60_000) {
+  const expMs = decodeExp(accessToken);
+  if (!expMs) return true;
+  return (expMs - Date.now()) <= marginMs;
 }
 
 function schedulePreemptiveRefresh(accessToken) {
@@ -75,7 +88,7 @@ let refreshing = null;
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function tryRefresh() {
+export async function tryRefresh() {
   if (refreshing) return refreshing;
   const s = activeStorage();
   const rt = s ? s.getItem('refresh_token') : null;

@@ -158,18 +158,53 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [compareMode, setCompareMode] = useState(false);
   const [compareIdxs, setCompareIdxs] = useState([]);  // up to 2 trip indices
 
-  // 영속 옵션 — default OFF (시각적 노이즈 줄이기 위해 사용자가 명시 ON 했을 때만 적용)
+  // 영속 옵션 — userPrefs.seeker (server sync) 우선, localStorage 는 부트 seed / offline fallback.
+  // speedColor default OFF (시각적 노이즈), showStops default ON (cluster 한눈에 파악).
   const [speedColor, setSpeedColor] = useState(() => {
     return localStorage.getItem(PREF_SPEED_COLOR) === 'true';
   });
   const [showStops, setShowStops]   = useState(() => {
-    // 기본값 ON — cluster (5+ 점이 좁은 범위로 뭉침) 을 한눈에 보고 싶은 게 보통.
-    // 사용자가 명시적으로 false 로 저장한 경우만 OFF.
     const v = localStorage.getItem(PREF_SHOW_STOPS);
     return v === null ? true : (v === 'true');
   });
-  useEffect(() => { localStorage.setItem(PREF_SPEED_COLOR, String(speedColor)); }, [speedColor]);
-  useEffect(() => { localStorage.setItem(PREF_SHOW_STOPS,  String(showStops)); },  [showStops]);
+
+  const seekerHydratedRef = useRef(false);   // 첫 서버 응답 전에는 토글 → 서버 patch 안 함
+
+  // 서버 값 hydrate + 최초 device 라면 localStorage 값 서버 push (마이그레이션).
+  useEffect(() => {
+    (async () => {
+      let prefs;
+      try { prefs = await api.getMyPrefs(); } catch { return; }
+      const s = prefs?.seeker;
+      if (s && typeof s === 'object') {
+        if (typeof s.speed_color === 'boolean') setSpeedColor(s.speed_color);
+        if (typeof s.show_stops  === 'boolean') setShowStops(s.show_stops);
+      } else {
+        // 서버 없음 — 로컬 값이라도 있으면 승격
+        const migrate = {};
+        const localSpeed = localStorage.getItem(PREF_SPEED_COLOR);
+        const localStops = localStorage.getItem(PREF_SHOW_STOPS);
+        if (localSpeed !== null) migrate.speed_color = localSpeed === 'true';
+        if (localStops !== null) migrate.show_stops  = localStops  === 'true';
+        if (Object.keys(migrate).length > 0) {
+          api.patchMyPrefs({ seeker: migrate }).catch(() => {});
+        }
+      }
+      seekerHydratedRef.current = true;
+    })();
+  }, []);
+
+  // 사용자 토글 → localStorage (부트 seed) + 서버 (계정 sync, hydrate 이후만).
+  useEffect(() => {
+    localStorage.setItem(PREF_SPEED_COLOR, String(speedColor));
+    if (!seekerHydratedRef.current) return;
+    api.patchMyPrefs({ seeker: { speed_color: speedColor, show_stops: showStops } }).catch(() => {});
+  }, [speedColor]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    localStorage.setItem(PREF_SHOW_STOPS, String(showStops));
+    if (!seekerHydratedRef.current) return;
+    api.patchMyPrefs({ seeker: { speed_color: speedColor, show_stops: showStops } }).catch(() => {});
+  }, [showStops]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // 일간/월간 별로 분리된 raw 데이터 — 모드 전환 시 재패치 안 일어남
   const [dayPoints, setDayPoints]     = useState([]);  // 그 날짜의 24h 전체
