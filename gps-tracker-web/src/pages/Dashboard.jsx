@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { TrackerWS } from '../ws';
@@ -18,8 +18,14 @@ import MiniSeekerOverlay, { MINI_SEEKER_BOTTOM_HEIGHT } from '../components/Mini
 import HomeFenceQuick from '../components/HomeFenceQuick';
 import YesterdaySummaryDialog from '../components/YesterdaySummaryDialog';
 import PointInfoSheet from '../components/PointInfoSheet';
-import AdminDashboard from '../components/AdminDashboard';
-import CorporatePanel from '../components/CorporatePanel';
+// admin / corporate 는 해당 사용자만 진입 — 초기 bundle 에서 제외.
+const AdminDashboard = lazy(() => import('../components/AdminDashboard'));
+const CorporatePanel = lazy(() => import('../components/CorporatePanel'));
+const LazyPanelFallback = () => (
+  <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+    로딩 중…
+  </div>
+);
 import PairTutorial, { shouldShowPairTutorial, hydratePairTutorialSeen } from '../components/PairTutorial';
 import UnpairModal from '../components/UnpairModal';
 import Icon from '../components/Icon';
@@ -1258,7 +1264,9 @@ export default function Dashboard({ onLogout }) {
           <div style={{
             flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
           }}>
-            <AdminDashboard />
+            <Suspense fallback={<LazyPanelFallback />}>
+              <AdminDashboard />
+            </Suspense>
           </div>
         )}
 
@@ -1267,7 +1275,9 @@ export default function Dashboard({ onLogout }) {
           <div style={{
             flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
           }}>
-            <CorporatePanel devices={devices} />
+            <Suspense fallback={<LazyPanelFallback />}>
+              <CorporatePanel devices={devices} />
+            </Suspense>
           </div>
         )}
 
