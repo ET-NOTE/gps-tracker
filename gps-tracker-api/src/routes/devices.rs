@@ -571,6 +571,30 @@ async fn delete_range(
     )
     .bind(id).bind(user.user_id).bind(q.from).bind(q.until)
     .execute(&mut *tx).await?.rows_affected();
+    // devices.last_* 재계산 — 삭제된 좌표가 마지막이었을 경우 stale 값이 남아있으면
+    // 프런트의 computeHomeSinceISO 가 todayHasFix=true 로 오판 → 삭제 후에도 오늘
+    // 지도에 계속 그려지는 회귀. 남은 최신 fix/event 로 갱신 (없으면 모두 NULL).
+    // GREATEST 는 NULL 인자를 무시하므로 한쪽만 있어도 정확한 값 반환.
+    sqlx::query(
+        "WITH last_loc AS ( \
+           SELECT lat, lng, recorded_at FROM location_records \
+             WHERE device_id = $1 ORDER BY recorded_at DESC LIMIT 1 \
+         ), last_ev AS ( \
+           SELECT occurred_at FROM events \
+             WHERE device_id = $1 ORDER BY occurred_at DESC LIMIT 1 \
+         ) \
+         UPDATE devices SET \
+           last_lat  = (SELECT lat FROM last_loc), \
+           last_lng  = (SELECT lng FROM last_loc), \
+           last_fix_at = (SELECT recorded_at FROM last_loc), \
+           last_seen_at = GREATEST( \
+             (SELECT recorded_at FROM last_loc), \
+             (SELECT occurred_at FROM last_ev) \
+           ) \
+         WHERE id = $1",
+    )
+    .bind(id)
+    .execute(&mut *tx).await?;
     tx.commit().await?;
     tracing::info!(device_id = id, user_id = user.user_id, from = %q.from, until = %q.until, locs, evs, "cycle range deleted");
     Ok(Json(json!({ "deleted_locations": locs, "deleted_events": evs })))

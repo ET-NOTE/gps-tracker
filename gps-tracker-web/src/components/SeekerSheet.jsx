@@ -2131,19 +2131,50 @@ function CycleListSection({ deviceId, color, onSeek }) {
     }
   }
 
+  // 오늘 전체 삭제 — wake/sleep_enter 이벤트 없이 계속 fix 만 도착하는 상황
+  // (07/08 aa 사례처럼 사이클 grouping 이 무의미할 때) 를 위한 date-based 삭제 옵션.
+  async function handleDeleteToday() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const end = new Date(start.getTime() + 86400 * 1000 - 1);
+    const ok = await confirmDialog({
+      title: '오늘 전체 삭제',
+      body: `${start.toLocaleDateString('ko-KR')} 하루치 events + 좌표 모두 영구 삭제. 되돌릴 수 없음.`,
+      confirmText: '삭제',
+      danger: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const r = await api.deleteDeviceRange(deviceId, start.toISOString(), end.toISOString());
+      await refresh();
+      alertDialog({ title: '삭제 완료', body: `좌표 ${r.deleted_locations}개 · 이벤트 ${r.deleted_events}개 삭제됨.` });
+    } catch (e) {
+      alertDialog({ title: '삭제 실패', body: e?.message || '알 수 없는 오류' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div style={{
       marginBottom: 12, padding: 10, background: 'var(--surface-2, #f6f7fa)',
       border: '1px solid var(--border, #e5e7eb)', borderRadius: 8,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 6 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
           ⚗️ 사이클 ({cycles.length}) · 최근 7일
         </div>
-        <button onClick={refresh} disabled={loading || busy} style={{
-          fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)',
-          background: 'transparent', borderRadius: 4, cursor: 'pointer',
-        }}>{loading ? '⏳' : '🔄'}</button>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={handleDeleteToday} disabled={loading || busy} style={{
+            fontSize: 11, padding: '3px 8px', border: '1px solid var(--danger)',
+            background: 'transparent', color: 'var(--danger)', borderRadius: 4, cursor: 'pointer',
+          }} title="오늘 (KST 자정~자정) 전체 좌표+이벤트 삭제">🗑 오늘</button>
+          <button onClick={refresh} disabled={loading || busy} style={{
+            fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)',
+            background: 'transparent', borderRadius: 4, cursor: 'pointer',
+          }}>{loading ? '⏳' : '🔄'}</button>
+        </div>
       </div>
       {error && <div style={{ fontSize: 11, color: 'var(--danger)', marginBottom: 6 }}>⚠ {error}</div>}
       {cycles.length === 0 ? (
@@ -2189,7 +2220,10 @@ function groupCycles(events) {
   let cur = null;
   for (const e of asc) {
     const d = e.data || {};
-    if (e.kind === 'wake' || cur == null) {
+    // 새 cycle 트리거:
+    //   (1) 첫 event  (2) wake  (3) 직전 cycle 이 sleep_enter 로 닫혔을 때
+    // (3) 없으면 sleep 후 지속되는 fix (예: WS replay) 가 닫힌 cycle 에 append 되어 range 오염.
+    if (cur == null || e.kind === 'wake' || cur.endKnown) {
       if (cur) out.push(cur);
       cur = {
         start: e.occurred_at,
@@ -2206,6 +2240,17 @@ function groupCycles(events) {
         cur.sleepReason = d.sleep_reason || '-';
       }
       cur.durationS = (new Date(cur.end) - new Date(cur.start)) / 1000;
+    }
+  }
+  // 진행중 cycle (sleep_enter 미도착) 은 end 를 현재 시각으로 확장 — sleep 없이
+  // 계속 도착하는 fix 를 삭제 range 가 커버하도록. wake 이벤트 없이 15초 POST 만
+  // 오는 firmware (07/08 aa 사례) 도 이 경로로 실제 데이터가 삭제됨.
+  if (cur && !cur.endKnown) {
+    const nowMs = Date.now();
+    const endMs = new Date(cur.end).getTime();
+    if (nowMs > endMs) {
+      cur.end = new Date(nowMs).toISOString();
+      cur.durationS = (nowMs - new Date(cur.start).getTime()) / 1000;
     }
   }
   if (cur) out.push(cur);
