@@ -1,4 +1,5 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { compactStopMarkerIndexes as compactStopMarkerIndexesLib } from '../lib/stops';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const MAX_HISTORY_POINTS = 500;
@@ -81,48 +82,10 @@ function distanceM(a, b) {
   return 12742000 * Math.asin(Math.sqrt(h));
 }
 
+// Seeker 는 대표 인덱스 Set 만 필요. lib/stops 헬퍼 는 { compacted, clusterMap }
+// 을 반환하므로 얇게 래핑.
 function compactStopMarkerIndexes(pts, indexes, radiusM) {
-  const total = pts.length;
-  if (total <= 2 || radiusM <= 0) return indexes;
-
-  const sorted = Array.from(indexes).sort((a, b) => a - b);
-  const compacted = new Set();
-  let cluster = [];
-  let center = null;
-
-  const flushCluster = () => {
-    if (cluster.length === 0) return;
-    compacted.add(cluster[Math.floor(cluster.length / 2)]);
-    cluster = [];
-    center = null;
-  };
-
-  sorted.forEach(idx => {
-    const p = pts[idx];
-    if (!p) return;
-
-    if (idx === 0 || idx === total - 1 || !p._isStop) {
-      flushCluster();
-      compacted.add(idx);
-      return;
-    }
-
-    if (!center || distanceM(center, p) > radiusM) {
-      flushCluster();
-      cluster = [idx];
-      center = { lat: p.lat, lng: p.lng };
-      return;
-    }
-
-    cluster.push(idx);
-    center = {
-      lat: (center.lat * (cluster.length - 1) + p.lat) / cluster.length,
-      lng: (center.lng * (cluster.length - 1) + p.lng) / cluster.length,
-    };
-  });
-
-  flushCluster();
-  return compacted;
+  return compactStopMarkerIndexesLib(pts, indexes, radiusM).compacted;
 }
 
 // ─── 진행 방향 화살표 (dev-gps 의 usman 작업물 흡수) ────────────────────
@@ -142,6 +105,38 @@ function calcBearing(lat1, lng1, lat2, lng2) {
 
 // 모듈 레벨 캐시 — 같은 (각도 bucket, 색상) 조합 재사용.
 const _arrowImageCache = {};
+
+// 정지 클러스터 대표 marker — 원형 + 개수 텍스트. 화살표(20x20) 보다 살짝 큼(28x28)
+// 으로 뭉친 것을 한눈에 구분. cache key: count bucket + color.
+const _clusterImageCache = {};
+function makeClusterImage(count, color) {
+  const bucket = count <= 9 ? String(count) : count <= 99 ? '10+' : '99+';
+  const key = `${bucket}_${color}`;
+  if (_clusterImageCache[key]) return _clusterImageCache[key];
+  const size = 28;
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  const cx = size / 2, cy = size / 2, r = 12;
+  // 흰 외곽 링 (지도 위 대비)
+  ctx.beginPath(); ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fill();
+  // 색상 원
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
+  // 개수 텍스트
+  ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(bucket, cx, cy + 0.5);
+  const url = c.toDataURL('image/png');
+  _clusterImageCache[key] = new window.kakao.maps.MarkerImage(
+    url,
+    new window.kakao.maps.Size(size, size),
+    { offset: new window.kakao.maps.Point(cx, cy) }
+  );
+  return _clusterImageCache[key];
+}
 
 function makeArrowImage(angleDeg, arrowColor) {
   const r = Math.round(angleDeg / 5) * 5;
@@ -649,14 +644,16 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (!meta.skipMarker) {
         // (2026-07-01) dot + arrow 이중 marker 통일 — 화살표 marker 하나로 (clickable + tooltip).
         // 첫 fix 는 heading 미확정 → angle=0 (북쪽 화살표). polyline 시작점 인식.
+        // 정지 클러스터 대표 (clusterCount>1) 는 원형 + 개수 이미지로 교체.
+        const isCluster = meta.clusterCount > 1;
         const st = arrowStateRef.current[deviceId];
         const angle = st ? calcBearing(st.lastPos.lat, st.lastPos.lng, lat, lng) : 0;
         const marker = new window.kakao.maps.Marker({
           map: dotVisible ? mapRef.current : null,
           position: pos,
-          image: makeArrowImage(angle, c),
+          image: isCluster ? makeClusterImage(meta.clusterCount, c) : makeArrowImage(angle, c),
           clickable: true,
-          zIndex: meta.isGapEndpoint ? 7 : 5,
+          zIndex: isCluster ? 6 : (meta.isGapEndpoint ? 7 : 5),
         });
         window.kakao.maps.event.addListener(marker, 'click', () => {
           const p = marker.getPosition();
@@ -1251,6 +1248,20 @@ function buildMainInfoHTML(label, color, m, addr, lat, lng) {
   `;
 }
 
+// "HH:MM" — KST 로컬 시각 (뭉친 dot tooltip 요약용)
+function fmtHm(iso) {
+  return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+// "N분간 정지" 요약 문구 (분 단위 반올림, 60분+ 는 시간 표기).
+function fmtDurationKo(startIso, endIso) {
+  const s = (new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000;
+  if (s < 60) return `${Math.max(1, Math.round(s))}초간 정지`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}분간 정지`;
+  const h = Math.floor(m / 60), rm = m % 60;
+  return rm > 0 ? `${h}시간 ${rm}분간 정지` : `${h}시간 정지`;
+}
+
 function buildPointInfoHTML(m, color, addr, lat, lng) {
   const ageTxt = m.recordedAt ? new Date(m.recordedAt).toLocaleString('ko-KR') : '—';
   const sat    = m.sat ?? '—';
@@ -1258,6 +1269,14 @@ function buildPointInfoHTML(m, color, addr, lat, lng) {
   const speed  = m.speedKmh != null ? ROW(SVG_RUN, `${m.speedKmh.toFixed(1)} km/h`) : '';
   const stopBadge = m.isStop
     ? `<span style="display:inline-block;background:#1a1a2e;color:#fbbf24;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600;margin-left:6px;letter-spacing:.04em">정지</span>`
+    : '';
+  // 정지 클러스터 요약 — clusterCount>1 이면 개별 시각 대신 range + duration 표시.
+  const isCluster = m.clusterCount > 1;
+  const clusterBlock = isCluster
+    ? `<div style="background:#f6f7fa;border:1px solid #e5e7eb;border-radius:6px;padding:6px 10px;margin:6px 0 10px;font-size:11px;line-height:1.5;color:#1a1a2e">
+         <div style="font-weight:600;margin-bottom:2px">${fmtHm(m.clusterStartAt)} ~ ${fmtHm(m.clusterEndAt)}</div>
+         <div style="color:#666">${fmtDurationKo(m.clusterStartAt, m.clusterEndAt)} · ${m.clusterCount}개 fix 합침</div>
+       </div>`
     : '';
   // gap 정보 — 이 점이 통신 두절 구간의 시작점 또는 끝점인 경우 표시 + 복사 버튼.
   const gapBlock = (m.gapBefore || m.gapAfter)
@@ -1267,12 +1286,13 @@ function buildPointInfoHTML(m, color, addr, lat, lng) {
     <div style="padding:12px 14px;font-size:12px;font-family:-apple-system,system-ui,sans-serif;min-width:240px;line-height:1.55;color:#1a1a2e">
       <div style="font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
         <span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${color || '#888'}"></span>
-        기록 지점${stopBadge}
+        ${isCluster ? '정지 구간' : '기록 지점'}${stopBadge}
       </div>
       ${ROW(SVG_PIN, addrLine(addr))}
+      ${clusterBlock}
       ${ROW(SVG_SAT, `sat ${sat} · ${vbat}`)}
       ${speed}
-      <div style="color:#888;font-size:11px;margin:4px 0 10px">${ageTxt}</div>
+      <div style="color:#888;font-size:11px;margin:4px 0 10px">${isCluster ? '중앙 fix: ' : ''}${ageTxt}</div>
       ${gapBlock}
       ${roadviewBtn(lat, lng)}
     </div>

@@ -62,6 +62,77 @@ function findClusterIndices(points, minCount, radiusM, windowSize) {
  *   - 끝 점 A: B 50m, C 100m, D 150m, E 200m → 150m 안엔 B,C,D → count=4 < 5 → flag X
  *   - 의도된 동작: chain (이동 중) 은 cluster 아님, 모여있어야 cluster
  */
+/**
+ * 렌더 후보 인덱스 집합 (Set) 을 stop cluster 반경 안에서 뭉쳐 대표만 남김.
+ * 흡수되지 않은 (첫/마지막/이동중/멀리 떨어진) 인덱스는 그대로 유지.
+ * @returns { compacted: Set<number>, clusterMap: Map<repIdx, [absorbedIdxs]> }
+ *   - clusterMap: 대표 인덱스 → 흡수된 원본 인덱스 배열 (자기 자신 포함).
+ *     이 배열이 유일하면 cluster 아님 (단독 marker), 여럿이면 cluster.
+ */
+export function compactStopMarkerIndexes(pts, indexes, radiusM) {
+  const total = pts.length;
+  const clusterMap = new Map();
+  if (total <= 2 || radiusM <= 0) {
+    const compacted = new Set(indexes);
+    compacted.forEach(i => clusterMap.set(i, [i]));
+    return { compacted, clusterMap };
+  }
+
+  const sorted = Array.from(indexes).sort((a, b) => a - b);
+  const compacted = new Set();
+  let cluster = [];
+  let center = null;
+
+  const flushCluster = () => {
+    if (cluster.length === 0) return;
+    const rep = cluster[Math.floor(cluster.length / 2)];
+    compacted.add(rep);
+    clusterMap.set(rep, cluster);
+    cluster = [];
+    center = null;
+  };
+
+  sorted.forEach(idx => {
+    const p = pts[idx];
+    if (!p) return;
+    if (idx === 0 || idx === total - 1 || !p._isStop) {
+      flushCluster();
+      compacted.add(idx);
+      clusterMap.set(idx, [idx]);
+      return;
+    }
+    if (!center || haversineM(center.lat, center.lng, p.lat, p.lng) > radiusM) {
+      flushCluster();
+      cluster = [idx];
+      center = { lat: p.lat, lng: p.lng };
+      return;
+    }
+    cluster.push(idx);
+    center = {
+      lat: (center.lat * (cluster.length - 1) + p.lat) / cluster.length,
+      lng: (center.lng * (cluster.length - 1) + p.lng) / cluster.length,
+    };
+  });
+  flushCluster();
+  return { compacted, clusterMap };
+}
+
+/**
+ * cluster 대표 인덱스에 tooltip 용 timestamp range + count 부여.
+ * absorbed 는 시간 오름차순 인덱스 배열 (compactStopMarkerIndexes 결과).
+ * @returns { clusterStartAt, clusterEndAt, clusterCount } — count=1 이면 null 반환.
+ */
+export function clusterMeta(pts, absorbed) {
+  if (!absorbed || absorbed.length <= 1) return null;
+  const startIdx = absorbed[0];
+  const endIdx = absorbed[absorbed.length - 1];
+  return {
+    clusterStartAt: pts[startIdx]?.recorded_at,
+    clusterEndAt:   pts[endIdx]?.recorded_at,
+    clusterCount:   absorbed.length,
+  };
+}
+
 export function enrichWithSpeedStops(points, opts = {}) {
   const {
     clusterMin = 5,
