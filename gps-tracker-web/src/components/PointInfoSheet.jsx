@@ -20,6 +20,19 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
   const isStop  = !!meta?.isStop;
 
   const speedStr = meta?.speedKmh != null ? `${meta.speedKmh.toFixed(1)} km/h` : null;
+  // 정지 클러스터 요약 — 대표 dot 이면 timeStr 대신 range 표시.
+  const isCluster = meta?.clusterCount > 1;
+  const clusterRange = isCluster
+    ? `${new Date(meta.clusterStartAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })} ~ ${new Date(meta.clusterEndAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+    : null;
+  const clusterDur = isCluster ? (() => {
+    const s = (new Date(meta.clusterEndAt).getTime() - new Date(meta.clusterStartAt).getTime()) / 1000;
+    if (s < 60) return `${Math.max(1, Math.round(s))}초간 정지`;
+    const mi = Math.round(s / 60);
+    if (mi < 60) return `${mi}분간 정지`;
+    const h = Math.floor(mi / 60), rm = mi % 60;
+    return rm > 0 ? `${h}시간 ${rm}분간 정지` : `${h}시간 정지`;
+  })() : null;
   const battStr  = meta?.vbatMv != null
     ? `${(meta.vbatMv/1000).toFixed(2)}V`
     : null;
@@ -45,7 +58,7 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
             <span style={compact ? st.titleTxtSmall : st.titleTxt}>{title}</span>
           )}
           {isStop && <span style={compact ? st.stopBadgeSmall : st.stopBadge}>정지</span>}
-          <span style={compact ? st.timeTxtSmall : st.timeTxt}>{timeStr}</span>
+          <span style={compact ? st.timeTxtSmall : st.timeTxt}>{isCluster ? clusterRange : timeStr}</span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button onClick={() => onRoadview?.({ lat, lng })}
@@ -74,6 +87,11 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
       </div>
 
       <div style={compact ? st.statsSmall : st.stats}>
+        {isCluster && (
+          <span style={{ ...st.stat, color: 'var(--text)', fontWeight: 600 }}>
+            {clusterDur} · {meta.clusterCount}개 합침
+          </span>
+        )}
         {battStr && <span style={st.stat}><Icon name="battery" size={compact ? 11 : 12} /> {battStr}</span>}
         {speedStr && <span style={st.stat}><Icon name="route" size={compact ? 11 : 12} /> {speedStr}</span>}
         {/* compact 모드: 위성 / 위경도 생략 — 군더더기 정보 */}
