@@ -700,11 +700,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
     // updateMarker(..., { deferPolyline:true }) 로 누적한 coords 를 한 번에 setPath.
     // 대량 fix (initial load 2000+) 시 O(N²) → O(N). 마지막 fix 후 반드시 호출.
+    // gap 로 나뉜 여러 segment 를 모두 flush — 이전엔 마지막 segment 만 setPath 해서
+    // 이전 사이클의 polyline 이 미렌더되던 회귀 (dot 만 남고 실선 사라짐) 방어.
     flushLiveTrail(deviceId) {
       const entry = polyRef.current[deviceId];
       if (!entry) return;
-      const lastSeg = entry.segments[entry.segments.length - 1];
-      if (lastSeg) lastSeg.poly.setPath(lastSeg.coords);
+      entry.segments.forEach(seg => seg.poly.setPath(seg.coords));
     },
 
     // (2026-07-01) refresh(force=true) 용 — polyline + lastRecordedAtRef 완전 reset.
