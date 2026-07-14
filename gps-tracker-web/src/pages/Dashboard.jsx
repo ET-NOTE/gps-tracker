@@ -9,7 +9,7 @@ import BottomNav from '../components/BottomNav';
 import SideRail from '../components/SideRail';
 import MapControls from '../components/MapControls';
 import RoadviewModal, { probeRoadview } from '../components/RoadviewModal';
-import { enrichWithSpeedStops, haversineM, compactStopMarkerIndexes, clusterMeta } from '../lib/stops';
+import { enrichWithSpeedStops, haversineM, compactStopMarkerIndexes } from '../lib/stops';
 
 // 홈 뷰 정지 클러스터 흡수 반경 — seeker 기본 (35m) 과 통일.
 const HOME_STOP_MERGE_RADIUS_M = 35;
@@ -645,19 +645,18 @@ export default function Dashboard({ onLogout }) {
         const zoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
         const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap, clickableIntervalM(zoomLvl));
         // 정지 클러스터 흡수 — picked 안 근접 _isStop 들을 대표 인덱스 하나로 합침.
-        // seeker 와 동일한 로직 (drawSeekerPath 도 이 헬퍼 사용).
-        const { compacted, clusterMap } = compactStopMarkerIndexes(enriched, picked, HOME_STOP_MERGE_RADIUS_M);
+        // (2026-07-14) live 뷰는 대표 marker 를 "그냥 화살표" 로 조용히 표시 —
+        // clusterMeta (개수 뱃지 + tooltip range) 는 seeker 전용으로 격리 (사용자 요청).
+        const { compacted } = compactStopMarkerIndexes(enriched, picked, HOME_STOP_MERGE_RADIUS_M);
         enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
-          const cm = compacted.has(i) ? clusterMeta(enriched, clusterMap.get(i)) : null;
           mapRef.current?.addHistoryPoint(d.id, loc.lat, loc.lng, color, {
             recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix,
             speedKmh: loc._speed, isStop: loc._isStop,
             deviceId: d.id, deviceLabel: label,
             skipMarker: !compacted.has(i),
             isGapEndpoint: gapEndpoints.has(i),
-            ...(cm || {}),
             ...(g || {}),
           });
         });
@@ -710,19 +709,18 @@ export default function Dashboard({ onLogout }) {
         const zoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
         const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap, clickableIntervalM(zoomLvl));
         // 정지 클러스터 흡수 — picked 안 근접 _isStop 들을 대표 인덱스 하나로 합침.
-        // seeker 와 동일한 로직 (drawSeekerPath 도 이 헬퍼 사용).
-        const { compacted, clusterMap } = compactStopMarkerIndexes(enriched, picked, HOME_STOP_MERGE_RADIUS_M);
+        // (2026-07-14) live 뷰는 대표 marker 를 "그냥 화살표" 로 조용히 표시 —
+        // clusterMeta (개수 뱃지 + tooltip range) 는 seeker 전용으로 격리 (사용자 요청).
+        const { compacted } = compactStopMarkerIndexes(enriched, picked, HOME_STOP_MERGE_RADIUS_M);
         enriched.slice(0, -1).forEach((loc, i) => {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
-          const cm = compacted.has(i) ? clusterMeta(enriched, clusterMap.get(i)) : null;
           mapRef.current?.addHistoryPoint(d.id, loc.lat, loc.lng, color, {
             recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix,
             speedKmh: loc._speed, isStop: loc._isStop,
             deviceId: d.id, deviceLabel: label,
             skipMarker: !compacted.has(i),
             isGapEndpoint: gapEndpoints.has(i),
-            ...(cm || {}),
             ...(g || {}),
           });
         });
