@@ -1199,11 +1199,19 @@ export default function Dashboard({ onLogout }) {
                             }} title="마지막 GPS 좌표 수신">
                               <Icon name="mapPin" size={11} /> {ageString(d.last_fix_at)}
                             </span>
-                            {meta?.vbatMv && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                <Icon name="battery" size={11} /> {meta.vbatMv}mV
-                              </span>
-                            )}
+                            {(() => {
+                              // 실시간 meta 우선, 없으면 device row 의 last_vbat_mv (서버 LATERAL JOIN) fallback.
+                              // → 새로고침 후에도 즉시 최신 vbat 표시, LTE 끊긴 상태에서도 마지막 값 유지.
+                              const vbat = meta?.vbatMv ?? d.last_vbat_mv;
+                              const cbc  = meta?.cbcMv  ?? d.last_cbc_mv;
+                              if (!vbat) return null;
+                              return (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                      title={cbc ? `ADC ${vbat}mV / 모듈 ${cbc}mV` : `${vbat}mV`}>
+                                  <Icon name="battery" size={11} /> {vbat}mV{cbc ? ` (${cbc})` : ''}
+                                </span>
+                              );
+                            })()}
                             {meta?.sat !== undefined && meta?.sat !== null && (
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                 <Icon name="sat" size={11} /> sat {meta.sat}
