@@ -3,6 +3,7 @@ import { compactStopMarkerIndexes as compactStopMarkerIndexesLib } from '../lib/
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const MAX_HISTORY_POINTS = 500;
+const MIN_TRAIL_POINT_DISTANCE_M = 20;
 // 좌표 사이 timestamp gap 이 이 시간 넘으면 segment 분리 + gap 구간은 점선 polyline.
 // 운영 흐름: 일반 POST 간격 15s. sleep/reset/통신두절 시 갭 수십s~분 → split 정확히 감지.
 const POLYLINE_GAP_THRESHOLD_S = 60;
@@ -603,9 +604,14 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       } else {
         // 기존 마지막 segment 연속 — coords append + path 갱신
         const lastSeg = entry.segments[entry.segments.length - 1];
-        lastSeg.coords.push(pos);
+        const lastPos = lastSeg.coords[lastSeg.coords.length - 1];
+        const movedFromLastTrail = !lastPos || distanceM(
+          { lat: lastPos.getLat(), lng: lastPos.getLng() },
+          { lat, lng },
+        ) >= MIN_TRAIL_POINT_DISTANCE_M;
+        if (movedFromLastTrail) lastSeg.coords.push(pos);
         if (!deferPoly) {
-          lastSeg.poly.setPath(lastSeg.coords);
+          if (movedFromLastTrail) lastSeg.poly.setPath(lastSeg.coords);
           lastSeg.poly.setOptions({ strokeColor: stroke, strokeOpacity: opacity, strokeWeight: sw });
         }
       }
@@ -639,7 +645,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const pos = new window.kakao.maps.LatLng(lat, lng);
       const isStop = !!meta.isStop;
       const c = color || '#888';
-
       const dotVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
       if (!meta.skipMarker) {
         // (2026-07-01) dot + arrow 이중 marker 통일 — 화살표 marker 하나로 (clickable + tooltip).
@@ -754,9 +759,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       }
     },
 
-    focusDevice(deviceId) {
+    focusDevice(deviceId, opts = {}) {
       const entry = markersRef.current[deviceId];
-      if (entry) mapRef.current?.panTo(entry.marker.getPosition());
+      if (!entry || !mapRef.current) return false;
+      markProgrammatic();
+      mapRef.current.setCenter(entry.marker.getPosition());
+      if (Number.isFinite(opts.level)) mapRef.current.setLevel(opts.level);
+      return true;
     },
 
     fitToAllMarkers(padding = 50) {
