@@ -46,6 +46,10 @@ pub struct DeviceView {
     // 13_4 LC86G: 마지막 POST 의 안테나 상태 ("OK_EXT"/"OK_INT"/"OPEN"/"SHORT"/"?")
     // GPS fix 없어도 LTE POST 만 되면 갱신 — 안테나 결선 즉시 진단.
     pub last_antenna: Option<String>,
+    // 마지막 payload 배터리 값 (fix 유무 무관, location_records 최신 row 에서 LATERAL JOIN).
+    // 새로고침 후 device card 배터리 fallback — 실시간 WS 값 없어도 이걸로 최신 표시.
+    pub last_vbat_mv: Option<i32>,
+    pub last_cbc_mv:  Option<i32>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -166,7 +170,9 @@ async fn list(
                   d.paired_at, d.created_at, d.last_stationary,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
-                  la.antenna     AS last_antenna
+                  la.antenna     AS last_antenna,
+                  lv.vbat_mv     AS last_vbat_mv,
+                  lv.cbc_mv      AS last_cbc_mv
              FROM devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
@@ -192,6 +198,15 @@ async fn list(
                   ORDER BY x.at DESC
                   LIMIT 1
              ) la ON TRUE
+        LEFT JOIN LATERAL (
+                  -- (2026-07-16) fix 유무 무관 최근 payload 배터리. Fix 안 잡히는 실내 device 도
+                  --   새로고침 후 즉시 현재 vbat 표시. WS 실시간 값이 오면 웹에서 그것으로 override.
+                  SELECT vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
+                    FROM location_records
+                   WHERE device_id = d.id AND vbat_mv IS NOT NULL
+                ORDER BY recorded_at DESC
+                   LIMIT 1
+             ) lv ON TRUE
             WHERE d.owner_id = $1
             ORDER BY COALESCE(d.last_seen_at, d.created_at) DESC"#,
     )
