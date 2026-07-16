@@ -33,8 +33,11 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
     const h = Math.floor(mi / 60), rm = mi % 60;
     return rm > 0 ? `${h}시간 ${rm}분간 정지` : `${h}시간 정지`;
   })() : null;
+  // vbat (ESP ADC, 배터리 실측 근접) + cbc (모듈 AT+CBC, 배선 loss 뒤). cbc 는 있을 때만 부기.
   const battStr  = meta?.vbatMv != null
-    ? `${(meta.vbatMv/1000).toFixed(2)}V`
+    ? (meta.cbcMv != null
+        ? `${(meta.vbatMv/1000).toFixed(2)}V (모듈 ${(meta.cbcMv/1000).toFixed(2)}V)`
+        : `${(meta.vbatMv/1000).toFixed(2)}V`)
     : null;
   const satStr   = meta?.sat != null ? `위성 ${meta.sat}` : null;
 

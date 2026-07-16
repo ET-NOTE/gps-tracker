@@ -290,7 +290,8 @@ export const api = {
   },
 
   // Phase 1 schema — POST 단위 grouping. consumer 가 sampling / marker / polyline 로직 짤 때 활용.
-  // 응답: [{ post_at, uptime_s, vbat_mv, csq, reg, batch_size, fixes: [{ recorded_at, source, fix, lat, lng, sat, ttff_s, heading }] }, ...]
+  // 응답: [{ post_at, uptime_s, vbat_mv, cbc_mv, csq, reg, batch_size, fixes: [{ recorded_at, source, fix, lat, lng, sat, ttff_s, heading }] }, ...]
+  //   · vbat_mv = ESP ADC 측정 (배터리 실측 근접). cbc_mv = SIM7080 AT+CBC (배선 loss 뒤).
   listLocationsGrouped: (deviceId, params = {}) => {
     const q = new URLSearchParams({ grouped: 'true' });
     if (params.limit)    q.set('limit',    params.limit);
@@ -312,6 +313,7 @@ export const api = {
         post_at:    g.post_at,
         batch_size: g.batch_size,
         vbat_mv:    g.vbat_mv,
+        cbc_mv:     g.cbc_mv,
         uptime_s:   g.uptime_s,
         csq:        g.csq,
         reg:        g.reg,

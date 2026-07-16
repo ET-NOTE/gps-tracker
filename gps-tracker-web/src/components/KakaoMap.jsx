@@ -1227,7 +1227,8 @@ function buildMainInfoHTML(label, color, m, addr, lat, lng) {
   const fixTxt = m.fix === false ? 'no fix' : 'fix';
   const ageTxt = m.recordedAt ? new Date(m.recordedAt).toLocaleString('ko-KR') : '—';
   const sat    = m.sat ?? '—';
-  const vbat   = m.vbatMv ? `${m.vbatMv} mV` : '—';
+  // vbat_mv (ESP ADC, 배터리 실측 근접) + cbc_mv (모듈 AT+CBC, 배선 loss 뒤). cbc 는 있을 때만 부기.
+  const vbat   = m.vbatMv ? (m.cbcMv ? `${m.vbatMv} mV (모듈 ${m.cbcMv})` : `${m.vbatMv} mV`) : '—';
   const speed  = m.speedKmh != null ? ROW(SVG_RUN, `${m.speedKmh.toFixed(1)} km/h`) : '';
   // 라이브 마커도 gap 양끝점일 수 있음 — gap 정보 노출.
   const gapBlock = (m.gapBefore || m.gapAfter) ? buildGapInPointBlock(m, lat, lng) : '';
@@ -1265,7 +1266,8 @@ function fmtDurationKo(startIso, endIso) {
 function buildPointInfoHTML(m, color, addr, lat, lng) {
   const ageTxt = m.recordedAt ? new Date(m.recordedAt).toLocaleString('ko-KR') : '—';
   const sat    = m.sat ?? '—';
-  const vbat   = m.vbatMv ? `${m.vbatMv} mV` : '—';
+  // vbat_mv (ESP ADC, 배터리 실측 근접) + cbc_mv (모듈 AT+CBC, 배선 loss 뒤). cbc 는 있을 때만 부기.
+  const vbat   = m.vbatMv ? (m.cbcMv ? `${m.vbatMv} mV (모듈 ${m.cbcMv})` : `${m.vbatMv} mV`) : '—';
   const speed  = m.speedKmh != null ? ROW(SVG_RUN, `${m.speedKmh.toFixed(1)} km/h`) : '';
   const stopBadge = m.isStop
     ? `<span style="display:inline-block;background:#1a1a2e;color:#fbbf24;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600;margin-left:6px;letter-spacing:.04em">정지</span>`

@@ -30,6 +30,8 @@ pub struct LocationView {
     pub csq: Option<i16>,
     pub reg: Option<i16>,
     pub vbat_mv: Option<i32>,
+    /// SIM7080 AT+CBC 자체 측정 (모듈 VBAT 핀 = 배선 loss 뒤). raw JSONB 에서 parse.
+    pub cbc_mv: Option<i32>,
     pub device_uptime_s: Option<i32>,
     pub heading: Option<f32>,
 }
@@ -64,6 +66,7 @@ struct LocationRowRaw {
     csq: Option<i16>,
     reg: Option<i16>,
     vbat_mv: Option<i32>,
+    cbc_mv: Option<i32>,   // raw->>'cbc_mv' — SIM7080 자체 측정 (배선 loss 진단용)
     device_uptime_s: Option<i32>,
     heading: Option<f32>,
     raw: Option<Value>,
@@ -132,7 +135,9 @@ async fn history(
     // 조건이 NULL이면 무시되도록 COALESCE 패턴 사용. raw + fixes_jsonb 까지 가져옴 (grouped=true 시 사용).
     let rows = sqlx::query_as::<_, LocationRowRaw>(
         r#"SELECT recorded_at, source, fix, lat, lng, sat, ttff_s,
-                  csq, reg, vbat_mv, device_uptime_s, heading, raw, fixes_jsonb
+                  csq, reg, vbat_mv,
+                  (raw->>'cbc_mv')::int AS cbc_mv,
+                  device_uptime_s, heading, raw, fixes_jsonb
              FROM location_records
             WHERE device_id = $1 AND user_id = $7
               AND ($2::timestamptz IS NULL OR recorded_at >= $2)
@@ -172,6 +177,7 @@ async fn history(
                 post_at:    row.recorded_at,
                 uptime_s:   row.raw.as_ref().and_then(|r| r.get("ts")).and_then(|v| v.as_i64()).map(|v| v as i32),
                 vbat_mv:    row.vbat_mv,
+                cbc_mv:     row.cbc_mv,
                 csq:        row.csq,
                 reg:        row.reg,
                 ttff_s:     row.ttff_s,
@@ -188,6 +194,7 @@ async fn history(
                 group.ttff_s       = row.ttff_s;
                 group.heading      = row.heading;
                 group.vbat_mv      = row.vbat_mv;
+                group.cbc_mv       = row.cbc_mv;
                 group.csq          = row.csq;
                 group.reg          = row.reg;
             }
@@ -215,6 +222,7 @@ async fn history(
                 post_at:    b.post_at,
                 uptime_s:   b.uptime_s,
                 vbat_mv:    b.vbat_mv,
+                cbc_mv:     b.cbc_mv,
                 csq:        b.csq,
                 reg:        b.reg,
                 batch_size: sorted.len() as i32,
@@ -250,7 +258,7 @@ async fn history(
                         source: fix.source, fix: fix.fix,
                         lat: fix.lat, lng: fix.lng, sat: fix.sat,
                         ttff_s: fix.ttff_s,
-                        csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv,
+                        csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv, cbc_mv: r.cbc_mv,
                         device_uptime_s: r.device_uptime_s,
                         heading: fix.heading,
                     });
@@ -262,7 +270,7 @@ async fn history(
                 flat.push(LocationView {
                     recorded_at: r.recorded_at, source: r.source, fix: r.fix,
                     lat: r.lat, lng: r.lng, sat: r.sat, ttff_s: r.ttff_s,
-                    csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv,
+                    csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv, cbc_mv: r.cbc_mv,
                     device_uptime_s: r.device_uptime_s, heading: r.heading,
                 });
             }
@@ -278,6 +286,7 @@ struct GroupedPostBuilder {
     post_at:      DateTime<Utc>,
     uptime_s:     Option<i32>,
     vbat_mv:      Option<i32>,
+    cbc_mv:       Option<i32>,
     csq:          Option<i16>,
     reg:          Option<i16>,
     ttff_s:       Option<i32>,
@@ -330,6 +339,7 @@ struct GroupedPost {
     post_at:    DateTime<Utc>,
     uptime_s:   Option<i32>,
     vbat_mv:    Option<i32>,
+    cbc_mv:     Option<i32>,
     csq:        Option<i16>,
     reg:        Option<i16>,
     batch_size: i32,
