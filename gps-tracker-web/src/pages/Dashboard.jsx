@@ -862,6 +862,26 @@ export default function Dashboard({ onLogout }) {
   }, [fences, devices, showFences, geofenceAlert, filterDeviceId]);
 
   function handleWsEvent(msg) {
+    // (2026-07-16) fix 없는 POST 도 vbat/cbc/csq/reg/sat/uptime 메타는 최신값이 옴 —
+    // 단말기 카드 배터리 realtime 갱신 위해 msg.type==='location' 이면 fix 유무와 무관하게
+    // meta 갱신 + setDevices last_seen_at 통과. 마커/polyline 은 fix+lat+lng 조건에서만.
+    if (msg.type === 'location' && !(msg.fix && msg.lat && msg.lng)) {
+      const prevMetaNoFix = lastMetaRef.current[msg.device_id] || {};
+      lastMetaRef.current[msg.device_id] = {
+        ...prevMetaNoFix,
+        recordedAt: msg.recorded_at,
+        sat: msg.sat ?? prevMetaNoFix.sat,
+        vbatMv: msg.vbat_mv ?? prevMetaNoFix.vbatMv,
+        cbcMv: msg.cbc_mv ?? prevMetaNoFix.cbcMv,
+        fix: false,
+      };
+      setDevices(prev => prev.map(d =>
+        d.id === msg.device_id
+          ? { ...d, last_seen_at: msg.recorded_at }
+          : d
+      ));
+      return;
+    }
     if (msg.type === 'location' && msg.fix && msg.lat && msg.lng) {
       const dev = devRef.current.find(d => d.id === msg.device_id);
       const label = dev?.display_name || dev?.device_uid || `#${msg.device_id}`;
