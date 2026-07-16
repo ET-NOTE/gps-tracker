@@ -633,7 +633,7 @@ export default function Dashboard({ onLogout }) {
           const isLast = (i === ordered.length - 1);
           const g = gapMap[i];
           const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
+            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
             : { stale, recordedAt: loc.recorded_at };
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta, { deferPolyline: !isLast });
           if (isLast) lastMetaRef.current[d.id] = meta;
@@ -652,7 +652,7 @@ export default function Dashboard({ onLogout }) {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
           mapRef.current?.addHistoryPoint(d.id, loc.lat, loc.lng, color, {
-            recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix,
+            recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv, fix: loc.fix,
             speedKmh: loc._speed, isStop: loc._isStop,
             deviceId: d.id, deviceLabel: label,
             skipMarker: !compacted.has(i),
@@ -696,7 +696,7 @@ export default function Dashboard({ onLogout }) {
           const isLast = (i === ordered.length - 1);
           const g = gapMap[i];
           const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
+            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
             : { stale, recordedAt: loc.recorded_at };
           mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta, { deferPolyline: !isLast });
           if (isLast) lastMetaRef.current[d.id] = meta;
@@ -716,7 +716,7 @@ export default function Dashboard({ onLogout }) {
           if (!loc.lat || !loc.lng) return;
           const g = gapMap[i];
           mapRef.current?.addHistoryPoint(d.id, loc.lat, loc.lng, color, {
-            recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, fix: loc.fix,
+            recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv, fix: loc.fix,
             speedKmh: loc._speed, isStop: loc._isStop,
             deviceId: d.id, deviceLabel: label,
             skipMarker: !compacted.has(i),
@@ -871,7 +871,7 @@ export default function Dashboard({ onLogout }) {
         lat: msg.lat, lng: msg.lng, recordedAt: msg.recorded_at,
       });
       const meta = {
-        recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv,
+        recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv, cbcMv: msg.cbc_mv,
         fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
         lat: msg.lat, lng: msg.lng,
       };
@@ -895,7 +895,7 @@ export default function Dashboard({ onLogout }) {
         }
         wsDotAccRef.current[msg.device_id] = { lat, lng, accM: acc ? acc.accM : 0 };
         mapRef.current?.addHistoryPoint(msg.device_id, lat, lng, color, {
-          recordedAt, sat, vbatMv: msg.vbat_mv, fix: fixVal,
+          recordedAt, sat, vbatMv: msg.vbat_mv, cbcMv: msg.cbc_mv, fix: fixVal,
           speedKmh, isStop: false,
           deviceId: msg.device_id, deviceLabel: label,
           skipMarker,
