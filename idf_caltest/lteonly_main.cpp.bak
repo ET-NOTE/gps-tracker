@@ -1,0 +1,107 @@
+// =================================================================
+// LTE-ONLY BLOCK TEST — HW팀 LTE 모듈 의심 검증본 (2026-07-06)
+//   LTE(SIM7080) 만 구동/부하(반복 POST=TX)하고 다른 블록(GPS/모션/I2C/슬립)은 안 씀.
+//   목적: INT-WDT 크래시가 LTE bringup/TX 와 시간상관 있는지 확인.
+//     - 크래시가 POST/TX 순간과 겹치면 → LTE 전류/전원 의심 ↑ (시나리오 B, PCB근거)
+//     - LTE 하드부하인데 크래시가 안 나거나 idle 때만 나면 → LTE 트리거 아님
+//   크래시 가시화: NVS 크래시 카운터 + 배너 + 부저(크래시=6, 클린전원=1).
+//   ※ CAL_CYCLES=576 (크래시 잘 나는 설정) 유지.
+// =================================================================
+#include <Arduino.h>
+#include <Preferences.h>
+#include <esp_system.h>
+#include "config.h"
+#include "buzzer.h"
+#include "hw_power.h"
+#include "lte.h"
+#include "loopwdt.h"
+
+static uint32_t bootMs = 0;
+
+static uint32_t upS() { return (millis() - bootMs) / 1000; }
+
+void setup() {
+  bootMs = millis();
+  buzzer::init();                 // GPIO1 즉시 LOW (부저 boot-floating 방지)
+  Serial.begin(115200);
+  Serial.setTxTimeoutMs(0);       // non-blocking CDC (리더 없어도 hang 안 함)
+  delay(1500);
+
+  esp_reset_reason_t rr = esp_reset_reason();
+
+  // ===== HW-DIAG: NVS 크래시 카운터 + 배너 + 부저 알람 =====
+  {
+    Preferences pf; pf.begin("hwdiag", false);
+    uint32_t crashes = pf.getUInt("crashes", 0);
+    uint32_t boots   = pf.getUInt("boots", 0) + 1;
+    bool isCrash = (rr != ESP_RST_POWERON && rr != ESP_RST_DEEPSLEEP
+                    && rr != ESP_RST_USB && rr != ESP_RST_JTAG);
+    if (rr == ESP_RST_POWERON) { crashes = 0; boots = 1; }
+    else if (isCrash) crashes++;
+    pf.putUInt("crashes", crashes); pf.putUInt("boots", boots); pf.end();
+    Serial.println();
+    Serial.println("========================================================");
+    Serial.println("  LTE-ONLY BLOCK TEST | ESP32-C3 (HW팀 LTE 의심 검증)");
+    Serial.printf ("  reset=%d  boots=%lu   >>> CRASHES=%lu <<<\n",
+                   (int)rr, (unsigned long)boots, (unsigned long)crashes);
+    Serial.println(isCrash ? "  *** 방금 CRASH(INT-WDT류)로 재부팅됨 — 부저 알람 ***"
+                   : (rr == ESP_RST_POWERON ? "  clean power-on (카운터 리셋)" : "  boot"));
+    Serial.println("  LTE 만 구동/부하. 크래시가 POST/TX 와 시간상관 있으면 = LTE/전원 의심↑");
+    Serial.println("========================================================");
+    Serial.flush();
+    if (isCrash) { buzzer::beep(6, 70, 70); buzzer::flush(); }           // 크래시 알람 6회
+    else if (rr == ESP_RST_POWERON) { buzzer::beep(1, 600, 0); buzzer::flush(); }  // 클린 전원 1회
+  }
+
+  lwdt::arm();
+
+  hw_power::init();
+  Serial.println("[LTE-ONLY] railOn");
+  hw_power::railOn();
+  lte::init();                    // UART + power-on
+  Serial.println("[LTE-ONLY] init done → LTE bringup + POST 부하 시작");
+}
+
+void loop() {
+  lwdt::feed();
+  static uint32_t postN = 0, lastPost = 0;
+
+  // --- LTE 미등록: bringup 반복 ---
+  if (!lte::ready()) {
+    Serial.printf("[t=%lus] LTE bringUp 시도...\n", upS());
+    if (lte::bringUp()) {
+      lte::fetchSimInfo();
+      Serial.printf("[t=%lus] LTE ONLINE  CSQ=%d REG=%d IP=%s\n", upS(), lte::csq(), lte::reg(), "-");
+    } else {
+      Serial.printf("[t=%lus] LTE bringUp FAIL (CSQ=%d REG=%d)\n", upS(), lte::csq(), lte::reg());
+      delay(1500);
+    }
+    return;
+  }
+
+  // --- LTE 부하: 2초마다 POST(TX) 반복 ---
+  if (millis() - lastPost >= 2000) {
+    lastPost = millis();
+    postN++;
+    lte::refresh();               // CSQ/REG 갱신
+    char body[160];
+    snprintf(body, sizeof(body),
+             "{\"test\":\"lte-only\",\"t\":%lu,\"n\":%lu,\"csq\":%d,\"reg\":%d}",
+             (unsigned long)upS(), (unsigned long)postN, lte::csq(), lte::reg());
+    int st = -1;
+    uint32_t t0 = millis();
+    Serial.printf("[t=%lus] POST #%lu 시작 (TX) CSQ=%d ...\n", upS(), (unsigned long)postN, lte::csq());
+    bool ok = lte::httpPost(body, &st);
+    Serial.printf("[t=%lus] POST #%lu → status=%d elapsed=%lums ok=%d conn=%d\n",
+                  upS(), (unsigned long)postN, st, (unsigned long)(millis() - t0), (int)ok, (int)lte::httpConnected());
+  }
+
+  // 1초 하트비트 (크래시 시각 대조용 타임라인)
+  static uint32_t lastHb = 0;
+  if (millis() - lastHb >= 1000) {
+    lastHb = millis();
+    Serial.printf("[t=%lus] alive (LTE %s CSQ=%d REG=%d)\n",
+                  upS(), lte::ready() ? "OK" : "--", lte::csq(), lte::reg());
+  }
+  delay(20);
+}

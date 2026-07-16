@@ -26,13 +26,31 @@ dist-root/
 *.tsbuildinfo
 .vite/
 
-# ===== Arduino =====
+# ===== Arduino / ESP-IDF =====
 **/build/
+# IDF component manager fetch cache (arduino-esp32 등 auto-download)
+**/managed_components/
+# IDF menuconfig 잔재
+**/sdkconfig.old
+**/sdkconfig.orig
 *.bin
 *.elf
 *.map
 *.hex
 arduino/*.zip                          # sketch zip 보관본 (협업자 전달 임시)
+
+# ===== 배포 산출물/실험 임시본 (root, source 아님) =====
+# root zip (A_flash_standalone_nodep.zip, lteonly_*.zip 등), 협업자 전달용 임시 패키지
+/*.zip
+pkg_*/
+standalone_new_diag_fw/
+lteonly_scope_flash/
+
+# ===== 별개 workspace (이 repo 소속 아님) =====
+# Gwinstek 오실로스코프 tool workspace
+GDS-1052-U/
+# garbage (실수로 생성)
+/0
 
 # ===== Vite cache =====
 **/vite.config.js.timestamp-*.mjs
