@@ -1,0 +1,77 @@
+================================================================================
+ esp32c3-mini_gps — 최종 운영본 펌웨어 사양 (2026-07-08)
+ 프로젝트: idf_caltest (ESP-IDF from-source 빌드)
+================================================================================
+
+■ 최종본 = 두 플래그로 결정 (config.h)
+--------------------------------------------------------------------------------
+  #define HWDIAG_ENABLED  0     ← 크래시 디버그 OFF (최종본). 관찰/디버그본 = 1
+  #define OBSERVE_MODE    0     ← 운영 타이밍(정지 5분창). 관찰본 = 1(3분창)
+
+  · HWDIAG_ENABLED : main.cpp 의 HW-DIAG 블록 게이트.
+      1 = CRASHES 카운터(NVS) + 배너 + 긴삐3회 크래시부저 + 클린전원부저 (HW/필드 관측용)
+      0 = 위 전부 제거 → 앱 정상 부저 마일스톤(콜드부팅 길게1회 등)만 동작 = 최종본
+  · OBSERVE_MODE : 0=운영(정지 5분 → sleep), 1=관찰(3분창 + 로그유지 + bounce re-sleep 안함)
+
+
+■ 최종본 config 값 (aa, 신모듈)
+--------------------------------------------------------------------------------
+  CONFIG_RTC_CLK_CAL_CYCLES = 0      (INT-WDT 크래시 완화, ~10배)
+  SLEEP_DISABLED            = 0      (절전 ON, 모션-aware deep sleep)
+  recovery 재시작           = 30분   (BOOT_STUCK/STUCK_RESTART_TIMEOUT_MS, HARD_RESET_LIMIT=10)
+  LTE 핀맵(신모듈 native)   = PIN_LTE_RX 2 / PIN_LTE_TX 4 / DTR LOW
+                              (구모듈은 스왑: RX4/TX2/DTR HIGH — 구_LTE모듈_배선_DTR_정보.txt)
+
+
+■ 2026-07-08 개선 (전부 최종본에 포함)
+--------------------------------------------------------------------------------
+ A. boot-stuck CSQ=99 skip : 무신호(터널/지하)에선 재부팅해도 무의미 → skip.
+      신호 있는데 못 붙는 진짜 stuck 만 esp_restart. (지하주차장 재부팅 루프 제거)
+ B. 크래시 판정서 SW-reset 제외 : recovery 의 esp_restart(복구재시작)는 크래시 아님.
+      → HWDIAG=1 일 때 긴삐3회/CRASHES 가 진짜 INT-WDT/PANIC/BROWNOUT 만 표시.
+ ③. hardCycle 2분 back-off : 무신호서 railCycle 인러시 반복 억제(전원 브라운아웃 방지).
+ ·  LTE 재시도 부저 : bringUp 재시도마다 단발 50ms 부저 (운행 중 청각 인지).
+ ·  활동량(activity) 기반 sleep [실내 vs 터널 분리] :
+      raw 가속도 |Δ| 의 EMA(activityMg). 정지 실내=낮게(단발 노이즈 무시),
+      주행/터널=지속 진동으로 높게. active()=EMA≥MOTION_ACTIVITY_THS_MG(40).
+      → checkStationary 가 이벤트 quiet 대신 activity 로 판정. 단발 노이즈에 안 흔들림,
+        지속 진동(움직임)이면 절대 sleep 안 함(터널 안전). STATUS 에 act=Xmg 표시.
+ ·  non-blocking bringUp : 기존 90초 블로킹 등록대기 제거.
+      phase 상태머신(brPhase 0=idle/1=reg대기). 매 호출 CEREG 1회만 폴 →
+      loop 를 90초 굶기지 않음(GPS/모션 정상 서비스). recovery 가 2초 간격 재호출.
+
+
+■ 단말 현황 (2026-07-08)
+--------------------------------------------------------------------------------
+  aa  (COM16, 신모듈 native) = 최종 운영본 (HWDIAG 0 + OBSERVE 0). 크래시부저 없음.
+  sss                         = 관찰본 (OBSERVE 1, HWDIAG 1 — 크래시부저 긴삐3회 유지).
+      (활동량/non-blocking 리팩터는 sss 에도 적용됨. HWDIAG/OBSERVE 만 다름.)
+
+
+■ 부저 맵 (HWDIAG=1 기준. 최종본 HWDIAG=0 은 크래시부저 없이 앱 마일스톤만)
+--------------------------------------------------------------------------------
+  길게 1회      = 클린 전원/콜드부팅
+  삐 2회(150ms) = 절전(sleep) 진입
+  단발 50ms     = LTE 재시도            ← 신규
+  긴삐 3회(500ms)= 크래시 (HWDIAG=1 만)  ← 진짜 INT-WDT/PANIC/BROWNOUT
+  빠른 3/4/5/6회 = 첫 GPS fix / 첫 POST / 서버 cmd / 모션 wake
+
+
+■ ★필드 튜닝 필요
+--------------------------------------------------------------------------------
+  MOTION_ACTIVITY_THS_MG (현재 40) : 주행 중 STATUS 의 act=Xmg 값을 보고 조정.
+    - 주차(엔진off) 시 act 가 임계 아래(<40), 주행/터널 시 위(>40, "MOVING" 표시)
+      가 되도록. 안 맞으면 임계를 올리거나 내려 재빌드.
+
+
+■ 빌드 (최종본 vs 관찰본)
+--------------------------------------------------------------------------------
+  최종본  : config.h 에서 HWDIAG_ENABLED 0, OBSERVE_MODE 0
+  관찰본  : HWDIAG_ENABLED 1, OBSERVE_MODE 1
+  (LTE 핀맵은 장착 모듈에 맞게 native/스왑)
+  빌드: call C:\esp\esp-idf\export.bat && idf.py -C idf_caltest build
+  플래시: python -m esptool --chip esp32c3 --port COMx --before default_reset
+          --after hard_reset write_flash @build\flash_args
+  ※ 절전 ON 이라 정지 시 deep sleep → 포트 사라짐. 재플래시는 모션으로 깨우거나
+    깨어있는 순간 단일 시도. (또는 BOOT 버튼 다운로드 모드)
+================================================================================
