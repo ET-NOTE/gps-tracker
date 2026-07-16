@@ -27,6 +27,7 @@ pub enum Event {
         sat: Option<i16>,
         ttff_s: Option<i32>,
         vbat_mv: Option<i32>,
+        cbc_mv:  Option<i32>,   // SIM7080 AT+CBC (모듈 관점 VBAT, 배선 loss 뒤)
         heading: Option<f32>,
         /// P1: 1 POST 안 모든 fix (firmware batch). legacy single fix POST 는 None.
         /// top-level lat/lng/sat 은 fixes 의 마지막 fix 와 동일 (backward compat).

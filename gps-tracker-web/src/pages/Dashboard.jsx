@@ -1200,15 +1200,17 @@ export default function Dashboard({ onLogout }) {
                               <Icon name="mapPin" size={11} /> {ageString(d.last_fix_at)}
                             </span>
                             {(() => {
-                              // 실시간 meta 우선, 없으면 device row 의 last_vbat_mv (서버 LATERAL JOIN) fallback.
-                              // → 새로고침 후에도 즉시 최신 vbat 표시, LTE 끊긴 상태에서도 마지막 값 유지.
-                              const vbat = meta?.vbatMv ?? d.last_vbat_mv;
-                              const cbc  = meta?.cbcMv  ?? d.last_cbc_mv;
-                              if (!vbat) return null;
+                              // vbat/cbc 를 항상 페어로 사용 — 한 쪽은 최신, 다른 쪽은 stale 인
+                              // 혼합 상황 방지 (혼동 유발). 실시간 meta 에 vbat 있으면 meta 페어,
+                              // 없으면 device row (서버 LATERAL JOIN) 페어.
+                              const src = meta?.vbatMv != null
+                                ? { vbat: meta.vbatMv, cbc: meta.cbcMv }
+                                : { vbat: d.last_vbat_mv, cbc: d.last_cbc_mv };
+                              if (!src.vbat) return null;
                               return (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                                      title={cbc ? `ADC ${vbat}mV / 모듈 ${cbc}mV` : `${vbat}mV`}>
-                                  <Icon name="battery" size={11} /> {vbat}mV{cbc ? ` (${cbc})` : ''}
+                                      title={src.cbc ? `ADC ${src.vbat}mV / 모듈 ${src.cbc}mV` : `${src.vbat}mV`}>
+                                  <Icon name="battery" size={11} /> {src.vbat}mV{src.cbc ? ` (${src.cbc})` : ''}
                                 </span>
                               );
                             })()}
