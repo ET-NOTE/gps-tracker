@@ -618,11 +618,18 @@ export default function Dashboard({ onLogout }) {
         const since = await computeHomeSinceISO(d);
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
         const locs = api.flattenGrouped(groups);
-        if (!locs?.length) continue;
-        const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
         const color = getDeviceColor(d);
         const stale = isStale(d.last_seen_at);
+        if (!locs?.length) {
+          if (d.last_lat != null && d.last_lng != null) {
+            const meta = { recordedAt: d.last_fix_at || d.last_seen_at, stale };
+            mapRef.current?.updateMarker(d.id, d.last_lat, d.last_lng, label, color, meta);
+            lastMetaRef.current[d.id] = meta;
+          }
+          continue;
+        }
+        const ordered = [...locs].reverse();
         const gapMap = computeGapMap(ordered);
         // (2026-07-01) force refresh 면 polyline 도 완전 reset — updateMarker 는 시간 오름차순
         // append 만 하므로 기존 polyline (최신까지) 에 오래된 fix 이어붙이면 역방향 라인 생김.
@@ -684,11 +691,18 @@ export default function Dashboard({ onLogout }) {
         const since = sinces[li];
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
         const locs = api.flattenGrouped(groups);
-        if (!locs?.length) return;
-        const ordered = [...locs].reverse();
         const label = d.display_name || d.device_uid;
         const color = getDeviceColor(d);
         const stale = isStale(d.last_seen_at);
+        if (!locs?.length) {
+          if (d.last_lat != null && d.last_lng != null) {
+            const meta = { recordedAt: d.last_fix_at || d.last_seen_at, stale };
+            mapRef.current?.updateMarker(d.id, d.last_lat, d.last_lng, label, color, meta);
+            lastMetaRef.current[d.id] = meta;
+          }
+          return;
+        }
+        const ordered = [...locs].reverse();
         const gapMap = computeGapMap(ordered);
         // 폴리라인/메인 마커 갱신용 — bulk 로드 (setPath 는 마지막에 한 번만)
         ordered.forEach((loc, i) => {
@@ -1457,7 +1471,10 @@ export default function Dashboard({ onLogout }) {
                       색상은 userTrackPref(사용자 의도) 반영 — 시커가 일시 정지 중이라도 ON 으로 보임 (시커 닫히면 즉시 부활).
                       paused 면 미세하게 작은 구분선 표시. */}
                   {view === 'home' && filterDeviceId !== null && (
-                    <button onClick={() => setUserTrackPref(p => !p)}
+                    <button onClick={() => {
+                      setUserTrackPref(p => !p);
+                      mapRef.current?.focusDevice?.(filterDeviceId, { level: 3 });
+                    }}
                       className="btn-bounce"
                       style={{
                       position: 'absolute', right: 16,
