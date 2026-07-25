@@ -16,10 +16,10 @@ tags: ["esp32", "lte", "sim7080", "gps", "rust", "axum", "react", "kakao-maps"]
 | 1 | [왜 만들었나](01-why.md) | ✅ 완성 |
 | 2 | [아키텍처 큰 그림](02-architecture.md) | ✅ 완성 |
 | 3 | [하드웨어 진화 (PCB rev · GPS 세대 · 부저 재앙)](03-hardware.md) | ✅ 완성 |
-| 4 | [펌웨어 리팩터 (Arduino → IDF)](04-firmware.md) | 🟡 draft |
-| 5 | [서버 (Rust + axum + Timescale)](05-server.md) | 🟡 draft |
-| 6 | [프론트 (React + Kakao Maps)](06-frontend.md) | 🟡 draft |
-| 7 | [모바일 (Flutter WebView + FCM)](07-mobile.md) | 🟡 draft |
+| 4 | [펌웨어 리팩터 (Arduino → IDF)](04-firmware.md) | ✅ 완성 |
+| 5 | [서버 (Rust + axum + Timescale)](05-server.md) | ✅ 완성 |
+| 6 | [프론트 (React + Kakao Maps)](06-frontend.md) | ✅ 완성 |
+| 7 | [모바일 (Flutter WebView + FCM)](07-mobile.md) | ✅ 완성 |
 | 8 | [실전 사고 — 며칠씩 파고든 것들](08-troubleshooting.md) | ✅ 완성 |
 | 9 | [회고 — 다시 시작한다면](09-retro.md) | ✅ 완성 |
 
@@ -37,6 +37,7 @@ tags: ["esp32", "lte", "sim7080", "gps", "rust", "axum", "react", "kakao-maps"]
 
 ## 발행 정책
 
-- 챕터 4-7 (draft) 은 발행 후 점진 완성
-- Repository tag `v1.0-blog` = 초판 스냅샷 (이후 갱신되어도 원 링크 유지)
+- **`v1.0-blog`** = 초판 스냅샷 (챕터 1-3 · 8-9 완성, 4-7 draft)
+- **`v1.1-blog`** = 챕터 1-9 모두 완성 (2026-07-25)
+- 이후 갱신 시 `v1.x-blog` 새 태그. 이전 태그 링크는 유지 (안정 참조)
 - 개인 블로그 (Astro 등) 에 옮겨 게시할 계획
