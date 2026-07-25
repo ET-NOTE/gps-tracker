@@ -1,7 +1,21 @@
 # gps-tracker
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+
 ESP32-C3 + L80-R GPS + SIM7080G 트래커 — Rust(axum) API + React(Vite) 웹 + Arduino 펌웨어.
 운영 URL: https://seriallog.com
+
+## 라이선스
+
+이 프로젝트는 **[GNU Affero General Public License v3](LICENSE)** (AGPL-3.0-or-later) 하에 배포됩니다.
+
+핵심 조항 요약 (법률 자문 아님 · 전체는 [LICENSE](LICENSE) 참조):
+- **자유롭게** 사용/수정/배포 가능
+- **파생 저작물** (수정본 배포) 은 소스 공개 + 동일 AGPL 라이선스
+- **네트워크 서비스 (SaaS)** 로 이 소프트웨어를 사용해 다른 사용자에게 제공할 때도 소스 공개 의무
+- 저작권 · 라이선스 고지 유지
+
+즉 이 프로젝트를 그대로 참고/학습/자기 서버에서 돌리는 것은 자유. 다만 이걸 기반으로 **경쟁 SaaS 를 운영하려면 소스 공개 필수**.
 
 ## 1분 길찾기
 
