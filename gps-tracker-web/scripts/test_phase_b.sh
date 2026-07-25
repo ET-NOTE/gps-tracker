@@ -52,10 +52,10 @@ echo
 sleep 2
 echo
 echo "=== 이벤트 테이블 확인 ==="
-PGPASSWORD=QQopURby3seaZnd4PalqDXPoVv0C7 psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -c \
+psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -c \
   "SELECT id, device_id, kind, occurred_at, data FROM events WHERE device_id=$DID ORDER BY id;"
 
 echo
 echo "=== geofence_states ==="
-PGPASSWORD=QQopURby3seaZnd4PalqDXPoVv0C7 psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -c \
+psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -c \
   "SELECT geofence_id, device_id, inside, last_transition_at FROM geofence_states WHERE device_id=$DID;"
