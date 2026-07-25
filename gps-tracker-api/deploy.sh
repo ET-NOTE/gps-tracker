@@ -14,21 +14,23 @@
 set -e
 
 ENV="${1:-prod}"
+# VPS host — 다른 서버 배포 시 `DEPLOY_HOST=my.host.com bash deploy.sh` 형태로 override.
+DEPLOY_HOST="${DEPLOY_HOST:-210.114.18.16}"
 case "$ENV" in
   prod)
-    SERVER=mmm@210.114.18.16
+    SERVER="${DEPLOY_USER_PROD:-mmm}@${DEPLOY_HOST}"
     SERVICE=gps-tracker-api
     BIN_NAME=gps-tracker-api
-    REMOTE_HOME=/home/mmm/projects/gps-tracker-api
-    HEALTH_URL="https://seriallog.com/gps-tracker/api/v1/health"
+    REMOTE_HOME=/home/${DEPLOY_USER_PROD:-mmm}/projects/gps-tracker-api
+    HEALTH_URL="${HEALTH_URL_PROD:-https://seriallog.com/gps-tracker/api/v1/health}"
     ;;
   dev)
     # gps-dev 계정 통로. authorized_keys 에 등록된 키 (junior + maintainer) 면 모두 ssh 가능.
-    SERVER=gps-dev@210.114.18.16
+    SERVER="${DEPLOY_USER_DEV:-gps-dev}@${DEPLOY_HOST}"
     SERVICE=gps-tracker-api-dev
     BIN_NAME=gps-tracker-api-dev
-    REMOTE_HOME=/home/gps-dev/projects/gps-tracker-api
-    HEALTH_URL="https://dev-gps.serial.kr/gps-tracker/api/v1/health"
+    REMOTE_HOME=/home/${DEPLOY_USER_DEV:-gps-dev}/projects/gps-tracker-api
+    HEALTH_URL="${HEALTH_URL_DEV:-https://dev-gps.serial.kr/gps-tracker/api/v1/health}"
     ;;
   *)
     echo "usage: $0 [prod|dev]" >&2

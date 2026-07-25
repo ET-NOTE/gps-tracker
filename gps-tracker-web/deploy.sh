@@ -10,16 +10,18 @@
 set -e
 
 ENV="${1:-prod}"
+# VPS host — 다른 서버 배포 시 `DEPLOY_HOST=my.host.com bash deploy.sh` 형태로 override.
+DEPLOY_HOST="${DEPLOY_HOST:-210.114.18.16}"
 case "$ENV" in
   prod)
-    SERVER=mmm@210.114.18.16
-    REMOTE_DIR=/home/mmm/gps-tracker-web
+    SERVER="${DEPLOY_USER_PROD:-mmm}@${DEPLOY_HOST}"
+    REMOTE_DIR=/home/${DEPLOY_USER_PROD:-mmm}/gps-tracker-web
     HEALTH_URLS=("https://seriallog.com/gps-tracker/app/" "https://gps.serial.kr/")
     ;;
   dev)
     # gps-dev 계정 통로. junior + maintainer 양쪽 SSH 키 등록되어 있음.
-    SERVER=gps-dev@210.114.18.16
-    REMOTE_DIR=/home/gps-dev/gps-tracker-web-dev
+    SERVER="${DEPLOY_USER_DEV:-gps-dev}@${DEPLOY_HOST}"
+    REMOTE_DIR=/home/${DEPLOY_USER_DEV:-gps-dev}/gps-tracker-web-dev
     HEALTH_URLS=("https://dev-gps.serial.kr/")
     ;;
   *)

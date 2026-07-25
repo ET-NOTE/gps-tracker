@@ -2,7 +2,7 @@
 
 **최종 갱신**: 2026-05-15
 **도메인**: https://seriallog.com (모든 엔드포인트 HTTPS)
-**서버 SSH**: `mmm@210.114.18.16` (Ubuntu 22.04, PostgreSQL 14.18, nginx 1.18)
+**서버 SSH**: `mmm@<VPS_HOST>` (Ubuntu 22.04, PostgreSQL 14.18, nginx 1.18)
 
 ## 핵심 문서
 
@@ -202,8 +202,8 @@ wsl -d Ubuntu -- bash -lc 'source $HOME/.cargo/env && cd /mnt/e/project/2025/esp
 # scp + 스왑 + 재시작
 wsl -d Ubuntu -- bash -lc '
   scp /mnt/e/project/2025/esp32c3-mini_gps/gps-tracker-api/target/release/gps-tracker-api \
-      mmm@210.114.18.16:/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api.new && \
-  ssh mmm@210.114.18.16 "cd /home/mmm/projects/gps-tracker-api/bin && \
+      mmm@<VPS_HOST>:/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api.new && \
+  ssh mmm@<VPS_HOST> "cd /home/mmm/projects/gps-tracker-api/bin && \
     mv -f gps-tracker-api gps-tracker-api.bak && \
     mv gps-tracker-api.new gps-tracker-api && \
     chmod +x gps-tracker-api && \
@@ -224,10 +224,10 @@ wsl -d Ubuntu -- bash -lc 'source $HOME/.cargo/env && cd /mnt/e/project/2025/esp
 
 ```bash
 # 로그 (실시간)
-ssh mmm@210.114.18.16 'sudo journalctl -u gps-tracker-api -f'
+ssh mmm@<VPS_HOST> 'sudo journalctl -u gps-tracker-api -f'
 
 # DB
-ssh mmm@210.114.18.16 'PGPASSWORD=<.env에서> psql -h 127.0.0.1 -U gps_tracker_app -d gps_tracker'
+ssh mmm@<VPS_HOST> 'PGPASSWORD=<.env에서> psql -h 127.0.0.1 -U gps_tracker_app -d gps_tracker'
 
 # 최근 좌표
 SELECT d.device_uid, lr.recorded_at, lr.lat, lr.lng, lr.fix

@@ -53,7 +53,7 @@
 
 서버 배치:
 ```bash
-scp gps-tracker-*-firebase-adminsdk-*.json mmm@210.114.18.16:/home/mmm/secrets/
+scp gps-tracker-*-firebase-adminsdk-*.json mmm@<VPS_HOST>:/home/mmm/secrets/
 chmod 600 /home/mmm/secrets/gps-tracker-*.json
 ```
 

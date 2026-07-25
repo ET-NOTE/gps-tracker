@@ -8,9 +8,12 @@ ESP32-C3 + L80-R GPS + SIM7080G 트래커 — Rust(axum) API + React(Vite) 웹 +
 | 보고 싶은 것 | 어디로 |
 |---|---|
 | **지금 어디까지 만들어졌는지** | [STATUS.md](STATUS.md) |
-| **로컬에서 돌려보고 싶다** | [docs/SETUP.md](docs/SETUP.md) |
+| **로컬에서 돌려보고 싶다** | [docs/SETUP.md](docs/SETUP.md) · [docs/local-dev-setup.md](docs/local-dev-setup.md) |
 | **API 스펙 (REST + WebSocket)** | [docs/API_CONTRACT.md](docs/API_CONTRACT.md) |
 | **시스템 전체 구조** | [architecture.md](architecture.md) |
+| **하드웨어 · PCB rev 진화** | [docs/hardware.md](docs/hardware.md) |
+| **실전 사고 log (dirty!)** | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| **프로젝트 스토리 (블로그 draft)** | [docs/blog/index.md](docs/blog/index.md) |
 | **외부 키 발급 경로** | [docs/SETUP.md §1](docs/SETUP.md) + [docs/1NCE_INTEGRATION.md §8](docs/1NCE_INTEGRATION.md) |
 | **푸시 알림 셋업 (FCM/APNs)** | [docs/FCM_SETUP.md](docs/FCM_SETUP.md) |
 | **데이터 책임 경계** | [DATA_BOUNDARIES.md](DATA_BOUNDARIES.md) |

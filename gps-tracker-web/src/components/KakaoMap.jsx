@@ -60,17 +60,16 @@ function ensureKakaoMapSdk() {
   });
 }
 const BUCKET_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
-const TIME_SEGMENT_COLORS = ['#2563EB', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'];
+// (2026-07-25) timeColor = device 색 유지 + opacity 5단계로 시간 진행 표현 (진할수록 최근).
+// 원래는 다른 색 5개 (BUCKET-like) 였으나 여러 device 겹칠 때 identity 상실 → opacity 로 통일.
+// 관련: PR #9 (song1074) 원 아이디어, 이후 재구현.
+const TIME_SEGMENT_OPACITIES = [0.36, 0.48, 0.60, 0.72, 0.84];
 function speedBucket(p) {
   if (p._isStop || p._speed == null || p._speed < 5) return 0;       // 정지/도보 미만
   if (p._speed < 30)  return 1;                                       // 시내 저속
   if (p._speed < 60)  return 2;                                       // 일반 시내
   if (p._speed < 100) return 3;                                       // 고속도로
   return 4;                                                            // 초고속
-}
-function timeSegmentIndex(idx, total, segmentCount) {
-  if (total <= 1) return 0;
-  return Math.min(segmentCount - 1, Math.floor((idx / (total - 1)) * segmentCount));
 }
 function distanceM(a, b) {
   const r = Math.PI / 180;
@@ -957,7 +956,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           }
         }
       } else if (timeColor && pts.length >= 2) {
-        const segmentCount = Math.max(2, Math.min(timeSegments, TIME_SEGMENT_COLORS.length, pts.length - 1));
+        const segmentCount = Math.max(2, Math.min(timeSegments, TIME_SEGMENT_OPACITIES.length, pts.length - 1));
         for (let seg = 0; seg < segmentCount; seg++) {
           const start = Math.floor((pts.length - 1) * seg / segmentCount);
           const end = Math.floor((pts.length - 1) * (seg + 1) / segmentCount);
@@ -969,8 +968,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
             const poly = new window.kakao.maps.Polyline({
               map: mapRef.current, path: segPath,
               strokeWeight: sw,
-              strokeColor: TIME_SEGMENT_COLORS[seg] || color,
-              strokeOpacity: 0.68,
+              strokeColor: color,   // device color 유지
+              strokeOpacity: TIME_SEGMENT_OPACITIES[seg] ?? 0.68,
               strokeStyle: 'solid',
             });
             seekerRef.current.poly.push(poly);
@@ -1018,13 +1017,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         const p = pts[idx];
         if (!p) return;
         const isStop = !!p._isStop && showStops;
+        // timeColor 는 opacity 방식이라 dot 색상은 device color 유지 (dot 자체 opacity 는
+        // dotImage 안에서 조정되지 않아 색 구분은 폴리라인에만 나타남 — 충분한 UX).
         const dotColor = isStop
           ? '#EF4444'
           : speedColor
             ? (BUCKET_COLORS[speedBucket(p)] || color)
-            : timeColor
-              ? (TIME_SEGMENT_COLORS[timeSegmentIndex(idx, total, Math.min(timeSegments, TIME_SEGMENT_COLORS.length))] || color)
-              : color;
+            : color;
         // 클릭 허용 조건:
         //   - onPointClick(SeekerSheet 재생용): 부담 줄이기 위해 isStop 또는 total <= 200 일 때만
         //   - onPointInfo(모바일 sheet): 항상 (이미 maxMarkers 캡으로 렌더링 제한됨)
