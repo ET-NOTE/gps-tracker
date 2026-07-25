@@ -158,7 +158,7 @@ arduino-cli upload  --fqbn esp32:esp32:esp32c3 -p COM15 arduino/13_1_motion_awar
 
 ### Prerequisites
 
-- SSH key 가 서버 `mmm@210.114.18.16` 에 등록되어 있어야 함
+- SSH key 가 서버 `mmm@<VPS_HOST>` 에 등록되어 있어야 함
 - 서버에 systemd unit `gps-tracker-api.service` 존재, `ExecStart=/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api`
 - 서버에 nginx + Let's Encrypt 인증서 (`seriallog.com`, `gps.serial.kr`)
 - 서버 `/home/mmm/projects/gps-tracker-api/.env` 가 위 형식대로 채워져 있음

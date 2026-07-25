@@ -57,13 +57,13 @@ cargo build --release
 
 ```bash
 # WSL2에서 빌드한 binary scp
-scp target/release/gps-tracker-api root@210.114.18.16:/home/mmm/projects/gps-tracker-api/bin/
+scp target/release/gps-tracker-api root@<VPS_HOST>:/home/mmm/projects/gps-tracker-api/bin/
 
 # 서버에서 systemd 등록 (한 번만)
 sudo systemctl enable --now gps-tracker-api
 
 # 업데이트 시
-ssh root@210.114.18.16 'systemctl restart gps-tracker-api'
+ssh root@<VPS_HOST> 'systemctl restart gps-tracker-api'
 ```
 
 ## 마이그레이션
