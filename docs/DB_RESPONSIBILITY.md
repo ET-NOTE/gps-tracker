@@ -67,9 +67,9 @@ ls gps-tracker-api/migrations/ | tail -3
 
 | # | 시도 경로 | 차단 메커니즘 |
 |---|---|---|
-| 1 | SSH `mmm@vps` | 부사수 키가 `/home/mmm/.ssh/authorized_keys` 에 **없음** |
+| 1 | SSH `deploy@vps` | 부사수 키가 `/home/deploy/.ssh/authorized_keys` 에 **없음** |
 | 2 | `sudo systemctl restart gps-tracker-api` | gps-dev 의 sudoers (`/etc/sudoers.d/gps-dev`) 가 **`gps-tracker-api-dev`** 만 허용 |
-| 3 | `/home/mmm/projects/gps-tracker-api/.env` 읽기 (prod DB 비번) | mmm 소유 0600. gps-dev 접근 불가 |
+| 3 | `/home/deploy/projects/gps-tracker-api/.env` 읽기 (prod DB 비번) | deploy 계정 소유 0600. gps-dev 접근 불가 |
 | 4 | `psql -U gps_tracker_dev_app -d gps_tracker` 시도 | `gps_tracker_dev_app` role 에 `REVOKE CONNECT ON DATABASE gps_tracker` 적용됨 |
 
 각각 독립이라 한 단계 우회 가능해도 다음 단계가 막음.
@@ -85,7 +85,7 @@ ls gps-tracker-api/migrations/ | tail -3
        git diff <last>..HEAD -- gps-tracker-api/migrations/
 2. [ ] prod 배포 (bash deploy.sh prod) → 마이그레이션 자동 적용
 3. [ ] dev DB 에 동일 ALTER (IF NOT EXISTS) 직접 적용
-       wsl -d Ubuntu -- bash -lc 'ssh mmm@... "sudo -u postgres psql -d gps_tracker_dev" <<PSQL ... PSQL'
+       wsl -d Ubuntu -- bash -lc 'ssh deploy@... "sudo -u postgres psql -d gps_tracker_dev" <<PSQL ... PSQL'
 4. [ ] dev API restart 필요 X (단순 ALTER 는 hot — 새 ingest 부터 적용)
        단 컬럼 NOT NULL DEFAULT 추가는 큰 테이블에서 락 주의
 5. [ ] 부사수에게 "main 변경 있음, rebase 권장" 알림 (Slack 등)

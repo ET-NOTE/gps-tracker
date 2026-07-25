@@ -53,13 +53,13 @@
 
 서버 배치:
 ```bash
-scp gps-tracker-*-firebase-adminsdk-*.json mmm@<VPS_HOST>:/home/mmm/secrets/
-chmod 600 /home/mmm/secrets/gps-tracker-*.json
+scp gps-tracker-*-firebase-adminsdk-*.json deploy@<VPS_HOST>:/home/deploy/secrets/
+chmod 600 /home/deploy/secrets/gps-tracker-*.json
 ```
 
 `.env`:
 ```ini
-FCM_SERVICE_ACCOUNT_PATH=/home/mmm/secrets/gps-tracker-e21be-firebase-adminsdk-fbsvc-<해시>.json
+FCM_SERVICE_ACCOUNT_PATH=/home/deploy/secrets/gps-tracker-e21be-firebase-adminsdk-fbsvc-<해시>.json
 ```
 
 API 재시작 후 journal 확인:
@@ -285,7 +285,7 @@ DB 의 `notification_settings` 테이블이 사용자별 토글을 보관. 서�
 ## 9. 키 회전 / 보안 체크리스트
 
 - [ ] `gps-tracker-*-firebase-adminsdk-*.json` 은 `.gitignore` 에 있나?
-- [ ] 서버상 위 파일의 권한이 600 (mmm 만 read)?
+- [ ] 서버상 위 파일의 권한이 600 (deploy 계정만 read)?
 - [ ] `google-services.json`, `GoogleService-Info.plist` 둘 다 git 제외?
 - [ ] APNs `.p8` 키는 1Password 등 안전한 곳에만 보관?
 - [ ] release keystore 비밀번호가 `key.properties` 외에 노출된 곳 없나? (memory / shell history / 채팅)

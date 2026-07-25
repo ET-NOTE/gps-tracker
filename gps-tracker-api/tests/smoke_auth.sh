@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASE="https://seriallog.com/gps-tracker/api/v1"
+BASE="https://gps.serial.kr/api/v1"
 EMAIL="rust-test-$(date +%s)@seriallog.test"
 PW="hunter2hunter"
 

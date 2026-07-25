@@ -120,7 +120,7 @@ cache.setString('fcm_token_registered_$jwtHash', 'yes');
 
 Flutter 앱 소스는 **별도 관리** (로컬 개발). 이 repo (`ET-NOTE/gps-tracker`) 에는 서버/웹/펌웨어만.
 
-과거 VPS `/home/mmm/gps-tracker-web/flutter_app/` (2.5 GB) 에 개발본이 있었으나 로컬 개발용이라 VPS 정리 시 삭제 (backup tar 로 안전 보관).
+과거 VPS 배포 디렉터리 (`~deploy/gps-tracker-web/flutter_app/`, 2.5 GB) 에 개발본이 있었으나 로컬 개발용이라 VPS 정리 시 삭제 (backup tar 로 안전 보관).
 
 이유:
 - Flutter 앱은 iOS/Android build artifact 무거움 (수백 MB gitignore 후에도 큼)

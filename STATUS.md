@@ -1,8 +1,8 @@
 # GPS 트래커 프로젝트 진행 상태
 
 **최종 갱신**: 2026-05-15
-**도메인**: https://seriallog.com (모든 엔드포인트 HTTPS)
-**서버 SSH**: `mmm@<VPS_HOST>` (Ubuntu 22.04, PostgreSQL 14.18, nginx 1.18)
+**도메인**: https://gps.serial.kr (모든 엔드포인트 HTTPS)
+**서버 SSH**: `deploy@<VPS_HOST>` (Ubuntu 22.04, PostgreSQL 14.18, nginx 1.18)
 
 ## 핵심 문서
 
@@ -19,7 +19,7 @@
 
 ## 1. 한 줄 요약
 
-ESP32-C3 GPS 트래커 → seriallog.com Rust API → (예정) Flutter 앱.
+ESP32-C3 GPS 트래커 → gps.serial.kr Rust API → (예정) Flutter 앱.
 **서버 백엔드 핵심 완료** (인증/디바이스/위치/실시간 WS/이벤트/FCM 스텁).
 다음: **12_ 펌웨어로 데이터 누적 검증** → Flutter.
 
@@ -28,7 +28,7 @@ ESP32-C3 GPS 트래커 → seriallog.com Rust API → (예정) Flutter 앱.
 ## 2. 시스템 구성
 
 ```
-[ESP32-C3 mini]                    [seriallog.com VPS]                  [예정: Flutter 앱]
+[ESP32-C3 mini]                    [gps.serial.kr VPS]                  [예정: Flutter 앱]
   L80-R GPS  ──┐                       nginx 443
   SIM7080G   ──┤  HTTPS POST  ───►  ┌──────────────────────────┐
   OLED         │   ingest           │ = /gps-tracker/ingest    │── 3040 ──► Rust API
@@ -55,7 +55,7 @@ ESP32-C3 GPS 트래커 → seriallog.com Rust API → (예정) Flutter 앱.
   - 스위치 `LOW` = wake / `HIGH` = deep sleep (0.5s 디바운스)
   - L80-R UART NMEA → 좌표/위성/TTFF
   - SIM7080G LTE + **SH* HTTP 스택** (CGNSPWR=0 유지, GNSS 미사용 → 데이터 안정)
-  - 30초 간격 POST `https://seriallog.com/gps-tracker/ingest`
+  - 30초 간격 POST `https://gps.serial.kr/gps-tracker/ingest`
   - OLED 4줄 디버그 (CDC USB 시리얼)
 - ⚠️ MMA8452 자이로 — INT 하드웨어 이슈로 보류
 - ⚠️ 전원 — D6 경로가 SIM7080G 피크 부족, 현재 Jinyushi USB 5V 상시 공급 가정 ([project_power_design_gap.md](../../C:/Users/msb/.claude/projects/e--project/memory/project_power_design_gap.md))
@@ -66,7 +66,7 @@ ESP32-C3 GPS 트래커 → seriallog.com Rust API → (예정) Flutter 앱.
 
 **런타임**:
 - 빌드 환경: **WSL2 Ubuntu 24.04 + rustc 1.88** (`rust-toolchain.toml` 고정). 서버 빌드 금지 (디스크 95%).
-- 배포 경로: `/home/mmm/projects/gps-tracker-api/{bin/gps-tracker-api, .env}`
+- 배포 경로: `/home/deploy/projects/gps-tracker-api/{bin/gps-tracker-api, .env}`
 - 서비스: `systemd gps-tracker-api.service` → `127.0.0.1:3040`
 - DB: `gps_tracker` / role `gps_tracker_app` (.env에 패스워드)
 - 마이그레이션: 부팅 시 `sqlx::migrate!()` 자동 적용 ([migrations/0001_init.sql](gps-tracker-api/migrations/0001_init.sql))
@@ -79,7 +79,7 @@ ESP32-C3 GPS 트래커 → seriallog.com Rust API → (예정) Flutter 앱.
 - `refresh_tokens` (token sha256 hash, jti 회전, revoked_at)
 - `fcm_tokens` (사용자별 푸시 토큰, active partial idx)
 
-**엔드포인트** (모두 `https://seriallog.com/gps-tracker/` 아래):
+**엔드포인트** (모두 `https://gps.serial.kr/gps-tracker/` 아래):
 
 | Path | Method | Auth | 비고 |
 |---|---|---|---|
@@ -110,7 +110,7 @@ ESP32-C3 GPS 트래커 → seriallog.com Rust API → (예정) Flutter 앱.
 
 ### 3-3. nginx
 
-- 사이트 파일: `/etc/nginx/sites-enabled/seriallog.com`
+- 사이트 파일: `/etc/nginx/sites-enabled/gps.serial.kr`
 - 추가된 블록 (양쪽 server에 idempotent 패치 스크립트로 삽입):
   - `location = /gps-tracker/ingest` → 3040
   - `location ^~ /gps-tracker/api/` → 3040
@@ -134,7 +134,7 @@ ESP32-C3 GPS 트래커 → seriallog.com Rust API → (예정) Flutter 앱.
 
 | 항목 | 결정 | 메모리 |
 |---|---|---|
-| 도메인/프로토콜 | `https://seriallog.com` 전용 | [project_gps_tracker_decisions.md](../../C:/Users/msb/.claude/projects/e--project/memory/project_gps_tracker_decisions.md) |
+| 도메인/프로토콜 | `https://gps.serial.kr` 전용 | [project_gps_tracker_decisions.md](../../C:/Users/msb/.claude/projects/e--project/memory/project_gps_tracker_decisions.md) |
 | 페어링 Phase 1 | user-driven `device_uid` 입력 | 동일 |
 | 페어링 Phase 2 (TODO) | SIM7080G ICCID/IMSI/IMEI 중 하나로 자동 | 동일 |
 | 지도 스택 | **카카오맵** (flutter_map/Mapbox/Google 후보 폐기) | 동일 |
@@ -202,8 +202,8 @@ wsl -d Ubuntu -- bash -lc 'source $HOME/.cargo/env && cd /mnt/e/project/2025/esp
 # scp + 스왑 + 재시작
 wsl -d Ubuntu -- bash -lc '
   scp /mnt/e/project/2025/esp32c3-mini_gps/gps-tracker-api/target/release/gps-tracker-api \
-      mmm@<VPS_HOST>:/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api.new && \
-  ssh mmm@<VPS_HOST> "cd /home/mmm/projects/gps-tracker-api/bin && \
+      deploy@<VPS_HOST>:/home/deploy/projects/gps-tracker-api/bin/gps-tracker-api.new && \
+  ssh deploy@<VPS_HOST> "cd /home/deploy/projects/gps-tracker-api/bin && \
     mv -f gps-tracker-api gps-tracker-api.bak && \
     mv gps-tracker-api.new gps-tracker-api && \
     chmod +x gps-tracker-api && \
@@ -224,10 +224,10 @@ wsl -d Ubuntu -- bash -lc 'source $HOME/.cargo/env && cd /mnt/e/project/2025/esp
 
 ```bash
 # 로그 (실시간)
-ssh mmm@<VPS_HOST> 'sudo journalctl -u gps-tracker-api -f'
+ssh deploy@<VPS_HOST> 'sudo journalctl -u gps-tracker-api -f'
 
 # DB
-ssh mmm@<VPS_HOST> 'PGPASSWORD=<.env에서> psql -h 127.0.0.1 -U gps_tracker_app -d gps_tracker'
+ssh deploy@<VPS_HOST> 'PGPASSWORD=<.env에서> psql -h 127.0.0.1 -U gps_tracker_app -d gps_tracker'
 
 # 최근 좌표
 SELECT d.device_uid, lr.recorded_at, lr.lat, lr.lng, lr.fix
@@ -240,8 +240,8 @@ SELECT * FROM events WHERE notified_at IS NULL ORDER BY occurred_at DESC LIMIT 2
 
 ### 환경 / 시크릿
 
-- `/home/mmm/projects/gps-tracker-api/.env`: `BIND_ADDR`, `DATABASE_URL`, `JWT_SECRET`, `JWT_ACCESS_TTL_MIN=15`, `JWT_REFRESH_TTL_DAYS=30`, (TODO) `FCM_SERVER_KEY`
-- nginx 백업: `/etc/nginx/sites-enabled/seriallog.com.bak.<timestamp>`
+- `/home/deploy/projects/gps-tracker-api/.env`: `BIND_ADDR`, `DATABASE_URL`, `JWT_SECRET`, `JWT_ACCESS_TTL_MIN=15`, `JWT_REFRESH_TTL_DAYS=30`, (TODO) `FCM_SERVER_KEY`
+- nginx 백업: `/etc/nginx/sites-enabled/gps.serial.kr.bak.<timestamp>`
 
 ### 다른 프로젝트 충돌 회피
 

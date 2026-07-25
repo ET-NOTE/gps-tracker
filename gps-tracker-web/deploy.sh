@@ -2,7 +2,7 @@
 # deploy.sh — tar+scp source → build on server → static 산출물 배포
 #
 # 사용법:
-#   bash deploy.sh           # = prod (default) — seriallog.com + gps.serial.kr
+#   bash deploy.sh           # = prod (default) — gps.serial.kr + legacy /gps-tracker/app/ 서브패스
 #   bash deploy.sh prod
 #   bash deploy.sh dev       # = dev-gps.serial.kr 단일 base
 #
@@ -14,9 +14,10 @@ ENV="${1:-prod}"
 DEPLOY_HOST="${DEPLOY_HOST:-210.114.18.16}"
 case "$ENV" in
   prod)
-    SERVER="${DEPLOY_USER_PROD:-mmm}@${DEPLOY_HOST}"
-    REMOTE_DIR=/home/${DEPLOY_USER_PROD:-mmm}/gps-tracker-web
-    HEALTH_URLS=("https://seriallog.com/gps-tracker/app/" "https://gps.serial.kr/")
+    SERVER="${DEPLOY_USER_PROD:-deploy}@${DEPLOY_HOST}"
+    REMOTE_DIR=/home/${DEPLOY_USER_PROD:-deploy}/gps-tracker-web
+    # 주 도메인 gps.serial.kr — legacy /gps-tracker/app/ 서브패스도 아직 nginx 유지 (backward-compat)
+    HEALTH_URLS=("https://gps.serial.kr/" "https://gps.serial.kr/gps-tracker/app/")
     ;;
   dev)
     # gps-dev 계정 통로. junior + maintainer 양쪽 SSH 키 등록되어 있음.
@@ -71,9 +72,9 @@ echo "node: \$(node --version)  npm: \$(npm --version)"
 cd $REMOTE_DIR
 npm install
 if [ "$ENV" = "prod" ]; then
-  # 1) seriallog.com/gps-tracker/app/ 용 (기본 base)
+  # 1) legacy /gps-tracker/app/ 서브패스용 (기본 base) — nginx 에 아직 살아 있음
   npm run build
-  # 2) gps.serial.kr/ 용 (root base, dist-root 로 출력)
+  # 2) gps.serial.kr/ 루트용 (root base, dist-root 로 출력)
   VITE_BASE=/ VITE_OUT=dist-root npm run build
   echo ">>> build OK (dist + dist-root)"
 else
@@ -86,13 +87,12 @@ ENDSSH
 # ── 3. nginx route (prod 만 — idempotent. dev 는 nginx 별도 셋업됨) ──────
 echo "=== [3/3] nginx ==="
 if [ "$ENV" = "prod" ]; then
-  ssh -T $SERVER <<'ENDSSH'
-  if grep -q "gps-tracker-web static" /etc/nginx/sites-enabled/seriallog.com 2>/dev/null; then
-    echo "nginx block already present"
-  else
-    sudo python3 /home/mmm/gps-tracker-web/scripts/nginx_add_web_route.py
-  fi
-ENDSSH
+  # NOTE: nginx 사이트 파일명은 VPS 상 실제 파일명. 초기 도메인 이력으로
+  # `/etc/nginx/sites-enabled/seriallog.com` 인 채로 유지 (도메인 이관 후에도 rename X).
+  # 다른 서버 배포 시 `DEPLOY_NGINX_SITE=my.example.com bash deploy.sh` 로 override.
+  NGINX_SITE="${DEPLOY_NGINX_SITE:-seriallog.com}"
+  DEPLOY_USER="${DEPLOY_USER_PROD:-deploy}"
+  ssh -T $SERVER "if grep -q 'gps-tracker-web static' /etc/nginx/sites-enabled/${NGINX_SITE} 2>/dev/null; then echo 'nginx block already present'; else sudo python3 /home/${DEPLOY_USER}/gps-tracker-web/scripts/nginx_add_web_route.py; fi"
 else
   echo "dev: nginx /etc/nginx/sites-enabled/dev-gps.serial.kr.conf 가 dist 를 serve"
 fi

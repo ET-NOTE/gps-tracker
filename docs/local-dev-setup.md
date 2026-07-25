@@ -13,7 +13,7 @@ prod DB 접속 정보는 **maintainer 만** 갖고 있음. 스크립트는 env �
 ### 방법 1 — shell 세션마다 명시
 
 ```bash
-export PGPASSWORD='<mmm 로부터 전달받은 값>'
+export PGPASSWORD='<maintainer 로부터 전달받은 값>'
 bash gps-tracker-web/scripts/db_inspect.sh
 ```
 
@@ -23,7 +23,7 @@ bash gps-tracker-web/scripts/db_inspect.sh
 
 ```bash
 cat > ~/.gps_tracker_env << 'EOF'
-export PGPASSWORD='<mmm 로부터 전달받은 값>'
+export PGPASSWORD='<maintainer 로부터 전달받은 값>'
 EOF
 chmod 600 ~/.gps_tracker_env
 ```
@@ -43,7 +43,7 @@ export PGPASSWORD='<...>'
 
 ## 원격 접속 (VPS)
 
-- **maintainer (mmm)**: 실 배포·rotation·prod DB 직접 접속
+- **maintainer (deploy)**: 실 배포·rotation·prod DB 직접 접속
 - **junior (gps-dev)**: dev 환경만. prod DB 4계층 차단 (memory 참조)
 
 접근 필요 시 maintainer 에게 SSH key 등록 요청.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""WS /gps-tracker/ws/realtime end-to-end:
+"""WS /ws/realtime end-to-end:
 register → pair (own) + create stranger device → connect WS as user1 → subscribe own+stranger
 → trigger ingest for both → expect to receive only the owned device's location event.
 """
@@ -8,8 +8,8 @@ import urllib.request
 
 import websockets
 
-BASE = "https://seriallog.com/gps-tracker"
-WS_BASE = "wss://seriallog.com/gps-tracker"
+BASE = "https://gps.serial.kr"
+WS_BASE = "wss://gps.serial.kr"
 
 def http(method, path, *, headers=None, body=None):
     data = json.dumps(body).encode() if body is not None else None
@@ -22,8 +22,8 @@ def http(method, path, *, headers=None, body=None):
 
 async def main():
     ts = int(time.time())
-    user1 = {"email": f"ws-u1-{ts}@seriallog.test", "password": "hunter2hunter"}
-    user2 = {"email": f"ws-u2-{ts}@seriallog.test", "password": "hunter2hunter"}
+    user1 = {"email": f"ws-u1-{ts}@gps.serial.test", "password": "hunter2hunter"}
+    user2 = {"email": f"ws-u2-{ts}@gps.serial.test", "password": "hunter2hunter"}
     uid_owned    = f"ws-owned-{ts}"
     uid_stranger = f"ws-stranger-{ts}"
 

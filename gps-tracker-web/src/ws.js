@@ -1,11 +1,11 @@
 // WebSocket client for real-time GPS events.
 // 도메인별 prefix 분기:
-//   gps.serial.kr → /ws/realtime (clean)
-//   기타 (seriallog.com 등) → /gps-tracker/ws/realtime
+//   gps.serial.kr → /ws/realtime (주 도메인)
+//   legacy /gps-tracker/ 서브패스 → /gps-tracker/ws/realtime
 import { activeStorage, tryRefresh, isTokenExpiringSoon } from './api';
 
 function buildWsUrl() {
-  if (!import.meta.env.PROD) return 'wss://seriallog.com/gps-tracker/ws/realtime';
+  if (!import.meta.env.PROD) return 'wss://gps.serial.kr/ws/realtime';
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const path  = location.hostname === 'gps.serial.kr' ? '/ws/realtime' : '/gps-tracker/ws/realtime';
   return `${proto}://${location.host}${path}`;

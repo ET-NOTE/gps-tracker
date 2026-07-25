@@ -194,7 +194,7 @@ ONCE_API_TOKEN=...
 
 | 환경 | 경로 | 비고 |
 |---|---|---|
-| **운영 서버** | `/home/mmm/projects/gps-tracker-api/.env` | systemd `gps-tracker-api.service` 가 `EnvironmentFile=` 으로 로드. **`.env` 직접 read 는 sandbox 차단** — 변경은 `sudo nano` 후 `sudo systemctl restart gps-tracker-api` |
+| **운영 서버** | `/home/deploy/projects/gps-tracker-api/.env` | systemd `gps-tracker-api.service` 가 `EnvironmentFile=` 으로 로드. **`.env` 직접 read 는 sandbox 차단** — 변경은 `sudo nano` 후 `sudo systemctl restart gps-tracker-api` |
 | **WSL 빌드/배포** | 동일 파일을 deploy.sh 가 동기화하지 않음 — 서버 .env 가 single source of truth | 로컬에서 1NCE 자격증명 굳이 둘 필요 X (1NCE 호출 테스트는 prod 에서만) |
 | **로컬 dev 옵션** | `gps-tracker-api/.env` (gitignored) | smoke 테스트용. 절대 commit 금지 |
 

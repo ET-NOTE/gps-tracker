@@ -3,7 +3,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
 ESP32-C3 + L80-R GPS + SIM7080G 트래커 — Rust(axum) API + React(Vite) 웹 + Arduino 펌웨어.
-운영 URL: https://seriallog.com
+운영 URL: https://gps.serial.kr
 
 ## 라이선스
 

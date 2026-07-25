@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # devices API end-to-end (HTTPS only).
 set -euo pipefail
-BASE="https://seriallog.com/gps-tracker/api/v1"
+BASE="https://gps.serial.kr/api/v1"
 EMAIL="dev-test-$(date +%s)@seriallog.test"
 PW="hunter2hunter"
 

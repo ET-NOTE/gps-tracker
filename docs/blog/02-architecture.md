@@ -13,7 +13,7 @@
     └──────────────────────┘   ┌────────────────────┐
                                 │  nginx (Ubuntu)    │
     ┌──────────────────────┐   │  gps.serial.kr     │
-    │  브라우저 / Flutter  │◄─►│  seriallog.com     │
+    │  브라우저 / Flutter  │◄─►│                    │
     │  React SPA           │   │                    │
     │  Kakao Maps          │   │  ┌──────────────┐  │
     │  WebSocket 구독      │◄─►│  │ Rust axum    │  │
