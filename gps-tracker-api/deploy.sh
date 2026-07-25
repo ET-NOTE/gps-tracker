@@ -18,11 +18,11 @@ ENV="${1:-prod}"
 DEPLOY_HOST="${DEPLOY_HOST:-210.114.18.16}"
 case "$ENV" in
   prod)
-    SERVER="${DEPLOY_USER_PROD:-mmm}@${DEPLOY_HOST}"
+    SERVER="${DEPLOY_USER_PROD:-deploy}@${DEPLOY_HOST}"
     SERVICE=gps-tracker-api
     BIN_NAME=gps-tracker-api
-    REMOTE_HOME=/home/${DEPLOY_USER_PROD:-mmm}/projects/gps-tracker-api
-    HEALTH_URL="${HEALTH_URL_PROD:-https://seriallog.com/gps-tracker/api/v1/health}"
+    REMOTE_HOME=/home/${DEPLOY_USER_PROD:-deploy}/projects/gps-tracker-api
+    HEALTH_URL="${HEALTH_URL_PROD:-https://gps.serial.kr/api/v1/health}"
     ;;
   dev)
     # gps-dev 계정 통로. authorized_keys 에 등록된 키 (junior + maintainer) 면 모두 ssh 가능.
@@ -30,7 +30,7 @@ case "$ENV" in
     SERVICE=gps-tracker-api-dev
     BIN_NAME=gps-tracker-api-dev
     REMOTE_HOME=/home/${DEPLOY_USER_DEV:-gps-dev}/projects/gps-tracker-api
-    HEALTH_URL="${HEALTH_URL_DEV:-https://dev-gps.serial.kr/gps-tracker/api/v1/health}"
+    HEALTH_URL="${HEALTH_URL_DEV:-https://dev-gps.serial.kr/api/v1/health}"
     ;;
   *)
     echo "usage: $0 [prod|dev]" >&2

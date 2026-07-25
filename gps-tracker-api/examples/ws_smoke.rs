@@ -10,8 +10,8 @@ use serde_json::{json, Value};
 use tokio::time::timeout;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-const HTTP_BASE: &str = "https://seriallog.com/gps-tracker";
-const WS_BASE: &str = "wss://seriallog.com/gps-tracker";
+const HTTP_BASE: &str = "https://gps.serial.kr";
+const WS_BASE: &str = "wss://gps.serial.kr";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,8 +20,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
 
     let ts = chrono::Utc::now().timestamp_millis();
-    let email1 = format!("ws-u1-{}@seriallog.test", ts);
-    let email2 = format!("ws-u2-{}@seriallog.test", ts);
+    let email1 = format!("ws-u1-{}@gps.serial.test", ts);
+    let email2 = format!("ws-u2-{}@gps.serial.test", ts);
     let uid_owned = format!("ws-owned-{}", ts);
     let uid_stranger = format!("ws-stranger-{}", ts);
     let pw = "hunter2hunter";

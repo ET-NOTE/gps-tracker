@@ -1,7 +1,8 @@
 import { hydrateDeviceColors } from './colors';
 import { hydratePairTutorialSeen } from './pairTutorialSeen';
 
-// 도메인 감지: gps.serial.kr 은 prefix 없이 /api/v1, 그 외 (seriallog.com 등) 는 /gps-tracker/api/v1
+// 도메인 감지: 주 도메인 gps.serial.kr 은 prefix 없이 /api/v1.
+// legacy /gps-tracker/ 서브패스 (localhost dev, 옛 nginx 서브패스 fallback) 는 /gps-tracker/api/v1.
 const BASE = (typeof window !== 'undefined' && window.location.hostname === 'gps.serial.kr')
   ? '/api/v1'
   : '/gps-tracker/api/v1';

@@ -57,7 +57,7 @@ cargo build --release
 
 ```bash
 # WSL2에서 빌드한 binary scp
-scp target/release/gps-tracker-api root@<VPS_HOST>:/home/mmm/projects/gps-tracker-api/bin/
+scp target/release/gps-tracker-api root@<VPS_HOST>:/home/deploy/projects/gps-tracker-api/bin/
 
 # 서버에서 systemd 등록 (한 번만)
 sudo systemctl enable --now gps-tracker-api

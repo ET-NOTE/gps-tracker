@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # locations API: ingest로 데이터 넣고 → 페어링 → 조회.
 set -euo pipefail
-BASE="https://seriallog.com/gps-tracker"
+BASE="https://gps.serial.kr"
 EMAIL="loc-test-$(date +%s)@seriallog.test"
 PW="hunter2hunter"
 DEVUID="loc-smoke-$(date +%s)"

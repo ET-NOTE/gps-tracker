@@ -158,10 +158,10 @@ arduino-cli upload  --fqbn esp32:esp32:esp32c3 -p COM15 arduino/13_1_motion_awar
 
 ### Prerequisites
 
-- SSH key 가 서버 `mmm@<VPS_HOST>` 에 등록되어 있어야 함
-- 서버에 systemd unit `gps-tracker-api.service` 존재, `ExecStart=/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api`
-- 서버에 nginx + Let's Encrypt 인증서 (`seriallog.com`, `gps.serial.kr`)
-- 서버 `/home/mmm/projects/gps-tracker-api/.env` 가 위 형식대로 채워져 있음
+- SSH key 가 서버 `deploy@<VPS_HOST>` 에 등록되어 있어야 함
+- 서버에 systemd unit `gps-tracker-api.service` 존재, `ExecStart=/home/deploy/projects/gps-tracker-api/bin/gps-tracker-api`
+- 서버에 nginx + Let's Encrypt 인증서 (`gps.serial.kr` — 주 도메인)
+- 서버 `/home/deploy/projects/gps-tracker-api/.env` 가 위 형식대로 채워져 있음
 - 서버 어딘가에 Firebase 서비스 계정 JSON 배치 + `.env` 의 `FCM_SERVICE_ACCOUNT_PATH` 가 가리킴
 
 ### 배포 명령
@@ -183,8 +183,8 @@ wsl -d Ubuntu -- bash -lc "cd /mnt/e/.../gps-tracker-api && bash deploy.sh"
 배포 후 확인:
 
 ```bash
-curl https://seriallog.com/gps-tracker/health
-curl https://seriallog.com/gps-tracker/api/v1/auth/ping
+curl https://gps.serial.kr/health
+curl https://gps.serial.kr/api/v1/auth/ping
 ```
 
 ### 함정: bin/ 경로
@@ -197,14 +197,13 @@ systemd ExecStart 는 `bin/gps-tracker-api` 하위를 실행합니다. 그 위 �
 
 | URL | 용도 |
 |---|---|
-| `https://seriallog.com/gps-tracker/health` | API health |
-| `https://seriallog.com/gps-tracker/api/v1/*` | 인증된 REST |
-| `https://seriallog.com/gps-tracker/ingest` | ESP 펌웨어 POST (익명) |
-| `https://seriallog.com/gps-tracker/ws/realtime?token=<jwt>` | 실시간 WebSocket |
-| `https://seriallog.com/gps-tracker/app/` | 프론트엔드 (sub-path) |
-| `https://gps.serial.kr/` | 프론트엔드 (전용 서브도메인) — Flutter 앱이 로딩 |
+| `https://gps.serial.kr/health` | API health |
+| `https://gps.serial.kr/api/v1/*` | 인증된 REST |
+| `https://gps.serial.kr/ingest` | ESP 펌웨어 POST (익명) |
+| `https://gps.serial.kr/ws/realtime?token=<jwt>` | 실시간 WebSocket |
+| `https://gps.serial.kr/` | 프론트엔드 (React SPA + Flutter WebView 진입) |
 
-nginx 가 `/gps-tracker/api/v1/*` → `127.0.0.1:3040/api/v1/*` 로 path rewrite + reverse proxy.
+nginx 가 위 경로들을 `127.0.0.1:3040` 으로 reverse proxy 합니다. (과거 seriallog.com 아래 `/gps-tracker/` prefix 로 운영한 흔적이 일부 legacy 스크립트에 남아 있음 — 배포 스크립트의 fallback 은 유지.)
 
 ---
 

@@ -2,10 +2,14 @@
 """Idempotently inject `^~ /gps-tracker/api/` proxy block into nginx server blocks.
 
 Run on the server as: sudo python3 nginx_add_api_route.py
-"""
-import re, sys, time, shutil, subprocess
 
-PATH = "/etc/nginx/sites-enabled/seriallog.com"
+NOTE: nginx 사이트 파일명은 VPS 상 실제 파일명 그대로. 초기 도메인 이력으로
+`/etc/nginx/sites-enabled/seriallog.com` 이지만 도메인 이관 후에도 파일 rename X.
+다른 서버에서는: NGINX_CONF=/etc/nginx/sites-enabled/my.example.com python3 ...
+"""
+import os, re, sys, time, shutil, subprocess
+
+PATH = os.environ.get("NGINX_CONF", "/etc/nginx/sites-enabled/seriallog.com")
 MARKER = "http://127.0.0.1:3040/gps-tracker/api/"
 ANCHOR_RE = re.compile(r"\n(    location \^~ /gps-tracker/ \{)")
 

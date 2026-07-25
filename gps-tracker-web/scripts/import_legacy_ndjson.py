@@ -14,10 +14,10 @@ from psycopg2.extras import execute_batch
 
 DEVICE_UID  = "legacy-l80-import"
 DEVICE_LABEL = "레거시 L80 이력"
-NDJSON_GLOB = "/home/mmm/projects/gps-tracker/data/points.ndjson*"
+NDJSON_GLOB = "/home/deploy/projects/gps-tracker/data/points.ndjson*"
 
 # pull DATABASE_URL from gps-tracker-api .env
-ENV_PATH = "/home/mmm/projects/gps-tracker-api/.env"
+ENV_PATH = "/home/deploy/projects/gps-tracker-api/.env"
 db_url = None
 with open(ENV_PATH) as f:
     for line in f:

@@ -6,16 +6,17 @@
 
 | 환경 | 도메인 | API base |
 |---|---|---|
-| 운영 | seriallog.com | `https://seriallog.com/gps-tracker/api/v1` |
-| 운영 (모바일) | gps.serial.kr | `https://gps.serial.kr/api/v1` |
+| 운영 | gps.serial.kr | `https://gps.serial.kr/api/v1` |
 | 로컬 | localhost | `http://127.0.0.1:3040/api/v1` |
+
+(과거 seriallog.com 아래 `/gps-tracker/` prefix 로 운영한 흔적이 일부 legacy 스크립트에 남아 있음 — 현재 주 도메인은 gps.serial.kr.)
 
 ESP 펌웨어 ingest 와 health 는 `/api/v1` 이 아닌 `/gps-tracker/` 직하:
 - `POST /gps-tracker/ingest`
 - `GET  /gps-tracker/health`
 
 WebSocket:
-- `wss://seriallog.com/gps-tracker/ws/realtime?token=<access_jwt>`
+- `wss://gps.serial.kr/ws/realtime?token=<access_jwt>`
 
 ---
 
@@ -282,7 +283,7 @@ OTP 는 운영에선 Bizm SMS (`BIZMSG_*`), 개발에선 `SMS_DEV_MODE=1` 로 �
 ### 연결
 
 ```
-wss://seriallog.com/gps-tracker/ws/realtime?token=<access_jwt>
+wss://gps.serial.kr/ws/realtime?token=<access_jwt>
 ```
 
 JWT 검증 실패 → 401 close.
