@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # DB inspect helper
 set -e
-export PGPASSWORD=QQopURby3seaZnd4PalqDXPoVv0C7
+: ${PGPASSWORD:?PGPASSWORD required — see docs/local-dev-setup.md}
 PSQL="psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -A -F | "
 
 echo "=== device row ==="

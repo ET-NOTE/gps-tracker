@@ -16,4 +16,4 @@ echo "POST /auth/fcm-token        : $(curl -sS -o /dev/null -w '%{http_code}' -X
 echo "POST /auth/fcm-token/revoke : $(curl -sS -o /dev/null -w '%{http_code}' -X POST https://seriallog.com/gps-tracker/api/v1/auth/fcm-token/revoke -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"token":"d1"}')"
 
 echo "DB row:"
-PGPASSWORD=QQopURby3seaZnd4PalqDXPoVv0C7 psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -c "SELECT user_id, token, platform, active FROM fcm_tokens WHERE token='d1';"
+psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -c "SELECT user_id, token, platform, active FROM fcm_tokens WHERE token='d1';"

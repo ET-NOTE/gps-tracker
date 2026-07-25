@@ -28,7 +28,7 @@ curl -sS -i -X POST https://seriallog.com/gps-tracker/api/v1/auth/fcm-tokens \
 
 echo
 echo "=== DB row ==="
-PGPASSWORD=QQopURby3seaZnd4PalqDXPoVv0C7 psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -c \
+psql -U gps_tracker_app -h 127.0.0.1 -d gps_tracker -c \
   "SELECT user_id, token, platform, app_version, active FROM fcm_tokens WHERE token='$DUMMY_TOKEN';"
 
 echo
