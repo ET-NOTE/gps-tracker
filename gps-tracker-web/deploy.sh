@@ -14,8 +14,8 @@ ENV="${1:-prod}"
 DEPLOY_HOST="${DEPLOY_HOST:-210.114.18.16}"
 case "$ENV" in
   prod)
-    SERVER="${DEPLOY_USER_PROD:-deploy}@${DEPLOY_HOST}"
-    REMOTE_DIR=/home/${DEPLOY_USER_PROD:-deploy}/gps-tracker-web
+    SERVER="${DEPLOY_USER_PROD:-mmm}@${DEPLOY_HOST}"
+    REMOTE_DIR=/home/${DEPLOY_USER_PROD:-mmm}/gps-tracker-web
     # 주 도메인 gps.serial.kr — legacy /gps-tracker/app/ 서브패스도 아직 nginx 유지 (backward-compat)
     HEALTH_URLS=("https://gps.serial.kr/" "https://gps.serial.kr/gps-tracker/app/")
     ;;
@@ -91,7 +91,7 @@ if [ "$ENV" = "prod" ]; then
   # `/etc/nginx/sites-enabled/seriallog.com` 인 채로 유지 (도메인 이관 후에도 rename X).
   # 다른 서버 배포 시 `DEPLOY_NGINX_SITE=my.example.com bash deploy.sh` 로 override.
   NGINX_SITE="${DEPLOY_NGINX_SITE:-seriallog.com}"
-  DEPLOY_USER="${DEPLOY_USER_PROD:-deploy}"
+  DEPLOY_USER="${DEPLOY_USER_PROD:-mmm}"
   ssh -T $SERVER "if grep -q 'gps-tracker-web static' /etc/nginx/sites-enabled/${NGINX_SITE} 2>/dev/null; then echo 'nginx block already present'; else sudo python3 /home/${DEPLOY_USER}/gps-tracker-web/scripts/nginx_add_web_route.py; fi"
 else
   echo "dev: nginx /etc/nginx/sites-enabled/dev-gps.serial.kr.conf 가 dist 를 serve"
