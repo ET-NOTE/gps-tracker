@@ -276,6 +276,18 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   // 현재 단말기 필터 — null = 전체. updateMarker/addHistoryPoint 가 새 마커/폴리라인 생성 시 이걸 참조해
   // 필터에 안 맞는 디바이스 데이터는 map=null 로 숨겨둠 (filterToDevice 가 명시 호출되지 않아도).
   const currentFilterIdRef = useRef(null);
+  // (2026-07-27) Seeker 모드 플래그 — true 면 live layer (main pin / arrow dot / cluster / polyline / gap)
+  // 전부 map:null. WS/refresh 로 들어오는 새 fix 는 내부 state (markersRef/polyRef/pointsRef) 에만
+  // 축적, map 에는 안 그려짐. 시커 종료 시 setSeekerMode(false) 로 필터 규칙에 따라 일괄 복원.
+  // 이전엔 setHistoryPointsVisible + setLiveTrailsVisible 로 pointsRef/polyRef 만 감췄고 markersRef
+  // (main pin, zIndex 200) 이 그대로 노출 → 초록 pin + 30s refresh 로 오늘 데이터가 시커 위에 얹혀 보임.
+  const seekerModeRef = useRef(false);
+  // 새 live-layer element 를 map 에 올릴지 판정. seeker 모드거나 device 필터와 불일치 시 map:null.
+  const isLiveVisible = (deviceId) => {
+    if (seekerModeRef.current) return false;
+    const f = currentFilterIdRef.current;
+    return f == null || f === deviceId;
+  };
   const sharedIwRef  = useRef(null); // single InfoWindow shared by all markers/points
   const onRoadviewRef= useRef(onRoadview);
   const zoomLevelRef = useRef(10);   // 현재 zoom level — 마커/라인 두께 계산용
@@ -517,10 +529,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         e.meta = meta;
         e.label = label;
       } else {
-        // 필터 적용 — 다른 디바이스 데이터가 필터 무시하고 그려지는 것 방지.
-        const visible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
+        // seeker 모드거나 필터와 불일치면 map:null 로 생성 — state 는 유지, 렌더만 억제.
         const marker = new window.kakao.maps.Marker({
-          map: visible ? mapRef.current : null,
+          map: isLiveVisible(deviceId) ? mapRef.current : null,
           position: pos,
           title: label,
           image: pinImage(color || '#5B7CFF'),
@@ -577,9 +588,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           const lastSeg = entry.segments[entry.segments.length - 1];
           const lastPos = lastSeg.coords[lastSeg.coords.length - 1];
           if (lastPos) {
-            const dashedVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
             const dashed = new window.kakao.maps.Polyline({
-              map: dashedVisible ? mapRef.current : null,
+              map: isLiveVisible(deviceId) ? mapRef.current : null,
               path: [lastPos, pos],
               strokeWeight: Math.max(1, sw - 1),
               strokeColor: stroke,
@@ -590,9 +600,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           }
         }
         const coords = [pos];
-        const polyVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
         const poly = new window.kakao.maps.Polyline({
-          map: polyVisible ? mapRef.current : null,
+          map: isLiveVisible(deviceId) ? mapRef.current : null,
           path: coords,
           strokeWeight: sw,
           strokeColor: stroke,
@@ -644,7 +653,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const pos = new window.kakao.maps.LatLng(lat, lng);
       const isStop = !!meta.isStop;
       const c = color || '#888';
-      const dotVisible = currentFilterIdRef.current == null || currentFilterIdRef.current === deviceId;
       if (!meta.skipMarker) {
         // (2026-07-01) dot + arrow 이중 marker 통일 — 화살표 marker 하나로 (clickable + tooltip).
         // 첫 fix 는 heading 미확정 → angle=0 (북쪽 화살표). polyline 시작점 인식.
@@ -653,7 +661,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         const st = arrowStateRef.current[deviceId];
         const angle = st ? calcBearing(st.lastPos.lat, st.lastPos.lng, lat, lng) : 0;
         const marker = new window.kakao.maps.Marker({
-          map: dotVisible ? mapRef.current : null,
+          map: isLiveVisible(deviceId) ? mapRef.current : null,
           position: pos,
           image: isCluster ? makeClusterImage(meta.clusterCount, c) : makeArrowImage(angle, c),
           clickable: true,
@@ -723,20 +731,41 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     },
 
     /**
-     * 모든 디바이스의 history 점들을 일시적으로 숨김/노출 (지우지 않고 visibility 만).
-     * 시커 활성 시 호출하면 라이브 trail (초록) 가 seeker path (파랑) 와 시각 충돌 없이 정리됨.
+     * (2026-07-27) Seeker 모드 진입/종료 — live layer 전체 (main pin + arrow/cluster dot +
+     * solid polyline + dashed gap) visibility 를 원자적으로 토글.
+     *
+     * 이전엔 setHistoryPointsVisible + setLiveTrailsVisible 두 개로 pointsRef/polyRef 만 감췄으나
+     * markersRef (main pin, zIndex 200) 가 그대로 노출되어 시커 위에 오늘의 라이브 pin (device color,
+     * 초록 device 면 초록) 이 계속 떠 있었음. 30s force refresh + WS 이벤트도 seeker 상태 무시하고
+     * updateMarker/addHistoryPoint 로 pin/dot/polyline 을 재생성 → 다른 날짜 fix 가 시커 path 위에
+     * 계속 얹혀 보이는 회귀.
+     *
+     * 새 계약:
+     *   1. active=true: 모든 live element setMap(null). isLiveVisible 은 false 반환 →
+     *      새로 생성되는 element 도 map:null (WS/refresh 계속 돌아도 state 만 축적, 렌더 X).
+     *   2. active=false: 필터 규칙 (currentFilterIdRef) 에 따라 visibility 복원. 그동안 축적된
+     *      state 도 즉시 반영 (재조회 필요 없음).
+     *
+     * Dashboard 는 showSeeker || showMiniSeeker 변화에 이 API 하나만 호출.
      */
-    setHistoryPointsVisible(visible) {
+    setSeekerMode(active) {
       if (!mapRef.current) return;
-      Object.values(pointsRef.current).forEach(arr => {
-        arr.forEach(({ marker }) => marker.setMap(visible ? mapRef.current : null));
+      seekerModeRef.current = !!active;
+      const applyMain = (deviceId) => {
+        const f = currentFilterIdRef.current;
+        return !seekerModeRef.current && (f == null || +f === +deviceId) ? mapRef.current : null;
+      };
+      Object.entries(markersRef.current).forEach(([id, { marker }]) => {
+        marker.setMap(applyMain(id));
       });
-    },
-    setLiveTrailsVisible(visible) {
-      if (!mapRef.current) return;
-      Object.values(polyRef.current).forEach(entry => {
-        entry.segments.forEach(s => s.poly.setMap(visible ? mapRef.current : null));
-        entry.gaps.forEach(g => g.setMap(visible ? mapRef.current : null));
+      Object.entries(pointsRef.current).forEach(([id, arr]) => {
+        const m = applyMain(id);
+        arr.forEach(({ marker }) => marker.setMap(m));
+      });
+      Object.entries(polyRef.current).forEach(([id, entry]) => {
+        const m = applyMain(id);
+        entry.segments.forEach(s => s.poly.setMap(m));
+        entry.gaps.forEach(g => g.setMap(m));
       });
     },
 
@@ -792,6 +821,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     filterToDevice(targetId, opts = {}) {
       if (!mapRef.current || !window.kakao?.maps) return;
       currentFilterIdRef.current = targetId;   // 새 마커 생성 시 참조
+      // (2026-07-27) seeker 모드 중 필터 변경은 상태만 갱신 — 시커 종료 시 setSeekerMode(false) 가
+      // 필터 규칙대로 재복원. 여기서 setMap 하면 seeker path 위에 live 가 튀어나옴.
+      if (seekerModeRef.current) {
+        sharedIwRef.current?.close();
+        return;
+      }
       const all = mapRef.current;
       Object.entries(markersRef.current).forEach(([id, { marker }]) => {
         marker.setMap((targetId === null || +id === targetId) ? all : null);
