@@ -12,7 +12,7 @@ VPS 상 실제 파일 경로는 배포 계정 홈 기준. 초기 도메인 이�
 import os, re, subprocess, sys
 
 NGINX_CONF = os.environ.get("NGINX_CONF", "/etc/nginx/sites-enabled/seriallog.com")
-DEPLOY_USER = os.environ.get("DEPLOY_USER", "deploy")
+DEPLOY_USER = os.environ.get("DEPLOY_USER", "mmm")
 
 NEW_BLOCK = f"""\
     # gps-tracker-web static (react/vite build)

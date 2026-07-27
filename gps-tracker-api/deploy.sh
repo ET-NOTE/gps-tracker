@@ -18,10 +18,10 @@ ENV="${1:-prod}"
 DEPLOY_HOST="${DEPLOY_HOST:-210.114.18.16}"
 case "$ENV" in
   prod)
-    SERVER="${DEPLOY_USER_PROD:-deploy}@${DEPLOY_HOST}"
+    SERVER="${DEPLOY_USER_PROD:-mmm}@${DEPLOY_HOST}"
     SERVICE=gps-tracker-api
     BIN_NAME=gps-tracker-api
-    REMOTE_HOME=/home/${DEPLOY_USER_PROD:-deploy}/projects/gps-tracker-api
+    REMOTE_HOME=/home/${DEPLOY_USER_PROD:-mmm}/projects/gps-tracker-api
     HEALTH_URL="${HEALTH_URL_PROD:-https://gps.serial.kr/api/v1/health}"
     ;;
   dev)
