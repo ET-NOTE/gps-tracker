@@ -466,12 +466,17 @@ export default function Dashboard({ onLogout }) {
     setSeekerPaused(!!(showSeeker || showMiniSeeker));
   }, [showSeeker, showMiniSeeker]);
 
-  // 시커 활성 시 라이브 history 점 (초록) 숨기기 — seeker path (파랑) 와 시각 충돌 방지.
-  // 시커 닫으면 자동 복원. addHistoryPoint 가 새로 그릴 때도 mapVisible=true 면 보이게 됨.
+  // (2026-07-27) 시커 open/close → live layer 전체 (main pin + arrow/cluster dot + solid poly +
+  // dashed gap) 를 원자적으로 숨김/복원. 이전엔 setHistoryPointsVisible + setLiveTrailsVisible
+  // 두 개로 pointsRef/polyRef 만 감췄고 markersRef (main pin, zIndex 200) 는 그대로 노출되어
+  // 시커 위에 오늘의 라이브 pin 이 계속 떠 있었음. 30s force refresh + WS 이벤트도 seeker 무시하고
+  // pin/dot/poly 재생성 → 다른 날짜 fix 가 seeker path 위에 계속 얹혀 보임 → 사용자 리포트.
+  // 새 KakaoMap.setSeekerMode 는 (1) 기존 element 일괄 setMap(null), (2) 이후 생성되는
+  // element 도 seekerModeRef 참조하여 map:null 로 만들어 WS/refresh 로 오늘 데이터 유입 시에도
+  // seeker 위에 안 얹힘. 시커 종료 시 축적된 state 를 필터 규칙대로 즉시 복원.
   useEffect(() => {
     const seekerActive = !!(showSeeker || showMiniSeeker);
-    mapRef.current?.setHistoryPointsVisible?.(!seekerActive);
-    mapRef.current?.setLiveTrailsVisible?.(!seekerActive);
+    mapRef.current?.setSeekerMode?.(seekerActive);
   }, [showSeeker, showMiniSeeker]);
 
   // 추적이 효과적으로 ON 으로 전환되는 순간 (켜자마자 / 시커 닫고 부활) 즉시 카메라를 디바이스 마지막 위치로.
