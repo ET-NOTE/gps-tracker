@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { useMe, useAccountType } from '../state';
 import { TrackerWS } from '../ws';
 import KakaoMap from '../components/KakaoMap';
 import ProfilePanel from '../components/ProfilePanel';
@@ -275,8 +276,11 @@ export default function Dashboard({ onLogout }) {
   const [userTrackPref, setUserTrackPref] = useState(false);
   const [seekerPaused,  setSeekerPaused]  = useState(false);
   const trackLive = userTrackPref && !seekerPaused;
-  const [me, setMe] = useState(null);
-  const [accountType, setAccountType] = useState(null);   // unspecified | rentcar | corporate_fleet | delivery
+  // (F2-a) me / accountType 을 React Query 로 이전. 이전엔 4곳에서 중복 fetch 됐음
+  // (Dashboard, ProfilePanel×3). 이제 dedup + StrictMode 안전 + refetchOnWindowFocus.
+  const { data: me = null } = useMe();
+  const { data: accountTypeRaw } = useAccountType();
+  const accountType = accountTypeRaw?.account_type ?? null;
   const isAdmin     = me?.role === 'admin';
   const isCorporate = accountType === 'corporate_fleet';
   const isRentcar   = accountType === 'rentcar';
@@ -308,11 +312,7 @@ export default function Dashboard({ onLogout }) {
     catch (e) { console.error('loadFences', e); }
   }, []);
 
-  // 본인 정보 (role 등) — 마운트 시 한 번
-  useEffect(() => {
-    api.getMe().then(setMe).catch(() => {});
-    api.getAccountType().then(r => setAccountType(r.account_type)).catch(() => {});
-  }, []);
+  // (F2-a) me/accountType 은 useMe / useAccountType hook 이 담당 (dedup + focus refetch).
 
   // legacy `lab_summary_seen:{userId}:{deviceId}` → userPrefs.summary_seen 마이그레이션.
   // me.id 알아야 하므로 별도 effect. 서버 값과 병합해서 push.

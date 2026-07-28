@@ -2,7 +2,9 @@
 // 채팅 탭은 admin 본인은 노출 안 함 (자기 자신과의 채팅 thread 가 admin inbox 에 잡히지 않게).
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { api, clearTokens } from '../api';
+import { useMe, qk } from '../state';
 import Icon from './Icon';
 import ChatPanel from './ChatPanel';
 import NotificationSettings from './NotificationSettings';
@@ -19,14 +21,14 @@ function initialProfileTab() {
 // 이전엔 AccountTypeCard 가 자체 fetch/state 를 유지해서 PATCH 성공 후 Dashboard 는
 // stale — SideRail/BottomNav 가 corporate 탭 렌더 안 함 → 새로고침해야 반영되던 회귀.
 export default function ProfilePanel({ onLogout, accountType, onAccountTypeChange }) {
-  const [me, setMe] = useState(null);
+  // (F2-a) useState+useEffect fetch → useMe hook (dedup, focus refetch).
+  // 아래 setMe 호출은 qc.setQueryData(qk.me(), ...) 로 캐시 optimistic 갱신.
+  const { data: me } = useMe();
+  const qc = useQueryClient();
+  const setMe = (next) => qc.setQueryData(qk.me(), next);
   const [tab, setTabRaw] = useState(initialProfileTab);
   const setTab = (v) => { setTabRaw(v); try { localStorage.setItem('profile_tab', v); } catch {} };
   const [chatUnread, setChatUnread] = useState(0);
-
-  useEffect(() => {
-    api.getMe().then(setMe).catch(console.error);
-  }, []);
 
   // 채팅 unread 폴링 — 탭 뱃지용
   useEffect(() => {
