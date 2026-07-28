@@ -21,9 +21,9 @@ export default function RentcarPanel({ devices }) {
   const setTabPersist = (t) => { setTab(t); try { localStorage.setItem('rentcar_tab', t); } catch {} };
 
   const tabs = [
-    { id: 'fleet',    label: '차량 현황', icon: 'list' },
-    { id: 'rentals',  label: '임대 계약', icon: 'route' },
-    { id: 'schedule', label: '반납 일정', icon: 'clock' },
+    { id: 'fleet',    label: '홈',         icon: 'home' },
+    { id: 'rentals',  label: '임대 계약',  icon: 'route' },
+    { id: 'schedule', label: '반납 일정',  icon: 'clock' },
   ];
 
   return (
@@ -845,24 +845,246 @@ function FilterChip({ active, onClick, label, count, tone = 'default' }) {
   );
 }
 
+// (2026-07-28 Stage-R8) 렌트카 홈 대시보드 — rental_contracts 통합 뷰.
+// 차량 fleet + 임대 사이드를 한 화면에서. 오늘/이번주 반납 임박, 활성 계약,
+// 이번달 매출·유휴 차량, 최근 반납.
 function FleetTab({ devices }) {
   const s = useFleetStats(devices);
   const fmt = (n) => (n == null ? '–' : n.toLocaleString());
-  // 렌트카 관점 임시 파생 지표 (실 데이터 도입 전):
-  //  · 임대 가능 = 유휴 (전체 - 운행중). 임대 계약 도입 시 rental_contracts 로 대체.
-  const idleCount = Math.max(0, s.totalCount - s.activeCount);
+
+  const [rentals, setRentals] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const now = new Date();
+    // 넓게 잡아 활성 + 최근 반납 + 예정 다 커버.
+    api.listRentals({
+      from: new Date(now.getTime() - 60 * 86400_000).toISOString(),
+      to:   new Date(now.getTime() + 90 * 86400_000).toISOString(),
+    }).then(rs => { if (!cancelled) { setRentals(rs || []); setLoading(false); } })
+      .catch(()  => { if (!cancelled) { setRentals([]);    setLoading(false); } });
+    return () => { cancelled = true; };
+  }, []);
+
+  const now = Date.now();
+  const list = rentals || [];
+  const activeRentals = list.filter(c => c.status === 'active' || c.status === 'draft');
+  const overdue       = list.filter(c => c.status === 'overdue');
+  const returnedList  = list.filter(c => c.status === 'returned' && c.settled_at);
+
+  // 오늘 반납 (active + ends_at 오늘 안)
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const todayEnd   = new Date(); todayEnd.setHours(23,59,59,999);
+  const returnToday = activeRentals.filter(c => {
+    const e = new Date(c.ends_at);
+    return e >= todayStart && e <= todayEnd;
+  });
+  const returnThisWeek = activeRentals.filter(c => {
+    const e = new Date(c.ends_at).getTime();
+    return e >= now && e <= now + 7 * 86400_000;
+  });
+
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+  const monthRevenue = returnedList
+    .filter(c => new Date(c.settled_at) >= monthStart)
+    .reduce((sum, c) => sum + (c.settled_amount_krw || 0), 0);
+
+  // 유휴 = fleet 총차량 - 임대중 차량 수 (device_id 기준 unique)
+  const rentedDeviceIds = new Set(activeRentals.map(c => c.device_id));
+  const rentedCount = rentedDeviceIds.size;
+  const idleCount = Math.max(0, s.totalCount - rentedCount);
 
   return (
     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <StatCardGrid>
-        <StatCard icon="list"   label="전체 차량"     value={fmt(s.totalCount)}  unit="대"  tone="default" loading={s.loading} />
-        <StatCard icon="route"  label="운행 중"       value={fmt(s.activeCount)} unit="대"  tone="success" loading={s.loading} />
-        <StatCard icon="mapPin" label="임대 가능"     value={fmt(idleCount)}     unit="대"  tone="primary" loading={s.loading}
-          hint="유휴 차량 (실 임대 계약 관리는 준비 중)" />
-        <StatCard icon="bar"    label="이번달 주행"   value={fmt(s.monthKm)}     unit="km"  tone="default" loading={s.loading} />
+        <StatCard icon="list"   label="전체 차량"     value={fmt(s.totalCount)}   unit="대" tone="default" loading={s.loading} />
+        <StatCard icon="route"  label="임대 중"       value={fmt(rentedCount)}    unit="대" tone="success" loading={loading || s.loading} />
+        <StatCard icon="mapPin" label="유휴"          value={fmt(idleCount)}      unit="대" tone="primary" loading={loading || s.loading} />
+        <StatCard icon="clock"  label="오늘 반납"     value={fmt(returnToday.length)} unit="건" tone={returnToday.length > 0 ? 'primary' : 'default'} loading={loading} />
+        <StatCard icon="warn"   label="연체"          value={fmt(overdue.length)} unit="건" tone={overdue.length > 0 ? 'danger' : 'default'} loading={loading} />
+        <StatCard icon="bar"    label="이번주 반납"   value={fmt(returnThisWeek.length)} unit="건" tone="default" loading={loading} />
+        <StatCard icon="coin"   label="이번달 매출"   value={fmt(monthRevenue)}   unit="원" tone="primary" loading={loading} />
+        <StatCard icon="check"  label="이번달 주행"   value={fmt(s.monthKm)}      unit="km" tone="default" loading={s.loading} />
       </StatCardGrid>
 
+      {/* 반납 임박 (오늘·내일 위주) */}
+      {returnThisWeek.length > 0 && (
+        <ReturnsUpcoming rentals={returnThisWeek} now={now} />
+      )}
+
+      {/* 연체 강조 */}
+      {overdue.length > 0 && (
+        <OverdueList rentals={overdue} now={now} />
+      )}
+
+      {/* 활성 계약 요약 */}
+      <ActiveRentalsMini rentals={activeRentals} />
+
+      {/* 차량 목록 (기존 유지) */}
       <FleetTable devices={devices} />
+
+      {/* 최근 반납 */}
+      {returnedList.length > 0 && (
+        <RecentReturns rentals={returnedList.slice().sort((a,b) => new Date(b.settled_at) - new Date(a.settled_at)).slice(0, 5)} />
+      )}
+    </div>
+  );
+}
+
+// ── R8 홈 서브컴포넌트 ─────────────────────────────
+function ReturnsUpcoming({ rentals, now }) {
+  const sorted = rentals.slice().sort((a, b) => new Date(a.ends_at) - new Date(b.ends_at));
+  return (
+    <div style={st.card}>
+      <div style={{ ...st.cardTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Icon name="clock" size={13} style={{ color: 'var(--primary)' }} />
+        반납 임박 <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>· 7일 이내</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {sorted.map(c => {
+          const endMs = new Date(c.ends_at).getTime();
+          const diff = endMs - now;
+          const hours = Math.round(diff / 3600_000);
+          const days  = Math.round(diff / 86400_000);
+          const urgency = hours <= 24 ? 'danger' : hours <= 72 ? 'warning' : 'text-2';
+          const label = hours <= 0 ? '오늘 반납' : hours <= 24 ? `${hours}시간 후` : `${days}일 후`;
+          return (
+            <div key={c.id} style={{
+              display: 'flex', gap: 10, alignItems: 'center',
+              padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 8,
+              borderLeft: `3px solid var(--${urgency})`,
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>
+                  {c.license_plate || c.device_name || `#${c.device_id}`}
+                  <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginLeft: 6 }}>
+                    · {c.renter_name}
+                  </span>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+                  {new Date(c.ends_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                  {c.renter_phone && ` · ${c.renter_phone}`}
+                </div>
+              </div>
+              <span style={{
+                fontSize: 11, fontWeight: 800,
+                color: `var(--${urgency})`,
+                padding: '4px 10px', borderRadius: 999,
+                background: `color-mix(in srgb, var(--${urgency}) 15%, transparent)`,
+              }}>{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OverdueList({ rentals, now }) {
+  return (
+    <div style={{ ...st.card, borderLeft: '3px solid var(--danger)' }}>
+      <div style={{ ...st.cardTitle, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--danger)' }}>
+        <Icon name="warn" size={13} style={{ color: 'var(--danger)' }} />
+        연체 계약
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {rentals.map(c => {
+          const days = Math.round((now - new Date(c.ends_at).getTime()) / 86400_000);
+          return (
+            <div key={c.id} style={{
+              display: 'flex', gap: 10, alignItems: 'center',
+              padding: '8px 10px', background: 'color-mix(in srgb, var(--danger) 8%, transparent)', borderRadius: 8,
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>
+                  {c.license_plate || c.device_name || `#${c.device_id}`}
+                  <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginLeft: 6 }}>· {c.renter_name}</span>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+                  {c.renter_phone || '연락처 없음'} · 계약 종료 {new Date(c.ends_at).toLocaleDateString('ko-KR')}
+                </div>
+              </div>
+              <span style={{
+                fontSize: 11, fontWeight: 800, color: 'var(--danger)',
+                padding: '4px 10px', borderRadius: 999,
+                background: 'color-mix(in srgb, var(--danger) 20%, transparent)',
+              }}>{days}일 경과</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ActiveRentalsMini({ rentals }) {
+  if (!rentals.length) return null;
+  return (
+    <div style={st.card}>
+      <div style={{ ...st.cardTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Icon name="route" size={13} style={{ color: 'var(--accent)' }} />
+        임대 중 <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>· {rentals.length}건</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6 }}>
+        {rentals.map(c => (
+          <div key={c.id} style={{
+            padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 8,
+            display: 'flex', flexDirection: 'column', gap: 3,
+          }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text)' }}>
+              {c.license_plate || c.device_name || `#${c.device_id}`}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)' }}>{c.renter_name}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+              ~ {new Date(c.ends_at).toLocaleDateString('ko-KR', { month:'2-digit', day:'2-digit' })}
+              {' · '}
+              {(c.rate_amount_krw || 0).toLocaleString()}원/{RATE_TYPE_LABEL[c.rate_type] || c.rate_type}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RecentReturns({ rentals }) {
+  return (
+    <div style={st.card}>
+      <div style={{ ...st.cardTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Icon name="check" size={13} style={{ color: 'var(--primary)' }} />
+        최근 반납 <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>· {rentals.length}건</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {rentals.map(c => (
+          <div key={c.id} style={{
+            display: 'flex', gap: 10, alignItems: 'center',
+            padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 8,
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text)' }}>
+                {c.license_plate || c.device_name || `#${c.device_id}`}
+                <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginLeft: 6 }}>· {c.renter_name}</span>
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+                {new Date(c.settled_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                {c.refund_krw != null && c.deposit_krw > 0 && (
+                  <span style={{
+                    marginLeft: 6,
+                    color: c.refund_krw >= 0 ? 'var(--accent)' : 'var(--danger)',
+                    fontWeight: 700,
+                  }}>
+                    · {c.refund_krw >= 0 ? '환급' : '추가청구'} {Math.abs(c.refund_krw).toLocaleString()}원
+                  </span>
+                )}
+              </div>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary)' }}>
+              {(c.settled_amount_krw || 0).toLocaleString()}원
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
