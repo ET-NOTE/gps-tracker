@@ -661,6 +661,10 @@ pub struct EventsQuery {
     pub since: Option<DateTime<Utc>>,
     /// 결과 row 상한. 기본 50, 최대 1000 (진단 페이지가 긴 벤치 세션에서도 cover).
     pub limit: Option<i64>,
+    /// (2026-07-29) 특정 kind 만 필터. 쉼표 구분 (예: "wake" / "wake,sleep_enter").
+    /// 홈 뷰 `computeHomeSinceISO` 가 wake 1건만 필요할 때 이 파라미터로 노이즈 skip.
+    /// 미제공 시 기본 화이트리스트 전체.
+    pub kinds: Option<String>,
 }
 
 async fn events_log(
@@ -675,17 +679,33 @@ async fn events_log(
         return Err(AppError::NotFound);
     }
     let limit = q.limit.unwrap_or(50).clamp(1, 1000);
+    // 기본 화이트리스트 — 사용자 지정 kinds 가 있으면 그것과 교집합. (허용 목록 밖 kind 는 자동 필터링)
+    const ALLOWED: &[&str] = &[
+        "wake","sleep_enter","low_batt","offline","online","signal_loss","stuck",
+        "geofence_in","geofence_out","geofence_armed","brownout","gps_anomaly","lost",
+    ];
+    let kinds: Vec<String> = match q.kinds.as_deref() {
+        Some(s) => s.split(',')
+            .map(|k| k.trim())
+            .filter(|k| !k.is_empty() && ALLOWED.contains(k))
+            .map(|k| k.to_string())
+            .collect(),
+        None => ALLOWED.iter().map(|s| s.to_string()).collect(),
+    };
+    if kinds.is_empty() {
+        // 잘못된 kinds 만 지정된 경우 — 빈 결과.
+        return Ok(Json(vec![]));
+    }
     let rows = sqlx::query_as::<_, DeviceEvent>(
         r#"SELECT id, kind, data, occurred_at
              FROM events
             WHERE device_id = $1 AND user_id = $2
-              AND kind IN ('wake','sleep_enter','low_batt','offline','online','signal_loss','stuck',
-                           'geofence_in','geofence_out','geofence_armed','brownout','gps_anomaly','lost')
+              AND kind = ANY($5)
               AND ($3::timestamptz IS NULL OR occurred_at >= $3)
             ORDER BY occurred_at DESC
             LIMIT $4"#,
     )
-    .bind(id).bind(user.user_id).bind(q.since).bind(limit)
+    .bind(id).bind(user.user_id).bind(q.since).bind(limit).bind(&kinds)
     .fetch_all(&state.db).await?;
     Ok(Json(rows))
 }

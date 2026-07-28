@@ -248,6 +248,10 @@ export const api = {
     const q = new URLSearchParams();
     if (params.since) q.set('since', params.since);
     if (params.limit) q.set('limit', params.limit);
+    // (2026-07-29) kinds — 서버측 kind 필터 (쉼표). computeHomeSinceISO 등이 wake 만 요청.
+    if (params.kinds && params.kinds.length) {
+      q.set('kinds', Array.isArray(params.kinds) ? params.kinds.join(',') : String(params.kinds));
+    }
     const qs = q.toString();
     return req('GET', `/devices/${id}/events${qs ? '?' + qs : ''}`);
   },

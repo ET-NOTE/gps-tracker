@@ -28,20 +28,23 @@ function localMidnightMs() {
 
 // (한국 사용자 시간대 기준) 홈 뷰 fetch 창의 since 산출.
 // 당일 fix 있으면 자정부터, 없으면 마지막 wake 이벤트부터 (자정 걸친 운행 carry-over).
+//
+// (2026-07-29) 이전엔 `getDeviceEvents(id, { limit: 50 })` 로 모든 kind 최근 50개
+// 받아서 client 필터. 10일 오래된 단말이 offline/online/signal_loss/geofence_* 등으로
+// 50개 노이즈 이벤트 쌓이면 wake 가 밀려나 못 찾음 → midnightISO fallback → 오늘 fix 0건
+// → 마지막 사이클 fix 안 그려지고 last_lat/lng 마커 1개만 보이는 버그.
+// Fix: 서버 kind 필터로 wake 1건만 요청 (backend F7-d).
 export async function computeHomeSinceISO(device) {
   const midnightMs = localMidnightMs();
   const midnightISO = new Date(midnightMs).toISOString();
   const lastFixMs = device?.last_fix_at ? new Date(device.last_fix_at).getTime() : 0;
   if (lastFixMs >= midnightMs) return midnightISO;
   try {
-    const events = await api.getDeviceEvents(device.id, { limit: 50 });
-    let lastWake = -Infinity;
-    for (const e of events) {
-      if (e.kind !== 'wake') continue;
-      const t = new Date(e.occurred_at).getTime();
-      if (t > lastWake) lastWake = t;
+    const events = await api.getDeviceEvents(device.id, { kinds: ['wake'], limit: 1 });
+    if (events && events.length > 0) {
+      return new Date(events[0].occurred_at).toISOString();
     }
-    return Number.isFinite(lastWake) ? new Date(lastWake).toISOString() : midnightISO;
+    return midnightISO;
   } catch {
     return midnightISO;
   }
