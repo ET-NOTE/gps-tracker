@@ -50,6 +50,9 @@ pub struct DeviceView {
     // 새로고침 후 device card 배터리 fallback — 실시간 WS 값 없어도 이걸로 최신 표시.
     pub last_vbat_mv: Option<i32>,
     pub last_cbc_mv:  Option<i32>,
+    // (2026-07-28) 월간 리포트 유류비 추정용. migration 0044.
+    pub fuel_efficiency_kmpl: Option<f32>,
+    pub fuel_type:            Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -90,6 +93,7 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/batch-stats", get(batch_stats))     // sss 24h: fixes array (batch) 통계
         .route("/devices/:id/post-interval", post(set_post_interval))   // POST 주기 원격 조정 (5~300s)
         .route("/devices/:id/locations/aggregated", get(locations_aggregated))   // TimescaleDB continuous aggregate (1m/1h bucket)
+        .route("/devices/:id/fuel-info", patch(set_fuel_info))    // (2026-07-28) 연비/연료 종류 — 월간 리포트 유류비 추정용
         .route("/timescaledb/storage-stats", get(timescaledb_storage_stats))      // P2: hypertable size + compression ratio
 }
 
@@ -168,6 +172,7 @@ async fn list(
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
+                  d.fuel_efficiency_kmpl, d.fuel_type,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
@@ -448,6 +453,48 @@ async fn unpair(
         "purge": q.purge,
         "purged_rows": purged,
     })))
+}
+
+// ===========================================================================
+// (2026-07-28) 연비/연료 종류 설정 — 월간 리포트 유류비 자동 추정용.
+// ===========================================================================
+#[derive(Debug, Deserialize, Validate)]
+pub struct FuelInfoRequest {
+    /// 리터당 km. NULL 로 clear 가능.
+    #[validate(range(min = 1.0, max = 100.0))]
+    pub fuel_efficiency_kmpl: Option<f32>,
+    /// gasoline | diesel | lpg | ev. NULL 로 clear.
+    pub fuel_type: Option<String>,
+}
+
+async fn set_fuel_info(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Json(req): Json<FuelInfoRequest>,
+) -> AppResult<Json<DeviceView>> {
+    if let Some(ref t) = req.fuel_type {
+        if !matches!(t.as_str(), "gasoline"|"diesel"|"lpg"|"ev") {
+            return Err(AppError::BadRequest(format!("invalid fuel_type: {t}")));
+        }
+    }
+    // 소유권 확인 + atomic set. NULL 전달 시 컬럼 clear.
+    let updated: Option<(i64,)> = sqlx::query_as(
+        r#"UPDATE devices
+              SET fuel_efficiency_kmpl = $1,
+                  fuel_type            = $2
+            WHERE id = $3 AND owner_id = $4
+        RETURNING id"#,
+    )
+    .bind(req.fuel_efficiency_kmpl)
+    .bind(req.fuel_type.as_deref())
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_optional(&state.db).await?;
+    if updated.is_none() {
+        return Err(AppError::NotFound);
+    }
+    fetch_device(&state, id, user.user_id).await
 }
 
 // ===========================================================================
@@ -923,9 +970,12 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
+                  d.fuel_efficiency_kmpl, d.fuel_type,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
-                  la.antenna     AS last_antenna
+                  la.antenna     AS last_antenna,
+                  lv.vbat_mv     AS last_vbat_mv,
+                  lv.cbc_mv      AS last_cbc_mv
              FROM devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
@@ -951,6 +1001,13 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   ORDER BY x.at DESC
                   LIMIT 1
              ) la ON TRUE
+        LEFT JOIN LATERAL (
+                  SELECT vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
+                    FROM location_records
+                   WHERE device_id = d.id AND vbat_mv IS NOT NULL
+                ORDER BY recorded_at DESC
+                   LIMIT 1
+             ) lv ON TRUE
             WHERE d.id = $1 AND d.owner_id = $2"#,
     )
     .bind(id)

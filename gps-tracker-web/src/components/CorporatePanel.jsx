@@ -28,10 +28,11 @@ export default function CorporatePanel({ devices }) {
   }, []);
 
   const tabs = [
-    { id: 'report', label: '운행 리포트', icon: 'route' },
-    { id: 'staff',  label: '직원',       icon: 'user' },
-    { id: 'info',   label: '회사 정보',   icon: 'list' },
-    { id: 'sub',    label: '구독',       icon: 'coin' },
+    { id: 'report',  label: '운행 리포트', icon: 'route' },
+    { id: 'monthly', label: '월간 리포트', icon: 'bar' },   // (2026-07-28) Stage-3A
+    { id: 'staff',   label: '직원',       icon: 'user' },
+    { id: 'info',    label: '회사 정보',   icon: 'list' },
+    { id: 'sub',     label: '구독',       icon: 'coin' },
   ];
 
   return (
@@ -56,10 +57,11 @@ export default function CorporatePanel({ devices }) {
       </div>
 
       <div style={st.body}>
-        {tab === 'report' && <ReportTab devices={devices} sub={sub} onSubChange={setSub} />}
-        {tab === 'staff'  && <StaffTab />}
-        {tab === 'info'   && <InfoTab />}
-        {tab === 'sub'    && <SubTab sub={sub} onChange={setSub} />}
+        {tab === 'report'  && <ReportTab devices={devices} sub={sub} onSubChange={setSub} />}
+        {tab === 'monthly' && <MonthlyReportTab devices={devices} sub={sub} />}
+        {tab === 'staff'   && <StaffTab />}
+        {tab === 'info'    && <InfoTab />}
+        {tab === 'sub'     && <SubTab sub={sub} onChange={setSub} />}
       </div>
     </div>
   );
@@ -709,6 +711,290 @@ function SubTab({ sub, onChange }) {
         {busy ? '...' : (sub.active ? '30일 추가 결제' : '구독 시작')}
       </button>
     </Card>
+  );
+}
+
+// ─── 월간 리포트 (2026-07-28 Stage-3A) ─────────────────
+// 참조: 첨부 이미지 4 (월간 · 업무/개인 분리 · 유류비 추정 · 차량별 bar).
+// 데이터: 병렬 listTrips + trip_annotations 로 client-side aggregate.
+// 유류비 = km ÷ fuel_efficiency_kmpl × FUEL_PRICE[fuel_type]. 연비 미입력 device 는
+// "연비 설정" pill 로 유도. Trip 별 fuel_cost 수기 입력값이 있으면 우선 (annotation.fuel_cost).
+//
+// 백엔드는 devices.fuel_efficiency_kmpl / fuel_type 컬럼 (migration 0044) + PATCH
+// /devices/:id/fuel-info endpoint 만 제공. 유가 상수는 클라이언트 (환경 관계 없이).
+const FUEL_PRICE_KRW = {
+  gasoline: 1700, diesel: 1600, lpg: 1000, ev: 0,
+};
+const FUEL_LABEL = {
+  gasoline: '휘발유', diesel: '경유', lpg: 'LPG', ev: '전기',
+};
+const BUSINESS_PURPOSES = new Set(['business']);
+
+function ymKST(d = new Date()) {
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 7);
+}
+function monthBounds(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  const from = `${ym}-01`;
+  const ny = m === 12 ? y + 1 : y;
+  const nm = m === 12 ? 1 : m + 1;
+  const to = `${ny}-${String(nm).padStart(2, '0')}-01`;
+  return { from, to };
+}
+
+function MonthlyReportTab({ devices, sub }) {
+  const [ym, setYm] = useState(ymKST());
+  const [rows, setRows] = useState(null);   // per-device aggregate
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [editing, setEditing] = useState(null);   // 연비 편집 대상 device
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!devices || devices.length === 0) { setRows([]); return; }
+    setLoading(true); setError(null);
+    const { from, to } = monthBounds(ym);
+    Promise.all(devices.map(d =>
+      api.listTrips(d.id, { from, to }).catch(() => [])
+    )).then(perDevice => {
+      if (cancelled) return;
+      const out = devices.map((d, i) => {
+        const trips = perDevice[i] || [];
+        let totalM = 0, businessM = 0, personalM = 0;
+        let annCostSum = 0, annCostCount = 0;
+        for (const t of trips) {
+          const dist = t.distance_m || 0;
+          totalM += dist;
+          const purpose = t.annotation?.purpose || 'unspecified';
+          if (BUSINESS_PURPOSES.has(purpose)) businessM += dist;
+          else personalM += dist;
+          if (typeof t.annotation?.fuel_cost === 'number') {
+            annCostSum += t.annotation.fuel_cost;
+            annCostCount++;
+          }
+        }
+        return {
+          id: d.id,
+          label: d.display_name || d.device_uid,
+          fuel_efficiency_kmpl: d.fuel_efficiency_kmpl,
+          fuel_type: d.fuel_type,
+          totalKm:    totalM / 1000,
+          businessKm: businessM / 1000,
+          personalKm: personalM / 1000,
+          annotationCost: annCostSum,           // 사용자가 직접 입력한 비용 합계 (있으면 우선)
+          annotationCount: annCostCount,
+        };
+      });
+      setRows(out); setLoading(false);
+    }).catch(e => {
+      if (cancelled) return;
+      setError(e.message); setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [devices, ym, tick]);
+
+  // fleet 총계 — stat card 4개.
+  const totals = useMemo(() => {
+    if (!rows) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0 };
+    let totalKm = 0, businessKm = 0, personalKm = 0, fuelCost = 0;
+    for (const r of rows) {
+      totalKm    += r.totalKm;
+      businessKm += r.businessKm;
+      personalKm += r.personalKm;
+      fuelCost   += estimateFuelCost(r);
+    }
+    return { totalKm, businessKm, personalKm, fuelCost };
+  }, [rows]);
+
+  if (!sub) return <div style={st.muted}>구독 상태 로딩 중...</div>;
+  if (!sub.active) {
+    return (
+      <Card title="월간 리포트 — 구독 필요">
+        <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
+          운행 리포트 구독을 활성화하면 월간 리포트도 함께 이용 가능합니다.
+        </div>
+      </Card>
+    );
+  }
+
+  const fmtKm  = (n) => n < 1 ? '0' : n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString();
+  const fmtWon = (n) => n.toLocaleString() + '원';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input type="month" value={ym} onChange={e => setYm(e.target.value || ymKST())}
+          style={{ ...st.dateInput, minWidth: 130 }} />
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+          업무 = trip_annotations.purpose='business' 합계. 그 외 (출퇴근/기타/미지정) 는 개인.
+        </span>
+      </div>
+
+      <StatCardGrid>
+        <StatCard icon="bar"    label="총 주행거리"   value={fmtKm(totals.totalKm)}    unit="km" tone="default" loading={loading} />
+        <StatCard icon="route"  label="업무거리"     value={fmtKm(totals.businessKm)} unit="km" tone="primary" loading={loading} />
+        <StatCard icon="mapPin" label="개인거리"     value={fmtKm(totals.personalKm)} unit="km" tone="default" loading={loading} />
+        <StatCard icon="coin"   label="유류비 추정"   value={fmtWon(Math.round(totals.fuelCost))} tone="warn" loading={loading}
+          hint="연비 미입력 차량은 제외" />
+      </StatCardGrid>
+
+      {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
+      {loading && !rows && <div style={st.muted}>월간 데이터 로딩 중...</div>}
+      {rows && rows.length === 0 && <div style={st.muted}>차량이 없습니다.</div>}
+
+      {rows && rows.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {rows.map(r => (
+            <MonthlyDeviceRow key={r.id} row={r} onEdit={() => setEditing(r)} />
+          ))}
+        </div>
+      )}
+
+      {editing && (
+        <FuelInfoDialog device={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+      )}
+    </div>
+  );
+}
+
+function estimateFuelCost(r) {
+  // 사용자가 직접 trip_annotations 에 입력한 비용이 있으면 그것 우선.
+  if (r.annotationCost > 0) return r.annotationCost;
+  if (!r.fuel_efficiency_kmpl || !r.fuel_type) return 0;
+  const price = FUEL_PRICE_KRW[r.fuel_type] ?? 0;
+  if (price === 0) return 0;
+  return (r.totalKm / r.fuel_efficiency_kmpl) * price;
+}
+
+function MonthlyDeviceRow({ row, onEdit }) {
+  const cost = estimateFuelCost(row);
+  const total = row.totalKm || 1;   // divide-by-zero 방지
+  const bizPct = Math.round((row.businessKm / total) * 100);
+  const perPct = 100 - bizPct;
+  const fmtKm = (n) => n < 1 ? '0' : n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString();
+
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{row.label}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+            {row.fuel_efficiency_kmpl
+              ? `${FUEL_LABEL[row.fuel_type] || '?'} · ${row.fuel_efficiency_kmpl}km/L`
+              : <span style={{ color: 'var(--warning)' }}>연비 미입력</span>}
+            {row.annotationCount > 0 && ' · 실 입력비 반영'}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>
+            {fmtKm(row.totalKm)}<span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 3 }}>km</span>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+            {cost > 0 ? Math.round(cost).toLocaleString() + '원' : '–'}
+          </div>
+        </div>
+        <button onClick={onEdit} style={{
+          fontSize: 11, padding: '6px 10px', borderRadius: 8,
+          background: 'var(--surface-2)', border: '1px solid var(--border)',
+          color: 'var(--text-2)', cursor: 'pointer', fontWeight: 600,
+        }}>
+          연비 설정
+        </button>
+      </div>
+
+      {/* stacked bar: business (primary) + personal (accent muted) */}
+      <div style={{ height: 8, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden', display: 'flex' }}>
+        {row.businessKm > 0 && (
+          <div style={{ width: `${bizPct}%`, background: 'var(--primary)' }} title={`업무 ${fmtKm(row.businessKm)}km`} />
+        )}
+        {row.personalKm > 0 && (
+          <div style={{ width: `${perPct}%`, background: 'var(--accent)', opacity: 0.6 }} title={`개인 ${fmtKm(row.personalKm)}km`} />
+        )}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-3)' }}>
+        <span>업무 {fmtKm(row.businessKm)}km · {bizPct}%</span>
+        <span>개인 {fmtKm(row.personalKm)}km · {perPct}%</span>
+      </div>
+    </div>
+  );
+}
+
+function FuelInfoDialog({ device, onClose, onSaved }) {
+  const [eff,  setEff]  = useState(device.fuel_efficiency_kmpl ?? '');
+  const [type, setType] = useState(device.fuel_type ?? 'gasoline');
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    const n = eff === '' ? null : Number(eff);
+    if (n !== null && (isNaN(n) || n < 1 || n > 100)) {
+      alertDialog({ title: '연비 범위 오류', body: '1 ~ 100 km/L 범위로 입력하세요.', tone: 'danger' });
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.setFuelInfo(device.id, {
+        fuel_efficiency_kmpl: n,
+        fuel_type: n === null ? null : type,
+      });
+      onSaved();
+    } catch (e) {
+      alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', borderRadius: 14, padding: 20,
+        width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 700 }}>{device.label} — 연비 설정</div>
+
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연료</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+            {['gasoline', 'diesel', 'lpg', 'ev'].map(f => (
+              <button key={f} onClick={() => setType(f)} style={{
+                padding: '8px 4px', fontSize: 12, borderRadius: 8, cursor: 'pointer',
+                background: type === f ? 'var(--primary)' : 'var(--surface-2)',
+                color:      type === f ? 'var(--primary-fg)' : 'var(--text)',
+                border: 'none', fontWeight: type === f ? 700 : 500,
+              }}>{FUEL_LABEL[f]}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연비 (km/L)</div>
+          <input type="number" step="0.1" min="1" max="100"
+            value={eff} onChange={e => setEff(e.target.value)}
+            placeholder="예: 12.5"
+            style={st.input} />
+          <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>
+            비워두면 연비 정보 삭제 (유류비 자동 추정 skip).
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+          <button onClick={onClose} disabled={busy} style={{
+            ...st.btnGhost, flex: 1,
+          }}>취소</button>
+          <button onClick={save} disabled={busy} style={{
+            ...st.btnPrimary, flex: 1,
+          }}>{busy ? '...' : '저장'}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 

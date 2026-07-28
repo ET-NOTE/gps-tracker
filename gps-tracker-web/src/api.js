@@ -195,6 +195,11 @@ export const api = {
     return req('DELETE', `/devices/${id}${purge}`);
   },
 
+  // (2026-07-28) 연비/연료 종류 — 월간 리포트 유류비 자동 추정용.
+  // body: { fuel_efficiency_kmpl: 12.5, fuel_type: 'gasoline'|'diesel'|'lpg'|'ev' }
+  // null 로 clear 가능.
+  setFuelInfo: (id, body) => req('PATCH', `/devices/${id}/fuel-info`, body),
+
   // user profile
   getMe:           ()       => req('GET',    '/auth/me'),
   updateMe:        (patch)  => req('PATCH',  '/auth/me', patch),
