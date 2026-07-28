@@ -621,9 +621,12 @@ export default function Dashboard({ onLogout }) {
       setDevices(list);
       devRef.current = list;
       wsRef.current?.subscribe(list.map(d => d.id));
-      for (const d of list) {
+      // (F0-3) serial for-loop → Promise.all — 100대에서 30s tick 이 30s+ 로 밀리던
+      // 문제 해결. Kakao 조작은 JS single-thread 라 실제 렌더는 순차지만 fetch 대기가
+      // 겹쳐서 wall clock 이 N × RTT → max(RTT) 근사.
+      await Promise.all(list.map(async d => {
         // (2026-07-01) force=true (zoom re-render 등) 면 기존 device 도 dot 재그림
-        if (!force && oldIds.has(d.id)) continue;
+        if (!force && oldIds.has(d.id)) return;
         // (2026-07-28) 깜빡임 fix — 30s force refresh 인데 마지막 fix 시각이 이전 로드와 동일하면
         // 이 device 는 신규 데이터 없음 → clearLiveTrail + 재구축 skip (visible clear→rebuild 갭
         // 사라짐). WS 로 새 fix 오면 lastLoadedFixAtRef 는 갱신되지 않아 다음 force refresh 는
@@ -631,7 +634,7 @@ export default function Dashboard({ onLogout }) {
         if (force && oldIds.has(d.id)) {
           const prevAt = lastLoadedFixAtRef.current[d.id];
           const curAt  = d.last_fix_at || d.last_seen_at || null;
-          if (prevAt && curAt && prevAt === curAt) continue;
+          if (prevAt && curAt && prevAt === curAt) return;
         }
         const since = await computeHomeSinceISO(d);
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
@@ -646,7 +649,7 @@ export default function Dashboard({ onLogout }) {
             lastMetaRef.current[d.id] = meta;
           }
           lastLoadedFixAtRef.current[d.id] = d.last_fix_at || d.last_seen_at || null;
-          continue;
+          return;
         }
         const ordered = [...locs].reverse();
         const gapMap = computeGapMap(ordered);
@@ -688,7 +691,7 @@ export default function Dashboard({ onLogout }) {
         });
         // 로드 완료 — 다음 30s force refresh 에서 이 값과 비교해 skip 판정.
         lastLoadedFixAtRef.current[d.id] = d.last_fix_at || d.last_seen_at || null;
-      }
+      }));
     } catch (e) { console.error('refresh', e); }
   }
 

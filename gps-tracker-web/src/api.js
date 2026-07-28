@@ -336,6 +336,26 @@ export const api = {
     // 그래야 consumer 가 reverse() 했을 때 시간 ASC 정확. (group 단위 DESC + group 안 ASC 인 native 순서 → 사이클 안 polyline 거꾸로 그려지는 버그 해결.)
     return all.sort((a, b) => new Date(b.recorded_at) - new Date(a.recorded_at));
   },
+  // (F0-2) 시간 오름차순 flatten — seeker/polyline 처럼 시간순 소비하는 곳에서
+  // consumer 가 다시 reverse/sort 하지 않도록. flattenGrouped 는 DESC 유지 (legacy).
+  flattenGroupedAsc: (groups) => {
+    const all = groups.flatMap(g => {
+      const last = g.fixes.length - 1;
+      return g.fixes.map((f, i) => ({
+        ...f,
+        post_at:    g.post_at,
+        batch_size: g.batch_size,
+        vbat_mv:    g.vbat_mv,
+        cbc_mv:     g.cbc_mv,
+        uptime_s:   g.uptime_s,
+        csq:        g.csq,
+        reg:        g.reg,
+        post_idx:        i,
+        is_last_in_post: i === last,
+      }));
+    });
+    return all.sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+  },
 
   // 공유 링크 (Phase D Round 2)
   listShares:   (deviceId)              => req('GET',    `/devices/${deviceId}/shares`),
