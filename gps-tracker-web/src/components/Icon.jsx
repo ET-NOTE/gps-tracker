@@ -46,6 +46,8 @@ const PATHS = {
   target: 'M12 2v4M12 18v4M2 12h4M18 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
   bar:    'M3 21h18M7 21V10M12 21V4M17 21v-7',
   info:   'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 8h.01M11 12h1v4h1',
+  check:    'M20 6L9 17l-5-5',
+  download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
 };
 
 export default function Icon({ name, size = 18, stroke = 1.75, fill = 'none', style }) {
