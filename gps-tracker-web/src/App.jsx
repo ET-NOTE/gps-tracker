@@ -21,7 +21,13 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 // Dashboard 는 홈이라 critical — sync import 유지.
 import Dashboard from './pages/Dashboard';
 import DialogHost from './components/Dialog';
-import { ToastHost } from './components/ui';
+import {
+  ToastHost, CommandPaletteHost,
+  togglePalette, registerCommands, registerDevices,
+} from './components/ui';
+import { useDevices } from './state';
+import { toggleTheme } from './theme';
+import { clearTokens } from './api';
 
 // 나머지 라우트는 각자 진입할 때만 로드 — 초기 bundle 축소.
 const Auth           = lazy(() => import('./pages/Auth'));
@@ -46,8 +52,48 @@ export default function App() {
       <Shell />
       <DialogHost />
       <ToastHost />
+      <PaletteBridge />
     </BrowserRouter>
   );
+}
+
+// (F5-b) Cmd+K palette host + commands 등록 + device 자동 sync.
+// Shell 안에 있으면 useNavigate 사용 가능 (BrowserRouter context).
+function PaletteBridge() {
+  const nav = useNavigate();
+  // 로그인 페이지에선 devices fetch 안 되도록 authed 조건. 간단히 localStorage 체크.
+  const hasToken = () => !!(localStorage.getItem('access_token') || sessionStorage.getItem('access_token'));
+  const { data: devices } = useDevices({ enabled: hasToken() });
+
+  // Cmd+K / Ctrl+K global bind.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        togglePalette();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // 정적 액션 등록.
+  useEffect(() => {
+    registerCommands([
+      { id: 'nav-home',    label: '홈 (Dashboard)',       icon: 'home',   group: '이동', run: () => nav('/') },
+      { id: 'nav-fleet',   label: 'Fleet 대시보드',        icon: 'route',  group: '이동', run: () => nav('/fleet') },
+      { id: 'nav-diag',    label: '진단 콘솔',              icon: 'wrench', group: '이동', run: () => nav('/diagnostic') },
+      { id: 'ui-theme',    label: '테마 전환 (다크/라이트)', icon: 'sun',    group: '설정', run: () => toggleTheme() },
+      { id: 'auth-logout', label: '로그아웃',                icon: 'power',  group: '설정', run: () => { clearTokens(); window.location.href = '/login'; } },
+    ]);
+  }, [nav]);
+
+  // devices 리스트 sync.
+  useEffect(() => {
+    registerDevices(devices || []);
+  }, [devices]);
+
+  return <CommandPaletteHost onSelectDevice={d => nav(`/fleet?device=${d.id}`)} />;
 }
 
 function Shell() {
