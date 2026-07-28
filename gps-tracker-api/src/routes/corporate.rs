@@ -44,6 +44,9 @@ pub fn router() -> Router<AppState> {
         .route("/corporate/report.xlsx",                      get(report_xlsx))
         // (2026-07-28) Stage-4D: 현재 캐시된 오피넷 유가 (프론트 badge 용).
         .route("/corporate/fuel-prices",                      get(get_fuel_prices))
+        // (2026-07-28) Stage-4F-1: 차량 예약 CRUD.
+        .route("/corporate/reservations",     get(list_reservations).post(create_reservation))
+        .route("/corporate/reservations/:id", patch(update_reservation).delete(delete_reservation))
         // 구독
         .route("/corporate/subscription", get(get_subscription).post(buy_subscription))
 }
@@ -976,6 +979,221 @@ async fn report_xlsx(
          (header::CONTENT_DISPOSITION, cd)],
         bytes,
     ).into_response())
+}
+
+// ═══════════════════════════════════════════════════════════════
+// (2026-07-28) Stage-4F-1: 차량 예약 CRUD.
+// ═══════════════════════════════════════════════════════════════
+#[derive(Debug, Serialize, FromRow)]
+struct Reservation {
+    id:              i64,
+    user_id:         i64,
+    device_id:       i64,
+    driver_staff_id: Option<i64>,
+    driver_name:     Option<String>,       // JOIN staff
+    device_name:     Option<String>,       // JOIN devices
+    license_plate:   Option<String>,       // JOIN devices
+    starts_at:       DateTime<Utc>,
+    ends_at:         DateTime<Utc>,
+    purpose:         Option<String>,
+    note:            Option<String>,
+    status:          String,
+    created_at:      DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReservationQuery {
+    device_id:  Option<i64>,
+    /// ISO date/datetime. 기본: 이번주 시작.
+    from:       Option<String>,
+    to:         Option<String>,
+    /// planned|in_progress|completed|cancelled 콤마 목록.
+    status:     Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReservationPayload {
+    device_id:       i64,
+    driver_staff_id: Option<i64>,
+    starts_at:       DateTime<Utc>,
+    ends_at:         DateTime<Utc>,
+    purpose:         Option<String>,
+    note:            Option<String>,
+    status:          Option<String>,   // default 'planned'
+}
+
+async fn list_reservations(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Query(q): Query<ReservationQuery>,
+) -> AppResult<Json<Vec<Reservation>>> {
+    let now = Utc::now();
+    let from: DateTime<Utc> = q.from.as_deref()
+        .and_then(|s| DateTime::parse_from_rfc3339(s).ok().map(|d| d.with_timezone(&Utc)))
+        .unwrap_or_else(|| now - chrono::Duration::days(7));
+    let to: DateTime<Utc> = q.to.as_deref()
+        .and_then(|s| DateTime::parse_from_rfc3339(s).ok().map(|d| d.with_timezone(&Utc)))
+        .unwrap_or_else(|| now + chrono::Duration::days(30));
+
+    let status_filter: Option<Vec<String>> = q.status.as_deref().map(|s|
+        s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect::<Vec<_>>())
+        .filter(|v| !v.is_empty());
+
+    let rows: Vec<Reservation> = if let (Some(dev_id), Some(ref sts)) = (q.device_id, status_filter.as_ref()) {
+        sqlx::query_as(
+            r#"SELECT r.id, r.user_id, r.device_id, r.driver_staff_id,
+                      s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                      r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
+                 FROM vehicle_reservations r
+            LEFT JOIN staff   s ON s.id = r.driver_staff_id
+            LEFT JOIN devices d ON d.id = r.device_id
+                WHERE r.user_id = $1 AND r.device_id = $2
+                  AND r.starts_at < $4 AND r.ends_at > $3
+                  AND r.status = ANY($5::TEXT[])
+                ORDER BY r.starts_at DESC"#,
+        )
+        .bind(user.user_id).bind(dev_id).bind(from).bind(to).bind(sts)
+        .fetch_all(&state.db).await?
+    } else if let Some(dev_id) = q.device_id {
+        sqlx::query_as(
+            r#"SELECT r.id, r.user_id, r.device_id, r.driver_staff_id,
+                      s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                      r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
+                 FROM vehicle_reservations r
+            LEFT JOIN staff   s ON s.id = r.driver_staff_id
+            LEFT JOIN devices d ON d.id = r.device_id
+                WHERE r.user_id = $1 AND r.device_id = $2
+                  AND r.starts_at < $4 AND r.ends_at > $3
+                ORDER BY r.starts_at DESC"#,
+        )
+        .bind(user.user_id).bind(dev_id).bind(from).bind(to)
+        .fetch_all(&state.db).await?
+    } else if let Some(ref sts) = status_filter {
+        sqlx::query_as(
+            r#"SELECT r.id, r.user_id, r.device_id, r.driver_staff_id,
+                      s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                      r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
+                 FROM vehicle_reservations r
+            LEFT JOIN staff   s ON s.id = r.driver_staff_id
+            LEFT JOIN devices d ON d.id = r.device_id
+                WHERE r.user_id = $1
+                  AND r.starts_at < $3 AND r.ends_at > $2
+                  AND r.status = ANY($4::TEXT[])
+                ORDER BY r.starts_at DESC"#,
+        )
+        .bind(user.user_id).bind(from).bind(to).bind(sts)
+        .fetch_all(&state.db).await?
+    } else {
+        sqlx::query_as(
+            r#"SELECT r.id, r.user_id, r.device_id, r.driver_staff_id,
+                      s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                      r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
+                 FROM vehicle_reservations r
+            LEFT JOIN staff   s ON s.id = r.driver_staff_id
+            LEFT JOIN devices d ON d.id = r.device_id
+                WHERE r.user_id = $1
+                  AND r.starts_at < $3 AND r.ends_at > $2
+                ORDER BY r.starts_at DESC"#,
+        )
+        .bind(user.user_id).bind(from).bind(to)
+        .fetch_all(&state.db).await?
+    };
+    Ok(Json(rows))
+}
+
+async fn create_reservation(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<ReservationPayload>,
+) -> AppResult<Json<Reservation>> {
+    if req.ends_at <= req.starts_at {
+        return Err(AppError::BadRequest("ends_at must be after starts_at".into()));
+    }
+    verify_device_owner(&state, user.user_id, req.device_id).await?;
+    let status = req.status.unwrap_or_else(|| "planned".into());
+    if !matches!(status.as_str(), "planned"|"in_progress"|"completed"|"cancelled") {
+        return Err(AppError::BadRequest(format!("invalid status: {status}")));
+    }
+    // 겹침 검사 — 같은 device, active status (planned/in_progress) 인 예약과 시간 겹침
+    let overlap: Option<(i64,)> = sqlx::query_as(
+        r#"SELECT id FROM vehicle_reservations
+            WHERE user_id = $1 AND device_id = $2
+              AND status IN ('planned','in_progress')
+              AND starts_at < $4 AND ends_at > $3
+            LIMIT 1"#,
+    )
+    .bind(user.user_id).bind(req.device_id).bind(req.starts_at).bind(req.ends_at)
+    .fetch_optional(&state.db).await?;
+    if let Some((existing_id,)) = overlap {
+        if status == "planned" || status == "in_progress" {
+            return Err(AppError::BadRequest(format!("이 시간대에 겹치는 예약 있음 (id={existing_id})")));
+        }
+    }
+    let row: Reservation = sqlx::query_as(
+        r#"WITH ins AS (
+             INSERT INTO vehicle_reservations
+                (user_id, device_id, driver_staff_id, starts_at, ends_at, purpose, note, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING *
+           )
+           SELECT ins.id, ins.user_id, ins.device_id, ins.driver_staff_id,
+                  s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                  ins.starts_at, ins.ends_at, ins.purpose, ins.note, ins.status, ins.created_at
+             FROM ins
+        LEFT JOIN staff   s ON s.id = ins.driver_staff_id
+        LEFT JOIN devices d ON d.id = ins.device_id"#,
+    )
+    .bind(user.user_id).bind(req.device_id).bind(req.driver_staff_id)
+    .bind(req.starts_at).bind(req.ends_at)
+    .bind(req.purpose).bind(req.note).bind(status)
+    .fetch_one(&state.db).await?;
+    Ok(Json(row))
+}
+
+async fn update_reservation(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Json(req): Json<ReservationPayload>,
+) -> AppResult<Json<Reservation>> {
+    if req.ends_at <= req.starts_at {
+        return Err(AppError::BadRequest("ends_at must be after starts_at".into()));
+    }
+    let status = req.status.unwrap_or_else(|| "planned".into());
+    let row: Option<Reservation> = sqlx::query_as(
+        r#"WITH upd AS (
+             UPDATE vehicle_reservations
+                SET device_id = $3, driver_staff_id = $4,
+                    starts_at = $5, ends_at = $6,
+                    purpose = $7, note = $8, status = $9,
+                    updated_at = NOW()
+              WHERE id = $1 AND user_id = $2
+              RETURNING *
+           )
+           SELECT upd.id, upd.user_id, upd.device_id, upd.driver_staff_id,
+                  s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                  upd.starts_at, upd.ends_at, upd.purpose, upd.note, upd.status, upd.created_at
+             FROM upd
+        LEFT JOIN staff   s ON s.id = upd.driver_staff_id
+        LEFT JOIN devices d ON d.id = upd.device_id"#,
+    )
+    .bind(id).bind(user.user_id).bind(req.device_id).bind(req.driver_staff_id)
+    .bind(req.starts_at).bind(req.ends_at)
+    .bind(req.purpose).bind(req.note).bind(status)
+    .fetch_optional(&state.db).await?;
+    Ok(Json(row.ok_or(AppError::NotFound)?))
+}
+
+async fn delete_reservation(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let n = sqlx::query("DELETE FROM vehicle_reservations WHERE id = $1 AND user_id = $2")
+        .bind(id).bind(user.user_id)
+        .execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "ok": true })))
 }
 
 fn csv_escape(s: &str) -> String {
