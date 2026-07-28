@@ -432,15 +432,67 @@ function RentalCard({ c, onEdit, onReturn, onDelete }) {
         </div>
       )}
       {c.settled_amount_krw != null && (
-        <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 700 }}>
-          정산 <span style={{ color: 'var(--primary)' }}>{c.settled_amount_krw.toLocaleString()}원</span>
-          {c.settled_at && <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 6 }}>
-            · {new Date(c.settled_at).toLocaleDateString('ko-KR')}
-          </span>}
-        </div>
+        <SettlementSummary c={c} />
       )}
     </div>
   );
+}
+
+// (R4) 정산 breakdown 표시 + 청구서 다운로드.
+function SettlementSummary({ c }) {
+  const lines = c.settlement_json?.lines || [];
+  const refund = c.refund_krw ?? ((c.deposit_krw || 0) - (c.settled_amount_krw || 0));
+  return (
+    <div style={{
+      background: 'var(--surface-2)', borderRadius: 8, padding: 8,
+      display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11,
+    }}>
+      {lines.map((l, i) => (
+        <div key={i} style={{ display: 'flex', gap: 6, color: 'var(--text-2)' }}>
+          <span style={{ color: 'var(--text-3)', minWidth: 44 }}>
+            {({ base:'기본료', over_km:'초과km', late:'지연', extra:'기타' })[l.kind] || l.kind}
+          </span>
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.label}</span>
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>{(l.amount||0).toLocaleString()}</span>
+        </div>
+      ))}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between',
+        marginTop: 4, paddingTop: 4, borderTop: '1px dashed var(--border)',
+        fontWeight: 700, color: 'var(--text)',
+      }}>
+        <span>소계</span>
+        <span style={{ color: 'var(--primary)' }}>{(c.settled_amount_krw || 0).toLocaleString()}원</span>
+      </div>
+      {c.deposit_krw > 0 && (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between',
+          fontWeight: 800,
+          color: refund >= 0 ? 'var(--accent)' : 'var(--danger)',
+        }}>
+          <span>{refund >= 0 ? '환급' : '추가청구'}</span>
+          <span>{Math.abs(refund).toLocaleString()}원</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+        <button onClick={() => downloadInvoice(c)} style={{ ...st.btnGhost, fontSize: 10, padding: '4px 8px', flex: 1 }}>
+          <Icon name="download" size={10} /> 청구서 XLSX
+        </button>
+      </div>
+    </div>
+  );
+}
+
+async function downloadInvoice(c) {
+  try {
+    const { blob, filename } = await api.rentalInvoiceXlsx(c.id);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  } catch (e) {
+    alertDialog({ title: '청구서 다운로드 실패', body: e.message, tone: 'danger' });
+  }
 }
 
 // datetime-local 헬퍼
@@ -600,14 +652,21 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
 function ReturnDialog({ contract, onClose, onDone }) {
   const [odometer, setOdometer] = useState(contract.return_odometer_km ?? '');
   const [location, setLocation] = useState(contract.return_location ?? '');
-  const [extraFee, setExtraFee] = useState('');
+  const [extraFee,   setExtraFee]   = useState('');
+  const [extraLabel, setExtraLabel] = useState('');
+  const [returnedAt, setReturnedAt] = useState(isoToLocal(new Date().toISOString()));
   const [note,     setNote]     = useState('');
   const [busy,     setBusy]     = useState(false);
 
-  const dur = Math.max(1, Math.ceil((new Date(contract.ends_at) - new Date(contract.starts_at)) / 3600_000 / 24));
-  const baseEstimate = contract.rate_type === 'daily' ? dur * contract.rate_amount_krw
-    : contract.rate_type === 'monthly' ? Math.ceil(dur / 30) * contract.rate_amount_krw
-    : Math.ceil(dur * 24) * contract.rate_amount_krw;
+  // (R4) 정산 실시간 preview — 백엔드와 동일 공식.
+  const preview = useMemo(() => {
+    return computeSettlementPreview(contract, {
+      returnOdometerKm: odometer === '' ? null : Number(odometer),
+      extraFeeKrw:      extraFee === '' ? 0    : Number(extraFee),
+      extraLabel:       extraLabel.trim() || '기타',
+      returnedAt:       returnedAt ? new Date(returnedAt) : new Date(),
+    });
+  }, [contract, odometer, extraFee, extraLabel, returnedAt]);
 
   async function submit() {
     setBusy(true);
@@ -616,6 +675,8 @@ function ReturnDialog({ contract, onClose, onDone }) {
         return_odometer_km: odometer === '' ? null : Number(odometer),
         return_location:    location.trim() || null,
         extra_fee_krw:      extraFee === '' ? null : Number(extraFee),
+        extra_fee_label:    extraLabel.trim() || null,
+        returned_at:        returnedAt ? new Date(returnedAt).toISOString() : null,
         note:               note.trim() || null,
       });
       onDone();
@@ -626,32 +687,72 @@ function ReturnDialog({ contract, onClose, onDone }) {
 
   return (
     <div style={st.modalBackdrop} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={st.modal}>
+      <div onClick={e => e.stopPropagation()} style={{ ...st.modal, maxWidth: 480 }}>
         <div style={{ fontSize: 15, fontWeight: 800 }}>반납 처리</div>
         <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
           {contract.license_plate || contract.device_name} · {contract.renter_name}
         </div>
-        <div style={{
-          padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 8,
-          fontSize: 12, color: 'var(--text-2)',
-        }}>
-          <div>계약 기본금 예상: <b>{baseEstimate.toLocaleString()}원</b> ({dur}일 × {contract.rate_amount_krw.toLocaleString()})</div>
-          {contract.deposit_krw > 0 && <div>보증금: {contract.deposit_krw.toLocaleString()}원 (별도 반환)</div>}
-        </div>
 
-        <Labeled label="반납 오도미터 (km)">
-          <input type="number" value={odometer} onChange={e => setOdometer(e.target.value)} placeholder="예: 12345" style={st.input} />
-        </Labeled>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <Labeled label="실제 반납 시각">
+            <input type="datetime-local" value={returnedAt}
+              onChange={e => setReturnedAt(e.target.value)} style={st.input} />
+          </Labeled>
+          <Labeled label="반납 오도미터 (km)">
+            <input type="number" value={odometer}
+              onChange={e => setOdometer(e.target.value)} placeholder="예: 12345" style={st.input} />
+          </Labeled>
+        </div>
         <Labeled label="반납 장소">
           <input value={location} onChange={e => setLocation(e.target.value)} style={st.input} />
         </Labeled>
-        <Labeled label="추가비 (청소·연료 등) 원">
-          <input type="number" value={extraFee} onChange={e => setExtraFee(e.target.value)} placeholder="0" style={st.input} />
-        </Labeled>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+          <Labeled label="기타 요금 사유 (세차·파손·연료 등)">
+            <input value={extraLabel} onChange={e => setExtraLabel(e.target.value)}
+              placeholder="예: 세차비" style={st.input} />
+          </Labeled>
+          <Labeled label="금액 (원)">
+            <input type="number" value={extraFee} onChange={e => setExtraFee(e.target.value)}
+              placeholder="0" style={st.input} />
+          </Labeled>
+        </div>
         <Labeled label="메모"><input value={note} onChange={e => setNote(e.target.value)} style={st.input} /></Labeled>
 
-        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          저장 시 정산액 = 기본금 + 초과 km 요금 + 추가비. status → returned.
+        {/* itemized preview */}
+        <div style={{
+          padding: 10, background: 'var(--surface-2)', borderRadius: 8,
+          display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12,
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.4 }}>
+            정산 미리보기
+          </div>
+          {preview.lines.map((l, i) => (
+            <div key={i} style={{ display: 'flex', gap: 6, color: 'var(--text-2)' }}>
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.label}</span>
+              <span style={{ fontWeight: 600, color: 'var(--text)' }}>{l.amount.toLocaleString()}원</span>
+            </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between',
+              marginTop: 4, paddingTop: 4, borderTop: '1px dashed var(--border)',
+              fontWeight: 700 }}>
+            <span>소계</span>
+            <span style={{ color: 'var(--primary)' }}>{preview.subtotal.toLocaleString()}원</span>
+          </div>
+          {contract.deposit_krw > 0 && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-2)' }}>
+                <span>보증금</span>
+                <span>{contract.deposit_krw.toLocaleString()}원</span>
+              </div>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', fontWeight: 800,
+                color: preview.balance >= 0 ? 'var(--accent)' : 'var(--danger)',
+              }}>
+                <span>{preview.balance >= 0 ? '환급 (임차인에게)' : '추가 청구 (임차인에게)'}</span>
+                <span>{Math.abs(preview.balance).toLocaleString()}원</span>
+              </div>
+            </>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
@@ -663,6 +764,55 @@ function ReturnDialog({ contract, onClose, onDone }) {
       </div>
     </div>
   );
+}
+
+// (R4) 백엔드와 동일 공식으로 정산 line item 계산 — preview 전용.
+function computeSettlementPreview(c, { returnOdometerKm, extraFeeKrw, extraLabel, returnedAt }) {
+  const dur = new Date(c.ends_at) - new Date(c.starts_at); // ms
+  const hours = dur / 3600_000;
+  let units, unitLabel;
+  if (c.rate_type === 'hourly')       { units = Math.max(1, Math.ceil(hours));       unitLabel = '시간'; }
+  else if (c.rate_type === 'monthly') { units = Math.max(1, Math.ceil(hours/24/30)); unitLabel = '개월'; }
+  else                                { units = Math.max(1, Math.ceil(hours/24));    unitLabel = '일'; }
+  const rate = c.rate_amount_krw || 0;
+  const baseFee = units * rate;
+
+  // 초과 주행
+  let overKm = 0, overFee = 0;
+  if (returnOdometerKm != null && c.pickup_odometer_km != null
+      && c.included_km_per_day != null && c.over_km_price_krw != null) {
+    const driven = Math.max(0, returnOdometerKm - c.pickup_odometer_km);
+    const days   = Math.max(1, Math.ceil(hours / 24));
+    const allowed = c.included_km_per_day * days;
+    overKm  = Math.max(0, driven - allowed);
+    overFee = overKm * c.over_km_price_krw;
+  }
+  // 지연 반납
+  const endsAt = new Date(c.ends_at);
+  const lateHours = returnedAt > endsAt ? Math.max(0, Math.ceil((returnedAt - endsAt) / 3600_000)) : 0;
+  const hourly = c.rate_type === 'hourly' ? rate
+    : c.rate_type === 'monthly' ? Math.floor(rate / 720)
+    : Math.floor(rate / 24);
+  const lateFee = lateHours > 0 ? Math.round(lateHours * hourly * 1.5) : 0;
+
+  const extra = Number(extraFeeKrw) || 0;
+  const lines = [
+    { kind: 'base', label: `기본 요금 (${units}${unitLabel} × ${rate.toLocaleString()}원)`, amount: baseFee },
+  ];
+  if (overKm > 0 && overFee > 0) {
+    lines.push({ kind: 'over_km',
+      label: `초과 주행 (${overKm}km × ${c.over_km_price_krw.toLocaleString()}원)`, amount: overFee });
+  }
+  if (lateHours > 0 && lateFee > 0) {
+    lines.push({ kind: 'late',
+      label: `지연 반납 (${lateHours}시간 × ${hourly.toLocaleString()}원 × 1.5배)`, amount: lateFee });
+  }
+  if (extra !== 0) {
+    lines.push({ kind: 'extra', label: extraLabel, amount: extra });
+  }
+  const subtotal = lines.reduce((s, l) => s + l.amount, 0);
+  const balance  = (c.deposit_krw || 0) - subtotal;
+  return { lines, subtotal, balance };
 }
 
 function Labeled({ label, children }) {

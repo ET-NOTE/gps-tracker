@@ -527,6 +527,26 @@ export const api = {
   returnRental: (id, body) => req('POST',  `/rentcar/contracts/${id}/return`, body),
   deleteRental: (id)       => req('DELETE',`/rentcar/contracts/${id}`),
 
+  // (2026-07-28 Stage-R4) 렌트카 청구서 XLSX.
+  rentalInvoiceXlsx: async (id) => {
+    const tok = getToken();
+    const res = await fetch(`${BASE}/rentcar/contracts/${id}/invoice.xlsx`, {
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || res.statusText);
+    }
+    const blob = await res.blob();
+    const cd   = res.headers.get('content-disposition') || '';
+    const m1 = cd.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+    const m2 = cd.match(/filename\s*=\s*"?([^";]+)"?/i);
+    const filename = m1 ? decodeURIComponent(m1[1])
+                   : m2 ? decodeURIComponent(m2[1])
+                        : `청구서_${id}.xlsx`;
+    return { blob, filename };
+  },
+
   // (2026-07-28) Stage-4D: 오피넷 캐시된 유가. { gasoline, diesel, lpg, source, updated_at }
   // source: "opinet" (실 API 성공) | "default" (fallback).
   getFuelPrices: () => req('GET', '/corporate/fuel-prices'),
