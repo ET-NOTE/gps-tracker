@@ -28,11 +28,12 @@ export default function CorporatePanel({ devices }) {
   }, []);
 
   const tabs = [
-    { id: 'report',  label: '운행 리포트', icon: 'route' },
-    { id: 'monthly', label: '월간 리포트', icon: 'bar' },   // (2026-07-28) Stage-3A
-    { id: 'staff',   label: '직원',       icon: 'user' },
-    { id: 'info',    label: '회사 정보',   icon: 'list' },
-    { id: 'sub',     label: '구독',       icon: 'coin' },
+    { id: 'report',   label: '운행 리포트', icon: 'route' },
+    { id: 'monthly',  label: '월간 리포트', icon: 'bar' },   // (2026-07-28) Stage-3A
+    { id: 'vehicles', label: '차량 관리',   icon: 'list' },  // (2026-07-28) Stage-4C-1
+    { id: 'staff',    label: '직원',       icon: 'user' },
+    { id: 'info',     label: '회사 정보',   icon: 'list' },
+    { id: 'sub',      label: '구독',       icon: 'coin' },
   ];
 
   return (
@@ -57,11 +58,12 @@ export default function CorporatePanel({ devices }) {
       </div>
 
       <div style={st.body}>
-        {tab === 'report'  && <ReportTab devices={devices} sub={sub} onSubChange={setSub} />}
-        {tab === 'monthly' && <MonthlyReportTab devices={devices} sub={sub} />}
-        {tab === 'staff'   && <StaffTab />}
-        {tab === 'info'    && <InfoTab />}
-        {tab === 'sub'     && <SubTab sub={sub} onChange={setSub} />}
+        {tab === 'report'   && <ReportTab devices={devices} sub={sub} onSubChange={setSub} />}
+        {tab === 'monthly'  && <MonthlyReportTab devices={devices} sub={sub} />}
+        {tab === 'vehicles' && <VehiclesTab devices={devices} />}
+        {tab === 'staff'    && <StaffTab />}
+        {tab === 'info'     && <InfoTab />}
+        {tab === 'sub'      && <SubTab sub={sub} onChange={setSub} />}
       </div>
     </div>
   );
@@ -940,6 +942,190 @@ function SubTab({ sub, onChange }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════
+// (2026-07-28 Stage-4C-1) 차량 관리 — cartax.biz 스타일 참조.
+// 필터 chips + 검색 + 카드 리스트 + 상세 편집 (기존 VehicleInfoDialog 재사용).
+// ═══════════════════════════════════════════════════════
+function VehiclesTab({ devices }) {
+  const [filter, setFilter] = useState('all');   // all | enabled | disabled
+  const [query,  setQuery]  = useState('');
+  const [editing, setEditing] = useState(null);
+  const [tick, setTick] = useState(0);
+  const stats = useFleetStats(devices);   // 이번달 km — device 별로는 라이브 계산 X (요약만)
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (devices || [])
+      .filter(d => {
+        // enabled 는 새 컬럼이라 옛 record 는 undefined → true 로 간주
+        const active = d.enabled !== false;
+        if (filter === 'enabled'  && !active) return false;
+        if (filter === 'disabled' &&  active) return false;
+        if (!q) return true;
+        return [d.display_name, d.device_uid, d.license_plate, d.department]
+          .some(v => (v || '').toLowerCase().includes(q));
+      });
+  }, [devices, filter, query, tick]);
+
+  const enabledCount  = (devices || []).filter(d => d.enabled !== false).length;
+  const disabledCount = (devices || []).length - enabledCount;
+
+  return (
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <StatCardGrid>
+        <StatCard icon="list"  label="전체 차량" value={devices?.length ?? 0} unit="대" tone="default" />
+        <StatCard icon="route" label="사용가능"   value={enabledCount}         unit="대" tone="success" />
+        <StatCard icon="warn"  label="사용정지"   value={disabledCount}        unit="대" tone={disabledCount > 0 ? 'warn' : 'default'} />
+      </StatCardGrid>
+
+      {/* 필터 chips + 검색 */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <FilterChip active={filter==='all'}      onClick={() => setFilter('all')}      label="전체"     count={devices?.length ?? 0} />
+        <FilterChip active={filter==='enabled'}  onClick={() => setFilter('enabled')}  label="사용가능" count={enabledCount} tone="success" />
+        <FilterChip active={filter==='disabled'} onClick={() => setFilter('disabled')} label="사용정지" count={disabledCount} tone="warn" />
+        <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
+          <input value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="차량번호 · 차명 · 부서 검색"
+            style={{ ...st.input, paddingLeft: 34 }} />
+          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }}>
+            <Icon name="filter" size={14} />
+          </div>
+        </div>
+      </div>
+
+      {rows.length === 0 && (
+        <div style={st.muted}>
+          {devices?.length === 0 ? '아직 등록된 차량이 없습니다.' : '조건에 맞는 차량이 없습니다.'}
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 8 }}>
+          {rows.map(d => <VehicleCard key={d.id} d={d} onEdit={() => setEditing(d)} />)}
+        </div>
+      )}
+
+      {editing && (
+        <FuelInfoDialog device={vehicleToRowShape(editing)}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+      )}
+    </div>
+  );
+}
+
+// FuelInfoDialog 는 MonthlyReport 의 row shape (label 필드) 을 기대. device 를 그 shape 으로 변환.
+function vehicleToRowShape(d) {
+  return {
+    id: d.id,
+    label: d.display_name || d.device_uid,
+    fuel_efficiency_kmpl: d.fuel_efficiency_kmpl,
+    fuel_type: d.fuel_type,
+    license_plate: d.license_plate,
+    model_year: d.model_year,
+    engine_cc: d.engine_cc,
+    purchase_price_krw: d.purchase_price_krw,
+    acquired_at: d.acquired_at,
+    department: d.department,
+    vehicle_type: d.vehicle_type,
+    enabled: d.enabled,
+    note: d.note,
+  };
+}
+
+function FilterChip({ active, onClick, label, count, tone = 'default' }) {
+  const c = tone === 'success' ? 'var(--accent)' : tone === 'warn' ? 'var(--warning)' : 'var(--primary)';
+  return (
+    <button onClick={onClick} style={{
+      padding: '6px 12px', borderRadius: 999,
+      background: active ? c : 'var(--surface-2)',
+      color: active ? 'white' : 'var(--text-2)',
+      border: 'none', cursor: 'pointer',
+      fontSize: 12, fontWeight: 700,
+      display: 'flex', alignItems: 'center', gap: 6,
+    }}>
+      {label}
+      <span style={{
+        fontSize: 10, padding: '1px 6px', borderRadius: 999,
+        background: active ? 'rgba(255,255,255,0.25)' : 'var(--surface)',
+        color: active ? 'white' : 'var(--text-3)',
+        fontWeight: 700,
+      }}>{count}</span>
+    </button>
+  );
+}
+
+function VehicleCard({ d, onEdit }) {
+  const active = d.enabled !== false;
+  const km = d.last_fix_at ? '' : '';   // 개별 lifetime 은 별도 API 필요 — 지금은 skip
+  return (
+    <div onClick={onEdit} style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 12, padding: 14,
+      display: 'flex', gap: 12, alignItems: 'center',
+      cursor: 'pointer', transition: 'transform .1s, box-shadow .1s',
+      opacity: active ? 1 : 0.6,
+    }}
+    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'}
+    onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+      <div style={{
+        width: 42, height: 42, borderRadius: 10,
+        background: active
+          ? 'color-mix(in srgb, var(--primary) 12%, transparent)'
+          : 'var(--surface-2)',
+        color: active ? 'var(--primary)' : 'var(--text-3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon name="route" size={20} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: '-0.01em' }}>
+            {d.license_plate || <span style={{ color: 'var(--text-3)' }}>번호 미입력</span>}
+          </span>
+          <span style={{ fontSize: 13, color: 'var(--text-2)' }}>
+            {d.display_name || d.device_uid}
+          </span>
+          <StateBadge active={active} />
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {d.department && <span>👥 {d.department}</span>}
+          {d.model_year && <span>{d.model_year}년식</span>}
+          {d.fuel_type && <span>{FUEL_LABEL[d.fuel_type]}</span>}
+          {d.fuel_efficiency_kmpl && <span>{d.fuel_efficiency_kmpl}km/L</span>}
+        </div>
+        {d.note && (
+          <div style={{
+            fontSize: 11, color: 'var(--text-2)', marginTop: 6,
+            padding: '4px 8px', background: 'var(--surface-2)', borderRadius: 6,
+          }}>
+            📝 {d.note}
+          </div>
+        )}
+      </div>
+      <div style={{ flexShrink: 0, textAlign: 'right', color: 'var(--text-3)' }}>
+        <Icon name="chevron-right" size={16} />
+      </div>
+    </div>
+  );
+}
+
+function StateBadge({ active }) {
+  return (
+    <span style={{
+      fontSize: 10, padding: '2px 8px', borderRadius: 999,
+      background: active
+        ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
+        : 'var(--surface-2)',
+      color: active ? 'var(--accent)' : 'var(--text-3)',
+      fontWeight: 700,
+    }}>
+      {active ? '사용가능' : '사용정지'}
+    </span>
+  );
+}
+
 // ─── 월간 리포트 (2026-07-28 Stage-3A) ─────────────────
 // 참조: 첨부 이미지 4 (월간 · 업무/개인 분리 · 유류비 추정 · 차량별 bar).
 // 데이터: 병렬 listTrips + trip_annotations 로 client-side aggregate.
@@ -1225,6 +1411,9 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
   const [acquiredAt,  setAcquiredAt]  = useState(device.acquired_at        ?? '');
   const [department,  setDepartment]  = useState(device.department         ?? '');
   const [vehicleType, setVehicleType] = useState(device.vehicle_type       ?? 'sedan');
+  // (2026-07-28) Stage-4C-1: 사용가능 + 메모
+  const [enabled,     setEnabled]     = useState(device.enabled !== false);
+  const [note,        setNote]        = useState(device.note ?? '');
   const [busy, setBusy] = useState(false);
 
   async function save() {
@@ -1255,6 +1444,8 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
           acquired_at:        acquiredAt || null,
           department:         department.trim() || null,
           vehicle_type:       vehicleType || null,
+          enabled:            enabled,
+          note:               note.trim() || null,
         }),
       ]);
       onSaved();
@@ -1322,7 +1513,7 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
         </div>
 
         {/* ─── 우리 전용 ─────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             우리 전용
           </div>
@@ -1330,6 +1521,36 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
             <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>부서/그룹</div>
             <input value={department} onChange={e => setDepartment(e.target.value)}
               placeholder="영업 1팀, 본사 임원차..." style={st.input} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>메모</div>
+            <textarea value={note} onChange={e => setNote(e.target.value)}
+              placeholder="정비 이력·특이사항..." maxLength={500}
+              style={{ ...st.input, minHeight: 60, resize: 'vertical', fontFamily: 'inherit' }} />
+          </div>
+          {/* 사용가능 toggle (2026-07-28 Stage-4C-1) */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 8,
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>사용가능</div>
+              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+                사용정지 시 차량 목록에서 흐리게 표시. 리포트에는 계속 반영 (과거 데이터 유지).
+              </div>
+            </div>
+            <button onClick={() => setEnabled(v => !v)} style={{
+              width: 44, height: 24, borderRadius: 999,
+              background: enabled ? 'var(--accent)' : 'var(--text-3)',
+              border: 'none', cursor: 'pointer', position: 'relative',
+              transition: 'background .15s',
+            }}>
+              <div style={{
+                position: 'absolute', top: 2, left: enabled ? 22 : 2,
+                width: 20, height: 20, borderRadius: '50%', background: 'white',
+                transition: 'left .15s',
+              }} />
+            </button>
           </div>
         </div>
 
