@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, clearTokens } from '../api';
-import { useMe, qk } from '../state';
+import { useMe, useAccountType, useSetAccountType, qk } from '../state';
 import Icon from './Icon';
 import ChatPanel from './ChatPanel';
 import NotificationSettings from './NotificationSettings';
@@ -17,10 +17,9 @@ function initialProfileTab() {
   return ['account','credit','chat','notif','theme','lab'].includes(v) ? v : 'account';
 }
 
-// (2026-07-28) accountType + onAccountTypeChange 를 상위 Dashboard 에서 내려받음.
-// 이전엔 AccountTypeCard 가 자체 fetch/state 를 유지해서 PATCH 성공 후 Dashboard 는
-// stale — SideRail/BottomNav 가 corporate 탭 렌더 안 함 → 새로고침해야 반영되던 회귀.
-export default function ProfilePanel({ onLogout, accountType, onAccountTypeChange }) {
+// (F2-b) accountType 은 backward-compat prop (부모 렌더 hints 용). AccountTypeCard 는
+// 이제 useAccountType/useSetAccountType 훅으로 자체 완결 — onAccountTypeChange 불필요.
+export default function ProfilePanel({ onLogout, accountType }) {
   // (F2-a) useState+useEffect fetch → useMe hook (dedup, focus refetch).
   // 아래 setMe 호출은 qc.setQueryData(qk.me(), ...) 로 캐시 optimistic 갱신.
   const { data: me } = useMe();
@@ -85,8 +84,7 @@ export default function ProfilePanel({ onLogout, accountType, onAccountTypeChang
       </div>
 
       <div style={tab === 'chat' ? st.bodyFill : st.body}>
-        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout}
-          accountType={accountType} onAccountTypeChange={onAccountTypeChange} />}
+        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} />}
         {tab === 'credit'  && <CreditTab />}
         {tab === 'chat'    && !isAdmin && <ChatTab onRead={() => setChatUnread(0)} />}
         {tab === 'notif'   && <NotifTab />}
@@ -98,9 +96,8 @@ export default function ProfilePanel({ onLogout, accountType, onAccountTypeChang
 }
 
 // ─── 계정 (이메일/이름/비번/탈퇴) ─────────────────────────
-// (2026-07-28) accountType + onAccountTypeChange 는 ProfilePanel 이 상위 Dashboard 에서
-// 받아서 여기까지 그대로 pass-through. AccountTypeCard 에 prop 으로 내려줌.
-function AccountTab({ me, setMe, onLogout, accountType, onAccountTypeChange }) {
+// (F2-b) accountType prop 제거 — AccountTypeCard 자체 완결.
+function AccountTab({ me, setMe, onLogout }) {
   const [name, setName]     = useState(me.display_name || '');
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -151,7 +148,7 @@ function AccountTab({ me, setMe, onLogout, accountType, onAccountTypeChange }) {
         <Field label="권한"   value={me.role} />
       </Card>
 
-      <AccountTypeCard cur={accountType} onChange={onAccountTypeChange} />
+      <AccountTypeCard />
 
       <PhonesCard me={me} setMe={setMe} />
 
@@ -522,24 +519,21 @@ const phs = {
   title: { fontSize: 14, fontWeight: 700, marginBottom: 10, color: 'var(--text)' },
 };
 
-// (2026-07-28) cur/onChange 를 상위에서 내려받음 (dual-state 제거).
-// 이전 자체 state 유지 구조는 Dashboard 의 accountType 과 어긋나 SideRail/BottomNav
-// 리렌더 안 됨 → 계정 유형 바꿔도 새로고침 전엔 corporate 탭 안 나타남.
-function AccountTypeCard({ cur, onChange }) {
-  const [busy, setBusy] = useState(false);
+// (F2-b) React Query 로 완전 자체 완결. cur/onChange prop 불필요 (backward-compat 로 유지).
+// useAccountType 이 캐시 반환, useSetAccountType mutation 이 setQueryData 로 캐시 갱신
+// → 다른 곳 (Dashboard SideRail/BottomNav) 이 useAccountType 을 구독하고 있어 자동 refresh.
+// stale bug 근본 해결.
+function AccountTypeCard() {
+  const { data: accountTypeRaw } = useAccountType();
+  const cur = accountTypeRaw?.account_type ?? null;
+  const setType = useSetAccountType();
 
   async function pick(type) {
-    if (type === cur) return;
-    setBusy(true);
-    try {
-      const r = await api.setAccountType(type);
-      onChange?.(r.account_type);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setBusy(false);
-    }
+    if (type === cur || setType.isPending) return;
+    try { await setType.mutateAsync(type); }
+    catch (e) { alert(e.message); }
   }
+  const busy = setType.isPending;
 
   if (!cur) return null;
 

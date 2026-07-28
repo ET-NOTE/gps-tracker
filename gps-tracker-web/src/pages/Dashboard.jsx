@@ -1311,10 +1311,11 @@ export default function Dashboard({ onLogout }) {
         {/* 내정보 — 서브탭 (계정 / 포인트 / 채팅 / 알림 / 테마) 은 ProfilePanel 내부 */}
         {view === 'profile' && (
           <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* (F2-b) accountType 은 useAccountType 훅이 담당 — prop 불필요.
+                 하위 호환용으로 accountType 는 여전히 전달 (SideRail/BottomNav 렌더링용). */}
             <ProfilePanel
               onLogout={onLogout}
               accountType={accountType}
-              onAccountTypeChange={setAccountType}
             />
           </div>
         )}
