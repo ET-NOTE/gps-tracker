@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, clearTokens } from '../api';
-import { useMe, useAccountType, useSetAccountType, qk } from '../state';
+import { useMe, useAccountType, useSetAccountType, useChatUnread, qk } from '../state';
 import Icon from './Icon';
 import ChatPanel from './ChatPanel';
 import NotificationSettings from './NotificationSettings';
@@ -27,22 +27,10 @@ export default function ProfilePanel({ onLogout, accountType }) {
   const setMe = (next) => qc.setQueryData(qk.me(), next);
   const [tab, setTabRaw] = useState(initialProfileTab);
   const setTab = (v) => { setTabRaw(v); try { localStorage.setItem('profile_tab', v); } catch {} };
-  const [chatUnread, setChatUnread] = useState(0);
-
-  // 채팅 unread 폴링 — 탭 뱃지용
-  useEffect(() => {
-    if (me && me.role === 'admin') return;        // admin 은 채팅 탭 자체가 없음
-    let iv;
-    async function pull() {
-      try {
-        const t = await api.chatMyThread();
-        setChatUnread(t.unread_for_user || 0);
-      } catch { /* noop */ }
-    }
-    pull();
-    iv = setInterval(pull, 10_000);
-    return () => clearInterval(iv);
-  }, [me]);
+  // (F2-c) useChatUnread hook — 10s refetchInterval + dedup 로 ChatPanel 과 하나의 fetch 공유.
+  // admin 은 채팅 탭 자체가 없음 → 폴링 비활성.
+  const { data: chatUnread = 0 } = useChatUnread(!!me && me.role !== 'admin');
+  const setChatUnread = (v) => qc.setQueryData(['chat-unread'], typeof v === 'function' ? v(chatUnread) : v);
 
   if (!me) return <div style={{ color: 'var(--text-3)', padding: 16 }}>로딩...</div>;
 
