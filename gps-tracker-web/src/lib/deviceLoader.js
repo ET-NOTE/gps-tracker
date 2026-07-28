@@ -11,30 +11,15 @@
 import { api } from '../api';
 import { enrichWithSpeedStops, haversineM, compactStopMarkerIndexes } from './stops';
 import { getDeviceColor, isStale } from '../colors';
+// (F6-c) calcSpeedKmh / clickableIntervalM 중복 → lib/speed.js 로 통합.
+// Re-export 로 기존 import 경로 유지.
+import { calcSpeedKmh, clickableIntervalM } from './speed';
+export { calcSpeedKmh, clickableIntervalM };
 
 // Home view stop cluster 흡수 반경 — seeker 기본 (35m) 과 통일.
 export const HOME_STOP_MERGE_RADIUS_M = 35;
 // 폴리라인 dashed gap 기준 (KakaoMap.POLYLINE_GAP_THRESHOLD_S 와 동일).
 export const POLYLINE_GAP_THRESHOLD_S = 60;
-
-// ── 순수 헬퍼 ──────────────────────────────
-export function calcSpeedKmh(prev, next) {
-  if (!prev?.lat || !prev?.lng || !prev?.recordedAt || !next?.lat || !next?.lng || !next?.recordedAt) return null;
-  const dt = new Date(next.recordedAt).getTime() - new Date(prev.recordedAt).getTime();
-  if (!(dt > 0)) return null;
-  const distM = haversineM(prev.lat, prev.lng, next.lat, next.lng);
-  if (distM < 3) return 0;
-  const speed = (distM / (dt / 1000)) * 3.6;
-  return Number.isFinite(speed) ? Math.min(speed, 240) : null;
-}
-
-export function clickableIntervalM(zoomLevel) {
-  if (zoomLevel <= 3)  return 30;
-  if (zoomLevel <= 5)  return 60;
-  if (zoomLevel <= 7)  return 120;
-  if (zoomLevel <= 9)  return 250;
-  return 500;
-}
 
 function localMidnightMs() {
   const now = new Date();

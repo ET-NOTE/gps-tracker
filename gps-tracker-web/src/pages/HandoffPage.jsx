@@ -27,7 +27,12 @@ export default function HandoffPage({ token }) {
 
   useEffect(() => {
     if (!token) return;
-    api.handoffView(token).then(setView).catch(e => setError(e.message));
+    // (F6-c) cancel guard — token 이 빠르게 바뀌거나 언마운트 시 이전 fetch 결과 무시.
+    let cancelled = false;
+    api.handoffView(token)
+      .then(v => { if (!cancelled) setView(v); })
+      .catch(e => { if (!cancelled) setError(e.message); });
+    return () => { cancelled = true; };
   }, [token]);
 
   const purposeLabel = view?.purpose === 'pickup' ? '차량 인수' : '차량 반납';
