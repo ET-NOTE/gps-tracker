@@ -1286,7 +1286,11 @@ export default function Dashboard({ onLogout }) {
         {/* 내정보 — 서브탭 (계정 / 포인트 / 채팅 / 알림 / 테마) 은 ProfilePanel 내부 */}
         {view === 'profile' && (
           <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <ProfilePanel onLogout={onLogout} />
+            <ProfilePanel
+              onLogout={onLogout}
+              accountType={accountType}
+              onAccountTypeChange={setAccountType}
+            />
           </div>
         )}
 
