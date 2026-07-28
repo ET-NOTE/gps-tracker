@@ -1006,6 +1006,14 @@ function MonthlyReportTab({ devices, sub }) {
           label: d.display_name || d.device_uid,
           fuel_efficiency_kmpl: d.fuel_efficiency_kmpl,
           fuel_type: d.fuel_type,
+          // (2026-07-28) Stage-4B-1 국세청 + 우리 전용 필드 (편집 다이얼로그 전달용)
+          license_plate:      d.license_plate,
+          model_year:         d.model_year,
+          engine_cc:          d.engine_cc,
+          purchase_price_krw: d.purchase_price_krw,
+          acquired_at:        d.acquired_at,
+          department:         d.department,
+          vehicle_type:       d.vehicle_type,
           totalKm:    totalM / 1000,
           businessKm: businessM / 1000,
           personalKm: personalM / 1000,
@@ -1110,11 +1118,29 @@ function MonthlyDeviceRow({ row, onEdit }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>{row.label}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{row.label}</span>
+            {row.license_plate && (
+              <span style={{
+                fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                background: 'var(--surface-2)', color: 'var(--text-2)', fontWeight: 700,
+                letterSpacing: '0.02em',
+              }}>{row.license_plate}</span>
+            )}
+            {row.department && (
+              <span style={{
+                fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                color: 'var(--primary)', fontWeight: 600,
+              }}>{row.department}</span>
+            )}
+          </div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
             {row.fuel_efficiency_kmpl
               ? `${FUEL_LABEL[row.fuel_type] || '?'} · ${row.fuel_efficiency_kmpl}km/L`
               : <span style={{ color: 'var(--warning)' }}>연비 미입력</span>}
+            {row.model_year && ` · ${row.model_year}년식`}
+            {row.engine_cc  && ` · ${row.engine_cc.toLocaleString()}cc`}
             {row.annotationCount > 0 && ' · 실 입력비 반영'}
           </div>
         </div>
@@ -1131,7 +1157,7 @@ function MonthlyDeviceRow({ row, onEdit }) {
           background: 'var(--surface-2)', border: '1px solid var(--border)',
           color: 'var(--text-2)', cursor: 'pointer', fontWeight: 600,
         }}>
-          연비 설정
+          정보 편집
         </button>
       </div>
 
@@ -1152,23 +1178,56 @@ function MonthlyDeviceRow({ row, onEdit }) {
   );
 }
 
+// (2026-07-28) Stage-4B-1: FuelInfoDialog → VehicleInfoDialog 로 확장.
+// 국세청 별지 제73호 헤더 필드 (번호판/연식/배기량/취득가액/취득일) + 우리 전용 (부서/차종)
+// + 연비/연료 (Stage-3A) 을 한 화면에서 편집. 저장 시 두 endpoint (fuel-info, vehicle-info)
+// 를 병렬 호출 (별개 트랜잭션이지만 UX 는 한 번의 저장).
+const VEHICLE_TYPE_LABEL = { sedan: '승용', van: '승합', truck: '화물', special: '특수', ev: '전기' };
+
 function FuelInfoDialog({ device, onClose, onSaved }) {
+  // 연비/연료 (fuel-info)
   const [eff,  setEff]  = useState(device.fuel_efficiency_kmpl ?? '');
   const [type, setType] = useState(device.fuel_type ?? 'gasoline');
+  // 국세청 헤더 (vehicle-info)
+  const [plate,       setPlate]       = useState(device.license_plate      ?? '');
+  const [modelYear,   setModelYear]   = useState(device.model_year         ?? '');
+  const [engineCc,    setEngineCc]    = useState(device.engine_cc          ?? '');
+  const [purchase,    setPurchase]    = useState(device.purchase_price_krw ?? '');
+  const [acquiredAt,  setAcquiredAt]  = useState(device.acquired_at        ?? '');
+  const [department,  setDepartment]  = useState(device.department         ?? '');
+  const [vehicleType, setVehicleType] = useState(device.vehicle_type       ?? 'sedan');
   const [busy, setBusy] = useState(false);
 
   async function save() {
-    const n = eff === '' ? null : Number(eff);
-    if (n !== null && (isNaN(n) || n < 1 || n > 100)) {
+    const eN = eff === '' ? null : Number(eff);
+    if (eN !== null && (isNaN(eN) || eN < 1 || eN > 100)) {
       alertDialog({ title: '연비 범위 오류', body: '1 ~ 100 km/L 범위로 입력하세요.', tone: 'danger' });
       return;
     }
+    const myN = modelYear === '' ? null : parseInt(modelYear, 10);
+    if (myN !== null && (isNaN(myN) || myN < 1990 || myN > 2100)) {
+      alertDialog({ title: '연식 범위 오류', body: '1990 ~ 2100 범위로 입력하세요.', tone: 'danger' });
+      return;
+    }
+    const ccN = engineCc === '' ? null : parseInt(engineCc, 10);
+    const pN  = purchase === '' ? null : parseInt(purchase, 10);
     setBusy(true);
     try {
-      await api.setFuelInfo(device.id, {
-        fuel_efficiency_kmpl: n,
-        fuel_type: n === null ? null : type,
-      });
+      await Promise.all([
+        api.setFuelInfo(device.id, {
+          fuel_efficiency_kmpl: eN,
+          fuel_type: eN === null ? null : type,
+        }),
+        api.setVehicleInfo(device.id, {
+          license_plate:      plate.trim()      || null,
+          model_year:         myN,
+          engine_cc:          ccN,
+          purchase_price_krw: pN,
+          acquired_at:        acquiredAt || null,
+          department:         department.trim() || null,
+          vehicle_type:       vehicleType || null,
+        }),
+      ]);
       onSaved();
     } catch (e) {
       alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
@@ -1182,42 +1241,102 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: 'var(--surface)', borderRadius: 14, padding: 20,
-        width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 12,
+        width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 14,
       }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>{device.label} — 연비 설정</div>
-
         <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연료</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
-            {['gasoline', 'diesel', 'lpg', 'ev'].map(f => (
-              <button key={f} onClick={() => setType(f)} style={{
-                padding: '8px 4px', fontSize: 12, borderRadius: 8, cursor: 'pointer',
-                background: type === f ? 'var(--primary)' : 'var(--surface-2)',
-                color:      type === f ? 'var(--primary-fg)' : 'var(--text)',
-                border: 'none', fontWeight: type === f ? 700 : 500,
-              }}>{FUEL_LABEL[f]}</button>
-            ))}
+          <div style={{ fontSize: 15, fontWeight: 700 }}>{device.label} — 차량 정보</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+            국세청 별지 제73호 헤더 + 우리 전용 필드. 미입력 항목은 비어둬도 됩니다.
           </div>
         </div>
 
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연비 (km/L)</div>
-          <input type="number" step="0.1" min="1" max="100"
-            value={eff} onChange={e => setEff(e.target.value)}
-            placeholder="예: 12.5"
-            style={st.input} />
-          <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>
-            비워두면 연비 정보 삭제 (유류비 자동 추정 skip).
+        {/* ─── 국세청 헤더 ───────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            국세청 별지 제73호 헤더
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량번호</div>
+              <input value={plate} onChange={e => setPlate(e.target.value)} placeholder="12가3456" style={st.input} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연식</div>
+              <input type="number" min="1990" max="2100" value={modelYear}
+                onChange={e => setModelYear(e.target.value)} placeholder="예: 2023" style={st.input} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>배기량 (cc)</div>
+              <input type="number" value={engineCc}
+                onChange={e => setEngineCc(e.target.value)} placeholder="예: 1998" style={st.input} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>취득가액 (원)</div>
+              <input type="number" value={purchase}
+                onChange={e => setPurchase(e.target.value)} placeholder="예: 35000000" style={st.input} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>취득일</div>
+              <input type="date" value={acquiredAt || ''}
+                onChange={e => setAcquiredAt(e.target.value)} style={st.input} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량 유형</div>
+              <select value={vehicleType} onChange={e => setVehicleType(e.target.value)} style={st.input}>
+                {Object.entries(VEHICLE_TYPE_LABEL).map(([id, label]) => (
+                  <option key={id} value={id}>{label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── 우리 전용 ─────────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            우리 전용
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>부서/그룹</div>
+            <input value={department} onChange={e => setDepartment(e.target.value)}
+              placeholder="영업 1팀, 본사 임원차..." style={st.input} />
+          </div>
+        </div>
+
+        {/* ─── 연비 / 연료 ───────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            연비 · 유류비 추정
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연료</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+              {['gasoline', 'diesel', 'lpg', 'ev'].map(f => (
+                <button key={f} onClick={() => setType(f)} style={{
+                  padding: '8px 4px', fontSize: 12, borderRadius: 8, cursor: 'pointer',
+                  background: type === f ? 'var(--primary)' : 'var(--surface-2)',
+                  color:      type === f ? 'var(--primary-fg)' : 'var(--text)',
+                  border: 'none', fontWeight: type === f ? 700 : 500,
+                }}>{FUEL_LABEL[f]}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연비 (km/L)</div>
+            <input type="number" step="0.1" min="1" max="100"
+              value={eff} onChange={e => setEff(e.target.value)} placeholder="예: 12.5" style={st.input} />
+            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>
+              비워두면 유류비 자동 추정 skip.
+            </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-          <button onClick={onClose} disabled={busy} style={{
-            ...st.btnGhost, flex: 1,
-          }}>취소</button>
-          <button onClick={save} disabled={busy} style={{
-            ...st.btnPrimary, flex: 1,
-          }}>{busy ? '...' : '저장'}</button>
+          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
+          <button onClick={save} disabled={busy} style={{ ...st.btnPrimary, flex: 1 }}>
+            {busy ? '저장 중...' : '저장'}
+          </button>
         </div>
       </div>
     </div>

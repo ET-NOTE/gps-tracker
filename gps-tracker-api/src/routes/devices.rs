@@ -53,6 +53,14 @@ pub struct DeviceView {
     // (2026-07-28) 월간 리포트 유류비 추정용. migration 0044.
     pub fuel_efficiency_kmpl: Option<f32>,
     pub fuel_type:            Option<String>,
+    // (2026-07-28) 국세청 별지 제73호 헤더 + 우리 전용 양식. migration 0045.
+    pub license_plate:      Option<String>,
+    pub model_year:         Option<i32>,
+    pub engine_cc:          Option<i32>,
+    pub purchase_price_krw: Option<i64>,
+    pub acquired_at:        Option<chrono::NaiveDate>,
+    pub department:         Option<String>,
+    pub vehicle_type:       Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -94,6 +102,7 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/post-interval", post(set_post_interval))   // POST 주기 원격 조정 (5~300s)
         .route("/devices/:id/locations/aggregated", get(locations_aggregated))   // TimescaleDB continuous aggregate (1m/1h bucket)
         .route("/devices/:id/fuel-info", patch(set_fuel_info))    // (2026-07-28) 연비/연료 종류 — 월간 리포트 유류비 추정용
+        .route("/devices/:id/vehicle-info", patch(set_vehicle_info)) // (2026-07-28) 국세청 별지 제73호 헤더 필드
         .route("/timescaledb/storage-stats", get(timescaledb_storage_stats))      // P2: hypertable size + compression ratio
 }
 
@@ -173,6 +182,9 @@ async fn list(
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
                   d.fuel_efficiency_kmpl, d.fuel_type,
+                  d.license_plate, d.model_year, d.engine_cc,
+                  d.purchase_price_krw, d.acquired_at,
+                  d.department, d.vehicle_type,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
@@ -488,6 +500,73 @@ async fn set_fuel_info(
     )
     .bind(req.fuel_efficiency_kmpl)
     .bind(req.fuel_type.as_deref())
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_optional(&state.db).await?;
+    if updated.is_none() {
+        return Err(AppError::NotFound);
+    }
+    fetch_device(&state, id, user.user_id).await
+}
+
+// ===========================================================================
+// (2026-07-28) Stage-4B-1: 국세청 별지 제73호 (업무용승용차 운행기록부) 헤더
+// 필드 + 우리 전용 양식 필드 (부서, 차량 유형).
+// ===========================================================================
+#[derive(Debug, Deserialize, Validate)]
+pub struct VehicleInfoRequest {
+    /// 차량번호 — "12가3456" 등. NULL 로 clear 가능.
+    #[validate(length(min = 1, max = 20))]
+    pub license_plate: Option<String>,
+    /// 연식. 1990 ~ 현재+1.
+    #[validate(range(min = 1990, max = 2100))]
+    pub model_year: Option<i32>,
+    /// 배기량 cc.
+    #[validate(range(min = 50, max = 20000))]
+    pub engine_cc: Option<i32>,
+    /// 취득가액 원.
+    #[validate(range(min = 0_i64, max = 10_000_000_000_i64))]
+    pub purchase_price_krw: Option<i64>,
+    /// 취득일 (YYYY-MM-DD).
+    pub acquired_at: Option<chrono::NaiveDate>,
+    /// 부서/그룹 (우리 전용).
+    #[validate(length(min = 1, max = 40))]
+    pub department: Option<String>,
+    /// 차량 유형 — sedan|van|truck|special|ev.
+    pub vehicle_type: Option<String>,
+}
+
+async fn set_vehicle_info(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Json(req): Json<VehicleInfoRequest>,
+) -> AppResult<Json<DeviceView>> {
+    if let Some(ref t) = req.vehicle_type {
+        if !matches!(t.as_str(), "sedan"|"van"|"truck"|"special"|"ev") {
+            return Err(AppError::BadRequest(format!("invalid vehicle_type: {t}")));
+        }
+    }
+    // NULL 전달 시 각 컬럼 clear. UNIQUE index 는 NULL 허용이라 여러 device 미입력 공존 OK.
+    let updated: Option<(i64,)> = sqlx::query_as(
+        r#"UPDATE devices
+              SET license_plate      = $1,
+                  model_year         = $2,
+                  engine_cc          = $3,
+                  purchase_price_krw = $4,
+                  acquired_at        = $5,
+                  department         = $6,
+                  vehicle_type       = $7
+            WHERE id = $8 AND owner_id = $9
+        RETURNING id"#,
+    )
+    .bind(req.license_plate.as_deref())
+    .bind(req.model_year)
+    .bind(req.engine_cc)
+    .bind(req.purchase_price_krw)
+    .bind(req.acquired_at)
+    .bind(req.department.as_deref())
+    .bind(req.vehicle_type.as_deref())
     .bind(id)
     .bind(user.user_id)
     .fetch_optional(&state.db).await?;
@@ -971,6 +1050,9 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
                   d.fuel_efficiency_kmpl, d.fuel_type,
+                  d.license_plate, d.model_year, d.engine_cc,
+                  d.purchase_price_krw, d.acquired_at,
+                  d.department, d.vehicle_type,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,

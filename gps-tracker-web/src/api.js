@@ -200,6 +200,11 @@ export const api = {
   // null 로 clear 가능.
   setFuelInfo: (id, body) => req('PATCH', `/devices/${id}/fuel-info`, body),
 
+  // (2026-07-28) Stage-4B-1: 국세청 별지 제73호 헤더 + 우리 전용 필드.
+  // body: { license_plate, model_year, engine_cc, purchase_price_krw, acquired_at, department, vehicle_type }
+  // 모두 optional — 각 필드 null 로 clear 가능.
+  setVehicleInfo: (id, body) => req('PATCH', `/devices/${id}/vehicle-info`, body),
+
   // user profile
   getMe:           ()       => req('GET',    '/auth/me'),
   updateMe:        (patch)  => req('PATCH',  '/auth/me', patch),
