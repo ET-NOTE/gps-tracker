@@ -10,7 +10,7 @@ import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
 import { panelPropsEqual } from './shared/memoPanel';
-import { Modal, Button, SkeletonList } from './ui';
+import { Modal, Button, SkeletonList, toast } from './ui';
 import {
   useCorporateInfo, useStaff, useReservations, useDocuments,
   useCreateReservation, useUpdateReservation, useDeleteReservation,
@@ -108,7 +108,7 @@ function InfoTab() {
       });
       qc.setQueryData(qk.corporateInfo(), r);
       setLocal(r);
-      await alertDialog({ title: '저장 완료', tone: 'success', body: '운행기록부 헤더에 반영됩니다.' });
+      toast.success({ title: '저장 완료', body: '운행기록부 헤더에 반영됩니다.' });
     } catch (e) { await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' }); }
     finally { setBusy(false); }
   }
