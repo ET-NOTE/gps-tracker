@@ -9,6 +9,7 @@ import Icon from './Icon';
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
+import { Modal, Button, SkeletonList } from './ui';
 
 const PURPOSE_LABEL = {
   commute:     '출퇴근',
@@ -1520,19 +1521,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--surface)', borderRadius: 14, padding: 16,
-        width: '100%', maxWidth: 480, maxHeight: '92vh', overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 10,
-        boxSizing: 'border-box',
-      }}>
-        <div style={{ fontSize: 15, fontWeight: 800 }}>
-          {init?.id ? '예약 편집' : '새 예약'}
-        </div>
+    <Modal open onClose={onClose} size="md" title={init?.id ? '예약 편집' : '새 예약'}>
 
         <div>
           <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량</div>
@@ -1592,14 +1581,13 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
-          <button onClick={save} disabled={busy} style={{ ...st.btnPrimary, flex: 2, padding: '12px' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+          <Button onClick={onClose} disabled={busy} variant="ghost" style={{ flex: 1 }}>취소</Button>
+          <Button onClick={save} busy={busy} variant="primary" size="lg" style={{ flex: 2 }}>
             {busy ? '저장 중...' : '저장'}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

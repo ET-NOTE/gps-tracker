@@ -15,7 +15,7 @@ import { api } from '../api';
 import { alertDialog, confirmDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
-import { Modal, FormField, Button, Pill } from './ui';
+import { Modal, FormField, Button, Pill, SkeletonList } from './ui';
 
 export default function RentcarPanel({ devices }) {
   const [tab, setTab] = useState(() => localStorage.getItem('rentcar_tab') || 'fleet');
@@ -124,7 +124,7 @@ function ScheduleTab({ devices }) {
       </div>
 
       {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
-      {loading && <div style={st.muted}>계약 로딩 중...</div>}
+      {loading && !list && <SkeletonList count={3} itemHeight={80} />}
 
       <RentalCalendar ym={ym} list={list}
         onDayClick={(dateStr) => setEditing({ new: dateStr })}
@@ -344,7 +344,7 @@ function RentalsTab({ devices }) {
       </div>
 
       {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
-      {loading && !list && <div style={st.muted}>계약 로딩 중...</div>}
+      {loading && !list && <SkeletonList count={4} itemHeight={80} />}
       {list && list.length === 0 && <div style={st.muted}>계약이 없습니다.</div>}
 
       {list && list.length > 0 && (
@@ -620,12 +620,7 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
   }
 
   return (
-    <div style={st.modalBackdrop} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={st.modalWide}>
-        <div style={{ fontSize: 15, fontWeight: 800 }}>
-          {init?.id ? '계약 편집' : '새 임대 계약'}
-        </div>
-
+    <Modal open onClose={onClose} size="lg" title={init?.id ? '계약 편집' : '새 임대 계약'}>
         {/* 차량 + 상태 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="차량">
@@ -718,14 +713,13 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
         </div>
         <Labeled label="메모"><input value={note} onChange={e => setNote(e.target.value)} style={st.input} /></Labeled>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
-          <button onClick={save} disabled={busy} style={{ ...st.btnPrimary, flex: 2, padding: '12px' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+          <Button onClick={onClose} disabled={busy} variant="ghost" size="md" style={{ flex: 1 }}>취소</Button>
+          <Button onClick={save} busy={busy} variant="primary" size="lg" style={{ flex: 2 }}>
             {busy ? '저장 중...' : '저장'}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -766,14 +760,9 @@ function ReturnDialog({ contract, onClose, onDone }) {
   }
 
   return (
-    <div style={st.modalBackdrop} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ ...st.modal, maxWidth: 480 }}>
-        <div style={{ fontSize: 15, fontWeight: 800 }}>반납 처리</div>
-        <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
-          {contract.license_plate || contract.device_name} · {contract.renter_name}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+    <Modal open onClose={onClose} size="md" title="반납 처리"
+      subtitle={`${contract.license_plate || contract.device_name} · ${contract.renter_name}`}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-2)' }}>
           <Labeled label="실제 반납 시각">
             <input type="datetime-local" value={returnedAt}
               onChange={e => setReturnedAt(e.target.value)} style={st.input} />
@@ -835,14 +824,13 @@ function ReturnDialog({ contract, onClose, onDone }) {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
-          <button onClick={submit} disabled={busy} style={{ ...st.btnPrimary, flex: 2, padding: '12px' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+          <Button onClick={onClose} disabled={busy} variant="ghost" style={{ flex: 1 }}>취소</Button>
+          <Button onClick={submit} busy={busy} variant="primary" size="lg" style={{ flex: 2 }}>
             {busy ? '반납 처리 중...' : '반납 · 정산'}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1594,18 +1582,9 @@ function RenterDetailModal({ phone, onClose, onBlacklistChanged }) {
 
   const s = data?.summary;
   return (
-    <div style={st.modalBackdrop} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={st.modalWide}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 800 }}>임차인 상세</div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{phone}</div>
-          </div>
-          <button onClick={onClose} style={{ ...st.btnGhost, padding: '4px 8px' }}><Icon name="close" size={13} /></button>
-        </div>
-
+    <Modal open onClose={onClose} size="lg" title="임차인 상세" subtitle={phone}>
         {error && <div style={{ color: 'var(--danger)', fontSize: 12 }}>{error}</div>}
-        {!data && !error && <div style={st.muted}>로딩 중...</div>}
+        {!data && !error && <SkeletonList count={3} itemHeight={48} />}
         {s && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 8 }}>
@@ -1663,8 +1642,7 @@ function RenterDetailModal({ phone, onClose, onBlacklistChanged }) {
             </div>
           </>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1718,12 +1696,9 @@ function BlacklistDialog({ renter, onClose, onSaved }) {
   }
 
   return (
-    <div style={st.modalBackdrop} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={st.modal}>
-        <div style={{ fontSize: 15, fontWeight: 800 }}>블랙리스트 {already ? '수정' : '등록'}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
-          {renter.renter_name || '(이름 없음)'} · {renter.renter_phone}
-        </div>
+    <Modal open onClose={onClose} size="sm"
+      title={`블랙리스트 ${already ? '수정' : '등록'}`}
+      subtitle={`${renter.renter_name || '(이름 없음)'} · ${renter.renter_phone}`}>
         <Labeled label="사유">
           <input value={reason} onChange={e => setReason(e.target.value)}
             placeholder="예: 차량 파손 미보상 · 연체 3회"
@@ -1746,18 +1721,17 @@ function BlacklistDialog({ renter, onClose, onSaved }) {
             ))}
           </div>
         </Labeled>
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+          <Button onClick={onClose} disabled={busy} variant="ghost" style={{ flex: 1 }}>취소</Button>
           {already && (
-            <button onClick={remove} disabled={busy}
-              style={{ ...st.btnGhost, color: 'var(--danger)', flex: 1 }}>해제</button>
+            <Button onClick={remove} disabled={busy}
+              variant="ghost" style={{ color: 'var(--danger)', flex: 1 }}>해제</Button>
           )}
-          <button onClick={submit} disabled={busy} style={{ ...st.btnPrimary, flex: 2 }}>
+          <Button onClick={submit} busy={busy} variant="primary" style={{ flex: 2 }}>
             {busy ? '저장 중...' : (already ? '수정' : '등록')}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1835,20 +1809,8 @@ function PhotoGalleryModal({ contract, onClose }) {
   }, [list]);
 
   return (
-    <div style={st.modalBackdrop} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={st.modalWide}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 800 }}>계약 사진</div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
-              {contract.license_plate || contract.device_name} · {contract.renter_name}
-            </div>
-          </div>
-          <button onClick={onClose} style={{ ...st.btnGhost, padding: '4px 8px', marginLeft: 'auto' }}>
-            <Icon name="close" size={13} />
-          </button>
-        </div>
-
+    <Modal open onClose={onClose} size="lg" title="계약 사진"
+      subtitle={`${contract.license_plate || contract.device_name} · ${contract.renter_name}`}>
         <div style={{
           padding: 10, background: 'var(--surface-2)', borderRadius: 8,
           display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap',
@@ -1910,8 +1872,7 @@ function PhotoGalleryModal({ contract, onClose }) {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }
 
