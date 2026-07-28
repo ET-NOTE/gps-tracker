@@ -3,6 +3,7 @@
 //   gps.serial.kr → /ws/realtime (주 도메인)
 //   legacy /gps-tracker/ 서브패스 → /gps-tracker/ws/realtime
 import { activeStorage, tryRefresh, isTokenExpiringSoon } from './api';
+import { chatBus } from './lib/chatBus';
 
 function buildWsUrl() {
   if (!import.meta.env.PROD) return 'wss://gps.serial.kr/ws/realtime';
@@ -85,6 +86,12 @@ export class TrackerWS {
     sock.onmessage = (e) => {
       let msg;
       try { msg = JSON.parse(e.data); } catch { return; }
+      // (F7-b) chat_message 는 device 컨텍스트와 무관 — chatBus 로 직접 fan-out.
+      // ChatPanel / useChatUnread 는 chatBus.subscribe 로 즉시 반영.
+      if (msg?.type === 'chat_message') {
+        chatBus.publish(msg.message || msg);
+        return;
+      }
       // (F3) location fix 만 rAF batch — 폭주 시 프레임당 한 번 flush.
       // 상태 event (wake/sleep/rental_*) 는 즉시 dispatch (실시간성 우선).
       if (msg?.type === 'location') {

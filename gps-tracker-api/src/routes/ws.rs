@@ -25,7 +25,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 use tokio::sync::broadcast::error::RecvError;
 
-use crate::{auth::jwt, events::Event, state::AppState};
+use crate::{auth::jwt, events::{Event, EventTarget}, state::AppState};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -141,9 +141,14 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64) {
             ev = rx.recv() => {
                 match ev {
                     Ok(ev) => {
-                        let device_id = ev.device_id();
-                        let subscribed = { subs.lock().unwrap().contains(&device_id) };
-                        if !subscribed { continue; }
+                        // (F7-b) 배송 대상 판별:
+                        // Device(id) → subscribe 된 device 만
+                        // User(id)   → 이 WS 의 user_id 와 일치할 때만 (chat 등 user-scoped)
+                        let should_send = match ev.target() {
+                            EventTarget::Device(did) => subs.lock().unwrap().contains(&did),
+                            EventTarget::User(uid)   => uid == user_id,
+                        };
+                        if !should_send { continue; }
                         let payload = match serde_json::to_string(&ev) {
                             Ok(s) => s,
                             Err(_) => continue,
