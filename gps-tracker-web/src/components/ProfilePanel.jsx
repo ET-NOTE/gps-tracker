@@ -83,7 +83,8 @@ export default function ProfilePanel({ onLogout, accountType, onAccountTypeChang
       </div>
 
       <div style={tab === 'chat' ? st.bodyFill : st.body}>
-        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} />}
+        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout}
+          accountType={accountType} onAccountTypeChange={onAccountTypeChange} />}
         {tab === 'credit'  && <CreditTab />}
         {tab === 'chat'    && !isAdmin && <ChatTab onRead={() => setChatUnread(0)} />}
         {tab === 'notif'   && <NotifTab />}
@@ -95,7 +96,9 @@ export default function ProfilePanel({ onLogout, accountType, onAccountTypeChang
 }
 
 // ─── 계정 (이메일/이름/비번/탈퇴) ─────────────────────────
-function AccountTab({ me, setMe, onLogout }) {
+// (2026-07-28) accountType + onAccountTypeChange 는 ProfilePanel 이 상위 Dashboard 에서
+// 받아서 여기까지 그대로 pass-through. AccountTypeCard 에 prop 으로 내려줌.
+function AccountTab({ me, setMe, onLogout, accountType, onAccountTypeChange }) {
   const [name, setName]     = useState(me.display_name || '');
   const [savingProfile, setSavingProfile] = useState(false);
 
