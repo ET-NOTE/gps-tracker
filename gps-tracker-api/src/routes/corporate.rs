@@ -747,6 +747,10 @@ struct XlsxQuery {
     /// purpose 콤마 목록 (business|commute|other|unspecified). 미지정 = 전체.
     /// trip.annotation.purpose null 은 'unspecified' 로 취급.
     purposes: Option<String>,
+    /// (2026-07-28) Stage-4G: 부서 콤마 목록. 미지정 = 전체.
+    /// devices.department NULL/empty 은 '(부서없음)' 그룹으로 취급.
+    /// value 에 '(부서없음)' 포함 시 department IS NULL 매칭.
+    departments: Option<String>,
 }
 
 // (2026-07-28) Stage-4D: 오피넷 캐시된 유가 사용. env override 도 여전히 지원 (지역 특수가).
@@ -842,6 +846,13 @@ async fn report_xlsx(
     let purpose_filter: Option<Vec<String>> = q.purposes.as_deref().map(|s|
         s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect::<Vec<_>>())
         .filter(|v| !v.is_empty());
+    // 부서 필터. '(부서없음)' sentinel → department IS NULL 매칭.
+    let department_filter: Option<Vec<String>> = q.departments.as_deref().map(|s|
+        s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect::<Vec<_>>())
+        .filter(|v| !v.is_empty());
+    let dep_include_null = department_filter.as_ref().map_or(false, |v| v.iter().any(|d| d == "(부서없음)"));
+    let dep_names: Vec<String> = department_filter.as_ref().map_or(vec![], |v|
+        v.iter().filter(|d| d.as_str() != "(부서없음)").cloned().collect());
 
     // owner 의 device 목록 (device_id 필터 적용)
     #[derive(FromRow)]
@@ -852,14 +863,38 @@ async fn report_xlsx(
         department: Option<String>, vehicle_type: Option<String>,
         fuel_efficiency_kmpl: Option<f32>, fuel_type: Option<String>,
     }
-    let devs: Vec<DevRow> = if let Some(ref ids) = device_id_filter {
-        sqlx::query_as(
-            r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
-                      purchase_price_krw, acquired_at, department, vehicle_type,
-                      fuel_efficiency_kmpl, fuel_type
-                 FROM devices WHERE owner_id = $1 AND id = ANY($2::BIGINT[])
-                ORDER BY id"#)
-        .bind(user.user_id).bind(ids).fetch_all(&state.db).await?
+    // (Stage-4G) 부서 필터를 SQL WHERE 절로 결합 — SQL 이 복잡해지지만 필터 조합 3개 (id/부서/포함)
+    // 각각 optional 이라 conditional 하게 다뤄야 한다.
+    // 편의상 owner + department 필터로 먼저 좁힌 뒤, device_id 필터를 in-memory 로 추가 적용.
+    let mut devs: Vec<DevRow> = if department_filter.is_some() && !(dep_include_null && dep_names.is_empty()) {
+        // department 필터 있음
+        if dep_include_null && !dep_names.is_empty() {
+            sqlx::query_as(
+                r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+                          purchase_price_krw, acquired_at, department, vehicle_type,
+                          fuel_efficiency_kmpl, fuel_type
+                     FROM devices
+                    WHERE owner_id = $1 AND (department IS NULL OR department = ANY($2::TEXT[]))
+                    ORDER BY id"#)
+            .bind(user.user_id).bind(&dep_names).fetch_all(&state.db).await?
+        } else if !dep_names.is_empty() {
+            sqlx::query_as(
+                r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+                          purchase_price_krw, acquired_at, department, vehicle_type,
+                          fuel_efficiency_kmpl, fuel_type
+                     FROM devices
+                    WHERE owner_id = $1 AND department = ANY($2::TEXT[])
+                    ORDER BY id"#)
+            .bind(user.user_id).bind(&dep_names).fetch_all(&state.db).await?
+        } else {
+            sqlx::query_as(
+                r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+                          purchase_price_krw, acquired_at, department, vehicle_type,
+                          fuel_efficiency_kmpl, fuel_type
+                     FROM devices WHERE owner_id = $1 AND department IS NULL
+                    ORDER BY id"#)
+            .bind(user.user_id).fetch_all(&state.db).await?
+        }
     } else {
         sqlx::query_as(
             r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
@@ -869,6 +904,11 @@ async fn report_xlsx(
                 ORDER BY id"#)
         .bind(user.user_id).fetch_all(&state.db).await?
     };
+    // device_id 필터 in-memory 후처리 (부서 필터와 AND 조합)
+    if let Some(ref ids) = device_id_filter {
+        let set: std::collections::HashSet<i64> = ids.iter().copied().collect();
+        devs.retain(|d| set.contains(&d.id));
+    }
 
     let devices_lite: Vec<xlsx_report::DeviceLite> = devs.iter().map(|d| xlsx_report::DeviceLite {
         id: d.id, display_name: d.display_name.clone(), device_uid: d.device_uid.clone(),

@@ -1168,6 +1168,8 @@ function MonthlyReportTab({ devices, sub }) {
   const [tick, setTick] = useState(0);
   const [dlOpen, setDlOpen] = useState(false);    // (2026-07-28) Stage-4C-2 다운로드 다이얼로그
   const [fuelPrices, setFuelPrices] = useState(null);  // (2026-07-28) Stage-4D 오피넷
+  // (2026-07-28) Stage-4G 부서 필터. null = 전체. Set<string> = 선택한 부서명 (또는 '(부서없음)').
+  const [depFilter, setDepFilter] = useState(null);
 
   // 오피넷 유가 fetch — mount 시 1회. 실패해도 default 로 fallback.
   // fetch 성공 시 모듈 전역 FUEL_PRICE_KRW 갱신 → estimateFuelCost 즉시 반영.
@@ -1233,11 +1235,24 @@ function MonthlyReportTab({ devices, sub }) {
     return () => { cancelled = true; };
   }, [devices, ym, tick]);
 
-  // fleet 총계 — stat card 4개.
+  // (2026-07-28) Stage-4G 부서 목록 (rows 에서 자동 발견) + 부서 필터 적용된 row.
+  const departments = useMemo(() => {
+    if (!rows) return [];
+    const s = new Set();
+    for (const r of rows) s.add(r.department || '(부서없음)');
+    return Array.from(s).sort();
+  }, [rows]);
+  const filteredRows = useMemo(() => {
+    if (!rows || !depFilter || depFilter.size === 0) return rows;
+    return rows.filter(r => depFilter.has(r.department || '(부서없음)'));
+  }, [rows, depFilter]);
+
+  // fleet 총계 — stat card 5개. (부서 필터 적용된 filteredRows 사용)
   const totals = useMemo(() => {
-    if (!rows) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0, depreciation: 0 };
+    const use = filteredRows || rows;
+    if (!use) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0, depreciation: 0 };
     let totalKm = 0, businessKm = 0, personalKm = 0, fuelCost = 0, depreciation = 0;
-    for (const r of rows) {
+    for (const r of use) {
       totalKm    += r.totalKm;
       businessKm += r.businessKm;
       personalKm += r.personalKm;
@@ -1245,7 +1260,7 @@ function MonthlyReportTab({ devices, sub }) {
       depreciation += estimateDepreciation(r);
     }
     return { totalKm, businessKm, personalKm, fuelCost, depreciation };
-  }, [rows]);
+  }, [rows, filteredRows]);
 
   if (!sub) return <div style={st.muted}>구독 상태 로딩 중...</div>;
   if (!sub.active) {
@@ -1284,13 +1299,38 @@ function MonthlyReportTab({ devices, sub }) {
           hint="5년 정액법 × 업무비율 · 한도 800만/년" />
       </StatCardGrid>
 
+      {/* (Stage-4G) 부서 필터 chips — 부서가 2개 이상일 때만 표시 */}
+      {departments.length >= 2 && (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 700, marginRight: 4 }}>부서</span>
+          <FilterChip active={!depFilter || depFilter.size === 0} onClick={() => setDepFilter(null)}
+            label="전체" count={rows?.length ?? 0} />
+          {departments.map(dep => {
+            const cnt = (rows || []).filter(r => (r.department || '(부서없음)') === dep).length;
+            const on = depFilter?.has(dep);
+            return (
+              <FilterChip key={dep} active={on}
+                onClick={() => setDepFilter(prev => {
+                  const s = new Set(prev ?? []);
+                  if (s.has(dep)) s.delete(dep); else s.add(dep);
+                  return s.size === 0 ? null : s;
+                })}
+                label={dep} count={cnt} tone={on ? 'success' : 'default'} />
+            );
+          })}
+        </div>
+      )}
+
       {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
       {loading && !rows && <div style={st.muted}>월간 데이터 로딩 중...</div>}
       {rows && rows.length === 0 && <div style={st.muted}>차량이 없습니다.</div>}
 
       {rows && rows.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {rows.map(r => (
+          {(filteredRows || rows).length === 0 && (
+            <div style={st.muted}>선택한 부서에 차량이 없습니다.</div>
+          )}
+          {(filteredRows || rows).map(r => (
             <MonthlyDeviceRow key={r.id} row={r} onEdit={() => setEditing(r)} />
           ))}
         </div>
@@ -1300,6 +1340,12 @@ function MonthlyReportTab({ devices, sub }) {
         <FuelInfoDialog device={editing}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+      )}
+
+      {dlOpen && (
+        <DownloadDialog ym={ym} devices={devices}
+          initialDepartments={depFilter ? Array.from(depFilter) : null}
+          onClose={() => setDlOpen(false)} />
       )}
     </div>
   );
@@ -1349,13 +1395,21 @@ const PURPOSE_ALL = [
   { id: 'unspecified', label: '미지정' },
 ];
 
-function DownloadDialog({ ym, devices, onClose }) {
+function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
   const [kind, setKind] = useState('nts');
   // null = 전체. Set<number> = 선택 차량 id.
   const [selectedDevs, setSelectedDevs] = useState(null);
   // null = 전체. Set<string> = 선택 목적.
   const [selectedPurps, setSelectedPurps] = useState(null);
+  // null = 전체. Set<string> = 선택 부서. (Stage-4G, MonthlyReport 부서 필터 초기값 승계)
+  const [selectedDeps, setSelectedDeps] = useState(initialDepartments ? new Set(initialDepartments) : null);
   const [busy, setBusy] = useState(false);
+
+  const departmentOptions = useMemo(() => {
+    const s = new Set();
+    for (const d of devices || []) s.add(d.department || '(부서없음)');
+    return Array.from(s).sort();
+  }, [devices]);
 
   const allDevIds = useMemo(() => new Set((devices || []).map(d => d.id)), [devices]);
   const isAllDev = !selectedDevs || selectedDevs.size === allDevIds.size;
@@ -1382,6 +1436,9 @@ function DownloadDialog({ ym, devices, onClose }) {
       if (selectedDevs && !isAllDev) params.device_ids = Array.from(selectedDevs);
       if (selectedPurps && selectedPurps.size > 0 && selectedPurps.size < PURPOSE_ALL.length) {
         params.purposes = Array.from(selectedPurps);
+      }
+      if (selectedDeps && selectedDeps.size > 0 && selectedDeps.size < departmentOptions.length) {
+        params.departments = Array.from(selectedDeps);
       }
       const { blob, filename } = await api.reportXlsx(params);
       const url = URL.createObjectURL(blob);
@@ -1489,6 +1546,46 @@ function DownloadDialog({ ym, devices, onClose }) {
             </span>
           </div>
         </FieldSection>
+
+        {/* (Stage-4G) 부서 — 부서 옵션이 2개 이상일 때만 표시 */}
+        {departmentOptions.length >= 2 && (
+          <FieldSection label="부서" trailing={
+            <button onClick={() => setSelectedDeps(prev => prev == null ? new Set() : null)}
+              style={{ ...st.btnGhost, fontSize: 11 }}>
+              {selectedDeps == null ? '개별 선택' : '전체'}
+            </button>
+          }>
+            {selectedDeps == null ? (
+              <div style={{
+                padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8,
+                fontSize: 12, color: 'var(--text-2)',
+              }}>
+                전체 {departmentOptions.length}개 부서
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 4 }}>
+                {departmentOptions.map(dep => {
+                  const on = selectedDeps?.has(dep);
+                  return (
+                    <label key={dep} style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                      background: on ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--surface-2)',
+                      fontSize: 12, fontWeight: 600,
+                    }}>
+                      <input type="checkbox" checked={!!on} onChange={() => setSelectedDeps(prev => {
+                        const s = new Set(prev ?? []);
+                        if (s.has(dep)) s.delete(dep); else s.add(dep);
+                        return s;
+                      })} />
+                      {dep}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </FieldSection>
+        )}
 
         {/* 운행목적 */}
         <FieldSection label="운행목적" trailing={

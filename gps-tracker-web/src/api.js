@@ -474,6 +474,7 @@ export const api = {
     if (params.month) q.set('month', params.month);
     if (params.device_ids?.length) q.set('device_ids', params.device_ids.join(','));
     if (params.purposes?.length)   q.set('purposes',   params.purposes.join(','));
+    if (params.departments?.length) q.set('departments', params.departments.join(','));
     const tok = localStorage.getItem('access_token');
     const res = await fetch(`${BASE}/corporate/report.xlsx?${q.toString()}`, {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
