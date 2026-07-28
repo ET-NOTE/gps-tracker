@@ -1393,16 +1393,29 @@ function ReservationCard({ r, onEdit, onDelete }) {
   const end   = new Date(r.ends_at);
   const fmtDT = d => d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   const sameDay = start.toDateString() === end.toDateString();
+  // (2026-07-28) Stage-4H-1: 임박 표시 — planned status 이고 시작까지 60min 이내.
+  const minsUntilStart = Math.round((start.getTime() - Date.now()) / 60_000);
+  const isImminent = r.status === 'planned' && minsUntilStart >= 0 && minsUntilStart <= 60;
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 8,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{
           fontSize: 10, padding: '3px 8px', borderRadius: 999,
           background: s.bg, color: s.color, fontWeight: 700,
         }}>{s.label}</span>
+        {isImminent && (
+          <span style={{
+            fontSize: 10, padding: '3px 8px', borderRadius: 999,
+            background: 'color-mix(in srgb, var(--warning) 20%, transparent)',
+            color: 'var(--warning)', fontWeight: 800,
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+          }} title={`${minsUntilStart}분 후 시작 — 백엔드 워커가 30분 전 FCM 알림 발송`}>
+            🔔 {minsUntilStart === 0 ? '지금' : `${minsUntilStart}분 후`}
+          </span>
+        )}
         <span style={{ fontWeight: 700, fontSize: 14 }}>
           {r.license_plate || r.device_name || `#${r.device_id}`}
         </span>

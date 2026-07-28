@@ -12,3 +12,4 @@ pub mod stats;
 pub mod toss;
 pub mod xlsx_report;
 pub mod opinet;
+pub mod reservation_alerts;
