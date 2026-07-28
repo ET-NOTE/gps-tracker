@@ -100,6 +100,16 @@ export function useReservations(params = {}, opts = {}) {
   });
 }
 
+// (F6-b) Fleet 단위 trip aggregate — devices.map(listTrips) N+1 대체.
+export function useFleetTripStats(params = {}, opts = {}) {
+  return useQuery({
+    queryKey: qk.fleetTripStats(params),
+    queryFn: () => api.fleetTripStats(params),
+    staleTime: 60_000,   // 1분 — 요약 지표라 자주 안 바뀜
+    ...opts,
+  });
+}
+
 export function useDocuments(deviceId, opts = {}) {
   return useQuery({
     queryKey: qk.documents(deviceId),

@@ -42,6 +42,8 @@ pub fn router() -> Router<AppState> {
         .route("/corporate/devices/:id/trips.csv",            get(trips_csv))
         // (2026-07-28) Stage-4B-2: 월간 운행기록부 XLSX. type=nts|ours, month=YYYY-MM.
         .route("/corporate/report.xlsx",                      get(report_xlsx))
+        // (2026-07-28 F6-b) Fleet 단위 aggregate — 100대 devices.map(listTrips) N+1 해소.
+        .route("/corporate/fleet/trip-stats",                 get(list_fleet_trip_stats))
         // (2026-07-28) Stage-4D: 현재 캐시된 오피넷 유가 (프론트 badge 용).
         .route("/corporate/fuel-prices",                      get(get_fuel_prices))
         // (2026-07-28) Stage-4F-1: 차량 예약 CRUD.
@@ -844,6 +846,95 @@ async fn get_fuel_prices(
     // 캐시 없거나 stale 이면 refetch 시도 (실패해도 fallback 반환).
     let prices = state.opinet.get_or_fetch().await;
     Ok(Json(prices))
+}
+
+// (2026-07-28 F6-b) Fleet 단위 trip aggregate.
+// 이전: frontend 가 useFleetStats(devices) 에서 devices.map(d => listTrips(d.id))
+//       → 100대 사용자 = 100 HTTP 요청 매 poll. Corporate report 도 동일.
+// 이제: 한 번에 user 소유 device 전체 aggregate 를 서버가 계산.
+//
+// endpoint: GET /corporate/fleet/trip-stats?from=&to=
+// 기본 창: 이번 달 (from 미제공 시 이번달 1일, to 미제공 시 이번달 말).
+//
+// 서버측도 여전히 devices loop 로 compute_trips_inner 반복 (raw SQL aggregate 는 별도
+// 최적화 라운드) — 그러나 network round trip 이 N → 1 로 감소, browser main-thread
+// blocking 크게 완화.
+#[derive(Debug, serde::Serialize)]
+struct FleetTripStat {
+    device_id:       i64,
+    display_name:    Option<String>,
+    license_plate:   Option<String>,
+    trip_count:      i64,
+    total_distance_m: f64,
+    business_m:      f64,
+    personal_m:      f64,
+    // 오늘 (KST) 안 거리 — todayKm 계산용
+    today_distance_m: f64,
+}
+
+#[derive(Debug, serde::Serialize)]
+struct FleetTripStatsResponse {
+    from: DateTime<Utc>,
+    to:   DateTime<Utc>,
+    per_device: Vec<FleetTripStat>,
+}
+
+async fn list_fleet_trip_stats(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Query(q): Query<TripQuery>,
+) -> AppResult<Json<FleetTripStatsResponse>> {
+    let (from, to) = parse_range(&q)?;
+    // user 소유 devices 조회 — id/name/plate 최소.
+    #[derive(sqlx::FromRow)]
+    struct DevLite { id: i64, display_name: Option<String>, license_plate: Option<String> }
+    let devices: Vec<DevLite> = sqlx::query_as(
+        "SELECT id, display_name, license_plate FROM devices WHERE owner_id = $1 ORDER BY id"
+    ).bind(user.user_id).fetch_all(&state.db).await?;
+
+    // KST 오늘 00:00 UTC 로 환산 (Asia/Seoul UTC+9)
+    let today_kst_start = {
+        let now = Utc::now();
+        let kst_now = now + chrono::Duration::hours(9);
+        let kst_date = kst_now.date_naive();
+        let kst_midnight = kst_date.and_hms_opt(0, 0, 0).unwrap();
+        // KST 자정 → UTC = -9h
+        chrono::DateTime::<Utc>::from_naive_utc_and_offset(kst_midnight, Utc) - chrono::Duration::hours(9)
+    };
+
+    let mut out = Vec::with_capacity(devices.len());
+    for d in &devices {
+        // compute_trips_inner 는 병합 기본값 (10분) 사용. trip aggregation 과 일치.
+        let trips = compute_trips_inner(&state, user.user_id, d.id, from, to).await
+            .unwrap_or_default();
+        let mut trip_count = 0i64;
+        let mut total_m = 0.0;
+        let mut biz_m = 0.0;
+        let mut per_m = 0.0;
+        let mut today_m = 0.0;
+        for t in &trips {
+            if t.start_lat.is_none() && t.end_lat.is_none() { continue; }   // 좌표 전무 skip
+            trip_count += 1;
+            total_m += t.distance_m;
+            let purpose = t.annotation.as_ref()
+                .map(|a| a.purpose.clone()).unwrap_or_else(|| "unspecified".into());
+            if purpose == "business" { biz_m += t.distance_m; }
+            else                     { per_m += t.distance_m; }
+            if t.started_at >= today_kst_start { today_m += t.distance_m; }
+        }
+        out.push(FleetTripStat {
+            device_id: d.id,
+            display_name: d.display_name.clone(),
+            license_plate: d.license_plate.clone(),
+            trip_count,
+            total_distance_m: total_m,
+            business_m: biz_m,
+            personal_m: per_m,
+            today_distance_m: today_m,
+        });
+    }
+
+    Ok(Json(FleetTripStatsResponse { from, to, per_device: out }))
 }
 
 async fn report_xlsx(
