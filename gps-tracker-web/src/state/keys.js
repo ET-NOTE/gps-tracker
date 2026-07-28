@@ -24,6 +24,7 @@ export const qk = {
   staff:         () => ['staff'],
   reservations:  (params = {}) => ['reservations', params],
   trips:         (deviceId, params = {}) => ['trips', deviceId, params],
+  fleetTripStats:(params = {}) => ['fleet-trip-stats', params],
 
   // ── rentcar ──
   rentals:        (params = {}) => ['rentals', params],

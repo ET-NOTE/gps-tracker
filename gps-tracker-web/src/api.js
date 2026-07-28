@@ -455,6 +455,16 @@ export const api = {
     const qs = q.toString();
     return req('GET', `/corporate/devices/${deviceId}/trips${qs ? '?' + qs : ''}`);
   },
+  // (2026-07-28 F6-b) Fleet 단위 trip aggregate — 100대 devices.map(listTrips) N+1 해소.
+  // 반환: { from, to, per_device: [{ device_id, trip_count, total_distance_m, business_m,
+  //                                  personal_m, today_distance_m, ... }] }
+  fleetTripStats: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.from) q.set('from', params.from);
+    if (params.to)   q.set('to',   params.to);
+    const qs = q.toString();
+    return req('GET', `/corporate/fleet/trip-stats${qs ? '?' + qs : ''}`);
+  },
   upsertTripAnnotation:  (deviceId, body) =>
     req('PATCH', `/corporate/devices/${deviceId}/trips/annotation`, body),
   // CSV 다운로드 URL (브라우저가 직접 GET — 인증 헤더 필요해서 fetch 후 blob)
