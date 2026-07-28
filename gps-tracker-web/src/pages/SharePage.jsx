@@ -37,6 +37,10 @@ export default function SharePage({ token }) {
   const iwRef        = useRef(null); // InfoWindow (한 개만 공유)
   const geocoderRef  = useRef(null);
   const fitOnceRef   = useRef(false);
+  // (F3-b) 30s poll 마다 drawPath 가 poly/dot 를 clear+rebuild 하던 문제 fix.
+  // fingerprint (개수 + 첫/끝 timestamp) 로 좌표 집합 변경 여부 판단, 같으면 skip.
+  // 라이브 모드에서 새 fix 없으면 poll → skip, 있으면 rebuild.
+  const pathFpRef    = useRef('');
 
   const rangeHours = RANGE_OPTIONS.find(r => r.id === rangeId)?.hours || 24;
 
@@ -136,13 +140,21 @@ export default function SharePage({ token }) {
   // path/마커 헬퍼 — raw kakao 호출.
   function drawPath(pts) {
     if (!mapRef.current || !window.kakao?.maps) return;
+    // (F3-b) fingerprint 비교 — 좌표 집합 변경 없으면 rebuild skip.
+    const list = pts || [];
+    const fp = list.length === 0 ? '' :
+      `${list.length}|${list[0]?.recorded_at || ''}|${list[list.length-1]?.recorded_at || ''}`;
+    if (fp === pathFpRef.current && (polyRef.current || dotsRef.current.length > 0)) {
+      return; // 30s poll 등에서 새 fix 없음 — 기존 poly/dot 재사용.
+    }
+    pathFpRef.current = fp;
+
     polyRef.current?.setMap(null);
     polyRef.current = null;
     dotsRef.current.forEach(m => m.setMap(null));
     dotsRef.current = [];
 
     const color = view?.device_color || '#5B7CFF';
-    const list  = pts || [];
     const path  = list.slice().reverse()
       .map(p => new window.kakao.maps.LatLng(p.lat, p.lng));
     if (path.length >= 2) {
@@ -178,6 +190,7 @@ export default function SharePage({ token }) {
     dotsRef.current.forEach(m => m.setMap(null));
     dotsRef.current = [];
     iwRef.current?.close();
+    pathFpRef.current = '';   // (F3-b) clear 후 다음 draw 는 정상 rebuild
   }
 
   // 점 클릭 시 — 즉시 시각·좌표 표기 후 비동기 주소 추가.
