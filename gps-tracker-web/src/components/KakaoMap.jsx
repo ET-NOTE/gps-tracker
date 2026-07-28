@@ -296,6 +296,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const iwReqIdRef   = useRef(0);    // InfoWindow 비동기 갱신용 시퀀스
   const seekerRef    = useRef({ poly: [], pts: [], cursor: null });   // history seeker 임시 렌더링
   const seekerPinRef = useRef(null);   // 시커 슬롯 선택 표시용 단일 핀 마커
+  // (F4-a) MarkerClusterer — 수백 대 밀집 시 marker 겹침·클릭 방해 해소.
+  // 메인 device pin (updateMarker) 만 cluster. history dot / arrow / cursor / seeker path 는 제외.
+  // minLevel 5+ (약 500m~수십km 시야) 에서 활성. 그 아래는 개별 marker.
+  // SDK 는 kakaoloader 시점에 clusterer library 이미 로드됨 (script src `libraries=…,clusterer`).
+  const clustererRef = useRef(null);
 
   useEffect(() => { onRoadviewRef.current = onRoadview; }, [onRoadview]);
   useEffect(() => { onPointInfoRef.current = onPointInfo; }, [onPointInfo]);
@@ -356,6 +361,20 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           // 툴팁이 다른 마커(zIndex 1~99) 에 가리지 않게 충분히 높게.
           zIndex: 10000,
         });
+        // (F4-a) MarkerClusterer — 활성 조건 (minLevel) 이상에서 자동으로 marker 그룹핑.
+        // gridSize 60px, averageCenter (중심점 = 소속 marker 평균 위치), disableClickZoom X
+        // (클릭 시 자동 zoom-in). minLevel 5 ≈ 500m 시야 — 그 아래는 개별 marker.
+        if (window.kakao.maps.MarkerClusterer) {
+          clustererRef.current = new window.kakao.maps.MarkerClusterer({
+            map: mapRef.current,
+            averageCenter: true,
+            minLevel: 5,
+            gridSize: 60,
+            disableClickZoom: false,
+          });
+        } else if (typeof console !== 'undefined') {
+          console.warn('kakao MarkerClusterer 라이브러리 미로드 — clustering 비활성');
+        }
         // 줌 변경 — 라인 두께 + dot 마커 이미지 재계산.
         window.kakao.maps.event.addListener(mapRef.current, 'zoom_changed', () => {
           const lvl = mapRef.current.getLevel();
@@ -530,8 +549,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         e.label = label;
       } else {
         // seeker 모드거나 필터와 불일치면 map:null 로 생성 — state 는 유지, 렌더만 억제.
+        // (F4-a) clusterer 사용 시엔 개별 marker 의 map 은 null 두고 clusterer 가 관리.
+        //         visible=true 인 marker 만 clusterer 에 추가.
+        const visible = isLiveVisible(deviceId);
+        const useCluster = !!clustererRef.current;
         const marker = new window.kakao.maps.Marker({
-          map: isLiveVisible(deviceId) ? mapRef.current : null,
+          map: (useCluster || !visible) ? null : mapRef.current,
           position: pos,
           title: label,
           image: pinImage(color || '#5B7CFF'),
@@ -556,6 +579,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           }
         });
         markersRef.current[deviceId] = { marker, color, meta, label };
+        if (useCluster && visible) clustererRef.current.addMarker(marker);
       }
 
       // ── trail polyline (segment + gap 분리) ─────────────────────────
@@ -751,12 +775,22 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     setSeekerMode(active) {
       if (!mapRef.current) return;
       seekerModeRef.current = !!active;
+      const useCluster = !!clustererRef.current;
       const applyMain = (deviceId) => {
         const f = currentFilterIdRef.current;
         return !seekerModeRef.current && (f == null || +f === +deviceId) ? mapRef.current : null;
       };
+      // (F4-a) clusterer 사용 시 main pin 은 clusterer 가 관리 — direct setMap 대신
+      //         addMarker/removeMarker 로 토글. visible=null 이면 remove, else add.
       Object.entries(markersRef.current).forEach(([id, { marker }]) => {
-        marker.setMap(applyMain(id));
+        const visible = applyMain(id) != null;
+        if (useCluster) {
+          if (visible) clustererRef.current.addMarker(marker);
+          else         clustererRef.current.removeMarker(marker);
+          marker.setMap(null);  // clusterer 가 알아서 그림
+        } else {
+          marker.setMap(visible ? mapRef.current : null);
+        }
       });
       Object.entries(pointsRef.current).forEach(([id, arr]) => {
         const m = applyMain(id);
@@ -828,8 +862,17 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         return;
       }
       const all = mapRef.current;
+      // (F4-a) clusterer 있으면 addMarker/removeMarker 로 필터, marker.setMap 은 null.
+      const useCluster = !!clustererRef.current;
       Object.entries(markersRef.current).forEach(([id, { marker }]) => {
-        marker.setMap((targetId === null || +id === targetId) ? all : null);
+        const visible = (targetId === null || +id === targetId);
+        if (useCluster) {
+          if (visible) clustererRef.current.addMarker(marker);
+          else         clustererRef.current.removeMarker(marker);
+          marker.setMap(null);
+        } else {
+          marker.setMap(visible ? all : null);
+        }
       });
       Object.entries(polyRef.current).forEach(([id, entry]) => {
         const vis = (targetId === null || +id === targetId);
@@ -1204,6 +1247,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     removeMarker(deviceId) {
       const entry = markersRef.current[deviceId];
       if (entry) {
+        // (F4-a) clusterer 에서 먼저 빼고 map:null (순서 반대면 clusterer 가 dead marker 참조).
+        if (clustererRef.current) clustererRef.current.removeMarker(entry.marker);
         entry.marker.setMap(null);
         delete markersRef.current[deviceId];
       }
