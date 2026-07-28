@@ -1,6 +1,7 @@
 // 사용자 ↔ 관리자 채팅 (사용자 측). 5초 폴링, after_id 로 incremental fetch.
 // onRead: unread 가 0 으로 마킹되면 부모 뱃지 갱신.
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import Icon from './Icon';
 
@@ -12,6 +13,9 @@ export default function ChatPanel({ onRead }) {
   const [busy,     setBusy]     = useState(false);
   const lastIdRef = useRef(0);
   const scrollRef = useRef(null);
+  const qc = useQueryClient();
+  // (F2-c) unread 캐시 갱신 helper — ProfilePanel 뱃지 자동 반영.
+  const markUnreadZero = () => qc.setQueryData(['chat-unread'], 0);
 
   async function loadInitial() {
     try {
@@ -19,7 +23,7 @@ export default function ChatPanel({ onRead }) {
       setMessages(list || []);
       if (list && list.length > 0) lastIdRef.current = list[list.length - 1].id;
       // 사용자가 패널을 열었으니 read 처리
-      try { await api.chatMarkReadUser(); } catch {}
+      try { await api.chatMarkReadUser(); markUnreadZero(); } catch {}
       onRead?.();
     } catch (e) { console.error(e); }
   }
@@ -31,7 +35,7 @@ export default function ChatPanel({ onRead }) {
         setMessages(prev => [...prev, ...list]);
         lastIdRef.current = list[list.length - 1].id;
         // admin 메시지 들어왔으면 read 처리
-        try { await api.chatMarkReadUser(); } catch {}
+        try { await api.chatMarkReadUser(); markUnreadZero(); } catch {}
         onRead?.();
       }
     } catch { /* noop */ }

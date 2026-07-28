@@ -72,6 +72,125 @@ export function useDevices(opts = {}) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Corporate (법인차 · 예약 · 직원 · 문서)
+// ═══════════════════════════════════════════════════════════
+
+export function useCorporateInfo(opts = {}) {
+  return useQuery({
+    queryKey: qk.corporateInfo(),
+    queryFn: () => api.getCorporateInfo(),
+    staleTime: 5 * 60_000,
+    ...opts,
+  });
+}
+
+export function useStaff(opts = {}) {
+  return useQuery({
+    queryKey: qk.staff(),
+    queryFn: () => api.listStaff(),
+    ...opts,
+  });
+}
+
+export function useReservations(params = {}, opts = {}) {
+  return useQuery({
+    queryKey: qk.reservations(params),
+    queryFn: () => api.listReservations(params),
+    ...opts,
+  });
+}
+
+export function useDocuments(deviceId, opts = {}) {
+  return useQuery({
+    queryKey: qk.documents(deviceId),
+    queryFn: () => api.listDocuments(deviceId),
+    enabled: !!deviceId,
+    ...opts,
+  });
+}
+
+// Reservation mutations
+export function useCreateReservation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body) => api.createReservation(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.reservations() }),
+  });
+}
+export function useUpdateReservation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }) => api.updateReservation(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.reservations() }),
+  });
+}
+export function useDeleteReservation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.deleteReservation(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.reservations() }),
+  });
+}
+
+// Staff mutations
+export function useCreateStaff() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body) => api.createStaff(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.staff() }),
+  });
+}
+export function useUpdateStaff() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }) => api.updateStaff(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.staff() }),
+  });
+}
+export function useRemoveStaff() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.removeStaff(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.staff() }),
+  });
+}
+
+// Documents mutations
+export function useUploadDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ deviceId, body }) => api.uploadDocument(deviceId, body),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: qk.documents(vars.deviceId) }),
+  });
+}
+export function useDeleteDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }) => api.deleteDocument(id),
+    onSuccess: (_data, vars) => {
+      if (vars.deviceId != null) qc.invalidateQueries({ queryKey: qk.documents(vars.deviceId) });
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Chat unread — ChatPanel + ProfilePanel 중복 폴링 통합.
+// ═══════════════════════════════════════════════════════════
+export function useChatUnread(enabled = true) {
+  return useQuery({
+    queryKey: ['chat-unread'],
+    queryFn: async () => {
+      const t = await api.chatMyThread();
+      return t?.unread_for_user || 0;
+    },
+    staleTime: 5_000,
+    refetchInterval: 10_000,
+    enabled,
+    // 캐시된 값 사용 — 두 구독자가 각자 fetch 하지 않음
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
 // Rentcar
 // ═══════════════════════════════════════════════════════════
 

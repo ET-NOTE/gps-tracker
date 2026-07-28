@@ -10,6 +10,13 @@ import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
 import { Modal, Button, SkeletonList } from './ui';
+import {
+  useCorporateInfo, useStaff, useReservations, useDocuments,
+  useCreateReservation, useUpdateReservation, useDeleteReservation,
+  useCreateStaff, useUpdateStaff, useRemoveStaff,
+  useUploadDocument, useDeleteDocument, qk,
+} from '../state';
+import { useQueryClient } from '@tanstack/react-query';
 
 const PURPOSE_LABEL = {
   commute:     '출퇴근',
@@ -77,10 +84,14 @@ export default function CorporatePanel({ devices }) {
 // 국세청 양식 (별지 제73호 서식) 헤더 필수: 사업자번호 · 상호 · 대표자.
 // ════════════════════════════════════════════════════════
 function InfoTab() {
-  const [info, setInfo] = useState(null);
+  // (F2-c) useCorporateInfo hook. setInfo(local) 는 캐시로 optimistic.
+  const { data: serverInfo } = useCorporateInfo();
+  const qc = useQueryClient();
+  const [local, setLocal] = useState(null);
+  // 서버 값이 들어오면 local 초기화 (편집 중이 아닐 때만)
+  useEffect(() => { if (serverInfo && !local) setLocal(serverInfo); }, [serverInfo, local]);
+  const info = local || serverInfo;
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => { api.getCorporateInfo().then(setInfo).catch(() => {}); }, []);
 
   async function save() {
     setBusy(true);
@@ -91,14 +102,15 @@ function InfoTab() {
         address:         info.address         || null,
         representative:  info.representative   || null,
       });
-      setInfo(r);
+      qc.setQueryData(qk.corporateInfo(), r);
+      setLocal(r);
       await alertDialog({ title: '저장 완료', tone: 'success', body: '운행기록부 헤더에 반영됩니다.' });
     } catch (e) { await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' }); }
     finally { setBusy(false); }
   }
 
   if (!info) return <div style={st.muted}>로딩...</div>;
-  const set = (k, v) => setInfo(prev => ({ ...prev, [k]: v }));
+  const set = (k, v) => setLocal(prev => ({ ...(prev || info), [k]: v }));
   const required = ['business_number', 'company_name', 'representative'];
   const missing = required.filter(k => !info[k]);
   const complete = missing.length === 0;
@@ -188,34 +200,29 @@ function TrendyField({ label, required, value, onChange, placeholder }) {
 // 직원 — 운전자 후보. (2026-07-28 재디자인 — 카드형 + stat + 검색 + 접힘 폼)
 // ════════════════════════════════════════════════════════
 function StaffTab() {
-  const [list, setList] = useState(null);
+  // (F2-c) useStaff hook + mutations. load() 불필요 — mutation onSuccess 이 자동 invalidate.
+  const { data: list } = useStaff();
+  const createMut = useCreateStaff();
+  const updateMut = useUpdateStaff();
+  const removeMut = useRemoveStaff();
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function load() {
-    try { setList(await api.listStaff()); } catch {}
-  }
-  useEffect(() => { load(); }, []);
+  const busy = createMut.isPending || updateMut.isPending || removeMut.isPending;
 
   async function add() {
     if (!name.trim()) return;
-    setBusy(true);
     try {
-      await api.createStaff({ name: name.trim(), role: role || null, phone: phone || null });
+      await createMut.mutateAsync({ name: name.trim(), role: role || null, phone: phone || null });
       setName(''); setRole(''); setPhone(''); setAdding(false);
-      load();
     } catch (e) { await alertDialog({ title: '실패', body: e.message, tone: 'danger' }); }
-    finally { setBusy(false); }
   }
 
   async function toggle(s) {
     try {
-      await api.updateStaff(s.id, { name: s.name, role: s.role, phone: s.phone, active: !s.active });
-      load();
+      await updateMut.mutateAsync({ id: s.id, body: { name: s.name, role: s.role, phone: s.phone, active: !s.active } });
     } catch (e) { await alertDialog({ title: '실패', body: e.message, tone: 'danger' }); }
   }
 
@@ -226,7 +233,7 @@ function StaffTab() {
       danger: true,
     });
     if (!ok) return;
-    try { await api.removeStaff(s.id); load(); }
+    try { await removeMut.mutateAsync(s.id); }
     catch (e) { await alertDialog({ title: '실패', body: e.message, tone: 'danger' }); }
   }
 
@@ -384,8 +391,6 @@ function ReportTab({ devices, sub, onSubChange }) {
   const [from, setFrom] = useState(monthAgo);
   const [to,   setTo]   = useState(today);
   const [trips, setTrips] = useState(null);
-  const [staff, setStaff] = useState([]);
-  const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);   // 편집 중인 trip {trip, deviceId}
@@ -396,11 +401,10 @@ function ReportTab({ devices, sub, onSubChange }) {
   const [minHours,      setMinHours]      = useState('');
 
   const device = devices.find(d => d.id === deviceId);
-
-  useEffect(() => {
-    api.listStaff().then(s => setStaff((s || []).filter(x => x.active))).catch(() => {});
-    api.getCorporateInfo().then(setInfo).catch(() => {});
-  }, []);
+  // (F2-c) 훅으로 이전. staff active-filter 는 로컬.
+  const { data: staffAll } = useStaff();
+  const staff = useMemo(() => (staffAll || []).filter(x => x.active), [staffAll]);
+  const { data: info } = useCorporateInfo();
 
   async function load() {
     if (!deviceId) return;
@@ -1141,32 +1145,25 @@ const RESV_STATUS = {
 };
 
 function ReservationsTab({ devices }) {
-  const [list, setList] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');   // active | all | completed | cancelled
   const [editing, setEditing] = useState(null);   // null | 'new' | {id, ...} | {new: 'YYYY-MM-DD'}
-  const [staff, setStaff] = useState([]);
-  const [tick, setTick] = useState(0);
   // (2026-07-28) Stage-4F-2: 뷰 모드 (리스트 / 캘린더).
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('resv_view') || 'list');
   const setViewPersist = (v) => { setViewMode(v); try { localStorage.setItem('resv_view', v); } catch {} };
-  // 캘린더는 표시 월 별도. 리스트는 최근/향후 range 로.
   const [calYm, setCalYm] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  useEffect(() => {
-    api.listStaff().then(s => setStaff((s || []).filter(x => x.active))).catch(() => {});
-  }, []);
+  // (F2-c) useStaff hook — active 만 필터.
+  const { data: staffAll } = useStaff();
+  const staff = useMemo(() => (staffAll || []).filter(x => x.active), [staffAll]);
+  const deleteResvMut = useDeleteReservation();
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true); setError(null);
+  // (F2-c) useReservations hook — params key 안정화.
+  const resvParams = useMemo(() => {
     let from, to;
     if (viewMode === 'calendar') {
-      // 표시 월 ± 1주 (그리드에 걸치는 인접 월 데이터도 포함)
       const [y, m] = calYm.split('-').map(Number);
       const start = new Date(y, m - 1, 1);
       const end   = new Date(y, m, 1);
@@ -1179,16 +1176,13 @@ function ReservationsTab({ devices }) {
     }
     const params = { from, to };
     if (viewMode !== 'calendar') {
-      // 캘린더는 모든 status 를 색으로 구분해 보여줌 → filter 는 리스트뷰에서만.
       if (statusFilter === 'active') params.status = ['planned', 'in_progress'];
       else if (statusFilter !== 'all') params.status = [statusFilter];
     }
-    api.listReservations(params).then(rs => {
-      if (cancelled) return;
-      setList(rs || []); setLoading(false);
-    }).catch(e => { if (!cancelled) { setError(e.message); setLoading(false); } });
-    return () => { cancelled = true; };
-  }, [statusFilter, tick, viewMode, calYm]);
+    return params;
+  }, [statusFilter, viewMode, calYm]);
+  const { data: list, isLoading: loading, error: qError } = useReservations(resvParams);
+  const error = qError?.message || null;
 
   const activeCount    = (list || []).filter(r => r.status === 'planned' || r.status === 'in_progress').length;
   const completedCount = (list || []).filter(r => r.status === 'completed').length;
@@ -1232,7 +1226,7 @@ function ReservationsTab({ devices }) {
       </div>
 
       {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
-      {loading && !list && <div style={st.muted}>예약 로딩 중...</div>}
+      {loading && !list && <SkeletonList count={3} itemHeight={80} />}
       {list && list.length === 0 && viewMode === 'list' && <div style={st.muted}>예약이 없습니다.</div>}
 
       {viewMode === 'list' && list && list.length > 0 && (
@@ -1242,7 +1236,7 @@ function ReservationsTab({ devices }) {
               onDelete={async () => {
                 const ok = await confirmDialog({ title: '예약 삭제', body: '삭제하시겠습니까? (되돌릴 수 없음)', danger: true });
                 if (!ok) return;
-                try { await api.deleteReservation(r.id); setTick(t => t + 1); }
+                try { await deleteResvMut.mutateAsync(r.id); }
                 catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
               }} />
           ))}
@@ -1259,7 +1253,7 @@ function ReservationsTab({ devices }) {
         <ReservationDialog init={editing === 'new' ? null : editing} devices={devices} staff={staff}
           presetDate={editing?.new || null}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+          onSaved={() => setEditing(null)} />
       )}
     </div>
   );
@@ -1496,7 +1490,10 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
   const [purpose,  setPurpose]  = useState(init?.purpose ?? '');
   const [note,     setNote]     = useState(init?.note ?? '');
   const [status,   setStatus]   = useState(init?.status ?? 'planned');
-  const [busy, setBusy] = useState(false);
+  // (F2-c) mutations — 성공 시 자동 invalidate.
+  const createMut = useCreateReservation();
+  const updateMut = useUpdateReservation();
+  const busy = createMut.isPending || updateMut.isPending;
 
   async function save() {
     if (!deviceId) { alertDialog({ title: '차량 선택 필요', body: '', tone: 'danger' }); return; }
@@ -1510,14 +1507,13 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
       note:            note.trim() || null,
       status,
     };
-    setBusy(true);
     try {
-      if (init?.id) await api.updateReservation(init.id, body);
-      else          await api.createReservation(body);
+      if (init?.id) await updateMut.mutateAsync({ id: init.id, body });
+      else          await createMut.mutateAsync(body);
       onSaved();
     } catch (e) {
       alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
-    } finally { setBusy(false); }
+    }
   }
 
   return (
@@ -2459,18 +2455,15 @@ const DOC_KIND_LABEL = {
 };
 
 function DocumentsSection({ deviceId }) {
-  const [docs, setDocs] = useState(null);
-  const [busy, setBusy] = useState(false);
+  // (F2-c) useDocuments hook + upload/delete mutations. load() 제거.
+  const { data: docs } = useDocuments(deviceId);
+  const uploadMut = useUploadDocument();
+  const deleteMut = useDeleteDocument();
   const [kind, setKind] = useState('registration');
   const [note, setNote] = useState('');
   const [preview, setPreview] = useState(null);   // { doc, url, mime } | null
   const fileRef = useRef(null);
-
-  async function load() {
-    try { setDocs(await api.listDocuments(deviceId)); }
-    catch { setDocs([]); }
-  }
-  useEffect(() => { load(); }, [deviceId]);   // eslint-disable-line
+  const busy = uploadMut.isPending || deleteMut.isPending;
 
   async function upload(e) {
     const file = e.target.files?.[0];
@@ -2480,14 +2473,12 @@ function DocumentsSection({ deviceId }) {
       e.target.value = '';
       return;
     }
-    setBusy(true);
     try {
-      await api.uploadDocument(deviceId, { file, kind, note: note.trim() || null });
+      await uploadMut.mutateAsync({ deviceId, body: { file, kind, note: note.trim() || null } });
       setNote(''); e.target.value = '';
-      load();
     } catch (err) {
       alertDialog({ title: '업로드 실패', body: err.message, tone: 'danger' });
-    } finally { setBusy(false); }
+    }
   }
 
   async function download(d) {
@@ -2505,7 +2496,7 @@ function DocumentsSection({ deviceId }) {
   async function del(d) {
     const ok = await confirmDialog({ title: '서류 삭제', body: `${d.filename} 을(를) 삭제하시겠습니까?`, danger: true });
     if (!ok) return;
-    try { await api.deleteDocument(d.id); load(); }
+    try { await deleteMut.mutateAsync({ id: d.id, deviceId }); }
     catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
   }
 
