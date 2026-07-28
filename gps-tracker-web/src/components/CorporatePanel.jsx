@@ -28,12 +28,13 @@ export default function CorporatePanel({ devices }) {
   }, []);
 
   const tabs = [
-    { id: 'report',   label: '운행 리포트', icon: 'route' },
-    { id: 'monthly',  label: '월간 리포트', icon: 'bar' },   // (2026-07-28) Stage-3A
-    { id: 'vehicles', label: '차량 관리',   icon: 'list' },  // (2026-07-28) Stage-4C-1
-    { id: 'staff',    label: '직원',       icon: 'user' },
-    { id: 'info',     label: '회사 정보',   icon: 'list' },
-    { id: 'sub',      label: '구독',       icon: 'coin' },
+    { id: 'report',       label: '운행 리포트', icon: 'route' },
+    { id: 'monthly',      label: '월간 리포트', icon: 'bar' },   // (2026-07-28) Stage-3A
+    { id: 'vehicles',     label: '차량 관리',   icon: 'list' },  // (2026-07-28) Stage-4C-1
+    { id: 'reservations', label: '차량 예약',   icon: 'clock' }, // (2026-07-28) Stage-4F-1
+    { id: 'staff',        label: '직원',       icon: 'user' },
+    { id: 'info',         label: '회사 정보',   icon: 'list' },
+    { id: 'sub',          label: '구독',       icon: 'coin' },
   ];
 
   return (
@@ -58,12 +59,13 @@ export default function CorporatePanel({ devices }) {
       </div>
 
       <div style={st.body}>
-        {tab === 'report'   && <ReportTab devices={devices} sub={sub} onSubChange={setSub} />}
-        {tab === 'monthly'  && <MonthlyReportTab devices={devices} sub={sub} />}
-        {tab === 'vehicles' && <VehiclesTab devices={devices} />}
-        {tab === 'staff'    && <StaffTab />}
-        {tab === 'info'     && <InfoTab />}
-        {tab === 'sub'      && <SubTab sub={sub} onChange={setSub} />}
+        {tab === 'report'       && <ReportTab devices={devices} sub={sub} onSubChange={setSub} />}
+        {tab === 'monthly'      && <MonthlyReportTab devices={devices} sub={sub} />}
+        {tab === 'vehicles'     && <VehiclesTab devices={devices} />}
+        {tab === 'reservations' && <ReservationsTab devices={devices} />}
+        {tab === 'staff'        && <StaffTab />}
+        {tab === 'info'         && <InfoTab />}
+        {tab === 'sub'          && <SubTab sub={sub} onChange={setSub} />}
       </div>
     </div>
   );
@@ -1123,6 +1125,284 @@ function StateBadge({ active }) {
     }}>
       {active ? '사용가능' : '사용정지'}
     </span>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// (2026-07-28 Stage-4F-1) 차량 예약 — cartax 스타일.
+// 리스트 + 상태 chip 필터 + 생성/편집 다이얼로그.
+// ═══════════════════════════════════════════════════════
+const RESV_STATUS = {
+  planned:     { label: '예정',   color: 'var(--primary)', bg: 'color-mix(in srgb, var(--primary) 12%, transparent)' },
+  in_progress: { label: '진행중', color: 'var(--accent)',  bg: 'color-mix(in srgb, var(--accent) 15%, transparent)' },
+  completed:   { label: '완료',   color: 'var(--text-3)',  bg: 'var(--surface-2)' },
+  cancelled:   { label: '취소',   color: 'var(--danger)',  bg: 'color-mix(in srgb, var(--danger) 12%, transparent)' },
+};
+
+function ReservationsTab({ devices }) {
+  const [list, setList] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('active');   // active | all | completed | cancelled
+  const [editing, setEditing] = useState(null);   // null | 'new' | {id, ...}
+  const [staff, setStaff] = useState([]);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    api.listStaff().then(s => setStaff((s || []).filter(x => x.active))).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setError(null);
+    // active = planned + in_progress. 기본은 향후 30일 + 지난 7일.
+    const now = new Date();
+    const from = new Date(now.getTime() - 7 * 86400_000).toISOString();
+    const to   = new Date(now.getTime() + 60 * 86400_000).toISOString();
+    const params = { from, to };
+    if (statusFilter === 'active') params.status = ['planned', 'in_progress'];
+    else if (statusFilter !== 'all') params.status = [statusFilter];
+    api.listReservations(params).then(rs => {
+      if (cancelled) return;
+      setList(rs || []); setLoading(false);
+    }).catch(e => { if (!cancelled) { setError(e.message); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [statusFilter, tick]);
+
+  const activeCount    = (list || []).filter(r => r.status === 'planned' || r.status === 'in_progress').length;
+  const completedCount = (list || []).filter(r => r.status === 'completed').length;
+  const cancelledCount = (list || []).filter(r => r.status === 'cancelled').length;
+
+  return (
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <StatCardGrid>
+        <StatCard icon="clock" label="예정/진행중"  value={activeCount}    unit="건" tone="primary" />
+        <StatCard icon="route" label="완료"         value={completedCount} unit="건" tone="success" />
+        <StatCard icon="close" label="취소"         value={cancelledCount} unit="건" tone="default" />
+        <StatCard icon="list"  label="전체 차량"    value={devices?.length ?? 0} unit="대" tone="default" />
+      </StatCardGrid>
+
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+        <FilterChip active={statusFilter==='active'}    onClick={() => setStatusFilter('active')}    label="예정+진행" count={activeCount} tone="primary" />
+        <FilterChip active={statusFilter==='completed'} onClick={() => setStatusFilter('completed')} label="완료"     count={completedCount} tone="success" />
+        <FilterChip active={statusFilter==='cancelled'} onClick={() => setStatusFilter('cancelled')} label="취소"     count={cancelledCount} tone="warn" />
+        <FilterChip active={statusFilter==='all'}       onClick={() => setStatusFilter('all')}       label="전체"     count={(list || []).length} />
+        <button onClick={() => setEditing('new')} style={{
+          marginLeft: 'auto', ...st.btnPrimary, display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          <Icon name="plus" size={13} /> 새 예약
+        </button>
+      </div>
+
+      {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
+      {loading && !list && <div style={st.muted}>예약 로딩 중...</div>}
+      {list && list.length === 0 && <div style={st.muted}>예약이 없습니다.</div>}
+
+      {list && list.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 8 }}>
+          {list.map(r => (
+            <ReservationCard key={r.id} r={r} onEdit={() => setEditing(r)}
+              onDelete={async () => {
+                const ok = await confirmDialog({ title: '예약 삭제', body: '삭제하시겠습니까? (되돌릴 수 없음)', danger: true });
+                if (!ok) return;
+                try { await api.deleteReservation(r.id); setTick(t => t + 1); }
+                catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
+              }} />
+          ))}
+        </div>
+      )}
+
+      {editing && (
+        <ReservationDialog init={editing === 'new' ? null : editing} devices={devices} staff={staff}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+      )}
+    </div>
+  );
+}
+
+function ReservationCard({ r, onEdit, onDelete }) {
+  const s = RESV_STATUS[r.status] || RESV_STATUS.planned;
+  const start = new Date(r.starts_at);
+  const end   = new Date(r.ends_at);
+  const fmtDT = d => d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const sameDay = start.toDateString() === end.toDateString();
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 8,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{
+          fontSize: 10, padding: '3px 8px', borderRadius: 999,
+          background: s.bg, color: s.color, fontWeight: 700,
+        }}>{s.label}</span>
+        <span style={{ fontWeight: 700, fontSize: 14 }}>
+          {r.license_plate || r.device_name || `#${r.device_id}`}
+        </span>
+        {r.driver_name && (
+          <span style={{
+            fontSize: 10, padding: '2px 8px', borderRadius: 4,
+            background: 'var(--surface-2)', color: 'var(--text-2)', fontWeight: 600,
+          }}>👤 {r.driver_name}</span>
+        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          <button onClick={onEdit} style={{ ...st.btnGhost, padding: '4px 8px' }} title="편집">
+            <Icon name="edit" size={12} />
+          </button>
+          <button onClick={onDelete} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제">
+            <Icon name="trash2" size={12} />
+          </button>
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Icon name="clock" size={12} />
+        {sameDay
+          ? `${start.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })} ${start.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} ~ ${end.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`
+          : `${fmtDT(start)} ~ ${fmtDT(end)}`}
+      </div>
+      {r.purpose && (
+        <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+          <span style={{ color: 'var(--text-3)' }}>목적</span>
+          <span style={{ marginLeft: 6 }}>{r.purpose}</span>
+        </div>
+      )}
+      {r.note && (
+        <div style={{
+          fontSize: 11, color: 'var(--text-2)',
+          padding: '6px 10px', background: 'var(--surface-2)', borderRadius: 6,
+        }}>📝 {r.note}</div>
+      )}
+    </div>
+  );
+}
+
+// datetime-local input value 는 'YYYY-MM-DDTHH:MM' 로컬 시간 문자열.
+// ISO 로 변환 (Date 는 로컬 문자열을 로컬 시간으로 파싱 → toISOString 은 UTC).
+function localToIso(v) { return v ? new Date(v).toISOString() : null; }
+function isoToLocal(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function ReservationDialog({ init, devices, staff, onClose, onSaved }) {
+  // init null = 신규. 기본 시작 = 다음 정시, 종료 = +1h.
+  const nowRound = () => {
+    const d = new Date(); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); return d;
+  };
+  const [deviceId, setDeviceId] = useState(init?.device_id ?? devices?.[0]?.id ?? '');
+  const [driverId, setDriverId] = useState(init?.driver_staff_id ?? '');
+  const [startsAt, setStartsAt] = useState(init ? isoToLocal(init.starts_at) : isoToLocal(nowRound().toISOString()));
+  const [endsAt,   setEndsAt]   = useState(init ? isoToLocal(init.ends_at)   : isoToLocal(new Date(nowRound().getTime() + 3600_000).toISOString()));
+  const [purpose,  setPurpose]  = useState(init?.purpose ?? '');
+  const [note,     setNote]     = useState(init?.note ?? '');
+  const [status,   setStatus]   = useState(init?.status ?? 'planned');
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    if (!deviceId) { alertDialog({ title: '차량 선택 필요', body: '', tone: 'danger' }); return; }
+    if (!startsAt || !endsAt) { alertDialog({ title: '시간 입력 필요', body: '', tone: 'danger' }); return; }
+    const body = {
+      device_id:       Number(deviceId),
+      driver_staff_id: driverId ? Number(driverId) : null,
+      starts_at:       localToIso(startsAt),
+      ends_at:         localToIso(endsAt),
+      purpose:         purpose.trim() || null,
+      note:            note.trim() || null,
+      status,
+    };
+    setBusy(true);
+    try {
+      if (init?.id) await api.updateReservation(init.id, body);
+      else          await api.createReservation(body);
+      onSaved();
+    } catch (e) {
+      alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', borderRadius: 14, padding: 20,
+        width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 800 }}>
+          {init?.id ? '예약 편집' : '새 예약'}
+        </div>
+
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량</div>
+          <select value={deviceId} onChange={e => setDeviceId(e.target.value)} style={st.input}>
+            {(devices || []).map(d => (
+              <option key={d.id} value={d.id}>
+                {d.license_plate ? `${d.license_plate} · ` : ''}{d.display_name || d.device_uid}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>운전자 (선택)</div>
+          <select value={driverId} onChange={e => setDriverId(e.target.value)} style={st.input}>
+            <option value="">— 미지정 —</option>
+            {staff.map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` (${s.role})` : ''}</option>)}
+          </select>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>시작</div>
+            <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={st.input} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>종료</div>
+            <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} style={st.input} />
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>목적</div>
+          <input value={purpose} onChange={e => setPurpose(e.target.value)}
+            placeholder="거래처 방문, 외근..." style={st.input} />
+        </div>
+
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>메모 (선택)</div>
+          <textarea value={note} onChange={e => setNote(e.target.value)}
+            placeholder="..." style={{ ...st.input, minHeight: 50, resize: 'vertical', fontFamily: 'inherit' }} />
+        </div>
+
+        {init?.id && (
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>상태</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+              {Object.entries(RESV_STATUS).map(([id, meta]) => (
+                <button key={id} onClick={() => setStatus(id)} style={{
+                  padding: '8px 4px', fontSize: 11, borderRadius: 8, cursor: 'pointer',
+                  background: status === id ? meta.color : 'var(--surface-2)',
+                  color:      status === id ? 'white'    : 'var(--text)',
+                  border: 'none', fontWeight: status === id ? 700 : 500,
+                }}>{meta.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
+          <button onClick={save} disabled={busy} style={{ ...st.btnPrimary, flex: 2, padding: '12px' }}>
+            {busy ? '저장 중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

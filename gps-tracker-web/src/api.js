@@ -461,6 +461,20 @@ export const api = {
                         : `trips_${deviceId}.csv`;
     return { blob, filename };
   },
+  // (2026-07-28) Stage-4F-1: 차량 예약 CRUD.
+  listReservations: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.device_id != null) q.set('device_id', String(params.device_id));
+    if (params.from)   q.set('from',   params.from);
+    if (params.to)     q.set('to',     params.to);
+    if (params.status) q.set('status', Array.isArray(params.status) ? params.status.join(',') : params.status);
+    const qs = q.toString();
+    return req('GET', `/corporate/reservations${qs ? '?' + qs : ''}`);
+  },
+  createReservation: (body) => req('POST',   '/corporate/reservations', body),
+  updateReservation: (id, body) => req('PATCH',  `/corporate/reservations/${id}`, body),
+  deleteReservation: (id) => req('DELETE', `/corporate/reservations/${id}`),
+
   // (2026-07-28) Stage-4D: 오피넷 캐시된 유가. { gasoline, diesel, lpg, source, updated_at }
   // source: "opinet" (실 API 성공) | "default" (fallback).
   getFuelPrices: () => req('GET', '/corporate/fuel-prices'),
