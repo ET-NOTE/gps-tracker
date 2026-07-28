@@ -34,6 +34,13 @@ pub fn router() -> Router<AppState> {
         .route("/rentcar/blacklist",           get(list_blacklist).post(add_blacklist))
         .route("/rentcar/blacklist/:id",       axum::routing::delete(remove_blacklist))
         .route("/rentcar/blacklist/check",     get(check_blacklist))
+        // (R9-a) 인수/반납 QR 토큰 발급 + 사진 조회 (owner)
+        .route("/rentcar/contracts/:id/handoff-tokens", get(list_handoff_tokens).post(issue_handoff_token))
+        .route("/rentcar/handoff-tokens/:id",           axum::routing::delete(revoke_handoff_token))
+        .route("/rentcar/photos/:id",                   get(get_photo))
+        // (R9-a) public — 임차인 auth-free 링크
+        .route("/rentcar/handoff/:token",               get(handoff_view))
+        .route("/rentcar/handoff/:token/submit",        post(handoff_submit))
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -933,4 +940,400 @@ async fn check_blacklist(
         "entry":       entry,
         "visits":      visits,
     })))
+}
+
+// ═══════════════════════════════════════════════════════════════
+// (2026-07-28) Stage-R9-a: 렌트카 인수/반납 QR self-handoff.
+//   1) owner 가 계약에 대해 handoff token 발급 → 카톡 등으로 링크 전송
+//   2) 임차인이 로그인 없이 링크 열어 오도미터 사진 + 서명 제출
+//   3) pickup → status active + pickup_odometer/photo/signature 확정
+//      return → status returned + return_odometer/photo/signature + settlement 계산
+// ═══════════════════════════════════════════════════════════════
+
+const HANDOFF_DEFAULT_TTL_HOURS: i64 = 72;
+const HANDOFF_MAX_PHOTO_BYTES:   usize = 4 * 1024 * 1024;  // 4MB
+
+fn generate_handoff_token() -> String {
+    use rand::RngCore;
+    let mut buf = [0u8; 16];   // 128 bit → base64 22자
+    rand::thread_rng().fill_bytes(&mut buf);
+    const ALPHABET: &[u8; 64] =
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    let mut out = String::with_capacity(22);
+    let mut acc: u32 = 0;
+    let mut bits: u32 = 0;
+    for &b in &buf {
+        acc = (acc << 8) | (b as u32);
+        bits += 8;
+        while bits >= 6 {
+            bits -= 6;
+            out.push(ALPHABET[((acc >> bits) & 0x3F) as usize] as char);
+        }
+    }
+    if bits > 0 {
+        out.push(ALPHABET[((acc << (6 - bits)) & 0x3F) as usize] as char);
+    }
+    out
+}
+
+#[derive(Debug, Serialize, FromRow)]
+pub struct HandoffToken {
+    pub id:          i64,
+    pub contract_id: i64,
+    pub user_id:     i64,
+    pub purpose:     String,
+    pub token:       String,
+    pub created_at:  DateTime<Utc>,
+    pub expires_at:  DateTime<Utc>,
+    pub used_at:     Option<DateTime<Utc>>,
+    pub revoked_at:  Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct IssueTokenPayload {
+    pub purpose:       String,             // pickup | return
+    pub expires_hours: Option<i64>,        // 기본 72
+}
+
+async fn issue_handoff_token(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(contract_id): Path<i64>,
+    Json(req): Json<IssueTokenPayload>,
+) -> AppResult<Json<HandoffToken>> {
+    if !matches!(req.purpose.as_str(), "pickup"|"return") {
+        return Err(AppError::BadRequest("purpose must be pickup or return".into()));
+    }
+    let hours = req.expires_hours.unwrap_or(HANDOFF_DEFAULT_TTL_HOURS).clamp(1, 720);
+    // 소유권 확인
+    let owner_check: Option<i64> = sqlx::query_scalar(
+        "SELECT user_id FROM rental_contracts WHERE id = $1"
+    ).bind(contract_id).fetch_optional(&state.db).await?;
+    match owner_check {
+        Some(uid) if uid == user.user_id => {}
+        _ => return Err(AppError::NotFound),
+    }
+    let token = generate_handoff_token();
+    let expires_at = Utc::now() + chrono::Duration::hours(hours);
+    let row: HandoffToken = sqlx::query_as(
+        r#"INSERT INTO rental_handoff_tokens (contract_id, user_id, purpose, token, expires_at)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id, contract_id, user_id, purpose, token, created_at, expires_at, used_at, revoked_at"#,
+    )
+    .bind(contract_id).bind(user.user_id).bind(&req.purpose).bind(&token).bind(expires_at)
+    .fetch_one(&state.db).await?;
+    Ok(Json(row))
+}
+
+async fn list_handoff_tokens(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(contract_id): Path<i64>,
+) -> AppResult<Json<Vec<HandoffToken>>> {
+    // 소유권 확인은 SQL 조건으로
+    let rows: Vec<HandoffToken> = sqlx::query_as(
+        r#"SELECT id, contract_id, user_id, purpose, token, created_at, expires_at, used_at, revoked_at
+             FROM rental_handoff_tokens
+            WHERE contract_id = $1 AND user_id = $2
+         ORDER BY created_at DESC LIMIT 20"#,
+    ).bind(contract_id).bind(user.user_id).fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+async fn revoke_handoff_token(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let n = sqlx::query(
+        r#"UPDATE rental_handoff_tokens
+              SET revoked_at = NOW()
+            WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL AND used_at IS NULL"#,
+    ).bind(id).bind(user.user_id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(json!({ "ok": true })))
+}
+
+// ─── public — 임차인 auth-free 뷰 ─────────────────────
+
+#[derive(Debug, Serialize)]
+struct HandoffView {
+    purpose:         String,
+    status:          String,      // "ready" | "used" | "revoked" | "expired"
+    contract_id:     i64,
+    company_name:    Option<String>,
+    device_name:     Option<String>,
+    license_plate:   Option<String>,
+    renter_name:     String,
+    starts_at:       DateTime<Utc>,
+    ends_at:         DateTime<Utc>,
+    rate_type:       String,
+    rate_amount_krw: i64,
+    deposit_krw:     i64,
+    pickup_odometer_km: Option<i32>,   // return purpose 시 참고용
+    used_at:         Option<DateTime<Utc>>,
+    submitted_photo_id: Option<i64>,   // used 시 photo 조회용
+}
+
+async fn load_handoff_by_token(pool: &sqlx::PgPool, token: &str) -> AppResult<HandoffView> {
+    #[derive(FromRow)]
+    struct Row {
+        contract_id: i64,
+        user_id: i64,
+        purpose: String,
+        expires_at: DateTime<Utc>,
+        used_at: Option<DateTime<Utc>>,
+        revoked_at: Option<DateTime<Utc>>,
+        device_name: Option<String>,
+        license_plate: Option<String>,
+        renter_name: String,
+        starts_at: DateTime<Utc>,
+        ends_at: DateTime<Utc>,
+        rate_type: String,
+        rate_amount_krw: i64,
+        deposit_krw: i64,
+        pickup_odometer_km: Option<i32>,
+    }
+    let r: Option<Row> = sqlx::query_as(
+        r#"SELECT t.contract_id, t.user_id, t.purpose, t.expires_at, t.used_at, t.revoked_at,
+                  d.display_name AS device_name, d.license_plate,
+                  c.renter_name, c.starts_at, c.ends_at, c.rate_type, c.rate_amount_krw,
+                  c.deposit_krw, c.pickup_odometer_km
+             FROM rental_handoff_tokens t
+             JOIN rental_contracts c ON c.id = t.contract_id
+        LEFT JOIN devices d ON d.id = c.device_id
+            WHERE t.token = $1"#,
+    ).bind(token).fetch_optional(pool).await?;
+    let r = r.ok_or(AppError::NotFound)?;
+
+    let status = if r.revoked_at.is_some()          { "revoked" }
+                 else if r.used_at.is_some()        { "used" }
+                 else if r.expires_at <= Utc::now() { "expired" }
+                 else                               { "ready" };
+
+    // used 이면 임차인이 제출한 사진 id (동일 purpose)
+    let submitted_photo_id: Option<i64> = if status == "used" {
+        let kind = if r.purpose == "pickup" { "pickup_odometer" } else { "return_odometer" };
+        sqlx::query_scalar(
+            r#"SELECT id FROM rental_photos
+                WHERE contract_id = $1 AND kind = $2
+             ORDER BY uploaded_at DESC LIMIT 1"#,
+        ).bind(r.contract_id).bind(kind).fetch_optional(pool).await.ok().flatten()
+    } else { None };
+
+    // owner 회사명
+    let company_name: Option<String> = sqlx::query_scalar(
+        "SELECT company_name FROM corporate_info WHERE user_id = $1"
+    ).bind(r.user_id).fetch_optional(pool).await.ok().flatten();
+
+    Ok(HandoffView {
+        purpose: r.purpose,
+        status: status.to_string(),
+        contract_id: r.contract_id,
+        company_name,
+        device_name: r.device_name,
+        license_plate: r.license_plate,
+        renter_name: r.renter_name,
+        starts_at: r.starts_at,
+        ends_at: r.ends_at,
+        rate_type: r.rate_type,
+        rate_amount_krw: r.rate_amount_krw,
+        deposit_krw: r.deposit_krw,
+        pickup_odometer_km: r.pickup_odometer_km,
+        used_at: r.used_at,
+        submitted_photo_id,
+    })
+}
+
+async fn handoff_view(
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+) -> AppResult<Json<HandoffView>> {
+    let v = load_handoff_by_token(&state.db, &token).await?;
+    Ok(Json(v))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HandoffSubmitPayload {
+    pub odometer_km:      i32,
+    pub signature_svg:    String,       // SVG dataURL 또는 raw <svg> — 프론트가 작성
+    pub photo_data_url:   String,       // "data:image/jpeg;base64,..."
+    pub renter_confirmed_name: Option<String>,   // 임차인이 이름 확인 재입력
+}
+
+async fn handoff_submit(
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+    Json(req): Json<HandoffSubmitPayload>,
+) -> AppResult<Json<Value>> {
+    if req.signature_svg.trim().is_empty() {
+        return Err(AppError::BadRequest("서명이 비어 있습니다".into()));
+    }
+    if req.photo_data_url.trim().is_empty() {
+        return Err(AppError::BadRequest("사진이 비어 있습니다".into()));
+    }
+    // dataURL 파싱: "data:image/jpeg;base64,{b64}"
+    let (mime, bytes) = parse_data_url(&req.photo_data_url)
+        .ok_or_else(|| AppError::BadRequest("photo_data_url invalid".into()))?;
+    if bytes.len() > HANDOFF_MAX_PHOTO_BYTES {
+        return Err(AppError::BadRequest("photo too large (>4MB)".into()));
+    }
+
+    // 토큰 상태 검증
+    #[derive(FromRow)]
+    struct Tk { id: i64, contract_id: i64, user_id: i64, purpose: String,
+                expires_at: DateTime<Utc>, used_at: Option<DateTime<Utc>>, revoked_at: Option<DateTime<Utc>> }
+    let tk: Option<Tk> = sqlx::query_as(
+        r#"SELECT id, contract_id, user_id, purpose, expires_at, used_at, revoked_at
+             FROM rental_handoff_tokens WHERE token = $1"#,
+    ).bind(&token).fetch_optional(&state.db).await?;
+    let tk = tk.ok_or(AppError::NotFound)?;
+    if tk.revoked_at.is_some() { return Err(AppError::BadRequest("취소된 링크입니다".into())); }
+    if tk.used_at.is_some()    { return Err(AppError::BadRequest("이미 제출된 링크입니다".into())); }
+    if tk.expires_at <= Utc::now() { return Err(AppError::BadRequest("만료된 링크입니다".into())); }
+
+    let mut tx = state.db.begin().await?;
+
+    let photo_kind = if tk.purpose == "pickup" { "pickup_odometer" } else { "return_odometer" };
+    let photo_id: i64 = sqlx::query_scalar(
+        r#"INSERT INTO rental_photos (contract_id, user_id, kind, mime, bytes, uploaded_by_token)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id"#,
+    )
+    .bind(tk.contract_id).bind(tk.user_id).bind(photo_kind).bind(&mime).bind(&bytes).bind(tk.id)
+    .fetch_one(&mut *tx).await?;
+
+    if tk.purpose == "pickup" {
+        // 인수: pickup 정보 + status draft/active 유지 → active. renter_name 확인값이 다르면 무시.
+        sqlx::query(
+            r#"UPDATE rental_contracts SET
+                pickup_odometer_km    = $2,
+                pickup_signature_svg  = $3,
+                pickup_signed_at      = NOW(),
+                status                = CASE WHEN status = 'draft' THEN 'active' ELSE status END,
+                updated_at            = NOW()
+              WHERE id = $1"#,
+        )
+        .bind(tk.contract_id).bind(req.odometer_km).bind(&req.signature_svg)
+        .execute(&mut *tx).await?;
+    } else {
+        // return: signature/photo 만 저장. settlement 는 owner 가 '반납 완료' 버튼으로 확정 (기존 return_contract).
+        // R9-b 에서 여기서 자동 settlement 로 확장 예정.
+        sqlx::query(
+            r#"UPDATE rental_contracts SET
+                return_odometer_km    = $2,
+                return_signature_svg  = $3,
+                return_signed_at      = NOW(),
+                updated_at            = NOW()
+              WHERE id = $1"#,
+        )
+        .bind(tk.contract_id).bind(req.odometer_km).bind(&req.signature_svg)
+        .execute(&mut *tx).await?;
+    }
+    sqlx::query("UPDATE rental_handoff_tokens SET used_at = NOW() WHERE id = $1")
+        .bind(tk.id).execute(&mut *tx).await?;
+
+    tx.commit().await?;
+
+    // Owner 알림 event insert (기존 FCM 워커 pickup)
+    let _ = sqlx::query(
+        r#"INSERT INTO events (device_id, user_id, occurred_at, kind, data)
+           SELECT c.device_id, c.user_id, NOW(),
+                  CASE WHEN $2 = 'pickup' THEN 'rental_pickup_done' ELSE 'rental_return_submitted' END,
+                  jsonb_build_object(
+                    'contract_id', c.id,
+                    'renter_name', c.renter_name,
+                    'odometer_km', $3::INT,
+                    'photo_id',    $4::BIGINT)
+             FROM rental_contracts c WHERE c.id = $1"#,
+    ).bind(tk.contract_id).bind(&tk.purpose).bind(req.odometer_km).bind(photo_id)
+    .execute(&state.db).await;
+
+    // 이름 확인값과 불일치면 audit 로그 성격 note 붙임 (best-effort)
+    if let Some(name) = req.renter_confirmed_name.as_deref() {
+        let name = name.trim();
+        if !name.is_empty() {
+            let _ = sqlx::query(
+                r#"UPDATE rental_contracts
+                      SET note = COALESCE(note, '') ||
+                        CASE WHEN COALESCE(note,'') = '' THEN '' ELSE E'\n' END ||
+                        '[' || $2 || ' handoff] 임차인 확인 이름: ' || $3
+                    WHERE id = $1"#,
+            ).bind(tk.contract_id).bind(&tk.purpose).bind(name)
+            .execute(&state.db).await;
+        }
+    }
+
+    Ok(Json(json!({
+        "ok": true,
+        "purpose": tk.purpose,
+        "photo_id": photo_id,
+    })))
+}
+
+async fn get_photo(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<axum::response::Response> {
+    #[derive(FromRow)]
+    struct Row { mime: String, bytes: Vec<u8>, user_id: i64 }
+    let row: Option<Row> = sqlx::query_as(
+        "SELECT mime, bytes, user_id FROM rental_photos WHERE id = $1"
+    ).bind(id).fetch_optional(&state.db).await?;
+    let row = row.ok_or(AppError::NotFound)?;
+    if row.user_id != user.user_id {
+        return Err(AppError::NotFound);
+    }
+    let mut headers = HeaderMap::new();
+    headers.insert(header::CONTENT_TYPE,
+        HeaderValue::from_str(&row.mime).unwrap_or_else(|_| HeaderValue::from_static("image/jpeg")));
+    headers.insert(header::CACHE_CONTROL,
+        HeaderValue::from_static("private, max-age=86400"));
+    Ok((StatusCode::OK, headers, row.bytes).into_response())
+}
+
+fn parse_data_url(s: &str) -> Option<(String, Vec<u8>)> {
+    // "data:image/jpeg;base64,{b64}"
+    let s = s.strip_prefix("data:")?;
+    let (meta, b64) = s.split_once(",")?;
+    let (mime, is_b64) = if let Some(m) = meta.strip_suffix(";base64") {
+        (m.to_string(), true)
+    } else {
+        (meta.to_string(), false)
+    };
+    if !is_b64 { return None; }  // urlencoded 미지원
+    // base64 decode
+    let bytes = base64_decode(b64)?;
+    if !mime.starts_with("image/") { return None; }
+    Some((mime, bytes))
+}
+
+fn base64_decode(s: &str) -> Option<Vec<u8>> {
+    const T: [i8; 256] = {
+        let mut t = [-1i8; 256];
+        let a = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let mut i = 0;
+        while i < 64 { t[a[i] as usize] = i as i8; i += 1; }
+        // URL-safe 대체 문자
+        t[b'-' as usize] = 62;
+        t[b'_' as usize] = 63;
+        t
+    };
+    let s = s.trim_end_matches('=');
+    let mut out = Vec::with_capacity(s.len() * 3 / 4);
+    let mut acc: u32 = 0;
+    let mut bits: u32 = 0;
+    for &b in s.as_bytes() {
+        if b == b'\n' || b == b'\r' || b == b' ' { continue; }
+        let v = T[b as usize];
+        if v < 0 { return None; }
+        acc = (acc << 6) | (v as u32);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push(((acc >> bits) & 0xFF) as u8);
+        }
+    }
+    Some(out)
 }

@@ -28,6 +28,7 @@ const SharePage      = lazy(() => import('./pages/SharePage'));
 const PaymentResult  = lazy(() => import('./pages/PaymentResult'));
 const LegalPage      = lazy(() => import('./pages/LegalPage'));
 const DiagnosticPage = lazy(() => import('./pages/DiagnosticPage'));
+const HandoffPage    = lazy(() => import('./pages/HandoffPage'));
 
 const LazyFallback = () => (
   <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
@@ -64,6 +65,7 @@ function Shell() {
       <Routes>
         {/* 공개 */}
         <Route path="/s/:token" element={<ShareRoute />} />
+        <Route path="/handoff/:token" element={<HandoffRoute />} />
         <Route path="/payments/toss/success" element={<PaymentResult kind="success" />} />
         <Route path="/payments/toss/fail"    element={<PaymentResult kind="fail" />} />
         <Route path="/privacy" element={<LegalPage kind="privacy" />} />
@@ -90,6 +92,12 @@ function Shell() {
       </Routes>
     </Suspense>
   );
+}
+
+function HandoffRoute() {
+  const loc = useLocation();
+  const m = loc.pathname.match(/\/handoff\/([A-Za-z0-9_-]+)/);
+  return <HandoffPage token={m?.[1]} />;
 }
 
 function ShareRoute() {

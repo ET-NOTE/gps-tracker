@@ -527,6 +527,27 @@ export const api = {
   returnRental: (id, body) => req('POST',  `/rentcar/contracts/${id}/return`, body),
   deleteRental: (id)       => req('DELETE',`/rentcar/contracts/${id}`),
 
+  // (2026-07-28 Stage-R9-a) 렌트카 QR 인수/반납 토큰 (owner)
+  issueHandoffToken:  (contractId, purpose, expires_hours = 72) =>
+    req('POST', `/rentcar/contracts/${contractId}/handoff-tokens`, { purpose, expires_hours }),
+  listHandoffTokens:  (contractId) => req('GET', `/rentcar/contracts/${contractId}/handoff-tokens`),
+  revokeHandoffToken: (id)         => req('DELETE', `/rentcar/handoff-tokens/${id}`),
+  // 사진 URL (owner 인증) — <img src=> 로는 못 씀 (Authorization header 필요),
+  // 대신 fetch 로 blob → object URL 만들어 사용.
+  fetchRentalPhoto:   async (photoId) => {
+    const tok = getToken();
+    const res = await fetch(`${BASE}/rentcar/photos/${photoId}`, {
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+    });
+    if (!res.ok) throw new Error(res.statusText);
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
+
+  // 임차인 (public — 인증 우회, token 자체가 자격)
+  handoffView:   (token)         => req('GET',  `/rentcar/handoff/${encodeURIComponent(token)}`),
+  handoffSubmit: (token, body)   => req('POST', `/rentcar/handoff/${encodeURIComponent(token)}/submit`, body),
+
   // (2026-07-28 Stage-R6) 임차인 registry + 블랙리스트.
   listRenters:       ()      => req('GET', '/rentcar/renters'),
   renterDetail:      (phone) => req('GET', `/rentcar/renters/${encodeURIComponent(phone)}`),
