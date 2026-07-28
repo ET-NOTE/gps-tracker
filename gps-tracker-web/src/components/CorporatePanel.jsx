@@ -1134,9 +1134,13 @@ function StateBadge({ active }) {
 //
 // 백엔드는 devices.fuel_efficiency_kmpl / fuel_type 컬럼 (migration 0044) + PATCH
 // /devices/:id/fuel-info endpoint 만 제공. 유가 상수는 클라이언트 (환경 관계 없이).
-const FUEL_PRICE_KRW = {
+// (2026-07-28) Stage-4D: 오피넷 서버 캐시 fetch. useFuelPrices 훅 실패 or 로딩 중이면 이 default.
+const DEFAULT_FUEL_PRICE_KRW = {
   gasoline: 1700, diesel: 1600, lpg: 1000, ev: 0,
 };
+// mutable — useFuelPrices 훅이 채워넣음. estimateFuelCost 는 이걸 참조.
+// eslint-disable-next-line prefer-const
+let FUEL_PRICE_KRW = { ...DEFAULT_FUEL_PRICE_KRW };
 const FUEL_LABEL = {
   gasoline: '휘발유', diesel: '경유', lpg: 'LPG', ev: '전기',
 };
@@ -1163,6 +1167,19 @@ function MonthlyReportTab({ devices, sub }) {
   const [editing, setEditing] = useState(null);   // 연비 편집 대상 device
   const [tick, setTick] = useState(0);
   const [dlOpen, setDlOpen] = useState(false);    // (2026-07-28) Stage-4C-2 다운로드 다이얼로그
+  const [fuelPrices, setFuelPrices] = useState(null);  // (2026-07-28) Stage-4D 오피넷
+
+  // 오피넷 유가 fetch — mount 시 1회. 실패해도 default 로 fallback.
+  // fetch 성공 시 모듈 전역 FUEL_PRICE_KRW 갱신 → estimateFuelCost 즉시 반영.
+  useEffect(() => {
+    api.getFuelPrices().then(p => {
+      setFuelPrices(p);
+      FUEL_PRICE_KRW = {
+        gasoline: p.gasoline, diesel: p.diesel, lpg: p.lpg, ev: 0,
+      };
+      setTick(t => t + 1);   // 재계산 트리거
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -1253,9 +1270,7 @@ function MonthlyReportTab({ devices, sub }) {
         }}>
           <Icon name="share" size={13} /> 운행일지 다운로드
         </button>
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>
-          업무 = trip_annotations.purpose='business' 합계
-        </span>
+        <FuelPriceBadge prices={fuelPrices} />
       </div>
 
       <StatCardGrid>
@@ -1282,6 +1297,40 @@ function MonthlyReportTab({ devices, sub }) {
         <FuelInfoDialog device={editing}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+      )}
+    </div>
+  );
+}
+
+// (2026-07-28) Stage-4D: 유가 배지 — 오피넷 실 데이터 or fallback 표시.
+function FuelPriceBadge({ prices }) {
+  const isLive = prices?.source === 'opinet';
+  const at = prices?.updated_at ? new Date(prices.updated_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }) : '';
+  return (
+    <div style={{
+      marginLeft: 'auto',
+      display: 'flex', alignItems: 'center', gap: 6,
+      padding: '4px 10px', borderRadius: 8,
+      background: isLive
+        ? 'color-mix(in srgb, var(--accent) 10%, transparent)'
+        : 'var(--surface-2)',
+      fontSize: 10, color: 'var(--text-2)',
+    }}
+    title={isLive ? `오피넷 실시간 (${at})` : '오피넷 KEY 미설정 — 기본값 사용'}>
+      <span style={{
+        width: 6, height: 6, borderRadius: '50%',
+        background: isLive ? 'var(--accent)' : 'var(--text-3)',
+      }} />
+      <span style={{ fontWeight: 700 }}>유가</span>
+      {prices ? (
+        <>
+          <span>휘{Math.round(prices.gasoline).toLocaleString()}</span>
+          <span>·경{Math.round(prices.diesel).toLocaleString()}</span>
+          <span>·L{Math.round(prices.lpg).toLocaleString()}</span>
+          {isLive && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>실시간</span>}
+        </>
+      ) : (
+        <span style={{ color: 'var(--text-3)' }}>로딩...</span>
       )}
     </div>
   );

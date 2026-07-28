@@ -62,7 +62,8 @@ pub struct ReportContext<'a> {
     pub month_ym:     String,            // "2026-07"
     pub corp:         &'a CorpInfoLite,
     pub per_device:   Vec<(&'a DeviceLite, Vec<TripLite>)>,
-    pub fuel_price:   fn(&str) -> i64,   // fuel_type → 원/L
+    /// fuel_type ('gasoline'|'diesel'|'lpg'|'ev') → 원/L. env override + 오피넷 캐시.
+    pub fuel_price:   Box<dyn Fn(&str) -> i64 + Send + Sync + 'a>,
 }
 
 // ═══════════════════════════════════════════════════════════════
