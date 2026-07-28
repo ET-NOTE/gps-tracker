@@ -7,6 +7,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import Icon from './Icon';
 import { confirmDialog, alertDialog } from './Dialog';
+import { StatCard, StatCardGrid } from './shared/StatCard';
+import { useFleetStats } from './shared/useFleetStats';
 
 const PURPOSE_LABEL = {
   commute:     '출퇴근',
@@ -315,6 +317,11 @@ function ReportTab({ devices, sub, onSubChange }) {
 
   return (
     <>
+      {/* (2026-07-28) Fleet 요약 — 상단 stat card 4개 (첨부 이미지 스타일).
+          fleet-wide 지표 (총 차량 / 운행중 / 오늘 km / 이번달 km) 로 device drill-down 위에 배치.
+          운행중 판정: devices.last_event_kind === 'wake'. km: 병렬 listTrips 집계. */}
+      <FleetSummary devices={devices} />
+
       {/* 컨트롤 — 인쇄 시 숨김 */}
       <div className="no-print" style={st.controls}>
         <select value={deviceId || ''} onChange={e => setDeviceId(parseInt(e.target.value, 10) || null)}
@@ -702,6 +709,24 @@ function SubTab({ sub, onChange }) {
         {busy ? '...' : (sub.active ? '30일 추가 결제' : '구독 시작')}
       </button>
     </Card>
+  );
+}
+
+// ─── Fleet 요약 상단 (2026-07-28) ──────────────────────
+// device drill-down 위에 얹는 4-card row. 첨부 이미지 스타일 (아이콘 + 큰 숫자).
+// tone 은 정보 성격별 색 구분: 운행중=success (초록), km=primary (파랑).
+function FleetSummary({ devices }) {
+  const s = useFleetStats(devices);
+  const fmt = (n) => (n == null ? '–' : n.toLocaleString());
+  return (
+    <div className="no-print">
+      <StatCardGrid>
+        <StatCard icon="list"   label="전체 차량"       value={fmt(s.totalCount)} unit="대" tone="default" loading={s.loading} />
+        <StatCard icon="route"  label="운행 중"         value={fmt(s.activeCount)} unit="대" tone="success" loading={s.loading} />
+        <StatCard icon="mapPin" label="오늘 운행거리"   value={fmt(s.todayKm)} unit="km" tone="primary" loading={s.loading} />
+        <StatCard icon="bar"    label="이번달 운행거리" value={fmt(s.monthKm)} unit="km" tone="default" loading={s.loading} />
+      </StatCardGrid>
+    </div>
   );
 }
 
