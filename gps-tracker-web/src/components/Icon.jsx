@@ -48,6 +48,19 @@ const PATHS = {
   info:   'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 8h.01M11 12h1v4h1',
   check:    'M20 6L9 17l-5-5',
   download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+  // (F1-2) unicode fallback 정리
+  upload:   'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+  antenna:  'M2 12s2-5 10-5 10 5 10 5M4 15s2-3 8-3 8 3 8 3M12 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  car:      'M5 17V11h14v6M7 17v2M17 17v2M5 11l2-5h10l2 5M8 14h.01M16 14h.01',
+  fuel:     'M3 21V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16H3zM3 12h10M16 8l4 4v6a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2',
+  power:    'M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10',
+  wifi:     'M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0M2 8.82a15 15 0 0 1 20 0M12 20h.01',
+  filter2:  'M22 3H2l8 9.46V19l4 2v-8.54z',
+  more:     'M12 5h.01M12 12h.01M12 19h.01',
+  external: 'M15 3h6v6M10 14L21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',
+  qr:       'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM17 17h4v4h-4zM20 14h1v1',
+  users:    'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  search:   'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35',
 };
 
 export default function Icon({ name, size = 18, stroke = 1.75, fill = 'none', style }) {

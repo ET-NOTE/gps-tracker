@@ -9,12 +9,13 @@
 //  · 이번달 임대 매출  = 0 (매출 데이터 없음)
 // 임대 계약 실 도입 시 useFleetStats 확장 or 별도 hook.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import Icon from './Icon';
 import { api } from '../api';
 import { alertDialog, confirmDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
+import { Modal, FormField, Button, Pill } from './ui';
 
 export default function RentcarPanel({ devices }) {
   const [tab, setTab] = useState(() => localStorage.getItem('rentcar_tab') || 'fleet');
@@ -1365,96 +1366,88 @@ function HandoffTokenDialog({ contract, onClose }) {
     }
   }
 
-  return (
-    <div style={st.modalBackdrop} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ ...st.modal, maxWidth: 460 }}>
-        <div style={{ fontSize: 15, fontWeight: 800 }}>임차인 QR / 링크 발급</div>
-        <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
-          {contract.license_plate || contract.device_name} · {contract.renter_name}
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
-          발급된 링크를 카톡·문자로 전송하면 임차인이 로그인 없이 오도미터 사진 + 서명을 제출합니다.
-          제출 시 자동으로 계약이 진행됩니다.
-        </div>
+  const toneOf = t => t.revoked_at ? 'muted' :
+                       t.used_at    ? 'primary' :
+                       new Date(t.expires_at).getTime() < Date.now() ? 'muted' : 'success';
+  const labelOf = t => t.revoked_at ? '취소' :
+                        t.used_at    ? '사용됨' :
+                        new Date(t.expires_at).getTime() < Date.now() ? '만료' : '활성';
 
-        <Labeled label="용도">
-          <div style={{ display: 'flex', gap: 6 }}>
-            {[
-              { v: 'pickup', label: '차량 인수' },
-              { v: 'return', label: '차량 반납' },
-            ].map(o => (
-              <button key={o.v} onClick={() => setPurpose(o.v)}
-                style={{
-                  padding: '10px 14px', borderRadius: 6, border: '1px solid var(--border)',
-                  background: purpose === o.v ? 'var(--surface-2)' : 'transparent',
-                  color: purpose === o.v ? 'var(--text)' : 'var(--text-3)',
-                  fontWeight: purpose === o.v ? 700 : 500,
-                  cursor: 'pointer', flex: 1, fontSize: 12,
-                }}>{o.label}</button>
+  return (
+    <Modal open onClose={onClose}
+      size="md"
+      title="임차인 QR / 링크 발급"
+      subtitle={`${contract.license_plate || contract.device_name} · ${contract.renter_name}`}
+    >
+      <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+        발급된 링크를 카톡·문자로 전송하면 임차인이 로그인 없이 오도미터 사진 + 서명을 제출합니다.
+        제출 시 자동으로 계약이 진행됩니다.
+      </div>
+
+      <FormField label="용도">
+        <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+          {[
+            { v: 'pickup', label: '차량 인수' },
+            { v: 'return', label: '차량 반납' },
+          ].map(o => (
+            <Button key={o.v} onClick={() => setPurpose(o.v)}
+              variant={purpose === o.v ? 'primary' : 'ghost'}
+              size="sm" full={false}
+              style={{ flex: 1 }}
+            >{o.label}</Button>
+          ))}
+        </div>
+      </FormField>
+
+      {activeToken ? (
+        <div style={{
+          padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)',
+          display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+        }}>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>활성 링크 · 72시간 유효</div>
+          <div style={{
+            fontSize: 11, color: 'var(--text)',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)',
+            wordBreak: 'break-all',
+          }}>{publicUrl}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+            만료: {new Date(activeToken.expires_at).toLocaleString('ko-KR')}
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+            <Button onClick={copyLink} variant="primary" size="sm" style={{ flex: 2 }}
+              icon={<Icon name="copy" size={11} />}>링크 복사</Button>
+            <Button onClick={() => revoke(activeToken.id)} variant="ghost" size="sm"
+              style={{ color: 'var(--danger)' }}>취소</Button>
+          </div>
+        </div>
+      ) : (
+        <Button onClick={issue} busy={busy} variant="primary" full>
+          {busy ? '발급 중...' : '링크 발급 (72h)'}
+        </Button>
+      )}
+
+      {tokens && tokens.length > 0 && (
+        <div style={{ marginTop: 'var(--space-1)' }}>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, marginBottom: 4 }}>발급 이력</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 140, overflowY: 'auto' }}>
+            {tokens.map(t => (
+              <div key={t.id} style={{
+                display: 'flex', gap: 'var(--space-2)', alignItems: 'center', fontSize: 10,
+                padding: '4px var(--space-2)', background: 'var(--surface-2)',
+                borderRadius: 'var(--radius-xs)',
+              }}>
+                <Pill tone={toneOf(t)} size="xs">{labelOf(t)}</Pill>
+                <span style={{ color: 'var(--text-3)' }}>{t.purpose === 'pickup' ? '인수' : '반납'}</span>
+                <span style={{ color: 'var(--text-3)', marginLeft: 'auto' }}>
+                  {new Date(t.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                </span>
+              </div>
             ))}
           </div>
-        </Labeled>
-
-        {activeToken ? (
-          <div style={{
-            padding: 10, background: 'var(--surface-2)', borderRadius: 8,
-            display: 'flex', flexDirection: 'column', gap: 6,
-          }}>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>활성 링크 · 72시간 유효</div>
-            <div style={{
-              fontSize: 11, color: 'var(--text)',
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              padding: '8px 10px', borderRadius: 6, wordBreak: 'break-all',
-            }}>{publicUrl}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
-              만료: {new Date(activeToken.expires_at).toLocaleString('ko-KR')}
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={copyLink} style={{ ...st.btnPrimary, flex: 2 }}>
-                <Icon name="copy" size={11} /> 링크 복사
-              </button>
-              <button onClick={() => revoke(activeToken.id)} style={{ ...st.btnGhost, color: 'var(--danger)' }}>
-                취소
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button onClick={issue} disabled={busy} style={st.btnPrimary}>
-            {busy ? '발급 중...' : '링크 발급 (72h)'}
-          </button>
-        )}
-
-        {tokens && tokens.length > 0 && (
-          <div style={{ marginTop: 6 }}>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, marginBottom: 4 }}>발급 이력</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 140, overflowY: 'auto' }}>
-              {tokens.map(t => {
-                const used = !!t.used_at, revoked = !!t.revoked_at;
-                const expired = !used && !revoked && new Date(t.expires_at).getTime() < Date.now();
-                const stateLabel = revoked ? '취소' : used ? '사용됨' : expired ? '만료' : '활성';
-                const stateColor = revoked ? 'var(--text-3)' : used ? 'var(--primary)' : expired ? 'var(--text-3)' : 'var(--accent)';
-                return (
-                  <div key={t.id} style={{
-                    display: 'flex', gap: 8, alignItems: 'center', fontSize: 10,
-                    padding: '4px 8px', background: 'var(--surface-2)', borderRadius: 4,
-                  }}>
-                    <span style={{ color: stateColor, fontWeight: 700, minWidth: 40 }}>{stateLabel}</span>
-                    <span style={{ color: 'var(--text-3)' }}>{t.purpose === 'pickup' ? '인수' : '반납'}</span>
-                    <span style={{ color: 'var(--text-3)', marginLeft: 'auto' }}>
-                      {new Date(t.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} style={{ ...st.btnGhost, flex: 1 }}>닫기</button>
         </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }
 
