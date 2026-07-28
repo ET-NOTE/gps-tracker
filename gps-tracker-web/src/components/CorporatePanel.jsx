@@ -1144,9 +1144,17 @@ function ReservationsTab({ devices }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');   // active | all | completed | cancelled
-  const [editing, setEditing] = useState(null);   // null | 'new' | {id, ...}
+  const [editing, setEditing] = useState(null);   // null | 'new' | {id, ...} | {new: 'YYYY-MM-DD'}
   const [staff, setStaff] = useState([]);
   const [tick, setTick] = useState(0);
+  // (2026-07-28) Stage-4F-2: 뷰 모드 (리스트 / 캘린더).
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('resv_view') || 'list');
+  const setViewPersist = (v) => { setViewMode(v); try { localStorage.setItem('resv_view', v); } catch {} };
+  // 캘린더는 표시 월 별도. 리스트는 최근/향후 range 로.
+  const [calYm, setCalYm] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   useEffect(() => {
     api.listStaff().then(s => setStaff((s || []).filter(x => x.active))).catch(() => {});
@@ -1155,19 +1163,31 @@ function ReservationsTab({ devices }) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true); setError(null);
-    // active = planned + in_progress. 기본은 향후 30일 + 지난 7일.
-    const now = new Date();
-    const from = new Date(now.getTime() - 7 * 86400_000).toISOString();
-    const to   = new Date(now.getTime() + 60 * 86400_000).toISOString();
+    let from, to;
+    if (viewMode === 'calendar') {
+      // 표시 월 ± 1주 (그리드에 걸치는 인접 월 데이터도 포함)
+      const [y, m] = calYm.split('-').map(Number);
+      const start = new Date(y, m - 1, 1);
+      const end   = new Date(y, m, 1);
+      from = new Date(start.getTime() - 7 * 86400_000).toISOString();
+      to   = new Date(end.getTime()   + 7 * 86400_000).toISOString();
+    } else {
+      const now = new Date();
+      from = new Date(now.getTime() - 7 * 86400_000).toISOString();
+      to   = new Date(now.getTime() + 60 * 86400_000).toISOString();
+    }
     const params = { from, to };
-    if (statusFilter === 'active') params.status = ['planned', 'in_progress'];
-    else if (statusFilter !== 'all') params.status = [statusFilter];
+    if (viewMode !== 'calendar') {
+      // 캘린더는 모든 status 를 색으로 구분해 보여줌 → filter 는 리스트뷰에서만.
+      if (statusFilter === 'active') params.status = ['planned', 'in_progress'];
+      else if (statusFilter !== 'all') params.status = [statusFilter];
+    }
     api.listReservations(params).then(rs => {
       if (cancelled) return;
       setList(rs || []); setLoading(false);
     }).catch(e => { if (!cancelled) { setError(e.message); setLoading(false); } });
     return () => { cancelled = true; };
-  }, [statusFilter, tick]);
+  }, [statusFilter, tick, viewMode, calYm]);
 
   const activeCount    = (list || []).filter(r => r.status === 'planned' || r.status === 'in_progress').length;
   const completedCount = (list || []).filter(r => r.status === 'completed').length;
@@ -1182,11 +1202,27 @@ function ReservationsTab({ devices }) {
         <StatCard icon="list"  label="전체 차량"    value={devices?.length ?? 0} unit="대" tone="default" />
       </StatCardGrid>
 
+      {/* 뷰 mode 토글 + 필터/추가 */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-        <FilterChip active={statusFilter==='active'}    onClick={() => setStatusFilter('active')}    label="예정+진행" count={activeCount} tone="primary" />
-        <FilterChip active={statusFilter==='completed'} onClick={() => setStatusFilter('completed')} label="완료"     count={completedCount} tone="success" />
-        <FilterChip active={statusFilter==='cancelled'} onClick={() => setStatusFilter('cancelled')} label="취소"     count={cancelledCount} tone="warn" />
-        <FilterChip active={statusFilter==='all'}       onClick={() => setStatusFilter('all')}       label="전체"     count={(list || []).length} />
+        <div style={{
+          display: 'flex', gap: 0, padding: 3,
+          background: 'var(--surface-2)', borderRadius: 999,
+        }}>
+          <ViewToggleBtn active={viewMode==='list'}     onClick={() => setViewPersist('list')}     label="리스트" icon="list" />
+          <ViewToggleBtn active={viewMode==='calendar'} onClick={() => setViewPersist('calendar')} label="캘린더" icon="clock" />
+        </div>
+        {viewMode === 'list' && (
+          <>
+            <FilterChip active={statusFilter==='active'}    onClick={() => setStatusFilter('active')}    label="예정+진행" count={activeCount} tone="primary" />
+            <FilterChip active={statusFilter==='completed'} onClick={() => setStatusFilter('completed')} label="완료"     count={completedCount} tone="success" />
+            <FilterChip active={statusFilter==='cancelled'} onClick={() => setStatusFilter('cancelled')} label="취소"     count={cancelledCount} tone="warn" />
+            <FilterChip active={statusFilter==='all'}       onClick={() => setStatusFilter('all')}       label="전체"     count={(list || []).length} />
+          </>
+        )}
+        {viewMode === 'calendar' && (
+          <input type="month" value={calYm} onChange={e => setCalYm(e.target.value || calYm)}
+            style={{ ...st.dateInput, minWidth: 130 }} />
+        )}
         <button onClick={() => setEditing('new')} style={{
           marginLeft: 'auto', ...st.btnPrimary, display: 'flex', alignItems: 'center', gap: 6,
         }}>
@@ -1196,9 +1232,9 @@ function ReservationsTab({ devices }) {
 
       {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
       {loading && !list && <div style={st.muted}>예약 로딩 중...</div>}
-      {list && list.length === 0 && <div style={st.muted}>예약이 없습니다.</div>}
+      {list && list.length === 0 && viewMode === 'list' && <div style={st.muted}>예약이 없습니다.</div>}
 
-      {list && list.length > 0 && (
+      {viewMode === 'list' && list && list.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 8 }}>
           {list.map(r => (
             <ReservationCard key={r.id} r={r} onEdit={() => setEditing(r)}
@@ -1212,11 +1248,141 @@ function ReservationsTab({ devices }) {
         </div>
       )}
 
+      {viewMode === 'calendar' && (
+        <ReservationCalendar ym={calYm} list={list || []}
+          onDayClick={(dateStr) => setEditing({ new: dateStr })}
+          onEventClick={(r) => setEditing(r)} />
+      )}
+
       {editing && (
         <ReservationDialog init={editing === 'new' ? null : editing} devices={devices} staff={staff}
+          presetDate={editing?.new || null}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
       )}
+    </div>
+  );
+}
+
+function ViewToggleBtn({ active, onClick, label, icon }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: '6px 12px', borderRadius: 999, border: 'none', cursor: 'pointer',
+      background: active ? 'var(--surface)' : 'transparent',
+      color: active ? 'var(--text)' : 'var(--text-3)',
+      fontSize: 12, fontWeight: 700,
+      boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+      display: 'flex', alignItems: 'center', gap: 5,
+      transition: 'all .15s',
+    }}>
+      <Icon name={icon} size={12} /> {label}
+    </button>
+  );
+}
+
+// (2026-07-28) Stage-4F-2: 월 캘린더 뷰. 7x6 grid, 각 셀 = 하루.
+// 예약은 그 날 시간대에 걸치는 것들 (status 색으로 구분). 최대 3개 표시 + "N+ more".
+function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
+  const [y, m] = ym.split('-').map(Number);
+  const monthStart = new Date(y, m - 1, 1);
+  const monthEnd   = new Date(y, m, 0);   // 마지막날
+  const startDay   = monthStart.getDay(); // 0=Sun
+  const daysInMonth = monthEnd.getDate();
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // 셀 구성 — 이전달 잔여 + 이번달 + 다음달 첫주 padding. 7x6 = 42 cells.
+  const cells = [];
+  for (let i = 0; i < startDay; i++) {
+    const d = new Date(y, m - 1, i - startDay + 1);
+    cells.push({ date: d, currentMonth: false });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ date: new Date(y, m - 1, d), currentMonth: true });
+  }
+  while (cells.length < 42) {
+    const last = cells[cells.length - 1].date;
+    cells.push({ date: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1), currentMonth: false });
+  }
+
+  function reservationsOn(date) {
+    const dStr = date.toISOString().slice(0, 10);
+    return (list || []).filter(r => {
+      const s = new Date(r.starts_at).toISOString().slice(0, 10);
+      const e = new Date(r.ends_at  ).toISOString().slice(0, 10);
+      return dStr >= s && dStr <= e;
+    });
+  }
+
+  const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 12, padding: 8,
+    }}>
+      {/* DoW header */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
+        {DOW.map((d, i) => (
+          <div key={d} style={{
+            fontSize: 11, fontWeight: 700, padding: '6px 4px',
+            textAlign: 'center',
+            color: i === 0 ? 'var(--danger)' : i === 6 ? 'var(--primary)' : 'var(--text-2)',
+          }}>{d}</div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {cells.map((c, i) => {
+          const dStr = c.date.toISOString().slice(0, 10);
+          const dayResv = reservationsOn(c.date);
+          const isToday = dStr === todayStr;
+          const dow = c.date.getDay();
+          return (
+            <div key={i} onClick={() => c.currentMonth && onDayClick(dStr)} style={{
+              minHeight: 84,
+              padding: 4,
+              background: isToday
+                ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
+                : c.currentMonth ? 'var(--surface)' : 'var(--surface-2)',
+              border: '1px solid ' + (isToday ? 'var(--primary)' : 'var(--border)'),
+              borderRadius: 6,
+              opacity: c.currentMonth ? 1 : 0.4,
+              cursor: c.currentMonth ? 'pointer' : 'default',
+              display: 'flex', flexDirection: 'column', gap: 2,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700,
+                color: !c.currentMonth ? 'var(--text-3)'
+                     : isToday ? 'var(--primary)'
+                     : dow === 0 ? 'var(--danger)'
+                     : dow === 6 ? 'var(--primary)'
+                     : 'var(--text)',
+              }}>
+                {c.date.getDate()}
+              </div>
+              {dayResv.slice(0, 3).map(r => {
+                const s = RESV_STATUS[r.status] || RESV_STATUS.planned;
+                return (
+                  <div key={r.id} onClick={(e) => { e.stopPropagation(); onEventClick(r); }} style={{
+                    fontSize: 10, fontWeight: 600,
+                    padding: '2px 5px', borderRadius: 3,
+                    background: s.bg, color: s.color,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    cursor: 'pointer',
+                  }} title={`${r.license_plate || r.device_name || ''} · ${r.purpose || ''} · ${s.label}`}>
+                    {r.license_plate || r.device_name || `#${r.device_id}`}
+                  </div>
+                );
+              })}
+              {dayResv.length > 3 && (
+                <div style={{ fontSize: 9, color: 'var(--text-3)', textAlign: 'center' }}>
+                  +{dayResv.length - 3}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1287,15 +1453,17 @@ function isoToLocal(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function ReservationDialog({ init, devices, staff, onClose, onSaved }) {
-  // init null = 신규. 기본 시작 = 다음 정시, 종료 = +1h.
-  const nowRound = () => {
+function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved }) {
+  // init null = 신규. presetDate 'YYYY-MM-DD' 있으면 그 날 09:00~10:00 기본.
+  // 아니면 다음 정시부터 +1h.
+  const defaultStart = () => {
+    if (presetDate) return new Date(`${presetDate}T09:00:00`);
     const d = new Date(); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); return d;
   };
   const [deviceId, setDeviceId] = useState(init?.device_id ?? devices?.[0]?.id ?? '');
   const [driverId, setDriverId] = useState(init?.driver_staff_id ?? '');
-  const [startsAt, setStartsAt] = useState(init ? isoToLocal(init.starts_at) : isoToLocal(nowRound().toISOString()));
-  const [endsAt,   setEndsAt]   = useState(init ? isoToLocal(init.ends_at)   : isoToLocal(new Date(nowRound().getTime() + 3600_000).toISOString()));
+  const [startsAt, setStartsAt] = useState(init ? isoToLocal(init.starts_at) : isoToLocal(defaultStart().toISOString()));
+  const [endsAt,   setEndsAt]   = useState(init ? isoToLocal(init.ends_at)   : isoToLocal(new Date(defaultStart().getTime() + 3600_000).toISOString()));
   const [purpose,  setPurpose]  = useState(init?.purpose ?? '');
   const [note,     setNote]     = useState(init?.note ?? '');
   const [status,   setStatus]   = useState(init?.status ?? 'planned');
