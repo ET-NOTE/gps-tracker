@@ -1162,6 +1162,7 @@ function MonthlyReportTab({ devices, sub }) {
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);   // 연비 편집 대상 device
   const [tick, setTick] = useState(0);
+  const [dlOpen, setDlOpen] = useState(false);    // (2026-07-28) Stage-4C-2 다운로드 다이얼로그
 
   useEffect(() => {
     let cancelled = false;
@@ -1247,8 +1248,11 @@ function MonthlyReportTab({ devices, sub }) {
       <div className="no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <input type="month" value={ym} onChange={e => setYm(e.target.value || ymKST())}
           style={{ ...st.dateInput, minWidth: 130 }} />
-        <XlsxDownloadButton kind="nts"  ym={ym} label="국세청 양식" hint="별지 제73호" />
-        <XlsxDownloadButton kind="ours" ym={ym} label="우리 양식"   hint="상세" />
+        <button onClick={() => setDlOpen(true)} style={{
+          ...st.btnPrimary, display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          <Icon name="share" size={13} /> 운행일지 다운로드
+        </button>
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>
           업무 = trip_annotations.purpose='business' 합계
         </span>
@@ -1283,30 +1287,219 @@ function MonthlyReportTab({ devices, sub }) {
   );
 }
 
-// (2026-07-28) Stage-4B-2: XLSX 다운로드 버튼.
-// kind='nts' → 국세청 별지 제73호. kind='ours' → 우리 전용 (더 풍부).
-function XlsxDownloadButton({ kind, ym, label, hint }) {
+// (2026-07-28) Stage-4C-2: 운행일지 다운로드 다이얼로그.
+// 이미지 1 (cartax) 스타일: 양식 선택 + 차량 선택 + 기간 + 운행목적 필터.
+// 백엔드 /corporate/report.xlsx?type=&month=&device_ids=&purposes= 로 전송.
+const PURPOSE_ALL = [
+  { id: 'business',    label: '업무' },
+  { id: 'commute',     label: '출퇴근' },
+  { id: 'other',       label: '기타' },
+  { id: 'unspecified', label: '미지정' },
+];
+
+function DownloadDialog({ ym, devices, onClose }) {
+  const [kind, setKind] = useState('nts');
+  // null = 전체. Set<number> = 선택 차량 id.
+  const [selectedDevs, setSelectedDevs] = useState(null);
+  // null = 전체. Set<string> = 선택 목적.
+  const [selectedPurps, setSelectedPurps] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  const allDevIds = useMemo(() => new Set((devices || []).map(d => d.id)), [devices]);
+  const isAllDev = !selectedDevs || selectedDevs.size === allDevIds.size;
+
+  function toggleDev(id) {
+    setSelectedDevs(prev => {
+      const s = new Set(prev ?? []);
+      if (s.has(id)) s.delete(id); else s.add(id);
+      return s;
+    });
+  }
+  function togglePurp(p) {
+    setSelectedPurps(prev => {
+      const s = new Set(prev ?? []);
+      if (s.has(p)) s.delete(p); else s.add(p);
+      return s;
+    });
+  }
+
   async function download() {
     setBusy(true);
     try {
-      const { blob, filename } = await api.reportXlsx({ type: kind, month: ym });
+      const params = { type: kind, month: ym };
+      if (selectedDevs && !isAllDev) params.device_ids = Array.from(selectedDevs);
+      if (selectedPurps && selectedPurps.size > 0 && selectedPurps.size < PURPOSE_ALL.length) {
+        params.purposes = Array.from(selectedPurps);
+      }
+      const { blob, filename } = await api.reportXlsx(params);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      onClose();
     } catch (e) {
       alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' });
     } finally { setBusy(false); }
   }
+
   return (
-    <button onClick={download} disabled={busy} style={{
-      ...st.btnGhost, display: 'flex', alignItems: 'center', gap: 6,
-      padding: '7px 12px',
-    }} title={hint}>
-      <Icon name="share" size={12} />
-      {busy ? '...' : label}
-    </button>
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', borderRadius: 14, padding: 20,
+        width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 800 }}>운행일지 다운로드</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>
+            {ym} · {devices?.length || 0}대 차량 · XLSX
+          </div>
+        </div>
+
+        {/* 양식 */}
+        <FieldSection label="양식">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {[
+              { id: 'nts',  title: '국세청 운행기록부', hint: '별지 제73호 · 세무 신고' },
+              { id: 'ours', title: '우리 양식',         hint: '요약 + 차량별 상세 · 실무용' },
+            ].map(o => {
+              const on = kind === o.id;
+              return (
+                <button key={o.id} onClick={() => setKind(o.id)} style={{
+                  padding: '12px', borderRadius: 10, cursor: 'pointer',
+                  textAlign: 'left', border: '2px solid ' + (on ? 'var(--primary)' : 'var(--border)'),
+                  background: on ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--surface)',
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: on ? 'var(--primary)' : 'var(--text)' }}>
+                    {o.title}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>{o.hint}</div>
+                </button>
+              );
+            })}
+          </div>
+        </FieldSection>
+
+        {/* 차량 */}
+        <FieldSection label="차량" trailing={
+          <button onClick={() => setSelectedDevs(isAllDev ? new Set() : null)}
+            style={{ ...st.btnGhost, fontSize: 11 }}>
+            {isAllDev ? '개별 선택' : '전체'}
+          </button>
+        }>
+          {isAllDev ? (
+            <div style={{
+              padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8,
+              fontSize: 12, color: 'var(--text-2)',
+            }}>
+              전체 {devices?.length || 0}대
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }}>
+              {(devices || []).map(d => {
+                const on = selectedDevs?.has(d.id);
+                return (
+                  <label key={d.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                    background: on ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--surface-2)',
+                  }}>
+                    <input type="checkbox" checked={!!on} onChange={() => toggleDev(d.id)} />
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>
+                      {d.license_plate || d.display_name || d.device_uid}
+                    </span>
+                    {d.department && (
+                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>· {d.department}</span>
+                    )}
+                  </label>
+                );
+              })}
+              <div style={{ fontSize: 11, color: 'var(--text-3)', paddingLeft: 12 }}>
+                {selectedDevs?.size || 0} / {devices?.length || 0} 선택
+              </div>
+            </div>
+          )}
+        </FieldSection>
+
+        {/* 기간 (readonly, 상단 month picker 로 조정) */}
+        <FieldSection label="기간">
+          <div style={{
+            padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8,
+            fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <Icon name="clock" size={12} />
+            {ym} (한 달)
+            <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-3)' }}>
+              다른 달은 리포트 상단 월 선택으로 변경
+            </span>
+          </div>
+        </FieldSection>
+
+        {/* 운행목적 */}
+        <FieldSection label="운행목적" trailing={
+          <button onClick={() => setSelectedPurps(prev => prev == null ? new Set() : null)}
+            style={{ ...st.btnGhost, fontSize: 11 }}>
+            {selectedPurps == null ? '개별 선택' : '전체'}
+          </button>
+        }>
+          {selectedPurps == null ? (
+            <div style={{
+              padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8,
+              fontSize: 12, color: 'var(--text-2)',
+            }}>
+              전체 (업무·출퇴근·기타·미지정)
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
+              {PURPOSE_ALL.map(p => {
+                const on = selectedPurps?.has(p.id);
+                return (
+                  <label key={p.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                    background: on ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--surface-2)',
+                    fontSize: 12, fontWeight: 600,
+                  }}>
+                    <input type="checkbox" checked={!!on} onChange={() => togglePurp(p.id)} />
+                    {p.label}
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </FieldSection>
+
+        {/* 액션 */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
+          <button onClick={download} disabled={busy} style={{
+            ...st.btnPrimary, flex: 2, padding: '12px', fontSize: 13, gap: 8,
+          }}>
+            <Icon name="share" size={14} />
+            {busy ? '생성 중...' : 'XLSX 다운로드'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FieldSection({ label, trailing, children }) {
+  return (
+    <div>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6,
+        letterSpacing: '0.04em', textTransform: 'uppercase',
+      }}>
+        <span>{label}</span>
+        {trailing}
+      </div>
+      {children}
+    </div>
   );
 }
 

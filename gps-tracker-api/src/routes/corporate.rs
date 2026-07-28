@@ -740,6 +740,11 @@ struct XlsxQuery {
     kind:  Option<String>,
     /// YYYY-MM (default = 이번달 KST)
     month: Option<String>,
+    /// device id 콤마 목록. 미지정 = 전체 owner device.
+    device_ids: Option<String>,
+    /// purpose 콤마 목록 (business|commute|other|unspecified). 미지정 = 전체.
+    /// trip.annotation.purpose null 은 'unspecified' 로 취급.
+    purposes: Option<String>,
 }
 
 fn fuel_price_krw(fuel_type: &str) -> i64 {
@@ -814,7 +819,15 @@ async fn report_xlsx(
         address:         corp.as_ref().and_then(|c| c.address.clone()),
     };
 
-    // owner 의 device 목록 (XLSX 에 쓸 필드까지 전부 SELECT)
+    // 필터 파싱 — 콤마 분리, 공백 trim, 빈 항목 skip.
+    let device_id_filter: Option<Vec<i64>> = q.device_ids.as_deref().map(|s|
+        s.split(',').filter_map(|v| v.trim().parse::<i64>().ok()).collect::<Vec<_>>())
+        .filter(|v| !v.is_empty());
+    let purpose_filter: Option<Vec<String>> = q.purposes.as_deref().map(|s|
+        s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect::<Vec<_>>())
+        .filter(|v| !v.is_empty());
+
+    // owner 의 device 목록 (device_id 필터 적용)
     #[derive(FromRow)]
     struct DevRow {
         id: i64, display_name: Option<String>, device_uid: String,
@@ -823,13 +836,23 @@ async fn report_xlsx(
         department: Option<String>, vehicle_type: Option<String>,
         fuel_efficiency_kmpl: Option<f32>, fuel_type: Option<String>,
     }
-    let devs: Vec<DevRow> = sqlx::query_as(
-        r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
-                  purchase_price_krw, acquired_at, department, vehicle_type,
-                  fuel_efficiency_kmpl, fuel_type
-             FROM devices WHERE owner_id = $1
-            ORDER BY id"#)
-    .bind(user.user_id).fetch_all(&state.db).await?;
+    let devs: Vec<DevRow> = if let Some(ref ids) = device_id_filter {
+        sqlx::query_as(
+            r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+                      purchase_price_krw, acquired_at, department, vehicle_type,
+                      fuel_efficiency_kmpl, fuel_type
+                 FROM devices WHERE owner_id = $1 AND id = ANY($2::BIGINT[])
+                ORDER BY id"#)
+        .bind(user.user_id).bind(ids).fetch_all(&state.db).await?
+    } else {
+        sqlx::query_as(
+            r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+                      purchase_price_krw, acquired_at, department, vehicle_type,
+                      fuel_efficiency_kmpl, fuel_type
+                 FROM devices WHERE owner_id = $1
+                ORDER BY id"#)
+        .bind(user.user_id).fetch_all(&state.db).await?
+    };
 
     let devices_lite: Vec<xlsx_report::DeviceLite> = devs.iter().map(|d| xlsx_report::DeviceLite {
         id: d.id, display_name: d.display_name.clone(), device_uid: d.device_uid.clone(),
@@ -841,22 +864,30 @@ async fn report_xlsx(
     }).collect();
 
     // device 별 trip 병렬 계산 — compute_trips_inner 재사용
+    // purpose 필터: annotation 없는 trip 은 'unspecified' 로 취급.
     let mut per_device: Vec<(&xlsx_report::DeviceLite, Vec<xlsx_report::TripLite>)> = Vec::with_capacity(devices_lite.len());
     for (i, d) in devs.iter().enumerate() {
         let trips = compute_trips_inner(&state, user.user_id, d.id, from, to).await
             .unwrap_or_default();
-        let lite: Vec<xlsx_report::TripLite> = trips.into_iter().map(|t| xlsx_report::TripLite {
-            started_at: t.started_at, ended_at: t.ended_at,
-            distance_m: t.distance_m,
-            start_address: t.start_address, end_address: t.end_address,
-            start_lat: t.start_lat, start_lng: t.start_lng,
-            end_lat: t.end_lat, end_lng: t.end_lng,
-            purpose:      t.annotation.as_ref().map(|a| a.purpose.clone()),
-            purpose_note: t.annotation.as_ref().and_then(|a| a.purpose_note.clone()),
-            driver_name:  t.annotation.as_ref().and_then(|a| a.driver_name.clone()),
-            fuel_liters:  t.annotation.as_ref().and_then(|a| a.fuel_liters),
-            fuel_cost_krw: t.annotation.as_ref().and_then(|a| a.fuel_cost.map(|v| v as i64)),
-            note:         t.annotation.as_ref().and_then(|a| a.note.clone()),
+        let lite: Vec<xlsx_report::TripLite> = trips.into_iter().filter_map(|t| {
+            let purpose = t.annotation.as_ref().map(|a| a.purpose.clone())
+                .unwrap_or_else(|| "unspecified".into());
+            if let Some(ref allowed) = purpose_filter {
+                if !allowed.iter().any(|p| p == &purpose) { return None; }
+            }
+            Some(xlsx_report::TripLite {
+                started_at: t.started_at, ended_at: t.ended_at,
+                distance_m: t.distance_m,
+                start_address: t.start_address, end_address: t.end_address,
+                start_lat: t.start_lat, start_lng: t.start_lng,
+                end_lat: t.end_lat, end_lng: t.end_lng,
+                purpose:      Some(purpose),
+                purpose_note: t.annotation.as_ref().and_then(|a| a.purpose_note.clone()),
+                driver_name:  t.annotation.as_ref().and_then(|a| a.driver_name.clone()),
+                fuel_liters:  t.annotation.as_ref().and_then(|a| a.fuel_liters),
+                fuel_cost_krw: t.annotation.as_ref().and_then(|a| a.fuel_cost.map(|v| v as i64)),
+                note:         t.annotation.as_ref().and_then(|a| a.note.clone()),
+            })
         }).collect();
         per_device.push((&devices_lite[i], lite));
     }

@@ -461,13 +461,15 @@ export const api = {
                         : `trips_${deviceId}.csv`;
     return { blob, filename };
   },
-  // (2026-07-28) Stage-4B-2: 월간 XLSX 리포트 다운로드.
-  // params: { type: 'nts'|'ours', month: 'YYYY-MM' (선택, default 이번달 KST) }
-  // 반환: { blob, filename } — CSV 헬퍼와 동일 패턴.
+  // (2026-07-28) Stage-4B-2 + Stage-4C-2: 월간 XLSX 리포트 다운로드.
+  // params: { type: 'nts'|'ours', month: 'YYYY-MM' (선택),
+  //           device_ids: [1,2,3] (선택 — 전체), purposes: ['business','commute'] (선택 — 전체) }
   reportXlsx: async (params = {}) => {
     const q = new URLSearchParams();
     q.set('type', params.type || 'ours');
     if (params.month) q.set('month', params.month);
+    if (params.device_ids?.length) q.set('device_ids', params.device_ids.join(','));
+    if (params.purposes?.length)   q.set('purposes',   params.purposes.join(','));
     const tok = localStorage.getItem('access_token');
     const res = await fetch(`${BASE}/corporate/report.xlsx?${q.toString()}`, {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
