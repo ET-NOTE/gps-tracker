@@ -1061,8 +1061,10 @@ function MonthlyReportTab({ devices, sub }) {
       <div className="no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <input type="month" value={ym} onChange={e => setYm(e.target.value || ymKST())}
           style={{ ...st.dateInput, minWidth: 130 }} />
-        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          업무 = trip_annotations.purpose='business' 합계. 그 외 (출퇴근/기타/미지정) 는 개인.
+        <XlsxDownloadButton kind="nts"  ym={ym} label="국세청 양식" hint="별지 제73호" />
+        <XlsxDownloadButton kind="ours" ym={ym} label="우리 양식"   hint="상세" />
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>
+          업무 = trip_annotations.purpose='business' 합계
         </span>
       </div>
 
@@ -1092,6 +1094,33 @@ function MonthlyReportTab({ devices, sub }) {
           onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
       )}
     </div>
+  );
+}
+
+// (2026-07-28) Stage-4B-2: XLSX 다운로드 버튼.
+// kind='nts' → 국세청 별지 제73호. kind='ours' → 우리 전용 (더 풍부).
+function XlsxDownloadButton({ kind, ym, label, hint }) {
+  const [busy, setBusy] = useState(false);
+  async function download() {
+    setBusy(true);
+    try {
+      const { blob, filename } = await api.reportXlsx({ type: kind, month: ym });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' });
+    } finally { setBusy(false); }
+  }
+  return (
+    <button onClick={download} disabled={busy} style={{
+      ...st.btnGhost, display: 'flex', alignItems: 'center', gap: 6,
+      padding: '7px 12px',
+    }} title={hint}>
+      <Icon name="share" size={12} />
+      {busy ? '...' : label}
+    </button>
   );
 }
 

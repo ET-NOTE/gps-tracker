@@ -10,3 +10,4 @@ pub mod openai;
 pub mod sms;
 pub mod stats;
 pub mod toss;
+pub mod xlsx_report;
