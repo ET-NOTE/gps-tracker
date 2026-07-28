@@ -25,6 +25,12 @@ export class TrackerWS {
     // 대량 client 가 서버 죽음 → 동시 재접속으로 thundering herd 되는 것 방지.
     // 성공 (onopen) 시 리셋. 스킬 순서: 1s, 2s, 4s, 8s, 16s, 30s cap.
     this._reconnectAttempts = 0;
+    // (F3) rAF coalesce — WS onmessage 폭주 시 매 프레임에 한 번만 flush.
+    // 100대 device 가 동시에 fix POST → onmessage 100 회 → 100 회 React setState
+    // → 프레임 드롭 60fps → <10fps 문제 정면 해소.
+    // location message 만 batch (wake/sleep 은 실시간성 중요, 즉시 dispatch).
+    this._pending = [];
+    this._rafScheduled = false;
   }
 
   _reconnectDelay() {
@@ -77,7 +83,28 @@ export class TrackerWS {
     };
 
     sock.onmessage = (e) => {
-      try { this.onEvent(JSON.parse(e.data)); } catch { /* ignore malformed */ }
+      let msg;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      // (F3) location fix 만 rAF batch — 폭주 시 프레임당 한 번 flush.
+      // 상태 event (wake/sleep/rental_*) 는 즉시 dispatch (실시간성 우선).
+      if (msg?.type === 'location') {
+        this._pending.push(msg);
+        if (!this._rafScheduled) {
+          this._rafScheduled = true;
+          const flush = () => {
+            this._rafScheduled = false;
+            const batch = this._pending;
+            this._pending = [];
+            for (const m of batch) {
+              try { this.onEvent(m); } catch { /* ignore consumer err */ }
+            }
+          };
+          if (typeof requestAnimationFrame === 'function') requestAnimationFrame(flush);
+          else setTimeout(flush, 16);
+        }
+      } else {
+        try { this.onEvent(msg); } catch { /* noop */ }
+      }
     };
 
     sock.onclose = () => {

@@ -3,12 +3,13 @@
 //
 // 인쇄: 브라우저 window.print() 호출. @media print 로 nav/사이드 다 숨기고 리포트만.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Icon from './Icon';
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
+import { panelPropsEqual } from './shared/memoPanel';
 import { Modal, Button, SkeletonList } from './ui';
 import {
   useCorporateInfo, useStaff, useReservations, useDocuments,
@@ -25,7 +26,7 @@ const PURPOSE_LABEL = {
   unspecified: '미지정',
 };
 
-export default function CorporatePanel({ devices }) {
+function CorporatePanel({ devices }) {
   const [tab, setTab] = useState(() => localStorage.getItem('corporate_tab') || 'report');
   const setTabPersist = (t) => { setTab(t); try { localStorage.setItem('corporate_tab', t); } catch {} };
 
@@ -78,6 +79,9 @@ export default function CorporatePanel({ devices }) {
     </div>
   );
 }
+
+// (F3) devices lat/lng 만 변경 시 재렌더 skip.
+export default React.memo(CorporatePanel, panelPropsEqual);
 
 // ════════════════════════════════════════════════════════
 // 회사 정보 — 국세청 운행기록부 헤더 정보. (2026-07-28 재디자인)
