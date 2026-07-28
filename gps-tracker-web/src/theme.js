@@ -5,6 +5,39 @@
 
 import { api } from './api';
 
+// (F0-5) spacing / radius / shadow 토큰 — 테마 무관 공통.
+// 하드코딩된 padding·borderRadius·boxShadow 를 codemod 로 점진 대체 예정.
+// 사용: `padding: 'var(--space-3)'`, `borderRadius: 'var(--radius-md)'`
+export const DESIGN_TOKENS = {
+  // spacing scale (4의 배수 · Tailwind-like)
+  '--space-1':  '4px',
+  '--space-2':  '8px',
+  '--space-3':  '12px',
+  '--space-4':  '16px',
+  '--space-5':  '20px',
+  '--space-6':  '24px',
+  '--space-8':  '32px',
+  '--space-10': '40px',
+  '--space-12': '48px',
+  // border-radius
+  '--radius-xs':  '3px',
+  '--radius-sm':  '6px',
+  '--radius-md':  '8px',
+  '--radius-lg':  '12px',
+  '--radius-xl':  '14px',
+  '--radius-2xl': '16px',
+  '--radius-pill': '999px',
+  // shadows (라이트 기준 — 다크는 alpha 만 조정하면 대개 어울림)
+  '--shadow-xs': '0 1px 2px rgba(0,0,0,0.05)',
+  '--shadow-sm': '0 2px 6px rgba(0,0,0,0.08)',
+  '--shadow-md': '0 4px 12px rgba(0,0,0,0.10)',
+  '--shadow-lg': '0 8px 24px rgba(0,0,0,0.14)',
+  // z-index scale
+  '--z-modal':   '900',
+  '--z-toast':   '950',
+  '--z-tooltip': '1000',
+};
+
 export const THEMES = {
   light: {
     '--bg':         '#F5F5F7',   // 페이지 배경
@@ -46,6 +79,8 @@ export function applyTheme(name, opts = {}) {
   const { persist = true, syncServer = true } = opts;
   const map = THEMES[name] || THEMES.dark;
   const root = document.documentElement;
+  // (F0-5) 테마 무관 디자인 토큰은 매 apply 마다 재-set (idempotent) 하지만 실질 부담 없음.
+  Object.entries(DESIGN_TOKENS).forEach(([k, v]) => root.style.setProperty(k, v));
   Object.entries(map).forEach(([k, v]) => root.style.setProperty(k, v));
   root.setAttribute('data-theme', name);
   if (persist) localStorage.setItem('theme', name);

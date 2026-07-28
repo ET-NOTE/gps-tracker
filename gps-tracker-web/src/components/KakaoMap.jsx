@@ -930,7 +930,6 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
      */
     drawSeekerPath(points, opts = {}) {
       if (!mapRef.current) return null;
-      this.clearSeekerPath();
       const {
         color = '#5B7CFF', speedColor = false, timeColor = false, showStops = true,
         showCursor = false, onPointClick = null,
@@ -938,7 +937,17 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         stopMergeRadiusM = 35,   // nearby stop markers are absorbed into one representative marker
         minBucketRun = 3,        // 노이즈 단일 버킷 전환 무시 (>=3 점 연속이어야 새 segment)
         timeSegments = 5,       // 하루 왕복 경로가 겹칠 때 시간대별 선 색상 분리
+        // (F0-1) 옵션 토글 (색상·정지 강조 등) 시 사용자가 잡아둔 zoom/pan 을
+        // 파괴하지 않도록 fingerprint 기반으로 refit 를 skip. 강제 refit 는 refit=true.
+        refit,                   // undefined = auto, true = force, false = never
       } = opts;
+      // fingerprint: 첫/마지막 timestamp + 개수. 좌표 집합이 실제로 변했는지 판단.
+      const fp = points.length === 0 ? '' :
+        `${points.length}|${points[0]?.recorded_at || ''}|${points[points.length-1]?.recorded_at || ''}`;
+      const shouldRefit = refit === true
+        || (refit !== false && seekerRef.current._fp !== fp);
+      this.clearSeekerPath();
+      seekerRef.current._fp = fp;
 
       // 호출자에 따라 server DESC 순서로 그대로 넘어올 수 있음 (MiniSeekerOverlay) → 화살표 방향 역전.
       // 여기서 recorded_at ASC 로 강제 정렬 (이미 ASC 면 빠르게 통과). 모든 호출자에 안전.
@@ -1128,13 +1137,16 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         seekerRef.current.cursor = cursor;
       }
 
-      // bounds fit
-      if (pts.length > 1) {
-        const bounds = new window.kakao.maps.LatLngBounds();
-        pts.forEach(p => bounds.extend(new window.kakao.maps.LatLng(p.lat, p.lng)));
-        mapRef.current.setBounds(bounds, 60, 60, 60, 60);
-      } else {
-        mapRef.current.setCenter(new window.kakao.maps.LatLng(pts[0].lat, pts[0].lng));
+      // (F0-1) bounds fit — 좌표 집합이 실제로 변한 경우에만.
+      // 옵션 토글 (색상·정지 강조 등) 로 인한 재렌더 시엔 사용자가 잡아둔 zoom/pan 보존.
+      if (shouldRefit) {
+        if (pts.length > 1) {
+          const bounds = new window.kakao.maps.LatLngBounds();
+          pts.forEach(p => bounds.extend(new window.kakao.maps.LatLng(p.lat, p.lng)));
+          mapRef.current.setBounds(bounds, 60, 60, 60, 60);
+        } else {
+          mapRef.current.setCenter(new window.kakao.maps.LatLng(pts[0].lat, pts[0].lng));
+        }
       }
 
       return {
@@ -1151,7 +1163,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       seekerRef.current.poly.forEach(p => p.setMap(null));
       seekerRef.current.pts.forEach(m => m.setMap(null));
       seekerRef.current.cursor?.setMap(null);
-      seekerRef.current = { poly: [], pts: [], cursor: null };
+      // (F0-1) _fp 는 drawSeekerPath 가 새로 설정하기 전 clear 되면 refit 판단 잃음.
+      // fingerprint 는 clear 후에도 유지 (draw 가 곧 덮어씀).
+      const prevFp = seekerRef.current._fp;
+      seekerRef.current = { poly: [], pts: [], cursor: null, _fp: prevFp };
       // 시커 닫힐 때 선택 핀도 같이 정리.
       seekerPinRef.current?.setMap(null);
       seekerPinRef.current = null;

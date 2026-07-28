@@ -21,6 +21,17 @@ export class TrackerWS {
     this.subscribed = new Set();
     this._timer = null;
     this._dead = false;
+    // (F0-4) 재연결 exp backoff — 5s 고정이 아니라 1s→30s cap 로 지수 증가 + jitter.
+    // 대량 client 가 서버 죽음 → 동시 재접속으로 thundering herd 되는 것 방지.
+    // 성공 (onopen) 시 리셋. 스킬 순서: 1s, 2s, 4s, 8s, 16s, 30s cap.
+    this._reconnectAttempts = 0;
+  }
+
+  _reconnectDelay() {
+    const base = Math.min(30_000, 1000 * Math.pow(2, this._reconnectAttempts));
+    const jitter = Math.random() * base * 0.3;   // ±30%
+    this._reconnectAttempts++;
+    return Math.round(base + jitter);
   }
 
   connect(token) {
@@ -50,14 +61,15 @@ export class TrackerWS {
     }
     if (t) this.token = t;
     if (!this.token) {
-      // 토큰 없으면 5초 후 재시도 (로그인 직후 등)
-      this._timer = setTimeout(() => this._open(), 5000);
+      // 토큰 없으면 exp backoff 로 재시도 (로그인 직후 등)
+      this._timer = setTimeout(() => this._open(), this._reconnectDelay());
       return;
     }
     const sock = new WebSocket(`${WS_URL}?token=${this.token}`);
     this.socket = sock;
 
     sock.onopen = () => {
+      this._reconnectAttempts = 0;   // (F0-4) 성공 시 backoff 리셋
       this.onStatus?.('connected');
       if (this.subscribed.size > 0) {
         this._send({ action: 'subscribe', device_ids: [...this.subscribed] });
@@ -71,7 +83,7 @@ export class TrackerWS {
     sock.onclose = () => {
       this.onStatus?.('disconnected');
       if (!this._dead) {
-        this._timer = setTimeout(() => this._open(), 5000);
+        this._timer = setTimeout(() => this._open(), this._reconnectDelay());
       }
     };
   }
