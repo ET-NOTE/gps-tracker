@@ -461,6 +461,31 @@ export const api = {
                         : `trips_${deviceId}.csv`;
     return { blob, filename };
   },
+  // (2026-07-28) Stage-4B-2: 월간 XLSX 리포트 다운로드.
+  // params: { type: 'nts'|'ours', month: 'YYYY-MM' (선택, default 이번달 KST) }
+  // 반환: { blob, filename } — CSV 헬퍼와 동일 패턴.
+  reportXlsx: async (params = {}) => {
+    const q = new URLSearchParams();
+    q.set('type', params.type || 'ours');
+    if (params.month) q.set('month', params.month);
+    const tok = localStorage.getItem('access_token');
+    const res = await fetch(`${BASE}/corporate/report.xlsx?${q.toString()}`, {
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || res.statusText);
+    }
+    const blob = await res.blob();
+    const cd   = res.headers.get('content-disposition') || '';
+    const m1 = cd.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+    const m2 = cd.match(/filename\s*=\s*"?([^";]+)"?/i);
+    const filename = m1 ? decodeURIComponent(m1[1])
+                   : m2 ? decodeURIComponent(m2[1])
+                        : `운행기록부_${params.month || 'this-month'}_${params.type || 'ours'}.xlsx`;
+    return { blob, filename };
+  },
+
   // 법인운행 — 구독
   getCorporateSubscription:  () => req('GET', '/corporate/subscription'),
   buyCorporateSubscription:  () => req('POST', '/corporate/subscription'),

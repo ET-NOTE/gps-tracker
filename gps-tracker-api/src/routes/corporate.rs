@@ -40,6 +40,8 @@ pub fn router() -> Router<AppState> {
         .route("/corporate/devices/:id/trips",                get(list_trips))
         .route("/corporate/devices/:id/trips/annotation",     patch(upsert_annotation))
         .route("/corporate/devices/:id/trips.csv",            get(trips_csv))
+        // (2026-07-28) Stage-4B-2: 월간 운행기록부 XLSX. type=nts|ours, month=YYYY-MM.
+        .route("/corporate/report.xlsx",                      get(report_xlsx))
         // 구독
         .route("/corporate/subscription", get(get_subscription).post(buy_subscription))
 }
@@ -232,9 +234,19 @@ async fn list_trips(
 ) -> AppResult<Json<Vec<Trip>>> {
     verify_device_owner(&state, user.user_id, device_id).await?;
     let (from, to) = parse_range(&q)?;
+    Ok(Json(compute_trips_inner(&state, user.user_id, device_id, from, to).await?))
+}
 
+// (2026-07-28) Stage-4B-2: XLSX 리포트에서 재사용하기 위해 list_trips 의 코어 로직을
+// 순수 함수로 분리. axum 추출자 없이 device 별 trip 을 계산.
+async fn compute_trips_inner(
+    state: &AppState,
+    user_id: i64,
+    device_id: i64,
+    from: DateTime<Utc>,
+    to:   DateTime<Utc>,
+) -> AppResult<Vec<Trip>> {
     // 1) wake/sleep_enter 페어링으로 trip 경계 산출 — user_id 격리
-    //    data 도 함께 — sleep_enter 의 data.stopped_at(펌웨어가 보낸 진짜 정지 시각) 활용.
     let events: Vec<(String, DateTime<Utc>, Option<serde_json::Value>)> = sqlx::query_as(
         r#"SELECT kind, occurred_at, data
              FROM events
@@ -243,24 +255,20 @@ async fn list_trips(
               AND occurred_at >= $2 AND occurred_at <= $3
             ORDER BY occurred_at ASC"#,
     )
-    .bind(device_id).bind(from).bind(to).bind(user.user_id)
+    .bind(device_id).bind(from).bind(to).bind(user_id)
     .fetch_all(&state.db).await?;
 
     let mut trips = pair_trips(&events);
 
-    // 2) sleep/wake 이벤트가 0건 → motion-based fallback (user_id 격리)
+    // 2) sleep/wake 이벤트가 0건 → motion-based fallback
     if trips.is_empty() {
-        trips = motion_based_trips(&state.db, device_id, user.user_id, from, to).await?;
+        trips = motion_based_trips(&state.db, device_id, user_id, from, to).await?;
     }
 
-    // 2b) 짧은 정차로 인한 trip 분절 자동 병합 — 보류.
-    //     디바이스 펌웨어 측 sleep timeout 정책에서 일관 처리하기로 결정.
-    //     필요 시 한 줄로 재활성: trips = merge_short_gaps(trips, chrono::Duration::seconds(MOTION_GAP_SEC));
+    // 3) trip endpoints
+    let trip_rows = collect_trip_endpoints(&state.db, device_id, user_id, &trips, to).await?;
 
-    // 3) 모든 trip 의 [start, end] 범위에서 첫·마지막 fix 점을 한 SQL 로 일괄 추출
-    let trip_rows = collect_trip_endpoints(&state.db, device_id, user.user_id, &trips, to).await?;
-
-    // 4) 거리 계산용 — 한 번의 SQL 로 모든 fix 좌표 (시간순) 가져와서 메모리에서 분배
+    // 4) 거리 계산용 fixes
     let all_fixes: Vec<(DateTime<Utc>, f64, f64)> = sqlx::query_as(
         r#"SELECT recorded_at, lat, lng FROM location_records
             WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
@@ -268,14 +276,14 @@ async fn list_trips(
               AND recorded_at >= $2 AND recorded_at <= $3
             ORDER BY recorded_at ASC"#,
     )
-    .bind(device_id).bind(from).bind(to).bind(user.user_id)
+    .bind(device_id).bind(from).bind(to).bind(user_id)
     .fetch_all(&state.db).await?;
 
-    // 5) 모든 trip 의 시작/끝 좌표를 모아 한 번의 batch reverse-geocode 호출.
+    // 5) batch reverse-geocode
     let mut coords_to_resolve: Vec<(f64, f64)> = Vec::new();
-    let mut idx_map: Vec<(usize, usize)> = Vec::with_capacity(trips.len()); // (start_idx, end_idx) in resolved
-    for (i, _t) in trips.iter().enumerate() {
-        let row = trip_rows.get(i);
+    let mut idx_map: Vec<(usize, usize)> = Vec::with_capacity(trips.len());
+    for (_i, _t) in trips.iter().enumerate() {
+        let row = trip_rows.get(_i);
         let s_idx = if let Some(r) = row {
             if let (Some(la), Some(ln)) = (r.start_lat, r.start_lng) {
                 coords_to_resolve.push((la, ln));
@@ -293,10 +301,10 @@ async fn list_trips(
     let resolved = if coords_to_resolve.is_empty() { vec![] }
                    else { kakao_geo::reverse_many_cached(&state.db, &coords_to_resolve).await };
 
-    // 6) annotations 한 번에 로드 (user_id 격리)
-    let annotations = load_annotations(&state, device_id, user.user_id, from, to).await?;
+    // 6) annotations
+    let annotations = load_annotations(state, device_id, user_id, from, to).await?;
 
-    // 7) 각 trip 의 거리 — all_fixes 를 [start..=end] 시간 범위로 슬라이스
+    // 7) 최종 Trip 조립
     let mut out = Vec::with_capacity(trips.len());
     for (i, (s, e)) in trips.iter().enumerate() {
         let end = e.unwrap_or(to);
@@ -332,7 +340,7 @@ async fn list_trips(
             annotation,
         });
     }
-    Ok(Json(out))
+    Ok(out)
 }
 
 // ── 헬퍼: wake/sleep 이벤트 → trip 경계 ─────────────
@@ -717,6 +725,167 @@ async fn trips_csv(
         [(header::CONTENT_TYPE, "text/csv; charset=utf-8".to_string()),
          (header::CONTENT_DISPOSITION, cd)],
         s,
+    ).into_response())
+}
+
+// ═══════════════════════════════════════════════════════════════
+// (2026-07-28) Stage-4B-2: 월간 XLSX 리포트 — 2종 (nts / ours).
+// ═══════════════════════════════════════════════════════════════
+use crate::services::xlsx_report;
+
+#[derive(Debug, Deserialize)]
+struct XlsxQuery {
+    /// nts | ours
+    #[serde(rename = "type")]
+    kind:  Option<String>,
+    /// YYYY-MM (default = 이번달 KST)
+    month: Option<String>,
+}
+
+fn fuel_price_krw(fuel_type: &str) -> i64 {
+    // 서버 env 로 override 가능 (오피넷 연동은 향후).
+    let env = |k: &str, d: i64| std::env::var(k).ok().and_then(|v| v.parse().ok()).unwrap_or(d);
+    match fuel_type {
+        "gasoline" => env("FUEL_PRICE_GASOLINE_KRW", 1700),
+        "diesel"   => env("FUEL_PRICE_DIESEL_KRW",   1600),
+        "lpg"      => env("FUEL_PRICE_LPG_KRW",      1000),
+        _          => 0,
+    }
+}
+
+async fn report_xlsx(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Query(q): Query<XlsxQuery>,
+) -> AppResult<axum::response::Response> {
+    use axum::response::IntoResponse;
+    use axum::http::header;
+    use chrono::{Datelike, TimeZone, NaiveDate};
+
+    // 구독 활성 확인 — 리포트 종류와 무관하게 corporate_report 구독 필수.
+    let sub_active: Option<DateTime<Utc>> = sqlx::query_scalar(
+        r#"SELECT MAX(expires_at) FROM subscriptions
+            WHERE user_id = $1 AND kind = $2 AND expires_at > NOW()"#,
+    )
+    .bind(user.user_id).bind(SUB_KIND).fetch_optional(&state.db).await?.flatten();
+    if sub_active.is_none() {
+        return Err(AppError::BadRequest("법인운행 리포트 구독이 필요합니다.".into()));
+    }
+
+    let kind = q.kind.as_deref().unwrap_or("ours");
+    if kind != "nts" && kind != "ours" {
+        return Err(AppError::BadRequest(format!("invalid type: {kind} (nts|ours)")));
+    }
+
+    // month 파싱 — 기본은 오늘 (KST) 기준 이번달
+    let kst = chrono::FixedOffset::east_opt(9 * 3600).unwrap();
+    let now_kst = Utc::now().with_timezone(&kst);
+    let ym = q.month.clone().unwrap_or_else(|| now_kst.format("%Y-%m").to_string());
+    let (y, m) = ym.split_once('-')
+        .and_then(|(y, m)| Some((y.parse::<i32>().ok()?, m.parse::<u32>().ok()?)))
+        .ok_or_else(|| AppError::BadRequest(format!("invalid month: {ym} (YYYY-MM)")))?;
+    if !(2000..=2100).contains(&y) || !(1..=12).contains(&m) {
+        return Err(AppError::BadRequest(format!("invalid month range: {ym}")));
+    }
+    let from_naive: NaiveDate = NaiveDate::from_ymd_opt(y, m, 1)
+        .ok_or_else(|| AppError::BadRequest("invalid date".into()))?;
+    let (ny, nm) = if m == 12 { (y + 1, 1) } else { (y, m + 1) };
+    let to_naive: NaiveDate = NaiveDate::from_ymd_opt(ny, nm, 1)
+        .ok_or_else(|| AppError::BadRequest("invalid date".into()))?;
+    let from = kst.from_local_datetime(&from_naive.and_hms_opt(0, 0, 0).unwrap())
+        .single().ok_or_else(|| AppError::BadRequest("tz".into()))?.with_timezone(&Utc);
+    let to   = kst.from_local_datetime(&to_naive.and_hms_opt(0, 0, 0).unwrap())
+        .single().ok_or_else(|| AppError::BadRequest("tz".into()))?.with_timezone(&Utc);
+
+    // 회사 정보
+    #[derive(FromRow)]
+    struct CorpRow {
+        business_number: Option<String>, company_name: Option<String>,
+        representative:  Option<String>, address:      Option<String>,
+    }
+    let corp: Option<CorpRow> = sqlx::query_as(
+        "SELECT business_number, company_name, representative, address
+           FROM corporate_info WHERE user_id = $1")
+    .bind(user.user_id).fetch_optional(&state.db).await?;
+    let corp_info = xlsx_report::CorpInfoLite {
+        business_number: corp.as_ref().and_then(|c| c.business_number.clone()),
+        company_name:    corp.as_ref().and_then(|c| c.company_name.clone()),
+        representative:  corp.as_ref().and_then(|c| c.representative.clone()),
+        address:         corp.as_ref().and_then(|c| c.address.clone()),
+    };
+
+    // owner 의 device 목록 (XLSX 에 쓸 필드까지 전부 SELECT)
+    #[derive(FromRow)]
+    struct DevRow {
+        id: i64, display_name: Option<String>, device_uid: String,
+        license_plate: Option<String>, model_year: Option<i32>, engine_cc: Option<i32>,
+        purchase_price_krw: Option<i64>, acquired_at: Option<chrono::NaiveDate>,
+        department: Option<String>, vehicle_type: Option<String>,
+        fuel_efficiency_kmpl: Option<f32>, fuel_type: Option<String>,
+    }
+    let devs: Vec<DevRow> = sqlx::query_as(
+        r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+                  purchase_price_krw, acquired_at, department, vehicle_type,
+                  fuel_efficiency_kmpl, fuel_type
+             FROM devices WHERE owner_id = $1
+            ORDER BY id"#)
+    .bind(user.user_id).fetch_all(&state.db).await?;
+
+    let devices_lite: Vec<xlsx_report::DeviceLite> = devs.iter().map(|d| xlsx_report::DeviceLite {
+        id: d.id, display_name: d.display_name.clone(), device_uid: d.device_uid.clone(),
+        license_plate: d.license_plate.clone(),
+        model_year: d.model_year, engine_cc: d.engine_cc,
+        purchase_price_krw: d.purchase_price_krw, acquired_at: d.acquired_at,
+        department: d.department.clone(), vehicle_type: d.vehicle_type.clone(),
+        fuel_efficiency_kmpl: d.fuel_efficiency_kmpl, fuel_type: d.fuel_type.clone(),
+    }).collect();
+
+    // device 별 trip 병렬 계산 — compute_trips_inner 재사용
+    let mut per_device: Vec<(&xlsx_report::DeviceLite, Vec<xlsx_report::TripLite>)> = Vec::with_capacity(devices_lite.len());
+    for (i, d) in devs.iter().enumerate() {
+        let trips = compute_trips_inner(&state, user.user_id, d.id, from, to).await
+            .unwrap_or_default();
+        let lite: Vec<xlsx_report::TripLite> = trips.into_iter().map(|t| xlsx_report::TripLite {
+            started_at: t.started_at, ended_at: t.ended_at,
+            distance_m: t.distance_m,
+            start_address: t.start_address, end_address: t.end_address,
+            start_lat: t.start_lat, start_lng: t.start_lng,
+            end_lat: t.end_lat, end_lng: t.end_lng,
+            purpose:      t.annotation.as_ref().map(|a| a.purpose.clone()),
+            purpose_note: t.annotation.as_ref().and_then(|a| a.purpose_note.clone()),
+            driver_name:  t.annotation.as_ref().and_then(|a| a.driver_name.clone()),
+            fuel_liters:  t.annotation.as_ref().and_then(|a| a.fuel_liters),
+            fuel_cost_krw: t.annotation.as_ref().and_then(|a| a.fuel_cost.map(|v| v as i64)),
+            note:         t.annotation.as_ref().and_then(|a| a.note.clone()),
+        }).collect();
+        per_device.push((&devices_lite[i], lite));
+    }
+
+    let ctx = xlsx_report::ReportContext {
+        month_ym: ym.clone(),
+        corp: &corp_info,
+        per_device,
+        fuel_price: fuel_price_krw,
+    };
+    let bytes = match kind {
+        "nts"  => xlsx_report::build_nts(&ctx),
+        "ours" => xlsx_report::build_ours(&ctx),
+        _ => unreachable!(),
+    }.map_err(|e| anyhow::anyhow!("xlsx build: {e}"))?;
+
+    let kind_ko = if kind == "nts" { "국세청양식" } else { "우리양식" };
+    let month_slug = ym.replace('-', "");
+    let filename = format!("운행기록부_{}_{}.xlsx", month_slug, kind_ko);
+    let pct = percent_encode(&filename);
+    let cd = format!("attachment; filename=\"{}\"; filename*=UTF-8''{}", pct, pct);
+
+    // year/month unused 방지 (chrono::Datelike 는 import 확인용 재적용)
+    let _ = (now_kst.year(), now_kst.month());
+
+    Ok((
+        [(header::CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".to_string()),
+         (header::CONTENT_DISPOSITION, cd)],
+        bytes,
     ).into_response())
 }
 

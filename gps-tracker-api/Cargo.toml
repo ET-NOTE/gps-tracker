@@ -57,6 +57,10 @@ base64          = "0.22"
 subtle          = "2"     # constant-time 비교 (OTP 등)
 hmac            = "0.12"  # webhook 서명 검증 (Toss)
 
+# XLSX 생성 — 국세청 별지 제73호 + 우리 전용 운행기록부 export.
+# rust_xlsxwriter 는 pure Rust (native), Excel/Numbers/LibreOffice 호환.
+rust_xlsxwriter = "0.87"
+
 [profile.release]
 opt-level     = 3
 lto           = "thin"     # 빌드 시간 적당히, 최적화 충분
