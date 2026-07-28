@@ -426,6 +426,9 @@ export default function Dashboard({ onLogout }) {
   const wsRef      = useRef(null);
   const devRef     = useRef([]);
   const lastMetaRef = useRef({});
+  // (2026-07-28) 깜빡임 fix — device.id → 마지막 로드 시 device.last_fix_at 저장.
+  // 30s force refresh 에서 이 값과 서버 값이 같으면 (=신규 데이터 없음) 재구축 skip.
+  const lastLoadedFixAtRef = useRef({});
   // (2026-07-01) zoom 변경 시 dot 재-render 위해 refresh 함수 노출
   const refreshFnRef      = useRef(null);
   const lastZoomLevelRef  = useRef(null);
@@ -612,6 +615,7 @@ export default function Dashboard({ onLogout }) {
         if (!newIds.has(id)) {
           mapRef.current?.removeMarker(id);
           delete lastMetaRef.current[id];
+          delete lastLoadedFixAtRef.current[id];
         }
       });
       setDevices(list);
@@ -620,6 +624,15 @@ export default function Dashboard({ onLogout }) {
       for (const d of list) {
         // (2026-07-01) force=true (zoom re-render 등) 면 기존 device 도 dot 재그림
         if (!force && oldIds.has(d.id)) continue;
+        // (2026-07-28) 깜빡임 fix — 30s force refresh 인데 마지막 fix 시각이 이전 로드와 동일하면
+        // 이 device 는 신규 데이터 없음 → clearLiveTrail + 재구축 skip (visible clear→rebuild 갭
+        // 사라짐). WS 로 새 fix 오면 lastLoadedFixAtRef 는 갱신되지 않아 다음 force refresh 는
+        // 정상 재로드. 새 device 첫 로드는 lastLoadedFixAtRef 비어있어 통과.
+        if (force && oldIds.has(d.id)) {
+          const prevAt = lastLoadedFixAtRef.current[d.id];
+          const curAt  = d.last_fix_at || d.last_seen_at || null;
+          if (prevAt && curAt && prevAt === curAt) continue;
+        }
         const since = await computeHomeSinceISO(d);
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
         const locs = api.flattenGrouped(groups);
@@ -632,6 +645,7 @@ export default function Dashboard({ onLogout }) {
             mapRef.current?.updateMarker(d.id, d.last_lat, d.last_lng, label, color, meta);
             lastMetaRef.current[d.id] = meta;
           }
+          lastLoadedFixAtRef.current[d.id] = d.last_fix_at || d.last_seen_at || null;
           continue;
         }
         const ordered = [...locs].reverse();
@@ -672,6 +686,8 @@ export default function Dashboard({ onLogout }) {
             ...(g || {}),
           });
         });
+        // 로드 완료 — 다음 30s force refresh 에서 이 값과 비교해 skip 판정.
+        lastLoadedFixAtRef.current[d.id] = d.last_fix_at || d.last_seen_at || null;
       }
     } catch (e) { console.error('refresh', e); }
   }

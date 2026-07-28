@@ -1235,15 +1235,16 @@ function MonthlyReportTab({ devices, sub }) {
 
   // fleet 총계 — stat card 4개.
   const totals = useMemo(() => {
-    if (!rows) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0 };
-    let totalKm = 0, businessKm = 0, personalKm = 0, fuelCost = 0;
+    if (!rows) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0, depreciation: 0 };
+    let totalKm = 0, businessKm = 0, personalKm = 0, fuelCost = 0, depreciation = 0;
     for (const r of rows) {
       totalKm    += r.totalKm;
       businessKm += r.businessKm;
       personalKm += r.personalKm;
       fuelCost   += estimateFuelCost(r);
+      depreciation += estimateDepreciation(r);
     }
-    return { totalKm, businessKm, personalKm, fuelCost };
+    return { totalKm, businessKm, personalKm, fuelCost, depreciation };
   }, [rows]);
 
   if (!sub) return <div style={st.muted}>구독 상태 로딩 중...</div>;
@@ -1279,6 +1280,8 @@ function MonthlyReportTab({ devices, sub }) {
         <StatCard icon="mapPin" label="개인거리"     value={fmtKm(totals.personalKm)} unit="km" tone="default" loading={loading} />
         <StatCard icon="coin"   label="유류비 추정"   value={fmtWon(Math.round(totals.fuelCost))} tone="warn" loading={loading}
           hint="연비 미입력 차량은 제외" />
+        <StatCard icon="bar"    label="감가상각 인정" value={fmtWon(Math.round(totals.depreciation))} tone="primary" loading={loading}
+          hint="5년 정액법 × 업무비율 · 한도 800만/년" />
       </StatCardGrid>
 
       {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
@@ -1561,12 +1564,29 @@ function estimateFuelCost(r) {
   return (r.totalKm / r.fuel_efficiency_kmpl) * price;
 }
 
+// (2026-07-28) Stage-4E: 감가상각 인정액 (월 · 업무비율 반영).
+// 국세청 기준: 5년 정액법 (연 20%). 잔존가액 없음.
+//   월 감가상각액 = 취득가액 / 5년 / 12월
+//   인정 감가상각 = 월 감가상각 × 업무비율
+// 참고: 800만원/년 한도 (2020년 세법 개정) 이월 규정은 복잡 → 하이라이트만 표시.
+const YEARLY_BIZ_LIMIT_KRW = 8_000_000;   // 연 800만원 한도 (참고)
+function estimateDepreciation(r) {
+  if (!r.purchase_price_krw || r.purchase_price_krw <= 0) return 0;
+  const monthlyDep = r.purchase_price_krw / 5 / 12;
+  const total = r.totalKm || 0;
+  const bizRate = total > 0 ? (r.businessKm / total) : 0;
+  return monthlyDep * bizRate;
+}
+
 function MonthlyDeviceRow({ row, onEdit }) {
   const cost = estimateFuelCost(row);
+  const dep  = estimateDepreciation(row);
   const total = row.totalKm || 1;   // divide-by-zero 방지
   const bizPct = Math.round((row.businessKm / total) * 100);
   const perPct = 100 - bizPct;
   const fmtKm = (n) => n < 1 ? '0' : n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString();
+  // 감가상각 연 800만 한도 초과 여부 힌트 (월 66.7만 초과 = 연 800만 override)
+  const overLimit = dep > (YEARLY_BIZ_LIMIT_KRW / 12);
 
   return (
     <div style={{
@@ -1631,6 +1651,34 @@ function MonthlyDeviceRow({ row, onEdit }) {
         <span>업무 {fmtKm(row.businessKm)}km · {bizPct}%</span>
         <span>개인 {fmtKm(row.personalKm)}km · {perPct}%</span>
       </div>
+
+      {/* (2026-07-28) Stage-4E 감가상각 인정액 (취득가액 입력된 경우만) */}
+      {row.purchase_price_krw > 0 && (
+        <div style={{
+          fontSize: 11, color: 'var(--text-2)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '6px 10px', background: 'var(--surface-2)', borderRadius: 6, marginTop: 2,
+        }}>
+          <span>
+            <span style={{ color: 'var(--text-3)' }}>감가상각 인정</span>
+            <span style={{ marginLeft: 6, fontWeight: 700, color: 'var(--primary)' }}>
+              {Math.round(dep).toLocaleString()}원
+            </span>
+            <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 4 }}>
+              (월 {Math.round(row.purchase_price_krw / 60).toLocaleString()} × {bizPct}%)
+            </span>
+          </span>
+          {overLimit && (
+            <span style={{
+              fontSize: 10, padding: '2px 6px', borderRadius: 4,
+              background: 'color-mix(in srgb, var(--warning) 15%, transparent)',
+              color: 'var(--warning)', fontWeight: 700,
+            }} title="연 800만원 한도 초과분은 이월 처리 (세법 개정 2020)">
+              한도 초과
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
