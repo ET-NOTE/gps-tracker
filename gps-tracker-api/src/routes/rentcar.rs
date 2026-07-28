@@ -28,6 +28,12 @@ pub fn router() -> Router<AppState> {
         .route("/rentcar/contracts/:id", patch(update_contract).delete(delete_contract))
         .route("/rentcar/contracts/:id/return", post(return_contract))
         .route("/rentcar/contracts/:id/invoice.xlsx", get(invoice_xlsx))
+        // (R6) 임차인
+        .route("/rentcar/renters",             get(list_renters))
+        .route("/rentcar/renters/:phone",      get(renter_detail))
+        .route("/rentcar/blacklist",           get(list_blacklist).post(add_blacklist))
+        .route("/rentcar/blacklist/:id",       axum::routing::delete(remove_blacklist))
+        .route("/rentcar/blacklist/check",     get(check_blacklist))
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -723,3 +729,208 @@ SELECT upd.id, upd.user_id, upd.device_id,
        upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json
   FROM upd
 LEFT JOIN devices d ON d.id = upd.device_id"#;
+
+// ═══════════════════════════════════════════════════════════════
+// (2026-07-28) Stage-R6: 임차인 registry (파생) + 블랙리스트.
+// ═══════════════════════════════════════════════════════════════
+
+#[derive(Debug, Serialize, FromRow)]
+pub struct RenterSummary {
+    pub renter_phone:    String,
+    pub renter_name:     Option<String>,
+    pub contracts_count: i64,
+    pub returned_count:  i64,
+    pub overdue_count:   i64,
+    pub late_count:      i64,
+    pub total_revenue:   i64,
+    pub first_at:        DateTime<Utc>,
+    pub last_at:         DateTime<Utc>,
+    pub blacklisted:     bool,
+    pub blacklist_severity: Option<String>,
+    pub blacklist_reason:   Option<String>,
+}
+
+async fn list_renters(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> AppResult<Json<Vec<RenterSummary>>> {
+    let rows: Vec<RenterSummary> = sqlx::query_as(
+        r#"WITH agg AS (
+            SELECT c.renter_phone,
+                   MAX(c.renter_name) FILTER (WHERE c.renter_name <> '') AS renter_name,
+                   COUNT(*)::BIGINT                                     AS contracts_count,
+                   COUNT(*) FILTER (WHERE c.status = 'returned')::BIGINT AS returned_count,
+                   COUNT(*) FILTER (WHERE c.status = 'overdue' )::BIGINT AS overdue_count,
+                   COUNT(*) FILTER (WHERE COALESCE(c.late_hours,0) > 0)::BIGINT AS late_count,
+                   COALESCE(SUM(c.settled_amount_krw), 0)::BIGINT       AS total_revenue,
+                   MIN(c.starts_at) AS first_at,
+                   MAX(c.starts_at) AS last_at
+              FROM rental_contracts c
+             WHERE c.user_id = $1 AND c.renter_phone IS NOT NULL AND c.renter_phone <> ''
+          GROUP BY c.renter_phone
+        )
+        SELECT a.renter_phone, a.renter_name,
+               a.contracts_count, a.returned_count, a.overdue_count, a.late_count,
+               a.total_revenue, a.first_at, a.last_at,
+               (b.id IS NOT NULL)  AS blacklisted,
+               b.severity          AS blacklist_severity,
+               b.reason            AS blacklist_reason
+          FROM agg a
+     LEFT JOIN renter_blacklist b
+            ON b.user_id = $1 AND b.renter_phone = a.renter_phone
+         ORDER BY a.last_at DESC"#,
+    ).bind(user.user_id).fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+async fn renter_detail(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(phone): Path<String>,
+) -> AppResult<Json<Value>> {
+    // 통계
+    let summary: Option<RenterSummary> = sqlx::query_as(
+        r#"WITH agg AS (
+            SELECT c.renter_phone,
+                   MAX(c.renter_name) FILTER (WHERE c.renter_name <> '') AS renter_name,
+                   COUNT(*)::BIGINT                                     AS contracts_count,
+                   COUNT(*) FILTER (WHERE c.status = 'returned')::BIGINT AS returned_count,
+                   COUNT(*) FILTER (WHERE c.status = 'overdue' )::BIGINT AS overdue_count,
+                   COUNT(*) FILTER (WHERE COALESCE(c.late_hours,0) > 0)::BIGINT AS late_count,
+                   COALESCE(SUM(c.settled_amount_krw), 0)::BIGINT       AS total_revenue,
+                   MIN(c.starts_at) AS first_at,
+                   MAX(c.starts_at) AS last_at
+              FROM rental_contracts c
+             WHERE c.user_id = $1 AND c.renter_phone = $2
+          GROUP BY c.renter_phone
+        )
+        SELECT a.renter_phone, a.renter_name,
+               a.contracts_count, a.returned_count, a.overdue_count, a.late_count,
+               a.total_revenue, a.first_at, a.last_at,
+               (b.id IS NOT NULL)  AS blacklisted,
+               b.severity          AS blacklist_severity,
+               b.reason            AS blacklist_reason
+          FROM agg a
+     LEFT JOIN renter_blacklist b
+            ON b.user_id = $1 AND b.renter_phone = a.renter_phone"#,
+    ).bind(user.user_id).bind(&phone).fetch_optional(&state.db).await?;
+    let summary = summary.ok_or(AppError::NotFound)?;
+
+    // 계약 이력 (최대 100건, 최신순)
+    let contracts: Vec<Contract> = sqlx::query_as(
+        r#"SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
+                  c.renter_name, c.renter_phone, c.renter_id_last4, c.starts_at, c.ends_at,
+                  c.rate_type, c.rate_amount_krw, c.included_km_per_day, c.over_km_price_krw,
+                  c.deposit_krw, c.return_odometer_km, c.pickup_odometer_km,
+                  c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
+                  c.status, c.note, c.created_at,
+                  c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
+                  c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+             FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+            WHERE c.user_id = $1 AND c.renter_phone = $2
+         ORDER BY c.starts_at DESC LIMIT 100"#,
+    ).bind(user.user_id).bind(&phone).fetch_all(&state.db).await?;
+
+    Ok(Json(json!({ "summary": summary, "contracts": contracts })))
+}
+
+#[derive(Debug, Serialize, FromRow)]
+pub struct BlacklistEntry {
+    pub id:            i64,
+    pub user_id:       i64,
+    pub renter_phone:  String,
+    pub renter_name:   Option<String>,
+    pub reason:        String,
+    pub severity:      String,
+    pub created_at:    DateTime<Utc>,
+    pub created_by:    Option<i64>,
+}
+
+async fn list_blacklist(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> AppResult<Json<Vec<BlacklistEntry>>> {
+    let rows: Vec<BlacklistEntry> = sqlx::query_as(
+        r#"SELECT id, user_id, renter_phone, renter_name, reason, severity, created_at, created_by
+             FROM renter_blacklist WHERE user_id = $1 ORDER BY created_at DESC"#,
+    ).bind(user.user_id).fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BlacklistPayload {
+    pub renter_phone: String,
+    pub renter_name:  Option<String>,
+    pub reason:       String,
+    pub severity:     Option<String>,  // 'warn' (default) | 'block'
+}
+
+async fn add_blacklist(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<BlacklistPayload>,
+) -> AppResult<Json<BlacklistEntry>> {
+    if req.renter_phone.trim().is_empty() {
+        return Err(AppError::BadRequest("renter_phone required".into()));
+    }
+    if req.reason.trim().is_empty() {
+        return Err(AppError::BadRequest("reason required".into()));
+    }
+    let sev = req.severity.unwrap_or_else(|| "warn".into());
+    if !matches!(sev.as_str(), "warn"|"block") {
+        return Err(AppError::BadRequest(format!("invalid severity: {sev}")));
+    }
+    let row: BlacklistEntry = sqlx::query_as(
+        r#"INSERT INTO renter_blacklist (user_id, renter_phone, renter_name, reason, severity, created_by)
+           VALUES ($1, $2, $3, $4, $5, $1)
+           ON CONFLICT (user_id, renter_phone)
+           DO UPDATE SET reason = EXCLUDED.reason,
+                         severity = EXCLUDED.severity,
+                         renter_name = COALESCE(EXCLUDED.renter_name, renter_blacklist.renter_name)
+           RETURNING id, user_id, renter_phone, renter_name, reason, severity, created_at, created_by"#,
+    )
+    .bind(user.user_id).bind(req.renter_phone.trim())
+    .bind(req.renter_name.as_deref())
+    .bind(req.reason.trim()).bind(&sev)
+    .fetch_one(&state.db).await?;
+    Ok(Json(row))
+}
+
+async fn remove_blacklist(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let n = sqlx::query("DELETE FROM renter_blacklist WHERE id = $1 AND user_id = $2")
+        .bind(id).bind(user.user_id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(json!({ "ok": true })))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CheckQuery {
+    pub phone: String,
+}
+
+async fn check_blacklist(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Query(q): Query<CheckQuery>,
+) -> AppResult<Json<Value>> {
+    let entry: Option<BlacklistEntry> = sqlx::query_as(
+        r#"SELECT id, user_id, renter_phone, renter_name, reason, severity, created_at, created_by
+             FROM renter_blacklist WHERE user_id = $1 AND renter_phone = $2"#,
+    ).bind(user.user_id).bind(q.phone.trim()).fetch_optional(&state.db).await?;
+
+    // 재방문 여부 — 이 phone 으로 계약 몇 건?
+    let visits: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*)::BIGINT FROM rental_contracts
+            WHERE user_id = $1 AND renter_phone = $2"#,
+    ).bind(user.user_id).bind(q.phone.trim()).fetch_one(&state.db).await.unwrap_or(0);
+
+    Ok(Json(json!({
+        "blacklisted": entry.is_some(),
+        "entry":       entry,
+        "visits":      visits,
+    })))
+}
