@@ -1,11 +1,14 @@
-// 사용자 ↔ 관리자 채팅 (사용자 측). 5초 폴링, after_id 로 incremental fetch.
+// 사용자 ↔ 관리자 채팅 (사용자 측).
+// (F7-b) WS chat_message push → chatBus 로 즉시 반영. Polling 은 30s fallback
+//        (WS 유실/재연결 갭 대비 안전망).
 // onRead: unread 가 0 으로 마킹되면 부모 뱃지 갱신.
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
+import { chatBus } from '../lib/chatBus';
 import Icon from './Icon';
 
-const POLL_MS = 5000;
+const POLL_MS = 30_000;
 
 export default function ChatPanel({ onRead }) {
   const [messages, setMessages] = useState([]);
@@ -44,7 +47,19 @@ export default function ChatPanel({ onRead }) {
   useEffect(() => {
     loadInitial();
     const iv = setInterval(pollNew, POLL_MS);
-    return () => clearInterval(iv);
+    // (F7-b) WS chatBus 구독 — 서버 push 시 즉시 append + dedup (id 기준).
+    const unsub = chatBus.subscribe(async (m) => {
+      if (!m || !m.id) return;
+      if (m.id <= lastIdRef.current) return;   // 이미 반영됨 (poll 이 먼저 가져갔거나 자기 송신 echo)
+      lastIdRef.current = m.id;
+      setMessages(prev => [...prev, m]);
+      // admin 메시지 push 로 도달 시 자동 read 처리 (패널 열려 있을 때만 이 hook 활성)
+      if (m.sender_role === 'admin') {
+        try { await api.chatMarkReadUser(); markUnreadZero(); } catch {}
+        onRead?.();
+      }
+    });
+    return () => { clearInterval(iv); unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

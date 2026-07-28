@@ -18,6 +18,7 @@ use sqlx::FromRow;
 use crate::{
     auth::{AdminUser, AuthUser},
     error::{AppError, AppResult},
+    events::{ChatMessagePayload, Event},
     state::AppState,
 };
 
@@ -34,6 +35,37 @@ pub fn router_admin() -> Router<AppState> {
         .route("/admin/chat/threads/:thread_id/messages",   get(thread_messages).post(send_admin_message))
         .route("/admin/chat/threads/:thread_id/read",       post(mark_read_admin))
         .route("/admin/chat/search",                        get(search_messages))
+}
+
+// (F7-b) WS push helper — 대상 user_id 에게 ChatMessage 이벤트 broadcast.
+// broadcast::Sender.send 는 subscriber 없어도 무해 (Err 반환, 무시).
+fn push_chat_message(state: &AppState, target_user_id: i64, row: &MessageRow) {
+    let payload = ChatMessagePayload {
+        id: row.id,
+        thread_id: row.thread_id,
+        sender_role: row.sender_role.clone(),
+        sender_id: row.sender_id,
+        body: row.body.clone(),
+        created_at: row.created_at,
+    };
+    let _ = state.events.send(Event::ChatMessage {
+        target_user_id,
+        message: payload,
+    });
+}
+
+// (F7-b) 사용자→관리자 메시지: 모든 admin 사용자 id 를 조회해 각각 push.
+// admin 수는 소수 (수십~수백) 이라 매 메시지 조회 부담 낮음.
+async fn push_to_admins_ws(state: &AppState, row: &MessageRow) {
+    let admin_ids: Vec<i64> = sqlx::query_scalar(
+        "SELECT id FROM users WHERE role = 'admin'",
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    for uid in admin_ids {
+        push_chat_message(state, uid, row);
+    }
 }
 
 // ─── 공통 row 타입 ─────────────────────────────────────
@@ -188,6 +220,9 @@ async fn send_user_message(
         ).await;
     });
 
+    // (F7-b) WS realtime push — 모든 admin 에게 broadcast (open WS 만 실제 전송).
+    push_to_admins_ws(&state, &row).await;
+
     Ok(Json(row))
 }
 
@@ -316,6 +351,9 @@ async fn send_admin_message(
             }),
         ).await;
     });
+
+    // (F7-b) WS realtime push — 대상 사용자에게 전송.
+    push_chat_message(&state, target_user_id, &row);
 
     Ok(Json(row))
 }

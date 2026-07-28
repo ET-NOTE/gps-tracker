@@ -11,9 +11,11 @@
 //   const rentals = useRentals({ status: ['draft','active'] });
 //   const addRental = useCreateRental(); addRental.mutate(body);
 
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import { qk } from './keys';
+import { chatBus } from '../lib/chatBus';
 
 // ═══════════════════════════════════════════════════════════
 // 사용자 · 계정 정보
@@ -187,17 +189,29 @@ export function useDeleteDocument() {
 // Chat unread — ChatPanel + ProfilePanel 중복 폴링 통합.
 // ═══════════════════════════════════════════════════════════
 export function useChatUnread(enabled = true) {
-  return useQuery({
+  const qc = useQueryClient();
+  const q = useQuery({
     queryKey: ['chat-unread'],
     queryFn: async () => {
       const t = await api.chatMyThread();
       return t?.unread_for_user || 0;
     },
     staleTime: 5_000,
-    refetchInterval: 10_000,
+    // (F7-b) WS push 로 실시간 반영 후엔 poll 은 fallback — 60s 로 완화 (10s→60s).
+    refetchInterval: 60_000,
     enabled,
-    // 캐시된 값 사용 — 두 구독자가 각자 fetch 하지 않음
   });
+  // (F7-b) admin 발신 chat_message push 시 unread +1 (optimistic).
+  // ChatPanel 이 열려 있으면 그쪽에서 markUnreadZero 로 0 세팅함 (레이스 무해 — 뒤가 이김).
+  useEffect(() => {
+    if (!enabled) return;
+    return chatBus.subscribe((m) => {
+      if (m?.sender_role === 'admin') {
+        qc.setQueryData(['chat-unread'], (prev = 0) => (prev || 0) + 1);
+      }
+    });
+  }, [enabled, qc]);
+  return q;
 }
 
 // ═══════════════════════════════════════════════════════════
