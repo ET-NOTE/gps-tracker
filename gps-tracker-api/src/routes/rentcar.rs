@@ -37,7 +37,9 @@ pub fn router() -> Router<AppState> {
         // (R9-a) 인수/반납 QR 토큰 발급 + 사진 조회 (owner)
         .route("/rentcar/contracts/:id/handoff-tokens", get(list_handoff_tokens).post(issue_handoff_token))
         .route("/rentcar/handoff-tokens/:id",           axum::routing::delete(revoke_handoff_token))
-        .route("/rentcar/photos/:id",                   get(get_photo))
+        .route("/rentcar/photos/:id",                   get(get_photo).delete(delete_photo))
+        // (R9-a 확장) owner 가 계약별 사진 (파손·연료·오도미터) 업로드/조회 갤러리
+        .route("/rentcar/contracts/:id/photos",         get(list_photos).post(upload_photo))
         // (R9-a) public — 임차인 auth-free 링크
         .route("/rentcar/handoff/:token",               get(handoff_view))
         .route("/rentcar/handoff/:token/submit",        post(handoff_submit))
@@ -1291,6 +1293,87 @@ async fn get_photo(
     headers.insert(header::CACHE_CONTROL,
         HeaderValue::from_static("private, max-age=86400"));
     Ok((StatusCode::OK, headers, row.bytes).into_response())
+}
+
+// (R9-a 확장) owner 계약별 사진 목록 (썸네일 갤러리 뷰용).
+#[derive(Debug, Serialize, FromRow)]
+pub struct PhotoMeta {
+    pub id:          i64,
+    pub contract_id: i64,
+    pub kind:        String,
+    pub mime:        String,
+    pub uploaded_at: DateTime<Utc>,
+    pub size_bytes:  i64,
+}
+
+async fn list_photos(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(contract_id): Path<i64>,
+) -> AppResult<Json<Vec<PhotoMeta>>> {
+    let rows: Vec<PhotoMeta> = sqlx::query_as(
+        r#"SELECT id, contract_id, kind, mime, uploaded_at,
+                  OCTET_LENGTH(bytes)::BIGINT AS size_bytes
+             FROM rental_photos
+            WHERE contract_id = $1 AND user_id = $2
+         ORDER BY uploaded_at ASC"#,
+    ).bind(contract_id).bind(user.user_id).fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UploadPhotoPayload {
+    pub kind:      String,           // pickup_odometer|pickup_damage|pickup_fuel|return_*
+    pub data_url:  String,
+}
+
+const OWNER_ALLOWED_KINDS: &[&str] = &[
+    "pickup_odometer","pickup_damage","pickup_fuel",
+    "return_odometer","return_damage","return_fuel",
+];
+
+async fn upload_photo(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(contract_id): Path<i64>,
+    Json(req): Json<UploadPhotoPayload>,
+) -> AppResult<Json<PhotoMeta>> {
+    if !OWNER_ALLOWED_KINDS.iter().any(|k| *k == req.kind) {
+        return Err(AppError::BadRequest(format!("invalid kind: {}", req.kind)));
+    }
+    // 소유권 확인
+    let owner: Option<i64> = sqlx::query_scalar(
+        "SELECT user_id FROM rental_contracts WHERE id = $1"
+    ).bind(contract_id).fetch_optional(&state.db).await?;
+    match owner {
+        Some(uid) if uid == user.user_id => {}
+        _ => return Err(AppError::NotFound),
+    }
+    let (mime, bytes) = parse_data_url(&req.data_url)
+        .ok_or_else(|| AppError::BadRequest("data_url invalid".into()))?;
+    if bytes.len() > HANDOFF_MAX_PHOTO_BYTES {
+        return Err(AppError::BadRequest("photo too large (>4MB)".into()));
+    }
+    let row: PhotoMeta = sqlx::query_as(
+        r#"INSERT INTO rental_photos (contract_id, user_id, kind, mime, bytes)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id, contract_id, kind, mime, uploaded_at,
+                     OCTET_LENGTH(bytes)::BIGINT AS size_bytes"#,
+    )
+    .bind(contract_id).bind(user.user_id).bind(&req.kind).bind(&mime).bind(&bytes)
+    .fetch_one(&state.db).await?;
+    Ok(Json(row))
+}
+
+async fn delete_photo(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let n = sqlx::query("DELETE FROM rental_photos WHERE id = $1 AND user_id = $2")
+        .bind(id).bind(user.user_id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(json!({ "ok": true })))
 }
 
 fn parse_data_url(s: &str) -> Option<(String, Vec<u8>)> {

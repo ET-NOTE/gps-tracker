@@ -754,7 +754,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
         <div style={mst.body}>
           {/* 용무 */}
           <Field label="용무">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 6 }}>
               {[
                 ['unspecified', '미지정'],
                 ['commute',     '출퇴근'],
@@ -802,7 +802,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
 
           {/* 유류 */}
           <Field label="유류">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6 }}>
               <div>
                 <input type="number" step="0.1" value={fuelLiters}
                   onChange={e => setFuelLiters(e.target.value)}
@@ -1321,25 +1321,26 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
       borderRadius: 12, padding: 8,
     }}>
       {/* DoW header */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
         {DOW.map((d, i) => (
           <div key={d} style={{
-            fontSize: 11, fontWeight: 700, padding: '6px 4px',
+            fontSize: 11, fontWeight: 700, padding: '6px 2px',
             textAlign: 'center',
             color: i === 0 ? 'var(--danger)' : i === 6 ? 'var(--primary)' : 'var(--text-2)',
           }}>{d}</div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
         {cells.map((c, i) => {
           const dStr = c.date.toISOString().slice(0, 10);
           const dayResv = reservationsOn(c.date);
           const isToday = dStr === todayStr;
           const dow = c.date.getDay();
+          const MAX_BADGES = 2;   // 모바일 대응: 셀 폭 좁을 때 3개는 넘침
           return (
             <div key={i} onClick={() => c.currentMonth && onDayClick(dStr)} style={{
-              minHeight: 84,
-              padding: 4,
+              minHeight: 'clamp(56px, 12vw, 84px)',
+              padding: 3,
               background: isToday
                 ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
                 : c.currentMonth ? 'var(--surface)' : 'var(--surface-2)',
@@ -1349,6 +1350,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
               cursor: c.currentMonth ? 'pointer' : 'default',
               display: 'flex', flexDirection: 'column', gap: 2,
               overflow: 'hidden',
+              minWidth: 0,
             }}>
               <div style={{
                 fontSize: 11, fontWeight: 700,
@@ -1360,23 +1362,24 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
               }}>
                 {c.date.getDate()}
               </div>
-              {dayResv.slice(0, 3).map(r => {
+              {dayResv.slice(0, MAX_BADGES).map(r => {
                 const s = RESV_STATUS[r.status] || RESV_STATUS.planned;
                 return (
                   <div key={r.id} onClick={(e) => { e.stopPropagation(); onEventClick(r); }} style={{
                     fontSize: 10, fontWeight: 600,
-                    padding: '2px 5px', borderRadius: 3,
+                    padding: '1px 3px', borderRadius: 3,
                     background: s.bg, color: s.color,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     cursor: 'pointer',
+                    minWidth: 0,
                   }} title={`${r.license_plate || r.device_name || ''} · ${r.purpose || ''} · ${s.label}`}>
                     {r.license_plate || r.device_name || `#${r.device_id}`}
                   </div>
                 );
               })}
-              {dayResv.length > 3 && (
+              {dayResv.length > MAX_BADGES && (
                 <div style={{ fontSize: 9, color: 'var(--text-3)', textAlign: 'center' }}>
-                  +{dayResv.length - 3}
+                  +{dayResv.length - MAX_BADGES}
                 </div>
               )}
             </div>
@@ -1519,12 +1522,13 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8,
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--surface)', borderRadius: 14, padding: 20,
-        width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 12,
+        background: 'var(--surface)', borderRadius: 14, padding: 16,
+        width: '100%', maxWidth: 480, maxHeight: '92vh', overflowY: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 10,
+        boxSizing: 'border-box',
       }}>
         <div style={{ fontSize: 15, fontWeight: 800 }}>
           {init?.id ? '예약 편집' : '새 예약'}
@@ -1549,12 +1553,12 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
           </select>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>시작</div>
             <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={st.input} />
           </div>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>종료</div>
             <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} style={st.input} />
           </div>
@@ -1575,7 +1579,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
         {init?.id && (
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>상태</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 4 }}>
               {Object.entries(RESV_STATUS).map(([id, meta]) => (
                 <button key={id} onClick={() => setStatus(id)} style={{
                   padding: '8px 4px', fontSize: 11, borderRadius: 8, cursor: 'pointer',
@@ -1943,7 +1947,7 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
 
         {/* 양식 */}
         <FieldSection label="양식">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
             {[
               { id: 'nts',  title: '국세청 운행기록부', hint: '별지 제73호 · 세무 신고' },
               { id: 'ours', title: '우리 양식',         hint: '요약 + 차량별 상세 · 실무용' },
@@ -2336,7 +2340,7 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
           <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             국세청 별지 제73호 헤더
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량번호</div>
               <input value={plate} onChange={e => setPlate(e.target.value)} placeholder="12가3456" style={st.input} />
@@ -2421,7 +2425,7 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
           </div>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연료</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 4 }}>
               {['gasoline', 'diesel', 'lpg', 'ev'].map(f => (
                 <button key={f} onClick={() => setType(f)} style={{
                   padding: '8px 4px', fontSize: 12, borderRadius: 8, cursor: 'pointer',
@@ -2471,6 +2475,7 @@ function DocumentsSection({ deviceId }) {
   const [busy, setBusy] = useState(false);
   const [kind, setKind] = useState('registration');
   const [note, setNote] = useState('');
+  const [preview, setPreview] = useState(null);   // { doc, url, mime } | null
   const fileRef = useRef(null);
 
   async function load() {
@@ -2514,6 +2519,19 @@ function DocumentsSection({ deviceId }) {
     if (!ok) return;
     try { await api.deleteDocument(d.id); load(); }
     catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
+  }
+
+  async function openPreview(d) {
+    try {
+      const { url, mime } = await api.fetchDocumentPreview(d.id);
+      setPreview({ doc: d, url, mime });
+    } catch (e) {
+      alertDialog({ title: '프리뷰 실패', body: e.message, tone: 'danger' });
+    }
+  }
+  function closePreview() {
+    if (preview?.url) URL.revokeObjectURL(preview.url);
+    setPreview(null);
   }
 
   return (
@@ -2561,8 +2579,11 @@ function DocumentsSection({ deviceId }) {
               <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                 title={d.filename}>{d.filename}</span>
               <span style={{ color: 'var(--text-3)', fontSize: 10 }}>{Math.round(d.size_bytes / 1024).toLocaleString()}KB</span>
+              <button onClick={() => openPreview(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="바로보기">
+                <Icon name="eye" size={11} />
+              </button>
               <button onClick={() => download(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="다운로드">
-                <Icon name="share" size={11} />
+                <Icon name="download" size={11} />
               </button>
               <button onClick={() => del(d)} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제">
                 <Icon name="trash2" size={11} />
@@ -2571,6 +2592,57 @@ function DocumentsSection({ deviceId }) {
           ))}
         </div>
       )}
+
+      {preview && <DocPreviewModal preview={preview} onClose={closePreview} onDownload={() => download(preview.doc)} />}
+    </div>
+  );
+}
+
+function DocPreviewModal({ preview, onClose, onDownload }) {
+  const { doc, url, mime } = preview;
+  const isImage = mime?.startsWith('image/');
+  const isPdf   = mime === 'application/pdf';
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 950,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8,
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', borderRadius: 12, padding: 12,
+        width: '100%', maxWidth: 900, maxHeight: '95vh',
+        display: 'flex', flexDirection: 'column', gap: 8, boxSizing: 'border-box',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            title={doc.filename}>{doc.filename}</div>
+          <button onClick={onDownload} style={{ ...st.btnGhost, padding: '6px 10px' }} title="다운로드">
+            <Icon name="download" size={12} />
+          </button>
+          <button onClick={onClose} style={{ ...st.btnGhost, padding: '6px 10px' }}>
+            <Icon name="close" size={12} />
+          </button>
+        </div>
+        <div style={{
+          flex: 1, minHeight: 0, background: '#000',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 8, overflow: 'hidden',
+        }}>
+          {isImage && (
+            <img src={url} alt={doc.filename}
+              style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
+          )}
+          {isPdf && (
+            <iframe src={url} title={doc.filename}
+              style={{ width: '100%', height: '80vh', border: 'none', background: '#FFF' }} />
+          )}
+          {!isImage && !isPdf && (
+            <div style={{ color: '#AAA', padding: 40, textAlign: 'center' }}>
+              이 형식은 인라인 프리뷰 미지원 — 다운로드 후 확인해주세요.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
