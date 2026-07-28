@@ -885,52 +885,72 @@ async fn list_fleet_trip_stats(
     Query(q): Query<TripQuery>,
 ) -> AppResult<Json<FleetTripStatsResponse>> {
     let (from, to) = parse_range(&q)?;
-    // user 소유 devices 조회 — id/name/plate 최소.
+
+    // (2026-07-29 F7-c) daily_stats 로 SQL 단일 aggregate.
+    //
+    // 이전: devices loop × compute_trips_inner (device 당 SQL 2-3건 + Kakao reverse-geo).
+    //       100대면 SQL 200~300 + HTTP ~200 → 사용자 요청당 backend 수초 CPU 부담.
+    // 이후: single SQL — LEFT JOIN daily_stats. 100대 = 1 SQL query.
+    //
+    // 정확도 trade-off: daily_stats worker 는 5분 폴 주기 → today_distance_m 은
+    // 최대 5분 지연. Fleet 대시보드 요약 지표 용도로 허용 가능.
+    // 정확한 trip 단위 biz/per 는 device drill-down (list_trips) 에서 유지.
+    //
+    // FE 소비: useFleetStats 는 total_distance_m + today_distance_m 만 사용 (grep 검증됨).
+    // trip_count/business_m/personal_m 은 응답 유지 (backward compat) 이지만 0 반환.
+
+    // KST 오늘 (daily_stats 는 date_naive KST 기준)
+    let today_kst = (Utc::now() + chrono::Duration::hours(9)).date_naive();
+
+    // from/to → KST date 범위. daily_stats.date 컬럼 매칭.
+    let from_kst_date = (from + chrono::Duration::hours(9)).date_naive();
+    let to_kst_date   = (to + chrono::Duration::hours(9)).date_naive();
+
     #[derive(sqlx::FromRow)]
-    struct DevLite { id: i64, display_name: Option<String>, license_plate: Option<String> }
-    let devices: Vec<DevLite> = sqlx::query_as(
-        "SELECT id, display_name, license_plate FROM devices WHERE owner_id = $1 ORDER BY id"
-    ).bind(user.user_id).fetch_all(&state.db).await?;
+    struct AggRow {
+        device_id: i64,
+        display_name: Option<String>,
+        license_plate: Option<String>,
+        total_m: Option<f64>,
+        today_m: Option<f64>,
+    }
 
-    // KST 오늘 00:00 UTC 로 환산 (Asia/Seoul UTC+9)
-    let today_kst_start = {
-        let now = Utc::now();
-        let kst_now = now + chrono::Duration::hours(9);
-        let kst_date = kst_now.date_naive();
-        let kst_midnight = kst_date.and_hms_opt(0, 0, 0).unwrap();
-        // KST 자정 → UTC = -9h
-        chrono::DateTime::<Utc>::from_naive_utc_and_offset(kst_midnight, Utc) - chrono::Duration::hours(9)
-    };
+    let rows: Vec<AggRow> = sqlx::query_as(
+        r#"SELECT
+              d.id                     AS device_id,
+              d.display_name           AS display_name,
+              d.license_plate          AS license_plate,
+              COALESCE(SUM(ds.distance_m), 0)::float8 AS total_m,
+              COALESCE(SUM(
+                CASE WHEN ds.date = $4 THEN ds.distance_m ELSE 0 END
+              ), 0)::float8            AS today_m
+            FROM devices d
+            LEFT JOIN daily_stats ds
+              ON ds.device_id = d.id
+             AND ds.user_id   = $1
+             AND ds.date     >= $2
+             AND ds.date     <= $3
+            WHERE d.owner_id = $1
+            GROUP BY d.id, d.display_name, d.license_plate
+            ORDER BY d.id"#,
+    )
+    .bind(user.user_id)
+    .bind(from_kst_date)
+    .bind(to_kst_date)
+    .bind(today_kst)
+    .fetch_all(&state.db).await?;
 
-    let mut out = Vec::with_capacity(devices.len());
-    for d in &devices {
-        // compute_trips_inner 는 병합 기본값 (10분) 사용. trip aggregation 과 일치.
-        let trips = compute_trips_inner(&state, user.user_id, d.id, from, to).await
-            .unwrap_or_default();
-        let mut trip_count = 0i64;
-        let mut total_m = 0.0;
-        let mut biz_m = 0.0;
-        let mut per_m = 0.0;
-        let mut today_m = 0.0;
-        for t in &trips {
-            if t.start_lat.is_none() && t.end_lat.is_none() { continue; }   // 좌표 전무 skip
-            trip_count += 1;
-            total_m += t.distance_m;
-            let purpose = t.annotation.as_ref()
-                .map(|a| a.purpose.clone()).unwrap_or_else(|| "unspecified".into());
-            if purpose == "business" { biz_m += t.distance_m; }
-            else                     { per_m += t.distance_m; }
-            if t.started_at >= today_kst_start { today_m += t.distance_m; }
-        }
+    let mut out = Vec::with_capacity(rows.len());
+    for r in rows {
         out.push(FleetTripStat {
-            device_id: d.id,
-            display_name: d.display_name.clone(),
-            license_plate: d.license_plate.clone(),
-            trip_count,
-            total_distance_m: total_m,
-            business_m: biz_m,
-            personal_m: per_m,
-            today_distance_m: today_m,
+            device_id: r.device_id,
+            display_name: r.display_name,
+            license_plate: r.license_plate,
+            trip_count: 0,                // (F7-c) 요약 endpoint 에서 미사용 필드 — drill-down 에서 정확치
+            total_distance_m: r.total_m.unwrap_or(0.0),
+            business_m: 0.0,              // (F7-c) 정확치는 device drill-down (list_trips) 에서
+            personal_m: 0.0,
+            today_distance_m: r.today_m.unwrap_or(0.0),
         });
     }
 
