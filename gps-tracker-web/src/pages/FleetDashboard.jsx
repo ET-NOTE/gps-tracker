@@ -1,19 +1,20 @@
 // (2026-07-28) Phase F4-b — Unified Fleet Dashboard.
 //
 // 참고 이미지 (cartax-style) 대응: 상단 요약 chips + 좌측 device list (react-window virtualize)
-// + 중앙 map (MarkerClusterer 활성) + 우측 event feed.
+// + 중앙 map (MarkerClusterer 활성) + 우측 SelectedDevicePanel (이벤트/운행 이력 tabs).
 //
-// 기존 Dashboard 는 그대로 유지, 이 페이지는 별도 `/fleet` 라우트. 사용자가 두 뷰 비교 후
-// 정착되면 기존 Dashboard 를 대체 예정 (F4-c 이후).
+// F4-b-1: shell + 3-panel + last position markers
+// F4-b-2: WS live 갱신 + map marker click sync + trip 클릭 → seeker path
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDevices } from '../state';
 import { api } from '../api';
+import { TrackerWS } from '../ws';
 import KakaoMap from '../components/KakaoMap';
 import SummaryChips, { classifyDevice } from '../components/fleet/SummaryChips';
 import DeviceListPanel from '../components/fleet/DeviceListPanel';
-import EventFeedPanel from '../components/fleet/EventFeedPanel';
+import SelectedDevicePanel from '../components/fleet/SelectedDevicePanel';
 import Icon from '../components/Icon';
 
 export default function FleetDashboard() {
@@ -39,7 +40,7 @@ export default function FleetDashboard() {
 
   const { data: devices = [] } = useDevices();
 
-  // 필터 적용된 device 목록 — SummaryChips 는 원본 count, List/Map 는 filtered.
+  // 필터 적용된 device 목록.
   const filtered = useMemo(() => {
     if (filter === 'all') return devices;
     return devices.filter(d => classifyDevice(d) === filter);
@@ -68,8 +69,17 @@ export default function FleetDashboard() {
   // KakaoMap 인스턴스 & marker 배치.
   const mapRef = useRef(null);
   const mapReadyRef = useRef(false);
-  // Fleet overview 는 last_lat/last_lng 만 표시 (히스토리 polyline 은 상세 뷰에서).
-  // devices 목록/last position 변할 때만 marker 재배치. WS live 갱신은 Dashboard 쪽에 위임 예정.
+
+  // (F4-b-2) map marker click → selectedId sync.
+  // KakaoMap onPointInfo prop 은 marker/dot click 시 { kind, deviceId, ... } 콜백.
+  const handlePointInfo = useCallback((p) => {
+    if (p?.kind === 'main' && p?.meta?.deviceId != null) {
+      setSelectedId(p.meta.deviceId);
+    }
+  }, []);
+
+  // last position marker 배치. devices id·last_fix_at 이 실제 변할 때만 재-loop (deps stable).
+  const positionKey = devices.map(d => `${d.id}:${d.last_fix_at || ''}`).join(',');
   useEffect(() => {
     const m = mapRef.current;
     if (!m || !m.updateMarker) return;
@@ -79,23 +89,87 @@ export default function FleetDashboard() {
       const meta = {
         recordedAt: d.last_fix_at || d.last_seen_at,
         lat: d.last_lat, lng: d.last_lng,
+        deviceId: d.id, deviceLabel: label,   // (F4-b-2) onPointInfo 콜백에서 참조
       };
       m.updateMarker(d.id, d.last_lat, d.last_lng, label, d.device_color || '#5B7CFF', meta);
     }
-    // 첫 배치 시 전체 fit.
     if (!mapReadyRef.current) {
       mapReadyRef.current = true;
       m.filterToDevice?.(null, { fit: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [devices.length, devices.map(d => `${d.id}:${d.last_fix_at || ''}`).join(',')]);
+  }, [positionKey]);
 
-  // 선택 시 map focus (KakaoMap.filterToDevice).
+  // (F4-b-2) WS live 갱신 — 새 fix 오면 map marker 즉시 이동.
+  const wsRef = useRef(null);
+  const devicesRef = useRef(devices);
+  useEffect(() => { devicesRef.current = devices; }, [devices]);
+  useEffect(() => {
+    const ws = new TrackerWS((msg) => {
+      if (msg?.type !== 'location') return;
+      const m = mapRef.current;
+      if (!m || !m.updateMarker) return;
+      const fixes = Array.isArray(msg.fixes) ? msg.fixes : [];
+      const last = fixes.filter(f => f && f.lat != null && f.lng != null).pop();
+      if (!last) return;
+      const d = devicesRef.current.find(x => x.id === msg.device_id);
+      const label = d?.license_plate || d?.display_name || d?.device_uid || String(msg.device_id);
+      const color = d?.device_color || '#5B7CFF';
+      const meta = {
+        recordedAt: last.recorded_at, sat: last.sat, fix: last.fix,
+        lat: last.lat, lng: last.lng, heading: last.heading,
+        deviceId: msg.device_id, deviceLabel: label,
+      };
+      m.updateMarker(msg.device_id, last.lat, last.lng, label, color, meta);
+    }, () => {/* onStatus */});
+    ws.connect(null);
+    wsRef.current = ws;
+    return () => ws.disconnect();
+  }, []);
+  // subscribe 는 devices 배열 변경 시.
+  useEffect(() => {
+    wsRef.current?.subscribe(devices.map(d => d.id));
+  }, [positionKey]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 선택 시 map focus.
   useEffect(() => {
     if (!mapRef.current) return;
     if (selectedId != null) mapRef.current.filterToDevice?.(selectedId, { fit: true });
     else                    mapRef.current.filterToDevice?.(null,       { fit: false });
+    // trip 선택 초기화
+    setSelectedTripKey(null);
+    mapRef.current.clearSeekerPath?.();
+    mapRef.current.setSeekerMode?.(false);
   }, [selectedId]);
+
+  // (F4-b-2) 선택된 trip → seeker path.
+  const [selectedTripKey, setSelectedTripKey] = useState(null);
+  const handleTripSelect = useCallback(async (trip) => {
+    const m = mapRef.current;
+    if (!m || !selectedId) return;
+    const key = trip.started_at;
+    if (selectedTripKey === key) {
+      // 재클릭 = 취소.
+      m.clearSeekerPath?.();
+      m.setSeekerMode?.(false);
+      setSelectedTripKey(null);
+      return;
+    }
+    setSelectedTripKey(key);
+    try {
+      // trip 시간창의 fixes 가져오기 (grouped).
+      const from = trip.started_at;
+      const to   = trip.ended_at || new Date().toISOString();
+      const groups = await api.listLocationsGrouped(selectedId, { since: from, until: to, fix_only: true, limit: 5000 });
+      const points = api.flattenGroupedAsc(groups);
+      const color = devices.find(d => d.id === selectedId)?.device_color || '#5B7CFF';
+      m.setSeekerMode?.(true);
+      m.drawSeekerPath(points, { color, refit: true, showStops: true, showCursor: true });
+    } catch (e) {
+      console.error('trip seeker load', e);
+      setSelectedTripKey(null);
+    }
+  }, [selectedId, selectedTripKey, devices]);
 
   return (
     <div style={{
@@ -121,7 +195,7 @@ export default function FleetDashboard() {
           Fleet 대시보드
         </div>
         <div style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-3)' }}>
-          Beta — F4-b 신규 뷰. 기존 Dashboard 는 홈 버튼으로 이동.
+          Beta — 홈 버튼으로 기존 Dashboard 이동
         </div>
       </div>
       <SummaryChips devices={devices} filter={filter} onChange={setFilter} />
@@ -130,7 +204,7 @@ export default function FleetDashboard() {
       <div style={{
         flex: 1, minHeight: 0,
         display: 'grid',
-        gridTemplateColumns: 'minmax(280px, 340px) 1fr minmax(280px, 340px)',
+        gridTemplateColumns: 'minmax(280px, 340px) 1fr minmax(300px, 360px)',
       }}>
         <DeviceListPanel
           devices={filtered}
@@ -140,12 +214,14 @@ export default function FleetDashboard() {
           onQuery={setQuery}
         />
         <div style={{ position: 'relative', minWidth: 0, minHeight: 0 }}>
-          <KakaoMap ref={mapRef} />
+          <KakaoMap ref={mapRef} onPointInfo={handlePointInfo} />
         </div>
-        <EventFeedPanel
-          events={events}
+        <SelectedDevicePanel
           selectedDevice={selectedDevice}
-          loading={evLoading}
+          events={events}
+          evLoading={evLoading}
+          onTripSelect={handleTripSelect}
+          selectedTripKey={selectedTripKey}
         />
       </div>
     </div>
