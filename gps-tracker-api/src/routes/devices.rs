@@ -61,6 +61,9 @@ pub struct DeviceView {
     pub acquired_at:        Option<chrono::NaiveDate>,
     pub department:         Option<String>,
     pub vehicle_type:       Option<String>,
+    // (2026-07-28) Stage-4C-1: 차량 관리 (사용가능 toggle + 메모). migration 0046.
+    pub enabled:            Option<bool>,   // NOT NULL DEFAULT TRUE — Option 은 sqlx bind 편의
+    pub note:               Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -185,6 +188,7 @@ async fn list(
                   d.license_plate, d.model_year, d.engine_cc,
                   d.purchase_price_krw, d.acquired_at,
                   d.department, d.vehicle_type,
+                  d.enabled, d.note,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
@@ -534,6 +538,11 @@ pub struct VehicleInfoRequest {
     pub department: Option<String>,
     /// 차량 유형 — sedan|van|truck|special|ev.
     pub vehicle_type: Option<String>,
+    /// (2026-07-28) 사용가능 / 사용정지 toggle. null 이면 변경 안 함.
+    pub enabled: Option<bool>,
+    /// (2026-07-28) 메모. 빈 문자열 or null 이면 clear.
+    #[validate(length(max = 500))]
+    pub note: Option<String>,
 }
 
 async fn set_vehicle_info(
@@ -548,6 +557,9 @@ async fn set_vehicle_info(
         }
     }
     // NULL 전달 시 각 컬럼 clear. UNIQUE index 는 NULL 허용이라 여러 device 미입력 공존 OK.
+    // enabled 는 NULL 로 clear 하지 않음 (컬럼 NOT NULL). 값이 왔을 때만 갱신.
+    // COALESCE($8, enabled) → NULL 이면 기존 유지.
+    let note_norm = req.note.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty());
     let updated: Option<(i64,)> = sqlx::query_as(
         r#"UPDATE devices
               SET license_plate      = $1,
@@ -556,8 +568,10 @@ async fn set_vehicle_info(
                   purchase_price_krw = $4,
                   acquired_at        = $5,
                   department         = $6,
-                  vehicle_type       = $7
-            WHERE id = $8 AND owner_id = $9
+                  vehicle_type       = $7,
+                  enabled            = COALESCE($8, enabled),
+                  note               = $9
+            WHERE id = $10 AND owner_id = $11
         RETURNING id"#,
     )
     .bind(req.license_plate.as_deref())
@@ -567,6 +581,8 @@ async fn set_vehicle_info(
     .bind(req.acquired_at)
     .bind(req.department.as_deref())
     .bind(req.vehicle_type.as_deref())
+    .bind(req.enabled)
+    .bind(note_norm)
     .bind(id)
     .bind(user.user_id)
     .fetch_optional(&state.db).await?;
@@ -1053,6 +1069,7 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   d.license_plate, d.model_year, d.engine_cc,
                   d.purchase_price_krw, d.acquired_at,
                   d.department, d.vehicle_type,
+                  d.enabled, d.note,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
