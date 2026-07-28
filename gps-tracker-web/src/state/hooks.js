@@ -46,6 +46,18 @@ export function useUserPrefs(opts = {}) {
   });
 }
 
+// (F2-b) account type 변경 mutation — 성공 시 캐시 즉시 갱신 → SideRail/BottomNav
+// 리렌더 (accountType stale bug 근본 해결).
+export function useSetAccountType() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (type) => api.setAccountType(type),
+    onSuccess: (data) => {
+      qc.setQueryData(qk.accountType(), data);   // optimistic — 서버 응답 그대로
+    },
+  });
+}
+
 // ═══════════════════════════════════════════════════════════
 // Device fleet
 // ═══════════════════════════════════════════════════════════
@@ -203,6 +215,29 @@ export function useRevokeHandoffToken() {
     onSuccess: (_data, vars) => {
       if (vars.contractId != null) {
         qc.invalidateQueries({ queryKey: qk.handoffTokens(vars.contractId) });
+      }
+    },
+  });
+}
+
+// Rental photos
+export function useUploadRentalPhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ contractId, kind, dataUrl }) =>
+      api.uploadRentalPhoto(contractId, { kind, data_url: dataUrl }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: qk.rentalPhotos(vars.contractId) });
+    },
+  });
+}
+export function useDeleteRentalPhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ photoId }) => api.deleteRentalPhoto(photoId),
+    onSuccess: (_data, vars) => {
+      if (vars.contractId != null) {
+        qc.invalidateQueries({ queryKey: qk.rentalPhotos(vars.contractId) });
       }
     },
   });

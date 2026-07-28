@@ -16,6 +16,13 @@ import { alertDialog, confirmDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
 import { Modal, FormField, Button, Pill, SkeletonList } from './ui';
+import {
+  useRentals, useCreateRental, useUpdateRental, useReturnRental, useDeleteRental,
+  useRenters, useRenterDetail, useAddBlacklist, useRemoveBlacklist,
+  useHandoffTokens, useIssueHandoffToken, useRevokeHandoffToken,
+  useRentalPhotos, useUploadRentalPhoto, useDeleteRentalPhoto, qk,
+} from '../state';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function RentcarPanel({ devices }) {
   const [tab, setTab] = useState(() => localStorage.getItem('rentcar_tab') || 'fleet');
@@ -69,28 +76,21 @@ function ScheduleTab({ devices }) {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [list, setList]   = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);   // null | 'new' | contract | {new: 'YYYY-MM-DD'}
   const [returning, setReturning] = useState(null);
-  const [tick, setTick] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true); setError(null);
-    // 표시 월 ± 1주 (그리드 걸치는 인접 월 포함)
+  // (F2-b) useRentals hook — ym 변할 때만 params key 변경 (useMemo 로 identity 안정).
+  const scheduleParams = useMemo(() => {
     const [y, m] = ym.split('-').map(Number);
     const start = new Date(y, m - 1, 1);
     const end   = new Date(y, m, 1);
-    const from = new Date(start.getTime() - 7 * 86400_000).toISOString();
-    const to   = new Date(end.getTime()   + 7 * 86400_000).toISOString();
-    api.listRentals({ from, to }).then(rs => {
-      if (cancelled) return;
-      setList(rs || []); setLoading(false);
-    }).catch(e => { if (!cancelled) { setError(e.message); setLoading(false); } });
-    return () => { cancelled = true; };
-  }, [ym, tick]);
+    return {
+      from: new Date(start.getTime() - 7 * 86400_000).toISOString(),
+      to:   new Date(end.getTime()   + 7 * 86400_000).toISOString(),
+    };
+  }, [ym]);
+  const { data: list = [], isLoading: loading, error: qError } = useRentals(scheduleParams);
+  const error = qError?.message || null;
 
   // 오늘 반납 예정 (표시 월 내 active + ends_at 오늘)
   const todayReturns = useMemo(() => {
@@ -135,12 +135,12 @@ function ScheduleTab({ devices }) {
           devices={devices}
           presetDate={editing?.new || null}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+          onSaved={() => setEditing(null)} />
       )}
       {returning && (
         <ReturnDialog contract={returning}
           onClose={() => setReturning(null)}
-          onDone={() => { setReturning(null); setTick(t => t + 1); }} />
+          onDone={() => setReturning(null)} />
       )}
     </div>
   );
@@ -276,19 +276,15 @@ const RENTAL_STATUS = {
 const RATE_TYPE_LABEL = { hourly: '시간', daily: '일', monthly: '월' };
 
 function RentalsTab({ devices }) {
-  const [list, setList]   = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');   // active | overdue | returned | all
   const [editing, setEditing] = useState(null);       // null | 'new' | contract
   const [returning, setReturning] = useState(null);   // contract to return
   const [handoff, setHandoff] = useState(null);       // contract for handoff link
   const [photosOf, setPhotosOf] = useState(null);     // contract for photo gallery
-  const [tick, setTick] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true); setError(null);
+  // (F2-b) useRentals hook + useDeleteRental mutation. setTick 제거.
+  // params 는 statusFilter 만 useMemo (from/to 는 tick 마다 변하면 캐시 miss 되니 useMemo).
+  const rentalParams = useMemo(() => {
     const now = new Date();
     const params = {
       from: new Date(now.getTime() - 30 * 86400_000).toISOString(),
@@ -296,12 +292,12 @@ function RentalsTab({ devices }) {
     };
     if (statusFilter === 'active')   params.status = ['draft', 'active'];
     else if (statusFilter !== 'all') params.status = [statusFilter];
-    api.listRentals(params).then(rs => {
-      if (cancelled) return;
-      setList(rs || []); setLoading(false);
-    }).catch(e => { if (!cancelled) { setError(e.message); setLoading(false); } });
-    return () => { cancelled = true; };
-  }, [statusFilter, tick]);
+    return params;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
+  const { data: list, isLoading: loading, error: qError } = useRentals(rentalParams);
+  const deleteRental = useDeleteRental();
+  const error = qError?.message || null;
 
   const activeCount   = (list || []).filter(c => c.status === 'active' || c.status === 'draft').length;
   const overdueCount  = (list || []).filter(c => c.status === 'overdue').length;
@@ -357,7 +353,7 @@ function RentalsTab({ devices }) {
             onDelete={async () => {
               const ok = await confirmDialog({ title: '계약 삭제', body: '삭제하시겠습니까?', danger: true });
               if (!ok) return;
-              try { await api.deleteRental(c.id); setTick(t => t + 1); }
+              try { await deleteRental.mutateAsync(c.id); }
               catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
             }} />)}
         </div>
@@ -366,12 +362,12 @@ function RentalsTab({ devices }) {
       {editing && (
         <RentalDialog init={editing === 'new' ? null : editing} devices={devices}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+          onSaved={() => setEditing(null)} />
       )}
       {returning && (
         <ReturnDialog contract={returning}
           onClose={() => setReturning(null)}
-          onDone={() => { setReturning(null); setTick(t => t + 1); }} />
+          onDone={() => setReturning(null)} />
       )}
       {handoff && (
         <HandoffTokenDialog contract={handoff}
@@ -556,7 +552,10 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
   const [returnLoc,    setReturnLoc]    = useState(init?.return_location ?? '');
   const [status,       setStatus]       = useState(init?.status ?? 'draft');
   const [note,         setNote]         = useState(init?.note ?? '');
-  const [busy,         setBusy]         = useState(false);
+  // (F2-b) mutation — 성공 시 자동 invalidate.
+  const createMut = useCreateRental();
+  const updateMut = useUpdateRental();
+  const busy = createMut.isPending || updateMut.isPending;
   const [phoneLookup, setPhoneLookup] = useState(null);   // { blacklisted, entry, visits }
 
   // (R6) phone 300ms debounce → lookup 재방문/블랙리스트.
@@ -609,14 +608,13 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
       status,
       note: note.trim() || null,
     };
-    setBusy(true);
     try {
-      if (init?.id) await api.updateRental(init.id, body);
-      else          await api.createRental(body);
+      if (init?.id) await updateMut.mutateAsync({ id: init.id, body });
+      else          await createMut.mutateAsync(body);
       onSaved();
     } catch (e) {
       alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
-    } finally { setBusy(false); }
+    }
   }
 
   return (
@@ -730,7 +728,9 @@ function ReturnDialog({ contract, onClose, onDone }) {
   const [extraLabel, setExtraLabel] = useState('');
   const [returnedAt, setReturnedAt] = useState(isoToLocal(new Date().toISOString()));
   const [note,     setNote]     = useState('');
-  const [busy,     setBusy]     = useState(false);
+  // (F2-b) useReturnRental mutation — 성공 시 rentals/renters 자동 invalidate.
+  const returnMut = useReturnRental();
+  const busy = returnMut.isPending;
 
   // (R4) 정산 실시간 preview — 백엔드와 동일 공식.
   const preview = useMemo(() => {
@@ -743,20 +743,22 @@ function ReturnDialog({ contract, onClose, onDone }) {
   }, [contract, odometer, extraFee, extraLabel, returnedAt]);
 
   async function submit() {
-    setBusy(true);
     try {
-      await api.returnRental(contract.id, {
-        return_odometer_km: odometer === '' ? null : Number(odometer),
-        return_location:    location.trim() || null,
-        extra_fee_krw:      extraFee === '' ? null : Number(extraFee),
-        extra_fee_label:    extraLabel.trim() || null,
-        returned_at:        returnedAt ? new Date(returnedAt).toISOString() : null,
-        note:               note.trim() || null,
+      await returnMut.mutateAsync({
+        id: contract.id,
+        body: {
+          return_odometer_km: odometer === '' ? null : Number(odometer),
+          return_location:    location.trim() || null,
+          extra_fee_krw:      extraFee === '' ? null : Number(extraFee),
+          extra_fee_label:    extraLabel.trim() || null,
+          returned_at:        returnedAt ? new Date(returnedAt).toISOString() : null,
+          note:               note.trim() || null,
+        },
       });
       onDone();
     } catch (e) {
       alertDialog({ title: '반납 실패', body: e.message, tone: 'danger' });
-    } finally { setBusy(false); }
+    }
   }
 
   return (
@@ -1304,16 +1306,11 @@ const st = {
 // ═══════════════════════════════════════════════════════════════
 function HandoffTokenDialog({ contract, onClose }) {
   const [purpose, setPurpose] = useState(contract.status === 'draft' ? 'pickup' : 'pickup');
-  const [tokens, setTokens] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    api.listHandoffTokens(contract.id).then(ts => { if (!cancelled) setTokens(ts || []); })
-      .catch(() => { if (!cancelled) setTokens([]); });
-    return () => { cancelled = true; };
-  }, [contract.id, tick]);
+  // (F2-b) useHandoffTokens + issue/revoke mutations. setTick 제거.
+  const { data: tokens } = useHandoffTokens(contract.id);
+  const issueMut  = useIssueHandoffToken();
+  const revokeMut = useRevokeHandoffToken();
+  const busy = issueMut.isPending || revokeMut.isPending;
 
   const activeToken = useMemo(() => {
     if (!tokens) return null;
@@ -1328,16 +1325,12 @@ function HandoffTokenDialog({ contract, onClose }) {
   const publicUrl = activeToken ? `${publicOrigin}/handoff/${activeToken.token}` : '';
 
   async function issue() {
-    setBusy(true);
-    try {
-      await api.issueHandoffToken(contract.id, purpose, 72);
-      setTick(t => t + 1);
-    } catch (e) { await alertDialog({ title: '발급 실패', body: e.message, tone: 'danger' }); }
-    finally { setBusy(false); }
+    try { await issueMut.mutateAsync({ contractId: contract.id, purpose, expiresHours: 72 }); }
+    catch (e) { await alertDialog({ title: '발급 실패', body: e.message, tone: 'danger' }); }
   }
   async function revoke(id) {
     if (!(await confirmDialog({ title: '링크 취소', body: '이 링크를 취소하시겠습니까?', danger: true }))) return;
-    try { await api.revokeHandoffToken(id); setTick(t => t + 1); }
+    try { await revokeMut.mutateAsync({ tokenId: id, contractId: contract.id }); }
     catch (e) { await alertDialog({ title: '취소 실패', body: e.message, tone: 'danger' }); }
   }
   async function copyLink() {
@@ -1443,19 +1436,13 @@ function HandoffTokenDialog({ contract, onClose }) {
 // (2026-07-28) Stage-R6: 임차인 registry — 재방문 인식 + 블랙리스트.
 // ═══════════════════════════════════════════════════════════════
 function RentersTab() {
-  const [list,    setList]    = useState(null);
-  const [error,   setError]   = useState(null);
   const [q,       setQ]       = useState('');
   const [detail,  setDetail]  = useState(null);   // { phone } | null
   const [blModal, setBlModal] = useState(null);   // { renter } | null
-  const [tick, setTick] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    api.listRenters().then(rs => { if (!cancelled) setList(rs || []); })
-      .catch(e => { if (!cancelled) { setError(e.message); setList([]); } });
-    return () => { cancelled = true; };
-  }, [tick]);
+  // (F2-b) useRenters hook. setTick 제거 — blacklist mutation onSuccess 이 자동 invalidate.
+  const { data: list, error: qError } = useRenters();
+  const error = qError?.message || null;
 
   const filtered = useMemo(() => {
     if (!list) return null;
@@ -1500,13 +1487,12 @@ function RentersTab() {
 
       {detail && (
         <RenterDetailModal phone={detail.phone}
-          onClose={() => setDetail(null)}
-          onBlacklistChanged={() => setTick(t => t + 1)} />
+          onClose={() => setDetail(null)} />
       )}
       {blModal && (
         <BlacklistDialog renter={blModal.renter}
           onClose={() => setBlModal(null)}
-          onSaved={() => { setBlModal(null); setTick(t => t + 1); }} />
+          onSaved={() => setBlModal(null)} />
       )}
     </div>
   );
@@ -1570,16 +1556,10 @@ function RenterCard({ r, onDetail, onBlacklist }) {
   );
 }
 
-function RenterDetailModal({ phone, onClose, onBlacklistChanged }) {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  useEffect(() => {
-    let cancelled = false;
-    api.renterDetail(phone).then(d => { if (!cancelled) setData(d); })
-      .catch(e => { if (!cancelled) setError(e.message); });
-    return () => { cancelled = true; };
-  }, [phone]);
-
+function RenterDetailModal({ phone, onClose }) {
+  // (F2-b) useRenterDetail hook — deduped, focus refetch.
+  const { data, error: qError } = useRenterDetail(phone);
+  const error = qError?.message || null;
   const s = data?.summary;
   return (
     <Modal open onClose={onClose} size="lg" title="임차인 상세" subtitle={phone}>
@@ -1663,16 +1643,19 @@ function BlacklistDialog({ renter, onClose, onSaved }) {
   const already = renter.blacklisted;
   const [reason, setReason] = useState(renter.blacklist_reason || '');
   const [severity, setSeverity] = useState(renter.blacklist_severity || 'warn');
-  const [busy, setBusy] = useState(false);
+
+  // (F2-b) mutations — onSuccess 이 자동 invalidateQueries.
+  const addMut    = useAddBlacklist();
+  const removeMut = useRemoveBlacklist();
+  const busy = addMut.isPending || removeMut.isPending;
 
   async function submit() {
     if (!reason.trim()) {
       await alertDialog({ title: '사유 필요', body: '블랙리스트 등록 사유를 입력하세요.', tone: 'danger' });
       return;
     }
-    setBusy(true);
     try {
-      await api.addBlacklist({
+      await addMut.mutateAsync({
         renter_phone: renter.renter_phone,
         renter_name:  renter.renter_name,
         reason:       reason.trim(),
@@ -1680,19 +1663,16 @@ function BlacklistDialog({ renter, onClose, onSaved }) {
       });
       onSaved();
     } catch (e) { await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' }); }
-    finally { setBusy(false); }
   }
 
   async function remove() {
     // remove 시 id 가 필요 — listBlacklist 로 찾아서 삭제.
-    setBusy(true);
     try {
       const bl = await api.listBlacklist();
       const hit = (bl || []).find(x => x.renter_phone === renter.renter_phone);
-      if (hit) await api.removeBlacklist(hit.id);
+      if (hit) await removeMut.mutateAsync(hit.id);
       onSaved();
     } catch (e) { await alertDialog({ title: '해제 실패', body: e.message, tone: 'danger' }); }
-    finally { setBusy(false); }
   }
 
   return (
@@ -1750,21 +1730,16 @@ const PHOTO_KIND_LABEL = {
 };
 
 function PhotoGalleryModal({ contract, onClose }) {
-  const [list, setList] = useState(null);
-  const [error, setError] = useState(null);
-  const [tick, setTick] = useState(0);
+  // (F2-b) useRentalPhotos + upload/delete mutations. setTick 제거.
+  const { data: list, error: qError } = useRentalPhotos(contract.id);
+  const uploadMut = useUploadRentalPhoto();
+  const deleteMut = useDeleteRentalPhoto();
+  const error = qError?.message || null;
   const [uploadKind, setUploadKind] = useState('pickup_damage');
-  const [busy, setBusy] = useState(false);
   const [viewer, setViewer] = useState(null);   // { id, kind } | null
   const [viewerUrl, setViewerUrl] = useState(null);
   const fileRef = useRef(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    api.listRentalPhotos(contract.id).then(rs => { if (!cancelled) setList(rs || []); })
-      .catch(e => { if (!cancelled) { setError(e.message); setList([]); } });
-    return () => { cancelled = true; };
-  }, [contract.id, tick]);
+  const busy = uploadMut.isPending || deleteMut.isPending;
 
   useEffect(() => {
     if (!viewer) { setViewerUrl(null); return; }
@@ -1783,19 +1758,17 @@ function PhotoGalleryModal({ contract, onClose }) {
       alertDialog({ title: '파일 크기 초과', body: '최대 10MB', tone: 'danger' });
       return;
     }
-    setBusy(true);
     try {
       const dataUrl = await compressToJpegDataUrl(f, 1600, 0.8);
-      await api.uploadRentalPhoto(contract.id, { kind: uploadKind, data_url: dataUrl });
-      setTick(t => t + 1);
+      await uploadMut.mutateAsync({ contractId: contract.id, kind: uploadKind, dataUrl });
     } catch (e) {
       alertDialog({ title: '업로드 실패', body: e.message, tone: 'danger' });
-    } finally { setBusy(false); if (fileRef.current) fileRef.current.value = ''; }
+    } finally { if (fileRef.current) fileRef.current.value = ''; }
   }
 
   async function remove(p) {
     if (!(await confirmDialog({ title: '사진 삭제', body: '이 사진을 삭제하시겠습니까?', danger: true }))) return;
-    try { await api.deleteRentalPhoto(p.id); setTick(t => t + 1); }
+    try { await deleteMut.mutateAsync({ photoId: p.id, contractId: contract.id }); }
     catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
   }
 
