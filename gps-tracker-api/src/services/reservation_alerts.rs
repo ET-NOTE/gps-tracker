@@ -162,29 +162,33 @@ async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
 }
 
 // (2026-07-28 Stage-4H-2) 시간 기반 자동 status 전환.
-//   planned      → in_progress  (starts_at 이 이미 지남)
-//   in_progress  → completed    (ends_at 이 이미 지남)
 async fn auto_transition_status(db: &PgPool) -> anyhow::Result<()> {
-    // planned → in_progress
     let n1 = sqlx::query(
-        r#"UPDATE vehicle_reservations
-              SET status = 'in_progress', updated_at = NOW()
+        r#"UPDATE vehicle_reservations SET status = 'in_progress', updated_at = NOW()
             WHERE status = 'planned' AND starts_at <= NOW() AND ends_at > NOW()"#,
     ).execute(db).await?.rows_affected();
-    // in_progress → completed
     let n2 = sqlx::query(
-        r#"UPDATE vehicle_reservations
-              SET status = 'completed', updated_at = NOW()
+        r#"UPDATE vehicle_reservations SET status = 'completed', updated_at = NOW()
             WHERE status = 'in_progress' AND ends_at <= NOW()"#,
     ).execute(db).await?.rows_affected();
-    // planned 인데 이미 종료 시각도 지난 경우 (놓친 예약) → completed 직행
     let n3 = sqlx::query(
-        r#"UPDATE vehicle_reservations
-              SET status = 'completed', updated_at = NOW()
+        r#"UPDATE vehicle_reservations SET status = 'completed', updated_at = NOW()
             WHERE status = 'planned' AND ends_at <= NOW()"#,
     ).execute(db).await?.rows_affected();
-    if n1 + n2 + n3 > 0 {
-        tracing::info!("reservation auto-status: {n1} started, {n2} completed, {n3} skipped-planned→completed");
+
+    // (Stage-R1) 렌트카 계약 자동 전환:
+    //   draft/active → overdue: ends_at 지났고 아직 returned/cancelled 아님
+    //   draft → active: starts_at 이 지났고 아직 draft
+    let r1 = sqlx::query(
+        r#"UPDATE rental_contracts SET status = 'active', updated_at = NOW()
+            WHERE status = 'draft' AND starts_at <= NOW() AND ends_at > NOW()"#,
+    ).execute(db).await?.rows_affected();
+    let r2 = sqlx::query(
+        r#"UPDATE rental_contracts SET status = 'overdue', updated_at = NOW()
+            WHERE status IN ('draft','active') AND ends_at <= NOW()"#,
+    ).execute(db).await?.rows_affected();
+    if n1 + n2 + n3 + r1 + r2 > 0 {
+        tracing::info!("auto-status: reservations {n1}/{n2}/{n3}, rentals {r1}/{r2}");
     }
     Ok(())
 }

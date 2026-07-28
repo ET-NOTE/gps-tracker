@@ -14,6 +14,7 @@ pub mod notifications;
 pub mod payments;
 pub mod phones;
 pub mod profile_type;
+pub mod rentcar;
 pub mod share;
 pub mod sim_requests;
 pub mod stats;
@@ -41,6 +42,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(credits::router_admin())
         .merge(profile_type::router())
         .merge(corporate::router())
+        .merge(rentcar::router())
         .merge(payments::router())
         .merge(phones::router())
         .merge(sim_requests::router_user())
