@@ -12,24 +12,7 @@
 
 import { getDeviceColor } from '../colors';
 import { haversineM } from './stops';
-
-function calcSpeedKmh(prev, next) {
-  if (!prev?.lat || !prev?.lng || !prev?.recordedAt || !next?.lat || !next?.lng || !next?.recordedAt) return null;
-  const dt = new Date(next.recordedAt).getTime() - new Date(prev.recordedAt).getTime();
-  if (!(dt > 0)) return null;
-  const distM = haversineM(prev.lat, prev.lng, next.lat, next.lng);
-  if (distM < 3) return 0;
-  const speed = (distM / (dt / 1000)) * 3.6;
-  return Number.isFinite(speed) ? Math.min(speed, 240) : null;
-}
-
-function clickableIntervalM(zoomLevel) {
-  if (zoomLevel <= 3)  return 30;
-  if (zoomLevel <= 5)  return 60;
-  if (zoomLevel <= 7)  return 120;
-  if (zoomLevel <= 9)  return 250;
-  return 500;
-}
+import { calcSpeedKmh, clickableIntervalM } from './speed';
 
 export function makeWsEventHandler({
   devRef, mapRef, lastMetaRef, wsDotAccRef,
