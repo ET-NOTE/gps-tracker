@@ -9,9 +9,11 @@ const BASE_TABS = [
   { id: 'profile', label: '내정보', icon: 'user' },
 ];
 
-export default function BottomNav({ active, onChange, isAdmin, isCorporate }) {
+export default function BottomNav({ active, onChange, isAdmin, isCorporate, isRentcar, isDelivery }) {
   const tabs = [...BASE_TABS];
-  if (isCorporate) tabs.push({ id: 'corporate', label: '법인',   icon: 'route' });
+  if (isCorporate) tabs.push({ id: 'corporate', label: '법인',   icon: 'route'  });
+  if (isRentcar)   tabs.push({ id: 'rentcar',   label: '렌트',   icon: 'route'  });
+  if (isDelivery)  tabs.push({ id: 'delivery',  label: '배송',   icon: 'mapPin' });
   if (isAdmin)     tabs.push({ id: 'admin',     label: '관리자', icon: 'wrench' });
 
   return (

@@ -24,6 +24,8 @@ import PointInfoSheet from '../components/PointInfoSheet';
 // admin / corporate 는 해당 사용자만 진입 — 초기 bundle 에서 제외.
 const AdminDashboard = lazy(() => import('../components/AdminDashboard'));
 const CorporatePanel = lazy(() => import('../components/CorporatePanel'));
+const RentcarPanel   = lazy(() => import('../components/RentcarPanel'));
+const DeliveryPanel  = lazy(() => import('../components/DeliveryPanel'));
 const LazyPanelFallback = () => (
   <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
     로딩 중…
@@ -69,6 +71,8 @@ function pathToView(p) {
   if (p.startsWith('/profile'))   return 'profile';
   if (p.startsWith('/admin'))     return 'admin';
   if (p.startsWith('/corporate')) return 'corporate';
+  if (p.startsWith('/rentcar'))   return 'rentcar';
+  if (p.startsWith('/delivery'))  return 'delivery';
   return 'home';
 }
 function viewToPath(v) {
@@ -275,6 +279,8 @@ export default function Dashboard({ onLogout }) {
   const [accountType, setAccountType] = useState(null);   // unspecified | rentcar | corporate_fleet | delivery
   const isAdmin     = me?.role === 'admin';
   const isCorporate = accountType === 'corporate_fleet';
+  const isRentcar   = accountType === 'rentcar';
+  const isDelivery  = accountType === 'delivery';
 
   // ── 사용자 UI 환경설정 (계정 귀속) ────────────────────────
   // prefs.filter_device_id — 다른 PC 에서 로그인해도 마지막 선택 디바이스 복원
@@ -1311,7 +1317,8 @@ export default function Dashboard({ onLogout }) {
     <div style={{ height: '100dvh', display: 'flex', flexDirection: isDesktop ? 'row' : 'column' }}>
 
       {/* 데스크톱 좌측 사이드 레일 */}
-      {isDesktop && <SideRail active={view} onChange={setView} isAdmin={isAdmin} isCorporate={isCorporate} />}
+      {isDesktop && <SideRail active={view} onChange={setView} isAdmin={isAdmin}
+        isCorporate={isCorporate} isRentcar={isRentcar} isDelivery={isDelivery} />}
 
       <main style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
 
@@ -1337,10 +1344,28 @@ export default function Dashboard({ onLogout }) {
           </div>
         )}
 
+        {/* 렌트카 본문 — 풀-화면. corporate 와 같은 shell. */}
+        {view === 'rentcar' && isRentcar && (
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <Suspense fallback={<LazyPanelFallback />}>
+              <RentcarPanel devices={devices} />
+            </Suspense>
+          </div>
+        )}
+
+        {/* 배송 본문 — 풀-화면. */}
+        {view === 'delivery' && isDelivery && (
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <Suspense fallback={<LazyPanelFallback />}>
+              <DeliveryPanel devices={devices} />
+            </Suspense>
+          </div>
+        )}
+
         {/* 데스크톱 사이드바 패널 — SideRail 바로 옆에서 확장.
             home/tools/admin/corporate 제외 탭일 때만 슬라이드 인.
             tools 는 home 과 동일하게 지도+FAB 만 — sheet 가 좌하단 floating 으로 뜸. */}
-        {view !== 'admin' && view !== 'corporate' && isDesktop && view !== 'home' && view !== 'tools' && (
+        {view !== 'admin' && view !== 'corporate' && view !== 'rentcar' && view !== 'delivery' && isDesktop && view !== 'home' && view !== 'tools' && (
           <aside style={{
             width: 400, flexShrink: 0,
             background: 'var(--surface)',
@@ -1356,7 +1381,7 @@ export default function Dashboard({ onLogout }) {
             데스크톱은 항상, 모바일/태블릿은 home 일 때만 시각적 노출 */}
         <div style={{
           flex: 1, position: 'relative', minWidth: 0,
-          display: ((view === 'admin' && isAdmin) || (view === 'corporate' && isCorporate)) ? 'none' : 'block',
+          display: ((view === 'admin' && isAdmin) || (view === 'corporate' && isCorporate) || (view === 'rentcar' && isRentcar) || (view === 'delivery' && isDelivery)) ? 'none' : 'block',
         }}>
           <div style={{ position: 'absolute', inset: 0, visibility: mapVisible ? 'visible' : 'hidden' }}>
             <KakaoMap ref={mapRef} onReady={handleMapReady}
@@ -1662,7 +1687,8 @@ export default function Dashboard({ onLogout }) {
       </main>
 
       {/* 모바일/태블릿 바텀 네비 */}
-      {!isDesktop && <BottomNav active={view} onChange={setView} isAdmin={isAdmin} isCorporate={isCorporate} />}
+      {!isDesktop && <BottomNav active={view} onChange={setView} isAdmin={isAdmin}
+        isCorporate={isCorporate} isRentcar={isRentcar} isDelivery={isDelivery} />}
 
       {/* 로드뷰 모달 — 호출 측이 probeRoadview() 로 panoId 확보 후에만 마운트 */}
       {roadview && (
