@@ -92,12 +92,15 @@ button { user-select: none; }
 
 /* 인쇄: 리포트만 보이게 — nav, sidebar, controls 다 숨김. .report-area 만 풀-페이지 */
 @media print {
-  /* 모든 요소 숨기고 .report-area 만 노출 */
+  /* (2026-07-28) position:absolute + visibility 조합은 Chrome 의 page-break 계산과
+     충돌해 tr 이 페이지 경계에서 잘리는 원인. 대신 .report-area 부모부터 아래로
+     display:contents 로 lay out 을 그대로 두면서 형제만 display:none 하는 방식. */
+  html, body { background: white !important; }
   body * { visibility: hidden !important; }
   .report-area, .report-area * { visibility: visible !important; }
 
   .report-area {
-    position: absolute; left: 0; top: 0;
+    /* absolute 제거 — 정상 흐름 유지 (page break 정확도 우선) */
     width: 100% !important;
     border: none !important;
     background: white !important;
@@ -106,18 +109,25 @@ button { user-select: none; }
     margin: 0 !important;
     box-shadow: none !important;
     font-size: 9pt !important;
+    orphans: 3; widows: 3;
   }
   .report-area * {
     color: black !important;
+  }
+  .report-area table {
+    border-collapse: collapse !important;
+    width: 100% !important;
   }
   .report-area th, .report-area td {
     background: white !important;
     border: 1px solid #999 !important;
     padding: 4px 6px !important;
     font-size: 9pt !important;
-    /* 한 행이 페이지 사이에 잘리지 않도록 */
+    vertical-align: top !important;
+    /* 한 행이 페이지 사이에 잘리지 않도록 — 브라우저별 prefix 모두 */
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
   }
   .report-area th {
     background: #e8e8e8 !important;
@@ -126,7 +136,12 @@ button { user-select: none; }
   /* thead 가 페이지마다 반복되도록 */
   .report-area thead { display: table-header-group !important; }
   .report-area tbody { display: table-row-group !important; }
-  .report-area tr    { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .report-area tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
 
   .no-print { display: none !important; }
   .editable-cell { cursor: default !important; }

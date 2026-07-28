@@ -1156,12 +1156,23 @@ async fn handoff_view(
 }
 
 #[derive(Debug, Deserialize)]
+pub struct HandoffExtraPhoto {
+    pub kind:     String,   // 'damage' | 'fuel' — purpose 와 결합해 DB kind 로 매핑
+    pub data_url: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct HandoffSubmitPayload {
     pub odometer_km:      i32,
     pub signature_svg:    String,       // SVG dataURL 또는 raw <svg> — 프론트가 작성
     pub photo_data_url:   String,       // "data:image/jpeg;base64,..."
     pub renter_confirmed_name: Option<String>,   // 임차인이 이름 확인 재입력
+    // (2026-07-28 R9-b) 추가 사진 (파손 · 연료 게이지) — max 6장
+    #[serde(default)]
+    pub extra_photos:     Vec<HandoffExtraPhoto>,
 }
+
+const HANDOFF_MAX_EXTRA_PHOTOS: usize = 6;
 
 async fn handoff_submit(
     State(state): State<AppState>,
@@ -1174,11 +1185,27 @@ async fn handoff_submit(
     if req.photo_data_url.trim().is_empty() {
         return Err(AppError::BadRequest("사진이 비어 있습니다".into()));
     }
-    // dataURL 파싱: "data:image/jpeg;base64,{b64}"
-    let (mime, bytes) = parse_data_url(&req.photo_data_url)
+    if req.extra_photos.len() > HANDOFF_MAX_EXTRA_PHOTOS {
+        return Err(AppError::BadRequest(format!("사진은 최대 {}장까지", HANDOFF_MAX_EXTRA_PHOTOS)));
+    }
+    // 오도미터 사진 파싱
+    let (odo_mime, odo_bytes) = parse_data_url(&req.photo_data_url)
         .ok_or_else(|| AppError::BadRequest("photo_data_url invalid".into()))?;
-    if bytes.len() > HANDOFF_MAX_PHOTO_BYTES {
+    if odo_bytes.len() > HANDOFF_MAX_PHOTO_BYTES {
         return Err(AppError::BadRequest("photo too large (>4MB)".into()));
+    }
+    // 추가 사진 파싱 + kind 매핑 검증
+    let mut extras_parsed: Vec<(String, String, Vec<u8>)> = Vec::with_capacity(req.extra_photos.len());
+    for p in &req.extra_photos {
+        if !matches!(p.kind.as_str(), "damage"|"fuel") {
+            return Err(AppError::BadRequest(format!("invalid extra kind: {}", p.kind)));
+        }
+        let (m, b) = parse_data_url(&p.data_url)
+            .ok_or_else(|| AppError::BadRequest("extra photo data_url invalid".into()))?;
+        if b.len() > HANDOFF_MAX_PHOTO_BYTES {
+            return Err(AppError::BadRequest("extra photo too large (>4MB)".into()));
+        }
+        extras_parsed.push((p.kind.clone(), m, b));
     }
 
     // 토큰 상태 검증
@@ -1194,6 +1221,20 @@ async fn handoff_submit(
     if tk.used_at.is_some()    { return Err(AppError::BadRequest("이미 제출된 링크입니다".into())); }
     if tk.expires_at <= Utc::now() { return Err(AppError::BadRequest("만료된 링크입니다".into())); }
 
+    // (R9-b) return purpose 시 자동 settlement 위해 계약 요약 미리 로드.
+    #[derive(FromRow)]
+    struct Cur {
+        rate_type: String, rate_amount_krw: i64,
+        starts_at: DateTime<Utc>, ends_at: DateTime<Utc>,
+        included_km_per_day: Option<i32>, over_km_price_krw: Option<i32>,
+        pickup_odometer_km: Option<i32>, deposit_krw: i64,
+    }
+    let cur: Cur = sqlx::query_as(
+        r#"SELECT rate_type, rate_amount_krw, starts_at, ends_at,
+                  included_km_per_day, over_km_price_krw, pickup_odometer_km, deposit_krw
+             FROM rental_contracts WHERE id = $1"#,
+    ).bind(tk.contract_id).fetch_one(&state.db).await?;
+
     let mut tx = state.db.begin().await?;
 
     let photo_kind = if tk.purpose == "pickup" { "pickup_odometer" } else { "return_odometer" };
@@ -1202,11 +1243,32 @@ async fn handoff_submit(
            VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id"#,
     )
-    .bind(tk.contract_id).bind(tk.user_id).bind(photo_kind).bind(&mime).bind(&bytes).bind(tk.id)
+    .bind(tk.contract_id).bind(tk.user_id).bind(photo_kind).bind(&odo_mime).bind(&odo_bytes).bind(tk.id)
     .fetch_one(&mut *tx).await?;
 
+    // 추가 사진 저장 (damage/fuel × purpose)
+    let mut extra_photo_ids: Vec<i64> = Vec::with_capacity(extras_parsed.len());
+    for (kind_short, mime, bytes) in &extras_parsed {
+        let db_kind = match (tk.purpose.as_str(), kind_short.as_str()) {
+            ("pickup", "damage") => "pickup_damage",
+            ("pickup", "fuel")   => "pickup_fuel",
+            ("return", "damage") => "return_damage",
+            ("return", "fuel")   => "return_fuel",
+            _ => continue,   // 위 검증에서 걸러짐, defensive
+        };
+        let id: i64 = sqlx::query_scalar(
+            r#"INSERT INTO rental_photos (contract_id, user_id, kind, mime, bytes, uploaded_by_token)
+               VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"#,
+        )
+        .bind(tk.contract_id).bind(tk.user_id).bind(db_kind).bind(mime).bind(bytes).bind(tk.id)
+        .fetch_one(&mut *tx).await?;
+        extra_photo_ids.push(id);
+    }
+
+    let mut settlement_out: Option<Value> = None;
+
     if tk.purpose == "pickup" {
-        // 인수: pickup 정보 + status draft/active 유지 → active. renter_name 확인값이 다르면 무시.
+        // 인수: pickup 정보 확정. draft → active.
         sqlx::query(
             r#"UPDATE rental_contracts SET
                 pickup_odometer_km    = $2,
@@ -1219,36 +1281,63 @@ async fn handoff_submit(
         .bind(tk.contract_id).bind(req.odometer_km).bind(&req.signature_svg)
         .execute(&mut *tx).await?;
     } else {
-        // return: signature/photo 만 저장. settlement 는 owner 가 '반납 완료' 버튼으로 확정 (기존 return_contract).
-        // R9-b 에서 여기서 자동 settlement 로 확장 예정.
+        // (R9-b) 반납: 자동 settlement 실행. return_contract 와 동일 공식.
+        // 임차인 self-return 은 extra_fee = 0 (파손비/세차비 등은 owner 가 별도 편집).
+        let (settled_json, subtotal, base_fee, late_hours, late_fee, over_km_val, over_km_fee, refund, returned_at) =
+            compute_settlement(
+                &cur.rate_type, cur.rate_amount_krw,
+                cur.starts_at, cur.ends_at,
+                cur.included_km_per_day, cur.over_km_price_krw,
+                cur.pickup_odometer_km, cur.deposit_krw,
+                req.odometer_km, None, None, None,
+            );
+
         sqlx::query(
             r#"UPDATE rental_contracts SET
                 return_odometer_km    = $2,
                 return_signature_svg  = $3,
                 return_signed_at      = NOW(),
+                status                = 'returned',
+                settled_amount_krw    = $4,
+                settled_at            = NOW(),
+                base_fee_krw          = $5,
+                late_hours            = $6,
+                late_fee_krw          = $7,
+                over_km               = $8,
+                over_km_fee_krw       = $9,
+                extra_fee_krw         = 0,
+                refund_krw            = $10,
+                returned_at           = $11,
+                settlement_json       = $12,
                 updated_at            = NOW()
               WHERE id = $1"#,
         )
         .bind(tk.contract_id).bind(req.odometer_km).bind(&req.signature_svg)
+        .bind(subtotal).bind(base_fee).bind(late_hours).bind(late_fee)
+        .bind(over_km_val).bind(over_km_fee).bind(refund).bind(returned_at)
+        .bind(&settled_json)
         .execute(&mut *tx).await?;
+        settlement_out = Some(settled_json);
     }
     sqlx::query("UPDATE rental_handoff_tokens SET used_at = NOW() WHERE id = $1")
         .bind(tk.id).execute(&mut *tx).await?;
 
     tx.commit().await?;
 
-    // Owner 알림 event insert (기존 FCM 워커 pickup)
+    // Owner 알림 event insert (기존 FCM 워커 push)
+    let evt_kind = if tk.purpose == "pickup" { "rental_pickup_done" } else { "rental_return_done" };
     let _ = sqlx::query(
         r#"INSERT INTO events (device_id, user_id, occurred_at, kind, data)
-           SELECT c.device_id, c.user_id, NOW(),
-                  CASE WHEN $2 = 'pickup' THEN 'rental_pickup_done' ELSE 'rental_return_submitted' END,
+           SELECT c.device_id, c.user_id, NOW(), $2,
                   jsonb_build_object(
                     'contract_id', c.id,
                     'renter_name', c.renter_name,
                     'odometer_km', $3::INT,
-                    'photo_id',    $4::BIGINT)
+                    'photo_id',    $4::BIGINT,
+                    'extra_photo_ids', $5::JSONB)
              FROM rental_contracts c WHERE c.id = $1"#,
-    ).bind(tk.contract_id).bind(&tk.purpose).bind(req.odometer_km).bind(photo_id)
+    ).bind(tk.contract_id).bind(evt_kind).bind(req.odometer_km).bind(photo_id)
+    .bind(serde_json::to_value(&extra_photo_ids).unwrap_or_default())
     .execute(&state.db).await;
 
     // 이름 확인값과 불일치면 audit 로그 성격 note 붙임 (best-effort)
@@ -1270,7 +1359,97 @@ async fn handoff_submit(
         "ok": true,
         "purpose": tk.purpose,
         "photo_id": photo_id,
+        "extra_photo_ids": extra_photo_ids,
+        "settlement": settlement_out,   // return purpose 시 breakdown, pickup 은 null
     })))
+}
+
+// (R9-b) return_contract 와 동일 공식. 임차인 self-return 은 extra_fee 없음.
+// 반환: (settlement_json, subtotal, base_fee, late_hours, late_fee, over_km, over_km_fee, refund, returned_at)
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
+fn compute_settlement(
+    rate_type: &str,
+    rate_amount_krw: i64,
+    starts_at: DateTime<Utc>,
+    ends_at: DateTime<Utc>,
+    included_km_per_day: Option<i32>,
+    over_km_price_krw: Option<i32>,
+    pickup_odometer_km: Option<i32>,
+    deposit_krw: i64,
+    return_odo_km: i32,
+    extra_fee_override: Option<i64>,
+    extra_label_override: Option<&str>,
+    returned_at_override: Option<DateTime<Utc>>,
+) -> (Value, i64, i64, i32, i64, i32, i64, i64, DateTime<Utc>) {
+    let dur = ends_at - starts_at;
+    let (units_raw, unit_label) = match rate_type {
+        "hourly"  => ((dur.num_minutes() as f64 / 60.0).ceil() as i64, "시간"),
+        "monthly" => ((dur.num_days()    as f64 / 30.0).ceil() as i64, "개월"),
+        _         => ((dur.num_hours()   as f64 / 24.0).ceil() as i64, "일"),
+    };
+    let units = units_raw.max(1);
+    let base_fee = rate_amount_krw * units;
+
+    let mut over_km_val: i32 = 0;
+    let mut over_km_fee: i64 = 0;
+    if let (Some(pick_od), Some(inc_per_day), Some(over_price)) =
+        (pickup_odometer_km, included_km_per_day, over_km_price_krw)
+    {
+        let driven = (return_odo_km - pick_od).max(0);
+        let days = ((dur.num_hours() as f64 / 24.0).ceil() as i32).max(1);
+        let allowed = inc_per_day * days;
+        over_km_val = (driven - allowed).max(0);
+        over_km_fee = (over_km_val as i64) * (over_price as i64);
+    }
+
+    let returned_at = returned_at_override.unwrap_or_else(Utc::now);
+    let late_hours: i32 = if returned_at > ends_at {
+        let d = returned_at - ends_at;
+        ((d.num_minutes() as f64 / 60.0).ceil() as i32).max(0)
+    } else { 0 };
+    let hourly = hourly_rate(rate_type, rate_amount_krw);
+    let late_fee: i64 = if late_hours > 0 {
+        ((late_hours as f64) * (hourly as f64) * LATE_FEE_MULTIPLIER).round() as i64
+    } else { 0 };
+
+    let extra_fee = extra_fee_override.unwrap_or(0);
+    let extra_label = extra_label_override.unwrap_or("기타").to_string();
+
+    let subtotal = base_fee + over_km_fee + late_fee + extra_fee;
+    let refund = deposit_krw - subtotal;
+
+    let mut lines: Vec<Value> = Vec::new();
+    lines.push(json!({
+        "kind": "base",
+        "label": format!("기본 요금 ({units}{unit_label} × {}원)", fmt_krw(rate_amount_krw)),
+        "amount": base_fee,
+    }));
+    if over_km_val > 0 && over_km_fee > 0 {
+        let over_price = over_km_price_krw.unwrap_or(0);
+        lines.push(json!({
+            "kind": "over_km",
+            "label": format!("초과 주행 ({over_km_val}km × {}원)", fmt_krw(over_price as i64)),
+            "amount": over_km_fee,
+        }));
+    }
+    if late_hours > 0 && late_fee > 0 {
+        lines.push(json!({
+            "kind": "late",
+            "label": format!("지연 반납 ({late_hours}시간 × {}원 × {}배)",
+                fmt_krw(hourly), LATE_FEE_MULTIPLIER),
+            "amount": late_fee,
+        }));
+    }
+    if extra_fee != 0 {
+        lines.push(json!({ "kind": "extra", "label": extra_label, "amount": extra_fee }));
+    }
+    let settlement = json!({
+        "lines": lines,
+        "subtotal": subtotal,
+        "deposit": deposit_krw,
+        "balance": refund,
+    });
+    (settlement, subtotal, base_fee, late_hours, late_fee, over_km_val, over_km_fee, refund, returned_at)
 }
 
 async fn get_photo(
