@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useMe, useAccountType } from '../state';
-import { TrackerWS } from '../ws';
+import { useLiveWS } from '../hooks/useLiveWS';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import KakaoMap from '../components/KakaoMap';
 import ProfilePanel from '../components/ProfilePanel';
 import DeviceDetail from '../components/DeviceDetail';
@@ -571,40 +572,28 @@ export default function Dashboard({ onLogout }) {
     mapRef.current?.panToCoord?.(p.lat, p.lng);
   }, [filterDeviceId]);
 
+  // (F6-a-1) WS lifecycle 은 useLiveWS hook 이 담당. 이 컴포넌트는 handleWsEvent 만 소유.
+  const { status: liveWsStatus, subscribe: wsSubscribe } = useLiveWS({
+    onEvent: (msg) => handleWsEvent(msg),
+  });
+  // legacy wsStatus setter 대체 — 뷰가 참조하는 wsStatus 는 hook 이 관리.
+  useEffect(() => { setWsStatus(liveWsStatus); }, [liveWsStatus]);
+  // legacy wsRef.current?.subscribe(...) 호출부와 호환을 위해 wsRef 유지
+  // (loadDevicesIncremental / loadDevices 에서 계속 사용).
   useEffect(() => {
-    const ws = new TrackerWS(handleWsEvent, setWsStatus);
-    ws.connect(localStorage.getItem('access_token'));
-    wsRef.current = ws;
+    wsRef.current = { subscribe: wsSubscribe };
+    return () => { wsRef.current = null; };
+  }, [wsSubscribe]);
 
-    // 새로고침 호출 디바운스 — 30초 인터벌 + visibility/focus 이벤트가 동시에 떨어지면
-    // 같은 API 가 한 번에 여러 번 호출되어 quota 낭비 + 백엔드 부하. 최소 8초 간격 보장.
-    let lastRefreshAt = 0;
-    const refresh = (force = false) => {
-      const now = Date.now();
-      if (!force && now - lastRefreshAt < 8000) return;
-      lastRefreshAt = now;
-      setTick(x => x + 1);
-      loadDevicesIncremental(force);   // force → 기존 device 도 dot 재-render
-      loadFences();
-    };
-    // zoom 변경 시 handleMapViewChange 에서 호출용 (debounce 300ms)
-    refreshFnRef.current = refresh;
-
-    const t = setInterval(() => refresh(true), 30000);
-
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') refresh();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', onVisible);
-
-    return () => {
-      ws.disconnect();
-      clearInterval(t);
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('focus', onVisible);
-    };
+  // (F6-a-1) 30s tick + focus/visibility 는 useAutoRefresh hook 이 담당.
+  const doRefresh = useCallback((force = false) => {
+    setTick(x => x + 1);
+    loadDevicesIncremental(force);
+    loadFences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const refreshFn = useAutoRefresh(doRefresh, { intervalMs: 30_000, minIntervalMs: 8_000 });
+  useEffect(() => { refreshFnRef.current = refreshFn; }, [refreshFn]);
 
   async function loadDevicesIncremental(force = false) {
     try {
