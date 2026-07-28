@@ -346,13 +346,14 @@ function BatchStatsBody({ stats }) {
   // 시간순 정렬 (DESC) 그대로 보여줌 — 최신 batch 가 위.
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: 12 }}>
         <BatchStatTile label="평균 batch" value={stats.avg_batch?.toFixed(1) ?? '—'} sub="POST 당 fix 수" />
         <BatchStatTile label="최대" value={stats.max_batch} sub="가장 많은 batch" />
         <BatchStatTile label="최소" value={stats.min_batch} sub="가장 적은 batch" />
         <BatchStatTile label="총 fix" value={stats.total_fixes} sub={`${stats.total_batches} POST`} />
       </div>
-      <table style={tbl}>
+      <div style={{ overflowX: 'auto' }}>
+      <table style={{ ...tbl, minWidth: 480 }}>
         <thead>
           <tr>
             <th style={th}>uptime</th>
@@ -380,6 +381,7 @@ function BatchStatsBody({ stats }) {
           ))}
         </tbody>
       </table>
+      </div>
       {recent.length === 0 && <Muted>이 윈도우에 fixes array 가 들어온 POST 가 없습니다.</Muted>}
     </div>
   );
@@ -458,7 +460,7 @@ function AggregateChart({ rows, bucket }) {
     : rows;
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: 12 }}>
         <BatchStatTile label="총 fix" value={totalFix} sub={`${rows.length} bucket`} />
         <BatchStatTile label="평균 위성" value={avgSat} sub="bucket 평균" />
         <BatchStatTile label="max bucket fix" value={maxFix} sub="가장 활발한 bucket" />
@@ -515,7 +517,7 @@ function TimescaleDbStatsBody({ stats }) {
   const aggs = stats.aggregates || {};
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: 12 }}>
         <BatchStatTile
           label="hypertable 총 size"
           value={fmtBytes(stats.total_bytes)}
@@ -537,7 +539,7 @@ function TimescaleDbStatsBody({ stats }) {
           sub={ratio != null ? `${fmtBytes(c.before_bytes)} → ${fmtBytes(c.after_bytes)}` : '7일 후 측정'}
         />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
         <BatchStatTile label="1m aggregate"  value={fmtBytes(aggs.location_1min)}  sub="continuous aggregate" />
         <BatchStatTile label="5m aggregate"  value={fmtBytes(aggs.location_5min)}  sub="continuous aggregate" />
         <BatchStatTile label="1h aggregate"  value={fmtBytes(aggs.location_1hour)} sub="continuous aggregate" />

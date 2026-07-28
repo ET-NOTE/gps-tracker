@@ -37,6 +37,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/devices/:id/documents", get(list_documents).post(upload_document))
         .route("/documents/:id/download", get(download_document))
+        .route("/documents/:id/preview",  get(preview_document))
         .route("/documents/:id",          delete(delete_document))
 }
 
@@ -190,6 +191,32 @@ async fn download_document(
         [(header::CONTENT_TYPE, row.mime.clone()),
          (header::CONTENT_DISPOSITION,
           format!("attachment; filename=\"{}\"; filename*=UTF-8''{}", cd, cd))],
+        Body::from(data),
+    ).into_response())
+}
+
+// (2026-07-28) inline preview — <img> / <iframe> 로 바로 렌더 가능한 형태.
+// Content-Disposition: inline. 원본 파일 그대로 (이미지/PDF).
+async fn preview_document(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<axum::response::Response> {
+    #[derive(FromRow)]
+    struct Row { user_id: i64, stored_path: String, mime: String, filename: String }
+    let row: Option<Row> = sqlx::query_as(
+        "SELECT user_id, stored_path, mime, filename FROM device_documents WHERE id = $1",
+    ).bind(id).fetch_optional(&state.db).await?;
+    let row = row.ok_or(AppError::NotFound)?;
+    if row.user_id != user.user_id { return Err(AppError::NotFound); }
+    let data = tokio::fs::read(&row.stored_path).await
+        .map_err(|e| anyhow::anyhow!("read file: {e}"))?;
+    let cd = percent_encode(&row.filename);
+    Ok((
+        [(header::CONTENT_TYPE, row.mime.clone()),
+         (header::CONTENT_DISPOSITION,
+          format!("inline; filename=\"{}\"; filename*=UTF-8''{}", cd, cd)),
+         (header::CACHE_CONTROL, "private, max-age=3600".to_string())],
         Body::from(data),
     ).into_response())
 }

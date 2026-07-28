@@ -185,25 +185,27 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
       background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: 12, padding: 8,
     }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
         {DOW.map((d, i) => (
           <div key={d} style={{
-            fontSize: 11, fontWeight: 700, padding: '6px 4px', textAlign: 'center',
+            fontSize: 11, fontWeight: 700, padding: '6px 2px', textAlign: 'center',
             color: i === 0 ? 'var(--danger)' : i === 6 ? 'var(--primary)' : 'var(--text-2)',
           }}>{d}</div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
         {cells.map((cell, i) => {
           const dStr = cell.date.toISOString().slice(0, 10);
           const dayContracts = contractsOn(cell.date);
           const isToday = dStr === todayStr;
           const dow = cell.date.getDay();
           const hasReturn = dayContracts.some(c => isReturnDay(cell.date, c) && c.status !== 'returned' && c.status !== 'cancelled');
+          const MAX_BADGES = 2;
           return (
             <div key={i} onClick={() => cell.currentMonth && onDayClick(dStr)} style={{
-              minHeight: 92,
-              padding: 4,
+              minHeight: 'clamp(60px, 13vw, 92px)',
+              padding: 3,
+              minWidth: 0,
               background: isToday
                 ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
                 : cell.currentMonth ? 'var(--surface)' : 'var(--surface-2)',
@@ -230,25 +232,26 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
                   <span style={{ fontSize: 8, color: 'var(--warning)', fontWeight: 800 }}>반납</span>
                 )}
               </div>
-              {dayContracts.slice(0, 3).map(c => {
+              {dayContracts.slice(0, MAX_BADGES).map(c => {
                 const s = RENTAL_STATUS[c.status] || RENTAL_STATUS.draft;
                 const returnHere = isReturnDay(cell.date, c);
                 return (
                   <div key={c.id} onClick={(e) => { e.stopPropagation(); onEventClick(c); }} style={{
                     fontSize: 10, fontWeight: 600,
-                    padding: '2px 5px', borderRadius: 3,
+                    padding: '1px 3px', borderRadius: 3,
                     background: s.bg, color: s.color,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     cursor: 'pointer',
                     borderLeft: returnHere ? '3px solid var(--warning)' : 'none',
+                    minWidth: 0,
                   }} title={`${c.renter_name} · ${c.license_plate || c.device_name || ''} · ${s.label}${returnHere ? ' · 오늘 반납' : ''}`}>
                     {c.license_plate || c.device_name || `#${c.device_id}`}
                   </div>
                 );
               })}
-              {dayContracts.length > 3 && (
+              {dayContracts.length > MAX_BADGES && (
                 <div style={{ fontSize: 9, color: 'var(--text-3)', textAlign: 'center' }}>
-                  +{dayContracts.length - 3}
+                  +{dayContracts.length - MAX_BADGES}
                 </div>
               )}
             </div>
@@ -279,6 +282,7 @@ function RentalsTab({ devices }) {
   const [editing, setEditing] = useState(null);       // null | 'new' | contract
   const [returning, setReturning] = useState(null);   // contract to return
   const [handoff, setHandoff] = useState(null);       // contract for handoff link
+  const [photosOf, setPhotosOf] = useState(null);     // contract for photo gallery
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -348,6 +352,7 @@ function RentalsTab({ devices }) {
             onEdit={() => setEditing(c)}
             onReturn={() => setReturning(c)}
             onHandoff={() => setHandoff(c)}
+            onPhotos={() => setPhotosOf(c)}
             onDelete={async () => {
               const ok = await confirmDialog({ title: '계약 삭제', body: '삭제하시겠습니까?', danger: true });
               if (!ok) return;
@@ -371,11 +376,15 @@ function RentalsTab({ devices }) {
         <HandoffTokenDialog contract={handoff}
           onClose={() => setHandoff(null)} />
       )}
+      {photosOf && (
+        <PhotoGalleryModal contract={photosOf}
+          onClose={() => setPhotosOf(null)} />
+      )}
     </div>
   );
 }
 
-function RentalCard({ c, onEdit, onReturn, onDelete, onHandoff }) {
+function RentalCard({ c, onEdit, onReturn, onDelete, onHandoff, onPhotos }) {
   const s = RENTAL_STATUS[c.status] || RENTAL_STATUS.draft;
   const start = new Date(c.starts_at);
   const end   = new Date(c.ends_at);
@@ -410,6 +419,9 @@ function RentalCard({ c, onEdit, onReturn, onDelete, onHandoff }) {
               </button>
             </>
           )}
+          <button onClick={onPhotos} style={{ ...st.btnGhost, padding: '4px 8px' }} title="사진 (오도미터/파손/연료)">
+            <Icon name="cam" size={11} />
+          </button>
           <button onClick={onEdit} style={{ ...st.btnGhost, padding: '4px 8px' }} title="편집">
             <Icon name="edit" size={11} />
           </button>
@@ -1754,4 +1766,215 @@ function BlacklistDialog({ renter, onClose, onSaved }) {
       </div>
     </div>
   );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// (2026-07-28) Stage-R9-a 확장: owner 계약별 사진 갤러리.
+// 오도미터 / 파손 / 연료 사진 조회 · 추가 · 삭제. 각 kind 별로 그룹핑.
+// ═══════════════════════════════════════════════════════════════
+
+const PHOTO_KIND_LABEL = {
+  pickup_odometer:  '인수 오도미터',
+  pickup_damage:    '인수 파손',
+  pickup_fuel:      '인수 연료',
+  return_odometer:  '반납 오도미터',
+  return_damage:    '반납 파손',
+  return_fuel:      '반납 연료',
+};
+
+function PhotoGalleryModal({ contract, onClose }) {
+  const [list, setList] = useState(null);
+  const [error, setError] = useState(null);
+  const [tick, setTick] = useState(0);
+  const [uploadKind, setUploadKind] = useState('pickup_damage');
+  const [busy, setBusy] = useState(false);
+  const [viewer, setViewer] = useState(null);   // { id, kind } | null
+  const [viewerUrl, setViewerUrl] = useState(null);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.listRentalPhotos(contract.id).then(rs => { if (!cancelled) setList(rs || []); })
+      .catch(e => { if (!cancelled) { setError(e.message); setList([]); } });
+    return () => { cancelled = true; };
+  }, [contract.id, tick]);
+
+  useEffect(() => {
+    if (!viewer) { setViewerUrl(null); return; }
+    let cancelled = false;
+    let objectUrl;
+    api.fetchRentalPhoto(viewer.id).then(url => {
+      if (cancelled) { URL.revokeObjectURL(url); return; }
+      objectUrl = url; setViewerUrl(url);
+    }).catch(() => {});
+    return () => { cancelled = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [viewer]);
+
+  async function handleFile(f) {
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) {
+      alertDialog({ title: '파일 크기 초과', body: '최대 10MB', tone: 'danger' });
+      return;
+    }
+    setBusy(true);
+    try {
+      const dataUrl = await compressToJpegDataUrl(f, 1600, 0.8);
+      await api.uploadRentalPhoto(contract.id, { kind: uploadKind, data_url: dataUrl });
+      setTick(t => t + 1);
+    } catch (e) {
+      alertDialog({ title: '업로드 실패', body: e.message, tone: 'danger' });
+    } finally { setBusy(false); if (fileRef.current) fileRef.current.value = ''; }
+  }
+
+  async function remove(p) {
+    if (!(await confirmDialog({ title: '사진 삭제', body: '이 사진을 삭제하시겠습니까?', danger: true }))) return;
+    try { await api.deleteRentalPhoto(p.id); setTick(t => t + 1); }
+    catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
+  }
+
+  const grouped = useMemo(() => {
+    const g = {};
+    for (const p of (list || [])) {
+      if (!g[p.kind]) g[p.kind] = [];
+      g[p.kind].push(p);
+    }
+    return g;
+  }, [list]);
+
+  return (
+    <div style={st.modalBackdrop} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={st.modalWide}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>계약 사진</div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+              {contract.license_plate || contract.device_name} · {contract.renter_name}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ ...st.btnGhost, padding: '4px 8px', marginLeft: 'auto' }}>
+            <Icon name="close" size={13} />
+          </button>
+        </div>
+
+        <div style={{
+          padding: 10, background: 'var(--surface-2)', borderRadius: 8,
+          display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap',
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)' }}>사진 추가</div>
+          <select value={uploadKind} onChange={e => setUploadKind(e.target.value)}
+            style={{ ...st.input, width: 'auto', flex: '1 1 140px', minWidth: 120 }}>
+            {Object.entries(PHOTO_KIND_LABEL).map(([id, label]) => (
+              <option key={id} value={id}>{label}</option>
+            ))}
+          </select>
+          <input ref={fileRef} type="file" accept="image/*" capture="environment"
+            onChange={e => handleFile(e.target.files?.[0])}
+            style={{ display: 'none' }} />
+          <button onClick={() => fileRef.current?.click()} disabled={busy} style={{
+            ...st.btnPrimary, padding: '8px 14px',
+          }}>
+            {busy ? '업로드 중...' : '파일 선택 · 촬영'}
+          </button>
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+          자동 리사이즈 (1600px, JPEG 0.8) · 저장 후 owner 만 열람.
+        </div>
+
+        {error && <div style={{ color: 'var(--danger)', fontSize: 12 }}>{error}</div>}
+        {!list && !error && <div style={st.muted}>로딩 중...</div>}
+        {list && list.length === 0 && <div style={st.muted}>등록된 사진 없음.</div>}
+
+        {Object.keys(grouped).map(kind => (
+          <div key={kind} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-2)' }}>
+              {PHOTO_KIND_LABEL[kind] || kind} <span style={{ color: 'var(--text-3)', fontWeight: 500 }}>· {grouped[kind].length}장</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 6 }}>
+              {grouped[kind].map(p => (
+                <PhotoThumb key={p.id} photo={p}
+                  onOpen={() => setViewer(p)}
+                  onDelete={() => remove(p)} />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {viewer && (
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 960,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12,
+          }} onClick={() => setViewer(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ position: 'relative', maxWidth: '95vw', maxHeight: '95vh' }}>
+              <button onClick={() => setViewer(null)} style={{
+                position: 'absolute', top: 8, right: 8, zIndex: 1,
+                background: 'rgba(0,0,0,0.5)', color: '#FFF', border: 'none',
+                borderRadius: 6, padding: '6px 10px', cursor: 'pointer',
+              }}><Icon name="close" size={13} /></button>
+              {viewerUrl ? (
+                <img src={viewerUrl} alt={PHOTO_KIND_LABEL[viewer.kind]}
+                  style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', borderRadius: 8 }} />
+              ) : <div style={{ color: '#FFF' }}>로딩...</div>}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PhotoThumb({ photo, onOpen, onDelete }) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    let obj;
+    api.fetchRentalPhoto(photo.id).then(u => {
+      if (cancelled) { URL.revokeObjectURL(u); return; }
+      obj = u; setUrl(u);
+    }).catch(() => {});
+    return () => { cancelled = true; if (obj) URL.revokeObjectURL(obj); };
+  }, [photo.id]);
+  return (
+    <div style={{ position: 'relative', aspectRatio: '1', borderRadius: 6, overflow: 'hidden', background: 'var(--surface-2)' }}>
+      {url ? (
+        <img src={url} alt="" onClick={onOpen}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in', display: 'block' }} />
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-3)', fontSize: 10 }}>...</div>
+      )}
+      <button onClick={onDelete} style={{
+        position: 'absolute', top: 4, right: 4,
+        background: 'rgba(239,68,68,0.85)', color: '#FFF',
+        border: 'none', borderRadius: 4, padding: '2px 6px',
+        fontSize: 10, cursor: 'pointer',
+      }}>×</button>
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+        color: '#FFF', fontSize: 9, padding: '10px 4px 3px', textAlign: 'right',
+      }}>{Math.round((photo.size_bytes || 0) / 1024)}KB</div>
+    </div>
+  );
+}
+
+// 파일 → JPEG dataURL (max side 리사이즈 + 압축).
+function compressToJpegDataUrl(file, maxSide = 1600, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('이미지 파싱 실패'));
+      img.onload = () => {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }

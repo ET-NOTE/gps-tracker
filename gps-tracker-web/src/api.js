@@ -482,7 +482,7 @@ export const api = {
   },
   deleteDocument: (id) => req('DELETE', `/documents/${id}`),
   documentDownloadUrl: (id) => {
-    const tok = localStorage.getItem('access_token');
+    const tok = getToken();
     // 브라우저 <a href> 로 열려면 auth header 못 붙임. blob fetch 후 URL.createObjectURL.
     return async () => {
       const res = await fetch(`${BASE}/documents/${id}/download`, {
@@ -496,6 +496,16 @@ export const api = {
       const filename = m1 ? decodeURIComponent(m1[1]) : m2 ? decodeURIComponent(m2[1]) : `doc-${id}`;
       return { blob, filename };
     };
+  },
+  // (2026-07-28) 문서 인라인 프리뷰 — blob URL 로 <img>/<embed> 렌더.
+  fetchDocumentPreview: async (id) => {
+    const tok = getToken();
+    const res = await fetch(`${BASE}/documents/${id}/preview`, {
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+    });
+    if (!res.ok) throw new Error(res.statusText);
+    const blob = await res.blob();
+    return { url: URL.createObjectURL(blob), mime: blob.type };
   },
 
   // (2026-07-28) Stage-4F-1: 차량 예약 CRUD.
@@ -547,6 +557,11 @@ export const api = {
   // 임차인 (public — 인증 우회, token 자체가 자격)
   handoffView:   (token)         => req('GET',  `/rentcar/handoff/${encodeURIComponent(token)}`),
   handoffSubmit: (token, body)   => req('POST', `/rentcar/handoff/${encodeURIComponent(token)}/submit`, body),
+
+  // (2026-07-28) R9-a 확장 — 계약별 사진 갤러리 (파손·연료·오도미터).
+  listRentalPhotos:    (contractId)         => req('GET',    `/rentcar/contracts/${contractId}/photos`),
+  uploadRentalPhoto:   (contractId, body)   => req('POST',   `/rentcar/contracts/${contractId}/photos`, body),
+  deleteRentalPhoto:   (id)                 => req('DELETE', `/rentcar/photos/${id}`),
 
   // (2026-07-28 Stage-R6) 임차인 registry + 블랙리스트.
   listRenters:       ()      => req('GET', '/rentcar/renters'),
