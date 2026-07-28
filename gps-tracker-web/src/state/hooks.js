@@ -1,0 +1,209 @@
+// (2026-07-28) Phase F2 — 공용 useQuery 훅 모음.
+//
+// 원칙:
+//   1. 하나의 API endpoint = 하나의 훅. 중복 fetch 사라짐 (dedup).
+//   2. 훅 이름은 use{Resource} — 컴포넌트에서 바로 데이터·loading·error 사용.
+//   3. mutation 은 useMutation + invalidateQueries — setTick(t=>t+1) 대체.
+//
+// 사용:
+//   const { data: me, isLoading } = useMe();
+//   const { data: devices } = useDevices();
+//   const rentals = useRentals({ status: ['draft','active'] });
+//   const addRental = useCreateRental(); addRental.mutate(body);
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../api';
+import { qk } from './keys';
+
+// ═══════════════════════════════════════════════════════════
+// 사용자 · 계정 정보
+// ═══════════════════════════════════════════════════════════
+
+export function useMe(opts = {}) {
+  return useQuery({
+    queryKey: qk.me(),
+    queryFn: () => api.getMe(),
+    staleTime: 5 * 60_000,   // 5분 — 자주 안 바뀌는 프로필
+    ...opts,
+  });
+}
+
+export function useAccountType(opts = {}) {
+  return useQuery({
+    queryKey: qk.accountType(),
+    queryFn: () => api.getAccountType(),
+    staleTime: 10 * 60_000,  // 10분 — 계정 유형은 거의 안 바뀜
+    ...opts,
+  });
+}
+
+export function useUserPrefs(opts = {}) {
+  return useQuery({
+    queryKey: qk.userPrefs(),
+    queryFn: () => api.getMyPrefs?.() ?? Promise.resolve({}),
+    staleTime: 5 * 60_000,
+    ...opts,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Device fleet
+// ═══════════════════════════════════════════════════════════
+
+export function useDevices(opts = {}) {
+  return useQuery({
+    queryKey: qk.devices(),
+    queryFn: () => api.listDevices(),
+    staleTime: 30_000,   // 30s
+    ...opts,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Rentcar
+// ═══════════════════════════════════════════════════════════
+
+export function useRentals(params = {}, opts = {}) {
+  return useQuery({
+    queryKey: qk.rentals(params),
+    queryFn: () => api.listRentals(params),
+    ...opts,
+  });
+}
+
+export function useRenters(opts = {}) {
+  return useQuery({
+    queryKey: qk.renters(),
+    queryFn: () => api.listRenters(),
+    ...opts,
+  });
+}
+
+export function useRenterDetail(phone, opts = {}) {
+  return useQuery({
+    queryKey: qk.renterDetail(phone),
+    queryFn: () => api.renterDetail(phone),
+    enabled: !!phone,
+    ...opts,
+  });
+}
+
+export function useBlacklist(opts = {}) {
+  return useQuery({
+    queryKey: qk.blacklist(),
+    queryFn: () => api.listBlacklist(),
+    ...opts,
+  });
+}
+
+export function useHandoffTokens(contractId, opts = {}) {
+  return useQuery({
+    queryKey: qk.handoffTokens(contractId),
+    queryFn: () => api.listHandoffTokens(contractId),
+    enabled: !!contractId,
+    ...opts,
+  });
+}
+
+export function useRentalPhotos(contractId, opts = {}) {
+  return useQuery({
+    queryKey: qk.rentalPhotos(contractId),
+    queryFn: () => api.listRentalPhotos(contractId),
+    enabled: !!contractId,
+    ...opts,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Mutations — 성공 시 관련 query 자동 invalidate.
+// setTick(t => t+1) 패턴 대체.
+// ═══════════════════════════════════════════════════════════
+
+export function useCreateRental() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body) => api.createRental(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.rentals() });
+      qc.invalidateQueries({ queryKey: qk.renters() });
+    },
+  });
+}
+
+export function useUpdateRental() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }) => api.updateRental(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.rentals() });
+      qc.invalidateQueries({ queryKey: qk.renters() });
+    },
+  });
+}
+
+export function useReturnRental() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }) => api.returnRental(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.rentals() });
+      qc.invalidateQueries({ queryKey: qk.renters() });
+    },
+  });
+}
+
+export function useDeleteRental() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.deleteRental(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.rentals() });
+      qc.invalidateQueries({ queryKey: qk.renters() });
+    },
+  });
+}
+
+// Blacklist
+export function useAddBlacklist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body) => api.addBlacklist(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.blacklist() });
+      qc.invalidateQueries({ queryKey: qk.renters() });
+    },
+  });
+}
+export function useRemoveBlacklist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.removeBlacklist(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.blacklist() });
+      qc.invalidateQueries({ queryKey: qk.renters() });
+    },
+  });
+}
+
+// Handoff tokens
+export function useIssueHandoffToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ contractId, purpose, expiresHours }) =>
+      api.issueHandoffToken(contractId, purpose, expiresHours ?? 72),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: qk.handoffTokens(vars.contractId) });
+    },
+  });
+}
+export function useRevokeHandoffToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tokenId }) => api.revokeHandoffToken(tokenId),
+    onSuccess: (_data, vars) => {
+      if (vars.contractId != null) {
+        qc.invalidateQueries({ queryKey: qk.handoffTokens(vars.contractId) });
+      }
+    },
+  });
+}
