@@ -12,22 +12,22 @@ const RATE_LABEL = { hourly: '시간', daily: '일', monthly: '개월' };
 export default function HandoffPage({ token }) {
   const [view,  setView]  = useState(null);
   const [error, setError] = useState(null);
-  const [step,  setStep]  = useState('summary');   // summary → photo → sign → submitting → done
+  // summary → photo → extras → sign → submitting → done
+  const [step,  setStep]  = useState('summary');
   const [odometer, setOdometer] = useState('');
   const [nameConfirm, setNameConfirm] = useState('');
   const [photoDataUrl, setPhotoDataUrl] = useState(null);
+  // (R9-b) 추가 사진: [{ kind: 'damage'|'fuel', data_url }]
+  const [extraPhotos, setExtraPhotos] = useState([]);
   const [signatureSvg, setSignatureSvg] = useState(null);
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  // (R9-b) 반납 자동 정산 결과 (제출 후 표시)
+  const [settlement, setSettlement] = useState(null);
 
   useEffect(() => {
     if (!token) return;
-    api.handoffView(token).then(v => {
-      setView(v);
-      if (v.pickup_odometer_km != null && v.purpose === 'return') {
-        // return 은 이미 pickup 시 오도미터 있음. 참고용으로 힌트만.
-      }
-    }).catch(e => setError(e.message));
+    api.handoffView(token).then(setView).catch(e => setError(e.message));
   }, [token]);
 
   const purposeLabel = view?.purpose === 'pickup' ? '차량 인수' : '차량 반납';
@@ -47,12 +47,14 @@ export default function HandoffPage({ token }) {
     if (!signatureSvg)  { setSubmitError('서명이 필요합니다.'); return; }
     setBusy(true); setSubmitError(null); setStep('submitting');
     try {
-      await api.handoffSubmit(token, {
+      const res = await api.handoffSubmit(token, {
         odometer_km:            Number(odometer),
         photo_data_url:         photoDataUrl,
         signature_svg:          signatureSvg,
         renter_confirmed_name:  nameConfirm.trim() || null,
+        extra_photos:           extraPhotos.map(p => ({ kind: p.kind, data_url: p.data_url })),
       });
+      setSettlement(res?.settlement || null);
       setStep('done');
     } catch (e) {
       setSubmitError(e.message);
@@ -74,8 +76,8 @@ export default function HandoffPage({ token }) {
             <div style={sx.hint}>
               아래 순서로 진행됩니다.<br/>
               1. 오도미터 사진 촬영 · 수치 입력<br/>
-              2. 서명<br/>
-              3. 제출
+              2. (선택) 차량 파손 · 연료 게이지 사진<br/>
+              3. 서명 → 제출
             </div>
             <button onClick={() => setStep('photo')} style={sx.btnPrimary}>시작하기</button>
           </>
@@ -86,9 +88,18 @@ export default function HandoffPage({ token }) {
             purpose={view.purpose}
             odometer={odometer} setOdometer={setOdometer}
             photoDataUrl={photoDataUrl} setPhotoDataUrl={setPhotoDataUrl}
-            onNext={() => setStep('sign')}
+            onNext={() => setStep('extras')}
             onBack={() => setStep('summary')}
             pickupOdometer={view.pickup_odometer_km}
+          />
+        )}
+
+        {step === 'extras' && (
+          <ExtrasStep
+            purpose={view.purpose}
+            extraPhotos={extraPhotos} setExtraPhotos={setExtraPhotos}
+            onBack={() => setStep('photo')}
+            onNext={() => setStep('sign')}
           />
         )}
 
@@ -97,7 +108,7 @@ export default function HandoffPage({ token }) {
             renterName={view.renter_name}
             nameConfirm={nameConfirm} setNameConfirm={setNameConfirm}
             onSignature={setSignatureSvg}
-            onBack={() => setStep('photo')}
+            onBack={() => setStep('extras')}
             onSubmit={submit}
             busy={busy}
             error={submitError}
@@ -107,11 +118,7 @@ export default function HandoffPage({ token }) {
         {step === 'submitting' && <div style={sx.loading}>제출 중...</div>}
 
         {step === 'done' && (
-          <div style={{ padding: 20, textAlign: 'center' }}>
-            <div style={{ fontSize: 48 }}>✅</div>
-            <div style={{ fontSize: 18, fontWeight: 800, margin: '8px 0' }}>{purposeLabel} 완료</div>
-            <div style={{ fontSize: 13, color: '#666' }}>임대인에게 자동으로 알림이 전송되었습니다.</div>
-          </div>
+          <DoneScreen purpose={view.purpose} settlement={settlement} />
         )}
       </div>
     </div>
@@ -143,29 +150,171 @@ function Row({ label, value }) {
   );
 }
 
-// ─── STEP: 사진 ────────────────────────────────────
-function PhotoStep({ purpose, odometer, setOdometer, photoDataUrl, setPhotoDataUrl, onNext, onBack, pickupOdometer }) {
-  const inputRef = useRef();
-
-  function handleFile(f) {
-    if (!f) return;
+// (R9-b) 파일 → 리사이즈 JPEG dataURL. PhotoStep + ExtrasStep 공용.
+function fileToJpegDataUrl(f, maxSide = 1600, quality = 0.8) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
     reader.onload = () => {
       const img = new Image();
+      img.onerror = () => reject(new Error('이미지 파싱 실패'));
       img.onload = () => {
-        // 1600px 최장변으로 리사이즈 → JPEG 0.8
-        const maxSide = 1600;
         const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
         const w = Math.round(img.width * scale);
         const h = Math.round(img.height * scale);
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        setPhotoDataUrl(canvas.toDataURL('image/jpeg', 0.8));
+        resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.src = reader.result;
     };
     reader.readAsDataURL(f);
+  });
+}
+
+// ─── STEP: 파손 · 연료 사진 (선택) ──────────────────
+const MAX_EXTRA_PHOTOS = 6;
+function ExtrasStep({ purpose, extraPhotos, setExtraPhotos, onBack, onNext }) {
+  const damageInputRef = useRef();
+  const fuelInputRef = useRef();
+
+  async function addPhoto(kind, file) {
+    if (!file) return;
+    if (extraPhotos.length >= MAX_EXTRA_PHOTOS) {
+      alert(`사진은 최대 ${MAX_EXTRA_PHOTOS}장까지 첨부할 수 있습니다.`);
+      return;
+    }
+    try {
+      const data_url = await fileToJpegDataUrl(file);
+      setExtraPhotos(prev => [...prev, { kind, data_url }]);
+    } catch (e) { alert(e.message); }
+  }
+  function removeAt(i) {
+    setExtraPhotos(prev => prev.filter((_, idx) => idx !== i));
+  }
+
+  const purposeWord = purpose === 'pickup' ? '인수' : '반납';
+  return (
+    <>
+      <div style={sx.stepTitle}>2. {purposeWord} 시 사진 (선택)</div>
+      <div style={sx.hintBox}>
+        차량 상태 · 연료 게이지를 사진으로 남기면 반납 시 분쟁 예방에 도움이 됩니다. 최대 {MAX_EXTRA_PHOTOS}장.
+      </div>
+
+      <input ref={damageInputRef} type="file" accept="image/*" capture="environment"
+        onChange={e => { addPhoto('damage', e.target.files?.[0]); e.target.value = ''; }}
+        style={{ display: 'none' }} />
+      <input ref={fuelInputRef} type="file" accept="image/*" capture="environment"
+        onChange={e => { addPhoto('fuel', e.target.files?.[0]); e.target.value = ''; }}
+        style={{ display: 'none' }} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <button onClick={() => damageInputRef.current?.click()} style={sx.btnSecondary}
+          disabled={extraPhotos.length >= MAX_EXTRA_PHOTOS}>
+          📷 파손 사진
+        </button>
+        <button onClick={() => fuelInputRef.current?.click()} style={sx.btnSecondary}
+          disabled={extraPhotos.length >= MAX_EXTRA_PHOTOS}>
+          ⛽ 연료 게이지
+        </button>
+      </div>
+
+      {extraPhotos.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 6 }}>
+          {extraPhotos.map((p, i) => (
+            <div key={i} style={{
+              position: 'relative', aspectRatio: '1', borderRadius: 6, overflow: 'hidden',
+              border: '1px solid #E5E7EB',
+            }}>
+              <img src={p.data_url} alt={p.kind}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <div style={{
+                position: 'absolute', top: 4, left: 4,
+                background: 'rgba(0,0,0,0.6)', color: '#FFF',
+                fontSize: 9, padding: '2px 5px', borderRadius: 3, fontWeight: 700,
+              }}>{p.kind === 'damage' ? '파손' : '연료'}</div>
+              <button onClick={() => removeAt(i)} style={{
+                position: 'absolute', top: 4, right: 4,
+                background: 'rgba(239,68,68,0.85)', color: '#FFF',
+                border: 'none', borderRadius: 4, padding: '2px 6px',
+                fontSize: 11, cursor: 'pointer',
+              }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ fontSize: 11, color: '#666', textAlign: 'center' }}>
+        {extraPhotos.length} / {MAX_EXTRA_PHOTOS}장
+      </div>
+
+      <div style={sx.stepBtns}>
+        <button onClick={onBack} style={sx.btnGhost}>이전</button>
+        <button onClick={onNext} style={sx.btnPrimary}>
+          {extraPhotos.length === 0 ? '건너뛰고 다음' : '다음'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ─── DONE — 반납이면 정산 breakdown 표시 ─────────
+function DoneScreen({ purpose, settlement }) {
+  const purposeLabel = purpose === 'pickup' ? '차량 인수' : '차량 반납';
+  return (
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 48 }}>✅</div>
+        <div style={{ fontSize: 18, fontWeight: 800, margin: '8px 0' }}>{purposeLabel} 완료</div>
+        <div style={{ fontSize: 13, color: '#666' }}>임대인에게 자동으로 알림이 전송되었습니다.</div>
+      </div>
+      {purpose === 'return' && settlement && (
+        <div style={{
+          background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8, padding: 12,
+          display: 'flex', flexDirection: 'column', gap: 6,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#666' }}>자동 정산 결과</div>
+          {(settlement.lines || []).map((l, i) => (
+            <div key={i} style={{ display: 'flex', gap: 6, fontSize: 12, color: '#333' }}>
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.label}</span>
+              <span style={{ fontWeight: 700 }}>{(l.amount||0).toLocaleString()}원</span>
+            </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between',
+              paddingTop: 6, borderTop: '1px dashed #E5E7EB', fontWeight: 700, fontSize: 13 }}>
+            <span>소계</span><span style={{ color: '#3B82F6' }}>{(settlement.subtotal||0).toLocaleString()}원</span>
+          </div>
+          {settlement.deposit > 0 && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', fontSize: 12 }}>
+                <span>보증금</span><span>{settlement.deposit.toLocaleString()}원</span>
+              </div>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 13,
+                color: settlement.balance >= 0 ? '#10B981' : '#EF4444',
+              }}>
+                <span>{settlement.balance >= 0 ? '환급 (임대인 → 임차인)' : '추가 청구'}</span>
+                <span>{Math.abs(settlement.balance).toLocaleString()}원</span>
+              </div>
+            </>
+          )}
+          <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>
+            * 임대인이 별도 항목 (파손비 · 세차비 등) 을 추가할 수 있습니다.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── STEP: 사진 ────────────────────────────────────
+function PhotoStep({ purpose, odometer, setOdometer, photoDataUrl, setPhotoDataUrl, onNext, onBack, pickupOdometer }) {
+  const inputRef = useRef();
+
+  async function handleFile(f) {
+    if (!f) return;
+    try { setPhotoDataUrl(await fileToJpegDataUrl(f)); }
+    catch (e) { alert(e.message); }
   }
 
   return (
