@@ -107,5 +107,34 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
         tracing::info!(deleted = r.rows_affected(), "housekeeping: ancient device audit cleaned");
     }
 
+    // 6) (R6 PIPA) 렌트카 임차인 개인정보 자동 파기.
+    //   반납 완료 (returned) 이후 6개월 초과 → renter_id_last4 NULL (신분증 뒤4)
+    //   반납 완료 이후 3년 초과 → renter_phone NULL (연락처)
+    //   계약·매출 통계 자체는 유지. PII 만 최소화.
+    let r = sqlx::query(
+        "UPDATE rental_contracts
+            SET renter_id_last4 = NULL
+          WHERE status = 'returned'
+            AND settled_at IS NOT NULL
+            AND settled_at < NOW() - interval '180 days'
+            AND renter_id_last4 IS NOT NULL"
+    ).execute(pool).await?;
+    if r.rows_affected() > 0 {
+        tracing::info!(purged = r.rows_affected(),
+            "housekeeping: PIPA renter_id_last4 purged (>=180d after return)");
+    }
+    let r = sqlx::query(
+        "UPDATE rental_contracts
+            SET renter_phone = NULL
+          WHERE status = 'returned'
+            AND settled_at IS NOT NULL
+            AND settled_at < NOW() - interval '1095 days'
+            AND renter_phone IS NOT NULL"
+    ).execute(pool).await?;
+    if r.rows_affected() > 0 {
+        tracing::info!(purged = r.rows_affected(),
+            "housekeeping: PIPA renter_phone purged (>=3y after return)");
+    }
+
     Ok(())
 }

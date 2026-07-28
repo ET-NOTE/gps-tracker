@@ -24,6 +24,7 @@ export default function RentcarPanel({ devices }) {
     { id: 'fleet',    label: '홈',         icon: 'home' },
     { id: 'rentals',  label: '임대 계약',  icon: 'route' },
     { id: 'schedule', label: '반납 일정',  icon: 'clock' },
+    { id: 'renters',  label: '임차인',     icon: 'user' },
   ];
 
   return (
@@ -51,6 +52,7 @@ export default function RentcarPanel({ devices }) {
         {tab === 'fleet'    && <FleetTab devices={devices} />}
         {tab === 'rentals'  && <RentalsTab devices={devices} />}
         {tab === 'schedule' && <ScheduleTab devices={devices} />}
+        {tab === 'renters'  && <RentersTab />}
       </div>
     </div>
   );
@@ -531,10 +533,40 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
   const [status,       setStatus]       = useState(init?.status ?? 'draft');
   const [note,         setNote]         = useState(init?.note ?? '');
   const [busy,         setBusy]         = useState(false);
+  const [phoneLookup, setPhoneLookup] = useState(null);   // { blacklisted, entry, visits }
+
+  // (R6) phone 300ms debounce → lookup 재방문/블랙리스트.
+  useEffect(() => {
+    const p = renterPhone.trim();
+    if (!p || p.length < 7) { setPhoneLookup(null); return; }
+    let cancelled = false;
+    const id = setTimeout(() => {
+      api.checkBlacklist(p).then(r => { if (!cancelled) setPhoneLookup(r); })
+        .catch(() => { if (!cancelled) setPhoneLookup(null); });
+    }, 300);
+    return () => { cancelled = true; clearTimeout(id); };
+  }, [renterPhone]);
 
   async function save() {
     if (!deviceId) { alertDialog({ title: '차량 선택 필요', body: '', tone: 'danger' }); return; }
     if (!renterName.trim()) { alertDialog({ title: '임차인 이름 필요', body: '', tone: 'danger' }); return; }
+    // (R6) 블랙리스트 block 이면 신규 계약 차단, warn 이면 확인 통과.
+    if (phoneLookup?.blacklisted && phoneLookup.entry?.severity === 'block' && !init?.id) {
+      await alertDialog({
+        title: '⛔ 블랙리스트 차단',
+        body: `이 임차인 (${renterPhone}) 은 차단 등록됨: ${phoneLookup.entry.reason}\n임차인 탭에서 해제 후 진행하세요.`,
+        tone: 'danger',
+      });
+      return;
+    }
+    if (phoneLookup?.blacklisted && phoneLookup.entry?.severity === 'warn' && !init?.id) {
+      const ok = await confirmDialog({
+        title: '⚠ 블랙리스트 경고',
+        body: `이 임차인은 경고 등록됨: ${phoneLookup.entry.reason}\n계속하시겠습니까?`,
+        danger: true,
+      });
+      if (!ok) return;
+    }
     const body = {
       device_id: Number(deviceId),
       renter_name: renterName.trim(),
@@ -599,6 +631,30 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
           <Labeled label="연락처"><input value={renterPhone} onChange={e => setRenterPhone(e.target.value)} placeholder="010-..." style={st.input} /></Labeled>
           <Labeled label="신분증 뒤 4자리"><input value={idLast4} maxLength={4} onChange={e => setIdLast4(e.target.value.replace(/\D/g, ''))} placeholder="1234" style={st.input} /></Labeled>
         </div>
+        {phoneLookup && (phoneLookup.visits > 0 || phoneLookup.blacklisted) && (
+          <div style={{
+            padding: '8px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+            display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap',
+            background: phoneLookup.blacklisted
+              ? `color-mix(in srgb, var(--${phoneLookup.entry?.severity === 'block' ? 'danger' : 'warning'}) 12%, transparent)`
+              : 'color-mix(in srgb, var(--primary) 10%, transparent)',
+            color: phoneLookup.blacklisted
+              ? `var(--${phoneLookup.entry?.severity === 'block' ? 'danger' : 'warning'})`
+              : 'var(--primary)',
+          }}>
+            {phoneLookup.blacklisted ? (
+              <>
+                <span>{phoneLookup.entry.severity === 'block' ? '⛔ 블랙리스트 (차단)' : '⚠ 블랙리스트 (경고)'}</span>
+                <span style={{ opacity: 0.8, fontWeight: 500 }}>사유: {phoneLookup.entry.reason}</span>
+              </>
+            ) : (
+              <>
+                <Icon name="refresh" size={12} />
+                <span>재방문 임차인 · 기존 계약 {phoneLookup.visits}건</span>
+              </>
+            )}
+          </div>
+        )}
 
         {/* 기간 + 인수 오도미터 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -1228,3 +1284,313 @@ const st = {
     display: 'flex', flexDirection: 'column', gap: 12,
   },
 };
+
+// ═══════════════════════════════════════════════════════════════
+// (2026-07-28) Stage-R6: 임차인 registry — 재방문 인식 + 블랙리스트.
+// ═══════════════════════════════════════════════════════════════
+function RentersTab() {
+  const [list,    setList]    = useState(null);
+  const [error,   setError]   = useState(null);
+  const [q,       setQ]       = useState('');
+  const [detail,  setDetail]  = useState(null);   // { phone } | null
+  const [blModal, setBlModal] = useState(null);   // { renter } | null
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.listRenters().then(rs => { if (!cancelled) setList(rs || []); })
+      .catch(e => { if (!cancelled) { setError(e.message); setList([]); } });
+    return () => { cancelled = true; };
+  }, [tick]);
+
+  const filtered = useMemo(() => {
+    if (!list) return null;
+    const s = q.trim();
+    if (!s) return list;
+    return list.filter(r =>
+      (r.renter_phone || '').includes(s) ||
+      (r.renter_name  || '').includes(s));
+  }, [list, q]);
+
+  const totalRevenue = (list || []).reduce((sum, r) => sum + (r.total_revenue || 0), 0);
+  const repeatCount  = (list || []).filter(r => r.contracts_count >= 2).length;
+  const blacklistedCount = (list || []).filter(r => r.blacklisted).length;
+
+  return (
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <StatCardGrid>
+        <StatCard icon="user" label="총 임차인"   value={(list || []).length}   unit="명" tone="default" />
+        <StatCard icon="refresh" label="재방문"   value={repeatCount}           unit="명" tone={repeatCount > 0 ? 'primary' : 'default'} />
+        <StatCard icon="warn" label="블랙리스트"  value={blacklistedCount}      unit="명" tone={blacklistedCount > 0 ? 'danger' : 'default'} />
+        <StatCard icon="coin" label="누적 매출"   value={totalRevenue.toLocaleString()} unit="원" tone="primary" />
+      </StatCardGrid>
+
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <input value={q} onChange={e => setQ(e.target.value)}
+          placeholder="이름/전화번호 검색"
+          style={{ ...st.input, flex: 1, maxWidth: 320 }} />
+      </div>
+
+      {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
+      {list && list.length === 0 && <div style={st.muted}>등록된 임차인이 없습니다.</div>}
+
+      {filtered && filtered.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 8 }}>
+          {filtered.map(r => (
+            <RenterCard key={r.renter_phone} r={r}
+              onDetail={() => setDetail({ phone: r.renter_phone })}
+              onBlacklist={() => setBlModal({ renter: r })} />
+          ))}
+        </div>
+      )}
+
+      {detail && (
+        <RenterDetailModal phone={detail.phone}
+          onClose={() => setDetail(null)}
+          onBlacklistChanged={() => setTick(t => t + 1)} />
+      )}
+      {blModal && (
+        <BlacklistDialog renter={blModal.renter}
+          onClose={() => setBlModal(null)}
+          onSaved={() => { setBlModal(null); setTick(t => t + 1); }} />
+      )}
+    </div>
+  );
+}
+
+function RenterCard({ r, onDetail, onBlacklist }) {
+  const returnedRate = r.contracts_count > 0 ? Math.round((r.returned_count / r.contracts_count) * 100) : 0;
+  const isRepeat = r.contracts_count >= 2;
+  const isProblem = r.overdue_count > 0 || r.late_count > 0;
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 8,
+      borderLeft: r.blacklisted
+        ? `4px solid var(--${r.blacklist_severity === 'block' ? 'danger' : 'warning'})`
+        : '1px solid var(--border)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 800, fontSize: 14 }}>{r.renter_name || '(이름 없음)'}</span>
+        {isRepeat && (
+          <span style={{
+            fontSize: 10, padding: '2px 6px', borderRadius: 999,
+            background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+            color: 'var(--primary)', fontWeight: 700,
+          }}>재방문 · {r.contracts_count}회</span>
+        )}
+        {r.blacklisted && (
+          <span style={{
+            fontSize: 10, padding: '2px 6px', borderRadius: 999,
+            background: `color-mix(in srgb, var(--${r.blacklist_severity === 'block' ? 'danger' : 'warning'}) 18%, transparent)`,
+            color: `var(--${r.blacklist_severity === 'block' ? 'danger' : 'warning'})`,
+            fontWeight: 800,
+          }}>{r.blacklist_severity === 'block' ? '⛔ 차단' : '⚠ 경고'}</span>
+        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          <button onClick={onDetail} style={{ ...st.btnGhost, padding: '4px 8px' }} title="상세">
+            <Icon name="info" size={11} />
+          </button>
+          <button onClick={onBlacklist} style={{
+            ...st.btnGhost, padding: '4px 8px',
+            color: r.blacklisted ? 'var(--danger)' : 'var(--text-2)',
+          }} title="블랙리스트 관리">
+            <Icon name="warn" size={11} />
+          </button>
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.renter_phone}</div>
+      <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-3)', flexWrap: 'wrap' }}>
+        <span>이용 {r.contracts_count}회</span>
+        <span>· 반납 {r.returned_count} ({returnedRate}%)</span>
+        {r.overdue_count > 0 && <span style={{ color: 'var(--danger)', fontWeight: 700 }}>· 연체 {r.overdue_count}</span>}
+        {r.late_count > 0 && <span style={{ color: 'var(--warning)', fontWeight: 700 }}>· 지연 {r.late_count}</span>}
+      </div>
+      <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-2)' }}>
+        <span>매출 <b style={{ color: 'var(--text)' }}>{(r.total_revenue || 0).toLocaleString()}원</b></span>
+        <span style={{ marginLeft: 'auto', color: 'var(--text-3)' }}>
+          최근 {new Date(r.last_at).toLocaleDateString('ko-KR')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function RenterDetailModal({ phone, onClose, onBlacklistChanged }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.renterDetail(phone).then(d => { if (!cancelled) setData(d); })
+      .catch(e => { if (!cancelled) setError(e.message); });
+    return () => { cancelled = true; };
+  }, [phone]);
+
+  const s = data?.summary;
+  return (
+    <div style={st.modalBackdrop} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={st.modalWide}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>임차인 상세</div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{phone}</div>
+          </div>
+          <button onClick={onClose} style={{ ...st.btnGhost, padding: '4px 8px' }}><Icon name="close" size={13} /></button>
+        </div>
+
+        {error && <div style={{ color: 'var(--danger)', fontSize: 12 }}>{error}</div>}
+        {!data && !error && <div style={st.muted}>로딩 중...</div>}
+        {s && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              <MiniStat label="이용" value={s.contracts_count} />
+              <MiniStat label="반납" value={s.returned_count} />
+              <MiniStat label="연체" value={s.overdue_count} tone={s.overdue_count > 0 ? 'danger' : 'default'} />
+              <MiniStat label="지연" value={s.late_count} tone={s.late_count > 0 ? 'warning' : 'default'} />
+            </div>
+            <div style={{
+              padding: 10, background: 'var(--surface-2)', borderRadius: 8,
+              display: 'flex', justifyContent: 'space-between', fontSize: 13,
+            }}>
+              <span style={{ color: 'var(--text-2)' }}>누적 매출</span>
+              <b style={{ color: 'var(--primary)' }}>{(s.total_revenue || 0).toLocaleString()}원</b>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+              최초 {new Date(s.first_at).toLocaleDateString('ko-KR')} · 최근 {new Date(s.last_at).toLocaleDateString('ko-KR')}
+            </div>
+            {s.blacklisted && (
+              <div style={{
+                padding: 10, borderRadius: 8, fontSize: 12,
+                background: `color-mix(in srgb, var(--${s.blacklist_severity === 'block' ? 'danger' : 'warning'}) 12%, transparent)`,
+                color: `var(--${s.blacklist_severity === 'block' ? 'danger' : 'warning'})`,
+                fontWeight: 700,
+              }}>
+                {s.blacklist_severity === 'block' ? '⛔ 신규 계약 차단' : '⚠ 경고'} — {s.blacklist_reason}
+              </div>
+            )}
+
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginTop: 4 }}>계약 이력</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
+              {(data.contracts || []).map(c => {
+                const stt = RENTAL_STATUS[c.status] || RENTAL_STATUS.draft;
+                return (
+                  <div key={c.id} style={{
+                    padding: '6px 10px', background: 'var(--surface-2)', borderRadius: 6,
+                    display: 'flex', gap: 8, alignItems: 'center', fontSize: 11,
+                  }}>
+                    <span style={{
+                      padding: '2px 6px', borderRadius: 999, background: stt.bg, color: stt.color,
+                      fontSize: 9, fontWeight: 800,
+                    }}>{stt.label}</span>
+                    <span style={{ fontWeight: 700 }}>{c.license_plate || c.device_name || `#${c.device_id}`}</span>
+                    <span style={{ color: 'var(--text-3)' }}>
+                      {new Date(c.starts_at).toLocaleDateString('ko-KR')} ~ {new Date(c.ends_at).toLocaleDateString('ko-KR')}
+                    </span>
+                    {c.settled_amount_krw != null && (
+                      <span style={{ marginLeft: 'auto', color: 'var(--primary)', fontWeight: 700 }}>
+                        {c.settled_amount_krw.toLocaleString()}원
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, tone = 'default' }) {
+  const color = tone === 'danger' ? 'var(--danger)' : tone === 'warning' ? 'var(--warning)' : 'var(--text)';
+  return (
+    <div style={{
+      padding: 10, background: 'var(--surface-2)', borderRadius: 8,
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color }}>{value}</div>
+    </div>
+  );
+}
+
+function BlacklistDialog({ renter, onClose, onSaved }) {
+  const already = renter.blacklisted;
+  const [reason, setReason] = useState(renter.blacklist_reason || '');
+  const [severity, setSeverity] = useState(renter.blacklist_severity || 'warn');
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (!reason.trim()) {
+      await alertDialog({ title: '사유 필요', body: '블랙리스트 등록 사유를 입력하세요.', tone: 'danger' });
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.addBlacklist({
+        renter_phone: renter.renter_phone,
+        renter_name:  renter.renter_name,
+        reason:       reason.trim(),
+        severity,
+      });
+      onSaved();
+    } catch (e) { await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' }); }
+    finally { setBusy(false); }
+  }
+
+  async function remove() {
+    // remove 시 id 가 필요 — listBlacklist 로 찾아서 삭제.
+    setBusy(true);
+    try {
+      const bl = await api.listBlacklist();
+      const hit = (bl || []).find(x => x.renter_phone === renter.renter_phone);
+      if (hit) await api.removeBlacklist(hit.id);
+      onSaved();
+    } catch (e) { await alertDialog({ title: '해제 실패', body: e.message, tone: 'danger' }); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div style={st.modalBackdrop} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={st.modal}>
+        <div style={{ fontSize: 15, fontWeight: 800 }}>블랙리스트 {already ? '수정' : '등록'}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+          {renter.renter_name || '(이름 없음)'} · {renter.renter_phone}
+        </div>
+        <Labeled label="사유">
+          <input value={reason} onChange={e => setReason(e.target.value)}
+            placeholder="예: 차량 파손 미보상 · 연체 3회"
+            style={st.input} />
+        </Labeled>
+        <Labeled label="심각도">
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[
+              { v: 'warn',  label: '⚠ 경고 (계약 시 알림)' },
+              { v: 'block', label: '⛔ 차단 (신규 계약 불가)' },
+            ].map(o => (
+              <button key={o.v} onClick={() => setSeverity(o.v)}
+                style={{
+                  padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)',
+                  background: severity === o.v ? 'var(--surface-2)' : 'transparent',
+                  color: severity === o.v ? 'var(--text)' : 'var(--text-3)',
+                  fontWeight: severity === o.v ? 700 : 500,
+                  cursor: 'pointer', flex: 1, fontSize: 11,
+                }}>{o.label}</button>
+            ))}
+          </div>
+        </Labeled>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
+          {already && (
+            <button onClick={remove} disabled={busy}
+              style={{ ...st.btnGhost, color: 'var(--danger)', flex: 1 }}>해제</button>
+          )}
+          <button onClick={submit} disabled={busy} style={{ ...st.btnPrimary, flex: 2 }}>
+            {busy ? '저장 중...' : (already ? '수정' : '등록')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

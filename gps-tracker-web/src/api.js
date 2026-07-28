@@ -527,6 +527,14 @@ export const api = {
   returnRental: (id, body) => req('POST',  `/rentcar/contracts/${id}/return`, body),
   deleteRental: (id)       => req('DELETE',`/rentcar/contracts/${id}`),
 
+  // (2026-07-28 Stage-R6) 임차인 registry + 블랙리스트.
+  listRenters:       ()      => req('GET', '/rentcar/renters'),
+  renterDetail:      (phone) => req('GET', `/rentcar/renters/${encodeURIComponent(phone)}`),
+  listBlacklist:     ()      => req('GET', '/rentcar/blacklist'),
+  addBlacklist:      (body)  => req('POST', '/rentcar/blacklist', body),
+  removeBlacklist:   (id)    => req('DELETE', `/rentcar/blacklist/${id}`),
+  checkBlacklist:    (phone) => req('GET', `/rentcar/blacklist/check?phone=${encodeURIComponent(phone)}`),
+
   // (2026-07-28 Stage-R4) 렌트카 청구서 XLSX.
   rentalInvoiceXlsx: async (id) => {
     const tok = getToken();
