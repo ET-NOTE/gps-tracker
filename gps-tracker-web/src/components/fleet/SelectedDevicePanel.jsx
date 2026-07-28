@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import Icon from '../Icon';
 import { api } from '../../api';
+import TripDetailTab from './TripDetailTab';
 
 const EVENT_META = {
   wake:                    { label: '운행 시작', icon: 'route',  color: 'var(--accent)' },
@@ -21,9 +22,19 @@ const EVENT_META = {
 export default function SelectedDevicePanel({
   selectedDevice, events, evLoading,
   onTripSelect,     // (trip) => void — 선택된 trip 을 map 에 그림
+  selectedTrip,     // 선택된 trip 객체 (또는 null)
   selectedTripKey,  // string | null — 선택된 trip 강조
+  mapRef,           // KakaoMap ref — TripDetailTab 이 cursor 조작
 }) {
-  const [tab, setTab] = useState('events');   // events | trips
+  const [tab, setTab] = useState('events');   // events | trips | detail
+  // (F4-c) trip 선택 시 자동으로 detail tab 진입. 해제 시 trips 로 복귀.
+  useEffect(() => {
+    if (selectedTripKey) setTab('detail');
+    else if (tab === 'detail') setTab('trips');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTripKey]);
+  // device 바뀌면 events tab 초기화.
+  useEffect(() => { setTab('events'); }, [selectedDevice?.id]);
 
   if (!selectedDevice) {
     return (
@@ -65,6 +76,7 @@ export default function SelectedDevicePanel({
         {[
           { id: 'events', label: '이벤트' },
           { id: 'trips',  label: '운행 이력' },
+          ...(selectedTrip ? [{ id: 'detail', label: '이 운행' }] : []),
         ].map(t => {
           const on = tab === t.id;
           return (
@@ -86,6 +98,9 @@ export default function SelectedDevicePanel({
         )}
         {tab === 'trips' && (
           <TripsTab deviceId={selectedDevice.id} onSelect={onTripSelect} selectedKey={selectedTripKey} />
+        )}
+        {tab === 'detail' && selectedTrip && (
+          <TripDetailTab deviceId={selectedDevice.id} trip={selectedTrip} mapRef={mapRef} />
         )}
       </div>
     </div>
