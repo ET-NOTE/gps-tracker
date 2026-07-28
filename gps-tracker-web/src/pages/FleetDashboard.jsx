@@ -137,13 +137,14 @@ export default function FleetDashboard() {
     if (selectedId != null) mapRef.current.filterToDevice?.(selectedId, { fit: true });
     else                    mapRef.current.filterToDevice?.(null,       { fit: false });
     // trip 선택 초기화
-    setSelectedTripKey(null);
+    setSelectedTrip(null);
     mapRef.current.clearSeekerPath?.();
     mapRef.current.setSeekerMode?.(false);
   }, [selectedId]);
 
   // (F4-b-2) 선택된 trip → seeker path.
-  const [selectedTripKey, setSelectedTripKey] = useState(null);
+  const [selectedTrip, setSelectedTrip] = useState(null);   // 전체 trip 객체 (TripDetailTab 이 참조)
+  const selectedTripKey = selectedTrip?.started_at ?? null;
   const handleTripSelect = useCallback(async (trip) => {
     const m = mapRef.current;
     if (!m || !selectedId) return;
@@ -152,12 +153,11 @@ export default function FleetDashboard() {
       // 재클릭 = 취소.
       m.clearSeekerPath?.();
       m.setSeekerMode?.(false);
-      setSelectedTripKey(null);
+      setSelectedTrip(null);
       return;
     }
-    setSelectedTripKey(key);
+    setSelectedTrip(trip);
     try {
-      // trip 시간창의 fixes 가져오기 (grouped).
       const from = trip.started_at;
       const to   = trip.ended_at || new Date().toISOString();
       const groups = await api.listLocationsGrouped(selectedId, { since: from, until: to, fix_only: true, limit: 5000 });
@@ -167,7 +167,7 @@ export default function FleetDashboard() {
       m.drawSeekerPath(points, { color, refit: true, showStops: true, showCursor: true });
     } catch (e) {
       console.error('trip seeker load', e);
-      setSelectedTripKey(null);
+      setSelectedTrip(null);
     }
   }, [selectedId, selectedTripKey, devices]);
 
@@ -221,7 +221,9 @@ export default function FleetDashboard() {
           events={events}
           evLoading={evLoading}
           onTripSelect={handleTripSelect}
+          selectedTrip={selectedTrip}
           selectedTripKey={selectedTripKey}
+          mapRef={mapRef}
         />
       </div>
     </div>

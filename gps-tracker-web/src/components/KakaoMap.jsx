@@ -1244,6 +1244,20 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       fenceRef.current = {};
     },
 
+    // (F4-c) waypoint 클릭 · 외부 요청으로 지도 pan. seeker cursor 도 함께 이동
+    //         (drawSeekerPath 로 이전에 생성된 cursor 가 있으면).
+    panTo(lat, lng, opts = {}) {
+      if (!mapRef.current || !window.kakao?.maps) return;
+      const pos = new window.kakao.maps.LatLng(lat, lng);
+      markProgrammatic();
+      if (opts.instant) mapRef.current.setCenter(pos);
+      else              mapRef.current.panTo(pos);
+      // seeker cursor 있으면 함께 이동 — 시각적 tracking.
+      if (seekerRef.current.cursor) {
+        seekerRef.current.cursor.setPosition(pos);
+      }
+    },
+
     removeMarker(deviceId) {
       const entry = markersRef.current[deviceId];
       if (entry) {
