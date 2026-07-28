@@ -1,6 +1,6 @@
 # GPS 트래커 프로젝트 진행 상태
 
-**최종 갱신**: 2026-05-15
+**최종 갱신**: 2026-07-29
 **도메인**: https://gps.serial.kr (모든 엔드포인트 HTTPS)
 **서버 SSH**: `deploy@<VPS_HOST>` (Ubuntu 22.04, PostgreSQL 14.18, nginx 1.18)
 
@@ -127,6 +127,32 @@ ESP32-C3 GPS 트래커 → gps.serial.kr Rust API → (예정) Flutter 앱.
 - ✅ WS 실시간 스트림 + subscribe 소유권 검증 + 다른 사용자 디바이스 누설 없음
 - ✅ low_batt 이벤트 자동 분류 (vbat_mv<3500) → events insert → broadcast → WS push
 - ✅ FCM 워커 dry-run (notified_at 마킹으로 큐 적체 방지, 키 받으면 실제 호출 자리만 채우면 됨)
+
+### 3-5. Frontend & 최적화 series (F0 – F7)
+
+2026-07 웹 앱 대규모 리팩터·성능·기능 강화. 자세한 커밋: [PR history](https://github.com/ET-NOTE/gps-tracker/pulls?q=is%3Apr+is%3Amerged).
+
+| Phase | 주제 | 결과 |
+|---|---|---|
+| **F0** | Audit + primitives | LazyImage, Modal, cursor markers, seeker fp skip |
+| **F1** | Codemod & style unification | Modal API 통일, Dialog/Toast host |
+| **F2** | React Query 도입 | 20+ hook, staleTime 30s, dedup·invalidate |
+| **F3** | Rendering perf | WS rAF coalesce, seeker draw skip, Panel memo |
+| **F4** | Fleet 대시보드 + MarkerClusterer | Unified 3-panel, react-window, 밀집 marker 해소 |
+| **F5** | Polish | PWA manifest+SW, Toast, Cmd+K palette |
+| **F6** | God-component 분해 + N+1 해소 | Dashboard −278 lines, bulk `/fleet/trip-stats` |
+| **F7-a** | Seeker canvas overlay (`?canvas=1`) | 장거리 trip 렌더 부담 감소 (opt-in) |
+| **F7-b** | Chat WebSocket push | polling 5s→30s fallback, 관리자 답장 즉시 |
+| **F7-c** | fleet/trip-stats daily_stats SUM | 100대 = 1 SQL, HTTP 0 (Kakao geo skip) |
+| **F7-d** | Bug hunt + fix | 7 verified fixes (auth leak · races · timer orphan) |
+
+**주요 아키텍처 요소** (F7 이후 상태):
+- 상태: React Query v5 (`src/state/`)
+- 실시간: WebSocket (device events) + chatBus (chat push)
+- 지도: KakaoMap SDK, MarkerClusterer, SeekerCanvasOverlay
+- 오프라인: PWA (manifest + service worker cache)
+- 인프라: FleetDashboard, HandoffPage, SharePage, DiagnosticPage
+- 정직한 debt register: [memory/project_refactor_debt_register.md](../../C:/Users/msb/.claude/projects/e--project-2025-esp32c3-mini-gps/memory/project_refactor_debt_register.md)
 
 ---
 

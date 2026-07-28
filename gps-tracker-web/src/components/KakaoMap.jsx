@@ -100,6 +100,13 @@ class SeekerCanvasOverlay {
     window.kakao.maps.event.addListener(map, 'zoom_changed', this._onIdle);
     window.kakao.maps.event.addListener(map, 'bounds_changed', this._onIdle);
     window.addEventListener('resize', this._onResize);
+    // (F7-d) window.resize 만 감지하면 panel toggle / split-pane 등 layout 변경으로
+    // 인한 container resize 를 놓쳐 canvas 가 stale dimension 으로 clip/offset.
+    // ResizeObserver 로 container 자체 크기 변화 감지.
+    if (typeof ResizeObserver !== 'undefined') {
+      this._ro = new ResizeObserver(this._onResize);
+      this._ro.observe(container);
+    }
 
     this._resize();
   }
@@ -208,6 +215,7 @@ class SeekerCanvasOverlay {
     window.kakao.maps.event.removeListener(this.map, 'zoom_changed', this._onIdle);
     window.kakao.maps.event.removeListener(this.map, 'bounds_changed', this._onIdle);
     window.removeEventListener('resize', this._onResize);
+    this._ro?.disconnect();
     if (this._canvas.parentNode) this._canvas.parentNode.removeChild(this._canvas);
   }
 }
@@ -556,6 +564,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       cancelled = true;
       canvasSeekerRef.current?.destroy();
       canvasSeekerRef.current = null;
+      // (F7-d) canvas seeker cursor 는 별도 kakao.maps.Marker — overlay destroy 로는
+      // 지워지지 않음. unmount 시 명시적으로 map:null 처리해 marker leak 방지.
+      canvasCursorRef.current?.setMap(null);
+      canvasCursorRef.current = null;
+      canvasPtsRef.current = [];
     };
   }, []);
 

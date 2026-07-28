@@ -28,46 +28,55 @@ export default function DiagnosticPage() {
   const pollRef = useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
     api.listDevices().then(list => {
+      if (cancelled) return;
       setDevices(list);
       if (list?.length && deviceId == null) setDeviceId(list[0].id);
-    }).catch(e => setError(e?.message || 'listDevices failed'));
+    }).catch(e => { if (!cancelled) setError(e?.message || 'listDevices failed'); });
+    return () => { cancelled = true; };
   }, []);
 
-  const refresh = async () => {
-    if (deviceId == null) return;
-    setLoading(true);
-    try {
-      const since = new Date(Date.now() - windowMs).toISOString();
-      const hours = Math.max(1, Math.round(windowMs / 3600000));
-      // Phase 4A: bucketOverride 가 명시되면 그것, 아니면 윈도우 자동 선택.
-      // 자동 규칙: <=6h → 1m, 6~24h → 5m, 24h+ → 1h.
-      const autoBucket = hours <= 6 ? '1m' : hours <= 24 ? '5m' : '1h';
-      const aggBucket = bucketOverride && bucketOverride !== 'auto' ? bucketOverride : autoBucket;
-      const [rows, bstats, agg, ts] = await Promise.all([
-        api.getDeviceEvents(deviceId, { since, limit: 1000 }),
-        api.getDeviceBatchStats(deviceId, hours).catch(() => null),
-        api.getDeviceLocationsAggregated(deviceId, aggBucket, since).catch(() => null),
-        api.getTimescaleDbStats().catch(() => null),
-      ]);
-      setEvents(rows || []);
-      setBatchStats(bstats);
-      setAggregated(agg ? { rows: agg, bucket: aggBucket } : null);
-      setTsdbStats(ts);
-      setError(null);
-    } catch (e) {
-      setError(e?.message || 'getDeviceEvents failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { refresh(); }, [deviceId, windowMs, bucketOverride]);
+  // (F7-d) refresh 는 deviceId/windowMs/bucketOverride 변경 또는 5s poll 시 호출.
+  // 이전엔 cancel guard 없어 이전 호출 응답이 뒤 도착 시 stale 데이터로 UI 덮어씀.
+  // useEffect 안에서 cancelled flag 를 refresh 에 클로저로 주입하는 형태로 재구성.
   useEffect(() => {
-    if (!autoRefresh || deviceId == null) return;
-    pollRef.current = setInterval(refresh, 5000);
-    return () => clearInterval(pollRef.current);
-  }, [autoRefresh, deviceId, windowMs]);
+    if (deviceId == null) return;
+    let cancelled = false;
+    const doRefresh = async () => {
+      setLoading(true);
+      try {
+        const since = new Date(Date.now() - windowMs).toISOString();
+        const hours = Math.max(1, Math.round(windowMs / 3600000));
+        const autoBucket = hours <= 6 ? '1m' : hours <= 24 ? '5m' : '1h';
+        const aggBucket = bucketOverride && bucketOverride !== 'auto' ? bucketOverride : autoBucket;
+        const [rows, bstats, agg, ts] = await Promise.all([
+          api.getDeviceEvents(deviceId, { since, limit: 1000 }),
+          api.getDeviceBatchStats(deviceId, hours).catch(() => null),
+          api.getDeviceLocationsAggregated(deviceId, aggBucket, since).catch(() => null),
+          api.getTimescaleDbStats().catch(() => null),
+        ]);
+        if (cancelled) return;
+        setEvents(rows || []);
+        setBatchStats(bstats);
+        setAggregated(agg ? { rows: agg, bucket: aggBucket } : null);
+        setTsdbStats(ts);
+        setError(null);
+      } catch (e) {
+        if (!cancelled) setError(e?.message || 'getDeviceEvents failed');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    doRefresh();
+    if (autoRefresh) {
+      pollRef.current = setInterval(doRefresh, 5000);
+    }
+    return () => {
+      cancelled = true;
+      clearInterval(pollRef.current);
+    };
+  }, [deviceId, windowMs, bucketOverride, autoRefresh]);
 
   // build_tag 필터 — 켜져있으면 14_* 진단 sketch 이벤트만 (legacy 13_2 prod 이벤트 제외).
   const filteredEvents = useMemo(() => {

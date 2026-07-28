@@ -236,6 +236,11 @@ async fn update_contract(
     if req.ends_at <= req.starts_at {
         return Err(AppError::BadRequest("ends_at must be after starts_at".into()));
     }
+    // (2026-07-29) 보안 fix — 이전엔 verify_device_owner 를 create_contract 에만 두고
+    // update_contract 에선 누락. 결과: 자기 계약을 PATCH 하여 device_id 를 임의 타인 device 로
+    // 교체 가능 → handoff_view (인증 없음) 로 그 device 의 display_name/license_plate 노출
+    // → device_id enumeration 으로 차량정보 leak. 여기서도 소유권 검증.
+    verify_device_owner(&state, user.user_id, req.device_id).await?;
     let rate_type = req.rate_type.unwrap_or_else(|| "daily".into());
     let status    = req.status.unwrap_or_else(|| "draft".into());
     let row: Option<Contract> = sqlx::query_as(SQL_UPDATE)
