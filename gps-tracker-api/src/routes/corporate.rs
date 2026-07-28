@@ -201,6 +201,9 @@ async fn remove_staff(
 struct TripQuery {
     from: Option<String>,    // ISO date or rfc3339
     to:   Option<String>,
+    // (2026-07-28) dev only — 좌표 전무 (wake/sleep 페어링 실패 & 거리 0) trip 도 반환.
+    // 유저 뷰에서는 기본 hidden. 진단용.
+    include_no_coord: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -239,7 +242,11 @@ async fn list_trips(
 ) -> AppResult<Json<Vec<Trip>>> {
     verify_device_owner(&state, user.user_id, device_id).await?;
     let (from, to) = parse_range(&q)?;
-    Ok(Json(compute_trips_inner(&state, user.user_id, device_id, from, to).await?))
+    let mut trips = compute_trips_inner(&state, user.user_id, device_id, from, to).await?;
+    if !q.include_no_coord.unwrap_or(false) {
+        trips.retain(|t| t.start_lat.is_some() || t.end_lat.is_some());
+    }
+    Ok(Json(trips))
 }
 
 // (2026-07-28) Stage-4B-2: XLSX 리포트에서 재사용하기 위해 list_trips 의 코어 로직을
@@ -929,6 +936,8 @@ async fn report_xlsx(
         let trips = compute_trips_inner(&state, user.user_id, d.id, from, to).await
             .unwrap_or_default();
         let lite: Vec<xlsx_report::TripLite> = trips.into_iter().filter_map(|t| {
+            // 좌표 전무 trip 은 리포트에서 제외 (유저급 뷰). 개발자 진단은 /trips?include_no_coord=1
+            if t.start_lat.is_none() && t.end_lat.is_none() { return None; }
             let purpose = t.annotation.as_ref().map(|a| a.purpose.clone())
                 .unwrap_or_else(|| "unspecified".into());
             if let Some(ref allowed) = purpose_filter {
