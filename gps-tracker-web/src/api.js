@@ -512,6 +512,21 @@ export const api = {
   updateReservation: (id, body) => req('PATCH',  `/corporate/reservations/${id}`, body),
   deleteReservation: (id) => req('DELETE', `/corporate/reservations/${id}`),
 
+  // (2026-07-28) Stage-R1: 렌트카 계약.
+  listRentals: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.device_id != null) q.set('device_id', String(params.device_id));
+    if (params.from)   q.set('from',   params.from);
+    if (params.to)     q.set('to',     params.to);
+    if (params.status) q.set('status', Array.isArray(params.status) ? params.status.join(',') : params.status);
+    const qs = q.toString();
+    return req('GET', `/rentcar/contracts${qs ? '?' + qs : ''}`);
+  },
+  createRental: (body)     => req('POST',  '/rentcar/contracts', body),
+  updateRental: (id, body) => req('PATCH', `/rentcar/contracts/${id}`, body),
+  returnRental: (id, body) => req('POST',  `/rentcar/contracts/${id}/return`, body),
+  deleteRental: (id)       => req('DELETE',`/rentcar/contracts/${id}`),
+
   // (2026-07-28) Stage-4D: 오피넷 캐시된 유가. { gasoline, diesel, lpg, source, updated_at }
   // source: "opinet" (실 API 성공) | "default" (fallback).
   getFuelPrices: () => req('GET', '/corporate/fuel-prices'),
