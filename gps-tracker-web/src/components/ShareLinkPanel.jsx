@@ -177,7 +177,7 @@ function fmtRelative(iso) {
 
 const s = {
   title: { fontSize: 11, fontWeight: 'bold', color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 },
-  muted: { color: '#666', fontSize: 12, fontStyle: 'italic' },
+  muted: { color: 'var(--text-2)', fontSize: 12, fontStyle: 'italic' },
   row:   { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', fontSize: 12 },
   token: { fontFamily: 'monospace', fontSize: 11, color: 'var(--text)' },
   subline: { fontSize: 10, color: 'var(--text-3)', marginTop: 2 },

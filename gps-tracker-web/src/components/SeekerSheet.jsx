@@ -769,7 +769,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             padding: '2px 8px',
             border: '1px solid ' + (precision === p ? '#1a1a2e' : '#ddd'),
             background: precision === p ? '#1a1a2e' : 'white',
-            color: precision === p ? 'white' : '#666',
+            color: precision === p ? 'white' : 'var(--text-2)',
             borderRadius: 3, cursor: 'pointer', fontSize: 10, fontWeight: 600,
           }}>{p}</button>
         ))}
