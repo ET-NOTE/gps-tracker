@@ -461,6 +461,43 @@ export const api = {
                         : `trips_${deviceId}.csv`;
     return { blob, filename };
   },
+  // (2026-07-28) Stage-4C-3: 차량 서류 업로드 (multipart).
+  // file: File, kind: 'registration'|'insurance'|'inspection'|'receipt'|'other', note?
+  listDocuments: (deviceId) => req('GET', `/devices/${deviceId}/documents`),
+  uploadDocument: async (deviceId, { file, kind, note }) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('kind', kind || 'other');
+    if (note) fd.append('note', note);
+    const tok = localStorage.getItem('access_token');
+    const res = await fetch(`${BASE}/devices/${deviceId}/documents`, {
+      method: 'POST', body: fd,
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || res.statusText);
+    }
+    return res.json();
+  },
+  deleteDocument: (id) => req('DELETE', `/documents/${id}`),
+  documentDownloadUrl: (id) => {
+    const tok = localStorage.getItem('access_token');
+    // 브라우저 <a href> 로 열려면 auth header 못 붙임. blob fetch 후 URL.createObjectURL.
+    return async () => {
+      const res = await fetch(`${BASE}/documents/${id}/download`, {
+        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      });
+      if (!res.ok) throw new Error(res.statusText);
+      const blob = await res.blob();
+      const cd = res.headers.get('content-disposition') || '';
+      const m1 = cd.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+      const m2 = cd.match(/filename\s*=\s*"?([^";]+)"?/i);
+      const filename = m1 ? decodeURIComponent(m1[1]) : m2 ? decodeURIComponent(m2[1]) : `doc-${id}`;
+      return { blob, filename };
+    };
+  },
+
   // (2026-07-28) Stage-4F-1: 차량 예약 CRUD.
   listReservations: (params = {}) => {
     const q = new URLSearchParams();

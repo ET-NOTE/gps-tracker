@@ -7,7 +7,7 @@ repository = "https://github.com/ET-NOTE/gps-tracker"
 
 [dependencies]
 # Web framework + async runtime
-axum            = { version = "0.7", features = ["ws", "macros"] }
+axum            = { version = "0.7", features = ["ws", "macros", "multipart"] }
 tokio           = { version = "1",   features = ["full"] }
 tower           = "0.5"
 tower-http      = { version = "0.6", features = ["cors", "trace", "compression-gzip", "timeout"] }

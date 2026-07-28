@@ -26,17 +26,22 @@ use serde_json::json;
 use sqlx::PgPool;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(5 * 60);
-const LEAD_MINUTES: i64 = 30;   // 시작 30분 전 알림
+const LEAD_MINUTES: i64 = 30;      // 시작 30분 전 알림
+const END_LEAD_MINUTES: i64 = 30;  // (4H-2) 종료 30분 전 반납 알림
 
 pub fn spawn_worker(pool: PgPool) {
     tokio::spawn(async move {
-        // 부팅 직후 즉시 1회 실행 → 이후 5분 주기.
-        // 오래 다운되어 있었던 동안 놓친 임박 예약도 커버.
         let mut tick = tokio::time::interval(POLL_INTERVAL);
         loop {
             tick.tick().await;
             if let Err(e) = run_once(&pool).await {
-                tracing::warn!("reservation_alerts: {e}");
+                tracing::warn!("reservation_alerts start: {e}");
+            }
+            if let Err(e) = run_end_alerts(&pool).await {
+                tracing::warn!("reservation_alerts end: {e}");
+            }
+            if let Err(e) = auto_transition_status(&pool).await {
+                tracing::warn!("reservation_alerts auto-status: {e}");
             }
         }
     });
@@ -104,6 +109,82 @@ async fn run_once(db: &PgPool) -> anyhow::Result<()> {
         )
         .bind(r.id).execute(&mut *tx).await?;
         tx.commit().await?;
+    }
+    Ok(())
+}
+
+// (2026-07-28 Stage-4H-2) 반납 임박 (ends_at 30분 전) 알림.
+async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
+    let now = Utc::now();
+    let lead_until = now + chrono::Duration::minutes(END_LEAD_MINUTES);
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        id:            i64, user_id: i64, device_id: i64,
+        ends_at:       DateTime<Utc>, purpose: Option<String>,
+        device_name:   Option<String>, license_plate: Option<String>,
+        driver_name:   Option<String>,
+    }
+    let rows: Vec<Row> = sqlx::query_as(
+        r#"SELECT r.id, r.user_id, r.device_id, r.ends_at, r.purpose,
+                  d.display_name AS device_name, d.license_plate,
+                  s.name AS driver_name
+             FROM vehicle_reservations r
+        LEFT JOIN devices d ON d.id = r.device_id
+        LEFT JOIN staff   s ON s.id = r.driver_staff_id
+            WHERE r.status IN ('planned','in_progress')
+              AND r.ended_alerted_at IS NULL
+              AND r.ends_at BETWEEN $1 AND $2"#,
+    )
+    .bind(now).bind(lead_until).fetch_all(db).await?;
+    if rows.is_empty() { return Ok(()); }
+    tracing::info!("reservation_alerts: {} ending reservation(s)", rows.len());
+    for r in rows {
+        let mins = ((r.ends_at - now).num_seconds() / 60).max(0);
+        let data = json!({
+            "type": "reservation_ending",
+            "reservation_id": r.id, "device_id": r.device_id,
+            "device_name": r.device_name, "license_plate": r.license_plate,
+            "ends_at": r.ends_at, "purpose": r.purpose, "driver_name": r.driver_name,
+            "minutes_until": mins,
+        });
+        let mut tx = db.begin().await?;
+        sqlx::query(
+            r#"INSERT INTO events (device_id, user_id, occurred_at, kind, data)
+               VALUES ($1, $2, NOW(), 'reservation_ending', $3)"#,
+        )
+        .bind(r.device_id).bind(r.user_id).bind(&data)
+        .execute(&mut *tx).await?;
+        sqlx::query("UPDATE vehicle_reservations SET ended_alerted_at = NOW() WHERE id = $1")
+            .bind(r.id).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    Ok(())
+}
+
+// (2026-07-28 Stage-4H-2) 시간 기반 자동 status 전환.
+//   planned      → in_progress  (starts_at 이 이미 지남)
+//   in_progress  → completed    (ends_at 이 이미 지남)
+async fn auto_transition_status(db: &PgPool) -> anyhow::Result<()> {
+    // planned → in_progress
+    let n1 = sqlx::query(
+        r#"UPDATE vehicle_reservations
+              SET status = 'in_progress', updated_at = NOW()
+            WHERE status = 'planned' AND starts_at <= NOW() AND ends_at > NOW()"#,
+    ).execute(db).await?.rows_affected();
+    // in_progress → completed
+    let n2 = sqlx::query(
+        r#"UPDATE vehicle_reservations
+              SET status = 'completed', updated_at = NOW()
+            WHERE status = 'in_progress' AND ends_at <= NOW()"#,
+    ).execute(db).await?.rows_affected();
+    // planned 인데 이미 종료 시각도 지난 경우 (놓친 예약) → completed 직행
+    let n3 = sqlx::query(
+        r#"UPDATE vehicle_reservations
+              SET status = 'completed', updated_at = NOW()
+            WHERE status = 'planned' AND ends_at <= NOW()"#,
+    ).execute(db).await?.rows_affected();
+    if n1 + n2 + n3 > 0 {
+        tracing::info!("reservation auto-status: {n1} started, {n2} completed, {n3} skipped-planned→completed");
     }
     Ok(())
 }

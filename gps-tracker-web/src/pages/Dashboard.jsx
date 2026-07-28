@@ -1427,37 +1427,67 @@ export default function Dashboard({ onLogout }) {
               />
             )}
             {view === 'home' && trackLive && filterDeviceId !== null && (() => {
-              // 알약 항상 표시 — liveSpeed 가 아직 없을 때도 device 정보로 fallback.
-              // WS msg 한 번도 안 받았거나 sleep 중이라 데이터 없어도 운영자가 기능 인지 가능.
+              // (2026-07-28) Stage-4J: 알약 확장 — 차량번호 뱃지 + 실시간 상태 + 마지막 활동 시각.
+              // 이미지 1 좌측 device 요약 카드 스타일 참조. 지도 위에 floating pill.
               const dev = devices.find(d => d.id === filterDeviceId);
               const label = liveSpeed?.label || dev?.display_name || dev?.device_uid || '실시간 추적';
+              const plate = dev?.license_plate;
               const color = liveSpeed?.color || (dev ? getDeviceColor(dev) : '#5B7CFF');
               const speedKmh = liveSpeed?.speedKmh;
+              const active   = dev?.last_event_kind === 'wake';
+              const lastAt   = dev?.last_fix_at || dev?.last_seen_at;
+              const ageMs    = lastAt ? Date.now() - new Date(lastAt).getTime() : null;
+              const ageText  = ageMs == null ? null
+                : ageMs < 60_000 ? '방금'
+                : ageMs < 3600_000 ? `${Math.floor(ageMs / 60_000)}분 전`
+                : ageMs < 86400_000 ? `${Math.floor(ageMs / 3600_000)}시간 전`
+                : `${Math.floor(ageMs / 86400_000)}일 전`;
               return (
                 <div style={{
                   position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-                  zIndex: 13, minWidth: 168, padding: '10px 14px', borderRadius: 16,
-                  background: 'rgba(255,255,255,.94)', border: '1px solid var(--border)',
+                  zIndex: 13, minWidth: 200, padding: '10px 14px', borderRadius: 16,
+                  background: 'rgba(255,255,255,.96)', border: '1px solid var(--border)',
                   boxShadow: '0 8px 24px rgba(15,23,42,.18)', display: 'flex',
-                  alignItems: 'center', gap: 10, backdropFilter: 'blur(10px)', pointerEvents: 'none',
+                  alignItems: 'center', gap: 12, backdropFilter: 'blur(10px)', pointerEvents: 'none',
                 }}>
                   <span style={{
                     width: 10, height: 10, borderRadius: 999, flexShrink: 0,
                     background: color || speedTone(speedKmh),
                     boxShadow: '0 0 0 4px rgba(59,130,246,.12)',
                   }} />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                    <span style={{
-                      maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
-                    }}>{label}</span>
-                    <span style={{
-                      fontSize: 24, lineHeight: 1, fontWeight: 800, letterSpacing: '-.03em',
-                      fontVariantNumeric: 'tabular-nums', color: speedTone(speedKmh),
-                    }}>
-                      {speedKmh == null ? '--' : Math.round(speedKmh)}
-                      <small style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}> km/h</small>
-                    </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{
+                        maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
+                      }}>{label}</span>
+                      {plate && (
+                        <span style={{
+                          fontSize: 9, padding: '1px 6px', borderRadius: 3,
+                          background: 'var(--surface-2)', color: 'var(--text-2)', fontWeight: 800,
+                          letterSpacing: '0.02em',
+                        }}>{plate}</span>
+                      )}
+                      <span style={{
+                        fontSize: 9, padding: '1px 6px', borderRadius: 999, fontWeight: 800,
+                        background: active
+                          ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
+                          : 'var(--surface-2)',
+                        color: active ? 'var(--accent)' : 'var(--text-3)',
+                      }}>{active ? '운행중' : '주차'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                      <span style={{
+                        fontSize: 24, lineHeight: 1, fontWeight: 800, letterSpacing: '-.03em',
+                        fontVariantNumeric: 'tabular-nums', color: speedTone(speedKmh),
+                      }}>
+                        {speedKmh == null ? '--' : Math.round(speedKmh)}
+                        <small style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}> km/h</small>
+                      </span>
+                      {ageText && (
+                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>· {ageText}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
