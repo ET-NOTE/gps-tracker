@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, setTokens } from '../api';
 import Icon from './Icon';
 import { confirmDialog, alertDialog, promptDialog } from './Dialog';
+import { StatCard, StatCardGrid } from './shared/StatCard';
 
 const NCE_PORTAL = 'https://portal.1nce.com';
 
@@ -34,6 +35,27 @@ function initialAdminSubTab() {
 export default function AdminDashboard() {
   const [subTab, setSubTabRaw] = useState(initialAdminSubTab);
   const setSubTab = (v) => { setSubTabRaw(v); try { localStorage.setItem('admin_subtab', v); } catch {} };
+  // (2026-07-28) Stage-4I: 상단 stat 카드 — 관리 요약. mount 시 4개 병렬 fetch.
+  const [stats, setStats] = useState({ users: null, devices: null, creditReqs: null, simReqs: null });
+  useEffect(() => {
+    let cancelled = false;
+    Promise.allSettled([
+      api.adminListUsers(),
+      api.adminListDevices(),
+      api.adminListCreditReqs(),
+      api.adminListSimRequests(),
+    ]).then(results => {
+      if (cancelled) return;
+      const [u, d, c, s] = results;
+      setStats({
+        users:      u.status === 'fulfilled' ? u.value.length : null,
+        devices:    d.status === 'fulfilled' ? d.value.length : null,
+        creditReqs: c.status === 'fulfilled' ? (c.value || []).filter(x => x.status === 'pending').length : null,
+        simReqs:    s.status === 'fulfilled' ? (s.value || []).filter(x => x.status === 'pending').length : null,
+      });
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div style={s.root}>
@@ -45,6 +67,16 @@ export default function AdminDashboard() {
         </div>
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>god mode · audit logged</span>
       </header>
+
+      {/* (2026-07-28 Stage-4I) Fleet 톤 통일 — 상단 4-stat card row */}
+      <div style={{ padding: '12px 12px 0' }}>
+        <StatCardGrid>
+          <StatCard icon="user"  label="전체 사용자"       value={stats.users ?? '–'}      unit="명" tone="default" loading={stats.users === null} />
+          <StatCard icon="list"  label="전체 장치"         value={stats.devices ?? '–'}    unit="대" tone="primary" loading={stats.devices === null} />
+          <StatCard icon="coin"  label="포인트 요청 대기"  value={stats.creditReqs ?? '–'} unit="건" tone={stats.creditReqs > 0 ? 'warn' : 'default'} loading={stats.creditReqs === null} />
+          <StatCard icon="spark" label="SIM 요청 대기"     value={stats.simReqs ?? '–'}    unit="건" tone={stats.simReqs > 0 ? 'warn' : 'default'} loading={stats.simReqs === null} />
+        </StatCardGrid>
+      </div>
 
       {/* 서브탭 */}
       <div style={s.subtabs}>

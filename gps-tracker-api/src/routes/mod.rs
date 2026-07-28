@@ -5,6 +5,7 @@ pub mod chat;
 pub mod corporate;
 pub mod credits;
 pub mod devices;
+pub mod documents;
 pub mod geofences;
 pub mod health;
 pub mod ingest;
@@ -28,6 +29,7 @@ pub fn build_router(state: AppState) -> Router {
     let api_v1 = Router::new()
         .merge(auth::router())
         .merge(devices::router())
+        .merge(documents::router())
         .merge(locations::router())
         .merge(notifications::router())
         .merge(geofences::router())

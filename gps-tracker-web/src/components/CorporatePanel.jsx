@@ -3,7 +3,7 @@
 //
 // 인쇄: 브라우저 window.print() 호출. @media print 로 nav/사이드 다 숨기고 리포트만.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Icon from './Icon';
 import { confirmDialog, alertDialog } from './Dialog';
@@ -1393,9 +1393,11 @@ function ReservationCard({ r, onEdit, onDelete }) {
   const end   = new Date(r.ends_at);
   const fmtDT = d => d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   const sameDay = start.toDateString() === end.toDateString();
-  // (2026-07-28) Stage-4H-1: 임박 표시 — planned status 이고 시작까지 60min 이내.
+  // (2026-07-28) Stage-4H-1/2: 임박 표시.
   const minsUntilStart = Math.round((start.getTime() - Date.now()) / 60_000);
-  const isImminent = r.status === 'planned' && minsUntilStart >= 0 && minsUntilStart <= 60;
+  const minsUntilEnd   = Math.round((end.getTime()   - Date.now()) / 60_000);
+  const isImminent  = r.status === 'planned'     && minsUntilStart >= 0 && minsUntilStart <= 60;
+  const isReturning = r.status === 'in_progress' && minsUntilEnd   >= 0 && minsUntilEnd   <= 60;
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)',
@@ -1413,7 +1415,17 @@ function ReservationCard({ r, onEdit, onDelete }) {
             color: 'var(--warning)', fontWeight: 800,
             display: 'inline-flex', alignItems: 'center', gap: 4,
           }} title={`${minsUntilStart}분 후 시작 — 백엔드 워커가 30분 전 FCM 알림 발송`}>
-            🔔 {minsUntilStart === 0 ? '지금' : `${minsUntilStart}분 후`}
+            🔔 {minsUntilStart === 0 ? '지금 시작' : `${minsUntilStart}분 후 시작`}
+          </span>
+        )}
+        {isReturning && (
+          <span style={{
+            fontSize: 10, padding: '3px 8px', borderRadius: 999,
+            background: 'color-mix(in srgb, var(--danger) 20%, transparent)',
+            color: 'var(--danger)', fontWeight: 800,
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+          }} title={`${minsUntilEnd}분 후 반납 — 30분 전 FCM 알림`}>
+            🔔 {minsUntilEnd === 0 ? '지금 반납' : `${minsUntilEnd}분 후 반납`}
           </span>
         )}
         <span style={{ fontWeight: 700, fontSize: 14 }}>
@@ -2430,6 +2442,9 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
           </div>
         </div>
 
+        {/* ─── 서류 (2026-07-28 Stage-4C-3) ─────────── */}
+        {device.id && <DocumentsSection deviceId={device.id} />}
+
         <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
           <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
           <button onClick={save} disabled={busy} style={{ ...st.btnPrimary, flex: 1 }}>
@@ -2437,6 +2452,125 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// (2026-07-28) Stage-4C-3: 차량 서류 (등록증/보험/정비영수증) 업로드 섹션.
+// VehicleInfoDialog 내부. 리스트 + 파일 선택 (kind + optional note) + 다운로드/삭제.
+const DOC_KIND_LABEL = {
+  registration: '등록증',
+  insurance:    '보험',
+  inspection:   '검사',
+  receipt:      '영수증',
+  other:        '기타',
+};
+
+function DocumentsSection({ deviceId }) {
+  const [docs, setDocs] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [kind, setKind] = useState('registration');
+  const [note, setNote] = useState('');
+  const fileRef = useRef(null);
+
+  async function load() {
+    try { setDocs(await api.listDocuments(deviceId)); }
+    catch { setDocs([]); }
+  }
+  useEffect(() => { load(); }, [deviceId]);   // eslint-disable-line
+
+  async function upload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alertDialog({ title: '파일 크기 초과', body: '최대 10MB', tone: 'danger' });
+      e.target.value = '';
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.uploadDocument(deviceId, { file, kind, note: note.trim() || null });
+      setNote(''); e.target.value = '';
+      load();
+    } catch (err) {
+      alertDialog({ title: '업로드 실패', body: err.message, tone: 'danger' });
+    } finally { setBusy(false); }
+  }
+
+  async function download(d) {
+    try {
+      const { blob, filename } = await api.documentDownloadUrl(d.id)();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' });
+    }
+  }
+
+  async function del(d) {
+    const ok = await confirmDialog({ title: '서류 삭제', body: `${d.filename} 을(를) 삭제하시겠습니까?`, danger: true });
+    if (!ok) return;
+    try { await api.deleteDocument(d.id); load(); }
+    catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        서류 (PDF/이미지 · 10MB · 20개)
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 6 }}>
+        <select value={kind} onChange={e => setKind(e.target.value)} style={st.input}>
+          {Object.entries(DOC_KIND_LABEL).map(([id, label]) => (
+            <option key={id} value={id}>{label}</option>
+          ))}
+        </select>
+        <input value={note} onChange={e => setNote(e.target.value)}
+          placeholder="메모 (선택)" style={st.input} />
+      </div>
+      <div>
+        <input ref={fileRef} type="file" accept=".pdf,image/*" onChange={upload} disabled={busy}
+          style={{ display: 'none' }} />
+        <button onClick={() => fileRef.current?.click()} disabled={busy} style={{
+          ...st.btnGhost, width: '100%', padding: '10px', fontSize: 12,
+        }}>
+          <Icon name="plus" size={12} /> {busy ? '업로드 중...' : '파일 선택'}
+        </button>
+      </div>
+
+      {docs && docs.length === 0 && (
+        <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', padding: 8 }}>
+          등록된 서류 없음
+        </div>
+      )}
+      {docs && docs.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {docs.map(d => (
+            <div key={d.id} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 6,
+              fontSize: 11,
+            }}>
+              <span style={{
+                fontSize: 9, padding: '2px 6px', borderRadius: 3,
+                background: 'var(--surface)', color: 'var(--text-2)', fontWeight: 700,
+              }}>{DOC_KIND_LABEL[d.kind] || d.kind}</span>
+              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                title={d.filename}>{d.filename}</span>
+              <span style={{ color: 'var(--text-3)', fontSize: 10 }}>{Math.round(d.size_bytes / 1024).toLocaleString()}KB</span>
+              <button onClick={() => download(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="다운로드">
+                <Icon name="share" size={11} />
+              </button>
+              <button onClick={() => del(d)} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제">
+                <Icon name="trash2" size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
