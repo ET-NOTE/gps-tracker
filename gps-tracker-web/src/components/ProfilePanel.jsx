@@ -15,7 +15,10 @@ function initialProfileTab() {
   return ['account','credit','chat','notif','theme','lab'].includes(v) ? v : 'account';
 }
 
-export default function ProfilePanel({ onLogout }) {
+// (2026-07-28) accountType + onAccountTypeChange 를 상위 Dashboard 에서 내려받음.
+// 이전엔 AccountTypeCard 가 자체 fetch/state 를 유지해서 PATCH 성공 후 Dashboard 는
+// stale — SideRail/BottomNav 가 corporate 탭 렌더 안 함 → 새로고침해야 반영되던 회귀.
+export default function ProfilePanel({ onLogout, accountType, onAccountTypeChange }) {
   const [me, setMe] = useState(null);
   const [tab, setTabRaw] = useState(initialProfileTab);
   const setTab = (v) => { setTabRaw(v); try { localStorage.setItem('profile_tab', v); } catch {} };
@@ -143,7 +146,7 @@ function AccountTab({ me, setMe, onLogout }) {
         <Field label="권한"   value={me.role} />
       </Card>
 
-      <AccountTypeCard />
+      <AccountTypeCard cur={accountType} onChange={onAccountTypeChange} />
 
       <PhonesCard me={me} setMe={setMe} />
 
@@ -514,20 +517,18 @@ const phs = {
   title: { fontSize: 14, fontWeight: 700, marginBottom: 10, color: 'var(--text)' },
 };
 
-function AccountTypeCard() {
-  const [cur, setCur] = useState(null);
+// (2026-07-28) cur/onChange 를 상위에서 내려받음 (dual-state 제거).
+// 이전 자체 state 유지 구조는 Dashboard 의 accountType 과 어긋나 SideRail/BottomNav
+// 리렌더 안 됨 → 계정 유형 바꿔도 새로고침 전엔 corporate 탭 안 나타남.
+function AccountTypeCard({ cur, onChange }) {
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    api.getAccountType().then(r => setCur(r.account_type)).catch(() => {});
-  }, []);
 
   async function pick(type) {
     if (type === cur) return;
     setBusy(true);
     try {
       const r = await api.setAccountType(type);
-      setCur(r.account_type);
+      onChange?.(r.account_type);
     } catch (e) {
       alert(e.message);
     } finally {
