@@ -50,7 +50,208 @@ export default function RentcarPanel({ devices }) {
       <div style={st.body}>
         {tab === 'fleet'    && <FleetTab devices={devices} />}
         {tab === 'rentals'  && <RentalsTab devices={devices} />}
-        {tab === 'schedule' && <PlaceholderTab title="반납 일정" hint="캘린더 뷰는 다음 라운드 (Stage-R2) 에서 예약 캘린더 컴포넌트 재사용 예정." />}
+        {tab === 'schedule' && <ScheduleTab devices={devices} />}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// (2026-07-28 Stage-R2) 반납 캘린더 — 월 그리드에 계약 표시.
+// 각 셀: 그 날 진행중이거나 반납 예정인 계약. 반납 날짜 셀은 강조.
+// 셀 클릭 → 그 날 preset 신규 계약. 계약 pill 클릭 → 편집.
+// ═══════════════════════════════════════════════════════
+function ScheduleTab({ devices }) {
+  const [ym, setYm] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [list, setList]   = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [editing, setEditing] = useState(null);   // null | 'new' | contract | {new: 'YYYY-MM-DD'}
+  const [returning, setReturning] = useState(null);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setError(null);
+    // 표시 월 ± 1주 (그리드 걸치는 인접 월 포함)
+    const [y, m] = ym.split('-').map(Number);
+    const start = new Date(y, m - 1, 1);
+    const end   = new Date(y, m, 1);
+    const from = new Date(start.getTime() - 7 * 86400_000).toISOString();
+    const to   = new Date(end.getTime()   + 7 * 86400_000).toISOString();
+    api.listRentals({ from, to }).then(rs => {
+      if (cancelled) return;
+      setList(rs || []); setLoading(false);
+    }).catch(e => { if (!cancelled) { setError(e.message); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [ym, tick]);
+
+  // 오늘 반납 예정 (표시 월 내 active + ends_at 오늘)
+  const todayReturns = useMemo(() => {
+    const t = new Date().toISOString().slice(0, 10);
+    return list.filter(c =>
+      (c.status === 'active' || c.status === 'draft') &&
+      (c.ends_at || '').slice(0, 10) === t);
+  }, [list]);
+  // 표시 월 내 반납 예정 총 건수
+  const monthReturns = useMemo(() => {
+    return list.filter(c => (c.ends_at || '').slice(0, 7) === ym).length;
+  }, [list, ym]);
+
+  return (
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <StatCardGrid>
+        <StatCard icon="clock"  label="오늘 반납"     value={todayReturns.length} unit="건" tone={todayReturns.length > 0 ? 'primary' : 'default'} />
+        <StatCard icon="bar"    label={`${ym} 반납`}  value={monthReturns} unit="건" tone="default" />
+        <StatCard icon="route"  label="전체 차량"     value={devices?.length ?? 0} unit="대" tone="default" />
+      </StatCardGrid>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input type="month" value={ym} onChange={e => setYm(e.target.value || ym)}
+          style={{ ...st.input, width: 140 }} />
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+          셀 클릭 = 그 날 preset 신규 계약 · 계약 클릭 = 편집
+        </span>
+        <button onClick={() => setEditing('new')} style={{ marginLeft: 'auto', ...st.btnPrimary }}>
+          <Icon name="plus" size={13} /> 새 계약
+        </button>
+      </div>
+
+      {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
+      {loading && <div style={st.muted}>계약 로딩 중...</div>}
+
+      <RentalCalendar ym={ym} list={list}
+        onDayClick={(dateStr) => setEditing({ new: dateStr })}
+        onEventClick={(c) => setEditing(c)} />
+
+      {editing && (
+        <RentalDialog init={editing === 'new' || editing.new ? null : editing}
+          devices={devices}
+          presetDate={editing?.new || null}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+      )}
+      {returning && (
+        <ReturnDialog contract={returning}
+          onClose={() => setReturning(null)}
+          onDone={() => { setReturning(null); setTick(t => t + 1); }} />
+      )}
+    </div>
+  );
+}
+
+function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
+  const [y, m] = ym.split('-').map(Number);
+  const monthStart = new Date(y, m - 1, 1);
+  const monthEnd   = new Date(y, m, 0);
+  const startDay   = monthStart.getDay();
+  const daysInMonth = monthEnd.getDate();
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const cells = [];
+  for (let i = 0; i < startDay; i++) {
+    const d = new Date(y, m - 1, i - startDay + 1);
+    cells.push({ date: d, currentMonth: false });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ date: new Date(y, m - 1, d), currentMonth: true });
+  }
+  while (cells.length < 42) {
+    const last = cells[cells.length - 1].date;
+    cells.push({ date: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1), currentMonth: false });
+  }
+
+  function contractsOn(date) {
+    const dStr = date.toISOString().slice(0, 10);
+    return (list || []).filter(c => {
+      const s = new Date(c.starts_at).toISOString().slice(0, 10);
+      const e = new Date(c.ends_at  ).toISOString().slice(0, 10);
+      return dStr >= s && dStr <= e;
+    });
+  }
+  function isReturnDay(date, c) {
+    return date.toISOString().slice(0, 10) === new Date(c.ends_at).toISOString().slice(0, 10);
+  }
+
+  const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 12, padding: 8,
+    }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
+        {DOW.map((d, i) => (
+          <div key={d} style={{
+            fontSize: 11, fontWeight: 700, padding: '6px 4px', textAlign: 'center',
+            color: i === 0 ? 'var(--danger)' : i === 6 ? 'var(--primary)' : 'var(--text-2)',
+          }}>{d}</div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {cells.map((cell, i) => {
+          const dStr = cell.date.toISOString().slice(0, 10);
+          const dayContracts = contractsOn(cell.date);
+          const isToday = dStr === todayStr;
+          const dow = cell.date.getDay();
+          const hasReturn = dayContracts.some(c => isReturnDay(cell.date, c) && c.status !== 'returned' && c.status !== 'cancelled');
+          return (
+            <div key={i} onClick={() => cell.currentMonth && onDayClick(dStr)} style={{
+              minHeight: 92,
+              padding: 4,
+              background: isToday
+                ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
+                : cell.currentMonth ? 'var(--surface)' : 'var(--surface-2)',
+              border: hasReturn && cell.currentMonth
+                ? '2px solid var(--warning)'
+                : '1px solid ' + (isToday ? 'var(--primary)' : 'var(--border)'),
+              borderRadius: 6,
+              opacity: cell.currentMonth ? 1 : 0.4,
+              cursor: cell.currentMonth ? 'pointer' : 'default',
+              display: 'flex', flexDirection: 'column', gap: 2,
+              overflow: 'hidden',
+              position: 'relative',
+            }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                color: !cell.currentMonth ? 'var(--text-3)'
+                     : isToday ? 'var(--primary)'
+                     : dow === 0 ? 'var(--danger)'
+                     : dow === 6 ? 'var(--primary)'
+                     : 'var(--text)',
+              }}>
+                <span>{cell.date.getDate()}</span>
+                {hasReturn && cell.currentMonth && (
+                  <span style={{ fontSize: 8, color: 'var(--warning)', fontWeight: 800 }}>반납</span>
+                )}
+              </div>
+              {dayContracts.slice(0, 3).map(c => {
+                const s = RENTAL_STATUS[c.status] || RENTAL_STATUS.draft;
+                const returnHere = isReturnDay(cell.date, c);
+                return (
+                  <div key={c.id} onClick={(e) => { e.stopPropagation(); onEventClick(c); }} style={{
+                    fontSize: 10, fontWeight: 600,
+                    padding: '2px 5px', borderRadius: 3,
+                    background: s.bg, color: s.color,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    cursor: 'pointer',
+                    borderLeft: returnHere ? '3px solid var(--warning)' : 'none',
+                  }} title={`${c.renter_name} · ${c.license_plate || c.device_name || ''} · ${s.label}${returnHere ? ' · 오늘 반납' : ''}`}>
+                    {c.license_plate || c.device_name || `#${c.device_id}`}
+                  </div>
+                );
+              })}
+              {dayContracts.length > 3 && (
+                <div style={{ fontSize: 9, color: 'var(--text-3)', textAlign: 'center' }}>
+                  +{dayContracts.length - 3}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -251,12 +452,15 @@ function isoToLocal(iso) {
 }
 function localToIso(v) { return v ? new Date(v).toISOString() : null; }
 
-function RentalDialog({ init, devices, onClose, onSaved }) {
+function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
+  // presetDate 'YYYY-MM-DD' 있으면 그 날 09:00 시작, 다음날 09:00 종료. 없으면 오늘 기준.
   const defaultStart = () => {
-    const d = new Date(); d.setHours(9, 0, 0, 0); return d;
+    const d = presetDate ? new Date(`${presetDate}T09:00:00`) : new Date();
+    d.setHours(9, 0, 0, 0); return d;
   };
   const defaultEnd = () => {
-    const d = new Date(); d.setHours(9, 0, 0, 0); d.setDate(d.getDate() + 1); return d;
+    const d = new Date(defaultStart().getTime() + 86400_000);
+    return d;
   };
   const [deviceId, setDeviceId] = useState(init?.device_id ?? devices?.[0]?.id ?? '');
   const [renterName,   setRenterName]   = useState(init?.renter_name ?? '');
