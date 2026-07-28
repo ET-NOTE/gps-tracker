@@ -1,0 +1,43 @@
+{
+  "name": "시리얼링크 위치추적기",
+  "short_name": "시리얼링크",
+  "description": "실시간 GPS 추적 · 운행 일지 · 지오펜스 · 렌트카 운영",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F5F5F7",
+  "theme_color": "#1A7681",
+  "lang": "ko-KR",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "business"],
+  "icons": [
+    { "src": "/icon-16.png",   "sizes": "16x16",   "type": "image/png" },
+    { "src": "/icon-32.png",   "sizes": "32x32",   "type": "image/png" },
+    { "src": "/icon-48.png",   "sizes": "48x48",   "type": "image/png" },
+    { "src": "/icon-64.png",   "sizes": "64x64",   "type": "image/png" },
+    { "src": "/icon-96.png",   "sizes": "96x96",   "type": "image/png" },
+    { "src": "/icon-128.png",  "sizes": "128x128", "type": "image/png" },
+    { "src": "/icon-192.png",  "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-256.png",  "sizes": "256x256", "type": "image/png" },
+    { "src": "/icon-384.png",  "sizes": "384x384", "type": "image/png" },
+    { "src": "/icon-512.png",  "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Fleet 대시보드",
+      "short_name": "Fleet",
+      "description": "차량 fleet 실시간 뷰",
+      "url": "/fleet",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "홈",
+      "short_name": "홈",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
