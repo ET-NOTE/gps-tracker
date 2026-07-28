@@ -42,6 +42,8 @@ pub fn router() -> Router<AppState> {
         .route("/corporate/devices/:id/trips.csv",            get(trips_csv))
         // (2026-07-28) Stage-4B-2: 월간 운행기록부 XLSX. type=nts|ours, month=YYYY-MM.
         .route("/corporate/report.xlsx",                      get(report_xlsx))
+        // (2026-07-28) Stage-4D: 현재 캐시된 오피넷 유가 (프론트 badge 용).
+        .route("/corporate/fuel-prices",                      get(get_fuel_prices))
         // 구독
         .route("/corporate/subscription", get(get_subscription).post(buy_subscription))
 }
@@ -747,15 +749,29 @@ struct XlsxQuery {
     purposes: Option<String>,
 }
 
-fn fuel_price_krw(fuel_type: &str) -> i64 {
-    // 서버 env 로 override 가능 (오피넷 연동은 향후).
-    let env = |k: &str, d: i64| std::env::var(k).ok().and_then(|v| v.parse().ok()).unwrap_or(d);
-    match fuel_type {
-        "gasoline" => env("FUEL_PRICE_GASOLINE_KRW", 1700),
-        "diesel"   => env("FUEL_PRICE_DIESEL_KRW",   1600),
-        "lpg"      => env("FUEL_PRICE_LPG_KRW",      1000),
-        _          => 0,
+// (2026-07-28) Stage-4D: 오피넷 캐시된 유가 사용. env override 도 여전히 지원 (지역 특수가).
+// XLSX 생성 시점의 캐시 스냅샷을 fn 클로저로 감싸 xlsx_report::ReportContext.fuel_price 에 전달.
+fn make_fuel_price_fn(prices: crate::services::opinet::FuelPrices) -> impl Fn(&str) -> i64 + Send + Sync + 'static {
+    // Copy each price out of the struct — closure는 'static life.
+    let (g, d, l) = (prices.gasoline, prices.diesel, prices.lpg);
+    move |fuel_type: &str| -> i64 {
+        let env = |k: &str, dflt: i64| std::env::var(k).ok().and_then(|v| v.parse().ok()).unwrap_or(dflt);
+        match fuel_type {
+            "gasoline" => env("FUEL_PRICE_GASOLINE_KRW", g),
+            "diesel"   => env("FUEL_PRICE_DIESEL_KRW",   d),
+            "lpg"      => env("FUEL_PRICE_LPG_KRW",      l),
+            _          => 0,
+        }
     }
+}
+
+async fn get_fuel_prices(
+    State(state): State<AppState>,
+    _user: AuthUser,
+) -> AppResult<Json<crate::services::opinet::FuelPrices>> {
+    // 캐시 없거나 stale 이면 refetch 시도 (실패해도 fallback 반환).
+    let prices = state.opinet.get_or_fetch().await;
+    Ok(Json(prices))
 }
 
 async fn report_xlsx(
@@ -892,11 +908,13 @@ async fn report_xlsx(
         per_device.push((&devices_lite[i], lite));
     }
 
+    // (Stage-4D) 오피넷 캐시 스냅샷 → 하드코딩 대신 최신 유가.
+    let fuel_prices = state.opinet.get_or_fetch().await;
     let ctx = xlsx_report::ReportContext {
         month_ym: ym.clone(),
         corp: &corp_info,
         per_device,
-        fuel_price: fuel_price_krw,
+        fuel_price: Box::new(make_fuel_price_fn(fuel_prices)),
     };
     let bytes = match kind {
         "nts"  => xlsx_report::build_nts(&ctx),

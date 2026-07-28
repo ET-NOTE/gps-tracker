@@ -47,11 +47,17 @@ async fn main() -> anyhow::Result<()> {
     // FCM 클라이언트 — events 워커와 채팅 푸시가 공유
     let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref());
 
+    // (2026-07-28) Stage-4D: 오피넷 유가 캐시. 부팅 시 첫 fetch 시도 + 6h 주기 refresh.
+    // OPINET_API_KEY env 미설정 시 fetch 실패 → 하드코딩 기본값 fallback.
+    let opinet = services::opinet::OpinetCache::new();
+    opinet.clone().spawn_refresh_worker();
+
     let state = state::AppState {
         db: pool.clone(),
         config: Arc::new(cfg.clone()),
         events: events::channel(256),
         fcm: fcm.clone(),
+        opinet,
     };
 
     services::fcm::spawn(pool.clone(), fcm);

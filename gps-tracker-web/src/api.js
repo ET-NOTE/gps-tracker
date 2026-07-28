@@ -461,6 +461,10 @@ export const api = {
                         : `trips_${deviceId}.csv`;
     return { blob, filename };
   },
+  // (2026-07-28) Stage-4D: 오피넷 캐시된 유가. { gasoline, diesel, lpg, source, updated_at }
+  // source: "opinet" (실 API 성공) | "default" (fallback).
+  getFuelPrices: () => req('GET', '/corporate/fuel-prices'),
+
   // (2026-07-28) Stage-4B-2 + Stage-4C-2: 월간 XLSX 리포트 다운로드.
   // params: { type: 'nts'|'ours', month: 'YYYY-MM' (선택),
   //           device_ids: [1,2,3] (선택 — 전체), purposes: ['business','commute'] (선택 — 전체) }
