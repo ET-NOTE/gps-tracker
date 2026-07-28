@@ -5,6 +5,7 @@ import { useMe, useAccountType } from '../state';
 import { useLiveWS } from '../hooks/useLiveWS';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { makeWsEventHandler } from '../lib/wsEventHandler';
+import { makeDeviceLoaders } from '../lib/deviceLoader';
 import KakaoMap from '../components/KakaoMap';
 import ProfilePanel from '../components/ProfilePanel';
 import DeviceDetail from '../components/DeviceDetail';
@@ -12,10 +13,6 @@ import BottomNav from '../components/BottomNav';
 import SideRail from '../components/SideRail';
 import MapControls from '../components/MapControls';
 import RoadviewModal, { probeRoadview } from '../components/RoadviewModal';
-import { enrichWithSpeedStops, haversineM, compactStopMarkerIndexes } from '../lib/stops';
-
-// 홈 뷰 정지 클러스터 흡수 반경 — seeker 기본 (35m) 과 통일.
-const HOME_STOP_MERGE_RADIUS_M = 35;
 import { confirmDialog, alertDialog } from '../components/Dialog';
 import DeviceFilter from '../components/DeviceFilter';
 import GeofenceSheet from '../components/GeofenceSheet';
@@ -81,127 +78,9 @@ function pathToView(p) {
 function viewToPath(v) {
   return v === 'home' ? '/' : `/${v}`;
 }
-function calcSpeedKmh(prev, next) {
-  if (!prev?.lat || !prev?.lng || !prev?.recordedAt || !next?.lat || !next?.lng || !next?.recordedAt) return null;
-  const dt = new Date(next.recordedAt).getTime() - new Date(prev.recordedAt).getTime();
-  if (!(dt > 0)) return null;
-  const distM = haversineM(prev.lat, prev.lng, next.lat, next.lng);
-  if (distM < 3) return 0;
-  const speed = (distM / (dt / 1000)) * 3.6;
-  return Number.isFinite(speed) ? Math.min(speed, 240) : null;
-}
-
-// 홈 탭 since 계산 — 사용자 규칙 (2026-07-27):
-//   · 오늘 fix 존재 → since = 오늘 자정 (당일만 표시)
-//   · 오늘 fix 없음 → since = 가장 마지막 wake 시점 (마지막 사이클)
-//
-// 이전 로직은 "자정 걸친 trip carry-over" 를 위해 자정 직전 마지막 sleep_enter + 1ms 를
-// since 로 삼았지만, 상한이 없어서 device 가 며칠 연속 wake 상태였고 마지막 sleep_enter
-// 가 3일 전이면 since = 3일 전 → 3일치 데이터 전부 로드하는 회귀. 사용자 리포트 재현.
-// carry-over 편의보다 예측가능성 우선 — 자정 직전 trip 은 seeker 로 조회.
-function localMidnightMs() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-}
-async function computeHomeSinceISO(device) {
-  const midnightMs = localMidnightMs();
-  const midnightISO = new Date(midnightMs).toISOString();
-  const lastFixMs = device?.last_fix_at ? new Date(device.last_fix_at).getTime() : 0;
-  if (lastFixMs >= midnightMs) return midnightISO;   // 당일 fix 있음 → 자정부터
-  // 당일 fix 없음 → 마지막 wake 이벤트 찾기 (limit 50 로 충분, 배터리 device 는 wake 빈번)
-  try {
-    const events = await api.getDeviceEvents(device.id, { limit: 50 });
-    let lastWake = -Infinity;
-    for (const e of events) {
-      if (e.kind !== 'wake') continue;
-      const t = new Date(e.occurred_at).getTime();
-      if (t > lastWake) lastWake = t;
-    }
-    return Number.isFinite(lastWake) ? new Date(lastWake).toISOString() : midnightISO;
-  } catch {
-    return midnightISO;
-  }
-}
-
-// 폴리라인 dashed gap 기준 (KakaoMap.POLYLINE_GAP_THRESHOLD_S 와 동일)
-const POLYLINE_GAP_THRESHOLD_S = 60;
-
-// ordered (시간 오름차순 fix 점들) 을 훑어 각 인덱스에 gap 양끝 메타 부여.
-// 결과: idx → { gapBefore?: {gapS, peerTs, peerLat, peerLng},
-//              gapAfter?:  {gapS, peerTs, peerLat, peerLng} }
-// gap 양끝 두 점이 dashed polyline 으로 묶인 양쪽. 둘 다 동일 정보 (방향만 반전).
-function computeGapMap(ordered) {
-  const map = {};
-  for (let i = 1; i < ordered.length; i++) {
-    const a = ordered[i - 1], b = ordered[i];
-    if (!a.recorded_at || !b.recorded_at) continue;
-    const gapS = (new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()) / 1000;
-    if (gapS <= POLYLINE_GAP_THRESHOLD_S) continue;
-    const aPeer = { gapS, peerTs: b.recorded_at, peerLat: b.lat, peerLng: b.lng };
-    const bPeer = { gapS, peerTs: a.recorded_at, peerLat: a.lat, peerLng: a.lng };
-    (map[i - 1] ??= {}).gapAfter  = aPeer;   // 이전 점 입장: 다음(b) 과 두절
-    (map[i]     ??= {}).gapBefore = bPeer;   // 다음 점 입장: 이전(a) 과 두절
-  }
-  return map;
-}
-
-// 클릭 가능한 dot 마커로 표시할 인덱스 선정 — priority sampling.
-// 모든 점에 dot 을 깔면 (1) 화살표 마커 (zIndex 4) 에 가려져 안 보이고 (2) 정지 구간 점이 겹쳐
-// 시각 노이즈. 의미있는 점만 클릭 가능 dot 으로 띄움. 그 외 점은 화살표 accumulator 만 갱신.
-//
-// 우선순위 (high → low):
-//   1) gap 양끝 (통신 두절 양쪽) — 항상 picked, isGapEndpoint=true (좀 크게 + 주황 ring + zIndex 5)
-//   2) 정지 클러스터 대표 — 인접 _isStop true run 의 첫 인덱스 하나만 (나머지는 흡수)
-//   3) 이동 구간 샘플링 — non-stop 점에서 CLICKABLE_SAMPLE_INTERVAL_M 누적될 때마다 1개
-// 첫 점은 궤적 시작 표시로 항상 포함.
-// (2026-07-01) Zoom level 별 dot 간격 — 확대 시 촘촘, 축소 시 sparse. Kakao level 낮을수록 확대.
-// 이전 30m 고정 → 축소 시 dot 너무 촘촘 (시각 노이즈). 확대 시 UX 유지 + 축소 시 자동 sparse.
-function clickableIntervalM(zoomLevel) {
-  if (zoomLevel <= 3)  return 30;    // 최대 확대 — 30m (60km/h 1.8초, 30km/h 3.6초)
-  if (zoomLevel <= 5)  return 60;
-  if (zoomLevel <= 7)  return 120;
-  if (zoomLevel <= 9)  return 250;
-  return 500;                         // 최대 축소
-}
-function computeClickableIndices(enriched, gapMap, intervalM = 30) {
-  const picked = new Set();
-  const gapEndpoints = new Set();
-  const n = enriched.length;
-  if (n === 0) return { picked, gapEndpoints };
-
-  for (const k in gapMap) {
-    const i = +k;
-    picked.add(i);
-    gapEndpoints.add(i);
-  }
-
-  let prevWasStop = false;
-  for (let i = 0; i < n; i++) {
-    const isStop = enriched[i]._isStop;
-    if (isStop && !prevWasStop) picked.add(i);
-    prevWasStop = isStop;
-  }
-
-  let acc = 0;
-  for (let i = 1; i < n; i++) {
-    const p = enriched[i - 1], q = enriched[i];
-    if (p.lat && p.lng && q.lat && q.lng) {
-      acc += haversineM(p.lat, p.lng, q.lat, q.lng);
-    }
-    if (picked.has(i)) { acc = 0; continue; }
-    // (2026-06-29) `_isStop continue` 제거 — cluster 알고리즘이 25km/h 운행도 정차로 분류
-    // (windowSize=30, radius=150m, min=5 → 25km/h × 5s = 35m < 150m 안 5 fix 면 stop).
-    // 진짜 정차 구간은 acc 누적 거리 = 0 이라 자동 skip — 가드 불필요. 잘못 분류된 운행
-    // stop 도 거리 누적 넘으면 picked.
-    if (acc >= intervalM) {
-      picked.add(i);
-      acc = 0;
-    }
-  }
-  if (n > 0) picked.add(0);
-
-  return { picked, gapEndpoints };
-}
+// (F6-a-3) 다음 helpers 는 lib/deviceLoader.js 로 이동:
+//   calcSpeedKmh · computeHomeSinceISO · POLYLINE_GAP_THRESHOLD_S · computeGapMap ·
+//   clickableIntervalM · computeClickableIndices · HOME_STOP_MERGE_RADIUS_M
 
 function speedTone(speedKmh) {
   if (speedKmh == null) return '#94A3B8';
@@ -586,6 +465,15 @@ export default function Dashboard({ onLogout }) {
     return () => { wsRef.current = null; };
   }, [wsSubscribe]);
 
+  // (F6-a-3) loadDevices / loadDevicesIncremental 은 lib/deviceLoader.js factory 로 이동.
+  // refs identity 는 stable → 매 render 새로 만들어도 부작용 없음 (useCallback / useMemo
+  // 없이 인라인). 반환값 identity 는 매 render 다르지만 handleMapReady/doRefresh 에서
+  // 매번 최신 클로저로 잡음 (아래 두 useCallback 은 hoist 위해 함수 선언 위로 옮겨야 했음).
+  const { loadDevices, loadDevicesIncremental } = makeDeviceLoaders({
+    mapRef, devRef, lastMetaRef, lastLoadedFixAtRef, wsRef,
+    setDevices, setDevicesLoaded,
+  });
+
   // (F6-a-1) 30s tick + focus/visibility 는 useAutoRefresh hook 이 담당.
   const doRefresh = useCallback((force = false) => {
     setTick(x => x + 1);
@@ -596,171 +484,6 @@ export default function Dashboard({ onLogout }) {
   const refreshFn = useAutoRefresh(doRefresh, { intervalMs: 30_000, minIntervalMs: 8_000 });
   useEffect(() => { refreshFnRef.current = refreshFn; }, [refreshFn]);
 
-  async function loadDevicesIncremental(force = false) {
-    try {
-      const list = await api.listDevices();
-      const oldIds = new Set(devRef.current.map(d => d.id));
-      const newIds = new Set(list.map(d => d.id));
-      oldIds.forEach(id => {
-        if (!newIds.has(id)) {
-          mapRef.current?.removeMarker(id);
-          delete lastMetaRef.current[id];
-          delete lastLoadedFixAtRef.current[id];
-        }
-      });
-      setDevices(list);
-      devRef.current = list;
-      wsRef.current?.subscribe(list.map(d => d.id));
-      // (F0-3) serial for-loop → Promise.all — 100대에서 30s tick 이 30s+ 로 밀리던
-      // 문제 해결. Kakao 조작은 JS single-thread 라 실제 렌더는 순차지만 fetch 대기가
-      // 겹쳐서 wall clock 이 N × RTT → max(RTT) 근사.
-      await Promise.all(list.map(async d => {
-        // (2026-07-01) force=true (zoom re-render 등) 면 기존 device 도 dot 재그림
-        if (!force && oldIds.has(d.id)) return;
-        // (2026-07-28) 깜빡임 fix — 30s force refresh 인데 마지막 fix 시각이 이전 로드와 동일하면
-        // 이 device 는 신규 데이터 없음 → clearLiveTrail + 재구축 skip (visible clear→rebuild 갭
-        // 사라짐). WS 로 새 fix 오면 lastLoadedFixAtRef 는 갱신되지 않아 다음 force refresh 는
-        // 정상 재로드. 새 device 첫 로드는 lastLoadedFixAtRef 비어있어 통과.
-        if (force && oldIds.has(d.id)) {
-          const prevAt = lastLoadedFixAtRef.current[d.id];
-          const curAt  = d.last_fix_at || d.last_seen_at || null;
-          if (prevAt && curAt && prevAt === curAt) return;
-        }
-        const since = await computeHomeSinceISO(d);
-        const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
-        const locs = api.flattenGrouped(groups);
-        const label = d.display_name || d.device_uid;
-        const color = getDeviceColor(d);
-        const stale = isStale(d.last_seen_at);
-        if (!locs?.length) {
-          if (d.last_lat != null && d.last_lng != null) {
-            const meta = { recordedAt: d.last_fix_at || d.last_seen_at, stale };
-            mapRef.current?.updateMarker(d.id, d.last_lat, d.last_lng, label, color, meta);
-            lastMetaRef.current[d.id] = meta;
-          }
-          lastLoadedFixAtRef.current[d.id] = d.last_fix_at || d.last_seen_at || null;
-          return;
-        }
-        const ordered = [...locs].reverse();
-        const gapMap = computeGapMap(ordered);
-        // (2026-07-01) force refresh 면 polyline 도 완전 reset — updateMarker 는 시간 오름차순
-        // append 만 하므로 기존 polyline (최신까지) 에 오래된 fix 이어붙이면 역방향 라인 생김.
-        if (force) mapRef.current?.clearLiveTrail?.(d.id);
-        // bulk 로드 — polyline setPath 는 마지막에 한 번만 (O(N²)→O(N))
-        ordered.forEach((loc, i) => {
-          if (!loc.lat || !loc.lng) return;
-          const isLast = (i === ordered.length - 1);
-          const g = gapMap[i];
-          const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
-            : { stale, recordedAt: loc.recorded_at };
-          mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta, { deferPolyline: !isLast });
-          if (isLast) lastMetaRef.current[d.id] = meta;
-        });
-        mapRef.current?.flushLiveTrail?.(d.id);
-        mapRef.current?.clearHistoryPoints(d.id);
-        const enriched = enrichWithSpeedStops(ordered);
-        // priority sampling — gap 양끝 + stop cluster rep + zoom 별 간격 이동 sample 만 클릭 가능 dot.
-        const zoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
-        const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap, clickableIntervalM(zoomLvl));
-        // 정지 클러스터 흡수 — picked 안 근접 _isStop 들을 대표 인덱스 하나로 합침.
-        // (2026-07-14) live 뷰는 대표 marker 를 "그냥 화살표" 로 조용히 표시 —
-        // clusterMeta (개수 뱃지 + tooltip range) 는 seeker 전용으로 격리 (사용자 요청).
-        const { compacted } = compactStopMarkerIndexes(enriched, picked, HOME_STOP_MERGE_RADIUS_M);
-        enriched.slice(0, -1).forEach((loc, i) => {
-          if (!loc.lat || !loc.lng) return;
-          const g = gapMap[i];
-          mapRef.current?.addHistoryPoint(d.id, loc.lat, loc.lng, color, {
-            recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv, fix: loc.fix,
-            speedKmh: loc._speed, isStop: loc._isStop,
-            deviceId: d.id, deviceLabel: label,
-            skipMarker: !compacted.has(i),
-            isGapEndpoint: gapEndpoints.has(i),
-            ...(g || {}),
-          });
-        });
-        // 로드 완료 — 다음 30s force refresh 에서 이 값과 비교해 skip 판정.
-        lastLoadedFixAtRef.current[d.id] = d.last_fix_at || d.last_seen_at || null;
-      }));
-    } catch (e) { console.error('refresh', e); }
-  }
-
-  const loadDevices = useCallback(async () => {
-    try {
-      const targetIdRaw = new URLSearchParams(window.location.search).get('device');
-      const targetId = targetIdRaw ? parseInt(targetIdRaw, 10) : NaN;
-
-      const list = await api.listDevices();
-      setDevices(list);
-      setDevicesLoaded(true);
-      devRef.current = list;
-      wsRef.current?.subscribe(list.map(d => d.id));
-
-      // 디바이스마다 since 를 events 로 산출 (자정 걸친 운행 carry-over). 디바이스 간엔 병렬.
-      const sinces = await Promise.all(list.map(d => computeHomeSinceISO(d)));
-      // (2026-07-07) 디바이스별 fetch + 렌더도 병렬 — 이전엔 순차 for-loop 라
-      // device N 개면 wall clock 이 N × (API RTT + render) 였음. Kakao 조작은 JS
-      // single thread 라 실제 실행 순서는 순차지만, fetch 대기 겹치기로 큰 개선.
-      await Promise.all(list.map(async (d, li) => {
-        const since = sinces[li];
-        const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
-        const locs = api.flattenGrouped(groups);
-        const label = d.display_name || d.device_uid;
-        const color = getDeviceColor(d);
-        const stale = isStale(d.last_seen_at);
-        if (!locs?.length) {
-          if (d.last_lat != null && d.last_lng != null) {
-            const meta = { recordedAt: d.last_fix_at || d.last_seen_at, stale };
-            mapRef.current?.updateMarker(d.id, d.last_lat, d.last_lng, label, color, meta);
-            lastMetaRef.current[d.id] = meta;
-          }
-          return;
-        }
-        const ordered = [...locs].reverse();
-        const gapMap = computeGapMap(ordered);
-        // 폴리라인/메인 마커 갱신용 — bulk 로드 (setPath 는 마지막에 한 번만)
-        ordered.forEach((loc, i) => {
-          if (!loc.lat || !loc.lng) return;
-          const isLast = (i === ordered.length - 1);
-          const g = gapMap[i];
-          const meta = isLast
-            ? { recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv, fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng, speedKmh: calcSpeedKmh(i > 0 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at } : null, { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at }), deviceId: d.id, deviceLabel: label, ...(g || {}) }
-            : { stale, recordedAt: loc.recorded_at };
-          mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta, { deferPolyline: !isLast });
-          if (isLast) lastMetaRef.current[d.id] = meta;
-        });
-        mapRef.current?.flushLiveTrail?.(d.id);
-        // 클릭 가능한 history dot 마커 — 마지막 점 제외 (메인 마커가 그 자리에 있음)
-        mapRef.current?.clearHistoryPoints(d.id);
-        const enriched = enrichWithSpeedStops(ordered);
-        // priority sampling — gap 양끝 + stop cluster rep + zoom 별 간격 이동 sample 만 클릭 가능 dot.
-        const zoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
-        const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap, clickableIntervalM(zoomLvl));
-        // 정지 클러스터 흡수 — picked 안 근접 _isStop 들을 대표 인덱스 하나로 합침.
-        // (2026-07-14) live 뷰는 대표 marker 를 "그냥 화살표" 로 조용히 표시 —
-        // clusterMeta (개수 뱃지 + tooltip range) 는 seeker 전용으로 격리 (사용자 요청).
-        const { compacted } = compactStopMarkerIndexes(enriched, picked, HOME_STOP_MERGE_RADIUS_M);
-        enriched.slice(0, -1).forEach((loc, i) => {
-          if (!loc.lat || !loc.lng) return;
-          const g = gapMap[i];
-          mapRef.current?.addHistoryPoint(d.id, loc.lat, loc.lng, color, {
-            recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv, fix: loc.fix,
-            speedKmh: loc._speed, isStop: loc._isStop,
-            deviceId: d.id, deviceLabel: label,
-            skipMarker: !compacted.has(i),
-            isGapEndpoint: gapEndpoints.has(i),
-            ...(g || {}),
-          });
-        });
-      }));
-      // (2026-07-03) map_view (lat/lng/level) 저장/복원 제거. 매번 auto fit — 사용자 요청.
-      if (!isNaN(targetId)) {
-        mapRef.current?.focusDevice(targetId);
-      } else {
-        mapRef.current?.fitToAllMarkers(60);
-      }
-    } catch (e) { console.error('loadDevices', e); }
-  }, []);
 
   const handleMapReady = useCallback(() => {
     loadDevices(); loadFences(); loadGeofenceAlert();
