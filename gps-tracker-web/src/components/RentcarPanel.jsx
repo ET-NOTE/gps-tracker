@@ -16,7 +16,7 @@ import { alertDialog, confirmDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
 import { panelPropsEqual } from './shared/memoPanel';
-import { Modal, FormField, Button, Pill, SkeletonList } from './ui';
+import { Modal, FormField, Button, Pill, SkeletonList, toast } from './ui';
 import {
   useRentals, useCreateRental, useUpdateRental, useReturnRental, useDeleteRental,
   useRenters, useRenterDetail, useAddBlacklist, useRemoveBlacklist,
@@ -1341,13 +1341,13 @@ function HandoffTokenDialog({ contract, onClose }) {
     if (!publicUrl) return;
     try {
       await navigator.clipboard.writeText(publicUrl);
-      await alertDialog({ title: '링크 복사됨', body: '카톡·문자로 임차인에게 전송하세요.' });
+      toast.success({ title: '링크 복사됨', body: '카톡·문자로 임차인에게 전송하세요.' });
     } catch {
       // fallback
       const ta = document.createElement('textarea');
       ta.value = publicUrl; document.body.appendChild(ta);
       ta.select(); document.execCommand('copy'); ta.remove();
-      await alertDialog({ title: '링크 복사됨', body: '카톡·문자로 임차인에게 전송하세요.' });
+      toast.success({ title: '링크 복사됨', body: '카톡·문자로 임차인에게 전송하세요.' });
     }
   }
 

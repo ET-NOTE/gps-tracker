@@ -21,6 +21,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 // Dashboard 는 홈이라 critical — sync import 유지.
 import Dashboard from './pages/Dashboard';
 import DialogHost from './components/Dialog';
+import { ToastHost } from './components/ui';
 
 // 나머지 라우트는 각자 진입할 때만 로드 — 초기 bundle 축소.
 const Auth           = lazy(() => import('./pages/Auth'));
@@ -44,6 +45,7 @@ export default function App() {
     <BrowserRouter basename={BASENAME || undefined}>
       <Shell />
       <DialogHost />
+      <ToastHost />
     </BrowserRouter>
   );
 }

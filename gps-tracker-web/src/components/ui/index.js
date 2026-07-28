@@ -9,3 +9,4 @@ export { default as PageHeader }   from './PageHeader';
 export { default as FormField, Input, Select, Textarea } from './FormField';
 export { default as Button }       from './Button';
 export { default as EmptyState }   from './EmptyState';
+export { toast, ToastHost }        from './Toast';
