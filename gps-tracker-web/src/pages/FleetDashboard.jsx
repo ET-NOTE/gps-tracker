@@ -143,6 +143,8 @@ export default function FleetDashboard() {
   }, [selectedId]);
 
   // (F4-b-2) 선택된 trip → seeker path.
+  // (F7-a) ?canvas=1 URL flag 로 canvas overlay 시험 사용. 안정성 검증 후 default 전환.
+  const useCanvasSeeker = new URLSearchParams(window.location.search).get('canvas') === '1';
   const [selectedTrip, setSelectedTrip] = useState(null);   // 전체 trip 객체 (TripDetailTab 이 참조)
   const selectedTripKey = selectedTrip?.started_at ?? null;
   const handleTripSelect = useCallback(async (trip) => {
@@ -151,7 +153,8 @@ export default function FleetDashboard() {
     const key = trip.started_at;
     if (selectedTripKey === key) {
       // 재클릭 = 취소.
-      m.clearSeekerPath?.();
+      if (useCanvasSeeker) m.clearSeekerPathCanvas?.();
+      else                 m.clearSeekerPath?.();
       m.setSeekerMode?.(false);
       setSelectedTrip(null);
       return;
@@ -164,12 +167,16 @@ export default function FleetDashboard() {
       const points = api.flattenGroupedAsc(groups);
       const color = devices.find(d => d.id === selectedId)?.device_color || '#5B7CFF';
       m.setSeekerMode?.(true);
-      m.drawSeekerPath(points, { color, refit: true, showStops: true, showCursor: true });
+      if (useCanvasSeeker) {
+        m.drawSeekerPathCanvas(points, { color, refit: true, showStops: true, showCursor: true });
+      } else {
+        m.drawSeekerPath(points, { color, refit: true, showStops: true, showCursor: true });
+      }
     } catch (e) {
       console.error('trip seeker load', e);
       setSelectedTrip(null);
     }
-  }, [selectedId, selectedTripKey, devices]);
+  }, [selectedId, selectedTripKey, devices, useCanvasSeeker]);
 
   return (
     <div style={{

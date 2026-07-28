@@ -60,6 +60,157 @@ function ensureKakaoMapSdk() {
   });
 }
 const BUCKET_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
+
+// (2026-07-29) Phase F7-a — Seeker canvas overlay.
+//
+// 배경: drawSeekerPath 는 point 당 kakao.maps.Marker 를 생성. maxMarkers=300 캡으로
+// 5000-point trip 도 마커 300개로 제한하지만, 마커 생성/제거 자체가 DOM 요소 단위 —
+// 장거리 trip 이 자주 열리면 사용자 체감 stutter. fingerprint 로 rebuild 는 이미 skip
+// 하지만 실 데이터 변경 시엔 여전히 teardown+rebuild.
+//
+// Canvas overlay 는:
+// - 전체 point 렌더 (마커 캡 없이, sampling 만 필요 시)
+// - 렌더 = single canvas draw call = O(points) 이지만 DOM 조작 없음
+// - zoom/pan 시 map projection 으로 재투영해 재렌더 (rAF throttle)
+// - Cursor 는 여전히 kakao.maps.Marker 유지 (재생 시 setPosition 만 하면 되므로 저렴)
+//
+// 이 라운드는 parallel 구현 — drawSeekerPathCanvas 를 별도 method 로 제공.
+// FleetDashboard 에서 ?canvas=1 flag 로 opt-in. 안정성 검증 후 다음 라운드에서 default.
+class SeekerCanvasOverlay {
+  constructor(map) {
+    this.map = map;
+    this.pts = [];
+    this.opts = {};
+    this._raf = null;
+
+    const container = map.getNode();
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = '2';   // above tiles, below markers (kakao markers ~200+)
+    container.appendChild(canvas);
+    this._canvas = canvas;
+    this._container = container;
+
+    this._onIdle = () => this._schedule();
+    this._onResize = () => { this._resize(); this._schedule(); };
+    window.kakao.maps.event.addListener(map, 'idle', this._onIdle);
+    window.kakao.maps.event.addListener(map, 'zoom_changed', this._onIdle);
+    window.kakao.maps.event.addListener(map, 'bounds_changed', this._onIdle);
+    window.addEventListener('resize', this._onResize);
+
+    this._resize();
+  }
+
+  _resize() {
+    const rect = this._container.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    this._canvas.width  = Math.max(1, Math.floor(rect.width  * dpr));
+    this._canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    this._canvas.style.width  = rect.width  + 'px';
+    this._canvas.style.height = rect.height + 'px';
+    const ctx = this._canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this._w = rect.width;
+    this._h = rect.height;
+  }
+
+  setData(pts, opts) {
+    this.pts = pts || [];
+    this.opts = opts || {};
+    this._schedule();
+  }
+
+  clear() {
+    this.pts = [];
+    this.opts = {};
+    this._schedule();
+  }
+
+  _schedule() {
+    if (this._raf) return;
+    this._raf = requestAnimationFrame(() => {
+      this._raf = null;
+      this._draw();
+    });
+  }
+
+  _draw() {
+    const ctx = this._canvas.getContext('2d');
+    ctx.clearRect(0, 0, this._w, this._h);
+    if (!this.pts.length || !this.map) return;
+
+    const proj = this.map.getProjection();
+    if (!proj) return;
+
+    // containerPointFromCoords 는 viewport pixel (canvas 좌표계와 동일).
+    // pan/zoom 오프셋은 kakao 가 자동 처리.
+    const toPx = (lat, lng) => {
+      const cp = proj.containerPointFromCoords(new window.kakao.maps.LatLng(lat, lng));
+      return cp;
+    };
+
+    const { color = '#5B7CFF' } = this.opts;
+
+    // 1) polyline
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWeightForLevel(this.map.getLevel());
+    ctx.globalAlpha = 0.8;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < this.pts.length; i++) {
+      const p = this.pts[i];
+      if (p.lat == null || p.lng == null) continue;
+      const cp = toPx(p.lat, p.lng);
+      if (!started) { ctx.moveTo(cp.x, cp.y); started = true; }
+      else          { ctx.lineTo(cp.x, cp.y); }
+    }
+    ctx.stroke();
+
+    // 2) all dots (fills the "sampled marker" role — canvas 로 캡 없이 전부 렌더)
+    const dotR = Math.max(2, dotSizeForLevel(this.map.getLevel()) / 5);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.85;
+    for (const p of this.pts) {
+      if (p.lat == null || p.lng == null || p._isStop) continue;
+      const cp = toPx(p.lat, p.lng);
+      ctx.beginPath();
+      ctx.arc(cp.x, cp.y, dotR, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+
+    // 3) stops — 강조 (빨강 큰 원)
+    if (this.opts.showStops !== false) {
+      ctx.fillStyle = '#EF4444';
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 1;
+      for (const p of this.pts) {
+        if (!p._isStop || p.lat == null || p.lng == null) continue;
+        const cp = toPx(p.lat, p.lng);
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, dotR * 2.2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    ctx.globalAlpha = 1;
+  }
+
+  destroy() {
+    if (this._raf) cancelAnimationFrame(this._raf);
+    window.kakao.maps.event.removeListener(this.map, 'idle', this._onIdle);
+    window.kakao.maps.event.removeListener(this.map, 'zoom_changed', this._onIdle);
+    window.kakao.maps.event.removeListener(this.map, 'bounds_changed', this._onIdle);
+    window.removeEventListener('resize', this._onResize);
+    if (this._canvas.parentNode) this._canvas.parentNode.removeChild(this._canvas);
+  }
+}
 // (2026-07-25) timeColor = device 색 유지 + opacity 5단계로 시간 진행 표현 (진할수록 최근).
 // 원래는 다른 색 5개 (BUCKET-like) 였으나 여러 device 겹칠 때 identity 상실 → opacity 로 통일.
 // 관련: PR #9 (song1074) 원 아이디어, 이후 재구현.
@@ -296,6 +447,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const iwReqIdRef   = useRef(0);    // InfoWindow 비동기 갱신용 시퀀스
   const seekerRef    = useRef({ poly: [], pts: [], cursor: null });   // history seeker 임시 렌더링
   const seekerPinRef = useRef(null);   // 시커 슬롯 선택 표시용 단일 핀 마커
+  // (F7-a) Seeker canvas overlay — drawSeekerPathCanvas 사용 시 활성. cursor 는 별도 kakao Marker.
+  const canvasSeekerRef = useRef(null);       // SeekerCanvasOverlay | null
+  const canvasCursorRef = useRef(null);       // kakao.maps.Marker | null (재생 커서)
+  const canvasPtsRef    = useRef([]);         // setCursor(idx) 참조용
   // (F4-a) MarkerClusterer — 수백 대 밀집 시 marker 겹침·클릭 방해 해소.
   // 메인 device pin (updateMarker) 만 cluster. history dot / arrow / cursor / seeker path 는 제외.
   // minLevel 5+ (약 500m~수십km 시야) 에서 활성. 그 아래는 개별 marker.
@@ -389,13 +544,19 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           onUserPanRef.current?.();
           fireViewChange();
         });
+        // (F7-a) canvas overlay 인스턴스 — 첫 draw 전까지 idle.
+        canvasSeekerRef.current = new SeekerCanvasOverlay(mapRef.current);
         onReady?.();
       });
     };
     ensureKakaoMapSdk()
       .then(() => { if (!cancelled) initMap(); })
       .catch(error => console.error('Kakao Maps SDK load failed', error));
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      canvasSeekerRef.current?.destroy();
+      canvasSeekerRef.current = null;
+    };
   }, []);
 
   // zoom 변경 시 — 모든 polylines 두께 갱신. (2026-07-01) 화살표 marker 는 zoom 무관 20px 고정.
@@ -1234,6 +1395,68 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       seekerPinRef.current = null;
     },
 
+    /**
+     * (F7-a) Canvas overlay 기반 seeker path.
+     * drawSeekerPath 의 marker-per-point 를 canvas 로 대체 — 장거리 trip 렌더 부담 감소.
+     * opts: { color, showStops, showCursor, refit }
+     * 반환: { setCursor(idx) } — panTo 와 유사 UX 로 cursor 이동.
+     */
+    drawSeekerPathCanvas(points, opts = {}) {
+      if (!mapRef.current || !canvasSeekerRef.current) return null;
+      const { color = '#5B7CFF', showStops = true, showCursor = false, refit = true } = opts;
+
+      const pts = (points || [])
+        .filter(p => p.lat != null && p.lng != null)
+        .slice()
+        .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+
+      canvasPtsRef.current = pts;
+      canvasSeekerRef.current.setData(pts, { color, showStops });
+
+      // cursor 는 마커 유지 (재생 시 setPosition 만 하면 되므로 저렴)
+      if (canvasCursorRef.current) {
+        canvasCursorRef.current.setMap(null);
+        canvasCursorRef.current = null;
+      }
+      if (showCursor && pts[0]) {
+        canvasCursorRef.current = new window.kakao.maps.Marker({
+          map: mapRef.current,
+          position: new window.kakao.maps.LatLng(pts[0].lat, pts[0].lng),
+          image: cursorImage(color),
+          zIndex: 99,
+        });
+      }
+
+      if (refit && pts.length > 0) {
+        if (pts.length > 1) {
+          const bounds = new window.kakao.maps.LatLngBounds();
+          pts.forEach(p => bounds.extend(new window.kakao.maps.LatLng(p.lat, p.lng)));
+          markProgrammatic();
+          mapRef.current.setBounds(bounds, 60, 60, 60, 60);
+        } else {
+          markProgrammatic();
+          mapRef.current.setCenter(new window.kakao.maps.LatLng(pts[0].lat, pts[0].lng));
+        }
+      }
+
+      return {
+        setCursor(idx) {
+          const p = canvasPtsRef.current[idx];
+          if (!canvasCursorRef.current || !p) return;
+          canvasCursorRef.current.setPosition(new window.kakao.maps.LatLng(p.lat, p.lng));
+        },
+      };
+    },
+
+    clearSeekerPathCanvas() {
+      canvasSeekerRef.current?.clear();
+      canvasCursorRef.current?.setMap(null);
+      canvasCursorRef.current = null;
+      canvasPtsRef.current = [];
+      seekerPinRef.current?.setMap(null);
+      seekerPinRef.current = null;
+    },
+
     removeGeofence(geofenceId) {
       const entry = fenceRef.current[geofenceId];
       if (entry) { entry.circle.setMap(null); delete fenceRef.current[geofenceId]; }
@@ -1255,6 +1478,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // seeker cursor 있으면 함께 이동 — 시각적 tracking.
       if (seekerRef.current.cursor) {
         seekerRef.current.cursor.setPosition(pos);
+      }
+      // (F7-a) canvas seeker cursor 도 동일 처리.
+      if (canvasCursorRef.current) {
+        canvasCursorRef.current.setPosition(pos);
       }
     },
 
