@@ -243,12 +243,14 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [activeDates, setActiveDates] = useState([]);
   useEffect(() => {
     if (!device?.id) return;
+    let cancelled = false;
     api.getDailyStats(device.id, { limit: 365 })
-      .then(setDailyStats)
+      .then(rows => { if (!cancelled) setDailyStats(rows); })
       .catch(() => {});
     api.getActiveDates(device.id)
-      .then(setActiveDates)
+      .then(rows => { if (!cancelled) setActiveDates(rows); })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, [device?.id]);
 
   const availDates = useMemo(() => {
@@ -301,7 +303,11 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [events, setEvents] = useState([]);
   useEffect(() => {
     if (mode !== 'day' || !device?.id) { setEvents([]); return; }
-    api.getDeviceEvents(device.id).then(rows => setEvents(rows || [])).catch(() => {});
+    let cancelled = false;
+    api.getDeviceEvents(device.id)
+      .then(rows => { if (!cancelled) setEvents(rows || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [device?.id, mode]);
 
   const dayEvents = useMemo(() => {
@@ -319,12 +325,14 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   useEffect(() => {
     if (!device?.id || mode !== 'day') return;
     setLoading(true); setError(null);
+    let cancelled = false;
     const w = dayWindow(date, 0, 24);
     // Phase 4B: day 24h = 86,400 fix → raw 5000 cap 으로 누락.
     // 정밀도 override: auto/1m/5m → aggregate, '1h' → 1h aggregate.
     const dayBucket = precision === 'auto' ? '1m' : precision;
     api.getDeviceLocationsAggregated(device.id, dayBucket, w.since, w.until)
     .then(rows => {
+      if (cancelled) return;
       const normalized = (rows || [])
         .filter(r => r.lat_last != null && r.lng_last != null)
         .map(r => ({
@@ -339,8 +347,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
       const sorted = normalized.slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
       setDayPoints(enrich(sorted));
     })
-    .catch(e => setError(e.message || '데이터를 불러올 수 없습니다.'))
-    .finally(() => setLoading(false));
+    .catch(e => { if (!cancelled) setError(e.message || '데이터를 불러올 수 없습니다.'); })
+    .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [device?.id, mode, date, precision]);
 
   // ─── 월간 — 그 달 전체 fetch ────────────────────────────
@@ -351,11 +360,13 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   useEffect(() => {
     if (!device?.id || mode !== 'month') return;
     setLoading(true); setError(null);
+    let cancelled = false;
     const w = monthWindow(month);
     // 정밀도 override: month default 1h, user 가 5m 선택 시 더 정밀.
     const monthBucket = precision === 'auto' || precision === '1m' ? '1h' : precision;
     api.getDeviceLocationsAggregated(device.id, monthBucket, w.since, w.until)
     .then(rows => {
+      if (cancelled) return;
       // aggregate 응답 → enrich 입력 형태로 normalize. lat_last 사용 (구간 마지막 fix).
       const normalized = (rows || [])
         .filter(r => r.lat_last != null && r.lng_last != null)
@@ -372,8 +383,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
       setMonthCapped(sorted.length >= MONTH_CAP);
       setMonthPoints(enrich(sorted));
     })
-    .catch(e => setError(e.message || '데이터를 불러올 수 없습니다.'))
-    .finally(() => setLoading(false));
+    .catch(e => { if (!cancelled) setError(e.message || '데이터를 불러올 수 없습니다.'); })
+    .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [device?.id, mode, month, precision]);
 
   // ─── 일간 데이터의 10분 버킷 — 시작 시각 드롭다운 옵션 ──
@@ -492,20 +504,27 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   }, [idx, mode, cameraFollow, playing, points]);
 
   // 재생
+  // (F7-d) 이전 구조 (setIdx updater 안에서 setTimeout 스케줄) 는 StrictMode 가
+  // updater 2회 호출 시 timer 2개 스폰 + playerRef 는 마지막만 보유 → 첫 timer orphan
+  // → 재생 속도 2배 + unmount 후 setState. tick 을 pure 하게: idx 는 ref 로 읽고
+  // setState 는 pure updater, 다음 setTimeout 은 updater 밖에서 등록.
+  const idxRef = useRef(0);
+  useEffect(() => { idxRef.current = idx; }, [idx]);
   useEffect(() => {
     if (mode !== 'day' || !playing || points.length < 2) return;
+    let cancelled = false;
     const tick = () => {
-      setIdx(i => {
-        if (i >= points.length - 1) { setPlaying(false); return i; }
-        const cur = new Date(points[i].recorded_at).getTime();
-        const nxt = new Date(points[i + 1].recorded_at).getTime();
-        const realMs = nxt - cur;
-        playerRef.current = setTimeout(tick, Math.max(50, Math.min(2000, realMs / playSpeed)));
-        return i + 1;
-      });
+      if (cancelled) return;
+      const i = idxRef.current;
+      if (i >= points.length - 1) { setPlaying(false); return; }
+      const cur = new Date(points[i].recorded_at).getTime();
+      const nxt = new Date(points[i + 1].recorded_at).getTime();
+      const realMs = nxt - cur;
+      setIdx(prev => prev + 1);
+      playerRef.current = setTimeout(tick, Math.max(50, Math.min(2000, realMs / playSpeed)));
     };
     playerRef.current = setTimeout(tick, 100);
-    return () => clearTimeout(playerRef.current);
+    return () => { cancelled = true; clearTimeout(playerRef.current); };
   }, [playing, points, playSpeed, mode]);
   useEffect(() => { setPlaying(false); }, [mode]);
 

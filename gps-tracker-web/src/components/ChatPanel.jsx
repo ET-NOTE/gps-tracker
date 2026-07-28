@@ -23,9 +23,15 @@ export default function ChatPanel({ onRead }) {
   async function loadInitial() {
     try {
       const list = await api.chatMyMessages();
-      setMessages(list || []);
-      if (list && list.length > 0) lastIdRef.current = list[list.length - 1].id;
-      // 사용자가 패널을 열었으니 read 처리
+      const initial = list || [];
+      const initialLastId = initial.length ? initial[initial.length - 1].id : 0;
+      // (F7-d) 로딩 중 WS 로 append 된 message (id > initialLastId) 는 유지.
+      // 이전엔 setMessages(list||[]) 로 무조건 대체 → race 로 도착한 admin push 유실.
+      setMessages(prev => {
+        const extras = prev.filter(m => m.id > initialLastId);
+        return [...initial, ...extras];
+      });
+      lastIdRef.current = Math.max(lastIdRef.current, initialLastId);
       try { await api.chatMarkReadUser(); markUnreadZero(); } catch {}
       onRead?.();
     } catch (e) { console.error(e); }
@@ -77,7 +83,10 @@ export default function ChatPanel({ onRead }) {
     try {
       const msg = await api.chatSendUser(body);
       setMessages(prev => [...prev, msg]);
-      lastIdRef.current = msg.id;
+      // (F7-d) 자기 송신 완료 사이에 WS 로 admin 답장이 먼저 도착했다면
+      // lastIdRef 는 이미 그 id 로 진행됨 — 뒤에 assigned 된 자기 msg.id 로
+      // 되돌리면 다음 pollNew(after_id=msg.id) 가 admin 답장 재fetch → duplicate.
+      lastIdRef.current = Math.max(lastIdRef.current, msg.id);
       setText('');
     } catch (e) {
       alert(e.message);
