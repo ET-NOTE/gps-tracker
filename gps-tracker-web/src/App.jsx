@@ -29,6 +29,7 @@ const PaymentResult  = lazy(() => import('./pages/PaymentResult'));
 const LegalPage      = lazy(() => import('./pages/LegalPage'));
 const DiagnosticPage = lazy(() => import('./pages/DiagnosticPage'));
 const HandoffPage    = lazy(() => import('./pages/HandoffPage'));
+const FleetDashboard = lazy(() => import('./pages/FleetDashboard'));
 
 const LazyFallback = () => (
   <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
@@ -81,6 +82,11 @@ function Shell() {
         {/* 14_* 진단 콘솔 — Dashboard 외부 풀스크린 */}
         <Route path="/diagnostic" element={
           authed ? <DiagnosticPage /> : <RequireAuthRedirect />
+        } />
+
+        {/* (F4-b) 신규 Unified Fleet Dashboard — beta, 참고 이미지 스타일 */}
+        <Route path="/fleet" element={
+          authed ? <FleetDashboard /> : <RequireAuthRedirect />
         } />
 
         {/* 보호된 영역 — 미인증이면 로그인으로 (next 보존) */}
