@@ -68,7 +68,8 @@ export default function CorporatePanel({ devices }) {
 }
 
 // ════════════════════════════════════════════════════════
-// 회사 정보
+// 회사 정보 — 국세청 운행기록부 헤더 정보. (2026-07-28 재디자인)
+// 국세청 양식 (별지 제73호 서식) 헤더 필수: 사업자번호 · 상호 · 대표자.
 // ════════════════════════════════════════════════════════
 function InfoTab() {
   const [info, setInfo] = useState(null);
@@ -86,37 +87,105 @@ function InfoTab() {
         representative:  info.representative   || null,
       });
       setInfo(r);
-      await alertDialog({ title: '저장 완료', tone: 'success', body: '리포트 헤더에 반영됩니다.' });
+      await alertDialog({ title: '저장 완료', tone: 'success', body: '운행기록부 헤더에 반영됩니다.' });
     } catch (e) { await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' }); }
     finally { setBusy(false); }
   }
 
   if (!info) return <div style={st.muted}>로딩...</div>;
   const set = (k, v) => setInfo(prev => ({ ...prev, [k]: v }));
+  const required = ['business_number', 'company_name', 'representative'];
+  const missing = required.filter(k => !info[k]);
+  const complete = missing.length === 0;
 
   return (
-    <Card title="회사 정보 (리포트 헤더용)">
-      <Field label="사업자번호" value={info.business_number || ''} placeholder="000-00-00000"
-        onChange={v => set('business_number', v)} />
-      <Field label="회사명"     value={info.company_name || ''}    placeholder="○○ 주식회사"
-        onChange={v => set('company_name', v)} />
-      <Field label="대표자"     value={info.representative || ''}  placeholder="홍길동"
-        onChange={v => set('representative', v)} />
-      <Field label="주소"       value={info.address || ''}          placeholder="서울특별시 ..."
-        onChange={v => set('address', v)} />
-      <button onClick={save} disabled={busy}
-        style={{ ...st.btnPrimary, marginTop: 8 }}>
-        {busy ? '저장 중...' : '저장'}
-      </button>
-    </Card>
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* 안내 배너 — 국세청 양식 매핑 안내 */}
+      <div style={{
+        background: complete
+          ? 'color-mix(in srgb, var(--accent) 8%, transparent)'
+          : 'color-mix(in srgb, var(--warning) 10%, transparent)',
+        border: '1px solid var(--border)', borderRadius: 12,
+        padding: 14, display: 'flex', gap: 12, alignItems: 'flex-start',
+      }}>
+        <div style={{
+          width: 30, height: 30, borderRadius: 10,
+          background: complete ? 'var(--accent)' : 'var(--warning)',
+          color: 'var(--primary-fg)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Icon name={complete ? 'target' : 'warn'} size={16} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+            {complete ? '운행기록부 헤더 준비 완료' : `필수 정보 ${missing.length}개 남음`}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
+            국세청 별지 제73호 (업무용승용차 운행기록부) 서식 헤더에 사용됩니다.
+            사업자번호·상호·대표자 3개는 필수 (경비 인정 근거).
+          </div>
+        </div>
+      </div>
+
+      <div style={st.sectionCard}>
+        <div style={st.sectionCardHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name="list" size={14} />
+            <span>회사 정보</span>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, padding: 16 }}>
+          <TrendyField label="사업자번호" required value={info.business_number || ''}
+            placeholder="000-00-00000" onChange={v => set('business_number', v)} />
+          <TrendyField label="상호 (회사명)" required value={info.company_name || ''}
+            placeholder="○○ 주식회사" onChange={v => set('company_name', v)} />
+          <TrendyField label="대표자" required value={info.representative || ''}
+            placeholder="홍길동" onChange={v => set('representative', v)} />
+          <TrendyField label="주소" value={info.address || ''}
+            placeholder="서울특별시 ..." onChange={v => set('address', v)} />
+        </div>
+        <div style={{ padding: '0 16px 16px', display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={save} disabled={busy} style={st.btnPrimary}>
+            {busy ? '저장 중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 트렌디 필드 — 라벨 우측에 필수 뱃지, 인풋에 hover 효과. 스타일은 st.input 재사용.
+function TrendyField({ label, required, value, onChange, placeholder }) {
+  return (
+    <div>
+      <div style={{
+        fontSize: 11, fontWeight: 600, marginBottom: 6,
+        display: 'flex', alignItems: 'center', gap: 6,
+        color: 'var(--text-2)',
+      }}>
+        <span>{label}</span>
+        {required && (
+          <span style={{
+            fontSize: 9, padding: '2px 6px', borderRadius: 4,
+            background: 'color-mix(in srgb, var(--danger) 15%, transparent)',
+            color: 'var(--danger)', fontWeight: 700,
+          }}>필수</span>
+        )}
+      </div>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        style={st.input} />
+    </div>
   );
 }
 
 // ════════════════════════════════════════════════════════
-// 직원
+// 직원 — 운전자 후보. (2026-07-28 재디자인 — 카드형 + stat + 검색 + 접힘 폼)
 // ════════════════════════════════════════════════════════
 function StaffTab() {
   const [list, setList] = useState(null);
+  const [query, setQuery] = useState('');
+  const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
@@ -132,7 +201,7 @@ function StaffTab() {
     setBusy(true);
     try {
       await api.createStaff({ name: name.trim(), role: role || null, phone: phone || null });
-      setName(''); setRole(''); setPhone('');
+      setName(''); setRole(''); setPhone(''); setAdding(false);
       load();
     } catch (e) { await alertDialog({ title: '실패', body: e.message, tone: 'danger' }); }
     finally { setBusy(false); }
@@ -156,46 +225,141 @@ function StaffTab() {
     catch (e) { await alertDialog({ title: '실패', body: e.message, tone: 'danger' }); }
   }
 
+  const totalCount    = list?.length ?? 0;
+  const activeCount   = list?.filter(s => s.active).length ?? 0;
+  const inactiveCount = totalCount - activeCount;
+  const filtered = useMemo(() => {
+    if (!list) return [];
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(s =>
+      (s.name || '').toLowerCase().includes(q) ||
+      (s.role || '').toLowerCase().includes(q) ||
+      (s.phone || '').toLowerCase().includes(q));
+  }, [list, query]);
+
   if (!list) return <div style={st.muted}>로딩...</div>;
 
   return (
-    <>
-      <Card title="직원 추가">
-        <Field label="이름" value={name} onChange={setName} placeholder="이름" />
-        <Field label="역할" value={role} onChange={setRole} placeholder="영업 / 사무 / 배차 ..." />
-        <Field label="연락처" value={phone} onChange={setPhone} placeholder="010-..." />
-        <button onClick={add} disabled={busy || !name.trim()}
-          style={{ ...st.btnPrimary, marginTop: 8 }}>
-          {busy ? '...' : '추가'}
-        </button>
-      </Card>
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <StatCardGrid>
+        <StatCard icon="user" label="전체 직원" value={totalCount}    unit="명" tone="default" />
+        <StatCard icon="user" label="활성"     value={activeCount}    unit="명" tone="success" />
+        <StatCard icon="user" label="비활성"   value={inactiveCount}  unit="명" tone="default" />
+      </StatCardGrid>
 
-      <Card title={`직원 목록 (${list.filter(s => s.active).length}명)`}>
-        {list.length === 0 && <div style={st.muted}>아직 등록된 직원이 없습니다.</div>}
-        {list.map(s => (
-          <div key={s.id} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 0', borderBottom: '1px solid var(--border)',
-            opacity: s.active ? 1 : 0.5,
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                {s.role ? `${s.role} · ` : ''}{s.phone || '연락처 없음'}
-              </div>
-            </div>
-            <button onClick={() => toggle(s)} style={st.btnGhost}>
-              {s.active ? '비활성' : '활성'}
-            </button>
-            {s.active && (
-              <button onClick={() => remove(s)} style={{ ...st.btnGhost, color: 'var(--danger)' }}>
-                <Icon name="trash2" size={12} />
-              </button>
-            )}
+      {/* 검색 + 추가 버튼 나란히 */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <input value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="이름 · 역할 · 연락처 검색"
+            style={{ ...st.input, paddingLeft: 34 }} />
+          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }}>
+            <Icon name="filter" size={14} />
           </div>
-        ))}
-      </Card>
-    </>
+        </div>
+        <button onClick={() => setAdding(v => !v)} style={{
+          ...st.btnPrimary, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          <Icon name={adding ? 'close' : 'plus'} size={13} />
+          {adding ? '닫기' : '직원 추가'}
+        </button>
+      </div>
+
+      {/* 접힘 추가 폼 */}
+      {adding && (
+        <div style={st.sectionCard}>
+          <div style={st.sectionCardHeader}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name="plus" size={14} />
+              <span>새 직원</span>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, padding: 16 }}>
+            <TrendyField label="이름"   required value={name}  onChange={setName}  placeholder="이름" />
+            <TrendyField label="역할"            value={role}  onChange={setRole}  placeholder="영업 / 사무 / 배차 ..." />
+            <TrendyField label="연락처"          value={phone} onChange={setPhone} placeholder="010-..." />
+          </div>
+          <div style={{ padding: '0 16px 16px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <button onClick={() => { setAdding(false); setName(''); setRole(''); setPhone(''); }}
+              style={st.btnGhost}>취소</button>
+            <button onClick={add} disabled={busy || !name.trim()} style={st.btnPrimary}>
+              {busy ? '...' : '추가'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 직원 카드 리스트 */}
+      {filtered.length === 0 && (
+        <div style={st.muted}>
+          {list.length === 0 ? '아직 등록된 직원이 없습니다.' : '검색 결과가 없습니다.'}
+        </div>
+      )}
+      {filtered.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 8 }}>
+          {filtered.map(s => <StaffCard key={s.id} s={s} onToggle={() => toggle(s)} onRemove={() => remove(s)} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 아바타 이니셜 색상 — 이름 해시로 6가지 팔레트 배정 (직원 간 시각 구분).
+const AVATAR_PALETTE = ['#5B7CFF', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+function avatarColor(name) {
+  let h = 0;
+  for (const ch of name || '') h = (h * 31 + ch.charCodeAt(0)) | 0;
+  return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
+}
+function initials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2);
+  return (parts[0][0] || '') + (parts[parts.length - 1][0] || '');
+}
+
+function StaffCard({ s, onToggle, onRemove }) {
+  const color = avatarColor(s.name);
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 12, padding: 14,
+      display: 'flex', alignItems: 'center', gap: 12,
+      opacity: s.active ? 1 : 0.55,
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: '50%',
+        background: color, color: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 700, fontSize: 14, flexShrink: 0,
+        letterSpacing: '-0.02em',
+      }}>{initials(s.name)}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{s.name}</span>
+          {s.role && (
+            <span style={{
+              fontSize: 10, padding: '2px 6px', borderRadius: 4,
+              background: 'var(--surface-2)', color: 'var(--text-2)', fontWeight: 600,
+            }}>{s.role}</span>
+          )}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+          {s.phone || '연락처 없음'}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+        <button onClick={onToggle} style={{ ...st.btnGhost, padding: '6px 10px' }} title={s.active ? '비활성화' : '활성화'}>
+          {s.active ? '비활성' : '활성'}
+        </button>
+        {s.active && (
+          <button onClick={onRemove} style={{ ...st.btnGhost, padding: '6px 8px', color: 'var(--danger)' }} title="삭제">
+            <Icon name="trash2" size={12} />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -692,25 +856,87 @@ function SubTab({ sub, onChange }) {
   }
 
   if (!sub) return <div style={st.muted}>로딩...</div>;
+
+  const daysLeft = sub.expires_at
+    ? Math.max(0, Math.ceil((new Date(sub.expires_at).getTime() - Date.now()) / 86400_000))
+    : null;
+
   return (
-    <Card title="법인운행 리포트 구독">
-      <div style={{ fontSize: 13, marginBottom: 12 }}>
-        상태: <b style={{ color: sub.active ? 'var(--accent)' : 'var(--text-3)' }}>
-          {sub.active ? '활성' : '비활성'}
-        </b>
-        {sub.expires_at && (
-          <span style={{ color: 'var(--text-2)' }}>
-            {' '}— {new Date(sub.expires_at).toLocaleDateString('ko-KR')} 까지
-          </span>
-        )}
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* 상태 요약 카드 — 큰 뱃지 + 만료일 + 남은 일수 */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 14, padding: 20, display: 'flex', gap: 16, alignItems: 'center',
+      }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: 12,
+          background: sub.active
+            ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
+            : 'var(--surface-2)',
+          color: sub.active ? 'var(--accent)' : 'var(--text-3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Icon name={sub.active ? 'coin' : 'warn'} size={22} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>
+            법인운행 리포트 구독
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>
+            {sub.active
+              ? <>활성 · <b>{new Date(sub.expires_at).toLocaleDateString('ko-KR')}</b> 까지
+                  {daysLeft != null && <span style={{ color: daysLeft <= 7 ? 'var(--warning)' : 'var(--text-3)' }}> ({daysLeft}일 남음)</span>}</>
+              : '비활성 — 결제하면 30일 이용 가능'}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.02em' }}>
+            {sub.price_krw.toLocaleString()}<span style={{ fontSize: 13, color: 'var(--text-3)', marginLeft: 2 }}>원 / 30일</span>
+          </div>
+        </div>
       </div>
-      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 12 }}>
-        월 {sub.price_krw.toLocaleString()}원 · 30일 추가 (기존 만료일 + 30일)
-      </div>
-      <button onClick={buy} disabled={busy} style={st.btnPrimary}>
+
+      {/* 결제 액션 */}
+      <button onClick={buy} disabled={busy} style={{
+        ...st.btnPrimary, padding: '14px 20px', fontSize: 14, alignSelf: 'flex-start',
+      }}>
         {busy ? '...' : (sub.active ? '30일 추가 결제' : '구독 시작')}
       </button>
-    </Card>
+
+      {/* 안내 — 구독으로 이용 가능한 기능 목록 */}
+      <div style={st.sectionCard}>
+        <div style={st.sectionCardHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name="info" size={14} />
+            <span>구독으로 이용 가능한 기능</span>
+          </div>
+        </div>
+        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[
+            { icon: 'route',  title: '운행 리포트',     desc: '기간별 · 차량별 운행 목록 조회 · 용무 / 운전자 / 유류 주석' },
+            { icon: 'bar',    title: '월간 리포트',     desc: '업무 / 개인 자동 분리 · 유류비 자동 추정 · 차량별 stacked bar' },
+            { icon: 'share',  title: 'PDF / 엑셀 출력', desc: '국세청 별지 제73호 서식 헤더 · 인쇄 최적화 (Stage-4B 서버 PDF 준비 중)' },
+            { icon: 'user',   title: '직원 관리',       desc: '운전자 후보 등록 · 운행별 배정 · 활성/비활성 토글' },
+          ].map(f => (
+            <div key={f.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8,
+                background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                color: 'var(--primary)', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon name={f.icon} size={14} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{f.title}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>{f.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1127,6 +1353,17 @@ const st = {
   cardTitle: {
     fontWeight: 700, fontSize: 11, color: 'var(--text-2)',
     textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8,
+  },
+  // (2026-07-28) 트렌디 리팩터 — 넓은 카드 + 헤더 (Staff/Info tab 등 재사용)
+  sectionCard: {
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: 14, overflow: 'hidden',
+  },
+  sectionCardHeader: {
+    padding: '12px 16px', borderBottom: '1px solid var(--border)',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    fontSize: 13, fontWeight: 700, color: 'var(--text)',
+    background: 'var(--surface-2)',
   },
   input: {
     display: 'block', width: '100%', padding: '8px 10px',
