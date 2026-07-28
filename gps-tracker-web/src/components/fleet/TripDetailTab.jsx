@@ -14,11 +14,16 @@ const SPEED_ANOMALY_KMH = 200;
 // waypoint 클릭 가능한 dot 을 얼마나 촘촘히 표시할지 — 100개 하드 캡.
 const MAX_WAYPOINTS = 120;
 
+const SPEEDS = [1, 2, 4, 8];   // 재생 속도 배율
+
 export default function TripDetailTab({ deviceId, trip, mapRef }) {
   const [points, setPoints] = useState(null);   // ASC 정렬 fix 배열
   const [error, setError] = useState(null);
   const [activeIdx, setActiveIdx] = useState(null);
+  const [playing, setPlaying]     = useState(false);
+  const [speedX,  setSpeedX]      = useState(2);   // 기본 2배속
   const rowRefs = useRef({});
+  const playTimerRef = useRef(null);
 
   // trip 변경 시 fixes fetch.
   useEffect(() => {
@@ -93,6 +98,56 @@ export default function TripDetailTab({ deviceId, trip, mapRef }) {
     mapRef?.current?.panTo?.(sample.lat, sample.lng);
   }
 
+  // (F4-d) 재생 컨트롤 — samples 순차 pan.
+  // 각 sample 사이의 실제 시간 gap 을 speedX 로 나눠 정확한 timing 재현.
+  useEffect(() => {
+    if (!playing || samples.length === 0) return;
+    let cancelled = false;
+    // activeIdx 가 null 이면 첫 sample 부터.
+    let curSampleIdx = Math.max(0, samples.findIndex(s => s._srcIdx === activeIdx));
+    if (curSampleIdx < 0) curSampleIdx = 0;
+
+    const step = () => {
+      if (cancelled) return;
+      if (curSampleIdx >= samples.length - 1) {
+        setPlaying(false);
+        return;
+      }
+      const cur  = samples[curSampleIdx];
+      const next = samples[curSampleIdx + 1];
+      const dtMs = Math.max(50, Math.min(3000,
+        (new Date(next.recorded_at) - new Date(cur.recorded_at)) / speedX));
+      playTimerRef.current = setTimeout(() => {
+        if (cancelled) return;
+        curSampleIdx += 1;
+        const s = samples[curSampleIdx];
+        setActiveIdx(s._srcIdx);
+        mapRef?.current?.panTo?.(s.lat, s.lng, { instant: false });
+        step();
+      }, dtMs);
+    };
+    step();
+    return () => { cancelled = true; if (playTimerRef.current) clearTimeout(playTimerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, speedX, samples]);
+
+  // trip 바뀌면 정지.
+  useEffect(() => { setPlaying(false); setActiveIdx(null); }, [trip?.started_at]);
+
+  // 활성 row 스크롤 into view.
+  useEffect(() => {
+    if (activeIdx == null) return;
+    const el = rowRefs.current[activeIdx];
+    el?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, [activeIdx]);
+
+  function scrubTo(sampleIdx) {
+    const s = samples[sampleIdx];
+    if (!s) return;
+    setActiveIdx(s._srcIdx);
+    mapRef?.current?.panTo?.(s.lat, s.lng, { instant: true });
+  }
+
   if (!trip) return null;
   if (error) return <div style={{ padding: 'var(--space-4)', color: 'var(--danger)', fontSize: 12 }}>{error}</div>;
   if (!points) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>운행 좌표 로딩...</div>;
@@ -124,6 +179,92 @@ export default function TripDetailTab({ deviceId, trip, mapRef }) {
                 (원본 {enriched.length})
               </span>
             )}
+          </div>
+          {/* (F4-d) 출발/도착 주소 + 운전자 — trip 메타에서 */}
+          {(trip.start_address || trip.end_address || trip.annotation?.driver_name) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4,
+                paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11 }}>
+              {trip.annotation?.driver_name && (
+                <div style={{ display: 'flex', gap: 6, color: 'var(--text-2)' }}>
+                  <Icon name="user" size={11} style={{ color: 'var(--text-3)' }} />
+                  <span>{trip.annotation.driver_name}</span>
+                </div>
+              )}
+              {trip.start_address && (
+                <div style={{ display: 'flex', gap: 6, color: 'var(--text-2)' }}>
+                  <span style={{ color: 'var(--accent)', fontWeight: 700 }}>출발</span>
+                  <span style={{ minWidth: 0, overflow: 'hidden',
+                    textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{trip.start_address}</span>
+                </div>
+              )}
+              {trip.end_address && (
+                <div style={{ display: 'flex', gap: 6, color: 'var(--text-2)' }}>
+                  <span style={{ color: 'var(--danger)', fontWeight: 700 }}>도착</span>
+                  <span style={{ minWidth: 0, overflow: 'hidden',
+                    textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{trip.end_address}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* (F4-d) 재생 컨트롤 */}
+      {samples.length > 1 && (
+        <div style={{
+          padding: 'var(--space-2) var(--space-3)',
+          background: 'var(--surface-2)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <button onClick={() => setPlaying(p => !p)}
+              style={{
+                width: 32, height: 32, borderRadius: '50%', border: 'none',
+                background: playing ? 'var(--danger)' : 'var(--primary)',
+                color: 'var(--primary-fg)', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, fontWeight: 800,
+              }}
+              aria-label={playing ? '일시정지' : '재생'}>
+              <Icon name={playing ? 'pause' : 'play'} size={13} />
+            </button>
+            <div style={{ display: 'flex', gap: 3, marginLeft: 'auto' }}>
+              {SPEEDS.map(x => (
+                <button key={x} onClick={() => setSpeedX(x)}
+                  style={{
+                    padding: '3px 8px', border: 'none', borderRadius: 'var(--radius-xs)',
+                    background: speedX === x ? 'var(--primary)' : 'var(--surface)',
+                    color: speedX === x ? 'var(--primary-fg)' : 'var(--text-2)',
+                    fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                  }}>{x}x</button>
+              ))}
+            </div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={samples.length - 1}
+            value={(() => {
+              const i = samples.findIndex(s => s._srcIdx === activeIdx);
+              return i < 0 ? 0 : i;
+            })()}
+            onChange={e => scrubTo(Number(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--primary)' }}
+          />
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            fontSize: 10, color: 'var(--text-3)', fontFamily: 'ui-monospace, monospace',
+          }}>
+            <span>
+              {activeIdx != null && enriched[activeIdx]
+                ? new Date(enriched[activeIdx].recorded_at).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
+                : (samples[0] && new Date(samples[0].recorded_at).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' }))}
+            </span>
+            <span>
+              {totals?.endedAt && new Date(totals.endedAt).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })}
+            </span>
           </div>
         </div>
       )}
