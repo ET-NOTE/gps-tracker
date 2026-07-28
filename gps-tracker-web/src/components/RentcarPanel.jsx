@@ -614,7 +614,7 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
         </div>
 
         {/* 차량 + 상태 */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="차량">
             <select value={deviceId} onChange={e => setDeviceId(e.target.value)} style={st.input}>
               {(devices || []).map(d => (
@@ -637,7 +637,7 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
         <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           임차인 (PIPA 최소화)
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="이름 *"><input value={renterName} onChange={e => setRenterName(e.target.value)} style={st.input} /></Labeled>
           <Labeled label="연락처"><input value={renterPhone} onChange={e => setRenterPhone(e.target.value)} placeholder="010-..." style={st.input} /></Labeled>
           <Labeled label="신분증 뒤 4자리"><input value={idLast4} maxLength={4} onChange={e => setIdLast4(e.target.value.replace(/\D/g, ''))} placeholder="1234" style={st.input} /></Labeled>
@@ -668,7 +668,7 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
         )}
 
         {/* 기간 + 인수 오도미터 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="시작"><input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={st.input} /></Labeled>
           <Labeled label="종료"><input type="datetime-local" value={endsAt}   onChange={e => setEndsAt(e.target.value)}   style={st.input} /></Labeled>
           <Labeled label="인수 오도미터 (km)"><input type="number" value={pickupOd} onChange={e => setPickupOd(e.target.value)} style={st.input} /></Labeled>
@@ -678,7 +678,7 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
         <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           요금
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="요금 단위">
             <select value={rateType} onChange={e => setRateType(e.target.value)} style={st.input}>
               {Object.entries(RATE_TYPE_LABEL).map(([id, label]) => <option key={id} value={id}>{label} 당</option>)}
@@ -699,7 +699,7 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
         </div>
 
         {/* 위치 + 메모 */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="인수 장소"><input value={pickupLoc} onChange={e => setPickupLoc(e.target.value)} style={st.input} /></Labeled>
           <Labeled label="반납 장소"><input value={returnLoc} onChange={e => setReturnLoc(e.target.value)} style={st.input} /></Labeled>
         </div>
@@ -760,7 +760,7 @@ function ReturnDialog({ contract, onClose, onDone }) {
           {contract.license_plate || contract.device_name} · {contract.renter_name}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="실제 반납 시각">
             <input type="datetime-local" value={returnedAt}
               onChange={e => setReturnedAt(e.target.value)} style={st.input} />
@@ -773,7 +773,7 @@ function ReturnDialog({ contract, onClose, onDone }) {
         <Labeled label="반납 장소">
           <input value={location} onChange={e => setLocation(e.target.value)} style={st.input} />
         </Labeled>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="기타 요금 사유 (세차·파손·연료 등)">
             <input value={extraLabel} onChange={e => setExtraLabel(e.target.value)}
               placeholder="예: 세차비" style={st.input} />
@@ -1282,17 +1282,19 @@ const st = {
   },
   modalBackdrop: {
     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8,
   },
   modal: {
-    background: 'var(--surface)', borderRadius: 14, padding: 20,
-    width: '100%', maxWidth: 420, maxHeight: '90vh', overflowY: 'auto',
-    display: 'flex', flexDirection: 'column', gap: 12,
+    background: 'var(--surface)', borderRadius: 14, padding: 16,
+    width: '100%', maxWidth: 420, maxHeight: '92vh', overflowY: 'auto',
+    display: 'flex', flexDirection: 'column', gap: 10,
+    boxSizing: 'border-box',
   },
   modalWide: {
-    background: 'var(--surface)', borderRadius: 14, padding: 20,
-    width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto',
-    display: 'flex', flexDirection: 'column', gap: 12,
+    background: 'var(--surface)', borderRadius: 14, padding: 16,
+    width: '100%', maxWidth: 640, maxHeight: '92vh', overflowY: 'auto',
+    display: 'flex', flexDirection: 'column', gap: 10,
+    boxSizing: 'border-box',
   },
 };
 
@@ -1601,7 +1603,7 @@ function RenterDetailModal({ phone, onClose, onBlacklistChanged }) {
         {!data && !error && <div style={st.muted}>로딩 중...</div>}
         {s && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 8 }}>
               <MiniStat label="이용" value={s.contracts_count} />
               <MiniStat label="반납" value={s.returned_count} />
               <MiniStat label="연체" value={s.overdue_count} tone={s.overdue_count > 0 ? 'danger' : 'default'} />
