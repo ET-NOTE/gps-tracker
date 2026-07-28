@@ -9,12 +9,13 @@
 //  · 이번달 임대 매출  = 0 (매출 데이터 없음)
 // 임대 계약 실 도입 시 useFleetStats 확장 or 별도 hook.
 
-import { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Icon from './Icon';
 import { api } from '../api';
 import { alertDialog, confirmDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
+import { panelPropsEqual } from './shared/memoPanel';
 import { Modal, FormField, Button, Pill, SkeletonList } from './ui';
 import {
   useRentals, useCreateRental, useUpdateRental, useReturnRental, useDeleteRental,
@@ -24,7 +25,7 @@ import {
 } from '../state';
 import { useQueryClient } from '@tanstack/react-query';
 
-export default function RentcarPanel({ devices }) {
+function RentcarPanel({ devices }) {
   const [tab, setTab] = useState(() => localStorage.getItem('rentcar_tab') || 'fleet');
   const setTabPersist = (t) => { setTab(t); try { localStorage.setItem('rentcar_tab', t); } catch {} };
 
@@ -65,6 +66,9 @@ export default function RentcarPanel({ devices }) {
     </div>
   );
 }
+
+// (F3) devices lat/lng 만 바뀌면 재렌더 skip — WS location fix 폭주 대응.
+export default React.memo(RentcarPanel, panelPropsEqual);
 
 // ═══════════════════════════════════════════════════════
 // (2026-07-28 Stage-R2) 반납 캘린더 — 월 그리드에 계약 표시.

@@ -944,10 +944,26 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // fingerprint: 첫/마지막 timestamp + 개수. 좌표 집합이 실제로 변했는지 판단.
       const fp = points.length === 0 ? '' :
         `${points.length}|${points[0]?.recorded_at || ''}|${points[points.length-1]?.recorded_at || ''}`;
+      // (F3-a-3) 옵션 signature — 색상/토글이 이전과 완전 동일하면 rebuild 자체 skip.
+      // 이전엔 옵션 변화 없어도 clearSeekerPath + 전체 재생성이 항상 일어났음.
+      const optsSig = `${color}|${speedColor}|${timeColor}|${showStops}|${showCursor}|${maxMarkers}|${stopMergeRadiusM}|${minBucketRun}|${timeSegments}`;
+      if (refit !== true && seekerRef.current._fp === fp && seekerRef.current._optsSig === optsSig && seekerRef.current.poly.length > 0) {
+        // 완전 동일 — 기존 marker/poly 재사용, cursor helper 만 반환.
+        const cachedPts = seekerRef.current._pts || [];
+        return {
+          setCursor(idx) {
+            const c = seekerRef.current.cursor;
+            const p = cachedPts[idx];
+            if (!c || !p) return;
+            c.setPosition(new window.kakao.maps.LatLng(p.lat, p.lng));
+          },
+        };
+      }
       const shouldRefit = refit === true
         || (refit !== false && seekerRef.current._fp !== fp);
       this.clearSeekerPath();
       seekerRef.current._fp = fp;
+      seekerRef.current._optsSig = optsSig;
 
       // 호출자에 따라 server DESC 순서로 그대로 넘어올 수 있음 (MiniSeekerOverlay) → 화살표 방향 역전.
       // 여기서 recorded_at ASC 로 강제 정렬 (이미 ASC 면 빠르게 통과). 모든 호출자에 안전.
@@ -1148,6 +1164,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           mapRef.current.setCenter(new window.kakao.maps.LatLng(pts[0].lat, pts[0].lng));
         }
       }
+
+      // (F3-a-3) 다음 호출에서 fp/opts 동일 시 skip path 가 쓸 수 있도록 pts 캐시.
+      seekerRef.current._pts = pts;
 
       return {
         setCursor(idx) {

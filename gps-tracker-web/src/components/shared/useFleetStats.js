@@ -5,7 +5,7 @@
 // 반환: { totalCount, activeCount, todayKm, monthKm, loading, error }
 // KST 기준 (한국 사업자 환경 기본).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api';
 
 function kstDateStr(d = new Date()) {
@@ -22,6 +22,15 @@ export function useFleetStats(devices) {
     totalCount: 0, activeCount: 0, todayKm: 0, monthKm: 0,
     loading: false, error: null,
   });
+
+  // (F3) devices 배열의 실제 관심 필드 (id + wake 여부) 만 뽑아 stable key 로.
+  // 이전엔 devices 배열 identity 만 봐서 WS location fix 마다 array 새로 만들어지면
+  // 매번 100대 listTrips N+1 발생. 이제 id/wake 변경 시에만 재fetch.
+  const depsKey = useMemo(() => {
+    if (!devices || devices.length === 0) return '';
+    return devices.map(d => `${d.id}:${d.last_event_kind === 'wake' ? 1 : 0}`).join(',');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [devices]);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +75,8 @@ export function useFleetStats(devices) {
     });
 
     return () => { cancelled = true; };
-  }, [devices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [depsKey]);
 
   return state;
 }

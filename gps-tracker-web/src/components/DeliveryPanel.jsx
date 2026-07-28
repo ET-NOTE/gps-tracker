@@ -8,12 +8,13 @@
 //  · 오늘 주행거리   = 병렬 listTrips 로 오늘 km
 // delivery_orders 도입 시 (Stage-3) 배송 건수/완료율 등 실 지표로 대체.
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Icon from './Icon';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
+import { panelPropsEqual } from './shared/memoPanel';
 
-export default function DeliveryPanel({ devices }) {
+function DeliveryPanel({ devices }) {
   const [tab, setTab] = useState(() => localStorage.getItem('delivery_tab') || 'today');
   const setTabPersist = (t) => { setTab(t); try { localStorage.setItem('delivery_tab', t); } catch {} };
 
@@ -54,6 +55,9 @@ export default function DeliveryPanel({ devices }) {
     </div>
   );
 }
+
+// (F3) devices lat/lng 만 변경 시 재렌더 skip.
+export default React.memo(DeliveryPanel, panelPropsEqual);
 
 function TodayTab({ devices }) {
   const s = useFleetStats(devices);
