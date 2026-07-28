@@ -204,7 +204,14 @@ struct TripQuery {
     // (2026-07-28) dev only — 좌표 전무 (wake/sleep 페어링 실패 & 거리 0) trip 도 반환.
     // 유저 뷰에서는 기본 hidden. 진단용.
     include_no_coord: Option<bool>,
+    // (2026-07-28) 인접 trip 병합 임계값 (분). 기본 10.
+    // 하드웨어의 spurious sleep→wake 반복 (fw sleep timeout 5min 이하) 노이즈를 하나로 합침.
+    // 실제 휴게소 (짧은 정차) 도 병합되어 사용자가 원하는 "한 번의 주행" 뷰가 됨.
+    // 0 지정 시 병합 비활성 (dev/디버그).
+    merge_gap_min: Option<i64>,
 }
+
+const DEFAULT_MERGE_GAP_MIN: i64 = 10;
 
 #[derive(Debug, Serialize)]
 struct Trip {
@@ -242,7 +249,8 @@ async fn list_trips(
 ) -> AppResult<Json<Vec<Trip>>> {
     verify_device_owner(&state, user.user_id, device_id).await?;
     let (from, to) = parse_range(&q)?;
-    let mut trips = compute_trips_inner(&state, user.user_id, device_id, from, to).await?;
+    let merge_min = q.merge_gap_min.unwrap_or(DEFAULT_MERGE_GAP_MIN).max(0);
+    let mut trips = compute_trips_inner_ex(&state, user.user_id, device_id, from, to, merge_min).await?;
     if !q.include_no_coord.unwrap_or(false) {
         trips.retain(|t| t.start_lat.is_some() || t.end_lat.is_some());
     }
@@ -257,6 +265,17 @@ async fn compute_trips_inner(
     device_id: i64,
     from: DateTime<Utc>,
     to:   DateTime<Utc>,
+) -> AppResult<Vec<Trip>> {
+    compute_trips_inner_ex(state, user_id, device_id, from, to, DEFAULT_MERGE_GAP_MIN).await
+}
+
+async fn compute_trips_inner_ex(
+    state: &AppState,
+    user_id: i64,
+    device_id: i64,
+    from: DateTime<Utc>,
+    to:   DateTime<Utc>,
+    merge_gap_min: i64,
 ) -> AppResult<Vec<Trip>> {
     // 1) wake/sleep_enter 페어링으로 trip 경계 산출 — user_id 격리
     let events: Vec<(String, DateTime<Utc>, Option<serde_json::Value>)> = sqlx::query_as(
@@ -275,6 +294,14 @@ async fn compute_trips_inner(
     // 2) sleep/wake 이벤트가 0건 → motion-based fallback
     if trips.is_empty() {
         trips = motion_based_trips(&state.db, device_id, user_id, from, to).await?;
+    }
+
+    // 2a) (2026-07-28) 인접 trip 병합 — hardware spurious sleep→wake 노이즈 정리.
+    //     gap ≤ merge_gap_min 인 인접 sub-trip 을 하나로 합침. 짧은 휴게소 정차 (< N min) 도
+    //     자동으로 하나의 trip 안에 흡수됨. 병합 후 endpoint / distance / annotations 는
+    //     아래 단계들이 병합된 시간창 기준으로 다시 계산하므로 자연스럽게 이어짐.
+    if merge_gap_min > 0 && trips.len() >= 2 {
+        trips = merge_short_gaps(trips, merge_gap_min);
     }
 
     // 3) trip endpoints
@@ -366,6 +393,37 @@ async fn compute_trips_inner(
 //   - 파싱 가능
 //   - 운행 시작(wake) 보다 늦음
 //   - occurred_at 보다 미래 30초 이상 X (clock skew 한계)
+// (2026-07-28) 인접 trip 병합 — gap ≤ threshold(min) 이면 두 trip 을 하나로 이음.
+//
+// 왜 필요한가: firmware sleep timeout 이 5분인데 하드웨어 spurious sleep→wake 가 반복되면
+// 실제 한 번의 주행이 10~15개의 짧은 trip 으로 파편화됨. 익산→강남 같은 장거리 주행이
+// UI 에서 15줄로 흩어지고, "휴게소 한 번 들림" 같은 정상 정차마저도 여러 조각으로 나뉨.
+//
+// 정책: 이전 trip 의 end 와 이번 trip 의 start 간 시간차 ≤ threshold 분 → 병합.
+// 병합된 trip 의 end = 이번 trip 의 end. 나머지 (endpoint, distance) 는 caller 에서
+// 병합된 시간창 기준으로 다시 계산되므로 자연스럽게 이어짐.
+//
+// end 가 None (마지막 미종료 trip) 인 케이스는 병합 대상에서 제외.
+fn merge_short_gaps(
+    trips: Vec<(DateTime<Utc>, Option<DateTime<Utc>>)>,
+    threshold_min: i64,
+) -> Vec<(DateTime<Utc>, Option<DateTime<Utc>>)> {
+    let mut out: Vec<(DateTime<Utc>, Option<DateTime<Utc>>)> = Vec::with_capacity(trips.len());
+    for (start, end) in trips {
+        if let Some(last) = out.last_mut() {
+            if let Some(prev_end) = last.1 {
+                let gap = (start - prev_end).num_minutes();
+                if gap >= 0 && gap <= threshold_min {
+                    last.1 = end;   // 병합 — end 를 이번 trip 의 end 로 확장
+                    continue;
+                }
+            }
+        }
+        out.push((start, end));
+    }
+    out
+}
+
 // 무효 / 미제공 → occurred_at 사용 (구버전 펌웨어 호환).
 fn pair_trips(events: &[(String, DateTime<Utc>, Option<serde_json::Value>)])
     -> Vec<(DateTime<Utc>, Option<DateTime<Utc>>)>
