@@ -11,6 +11,10 @@ pub struct Config {
     pub fcm_server_key: Option<String>,        // legacy server-key path (unused, kept for env compat)
     pub fcm_service_account_path: Option<String>,  // FCM v1: path to service-account JSON
     pub cors_allowed_origins: Vec<String>,
+    /// (2026-07-29) 스마트폰을 tracker device 로 페어링 허용 여부.
+    /// false 시: pair endpoint 가 kind='phone' 거부. 이미 등록된 phone device 는 계속 동작.
+    /// env PHONE_TRACKER_ENABLED=true|false (기본 true).
+    pub phone_tracker_enabled: bool,
 }
 
 impl Config {
@@ -39,6 +43,10 @@ impl Config {
             fcm_server_key: env::var("FCM_SERVER_KEY").ok().filter(|s| !s.is_empty()),
             fcm_service_account_path: env::var("FCM_SERVICE_ACCOUNT_PATH").ok().filter(|s| !s.is_empty()),
             cors_allowed_origins,
+            phone_tracker_enabled: env::var("PHONE_TRACKER_ENABLED")
+                .ok()
+                .map(|s| !matches!(s.to_lowercase().as_str(), "false" | "0" | "no" | "off"))
+                .unwrap_or(true),
         })
     }
 }

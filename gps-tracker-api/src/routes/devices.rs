@@ -64,6 +64,9 @@ pub struct DeviceView {
     // (2026-07-28) Stage-4C-1: 차량 관리 (사용가능 toggle + 메모). migration 0046.
     pub enabled:            Option<bool>,   // NOT NULL DEFAULT TRUE — Option 은 sqlx bind 편의
     pub note:               Option<String>,
+    // (2026-07-29) 'hardware' | 'phone' — 스마트폰 tracker device 구분.
+    // FE 는 phone 이면 배터리 mV / 안테나 / 부저 등 하드웨어 필드 숨김.
+    pub device_kind:        Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -92,6 +95,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/devices", get(list))
         .route("/devices/pair", post(pair))
+        .route("/devices/pair-phone", post(pair_phone))
         .route("/devices/:id", get(detail).patch(update).delete(unpair))
         .route("/devices/:id/wipe", post(wipe))                  // 데이터 완전 삭제
         .route("/devices/:id/audit", get(audit_log))             // 감사 로그
@@ -189,6 +193,7 @@ async fn list(
                   d.purchase_price_krw, d.acquired_at,
                   d.department, d.vehicle_type,
                   d.enabled, d.note,
+                  d.device_kind,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
@@ -336,6 +341,65 @@ async fn pair(
             .bind(&req.display_name)
             .fetch_one(&state.db)
             .await?
+        }
+    };
+
+    fetch_device(&state, device_id, user.user_id).await
+}
+
+// (2026-07-29) 스마트폰 tracker device 페어링 — 연구소 토글에서 호출.
+//   feature flag: PHONE_TRACKER_ENABLED=false 면 503 (사용자에게 "관리자가 비활성화" 안내).
+//   기존 (user, kind='phone') 페어링 있으면 재사용 (idempotent), 없으면 신설.
+//   device_uid = "phone-{user_id}-{random}" — 앱 재설치 시 새 device 로 생성됨.
+#[derive(Debug, Deserialize)]
+pub struct PairPhoneRequest {
+    /// 앱이 client-side 로 생성한 UUID (Keychain/EncryptedSharedPreferences 저장).
+    /// 재설치 시 새 UUID → 새 device row. 사용자가 이전 phone device 는 unpair.
+    pub client_uuid: String,
+    /// 사용자에게 보일 별명. 기본 "내 스마트폰".
+    pub display_name: Option<String>,
+    /// 앱 platform — 향후 진단용. 'ios' | 'android' | 'web'
+    pub platform: Option<String>,
+}
+
+async fn pair_phone(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<PairPhoneRequest>,
+) -> AppResult<Json<DeviceView>> {
+    if !state.config.phone_tracker_enabled {
+        return Err(AppError::BadRequest("phone tracker disabled by admin".into()));
+    }
+    if req.client_uuid.is_empty() || req.client_uuid.len() > 64 {
+        return Err(AppError::BadRequest("invalid client_uuid".into()));
+    }
+    let uid = format!("phone-{}-{}", user.user_id, req.client_uuid);
+    let display_name = req.display_name.filter(|s| !s.is_empty()).unwrap_or_else(|| "내 스마트폰".to_string());
+
+    // 기존 (user, uid) 있으면 재사용 (idempotent) — 별명·platform 만 갱신.
+    let existing: Option<i64> = sqlx::query_scalar(
+        "SELECT id FROM devices WHERE device_uid = $1 AND owner_id = $2 AND device_kind = 'phone'",
+    )
+    .bind(&uid).bind(user.user_id)
+    .fetch_optional(&state.db).await?;
+
+    let device_id: i64 = match existing {
+        Some(id) => {
+            sqlx::query("UPDATE devices SET display_name = $1 WHERE id = $2")
+                .bind(&display_name).bind(id).execute(&state.db).await?;
+            id
+        }
+        None => {
+            let id: i64 = sqlx::query_scalar(
+                r#"INSERT INTO devices (device_uid, owner_id, api_key_hash, display_name, paired_at, device_kind)
+                   VALUES ($1, $2, '', $3, now(), 'phone')
+                   RETURNING id"#,
+            )
+            .bind(&uid).bind(user.user_id).bind(&display_name)
+            .fetch_one(&state.db).await?;
+            log_audit(&state, id, "pair", user.user_id,
+                json!({"via": "phone", "platform": req.platform})).await;
+            id
         }
     };
 
@@ -1090,6 +1154,7 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   d.purchase_price_krw, d.acquired_at,
                   d.department, d.vehicle_type,
                   d.enabled, d.note,
+                  d.device_kind,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,

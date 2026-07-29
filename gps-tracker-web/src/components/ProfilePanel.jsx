@@ -10,6 +10,7 @@ import ChatPanel from './ChatPanel';
 import NotificationSettings from './NotificationSettings';
 import { currentTheme, toggleTheme } from '../theme';
 import { confirmDialog, alertDialog, promptDialog } from './Dialog';
+import { startPhoneTracker, stopPhoneTracker } from '../lib/phoneTracker';
 
 function initialProfileTab() {
   if (typeof window === 'undefined') return 'account';
@@ -1079,6 +1080,36 @@ function LabTab() {
     }
   }
 
+  // (2026-07-29) 스마트폰 tracker 토글 — ON 시 위치 권한 획득 + device 자동 등록.
+  //   실패 시 pref 롤백 + 이유 안내. OFF 시 위치 tracking 중단만 (device 는 유지).
+  async function handleTogglePhoneTracker(next) {
+    if (busy) return;
+    if (next) {
+      setBusy(true);
+      try {
+        const device = await startPhoneTracker();
+        await api.patchMyPrefs({ lab_phone_tracker: true });
+        setPrefs(p => ({ ...p, lab_phone_tracker: true }));
+        await alertDialog({
+          title: '스마트폰 tracker 활성',
+          body: `등록된 device: ${device.display_name || device.device_uid}\n\n홈 탭에서 확인할 수 있습니다. 브라우저 탭이 열려 있는 동안 위치 전송됩니다.`,
+          tone: 'success',
+        });
+      } catch (e) {
+        stopPhoneTracker();
+        let msg = e.message || '알 수 없는 오류';
+        if (e.code === 1) msg = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해 주세요.';
+        else if (e.code === 2) msg = '현재 위치를 확인할 수 없습니다 (GPS · Wi-Fi 확인).';
+        else if (e.code === 3) msg = '위치 확인 시간 초과.';
+        await alertDialog({ title: '활성 실패', body: msg, tone: 'danger' });
+      } finally { setBusy(false); }
+    } else {
+      // OFF — 위치 tracking 중단만. device 는 유지.
+      stopPhoneTracker();
+      await togglePref('lab_phone_tracker', false);
+    }
+  }
+
   if (!prefs) return <Card><div style={{ fontSize: 12, color: 'var(--text-3)' }}>로딩...</div></Card>;
 
   return (
@@ -1113,6 +1144,20 @@ function LabTab() {
           }
           on={!!prefs.lab_cycle_seeker}
           onChange={(v) => togglePref('lab_cycle_seeker', v)}
+          busy={busy}
+        />
+
+        <LabToggleRow
+          label="📱 스마트폰을 tracker 로 사용"
+          desc={
+            <>
+              위치 권한을 획득하고 스마트폰을 하나의 단말기로 등록해 지도에 표시.<br />
+              <b>ON</b>: 브라우저 탭이 열린 동안 30초 간격으로 위치 전송. Flutter 앱에선 백그라운드에서도 동작.<br />
+              <b>OFF</b>: 위치 전송 중단 (등록된 device 는 유지 — 홈에서 수동 삭제 가능).
+            </>
+          }
+          on={!!prefs.lab_phone_tracker}
+          onChange={handleTogglePhoneTracker}
           busy={busy}
         />
       </Card>

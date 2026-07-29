@@ -665,6 +665,11 @@ export const api = {
   getRentcarSubscription:    () => req('GET', '/rentcar/subscription'),
   buyRentcarSubscription:    () => req('POST', '/rentcar/subscription'),
 
+  // (2026-07-29) 스마트폰 tracker 페어링 — 연구소 토글에서 호출.
+  // idempotent — 동일 client_uuid 재호출 시 기존 device 재사용.
+  pairPhoneDevice: (client_uuid, display_name, platform) =>
+    req('POST', '/devices/pair-phone', { client_uuid, display_name, platform }),
+
   // 1:1 채팅 (관리자)
   adminChatThreads:      () => req('GET',  '/admin/chat/threads'),
   adminChatMessages:     (threadId, afterId) => {
