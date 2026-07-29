@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import DeviceDiagnosticPanel from '../components/DeviceDiagnosticPanel';
 
 const WINDOWS = [
   { label: '최근 1시간', ms: 1 * 3600 * 1000 },
@@ -13,8 +14,14 @@ const WINDOWS = [
 ];
 
 export default function DiagnosticPage() {
+  // (F8) DeviceDetail 의 "고급 진단" 링크가 ?device=<id> 로 넘어옴.
+  const initialDeviceId = (() => {
+    const raw = new URLSearchParams(window.location.search).get('device');
+    const n = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(n) ? n : null;
+  })();
   const [devices, setDevices] = useState([]);
-  const [deviceId, setDeviceId] = useState(null);
+  const [deviceId, setDeviceId] = useState(initialDeviceId);
   const [windowMs, setWindowMs] = useState(WINDOWS[0].ms);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [taggedOnly, setTaggedOnly] = useState(true);   // build_tag 있는 것만 (= 14_X 진단 세션만)
@@ -25,7 +32,9 @@ export default function DiagnosticPage() {
   const [tsdbStats, setTsdbStats] = useState(null);            // P2: TimescaleDB 운영 지표
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);   // manual refresh trigger
   const pollRef = useRef(null);
+  const refresh = () => setRefreshNonce(n => n + 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +85,7 @@ export default function DiagnosticPage() {
       cancelled = true;
       clearInterval(pollRef.current);
     };
-  }, [deviceId, windowMs, bucketOverride, autoRefresh]);
+  }, [deviceId, windowMs, bucketOverride, autoRefresh, refreshNonce]);
 
   // build_tag 필터 — 켜져있으면 14_* 진단 sketch 이벤트만 (legacy 13_2 prod 이벤트 제외).
   const filteredEvents = useMemo(() => {
@@ -136,6 +145,10 @@ export default function DiagnosticPage() {
         </div>
 
         {error && <div style={errBox}>⚠ {error}</div>}
+
+        {/* (F8) 선택된 단말의 device-scoped 진단 패널 — DeviceDetail 에서 이관.
+             정지 감지 카운트다운 · Lifecycle 재부팅 패턴 · 감사 로그 · 부저·reset 원격 제어. */}
+        {dev && <DeviceDiagnosticPanel device={dev} />}
 
         {/* 24h 테스트: POST 주기 원격 조정 (5~300s). RAM only — reset/wake 시 default 30s 자동 복귀. */}
         {deviceId != null && (
