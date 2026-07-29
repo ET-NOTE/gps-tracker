@@ -27,27 +27,32 @@ function localMidnightMs() {
 }
 
 // (한국 사용자 시간대 기준) 홈 뷰 fetch 창의 since 산출.
-// 당일 fix 있으면 자정부터, 없으면 마지막 wake 이벤트부터 (자정 걸친 운행 carry-over).
 //
-// (2026-07-29) 이전엔 `getDeviceEvents(id, { limit: 50 })` 로 모든 kind 최근 50개
-// 받아서 client 필터. 10일 오래된 단말이 offline/online/signal_loss/geofence_* 등으로
-// 50개 노이즈 이벤트 쌓이면 wake 가 밀려나 못 찾음 → midnightISO fallback → 오늘 fix 0건
-// → 마지막 사이클 fix 안 그려지고 last_lat/lng 마커 1개만 보이는 버그.
-// Fix: 서버 kind 필터로 wake 1건만 요청 (backend F7-d).
+// 정책 (2026-07-29 v2):
+//   - 오늘 fix 있음  → 오늘 KST 자정부터 (당일 전체 사이클)
+//   - 오늘 fix 없음  → 마지막 fix 가 있는 날의 KST 자정부터 (그 날 전체 사이클)
+//
+// 이전 정책 히스토리:
+//   - v1 (원본): 마지막 wake 이벤트부터 → 오래된 단말에서 노이즈 이벤트 50건 초과 시
+//                wake 못 찾아 midnightISO fallback → 마지막 사이클 fix 안 보이던 버그 (PR #193)
+//   - v1.1 (PR #193 fix): 서버 kinds=wake filter 로 wake 1건만 요청 → 대부분 케이스 해결.
+//                          그러나 spurious wake (혼자 fix 1개 남기고 잠든 케이스, ccc 실사례)
+//                          가 진짜 마지막 사이클 뒤에 존재하면 그 spurious wake 시각부터
+//                          fetch → 1 fix 만 보이는 문제 재현.
+//   - v2 (현재): "마지막 활동한 날 통째로" 보여주는 mental model 매칭. wake 이벤트 탐색
+//                자체 폐기 → 노이즈/spurious 이벤트에 영향받지 않음. limit 2000 fix cap 이
+//                하루치엔 충분 (30s 간격 = 2880 fix, 사이클 정지 시간 제외하면 여유).
 export async function computeHomeSinceISO(device) {
   const midnightMs = localMidnightMs();
   const midnightISO = new Date(midnightMs).toISOString();
   const lastFixMs = device?.last_fix_at ? new Date(device.last_fix_at).getTime() : 0;
-  if (lastFixMs >= midnightMs) return midnightISO;
-  try {
-    const events = await api.getDeviceEvents(device.id, { kinds: ['wake'], limit: 1 });
-    if (events && events.length > 0) {
-      return new Date(events[0].occurred_at).toISOString();
-    }
-    return midnightISO;
-  } catch {
-    return midnightISO;
-  }
+  if (!lastFixMs || lastFixMs >= midnightMs) return midnightISO;
+  // 오래된 단말: 마지막 fix 가 있는 그 날의 KST 자정 (UTC 기준).
+  const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(lastFixMs + KST_OFFSET_MS);
+  kstDate.setUTCHours(0, 0, 0, 0);        // KST 자정 (당일)
+  const kstMidnightUtcMs = kstDate.getTime() - KST_OFFSET_MS;
+  return new Date(kstMidnightUtcMs).toISOString();
 }
 
 export function computeGapMap(ordered) {
