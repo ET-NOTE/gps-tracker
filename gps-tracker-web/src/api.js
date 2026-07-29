@@ -661,6 +661,10 @@ export const api = {
   getCorporateSubscription:  () => req('GET', '/corporate/subscription'),
   buyCorporateSubscription:  () => req('POST', '/corporate/subscription'),
 
+  // 렌트카 — 구독 (별도 SUB_KIND=rentcar_report, 법인차와 독립)
+  getRentcarSubscription:    () => req('GET', '/rentcar/subscription'),
+  buyRentcarSubscription:    () => req('POST', '/rentcar/subscription'),
+
   // 1:1 채팅 (관리자)
   adminChatThreads:      () => req('GET',  '/admin/chat/threads'),
   adminChatMessages:     (threadId, afterId) => {

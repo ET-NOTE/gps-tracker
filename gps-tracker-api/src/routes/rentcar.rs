@@ -20,7 +20,16 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::FromRow;
 
-use crate::{auth::AuthUser, error::{AppError, AppResult}, state::AppState};
+use crate::{auth::AuthUser, services::credits, error::{AppError, AppResult}, state::AppState};
+
+// (2026-07-29 R-Sub) 렌트카 별도 구독 kind. corporate_report (법인) 와 분리 —
+// 각 계정 유형은 독립 구독. 가격은 ENV RENTCAR_REPORT_PRICE 로 오버라이드 가능.
+const SUB_KIND: &str = "rentcar_report";
+const SUB_PRICE: i64 = 30_000;
+fn rentcar_sub_price() -> i64 {
+    std::env::var("RENTCAR_REPORT_PRICE")
+        .ok().and_then(|s| s.parse().ok()).unwrap_or(SUB_PRICE)
+}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -43,6 +52,64 @@ pub fn router() -> Router<AppState> {
         // (R9-a) public — 임차인 auth-free 링크
         .route("/rentcar/handoff/:token",               get(handoff_view))
         .route("/rentcar/handoff/:token/submit",        post(handoff_submit))
+        // (2026-07-29 R-Sub) 구독
+        .route("/rentcar/subscription", get(get_subscription).post(buy_subscription))
+}
+
+// ─── 구독 ────────────────────────────────────────────
+#[derive(Debug, Serialize)]
+struct SubscriptionView {
+    active:      bool,
+    expires_at:  Option<DateTime<Utc>>,
+    price_krw:   i64,
+}
+
+async fn get_subscription(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> AppResult<Json<SubscriptionView>> {
+    let exp: Option<DateTime<Utc>> = sqlx::query_scalar(
+        r#"SELECT MAX(expires_at) FROM subscriptions
+            WHERE user_id = $1 AND kind = $2 AND expires_at > NOW()"#,
+    )
+    .bind(user.user_id).bind(SUB_KIND)
+    .fetch_optional(&state.db).await?.flatten();
+    Ok(Json(SubscriptionView {
+        active: exp.is_some(),
+        expires_at: exp,
+        price_krw: rentcar_sub_price(),
+    }))
+}
+
+async fn buy_subscription(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> AppResult<Json<SubscriptionView>> {
+    let price = rentcar_sub_price();
+    credits::charge(
+        &state.db, user.user_id, price,
+        "subscription", None, Some("rentcar_report 1개월"),
+    ).await?;
+    // 기존 active 있으면 그 끝에 30일 추가, 없으면 now+30일
+    let cur_exp: Option<DateTime<Utc>> = sqlx::query_scalar(
+        r#"SELECT MAX(expires_at) FROM subscriptions
+            WHERE user_id = $1 AND kind = $2 AND expires_at > NOW()"#,
+    )
+    .bind(user.user_id).bind(SUB_KIND).fetch_optional(&state.db).await?.flatten();
+    let starts_at = cur_exp.unwrap_or_else(Utc::now);
+    let expires_at = starts_at + chrono::Duration::days(30);
+    sqlx::query(
+        r#"INSERT INTO subscriptions (user_id, kind, starts_at, expires_at, paid_credits, note)
+           VALUES ($1, $2, $3, $4, $5, $6)"#,
+    )
+    .bind(user.user_id).bind(SUB_KIND).bind(starts_at).bind(expires_at).bind(price)
+    .bind("self-purchase")
+    .execute(&state.db).await?;
+    Ok(Json(SubscriptionView {
+        active: true,
+        expires_at: Some(expires_at),
+        price_krw: price,
+    }))
 }
 
 #[derive(Debug, Serialize, FromRow)]

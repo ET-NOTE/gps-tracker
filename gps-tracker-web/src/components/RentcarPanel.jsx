@@ -29,11 +29,22 @@ function RentcarPanel({ devices }) {
   const [tab, setTab] = useState(() => localStorage.getItem('rentcar_tab') || 'fleet');
   const setTabPersist = (t) => { setTab(t); try { localStorage.setItem('rentcar_tab', t); } catch {} };
 
+  // (R-Sub) 렌트카 별도 구독 상태 — 법인차 sub 와 완전 분리.
+  const [sub, setSub] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.getRentcarSubscription()
+      .then(r => { if (!cancelled) setSub(r); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const tabs = [
     { id: 'fleet',    label: '홈',         icon: 'home' },
     { id: 'rentals',  label: '임대 계약',  icon: 'route' },
     { id: 'schedule', label: '반납 일정',  icon: 'clock' },
     { id: 'renters',  label: '임차인',     icon: 'user' },
+    { id: 'sub',      label: '구독',       icon: 'coin' },
   ];
 
   return (
@@ -62,6 +73,129 @@ function RentcarPanel({ devices }) {
         {tab === 'rentals'  && <RentalsTab devices={devices} />}
         {tab === 'schedule' && <ScheduleTab devices={devices} />}
         {tab === 'renters'  && <RentersTab />}
+        {tab === 'sub'      && <SubTab sub={sub} onChange={setSub} />}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// (2026-07-29 R-Sub) 렌트카 구독 탭 — CorporatePanel SubTab 미러.
+// 각 계정 유형별 독립 구독 (rentcar_report / corporate_report).
+// ═══════════════════════════════════════════════════════
+function SubTab({ sub, onChange }) {
+  const [busy, setBusy] = useState(false);
+
+  async function buy() {
+    const ok = await confirmDialog({
+      title: '렌트카 구독 결제',
+      body: `${sub.price_krw.toLocaleString()}원 — 포인트에서 차감되며 30일 추가됩니다.`,
+      confirmLabel: '결제',
+      tone: 'success',
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const r = await api.buyRentcarSubscription();
+      onChange(r);
+      await alertDialog({
+        title: '구독 완료',
+        body: `${new Date(r.expires_at).toLocaleDateString('ko-KR')} 까지 사용 가능합니다.`,
+        tone: 'success',
+      });
+    } catch (e) {
+      await alertDialog({ title: '결제 실패', body: e.message, tone: 'danger' });
+    } finally { setBusy(false); }
+  }
+
+  if (!sub) return <div style={st.muted}>로딩...</div>;
+
+  const daysLeft = sub.expires_at
+    ? Math.max(0, Math.ceil((new Date(sub.expires_at).getTime() - Date.now()) / 86400_000))
+    : null;
+
+  return (
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* 상태 요약 카드 */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 14, padding: 20, display: 'flex', gap: 16, alignItems: 'center',
+      }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: 12,
+          background: sub.active
+            ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
+            : 'var(--surface-2)',
+          color: sub.active ? 'var(--accent)' : 'var(--text-3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Icon name={sub.active ? 'coin' : 'warn'} size={22} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>렌트카 리포트 구독</div>
+          <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>
+            {sub.active
+              ? <>활성 · <b>{new Date(sub.expires_at).toLocaleDateString('ko-KR')}</b> 까지
+                  {daysLeft != null && <span style={{ color: daysLeft <= 7 ? 'var(--warning)' : 'var(--text-3)' }}> ({daysLeft}일 남음)</span>}</>
+              : '비활성 — 결제하면 30일 이용 가능'}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.02em' }}>
+            {sub.price_krw.toLocaleString()}<span style={{ fontSize: 13, color: 'var(--text-3)', marginLeft: 2 }}>원 / 30일</span>
+          </div>
+        </div>
+      </div>
+
+      <button onClick={buy} disabled={busy} style={{
+        ...st.btnPrimary, padding: '14px 20px', fontSize: 14, alignSelf: 'flex-start',
+      }}>
+        {busy ? '...' : (sub.active ? '30일 추가 결제' : '구독 시작')}
+      </button>
+
+      {/* 안내 — 렌트카 유형 구독으로 이용 가능한 기능 */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 10, overflow: 'hidden',
+      }}>
+        <div style={{
+          padding: '10px 14px', background: 'var(--surface-2)',
+          fontSize: 12, fontWeight: 700, color: 'var(--text-2)',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <Icon name="info" size={14} />
+          <span>구독으로 이용 가능한 기능</span>
+        </div>
+        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[
+            { icon: 'route', title: '임대 계약 관리',       desc: '계약 CRUD · 반납 처리 · 청구서 XLSX · 요금 자동 정산' },
+            { icon: 'clock', title: '반납 일정 캘린더',      desc: '월 그리드 · 오늘 반납 · 연체 표시 · 셀 클릭 신규 계약' },
+            { icon: 'user',  title: '임차인 · 블랙리스트',   desc: '재이용 이력 · 블랙리스트 등록/해제 · 전화번호 대조' },
+            { icon: 'share', title: '인수·반납 QR 토큰',    desc: '임차인 auth-free 링크 · 사진 업로드 · 파손/연료/오도미터' },
+          ].map(f => (
+            <div key={f.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8,
+                background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                color: 'var(--primary)', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon name={f.icon} size={14} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{f.title}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>{f.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{
+          padding: '10px 16px', borderTop: '1px solid var(--border)',
+          fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5,
+        }}>
+          * 법인운행 구독과 완전 분리 — 각 계정 유형별 독립 구독으로 운영됩니다.
+        </div>
       </div>
     </div>
   );
