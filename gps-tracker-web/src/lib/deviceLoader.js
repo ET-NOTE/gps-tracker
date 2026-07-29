@@ -234,7 +234,6 @@ export function makeDeviceLoaders({
 
       const list = await api.listDevices();
       setDevices(list);
-      setDevicesLoaded(true);
       devRef.current = list;
       wsRef.current?.subscribe(list.map(d => d.id));
 
@@ -245,6 +244,11 @@ export function makeDeviceLoaders({
         const locs = api.flattenGrouped(groups);
         renderDeviceFixes(d, locs);
       }));
+      // (F12) setDevicesLoaded 를 Promise.all 이후로 이동 — 이전엔 devices state 만 세팅되고
+      // renderDeviceFixes 미완료 상태에서도 true 였음. Dashboard 의 filter-restore useEffect
+      // 가 이 시점에 filterToDevice(fit:true) 를 호출하면 pointsRef 비어 있어 bounds = 단일
+      // main marker → 이상한 zoom 위치. 실 데이터 렌더링 완료 후 signal.
+      setDevicesLoaded(true);
       if (!isNaN(targetId)) {
         mapRef.current?.focusDevice(targetId);
       } else {
