@@ -163,10 +163,18 @@ export function makeDeviceLoaders({
     // 후보 뽑아 200km 운행이 6000+ 후보 → MAX_HISTORY_POINTS=500 FIFO cap 로 오래된 것 evict
     // → "최근 20km 만 클릭 가능한 마커 몰림" 사용자 증상. 트립이 길어지면 interval 을 자동 확대해
     // TARGET_MARKER_COUNT 안에 균등 분포. 짧은 트립엔 zoom base interval 유지.
+    // (F10-fix) gap 걸친 두 fix 간 haversine 은 실 이동 거리 아님 (예: 서울→부산 sleep 후 wake
+    // = 400km 직선). totalM 에 포함하면 adaptive interval 이 과도하게 벌어져 클릭 마커 소멸.
+    // gap > POLYLINE_GAP_THRESHOLD_S (60s) 인 인접 쌍은 skip.
     let totalM = 0;
     for (let i = 1; i < enriched.length; i++) {
       const p = enriched[i - 1], q = enriched[i];
-      if (p.lat && q.lat) totalM += haversineM(p.lat, p.lng, q.lat, q.lng);
+      if (!p.lat || !q.lat) continue;
+      if (p.recorded_at && q.recorded_at) {
+        const gapS = (new Date(q.recorded_at).getTime() - new Date(p.recorded_at).getTime()) / 1000;
+        if (gapS > POLYLINE_GAP_THRESHOLD_S) continue;
+      }
+      totalM += haversineM(p.lat, p.lng, q.lat, q.lng);
     }
     const TARGET_MARKER_COUNT = 300;
     const baseIntervalM = clickableIntervalM(zoomLvl);
