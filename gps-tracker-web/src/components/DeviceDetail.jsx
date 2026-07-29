@@ -158,6 +158,9 @@ function ReceiveStatusBody({ device }) {
   const fixWarn  = isFixStale(device?.last_fix_at);
   const lat = device?.last_lat, lng = device?.last_lng;
   const coordStr = (lat != null && lng != null) ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : '—';
+  const isPhone = device?.device_kind === 'phone';
+  // (2026-07-29) 폰 tracker device 는 안테나 대신 좌표 넓게 표시.
+  //   폰은 antenna / vbat / cbc 필드가 무의미하므로 UI 에서 숨김.
   const ant = device?.last_antenna;
   const antOk   = (ant === 'OK_EXT' || ant === 'OK_INT' || ant === 'OK');
   const antWarn = (ant === 'OPEN' || ant === 'SHORT');
@@ -165,11 +168,14 @@ function ReceiveStatusBody({ device }) {
   const antDisplay = ANT_LABEL[ant] || '—';
 
   return (
-    <div style={s.grid4}>
-      <Cell label="LTE 통신"  v={ageString(device?.last_seen_at)} sub="마지막 ingest" warn={seenWarn} />
+    <div style={isPhone ? s.grid3 : s.grid4}>
+      <Cell label={isPhone ? '통신' : 'LTE 통신'}
+        v={ageString(device?.last_seen_at)} sub="마지막 갱신" warn={seenWarn} />
       <Cell label="GPS 좌표"  v={ageString(device?.last_fix_at)}  sub="마지막 fix"    warn={fixWarn} />
-      <Cell label="안테나"    v={antDisplay}
-        sub={antOk ? '정상' : antWarn ? '결선 이상' : '미보고'} warn={antWarn} ok={antOk} />
+      {!isPhone && (
+        <Cell label="안테나"    v={antDisplay}
+          sub={antOk ? '정상' : antWarn ? '결선 이상' : '미보고'} warn={antWarn} ok={antOk} />
+      )}
       <Cell label="위치"      v={coordStr} sub="lat · lng" mono />
     </div>
   );
@@ -511,6 +517,7 @@ const s = {
   },
 
   grid4: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 },
+  grid3: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 },
   grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
 
   simHead: {

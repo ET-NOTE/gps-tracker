@@ -27,7 +27,8 @@ import {
 } from './components/ui';
 import { useDevices } from './state';
 import { toggleTheme } from './theme';
-import { clearTokens } from './api';
+import { api, clearTokens } from './api';
+import { startPhoneTracker, stopPhoneTracker } from './lib/phoneTracker';
 
 // 나머지 라우트는 각자 진입할 때만 로드 — 초기 bundle 축소.
 const Auth           = lazy(() => import('./pages/Auth'));
@@ -53,8 +54,31 @@ export default function App() {
       <DialogHost />
       <ToastHost />
       <PaletteBridge />
+      <PhoneTrackerBootstrap />
     </BrowserRouter>
   );
+}
+
+// (2026-07-29) 연구소 lab_phone_tracker=true 인 사용자의 위치 tracking 자동 재시작.
+// 사용자가 새로고침 / 재접속 시 매번 Lab 탭 방문 안 하도록 mount 시 1회 프렌즈 로드.
+function PhoneTrackerBootstrap() {
+  useEffect(() => {
+    const hasToken = !!(localStorage.getItem('access_token') || sessionStorage.getItem('access_token'));
+    if (!hasToken) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const prefs = await api.getMyPrefs();
+        if (cancelled || !prefs?.lab_phone_tracker) return;
+        await startPhoneTracker();
+      } catch (e) {
+        // 조용히 실패 — 사용자가 명시적으로 다시 Lab 탭에서 켤 수 있음.
+        console.warn('phone tracker auto-resume failed:', e.message || e);
+      }
+    })();
+    return () => { cancelled = true; stopPhoneTracker(); };
+  }, []);
+  return null;
 }
 
 // (F5-b) Cmd+K palette host + commands 등록 + device 자동 sync.
