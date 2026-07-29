@@ -370,6 +370,76 @@ function pinImage(color) {
   return img;
 }
 
+// (F10) 방향성 live pin — 이동 중 (방향 화살표) · 정지 (원형 dot) · 오프라인 (회색).
+// 이전 pinImage(drop pin) 는 heading 정보 무시. Uber/카카오 T 처럼 차량 방향 즉각 인지 위해
+// 이동 중엔 heading 으로 회전하는 chevron/arrow pin, 정지/오프라인엔 별도 아이콘.
+//
+// state = 'moving' | 'stopped' | 'offline'
+// angle = heading (degrees, 0=N, 90=E) — 'moving' 에서만 의미.
+// 캐시 key: color|state|angle_bucket_10deg — 36 buckets × device 색 × 3 state.
+const livePinImageCache = new Map();
+function livePinImage(color, angle, state) {
+  const c = color || '#5B7CFF';
+  if (state === 'offline') {
+    const key = 'off';
+    const cached = livePinImageCache.get(key);
+    if (cached) return cached;
+    const size = 30;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <defs><filter id="sh"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.3"/></filter></defs>
+      <circle cx="15" cy="15" r="10" filter="url(#sh)" fill="#9CA3AF" stroke="white" stroke-width="2.5" stroke-dasharray="2 2"/>
+      <circle cx="15" cy="15" r="3" fill="white"/>
+    </svg>`;
+    const img = new window.kakao.maps.MarkerImage(
+      'data:image/svg+xml;base64,' + btoa(svg),
+      new window.kakao.maps.Size(size, size),
+      { offset: new window.kakao.maps.Point(15, 15) },
+    );
+    livePinImageCache.set(key, img);
+    return img;
+  }
+  if (state === 'stopped') {
+    const key = `stop_${c}`;
+    const cached = livePinImageCache.get(key);
+    if (cached) return cached;
+    const size = 32;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <defs><filter id="sh"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-opacity="0.35"/></filter></defs>
+      <circle cx="16" cy="16" r="12" filter="url(#sh)" fill="${c}" stroke="white" stroke-width="3"/>
+      <circle cx="16" cy="16" r="4" fill="white"/>
+    </svg>`;
+    const img = new window.kakao.maps.MarkerImage(
+      'data:image/svg+xml;base64,' + btoa(svg),
+      new window.kakao.maps.Size(size, size),
+      { offset: new window.kakao.maps.Point(16, 16) },
+    );
+    livePinImageCache.set(key, img);
+    return img;
+  }
+  // moving — heading 화살표 pin
+  const r = Math.round((angle || 0) / 10) * 10 % 360;
+  const key = `mv_${c}_${r}`;
+  const cached = livePinImageCache.get(key);
+  if (cached) return cached;
+  const size = 36;
+  // 차량 방향 표시 chevron — 사각 body + 위 방향 삼각 지시자. SVG rotate 로 heading 표현.
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <defs><filter id="sh"><feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-opacity="0.4"/></filter></defs>
+    <g transform="rotate(${r} 18 18)" filter="url(#sh)">
+      <path fill="${c}" stroke="white" stroke-width="2" stroke-linejoin="round"
+        d="M18 3 L28 26 L18 22 L8 26 Z"/>
+      <circle cx="18" cy="18" r="3" fill="white"/>
+    </g>
+  </svg>`;
+  const img = new window.kakao.maps.MarkerImage(
+    'data:image/svg+xml;base64,' + btoa(svg),
+    new window.kakao.maps.Size(size, size),
+    { offset: new window.kakao.maps.Point(size / 2, size / 2) },
+  );
+  livePinImageCache.set(key, img);
+  return img;
+}
+
 // 새 이미지 만들 필요 있는지 — 동일 size+isStop+color 캐시
 const dotImageCache = new Map();
 function dotImageCached(color, isStop, size, isGapEndpoint = false) {
@@ -431,6 +501,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   // (2026-07-01) dot + arrow 이중 marker 통일 → arrowsRef 삭제. pointsRef 안 marker 가 화살표 겸용.
   // arrowStateRef 는 직전 fix 좌표 (heading 계산용) 만 유지.
   const arrowStateRef  = useRef({});  // deviceId → { lastPos:{lat,lng}, distAcc }
+  // (F10) Live pin 이동 tween 상태 — 30s WS 간격 사이 부드러운 위치 보간.
+  //       Uber/카카오 T 처럼 pin 이 튀지 않고 미끄러지듯 이동.
+  const pinTweenRef    = useRef({});  // deviceId → { rafId, startPos, endPos, startTs, duration }
+  // (F10) Live pin 방향·상태 계산용 이전 fix 좌표/시간 — updateMarker 안에서 관리.
+  //       heading 은 firmware 제공 (msg.heading) 있으면 우선, 없으면 prev→curr bearing.
+  const pinStateRef    = useRef({});  // deviceId → { lastLat, lastLng, lastAt(ms), lastAngle, lastState }
   const fenceRef     = useRef({});   // geofenceId → { circle, name }
   // 현재 단말기 필터 — null = 전체. updateMarker/addHistoryPoint 가 새 마커/폴리라인 생성 시 이걸 참조해
   // 필터에 안 맞는 디바이스 데이터는 map=null 로 숨겨둠 (filterToDevice 가 명시 호출되지 않아도).
@@ -562,6 +638,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       .catch(error => console.error('Kakao Maps SDK load failed', error));
     return () => {
       cancelled = true;
+      // (F10) 진행 중 pin tween rAF 전체 취소 — unmount 후 marker 참조로 콘솔 오염 방지.
+      Object.keys(pinTweenRef.current).forEach(id => {
+        const s = pinTweenRef.current[id];
+        if (s?.rafId) cancelAnimationFrame(s.rafId);
+      });
+      pinTweenRef.current = {};
       canvasSeekerRef.current?.destroy();
       canvasSeekerRef.current = null;
       // (F7-d) canvas seeker cursor 는 별도 kakao.maps.Marker — overlay destroy 로는
@@ -656,6 +738,50 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     sharedIwRef.current.open(mapRef.current);
   }
 
+  // (F10) Live pin 이동 tween — 현재 marker 위치에서 새 위치로 rAF 로 선형 보간.
+  //       WS 30s 간격 사이에 pin 이 튀지 않고 미끄러지듯 이동. Uber/카카오 T 참고.
+  //
+  //   - 진행 중 tween 있으면 cancel 후 새 tween (현재 interpolated 위치 기준으로 이음).
+  //   - 500m+ jump 는 tween 스킵 (teleport/sleep→wake). 즉시 setPosition.
+  //   - duration 2000ms 고정 — 30s 간격 대비 짧지만 visual 부드러움엔 충분.
+  const PIN_TWEEN_DURATION_MS = 2000;
+  const PIN_TWEEN_SKIP_JUMP_M = 500;
+  function startPinTween(deviceId, marker, endPos) {
+    const prev = pinTweenRef.current[deviceId];
+    if (prev?.rafId) cancelAnimationFrame(prev.rafId);
+    const startPosLatLng = marker.getPosition();
+    const startLat = startPosLatLng.getLat(), startLng = startPosLatLng.getLng();
+    const endLat = endPos.getLat(), endLng = endPos.getLng();
+    const jumpM = distanceM({ lat: startLat, lng: startLng }, { lat: endLat, lng: endLng });
+    if (jumpM > PIN_TWEEN_SKIP_JUMP_M) {
+      marker.setPosition(endPos);
+      pinTweenRef.current[deviceId] = { rafId: null };
+      return;
+    }
+    const startTs = performance.now();
+    const state = { rafId: null };
+    const step = (nowMs) => {
+      const t = Math.min(1, (nowMs - startTs) / PIN_TWEEN_DURATION_MS);
+      // ease-out cubic — 초반 빠르게 → 후반 감속. 자연스러운 정지감.
+      const eased = 1 - Math.pow(1 - t, 3);
+      const lat = startLat + (endLat - startLat) * eased;
+      const lng = startLng + (endLng - startLng) * eased;
+      marker.setPosition(new window.kakao.maps.LatLng(lat, lng));
+      if (t < 1) {
+        state.rafId = requestAnimationFrame(step);
+      } else {
+        state.rafId = null;
+      }
+    };
+    state.rafId = requestAnimationFrame(step);
+    pinTweenRef.current[deviceId] = state;
+  }
+  function stopPinTween(deviceId) {
+    const s = pinTweenRef.current[deviceId];
+    if (s?.rafId) cancelAnimationFrame(s.rafId);
+    delete pinTweenRef.current[deviceId];
+  }
+
   useImperativeHandle(ref, () => ({
     /** 현재 Kakao map zoom level (1=최대 확대 ~ 14=최대 축소). Dashboard 의 clickable dot 간격 계산용. */
     getZoomLevel() { return zoomLevelRef.current; },
@@ -718,12 +844,48 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const deferPoly = opts.deferPolyline === true;
       const pos = new window.kakao.maps.LatLng(lat, lng);
 
+      // (F10) live pin 방향·상태 산출.
+      //   state:
+      //     - offline: last ingest 15분+ 오래됨 (meta.stale 도 같은 의미)
+      //     - moving:  최근 60s 안 이동 감지 (heading 있거나 prev→curr 이동)
+      //     - stopped: 나머지 (동일 위치 오래, GPS 노이즈 무시)
+      //   angle:
+      //     - firmware heading (meta.heading) 우선
+      //     - 없으면 prev→curr bearing (>= 8m 이동 시만; 그 미만은 GPS 노이즈)
+      //     - 이전 값 유지 (stopped 상태에서 회전 안 함)
+      const pinPrev = pinStateRef.current[deviceId];
+      const dtS = pinPrev ? (newRecordedAt - (pinPrev.lastAt || 0)) / 1000 : 0;
+      const distM = pinPrev ? distanceM(
+        { lat: pinPrev.lastLat, lng: pinPrev.lastLng }, { lat, lng }
+      ) : 0;
+      let pinState;
+      if (meta.stale) pinState = 'offline';
+      else if (!pinPrev) pinState = 'stopped';
+      else if (dtS > 0 && dtS < 60 && distM >= 8) pinState = 'moving';
+      else pinState = 'stopped';
+      let pinAngle;
+      if (typeof meta.heading === 'number' && Number.isFinite(meta.heading)) {
+        pinAngle = meta.heading;
+      } else if (pinPrev && distM >= 8) {
+        pinAngle = calcBearing(pinPrev.lastLat, pinPrev.lastLng, lat, lng);
+      } else {
+        pinAngle = pinPrev?.lastAngle ?? 0;
+      }
+      const pinImg = livePinImage(color, pinAngle, pinState);
+      pinStateRef.current[deviceId] = {
+        lastLat: lat, lastLng: lng, lastAt: newRecordedAt,
+        lastAngle: pinAngle, lastState: pinState,
+      };
+
       if (markersRef.current[deviceId]) {
         const e = markersRef.current[deviceId];
-        e.marker.setPosition(pos);
-        // color 변화 시 핀 이미지 재생성. 캐시되어있어 거의 즉시.
-        if (e.color !== color) {
-          e.marker.setImage(pinImage(color || '#5B7CFF'));
+        // (F10) setPosition 즉시 튀김 대신 tween — 이전 pos → 새 pos 부드럽게.
+        //       jump 500m+ (teleport / sleep→wake 이동) 은 tween 스킵.
+        startPinTween(deviceId, e.marker, pos);
+        // 이미지 변화 (색 · 방향 · 상태) 시만 setImage — 캐시로 저렴하지만 불필요 setter 방어.
+        if (e.color !== color || e.pinImg !== pinImg) {
+          e.marker.setImage(pinImg);
+          e.pinImg = pinImg;
         }
         e.color = color;
         e.meta = meta;
@@ -738,7 +900,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           map: (useCluster || !visible) ? null : mapRef.current,
           position: pos,
           title: label,
-          image: pinImage(color || '#5B7CFF'),
+          image: pinImg,
           // 라이브 위치 마커 — 옛 history 점(1~3) / cursor(99) 보다 명확히 위로.
           zIndex: 200,
         });
@@ -759,7 +921,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
               (addr) => buildMainInfoHTML(e.label, e.color, e.meta || {}, addr, lat, lng));
           }
         });
-        markersRef.current[deviceId] = { marker, color, meta, label };
+        markersRef.current[deviceId] = { marker, color, meta, label, pinImg };
         if (useCluster && visible) clustererRef.current.addMarker(marker);
       }
 
@@ -1510,6 +1672,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     },
 
     removeMarker(deviceId) {
+      // (F10) pin tween 중이면 먼저 취소 (marker.setMap(null) 후에도 rAF 콜백이 사라진 marker 참조).
+      stopPinTween(deviceId);
+      delete pinStateRef.current[deviceId];
       const entry = markersRef.current[deviceId];
       if (entry) {
         // (F4-a) clusterer 에서 먼저 빼고 map:null (순서 반대면 clusterer 가 dead marker 참조).
