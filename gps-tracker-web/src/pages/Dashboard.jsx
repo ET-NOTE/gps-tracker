@@ -491,9 +491,11 @@ export default function Dashboard({ onLogout }) {
   }, [loadDevices, loadFences, loadGeofenceAlert]);
 
   // 저장된 filter_device_id 복원 — devices/prefs/map 모두 준비됐을 때 1회.
+  // (F12) 이전엔 devices.length>0 로 판정해 renderDeviceFixes 미완료 상태에서도 fit 호출
+  // → bounds = main marker 단일 점 → 이상한 zoom. devicesLoaded 는 Promise.all 이후 true.
   useEffect(() => {
     if (filterAppliedRef.current) return;
-    if (!mapReady || !userPrefs || devices.length === 0) return;
+    if (!mapReady || !userPrefs || !devicesLoaded) return;
     const stored = userPrefs.filter_device_id;
     if (stored != null && devices.some(d => d.id === stored)) {
       setFilterDeviceId(stored);
@@ -501,7 +503,7 @@ export default function Dashboard({ onLogout }) {
       mapRef.current?.filterToDevice(stored, { fit: true });
     }
     filterAppliedRef.current = true;
-  }, [mapReady, userPrefs, devices]);
+  }, [mapReady, userPrefs, devicesLoaded, devices]);
 
   // 사용자 액션으로 필터 변경 시 — 즉시 서버 저장 (race 방지).
   // 새로고침 사이에 PATCH 가 날아가지 않도록 디바운스 X.

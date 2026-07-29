@@ -1324,9 +1324,16 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (targetId !== null) {
         const pts = pointsRef.current[targetId] || [];
         const main = markersRef.current[targetId];
+        const poly = polyRef.current[targetId];
         const bounds = new window.kakao.maps.LatLngBounds();
         pts.forEach(({ marker }) => bounds.extend(marker.getPosition()));
         if (main) bounds.extend(main.marker.getPosition());
+        // (F12) polyline 좌표도 bounds 에 포함 — pointsRef 는 클릭용 sampled dots 라
+        // 실 사이클 범위 못 대표할 수 있음 (특히 render 중간에 fit 호출된 경우).
+        // polyline 은 모든 fix 를 포함하므로 실 사이클 전체 범위 정확.
+        if (poly) {
+          poly.segments.forEach(s => s.coords.forEach(c => bounds.extend(c)));
+        }
         if (!bounds.isEmpty()) {
           markProgrammatic();
           mapRef.current?.setBounds(bounds, 60, 60, 60, 60);
