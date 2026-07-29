@@ -159,7 +159,19 @@ export function makeDeviceLoaders({
     mapRef.current?.clearHistoryPoints(d.id);
     const enriched = enrichWithSpeedStops(ordered);
     const zoomLvl = mapRef.current?.getZoomLevel?.() ?? 3;
-    const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap, clickableIntervalM(zoomLvl));
+    // (F10) 사이클 총 거리 기반 adaptive sampling — 이전엔 고정 clickableIntervalM (30m@z3) 로만
+    // 후보 뽑아 200km 운행이 6000+ 후보 → MAX_HISTORY_POINTS=500 FIFO cap 로 오래된 것 evict
+    // → "최근 20km 만 클릭 가능한 마커 몰림" 사용자 증상. 트립이 길어지면 interval 을 자동 확대해
+    // TARGET_MARKER_COUNT 안에 균등 분포. 짧은 트립엔 zoom base interval 유지.
+    let totalM = 0;
+    for (let i = 1; i < enriched.length; i++) {
+      const p = enriched[i - 1], q = enriched[i];
+      if (p.lat && q.lat) totalM += haversineM(p.lat, p.lng, q.lat, q.lng);
+    }
+    const TARGET_MARKER_COUNT = 300;
+    const baseIntervalM = clickableIntervalM(zoomLvl);
+    const adaptiveIntervalM = Math.max(baseIntervalM, totalM / TARGET_MARKER_COUNT);
+    const { picked, gapEndpoints } = computeClickableIndices(enriched, gapMap, adaptiveIntervalM);
     const { compacted } = compactStopMarkerIndexes(enriched, picked, HOME_STOP_MERGE_RADIUS_M);
     enriched.slice(0, -1).forEach((loc, i) => {
       if (!loc.lat || !loc.lng) return;
