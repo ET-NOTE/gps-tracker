@@ -654,6 +654,30 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     };
   }, []);
 
+  // (F10-fix) Staleness 재평가 타이머 — WS 가 조용해지면 updateMarker 재호출이 없어
+  // pin state 가 'moving'/'stopped' 로 고정됨. 60s 주기로 각 device 의 pinStateRef.lastAt
+  // 을 검사해 15min+ 지났으면 offline pin 으로 재렌더.
+  const STALE_MS = 15 * 60_000;
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const now = Date.now();
+      Object.keys(pinStateRef.current).forEach(id => {
+        const st = pinStateRef.current[id];
+        if (!st || st.lastState === 'offline') return;
+        const age = now - (st.lastAt || 0);
+        if (age > STALE_MS) {
+          const me = markersRef.current[id];
+          if (!me) return;
+          const img = livePinImage(me.color, 0, 'offline');
+          me.marker.setImage(img);
+          me.pinImg = img;
+          pinStateRef.current[id] = { ...st, lastState: 'offline' };
+        }
+      });
+    }, 60_000);
+    return () => clearInterval(iv);
+  }, []);
+
   // zoom 변경 시 — 모든 polylines 두께 갱신. (2026-07-01) 화살표 marker 는 zoom 무관 20px 고정.
   function applyZoomStyles() {
     const lvl = zoomLevelRef.current;
@@ -858,11 +882,21 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const distM = pinPrev ? distanceM(
         { lat: pinPrev.lastLat, lng: pinPrev.lastLng }, { lat, lng }
       ) : 0;
+      // (F10-fix) stopped/moving 판정 개선 — 이전 (distM>=8 && dtS<60) 은 GPS 노이즈 (정차 시
+      // 15s 안 8m 튀는 것 정상) 로 stopped 인데 moving 오판정. 또 0.48km/h 이하 저속 정속
+      // (아주 느린 walking) 은 moving 인데 stopped 오판정. 개선:
+      //   1) meta.speedKmh 우선 (firmware 계산 또는 wsEventHandler calcSpeedKmh) — >= 3km/h → moving
+      //   2) speed 없으면 distM/dtS 로 fallback — 실 속도 3km/h = 25m/30s → distM>=15 && dtS<=60 → moving
       let pinState;
       if (meta.stale) pinState = 'offline';
       else if (!pinPrev) pinState = 'stopped';
-      else if (dtS > 0 && dtS < 60 && distM >= 8) pinState = 'moving';
-      else pinState = 'stopped';
+      else if (typeof meta.speedKmh === 'number' && Number.isFinite(meta.speedKmh)) {
+        pinState = meta.speedKmh >= 3 ? 'moving' : 'stopped';
+      } else if (dtS > 0 && dtS <= 60 && distM >= 15) {
+        pinState = 'moving';
+      } else {
+        pinState = 'stopped';
+      }
       let pinAngle;
       if (typeof meta.heading === 'number' && Number.isFinite(meta.heading)) {
         pinAngle = meta.heading;
@@ -881,7 +915,15 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         const e = markersRef.current[deviceId];
         // (F10) setPosition 즉시 튀김 대신 tween — 이전 pos → 새 pos 부드럽게.
         //       jump 500m+ (teleport / sleep→wake 이동) 은 tween 스킵.
-        startPinTween(deviceId, e.marker, pos);
+        // (F10-fix) bulk 로드 (renderDeviceFixes forEach N회 연속) 시 매 call 이 이전 tween
+        //           을 cancel → getPosition 이 계속 fix[0] 반환 → 최종 하나만 tween 됨 (storm).
+        //           deferPolyline=true 는 "batch 중" 신호로 재사용 — tween skip 하고 즉시 이동.
+        if (opts.deferPolyline) {
+          stopPinTween(deviceId);
+          e.marker.setPosition(pos);
+        } else {
+          startPinTween(deviceId, e.marker, pos);
+        }
         // 이미지 변화 (색 · 방향 · 상태) 시만 setImage — 캐시로 저렴하지만 불필요 setter 방어.
         if (e.color !== color || e.pinImg !== pinImg) {
           e.marker.setImage(pinImg);
@@ -1076,6 +1118,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // (2026-06-30) addHistoryPoint 의 dedup ref 만 reset — polyRef + lastRecordedAtRef 는
       // updateMarker 의 polyline gap 계산에 필요하므로 안 건드림.
       delete lastDotAtRef.current[deviceId];
+      // (F10-fix) pinStateRef 도 reset — 안 그러면 force refresh 첫 fix 가 어제 위치
+      // 기준으로 distM/dtS 계산해 잘못된 bearing/state 산출.
+      delete pinStateRef.current[deviceId];
     },
 
     // updateMarker(..., { deferPolyline:true }) 로 누적한 coords 를 한 번에 setPath.
@@ -1099,6 +1144,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         delete polyRef.current[deviceId];
       }
       delete lastRecordedAtRef.current[deviceId];
+      // (F10-fix) 진행 중 pin tween 취소 + pinState reset — force refresh 전 클린.
+      stopPinTween(deviceId);
+      delete pinStateRef.current[deviceId];
     },
 
     /**
@@ -1122,6 +1170,19 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     setSeekerMode(active) {
       if (!mapRef.current) return;
       seekerModeRef.current = !!active;
+      // (F10-fix) seeker 진입 시 진행 중 pin tween 전부 취소 — 안 그러면 rAF 콜백이
+      // 감춰진 marker (setMap null) 에 계속 setPosition 시도 + seeker 나갈 때 stale
+      // interpolated 위치에서 다시 시작. 최종 위치로 스냅.
+      if (active) {
+        Object.keys(pinTweenRef.current).forEach(id => {
+          stopPinTween(id);
+          const target = pinStateRef.current[id];
+          const m = markersRef.current[id]?.marker;
+          if (m && target?.lastLat != null) {
+            m.setPosition(new window.kakao.maps.LatLng(target.lastLat, target.lastLng));
+          }
+        });
+      }
       const useCluster = !!clustererRef.current;
       const applyMain = (deviceId) => {
         const f = currentFilterIdRef.current;
@@ -1152,7 +1213,14 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
     setMarkerColor(deviceId, color) {
       const me = markersRef.current[deviceId];
-      if (me) me.color = color;
+      if (me) {
+        me.color = color;
+        // (F10-fix) live pin 이미지도 즉시 갱신 — 이전엔 다음 updateMarker 전까지 옛 색 유지.
+        const st = pinStateRef.current[deviceId];
+        const newImg = livePinImage(color, st?.lastAngle ?? 0, st?.lastState || 'stopped');
+        me.marker.setImage(newImg);
+        me.pinImg = newImg;
+      }
       const entry = polyRef.current[deviceId];
       if (entry) {
         entry.segments.forEach(s => s.poly.setOptions({ strokeColor: color }));
@@ -1171,6 +1239,14 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     focusDevice(deviceId, opts = {}) {
       const entry = markersRef.current[deviceId];
       if (!entry || !mapRef.current) return false;
+      // (F10-fix) 진행 중 pin tween 있으면 marker.getPosition() 은 interpolated 중간점.
+      // 카메라가 그 중간점에 센터되면 pin 이 이후에도 계속 미끄러져 나감. tween 을 종료
+      // (최종 위치로 skip) 후 focus.
+      stopPinTween(deviceId);
+      const target = pinStateRef.current[deviceId];
+      if (target?.lastLat != null && target?.lastLng != null) {
+        entry.marker.setPosition(new window.kakao.maps.LatLng(target.lastLat, target.lastLng));
+      }
       markProgrammatic();
       mapRef.current.setCenter(entry.marker.getPosition());
       if (Number.isFinite(opts.level)) mapRef.current.setLevel(opts.level);
@@ -1181,6 +1257,16 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (!mapRef.current) return;
       const entries = Object.values(markersRef.current);
       if (entries.length === 0) return;
+      // (F10-fix) 진행 중 pin tween 을 모두 최종 위치로 스킵 후 fit — bounds 계산이 중간값
+      // 아닌 실제 좌표 기준이 되도록.
+      Object.keys(pinTweenRef.current).forEach(id => {
+        stopPinTween(id);
+        const target = pinStateRef.current[id];
+        const m = markersRef.current[id]?.marker;
+        if (m && target?.lastLat != null) {
+          m.setPosition(new window.kakao.maps.LatLng(target.lastLat, target.lastLng));
+        }
+      });
       const bounds = new window.kakao.maps.LatLngBounds();
       entries.forEach(({ marker }) => bounds.extend(marker.getPosition()));
       markProgrammatic();
