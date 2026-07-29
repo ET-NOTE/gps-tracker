@@ -35,6 +35,9 @@ pub struct IngestPayload {
     pub csq: Option<i32>,
     pub reg: Option<i32>,
     pub vbat_mv: Option<i32>,
+    /// (F11) SIM7080G AT+CBC 로 읽는 모듈 전압 — 이전엔 raw JSONB 안 저장만 됐음.
+    /// WS broadcast 에 실어 실시간 모듈 헬스 관측 (ProfilePanel/Fleet 배터리 표시).
+    pub cbc_mv: Option<i32>,
     pub at_ms: Option<i32>,
     pub l80: Option<GpsFix>,
     pub lte: Option<GpsFix>,
@@ -630,6 +633,7 @@ fn broadcast_location(
         sat: fix.sat_count().map(|v| v as i16),
         ttff_s: fix.ttff_s,
         vbat_mv: parsed.vbat_mv,
+        cbc_mv: parsed.cbc_mv,
         heading: fix.heading,
         fixes: None,
     });
@@ -658,6 +662,7 @@ fn broadcast_batch(
         sat: last_sat,
         ttff_s: None,
         vbat_mv: parsed.vbat_mv,
+        cbc_mv: parsed.cbc_mv,
         heading: None,
         fixes: Some(fixes),
     });

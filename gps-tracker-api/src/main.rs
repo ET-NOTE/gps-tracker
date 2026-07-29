@@ -55,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
     let state = state::AppState {
         db: pool.clone(),
         config: Arc::new(cfg.clone()),
-        events: events::channel(256),
+        events: events::channel(1024),   // (F11) 256→1024 — 100대 fleet × chat WS 공유 시 lagged drop 감소.
         fcm: fcm.clone(),
         opinet,
     };
