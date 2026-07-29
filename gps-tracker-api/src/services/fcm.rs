@@ -334,8 +334,13 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
             false
         };
 
+        // (2026-07-29) 24시간 무응답 'lost' 알림 제거 — 사용자 스팸 리포트.
+        // event 자체는 여전히 events 테이블에 기록 (진단용, /diagnostic 에서 확인 가능).
+        // 단지 push 만 skip. lost_alert notification_setting 무시.
+        let allowed = allowed && ev.kind != "lost";
+
         if !allowed {
-            tracing::debug!(event_id = ev.id, kind = %ev.kind, "fcm: muted by user setting");
+            tracing::debug!(event_id = ev.id, kind = %ev.kind, "fcm: muted");
             // notified_at 은 batch claim 단계에서 이미 마킹됨 — 별도 UPDATE 불필요.
             continue;
         }
@@ -353,7 +358,7 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
         };
 
         let title = title_for_kind(&ev.kind, ev.device_id);
-        let body  = body_for_event(&ev);
+        let body  = body_for_event(pool, &ev).await;
         let message = json!({
             "notification": { "title": title, "body": body },
             "data": {
@@ -399,23 +404,35 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
 fn title_for_kind(kind: &str, _device_id: i64) -> String {
     match kind {
         "low_batt"        => "🔋 배터리 부족".into(),
-        "offline"         => "📡 통신 두절 (오프라인)".into(),
+        "offline"         => "📡 통신 두절".into(),
         "signal_loss"     => "📶 통신 약함".into(),
         "online"          => "✅ 통신 복구".into(),
-        "sleep_enter"     => "🌙 디바이스 절전 진입".into(),
-        "wake"            => "☀️ 디바이스 깨어남".into(),
-        "cycle_first_fix" => "📍 좌표 잡힘 (첫 fix)".into(),
+        "sleep_enter"     => "🌙 정지".into(),
+        "wake"            => "☀️ 활성".into(),
+        "cycle_first_fix" => "🚗 운행 시작".into(),
         "geofence_in"     => "📍 지오펜스 진입".into(),
         "geofence_out"    => "📍 지오펜스 이탈".into(),
         "geofence_armed"  => "📍 지오펜스 활성화".into(),
-        "brownout"        => "⚡ 전원 이슈".into(),
-        "gps_anomaly"     => "🛰️ GPS 신호 약함".into(),
-        "lost"            => "❗ 디바이스 점검 필요".into(),
-        _                 => format!("🔔 시리얼링크 위치추적기"),
+        "brownout"        => "⚡ 전원 불안정".into(),
+        "gps_anomaly"     => "🛰️ GPS 신호 불안정".into(),
+        "lost"            => "❗ 장치 미응답".into(),   // (2026-07-29) push 는 skip, title 은 in-app 로그용
+        _                 => "🔔 시리얼링크 위치추적기".into(),
     }
 }
 
-fn body_for_event(ev: &PendingEvent) -> String {
+/// 배터리 mV → 대략적인 % 환산. LiPo 3.4V(0%) ~ 4.2V(100%) 선형 근사.
+/// 사용자에게 mV 는 무의미 — % 로 안내.
+fn vbat_to_pct(mv: i64) -> i32 {
+    let pct = ((mv - 3400) as f64 / 800.0 * 100.0).round() as i32;
+    pct.clamp(0, 100)
+}
+
+async fn resolve_addr(pool: &PgPool, lat: f64, lng: f64) -> Option<String> {
+    let mut r = super::kakao_geo::reverse_many_cached(pool, &[(lat, lng)]).await;
+    r.pop().flatten().map(|x| x.short())
+}
+
+async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
     let dev = dev_label(ev);
     match ev.kind.as_str() {
         "low_batt" => {
@@ -423,18 +440,17 @@ fn body_for_event(ev: &PendingEvent) -> String {
                 .and_then(|d| d.get("vbat_mv"))
                 .and_then(|v| v.as_i64())
                 .unwrap_or(0);
-            format!("{dev} 배터리 {v}mV")
+            let pct = vbat_to_pct(v);
+            format!("{dev} 배터리 약 {pct}% 남았습니다 — 충전이 필요합니다")
         }
         "geofence_armed" => {
-            let d    = ev.data.as_ref();
-            let name = d.and_then(|x| x.get("geofence_name")).and_then(|v| v.as_str()).unwrap_or("펜스");
+            let d      = ev.data.as_ref();
+            let name   = d.and_then(|x| x.get("geofence_name")).and_then(|v| v.as_str()).unwrap_or("펜스");
             let inside = d.and_then(|x| x.get("inside")).and_then(|v| v.as_bool()).unwrap_or(false);
-            let radius = d.and_then(|x| x.get("radius_m")).and_then(|v| v.as_i64()).unwrap_or(0);
-            let dist   = d.and_then(|x| x.get("distance_m")).and_then(|v| v.as_i64()).unwrap_or(0);
             if inside {
-                format!("{dev}: '{name}' 활성화 — 펜스 안에 있습니다 (반경 {radius}m)")
+                format!("{dev}: '{name}' 감시 시작 — 현재 펜스 안에 있습니다")
             } else {
-                format!("{dev}: '{name}' 활성화 — 펜스 밖에 있습니다 (현재 {dist}m)")
+                format!("{dev}: '{name}' 감시 시작 — 현재 펜스 밖에 있습니다")
             }
         }
         "geofence_in" | "geofence_out" => {
@@ -442,70 +458,56 @@ fn body_for_event(ev: &PendingEvent) -> String {
                 .and_then(|x| x.get("geofence_name"))
                 .and_then(|v| v.as_str())
                 .unwrap_or("펜스");
-            let dist = ev.data.as_ref()
-                .and_then(|x| x.get("distance_m"))
-                .and_then(|v| v.as_i64())
-                .unwrap_or(0);
             let action = if ev.kind == "geofence_in" { "진입" } else { "이탈" };
-            format!("{dev}: '{name}' {action} (현재 {dist}m)")
+            format!("{dev}: '{name}' {action}")
         }
         "brownout" => {
-            let delta = ev.data.as_ref().and_then(|x| x.get("delta")).and_then(|v| v.as_i64()).unwrap_or(1);
-            let total = ev.data.as_ref().and_then(|x| x.get("total")).and_then(|v| v.as_i64()).unwrap_or(0);
-            format!("{dev}: 브라운아웃 {delta}회 새로 발생 (누적 {total}회) — 전원·배터리 점검 필요")
+            format!("{dev}: 전원이 불안정합니다 — 배터리·연결 상태를 확인해 주세요")
         }
         "gps_anomaly" => {
-            let delta = ev.data.as_ref().and_then(|x| x.get("delta")).and_then(|v| v.as_i64()).unwrap_or(1);
-            format!("{dev}: GPS fix 실패 사이클 {delta}회 추가 — 지하·실내·터널 통과 가능성")
+            format!("{dev}: GPS 신호가 약합니다 — 지하 · 실내 · 터널 통과 가능성")
         }
+        // (2026-07-29) 'lost' 는 push allowed 에서 skip 되지만 방어적으로 body 도 정리.
         "lost" => {
             let hrs = ev.data.as_ref().and_then(|x| x.get("hours_since_sleep")).and_then(|v| v.as_i64()).unwrap_or(24);
-            format!("{dev}: sleep 후 {hrs}시간 넘게 응답하지 않습니다")
+            format!("{dev}: {hrs}시간 넘게 응답 없음")
         }
         "offline" => {
             let m = ev.data.as_ref().and_then(|x| x.get("silence_min")).and_then(|v| v.as_i64()).unwrap_or(0);
-            if m > 0 {
-                format!("{dev}: {m}분간 통신이 끊겨 있습니다")
+            if m >= 60 {
+                let hrs = m / 60;
+                format!("{dev}: {hrs}시간 이상 통신이 끊겼습니다")
+            } else if m > 0 {
+                format!("{dev}: {m}분간 통신이 끊겼습니다")
             } else {
-                format!("{dev}: 통신 두절 상태입니다")
+                format!("{dev}: 통신이 끊겼습니다")
             }
         }
         "signal_loss" => {
             let m = ev.data.as_ref().and_then(|x| x.get("silence_min")).and_then(|v| v.as_i64()).unwrap_or(0);
-            format!("{dev}: {}분 무소식. 잠시 후 자동 복구 가능, 30분 넘으면 통신 두절로 분류됩니다", m.max(5))
+            format!("{dev}: {}분간 신호가 약합니다", m.max(5))
         }
         "online" => {
-            let from = ev.data.as_ref().and_then(|x| x.get("recovered_from")).and_then(|v| v.as_str()).unwrap_or("offline");
-            let label = match from {
-                "signal_loss" => "통신 약함",
-                _             => "통신 두절",
-            };
-            format!("{dev}: {label} 상태에서 복구되어 다시 통신 중입니다")
+            format!("{dev}: 통신이 복구되었습니다")
         }
         "sleep_enter" => {
-            let reason = ev.data.as_ref().and_then(|x| x.get("sleep_reason")).and_then(|v| v.as_str()).unwrap_or("");
-            if reason.is_empty() {
-                format!("{dev}: 절전 모드에 들어갔습니다")
-            } else {
-                format!("{dev}: 절전 진입 — 사유: {reason}")
-            }
+            format!("{dev}: 정지 상태로 전환되었습니다")
         }
         "wake" => {
-            let cause = ev.data.as_ref().and_then(|x| x.get("wake_cause")).and_then(|v| v.as_str()).unwrap_or("");
-            if cause.is_empty() {
-                format!("{dev}: 절전 모드에서 깨어났습니다")
-            } else {
-                format!("{dev}: 깨어남 — 원인: {cause}")
-            }
+            format!("{dev}: 다시 활성 상태입니다")
         }
+        // (2026-07-29) 좌표 · 위성수 대신 주소 — Kakao reverse-geo 캐시 사용.
         "cycle_first_fix" => {
-            let lat = ev.data.as_ref().and_then(|x| x.get("lat")).and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let lng = ev.data.as_ref().and_then(|x| x.get("lng")).and_then(|v| v.as_f64()).unwrap_or(0.0);
-            let sat = ev.data.as_ref().and_then(|x| x.get("sat")).and_then(|v| v.as_i64()).unwrap_or(-1);
-            if sat >= 0 {
-                format!("{dev}: 새 사이클 첫 좌표 {lat:.4}, {lng:.4} (위성 {sat}개)")
-            } else {
-                format!("{dev}: 새 사이클 첫 좌표 {lat:.4}, {lng:.4}")
+            let lat = ev.data.as_ref().and_then(|x| x.get("lat")).and_then(|v| v.as_f64());
+            let lng = ev.data.as_ref().and_then(|x| x.get("lng")).and_then(|v| v.as_f64());
+            match (lat, lng) {
+                (Some(lat), Some(lng)) => {
+                    match resolve_addr(pool, lat, lng).await {
+                        Some(addr) => format!("{dev} 운행을 시작했습니다 — 출발지: {addr}"),
+                        None       => format!("{dev} 운행을 시작했습니다"),
+                    }
+                }
+                _ => format!("{dev} 운행을 시작했습니다"),
             }
         }
         _ => format!("{dev} 알림"),

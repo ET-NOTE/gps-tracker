@@ -97,22 +97,18 @@ export default function NotificationSettings() {
 
       {/* ─── 절전 / 회복 사이클 ─────────────────── */}
       <Group title="절전 / 깨어남" desc="스위치·모션·타이머에 의한 sleep ↔ wake 전이">
-        <Toggle label="🌙 절전 진입"
-          sub="sleep 모드 들어갈 때 (스위치/타이머/저전압 트리거)"
+        <Toggle label="🌙 정지"
+          sub="장치가 정지 상태로 전환될 때"
           value={s.sleep_alert}
           onChange={v => patch({ sleep_alert: v })} />
-        <Toggle label="☀️ 깨어남"
-          sub="모션·스위치로 다시 동작 시작"
+        <Toggle label="☀️ 활성"
+          sub="장치가 다시 활성 상태로 전환될 때"
           value={s.wake_alert}
           onChange={v => patch({ wake_alert: v })} />
-        <Toggle label="📍 사이클 첫 좌표"
-          sub="깨어남 후 GPS 가 좌표 잡힌 시점 1회 (외출 시작 신호)"
+        <Toggle label="🚗 운행 시작"
+          sub="새 운행 사이클의 첫 위치 확보 시 (출발지 주소 포함)"
           value={s.cycle_first_fix_alert ?? false}
           onChange={v => patch({ cycle_first_fix_alert: v })} />
-        <Toggle label="❗ 장기 무응답 (꺼진 후 무소식)"
-          sub="sleep 후 24시간 넘게 안 깨어났을 때"
-          value={s.lost_alert ?? true}
-          onChange={v => patch({ lost_alert: v })} />
       </Group>
 
       {/* ─── 배터리 / 전원 / GPS ────────────────── */}
