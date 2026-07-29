@@ -126,7 +126,12 @@ export function makeDeviceLoaders({
       }
       return;
     }
-    const ordered = [...locs].reverse();
+    // (F9) 방어적 정렬 — api.flattenGrouped 는 DESC 유지 계약이지만 서버/네트워크
+    // 재정렬/누락 가능성 방어. asc 로 명시 정렬해 gap / arrow bearing 계산의 chronological
+    // 가정을 강제. 이전엔 reverse() 만 신뢰 → 배열 뒤섞이면 폴리라인 지그재그.
+    const ordered = [...locs]
+      .filter(l => l && l.recorded_at)
+      .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
     const gapMap = computeGapMap(ordered);
     if (force) mapRef.current?.clearLiveTrail?.(d.id);
     // bulk 로드 — polyline setPath 는 마지막에 한 번만.

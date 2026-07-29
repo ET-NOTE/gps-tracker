@@ -80,10 +80,17 @@ export function makeWsEventHandler({
         });
       };
       if (Array.isArray(msg.fixes) && msg.fixes.length > 0) {
-        for (let i = 0; i < msg.fixes.length; i++) {
-          const f = msg.fixes[i];
-          if (f.lat == null || f.lng == null) continue;
-          const isLast = (i === msg.fixes.length - 1);
+        // (F9) 방어적 정렬 — 펌웨어/백엔드 order 보장 없음. asc 로 정렬 후 처리해야
+        // updateMarker 의 stale-fix guard, gap 감지, addHistoryPoint 의 arrow bearing 이
+        // chronological 하게 동작. 이전엔 배치가 뒤섞이면 폴리라인 지그재그 + 화살표 반대방향.
+        // 마지막 = 배치 안 가장 최근 fix (기존 계약: top-level lat/lng/sat 과 동일).
+        const fixesAsc = msg.fixes
+          .filter(f => f.lat != null && f.lng != null && f.recorded_at)
+          .slice()
+          .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+        for (let i = 0; i < fixesAsc.length; i++) {
+          const f = fixesAsc[i];
+          const isLast = (i === fixesAsc.length - 1);
           const fMeta = isLast ? meta : {
             recordedAt: f.recorded_at, sat: f.sat, fix: true, stale: false,
             deviceId: msg.device_id, deviceLabel: label,
