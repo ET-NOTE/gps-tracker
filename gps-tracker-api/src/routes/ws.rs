@@ -157,7 +157,18 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64) {
                             break;
                         }
                     }
-                    Err(RecvError::Lagged(_)) => continue,
+                    Err(RecvError::Lagged(n)) => {
+                        // (F11) 이전엔 조용히 continue → 사용자 gap 인지 불가.
+                        // 클라이언트에게 lagged 알림 emit → FE 가 REST 로 catch-up 하도록.
+                        let notice = serde_json::json!({
+                            "type": "lagged",
+                            "dropped": n,
+                        });
+                        if sender.send(Message::Text(notice.to_string())).await.is_err() {
+                            break;
+                        }
+                        continue;
+                    }
                     Err(_) => break,
                 }
             }

@@ -109,18 +109,37 @@ export default function FleetDashboard() {
       if (msg?.type !== 'location') return;
       const m = mapRef.current;
       if (!m || !m.updateMarker) return;
-      const fixes = Array.isArray(msg.fixes) ? msg.fixes : [];
-      const last = fixes.filter(f => f && f.lat != null && f.lng != null).pop();
-      if (!last) return;
+      // (F11) LTE-only / legacy fw 단일 fix POST 는 msg.fixes 없이 top-level lat/lng 만.
+      // 이전엔 fixes 배열 없으면 조용히 drop → Fleet 뷰에서 그런 device 는 영원히 안 움직임.
+      // + 배치 순서 뒤엉킴 방어 sort (F9 wsEventHandler 와 동일 규칙).
+      let lat, lng, meta;
+      if (Array.isArray(msg.fixes) && msg.fixes.length > 0) {
+        const sorted = msg.fixes
+          .filter(f => f && f.lat != null && f.lng != null && f.recorded_at)
+          .slice()
+          .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+        const last = sorted[sorted.length - 1];
+        if (!last) return;
+        lat = last.lat; lng = last.lng;
+        meta = {
+          recordedAt: last.recorded_at, sat: last.sat, fix: true,
+          heading: last.heading, speedKmh: msg.speed_kmh, lat, lng,
+        };
+      } else if (msg.fix && msg.lat != null && msg.lng != null) {
+        lat = msg.lat; lng = msg.lng;
+        meta = {
+          recordedAt: msg.recorded_at, sat: msg.sat, fix: msg.fix,
+          heading: msg.heading, speedKmh: msg.speed_kmh, lat, lng,
+        };
+      } else {
+        return;
+      }
       const d = devicesRef.current.find(x => x.id === msg.device_id);
       const label = d?.license_plate || d?.display_name || d?.device_uid || String(msg.device_id);
       const color = d?.device_color || '#5B7CFF';
-      const meta = {
-        recordedAt: last.recorded_at, sat: last.sat, fix: last.fix,
-        lat: last.lat, lng: last.lng, heading: last.heading,
-        deviceId: msg.device_id, deviceLabel: label,
-      };
-      m.updateMarker(msg.device_id, last.lat, last.lng, label, color, meta);
+      meta.deviceId = msg.device_id;
+      meta.deviceLabel = label;
+      m.updateMarker(msg.device_id, lat, lng, label, color, meta);
     }, () => {/* onStatus */});
     ws.connect(null);
     wsRef.current = ws;

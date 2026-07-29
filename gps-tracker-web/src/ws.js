@@ -58,9 +58,10 @@ export class TrackerWS {
     if (t && isTokenExpiringSoon(t, 60_000)) {
       const r = await tryRefresh();
       if (r === 'unauth') {
-        // refresh 도 만료/취소 — 로그아웃 상태. 재시도 무의미하니 조용히 종료.
+        // (F11) 이전엔 _dead=true 로 영구 종료 → 사용자가 재로그인해도 WS 안 살아남.
+        // 로그인 상태 회복을 폴링으로 감지: 60s 후 재시도. 여전히 unauth 면 다시 60s 대기.
         this.onStatus?.('disconnected');
-        this._dead = true;
+        this._timer = setTimeout(() => this._open(), 60_000);
         return;
       }
       const s2 = activeStorage();
@@ -96,6 +97,15 @@ export class TrackerWS {
       // 상태 event (wake/sleep/rental_*) 는 즉시 dispatch (실시간성 우선).
       if (msg?.type === 'location') {
         this._pending.push(msg);
+        // (F11) 큐 상한 — background tab (rAF pause) 이거나 slow consumer 시
+        // 무제한 성장 → 재-foreground 시 단일 flush 로 수십초 freeze. 상한 초과 시
+        // 오래된 것부터 drop, top-level lat/lng 은 anchor (최신) 이라 사용자 관점
+        // "최신 위치는 보존됨" 유지. 이전 궤적 dot 만 유실.
+        const MAX_PENDING = 500;
+        if (this._pending.length > MAX_PENDING) {
+          const overflow = this._pending.length - MAX_PENDING;
+          this._pending.splice(0, overflow);
+        }
         if (!this._rafScheduled) {
           this._rafScheduled = true;
           const flush = () => {
@@ -106,8 +116,10 @@ export class TrackerWS {
               try { this.onEvent(m); } catch { /* ignore consumer err */ }
             }
           };
-          if (typeof requestAnimationFrame === 'function') requestAnimationFrame(flush);
-          else setTimeout(flush, 16);
+          // (F11) Page Visibility — tab hidden 이면 rAF 는 pause. setTimeout 100ms 로 fallback.
+          const hidden = typeof document !== 'undefined' && document.hidden;
+          if (!hidden && typeof requestAnimationFrame === 'function') requestAnimationFrame(flush);
+          else setTimeout(flush, hidden ? 100 : 16);
         }
       } else {
         try { this.onEvent(msg); } catch { /* noop */ }
