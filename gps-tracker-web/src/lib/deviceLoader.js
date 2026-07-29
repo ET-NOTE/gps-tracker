@@ -28,35 +28,37 @@ function localMidnightMs() {
 
 // (한국 사용자 시간대 기준) 홈 뷰 fetch 창의 since 산출.
 //
-// 정책 (2026-07-29 v3):
+// 정책 (2026-07-29 v3.1):
 //   - 오늘 fix 있음  → 오늘 KST 자정부터 (당일 전체 사이클)
-//   - 오늘 fix 없음  → **마지막 wake event 시각부터** (마지막 wake→sleep 사이클 하나만)
-//                       events kinds=wake filter 로 노이즈 무시.
-//                       wake 이벤트 없으면 마지막 fix 있는 날의 KST 자정 fallback.
+//   - 오늘 fix 없음  → **마지막 REAL wake event 시각부터** (spurious 제외)
+//                       wake_cause in {motion, switch} 만 실 사이클 시작. brownout/boot/crash
+//                       는 fix 를 남기지 않는 비정상 wake → 무시.
+//                       실 wake 못 찾으면 마지막 fix 있는 날의 KST 자정 fallback.
 //
 // 히스토리:
 //   - v1 (원본): last wake event → 노이즈 이벤트 50건 초과 시 wake 못 찾음
-//   - v1.1 (PR #193): 서버 kinds=wake filter — 대부분 해결
-//   - v2 (PR #196): "마지막 활동 날 통째로" → 하지만 device 가 sleep 중 물리적 이동 (차로
-//                    옮겨짐 등) 시 여러 사이클이 광역 지역에 흩어짐 → 사용자 mental
-//                    model 안 맞음 (마지막 사이클 하나 기대). ccc device: 청주 cycle #4
-//                    + 익산 cycle #5, 74km 떨어져 광역 fit → 사용자 혼란.
-//   - v3 (현재): last wake event 로 마지막 완결 사이클만. spurious wake (1 fix 만 남기고
-//                sleep) 는 그 자체가 마지막 활동이므로 그대로 보여주는 게 맞음.
-//                events 조회 실패 시 v2 fallback (마지막 fix 날 KST 자정).
+//   - v1.1 (PR #193): 서버 kinds=wake filter — 노이즈 해결
+//   - v2 (PR #196): "마지막 활동 날 통째로" → 광역 이동 (74km 청주↔익산) 시 여러 사이클
+//                    fit 되어 혼란
+//   - v3 (PR #204): last wake event → spurious wake (brownout/boot) 잡혀 fix 0건 →
+//                    main marker 1개만 나오는 회귀 (ccc 실사례)
+//   - v3.1 (현재): wake_cause = motion|switch 만. spurious cold-boot / brownout wake 제외.
+//                  최근 wake 20건 조회 후 client 필터 — 대부분 첫 몇개 안에서 결정.
+const REAL_WAKE_CAUSES = new Set(['motion', 'switch']);
 export async function computeHomeSinceISO(device) {
   const midnightMs = localMidnightMs();
   const midnightISO = new Date(midnightMs).toISOString();
   const lastFixMs = device?.last_fix_at ? new Date(device.last_fix_at).getTime() : 0;
   if (!lastFixMs || lastFixMs >= midnightMs) return midnightISO;
-  // 오래된 단말 — 마지막 wake event 로 마지막 사이클 시점 조회.
+  // 오래된 단말 — 실 wake (motion/switch) event 로 마지막 사이클 시점 조회.
   try {
-    const events = await api.getDeviceEvents(device.id, { kinds: ['wake'], limit: 1 });
-    if (events && events.length > 0) {
-      return new Date(events[0].occurred_at).toISOString();
+    const events = await api.getDeviceEvents(device.id, { kinds: ['wake'], limit: 20 });
+    const realWake = (events || []).find(e => REAL_WAKE_CAUSES.has(e.data?.wake_cause));
+    if (realWake) {
+      return new Date(realWake.occurred_at).toISOString();
     }
-  } catch { /* fallthrough to KST midnight fallback */ }
-  // Fallback: wake event 조회 실패 시 마지막 fix 날의 KST 자정 (v2 정책).
+  } catch { /* fallthrough */ }
+  // Fallback: 실 wake 못 찾으면 마지막 fix 날의 KST 자정 (v2 정책).
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
   const kstDate = new Date(lastFixMs + KST_OFFSET_MS);
   kstDate.setUTCHours(0, 0, 0, 0);
