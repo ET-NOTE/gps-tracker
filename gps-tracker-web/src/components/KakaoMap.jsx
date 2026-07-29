@@ -706,6 +706,13 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // 후속 setBounds/extend 시 "Cannot read properties of undefined (reading 'x')" 폭포수.
       if (typeof lat !== 'number' || typeof lng !== 'number'
           || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      // (F9) stale fix (recordedAt < prev) — 이전엔 아래 폴리라인 부분에서만 skip 하고
+      // 마커 setPosition 은 이미 실행돼 마커가 오래된 위치로 튀었음. 최상단에서 완전 skip.
+      // Backend 는 asc 로 보내지만 WS 재접속 replay / 병렬 device 큐 순서 flip 방어.
+      const newRecordedAt = meta.recordedAt ? new Date(meta.recordedAt).getTime() : Date.now();
+      const prevRecordedAt = lastRecordedAtRef.current[deviceId];
+      if (prevRecordedAt && newRecordedAt < prevRecordedAt) return;
+
       // deferPolyline=true 면 coords 만 push 하고 setPath skip — bulk 로드 시 O(N²) 재렌더 회피.
       // 마지막 fix 나 별도 flushLiveTrail(deviceId) 호출로 한 번만 setPath 하면 O(N).
       const deferPoly = opts.deferPolyline === true;
@@ -759,19 +766,11 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // ── trail polyline (segment + gap 분리) ─────────────────────────
       // recordedAt 시간 gap > POLYLINE_GAP_THRESHOLD_S 면 sleep/reset/통신두절 추정.
       // 새 solid segment 시작 + 직전 segment 끝 → 현재 좌표 잇는 dashed polyline 추가.
+      // (F9) stale-fix guard 는 이 함수 최상단으로 이동.
       const stroke = color || '#888';
       const opacity = meta.stale ? 0.35 : 0.85;
       const sw = strokeWeightForLevel(zoomLevelRef.current);
-      const newRecordedAt = meta.recordedAt ? new Date(meta.recordedAt).getTime() : Date.now();
-      const prevRecordedAt = lastRecordedAtRef.current[deviceId];
       const gapS = prevRecordedAt ? (newRecordedAt - prevRecordedAt) / 1000 : 0;
-      // (2026-07-03) out-of-order 방어 — newRecordedAt < prevRecordedAt (음수 gap) 인 fix 는
-      // polyline 에 이으면 역방향 라인 생김 ("deadline 으로 엮이는" 이슈). Backend 는 오름차순
-      // 보내지만 WS 재접속 replay / 병렬 device 큐 순서 flip 등에서 방어. skip 대신 새 segment
-      // 시작 (gap 로 표시하지도 않고 조용히 새 시작).
-      if (prevRecordedAt && newRecordedAt < prevRecordedAt) {
-        return;   // stale fix — polyline 오염 방지
-      }
       const isGap = prevRecordedAt && gapS > POLYLINE_GAP_THRESHOLD_S;
 
       if (!polyRef.current[deviceId]) {
@@ -842,12 +841,21 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // P1 dedup (PR #68): initial fetch + WS broadcast 가 같은 fix 두 번 추가하던 케이스 방지.
       // (2026-06-30) dedup ref 를 lastDotAtRef 로 분리 — lastRecordedAtRef 는 updateMarker 의 polyline
       // gap 계산용이라 reset 하면 polyline 망가짐. addHistoryPoint 만의 dedup 으로 격리.
+      // (F9) 사이클 gap 감지 — 하루 안 여러 trip 이 있을 때 사이클 경계에서 arrow bearing 을
+      //      리셋해야 새 사이클 첫 화살표가 이전 사이클 끝점을 기준으로 잘못 그려지지 않음.
+      let isGapBoundary = false;
       if (meta.recordedAt) {
         const newAt = new Date(meta.recordedAt).getTime();
         const lastAt = lastDotAtRef.current[deviceId];
         if (lastAt && newAt <= lastAt) return;
+        if (lastAt && (newAt - lastAt) / 1000 > POLYLINE_GAP_THRESHOLD_S) {
+          isGapBoundary = true;
+        }
         lastDotAtRef.current[deviceId] = newAt;
       }
+      // meta.gapBefore 는 deviceLoader.computeGapMap 이 명시적으로 전달 — WS 는 미제공.
+      if (meta.gapBefore) isGapBoundary = true;
+
       const pos = new window.kakao.maps.LatLng(lat, lng);
       const isStop = !!meta.isStop;
       const c = color || '#888';
@@ -856,6 +864,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         // 첫 fix 는 heading 미확정 → angle=0 (북쪽 화살표). polyline 시작점 인식.
         // 정지 클러스터 대표 (clusterCount>1) 는 원형 + 개수 이미지로 교체.
         const isCluster = meta.clusterCount > 1;
+        // (F9) gap 경계에서 이전 사이클 끝점 → 새 사이클 시작점 bearing 은 무의미 → reset.
+        //      첫 marker 는 angle=0 (북쪽) — "새 사이클 시작" 시각 표시.
+        if (isGapBoundary) delete arrowStateRef.current[deviceId];
         const st = arrowStateRef.current[deviceId];
         const angle = st ? calcBearing(st.lastPos.lat, st.lastPos.lng, lat, lng) : 0;
         const marker = new window.kakao.maps.Marker({
