@@ -41,6 +41,9 @@ pub struct IngestPayload {
     pub at_ms: Option<i32>,
     pub l80: Option<GpsFix>,
     pub lte: Option<GpsFix>,
+    /// (2026-07-30) 스마트폰 tracker (Flutter geolocator + browser API) — l80/lte 와 별개 source.
+    /// device_kind='phone' 인 device 가 이 필드로 보냄. source column 은 'phone' 로 저장.
+    pub phone: Option<GpsFix>,
 
     // 미래 호환: ESP가 자기 식별자 보낼 때
     pub device_uid: Option<String>,
@@ -296,6 +299,14 @@ pub async fn ingest(
             let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
         }
     }
+    // (2026-07-30) 스마트폰 tracker — 자체 GPS/WiFi/셀 hybrid fix. source='phone' 별도 라벨.
+    if let Some(phone) = &parsed.phone {
+        insert_location(&state, device_id, recorded_at, "phone", phone, &parsed, &payload).await?;
+        broadcast_location(&state, device_id, recorded_at, "phone", phone, &parsed);
+        if let (true, Some(lat), Some(lng)) = (phone.fix, phone.lat, phone.lng) {
+            let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
+        }
+    }
 
     // (2026-07-01) cycle_first_fix 중복 push fix — wake pending=TRUE 마킹을 first_fix 판정 *전*
     // 으로 이동. 이전 순서 (lifecycle event 분기 안 line 486 근처) 는 첫 fix 감지 → 이전 wake 의
@@ -413,9 +424,13 @@ pub async fn ingest(
         }
     }
 
-    // last_lat/lng 업데이트 (l80 우선, fix=true일 때만)
-    if let Some(l80) = parsed.l80.as_ref().filter(|x| x.fix) {
-        if let (Some(lat), Some(lng)) = (l80.lat, l80.lng) {
+    // last_lat/lng 업데이트 — 우선순위: phone > l80 > lte, fix=true 일 때만.
+    // (2026-07-30) phone tracker 우선 (l80/lte 는 firmware 만 보냄, 겹치지 않음).
+    let fix_for_update = parsed.phone.as_ref().filter(|x| x.fix)
+        .or_else(|| parsed.l80.as_ref().filter(|x| x.fix))
+        .or_else(|| parsed.lte.as_ref().filter(|x| x.fix));
+    if let Some(fix) = fix_for_update {
+        if let (Some(lat), Some(lng)) = (fix.lat, fix.lng) {
             sqlx::query(
                 "UPDATE devices SET last_lat = $1, last_lng = $2, last_fix_at = now() WHERE id = $3",
             )
