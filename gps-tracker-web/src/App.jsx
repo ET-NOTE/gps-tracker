@@ -59,24 +59,46 @@ export default function App() {
   );
 }
 
-// (2026-07-29) 연구소 lab_phone_tracker=true 인 사용자의 위치 tracking 자동 재시작.
-// 사용자가 새로고침 / 재접속 시 매번 Lab 탭 방문 안 하도록 mount 시 1회 프렌즈 로드.
+// (2026-07-29) 연구소 lab_phone_tracker 자동 재시작 + auth 상태 반응.
+// (2026-07-30 fix) 이전 버전 문제:
+//   [CRIT] 로그아웃 후 stopPhoneTracker 미호출 → 사용자 A 세션에서 계속 A device 로 POST.
+//          같은 탭에서 B 로그인해도 A tracking 지속 → privacy leak.
+//   [HIGH] 초기 mount 시 토큰 없어 early-return, 이후 login 은 effect 재실행 안 시켜
+//          auto-resume 발동 안 함. 사용자가 매번 Lab 탭 재토글 필요.
+//   [MED]  startPhoneTracker await 중 unmount 시 cleanup 의 stopPhoneTracker 는 아직
+//          null watchId 로 no-op → 이후 startPhoneTracker 가 watchId 세팅 → 좀비.
+// Fix: 10초 주기 poll — auth 상태 변경 (login/logout) + pref 변경 자동 감지.
+//   - hasToken=false → stopPhoneTracker (로그아웃 즉시 정지)
+//   - hasToken=true + pref=true + !running → startPhoneTracker
+//   - hasToken=true + pref=false + running → stopPhoneTracker
+//   - isPhoneTrackerRunning() 체크로 이중 start 방지.
+import { isPhoneTrackerRunning } from './lib/phoneTracker';
 function PhoneTrackerBootstrap() {
   useEffect(() => {
-    const hasToken = !!(localStorage.getItem('access_token') || sessionStorage.getItem('access_token'));
-    if (!hasToken) return;
     let cancelled = false;
-    (async () => {
+    let inFlight = false;
+    const check = async () => {
+      if (cancelled || inFlight) return;
+      const hasToken = !!(localStorage.getItem('access_token') || sessionStorage.getItem('access_token'));
+      if (!hasToken) {
+        if (isPhoneTrackerRunning()) stopPhoneTracker();
+        return;
+      }
+      inFlight = true;
       try {
         const prefs = await api.getMyPrefs();
-        if (cancelled || !prefs?.lab_phone_tracker) return;
-        await startPhoneTracker();
+        if (cancelled) return;
+        const want = !!prefs?.lab_phone_tracker;
+        const running = isPhoneTrackerRunning();
+        if (want && !running) await startPhoneTracker();
+        else if (!want && running) stopPhoneTracker();
       } catch (e) {
-        // 조용히 실패 — 사용자가 명시적으로 다시 Lab 탭에서 켤 수 있음.
-        console.warn('phone tracker auto-resume failed:', e.message || e);
-      }
-    })();
-    return () => { cancelled = true; stopPhoneTracker(); };
+        console.warn('phone tracker check failed:', e.message || e);
+      } finally { inFlight = false; }
+    };
+    check();
+    const iv = setInterval(check, 10_000);
+    return () => { cancelled = true; clearInterval(iv); stopPhoneTracker(); };
   }, []);
   return null;
 }

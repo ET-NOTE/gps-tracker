@@ -39,6 +39,13 @@ int     lastGsaMode = -1;   // GSA mode: 1=없음 2=2D 3=3D
 char    lastRmcStat = 0;    // RMC 상태: 'A'=유효 'V'=무효(void)
 char    lastRmcTime[12] = {0};   // RMC UTC 시각 hhmmss.ss
 bool    haveFix     = false;
+// (2026-07-30) 안테나 advisor — $PGCMD,33,1*6C 로 활성화 후 $PGTOP,11,<x> 로 리포트.
+//   0 = 미보고 (advisor 명령 전송 실패거나 모듈이 답 안 함 — L80 non-active 모델 등)
+//   1 = SHORT (안테나 회로 단락 — 배선/커넥터 이상)
+//   2 = 내부 patch 안테나 사용 중 (외장 안테나 미연결 or 인식 실패)
+//   3 = 외부 active 안테나 사용 중 (LNA 로 전류 감지됨)
+int     lastAntennaMode = 0;
+uint32_t antennaLastMs = 0;   // $PGTOP 마지막 수신 시각
 
 // CSV n번째 필드 추출 (0-indexed). 없으면 빈 문자열.
 static void getField(const char* l, int idx, char* out, size_t outsz) {
@@ -101,6 +108,17 @@ static const char* parseAndDiagnose(const char* l) {
   }
   if (strncmp(l, "$GPVTG", 6) == 0) { cntVTG++; return "  · VTG: 속도/방향 (fix 시 의미)"; }
   if (strncmp(l, "$GPGLL", 6) == 0) { cntGLL++; return "  · GLL: 위경도 (fix 시 의미)"; }
+  // (2026-07-30) 안테나 advisor 응답 — $PGTOP,11,<mode>*hh
+  if (strncmp(l, "$PGTOP,11,", 10) == 0) {
+    lastAntennaMode = atoi(l + 10);
+    antennaLastMs = millis();
+    static char tag[128];
+    if      (lastAntennaMode == 1) snprintf(tag, sizeof(tag), "  ❌ 안테나: SHORT (배선/커넥터 단락)");
+    else if (lastAntennaMode == 2) snprintf(tag, sizeof(tag), "  ⚠️  안테나: 내부 patch 사용 중 (외장 미연결/미인식)");
+    else if (lastAntennaMode == 3) snprintf(tag, sizeof(tag), "  ✅ 안테나: 외부 active 사용 중 (LNA 전류 감지)");
+    else                           snprintf(tag, sizeof(tag), "  ?  안테나: 알 수 없는 mode=%d", lastAntennaMode);
+    return tag;
+  }
   if (l[0] == '$')                  { cntOther++; return "  ?  unknown $ sentence"; }
   return nullptr;
 }
@@ -121,6 +139,16 @@ void setup() {
 
   gpsSerial.begin(GPS_BAUD, SERIAL_8N1, PIN_GPS_RX, PIN_GPS_TX);
   Serial.println(F("[UART] L80 UART 시작. 데이터 대기..."));
+
+  // (2026-07-30) 안테나 advisor 활성화 — MTK PMTK 계열 명령.
+  //   $PGCMD,33,1*6C — advisor ON (매 위치 fix 시 $PGTOP,11,<mode> 리포트)
+  //   $PGCMD,33,0*6D — advisor OFF
+  //   mode: 1=SHORT / 2=내부 patch / 3=외부 active
+  // 모듈이 부팅 안정화 (NMEA 흐름 시작) 이후 전송해야 안전. 2초 추가 대기.
+  delay(2000);
+  gpsSerial.println("$PGCMD,33,1*6C");
+  Serial.println(F("[ANT] 안테나 advisor ON — $PGTOP,11,<mode> 리포트 대기"));
+
   Serial.println();
   lastByteMs = millis();
 }
@@ -183,10 +211,16 @@ void loop() {
       // fix 상태
       if (haveFix && lastGsaMode >= 2)      Serial.printf(" | ✅ %dD fix (위성 %d)", lastGsaMode, lastSatsUsed);
       else                                  Serial.print(F(" | ❌ fix 없음"));
-      // 안테나
-      if (lastSatsView <= 0)                Serial.print(F(" | ⚠️  시야 위성 0 (실내 또는 안테나)"));
-      else if (lastSatsView < 4)            Serial.printf(" | 🛰 시야 위성 %d (fix 부족)", lastSatsView);
-      else                                  Serial.printf(" | ✅ 시야 위성 %d (안테나 OK)", lastSatsView);
+      // 시야 위성
+      if (lastSatsView <= 0)                Serial.print(F(" | ⚠️  시야 위성 0"));
+      else if (lastSatsView < 4)            Serial.printf(" | 🛰 시야 위성 %d (부족)", lastSatsView);
+      else                                  Serial.printf(" | ✅ 시야 위성 %d", lastSatsView);
+      // (2026-07-30) 안테나 mode — L80 advisor 응답. 미보고면 커넥터/케이블/PGCMD 미도달 의심.
+      if      (lastAntennaMode == 3)        Serial.print(F(" | ✅ 안테나 외부"));
+      else if (lastAntennaMode == 2)        Serial.print(F(" | ⚠️  안테나 내부 patch"));
+      else if (lastAntennaMode == 1)        Serial.print(F(" | ❌ 안테나 SHORT"));
+      else if (antennaLastMs == 0)          Serial.print(F(" | ? 안테나 미보고"));
+      else                                  Serial.printf(" | ? 안테나 mode=%d", lastAntennaMode);
       // 시각
       if (lastRmcStat == 'A')               Serial.printf(" | ⏰ UTC %s", lastRmcTime);
       else                                  Serial.print(F(" | ⏰ 시각 미동기"));

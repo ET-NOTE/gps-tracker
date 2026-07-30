@@ -57,7 +57,9 @@ async function ingestPos(pos) {
       fix: true,
       lat, lng,
       sat: null,
-      hdop: accuracy ? Math.round(accuracy) : null,
+      // (F13-fix) 이전엔 `hdop` 필드로 보냈으나 브라우저 accuracy 는 미터(m) 단위 = HDOP 아님.
+      // Backend GpsFix 에도 hdop 필드 없어 raw JSON 에만 저장됐음. 의미 명확한 이름으로.
+      accuracy_m: accuracy ? Math.round(accuracy) : null,
       alt: altitude,
       speed_kmh: (typeof speed === 'number' && speed >= 0) ? speed * 3.6 : null,
       heading: (typeof heading === 'number' && heading >= 0) ? heading : null,
@@ -157,6 +159,9 @@ export async function startPhoneTracker() {
   if (!hasFlutterBridge() && !('geolocation' in navigator)) {
     throw new Error('이 브라우저는 위치 기능을 지원하지 않습니다.');
   }
+  // (F13-fix) 이중 start 방어 — 기존 watcher/tween/queue 완전 정리 후 새로 시작.
+  // 이전엔 watchId 덮어써서 이전 watcher clearWatch 절대 불가 → 자원 누수 + 매 fix 이중 POST.
+  stopPhoneTracker();
   // 1) permission — getPosition 이 flutter bridge / 브라우저 API 선택.
   const firstPos = await getPosition();
 
