@@ -164,9 +164,12 @@ bool bringUp() {
     sendAT("AT+IFC=0,0", "OK", 1000);       // HW팀 기대값(표준): HW 흐름제어 끔 (RTS/CTS 미배선 stall 방지)
     sendAT("AT+IPR=115200", "OK", 1000);    // HW팀 기대값(표준): 보드레이트 고정 (autobaud 배제)
     sendAT("AT+CMEE=2", "OK", 1000);
-    sendAT("AT+CSCLK=0", "OK", 1000);       // HW팀 예제 반영: 모뎀 슬립 비활성 (DTR HIGH·저전력 AT timeout 방지, 신·구 공용)
+    sendAT("AT+CSCLK=0", "OK", 1000);       // HW팀 예제 반영: 모뎀 슬립 비활성 (저전력 AT timeout 방지, DTR 극성 무관화)
     sendAT("AT+CPIN?", "READY", 5000);
     sendAT("AT+CGNSPWR=0", "OK", 2000);
+    // [2026-07-30 신PCB 표준 — HW팀 검증 스케치 반영] RAT 선호 명시: 1NCE 로밍 등록 촉진.
+    sendAT("AT+CNMP=38", "OK", 2000);       // 38=LTE only (2=auto)
+    sendAT("AT+CMNB=3", "OK", 2000);        // 3=CAT-M+NB-IoT 둘 다 허용
     if (sendAT("AT+CSQ", "OK", 1500)) {   // [fix#4] expect=OK: +CSQ 값 도착 후 파싱 (토큰매칭 race → csq_=0 회피)
       int p = lastResp.indexOf("+CSQ:");
       if (p >= 0) csq_ = lastResp.substring(p + 5).toInt();
