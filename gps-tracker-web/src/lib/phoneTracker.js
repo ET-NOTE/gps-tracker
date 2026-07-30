@@ -17,6 +17,11 @@ import { api } from '../api';
 
 const STORAGE_KEY = 'phone_tracker_uuid';
 const POST_MIN_INTERVAL_MS = 30_000;      // 30s throttle — POST /ingest 최소 간격
+// (F13-stationary) 정지 시 저장 낭비 방지 — 이전 fix 와 STATIONARY_RADIUS_M 이내이고
+// 마지막 POST 로부터 HEARTBEAT_MS 안 지났으면 skip. Heartbeat 로 offline 판정 방지.
+//   측정: 사무실 정지 1시간 = 81 rows 저장 (모두 반경 2m 안) → 대표 heartbeat 몇개면 충분.
+const STATIONARY_RADIUS_M = 20;    // 이전 fix 와 이 반경 안이면 "정지" 로 판정
+const HEARTBEAT_MS = 3 * 60_000;   // 정지 상태라도 3분 지나면 1회 heartbeat POST
 const HIGH_ACCURACY = true;
 
 let watchId = null;
@@ -24,6 +29,8 @@ let deviceUid = null;
 let lastPostMs = 0;
 let queuedPos = null;
 let flushTimer = null;
+let lastPostedPos = null;          // {lat, lng, ts} — skip 판정용
+let skippedCount = 0;              // 진단용 카운터
 
 function getOrCreateUuid() {
   let uuid = localStorage.getItem(STORAGE_KEY);
@@ -44,9 +51,27 @@ function detectPlatform() {
   return 'web';
 }
 
+// 위경도 두 점 간 거리 (m) — haversine.
+function distM(lat1, lng1, lat2, lng2) {
+  const R = 6371000, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 async function ingestPos(pos) {
   if (!deviceUid) return;
   const { latitude: lat, longitude: lng, accuracy, altitude, speed, heading } = pos.coords;
+  // (F13-stationary) 이전 fix 와 반경 안 + heartbeat 미도래면 skip.
+  //   측정: 사무실 정지 1시간 81 rows → skip 로직으로 ~20 rows (3분 heartbeat) 로 감소.
+  if (lastPostedPos) {
+    const d = distM(lastPostedPos.lat, lastPostedPos.lng, lat, lng);
+    const elapsed = pos.timestamp - lastPostedPos.ts;
+    if (d < STATIONARY_RADIUS_M && elapsed < HEARTBEAT_MS) {
+      skippedCount++;
+      return;
+    }
+  }
   // (F13) Backend ingest payload — phone 필드로 별도 source (source='phone' 로 저장).
   //   L80/LTE 는 firmware 하드웨어 소스, phone 은 스마트폰 hybrid (GPS+WiFi+cell).
   //   backend 우선순위: phone > l80 > lte 로 devices.last_* 갱신.
@@ -79,7 +104,10 @@ async function ingestPos(pos) {
     });
     if (!res.ok) {
       console.warn('phone tracker: ingest', res.status, await res.text().catch(() => ''));
+      return;
     }
+    // 성공 시에만 lastPostedPos 갱신 (실패 시 다음 fix 재시도 대상).
+    lastPostedPos = { lat, lng, ts: pos.timestamp };
   } catch (e) {
     console.warn('phone tracker: ingest failed', e);
   }
@@ -204,6 +232,8 @@ export function stopPhoneTracker() {
   if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
   queuedPos = null;
   lastPostMs = 0;
+  lastPostedPos = null;
+  skippedCount = 0;
   deviceUid = null;
 }
 
