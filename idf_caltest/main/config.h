@@ -16,8 +16,8 @@
 #define PIN_SDA        8
 #define PIN_SCL        9
 #define PIN_PWR_EN     6      // GPS + LTE 공유 전원 (분리 제어 불가 — hw_power 모듈이 격리)
-#define PIN_PWRKEY     7
-#define PIN_DTR        10
+#define PIN_PWRKEY     10     // [2026-07-30 신PCB 표준] PWRKEY=GPIO10 (NPN 베이스, HIGH=눌림). ※구배선=7 (PWRKEY↔DTR 스왑됨)
+#define PIN_DTR        7      // [2026-07-30 신PCB 표준] DTR=GPIO7 (LOW=모듈 wake). ※구배선=10
 #define PIN_BAT        3
 #define PIN_LIS_INT    5
 #define PIN_GPS_RX     20
@@ -27,12 +27,12 @@
 #define PIN_BUZZER     1     // 액티브(마그네틱) 부저 — digitalWrite HIGH=on
 
 // ── LTE 극성 (aa fork — 03_4 진단 확정값) ────────────────────────
-#define LTE_DTR_IDLE      LOW    // 신모듈 native (구모듈 standalone=HIGH).
-//   PWRKEY 극성 = idle HIGH / pulse LOW (high→low→high, HW팀 전달값) — 양 모듈 공용.
-//   ★[2026-07-09] aa 신모듈은 native·반전 둘 다 30+연속통신 성공(모뎀 auto-boot라 극성 무관),
-//   구모듈 standalone은 반전 확인 → 공용값=반전 채택. (RX/TX·DTR 만 모듈별.)
-#define LTE_PWRKEY_IDLE   HIGH   // 반전=HW팀값·공용 (aa는 native도 되나 반전 채택)
-#define LTE_PWRKEY_PULSE  LOW
+// ★[2026-07-30 신PCB 표준 — HW팀 검증 스케치 반영] PWRKEY=GPIO10(NPN), DTR=GPIO7.
+//   PWRKEY: NPN 베이스 구동이라 idle=LOW(release) / pulse=HIGH(눌림). 구배선(idle HIGH/pulse LOW)과 반대.
+//   DTR: LOW=모듈 wake(sleep 방지). AT+CSCLK=0 로도 슬립 끄므로 극성 영향 최소.
+#define LTE_DTR_IDLE      LOW    // 신PCB 표준: DTR=GPIO7, LOW=wake
+#define LTE_PWRKEY_IDLE   LOW    // 신PCB 표준: NPN idle=LOW(release)
+#define LTE_PWRKEY_PULSE  HIGH   // 신PCB 표준: NPN pulse=HIGH(press) — 부팅 펄스 시 HIGH 유지
 
 // ── Baud / 네트워크 ──────────────────────────────────────────────
 #define GPS_BAUD       9600         // aa LC86G default — "9600 유지 절대 원칙"
