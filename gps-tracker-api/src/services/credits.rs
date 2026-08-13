@@ -6,7 +6,7 @@
 // grant : 관리자 수동 충전 / 사용자 self-topup (결제 PG 연동 전 임시 흐름)
 
 use serde::Serialize;
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::error::{AppError, AppResult};
 
@@ -16,9 +16,11 @@ pub struct CreditTxn {
     pub balance: i64,
 }
 
-/// 차감. 잔액 부족이면 `AppError::BadRequest("포인트 부족 …")`.
-pub async fn charge(
-    db: &PgPool,
+/// 차감 (호출측 트랜잭션 내에서 수행). 잔액 부족이면 `AppError::BadRequest`.
+/// 구독 구매처럼 "차감 + 후속 INSERT" 를 한 트랜잭션으로 원자 처리해야 하는 곳에서 사용 —
+/// 후속 작업이 실패하면 호출측이 tx 를 rollback 해 차감도 함께 취소된다.
+pub async fn charge_tx(
+    tx: &mut Transaction<'_, Postgres>,
     user_id: i64,
     cost: i64,
     reason: &str,
@@ -28,8 +30,6 @@ pub async fn charge(
     if cost <= 0 {
         return Err(AppError::BadRequest("invalid cost".into()));
     }
-    let mut tx = db.begin().await?;
-
     // 원자적 차감 — credits >= cost 보장. 부족하면 None.
     let updated: Option<i64> = sqlx::query_scalar(
         r#"UPDATE users SET credits = credits - $2
@@ -37,7 +37,7 @@ pub async fn charge(
         RETURNING credits"#,
     )
     .bind(user_id).bind(cost)
-    .fetch_optional(&mut *tx).await?;
+    .fetch_optional(&mut **tx).await?;
 
     let balance = updated.ok_or_else(|| AppError::BadRequest(
         format!("포인트가 부족합니다 (필요 {cost}원).")
@@ -55,10 +55,24 @@ pub async fn charge(
     .bind(reason)
     .bind(ref_id)
     .bind(note)
-    .fetch_one(&mut *tx).await?;
+    .fetch_one(&mut **tx).await?;
 
-    tx.commit().await?;
     Ok(CreditTxn { id: log_id, balance })
+}
+
+/// 차감 (자체 트랜잭션). 후속 작업 없는 단순 차감용.
+pub async fn charge(
+    db: &PgPool,
+    user_id: i64,
+    cost: i64,
+    reason: &str,
+    ref_id: Option<i64>,
+    note: Option<&str>,
+) -> AppResult<CreditTxn> {
+    let mut tx = db.begin().await?;
+    let txn = charge_tx(&mut tx, user_id, cost, reason, ref_id, note).await?;
+    tx.commit().await?;
+    Ok(txn)
 }
 
 /// 환불 — charge 의 역. fail 시 0 으로 fallback (오류 가시성을 위해 실패는 trace).

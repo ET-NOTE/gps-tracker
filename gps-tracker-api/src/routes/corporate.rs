@@ -1288,6 +1288,7 @@ async fn create_reservation(
         return Err(AppError::BadRequest("ends_at must be after starts_at".into()));
     }
     verify_device_owner(&state, user.user_id, req.device_id).await?;
+    verify_staff_owner(&state, user.user_id, req.driver_staff_id).await?;
     let status = req.status.unwrap_or_else(|| "planned".into());
     if !matches!(status.as_str(), "planned"|"in_progress"|"completed"|"cancelled") {
         return Err(AppError::BadRequest(format!("invalid status: {status}")));
@@ -1337,7 +1338,29 @@ async fn update_reservation(
     if req.ends_at <= req.starts_at {
         return Err(AppError::BadRequest("ends_at must be after starts_at".into()));
     }
+    // [보안] device_id / driver_staff_id 를 타인 소유로 바꾸는 IDOR 차단 — create 와 동일 검증.
+    //   (미검증 시 응답의 LEFT JOIN devices/staff 가 남의 번호판·직원명을 유출)
+    verify_device_owner(&state, user.user_id, req.device_id).await?;
+    verify_staff_owner(&state, user.user_id, req.driver_staff_id).await?;
     let status = req.status.unwrap_or_else(|| "planned".into());
+    if !matches!(status.as_str(), "planned"|"in_progress"|"completed"|"cancelled") {
+        return Err(AppError::BadRequest(format!("invalid status: {status}")));
+    }
+    // 겹침 검사 — 자기 자신(id) 제외한 같은 device 의 active 예약과 시간 겹침 (create 와 동일 정책)
+    if status == "planned" || status == "in_progress" {
+        let overlap: Option<(i64,)> = sqlx::query_as(
+            r#"SELECT id FROM vehicle_reservations
+                WHERE user_id = $1 AND device_id = $2 AND id <> $5
+                  AND status IN ('planned','in_progress')
+                  AND starts_at < $4 AND ends_at > $3
+                LIMIT 1"#,
+        )
+        .bind(user.user_id).bind(req.device_id).bind(req.starts_at).bind(req.ends_at).bind(id)
+        .fetch_optional(&state.db).await?;
+        if let Some((existing_id,)) = overlap {
+            return Err(AppError::BadRequest(format!("이 시간대에 겹치는 예약 있음 (id={existing_id})")));
+        }
+    }
     let row: Option<Reservation> = sqlx::query_as(
         r#"WITH upd AS (
              UPDATE vehicle_reservations
@@ -1433,18 +1456,23 @@ async fn buy_subscription(
     user: AuthUser,
 ) -> AppResult<Json<SubscriptionView>> {
     let price = corporate_sub_price();
-    // 포인트에서 차감 — 부족하면 BadRequest
-    credits::charge(
-        &state.db, user.user_id, price,
+    // [2026-08-14] 차감 + 구독 INSERT 단일 트랜잭션 원자화 + advisory lock 으로 동시구매 직렬화
+    //   (기존: charge 커밋 후 별도 INSERT → 실패 시 크레딧 소실 / 동시구매 겹침구독). rentcar 와 동일.
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(format!("sub:{}:{}", SUB_KIND, user.user_id))
+        .execute(&mut *tx).await?;
+    credits::charge_tx(
+        &mut tx, user.user_id, price,
         "subscription", None, Some("corporate_report 1개월"),
     ).await?;
 
-    // 기존 active subscription 끝 시각 + 30일, 없으면 now + 30일
+    // 기존 active subscription 끝 시각 + 30일, 없으면 now + 30일 (lock 하에 읽어 겹침 없음)
     let cur_exp: Option<DateTime<Utc>> = sqlx::query_scalar(
         r#"SELECT MAX(expires_at) FROM subscriptions
             WHERE user_id = $1 AND kind = $2 AND expires_at > NOW()"#,
     )
-    .bind(user.user_id).bind(SUB_KIND).fetch_optional(&state.db).await?.flatten();
+    .bind(user.user_id).bind(SUB_KIND).fetch_optional(&mut *tx).await?.flatten();
     let starts_at = cur_exp.unwrap_or_else(Utc::now);
     let expires_at = starts_at + chrono::Duration::days(30);
 
@@ -1454,7 +1482,8 @@ async fn buy_subscription(
     )
     .bind(user.user_id).bind(SUB_KIND).bind(starts_at).bind(expires_at).bind(price)
     .bind("self-purchase")
-    .execute(&state.db).await?;
+    .execute(&mut *tx).await?;
+    tx.commit().await?;
 
     Ok(Json(SubscriptionView {
         active: true,
@@ -1470,6 +1499,20 @@ async fn verify_device_owner(state: &AppState, uid: i64, device_id: i64) -> AppR
     )
     .bind(device_id).fetch_optional(&state.db).await?.flatten();
     if owner != Some(uid) { return Err(AppError::NotFound); }
+    Ok(())
+}
+
+// driver_staff_id 소유권 검증 — 없으면 통과. create/update_reservation 공용
+// (미검증 시 LEFT JOIN staff 가 타 조직 직원명을 응답에 실어 유출 — IDOR).
+async fn verify_staff_owner(state: &AppState, uid: i64, staff_id: Option<i64>) -> AppResult<()> {
+    if let Some(sid) = staff_id {
+        let owner: Option<i64> = sqlx::query_scalar(
+            "SELECT user_id FROM staff WHERE id = $1",
+        ).bind(sid).fetch_optional(&state.db).await?.flatten();
+        if owner != Some(uid) {
+            return Err(AppError::BadRequest("driver_staff_id 소유자 불일치".into()));
+        }
+    }
     Ok(())
 }
 

@@ -136,5 +136,13 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
             "housekeeping: PIPA renter_phone purged (>=3y after return)");
     }
 
+    // 7) login_attempts — brute-force 카운트용. 창(15분) 훨씬 지난 것 정리 (1일 grace).
+    let r = sqlx::query(
+        "DELETE FROM login_attempts WHERE created_at < now() - interval '1 day'"
+    ).execute(pool).await?;
+    if r.rows_affected() > 0 {
+        tracing::info!(deleted = r.rows_affected(), "housekeeping: old login_attempts cleaned");
+    }
+
     Ok(())
 }

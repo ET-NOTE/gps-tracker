@@ -312,6 +312,9 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
                        WHEN 'motion'         THEN COALESCE(ns.motion_alert,      TRUE)
                        WHEN 'offline'        THEN COALESCE(ns.offline_alert,     TRUE)
                        WHEN 'signal_loss'    THEN COALESCE(ns.signal_loss_alert, FALSE)
+                       -- [2026-08-14] stuck = signal_loss(5분) 전 1분 무응답 조기단계. 같은 계열이라
+                       --   signal_loss_alert 설정에 종속(기본 OFF). 누락 시 ELSE TRUE 로 강제푸시되던 버그 수정.
+                       WHEN 'stuck'          THEN COALESCE(ns.signal_loss_alert, FALSE)
                        WHEN 'online'         THEN COALESCE(ns.online_alert,      TRUE)
                        WHEN 'sleep_enter'    THEN COALESCE(ns.sleep_alert,       FALSE)
                        WHEN 'wake'           THEN COALESCE(ns.wake_alert,        FALSE)

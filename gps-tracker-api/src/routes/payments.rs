@@ -417,9 +417,18 @@ async fn webhook(
             tracing::warn!("toss webhook: secret configured but no signature header — rejecting");
             return Err(AppError::Unauthorized);
         }
-        // 시크릿 미설정 (개발 환경) → 통과시키되 경고.
+        // [보안 2026-08-14] 시크릿 미설정 → 기본 거부(fail-closed). 이전엔 무인증 수락(fail-open)이라
+        //   운영 env 누락 시 위조 webhook 으로 무료 크레딧 적립 가능했음. 로컬 개발용 우회는
+        //   TOSS_WEBHOOK_INSECURE_DEV=1 을 명시적으로 켰을 때만 허용.
         (None, _) => {
-            tracing::warn!("toss webhook: TOSS_WEBHOOK_SECRET not set — accepting (dev mode)");
+            let dev_bypass = std::env::var("TOSS_WEBHOOK_INSECURE_DEV")
+                .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+                .unwrap_or(false);
+            if !dev_bypass {
+                tracing::error!("toss webhook: TOSS_WEBHOOK_SECRET not set — rejecting (set secret, or TOSS_WEBHOOK_INSECURE_DEV=1 for local dev)");
+                return Err(AppError::Unauthorized);
+            }
+            tracing::warn!("toss webhook: TOSS_WEBHOOK_INSECURE_DEV=1 — accepting unsigned (DEV ONLY, do not use in prod)");
         }
     }
 
