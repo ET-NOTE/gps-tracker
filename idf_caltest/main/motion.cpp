@@ -1,5 +1,6 @@
 #include "motion.h"
 #include "config.h"
+#include "buzzer.h"   // [2026-08-14] activity 샘플의 부저 진동 가드
 #include <Wire.h>
 #include <math.h>
 
@@ -128,8 +129,20 @@ void init() {
 //    교란해 런타임 카운트가 몇 건 뒤 굶음 (2026-07-02 벤치 실측: GPS 는 이동 감지하는데
 //    MOT 카운트 정지). IA 비트 폴링은 latch/엣지 타이밍에 면역.
 void tick() {
-  if (!ok_) return;
   uint32_t now = millis();
+  if (!ok_) {
+    // [2026-08-14] 부팅 시 미검출이어도 주기 재탐지 — 기존엔 영구 return 이라 wedge-reinit 경로조차
+    //   못 타서 "sleep 영구 비활성(배터리 소모) + wake 소스 없음" 모드로 고착됐음.
+    static uint32_t lastProbeMs = 0;
+    if (now - lastProbeMs >= MOTION_REPROBE_MS) {
+      lastProbeMs = now;
+      busRecover(); delay(10);
+      wireBegin();
+      ok_ = lisInit();
+      if (ok_) { reinits_++; Serial.println(F("[LIS] late probe OK — motion 복구")); }
+    }
+    return;
+  }
   if (now - lastPollMs_ <= LIS_HEALTH_POLL_MS) return;
   lastPollMs_ = now;
 
@@ -185,14 +198,22 @@ void tick() {
     static int      lastMag = -1;
     if (now - actSampleMs >= ACTIVITY_SAMPLE_MS) {
       actSampleMs = now;
-      int mag = rawMagMg();
-      if (mag >= 0) {
-        if (lastMag >= 0) {
-          int d = mag - lastMag; if (d < 0) d = -d;
-          int32_t ema = (int32_t)activityEma_ + ((d - (int32_t)activityEma_) >> 3);   // EMA α=1/8
-          activityEma_ = ema < 0 ? 0 : (uint32_t)ema;
+      // [2026-08-14] 부저 진동 가드 — 같은 PCB 의 마그네틱 부저가 울리는 동안(+잔진동 창)은 샘플 스킵.
+      //   POST 마다 울리는 비프(15s 주기)가 EMA 를 임계(40mg, 정지노이즈 35mg 와 마진 5mg) 위로 밀어
+      //   stationary window 를 주기 리셋 → "정지인데 sleep 미진입"의 유력 원인.
+      bool buzzContam = buzzer::busy() || (now - buzzer::lastActiveMs() < BUZZ_RINGDOWN_MS);
+      if (!buzzContam) {
+        int mag = rawMagMg();
+        // [2026-08-14] 글리치 게이트 — 전바이트 0xFF(fix#11) 외 단일축 부분 글리치도 |mag| 타당범위로 컷.
+        if (mag >= MOTION_MAG_MIN_MG && mag <= MOTION_MAG_MAX_MG) {
+          if (lastMag >= 0) {
+            int d = mag - lastMag; if (d < 0) d = -d;
+            if (d > MOTION_D_CLAMP_MG) d = MOTION_D_CLAMP_MG;   // 글리치 1개가 EMA 를 임계 위로 못 밀게
+            int32_t ema = (int32_t)activityEma_ + ((d - (int32_t)activityEma_) >> 3);   // EMA α=1/8
+            activityEma_ = ema < 0 ? 0 : (uint32_t)ema;
+          }
+          lastMag = mag;
         }
-        lastMag = mag;
       }
     }
     if (activityEma_ >= MOTION_ACTIVITY_THS_MG) activeLastMs_ = now;

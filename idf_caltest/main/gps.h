@@ -19,6 +19,7 @@ namespace gps {
   };
 
   void init(uint32_t bootRefMs);   // gpsSerial.begin + LC86G PAIR init
+  void reconfigure();              // NMEA 설정 재주입 — railCycle(hardCycle) 후 GPS 재부팅 대응
   void feed();                     // loop 마다: UART drain → encode → 상태 갱신
 
   // ── 상태 질의 ──

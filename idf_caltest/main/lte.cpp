@@ -1,6 +1,7 @@
 #include "lte.h"
 #include "config.h"
 #include "hw_power.h"
+#include "gps.h"        // [2026-08-14] hardCycle 후 GPS 재설정 (공유 레일)
 #include "breadcrumb.h"
 #include "loopwdt.h"
 #include <HardwareSerial.h>
@@ -291,8 +292,11 @@ void hardCycle() {
   hw_power::railCycle();
   powerOn();
   ready_ = false;
+  csq_ = -1; reg_ = -1;   // [2026-08-14] stale 값 리셋 — 이전 세션 reg=1 이 남아 CEREG 폴 타임아웃 시
+                          //   미등록 모뎀인데 Phase 3(PDP)로 단락되던 낭비 사이클 방지
   brPhase_ = 0;   // (2026-07-08) 전원사이클 → bringUp Phase1(AT)부터 재시작
   resetHttpKeepalive();   // 모듈 power-cycle → HTTP state 전부 초기화
+  gps::reconfigure();     // [2026-08-14] 공유 레일 → GPS 도 재부팅됨 — NMEA 설정 재주입 (EASY/문장셋/advisor)
 }
 
 // -----------------------------------------------------------------

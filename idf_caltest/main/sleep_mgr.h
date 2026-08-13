@@ -14,7 +14,7 @@ namespace sleep_mgr {
   void checkStationary();               // loop: 정지 5분 → enterDeepSleep
   void timerWakeTick();                 // loop: timer-wake 2분 guard
   void onPostSuccess();                 // main 이 POST 200 시 호출 (timer-wake heartbeat 완료)
-  void enterDeepSleep(const char *reason);
+  bool enterDeepSleep(const char *reason);  // false = 진입 취소 (LIS 미검출 / 진동 지속 settle 실패)
 
   bool timerWakeMode();
   const char* wakeReason();
@@ -27,6 +27,12 @@ namespace sleep_mgr {
   float    lastDriftM();
   int      stationaryFixes();        // 최근 drift 평가의 유효 fix 수
   bool     stationaryGpsAvail();     // 최근 평가 시 GPS 가용 여부
+
+  // [2026-08-14] "sleep 미진입" 원격 진단 — 지금 sleep 을 막는 게이트 + window 리셋 원인별 누적(세션).
+  const char* stayCause();           // active/drift/nogps_wait/lte_recovery/window/…
+  uint16_t resetsActive();           // 진행중이던 window 가 activity 로 죽은 횟수
+  uint16_t resetsDrift();            //   〃 GPS drift 로
+  uint16_t resetsNoGps();            //   〃 no-GPS still 미달로
 
   // RTC 카운터 (telemetry diag)
   uint32_t bootCount();
