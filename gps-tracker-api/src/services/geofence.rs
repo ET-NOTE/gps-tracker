@@ -179,12 +179,21 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
         // 운영 중 LTE module hang / SHCONN 누락 등 — signal_loss (5분) 전에 빠른 가시화.
         // 24h 내 stuck 없을 때만 한 번. signal_loss/offline 으로 넘어가면 stuck 은 자동 만료.
         if silence_min >= 1 {
+            // [2026-08-14] dedup 경계 = GREATEST(24h 전, 마지막 online 복구시각).
+            //   기존 "24h 고정창" 은 두절→복구→재두절 시 재두절을 24h 내내 무통보시킴.
+            //   복구(online) 이후 발생한 stuck 만 세면 재두절은 즉시 통보되고, 연속 두절 중엔
+            //   1회만(스팸 방지), 24h 넘게 계속 두절이면 리마인더로 재발행.
             let recent_stuck: Option<bool> = sqlx::query_scalar(
                 r#"SELECT TRUE FROM events
                     WHERE device_id = $1
                       AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
                       AND kind = 'stuck'
-                      AND occurred_at > now() - interval '24 hours'
+                      AND occurred_at > GREATEST(
+                            now() - interval '24 hours',
+                            COALESCE((SELECT MAX(occurred_at) FROM events
+                                       WHERE device_id = $1
+                                         AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
+                                         AND kind = 'online'), '-infinity'::timestamptz))
                     ORDER BY occurred_at DESC LIMIT 1"#,
             )
             .bind(device_id).fetch_optional(pool).await?;
@@ -203,13 +212,19 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
 
         // 어떤 단계 알림을 발사할지 결정
         if silence_min >= offline_min as i64 {
-            // OFFLINE 단계 (30분+) — 직전 24h 내 offline 없을 때만 한 번 발사
+            // OFFLINE 단계 (30분+) — 복구(online) 이후 offline 없을 때만 발사 (24h 리마인더 유지).
+            //   재두절 무통보 버그 수정: 경계를 GREATEST(24h 전, 마지막 online).
             let recent_offline: Option<bool> = sqlx::query_scalar(
                 r#"SELECT TRUE FROM events
                     WHERE device_id = $1
                       AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
                       AND kind = 'offline'
-                      AND occurred_at > now() - interval '24 hours'
+                      AND occurred_at > GREATEST(
+                            now() - interval '24 hours',
+                            COALESCE((SELECT MAX(occurred_at) FROM events
+                                       WHERE device_id = $1
+                                         AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
+                                         AND kind = 'online'), '-infinity'::timestamptz))
                     ORDER BY occurred_at DESC LIMIT 1"#,
             )
             .bind(device_id).fetch_optional(pool).await?;
@@ -225,13 +240,18 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
             .execute(pool).await?;
             tracing::info!(device_id, silence_min, "offline event inserted");
         } else if silence_min >= signal_min as i64 {
-            // SIGNAL_LOSS 단계 (5~30분) — 직전 24h 내 signal_loss/offline 없을 때만
+            // SIGNAL_LOSS 단계 (5~30분) — 복구(online) 이후 signal_loss/offline 없을 때만 (24h 리마인더 유지)
             let recent_either: Option<bool> = sqlx::query_scalar(
                 r#"SELECT TRUE FROM events
                     WHERE device_id = $1
                       AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
                       AND kind IN ('signal_loss', 'offline')
-                      AND occurred_at > now() - interval '24 hours'
+                      AND occurred_at > GREATEST(
+                            now() - interval '24 hours',
+                            COALESCE((SELECT MAX(occurred_at) FROM events
+                                       WHERE device_id = $1
+                                         AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
+                                         AND kind = 'online'), '-infinity'::timestamptz))
                     ORDER BY occurred_at DESC LIMIT 1"#,
             )
             .bind(device_id).fetch_optional(pool).await?;

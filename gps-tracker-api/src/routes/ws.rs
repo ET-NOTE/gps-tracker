@@ -122,10 +122,29 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64) {
         }
     });
 
-    // SEND: broadcast 이벤트 + ack 메시지 두 채널 멀티플렉싱
+    // [보안 2026-08-14] 구독 소유권 주기 재검증 — subscribe 시점에만 검증하면, 이후 device 가
+    //   unpair→타인에게 re-pair 되어도 이 WS 의 subs 에 남아 새 owner 의 실시간 좌표가 계속 샘.
+    //   30s 주기로 재조회해 더 이상 소유하지 않는 device 를 프루닝(노출 창 ≤30s, per-message 비용 0).
+    let mut revalidate = tokio::time::interval(std::time::Duration::from_secs(30));
+    revalidate.tick().await;   // 즉시 발화하는 첫 tick 소비
+
+    // SEND: broadcast 이벤트 + ack 메시지 + 주기 재검증 멀티플렉싱
     loop {
         tokio::select! {
             biased;
+            _ = revalidate.tick() => {
+                let current: Vec<i64> = { subs.lock().unwrap().iter().copied().collect() };
+                if !current.is_empty() {
+                    // 성공했을 때만 프루닝 — 일시 DB 오류에 정상 구독을 전부 날리지 않도록.
+                    if let Ok(still) = sqlx::query_scalar::<_, i64>(
+                        "SELECT id FROM devices WHERE owner_id = $1 AND id = ANY($2)",
+                    ).bind(user_id).bind(&current).fetch_all(&state.db).await {
+                        let still_set: HashSet<i64> = still.into_iter().collect();
+                        let mut s = subs.lock().unwrap();
+                        s.retain(|id| still_set.contains(id));
+                    }
+                }
+            }
             ack = cmd_rx.recv() => {
                 let Some((accepted, rejected)) = ack else { break };
                 let payload = serde_json::json!({

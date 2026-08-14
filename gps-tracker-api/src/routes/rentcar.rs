@@ -86,16 +86,23 @@ async fn buy_subscription(
     user: AuthUser,
 ) -> AppResult<Json<SubscriptionView>> {
     let price = rentcar_sub_price();
-    credits::charge(
-        &state.db, user.user_id, price,
+    // [2026-08-14] 차감 + 구독 INSERT 를 단일 트랜잭션으로 원자화 (기존: charge 커밋 후 별도 INSERT
+    //   → INSERT 실패 시 크레딧만 소실). advisory lock 으로 동일 user+kind 동시 구매를 직렬화해
+    //   두 구매가 같은 MAX(expires_at) 를 읽어 겹치는 구독 2행을 만드는 race 도 차단.
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(format!("sub:{}:{}", SUB_KIND, user.user_id))
+        .execute(&mut *tx).await?;
+    credits::charge_tx(
+        &mut tx, user.user_id, price,
         "subscription", None, Some("rentcar_report 1개월"),
     ).await?;
-    // 기존 active 있으면 그 끝에 30일 추가, 없으면 now+30일
+    // 기존 active 있으면 그 끝에 30일 추가, 없으면 now+30일 (lock 하에 읽어 겹침 없음)
     let cur_exp: Option<DateTime<Utc>> = sqlx::query_scalar(
         r#"SELECT MAX(expires_at) FROM subscriptions
             WHERE user_id = $1 AND kind = $2 AND expires_at > NOW()"#,
     )
-    .bind(user.user_id).bind(SUB_KIND).fetch_optional(&state.db).await?.flatten();
+    .bind(user.user_id).bind(SUB_KIND).fetch_optional(&mut *tx).await?.flatten();
     let starts_at = cur_exp.unwrap_or_else(Utc::now);
     let expires_at = starts_at + chrono::Duration::days(30);
     sqlx::query(
@@ -104,7 +111,8 @@ async fn buy_subscription(
     )
     .bind(user.user_id).bind(SUB_KIND).bind(starts_at).bind(expires_at).bind(price)
     .bind("self-purchase")
-    .execute(&state.db).await?;
+    .execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(Json(SubscriptionView {
         active: true,
         expires_at: Some(expires_at),

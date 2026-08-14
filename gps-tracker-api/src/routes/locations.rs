@@ -108,7 +108,8 @@ async fn latest(
     // user_id 가 일치하므로 자동 복구).
     let row = sqlx::query_as::<_, LocationView>(
         r#"SELECT recorded_at, source, fix, lat, lng, sat, ttff_s,
-                  csq, reg, vbat_mv, device_uptime_s, heading
+                  csq, reg, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv,
+                  device_uptime_s, heading
              FROM location_records
             WHERE device_id = $1 AND user_id = $2
             ORDER BY recorded_at DESC

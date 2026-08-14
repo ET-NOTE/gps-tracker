@@ -548,12 +548,49 @@ pub async fn send_otp(
     }))
 }
 
+// [2026-08-14] 로그인 brute-force 방어 임계 (15분 창).
+const LOGIN_WINDOW_MIN: i64 = 15;
+const LOGIN_MAX_PER_EMAIL: i64 = 10;   // 이메일당 실패 상한
+const LOGIN_MAX_PER_IP: i64 = 30;      // IP당 실패 상한 (여러 이메일 스프레이 차단)
+
+fn client_ip(headers: &HeaderMap) -> String {
+    headers.get("x-real-ip")
+        .or_else(|| headers.get("x-forwarded-for"))
+        .and_then(|v| v.to_str().ok())
+        // x-forwarded-for 는 "client, proxy1, ..." 형식일 수 있어 첫 항목만.
+        .map(|s| s.split(',').next().unwrap_or(s).trim().to_string())
+        .unwrap_or_else(|| "unknown".into())
+}
+
 pub async fn login(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(req): Json<LoginRequest>,
 ) -> AppResult<Json<TokenPair>> {
     req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    let ip = client_ip(&headers);
+
+    // ── rate limit: 최근 15분 실패 횟수로 잠금 (이메일 단위 + IP 단위) ──
+    let email_fails: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*) FROM login_attempts
+            WHERE email = $1 AND success = FALSE
+              AND created_at > NOW() - ($2 || ' minutes')::interval"#,
+    )
+    .bind(&req.email).bind(LOGIN_WINDOW_MIN.to_string())
+    .fetch_one(&state.db).await?;
+    let ip_fails: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*) FROM login_attempts
+            WHERE ip = $1 AND success = FALSE
+              AND created_at > NOW() - ($2 || ' minutes')::interval"#,
+    )
+    .bind(&ip).bind(LOGIN_WINDOW_MIN.to_string())
+    .fetch_one(&state.db).await?;
+    if email_fails >= LOGIN_MAX_PER_EMAIL || ip_fails >= LOGIN_MAX_PER_IP {
+        tracing::warn!(email = %req.email, %ip, email_fails, ip_fails, "login locked (rate limit)");
+        return Err(AppError::TooManyRequests(
+            format!("로그인 시도가 너무 많습니다. {LOGIN_WINDOW_MIN}분 후 다시 시도해주세요.")
+        ));
+    }
 
     let row: Option<(i64, String)> = sqlx::query_as(
         r#"SELECT id, password_hash FROM users WHERE email = $1"#,
@@ -562,10 +599,24 @@ pub async fn login(
     .fetch_optional(&state.db)
     .await?;
 
-    let (user_id, pw_hash) = row.ok_or(AppError::Unauthorized)?;
-    if !password::verify(&req.password, &pw_hash) {
+    // 실패(계정 없음 / 비번 불일치) 는 동일하게 기록 + 동일 에러 → enumeration·잠금 우회 방지.
+    let ok = match &row {
+        Some((_, pw_hash)) => password::verify(&req.password, pw_hash),
+        None => false,
+    };
+    if !ok {
+        let _ = sqlx::query(
+            "INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, FALSE)",
+        ).bind(&req.email).bind(&ip).execute(&state.db).await;
         return Err(AppError::Unauthorized);
     }
+    let user_id = row.unwrap().0;
+
+    // 성공 → 이 이메일의 실패 기록 소거(즉시 잠금 해제) + 성공 기록.
+    let _ = sqlx::query("DELETE FROM login_attempts WHERE email = $1 AND success = FALSE")
+        .bind(&req.email).execute(&state.db).await;
+    let _ = sqlx::query("INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, TRUE)")
+        .bind(&req.email).bind(&ip).execute(&state.db).await;
 
     let ua = headers.get("user-agent").and_then(|v| v.to_str().ok());
     let ttl_days = refresh_ttl_for(&state, req.remember_me);
