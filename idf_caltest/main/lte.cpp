@@ -347,23 +347,33 @@ void fetchBandInfo() {
     String line = (cp >= 0) ? lastResp.substring(cp) : lastResp;
     int nl = line.indexOf('\n'); if (nl >= 0) line = line.substring(0, nl);
     line.trim();
-    const char *rat = "?";
-    if      (line.indexOf("CAT-M") >= 0 || line.indexOf("CATM") >= 0) rat = "M1";
-    else if (line.indexOf("NB-IOT") >= 0 || line.indexOf("NB-IoT") >= 0 || line.indexOf("NBIOT") >= 0) rat = "NB";
-    else if (line.indexOf("LTE") >= 0) rat = "LTE";
-    int b = -1, bp = line.indexOf("BAND");
-    if (bp >= 0) {
-      int i = bp + 4;
-      while (i < (int)line.length() && !isdigit((int)line[i])) i++;   // "-"/공백 스킵
-      int st = i;
-      while (i < (int)line.length() && isdigit((int)line[i])) i++;
-      if (i > st) b = line.substring(st, i).toInt();
+    // 미등록/무서비스 — "+CPSI: NO SERVICE,Online" 등. 파싱실패("?-?")와 구분해 명확 표기.
+    if (line.indexOf("NO SERVICE") >= 0 || line.indexOf("Offline") >= 0) {
+      snprintf(band_, sizeof(band_), "NOSVC");
+      Serial.printf("[BAND] serving: NOSVC | %s\n", line.c_str());
+    } else {
+      // RAT: "LTE CAT-M1" / "LTE NB-IOT". CAT-M 을 먼저 검사(둘 다 LTE 포함하므로).
+      const char *rat = "?";
+      if      (line.indexOf("CAT-M") >= 0 || line.indexOf("CATM") >= 0) rat = "M1";
+      else if (line.indexOf("NB-IOT") >= 0 || line.indexOf("NB-IoT") >= 0 || line.indexOf("NBIOT") >= 0) rat = "NB";
+      else if (line.indexOf("LTE") >= 0) rat = "LTE";
+      // 밴드번호: "EUTRAN-BAND3" 의 "BAND" 뒤 첫 숫자열. (구분자 '-'/공백 스킵 후 digit)
+      int b = -1, bp = line.indexOf("BAND");
+      if (bp >= 0) {
+        int i = bp + 4;
+        while (i < (int)line.length() && !isdigit((int)line[i])) i++;
+        int st = i;
+        while (i < (int)line.length() && isdigit((int)line[i])) i++;
+        if (i > st) b = line.substring(st, i).toInt();
+      }
+      if (b >= 0) snprintf(band_, sizeof(band_), "%s-B%d", rat, b);   // 예: M1-B3 / NB-B5
+      else        snprintf(band_, sizeof(band_), "%s-?", rat);         // RAT 만 확인, 밴드 미추출
+      Serial.printf("[BAND] serving: %s | %s\n", band_, line.c_str());
     }
-    if (b >= 0) snprintf(band_, sizeof(band_), "%s-B%d", rat, b);
-    else        snprintf(band_, sizeof(band_), "%s-?", rat);
-    Serial.printf("[BAND] serving: %s | %s\n", band_, line.c_str());
   } else {
-    Serial.println(F("[BAND] CPSI 무응답/무서비스"));
+    // CPSI 자체 무응답 — 이전 band_ 유지하지 않고 명시 (등록은 됐으나 CPSI timeout 등)
+    snprintf(band_, sizeof(band_), "NORESP");
+    Serial.println(F("[BAND] CPSI 무응답"));
   }
 }
 
