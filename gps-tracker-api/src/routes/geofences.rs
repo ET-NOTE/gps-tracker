@@ -274,7 +274,14 @@ async fn update(
     Json(req): Json<UpdateRequest>,
 ) -> AppResult<Json<GeofenceView>> {
     req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
-    if let (Some(la), Some(ln)) = (req.center_lat, req.center_lng) { check_lat_lng(la, ln)?; }
+    // [2026-08-14] 부분 업데이트 개별 검증 — 기존엔 lat/lng 둘 다 보낼 때만 검증해, 하나만 보내면
+    //   (나머지는 DB 유지) 범위 밖 값(lat=999)이 저장돼 haversine 거리 오염 → 스퓨리어스 이탈 push.
+    if let Some(la) = req.center_lat {
+        if !(-90.0..=90.0).contains(&la) { return Err(AppError::BadRequest("center_lat out of range".into())); }
+    }
+    if let Some(ln) = req.center_lng {
+        if !(-180.0..=180.0).contains(&ln) { return Err(AppError::BadRequest("center_lng out of range".into())); }
+    }
 
     // device_id 변경 시 권한 확인
     if let Some(Some(did)) = req.device_id {
@@ -313,6 +320,13 @@ async fn update(
 
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound);
+    }
+    // [2026-08-14] 위치/반경 변경 또는 재활성화 시 geofence_states 리셋 → 다음 ingest 가 첫 측정으로
+    //   재arm(이벤트 없음). 기존엔 stale prev(inside) 기준으로 허위 "이탈" push 를 쏘던 것 차단.
+    if req.center_lat.is_some() || req.center_lng.is_some() || req.radius_m.is_some()
+        || req.active == Some(true) {
+        let _ = sqlx::query("DELETE FROM geofence_states WHERE geofence_id = $1")
+            .bind(id).execute(&state.db).await;
     }
     fetch(&state, id, user.user_id).await
 }

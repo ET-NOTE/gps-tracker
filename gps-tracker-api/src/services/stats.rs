@@ -97,9 +97,12 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
 
     // fix=true 점만, 시간순
     let rows: Vec<(DateTime<Utc>, f64, f64)> = sqlx::query_as(
+        // [뿌리 B 2026-08-14] 현재 owner 데이터만 집계 — 재페어링된 device 에서 이전 owner 의
+        //   fix 까지 합산해 통계 혼입되던 것 차단 (upsert user_id 도 EXCLUDED 로 현재 owner 반영).
         r#"SELECT recorded_at, lat, lng
              FROM location_records
             WHERE device_id = $1
+              AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
               AND fix = TRUE
               AND lat IS NOT NULL AND lng IS NOT NULL
               AND recorded_at >= $2 AND recorded_at < $3
@@ -120,7 +123,7 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
                ON CONFLICT (device_id, date) DO UPDATE
                   SET fix_count=0, distance_m=0, duration_s=0, moving_s=0, stop_count=0,
                       max_speed_kmh=0, avg_speed_kmh=0, first_fix_at=NULL, last_fix_at=NULL, updated_at=now(),
-                      user_id = COALESCE(daily_stats.user_id, EXCLUDED.user_id)"#,
+                      user_id = EXCLUDED.user_id"#,
         )
         .bind(device_id).bind(date)
         .execute(pool).await?;
