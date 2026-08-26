@@ -235,5 +235,6 @@ WebSocket connection to 'wss://.../ws/realtime?token=eyJ...' failed: HTTP Authen
 
 - [hardware.md](hardware.md) — HW rev 진화
 - [DB_RESPONSIBILITY.md](DB_RESPONSIBILITY.md) — DB 접근 정책
-- `arduino/13_4_aa_motion_aware_tracker/` — 최종 firmware
-- STATUS.md — 현재 진행 상태
+- [`idf_caltest/`](../idf_caltest/) — **현재 운영 firmware** (ESP-IDF, 신PCB 표준)
+- `arduino/13_4_aa_motion_aware_tracker/` — legacy Arduino 세대 (구PCB 배선)
+- [../STATUS.md](../STATUS.md) — 현재 진행 상태

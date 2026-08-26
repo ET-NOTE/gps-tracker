@@ -111,5 +111,9 @@ UI (`Dashboard.jsx`, `KakaoMap tooltip`) 에는 두 값 함께 표시: `4240 mV 
 - [architecture.md](../architecture.md) — 시스템 전체 흐름 (firmware ↔ api ↔ web ↔ mobile)
 - [troubleshooting.md](troubleshooting.md) — 실전 사고 log
 - [SETUP.md](SETUP.md) — 로컬 개발 셋업
-- `arduino/13_4_aa_motion_aware_tracker/` — 최신 aa firmware (Arduino)
-- `idf_caltest/` — 최신 IDF 프로젝트 (arduino-esp32 as component)
+- **[`idf_caltest/`](../idf_caltest/) — ✅ 현재 운영 firmware** (ESP-IDF v5.5 + arduino-esp32 as component)
+  - **신PCB (2026-07-30~)** 표준: `PIN_PWRKEY=10`, `PIN_DTR=7` (구배선과 스왑됨) + PWRKEY NPN 극성 반전.
+  - 구PCB 유닛에 flash 금지 (PWRKEY/DTR 물리 misconnect).
+  - Build/flash 절차: [idf_caltest/README.md](../idf_caltest/README.md)
+- `arduino/13_4_aa_motion_aware_tracker/` — **legacy**, `idf_caltest` 이관 직전 세대. 구PCB (`PIN_PWRKEY=7`, `PIN_DTR=10`) 배선.
+- `arduino/03_*`, `arduino/14_*` 등 — 진단/실험 스케치 (운영 미사용).

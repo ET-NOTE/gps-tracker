@@ -1,6 +1,6 @@
 # GPS 트래커 프로젝트 진행 상태
 
-**최종 갱신**: 2026-07-29
+**최종 갱신**: 2026-07-30
 **도메인**: https://gps.serial.kr (모든 엔드포인트 HTTPS)
 **서버 SSH**: `deploy@<VPS_HOST>` (Ubuntu 22.04, PostgreSQL 14.18, nginx 1.18)
 
@@ -19,9 +19,8 @@
 
 ## 1. 한 줄 요약
 
-ESP32-C3 GPS 트래커 → gps.serial.kr Rust API → (예정) Flutter 앱.
-**서버 백엔드 핵심 완료** (인증/디바이스/위치/실시간 WS/이벤트/FCM 스텁).
-다음: **12_ 펌웨어로 데이터 누적 검증** → Flutter.
+ESP32-C3 GPS 트래커 → gps.serial.kr Rust API → Flutter iOS/Android 앱.
+**전 스택 프로덕션** — 펌웨어(`idf_caltest`) · 백엔드 · 웹(`gps.serial.kr`) · Flutter 앱 · FCM 알림 · 스마트폰 tracker 옵션까지 실서비스.
 
 ---
 
@@ -48,17 +47,22 @@ ESP32-C3 GPS 트래커 → gps.serial.kr Rust API → (예정) Flutter 앱.
 
 ## 3. 완료된 작업
 
-### 3-1. 펌웨어 (Arduino, ESP32-C3 mini)
+### 3-1. 펌웨어 (ESP32-C3 mini)
 
-- **[arduino/01_oled_test](arduino/01_oled_test/)** ~ **[arduino/10_tcp_tracker](arduino/10_tcp_tracker/)**: 단계별 검증 (OLED, ADC, GPS, SIM AT, LTE 데이터, deep sleep, TCP 단독)
-- **[arduino/11_final_tracker/11_final_tracker.ino](arduino/11_final_tracker/11_final_tracker.ino)** ✅ — 현재 사용 중 펌웨어
-  - 스위치 `LOW` = wake / `HIGH` = deep sleep (0.5s 디바운스)
-  - L80-R UART NMEA → 좌표/위성/TTFF
-  - SIM7080G LTE + **SH* HTTP 스택** (CGNSPWR=0 유지, GNSS 미사용 → 데이터 안정)
-  - 30초 간격 POST `https://gps.serial.kr/gps-tracker/ingest`
-  - OLED 4줄 디버그 (CDC USB 시리얼)
-- ⚠️ MMA8452 자이로 — INT 하드웨어 이슈로 보류
-- ⚠️ 전원 — D6 경로가 SIM7080G 피크 부족, 현재 Jinyushi USB 5V 상시 공급 가정 ([project_power_design_gap.md](../../C:/Users/msb/.claude/projects/e--project/memory/project_power_design_gap.md))
+**✅ 현재 운영본 — [`idf_caltest/`](idf_caltest/)** (ESP-IDF v5.5 + arduino-esp32 as component)
+- LC86G GPS + SIM7080 LTE + LIS3DH 모션 + 마그네틱 부저
+- POST `https://gps.serial.kr/ingest` (nginx → 백엔드 `/gps-tracker/ingest`)
+- **모션-aware sleep** (정지 5분 → deep sleep, 모션 wake, 10분 timer heartbeat)
+- 회복 state machine (soft/hardCycle/esp_restart, 상세: [idf_caltest/README.md](idf_caltest/README.md))
+- **신PCB 표준 (2026-07-30~)**: `PIN_PWRKEY=10`, `PIN_DTR=7` (구배선과 스왑됨). 구PCB flash 금지.
+- CDCOnBoot=**default** 필수 (cdc 면 Serial.print blocking 으로 LTE stuck)
+
+**Legacy Arduino 스케치** (`arduino/`) — 진단/실험/이관 흔적, **운영 미사용**:
+- `01_*` ~ `10_*`: 단계별 검증 (OLED, GPS, SIM AT, LTE, TCP 등)
+- `11_final_tracker`: 초기 최종본 (SH* HTTP 스택 검증)
+- `12_continuous_tracker` ~ `13_4_aa_motion_aware_tracker`: 이관 중간본. `13_4_aa` 는 `idf_caltest` 이관 직전 세대.
+- `14_*`, `03_*`, `05_*`: 진단/hw 검증용
+- ⚠️ 이 스케치들은 **구PCB 배선** (`PIN_PWRKEY=7`, `PIN_DTR=10`) 그대로. 신PCB 유닛에 flash 금지.
 
 ### 3-2. Backend (Rust + axum + sqlx + PostgreSQL)
 
@@ -83,7 +87,7 @@ ESP32-C3 GPS 트래커 → gps.serial.kr Rust API → (예정) Flutter 앱.
 
 | Path | Method | Auth | 비고 |
 |---|---|---|---|
-| `/ingest` | POST | 익명 | ESP 11_final_tracker 호환. device_uid 없으면 `anon-<ip>`로 생성. low_batt 자동 분류. |
+| `/ingest` | POST | 익명 | firmware(`idf_caltest`) + 스마트폰 tracker 공용. device_uid 없으면 `anon-<ip>`, low_batt 자동 분류, source∈{l80, lte, phone} 우선순위로 devices.last_* 갱신. |
 | `/api/v1/auth/register` | POST | 없음 | email + password (≥8) → access(15min) + refresh(30day, jti) |
 | `/api/v1/auth/login` | POST | 없음 | 동일 응답, refresh hash DB 저장 |
 | `/api/v1/auth/refresh` | POST | refresh_token | 회전 (이전 토큰 revoke + 새 쌍 발급) |
