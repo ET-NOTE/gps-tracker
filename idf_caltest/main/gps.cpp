@@ -114,17 +114,23 @@ static void parseAntenna(char *line, uint16_t len) {
 }
 
 // -----------------------------------------------------------------
-void init(uint32_t bootRefMs) {
-  bootRef_ = bootRefMs;
-  serial.setRxBufferSize(4096);   // LTE bringup 블로킹 동안 NMEA overflow 방지
-  serial.begin(GPS_BAUD, SERIAL_8N1, PIN_GPS_RX, PIN_GPS_TX);
-  delay(GPS_INIT_SETTLE_MS);
+// NMEA 설정 주입. init 외에 lte::hardCycle(railCycle) 후에도 호출 — 공유 레일이라 GPS 도 함께
+//   재부팅되어 설정이 공장값으로 돌아가기 때문 (flash 비저장). [2026-08-14 분리]
+void reconfigure() {
   sendNmea("$PAIR025,1");     delay(100);   // EASY (ephemeris 예측 — TTFF 단축)
   sendNmea("$PAIR050,1000");  delay(100);   // fix rate 1Hz
   sendNmea("$PAIR062,1,0");   delay(100);   // GLL off
   sendNmea("$PAIR062,5,0");   delay(100);   // VTG off
   sendNmea("$PAIR062,3,5");   delay(100);   // GSV 5s
   sendNmea("$PGCMD,33,1");    delay(100);   // [2026-07-14] MTK(L86) 안테나 advisor ON → ANTSTATUS 주기 출력(live 탈착 감지)
+}
+
+void init(uint32_t bootRefMs) {
+  bootRef_ = bootRefMs;
+  serial.setRxBufferSize(4096);   // LTE bringup 블로킹 동안 NMEA overflow 방지
+  serial.begin(GPS_BAUD, SERIAL_8N1, PIN_GPS_RX, PIN_GPS_TX);
+  delay(GPS_INIT_SETTLE_MS);
+  reconfigure();
 }
 
 void feed() {

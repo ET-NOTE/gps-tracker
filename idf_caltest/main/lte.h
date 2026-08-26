@@ -16,6 +16,7 @@ namespace lte {
   bool softReset();     // CFUN 0→1 (+COPS=0) 재등록
   void hardCycle();     // hw_power::railCycle + power-on (무거운 복구)
   void fetchSimInfo();  // ICCID/IMEI/IMSI
+  void fetchBandInfo(); // [2026-08-14] AT+CBANDCFG?(enable된 밴드셋, 로그) + AT+CPSI?(실제 serving 밴드 → band_)
   void refresh();       // CSQ + CEREG 재조회 (cached csq_/reg_ 갱신)
 
   // ── HTTP (Block 6) ──
@@ -38,4 +39,5 @@ namespace lte {
   const char* iccid();
   const char* imei();
   const char* imsi();
+  const char* band();       // 실제 serving 밴드 "RAT-Bxx" (예: M1-B3 / NB-B5). "?"=아직/무서비스. 인증밴드 실측용.
 }

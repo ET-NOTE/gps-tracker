@@ -17,7 +17,8 @@ RTC_DATA_ATTR static uint8_t  hardResets_ = 0;
 RTC_DATA_ATTR static uint8_t  softStreak_ = 0;
 RTC_DATA_ATTR static uint8_t  dataStreak_ = 0;   // (P1) REG OK 인데 POST 실패 시 data-plane 재활성 횟수
 // 타임스탬프는 millis 기반이라 재부팅 시 무의미 → 세션 로컬(static) 유지.
-static uint32_t lastSuccessMs_ = 0;   // 0 = 이 세션 성공 POST 아직 없음
+static uint32_t lastSuccessMs_ = 0;   // 0 = 이 세션 성공 POST 아직 없음 (진짜 성공만 — escalation rearm 은 아래 별도)
+static uint32_t lastEscalationMs_ = 0;   // [2026-08-14] 60s 쿨다운 anchor — lastSuccessMs_ 재사용(의미 오염) 분리
 static uint32_t stuckSinceMs_  = 0;   // stuck 시작 (성공 POST 시 0 으로 rearm)
 static uint32_t lastRegPollMs_ = 0;
 static uint32_t lastRegOkMs_   = 0;
@@ -61,6 +62,7 @@ void tick() {
       if (lte::bringUp()) {                          // 등록완료+PDP → ONLINE
         Serial.printf("[REC] → ONLINE (CSQ=%d REG=%d IP=%s)\n", lte::csq(), lte::reg(), lte::ip());
         lte::fetchSimInfo();
+        lte::fetchBandInfo();   // [2026-08-14] serving 밴드 실측 (CPSI) → telemetry band
         bringFails_ = 0; hardResets_ = 0; softStreak_ = 0; dataStreak_ = 0; stuckSinceMs_ = 0;
         lastRegOkMs_ = millis();
         nextBringUpAt_ = millis() + LTE_BRINGUP_RETRY_MS;
@@ -99,6 +101,7 @@ void tick() {
     if (lte::bringUp()) {                            // (드물게 즉시 ready — 보통 Phase1→in-progress)
       Serial.printf("[REC] → ONLINE (CSQ=%d REG=%d IP=%s)\n", lte::csq(), lte::reg(), lte::ip());
       lte::fetchSimInfo();
+      lte::fetchBandInfo();   // [2026-08-14] serving 밴드 실측 (CPSI) → telemetry band
       bringFails_ = 0; hardResets_ = 0; softStreak_ = 0; dataStreak_ = 0; stuckSinceMs_ = 0;
       lastRegOkMs_ = millis();
       nextBringUpAt_ = millis() + LTE_BRINGUP_RETRY_MS;
@@ -115,11 +118,16 @@ void tick() {
   // 경로(4)+(5) stuck watchdog: 마지막 성공 POST 후 60s 무응답.
   // (P1) REG 상태로 분기 — 등록 유지면 data-plane 만 가볍게(CFUN 안 함), 등록 상실이면 CFUN.
   // [2026-07-14 fix#1] lastSuccessMs_==0(첫 성공 POST 없음)도 stuck 으로 처리 — ONLINE(PDP up)인데
-  //   POST 를 단 한 번도 성공 못 하는 영구 stuck 방지. (now-0=uptime 이 60s 넘으면 escalation 시작
-  //   → data재활성/soft/hard, 미해결 시 STUCK_RESTART_TIMEOUT(30분)에 restart.)
-  if ((now - lastSuccessMs_) > STUCK_POST_TIMEOUT_MS) {
+  //   POST 를 단 한 번도 성공 못 하는 영구 stuck 방지. (anchor=bootMs → uptime 60s 넘으면 escalation
+  //   시작 → data재활성/soft/hard, 미해결 시 STUCK_RESTART_TIMEOUT(30분)에 restart.)
+  // [2026-08-14] 쿨다운 anchor 를 lastEscalationMs_ 로 분리 — 기존 lastSuccessMs_=now rearm 은
+  //   "마지막 성공 POST" 의미를 오염시켜 sleep_mgr 의 RECOVERY_STAY_AWAKE 판정이 escalation 시각
+  //   기준으로 밀리던 문제(설계보다 수 분 늦게 sleep) 유발.
+  uint32_t anchor = lastSuccessMs_ ? lastSuccessMs_ : bootMs_;
+  if (lastEscalationMs_ && (int32_t)(lastEscalationMs_ - anchor) > 0) anchor = lastEscalationMs_;
+  if ((now - anchor) > STUCK_POST_TIMEOUT_MS) {
     if (stuckSinceMs_ == 0) stuckSinceMs_ = now;
-    if ((now - stuckSinceMs_) > STUCK_RESTART_TIMEOUT_MS) restart("stuck 5min (soft/hard 무효)");
+    if ((now - stuckSinceMs_) > STUCK_RESTART_TIMEOUT_MS) restart("stuck 30min (soft/hard 무효)");
 
     lte::refresh();                          // 최신 REG/CSQ
     bool regOk = (lte::reg() == 1 || lte::reg() == 5);
@@ -138,9 +146,10 @@ void tick() {
       Serial.println(F("[REC] soft 반복 실패 → hardCycle"));
       softStreak_ = 0;
       lte::hardCycle();                      // ready_=false
+      lastHardCycleMs_ = now;   // [2026-08-14] stuck 경로 hardCycle 도 인러시 back-off arm (기존 누락 — bringup 경로만 arm 됐음)
       nextBringUpAt_ = millis() + 1000;
     }
-    lastSuccessMs_ = now;             // 60s cooldown rearm (stuckSinceMs_ 는 유지 = 총 stuck)
+    lastEscalationMs_ = now;          // 60s cooldown rearm (stuckSinceMs_ 는 유지 = 총 stuck)
     return;                          // ← 매 tick 단일 액션
   }
 
@@ -165,6 +174,7 @@ void notifyPostResult(bool ok200) {
   if (ok200) {
     uint32_t now = millis();
     lastSuccessMs_ = now;
+    lastEscalationMs_ = 0;
     stuckSinceMs_  = 0;
     softStreak_    = 0;
     dataStreak_    = 0;

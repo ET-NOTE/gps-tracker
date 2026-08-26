@@ -10,14 +10,17 @@
 //  · 모니터링 세션: FQBN esp32:esp32:esp32c3:CDCOnBoot=cdc + BUZZER_ENABLED 1
 //  · 운영(배터리):  FQBN esp32:esp32:esp32c3 (CDCOnBoot=default) + BUZZER_ENABLED 0
 #define BUZZER_ENABLED 1   // (2026-07-02) 능동 부저 활성. LTE POST 무해 재확인(2026-07-03). 운영/필드 ON 유지 결정.
+// ⚠️[2026-08-14] 위 "무해 재확인"은 구보드 기준. 마그네틱 부저(GPIO1 직결)의 LTE 간섭은 진단 이력상
+//   신PCB 에서 deterministic 이었고 firmware 로 차단 불가(플라이백 다이오드 = hardware fix 필수).
+//   신PCB 양산분에 플라이백 반영이 확인되기 전까지는 신PCB 유닛에 BUZZER_ENABLED 0 권장.
 #define WAKE_BEEP_COUNT 6  // (2026-07-03 사용자 결정) 모션 wake 시 부저 횟수 — aa 필드본과 통일(6회).
 
 // ── 핀 (신 PCB rev, 2026-06-17~) ─────────────────────────────────
 #define PIN_SDA        8
 #define PIN_SCL        9
 #define PIN_PWR_EN     6      // GPS + LTE 공유 전원 (분리 제어 불가 — hw_power 모듈이 격리)
-#define PIN_PWRKEY     7
-#define PIN_DTR        10
+#define PIN_PWRKEY     10     // [2026-07-30 신PCB 표준] PWRKEY=GPIO10 (NPN 베이스, HIGH=눌림). ※구배선=7 (PWRKEY↔DTR 스왑됨)
+#define PIN_DTR        7      // [2026-07-30 신PCB 표준] DTR=GPIO7 (LOW=모듈 wake). ※구배선=10
 #define PIN_BAT        3
 #define PIN_LIS_INT    5
 #define PIN_GPS_RX     20
@@ -27,12 +30,12 @@
 #define PIN_BUZZER     1     // 액티브(마그네틱) 부저 — digitalWrite HIGH=on
 
 // ── LTE 극성 (aa fork — 03_4 진단 확정값) ────────────────────────
-#define LTE_DTR_IDLE      LOW    // 신모듈 native (구모듈 standalone=HIGH).
-//   PWRKEY 극성 = idle HIGH / pulse LOW (high→low→high, HW팀 전달값) — 양 모듈 공용.
-//   ★[2026-07-09] aa 신모듈은 native·반전 둘 다 30+연속통신 성공(모뎀 auto-boot라 극성 무관),
-//   구모듈 standalone은 반전 확인 → 공용값=반전 채택. (RX/TX·DTR 만 모듈별.)
-#define LTE_PWRKEY_IDLE   HIGH   // 반전=HW팀값·공용 (aa는 native도 되나 반전 채택)
-#define LTE_PWRKEY_PULSE  LOW
+// ★[2026-07-30 신PCB 표준 — HW팀 검증 스케치 반영] PWRKEY=GPIO10(NPN), DTR=GPIO7.
+//   PWRKEY: NPN 베이스 구동이라 idle=LOW(release) / pulse=HIGH(눌림). 구배선(idle HIGH/pulse LOW)과 반대.
+//   DTR: LOW=모듈 wake(sleep 방지). AT+CSCLK=0 로도 슬립 끄므로 극성 영향 최소.
+#define LTE_DTR_IDLE      LOW    // 신PCB 표준: DTR=GPIO7, LOW=wake
+#define LTE_PWRKEY_IDLE   LOW    // 신PCB 표준: NPN idle=LOW(release)
+#define LTE_PWRKEY_PULSE  HIGH   // 신PCB 표준: NPN pulse=HIGH(press) — 부팅 펄스 시 HIGH 유지
 
 // ── Baud / 네트워크 ──────────────────────────────────────────────
 #define GPS_BAUD       9600         // aa LC86G default — "9600 유지 절대 원칙"
@@ -59,7 +62,9 @@
 #define PWRKEY_PRE_MS         100    // 펄스 전 idle 유지
 
 // ── GPS (gps 모듈) ───────────────────────────────────────────────
-#define GPS_HISTORY_N   16     // drift 판정용 fix ring buffer
+#define GPS_HISTORY_N   16     // drift 판정용 fix ring buffer. ※16×10s push = 실효 lookback 160s —
+                               //   recentDrift 에 5분 window 를 넘겨도 실제로는 최근 160s 만 평가됨.
+                               //   (의도적 유지: ring 확대 시 정지→sleep 수렴이 그만큼 늦어짐)
 #define BATCH_BUF_N     120    // POST 사이 fix 누적 (retry 시 손실 방지). RAM ~1.4KB.
 #define GPS_INIT_SETTLE_MS  1500   // LC86G 부팅 안정화 후 PAIR 명령
 // fix freshness — sticky-fix 방어 (age + sat + hdop 로 stale 좌표 거름)
@@ -136,7 +141,9 @@
   #define NO_GPS_SLEEP_GRACE_MS     (10UL*60*1000UL)  // GPS 없을 때 LIS 단독 sleep 유예
 #endif
 // ★[관찰 토글] timer heartbeat wake 활성. 0 = 모션 wake only(주기적 wake 없음, 증상관찰용). SLEEP_DISABLED 과 같은 맥락.
-#define TIMER_WAKE_ENABLED         0                  // ★[sss 관찰] timer HB 비활성 = 모션 wake only.
+#define TIMER_WAKE_ENABLED         1                  // [2026-08-14 운영 복원] 10분 timer HB 재활성 — sleep 중
+                                                      //   LIS 고장/장기 무모션 시 유일한 안전망 + 주차중 dark 방지.
+                                                      //   (0 은 sss 증상관찰 전용이었음 — 운영본에 남아있던 것 정정)
 #if OBSERVE_MODE
   #define TIMER_WAKE_INTERVAL_US   (5ULL*60*1000000ULL)   // (운행3차 후) sleep 시 5분 fallback wake(dark 방지·로거 재접속). was 8s(thrash 원인).
 #else
@@ -151,8 +158,13 @@
 #else
   #define RECOVERY_STAY_AWAKE_MS   (5UL*60*1000UL)    // 운영 5분
 #endif
-#define WAKE_BOUNCE_OBSERVE_MS     1000UL             // 모션 wake 후 진동 관찰
-#define WAKE_BOUNCE_LOW_RATIO      0.55f              // INT LOW 비율 초과 = 지속진동 → re-sleep
+#define WAKE_BOUNCE_OBSERVE_MS     1000UL             // 모션 wake 후 관찰창
+// [2026-08-14 bounce 개편] 구 판정(INT LOW 비율>0.55=지속진동→re-sleep) 폐기 — 지속 진동은 실주행일 수
+//   있어, re-sleep 하면 즉시 모션 wake 가 다시 걸려 sleep↔wake churn(레일 인러시 반복·추적 지연) 위험.
+//   신 판정 = "외로운 범프만 re-sleep": 관찰창 동안 INT 재어서트 없음 + raw |Δ| 최대 < ACTIVITY_THS
+//   둘 다 만족할 때만 re-sleep. 그 외(주행/애매)는 정상 기동해 추적.
+#define WAKE_BOUNCE_MAX_STREAK     3                  // 연속 bounce re-sleep 상한 — 초과 시 1회 정상 기동(오판 escape)
+#define SLEEP_PRE_SETTLE_MAX_MS    3000UL             // sleep 진입 前 INT settle 게이트(연속 HIGH 300ms). 실패=진동중=진입 취소
 
 // ── Motion (LIS3DH, motion 모듈) ─────────────────────────────────
 #define LIS_MOT_THS            0x08    // 128mg [2026-07-14 사용자: wake 민감도 2배 둔화 64→128mg] — 살짝(50-114mg) 무시, 중간(346)/세게(411)만 wake. (INT1_THS ±2g 16mg/LSb × 8)
@@ -171,6 +183,14 @@
 //  Wire 버스 timeout(무한 대기 방지), reinit 시 SCL 9펄스 bus-recovery(SDA stuck 언스틱).
 #define LIS_I2C_HZ             100000  // was 400000 — 신호무결성 마진 (모션 폴은 1B/50ms 라 속도 무관)
 #define LIS_I2C_TIMEOUT_MS     50      // Wire.setTimeOut — 버스 hang 시 드라이버 무한대기 차단
+// [2026-08-14 "정지인데 sleep 미진입" 대책] activity EMA 오염원 차단 3종 + LIS 자가복구.
+//   정지 노이즈(~35mg)와 임계(40mg) 마진이 5mg 뿐이라, 부저 진동/I2C 글리치가 EMA 를 임계 위로
+//   밀면 stationary window 가 주기적으로 리셋되어 영영 sleep 에 못 들어감.
+#define MOTION_REPROBE_MS      30000UL // init 실패 시 LIS 주기 재탐지 — 실패 방치 = sleep 영구 비활성(배터리)
+#define MOTION_MAG_MIN_MG      200     // rawMag 타당범위(중력≈1000mg) 밖 = 단일축 I2C 글리치로 간주, 샘플 스킵
+#define MOTION_MAG_MAX_MG      4000    //   (fix#11 은 전바이트 0xFF 만 걸렀음 — 부분 글리치 사각 보완)
+#define MOTION_D_CLAMP_MG      250     // 샘플 1개의 |Δ| 상한 — 글리치 1개로 EMA 가 임계(40) 못 넘게 (250/8=31)
+#define BUZZ_RINGDOWN_MS       200     // 부저 OFF 후 PCB 잔진동 무시 창 — POST 비프의 activity 오염 차단
 
 // ── 진단 출력 ────────────────────────────────────────────────────
 #define STATUS_PRINT_MS   1000UL

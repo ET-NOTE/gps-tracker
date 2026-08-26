@@ -9,6 +9,7 @@ static uint16_t pulseMs   = 0;
 static uint16_t gapMs     = 0;
 static bool     isOn      = false;
 static uint32_t nextEdge  = 0;
+static uint32_t lastActiveMs_ = 0;   // 마지막 울림 시각 (motion activity 가드용)
 
 void init() {
   gpio_hold_dis((gpio_num_t)PIN_BUZZER);   // deep-sleep LOW 래치 해제 (wake 후)
@@ -32,6 +33,7 @@ void beep(uint8_t count, uint16_t p, uint16_t g) {
   if (count == 0) return;
   digitalWrite(PIN_BUZZER, HIGH);
   isOn = true;
+  lastActiveMs_ = millis();
   nextEdge = millis() + p;
 #endif
 }
@@ -40,6 +42,7 @@ void update() {
 #if BUZZER_ENABLED
   if (remaining == 0 && !isOn) return;
   uint32_t now = millis();
+  if (isOn) lastActiveMs_ = now;   // 울리는 동안 계속 갱신 (ring-down 기준점)
   if ((int32_t)(now - nextEdge) < 0) return;
   if (isOn) {
     digitalWrite(PIN_BUZZER, LOW);
@@ -62,11 +65,22 @@ void flush(uint32_t maxMs) {
     delay(5);
   }
   digitalWrite(PIN_BUZZER, LOW);
+  if (isOn) lastActiveMs_ = millis();
   isOn = false;
   remaining = 0;
 #else
   (void)maxMs;
 #endif
 }
+
+bool busy() {
+#if BUZZER_ENABLED
+  return remaining > 0 || isOn;
+#else
+  return false;
+#endif
+}
+
+uint32_t lastActiveMs() { return lastActiveMs_; }
 
 } // namespace buzzer

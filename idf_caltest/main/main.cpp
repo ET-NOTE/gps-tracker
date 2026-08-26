@@ -61,7 +61,8 @@ static void printStatus() {
     (unsigned)recovery::bringFails(), (unsigned)recovery::hardResets(), (unsigned)recovery::softStreak(),
     gps::hasFix() ? "FIX" : "---", gps::satellites(), (unsigned)gps::batchCount(),
     (unsigned long)motion::events(), motion::ok() ? "ok" : "--");
-  Serial.printf(" act=%lumg%s", (unsigned long)motion::activityMg(), motion::active() ? "(MOVING)" : "");
+  Serial.printf(" act=%lumg%s stay=%s", (unsigned long)motion::activityMg(),
+    motion::active() ? "(MOVING)" : "", sleep_mgr::stayCause());   // stay = sleep 을 막는 현재 게이트
 #if HWDIAG_ENABLED
   Serial.printf(" RST[br=%lu iw=%lu tw=%lu pn=%lu sw=%lu ot=%lu#%lu]",   // 진단: reset원인 누적 (ot#=기타 원시번호)
     (unsigned long)g_rstBr, (unsigned long)g_rstIw, (unsigned long)g_rstTw,
