@@ -1293,18 +1293,23 @@ async fn create_reservation(
     if !matches!(status.as_str(), "planned"|"in_progress"|"completed"|"cancelled") {
         return Err(AppError::BadRequest(format!("invalid status: {status}")));
     }
+    // [뿌리 A 2026-08-14] device 별 advisory lock 하에 겹침검사 + INSERT 원자화 —
+    //   기존 check-then-insert 는 lock 없어 동시 생성 2건이 둘 다 통과(더블부킹). lock 으로 직렬화.
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(format!("resv:{}", req.device_id)).execute(&mut *tx).await?;
     // 겹침 검사 — 같은 device, active status (planned/in_progress) 인 예약과 시간 겹침
-    let overlap: Option<(i64,)> = sqlx::query_as(
-        r#"SELECT id FROM vehicle_reservations
-            WHERE user_id = $1 AND device_id = $2
-              AND status IN ('planned','in_progress')
-              AND starts_at < $4 AND ends_at > $3
-            LIMIT 1"#,
-    )
-    .bind(user.user_id).bind(req.device_id).bind(req.starts_at).bind(req.ends_at)
-    .fetch_optional(&state.db).await?;
-    if let Some((existing_id,)) = overlap {
-        if status == "planned" || status == "in_progress" {
+    if status == "planned" || status == "in_progress" {
+        let overlap: Option<(i64,)> = sqlx::query_as(
+            r#"SELECT id FROM vehicle_reservations
+                WHERE user_id = $1 AND device_id = $2
+                  AND status IN ('planned','in_progress')
+                  AND starts_at < $4 AND ends_at > $3
+                LIMIT 1"#,
+        )
+        .bind(user.user_id).bind(req.device_id).bind(req.starts_at).bind(req.ends_at)
+        .fetch_optional(&mut *tx).await?;
+        if let Some((existing_id,)) = overlap {
             return Err(AppError::BadRequest(format!("이 시간대에 겹치는 예약 있음 (id={existing_id})")));
         }
     }
@@ -1325,7 +1330,8 @@ async fn create_reservation(
     .bind(user.user_id).bind(req.device_id).bind(req.driver_staff_id)
     .bind(req.starts_at).bind(req.ends_at)
     .bind(req.purpose).bind(req.note).bind(status)
-    .fetch_one(&state.db).await?;
+    .fetch_one(&mut *tx).await?;
+    tx.commit().await?;
     Ok(Json(row))
 }
 
@@ -1346,6 +1352,10 @@ async fn update_reservation(
     if !matches!(status.as_str(), "planned"|"in_progress"|"completed"|"cancelled") {
         return Err(AppError::BadRequest(format!("invalid status: {status}")));
     }
+    // [뿌리 A 2026-08-14] device 별 advisory lock 하에 겹침검사(자기 제외) + UPDATE 원자화
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(format!("resv:{}", req.device_id)).execute(&mut *tx).await?;
     // 겹침 검사 — 자기 자신(id) 제외한 같은 device 의 active 예약과 시간 겹침 (create 와 동일 정책)
     if status == "planned" || status == "in_progress" {
         let overlap: Option<(i64,)> = sqlx::query_as(
@@ -1356,7 +1366,7 @@ async fn update_reservation(
                 LIMIT 1"#,
         )
         .bind(user.user_id).bind(req.device_id).bind(req.starts_at).bind(req.ends_at).bind(id)
-        .fetch_optional(&state.db).await?;
+        .fetch_optional(&mut *tx).await?;
         if let Some((existing_id,)) = overlap {
             return Err(AppError::BadRequest(format!("이 시간대에 겹치는 예약 있음 (id={existing_id})")));
         }
@@ -1381,8 +1391,10 @@ async fn update_reservation(
     .bind(id).bind(user.user_id).bind(req.device_id).bind(req.driver_staff_id)
     .bind(req.starts_at).bind(req.ends_at)
     .bind(req.purpose).bind(req.note).bind(status)
-    .fetch_optional(&state.db).await?;
-    Ok(Json(row.ok_or(AppError::NotFound)?))
+    .fetch_optional(&mut *tx).await?;
+    let row = row.ok_or(AppError::NotFound)?;
+    tx.commit().await?;
+    Ok(Json(row))
 }
 
 async fn delete_reservation(

@@ -211,14 +211,15 @@ async fn list(
                   -- (2026-07-03) location_records + events 통합. Timer wake heartbeat 사이클은
                   --   fix 없이 wake event 만 발행 → events 에만 antenna 저장 → 이전 로직은
                   --   location_records 만 참조해 last_antenna=null (미보고) 표시. 두 소스 최신값.
+                  -- [뿌리 B 2026-08-14] user_id 필터 — 재페어링 시 이전 owner 의 안테나값 노출 차단
                   SELECT antenna FROM (
                     SELECT raw ->>'antenna' AS antenna, recorded_at AS at
                       FROM location_records
-                     WHERE device_id = d.id AND raw ? 'antenna'
+                     WHERE device_id = d.id AND user_id = $1 AND raw ? 'antenna'
                     UNION ALL
                     SELECT data->>'antenna' AS antenna, occurred_at AS at
                       FROM events
-                     WHERE device_id = d.id AND data ? 'antenna'
+                     WHERE device_id = d.id AND user_id = $1 AND data ? 'antenna'
                   ) x
                   WHERE x.antenna IS NOT NULL AND x.antenna <> ''
                   ORDER BY x.at DESC
@@ -227,9 +228,10 @@ async fn list(
         LEFT JOIN LATERAL (
                   -- (2026-07-16) fix 유무 무관 최근 payload 배터리. Fix 안 잡히는 실내 device 도
                   --   새로고침 후 즉시 현재 vbat 표시. WS 실시간 값이 오면 웹에서 그것으로 override.
+                  -- [뿌리 B 2026-08-14] user_id 필터 — 이전 owner 의 배터리값 노출 차단
                   SELECT vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
                     FROM location_records
-                   WHERE device_id = d.id AND vbat_mv IS NOT NULL
+                   WHERE device_id = d.id AND user_id = $1 AND vbat_mv IS NOT NULL
                 ORDER BY recorded_at DESC
                    LIMIT 1
              ) lv ON TRUE
@@ -305,29 +307,42 @@ async fn pair(
             return Err(AppError::Conflict("device already paired with another account".into()));
         }
         Some((id, None)) => {
-            // 익명 행 클레임 — display_name 필수라 무조건 적용
-            sqlx::query(
+            // 익명 행 클레임 — [뿌리 A 2026-08-14] AND owner_id IS NULL 로 원자화.
+            //   (기존 SELECT→UPDATE 비원자 → 두 사용자 동시 pair 시 나중 UPDATE 가 먼저 페어링을
+            //    조용히 덮어씀. RETURNING 0건이면 그 사이 타인이 클레임 → Conflict.)
+            let claimed: Option<i64> = sqlx::query_scalar(
                 r#"UPDATE devices
                       SET owner_id = $1,
                           display_name = $2,
                           paired_at = now()
-                    WHERE id = $3"#,
+                    WHERE id = $3 AND owner_id IS NULL
+                RETURNING id"#,
             )
             .bind(user.user_id)
             .bind(&req.display_name)
             .bind(id)
-            .execute(&state.db)
+            .fetch_optional(&state.db)
             .await?;
-            log_audit(&state, id, "pair", user.user_id,
-                      json!({"via": req.iccid.is_some().then_some("iccid").unwrap_or("device_uid")})).await;
-            id
+            match claimed {
+                Some(cid) => {
+                    log_audit(&state, cid, "pair", user.user_id,
+                              json!({"via": req.iccid.is_some().then_some("iccid").unwrap_or("device_uid")})).await;
+                    cid
+                }
+                None => return Err(AppError::Conflict("device already paired with another account".into())),
+            }
         }
         None => {
             // 새로 생성 (device_uid 가 없으면 ICCID 기반으로 sim-<끝8자리> 자동 생성)
             let uid = req.device_uid.clone().unwrap_or_else(|| {
                 let iccid = req.iccid.as_deref().unwrap_or("");
-                let n = iccid.len();
-                let suffix = if n >= 8 { &iccid[n - 8..] } else { iccid };
+                // [뿌리 A 2026-08-14] char-safe 마지막 8자 — 바이트 슬라이싱(&iccid[n-8..])은
+                //   멀티바이트 iccid 입력 시 char boundary 아니면 panic → handler abort.
+                let suffix: String = {
+                    let cc: Vec<char> = iccid.chars().collect();
+                    let start = cc.len().saturating_sub(8);
+                    cc[start..].iter().collect()
+                };
                 format!("sim-{suffix}")
             });
             sqlx::query_scalar::<_, i64>(
@@ -482,7 +497,20 @@ async fn unpair(
                   last_seen_at          = NULL,
                   last_lat              = NULL,
                   last_lng              = NULL,
-                  last_fix_at           = NULL
+                  last_fix_at           = NULL,
+                  -- [뿌리 B 2026-08-14] 재페어링 시 이전 owner 개인정보 노출 차단 — 차량 메타 전부 초기화.
+                  --   (기존엔 owner/좌표만 지워 license_plate·취득가·부서 등이 새 owner 에게 노출됐음)
+                  license_plate         = NULL,
+                  department            = NULL,
+                  purchase_price_krw    = NULL,
+                  acquired_at           = NULL,
+                  fuel_type             = NULL,
+                  fuel_efficiency_kmpl  = NULL,
+                  model_year            = NULL,
+                  engine_cc             = NULL,
+                  note                  = NULL,
+                  icon                  = NULL,
+                  last_stationary       = NULL
             WHERE id = $1 AND owner_id = $2
         RETURNING id"#,
     )
@@ -817,12 +845,14 @@ async fn delete_range(
     // 지도에 계속 그려지는 회귀. 남은 최신 fix/event 로 갱신 (없으면 모두 NULL).
     // GREATEST 는 NULL 인자를 무시하므로 한쪽만 있어도 정확한 값 반환.
     sqlx::query(
+        // [뿌리 B 2026-08-14] 재계산 서브쿼리에 user_id 필터 — 이전 owner 의 좌표를
+        //   last_lat/last_lng 로 부활시켜 새 owner 지도에 표시하던 것 차단.
         "WITH last_loc AS ( \
            SELECT lat, lng, recorded_at FROM location_records \
-             WHERE device_id = $1 ORDER BY recorded_at DESC LIMIT 1 \
+             WHERE device_id = $1 AND user_id = $2 ORDER BY recorded_at DESC LIMIT 1 \
          ), last_ev AS ( \
            SELECT occurred_at FROM events \
-             WHERE device_id = $1 ORDER BY occurred_at DESC LIMIT 1 \
+             WHERE device_id = $1 AND user_id = $2 ORDER BY occurred_at DESC LIMIT 1 \
          ) \
          UPDATE devices SET \
            last_lat  = (SELECT lat FROM last_loc), \
@@ -835,6 +865,7 @@ async fn delete_range(
          WHERE id = $1",
     )
     .bind(id)
+    .bind(user.user_id)
     .execute(&mut *tx).await?;
     tx.commit().await?;
     tracing::info!(device_id = id, user_id = user.user_id, from = %q.from, until = %q.until, locs, evs, "cycle range deleted");
@@ -921,13 +952,14 @@ async fn batch_stats(
               MAX(recorded_at) AS last_at
             FROM location_records
            WHERE device_id = $1
+             AND user_id = $3
              AND raw ? 'fixes'
              AND recorded_at > now() - make_interval(hours => $2)
         GROUP BY raw->>'ts', raw->>'at_ms'
         ORDER BY MAX(recorded_at) DESC
         LIMIT 200"#,
     )
-    .bind(id).bind(hours)
+    .bind(id).bind(hours).bind(user.user_id)
     .fetch_all(&state.db)
     .await?;
 
@@ -992,9 +1024,14 @@ async fn locations_aggregated(
     let until = q.until.unwrap_or_else(Utc::now);
 
     let rows: Vec<(DateTime<Utc>, Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<f32>, Option<i32>, i64)> = sqlx::query_as(&format!(
+        // [뿌리 B 2026-08-14] CAGG 에는 user_id 컬럼이 없어 raw 처럼 필터 못 함 → 현재 owner 가
+        //   페어링한 시점(paired_at) 이후 bucket 만 반환해 이전 owner 의 집계 궤적 노출 차단.
+        //   paired_at NULL(legacy device)이면 제한 없음(-infinity).
         "SELECT bucket, lat_avg, lng_avg, lat_last, lng_last, sat_avg, vbat_avg, fix_count
            FROM {table}
           WHERE device_id = $1 AND bucket >= $2 AND bucket <= $3
+            AND bucket >= COALESCE(
+                  (SELECT paired_at FROM devices WHERE id = $1), '-infinity'::timestamptz)
           ORDER BY bucket ASC
           LIMIT 5000"
     ))
@@ -1172,23 +1209,25 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   -- (2026-07-03) location_records + events 통합. Timer wake heartbeat 사이클은
                   --   fix 없이 wake event 만 발행 → events 에만 antenna 저장 → 이전 로직은
                   --   location_records 만 참조해 last_antenna=null (미보고) 표시. 두 소스 최신값.
+                  -- [뿌리 B 2026-08-14] user_id 필터 — 재페어링 시 이전 owner 안테나 노출 차단
                   SELECT antenna FROM (
                     SELECT raw ->>'antenna' AS antenna, recorded_at AS at
                       FROM location_records
-                     WHERE device_id = d.id AND raw ? 'antenna'
+                     WHERE device_id = d.id AND user_id = $2 AND raw ? 'antenna'
                     UNION ALL
                     SELECT data->>'antenna' AS antenna, occurred_at AS at
                       FROM events
-                     WHERE device_id = d.id AND data ? 'antenna'
+                     WHERE device_id = d.id AND user_id = $2 AND data ? 'antenna'
                   ) x
                   WHERE x.antenna IS NOT NULL AND x.antenna <> ''
                   ORDER BY x.at DESC
                   LIMIT 1
              ) la ON TRUE
         LEFT JOIN LATERAL (
+                  -- [뿌리 B 2026-08-14] user_id 필터 — 이전 owner 배터리 노출 차단
                   SELECT vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
                     FROM location_records
-                   WHERE device_id = d.id AND vbat_mv IS NOT NULL
+                   WHERE device_id = d.id AND user_id = $2 AND vbat_mv IS NOT NULL
                 ORDER BY recorded_at DESC
                    LIMIT 1
              ) lv ON TRUE

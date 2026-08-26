@@ -9,7 +9,7 @@
 //   DELETE /rentcar/contracts/:id                           delete
 
 use axum::{
-    extract::{Path, Query, State},
+    extract::{DefaultBodyLimit, Path, Query, State},
     http::{header, HeaderMap, HeaderValue, StatusCode},
     response::IntoResponse,
     routing::{get, patch, post},
@@ -51,7 +51,10 @@ pub fn router() -> Router<AppState> {
         .route("/rentcar/contracts/:id/photos",         get(list_photos).post(upload_photo))
         // (R9-a) public — 임차인 auth-free 링크
         .route("/rentcar/handoff/:token",               get(handoff_view))
-        .route("/rentcar/handoff/:token/submit",        post(handoff_submit))
+        // [2026-08-14] handoff 사진(오도미터+파손/연료 최대 7장 × 4MB, base64 +33%)은 전역 1MB
+        //   body limit 을 초과 → 인수/반납 자체가 413 실패했음. 이 라우트만 40MB 로 오버라이드.
+        .route("/rentcar/handoff/:token/submit",
+               post(handoff_submit).layer(DefaultBodyLimit::max(40 * 1024 * 1024)))
         // (2026-07-29 R-Sub) 구독
         .route("/rentcar/subscription", get(get_subscription).post(buy_subscription))
 }
@@ -229,6 +232,37 @@ async fn verify_device_owner(state: &AppState, uid: i64, device_id: i64) -> AppR
     }
 }
 
+// [뿌리 A 2026-08-14] 계약 기간 겹침 차단 — 같은 device 의 활성(active/overdue) 계약과 시간 겹침 시 거부.
+//   create/update 공유. exclude_id = update 시 자기 자신 제외. 반드시 lock_device_rental 후 호출
+//   (check-then-insert 동시성 race 를 device 별 advisory lock 으로 직렬화).
+//   ※ 근본적으로는 DB EXCLUDE 제약(btree_gist)이 이상적이나, 부팅 시 자동 migration + 기존
+//     겹침 데이터/extension 권한 리스크로 앱층에서 원자 보장 (migration 0059 주석 참고).
+async fn check_contract_overlap(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: i64, device_id: i64,
+    starts_at: DateTime<Utc>, ends_at: DateTime<Utc>, exclude_id: Option<i64>,
+) -> AppResult<()> {
+    let hit: Option<i64> = sqlx::query_scalar(
+        r#"SELECT id FROM rental_contracts
+            WHERE user_id = $1 AND device_id = $2
+              AND status IN ('active','overdue')
+              AND ($5::bigint IS NULL OR id <> $5)
+              AND starts_at < $4 AND ends_at > $3
+            LIMIT 1"#,
+    ).bind(user_id).bind(device_id).bind(starts_at).bind(ends_at).bind(exclude_id)
+     .fetch_optional(&mut **tx).await?;
+    if let Some(eid) = hit {
+        return Err(AppError::Conflict(format!("이 차량의 해당 기간에 겹치는 활성 계약이 있습니다 (id={eid})")));
+    }
+    Ok(())
+}
+
+async fn lock_device_rental(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, device_id: i64) -> AppResult<()> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(format!("rental:{device_id}")).execute(&mut **tx).await?;
+    Ok(())
+}
+
 async fn list_contracts(
     State(state): State<AppState>,
     user: AuthUser,
@@ -285,6 +319,12 @@ async fn create_contract(
     if !matches!(status.as_str(), "draft"|"active"|"returned"|"overdue"|"cancelled") {
         return Err(AppError::BadRequest(format!("invalid status: {status}")));
     }
+    // [뿌리 A] device 락 하에 겹침 검사 + INSERT 원자화 (동시 생성 double-booking 차단)
+    let mut tx = state.db.begin().await?;
+    lock_device_rental(&mut tx, req.device_id).await?;
+    if matches!(status.as_str(), "active"|"overdue") {
+        check_contract_overlap(&mut tx, user.user_id, req.device_id, req.starts_at, req.ends_at, None).await?;
+    }
     let row: Contract = sqlx::query_as(SQL_INSERT)
         .bind(user.user_id).bind(req.device_id)
         .bind(req.renter_name.trim())
@@ -298,7 +338,8 @@ async fn create_contract(
         .bind(req.pickup_location.as_deref())
         .bind(req.return_location.as_deref())
         .bind(&status).bind(req.note.as_deref())
-        .fetch_one(&state.db).await?;
+        .fetch_one(&mut *tx).await?;
+    tx.commit().await?;
     Ok(Json(row))
 }
 
@@ -317,7 +358,20 @@ async fn update_contract(
     // → device_id enumeration 으로 차량정보 leak. 여기서도 소유권 검증.
     verify_device_owner(&state, user.user_id, req.device_id).await?;
     let rate_type = req.rate_type.unwrap_or_else(|| "daily".into());
-    let status    = req.status.unwrap_or_else(|| "draft".into());
+    // [뿌리 A 2026-08-14] create 와 동일 값 검증 이식 — 미검증 시 DB CHECK 위반이 400 대신 500.
+    if !matches!(rate_type.as_str(), "hourly"|"daily"|"monthly") {
+        return Err(AppError::BadRequest(format!("invalid rate_type: {rate_type}")));
+    }
+    let status = req.status.unwrap_or_else(|| "draft".into());
+    if !matches!(status.as_str(), "draft"|"active"|"returned"|"overdue"|"cancelled") {
+        return Err(AppError::BadRequest(format!("invalid status: {status}")));
+    }
+    // [뿌리 A] device 락 하에 겹침 검사(자기 자신 제외) + UPDATE 원자화
+    let mut tx = state.db.begin().await?;
+    lock_device_rental(&mut tx, req.device_id).await?;
+    if matches!(status.as_str(), "active"|"overdue") {
+        check_contract_overlap(&mut tx, user.user_id, req.device_id, req.starts_at, req.ends_at, Some(id)).await?;
+    }
     let row: Option<Contract> = sqlx::query_as(SQL_UPDATE)
         .bind(id).bind(user.user_id).bind(req.device_id)
         .bind(req.renter_name.trim())
@@ -331,8 +385,10 @@ async fn update_contract(
         .bind(req.pickup_location.as_deref())
         .bind(req.return_location.as_deref())
         .bind(&status).bind(req.note.as_deref())
-        .fetch_optional(&state.db).await?;
-    Ok(Json(row.ok_or(AppError::NotFound)?))
+        .fetch_optional(&mut *tx).await?;
+    let row = row.ok_or(AppError::NotFound)?;
+    tx.commit().await?;
+    Ok(Json(row))
 }
 
 async fn return_contract(
@@ -343,6 +399,7 @@ async fn return_contract(
 ) -> AppResult<Json<Contract>> {
     #[derive(FromRow)]
     struct Cur {
+        status: String,
         rate_type: String, rate_amount_krw: i64,
         starts_at: DateTime<Utc>, ends_at: DateTime<Utc>,
         included_km_per_day: Option<i32>, over_km_price_krw: Option<i32>,
@@ -350,11 +407,17 @@ async fn return_contract(
         deposit_krw: i64,
     }
     let cur: Option<Cur> = sqlx::query_as(
-        r#"SELECT rate_type, rate_amount_krw, starts_at, ends_at,
+        r#"SELECT status, rate_type, rate_amount_krw, starts_at, ends_at,
                   included_km_per_day, over_km_price_krw, pickup_odometer_km, deposit_krw
              FROM rental_contracts WHERE id = $1 AND user_id = $2"#,
     ).bind(id).bind(user.user_id).fetch_optional(&state.db).await?;
     let cur = cur.ok_or(AppError::NotFound)?;
+    // [뿌리 A 2026-08-14] status 가드 — 취소·이미반납·draft 계약 반납 재처리 차단
+    //   (기존엔 가드 없어 cancelled/returned 재호출 시 정산 재계산·덮어쓰기 → 수기 정산 소실).
+    if !matches!(cur.status.as_str(), "active"|"overdue") {
+        return Err(AppError::Conflict(format!(
+            "반납 처리는 active/overdue 계약만 가능합니다 (현재 상태: {})", cur.status)));
+    }
 
     // ── 1. 기본 요금 (계약 기간 × unit rate) ─────────────────────────
     let dur = cur.ends_at - cur.starts_at;
@@ -521,7 +584,7 @@ async fn invoice_xlsx(
     let fname = format!("청구서_{}_{}_{}.xlsx",
         plate,
         c.renter_name,
-        c.settled_at.map(|d| d.format("%Y%m%d").to_string()).unwrap_or_else(|| "unknown".into()));
+        c.settled_at.map(|d| fmt_kst(d, "%Y%m%d")).unwrap_or_else(|| "unknown".into()));
     // RFC5987 filename* — 한글 포함.
     let enc = url_encode(&fname);
     let cd = format!("attachment; filename=\"invoice.xlsx\"; filename*=UTF-8''{enc}");
@@ -532,6 +595,13 @@ async fn invoice_xlsx(
     headers.insert(header::CONTENT_DISPOSITION,
         HeaderValue::from_str(&cd).unwrap_or_else(|_| HeaderValue::from_static("attachment; filename=\"invoice.xlsx\"")));
     Ok((StatusCode::OK, headers, bytes).into_response())
+}
+
+// [2026-08-14] 청구서 날짜 KST 표기 헬퍼 — UTC 직접 format 은 고객 대면 문서에 -9h 오차.
+//   (corporate 리포트의 fmt_date_kst 와 동일 취지. rentcar 청구서만 누락됐던 것 정정.)
+fn fmt_kst(d: DateTime<Utc>, fmt: &str) -> String {
+    let kst = chrono::FixedOffset::east_opt(9 * 3600).unwrap();
+    d.with_timezone(&kst).format(fmt).to_string()
 }
 
 fn url_encode(s: &str) -> String {
@@ -589,7 +659,7 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
     // ── 타이틀 ───────────────────────────────────────
     ws.merge_range(0, 1, 0, 3, "렌 트 카   청 구 서", &title_fmt)?;
     ws.set_row_height(0, 32.0)?;
-    let settled_ymd = c.settled_at.map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default();
+    let settled_ymd = c.settled_at.map(|d| fmt_kst(d, "%Y-%m-%d")).unwrap_or_default();
     ws.merge_range(1, 1, 1, 3, &format!("발행일: {}", settled_ymd), &sub_fmt)?;
 
     // ── 임대인 (회사) ─────────────────────────────────
@@ -641,13 +711,13 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
     ws.merge_range(r, 2, r, 3, &vehicle, &value_fmt)?;
     r += 1;
     ws.write_string_with_format(r, 1, "계약 시작", &label_fmt)?;
-    ws.merge_range(r, 2, r, 3, &c.starts_at.format("%Y-%m-%d %H:%M").to_string(), &value_fmt)?;
+    ws.merge_range(r, 2, r, 3, &fmt_kst(c.starts_at, "%Y-%m-%d %H:%M"), &value_fmt)?;
     r += 1;
     ws.write_string_with_format(r, 1, "계약 종료", &label_fmt)?;
-    ws.merge_range(r, 2, r, 3, &c.ends_at.format("%Y-%m-%d %H:%M").to_string(), &value_fmt)?;
+    ws.merge_range(r, 2, r, 3, &fmt_kst(c.ends_at, "%Y-%m-%d %H:%M"), &value_fmt)?;
     r += 1;
     ws.write_string_with_format(r, 1, "실제 반납", &label_fmt)?;
-    let ret_s = c.returned_at.map(|d| d.format("%Y-%m-%d %H:%M").to_string())
+    let ret_s = c.returned_at.map(|d| fmt_kst(d, "%Y-%m-%d %H:%M"))
         .unwrap_or_else(|| "-".into());
     ws.merge_range(r, 2, r, 3, &ret_s, &value_fmt)?;
     r += 1;
@@ -1399,8 +1469,15 @@ async fn handoff_submit(
         .execute(&mut *tx).await?;
         settlement_out = Some(settled_json);
     }
-    sqlx::query("UPDATE rental_handoff_tokens SET used_at = NOW() WHERE id = $1")
+    // [2026-08-14 TOCTOU] AND used_at IS NULL 가드 + rows_affected 확인 — 동일 토큰 동시 제출 시
+    //   먼저 소진한 쪽만 성공, 진 쪽은 0건 → tx 전체 롤백(사진·정산 중복 차단). 기존엔 가드 없어
+    //   두 제출이 둘 다 성공해 사진 중복 insert + settlement 2회 계산됐음.
+    let consumed = sqlx::query(
+        "UPDATE rental_handoff_tokens SET used_at = NOW() WHERE id = $1 AND used_at IS NULL")
         .bind(tk.id).execute(&mut *tx).await?;
+    if consumed.rows_affected() == 0 {
+        return Err(AppError::Conflict("이미 제출 처리된 링크입니다".into()));
+    }
 
     tx.commit().await?;
 

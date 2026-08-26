@@ -9,6 +9,7 @@
 //   - 30일 이상 된 row 는 stale 로 보고 재조회.
 //   - reverse_many_cached 가 우선 캐시 일괄 조회 후, miss 만 Kakao API 호출.
 
+use futures_util::StreamExt;
 use reqwest::Client;
 use serde::Deserialize;
 use sqlx::{FromRow, PgPool};
@@ -16,6 +17,9 @@ use std::time::Duration;
 
 const CACHE_TTL_DAYS: i64 = 30;
 const QUANT: f64 = 10000.0;   // 4 decimal places
+// [2026-08-14] Kakao 초당 10회 제한 대응 — 무제한 join_all 대신 동시성 상한. 대량 좌표(운행일지/AI)
+//   전달 시 429 폭주 + 미적재 재호출 반복을 방지.
+const KAKAO_MAX_CONCURRENCY: usize = 8;
 
 fn quantize(lat: f64, lng: f64) -> (i32, i32) {
     ((lat * QUANT).round() as i32, (lng * QUANT).round() as i32)
@@ -116,12 +120,18 @@ pub async fn reverse_many(coords: &[(f64, f64)]) -> Vec<Option<Resolved>> {
         Ok(c) => c,
         Err(_) => return coords.iter().map(|_| None).collect(),
     };
-    let futs = coords.iter().map(|(lat, lng)| {
+    // buffered = 동시성 상한 + 순서 보존 (반환 Vec 이 coords 순서와 일치해야 함).
+    //   ※ owned Vec 로 미리 복사 — coords(빌림)를 stream await 너머로 넘기면 handler future 가
+    //     non-Send 가 됨(Send is not general enough). into_iter 로 소유 이동.
+    let owned: Vec<(f64, f64)> = coords.to_vec();
+    futures_util::stream::iter(owned.into_iter().map(|(lat, lng)| {
         let c = client.clone();
         let k = key.clone();
-        async move { reverse_with(&c, &k, *lat, *lng).await.ok() }
-    });
-    futures_util::future::join_all(futs).await
+        async move { reverse_with(&c, &k, lat, lng).await.ok() }
+    }))
+    .buffered(KAKAO_MAX_CONCURRENCY)
+    .collect()
+    .await
 }
 
 #[derive(Debug, FromRow)]
@@ -189,17 +199,25 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
         if let Some(key) = key {
             if let Ok(client) = reqwest::Client::builder().timeout(Duration::from_secs(6)).build() {
                 // 각 miss 셀의 첫 좌표로 한 번만 호출
-                let calls = miss_cells.iter().map(|cell| {
+                // owned 로 미리 materialize — coords/cell_to_indices(빌림)를 stream await 너머로
+                //   넘기면 handler future non-Send. (cell, lat, lng) 소유 튜플로 복사 후 into_iter.
+                let miss_inputs: Vec<((i32, i32), f64, f64)> = miss_cells.iter().map(|cell| {
                     let idx = cell_to_indices[cell][0];
                     let (lat, lng) = coords[idx];
-                    let c = client.clone();
-                    let k = key.clone();
-                    async move {
-                        let r = reverse_with(&c, &k, lat, lng).await.ok();
-                        (*cell, r)
-                    }
-                });
-                let results = futures_util::future::join_all(calls).await;
+                    (*cell, lat, lng)
+                }).collect();
+                let results: Vec<((i32, i32), Option<Resolved>)> =
+                    futures_util::stream::iter(miss_inputs.into_iter().map(|(cell, lat, lng)| {
+                        let c = client.clone();
+                        let k = key.clone();
+                        async move {
+                            let r = reverse_with(&c, &k, lat, lng).await.ok();
+                            (cell, r)
+                        }
+                    }))
+                    .buffer_unordered(KAKAO_MAX_CONCURRENCY)   // 순서 무관(맵에 삽입) → unordered
+                    .collect()
+                    .await;
                 for (cell, r) in results {
                     if let Some(resolved) = r {
                         // 캐시 upsert

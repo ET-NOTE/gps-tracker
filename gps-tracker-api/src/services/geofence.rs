@@ -67,10 +67,14 @@ pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f6
         //   이전 inside : dist > radius + 10m 일 때만 outside (그 외 inside 유지)
         //   이전 outside: dist <= radius - 10m 일 때만 inside  (그 외 outside 유지)
         let radius_f = radius as f64;
+        // [2026-08-14] 적응형 hysteresis — 고정 10m 는 반경 ≤20m 펜스의 진입(dist<=radius-10)을
+        //   수학적으로 불가능하게 만들었음(radius=15 → 진입 threshold 5m, radius=10 → 0m).
+        //   반경의 30% 와 10m 중 작은 값 → 소형 펜스도 진입 가능하고 대형은 기존 10m 유지.
+        let hyst = (radius_f * 0.3).min(GEOFENCE_HYSTERESIS_M);
         let inside_now = match prev {
             None        => dist <= radius_f,
-            Some(true)  => dist <= radius_f + GEOFENCE_HYSTERESIS_M,
-            Some(false) => dist <= radius_f - GEOFENCE_HYSTERESIS_M,
+            Some(true)  => dist <= radius_f + hyst,
+            Some(false) => dist <= radius_f - hyst,
         };
 
         // 첫 측정 — 상태만 기록 (이미 안에 있었던 건지 모르므로 이벤트 없음).

@@ -12,7 +12,9 @@
 
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::time::Duration;
+use std::sync::OnceLock;
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
 
 const TOKEN_URL: &str = "https://api.1nce.com/management-api/oauth/token";
 const BASE_URL:  &str = "https://api.1nce.com/management-api/v1";
@@ -36,11 +38,27 @@ fn normalize_iccid(iccid: &str) -> String {
     if iccid.len() == 20 { iccid[..19].to_string() } else { iccid.to_string() }
 }
 
-/// 환경변수에서 적절한 인증 토큰을 얻는다.
+// [2026-08-14] OAuth 토큰 프로세스-와이드 캐시. 기존엔 디바이스마다 resolve_token → 매번 신규
+//   발급 → 100대면 30분 주기마다 토큰 ~101회 발급 → 1NCE auth rate limit 유발. 55분 캐시 +
+//   lock 을 발급 왕복 동안 유지해 동시 만료 시에도 1회만 발급(thundering herd 방지).
+struct CachedToken { token: String, fetched_at: Instant }
+static TOKEN_CACHE: OnceLock<Mutex<Option<CachedToken>>> = OnceLock::new();
+const TOKEN_TTL: Duration = Duration::from_secs(55 * 60);   // 1NCE 토큰 1h 유효 → 55분 캐시
+
+/// 환경변수에서 적절한 인증 토큰을 얻는다. client_credentials 모드는 캐시(발급 왕복 제거).
 async fn resolve_token(client: &reqwest::Client) -> anyhow::Result<String> {
     if let (Ok(cid), Ok(csec)) = (std::env::var("ONCE_API_CLIENT_ID"), std::env::var("ONCE_API_CLIENT_SECRET")) {
         if !cid.is_empty() && !csec.is_empty() {
-            return obtain_token(client, &cid, &csec).await;
+            let cache = TOKEN_CACHE.get_or_init(|| Mutex::new(None));
+            let mut guard = cache.lock().await;
+            if let Some(c) = guard.as_ref() {
+                if c.fetched_at.elapsed() < TOKEN_TTL {
+                    return Ok(c.token.clone());
+                }
+            }
+            let tok = obtain_token(client, &cid, &csec).await?;
+            *guard = Some(CachedToken { token: tok.clone(), fetched_at: Instant::now() });
+            return Ok(tok);
         }
     }
     if let Ok(t) = std::env::var("ONCE_API_TOKEN") {
