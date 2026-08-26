@@ -125,8 +125,8 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
 
   // 식별/원인 (last_op = crash/stuck 위치 breadcrumb)
   p = appendf(out, cap, p,
-    "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\"",
-    sleep_mgr::wakeReason(), sleep_mgr::resetCause(), bc::last(), gps::antennaStatus());
+    "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\",\"band\":\"%s\"",
+    sleep_mgr::wakeReason(), sleep_mgr::resetCause(), bc::last(), gps::antennaStatus(), lte::band());
 
   // diag (wake 후 첫 POST 만)
   if (diagPending) {

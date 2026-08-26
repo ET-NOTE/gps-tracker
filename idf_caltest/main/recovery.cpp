@@ -62,6 +62,7 @@ void tick() {
       if (lte::bringUp()) {                          // 등록완료+PDP → ONLINE
         Serial.printf("[REC] → ONLINE (CSQ=%d REG=%d IP=%s)\n", lte::csq(), lte::reg(), lte::ip());
         lte::fetchSimInfo();
+        lte::fetchBandInfo();   // [2026-08-14] serving 밴드 실측 (CPSI) → telemetry band
         bringFails_ = 0; hardResets_ = 0; softStreak_ = 0; dataStreak_ = 0; stuckSinceMs_ = 0;
         lastRegOkMs_ = millis();
         nextBringUpAt_ = millis() + LTE_BRINGUP_RETRY_MS;
@@ -100,6 +101,7 @@ void tick() {
     if (lte::bringUp()) {                            // (드물게 즉시 ready — 보통 Phase1→in-progress)
       Serial.printf("[REC] → ONLINE (CSQ=%d REG=%d IP=%s)\n", lte::csq(), lte::reg(), lte::ip());
       lte::fetchSimInfo();
+      lte::fetchBandInfo();   // [2026-08-14] serving 밴드 실측 (CPSI) → telemetry band
       bringFails_ = 0; hardResets_ = 0; softStreak_ = 0; dataStreak_ = 0; stuckSinceMs_ = 0;
       lastRegOkMs_ = millis();
       nextBringUpAt_ = millis() + LTE_BRINGUP_RETRY_MS;

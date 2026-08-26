@@ -19,6 +19,7 @@ static uint16_t bringUpCount_ = 0;
 static char     iccid_[24]    = "";
 static char     imei_[20]     = "";
 static char     imsi_[20]     = "";
+static char     band_[24]     = "?";   // [2026-08-14] 실제 serving 밴드 (CPSI). 인증밴드 실측/증빙용.
 static uint32_t firstAtOkMs_  = 0;
 static int      modemVbatMv_  = -1;   // (2026-07-02) AT+CBC — 모뎀이 보는 VBAT (ESP divider 교차검증)
 
@@ -330,6 +331,42 @@ void fetchSimInfo() {
   Serial.printf("[SIM] iccid=%s imei=%s imsi=%s\n", iccid_, imei_, imsi_);
 }
 
+// [2026-08-14] 주파수 밴드 진단 — 인증(KC) 밴드 실측/증빙.
+//   ① AT+CBANDCFG? : 모듈에 enable 된 밴드셋(CATM/NBIOT) → serial 로그 (band-lock 확인용).
+//   ② AT+CPSI?     : 지금 망에 붙어 "실제로 쓰는" serving 밴드 → band_ (telemetry 로 서버 관측).
+//   ONLINE 전환마다 호출 (2 AT tx, 저비용). 밴드가 재등록으로 바뀌면 최신값 반영.
+void fetchBandInfo() {
+  // ① enable 된 밴드셋 — 인증밴드만 lock 됐는지 필드 확인용 (로그만, payload 미포함).
+  if (sendAT("AT+CBANDCFG?", "OK", 2000)) {
+    String s = lastResp; s.replace("\r", " "); s.replace("\n", " "); s.trim();
+    Serial.printf("[BAND] cfg: %s\n", s.c_str());
+  }
+  // ② 실제 serving 밴드 — CPSI. 예: "+CPSI: LTE CAT-M1,Online,450-05,...,EUTRAN-BAND3,..."
+  if (sendAT("AT+CPSI?", "+CPSI:", 2000)) {
+    int cp = lastResp.indexOf("+CPSI:");
+    String line = (cp >= 0) ? lastResp.substring(cp) : lastResp;
+    int nl = line.indexOf('\n'); if (nl >= 0) line = line.substring(0, nl);
+    line.trim();
+    const char *rat = "?";
+    if      (line.indexOf("CAT-M") >= 0 || line.indexOf("CATM") >= 0) rat = "M1";
+    else if (line.indexOf("NB-IOT") >= 0 || line.indexOf("NB-IoT") >= 0 || line.indexOf("NBIOT") >= 0) rat = "NB";
+    else if (line.indexOf("LTE") >= 0) rat = "LTE";
+    int b = -1, bp = line.indexOf("BAND");
+    if (bp >= 0) {
+      int i = bp + 4;
+      while (i < (int)line.length() && !isdigit((int)line[i])) i++;   // "-"/공백 스킵
+      int st = i;
+      while (i < (int)line.length() && isdigit((int)line[i])) i++;
+      if (i > st) b = line.substring(st, i).toInt();
+    }
+    if (b >= 0) snprintf(band_, sizeof(band_), "%s-B%d", rat, b);
+    else        snprintf(band_, sizeof(band_), "%s-?", rat);
+    Serial.printf("[BAND] serving: %s | %s\n", band_, line.c_str());
+  } else {
+    Serial.println(F("[BAND] CPSI 무응답/무서비스"));
+  }
+}
+
 // ── HTTP (Block 6) ───────────────────────────────────────────────
 void resetHttpKeepalive() {
   httpConfigured_ = false;
@@ -492,5 +529,6 @@ int      modemVbatMv()  { return modemVbatMv_; }
 const char* iccid()     { return iccid_; }
 const char* imei()      { return imei_; }
 const char* imsi()      { return imsi_; }
+const char* band()      { return band_; }
 
 } // namespace lte
