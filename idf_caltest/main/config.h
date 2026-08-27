@@ -198,3 +198,36 @@
 #define DBG  1
 #define DBGLN(...)  do { if (DBG) Serial.println(__VA_ARGS__); } while (0)
 #define DBGP(...)   do { if (DBG) Serial.print(__VA_ARGS__); } while (0)
+
+// =================================================================
+// ★ KC 인증(콜박스) 시험용 빌드 — for_kc.txt 체크리스트 대응 (2026-08-27)
+//   콜박스(기지국 시뮬레이터, PLMN 001/01 + 시험용 USIM)는 RRC 등록까지만 세우고
+//   PDP/데이터 세션은 안 붙는 경우가 많다. 운영 펌웨어의 "POST 실패 → 복구 에스컬레이션
+//   (railCycle 12s 전원차단 → esp_restart)" 이 그대로 돌면 시험 중 모뎀이 주기적으로
+//   꺼졌다 켜져 측정 불가 → 시험 반나절 날림. KC_TEST_BUILD=1 이면:
+//     · 재부팅/전원사이클/워치독 전부 OFF — 모뎀 항상 ON, 등록 유지 폴만
+//     · PDP/POST 스킵 — 등록(reg=1|5)만으로 ONLINE 취급 (콜박스가 RRC 전력제어로 TX 올림)
+//     · AT+COPS=0 명시 (수동 PLMN 고정 잔재 차단 — 시험용 PLMN 에 붙어야 함)
+//     · AT+CBANDCFG 밴드 락 + 응답 캡처 출력 (인증범위 증빙: 선언서 + 설정로그 + 캡처)
+//     · sleep/부저 OFF (시험 중 deep sleep 진입·GPIO1 노이즈원 차단)
+//   ⚠️ 운영 배포 전 반드시 0 원복! (TIMER_WAKE_ENABLED 교훈과 동일한 토글 함정 주의)
+//   ⚠️ CBANDCFG 는 모듈 NVRAM 저장 — 시험 후 다른 밴드 필요 시 docs/kc_test_build.md 의
+//      복원 커맨드로 해제. (단, 밴드 제한으로 인증받으면 양산 펌웨어도 락 유지가 원칙)
+// =================================================================
+#define KC_TEST_BUILD   0     // ★ 1 = KC 시험 빌드 (운영 배포 전 0 원복 필수!)
+
+#if KC_TEST_BUILD
+  // 인증 대상 밴드 락 — 시험소 견적 확정 후 조정. 실측(2026-08-27, device 3005) = Cat-M1 B5.
+  //   복수 밴드는 콤마: "5,8" / "5,3" 등. NB-IoT 미인증이면 NB 목록을 비우지 말고 동일 밴드로
+  //   락(모듈이 빈 목록 거부) + CNMP/CMNB 로 Cat-M only 강제.
+  #define KC_BAND_CATM    "5"        // Cat-M1 인증 밴드 (인증표: B5/B8/B3 중 선택)
+  #define KC_BAND_NBIOT   "5"        // NB-IoT 인증 밴드 (인증표: B5/B3 중 선택)
+  #define KC_CATM_ONLY    1          // 1 = AT+CMNB=1(Cat-M only) — NB 미인증 시. 0 = 둘 다(CMNB=3)
+  // 운영 플래그 강제 오버라이드 (재정의 경고 없이 #undef 후 재정의)
+  #undef  BUZZER_ENABLED
+  #define BUZZER_ENABLED   0         // GPIO1 부저 노이즈원 차단 (EMI + LTE 간섭 이력)
+  #undef  SLEEP_DISABLED
+  #define SLEEP_DISABLED   1         // deep sleep 금지 — 시험 내내 모뎀/보드 ON 유지
+  #undef  LOOP_WDT_ENABLED
+  #define LOOP_WDT_ENABLED 0         // task WDT panic reset OFF (문서 요구: 워치독 비활성)
+#endif
