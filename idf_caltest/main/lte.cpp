@@ -171,7 +171,24 @@ bool bringUp() {
     sendAT("AT+CGNSPWR=0", "OK", 2000);
     // [2026-07-30 신PCB 표준 — HW팀 검증 스케치 반영] RAT 선호 명시: 1NCE 로밍 등록 촉진.
     sendAT("AT+CNMP=38", "OK", 2000);       // 38=LTE only (2=auto)
+#if KC_TEST_BUILD
+    // ── KC 시험 모드: RAT 제한 + PLMN 자동 + 밴드 락 + 증빙 캡처 (for_kc.txt) ──
+  #if KC_CATM_ONLY
+    sendAT("AT+CMNB=1", "OK", 2000);        // Cat-M only (NB 미인증 시)
+  #else
+    sendAT("AT+CMNB=3", "OK", 2000);
+  #endif
+    sendAT("AT+COPS=0", "OK", 5000);        // 자동 PLMN — 수동 고정 잔재가 있으면 콜박스 시험용 PLMN(001/01)에 못 붙음
+    sendAT("AT+CBANDCFG=\"CAT-M\"," KC_BAND_CATM, "OK", 3000);    // 인증 밴드 락
+    sendAT("AT+CBANDCFG=\"NB-IOT\"," KC_BAND_NBIOT, "OK", 3000);
+    // 증빙 캡처 — 이 응답을 시리얼 로그로 저장해 "펌웨어 밴드 제한" 증빙(선언서 첨부)에 사용.
+    if (sendAT("AT+CBANDCFG?", "OK", 3000)) {
+      String s = lastResp; s.replace("\r", " "); s.replace("\n", " "); s.trim();
+      Serial.printf("[KC] band-lock evidence: %s\n", s.c_str());
+    }
+#else
     sendAT("AT+CMNB=3", "OK", 2000);        // 3=CAT-M+NB-IoT 둘 다 허용
+#endif
     if (sendAT("AT+CSQ", "OK", 1500)) {   // [fix#4] expect=OK: +CSQ 값 도착 후 파싱 (토큰매칭 race → csq_=0 회피)
       int p = lastResp.indexOf("+CSQ:");
       if (p >= 0) csq_ = lastResp.substring(p + 5).toInt();
@@ -197,6 +214,14 @@ bool bringUp() {
 
   // ── Phase 3: 등록됨 → PDP/IP (짧은 블로킹) ──
   brPhase_ = 0;
+#if KC_TEST_BUILD
+  // KC 시험 모드: 콜박스는 PDP 를 안 붙여주는 경우가 많음 — 등록(reg=1|5)만으로 ONLINE 취급.
+  //   CNACT/APN 시도 자체를 스킵(실패 이벤트가 escalation 유발 안 하도록 근원 차단).
+  Serial.println(F("[KC] registered — PDP skip (call-box mode), ONLINE"));
+  ready_ = true;
+  bringUpCount_++;
+  return true;
+#endif
   sendAT("AT+CNACT=0,0", "OK", 3000);
   delay(300);
   String c = String("AT+CNCFG=0,1,\"") + APN_NAME + "\"";

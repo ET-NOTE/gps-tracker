@@ -118,6 +118,13 @@ void setup() {
   delay(2000);   // USB CDC 안정화 대기
   Serial.println();
   Serial.println(F("=== 15_a_modular — Block 8: sleep_mgr (non-blocking CDC) ==="));
+#if KC_TEST_BUILD
+  Serial.println(F("*********************************************************"));
+  Serial.println(F("*  KC TEST BUILD — 콜박스 시험용 (운영 배포 금지!)          *"));
+  Serial.println(F("*  sleep/부저/WDT/복구 OFF · PDP/POST skip · COPS=0       *"));
+  Serial.printf ("*  band-lock: CAT-M=%s NB-IOT=%s catm_only=%d\n", KC_BAND_CATM, KC_BAND_NBIOT, (int)KC_CATM_ONLY);
+  Serial.println(F("*********************************************************"));
+#endif
 
   esp_reset_reason_t rr = esp_reset_reason();
   Serial.printf("[BOOT] reset_reason=%d\n", (int)rr);
@@ -227,10 +234,14 @@ void loop() {
 
   recovery::tick();
 
+#if KC_TEST_BUILD
+  // KC 시험 모드: POST 없음 (콜박스에 데이터 세션 없음 — SHCONN 시도는 실패 소음만 만듦)
+#else
   if (recovery::online() && (int32_t)(millis() - nextPostAt) >= 0) {
     doPost();
     nextPostAt = millis() + lte::postIntervalMs();
   }
+#endif
 
   sleep_mgr::checkStationary();   // 정지 5분 → deep sleep
   sleep_mgr::timerWakeTick();     // timer-wake 2분 guard

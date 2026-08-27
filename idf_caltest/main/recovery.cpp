@@ -45,6 +45,26 @@ static void restart(const char *why) {
 void tick() {
   uint32_t now = millis();
 
+#if KC_TEST_BUILD
+  // ── KC 시험 모드: 복구 에스컬레이션 전면 OFF (for_kc.txt — "재부팅 로직 제거, 모뎀 항상 ON") ──
+  //   restart/softReset/hardCycle/railCycle 절대 금지. 등록 안 됐으면 bringUp 재시도만,
+  //   등록됐으면 10s 주기 REG/CSQ 폴만 (상실해도 조치 없이 재등록 대기 — 콜박스가 셀 재구성하는
+  //   동안 전원 이벤트가 생기면 측정을 망침).
+  if (!lte::ready()) {
+    if ((int32_t)(now - nextBringUpAt_) < 0) return;
+    if (lte::bringUp()) {
+      Serial.printf("[KC] → ONLINE (CSQ=%d REG=%d)\n", lte::csq(), lte::reg());
+      nextBringUpAt_ = millis() + LTE_BRINGUP_RETRY_MS;
+    } else {
+      nextBringUpAt_ = millis() + (lte::bringInProgress() ? REG_POLL_FAST_MS : LTE_BRINGUP_RETRY_MS);
+    }
+  } else if ((now - lastRegPollMs_) > REG_POLL_MS) {
+    lastRegPollMs_ = now;
+    lte::refresh();   // REG/CSQ 관찰 로그만 — 상실 시에도 softReset 안 함 (재등록은 모뎀 자율)
+  }
+  return;
+#endif
+
   // ───────────────── BRINGUP 상태 ─────────────────
   if (!lte::ready()) {
     // 경로(1) boot-stuck: 부팅 후 성공 POST 0 + uptime 초과 → 능동 재부팅
