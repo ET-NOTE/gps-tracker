@@ -1,4 +1,4 @@
-<title>KC 인증 시험 빌드</title>
+<title>KC 인증 대응 현황</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -51,17 +51,17 @@
     color: var(--ink);
     font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     font-size: 15.5px;
-    line-height: 1.7;
+    line-height: 1.75;
     word-break: keep-all;
   }
-  main { max-width: 860px; margin: 0 auto; padding: 48px 24px 96px; }
+  main { max-width: 840px; margin: 0 auto; padding: 48px 24px 96px; }
 
   header.doc { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 8px; }
   .eyebrow {
     font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase;
     color: var(--accent); margin: 0 0 10px;
   }
-  h1 { font-size: 34px; font-weight: 700; line-height: 1.25; margin: 0 0 14px; text-wrap: balance; }
+  h1 { font-size: 33px; font-weight: 700; line-height: 1.28; margin: 0 0 14px; text-wrap: balance; }
   .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
   .meta b { color: var(--ink); font-weight: 500; }
 
@@ -70,21 +70,15 @@
     padding-top: 20px; border-top: 1px solid var(--line);
   }
   h2 + p.lead { margin-top: 8px; }
-  h3 { font-size: 16px; font-weight: 700; margin: 28px 0 8px; }
-  p { margin: 12px 0; max-width: 68ch; }
+  p { margin: 12px 0; max-width: 66ch; }
   .muted { color: var(--muted); }
   small { color: var(--muted); }
+  b { font-weight: 700; }
 
-  code, pre {
-    font-family: "IBM Plex Mono", Consolas, monospace;
-    font-size: 13.5px;
+  code {
+    font-family: "IBM Plex Mono", Consolas, monospace; font-size: 13.5px;
+    background: var(--code-bg); padding: 1.5px 6px; border-radius: 4px;
   }
-  code { background: var(--code-bg); padding: 1.5px 6px; border-radius: 4px; }
-  pre {
-    background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px;
-    padding: 14px 16px; overflow-x: auto; line-height: 1.6; margin: 14px 0;
-  }
-  pre code { background: none; padding: 0; }
 
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
   .chip {
@@ -92,22 +86,27 @@
     font-size: 12.5px; font-weight: 500; padding: 4px 12px;
     border: 1px solid var(--line); border-radius: 999px; color: var(--muted);
   }
-  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
   .chip.done  { border-color: var(--ok);   color: var(--ok);   background: var(--ok-soft); }
   .chip.done::before  { background: var(--ok); }
   .chip.open  { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
   .chip.open::before  { background: var(--warn); }
 
+  .summary {
+    background: var(--accent-soft); border-radius: 8px; padding: 18px 22px; margin: 26px 0 0;
+  }
+  .summary p { margin: 6px 0; max-width: none; }
+  .summary .tag { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+
   .tablewrap { overflow-x: auto; margin: 16px 0; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
-  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th {
     font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
     color: var(--muted); font-weight: 500; border-bottom: 2px solid var(--ink);
     white-space: nowrap;
   }
-  td.num, th.num { font-variant-numeric: tabular-nums; }
-  tr.off td:nth-child(3) { color: var(--accent); font-weight: 500; }
+  td.mode { color: var(--accent); font-weight: 500; white-space: nowrap; }
 
   .note {
     border-left: 3px solid var(--accent); background: var(--accent-soft);
@@ -115,33 +114,13 @@
   }
   .note.warn { border-left-color: var(--warn); background: var(--warn-soft); }
   .note p { margin: 6px 0; }
-  .note .tag {
-    font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  }
-  .note .tag { color: var(--accent); }
+  .note .tag { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
   .note.warn .tag { color: var(--warn); }
 
-  ol.steps { padding-left: 0; margin: 16px 0; list-style: none; counter-reset: step; }
-  ol.steps > li {
-    counter-increment: step; position: relative;
-    padding: 0 0 18px 44px; border-left: 1px solid var(--line); margin-left: 14px;
-  }
-  ol.steps > li:last-child { border-left-color: transparent; padding-bottom: 0; }
-  ol.steps > li::before {
-    content: counter(step);
-    position: absolute; left: -14px; top: 0;
-    width: 28px; height: 28px; border-radius: 50%;
-    background: var(--paper); border: 1.5px solid var(--accent); color: var(--accent);
-    font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
-    font-variant-numeric: tabular-nums;
-  }
-  ol.steps b { font-weight: 700; }
-  ol.steps p { margin: 4px 0; }
-
   ul.check { list-style: none; padding-left: 0; margin: 14px 0; }
-  ul.check li { padding: 6px 0 6px 32px; position: relative; border-bottom: 1px dashed var(--line); }
+  ul.check li { padding: 7px 0 7px 32px; position: relative; border-bottom: 1px dashed var(--line); }
   ul.check li::before {
-    content: ""; position: absolute; left: 2px; top: 12px;
+    content: ""; position: absolute; left: 2px; top: 14px;
     width: 14px; height: 14px; border: 1.5px solid var(--muted); border-radius: 3px;
   }
   ul.check li b { font-weight: 500; }
@@ -149,11 +128,13 @@
   dl.qa { margin: 16px 0; }
   dl.qa dt { font-weight: 700; margin-top: 18px; }
   dl.qa dt .q { color: var(--accent); font-family: "IBM Plex Mono", monospace; margin-right: 8px; }
-  dl.qa dd { margin: 4px 0 0 26px; color: var(--muted); max-width: 64ch; }
+  dl.qa dd { margin: 4px 0 0 26px; color: var(--muted); max-width: 62ch; }
+
+  .glossary { font-size: 13.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; margin: 18px 0; }
+  .glossary dt { font-weight: 700; color: var(--ink); float: left; clear: left; width: 92px; }
+  .glossary dd { margin: 0 0 6px 104px; }
 
   a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  .filelist { font-family: "IBM Plex Mono", Consolas, monospace; font-size: 13px; line-height: 2; }
-  .filelist span { color: var(--muted); font-family: "IBM Plex Sans KR", sans-serif; }
 
   footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line);
            font-size: 12.5px; color: var(--muted); }
@@ -162,163 +143,132 @@
 <main>
 <header class="doc">
   <p class="eyebrow">Serial-link GPS Tracker · 사내 공유</p>
-  <h1>KC 전자파 인증 — 시험용 펌웨어 빌드와 대응 현황</h1>
+  <h1>KC 전자파 인증, 지금 어디까지 왔고 무엇이 남았나</h1>
   <div class="meta">
     <span>작성 <b>2026-08-28</b></span>
-    <span>펌웨어 <b>idf_caltest</b> (ESP32-C3 + SIM7080G)</span>
-    <span>반영 <b>PR #216 · #217 → main</b></span>
-    <span>상세 절차 <b>docs/kc_test_build.md</b></span>
+    <span>대상 제품 <b>차량용 GPS 트래커 (통신모듈 SIM7080G)</b></span>
+    <span>기술 상세 <b>docs/kc_test_build.md</b> (개발자용)</span>
   </div>
   <div class="chips">
-    <span class="chip done">시험용 빌드 구현 완료</span>
-    <span class="chip done">밴드 실측 완료 — Cat-M1 B5</span>
-    <span class="chip open">인증 밴드 확정 대기 (시험소 답변)</span>
-    <span class="chip open">모듈 KC 인증서 수배 중</span>
+    <span class="chip done">시험용 동작 모드 완성</span>
+    <span class="chip done">실사용 주파수 확인 — Band 5</span>
+    <span class="chip open">인증 범위(주파수) 확정 — 시험소 답변 대기</span>
+    <span class="chip open">통신모듈 인증서 수배 중</span>
+  </div>
+
+  <div class="summary">
+    <p class="tag">세 줄 요약</p>
+    <p>① 시험소 장비 환경에서 우리 기기가 문제없이 측정받을 수 있도록 <b>시험 전용 동작 모드</b>를 만들어 두었다.</p>
+    <p>② 실사용 데이터로 우리 기기가 <b>Band 5 하나로 통신</b>함을 확인했다 — 인증 범위를 줄이면 <b>시험 비용이 내려간다</b> (2개 대역 견적 약 270만원).</p>
+    <p>③ 비용·절차가 갈리는 <b>질문 3가지를 시험소에 확인 중</b>이다. 답변이 오면 인증 대역을 확정한다.</p>
   </div>
 </header>
 
-<h2>1. 왜 시험용 빌드가 따로 필요한가</h2>
+<h2>1. KC 무선 시험은 어떻게 진행되나</h2>
 <p class="lead">
-  KC 무선(RF) 시험은 상용망이 아니라 <b>콜박스</b>(기지국 시뮬레이터 — Anritsu MT8821C,
-  R&amp;S CMW500 류)에 단말을 붙여 진행한다. 콜박스는 시험용 PLMN(001/01)과 시험용 USIM으로
-  <b>RRC 등록까지만</b> 세우고, 데이터 세션(PDP/APN)은 붙여주지 않는 경우가 많다.
+  시험소는 우리 기기를 실제 통신사 망에 붙이지 않는다. 대신 <b>시험실 안의 "모의 기지국"
+  장비</b>(현장 용어로 "콜박스")에 기기를 케이블로 연결하고, 시험 전용 유심을 꽂아
+  전파 성능을 측정한다. 통신사(SKT/KT 등)나 우리가 쓰는 유심과는 무관하게 진행된다.
+</p>
+<dl class="glossary">
+  <dt>콜박스</dt><dd>시험실 안에 가짜 기지국을 만들어 주는 계측 장비. 기기를 여기에 붙여 송신 전파를 잰다.</dd>
+  <dt>밴드</dt><dd>기기가 통신에 쓰는 주파수 대역(채널 묶음). 예: Band 5 = 850 MHz 대역. <b>인증은 밴드 단위로 받고, 밴드 수만큼 시험 비용이 늘어난다.</b></dd>
+</dl>
+
+<h2>2. 왜 "시험 전용 동작 모드"가 필요했나</h2>
+<p class="lead">
+  판매용 제품은 똑똑하게 동작한다 — 서버에 접속이 안 되면 스스로 통신부 전원을 껐다 켜서
+  복구를 시도하고, 차가 오래 멈추면 배터리를 아끼려 잠든다.
 </p>
 <p>
-  우리 운영 펌웨어는 "서버 POST 실패 → 복구 에스컬레이션" 구조라, 콜박스 환경에서 그대로 돌면
-  <b>모뎀 전원을 12초씩 끊는 railCycle과 esp_restart가 주기적으로 발동</b>해 측정 자체가
-  불가능해진다. 시험소 상담 기록(<code>for_kc.txt</code>)에서도 "이 유형이 가장 흔한 시험 지연
-  원인"으로 지목됐다. 그래서 이 동작들을 통째로 끄는 시험 전용 빌드를 만들었다.
+  문제는 시험실이다. 모의 기지국은 <b>전파 연결만 만들어 주고 인터넷은 연결해 주지 않는다.</b>
+  그래서 판매용 동작 그대로 시험을 받으면, 기기가 "서버에 못 붙네? 고장인가?"라고 판단해
+  <b>시험 도중 계속 스스로 껐다 켜기를 반복</b>한다. 측정이 불가능해지고, 시험이 며칠씩
+  늘어지는 단골 원인이라고 시험 전문가도 미리 경고해 준 부분이다.
 </p>
-
-<h2>2. 구현 — <code>KC_TEST_BUILD</code> 플래그</h2>
-<p class="lead">
-  <code>idf_caltest/main/config.h</code> 맨 아래의 플래그 하나로 전환한다. 기본값은
-  <code>0</code>(운영)이고, 시험 직전에만 <code>1</code>로 켠다. 별도 브랜치가 아니라
-  플래그 게이트라 운영 코드와 항상 같이 유지보수된다.
-</p>
+<p>그래서 스위치 하나로 켜고 끌 수 있는 <b>시험 전용 모드</b>를 만들었다. 시험 모드에서 달라지는 것:</p>
 
 <div class="tablewrap">
 <table>
-  <thead><tr><th>항목</th><th>운영 빌드 (0)</th><th>KC 시험 빌드 (1)</th><th>이유</th></tr></thead>
+  <thead><tr><th>기능</th><th>평소 (판매용)</th><th>시험 모드</th></tr></thead>
   <tbody>
-    <tr class="off"><td>복구 에스컬레이션<br><small>softReset / hardCycle / esp_restart</small></td>
-        <td>ON</td><td>전부 OFF</td>
-        <td>모뎀 항상 ON 유지 — 시험 중 전원 이벤트 금지 (문서 요구: "재부팅 로직 제거")</td></tr>
-    <tr class="off"><td>PDP(CNACT/APN) + 서버 POST</td><td>ON</td><td>스킵</td>
-        <td>콜박스에 데이터 세션 없음 — 등록(reg=1|5)만으로 ONLINE 취급</td></tr>
-    <tr class="off"><td>deep sleep (정지 5분 / timer)</td><td>ON</td><td>OFF</td>
-        <td>시험 중 잠들면 측정 중단</td></tr>
-    <tr class="off"><td>loop task 워치독 (60s panic reset)</td><td>ON</td><td>OFF</td>
-        <td>문서 요구: 워치독 비활성</td></tr>
-    <tr class="off"><td>부저 (GPIO1)</td><td>ON</td><td>OFF</td>
-        <td>EMI 노이즈원 + LTE 간섭 이력 (플라이백 미확인)</td></tr>
-    <tr class="off"><td>PLMN 선택</td><td>모뎀 기본</td><td><code>AT+COPS=0</code> 명시</td>
-        <td>수동 고정 잔재가 있으면 시험용 PLMN에 못 붙음</td></tr>
-    <tr class="off"><td>밴드</td><td>전체 허용</td><td><code>AT+CBANDCFG</code> 락</td>
-        <td>인증 범위 제한 + 증빙 (아래 4절)</td></tr>
-    <tr class="off"><td>RAT</td><td>Cat-M + NB (CMNB=3)</td><td>Cat-M only (CMNB=1)</td>
-        <td><code>KC_CATM_ONLY=1</code> 기본 — NB 미인증 시</td></tr>
+    <tr><td>고장 시 자동 재시작·전원 복구</td><td>켜짐</td><td class="mode">끔 — 시험 내내 켜진 상태 유지</td></tr>
+    <tr><td>정차 시 절전(잠자기)</td><td>켜짐</td><td class="mode">끔 — 시험 중 잠들지 않음</td></tr>
+    <tr><td>서버로 위치 전송</td><td>켜짐</td><td class="mode">끔 — 시험실엔 인터넷이 없음</td></tr>
+    <tr><td>사용 주파수</td><td>모듈이 지원하는 대역 전체</td><td class="mode">인증받을 대역만 쓰도록 고정</td></tr>
+    <tr><td>부저(알림음)</td><td>켜짐</td><td class="mode">끔 — 전자파 잡음을 만드는 부품</td></tr>
   </tbody>
 </table>
 </div>
 <p>
-  부팅하면 시리얼에 <b>"KC TEST BUILD — 운영 배포 금지"</b> 배너가 떠서 어떤 빌드가 올라가
-  있는지 눈으로 즉시 구분된다.
+  시험 모드로 켠 기기는 부팅할 때 점검 화면에 <b>"KC TEST BUILD — 시험용, 판매 배포 금지"</b>
+  문구가 크게 표시되어, 시험용과 판매용이 섞일 일이 없도록 했다. 시험이 끝나면 반드시
+  판매용 설정으로 되돌리는 절차까지 문서화되어 있다.
 </p>
 
-<h2>3. 시험소 가기 전 — 빌드·플래시 절차</h2>
-<ol class="steps">
-  <li><b>플래그 켜기</b>
-      <p><code>idf_caltest/main/config.h</code> 맨 아래 <code>#define KC_TEST_BUILD 0</code> → <code>1</code></p></li>
-  <li><b>빌드 &amp; 플래시</b>
-      <pre><code>idf.py build
-idf.py -p COMxx flash</code></pre></li>
-  <li><b>증빙 캡처</b>
-      <p>부팅 로그에서 <code>[KC] band-lock evidence: …</code> 라인을 저장 (4절 참고)</p></li>
-  <li><b>시험 종료 후 반드시 0 원복 → 재빌드</b>
-      <p class="muted">확인: <code>grep "KC_TEST_BUILD   1" idf_caltest/main/config.h</code> 결과가 없어야 함.
-      과거 관찰용 토글(TIMER_WAKE)이 운영본에 남아 안전망이 꺼진 사고가 있었다 — 같은 함정.</p></li>
-</ol>
-
-<h2>4. 밴드 락과 인증 범위 증빙</h2>
+<h2>3. 비용을 좌우하는 결정 — 어떤 주파수로 인증받을까</h2>
 <p class="lead">
-  전파법상 인증 범위는 SIM이 아니라 <b>"기기가 송신할 수 있는 주파수"</b> 기준이다.
-  펌웨어에서 밴드를 제한하고 그 증빙을 제출하면 인증 대상 밴드를 줄일 수 있고,
-  <b>밴드 수가 시험 비용을 좌우한다</b> (2밴드 견적 약 270만원 → 1밴드로 축소 시 유의미한 절감).
+  시험소 견적 기준, <b>2개 대역이면 약 270만원.</b> 대역을 줄이면 비용이 유의미하게 내려간다.
 </p>
-<pre><code>// config.h — 시험소 견적 확정 후 조정
-#define KC_BAND_CATM   "5"   // 인증표 Cat-M1: B5 / B8 / B3 중
-#define KC_BAND_NBIOT  "5"   // 인증표 NB-IoT: B5 / B3 중
-#define KC_CATM_ONLY   1     // NB 미인증이면 1 (CMNB=1)</code></pre>
 <p>
-  부팅 시 락을 적용한 뒤 <code>AT+CBANDCFG?</code> 응답을 그대로 로그로 뽑아준다.
-  이 캡처 + 제조사 선언서 조합이 "펌웨어 밴드 제한" 증빙이 된다.
+  법적으로 인증 범위는 "기기가 <b>송신할 수 있는</b> 주파수" 기준이다. 유심을 바꿔 끼우는 것과는
+  무관하고, <b>기기(소프트웨어)가 특정 대역만 쓰도록 고정하고 그 기록을 제출</b>하면 인증 범위를
+  줄이는 근거로 인정받을 수 있다 — 이 인정 여부가 아래 질문 1번이다.
 </p>
-<pre><code>[KC] band-lock evidence: AT+CBANDCFG? +CBANDCFG: "CAT-M",5 +CBANDCFG: "NB-IOT",5 OK</code></pre>
-
 <div class="note">
-  <p class="tag">실측 근거</p>
-  <p>2026-08-27, 실단말(device 3005)이 1NCE 로밍으로 <b>Cat-M1 Band 5</b>에 등록됨을 서버
-  telemetry(<code>band:"M1-B5"</code>)로 확인. 밴드 필드는 매 세션 자동 수집되므로(PR #216),
-  전 단말의 실사용 밴드를 서버 데이터로 증빙할 수 있다.</p>
-</div>
-
-<div class="note warn">
-  <p class="tag">주의 1 — CBANDCFG는 모듈에 남는다</p>
-  <p>밴드 락은 SIM7080G <b>NVRAM에 저장</b>된다. 시험 빌드를 돌린 모듈을 일반 개발로 되돌릴 땐
-  <code>docs/kc_test_build.md</code>의 복원 커맨드로 전체 밴드를 풀어야 한다.</p>
+  <p class="tag">우리의 실측 근거</p>
+  <p>실제 운용 중인 단말의 서버 데이터로, 우리 기기가 국내에서 <b>Band 5(850 MHz) 하나로
+  통신하고 있음</b>을 확인했다(2026-08-27). 게다가 이제 모든 단말이 자기가 쓰는 주파수를
+  서버에 자동 보고하므로, 언제든 실사용 대역을 데이터로 증명할 수 있다.
+  → <b>Band 5 단일 인증이 유력한 후보</b>다.</p>
 </div>
 <div class="note warn">
-  <p class="tag">주의 2 — 인증 후 양산 펌웨어도 락 유지</p>
-  <p>밴드 제한을 근거로 인증을 받으면 <b>양산 펌웨어도 그 제한을 유지하는 것이 원칙</b>이다.
-  인증 밴드 확정 시 운영 빌드 bringUp에 락을 상시 반영하는 후속 작업이 필요하다 (미착수).</p>
+  <p class="tag">함께 알아둘 점</p>
+  <p>특정 대역만 쓰는 조건으로 인증을 받으면, <b>판매 제품도 계속 그 대역만 쓰도록 고정을
+  유지해야 한다.</b> 인증 대역이 확정되면 판매용 소프트웨어에도 같은 고정을 넣는 후속 작업이
+  하나 남는다 (펌웨어 담당, 반나절 작업).</p>
 </div>
 
-<h2>5. 시험소 제출 샘플 체크리스트</h2>
-<ul class="check">
-  <li><b>정상 완제품 샘플 2~3대</b> — 복사성 방출 시험용</li>
-  <li><b>RF 커넥터 인출 지그 샘플 1대</b> — 전도성 시험용. 안테나 급전점에 동축(RG178) 직결.
-      제작 전 시험소와 사양 협의</li>
-  <li><b>시험용 펌웨어</b> — 본 KC_TEST_BUILD (워치독 off · COPS=0 · 밴드 락)</li>
-  <li><b>12V 전원 케이블</b> (차량용)</li>
-  <li><b>밴드 락 증빙</b> — <code>[KC] band-lock evidence</code> 캡처 + 제조사 선언서</li>
-  <li><b>SIM7080G 모듈 KC 인증서</b> — 대리점(에드웍스 등)에 요청, 수배 중</li>
-  <li><b>동작 설명서</b> — KC 빌드는 전원 인가만 하면 시험 상태 진입 (별도 조작 불필요)</li>
-</ul>
-
-<h2>6. 시험소에 확인할 것 (미해결 — 답변 대기)</h2>
+<h2>4. 시험소에 확인 중인 질문 3가지</h2>
+<p class="lead">이 답변에 따라 비용과 준비물이 갈린다. 답변을 받으면 인증 대역과 견적을 확정한다.</p>
 <dl class="qa">
-  <dt><span class="q">Q1</span>밴드 제한 증빙(선언서 + 펌웨어 로그)을 인정하는가?</dt>
-  <dd>인정되면 1밴드로 재견적 요청 — 비용이 갈리는 핵심 질문. 실측상 B5 단일이 유력.</dd>
-  <dt><span class="q">Q2</span>SIM7080G 모듈 KC 인증서 제출 시 무선 시험이 면제되는가?</dt>
-  <dd>면제되면 콜박스 시험 자체가 대폭 축소. 안테나 조건 충족 방법도 함께 확인.</dd>
-  <dt><span class="q">Q3</span>RF 테스트 모드 펌웨어가 별도로 필요한가, 콜박스 전력제어로 충분한가?</dt>
-  <dd>콜박스는 RRC 전력제어로 최대 출력을 올릴 수 있어 보통은 불필요. 요구 시 SIMCom RF Test 문서 수배.</dd>
+  <dt><span class="q">Q1</span>"이 기기는 Band 5만 씁니다"라는 증빙을 인정해 주는가?</dt>
+  <dd>인정되면 1개 대역으로 다시 견적 → 비용이 가장 크게 갈리는 질문. 증빙 자료(고정 기록 + 제조사 선언서)는 이미 준비되어 있다.</dd>
+  <dt><span class="q">Q2</span>통신모듈(SIM7080G) 자체의 KC 인증서를 내면 무선 시험이 면제되는가?</dt>
+  <dd>이미 인증받은 통신모듈을 쓰면 시험 일부가 면제되는 제도가 있다. 면제되면 시험 규모가 크게 준다. 인증서는 모듈 대리점에 요청해 둔 상태.</dd>
+  <dt><span class="q">Q3</span>시험용으로 별도의 "강제 송신" 소프트웨어가 필요한가?</dt>
+  <dd>보통은 콜박스가 기기 출력을 직접 조절할 수 있어 불필요. 시험소가 요구하는 경우에만 모듈 제조사 자료를 받아 추가 준비한다.</dd>
 </dl>
 
-<h2>7. 사전 스캔 (참고 — 자체 EMI 점검)</h2>
-<p>
-  시험소 방문 전 DSA815-TG로 자체 복사 노이즈를 훑을 때의 전문가 권고 세팅:
-  <b>30 MHz–1 GHz</b>, RBW/VBW <b>100 kHz</b>, Ref <b>−20 dBm</b>, Positive Peak + <b>Max Hold</b>
-  켜고 근접장 프로브로 보드를 수 분간 훑는다. 근접장 측정값은 규격(dBμV/m)과 직접 비교할 수 없고,
-  <b>핫스팟 위치 특정과 대책 전후 상대 비교</b>에만 쓴다.
+<h2>5. 시험소에 가져갈 것 (체크리스트)</h2>
+<ul class="check">
+  <li><b>완제품 샘플 2~3대</b> — 제품에서 나오는 전자파를 재는 시험용</li>
+  <li><b>안테나 자리에 케이블을 직접 연결하도록 개조한 샘플 1대</b> — 송신 성능을 케이블로 직접 재는 시험용. 개조 사양은 시험소와 협의 후 제작</li>
+  <li><b>시험 모드 소프트웨어가 들어간 기기</b> — 위 2절의 시험 전용 모드</li>
+  <li><b>12V 전원 케이블</b> — 차량 전원 환경 그대로</li>
+  <li><b>주파수 고정 증빙</b> — 기기가 출력하는 고정 확인 기록 + 제조사 선언서</li>
+  <li><b>통신모듈 KC 인증서</b> — 대리점 요청 중 (Q2와 연결)</li>
+  <li><b>간단한 동작 설명서</b> — 시험 모드 기기는 전원만 꽂으면 바로 시험 가능한 상태가 된다는 안내</li>
+</ul>
+
+<h2>6. 자체 사전 점검 (시험 전, 사무실에서)</h2>
+<p class="lead">
+  시험소에 가서 떨어지면 재시험 비용이 든다. 그래서 보유한 계측기(스펙트럼 분석기 DSA815)로
+  제품에서 새는 전자파 잡음을 미리 훑어보는 절차를 준비했고, 전문가가 권고한 측정 조건도
+  받아 두었다(개발자 문서에 수록).
 </p>
 <div class="note">
-  <p class="tag">장비 한계</p>
-  <p>DSA815-TG 상한은 1.5 GHz — <b>B3(1.7/1.8 GHz)과 GPS L1(1575.42 MHz)은 이 장비로 못 본다.</b>
-  GPS self-desense 디버깅이 필요해지면 3 GHz급 분석기가 별도로 필요하다.</p>
+  <p class="tag">알아둘 한계</p>
+  <p>이 계측기는 1.5 GHz까지만 볼 수 있다. 사전 점검은 그 아래 대역(전자파 잡음의 대부분)에
+  집중하고, 그 위쪽 확인이 필요해지면 상위 장비를 빌리거나 시험소 측정으로 대체한다.</p>
 </div>
 
-<h2>8. 관련 코드·문서</h2>
-<p class="filelist">
-  idf_caltest/main/config.h <span>— KC_TEST_BUILD 플래그 + 밴드 설정 (맨 아래 섹션)</span><br>
-  idf_caltest/main/lte.cpp <span>— COPS=0 · 밴드 락 · 증빙 출력 · PDP 스킵</span><br>
-  idf_caltest/main/recovery.cpp <span>— 시험 모드 에스컬레이션 무력화</span><br>
-  idf_caltest/main/main.cpp <span>— KC 배너 · POST 스킵</span><br>
-  docs/kc_test_build.md <span>— 상세 절차 (복원 커맨드 포함)</span><br>
-  for_kc.txt <span>— 시험소/전문가 상담 원문</span>
+<h2>7. 더 알아보기</h2>
+<p>
+  <a href="kc_test_build.md">docs/kc_test_build.md</a> — 개발자용 상세 절차 (시험 모드 켜고 끄는 법, 주파수 고정·복원 방법)<br>
+  <code>for_kc.txt</code> — 시험 전문가 상담 원문<br>
+  <span class="muted">소프트웨어 변경 이력: PR #216(주파수 자동 보고), #217(시험 전용 모드)</span>
 </p>
-<p class="muted">반영 PR: #216 (serving 밴드 계측), #217 (KC 시험 빌드). 두 빌드 구성 모두 ESP-IDF 5.5.1 컴파일 검증 완료.</p>
 
 <footer>
   Serial-link GPS Tracker · KC 적합성평가 대응 · 문의: 펌웨어 담당 (maintainer)
