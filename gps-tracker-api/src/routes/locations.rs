@@ -230,6 +230,29 @@ async fn history(
                 fixes:      sorted,
             }
         }).collect();
+        // [2026-08-28 재전송 사본 필터] 과거에 이미 중복 저장된 배치(재전송 — ingest dedup 도입
+        //   이전 데이터)를 조회 시점에 정화. 규칙 = ingest 와 동일한 running-max cutoff:
+        //   배치를 도착순(ASC)으로 훑으며, 같은 source 의 "지금까지 채택된 최종 fix 시각 +500ms"
+        //   이전의 fix 는 재전송 사본으로 제외. 사본은 복원 타임스탬프가 수백 ms 어긋나 interleave
+        //   되는데, 이 규칙은 어긋남 크기와 무관하게 겹침 구간을 통째로 걷어낸다 (GNSS fix 간격
+        //   >= 1s 라 정상 fix 는 안 걸림). DB 는 불변 (read-side 정화).
+        //   2026-08-27 sss 실증: 역방향 점프 68건 중 사본 기인 38건 전량 제거 (잔여는 GPS 노이즈).
+        groups.sort_by(|a, b| a.post_at.cmp(&b.post_at));   // 도착순 ASC 순회
+        {
+            let mut run_max: std::collections::HashMap<String, DateTime<Utc>> = Default::default();
+            for g in groups.iter_mut() {
+                g.fixes.retain(|f| {
+                    if f.lat.is_none() || f.lng.is_none() { return true; }   // no-fix row 는 유지
+                    if let Some(m) = run_max.get(&f.source) {
+                        if f.recorded_at <= *m + chrono::Duration::milliseconds(500) { return false; }
+                    }
+                    run_max.insert(f.source.clone(), f.recorded_at);
+                    true
+                });
+                g.batch_size = g.fixes.len() as i32;
+            }
+            groups.retain(|g| !g.fixes.is_empty());
+        }
         groups.sort_by(|a, b| b.post_at.cmp(&a.post_at));   // 최신 POST 먼저
         Ok(Json(json!(groups)))
     } else {
@@ -247,13 +270,28 @@ async fn history(
         }
 
         let mut flat: Vec<LocationView> = Vec::with_capacity(rows.len());
-        for r in rows {
+        // [2026-08-28 재전송 사본 필터] grouped 경로와 동일한 running-max cutoff — row 를 도착순
+        //   (ASC, 쿼리는 DESC 라 rev())으로 순회하며 같은 source 의 채택된 최종 fix 시각 +500ms
+        //   이전 fix 를 사본으로 제외 (좌표 없는 row 는 유지).
+        let mut run_max: std::collections::HashMap<String, DateTime<Utc>> = Default::default();
+        let mut keep_fix = |source: &str, at: DateTime<Utc>, has_coord: bool| -> bool {
+            if !has_coord { return true; }
+            if let Some(m) = run_max.get(source) {
+                if at <= *m + chrono::Duration::milliseconds(500) { return false; }
+            }
+            run_max.insert(source.to_string(), at);
+            true
+        };
+        for r in rows.into_iter().rev() {
             let at_ms = r.raw.as_ref().and_then(|j| j.get("at_ms")).and_then(|v| v.as_i64()).unwrap_or(-1);
             let ts    = r.raw.as_ref().and_then(|j| j.get("ts"   )).and_then(|v| v.as_i64()).unwrap_or(-1);
             let key   = (at_ms, ts);
             if let Some(jsonb) = &r.fixes_jsonb {
-                // anchor row — jsonb 의 모든 fix 를 flat 에 추가
+                // anchor row — jsonb 의 모든 fix 를 flat 에 추가 (재전송 사본은 keep_fix 가 제외)
                 for fix in unnest_jsonb_fixes(jsonb, r.recorded_at, r.ttff_s, r.heading) {
+                    if !keep_fix(&fix.source, fix.recorded_at, fix.lat.is_some() && fix.lng.is_some()) {
+                        continue;
+                    }
                     flat.push(LocationView {
                         recorded_at: fix.recorded_at,
                         source: fix.source, fix: fix.fix,
@@ -267,16 +305,18 @@ async fn history(
             } else if (at_ms >= 0 || ts >= 0) && anchor_keys.contains(&key) {
                 // 같은 batch 의 sibling column row — anchor jsonb 가 이미 담음 → skip
             } else {
-                // 비 batch row (legacy) — 그대로
-                flat.push(LocationView {
-                    recorded_at: r.recorded_at, source: r.source, fix: r.fix,
-                    lat: r.lat, lng: r.lng, sat: r.sat, ttff_s: r.ttff_s,
-                    csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv, cbc_mv: r.cbc_mv,
-                    device_uptime_s: r.device_uptime_s, heading: r.heading,
-                });
+                // 비 batch row (legacy) — 그대로 (재전송 사본은 keep_fix 가 제외)
+                if keep_fix(&r.source, r.recorded_at, r.lat.is_some() && r.lng.is_some()) {
+                    flat.push(LocationView {
+                        recorded_at: r.recorded_at, source: r.source, fix: r.fix,
+                        lat: r.lat, lng: r.lng, sat: r.sat, ttff_s: r.ttff_s,
+                        csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv, cbc_mv: r.cbc_mv,
+                        device_uptime_s: r.device_uptime_s, heading: r.heading,
+                    });
+                }
             }
         }
-        // recorded_at DESC 보장 (jsonb unnest 가 ASC 순서 만들 수 있음).
+        // recorded_at DESC 보장 (row 순회를 ASC 로 뒤집었고 jsonb unnest 도 ASC).
         flat.sort_by(|a, b| b.recorded_at.cmp(&a.recorded_at));
         Ok(Json(json!(flat)))
     }

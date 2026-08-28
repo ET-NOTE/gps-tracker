@@ -221,9 +221,29 @@ pub async fn ingest(
     //   WS broadcast 도 fix 별 그대로 (frontend dedup 가 처리).
     let mut fix_records: Vec<(chrono::DateTime<Utc>, f64, f64, Option<i32>)> = Vec::new();
     if let Some(fixes) = &parsed.fixes {
+        // [2026-08-28 배치 재전송 dedup] 펌웨어는 200 응답을 못 받으면(RF 순단 등) 같은 fix 를
+        //   다음 사이클에 재전송한다(at-least-once). 복원시각(도착시각-age_ms)은 전송마다 수백 ms
+        //   어긋나 기존 (device,recorded_at,source) 키로는 dedup 불가 → 사본이 interleave 저장되어
+        //   궤적 지그재그·방향화살표 역방향 유발 (2026-08-27 sss 실증: 운행 1회에 겹침 배치 7쌍).
+        //   해법: 이 단말의 "직전 저장 fix 최종시각(=MAX(recorded_at), anchor 가 배치 최신 fix)"
+        //   이전(+500ms 여유)의 fix 는 재전송 사본으로 드롭. GNSS fix 는 1s 간격이라 오인 없음.
+        //   전부 사본이면 insert 자체가 스킵되지만 200 은 반환 → 단말이 batch 를 비워 재전송 종료.
+        let last_t: Option<chrono::DateTime<Utc>> = sqlx::query_scalar(
+            "SELECT MAX(recorded_at) FROM location_records WHERE device_id = $1 AND source = 'l80'",
+        )
+        .bind(device_id)
+        .fetch_one(&state.db)
+        .await
+        .ok()
+        .flatten();
+        let dedup_cutoff = last_t.map(|t| t + chrono::Duration::milliseconds(500));
+        let mut retx_dropped = 0usize;
         for f in fixes {
             let age_ms = f.age_ms.unwrap_or(0);
             let fix_at = recorded_at - chrono::Duration::milliseconds(age_ms);
+            if let Some(cut) = dedup_cutoff {
+                if fix_at <= cut { retx_dropped += 1; continue; }
+            }
             batch_for_ws.push(crate::events::LocationFix {
                 recorded_at: fix_at,
                 lat: Some(f.lat),
@@ -232,6 +252,10 @@ pub async fn ingest(
             });
             fix_records.push((fix_at, f.lat, f.lng, f.sat));
             let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, f.lat, f.lng).await;
+        }
+        if retx_dropped > 0 {
+            tracing::info!(device_id, retx_dropped, total = fixes.len(),
+                "batch retx dedup: overlapping fixes dropped");
         }
 
         // Phase 6D: 1 row + jsonb INSERT.
