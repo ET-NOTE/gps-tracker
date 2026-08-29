@@ -81,6 +81,9 @@ pub struct BatchFix {
     pub lng: f64,
     pub sat: Option<i32>,
     pub age_ms: Option<i64>,
+    /// [2026-08-29] 포착 시점 단말 uptime ms — 재전송 dedup 의 정확 키 (재전송돼도 불변).
+    /// 구펌웨어는 미전송(None) → wall-clock 폴백. jsonb 에도 저장.
+    pub up_ms: Option<i64>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -219,7 +222,7 @@ pub async fn ingest(
     //   column lat/lng/sat/heading/ttff_s = anchor (가장 최근) fix 값 → devices.last_lat trigger 호환.
     //   geofence check 는 fix 별 그대로.
     //   WS broadcast 도 fix 별 그대로 (frontend dedup 가 처리).
-    let mut fix_records: Vec<(chrono::DateTime<Utc>, f64, f64, Option<i32>)> = Vec::new();
+    let mut fix_records: Vec<(chrono::DateTime<Utc>, f64, f64, Option<i32>, Option<i64>)> = Vec::new();
     if let Some(fixes) = &parsed.fixes {
         // [2026-08-28 배치 재전송 dedup] 펌웨어는 200 응답을 못 받으면(RF 순단 등) 같은 fix 를
         //   다음 사이클에 재전송한다(at-least-once). 복원시각(도착시각-age_ms)은 전송마다 수백 ms
@@ -228,29 +231,48 @@ pub async fn ingest(
         //   해법: 이 단말의 "직전 저장 fix 최종시각(=MAX(recorded_at), anchor 가 배치 최신 fix)"
         //   이전(+500ms 여유)의 fix 는 재전송 사본으로 드롭. GNSS fix 는 1s 간격이라 오인 없음.
         //   전부 사본이면 insert 자체가 스킵되지만 200 은 반환 → 단말이 batch 를 비워 재전송 종료.
-        let last_t: Option<chrono::DateTime<Utc>> = sqlx::query_scalar(
-            "SELECT MAX(recorded_at) FROM location_records WHERE device_id = $1 AND source = 'l80'",
+        // 직전 저장 배치: recorded_at(= 그 배치 최종 fix 시각, wall-clock 폴백용) + fixes_jsonb
+        // (up_ms 정확 dedup 용 — [2026-08-29] 신펌웨어는 fix 마다 up_ms 를 실음).
+        let last: Option<(chrono::DateTime<Utc>, Option<Value>)> = sqlx::query_as(
+            "SELECT recorded_at, fixes_jsonb FROM location_records \
+              WHERE device_id = $1 AND source = 'l80' \
+              ORDER BY recorded_at DESC LIMIT 1",
         )
         .bind(device_id)
-        .fetch_one(&state.db)
+        .fetch_optional(&state.db)
         .await
         .ok()
         .flatten();
-        let dedup_cutoff = last_t.map(|t| t + chrono::Duration::milliseconds(500));
+        let wall_cutoff = last.as_ref().map(|(t, _)| *t + chrono::Duration::milliseconds(500));
+        // 직전 배치의 최대 up_ms — 단말 uptime 기준 "여기까지 저장됨" 워터마크.
+        let last_up_ms: Option<i64> = last
+            .as_ref()
+            .and_then(|(_, j)| j.as_ref())
+            .and_then(|j| j.as_array())
+            .and_then(|arr| arr.iter().filter_map(|it| it.get("up_ms").and_then(|v| v.as_i64())).max());
+        // 같은 부팅 세션 판정 — 이번 POST 의 uptime(ts, 초)이 워터마크 이상 진행됐으면 같은 부팅.
+        //   재부팅이면 ts 가 리셋되어 false → wall-clock 폴백 (재전송 batch 는 RAM 이라 재부팅을
+        //   넘어 존재할 수 없음 → 폴백으로 충분). ts 는 초 절삭이라 +999ms 보정.
+        let same_boot = matches!((parsed.ts, last_up_ms),
+            (Some(ts), Some(lu)) if (ts as i64) * 1000 + 999 >= lu);
         let mut retx_dropped = 0usize;
         for f in fixes {
             let age_ms = f.age_ms.unwrap_or(0);
             let fix_at = recorded_at - chrono::Duration::milliseconds(age_ms);
-            if let Some(cut) = dedup_cutoff {
-                if fix_at <= cut { retx_dropped += 1; continue; }
-            }
+            // [2026-08-29] dedup 판정: ① up_ms 정확 비교 (같은 부팅 + 양쪽 up_ms 존재 — 재전송
+            //   사본은 up_ms 불변이라 산술적으로 정확) ② 아니면 wall-clock cutoff (기존 규칙).
+            let dup = match (f.up_ms, last_up_ms, same_boot) {
+                (Some(u), Some(lu), true) => u <= lu,
+                _ => wall_cutoff.map_or(false, |cut| fix_at <= cut),
+            };
+            if dup { retx_dropped += 1; continue; }
             batch_for_ws.push(crate::events::LocationFix {
                 recorded_at: fix_at,
                 lat: Some(f.lat),
                 lng: Some(f.lng),
                 sat: f.sat.map(|v| v as i16),
             });
-            fix_records.push((fix_at, f.lat, f.lng, f.sat));
+            fix_records.push((fix_at, f.lat, f.lng, f.sat, f.up_ms));
             let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, f.lat, f.lng).await;
         }
         if retx_dropped > 0 {
@@ -260,14 +282,15 @@ pub async fn ingest(
 
         // Phase 6D: 1 row + jsonb INSERT.
         // anchor = MAX(fix_at) — recorded_at + column lat/lng/sat 자리. at_ms 는 anchor 기준 음 offset.
-        if let Some(&(anchor_at, anchor_lat, anchor_lng, anchor_sat)) = fix_records.iter().max_by_key(|r| r.0) {
-            let jsonb_array: Vec<serde_json::Value> = fix_records.iter().map(|(at, lat, lng, sat)| {
+        if let Some(&(anchor_at, anchor_lat, anchor_lng, anchor_sat, _)) = fix_records.iter().max_by_key(|r| r.0) {
+            let jsonb_array: Vec<serde_json::Value> = fix_records.iter().map(|(at, lat, lng, sat, up_ms)| {
                 let at_ms = (*at - anchor_at).num_milliseconds();
                 serde_json::json!({
                     "at_ms": at_ms,
                     "lat":   lat,
                     "lng":   lng,
                     "sat":   sat,
+                    "up_ms": up_ms,   // [2026-08-29] 단말 uptime ms — 재전송 dedup 워터마크 (구펌웨어 null)
                 })
             }).collect();
             sqlx::query(

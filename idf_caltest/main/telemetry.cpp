@@ -149,8 +149,11 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
     for (uint8_t i = 0; i < avail && p < 3800; i++) {
       float lat, lng; int sat; uint32_t atMs;
       if (!gps::batchGet(i, lat, lng, sat, atMs)) break;
-      p = appendf(out, cap, p, "%s{\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"age_ms\":%lu}",
-        (written == 0 ? "" : ","), (double)lat, (double)lng, sat, (unsigned long)(now - atMs));
+      // [2026-08-29 up_ms] 포착 시점 uptime ms — 서버 재전송 dedup 의 정확 키 (age_ms 는 도착시각
+      //   기준 복원이라 재전송 시 수백 ms 어긋나던 것의 정석 해결). 재전송돼도 up_ms 는 불변.
+      p = appendf(out, cap, p, "%s{\"lat\":%.6f,\"lng\":%.6f,\"sat\":%d,\"age_ms\":%lu,\"up_ms\":%lu}",
+        (written == 0 ? "" : ","), (double)lat, (double)lng, sat,
+        (unsigned long)(now - atMs), (unsigned long)atMs);
       written++;
     }
     p = appendf(out, cap, p, "]");
