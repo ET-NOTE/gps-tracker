@@ -24,7 +24,7 @@ idf.py fullclean 없이 그냥: idf.py build
 | 항목 | 운영 | KC 시험 |
 |---|---|---|
 | 복구 에스컬레이션 (soft/hardCycle/esp_restart) | ON | **전부 OFF** — 모뎀 항상 ON, bringUp 재시도만 |
-| PDP(CNACT/APN) + 서버 POST | ON | **스킵** — 등록(reg=1\|5)만으로 ONLINE |
+| PDP(CNACT/APN) + 서버 POST | ON | **유지(시도)** — 실패해도 등록(reg=1\|5)만으로 ONLINE, 에스컬레이션 없음 ([2026-09-01] 시험실 인터넷 유무 불확실 → 연결 켜둠) |
 | deep sleep (stationary/timer) | ON | OFF (`SLEEP_DISABLED=1`) |
 | loop task WDT (60s panic reset) | ON | OFF |
 | 부저 (GPIO1) | ON | OFF (EMI/LTE 간섭원 차단) |

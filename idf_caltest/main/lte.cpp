@@ -214,14 +214,6 @@ bool bringUp() {
 
   // ── Phase 3: 등록됨 → PDP/IP (짧은 블로킹) ──
   brPhase_ = 0;
-#if KC_TEST_BUILD
-  // KC 시험 모드: 콜박스는 PDP 를 안 붙여주는 경우가 많음 — 등록(reg=1|5)만으로 ONLINE 취급.
-  //   CNACT/APN 시도 자체를 스킵(실패 이벤트가 escalation 유발 안 하도록 근원 차단).
-  Serial.println(F("[KC] registered — PDP skip (call-box mode), ONLINE"));
-  ready_ = true;
-  bringUpCount_++;
-  return true;
-#endif
   sendAT("AT+CNACT=0,0", "OK", 3000);
   delay(300);
   String c = String("AT+CNCFG=0,1,\"") + APN_NAME + "\"";
@@ -243,9 +235,20 @@ bool bringUp() {
     }
   }
 
+#if KC_TEST_BUILD
+  // [2026-09-01 팀장 지시] 시험실 인터넷 유무가 불확실 → 서버 연결(PDP/POST)은 시도한다.
+  //   콜박스처럼 PDP 가 안 붙는 환경이면 실패해도 등록만으로 ONLINE 유지 — 실패가 복구
+  //   에스컬레이션(재부팅/전원사이클)으로 이어지지 않는 것은 KC 모드 recovery 가 보장하므로
+  //   시험에 무해. 인터넷이 있으면 POST 정상 동작.
+  if (!pdp) Serial.println(F("[KC] PDP 실패 — 등록 유지로 ONLINE (서버 전송 시도는 계속)"));
+  ready_ = true;
+  bringUpCount_++;
+  return true;
+#else
   ready_ = pdp;
   if (pdp) bringUpCount_++;
   return pdp;
+#endif
 }
 
 void refresh() {

@@ -121,7 +121,7 @@ void setup() {
 #if KC_TEST_BUILD
   Serial.println(F("*********************************************************"));
   Serial.println(F("*  KC TEST BUILD — 콜박스 시험용 (운영 배포 금지!)          *"));
-  Serial.println(F("*  sleep/부저/WDT/복구 OFF · PDP/POST skip · COPS=0       *"));
+  Serial.println(F("*  sleep/부저/WDT/복구 OFF · 서버전송 ON(실패 무해) · COPS=0 *"));
   Serial.printf ("*  band-lock: CAT-M=%s NB-IOT=%s catm_only=%d\n", KC_BAND_CATM, KC_BAND_NBIOT, (int)KC_CATM_ONLY);
   Serial.println(F("*********************************************************"));
 #endif
@@ -234,14 +234,12 @@ void loop() {
 
   recovery::tick();
 
-#if KC_TEST_BUILD
-  // KC 시험 모드: POST 없음 (콜박스에 데이터 세션 없음 — SHCONN 시도는 실패 소음만 만듦)
-#else
+  // [2026-09-01 팀장 지시] KC 시험 모드에서도 서버 전송 유지 — 시험실 인터넷 유무 불확실.
+  //   실패해도 KC recovery 가 에스컬레이션 안 하므로 무해 (인터넷 있으면 정상 전송).
   if (recovery::online() && (int32_t)(millis() - nextPostAt) >= 0) {
     doPost();
     nextPostAt = millis() + lte::postIntervalMs();
   }
-#endif
 
   sleep_mgr::checkStationary();   // 정지 5분 → deep sleep
   sleep_mgr::timerWakeTick();     // timer-wake 2분 guard
