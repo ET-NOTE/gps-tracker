@@ -29,6 +29,8 @@ ESP32-C3 mini GPS tracker 의 firmware sketch 모음. 단계별 incremental deve
 
 ## Build / flash
 
+UNO R3용 SIM7080G 쉴드 테스트는 [03_8_uno_sim7080g_shield_test](03_8_uno_sim7080g_shield_test/)를 사용합니다. D6=DTR, D7=PWRKEY, D8=UNO RX, D9=UNO TX이며 `arduino:avr:uno`로 빌드합니다. 배선 조건과 업로드 절차는 해당 README를 참고하세요.
+
 `arduino-cli` 사용 — fqbn `esp32:esp32:esp32c3:CDCOnBoot=cdc`. 예시:
 
 ```bash
