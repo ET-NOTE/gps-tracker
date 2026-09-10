@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DHT11 진단 타임시리즈</title>
+<style>
+  body { font-family: -apple-system, "Malgun Gothic", sans-serif; margin: 0; background: #f5f6f8; color: #1a1a1a; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 18px; margin: 8px 0 2px; }
+  .sub { color: #667; font-size: 12px; margin-bottom: 12px; }
+  .cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .card { background: #fff; border: 1px solid #dde; border-radius: 8px; padding: 12px 18px; min-width: 140px; }
+  .card .k { font-size: 12px; color: #667; }
+  .card .v { font-size: 26px; font-weight: 700; margin-top: 2px; }
+  .card .t { font-size: 11px; color: #99a; margin-top: 4px; }
+  canvas { width: 100%; height: 180px; background: #fff; border: 1px solid #dde; border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #dde; margin-top: 14px; font-size: 13px; }
+  th, td { padding: 6px 10px; border-bottom: 1px solid #eef; text-align: right; }
+  th { background: #f0f2f5; position: sticky; top: 0; }
+  th:first-child, td:first-child { text-align: left; }
+  .stale { color: #c33; font-weight: 600; }
+  .ok { color: #283; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DHT11 온습도 진단</h1>
+  <div class="sub">device: <span id="dev">-</span> · 15초 주기 수신 · 시각은 KST(절대시각) · 10초마다 자동 갱신 · 상태: <span id="live">-</span></div>
+  <div class="cards">
+    <div class="card"><div class="k">온도</div><div class="v" id="t">-</div><div class="t" id="tat">-</div></div>
+    <div class="card"><div class="k">습도</div><div class="v" id="h">-</div><div class="t" id="hat">-</div></div>
+    <div class="card"><div class="k">수신 건수 (표시분)</div><div class="v" id="n">-</div><div class="t" id="range">-</div></div>
+  </div>
+  <canvas id="chart" width="1600" height="360"></canvas>
+  <table>
+    <thead><tr><th>KST 시각</th><th>온도(℃)</th><th>습도(%)</th><th>up_ms</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+<script>
+async function load() {
+  try {
+    const r = await fetch('/diagnostic/data?limit=1000');
+    const d = await r.json();
+    const items = d.items;            // 최신순
+    document.getElementById('n').textContent = d.count;
+    const rows = document.getElementById('rows');
+    rows.innerHTML = items.slice(0, 300).map(function(it) {
+      return '<tr><td>' + it.kst + '</td><td>' + (it.temp_c == null ? '-' : it.temp_c.toFixed(1)) +
+             '</td><td>' + (it.hum_pct == null ? '-' : it.hum_pct.toFixed(0)) +
+             '</td><td>' + (it.up_ms == null ? '-' : it.up_ms) + '</td></tr>';
+    }).join('');
+    if (items.length) {
+      const latest = items[0];
+      document.getElementById('dev').textContent = latest.device_uid;
+      document.getElementById('t').textContent = latest.temp_c == null ? '-' : latest.temp_c.toFixed(1) + ' ℃';
+      document.getElementById('h').textContent = latest.hum_pct == null ? '-' : latest.hum_pct.toFixed(0) + ' %';
+      document.getElementById('tat').textContent = latest.kst;
+      document.getElementById('hat').textContent = latest.kst;
+      document.getElementById('range').textContent = items[items.length-1].kst + ' ~';
+      // 최신 수신이 60초 이상 전이면 끊김 표시 (kst 문자열 → epoch)
+      const last = new Date(latest.kst.replace(' ', 'T') + '+09:00').getTime();
+      const ageS = Math.round((Date.now() - last) / 1000);
+      const live = document.getElementById('live');
+      if (ageS > 60) { live.textContent = '끊김 (' + ageS + '초 전 마지막 수신)'; live.className = 'stale'; }
+      else { live.textContent = '수신 중 (' + ageS + '초 전)'; live.className = 'ok'; }
+      draw(items.slice().reverse());   // 차트는 시간순
+    }
+  } catch (e) { document.getElementById('live').textContent = '조회 실패'; }
+}
+function draw(seq) {
+  const c = document.getElementById('chart'), ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  if (seq.length < 2) return;
+  const pad = 40, W = c.width - pad * 2, H = c.height - pad * 2;
+  function series(key, color, min, max) {
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 3;
+    let started = false;
+    seq.forEach(function(it, i) {
+      const v = it[key]; if (v == null) return;
+      const x = pad + W * i / (seq.length - 1);
+      const y = pad + H - H * (v - min) / (max - min);
+      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+  ctx.font = '20px sans-serif';
+  ctx.fillStyle = '#c50'; ctx.fillText('온도 0~50℃', pad, 24);
+  ctx.fillStyle = '#06c'; ctx.fillText('습도 0~100%', pad + 160, 24);
+  ctx.strokeStyle = '#dde'; ctx.strokeRect(pad, pad, W, H);
+  series('temp_c', '#c50', 0, 50);
+  series('hum_pct', '#06c', 0, 100);
+}
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

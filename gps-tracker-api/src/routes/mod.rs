@@ -5,6 +5,7 @@ pub mod chat;
 pub mod corporate;
 pub mod credits;
 pub mod devices;
+pub mod diag;
 pub mod documents;
 pub mod geofences;
 pub mod health;
@@ -56,6 +57,9 @@ pub fn build_router(state: AppState) -> Router {
         .route("/health", get(health::health))
         .route("/gps-tracker/health", get(health::health))
         .route("/gps-tracker/ingest", post(ingest::ingest))
+        .route("/gps-tracker/dht", post(diag::dht_ingest))
+        .route("/gps-tracker/diagnostic", get(diag::diag_page))
+        .route("/gps-tracker/diagnostic/data", get(diag::diag_data))
         .nest("/gps-tracker/api/v1", api_v1)
         .nest("/gps-tracker/ws", ws::router())
         .with_state(state)
