@@ -8,7 +8,11 @@
   body { font-family: -apple-system, "Malgun Gothic", sans-serif; margin: 0; background: #f5f6f8; color: #1a1a1a; }
   .wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
   h1 { font-size: 18px; margin: 8px 0 2px; }
-  .sub { color: #667; font-size: 12px; margin-bottom: 12px; }
+  .sub { color: #667; font-size: 12px; margin-bottom: 10px; }
+  .pager { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #fff; border: 1px solid #dde; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
+  .pager button { font-size: 13px; padding: 5px 12px; border: 1px solid #bcd; background: #f7faff; border-radius: 6px; cursor: pointer; }
+  .pager button:disabled { opacity: .4; cursor: default; }
+  .pager .info { color: #445; margin-left: auto; }
   .cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
   .card { background: #fff; border: 1px solid #dde; border-radius: 8px; padding: 12px 18px; min-width: 140px; }
   .card .k { font-size: 12px; color: #667; }
@@ -26,11 +30,18 @@
 <body>
 <div class="wrap">
   <h1>DHT11 온습도 진단</h1>
-  <div class="sub">device: <span id="dev">-</span> · 15초 주기 수신 · 시각은 KST(절대시각) · 10초마다 자동 갱신 · 상태: <span id="live">-</span></div>
+  <div class="sub">device: <span id="dev">-</span> · 15초 주기 수신 · 시각은 KST(절대시각) · 최신 페이지는 10초마다 자동 갱신 · 상태: <span id="live">-</span></div>
+
+  <div class="pager">
+    <button id="btnLatest">최신</button>
+    <button id="btnNewer">◀ 다음(최신쪽)</button>
+    <button id="btnOlder">이전(과거쪽) ▶</button>
+    <span class="info"><span id="pageNo">-</span> / <span id="pageMax">-</span> 페이지 (1페이지=1시간) · 전체 <span id="total">-</span>건 · 구간 <span id="range">-</span></span>
+  </div>
+
   <div class="cards">
     <div class="card"><div class="k">온도</div><div class="v" id="t">-</div><div class="t" id="tat">-</div></div>
     <div class="card"><div class="k">습도</div><div class="v" id="h">-</div><div class="t" id="hat">-</div></div>
-    <div class="card"><div class="k">수신 건수 (표시분)</div><div class="v" id="n">-</div><div class="t" id="range">-</div></div>
   </div>
   <canvas id="chart" width="1600" height="360"></canvas>
   <table>
@@ -39,33 +50,50 @@
   </table>
 </div>
 <script>
+var PAGE = 240;      // 15초 × 240 = 1시간
+var page = 0;        // 0 = 최신
+var totalPages = 1;
+
 async function load() {
   try {
-    const r = await fetch('/diagnostic/data?limit=1000');
+    const r = await fetch('/diagnostic/data?limit=' + PAGE + '&offset=' + (page * PAGE));
     const d = await r.json();
     const items = d.items;            // 최신순
-    document.getElementById('n').textContent = d.count;
+    totalPages = Math.max(1, Math.ceil(d.total / PAGE));
+    if (page >= totalPages) page = totalPages - 1;
+    document.getElementById('total').textContent = d.total;
+    document.getElementById('pageNo').textContent = page + 1;
+    document.getElementById('pageMax').textContent = totalPages;
+    document.getElementById('btnLatest').disabled = (page === 0);
+    document.getElementById('btnNewer').disabled = (page === 0);
+    document.getElementById('btnOlder').disabled = (page >= totalPages - 1);
+
     const rows = document.getElementById('rows');
-    rows.innerHTML = items.slice(0, 300).map(function(it) {
+    rows.innerHTML = items.map(function(it) {
       return '<tr><td>' + it.kst + '</td><td>' + (it.temp_c == null ? '-' : it.temp_c.toFixed(1)) +
              '</td><td>' + (it.hum_pct == null ? '-' : it.hum_pct.toFixed(0)) +
              '</td><td>' + (it.up_ms == null ? '-' : it.up_ms) + '</td></tr>';
     }).join('');
+
     if (items.length) {
-      const latest = items[0];
-      document.getElementById('dev').textContent = latest.device_uid;
-      document.getElementById('t').textContent = latest.temp_c == null ? '-' : latest.temp_c.toFixed(1) + ' ℃';
-      document.getElementById('h').textContent = latest.hum_pct == null ? '-' : latest.hum_pct.toFixed(0) + ' %';
-      document.getElementById('tat').textContent = latest.kst;
-      document.getElementById('hat').textContent = latest.kst;
-      document.getElementById('range').textContent = items[items.length-1].kst + ' ~';
-      // 최신 수신이 60초 이상 전이면 끊김 표시 (kst 문자열 → epoch)
-      const last = new Date(latest.kst.replace(' ', 'T') + '+09:00').getTime();
+      document.getElementById('range').textContent = items[items.length - 1].kst + ' ~ ' + items[0].kst;
+      const top = items[0];
+      document.getElementById('dev').textContent = top.device_uid;
+      document.getElementById('t').textContent = top.temp_c == null ? '-' : top.temp_c.toFixed(1) + ' ℃';
+      document.getElementById('h').textContent = top.hum_pct == null ? '-' : top.hum_pct.toFixed(0) + ' %';
+      document.getElementById('tat').textContent = top.kst + (page === 0 ? '' : ' (과거 페이지)');
+      document.getElementById('hat').textContent = top.kst + (page === 0 ? '' : ' (과거 페이지)');
+      draw(items.slice().reverse());   // 차트는 시간순
+    } else {
+      document.getElementById('range').textContent = '-';
+      draw([]);
+    }
+    if (page === 0 && items.length) {
+      const last = new Date(items[0].kst.replace(' ', 'T') + '+09:00').getTime();
       const ageS = Math.round((Date.now() - last) / 1000);
       const live = document.getElementById('live');
       if (ageS > 60) { live.textContent = '끊김 (' + ageS + '초 전 마지막 수신)'; live.className = 'stale'; }
       else { live.textContent = '수신 중 (' + ageS + '초 전)'; live.className = 'ok'; }
-      draw(items.slice().reverse());   // 차트는 시간순
     }
   } catch (e) { document.getElementById('live').textContent = '조회 실패'; }
 }
@@ -92,8 +120,11 @@ function draw(seq) {
   series('temp_c', '#c50', 0, 50);
   series('hum_pct', '#06c', 0, 100);
 }
+document.getElementById('btnLatest').onclick = function() { page = 0; load(); };
+document.getElementById('btnNewer').onclick = function() { if (page > 0) { page--; load(); } };
+document.getElementById('btnOlder').onclick = function() { if (page < totalPages - 1) { page++; load(); } };
 load();
-setInterval(load, 10000);
+setInterval(function() { if (page === 0) load(); }, 10000);
 </script>
 </body>
 </html>
