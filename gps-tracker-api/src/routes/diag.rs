@@ -51,6 +51,7 @@ pub async fn dht_ingest(
 #[derive(Debug, Deserialize)]
 pub struct DataQuery {
     pub limit: Option<i64>,
+    pub offset: Option<i64>,
     pub device_uid: Option<String>,
 }
 
@@ -59,15 +60,23 @@ pub async fn diag_data(
     Query(q): Query<DataQuery>,
 ) -> AppResult<Json<Value>> {
     let limit = q.limit.unwrap_or(300).clamp(1, 5000);
+    let offset = q.offset.unwrap_or(0).max(0);
+    let total: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM diag_dht WHERE ($1::text IS NULL OR device_uid = $1)",
+    )
+    .bind(&q.device_uid)
+    .fetch_one(&state.db)
+    .await?;
     let rows = sqlx::query(
         r#"SELECT device_uid, temp_c, hum_pct, up_ms, recorded_at
              FROM diag_dht
             WHERE ($2::text IS NULL OR device_uid = $2)
             ORDER BY recorded_at DESC
-            LIMIT $1"#,
+            LIMIT $1 OFFSET $3"#,
     )
     .bind(limit)
     .bind(&q.device_uid)
+    .bind(offset)
     .fetch_all(&state.db)
     .await?;
 
@@ -86,7 +95,7 @@ pub async fn diag_data(
         })
         .collect();
 
-    Ok(Json(json!({ "count": items.len(), "items": items })))
+    Ok(Json(json!({ "count": items.len(), "total": total, "offset": offset, "items": items })))
 }
 
 pub async fn diag_page() -> Html<&'static str> {
