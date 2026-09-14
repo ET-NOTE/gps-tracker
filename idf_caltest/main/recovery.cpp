@@ -54,6 +54,7 @@ void tick() {
     if ((int32_t)(now - nextBringUpAt_) < 0) return;
     if (lte::bringUp()) {
       Serial.printf("[KC] → ONLINE (CSQ=%d REG=%d)\n", lte::csq(), lte::reg());
+      lte::fetchBandInfo();   // serving 밴드 실측(CPSI) → telemetry band — 밴드락 상태 증빙에 필요
       nextBringUpAt_ = millis() + LTE_BRINGUP_RETRY_MS;
     } else {
       nextBringUpAt_ = millis() + (lte::bringInProgress() ? REG_POLL_FAST_MS : LTE_BRINGUP_RETRY_MS);
