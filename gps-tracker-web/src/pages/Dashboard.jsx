@@ -105,6 +105,33 @@ export default function Dashboard({ onLogout }) {
   const [pairError, setPairError]     = useState('');
   const [pairLoading, setPairLoading] = useState(false);
   const [pairOpen, setPairOpen]       = useState(false);
+  // [2026-09-14 KC] 미페어링 단말 스캔 탭 — 최근 ingest 중인 단말을 목록으로 보여주고 원클릭 페어링
+  const [scanRows, setScanRows]       = useState(null);   // null=미조회, []=없음
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanBusyUid, setScanBusyUid] = useState(null);   // 페어링 진행 중인 행
+
+  async function runScan() {
+    setScanLoading(true); setPairError('');
+    try {
+      const r = await api.scanDevices();
+      setScanRows(r.items || []);
+    } catch (e) { setPairError(e.message); }
+    finally { setScanLoading(false); }
+  }
+
+  async function pairFromScan(row) {
+    setPairError('');
+    // 별명 입력이 있으면 사용, 없으면 uid 꼬리로 자동 생성 (검사자 원클릭 최적화)
+    const name = pairLabel.trim() || `단말-${row.device_uid.slice(-6)}`;
+    setScanBusyUid(row.device_uid);
+    try {
+      await api.pairDevice({ device_uid: row.device_uid, display_name: name });
+      setPairLabel('');
+      await loadDevices();
+      await runScan();               // 페어링된 행은 목록에서 빠짐
+    } catch (e) { setPairError(e.message); }
+    finally { setScanBusyUid(null); }
+  }
 
   // /devices/pair deep link — 카카오 알림톡 등 외부에서 진입 + 연구소 탭의 "튜토리얼 다시 보기"
   // 버튼에서 재진입까지 모두 처리. 한 번 처리 후 path 정리 (/devices) — 새로고침 시 중복 트리거 방지.
@@ -761,10 +788,11 @@ export default function Dashboard({ onLogout }) {
                     {[
                       { id: 'iccid', label: 'SIM 번호' },
                       { id: 'uid',   label: 'device_uid' },
+                      { id: 'scan',  label: '스캔' },
                     ].map(t => {
                       const on = pairMode === t.id;
                       return (
-                        <button key={t.id} onClick={() => setPairMode(t.id)} style={{
+                        <button key={t.id} onClick={() => { setPairMode(t.id); if (t.id === 'scan') runScan(); }} style={{
                           flex: 1, padding: 6, fontSize: 12, borderRadius: 4, cursor: 'pointer', border: 'none',
                           background: on ? 'var(--primary)' : 'var(--surface-2)',
                           color:      on ? 'var(--primary-fg)' : 'var(--text-2)',
@@ -774,7 +802,7 @@ export default function Dashboard({ onLogout }) {
                     })}
                   </div>
 
-                  {pairMode === 'iccid' ? (
+                  {pairMode === 'iccid' && (
                     <>
                       <input placeholder="SIM 끝 8자리 또는 전체 ICCID"
                         value={pairIccid}
@@ -784,20 +812,61 @@ export default function Dashboard({ onLogout }) {
                         OLED 첫 줄 「SIM ...12345678」 의 숫자
                       </div>
                     </>
-                  ) : (
+                  )}
+                  {pairMode === 'uid' && (
                     <input placeholder="device_uid  예) esp-aabbccddeeff"
                       value={pairUid} onChange={e => setPairUid(e.target.value)}
                       style={s.input} />
                   )}
-                  <input placeholder="단말기 별명 (필수, 예: 1호차)"
-                    value={pairLabel} required maxLength={32}
+                  {pairMode === 'scan' && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                          최근 10분 내 신호를 보내온 미페어링 단말
+                        </div>
+                        <button onClick={runScan} disabled={scanLoading}
+                          style={{ ...s.smallBtn, opacity: scanLoading ? 0.6 : 1 }}>
+                          {scanLoading ? '스캔 중…' : '다시 스캔'}
+                        </button>
+                      </div>
+                      {scanRows !== null && scanRows.length === 0 && !scanLoading && (
+                        <div style={{ fontSize: 12, color: 'var(--text-3)', padding: '10px 0' }}>
+                          감지된 단말이 없습니다. 단말 전원과 통신 상태를 확인한 뒤 다시 스캔하세요.
+                        </div>
+                      )}
+                      {(scanRows || []).map(r => (
+                        <div key={r.device_uid} style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          padding: '8px 10px', marginTop: 6, borderRadius: 6,
+                          background: 'var(--surface-2)',
+                        }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {r.device_uid}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+                              {r.iccid_tail ? `SIM ${r.iccid_tail} · ` : ''}{r.ago_s}초 전 수신
+                            </div>
+                          </div>
+                          <button onClick={() => pairFromScan(r)} disabled={scanBusyUid !== null}
+                            style={{ ...s.smallBtn, opacity: scanBusyUid === r.device_uid ? 0.6 : 1 }}>
+                            {scanBusyUid === r.device_uid ? '...' : '페어링'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <input placeholder={pairMode === 'scan' ? '단말기 별명 (비우면 자동 생성)' : '단말기 별명 (필수, 예: 1호차)'}
+                    value={pairLabel} required={pairMode !== 'scan'} maxLength={32}
                     onChange={e => setPairLabel(e.target.value)}
                     style={{ ...s.input, marginTop: 6 }} />
                   {pairError && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{pairError}</div>}
-                  <button onClick={async () => { const ok = await handlePair(); if (ok) setPairOpen(false); }} disabled={pairLoading}
-                    style={{ ...s.btn, marginTop: 8, opacity: pairLoading ? 0.6 : 1 }}>
-                    {pairLoading ? '...' : '페어링'}
-                  </button>
+                  {pairMode !== 'scan' && (
+                    <button onClick={async () => { const ok = await handlePair(); if (ok) setPairOpen(false); }} disabled={pairLoading}
+                      style={{ ...s.btn, marginTop: 8, opacity: pairLoading ? 0.6 : 1 }}>
+                      {pairLoading ? '...' : '페어링'}
+                    </button>
+                  )}
                 </>
               )}
             </div>

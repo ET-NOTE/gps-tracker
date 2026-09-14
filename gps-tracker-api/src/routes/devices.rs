@@ -94,6 +94,7 @@ pub struct UpdateRequest {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/devices", get(list))
+        .route("/devices/scan", get(scan_unpaired))   // [2026-09-14 KC] 최근 ingest 중 미페어링 단말 스캔
         .route("/devices/pair", post(pair))
         .route("/devices/pair-phone", post(pair_phone))
         .route("/devices/:id", get(detail).patch(update).delete(unpair))
@@ -242,6 +243,47 @@ async fn list(
     .fetch_all(&state.db)
     .await?;
     Ok(Json(rows))
+}
+
+// [2026-09-14 KC 인증 대응] 최근 10분 내 ingest 가 들어오고 있는 미페어링 단말 목록.
+// 인증센터가 임의 USIM 을 끼우면 uid 가 sim-<새 ICCID 뒤8> 로 갈리며 미페어링 device 가
+// 자동 생성됨 → 검사자가 "스캔" → 원클릭 페어링. 익명 ingest 특성상 uid 를 아는 사용자는
+// 원래도 페어링 가능했으므로 노출 범위 동일 — 목록은 "최근 송신 중 + 미소유" 로 한정.
+async fn scan_unpaired(
+    State(state): State<AppState>,
+    _user: AuthUser,
+) -> AppResult<Json<Value>> {
+    let rows: Vec<(String, Option<String>, DateTime<Utc>, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT device_uid, iccid, last_seen_at, created_at
+           FROM devices
+          WHERE owner_id IS NULL
+            AND last_seen_at >= now() - interval '10 minutes'
+            AND COALESCE(device_kind, 'esp') <> 'phone'
+          ORDER BY last_seen_at DESC
+          LIMIT 30",
+    )
+    .fetch_all(&state.db)
+    .await?;
+    let now = Utc::now();
+    let items: Vec<Value> = rows
+        .into_iter()
+        .map(|(uid, iccid, seen, created)| {
+            // ICCID 는 끝 8자리만 노출 (페어링 매칭용으로 충분 — 전체 번호 열거 방지)
+            let tail = iccid.as_deref().filter(|s| !s.is_empty()).map(|s| {
+                let n = s.chars().count();
+                let t: String = s.chars().skip(n.saturating_sub(8)).collect();
+                format!("…{t}")
+            });
+            json!({
+                "device_uid": uid,
+                "iccid_tail": tail,
+                "last_seen_at": seen,
+                "ago_s": (now - seen).num_seconds().max(0),
+                "first_seen_at": created,
+            })
+        })
+        .collect();
+    Ok(Json(json!({ "items": items })))
 }
 
 async fn pair(
