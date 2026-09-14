@@ -60,6 +60,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/gps-tracker/dht", post(diag::dht_ingest))
         .route("/gps-tracker/diagnostic", get(diag::diag_page))
         .route("/gps-tracker/diagnostic/data", get(diag::diag_data))
+        .route("/gps-tracker/diagnostic/device", get(diag::device_log_page))
+        .route("/gps-tracker/diagnostic/device/data", get(diag::device_log_data))
         .nest("/gps-tracker/api/v1", api_v1)
         .nest("/gps-tracker/ws", ws::router())
         .with_state(state)

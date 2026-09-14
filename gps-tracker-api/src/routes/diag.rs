@@ -101,3 +101,84 @@ pub async fn diag_data(
 pub async fn diag_page() -> Html<&'static str> {
     Html(include_str!("diag_page.html"))
 }
+
+// ── [2026-09-14 KC] 단말 수신 로그 페이지 — GPS 없이도 매 POST 를 리스트업 ──
+// 익명 접근이지만 env DIAG_DEVICE_ALLOWLIST (콤마구분 uid) 에 있는 단말만 조회 가능
+// (임의 uid 로 운용 단말 telemetry 를 열람하는 것 방지 — KC 시험 단말 전용).
+
+fn device_allowed(uid: &str) -> bool {
+    std::env::var("DIAG_DEVICE_ALLOWLIST")
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .any(|u| !u.is_empty() && u == uid)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DeviceLogQuery {
+    pub uid: String,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+pub async fn device_log_data(
+    State(state): State<AppState>,
+    Query(q): Query<DeviceLogQuery>,
+) -> AppResult<Json<Value>> {
+    if !device_allowed(&q.uid) {
+        return Ok(Json(json!({ "error": "not allowed", "items": [], "total": 0 })));
+    }
+    let limit = q.limit.unwrap_or(240).clamp(1, 2000);
+    let offset = q.offset.unwrap_or(0).max(0);
+    let total: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM location_records lr JOIN devices d ON d.id = lr.device_id \
+          WHERE d.device_uid = $1",
+    )
+    .bind(&q.uid)
+    .fetch_one(&state.db)
+    .await?;
+    let rows = sqlx::query(
+        r#"SELECT lr.recorded_at,
+                  lr.raw->>'ts'      AS ts,
+                  lr.raw->>'csq'     AS csq,
+                  lr.raw->>'reg'     AS reg,
+                  lr.raw->>'band'    AS band,
+                  lr.raw->>'vbat_mv' AS vbat_mv,
+                  lr.raw->>'cbc_mv'  AS cbc_mv,
+                  lr.raw->'l80'->>'fix' AS fix,
+                  lr.raw->'l80'->>'sat' AS sat
+             FROM location_records lr
+             JOIN devices d ON d.id = lr.device_id
+            WHERE d.device_uid = $1
+            ORDER BY lr.recorded_at DESC
+            LIMIT $2 OFFSET $3"#,
+    )
+    .bind(&q.uid)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?;
+    let kst = FixedOffset::east_opt(9 * 3600).expect("KST offset");
+    let items: Vec<Value> = rows
+        .iter()
+        .map(|r| {
+            let at: chrono::DateTime<chrono::Utc> = r.get("recorded_at");
+            json!({
+                "kst": at.with_timezone(&kst).format("%Y-%m-%d %H:%M:%S").to_string(),
+                "ts": r.get::<Option<String>, _>("ts"),
+                "csq": r.get::<Option<String>, _>("csq"),
+                "reg": r.get::<Option<String>, _>("reg"),
+                "band": r.get::<Option<String>, _>("band"),
+                "vbat_mv": r.get::<Option<String>, _>("vbat_mv"),
+                "cbc_mv": r.get::<Option<String>, _>("cbc_mv"),
+                "fix": r.get::<Option<String>, _>("fix"),
+                "sat": r.get::<Option<String>, _>("sat"),
+            })
+        })
+        .collect();
+    Ok(Json(json!({ "uid": q.uid, "count": items.len(), "total": total, "offset": offset, "items": items })))
+}
+
+pub async fn device_log_page() -> Html<&'static str> {
+    Html(include_str!("diag_device_page.html"))
+}
