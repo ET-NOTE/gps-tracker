@@ -953,6 +953,14 @@ export default function Dashboard({ onLogout }) {
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                          {/* [2026-09-14 KC] 수신 로그 — GPS 없이도 HTTP 수신마다 리스트업되는
+                              공개 진단 페이지 (/diagnostic/device). 허용목록 단말만 조회됨. */}
+                          <button onClick={() => window.open('/diagnostic/device?uid=' + encodeURIComponent(d.device_uid), '_blank')}
+                            style={s.detailBtn}
+                            title="수신 로그 (GPS 없이도 통신 수신 확인, 로그인 불필요)">
+                            <Icon name="refresh" size={13} />
+                            <span>수신</span>
+                          </button>
                           <button onClick={() => setDetailId(detailId === d.id ? null : d.id)}
                             style={{
                               ...s.detailBtn,
