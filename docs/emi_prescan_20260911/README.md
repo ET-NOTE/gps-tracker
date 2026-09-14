@@ -25,10 +25,15 @@
 - 159.3MHz 방사원 위치 스니핑 (중심 159.33MHz/스팬 5MHz 실시간 모드) — 미수행
 - 부저 구동 순간 스캔 — 미수행
 
-## [2026-09-14 추가] 담당자 권고 조건 재측정 (KC 제출 단말, KC 빌드)
+## [2026-09-14 추가] 담당자 권고 조건 재측정 — 1차: 케이스 미장착 (KC 제출 단말, KC 빌드)
 조건: 30MHz~1GHz, RBW/VBW 100kHz, REF -20dBm, ATT 10dB(자동), 프리앰프 OFF, 피크+Max Hold, 작은 루프 근접.
 - kc_advisor_baseline_180s.csv — 단말 OFF 배경 180s (바닥 평균 -69.7dBm)
 - kc_advisor_boardon_180s.csv  — 단말 ON(배터리 단독) 근접 훑기 180s
 결론: **ON-OFF 차분에서 바닥 위로 올라온 것은 835.1MHz(+33dB) 단 하나 — Band 5 의도 송신.**
 잡음성 성분(40MHz 콤 포함)은 이 감도에선 바닥 아래 → "심한 노이즈 없음" 판정.
 (프리앰프 ON 고감도에서만 보이던 40MHz 콤은 이 기준 바닥보다 20dB 이상 아래)
+
+### 2차: 케이스 장착 (예정)
+동일 조건(30M~1G, RBW/VBW 100k, REF -20dBm, 프리앰프 OFF)으로 케이스 장착 후 재측정.
+파일 예정: kc_advisor_case_baseline_180s.csv / kc_advisor_case_boardon_180s.csv
+비교 포인트: 케이스에 의한 차폐/공진 변화, Band5 송신 레벨 변화(안테나 근접 영향).
