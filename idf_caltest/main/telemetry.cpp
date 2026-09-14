@@ -6,7 +6,7 @@
 #include "sleep_mgr.h"
 #include "recovery.h"
 #include "breadcrumb.h"
-#include <WiFi.h>
+#include <esp_mac.h>   // [2026-09-14 KC] efuse MAC 직접 읽기 — WiFi 라이브러리 의존 제거 (무선 미사용 명시)
 #include <stdarg.h>
 
 namespace telemetry {
@@ -46,7 +46,9 @@ const char* deviceUid() {
   // [2026-08-14] MAC 폴백은 캐시하지 않음 — 첫 POST 시점에 ICCID 파싱이 늦으면 esp- identity 로
   //   세션 내내 굳어져 같은 단말이 서버에 두 device 로 갈라지던 것 방지. ICCID 확보 즉시 sim- 로 수렴.
   static char tmp[32];
-  uint8_t mac[6]; WiFi.macAddress(mac);
+  // [2026-09-14 KC] WiFi.macAddress() → esp_read_mac(efuse 직독). WiFi 스택을 안 켜면 이전 API 는
+  //   미초기화 값을 줄 수 있어 부팅마다 uid 가 달라지던 문제(esp-…fec44 ↔ …964a 실측)도 함께 해결.
+  uint8_t mac[6]; esp_read_mac(mac, ESP_MAC_WIFI_STA);
   snprintf(tmp, sizeof(tmp), "esp-%02x%02x%02x%02x%02x%02x",
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   return tmp;
