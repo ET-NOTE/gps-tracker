@@ -106,12 +106,33 @@ pub async fn diag_page() -> Html<&'static str> {
 // 익명 접근이지만 env DIAG_DEVICE_ALLOWLIST (콤마구분 uid) 에 있는 단말만 조회 가능
 // (임의 uid 로 운용 단말 telemetry 를 열람하는 것 방지 — KC 시험 단말 전용).
 
-fn device_allowed(uid: &str) -> bool {
-    std::env::var("DIAG_DEVICE_ALLOWLIST")
-        .unwrap_or_default()
-        .split(',')
-        .map(str::trim)
-        .any(|u| !u.is_empty() && u == uid)
+// 허용 조건 (셋 중 하나) — 인증센터에서 유심/계정이 바뀌어도 안 막히도록:
+//  ① uid 가 esp- 프리픽스 (KC 시험빌드 단말은 항상 esp-, 운영 단말은 sim-/phone- 로 수렴)
+//  ② env DIAG_ALLOW_OWNER_EMAILS(콤마구분) 계정에 페어링된 장치 — 시험 계정이 페어링하면 즉시 허용
+//  ③ env DIAG_DEVICE_ALLOWLIST(콤마구분) 에 명시된 uid
+async fn device_allowed(db: &sqlx::PgPool, uid: &str) -> bool {
+    if uid.starts_with("esp-") {
+        return true;
+    }
+    let in_env = |var: &str, needle: &str| {
+        std::env::var(var)
+            .unwrap_or_default()
+            .split(',')
+            .map(str::trim)
+            .any(|u| !u.is_empty() && u.eq_ignore_ascii_case(needle))
+    };
+    if in_env("DIAG_DEVICE_ALLOWLIST", uid) {
+        return true;
+    }
+    let owner_email: Option<String> = sqlx::query_scalar(
+        "SELECT u.email FROM devices d JOIN users u ON u.id = d.owner_id WHERE d.device_uid = $1",
+    )
+    .bind(uid)
+    .fetch_optional(db)
+    .await
+    .ok()
+    .flatten();
+    matches!(owner_email, Some(e) if in_env("DIAG_ALLOW_OWNER_EMAILS", &e))
 }
 
 #[derive(Debug, Deserialize)]
@@ -125,7 +146,7 @@ pub async fn device_log_data(
     State(state): State<AppState>,
     Query(q): Query<DeviceLogQuery>,
 ) -> AppResult<Json<Value>> {
-    if !device_allowed(&q.uid) {
+    if !device_allowed(&state.db, &q.uid).await {
         return Ok(Json(json!({ "error": "not allowed", "items": [], "total": 0 })));
     }
     let limit = q.limit.unwrap_or(240).clamp(1, 2000);
