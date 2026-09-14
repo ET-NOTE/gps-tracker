@@ -189,6 +189,7 @@ export const api = {
   // devices
   listDevices:  ()                      => req('GET',    '/devices'),
   pairDevice:   (params) => req('POST', '/devices/pair', params),  // { device_uid?, iccid?, display_name? }
+  scanDevices:  () => req('GET', '/devices/scan'),                 // [KC] 최근 ingest 중 미페어링 단말 목록
   updateDevice: (id, patch)             => req('PATCH',  `/devices/${id}`, patch),
   unpairDevice: (id, opts = {}) => {
     const purge = opts.purge ? '?purge=true' : '';
