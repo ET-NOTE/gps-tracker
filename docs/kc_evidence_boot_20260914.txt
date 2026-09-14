@@ -1,0 +1,452 @@
+[   2.0s] === 15_a_modular — Block 8: sleep_mgr (non-blocking CDC) ===
+[   2.0s] *********************************************************
+[   2.0s] *  KC TEST BUILD — 콜박스 시험용 (운영 배포 금지!)          *
+[   2.0s] *  sleep/부저/WDT/복구 OFF · 서버전송 ON(실패 무해) · COPS=0 *
+[   2.0s] *  band-lock: CAT-M=5 NB-IOT=5 catm_only=1
+[   2.0s] *********************************************************
+[   2.0s] [PWR] railOn
+[   3.0s] [MOT] init
+[   3.0s] [  2311][E][esp32-hal-i2c-ng.c:372] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[   3.0s] [  2312][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[   3.0s] [LIS] probe 0x19 WHO=0xFF
+[   3.0s] [LIS] probe 0x18 WHO=0x33 <-- LIS3DH!
+[   3.0s] [LIS] OK (active-low, polling INT1_SRC IA)
+[   3.0s] [SLEEP] wake=boot reset=USB boots=1 wakes=0 motion=0 brown=0 INT1=1
+[   3.0s] [GPS] init
+[   3.0s] I (2457) uart: queue free spaces: 20
+[   4.0s] [GPS TX] $PAIR025,1
+[   4.0s] [GPS TX] $PAIR050,1000
+[   4.0s] [GPS TX] $PAIR062,1,0
+[   5.0s] [GPS TX] $PAIR062,5,0
+[   5.0s] [GPS TX] $PAIR062,3,5
+[   5.0s] [GPS TX] $PGCMD,33,1
+[   5.0s] [LTE] power-on (bringUp 은 recovery)
+[   5.0s] I (4558) uart: queue free spaces: 20
+[   8.1s] [LTE] silent → pulse PWRKEY (power-on)
+[   9.8s] [STATUS 9s wake=boot] BRINGUP vbat=3780mV heap=251872 | LTE:-- CSQ=-1 REG=-1 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[   9.8s] [GPS] first NMEA char @+9.8s
+[   9.8s] [GPS raw-ant] $GPTXT,01,01,02,ANTSTATUS=OPEN*2B
+[   9.8s] [GPS] antenna=OPEN (GPTXT st=-1 so=-1, boot+9.8s)
+[   9.8s] >> AT
+[   9.8s] << AT
+[   9.8s] OK
+[   9.8s] >> ATE0
+[   9.8s] << ATE0
+[   9.8s] OK
+[   9.8s] >> AT+IFC=0,0
+[   9.8s] <<
+[   9.8s] OK
+[   9.8s] >> AT+IPR=115200
+[   9.8s] <<
+[   9.8s] OK
+[   9.8s] >> AT+CMEE=2
+[   9.8s] <<
+[   9.8s] OK
+[   9.8s] >> AT+CSCLK=0
+[   9.8s] <<
+[   9.8s] OK
+[   9.8s] >> AT+CPIN?
+[   9.8s] <<
+[   9.8s] +CPIN: READY
+[   9.8s] OK
+[   9.8s] >> AT+CGNSPWR=0
+[  10.9s] <<
+[  10.9s] OK
+[  10.9s] >> AT+CNMP=38
+[  10.9s] <<
+[  10.9s] OK
+[  10.9s] >> AT+CMNB=1
+[  10.9s] <<
+[  10.9s] OK
+[  10.9s] >> AT+COPS=0
+[  14.9s] << (timeout)
+[  14.9s] +CME ERROR: SIM failure
+[  14.9s] +CFUN: 1
+[  14.9s] +CPIN: READY
+[  14.9s] SMS Ready
+[  14.9s] >> AT+CBANDCFG="CAT-M",5
+[  14.9s] <<
+[  14.9s] OK
+[  14.9s] >> AT+CBANDCFG="NB-IOT",5
+[  14.9s] <<
+[  14.9s] OK
+[  14.9s] >> AT+CBANDCFG?
+[  14.9s] <<
+[  14.9s] +CBANDCFG: "CAT-M",5
+[  14.9s] +CBANDCFG: "NB-IOT",5
+[  14.9s] OK
+[  14.9s] [KC] band-lock evidence: +CBANDCFG: "CAT-M",5   +CBANDCFG: "NB-IOT",5    OK
+[  14.9s] >> AT+CSQ
+[  14.9s] <<
+[  14.9s] +CSQ: 99,99
+[  14.9s] OK
+[  15.9s] [STATUS 14s wake=boot] BRINGUP vbat=3786mV heap=251604 | LTE:-- CSQ=99 REG=-1 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  16.9s] [STATUS 15s wake=boot] BRINGUP vbat=3782mV heap=251604 | LTE:-- CSQ=99 REG=-1 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  16.9s] >> AT+CEREG?
+[  16.9s] <<
+[  16.9s] +CEREG: 0,2
+[  16.9s] OK
+[  16.9s] [LTE] waiting reg… csq=99 reg=2 (2s)
+[  16.9s] [STATUS 16s wake=boot] BRINGUP vbat=3786mV heap=251604 | LTE:-- CSQ=99 REG=2 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  17.9s] [STATUS 17s wake=boot] BRINGUP vbat=3788mV heap=251604 | LTE:-- CSQ=99 REG=2 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  18.9s] >> AT+CEREG?
+[  18.9s] <<
+[  18.9s] +CEREG: 0,2
+[  18.9s] OK
+[  18.9s] [LTE] waiting reg… csq=99 reg=2 (4s)
+[  18.9s] [STATUS 18s wake=boot] BRINGUP vbat=3788mV heap=251604 | LTE:-- CSQ=99 REG=2 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  19.9s] [STATUS 19s wake=boot] BRINGUP vbat=3786mV heap=251604 | LTE:-- CSQ=99 REG=2 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  20.9s] >> AT+CEREG?
+[  20.9s] <<
+[  20.9s] +CEREG: 0,2
+[  20.9s] OK
+[  20.9s] [LTE] waiting reg… csq=99 reg=2 (6s)
+[  20.9s] [STATUS 20s wake=boot] BRINGUP vbat=3784mV heap=251604 | LTE:-- CSQ=99 REG=2 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  21.9s] [STATUS 21s wake=boot] BRINGUP vbat=3780mV heap=251604 | LTE:-- CSQ=99 REG=2 IP=- conn=0 bu=0 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  22.9s] >> AT+CEREG?
+[  22.9s] <<
+[  22.9s] +CEREG: 0,5
+[  22.9s] OK
+[  22.9s] >> AT+CNACT=0,0
+[  26.0s] << (timeout)
+[  26.0s] +CME ERROR: operation failed
+[  26.3s] >> AT+CNCFG=0,1,"iot.1nce.net"
+[  26.3s] <<
+[  26.3s] OK
+[  26.3s] >> AT+CNACT=0,1
+[  26.3s] <<
+[  26.3s] OK
+[  26.3s] +APP PDP: 0,ACTIVE
+[  26.3s] >> AT+CNACT?
+[  26.3s] <<
+[  26.3s] +CNACT: 0,1,"10.217.184.3"
+[  26.3s] +CNACT: 1,0,"0.0.0.0"
+[  26.3s] +CNACT: 2,0,"0.0.0.0"
+[  26.3s] +CNACT: 3,0,"0.0.0.0"
+[  26.3s] OK
+[  26.3s] [KC] → ONLINE (CSQ=99 REG=5)
+[  26.3s] >> AT+CBANDCFG?
+[  26.3s] <<
+[  26.3s] +CBANDCFG: "CAT-M",5
+[  26.3s] +CBANDCFG: "NB-IOT",5
+[  26.3s] OK
+[  26.3s] [BAND] cfg: +CBANDCFG: "CAT-M",5   +CBANDCFG: "NB-IOT",5    OK
+[  26.3s] >> AT+CPSI?
+[  26.3s] <<
+[  26.3s] +CPSI: LTE CAT-M1,Online,450-05,0x1215,29413387,29,EUTRAN-BAND5,2500,3,3,-7,-87,-67,16
+[  26.3s] OK
+[  26.3s] [BAND] serving: M1-B5 | +CPSI: LTE CAT-M1,Online,450-05,0x1215,29413387,29,EUTRAN-BAND5,2500,3,3,-7,-87,-67,16
+[  26.3s] [POST body] {"device_uid":"esp-c012ca3f964a","ts":26,"awake":1,"csq":99,"reg":5,"vbat_mv":3778,"cbc_mv":-1,"at_ms":9878,"l80":{"fix":false,"sat":0,"hdop":0.00},"motion":{"total":0,"delta":0,"age_s":0},"stationary":{"active":false,"held_s":0,"window_s":300,"sleep_in_s"AT
+[  26.3s] <<
+[  26.3s] OK
+[  26.3s] >> AT+CNACT?
+[  26.3s] <<
+[  26.3s] +CNACT: 0,1,"10.217.184.3"
+[  26.3s] +CNACT: 1,0,"0.0.0.0"
+[  26.3s] +CNACT: 2,0,"0.0.0.0"
+[  26.3s] +CNACT: 3,0,"0.0.0.0"
+[  26.3s] OK
+[  27.3s] >> AT+CGNSPWR=0
+[  27.3s] <<
+[  27.3s] OK
+[  27.3s] >> AT+SHDISC
+[  28.3s] << (timeout)
+[  28.3s] +CME ERROR: operation not allowed
+[  28.3s] >> AT+SHCONF="URL","http://gps.serial.kr"
+[  28.3s] <<
+[  28.3s] OK
+[  28.3s] >> AT+SHCONF="BODYLEN",4096
+[  28.3s] <<
+[  28.3s] OK
+[  28.3s] >> AT+SHCONF="HEADERLEN",350
+[  28.3s] <<
+[  28.3s] OK
+[  28.3s] >> AT+SHSSL=0,""
+[  30.3s] << (timeout)
+[  30.3s] +CME ERROR: operation not allowed
+[  30.3s] >> AT+SHDISC
+[  31.4s] << (timeout)
+[  31.4s] +CME ERROR: operation not allowed
+[  31.4s] >> AT+SHCONN
+[  32.4s] <<
+[  32.4s] OK
+[  32.4s] >> AT+SHCHEAD
+[  32.4s] <<
+[  32.4s] OK
+[  32.4s] >> AT+SHAHEAD="Content-Type","application/json"
+[  32.4s] <<
+[  32.4s] OK
+[  32.4s] >> AT+SHBOD=673,10000
+[  32.4s] <<
+[  32.4s] OK
+[  32.4s] >> AT+SHREQ="/ingest",3
+[  32.4s] <<
+[  32.4s] OK
+[  32.4s] +SHREQ: "POST",200,11
+[  32.4s] [POST] HTTP 200
+[  32.4s] >> AT+SHREAD=0,11
+[  32.4s] <<
+[  32.4s] OK
+[  32.4s] +SHREAD: 11
+[  32.4s] {"ok":true}
+[  33.4s] [POST] elapsed=6197ms status=200 ok=1 conn=1 posted=0
+[  33.4s] [STATUS 32s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=99 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  33.4s] [GPS TX] $PGCMD,33,1
+[  33.4s] >> AT+CSQ
+[  33.4s] <<
+[  33.4s] +CSQ: 24,99
+[  33.4s] OK
+[  33.4s] >> AT+CEREG?
+[  33.4s] <<
+[  33.4s] +CEREG: 0,5
+[  33.4s] OK
+[  33.4s] >> AT+CBC
+[  33.4s] <<
+[  33.4s] +CBC: 0,56,3736
+[  33.4s] OK
+[  34.4s] [STATUS 33s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  35.4s] [STATUS 34s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  36.4s] [STATUS 35s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  37.4s] [STATUS 36s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  38.4s] [STATUS 37s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  39.4s] [STATUS 38s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=4mg stay=boot
+[  40.4s] [STATUS 39s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  41.4s] [STATUS 40s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  42.4s] [STATUS 41s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  43.4s] >> AT+CSQ
+[  43.4s] <<
+[  43.4s] +CSQ: 23,99
+[  43.4s] OK
+[  43.4s] >> AT+CEREG?
+[  43.4s] <<
+[  43.4s] +CEREG: 0,5
+[  43.4s] OK
+[  43.4s] >> AT+CBC
+[  43.4s] <<
+[  43.4s] +CBC: 0,58,3762
+[  43.4s] OK
+[  43.4s] [STATUS 42s wake=boot] ONLINE vbat=3790mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=4mg stay=boot
+[  44.4s] [STATUS 43s wake=boot] ONLINE vbat=3790mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  45.4s] [STATUS 44s wake=boot] ONLINE vbat=3788mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  46.4s] [STATUS 45s wake=boot] ONLINE vbat=3786mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  47.4s] [STATUS 46s wake=boot] ONLINE vbat=3786mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  48.2s] [POST body] {"device_uid":"esp-c012ca3f964a","ts":47,"awake":1,"csq":23,"reg":5,"vbat_mv":3790,"cbc_mv":3762,"at_ms":9878,"l80":{"fix":false,"sat":0,"hdop":0.00},"motion":{"total":0,"delta":0,"age_s":0},"stationary":{"active":false,"held_s":0,"window_s":300,"sleep_in_>> AT
+[  48.2s] <<
+[  48.2s] OK
+[  48.2s] >> AT+SHSTATE?
+[  48.2s] <<
+[  48.2s] +SHSTATE: 1
+[  48.2s] OK
+[  48.2s] >> AT+SHCHEAD
+[  48.2s] <<
+[  48.2s] OK
+[  48.2s] >> AT+SHAHEAD="Content-Type","application/json"
+[  48.2s] <<
+[  48.2s] OK
+[  48.2s] >> AT+SHBOD=523,10000
+[  48.2s] <<
+[  48.2s] OK
+[  48.2s] >> AT+SHREQ="/ingest",3
+[  48.2s] <<
+[  48.2s] OK
+[  48.2s] +SHREQ: "POST",200,11
+[  49.2s] [POST] HTTP 200
+[  49.2s] >> AT+SHREAD=0,11
+[  49.2s] <<
+[  49.2s] OK
+[  49.2s] +SHREAD: 11
+[  49.2s] {"ok":true}
+[  49.2s] [POST] elapsed=1235ms status=200 ok=1 conn=1 posted=0
+[  49.2s] [STATUS 48s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  50.2s] [STATUS 49s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=7mg stay=boot
+[  51.2s] [STATUS 50s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  52.3s] [STATUS 51s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  53.3s] >> AT+CSQ
+[  53.3s] <<
+[  53.3s] +CSQ: 24,99
+[  53.3s] OK
+[  53.3s] >> AT+CEREG?
+[  53.3s] <<
+[  53.3s] +CEREG: 0,5
+[  53.3s] OK
+[  53.3s] >> AT+CBC
+[  53.3s] <<
+[  53.3s] +CBC: 0,56,3736
+[  53.3s] OK
+[  53.3s] [STATUS 52s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=4mg stay=boot
+[  54.3s] [STATUS 53s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  55.3s] [STATUS 54s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  56.3s] [STATUS 55s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  57.3s] [STATUS 56s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  58.3s] [STATUS 57s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  59.3s] [STATUS 58s wake=boot] ONLINE vbat=3786mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  60.3s] [STATUS 59s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  61.3s] [STATUS 60s wake=boot] ONLINE vbat=3786mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  62.3s] [STATUS 61s wake=boot] ONLINE vbat=3786mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  63.4s] [GPS TX] $PGCMD,33,1
+[  63.4s] >> AT+CSQ
+[  63.4s] <<
+[  63.4s] +CSQ: 24,99
+[  63.4s] OK
+[  63.4s] >> AT+CEREG?
+[  63.4s] <<
+[  63.4s] +CEREG: 0,5
+[  63.4s] OK
+[  63.4s] >> AT+CBC
+[  63.4s] <<
+[  63.4s] +CBC: 0,58,3762
+[  63.4s] OK
+[  63.4s] [STATUS 62s wake=boot] ONLINE vbat=3788mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=5mg stay=boot
+[  64.4s] [POST body] {"device_uid":"esp-c012ca3f964a","ts":63,"awake":1,"csq":24,"reg":5,"vbat_mv":3786,"cbc_mv":3762,"at_ms":9878,"l80":{"fix":false,"sat":0,"hdop":0.00},"motion":{"total":0,"delta":0,"age_s":0},"stationary":{"active":false,"held_s":0,"window_s":300,"sleep_in_
+[  64.4s] >> AT
+[  64.4s] <<
+[  64.4s] OK
+[  64.4s] >> AT+SHSTATE?
+[  64.4s] <<
+[  64.4s] +SHSTATE: 1
+[  64.4s] OK
+[  64.4s] >> AT+SHCHEAD
+[  64.4s] <<
+[  64.4s] OK
+[  64.4s] >> AT+SHAHEAD="Content-Type","application/json"
+[  64.4s] <<
+[  64.4s] OK
+[  64.4s] >> AT+SHBOD=523,10000
+[  64.4s] <<
+[  64.4s] OK
+[  64.4s] >> AT+SHREQ="/ingest",3
+[  65.4s] <<
+[  65.4s] OK
+[  65.4s] +SHREQ: "POST",200,11
+[  65.4s] [POST] HTTP 200
+[  65.4s] >> AT+SHREAD=0,11
+[  65.4s] <<
+[  65.4s] OK
+[  65.4s] +SHREAD: 11
+[  65.4s] {"ok":true}
+[  65.4s] [POST] elapsed=1215ms status=200 ok=1 conn=1 posted=0
+[  65.4s] [STATUS 65s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  66.4s] [STATUS 66s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  67.4s] [STATUS 67s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  68.4s] [STATUS 68s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  69.4s] [STATUS 69s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  70.4s] [STATUS 70s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=0mg stay=boot
+[  71.4s] [STATUS 71s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  72.4s] [STATUS 72s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  73.4s] >> AT+CSQ
+[  73.4s] <<
+[  73.4s] +CSQ: 24,99
+[  73.4s] OK
+[  73.4s] >> AT+CEREG?
+[  73.4s] <<
+[  73.4s] +CEREG: 0,5
+[  73.4s] OK
+[  73.4s] >> AT+CBC
+[  73.4s] <<
+[  73.4s] +CBC: 0,56,3738
+[  73.4s] OK
+[  73.4s] [STATUS 73s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  74.4s] [STATUS 74s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  75.4s] [STATUS 75s wake=boot] ONLINE vbat=3786mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=6mg stay=boot
+[  76.4s] [STATUS 76s wake=boot] ONLINE vbat=3790mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  77.5s] [STATUS 77s wake=boot] ONLINE vbat=3790mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  78.5s] [STATUS 78s wake=boot] ONLINE vbat=3788mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=5mg stay=boot
+[  79.5s] [STATUS 79s wake=boot] ONLINE vbat=3786mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  80.5s] [POST body] {"device_uid":"esp-c012ca3f964a","ts":80,"awake":1,"csq":24,"reg":5,"vbat_mv":3796,"cbc_mv":3738,"at_ms":9878,"l80":{"fix":false,"sat":0,"hdop":0.00},"motion":{"total":0,"delta":0,"age_s":0},"stationary":{"active":false,"held_s":0,"window_s":300,"sleep_in_>> AT
+[  80.5s] <<
+[  80.5s] OK
+[  80.5s] >> AT+SHSTATE?
+[  80.5s] <<
+[  80.5s] +SHSTATE: 1
+[  80.5s] OK
+[  80.5s] >> AT+SHCHEAD
+[  80.5s] <<
+[  80.5s] OK
+[  80.5s] >> AT+SHAHEAD="Content-Type","application/json"
+[  80.5s] <<
+[  80.5s] OK
+[  80.5s] >> AT+SHBOD=523,10000
+[  80.5s] <<
+[  80.5s] OK
+[  80.5s] >> AT+SHREQ="/ingest",3
+[  81.5s] <<
+[  81.5s] OK
+[  81.5s] +SHREQ: "POST",200,11
+[  81.5s] [POST] HTTP 200
+[  81.5s] >> AT+SHREAD=0,11
+[  81.5s] <<
+[  81.5s] OK
+[  81.5s] +SHREAD: 11
+[  81.5s] {"ok":true}
+[  81.5s] [POST] elapsed=1230ms status=200 ok=1 conn=1 posted=0
+[  81.5s] [STATUS 81s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=4mg stay=boot
+[  82.5s] [STATUS 82s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=24 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  83.5s] >> AT+CSQ
+[  83.5s] <<
+[  83.5s] +CSQ: 26,99
+[  83.5s] OK
+[  83.5s] >> AT+CEREG?
+[  83.5s] <<
+[  83.5s] +CEREG: 0,5
+[  83.5s] OK
+[  83.5s] >> AT+CBC
+[  83.5s] <<
+[  83.5s] +CBC: 0,56,3740
+[  83.5s] OK
+[  83.5s] [STATUS 83s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=6mg stay=boot
+[  84.5s] [STATUS 84s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  85.5s] [STATUS 85s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=6mg stay=boot
+[  86.5s] [STATUS 86s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=4mg stay=boot
+[  87.5s] [STATUS 87s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  88.5s] [STATUS 88s wake=boot] ONLINE vbat=3780mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  89.5s] [STATUS 89s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  90.5s] [STATUS 90s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  91.5s] [STATUS 91s wake=boot] ONLINE vbat=3792mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  92.5s] [STATUS 92s wake=boot] ONLINE vbat=3794mV heap=251568 | LTE:OK CSQ=26 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=4mg stay=boot
+[  93.5s] [GPS TX] $PGCMD,33,1
+[  93.5s] >> AT+CSQ
+[  93.5s] <<
+[  93.5s] +CSQ: 23,99
+[  93.5s] OK
+[  93.5s] >> AT+CEREG?
+[  93.5s] <<
+[  93.5s] +CEREG: 0,5
+[  93.5s] OK
+[  93.5s] >> AT+CBC
+[  93.5s] <<
+[  93.5s] +CBC: 0,58,3755
+[  93.5s] OK
+[  93.5s] [STATUS 93s wake=boot] ONLINE vbat=3790mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=5mg stay=boot
+[  94.5s] [STATUS 94s wake=boot] ONLINE vbat=3792mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=2mg stay=boot
+[  95.5s] [STATUS 95s wake=boot] ONLINE vbat=3794mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=3mg stay=boot
+[  96.6s] [POST body] {"device_uid":"esp-c012ca3f964a","ts":96,"awake":1,"csq":23,"reg":5,"vbat_mv":3790,"cbc_mv":3755,"at_ms":9878,"l80":{"fix":false,"sat":0,"hdop":0.00},"motion":{"total":0,"delta":0,"age_s":0},"stationary":{"active":false,"held_s":0,"window_s":300,"sleep_in_
+[  96.6s] <<
+[  96.6s] OK
+[  96.6s] >> AT+SHSTATE?
+[  96.6s] <<
+[  96.6s] +SHSTATE: 1
+[  96.6s] OK
+[  96.6s] >> AT+SHCHEAD
+[  96.6s] <<
+[  96.6s] OK
+[  96.6s] >> AT+SHAHEAD="Content-Type","application/json"
+[  96.6s] <<
+[  96.6s] OK
+[  96.6s] >> AT+SHBOD=523,10000
+[  96.6s] <<
+[  96.6s] OK
+[  96.6s] >> AT+SHREQ="/ingest",3
+[  97.6s] <<
+[  97.6s] OK
+[  97.6s] +SHREQ: "POST",200,11
+[  97.6s] [POST] HTTP 200
+[  97.6s] >> AT+SHREAD=0,11
+[  97.6s] <<
+[  97.6s] OK
+[  97.6s] +SHREAD: 11
+[  97.6s] {"ok":true}
+[  97.6s] [POST] elapsed=1235ms status=200 ok=1 conn=1 posted=0
+[  97.6s] [STATUS 97s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=1mg stay=boot
+[  98.6s] [STATUS 98s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=7mg stay=boot
+[  99.6s] [STATUS 99s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=7mg stay=boot
+[ 100.6s] [STATUS 100s wake=boot] ONLINE vbat=3782mV heap=251568 | LTE:OK CSQ=23 REG=5 IP=10.217.184.3 conn=1 bu=1 | esc(bf=0 hr=0 ss=0) | GPS:--- sat=0 batch=0 | MOT t=0 lis=ok act=8mg stay=boot
