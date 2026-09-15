@@ -22,6 +22,7 @@ static char     imsi_[20]     = "";
 static char     band_[24]     = "?";   // [2026-08-14] 실제 serving 밴드 (CPSI). 인증밴드 실측/증빙용.
 static uint32_t firstAtOkMs_  = 0;
 static int      modemVbatMv_  = -1;   // (2026-07-02) AT+CBC — 모뎀이 보는 VBAT (ESP divider 교차검증)
+static String   effectiveApn();       // [2026-09-15] 망 제공 APN 우선 (정의는 reactivateData 위)
 
 // HTTP keepalive + 서버 cmd 상태 (Block 6)
 static bool     httpConfigured_ = false;
@@ -216,7 +217,7 @@ bool bringUp() {
   brPhase_ = 0;
   sendAT("AT+CNACT=0,0", "OK", 3000);
   delay(300);
-  String c = String("AT+CNCFG=0,1,\"") + APN_NAME + "\"";
+  String c = String("AT+CNCFG=0,1,\"") + effectiveApn() + "\"";
   sendAT(c.c_str(), "OK", 2000);
   bool pdp = sendAT("AT+CNACT=0,1", "ACTIVE", LTE_CNACT_TIMEOUT_MS);
 
@@ -275,6 +276,26 @@ void refresh() {
   }
 }
 
+// [2026-09-15 KC] PDP APN 결정 — 망이 attach 때 내려준 APN(CGNAPN) 우선, 없으면 기본(1NCE).
+//   인증센터 등에서 임의 통신사 유심을 끼워도 데이터가 붙도록 (SIMCom 권장 절차).
+//   1NCE 유심은 CGNAPN 이 iot.1nce.net 을 돌려주므로 운영 동작 불변.
+static String effectiveApn() {
+  if (sendAT("AT+CGNAPN", "+CGNAPN:", 3000)) {
+    int p  = lastResp.indexOf("+CGNAPN:");
+    int q1 = lastResp.indexOf('"', p);
+    int q2 = lastResp.indexOf('"', q1 + 1);
+    if (q1 > 0 && q2 > q1 + 1) {
+      String apn = lastResp.substring(q1 + 1, q2);
+      if (apn.length() > 0) {
+        Serial.printf("[APN] 망 제공 APN 사용: %s\n", apn.c_str());
+        return apn;
+      }
+    }
+  }
+  Serial.printf("[APN] 망 제공 APN 없음 → 기본 %s\n", APN_NAME);
+  return String(APN_NAME);
+}
+
 // (P1 2026-07-02) 등록 유지한 채 data-plane 만 복구. "reg=5 but conn=0" 대응 — CFUN 안 함.
 bool reactivateData() {
   bc::set("lte_reactivate");
@@ -283,7 +304,7 @@ bool reactivateData() {
   sendAT("AT+SHDISC", nullptr, 1500);
   sendAT("AT+CNACT=0,0", "OK", 3000);
   delay(300);
-  String c = String("AT+CNCFG=0,1,\"") + APN_NAME + "\"";
+  String c = String("AT+CNCFG=0,1,\"") + effectiveApn() + "\"";
   sendAT(c.c_str(), "OK", 2000);
   bool pdp = sendAT("AT+CNACT=0,1", "ACTIVE", LTE_CNACT_TIMEOUT_MS);
   if (sendAT("AT+CNACT?", "+CNACT:", 2000)) {

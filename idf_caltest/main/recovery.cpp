@@ -62,6 +62,18 @@ void tick() {
   } else if ((now - lastRegPollMs_) > REG_POLL_MS) {
     lastRegPollMs_ = now;
     lte::refresh();   // REG/CSQ 관찰 로그만 — 상실 시에도 softReset 안 함 (재등록은 모뎀 자율)
+
+    // [2026-09-15] 우노 03_9 이틀 무인 검증 방식 이식 — 장시간 가동 시 SIM7080 데이터 세션
+    //   열화(2026-09-15 새벽 실측: ~1,800 POST 후 간헐화, 재부팅 0회) 대응.
+    //   KC 원칙 유지: 재부팅/CFUN/hardCycle 절대 금지 — PDP/SHCONN 만 재수립 (RRC 불변).
+    //   콜박스(데이터 없음) 환경에선 ~70s 주기 CNACT 재시도가 될 뿐, 측정에 무해.
+    uint32_t anchor = lastSuccessMs_ ? lastSuccessMs_ : bootMs_;
+    if (lastEscalationMs_ && (int32_t)(lastEscalationMs_ - anchor) > 0) anchor = lastEscalationMs_;
+    if ((now - anchor) > STUCK_POST_TIMEOUT_MS) {
+      Serial.println(F("[KC] POST 60s 무응답 → data 재활성 (재부팅/CFUN 없음)"));
+      lte::reactivateData();
+      lastEscalationMs_ = now;
+    }
   }
   return;
 #endif
