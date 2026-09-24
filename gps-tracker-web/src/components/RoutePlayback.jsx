@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { api } from '../api';
 import { getDeviceColor } from '../colors';
 import Icon from './Icon';
+import { analyzePath } from '../lib/stops';
 
 export default function RoutePlayback({ devices }) {
   const [deviceId, setDeviceId] = useState(devices[0]?.id ?? null);
@@ -152,18 +153,7 @@ export default function RoutePlayback({ devices }) {
 
   // 슬라이더 + 통계 표시용 데이터
   const cur = points[idx];
-  const totalKm = useMemo(() => {
-    if (points.length < 2) return 0;
-    let m = 0;
-    const R = 6371000, r = Math.PI / 180;
-    for (let i = 1; i < points.length; i++) {
-      const a = points[i - 1], b = points[i];
-      const dLa = (b.lat - a.lat) * r, dLo = (b.lng - a.lng) * r;
-      const v = Math.sin(dLa/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;
-      m += 2 * R * Math.asin(Math.sqrt(v));
-    }
-    return m / 1000;
-  }, [points]);
+  const totalKm = useMemo(() => analyzePath(points).distanceM / 1000, [points]);
 
   return (
     <div style={s.wrap}>

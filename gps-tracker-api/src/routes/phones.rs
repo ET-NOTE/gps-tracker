@@ -57,8 +57,7 @@ pub async fn assert_main_cap(
     let n = count_main_holders(db, phone, except_user_id).await?;
     if n >= MAX_MAIN_HOLDERS {
         return Err(AppError::Conflict(format!(
-            "이 번호는 이미 {} 개 계정의 메인으로 사용 중입니다 (최대 {})",
-            n, MAX_MAIN_HOLDERS
+            "이 번호는 이미 {n} 개 계정의 메인으로 사용 중입니다 (최대 {MAX_MAIN_HOLDERS})"
         )));
     }
     Ok(())
@@ -117,7 +116,7 @@ pub struct SendOtpResponse {
 
 async fn send_otp(
     State(state): State<AppState>,
-    user: AuthUser,
+    _user: AuthUser,
     Json(req): Json<SendOtpRequest>,
 ) -> AppResult<Json<SendOtpResponse>> {
     let phone = crate::services::sms::normalize_phone(&req.phone)

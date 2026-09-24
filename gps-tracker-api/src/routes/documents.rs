@@ -194,7 +194,7 @@ async fn upload_document(
         .await
         .map_err(|e| anyhow::anyhow!("mkdir: {e}"))?;
     let uuid = uuid::Uuid::new_v4();
-    let stored_name = format!("{}_{}", uuid, filename);
+    let stored_name = format!("{uuid}_{filename}");
     let stored_path = dir.join(&stored_name);
     let mut f = tokio::fs::File::create(&stored_path)
         .await
@@ -254,7 +254,7 @@ async fn download_document(
             (header::CONTENT_TYPE, row.mime.clone()),
             (
                 header::CONTENT_DISPOSITION,
-                format!("attachment; filename=\"{}\"; filename*=UTF-8''{}", cd, cd),
+                format!("attachment; filename=\"{cd}\"; filename*=UTF-8''{cd}"),
             ),
         ],
         Body::from(data),
@@ -295,7 +295,7 @@ async fn preview_document(
             (header::CONTENT_TYPE, row.mime.clone()),
             (
                 header::CONTENT_DISPOSITION,
-                format!("inline; filename=\"{}\"; filename*=UTF-8''{}", cd, cd),
+                format!("inline; filename=\"{cd}\"; filename*=UTF-8''{cd}"),
             ),
             (header::CACHE_CONTROL, "private, max-age=3600".to_string()),
         ],
@@ -332,7 +332,7 @@ fn percent_encode(s: &str) -> String {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => {
                 out.push(*b as char)
             }
-            _ => out.push_str(&format!("%{:02X}", b)),
+            _ => out.push_str(&format!("%{b:02X}")),
         }
     }
     out

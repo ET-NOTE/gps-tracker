@@ -93,27 +93,13 @@ impl OpinetCache {
             }
             Err(e) => {
                 tracing::warn!("opinet fetch failed: {e} — fallback to cached/default");
-                if let Some(cached) = self
-                    .inner
+                self.inner
                     .read()
                     .ok()
                     .and_then(|g| g.as_ref().map(|e| e.prices.clone()))
-                {
-                    cached
-                } else {
-                    FuelPrices::default()
-                }
+                    .unwrap_or_default()
             }
         }
-    }
-
-    /// 캐시 스냅샷 (fetch 없이). 캐시 없으면 default.
-    pub fn snapshot(&self) -> FuelPrices {
-        self.inner
-            .read()
-            .ok()
-            .and_then(|g| g.as_ref().map(|e| e.prices.clone()))
-            .unwrap_or_default()
     }
 
     /// 백그라운드 워커 — 부팅 후 즉시 첫 fetch + 6h 주기 refetch.

@@ -18,10 +18,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let http = Client::builder().timeout(Duration::from_secs(10)).build()?;
 
     let ts = chrono::Utc::now().timestamp_millis();
-    let email1 = format!("ws-u1-{}@gps.serial.test", ts);
-    let email2 = format!("ws-u2-{}@gps.serial.test", ts);
-    let uid_owned = format!("ws-owned-{}", ts);
-    let uid_stranger = format!("ws-stranger-{}", ts);
+    let email1 = format!("ws-u1-{ts}@gps.serial.test");
+    let email2 = format!("ws-u2-{ts}@gps.serial.test");
+    let uid_owned = format!("ws-owned-{ts}");
+    let uid_stranger = format!("ws-stranger-{ts}");
     let pw = "hunter2hunter";
 
     // 두 유저 register
@@ -136,7 +136,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("received {} events:", received.len());
     for ev in &received {
-        println!("  {}", ev);
+        println!("  {ev}");
     }
     assert!(!received.is_empty(), "no events received");
     assert!(

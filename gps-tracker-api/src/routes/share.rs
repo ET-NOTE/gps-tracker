@@ -268,8 +268,7 @@ async fn public_view(
 ) -> AppResult<Json<PublicShareView>> {
     let (device_id, expires_at, note) = resolve_token(&state, &token).await?;
 
-    let row: Option<(Option<String>, Option<String>, Option<String>,
-                     Option<DateTime<Utc>>, Option<f64>, Option<f64>)> = sqlx::query_as(
+    let row: SharedDeviceRow = sqlx::query_as(
         r#"SELECT display_name, color, icon, last_seen_at, last_lat, last_lng
              FROM devices WHERE id = $1 AND EXISTS (
                SELECT 1 FROM share_tokens s WHERE s.token=$2 AND s.device_id=devices.id
@@ -400,7 +399,7 @@ async fn resolve_token(
     state: &AppState,
     token: &str,
 ) -> AppResult<(i64, DateTime<Utc>, Option<String>)> {
-    let row: Option<(i64, DateTime<Utc>, Option<DateTime<Utc>>, Option<String>)> = sqlx::query_as(
+    let row: SharePolicyRow = sqlx::query_as(
         r#"SELECT s.device_id, s.expires_at, s.revoked_at, s.note
                  FROM share_tokens s JOIN devices d ON d.id=s.device_id
                 WHERE s.token = $1 AND s.created_by=d.owner_id"#,
@@ -428,7 +427,7 @@ fn generate_token() -> String {
 
 fn url_safe_base64(bytes: &[u8]) -> String {
     const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    let mut out = String::with_capacity((bytes.len() * 4 + 2) / 3);
+    let mut out = String::with_capacity((bytes.len() * 4).div_ceil(3));
     let mut buf: u32 = 0;
     let mut bits: u32 = 0;
     for &b in bytes {
@@ -446,3 +445,14 @@ fn url_safe_base64(bytes: &[u8]) -> String {
     }
     out
 }
+
+type SharedDeviceRow = Option<(
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<DateTime<Utc>>,
+    Option<f64>,
+    Option<f64>,
+)>;
+
+type SharePolicyRow = Option<(i64, DateTime<Utc>, Option<DateTime<Utc>>, Option<String>)>;

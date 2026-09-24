@@ -125,17 +125,3 @@ async fn set_device_override(
         effective_type: effective,
     }))
 }
-
-/// 헬퍼: 디바이스의 effective account_type 조회 (overrides ?? user.account_type)
-pub async fn effective_type(db: &sqlx::PgPool, device_id: i64) -> AppResult<String> {
-    let row: Option<(Option<String>, String)> = sqlx::query_as(
-        r#"SELECT d.account_type_override, u.account_type
-             FROM devices d JOIN users u ON u.id = d.owner_id
-            WHERE d.id = $1"#,
-    )
-    .bind(device_id)
-    .fetch_optional(db)
-    .await?;
-    let (override_type, account_type) = row.ok_or(AppError::NotFound)?;
-    Ok(override_type.unwrap_or(account_type))
-}

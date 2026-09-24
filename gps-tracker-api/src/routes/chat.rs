@@ -214,7 +214,7 @@ async fn send_user_message(
 
     // 모든 admin 에게 푸시 (best-effort, 실패해도 메시지는 정상 저장됨)
     let sender_email = sender_label(&state, user.user_id).await;
-    let title = format!("새 메시지 — {}", sender_email);
+    let title = format!("새 메시지 — {sender_email}");
     let pool = state.db.clone();
     let fcm = state.fcm.clone();
     let body_clone = body.clone();

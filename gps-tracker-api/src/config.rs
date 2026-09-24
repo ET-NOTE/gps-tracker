@@ -9,7 +9,6 @@ pub struct Config {
     pub jwt_secret: String,
     pub jwt_access_ttl_min: i64,
     pub jwt_refresh_ttl_days: i64,
-    pub fcm_server_key: Option<String>, // legacy server-key path (unused, kept for env compat)
     pub fcm_service_account_path: Option<String>, // FCM v1: path to service-account JSON
     pub cors_allowed_origins: Vec<String>,
     /// (2026-07-29) 스마트폰을 tracker device 로 페어링 허용 여부.
@@ -42,7 +41,6 @@ impl Config {
                 .ok()
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(30),
-            fcm_server_key: env::var("FCM_SERVER_KEY").ok().filter(|s| !s.is_empty()),
             fcm_service_account_path: env::var("FCM_SERVICE_ACCOUNT_PATH")
                 .ok()
                 .filter(|s| !s.is_empty()),

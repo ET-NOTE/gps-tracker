@@ -23,7 +23,6 @@ use crate::{
 const ENDPOINT: &str = "route_analyze";
 const ADMIN_EMAIL: &str = "admin@admin.com";
 const COST_PER_ANALYSIS: i64 = 20; // 회당 20 KRW (포인트)
-const MAX_POINTS_TO_GPT: usize = 40; // 균등 분포 샘플
 const MAX_OUT_TOKENS: u32 = 900;
 
 pub fn router() -> Router<AppState> {
@@ -149,7 +148,7 @@ async fn analyze(
     };
 
     // 차감 이후 실패하면 환불해야 함. 분석 본 로직을 inner 로 묶고 결과 처리.
-    let outcome: AppResult<(String, Option<String>, Option<i32>, Option<i32>)> = (async {
+    let outcome: AnalysisOutcome = (async {
         // 데이터 적재 — date 를 KST 자정~다음날 자정 범위로 변환
         let start = format!("{}T00:00:00+09:00", req.date);
         let end = format!("{}T23:59:59+09:00", req.date);
@@ -595,7 +594,7 @@ fn build_prompt(
             let tag = stop_position_tag(stops.len(), i);
             let loc = match geo.stop_addrs.get(i).and_then(|o| o.as_ref()) {
                 Some(r) => r.short(),
-                None => format!("{:.5},{:.5}", lat, lng),
+                None => format!("{lat:.5},{lng:.5}"),
             };
             buf.push_str(&format!(
                 "{}. {}~{} ({}분) {}{}\n",
@@ -657,8 +656,6 @@ pub struct Signals {
 #[derive(Debug, Clone, Copy)]
 struct Seg {
     t: DateTime<Utc>,
-    lat: f64,
-    lng: f64,
     speed: f64, // km/h, 0 이면 정지로 봄
     dt_s: i64,
     dist: f64, // m, 직전 점에서 이동 거리
@@ -679,8 +676,6 @@ fn enrich_speeds(points: &[PointRow]) -> Vec<Seg> {
         };
         out.push(Seg {
             t: p.recorded_at,
-            lat,
-            lng,
             speed,
             dt_s: dt,
             dist,
@@ -826,11 +821,11 @@ fn detect_anomalies(seg: &[Seg], stops: &[(DateTime<Utc>, DateTime<Utc>, f64, f6
     {
         let mut dist_m = 0.0;
         let mut secs = 0i64;
-        for i in 1..seg.len() {
-            let h = seg[i].t.with_timezone(&kst).hour();
-            if (h >= 22 || h < 6) && seg[i].speed > 5.0 {
-                dist_m += seg[i].dist;
-                secs += seg[i].dt_s;
+        for item in seg.iter().skip(1) {
+            let h = item.t.with_timezone(&kst).hour();
+            if !(6..22).contains(&h) && item.speed > 5.0 {
+                dist_m += item.dist;
+                secs += item.dt_s;
             }
         }
         s.night_dist_km = dist_m / 1000.0;
@@ -951,3 +946,5 @@ async fn today_count(state: &AppState, uid: i64) -> AppResult<i64> {
     .fetch_optional(&state.db).await?.flatten();
     Ok(n.unwrap_or(0))
 }
+
+type AnalysisOutcome = AppResult<(String, Option<String>, Option<i32>, Option<i32>)>;

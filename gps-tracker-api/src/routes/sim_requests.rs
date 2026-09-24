@@ -302,14 +302,7 @@ async fn admin_order_info(
     Path(id): Path<i64>,
     axum::extract::Query(q): axum::extract::Query<OrderInfoQuery>,
 ) -> AppResult<Json<AdminOrderInfo>> {
-    let row: Option<(
-        String,
-        Option<String>,
-        Option<i64>,
-        Option<Value>,
-        Option<Value>,
-        Option<DateTime<Utc>>,
-    )> = sqlx::query_as(
+    let row: SimRequestStatusRow = sqlx::query_as(
         r#"SELECT status, iccid, device_id, api_response, order_info, order_fetched_at
              FROM sim_topup_requests
             WHERE id = $1"#,
@@ -503,7 +496,7 @@ async fn process_request(
         let _ = post_system_message_to_user_thread(
             &state,
             user_id,
-            &format!("SIM 충전 요청 #{req_id} 실패 — {}원 자동 환불됨", cost),
+            &format!("SIM 충전 요청 #{req_id} 실패 — {cost}원 자동 환불됨"),
             json!({"kind":"sim_topup_failed","request_id":req_id}),
         )
         .await;
@@ -612,7 +605,7 @@ async fn manual_fail(
     let _ = post_system_message_to_user_thread(
         &state,
         user_id,
-        &format!("SIM 충전 요청 #{id} 실패 — {}원 자동 환불됨", cost),
+        &format!("SIM 충전 요청 #{id} 실패 — {cost}원 자동 환불됨"),
         json!({"kind":"sim_topup_failed","request_id":id,"manual":true}),
     )
     .await;
@@ -749,10 +742,7 @@ async fn cancel_pending_sim_request(
     let _ = post_system_message_to_user_thread(
         state,
         user_id,
-        &format!(
-            "SIM 충전 요청 #{req_id} 취소 — {}원 환불됨 ({reason})",
-            cost
-        ),
+        &format!("SIM 충전 요청 #{req_id} 취소 — {cost}원 환불됨 ({reason})"),
         json!({"kind": kind, "request_id": req_id, "by": reason}),
     )
     .await;
@@ -836,3 +826,12 @@ async fn post_system_message_to_user_thread(
 
     Ok(())
 }
+
+type SimRequestStatusRow = Option<(
+    String,
+    Option<String>,
+    Option<i64>,
+    Option<Value>,
+    Option<Value>,
+    Option<DateTime<Utc>>,
+)>;

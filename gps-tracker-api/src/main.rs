@@ -95,7 +95,10 @@ async fn main() -> anyhow::Result<()> {
     //   가정하고 abort. 클라이언트는 408/503 받음.
     let app = routes::build_router(state)
         .layer(DefaultBodyLimit::max(1024 * 1024))
-        .layer(TimeoutLayer::new(Duration::from_secs(30)))
+        .layer(TimeoutLayer::with_status_code(
+            axum::http::StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(30),
+        ))
         .layer(TraceLayer::new_for_http())
         .layer(cors);
 

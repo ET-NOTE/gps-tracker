@@ -3,7 +3,7 @@
 
 use axum::{
     extract::{Path, State},
-    routing::{get, post},
+    routing::get,
     Json, Router,
 };
 use chrono::{DateTime, Utc};
@@ -48,8 +48,7 @@ async fn enforce_geofence_cap(
             let total = dev_count + owner_wide_count;
             if total >= MAX_GEOFENCES_PER_SIM {
                 return Err(AppError::Conflict(format!(
-                    "이 SIM 의 지오펜스가 이미 {}개입니다 (최대 {})",
-                    total, MAX_GEOFENCES_PER_SIM
+                    "이 SIM 의 지오펜스가 이미 {total}개입니다 (최대 {MAX_GEOFENCES_PER_SIM})"
                 )));
             }
         }
@@ -64,8 +63,7 @@ async fn enforce_geofence_cap(
             if device_ids.is_empty() {
                 if owner_wide_count >= MAX_GEOFENCES_PER_SIM {
                     return Err(AppError::Conflict(format!(
-                        "지오펜스가 이미 {}개입니다 (최대 {})",
-                        owner_wide_count, MAX_GEOFENCES_PER_SIM
+                        "지오펜스가 이미 {owner_wide_count}개입니다 (최대 {MAX_GEOFENCES_PER_SIM})"
                     )));
                 }
                 return Ok(());
@@ -81,8 +79,7 @@ async fn enforce_geofence_cap(
                 let total = dev_count + owner_wide_count;
                 if total >= MAX_GEOFENCES_PER_SIM {
                     return Err(AppError::Conflict(format!(
-                        "디바이스 #{} 의 지오펜스가 이미 {}개입니다 (최대 {})",
-                        d, total, MAX_GEOFENCES_PER_SIM
+                        "디바이스 #{d} 의 지오펜스가 이미 {total}개입니다 (최대 {MAX_GEOFENCES_PER_SIM})"
                     )));
                 }
             }

@@ -25,11 +25,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 use tokio::sync::broadcast::error::RecvError;
 
-use crate::{
-    auth::jwt,
-    events::{Event, EventTarget},
-    state::AppState,
-};
+use crate::{auth::jwt, events::EventTarget, state::AppState};
 
 #[derive(Deserialize)]
 pub struct WsParams {

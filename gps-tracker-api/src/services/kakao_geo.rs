@@ -74,18 +74,6 @@ impl Resolved {
     }
 }
 
-/// 환경변수 + 좌표 → 주소.
-pub async fn reverse(lat: f64, lng: f64) -> anyhow::Result<Resolved> {
-    let key = std::env::var("KAKAO_REST_API_KEY")
-        .ok()
-        .filter(|s| !s.is_empty())
-        .ok_or_else(|| anyhow::anyhow!("KAKAO_REST_API_KEY not configured"))?;
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(6))
-        .build()?;
-    reverse_with(&client, &key, lat, lng).await
-}
-
 pub async fn reverse_with(
     client: &Client,
     key: &str,
@@ -143,37 +131,6 @@ pub async fn reverse_with(
     })
 }
 
-/// 여러 좌표를 동시에 해석 (캐시 미사용 — 호환성용).
-/// 신규 코드는 reverse_many_cached 사용 권장.
-pub async fn reverse_many(coords: &[(f64, f64)]) -> Vec<Option<Resolved>> {
-    let key = match std::env::var("KAKAO_REST_API_KEY")
-        .ok()
-        .filter(|s| !s.is_empty())
-    {
-        Some(k) => k,
-        None => return coords.iter().map(|_| None).collect(),
-    };
-    let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(6))
-        .build()
-    {
-        Ok(c) => c,
-        Err(_) => return coords.iter().map(|_| None).collect(),
-    };
-    // buffered = 동시성 상한 + 순서 보존 (반환 Vec 이 coords 순서와 일치해야 함).
-    //   ※ owned Vec 로 미리 복사 — coords(빌림)를 stream await 너머로 넘기면 handler future 가
-    //     non-Send 가 됨(Send is not general enough). into_iter 로 소유 이동.
-    let owned: Vec<(f64, f64)> = coords.to_vec();
-    futures_util::stream::iter(owned.into_iter().map(|(lat, lng)| {
-        let c = client.clone();
-        let k = key.clone();
-        async move { reverse_with(&c, &k, lat, lng).await.ok() }
-    }))
-    .buffered(KAKAO_MAX_CONCURRENCY)
-    .collect()
-    .await
-}
-
 #[derive(Debug, FromRow)]
 struct CacheRow {
     road: Option<String>,
@@ -216,14 +173,7 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
     // 2) 캐시 일괄 조회 (UNNEST)
     let lat_qs: Vec<i32> = unique_cells.iter().map(|c| c.0).collect();
     let lng_qs: Vec<i32> = unique_cells.iter().map(|c| c.1).collect();
-    let cached: Vec<(
-        i32,
-        i32,
-        Option<String>,
-        Option<String>,
-        String,
-        Option<String>,
-    )> = sqlx::query_as(
+    let cached: GeocodeCacheRows = sqlx::query_as(
         r#"SELECT lat_q, lng_q, road, jibun, region, building
                  FROM geocode_cache
                 WHERE (lat_q, lng_q) IN (
@@ -326,3 +276,12 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
     }
     out
 }
+
+type GeocodeCacheRows = Vec<(
+    i32,
+    i32,
+    Option<String>,
+    Option<String>,
+    String,
+    Option<String>,
+)>;

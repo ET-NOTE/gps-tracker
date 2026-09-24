@@ -68,3 +68,5 @@ Thumbs.db
 # ===== build / cache =====
 .cache/
 *.log
+__pycache__/
+*.pyc

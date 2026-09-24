@@ -51,6 +51,7 @@ pub enum Event {
         #[serde(skip_serializing_if = "Option::is_none")]
         fixes: Option<Vec<LocationFix>>,
     },
+    #[allow(clippy::enum_variant_names)] // Keep the existing event vocabulary and wire contract.
     DeviceEvent {
         device_id: i64,
         kind: String,

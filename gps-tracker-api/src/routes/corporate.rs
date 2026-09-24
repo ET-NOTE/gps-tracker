@@ -12,7 +12,7 @@
 
 use axum::{
     extract::{Path, Query, State},
-    routing::{delete, get, patch, post},
+    routing::{get, patch},
     Json, Router,
 };
 use chrono::{DateTime, Utc};
@@ -541,7 +541,7 @@ fn effective_sleep_end(
         .and_then(|d| d.get("stopped_offset_s"))
         .and_then(|v| v.as_i64())
     {
-        if off >= 0 && off < 86_400 {
+        if (0..86_400).contains(&off) {
             // 0초 ~ 24시간 사이만 허용
             let stopped = occurred_at - chrono::Duration::seconds(off);
             if validate(stopped, wake_at, occurred_at) {
@@ -655,7 +655,7 @@ async fn collect_trip_endpoints(
         .collect();
 
     // 한 쿼리로 모든 trip 의 첫·마지막 fix 좌표 — user_id 격리
-    let rows: Vec<(i32, Option<f64>, Option<f64>, Option<f64>, Option<f64>)> = sqlx::query_as(
+    let rows: TripEndpointRows = sqlx::query_as(
         r#"
         WITH t AS (
             SELECT idx, s_at, e_at FROM
@@ -811,13 +811,7 @@ async fn trips_csv(
     use axum::response::IntoResponse;
 
     // list_trips 와 동일 로직 — 결과만 CSV 직렬화
-    let trips_resp = list_trips(
-        State(state.clone()),
-        user.clone(),
-        Path(device_id),
-        Query(q),
-    )
-    .await?;
+    let trips_resp = list_trips(State(state.clone()), user, Path(device_id), Query(q)).await?;
     let trips = trips_resp.0;
 
     // 회사명 / 단말기명 으로 파일명
@@ -904,10 +898,10 @@ async fn trips_csv(
     let prefix = company.as_deref().unwrap_or("법인운행");
     let dev = device_name.as_deref().unwrap_or("device");
     let today = chrono::Utc::now().format("%Y%m%d");
-    let filename = format!("{}_{}_{}_운행일지.csv", prefix, dev, today);
+    let filename = format!("{prefix}_{dev}_{today}_운행일지.csv");
     let pct = percent_encode(&filename);
     // ASCII fallback + UTF-8 RFC5987
-    let cd = format!("attachment; filename=\"{}\"; filename*=UTF-8''{}", pct, pct);
+    let cd = format!("attachment; filename=\"{pct}\"; filename*=UTF-8''{pct}");
 
     Ok((
         [
@@ -1156,7 +1150,6 @@ async fn report_xlsx(
         business_number: Option<String>,
         company_name: Option<String>,
         representative: Option<String>,
-        address: Option<String>,
     }
     let corp: Option<CorpRow> = sqlx::query_as(
         "SELECT business_number, company_name, representative, address
@@ -1169,7 +1162,6 @@ async fn report_xlsx(
         business_number: corp.as_ref().and_then(|c| c.business_number.clone()),
         company_name: corp.as_ref().and_then(|c| c.company_name.clone()),
         representative: corp.as_ref().and_then(|c| c.representative.clone()),
-        address: corp.as_ref().and_then(|c| c.address.clone()),
     };
 
     // 필터 파싱 — 콤마 분리, 공백 trim, 빈 항목 skip.
@@ -1205,7 +1197,7 @@ async fn report_xlsx(
         .filter(|v| !v.is_empty());
     let dep_include_null = department_filter
         .as_ref()
-        .map_or(false, |v| v.iter().any(|d| d == "(부서없음)"));
+        .is_some_and(|v| v.iter().any(|d| d == "(부서없음)"));
     let dep_names: Vec<String> = department_filter.as_ref().map_or(vec![], |v| {
         v.iter()
             .filter(|d| d.as_str() != "(부서없음)")
@@ -1294,7 +1286,6 @@ async fn report_xlsx(
     let devices_lite: Vec<xlsx_report::DeviceLite> = devs
         .iter()
         .map(|d| xlsx_report::DeviceLite {
-            id: d.id,
             display_name: d.display_name.clone(),
             device_uid: d.device_uid.clone(),
             license_plate: d.license_plate.clone(),
@@ -1340,10 +1331,6 @@ async fn report_xlsx(
                     distance_m: t.distance_m,
                     start_address: t.start_address,
                     end_address: t.end_address,
-                    start_lat: t.start_lat,
-                    start_lng: t.start_lng,
-                    end_lat: t.end_lat,
-                    end_lng: t.end_lng,
                     purpose: Some(purpose),
                     purpose_note: t.annotation.as_ref().and_then(|a| a.purpose_note.clone()),
                     driver_name: t.annotation.as_ref().and_then(|a| a.driver_name.clone()),
@@ -1352,7 +1339,6 @@ async fn report_xlsx(
                         .annotation
                         .as_ref()
                         .and_then(|a| a.fuel_cost.map(|v| v as i64)),
-                    note: t.annotation.as_ref().and_then(|a| a.note.clone()),
                 })
             })
             .collect();
@@ -1380,9 +1366,9 @@ async fn report_xlsx(
         "우리양식"
     };
     let month_slug = ym.replace('-', "");
-    let filename = format!("운행기록부_{}_{}.xlsx", month_slug, kind_ko);
+    let filename = format!("운행기록부_{month_slug}_{kind_ko}.xlsx");
     let pct = percent_encode(&filename);
-    let cd = format!("attachment; filename=\"{}\"; filename*=UTF-8''{}", pct, pct);
+    let cd = format!("attachment; filename=\"{pct}\"; filename*=UTF-8''{pct}");
 
     // year/month unused 방지 (chrono::Datelike 는 import 확인용 재적용)
     let _ = (now_kst.year(), now_kst.month());
@@ -1747,7 +1733,7 @@ fn percent_encode(s: &str) -> String {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
                 out.push(b as char)
             }
-            _ => out.push_str(&format!("%{:02X}", b)),
+            _ => out.push_str(&format!("%{b:02X}")),
         }
     }
     out
@@ -1895,7 +1881,7 @@ fn parse_date_or_rfc3339(s: &str) -> AppResult<DateTime<Utc>> {
     if let Ok(t) = DateTime::parse_from_rfc3339(s) {
         return Ok(t.with_timezone(&Utc));
     }
-    let t = DateTime::parse_from_rfc3339(&format!("{}T00:00:00+09:00", s))
+    let t = DateTime::parse_from_rfc3339(&format!("{s}T00:00:00+09:00"))
         .map_err(|e| AppError::BadRequest(format!("bad date: {e}")))?;
     Ok(t.with_timezone(&Utc))
 }
@@ -1903,7 +1889,9 @@ fn parse_date_or_rfc3339_end(s: &str) -> AppResult<DateTime<Utc>> {
     if let Ok(t) = DateTime::parse_from_rfc3339(s) {
         return Ok(t.with_timezone(&Utc));
     }
-    let t = DateTime::parse_from_rfc3339(&format!("{}T23:59:59+09:00", s))
+    let t = DateTime::parse_from_rfc3339(&format!("{s}T23:59:59+09:00"))
         .map_err(|e| AppError::BadRequest(format!("bad date: {e}")))?;
     Ok(t.with_timezone(&Utc))
 }
+
+type TripEndpointRows = Vec<(i32, Option<f64>, Option<f64>, Option<f64>, Option<f64>)>;

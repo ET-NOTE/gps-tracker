@@ -39,10 +39,9 @@ pub async fn send_signup_welcome(phone: &str, display_name: &str) -> anyhow::Res
     // 본문 — 승인된 템플릿 그대로. #{이름} 자리만 치환.
     let message = format!(
         "시리얼링크 회원가입을 환영합니다!\n\n\
-         안녕하세요, {}님.\n\
+         안녕하세요, {display_name}님.\n\
          회원가입이 정상 완료되었습니다.\n\n\
          단말기를 등록하고 위치추적 서비스를 시작해 보세요.",
-        display_name,
     );
 
     // SMS 폴백 — 알림톡 발송 실패 시 LMS 로 재발송. 본문 그대로.

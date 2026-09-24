@@ -371,10 +371,7 @@ async fn approve_request(
     let _ = post_system_message_to_user_thread(
         &state,
         user_id,
-        &format!(
-            "포인트 충전 요청 #{req_id} 승인 완료 — {}원 충전됨 (잔액 {}원)",
-            amount, new_balance
-        ),
+        &format!("포인트 충전 요청 #{req_id} 승인 완료 — {amount}원 충전됨 (잔액 {new_balance}원)"),
         json!({
             "kind": "credit_topup_approved",
             "request_id": req_id,
@@ -443,12 +440,9 @@ async fn reject_request(
     let req_id = id;
 
     let body = if reason.is_empty() {
-        format!("포인트 충전 요청 #{req_id} 반려됨 ({}원)", amount)
+        format!("포인트 충전 요청 #{req_id} 반려됨 ({amount}원)")
     } else {
-        format!(
-            "포인트 충전 요청 #{req_id} 반려됨 ({}원) — {}",
-            amount, reason
-        )
+        format!("포인트 충전 요청 #{req_id} 반려됨 ({amount}원) — {reason}")
     };
     let _ = post_system_message_to_user_thread(
         &state,

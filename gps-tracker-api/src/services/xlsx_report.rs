@@ -20,12 +20,10 @@ pub struct CorpInfoLite {
     pub business_number: Option<String>,
     pub company_name: Option<String>,
     pub representative: Option<String>,
-    pub address: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct DeviceLite {
-    pub id: i64,
     pub display_name: Option<String>,
     pub device_uid: String,
     pub license_plate: Option<String>,
@@ -46,16 +44,11 @@ pub struct TripLite {
     pub distance_m: f64,
     pub start_address: Option<String>,
     pub end_address: Option<String>,
-    pub start_lat: Option<f64>,
-    pub start_lng: Option<f64>,
-    pub end_lat: Option<f64>,
-    pub end_lng: Option<f64>,
     pub purpose: Option<String>, // 'business'|'commute'|'other'|'unspecified'
     pub purpose_note: Option<String>,
     pub driver_name: Option<String>,
     pub fuel_liters: Option<f64>,
     pub fuel_cost_krw: Option<i64>, // 사용자 수기 입력 (있으면 우선)
-    pub note: Option<String>,
 }
 
 pub struct ReportContext<'a> {
@@ -105,7 +98,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         let month_no = &ctx.month_ym[5..];
         let header_rows: [[(&str, String); 4]; 3] = [
             [
-                ("과세기간", format!("{}년 {}월", year, month_no)),
+                ("과세기간", format!("{year}년 {month_no}월")),
                 ("법인명", ctx.corp.company_name.clone().unwrap_or_default()),
                 (
                     "사업자등록번호",
@@ -129,7 +122,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
                     "연식",
                     device
                         .model_year
-                        .map(|y| format!("{}년", y))
+                        .map(|y| format!("{y}년"))
                         .unwrap_or_default(),
                 ),
                 (
@@ -196,11 +189,11 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             total_km += dist_km;
             business_km += biz_km;
 
-            sheet.write_string_with_format(row, 0, &fmt_date_kst(&t.started_at), &cell_fmt)?;
+            sheet.write_string_with_format(row, 0, fmt_date_kst(&t.started_at), &cell_fmt)?;
             sheet.write_string_with_format(
                 row,
                 1,
-                &fmt_time_range(t.started_at, t.ended_at),
+                fmt_time_range(t.started_at, t.ended_at),
                 &cell_fmt,
             )?;
             sheet.write_number_with_format(row, 2, dist_km, &cell_num)?;
@@ -208,25 +201,25 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             sheet.write_string_with_format(
                 row,
                 4,
-                &t.start_address.clone().unwrap_or_default(),
+                t.start_address.clone().unwrap_or_default(),
                 &cell_fmt,
             )?;
             sheet.write_string_with_format(
                 row,
                 5,
-                &t.end_address.clone().unwrap_or_default(),
+                t.end_address.clone().unwrap_or_default(),
                 &cell_fmt,
             )?;
             sheet.write_string_with_format(
                 row,
                 6,
-                &purpose_ko(t.purpose.as_deref(), t.purpose_note.as_deref()),
+                purpose_ko(t.purpose.as_deref(), t.purpose_note.as_deref()),
                 &cell_fmt,
             )?;
             sheet.write_string_with_format(
                 row,
                 7,
-                &t.driver_name.clone().unwrap_or_default(),
+                t.driver_name.clone().unwrap_or_default(),
                 &cell_fmt,
             )?;
             row += 1;
@@ -259,7 +252,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         sheet.set_column_width(7, 12.0)?;
     }
 
-    Ok(wb.save_to_buffer()?)
+    wb.save_to_buffer()
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -276,7 +269,6 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
     let cell_num = table_cell_num_format();
     let cell_won = table_cell_won_format();
     let label_fmt = header_label_format();
-    let value_fmt = header_value_format();
     let summary_fmt = summary_format();
 
     // ── Sheet 1: 요약 ─────────────────────────────────
@@ -361,7 +353,7 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         summary.write_string_with_format(
             r,
             0,
-            &d.display_name
+            d.display_name
                 .clone()
                 .unwrap_or_else(|| d.device_uid.clone()),
             &cell_fmt,
@@ -369,22 +361,22 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         summary.write_string_with_format(
             r,
             1,
-            &d.license_plate.clone().unwrap_or_default(),
+            d.license_plate.clone().unwrap_or_default(),
             &cell_fmt,
         )?;
         summary.write_string_with_format(
             r,
             2,
-            &d.department.clone().unwrap_or_default(),
+            d.department.clone().unwrap_or_default(),
             &cell_fmt,
         )?;
         summary.write_string_with_format(
             r,
             3,
-            &d.model_year.map(|y| y.to_string()).unwrap_or_default(),
+            d.model_year.map(|y| y.to_string()).unwrap_or_default(),
             &cell_fmt,
         )?;
-        summary.write_string_with_format(r, 4, &fuel_type_ko(d.fuel_type.as_deref()), &cell_fmt)?;
+        summary.write_string_with_format(r, 4, fuel_type_ko(d.fuel_type.as_deref()), &cell_fmt)?;
         summary.write_number_with_format(r, 5, total_km, &cell_num)?;
         summary.write_number_with_format(r, 6, biz_km, &cell_num)?;
         summary.write_number_with_format(r, 7, pct, &cell_num)?;
@@ -421,7 +413,7 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         let name = short_sheet_name(&plate, i);
         sheet.set_name(&name)?;
 
-        sheet.merge_range(0, 0, 0, 9, &format!("{} 상세 운행", plate), &title_fmt)?;
+        sheet.merge_range(0, 0, 0, 9, &format!("{plate} 상세 운행"), &title_fmt)?;
         sheet.set_row_height(0, 24.0)?;
 
         let cols = [
@@ -442,12 +434,12 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         let mut row = 3u32;
         for t in trips {
             let dist_km = t.distance_m / 1000.0;
-            sheet.write_string_with_format(row, 0, &fmt_date_kst(&t.started_at), &cell_fmt)?;
-            sheet.write_string_with_format(row, 1, &fmt_time_kst(&t.started_at), &cell_fmt)?;
+            sheet.write_string_with_format(row, 0, fmt_date_kst(&t.started_at), &cell_fmt)?;
+            sheet.write_string_with_format(row, 1, fmt_time_kst(&t.started_at), &cell_fmt)?;
             sheet.write_string_with_format(
                 row,
                 2,
-                &t.ended_at
+                t.ended_at
                     .map(|e| fmt_time_kst(&e))
                     .unwrap_or_else(|| "진행중".into()),
                 &cell_fmt,
@@ -456,25 +448,25 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             sheet.write_string_with_format(
                 row,
                 4,
-                &t.start_address.clone().unwrap_or_default(),
+                t.start_address.clone().unwrap_or_default(),
                 &cell_fmt,
             )?;
             sheet.write_string_with_format(
                 row,
                 5,
-                &t.end_address.clone().unwrap_or_default(),
+                t.end_address.clone().unwrap_or_default(),
                 &cell_fmt,
             )?;
             sheet.write_string_with_format(
                 row,
                 6,
-                &purpose_ko(t.purpose.as_deref(), t.purpose_note.as_deref()),
+                purpose_ko(t.purpose.as_deref(), t.purpose_note.as_deref()),
                 &cell_fmt,
             )?;
             sheet.write_string_with_format(
                 row,
                 7,
-                &t.driver_name.clone().unwrap_or_default(),
+                t.driver_name.clone().unwrap_or_default(),
                 &cell_fmt,
             )?;
             if let Some(l) = t.fuel_liters {
@@ -494,7 +486,7 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         }
     }
 
-    Ok(wb.save_to_buffer()?)
+    wb.save_to_buffer()
 }
 
 // ── 포맷 헬퍼 ─────────────────────────────────────────
@@ -575,7 +567,7 @@ fn purpose_ko(p: Option<&str>, note: Option<&str>) -> String {
         _ => "미지정",
     };
     match (p, note) {
-        (Some("other"), Some(n)) if !n.is_empty() => format!("기타: {}", n),
+        (Some("other"), Some(n)) if !n.is_empty() => format!("기타: {n}"),
         _ => base.into(),
     }
 }

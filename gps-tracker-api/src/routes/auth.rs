@@ -1,7 +1,7 @@
 use axum::{
     extract::State,
     http::HeaderMap,
-    routing::{delete, get, patch, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use chrono::{DateTime, Duration, Utc};
@@ -396,7 +396,7 @@ fn hash_refresh(token: &str) -> String {
     let digest = Sha256::digest(token.as_bytes());
     let mut s = String::with_capacity(digest.len() * 2);
     for b in digest.iter() {
-        s.push_str(&format!("{:02x}", b));
+        s.push_str(&format!("{b:02x}"));
     }
     s
 }

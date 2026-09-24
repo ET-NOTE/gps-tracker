@@ -446,10 +446,7 @@ export default function Dashboard({ onLogout }) {
   const seekerLoadDates = useCallback(() =>
     filterDeviceId == null
       ? Promise.resolve([])
-      : api.getDailyStats(filterDeviceId, { limit: 365 })
-          .then(rows => (rows || [])
-            .filter(r => (r.fix_count || 0) > 0)
-            .map(r => r.date)),
+      : api.getActiveDates(filterDeviceId),
   [filterDeviceId]);
 
   const seekerLoadDayPoints = useCallback((d) =>
@@ -1419,6 +1416,7 @@ export default function Dashboard({ onLogout }) {
             {/* 시커 윈도우 — '운행' 탭에서만, 데스크톱은 좌하단 floating */}
             {showSeeker && view === 'tools' && filterDeviceId !== null && (
               <SeekerSheet
+                key={filterDeviceId}
                 device={devices.find(d => d.id === filterDeviceId)}
                 mapRef={mapRef}
                 onClose={() => {
@@ -1445,6 +1443,7 @@ export default function Dashboard({ onLogout }) {
                 월/일/시간 3-phase wizard 통합 (구 HomeMapSeeker 흡수). */}
             {showMiniSeeker && view === 'home' && filterDeviceId !== null && (
               <MiniSeekerOverlay
+                key={filterDeviceId}
                 ref={miniSeekerRef}
                 loadDates={seekerLoadDates}
                 loadDayPoints={seekerLoadDayPoints}

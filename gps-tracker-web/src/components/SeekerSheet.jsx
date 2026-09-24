@@ -10,7 +10,7 @@ import { getDeviceColor } from '../colors';
 import Icon from './Icon';
 import useBreakpoint from '../useBreakpoint';
 import useSwipeDownClose from '../useSwipeDownClose';
-import { enrichWithSpeedStops as enrich, haversineM } from '../lib/stops';
+import { enrichWithSpeedStops as enrich, haversineM, analyzePath } from '../lib/stops';
 import { confirmDialog, alertDialog } from './Dialog';
 
 const KST_TZ = 9 * 3600 * 1000;
@@ -49,12 +49,7 @@ function todayKstStr() {
 function thisMonthKstStr() { return todayKstStr().slice(0, 7); }
 
 function totalKm(points) {
-  if (points.length < 2) return 0;
-  let m = 0;
-  for (let i = 1; i < points.length; i++) {
-    m += haversineM(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng);
-  }
-  return m / 1000;
+  return analyzePath(points).distanceM / 1000;
 }
 function fmtDuration(seconds) {
   const s = Math.floor(seconds);
@@ -149,6 +144,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [startSlot, setStartSlot] = useState('00:00');  // "HH:MM" 10분 버킷
   const [hours, setHours] = useState(24);
   // Phase 4B-2: 정밀도 토글. day default '1m', month default '1h'. user 가 override.
+  const [refreshKey, setRefreshKey] = useState(0);
   const [precision, setPrecision] = useState('auto');   // 'auto' | '1m' | '5m' | '1h'
   // 카메라 follow — 재생 중 cursor 가 화면 밖으로 나가면 자동 panTo. default ON.
   const [cameraFollow, setCameraFollow] = useState(true);
@@ -251,7 +247,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
       .then(rows => { if (!cancelled) setActiveDates(rows); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [device?.id]);
+  }, [device?.id, refreshKey]);
 
   const availDates = useMemo(() => {
     const set = new Set(dailyStats.map(s => s.date));
@@ -350,7 +346,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     .catch(e => { if (!cancelled) setError(e.message || '데이터를 불러올 수 없습니다.'); })
     .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [device?.id, mode, date, precision]);
+  }, [device?.id, mode, date, precision, refreshKey]);
 
   // ─── 월간 — 그 달 전체 fetch ────────────────────────────
   // Phase 5: 월 단위 범위 → 1시간 aggregate view (TimescaleDB continuous aggregate, ms 응답).
@@ -386,7 +382,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     .catch(e => { if (!cancelled) setError(e.message || '데이터를 불러올 수 없습니다.'); })
     .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [device?.id, mode, month, precision]);
+  }, [device?.id, mode, month, precision, refreshKey]);
 
   // ─── 일간 데이터의 10분 버킷 — 시작 시각 드롭다운 옵션 ──
   const availableSlots = useMemo(() => {
@@ -721,7 +717,8 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             <option value={300}>300x</option>
             <option value={600}>600x</option>
           </select>
-          <button onClick={onClose} style={sty.closeBtn} title="닫기">
+          <button onClick={() => setRefreshKey(v => v + 1)} disabled={loading} style={sty.closeBtn}>새로고침</button>
+        <button onClick={onClose} style={sty.closeBtn} title="닫기">
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -756,6 +753,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>히스토리</div>
           </div>
         </div>
+        <button onClick={() => setRefreshKey(v => v + 1)} disabled={loading} style={sty.closeBtn}>새로고침</button>
         <button onClick={onClose} style={sty.closeBtn} title="닫기">
           <Icon name="close" size={14} />
         </button>
@@ -898,7 +896,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             {/* KPI */}
             {points.length > 0 ? (
               <div style={sty.kpiGrid}>
-                <Kpi label="이동거리" value={`${totalKm(points).toFixed(1)} km`} />
+                <Kpi label="표시 경로 거리" value={`${totalKm(points).toFixed(1)} km`} />
                 <Kpi label="운행시간" value={todayStats?.moving_s ? fmtDuration(todayStats.moving_s) : '—'} />
                 <Kpi label="평균속도" value={avgSpeed > 0 ? `${avgSpeed.toFixed(0)} km/h` : '—'} />
                 <Kpi label="최고속도" value={`${maxSpeed.toFixed(0)} km/h`} />

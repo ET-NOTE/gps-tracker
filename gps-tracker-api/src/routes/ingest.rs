@@ -17,7 +17,6 @@ use axum::{extract::State, http::HeaderMap, Json};
 use chrono::Utc;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use sqlx::Row;
 
 use crate::{
     error::{AppError, AppResult},
@@ -30,15 +29,12 @@ const LOW_BATT_THRESHOLD_MV: i32 = 3500;
 #[derive(Debug, Deserialize)]
 pub struct IngestPayload {
     pub ts: Option<i32>,
-    pub boot: Option<i64>,
-    pub awake: Option<i64>,
     pub csq: Option<i32>,
     pub reg: Option<i32>,
     pub vbat_mv: Option<i32>,
     /// (F11) SIM7080G AT+CBC 로 읽는 모듈 전압 — 이전엔 raw JSONB 안 저장만 됐음.
     /// WS broadcast 에 실어 실시간 모듈 헬스 관측 (ProfilePanel/Fleet 배터리 표시).
     pub cbc_mv: Option<i32>,
-    pub at_ms: Option<i32>,
     pub l80: Option<GpsFix>,
     pub lte: Option<GpsFix>,
     /// (2026-07-30) 스마트폰 tracker (Flutter geolocator + browser API) — l80/lte 와 별개 source.
@@ -127,7 +123,7 @@ pub async fn ingest(
     let device_uid = parsed
         .device_uid
         .clone()
-        .unwrap_or_else(|| format!("anon-{}", remote_ip));
+        .unwrap_or_else(|| format!("anon-{remote_ip}"));
 
     // 식별자 우선순위 (production-ready):
     //   1) ICCID 일치 (= SIM 정체성. 동일 SIM은 어떤 모뎀에 있든 같은 logical device)
@@ -224,21 +220,22 @@ pub async fn ingest(
 
     // sss 24h 테스트: fixes array 가 있으면 각 fix 별로 별도 insert (recorded_at - age_ms).
     // 이 경우 기존 l80 단일 fix 는 array 의 마지막 element 와 동일 → skip (중복 방지).
-    let has_batch = parsed.fixes.as_ref().map_or(false, |f| !f.is_empty());
+    let has_batch = parsed.fixes.as_ref().is_some_and(|f| !f.is_empty());
     // P1: WS broadcast 는 batch 끝에 1회 (N회 → 1회).
     let mut batch_for_ws: Vec<crate::events::LocationFix> = Vec::new();
     // Phase 6D: batch 는 1 row + fixes_jsonb 만 INSERT (이전 N row → 1 row).
     //   column lat/lng/sat/heading/ttff_s = anchor (가장 최근) fix 값 → devices.last_lat trigger 호환.
     //   geofence check 는 fix 별 그대로.
     //   WS broadcast 도 fix 별 그대로 (frontend dedup 가 처리).
-    let mut fix_records: Vec<(
+    type StoredFix = (
         chrono::DateTime<Utc>,
         f64,
         f64,
         Option<i32>,
         Option<i64>,
         Option<f32>,
-    )> = Vec::new();
+    );
+    let mut fix_records: Vec<StoredFix> = Vec::new();
     if let Some(fixes) = &parsed.fixes {
         // [2026-08-28 배치 재전송 dedup] 펌웨어는 200 응답을 못 받으면(RF 순단 등) 같은 fix 를
         //   다음 사이클에 재전송한다(at-least-once). 복원시각(도착시각-age_ms)은 전송마다 수백 ms
@@ -285,7 +282,7 @@ pub async fn ingest(
             //   사본은 up_ms 불변이라 산술적으로 정확) ② 아니면 wall-clock cutoff (기존 규칙).
             let dup = match (f.up_ms, last_up_ms, same_boot) {
                 (Some(u), Some(lu), true) => u <= lu,
-                _ => wall_cutoff.map_or(false, |cut| fix_at <= cut),
+                _ => wall_cutoff.is_some_and(|cut| fix_at <= cut),
             };
             if dup {
                 retx_dropped += 1;
@@ -363,21 +360,8 @@ pub async fn ingest(
         }
 
         // batch 끝에 1회 broadcast — 마지막 fix metadata 를 top-level 에, 모두를 fixes array 로.
-        if let (Some(last_fix), Some(last_meta)) = (
-            batch_for_ws.last().cloned(),
-            parsed.fixes.as_ref().and_then(|v| v.last()),
-        ) {
-            broadcast_batch(
-                &state,
-                device_id,
-                last_fix.recorded_at,
-                "l80",
-                Some(last_meta.lat),
-                Some(last_meta.lng),
-                last_meta.sat.map(|v| v as i16),
-                &parsed,
-                batch_for_ws.clone(),
-            );
+        if let Some(event) = batch_event(device_id, &parsed, batch_for_ws) {
+            let _ = state.events.send(event);
         }
     }
 
@@ -870,32 +854,27 @@ fn broadcast_location(
 
 /// P1: batch broadcast — 1 POST 의 모든 fix 를 단일 message 로.
 /// top-level fields 는 마지막 fix (legacy consumer 호환), fixes array 에 전체.
-fn broadcast_batch(
-    state: &AppState,
+fn batch_event(
     device_id: i64,
-    last_at: chrono::DateTime<Utc>,
-    source: &str,
-    last_lat: Option<f64>,
-    last_lng: Option<f64>,
-    last_sat: Option<i16>,
     parsed: &IngestPayload,
     fixes: Vec<crate::events::LocationFix>,
-) {
-    let _ = state.events.send(Event::Location {
+) -> Option<Event> {
+    let last = fixes.iter().max_by_key(|f| f.recorded_at)?;
+    Some(Event::Location {
         device_id,
-        recorded_at: last_at,
-        source: source.to_string(),
+        recorded_at: last.recorded_at,
+        source: "l80".to_string(),
         fix: true,
-        lat: last_lat,
-        lng: last_lng,
-        sat: last_sat,
+        lat: last.lat,
+        lng: last.lng,
+        sat: last.sat,
         ttff_s: None,
         vbat_mv: parsed.vbat_mv,
         cbc_mv: parsed.cbc_mv,
         heading: None,
-        speed_kmh: fixes.last().and_then(|f| f.speed_kmh),
+        speed_kmh: last.speed_kmh,
         fixes: Some(fixes),
-    });
+    })
 }
 
 async fn insert_location(
@@ -940,4 +919,44 @@ async fn insert_location(
     .execute(&state.db)
     .await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod batch_tests {
+    use super::*;
+    #[test]
+    fn broadcast_anchor_is_the_newest_accepted_fix_not_input_order() {
+        let payload: IngestPayload = serde_json::from_value(json!({"ts": 100})).unwrap();
+        let newer = crate::events::LocationFix {
+            recorded_at: Utc::now(),
+            lat: Some(37.1),
+            lng: Some(127.1),
+            sat: Some(12),
+            speed_kmh: Some(18.0),
+        };
+        let older = crate::events::LocationFix {
+            recorded_at: newer.recorded_at - chrono::Duration::seconds(2),
+            lat: Some(37.0),
+            lng: Some(127.0),
+            sat: Some(8),
+            speed_kmh: Some(0.0),
+        };
+        let event = batch_event(1, &payload, vec![newer.clone(), older]).unwrap();
+        if let Event::Location {
+            recorded_at,
+            lat,
+            speed_kmh,
+            fixes,
+            ..
+        } = event
+        {
+            assert_eq!(recorded_at, newer.recorded_at);
+            assert_eq!(lat, newer.lat);
+            assert_eq!(speed_kmh, Some(18.0));
+            assert_eq!(fixes.unwrap().len(), 2);
+        } else {
+            panic!("expected location event");
+        }
+        assert!(batch_event(1, &payload, vec![]).is_none());
+    }
 }

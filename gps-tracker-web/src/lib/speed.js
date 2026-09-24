@@ -7,14 +7,14 @@
 import { haversineM } from './stops';
 
 export function calcSpeedKmh(prev, next) {
-  if (!prev?.lat || !prev?.lng || !prev?.recordedAt ||
-      !next?.lat || !next?.lng || !next?.recordedAt) return null;
+  if (!Number.isFinite(prev?.lat) || !Number.isFinite(prev?.lng) || !prev?.recordedAt ||
+      !Number.isFinite(next?.lat) || !Number.isFinite(next?.lng) || !next?.recordedAt) return null;
   const dt = new Date(next.recordedAt).getTime() - new Date(prev.recordedAt).getTime();
-  if (!(dt > 0)) return null;
+  if (!(dt > 0) || dt > 600_000) return null;
   const distM = haversineM(prev.lat, prev.lng, next.lat, next.lng);
   if (distM < 3) return 0;
   const speed = (distM / (dt / 1000)) * 3.6;
-  return Number.isFinite(speed) ? Math.min(speed, 240) : null;
+  return Number.isFinite(speed) && speed <= 250 ? speed : null;
 }
 
 // Zoom level 별 클릭 가능한 dot 간격 (m). 확대 시 촘촘, 축소 시 sparse.

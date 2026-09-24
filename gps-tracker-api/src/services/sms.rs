@@ -23,7 +23,7 @@ pub async fn send_otp(phone: &str, code: &str) -> anyhow::Result<()> {
     let profile = std::env::var("BIZMSG_PROFILE").unwrap_or_else(|_| DEFAULT_PROFILE.into());
     let sender = std::env::var("BIZMSG_SMS_SENDER").unwrap_or_else(|_| DEFAULT_SENDER.into());
 
-    let message = format!("[Seriallog GPS] 인증번호 {} 을(를) 입력해주세요.", code);
+    let message = format!("[Seriallog GPS] 인증번호 {code} 을(를) 입력해주세요.");
 
     if dev {
         tracing::warn!(
@@ -77,16 +77,15 @@ pub async fn send_otp(phone: &str, code: &str) -> anyhow::Result<()> {
 /// 유효하지 않으면 None.
 pub fn normalize_phone(s: &str) -> Option<String> {
     let digits: String = s.chars().filter(|c| c.is_ascii_digit()).collect();
-    if digits.len() == 10 || digits.len() == 11 {
-        if digits.starts_with("010")
+    if (digits.len() == 10 || digits.len() == 11)
+        && (digits.starts_with("010")
             || digits.starts_with("011")
             || digits.starts_with("016")
             || digits.starts_with("017")
             || digits.starts_with("018")
-            || digits.starts_with("019")
-        {
-            return Some(digits);
-        }
+            || digits.starts_with("019"))
+    {
+        return Some(digits);
     }
     None
 }
@@ -95,5 +94,5 @@ pub fn normalize_phone(s: &str) -> Option<String> {
 pub fn generate_code() -> String {
     use rand::Rng;
     let n: u32 = rand::thread_rng().gen_range(1000..=9999);
-    format!("{:04}", n)
+    format!("{n:04}")
 }

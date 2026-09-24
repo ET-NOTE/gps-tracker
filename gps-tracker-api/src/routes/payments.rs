@@ -462,7 +462,7 @@ async fn webhook(
                 .split([',', ' '])
                 .filter_map(|part| {
                     let p = part.trim();
-                    p.strip_prefix("v1=").or_else(|| Some(p))
+                    p.strip_prefix("v1=").or(Some(p))
                 })
                 .find_map(|cand| base64::engine::general_purpose::STANDARD.decode(cand).ok());
 

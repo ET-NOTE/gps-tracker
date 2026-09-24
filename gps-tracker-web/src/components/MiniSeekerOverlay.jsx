@@ -84,6 +84,9 @@ function MiniSeekerOverlay({
       .catch(() => {});
   }, [loadMonthPoints, onPathChange, onPathClear]);
 
+  // A slow month request must not overwrite a subsequently selected day or a closed seeker.
+  useEffect(() => () => { monthFetchIdRef.current++; }, []);
+
   // 1) 날짜 리스트 로드 — 가장 최근 '월' 만 자동 선택 (phase 1 = month picker 로 시작).
   // 일/시간 자동 선택 X. 사용자가 화살표 또는 마커 클릭으로 phase 2 진입.
   // 초기 진입 시 가장 최근 월의 전체 데이터를 지도에 자동 표시.
@@ -155,6 +158,7 @@ function MiniSeekerOverlay({
   // ── 외부 (Dashboard onPointInfo) — 마커 클릭 sync ──────────
   useImperativeHandle(ref, () => ({
     selectByTime(isoUtc, opts = {}) {
+      monthFetchIdRef.current++;
       const ts = new Date(isoUtc).getTime();
       if (!monthPicked) {
         // phase 1 → drill-down: 그 점의 KST 날짜로 phase 2 진입.
@@ -194,6 +198,7 @@ function MiniSeekerOverlay({
   }
   // 화살표 클릭 — phase 2 진입 (그 달의 일별 보기). 마지막 활동일 자동 선택.
   function drillIntoMonth(m) {
+    monthFetchIdRef.current++;
     if (m !== month) setMonth(m);
     setMonthPicked(true);
     const days = dates.filter(d => d.startsWith(m));
@@ -201,6 +206,7 @@ function MiniSeekerOverlay({
     else setDate(null);
   }
   function selectDay(d) {
+    monthFetchIdRef.current++;
     setDate(d);
   }
   function goBackToMonths() {

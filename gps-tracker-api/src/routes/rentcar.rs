@@ -816,7 +816,7 @@ fn url_encode(s: &str) -> String {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
                 out.push(*b as char)
             }
-            _ => out.push_str(&format!("%{:02X}", b)),
+            _ => out.push_str(&format!("%{b:02X}")),
         }
     }
     out
@@ -907,7 +907,7 @@ fn build_invoice_xlsx(
         .settled_at
         .map(|d| fmt_kst(d, "%Y-%m-%d"))
         .unwrap_or_default();
-    ws.merge_range(1, 1, 1, 3, &format!("발행일: {}", settled_ymd), &sub_fmt)?;
+    ws.merge_range(1, 1, 1, 3, &format!("발행일: {settled_ymd}"), &sub_fmt)?;
 
     // ── 임대인 (회사) ─────────────────────────────────
     let mut r: u32 = 3;
@@ -1024,12 +1024,10 @@ fn build_invoice_xlsx(
     ws.write_string_with_format(r, 2, "설명", &label_fmt)?;
     ws.write_string_with_format(r, 3, "금액(원)", &label_fmt)?;
     r += 1;
-    if let Some(Value::Object(map)) = c
-        .settlement_json
-        .as_ref()
-        .map(|v| v.clone())
-        .map(|v| v)
-        .and_then(|v| if v.is_object() { Some(v) } else { None })
+    if let Some(Value::Object(map)) =
+        c.settlement_json
+            .clone()
+            .and_then(|v| if v.is_object() { Some(v) } else { None })
     {
         if let Some(Value::Array(arr)) = map.get("lines") {
             for line in arr {
@@ -1698,8 +1696,7 @@ async fn handoff_submit(
     }
     if req.extra_photos.len() > HANDOFF_MAX_EXTRA_PHOTOS {
         return Err(AppError::BadRequest(format!(
-            "사진은 최대 {}장까지",
-            HANDOFF_MAX_EXTRA_PHOTOS
+            "사진은 최대 {HANDOFF_MAX_EXTRA_PHOTOS}장까지"
         )));
     }
     // 오도미터 사진 파싱

@@ -290,7 +290,7 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
 // 자동 생성됨 → 검사자가 "스캔" → 원클릭 페어링. 익명 ingest 특성상 uid 를 아는 사용자는
 // 원래도 페어링 가능했으므로 노출 범위 동일 — 목록은 "최근 송신 중 + 미소유" 로 한정.
 async fn scan_unpaired(State(state): State<AppState>, _user: AuthUser) -> AppResult<Json<Value>> {
-    let rows: Vec<(String, Option<String>, DateTime<Utc>, DateTime<Utc>)> = sqlx::query_as(
+    let rows: LifecycleRows = sqlx::query_as(
         "SELECT device_uid, iccid, last_seen_at, created_at
            FROM devices
           WHERE owner_id IS NULL
@@ -414,8 +414,14 @@ async fn pair(
             .await?;
             match claimed {
                 Some(cid) => {
-                    log_audit(&state, cid, "pair", user.user_id,
-                              json!({"via": req.iccid.is_some().then_some("iccid").unwrap_or("device_uid")})).await;
+                    log_audit(
+                        &state,
+                        cid,
+                        "pair",
+                        user.user_id,
+                        json!({"via": if req.iccid.is_some() { "iccid" } else { "device_uid" }}),
+                    )
+                    .await;
                     cid
                 }
                 None => {
@@ -1198,14 +1204,7 @@ async fn batch_stats(
     // (column row 가 1개일 수도, N개일 수도 있음 — jsonb 가 진실).
     //   - 6B 이후 batch: anchor jsonb 가 있음 → COALESCE(jsonb_array_length, COUNT(*))
     //   - 6B 이전 batch: anchor jsonb 없음 → COUNT(*) 그대로 (legacy)
-    let rows: Vec<(
-        Option<String>,
-        Option<String>,
-        i64,
-        Option<f64>,
-        DateTime<Utc>,
-        DateTime<Utc>,
-    )> = sqlx::query_as(
+    let rows: ReceptionGroupRows = sqlx::query_as(
         r#"SELECT
               raw->>'ts'      AS uptime_s,
               raw->>'at_ms'   AS at_ms,
@@ -1305,16 +1304,7 @@ async fn locations_aggregated(
     if until < q.since {
         return Err(AppError::BadRequest("until < since".into()));
     }
-    let rows: Vec<(
-        DateTime<Utc>,
-        Option<f64>,
-        Option<f64>,
-        Option<f64>,
-        Option<f64>,
-        Option<f32>,
-        Option<i32>,
-        i64,
-    )> = sqlx::query_as(
+    let rows: AggregatedLocationRows = sqlx::query_as(
         "SELECT time_bucket($4::text::interval,recorded_at) AS bucket,
            avg(lat),avg(lng),last(lat,recorded_at),last(lng,recorded_at),
            avg(sat)::real,avg(vbat_mv)::int,count(*)
@@ -1361,13 +1351,7 @@ async fn sim_info(
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<serde_json::Value>> {
-    let row: Option<(
-        Option<i64>,
-        Option<String>,
-        Option<serde_json::Value>,
-        Option<DateTime<Utc>>,
-        Option<String>,
-    )> = sqlx::query_as(
+    let row: DiagnosticDeviceRow = sqlx::query_as(
         "SELECT owner_id, iccid, sim_info_cache, sim_info_fetched_at, sim_info_error \
              FROM devices WHERE id = $1",
     )
@@ -1607,7 +1591,7 @@ async fn timescaledb_storage_stats(
 
     // compression stats — hypertable_compression_stats 가 hypertable 단위 합계 1행 반환
     // (compression policy 미적용 시에는 모든 컬럼 NULL — 즉 압축된 chunk 가 없는 상태)
-    let compression: Option<(Option<i64>, Option<i64>, Option<i64>, Option<i64>)> = sqlx::query_as(
+    let compression: CompressionSizeRow = sqlx::query_as(
         r#"SELECT
               total_chunks::bigint,
               number_compressed_chunks::bigint,
@@ -1728,3 +1712,35 @@ async fn upload_car_image(
     }
     Err(AppError::BadRequest("file required".into()))
 }
+
+type LifecycleRows = Vec<(String, Option<String>, DateTime<Utc>, DateTime<Utc>)>;
+
+type ReceptionGroupRows = Vec<(
+    Option<String>,
+    Option<String>,
+    i64,
+    Option<f64>,
+    DateTime<Utc>,
+    DateTime<Utc>,
+)>;
+
+type AggregatedLocationRows = Vec<(
+    DateTime<Utc>,
+    Option<f64>,
+    Option<f64>,
+    Option<f64>,
+    Option<f64>,
+    Option<f32>,
+    Option<i32>,
+    i64,
+)>;
+
+type DiagnosticDeviceRow = Option<(
+    Option<i64>,
+    Option<String>,
+    Option<serde_json::Value>,
+    Option<DateTime<Utc>>,
+    Option<String>,
+)>;
+
+type CompressionSizeRow = Option<(Option<i64>, Option<i64>, Option<i64>, Option<i64>)>;
