@@ -13,13 +13,13 @@ export function haversineM(la1, lo1, la2, lo2) {
 // slow travel into parking: remain within 50 m of a fixed anchor for 5 minutes.
 export function analyzePath(points, { clusterRadiusM = 50, stopDurationS = 300 } = {}) {
   const stopped = new Set();
-  let anchor = 0, distanceM = 0, clusterM = 0, observedS = 0, stoppedS = 0;
+  let anchor = 0, distanceM = 0, clusterM = 0, observedS = 0, stoppedS = 0, stopCount = 0;
   const finish = end => {
     const seconds = (Date.parse(points[end]?.recorded_at) - Date.parse(points[anchor]?.recorded_at)) / 1000;
     if (seconds >= stopDurationS) {
       for (let j = anchor; j <= end; j++) stopped.add(j);
       distanceM -= clusterM;
-      stoppedS += seconds;
+      stoppedS += seconds; stopCount++;
     }
   };
   for (let i = 1; i < points.length; i++) {
@@ -36,7 +36,7 @@ export function analyzePath(points, { clusterRadiusM = 50, stopDurationS = 300 }
     else { finish(i - 1); anchor = i; clusterM = 0; }
   }
   if (points.length) finish(points.length - 1);
-  return { stopped, distanceM: Math.max(0, distanceM), movingS: Math.max(0, observedS - stoppedS) };
+  return { stopped, stoppedS, stopCount, observedS, distanceM: Math.max(0, distanceM), movingS: Math.max(0, observedS - stoppedS) };
 }
 
 /**

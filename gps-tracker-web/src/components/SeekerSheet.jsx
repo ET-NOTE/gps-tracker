@@ -254,7 +254,6 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     for (const d of activeDates) set.add(d);
     return Array.from(set).sort().reverse();    // 최근 날짜가 위로
   }, [dailyStats, activeDates]);
-  const todayStats = useMemo(() => dailyStats.find(s => s.date === date), [dailyStats, date]);
 
   // 첫 진입 시 오늘 데이터 없으면 가장 최근 활동일로
   const autoJumpedRef = useRef(false);
@@ -566,29 +565,14 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   }
 
   const cur = points[idx];
-  const stopCount = useMemo(() => points.filter(p => p._isStop).length, [points]);
+  const pathMetrics = useMemo(() => analyzePath(points), [points]);
+  const stopCount = pathMetrics.stopCount;
   const maxSpeed = useMemo(() => {
     let s = 0; for (const p of points) if (p._speed > s) s = p._speed; return s;
   }, [points]);
-  // 공회전 (idle) — _isStop 인 인접 구간의 dt 합. enrich() 의 isStop 정의:
-  // dM < 50m AND dt >= 5min. 즉 5분 이상 같은 자리에 있던 시간.
-  const idleSec = useMemo(() => {
-    let s = 0;
-    for (let i = 1; i < points.length; i++) {
-      if (points[i]._isStop) {
-        s += (new Date(points[i].recorded_at) - new Date(points[i - 1].recorded_at)) / 1000;
-      }
-    }
-    return s;
-  }, [points]);
-  // 평균속도 (이동 중) — 거리 / 운행시간 (todayStats) 또는 거리 / 총 dt.
-  const avgSpeed = useMemo(() => {
-    if (points.length < 2) return 0;
-    const km = totalKm(points);
-    const movingS = todayStats?.moving_s ||
-      Math.max(1, (new Date(points[points.length - 1].recorded_at) - new Date(points[0].recorded_at)) / 1000 - idleSec);
-    return movingS > 0 ? (km / (movingS / 3600)) : 0;
-  }, [points, todayStats, idleSec]);
+  // Every displayed KPI uses the selected points, not the whole day's cached stats.
+  const idleSec = pathMetrics.stoppedS;
+  const avgSpeed = pathMetrics.movingS > 0 ? pathMetrics.distanceM / pathMetrics.movingS * 3.6 : 0;
 
   // 모바일 compact 모드 — 재생 시작 시 자동 ON. 헤더+옵션+KPI 숨겨 지도 가시성 확보.
   // 사용자가 explicit 펴기 (▲ 버튼) 누르면 OFF.
@@ -897,10 +881,10 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             {points.length > 0 ? (
               <div style={sty.kpiGrid}>
                 <Kpi label="표시 경로 거리" value={`${totalKm(points).toFixed(1)} km`} />
-                <Kpi label="운행시간" value={todayStats?.moving_s ? fmtDuration(todayStats.moving_s) : '—'} />
+                <Kpi label="운행시간" value={fmtDuration(pathMetrics.movingS)} />
                 <Kpi label="평균속도" value={avgSpeed > 0 ? `${avgSpeed.toFixed(0)} km/h` : '—'} />
                 <Kpi label="최고속도" value={`${maxSpeed.toFixed(0)} km/h`} />
-                <Kpi label="공회전" value={idleSec > 0 ? fmtDuration(idleSec) : '—'} />
+                <Kpi label="정차시간" value={idleSec > 0 ? fmtDuration(idleSec) : '—'} />
                 <Kpi label="정지 횟수" value={`${stopCount}회`} />
               </div>
             ) : (
@@ -1566,11 +1550,9 @@ function CompareKpis({ trips }) {
     const end   = new Date(pts[pts.length - 1].recorded_at);
     let max = 0;
     for (const p of pts) if (p._speed > max) max = p._speed;
-    let idle = 0;
-    for (let i = 1; i < pts.length; i++) {
-      if (pts[i]._isStop) idle += (new Date(pts[i].recorded_at) - new Date(pts[i - 1].recorded_at)) / 1000;
-    }
-    const dur = (end - start) / 1000;
+    const metrics = analyzePath(pts);
+    const idle = metrics.stoppedS;
+    const dur = metrics.movingS;
     const avg = dur > 0 ? km / (dur / 3600) : 0;
     return { km, durSec: dur, max, idle, avg, start, end, points: pts.length };
   });
@@ -1610,7 +1592,7 @@ function CompareKpis({ trips }) {
           <Row label="운행시간" a={Math.round(stats[0].durSec)} b={Math.round(stats[1].durSec)} fmtVal={v => fmtDuration(v)} />
           <Row label="평균속도" a={stats[0].avg} b={stats[1].avg} fmtVal={v => `${v.toFixed(0)} km/h`} />
           <Row label="최고속도" a={stats[0].max} b={stats[1].max} fmtVal={v => `${v.toFixed(0)} km/h`} />
-          <Row label="공회전"  a={Math.round(stats[0].idle)} b={Math.round(stats[1].idle)} fmtVal={v => v > 0 ? fmtDuration(v) : '—'} />
+          <Row label="정차시간"  a={Math.round(stats[0].idle)} b={Math.round(stats[1].idle)} fmtVal={v => v > 0 ? fmtDuration(v) : '—'} />
           <Row label="점 수"   a={stats[0].points} b={stats[1].points} fmtVal={v => `${v}`} />
         </tbody>
       </table>

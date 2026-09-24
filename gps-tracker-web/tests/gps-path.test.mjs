@@ -22,8 +22,21 @@ test('stationary jitter requires five minutes, and does not inflate distance', (
   assert.equal(analyzePath(points.slice(0, 150)).stopped.size, 0);
   const result = analyzePath(points);
   assert.equal(result.stopped.size, 151);
+  assert.equal(result.stopCount, 1, '151 GPS points represent one continuous stop');
+  assert.equal(result.stoppedS, 300);
   assert.equal(result.movingS, 0);
   assert.ok(result.distanceM < .01);
+});
+
+test('separate stop episodes exclude an unobserved gap and respect the selected range', () => {
+  const first = Array.from({ length: 7 }, (_, i) => point(i * 60));
+  const second = Array.from({ length: 7 }, (_, i) => point(3600 + i * 60, 38));
+  const result = analyzePath([...first, ...second]);
+  assert.equal(result.stopCount, 2);
+  assert.equal(result.stoppedS, 720);
+  assert.equal(result.movingS, 0);
+  assert.equal(analyzePath(second).stopCount, 1);
+  assert.equal(analyzePath(second).stoppedS, 360);
 });
 
 test('outages, nonincreasing timestamps and impossible jumps are not travelled distance', () => {
