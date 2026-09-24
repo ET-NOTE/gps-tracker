@@ -11,3 +11,10 @@ scp -q (Join-Path $artifact 'artifacts.tar.gz') "seriallog:$stage/artifacts.tar.
 if ($LASTEXITCODE -ne 0) { throw 'Artifact upload failed.' }
 ssh -o BatchMode=yes seriallog "tar -xzf $stage/artifacts.tar.gz -C $stage && tr -d '\r' < $stage/deploy-dev-artifact.sh | bash -s -- $stage"
 if ($LASTEXITCODE -ne 0) { throw 'Dev deployment failed; inspect the preflight/health output.' }
+$backup = Join-Path $env:LOCALAPPDATA "GPS-PrivateBackups\$release"
+New-Item -ItemType Directory -Path $backup -Force | Out-Null
+ssh -o BatchMode=yes seriallog "sudo install -o mmm -g mmm -m 0600 /home/gps-dev/backups/$release/dev.dump $stage/dev-before-deploy.dump"
+if ($LASTEXITCODE -ne 0) { throw 'Dev is deployed, but preparing the offsite backup failed.' }
+scp -q "seriallog:$stage/dev-before-deploy.dump" (Join-Path $backup 'dev-before-deploy.dump')
+if ($LASTEXITCODE -ne 0) { throw 'Dev is deployed, but downloading the offsite backup failed.' }
+Write-Output "Dev deployed; pre-deployment DB backup saved outside VPS: $backup"

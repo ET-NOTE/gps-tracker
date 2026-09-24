@@ -1,5 +1,6 @@
 param([string]$Runner = 'etcom-hub')
 $ErrorActionPreference = 'Stop'
+if ($Runner -notmatch '^[A-Za-z0-9][A-Za-z0-9_-]*$') { throw 'Use a configured SSH host alias.' }
 $repo = Split-Path $PSScriptRoot -Parent
 Push-Location $repo
 try {
