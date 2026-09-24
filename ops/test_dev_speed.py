@@ -100,7 +100,9 @@ def verify_websocket():
         live,_=fixture('websocket',[])
         name=sql('SELECT device_uid FROM devices WHERE id=%s',(live,))[0][0]
         send(json.dumps(dict(action='subscribe',device_ids=[live])).encode())
-        ack=receive();assert ack['type']=='ack' and ack['accepted']==[live]
+        ack=receive()
+        if ack['type']=='hello':ack=receive()
+        assert ack['type']=='ack' and ack['accepted']==[live]
         fixes=[dict(lat=s*5/6371000*180/math.pi,lng=0,sat=12,age_ms=(8-s)*1000,up_ms=s*1000) for s in [0,2,4,6]]
         request('/gps-tracker/ingest',dict(device_uid=name,boot=1,fixes=fixes))
         event=receive()
