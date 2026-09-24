@@ -74,16 +74,23 @@ async fn latest(
 ) -> AppResult<Json<Option<LocationView>>> {
     ensure_owner(&state, id, user.user_id).await?;
     let row = sqlx::query_as::<_, LocationView>(
-        "WITH newest AS (
-          SELECT location_point_bound(recorded_at,fixes_jsonb,true) AS at
+        "WITH newest AS MATERIALIZED (
+          SELECT *
           FROM location_records WHERE device_id=$1 AND user_id=$2
             AND location_point_bound(recorded_at,fixes_jsonb,true) IS NOT NULL
-          ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC LIMIT 1
-        ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
-          (p.raw->>'cbc_mv')::int AS cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,p.anchor_at
-          FROM newest CROSS JOIN LATERAL location_points_between($1,$2,newest.at,newest.at) p
+          ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC, source,
+            (fixes_jsonb IS NOT NULL) DESC, recorded_at DESC LIMIT 1
+        ) SELECT r.recorded_at+COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' AS recorded_at,
+          r.source,CASE WHEN f IS NULL THEN r.fix ELSE true END AS fix,
+          CASE WHEN f IS NULL THEN r.lat ELSE (f->>'lat')::float8 END AS lat,
+          CASE WHEN f IS NULL THEN r.lng ELSE (f->>'lng')::float8 END AS lng,
+          CASE WHEN f IS NULL THEN r.sat ELSE (f->>'sat')::smallint END AS sat,
+          r.ttff_s,r.csq,r.reg,r.vbat_mv,(r.raw->>'cbc_mv')::int AS cbc_mv,
+          r.device_uptime_s,r.heading,COALESCE((f->>'speed_kmh')::real,r.speed_kmh) AS speed_kmh,
+          r.recorded_at AS anchor_at
+          FROM newest r LEFT JOIN LATERAL jsonb_array_elements(r.fixes_jsonb) f ON true
           WHERE EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
-          ORDER BY p.recorded_at DESC,p.source LIMIT 1",
+          ORDER BY 1 DESC LIMIT 1",
     )
     .bind(id)
     .bind(user.user_id)
