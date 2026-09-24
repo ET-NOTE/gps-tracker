@@ -27,7 +27,7 @@ const expected=new Set();let received=0,resyncs=0,connected=0,repaired=[];
 let releaseConnected;
 let connection=new Promise(resolve=>{releaseConnected=resolve;});
 const eventWaiters=[];
-const speedChecks=[]; let speedPoints=0;
+const speedChecks=[]; let speedPoints=0; const observedPoints=new Map();
 function waitForEvents(n) {
   if(received>=n)return Promise.resolve();
   return new Promise((resolve,reject)=>{
@@ -50,6 +50,7 @@ const client=new module.namespace.TrackerWS(event=>{
   if(event.type==='location') {
     assert.equal(event.device_id,id);received++;
     if (event.fixes?.length) {
+      for (const f of event.fixes) observedPoints.set(f.recorded_at,f);
       assert.equal(event.speed_kmh,[...event.fixes].sort((a,b)=>Date.parse(a.recorded_at)-Date.parse(b.recorded_at)).at(-1).speed_kmh);
       speedChecks.push(request(pointPath()).then(page=>{
         for (const f of event.fixes) {
@@ -85,12 +86,17 @@ try {
   await Promise.race([connection,new Promise((_,reject)=>setTimeout(()=>reject(Error('Reconnect timeout')),15000))]);
   await repair;
   assert.equal(resyncs,1);assert.equal(connected,2);
-  assert.equal(repaired.length,expected.size);
+  // If reconnect wins the race with the POST, the new points arrive over WS.
+  // REST repair plus subsequently streamed points must cover the complete history.
+  if (repaired.length < expected.size) await waitForEvents(4);
+  const recovered = new Set([...repaired.map(p=>p.recorded_at),...observedPoints.keys()]);
+  assert.equal(recovered.size,expected.size);
+  const beforeBoot=received;
   await request('/gps-tracker/ingest',payload([100,102],2,Date.now()-105000));
-  await waitForEvents(4);await Promise.all(speedChecks);
+  await waitForEvents(beforeBoot+1);await Promise.all(speedChecks);
   const all=await request(pointPath());
   assert.equal(all.items.length,expected.size);
-  const result={checked_at:new Date().toISOString(),device_id:id,unique_sent_points:expected.size,saved_points:all.items.length,speed_points_verified:speedPoints,connections:connected,resyncs,rest_repaired_points:repaired.length};
+  const result={checked_at:new Date().toISOString(),device_id:id,unique_sent_points:expected.size,saved_points:all.items.length,speed_points_verified:speedPoints,connections:connected,resyncs,rest_repaired_points:repaired.length,total_recovered_points:recovered.size};
   await writeFile(path.join(root,'fault-verification.json'),JSON.stringify(result,null,2));
   console.log(JSON.stringify(result,null,2));
 } finally {
