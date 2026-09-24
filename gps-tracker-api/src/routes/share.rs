@@ -311,6 +311,8 @@ pub struct PublicLocQuery {
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct PublicLocationRow {
+    pub speed_kmh: Option<f32>,
+    pub speed_source: String,
     pub recorded_at: DateTime<Utc>,
     pub fix: bool,
     pub lat: Option<f64>,
@@ -327,8 +329,8 @@ async fn public_locations(
     let limit = q.limit.unwrap_or(500).clamp(1, 10000);
 
     let rows = sqlx::query_as::<_, PublicLocationRow>(
-        r#"WITH scoped AS MATERIALIZED (SELECT recorded_at, fix, lat, lng, anchor_at, source
-             FROM location_points p
+        r#"WITH scoped AS MATERIALIZED (SELECT recorded_at, fix, lat, lng, anchor_at, source, speed_kmh, speed_source
+             FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3) p
             WHERE device_id = $1 AND EXISTS (
               SELECT 1 FROM share_tokens s JOIN devices d ON d.id=s.device_id
               WHERE s.token=$6 AND s.device_id=p.device_id AND s.created_by=p.user_id
@@ -338,7 +340,7 @@ async fn public_locations(
               AND ($4::bool        IS NULL OR fix = $4)
           ), anchors AS (
              SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $5
-          ) SELECT recorded_at,fix,lat,lng FROM scoped JOIN anchors USING(anchor_at,source)
+          ) SELECT recorded_at,fix,lat,lng,speed_kmh,speed_source FROM scoped JOIN anchors USING(anchor_at,source)
             ORDER BY recorded_at DESC"#,
     )
     .bind(device_id)

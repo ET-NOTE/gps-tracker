@@ -332,7 +332,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
       const normalized = (rows || [])
         .filter(r => r.lat_last != null && r.lng_last != null)
         .map(r => ({
-          recorded_at: r.bucket,
+          recorded_at: r.recorded_at_last,
+          speed_kmh:r.speed_kmh, speed_source:r.speed_source,
+          speed_avg_kmh:r.speed_avg_kmh, speed_max_kmh:r.speed_max_kmh,
           lat:         r.lat_last,
           lng:         r.lng_last,
           sat:         r.sat_avg != null ? Math.round(r.sat_avg) : null,
@@ -368,7 +370,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
       const normalized = (rows || [])
         .filter(r => r.lat_last != null && r.lng_last != null)
         .map(r => ({
-          recorded_at: r.bucket,
+          recorded_at: r.recorded_at_last,
+          speed_kmh:r.speed_kmh, speed_source:r.speed_source,
+          speed_avg_kmh:r.speed_avg_kmh, speed_max_kmh:r.speed_max_kmh,
           lat:         r.lat_last,
           lng:         r.lng_last,
           sat:         r.sat_avg != null ? Math.round(r.sat_avg) : null,
@@ -570,7 +574,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const pathMetrics = useMemo(() => analyzePath(points), [points]);
   const stopCount = pathMetrics.stopCount;
   const maxSpeed = useMemo(() => {
-    let s = 0; for (const p of points) if (p._speed > s) s = p._speed; return s;
+    let s = 0; for (const p of points) if ((p.speed_max_kmh ?? p._speed) > s) s = p.speed_max_kmh ?? p._speed; return s;
   }, [points]);
   // Every displayed KPI uses the selected points, not the whole day's cached stats.
   const idleSec = pathMetrics.stoppedS;
@@ -1495,12 +1499,14 @@ function SpeedSparkline({ points, cursorIdx, maxSpeed, onSeek }) {
   const tx = (t) => PAD + ((t - t0) / dur) * (W - PAD * 2);
   const ty = (v) => H - PAD - ((v || 0) / yMax) * (H - PAD * 2);
 
-  let d = '';
+  let d = '', connected = false;
   for (let i = 0; i < points.length; i++) {
     const p = points[i];
     const x = tx(new Date(p.recorded_at).getTime());
-    const y = ty(p._speed || 0);
-    d += (i === 0 ? `M${x.toFixed(1)},${y.toFixed(1)}` : ` L${x.toFixed(1)},${y.toFixed(1)}`);
+    if (!Number.isFinite(p._speed)) { connected = false; continue; }
+    const y = ty(p._speed);
+    d += (!connected ? `M${x.toFixed(1)},${y.toFixed(1)}` : ` L${x.toFixed(1)},${y.toFixed(1)}`);
+    connected = true;
   }
   const cur = points[cursorIdx];
   const cx = cur ? tx(new Date(cur.recorded_at).getTime()) : null;

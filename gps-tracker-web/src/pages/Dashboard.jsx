@@ -194,6 +194,11 @@ export default function Dashboard({ onLogout }) {
   // 모바일 친화 마커 클릭 정보 sheet (kakao InfoWindow 대체).
   const [pointInfo, setPointInfo] = useState(null);
   const [liveSpeed, setLiveSpeed] = useState(null);
+  const [speedNow, setSpeedNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setSpeedNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   // 라이브 추적 — 두 상태 분리:
   //   userTrackPref: 사용자가 의도한 ON/OFF (버튼·디바이스 선택으로만 변경)
   //   seekerPaused : 시커 활성 동안 일시 정지 — 시커 닫히면 자동 복원
@@ -472,7 +477,8 @@ export default function Dashboard({ onLogout }) {
       `${monthYM}-01T00:00:00+09:00`,
       `${ny}-${String(nm).padStart(2, '0')}-01T00:00:00+09:00`, options,
     ).then(rows => (rows || []).filter(r => r.lat_last != null && r.lng_last != null).map(r => ({
-      recorded_at: r.bucket, lat: r.lat_last, lng: r.lng_last, fix: true,
+      recorded_at: r.recorded_at_last, lat: r.lat_last, lng: r.lng_last, fix: true,
+      speed_kmh:r.speed_kmh, speed_source:r.speed_source, speed_max_kmh:r.speed_max_kmh,
       sat: r.sat_avg == null ? null : Math.round(r.sat_avg), batch_size: r.fix_count,
     })));
   }, [filterDeviceId]);
@@ -517,6 +523,10 @@ export default function Dashboard({ onLogout }) {
   const { loadDevices, loadDevicesIncremental } = makeDeviceLoaders({
     mapRef, devRef, lastMetaRef, lastLoadedFixAtRef, wsRef,
     setDevices, setDevicesLoaded,
+    onLatest: (d, meta) => {
+      if (filterDeviceIdRef.current === d.id) setLiveSpeed({ deviceId:d.id,
+        label:d.display_name || d.device_uid, color:getDeviceColor(d), speedKmh:meta.speedKmh, recordedAt:meta.recordedAt });
+    },
   });
 
   // (F6-a-1) 30s tick + focus/visibility 는 useAutoRefresh hook 이 담당.
@@ -1174,9 +1184,10 @@ export default function Dashboard({ onLogout }) {
               const label = liveSpeed?.label || dev?.display_name || dev?.device_uid || '실시간 추적';
               const plate = dev?.license_plate;
               const color = liveSpeed?.color || (dev ? getDeviceColor(dev) : '#5B7CFF');
-              const speedKmh = liveSpeed?.speedKmh;
+              const rawSpeed = liveSpeed?.speedKmh;
               const lastAt   = liveSpeed?.recordedAt || dev?.last_fix_at || dev?.last_seen_at;
-              const motion   = liveMotion(speedKmh, lastAt);
+              const motion   = liveMotion(rawSpeed, lastAt, speedNow);
+              const speedKmh = motion.speedKmh;
               const active   = motion.moving;
               const ageMs    = lastAt ? Date.now() - new Date(lastAt).getTime() : null;
               const ageText  = ageMs == null ? null
@@ -1224,7 +1235,7 @@ export default function Dashboard({ onLogout }) {
                         fontVariantNumeric: 'tabular-nums', color: speedTone(speedKmh),
                       }}>
                         {speedKmh == null ? '--' : Math.round(speedKmh)}
-                        <small style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}> km/h</small>
+                        <small style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}> km/h · 추정</small>
                       </span>
                       {ageText && (
                         <span style={{ fontSize: 10, color: 'var(--text-3)' }}>· {ageText}</span>

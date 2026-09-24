@@ -130,11 +130,11 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
     let end_utc = end_kst - chrono::Duration::hours(9);
 
     // fix=true 점만, 시간순
-    let rows: Vec<(DateTime<Utc>, f64, f64)> = sqlx::query_as(
+    let points: Vec<(DateTime<Utc>, f64, f64, Option<f32>)> = sqlx::query_as(
         // [뿌리 B 2026-08-14] 현재 owner 데이터만 집계 — 재페어링된 device 에서 이전 owner 의
         //   fix 까지 합산해 통계 혼입되던 것 차단 (upsert user_id 도 EXCLUDED 로 현재 owner 반영).
-        r#"SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng
-             FROM location_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3)
+        r#"SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng, speed_kmh
+             FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3)
             WHERE device_id = $1
               AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
               AND fix = TRUE
@@ -148,6 +148,7 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
     .fetch_all(&mut *tx)
     .await?;
 
+    let rows: Vec<_> = points.iter().map(|p| (p.0, p.1, p.2)).collect();
     if rows.is_empty() {
         // 기존 row 가 있으면 0으로 갱신 (디바이스가 데이터 0건인 날)
         sqlx::query(
@@ -174,9 +175,10 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
         distance_m,
         moving_s,
         stop_count,
-        max_speed,
+        max_speed: _,
         avg_speed,
     } = calculate_metrics(&rows);
+    let max_speed = points.iter().filter_map(|p| p.3).fold(0.0_f32, f32::max);
 
     sqlx::query(
         r#"INSERT INTO daily_stats
@@ -204,7 +206,7 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
     .bind(duration_s)
     .bind(moving_s as i32)
     .bind(stop_count)
-    .bind(max_speed as f32)
+    .bind(max_speed)
     .bind(avg_speed as f32)
     .bind(first_at)
     .bind(last_at)

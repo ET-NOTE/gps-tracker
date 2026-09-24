@@ -1,3 +1,4 @@
+import { serverSpeed } from './speed.js';
 const R_EARTH = 6371000;
 
 export function haversineM(la1, lo1, la2, lo2) {
@@ -114,13 +115,6 @@ export function enrichWithSpeedStops(points, opts = {}) {
   if (!points?.length) return points || [];
   const { stopped } = analyzePath(points, opts);
   return points.map((p, i) => {
-    let speed = Number.isFinite(p.speed_kmh) && p.speed_kmh >= 0 && p.speed_kmh <= 250 ? p.speed_kmh : null;
-    if (speed == null && i > 0) {
-      const prev = points[i - 1];
-      const seconds = (Date.parse(p.recorded_at) - Date.parse(prev.recorded_at)) / 1000;
-      const calculated = haversineM(prev.lat, prev.lng, p.lat, p.lng) / seconds * 3.6;
-      if (seconds > 0 && seconds <= 600 && calculated <= 250 && Number.isFinite(calculated)) speed = calculated;
-    }
-    return { ...p, _speed: stopped.has(i) ? 0 : speed, _isStop: stopped.has(i) };
+    return { ...p, _speed: serverSpeed(p), _isStop: stopped.has(i) };
   });
 }

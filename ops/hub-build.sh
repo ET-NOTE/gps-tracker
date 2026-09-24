@@ -34,6 +34,7 @@ docker run --rm --name "gps-build-$release" --cpus=4 --memory=6g --memory-swap=6
     cp -R dist /out/web
     cp /work/ops/test_dev_api.py /out/test_dev_api.py
     cp /work/ops/test_dev_resilience.py /out/test_dev_resilience.py
+    cp /work/ops/test_dev_speed.py /out/test_dev_speed.py
     cp /work/ops/deploy-dev-artifact.sh /out/deploy-dev-artifact.sh
     rustc --version > /out/toolchain.txt
     node --version >> /out/toolchain.txt

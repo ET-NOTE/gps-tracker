@@ -1068,7 +1068,7 @@ async fn delete_range(
     sqlx::query(
         "INSERT INTO stats_rebuild_queue(device_id,date)
         SELECT $1,d::date FROM generate_series(($2::timestamptz AT TIME ZONE 'Asia/Seoul')::date,
-          ($3::timestamptz AT TIME ZONE 'Asia/Seoul')::date,interval '1 day') d
+          (($3::timestamptz+interval '65 seconds') AT TIME ZONE 'Asia/Seoul')::date,interval '1 day') d
         ON CONFLICT(device_id,date) DO UPDATE SET generation=stats_rebuild_queue.generation+1",
     )
     .bind(id)
@@ -1315,16 +1315,23 @@ async fn locations_aggregated(
             "aggregate range too large; request smaller time windows".into(),
         ));
     }
-    let rows: AggregatedLocationRows = sqlx::query_as(
-        "SELECT time_bucket($4::text::interval,recorded_at) AS bucket,
-           avg(lat),avg(lng),last(lat,recorded_at),last(lng,recorded_at),
-           avg(sat)::real,avg(vbat_mv)::int,count(*)
-         FROM location_points_between($1,$5,$2,$3)
+    let out: Vec<Value> = sqlx::query_scalar(
+        "SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+          'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+          'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+          'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+          'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+          'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+          'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+          'speed_interval_s',last(speed_interval_s,recorded_at),
+          'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+         FROM location_speed_points_between($1,$5,$2,$3)
          WHERE device_id=$1 AND user_id=$5 AND fix=true
            AND recorded_at >= $2 AND recorded_at <= $3
            AND (NOT $6 OR recorded_at < $3)
            AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$5)
-         GROUP BY bucket ORDER BY bucket",
+         GROUP BY time_bucket($4::text::interval,recorded_at)
+         ORDER BY time_bucket($4::text::interval,recorded_at)",
     )
     .bind(id)
     .bind(q.since)
@@ -1334,22 +1341,6 @@ async fn locations_aggregated(
     .bind(q.until_exclusive.unwrap_or(false))
     .fetch_all(&state.db)
     .await?;
-
-    let out: Vec<Value> = rows
-        .into_iter()
-        .map(|(b, lat_a, lng_a, lat_l, lng_l, sat, vbat, count)| {
-            json!({
-                "bucket":     b,
-                "lat_avg":    lat_a,
-                "lng_avg":    lng_a,
-                "lat_last":   lat_l,
-                "lng_last":   lng_l,
-                "sat_avg":    sat,
-                "vbat_avg":   vbat,
-                "fix_count":  count,
-            })
-        })
-        .collect();
 
     Ok(Json(out))
 }
@@ -1735,17 +1726,6 @@ type ReceptionGroupRows = Vec<(
     Option<f64>,
     DateTime<Utc>,
     DateTime<Utc>,
-)>;
-
-type AggregatedLocationRows = Vec<(
-    DateTime<Utc>,
-    Option<f64>,
-    Option<f64>,
-    Option<f64>,
-    Option<f64>,
-    Option<f32>,
-    Option<i32>,
-    i64,
 )>;
 
 type DiagnosticDeviceRow = Option<(

@@ -32,6 +32,10 @@ pub struct LocationView {
     pub device_uptime_s: Option<i32>,
     pub heading: Option<f32>,
     pub speed_kmh: Option<f32>,
+    pub reported_speed_kmh: Option<f32>,
+    pub speed_interval_s: Option<f32>,
+    pub speed_reason: String,
+    pub speed_source: String,
     #[serde(skip)]
     pub anchor_at: DateTime<Utc>,
 }
@@ -64,8 +68,8 @@ async fn ensure_owner(state: &AppState, device_id: i64, user_id: i64) -> AppResu
     }
 }
 const POINTS: &str = "SELECT recorded_at,source,fix,lat,lng,sat,ttff_s,csq,reg,vbat_mv,
-    (raw->>'cbc_mv')::int AS cbc_mv,device_uptime_s,heading,speed_kmh,anchor_at
-    FROM location_points_between($1,$2,$3,$4) WHERE device_id=$1 AND user_id=$2
+    (raw->>'cbc_mv')::int AS cbc_mv,device_uptime_s,heading,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source,anchor_at
+    FROM location_speed_points_between($1,$2,$3,$4) WHERE device_id=$1 AND user_id=$2
     AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)";
 async fn latest(
     State(state): State<AppState>,
@@ -75,22 +79,16 @@ async fn latest(
     ensure_owner(&state, id, user.user_id).await?;
     let row = sqlx::query_as::<_, LocationView>(
         "WITH newest AS MATERIALIZED (
-          SELECT *
+          SELECT location_point_bound(recorded_at,fixes_jsonb,true) AS at
           FROM location_records WHERE device_id=$1 AND user_id=$2
             AND location_point_bound(recorded_at,fixes_jsonb,true) IS NOT NULL
-          ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC, source,
-            (fixes_jsonb IS NOT NULL) DESC, recorded_at DESC LIMIT 1
-        ) SELECT r.recorded_at+COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' AS recorded_at,
-          r.source,CASE WHEN f IS NULL THEN r.fix ELSE true END AS fix,
-          CASE WHEN f IS NULL THEN r.lat ELSE (f->>'lat')::float8 END AS lat,
-          CASE WHEN f IS NULL THEN r.lng ELSE (f->>'lng')::float8 END AS lng,
-          CASE WHEN f IS NULL THEN r.sat ELSE (f->>'sat')::smallint END AS sat,
-          r.ttff_s,r.csq,r.reg,r.vbat_mv,(r.raw->>'cbc_mv')::int AS cbc_mv,
-          r.device_uptime_s,r.heading,COALESCE((f->>'speed_kmh')::real,r.speed_kmh) AS speed_kmh,
-          r.recorded_at AS anchor_at
-          FROM newest r LEFT JOIN LATERAL jsonb_array_elements(r.fixes_jsonb) f ON true
+          ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC LIMIT 1
+        ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+          (p.raw->>'cbc_mv')::int AS cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+          p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+          FROM newest n CROSS JOIN LATERAL location_speed_points_between($1,$2,n.at,n.at) p
           WHERE EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
-          ORDER BY 1 DESC LIMIT 1",
+          ORDER BY p.source LIMIT 1",
     )
     .bind(id)
     .bind(user.user_id)
@@ -161,8 +159,8 @@ async fn page(
     let end = cursor.as_ref().map_or(q.until, |c| c.before.min(q.until));
     let mut rows = sqlx::query_as::<_, LocationView>(
         "SELECT recorded_at,source,fix,lat,lng,sat,ttff_s,csq,reg,vbat_mv,
-          (raw->>'cbc_mv')::int AS cbc_mv,device_uptime_s,heading,speed_kmh,anchor_at
-         FROM location_points_between($1,$2,$3,$4)
+          (raw->>'cbc_mv')::int AS cbc_mv,device_uptime_s,heading,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source,anchor_at
+         FROM location_speed_points_between($1,$2,$3,$4)
          WHERE recorded_at < $5 AND ($6::text IS NULL OR source=$6)
            AND ($7::bool IS NULL OR fix=$7)
            AND ($8::timestamptz IS NULL OR (recorded_at,source)<($8,$9))

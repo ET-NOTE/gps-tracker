@@ -1,20 +1,8 @@
-// (2026-07-28 F6-c) 속도·인터벌 공용 헬퍼.
-//
-// 이전엔 wsEventHandler.js + deviceLoader.js + Dashboard.jsx 세 곳에 각각 있던 중복 사본.
-// F6-a-2 · F6-a-3 에서 Dashboard 는 정리했지만 wsEventHandler / deviceLoader 에 여전히
-// 사본이 있어 debt register 에 등록됨. 이 라운드에서 lib/speed.js 로 통합.
-
-import { haversineM } from './stops';
-
-export function calcSpeedKmh(prev, next) {
-  if (!Number.isFinite(prev?.lat) || !Number.isFinite(prev?.lng) || !prev?.recordedAt ||
-      !Number.isFinite(next?.lat) || !Number.isFinite(next?.lng) || !next?.recordedAt) return null;
-  const dt = new Date(next.recordedAt).getTime() - new Date(prev.recordedAt).getTime();
-  if (!(dt > 0) || dt > 600_000) return null;
-  const distM = haversineM(prev.lat, prev.lng, next.lat, next.lng);
-  if (distM < 3) return 0;
-  const speed = (distM / (dt / 1000)) * 3.6;
-  return Number.isFinite(speed) && speed <= 250 ? speed : null;
+// Never replace a server rejection with a browser estimate (or a cached receiver value).
+export function serverSpeed(point) {
+  const value = point?.speed_kmh;
+  return point?.speed_source === 'server_coordinate_v1' && Number.isFinite(value) && value >= 0 && value <= 250
+    ? value : null;
 }
 
 // Zoom level 별 클릭 가능한 dot 간격 (m). 확대 시 촘촘, 축소 시 sparse.

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDevices } from '../state';
 import { api } from '../api';
+import { serverSpeed } from '../lib/speed';
 import { TrackerWS } from '../ws';
 import KakaoMap from '../components/KakaoMap';
 import SummaryChips, { classifyDevice } from '../components/fleet/SummaryChips';
@@ -123,13 +124,13 @@ export default function FleetDashboard() {
         lat = last.lat; lng = last.lng;
         meta = {
           recordedAt: last.recorded_at, sat: last.sat, fix: true,
-          heading: last.heading, speedKmh: msg.speed_kmh, lat, lng,
+          heading: last.heading, speedKmh: serverSpeed(last), lat, lng,
         };
       } else if (msg.fix && msg.lat != null && msg.lng != null) {
         lat = msg.lat; lng = msg.lng;
         meta = {
           recordedAt: msg.recorded_at, sat: msg.sat, fix: msg.fix,
-          heading: msg.heading, speedKmh: msg.speed_kmh, lat, lng,
+          heading: msg.heading, speedKmh: serverSpeed(msg), lat, lng,
         };
       } else {
         return;

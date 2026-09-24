@@ -27,6 +27,7 @@ const expected=new Set();let received=0,resyncs=0,connected=0,repaired=[];
 let releaseConnected;
 let connection=new Promise(resolve=>{releaseConnected=resolve;});
 const eventWaiters=[];
+const speedChecks=[]; let speedPoints=0;
 function waitForEvents(n) {
   if(received>=n)return Promise.resolve();
   return new Promise((resolve,reject)=>{
@@ -48,23 +49,34 @@ await module.evaluate();
 const client=new module.namespace.TrackerWS(event=>{
   if(event.type==='location') {
     assert.equal(event.device_id,id);received++;
+    if (event.fixes?.length) {
+      assert.equal(event.speed_kmh,[...event.fixes].sort((a,b)=>Date.parse(a.recorded_at)-Date.parse(b.recorded_at)).at(-1).speed_kmh);
+      speedChecks.push(request(pointPath()).then(page=>{
+        for (const f of event.fixes) {
+          const p=page.items.find(p=>p.recorded_at===f.recorded_at && p.source===event.source);
+          assert.ok(p);assert.equal(p.speed_source,'server_coordinate_v1');
+          if(f.speed_kmh==null)assert.equal(p.speed_kmh,null);else assert.ok(Math.abs(p.speed_kmh-f.speed_kmh)<1e-4);
+          assert.equal(p.reported_speed_kmh,null);speedPoints++;
+        }
+      }));
+    }
     for(let i=eventWaiters.length-1;i>=0;i--)if(eventWaiters[i]())eventWaiters.splice(i,1);
   }
   if(event.type==='resync') {resyncs++;repair=request(pointPath()).then(page=>{repaired=page.items;});}
 },status=>{if(status==='connected'){connected++;releaseConnected();}});
 function payload(seconds,boot=1,baseTime=origin) {
   const now=Date.now();
-  const fixes=seconds.map(s=>({lat:37+s*.00001,lng:127,sat:12,up_ms:s*1000,age_ms:Math.max(0,now-baseTime-s*1000),speed_kmh:4}));
+  const fixes=seconds.map(s=>({lat:37+s*.00001,lng:127,sat:12,up_ms:s*1000,age_ms:Math.max(0,now-baseTime-s*1000)}));
   for(const s of seconds)expected.add(`${boot}:${s}`);
   return {device_uid:uid,boot,ts:Math.floor((now-baseTime)/1000),fixes,l80:{fix:true,lat:fixes.at(-1).lat,lng:127,sat:12}};
 }
 try {
   client.subscribe([id]);client.connect();await connection;
-  await request('/gps-tracker/ingest',payload([100,102,104]));await waitForEvents(1);
+  await request('/gps-tracker/ingest',payload([100,102,104]));await waitForEvents(1);await Promise.all(speedChecks);
   await request('/gps-tracker/ingest',payload([100,102,104]));
-  await request('/gps-tracker/ingest',payload([108,106,104]));await waitForEvents(2);
+  await request('/gps-tracker/ingest',payload([108,106,104]));await waitForEvents(2);await Promise.all(speedChecks);
   const newest=await request(api+`/devices/${id}/locations/latest`);
-  await request('/gps-tracker/ingest',payload([96,98]));await waitForEvents(3);
+  await request('/gps-tracker/ingest',payload([96,98]));await waitForEvents(3);await Promise.all(speedChecks);
   assert.equal((await request(api+`/devices/${id}/locations/latest`)).recorded_at,newest.recorded_at);
   // A closed TCP/WebSocket session must resubscribe and repair the missed REST history.
   connection=new Promise(resolve=>{releaseConnected=resolve;});
@@ -75,9 +87,10 @@ try {
   assert.equal(resyncs,1);assert.equal(connected,2);
   assert.equal(repaired.length,expected.size);
   await request('/gps-tracker/ingest',payload([100,102],2,Date.now()-105000));
+  await waitForEvents(4);await Promise.all(speedChecks);
   const all=await request(pointPath());
   assert.equal(all.items.length,expected.size);
-  const result={checked_at:new Date().toISOString(),device_id:id,unique_sent_points:expected.size,saved_points:all.items.length,connections:connected,resyncs,rest_repaired_points:repaired.length};
+  const result={checked_at:new Date().toISOString(),device_id:id,unique_sent_points:expected.size,saved_points:all.items.length,speed_points_verified:speedPoints,connections:connected,resyncs,rest_repaired_points:repaired.length};
   await writeFile(path.join(root,'fault-verification.json'),JSON.stringify(result,null,2));
   console.log(JSON.stringify(result,null,2));
 } finally {

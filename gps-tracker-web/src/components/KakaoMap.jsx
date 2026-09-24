@@ -930,25 +930,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       //     - 없으면 prev→curr bearing (>= 8m 이동 시만; 그 미만은 GPS 노이즈)
       //     - 이전 값 유지 (stopped 상태에서 회전 안 함)
       const pinPrev = pinStateRef.current[deviceId];
-      const dtS = pinPrev ? (newRecordedAt - (pinPrev.lastAt || 0)) / 1000 : 0;
       const distM = pinPrev ? distanceM(
         { lat: pinPrev.lastLat, lng: pinPrev.lastLng }, { lat, lng }
       ) : 0;
-      // (F10-fix) stopped/moving 판정 개선 — 이전 (distM>=8 && dtS<60) 은 GPS 노이즈 (정차 시
-      // 15s 안 8m 튀는 것 정상) 로 stopped 인데 moving 오판정. 또 0.48km/h 이하 저속 정속
-      // (아주 느린 walking) 은 moving 인데 stopped 오판정. 개선:
-      //   1) meta.speedKmh 우선 (firmware 계산 또는 wsEventHandler calcSpeedKmh) — >= 3km/h → moving
-      //   2) speed 없으면 distM/dtS 로 fallback — 실 속도 3km/h = 25m/30s → distM>=15 && dtS<=60 → moving
-      let pinState;
-      if (meta.stale) pinState = 'offline';
-      else if (!pinPrev) pinState = 'stopped';
-      else if (typeof meta.speedKmh === 'number' && Number.isFinite(meta.speedKmh)) {
-        pinState = meta.speedKmh >= 3 ? 'moving' : 'stopped';
-      } else if (dtS > 0 && dtS <= 60 && distM >= 15) {
-        pinState = 'moving';
-      } else {
-        pinState = 'stopped';
-      }
+      // Motion uses the server speed; browser geometry is only used for direction.
+      const pinState = meta.stale ? 'offline'
+        : Number.isFinite(meta.speedKmh) && meta.speedKmh >= 3 ? 'moving' : 'stopped';
       let pinAngle;
       if (typeof meta.heading === 'number' && Number.isFinite(meta.heading)) {
         pinAngle = meta.heading;

@@ -110,7 +110,7 @@ try:
 
     request('/gps-tracker/ingest',method='POST',body={'device_uid':'review-'+run,'ts':120,'l80':{'fix':True,'lat':37.1,'lng':127.1,'sat':8,'speed_kmh':12.5}})
     latest=request(api+f'/devices/{did}/locations/latest',b)
-    assert latest['speed_kmh']==12.5
+    assert latest['speed_kmh'] is None and latest['reported_speed_kmh']==12.5
     print('PASS firmware-compatible ingest with optional GPS speed')
 
     query('UPDATE devices SET owner_id=%s WHERE id=%s',(a,did))

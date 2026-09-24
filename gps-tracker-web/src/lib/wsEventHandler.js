@@ -12,7 +12,7 @@
 
 import { getDeviceColor } from '../colors';
 import { haversineM } from './stops';
-import { calcSpeedKmh, clickableIntervalM } from './speed';
+import { serverSpeed, clickableIntervalM } from './speed';
 
 export function makeWsEventHandler({
   devRef, mapRef, lastMetaRef, wsDotAccRef,
@@ -33,7 +33,9 @@ export function makeWsEventHandler({
         vbatMv: msg.vbat_mv ?? prevMetaNoFix.vbatMv,
         cbcMv: msg.cbc_mv ?? prevMetaNoFix.cbcMv,
         fix: false,
+        speedKmh: null,
       };
+      if (filterDeviceIdRef.current === msg.device_id) setLiveSpeed(previous => previous ? { ...previous, speedKmh: null } : null);
       setDevices(prev => prev.map(d =>
         d.id === msg.device_id
           ? { ...d, last_seen_at: msg.recorded_at }
@@ -53,9 +55,9 @@ export function makeWsEventHandler({
         if (eventTime < previousTime) onResync?.();
         return;
       }
-      const speedKmh = msg.speed_kmh ?? msg.speedKmh ?? calcSpeedKmh(prevMeta, {
-        lat: msg.lat, lng: msg.lng, recordedAt: msg.recorded_at,
-      });
+      const latestFix = Array.isArray(msg.fixes) && msg.fixes.length
+        ? msg.fixes.reduce((a,b) => Date.parse(a.recorded_at) >= Date.parse(b.recorded_at) ? a : b) : msg;
+      const speedKmh = serverSpeed(latestFix);
       const meta = {
         recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv, cbcMv: msg.cbc_mv,
         fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
@@ -101,11 +103,8 @@ export function makeWsEventHandler({
           const f = fixesAsc[i];
           if (Date.parse(f.recorded_at) <= previousTime) continue;
           const isLast = (i === fixesAsc.length - 1);
-          const previous = i > 0 ? fixesAsc[i - 1] : null;
-          const pointSpeed = f.speed_kmh ?? calcSpeedKmh(previous ? {
-            lat: previous.lat, lng: previous.lng, recordedAt: previous.recorded_at,
-          } : prevMeta, { lat: f.lat, lng: f.lng, recordedAt: f.recorded_at });
-          const fMeta = isLast ? { ...meta, speedKmh: pointSpeed ?? speedKmh } : {
+          const pointSpeed = serverSpeed(f);
+          const fMeta = isLast ? { ...meta, speedKmh: pointSpeed } : {
             recordedAt: f.recorded_at, sat: f.sat, fix: true, stale: false,
             deviceId: msg.device_id, deviceLabel: label, speedKmh: pointSpeed,
           };

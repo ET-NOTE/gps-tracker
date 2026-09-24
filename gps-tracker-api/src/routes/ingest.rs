@@ -346,15 +346,6 @@ pub async fn ingest(
                 continue;
             }
             existing.push(incoming);
-            batch_for_ws.push(crate::events::LocationFix {
-                recorded_at: fix_at,
-                lat: Some(f.lat),
-                lng: Some(f.lng),
-                sat: f.sat.map(|v| v as i16),
-                speed_kmh: f
-                    .speed_kmh
-                    .filter(|v| v.is_finite() && (0.0..=250.0).contains(v)),
-            });
             fix_records.push((fix_at, f.lat, f.lng, f.sat, f.up_ms, f.speed_kmh));
         }
         if retx_dropped > 0 {
@@ -427,7 +418,13 @@ pub async fn ingest(
             .await?;
             let dates: Vec<_> = fix_records
                 .iter()
-                .map(|f| (f.0 + chrono::Duration::hours(9)).date_naive())
+                .flat_map(|f| {
+                    [
+                        (f.0 + chrono::Duration::hours(9)).date_naive(),
+                        (f.0 + chrono::Duration::hours(9) + chrono::Duration::seconds(65))
+                            .date_naive(),
+                    ]
+                })
                 .collect::<std::collections::BTreeSet<_>>()
                 .into_iter()
                 .collect();
@@ -440,6 +437,18 @@ pub async fn ingest(
             .bind(dates)
             .execute(&mut *tx)
             .await?;
+        }
+        if let (Some(first), Some(last)) = (
+            fix_records.iter().map(|p| p.0).min(),
+            fix_records.iter().map(|p| p.0).max(),
+        ) {
+            let accepted: std::collections::HashSet<_> = fix_records.iter().map(|p| p.0).collect();
+            batch_for_ws = sqlx::query_as::<_,crate::events::LocationFix>(
+                "SELECT recorded_at,lat,lng,sat,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source
+                 FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3)
+                 WHERE source='l80' ORDER BY recorded_at")
+                .bind(device_id).bind(first).bind(last).fetch_all(&mut *tx).await?
+                .into_iter().filter(|p| accepted.contains(&p.recorded_at)).collect();
         }
         tx.commit().await?;
         // Historical backfill must not replay old geofence crossings as current ones.
@@ -475,7 +484,7 @@ pub async fn ingest(
                 &payload,
             )
             .await?;
-            broadcast_location(&state, device_id, recorded_at, "l80", l80, &parsed);
+            broadcast_location(&state, device_id, recorded_at, "l80", l80, &parsed).await?;
             if let (true, Some(lat), Some(lng)) = (l80.fix, l80.lat, l80.lng) {
                 let _ =
                     crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng)
@@ -494,7 +503,7 @@ pub async fn ingest(
             &payload,
         )
         .await?;
-        broadcast_location(&state, device_id, recorded_at, "lte_gnss", lte, &parsed);
+        broadcast_location(&state, device_id, recorded_at, "lte_gnss", lte, &parsed).await?;
         if let (true, Some(lat), Some(lng)) = (lte.fix, lte.lat, lte.lng) {
             let _ =
                 crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
@@ -512,7 +521,7 @@ pub async fn ingest(
             &payload,
         )
         .await?;
-        broadcast_location(&state, device_id, recorded_at, "phone", phone, &parsed);
+        broadcast_location(&state, device_id, recorded_at, "phone", phone, &parsed).await?;
         if let (true, Some(lat), Some(lng)) = (phone.fix, phone.lat, phone.lng) {
             let _ =
                 crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
@@ -925,14 +934,32 @@ pub async fn ingest(
     Ok(Json(resp))
 }
 
-fn broadcast_location(
+async fn broadcast_location(
     state: &AppState,
     device_id: i64,
     recorded_at: chrono::DateTime<Utc>,
     source: &str,
     fix: &GpsFix,
     parsed: &IngestPayload,
-) {
+) -> AppResult<()> {
+    let point = sqlx::query_as::<_,crate::events::LocationFix>(
+        "SELECT recorded_at,lat,lng,sat,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source
+         FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$2)
+         WHERE source=$3")
+        .bind(device_id).bind(recorded_at).bind(source).fetch_optional(&state.db).await?;
+    let (speed_kmh, speed_details) = point
+        .map(|p| (p.speed_kmh, p.speed_details))
+        .unwrap_or_else(|| {
+            (
+                None,
+                crate::events::SpeedDetails {
+                    speed_source: "server_coordinate_v1".into(),
+                    speed_reason: "insufficient_history".into(),
+                    ..Default::default()
+                },
+            )
+        });
+
     let _ = state.events.send(Event::Location {
         device_id,
         recorded_at,
@@ -945,11 +972,11 @@ fn broadcast_location(
         vbat_mv: parsed.vbat_mv,
         cbc_mv: parsed.cbc_mv,
         heading: fix.heading,
-        speed_kmh: fix
-            .speed_kmh
-            .filter(|v| v.is_finite() && (0.0..=250.0).contains(v)),
+        speed_kmh,
+        speed_details,
         fixes: None,
     });
+    Ok(())
 }
 
 /// P1: batch broadcast — 1 POST 의 모든 fix 를 단일 message 로.
@@ -973,6 +1000,7 @@ fn batch_event(
         cbc_mv: parsed.cbc_mv,
         heading: None,
         speed_kmh: last.speed_kmh,
+        speed_details: last.speed_details.clone(),
         fixes: Some(fixes),
     })
 }
@@ -1018,6 +1046,19 @@ async fn insert_location(
     )
     .execute(&state.db)
     .await?;
+    if fix.fix {
+        sqlx::query(
+            "INSERT INTO stats_rebuild_queue(device_id,date)
+          SELECT $1, d FROM (SELECT DISTINCT unnest(ARRAY[
+            ($2::timestamptz AT TIME ZONE 'Asia/Seoul')::date,
+            (($2::timestamptz+interval '65 seconds') AT TIME ZONE 'Asia/Seoul')::date]) AS d) days
+          ON CONFLICT(device_id,date) DO UPDATE SET generation=stats_rebuild_queue.generation+1",
+        )
+        .bind(device_id)
+        .bind(recorded_at)
+        .execute(&state.db)
+        .await?;
+    }
     Ok(())
 }
 
@@ -1056,6 +1097,7 @@ mod batch_tests {
             lng: Some(127.1),
             sat: Some(12),
             speed_kmh: Some(18.0),
+            speed_details: Default::default(),
         };
         let older = crate::events::LocationFix {
             recorded_at: newer.recorded_at - chrono::Duration::seconds(2),
@@ -1063,6 +1105,7 @@ mod batch_tests {
             lng: Some(127.0),
             sat: Some(8),
             speed_kmh: Some(0.0),
+            speed_details: Default::default(),
         };
         let event = batch_event(1, &payload, vec![newer.clone(), older]).unwrap();
         if let Event::Location {

@@ -1,9 +1,11 @@
 import { ageString } from '../colors';
 import Icon from './Icon';
+import { liveMotion } from '../lib/liveMotion';
 
 export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, deviceStatus, onPress, onUnpin, bottomOffset = 0 }) {
   if (!device) return null;
 
+  const speed = liveMotion(deviceMeta?.speedKmh,deviceMeta?.recordedAt).speedKmh;
   const name = device.display_name || device.device_uid;
   const isOnline = deviceStatus?.label === '활성';
 
@@ -59,8 +61,8 @@ export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, de
                 <Icon name="battery" size={10} /> {deviceMeta.vbatMv}mV
               </span>
             )}
-            {deviceMeta?.speedKmh != null && deviceMeta.speedKmh > 0 && (
-              <span>{deviceMeta.speedKmh.toFixed(0)} km/h</span>
+            {speed != null && (
+              <span>{speed.toFixed(0)} km/h</span>
             )}
           </div>
         </div>

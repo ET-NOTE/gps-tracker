@@ -8,7 +8,7 @@ import { analyzePath, enrichWithSpeedStops } from '../src/lib/stops.js';
 import { liveMotion } from '../src/lib/liveMotion.js';
 
 const epoch = Date.parse('2026-09-24T08:00:00Z');
-const point = (s, lat = 37, lng = 127, extra = {}) => ({ recorded_at: new Date(epoch + s * 1000).toISOString(), lat, lng, ...extra });
+const point = (s, lat = 37, lng = 127, extra = {}) => ({ recorded_at: new Date(epoch + s * 1000).toISOString(), lat, lng, speed_source: 'server_coordinate_v1', ...extra });
 
 test('live GPS status distinguishes movement, low speed, unknown and stale fixes', () => {
   assert.equal(liveMotion(10, point(0).recorded_at, epoch).label, '이동 중');
@@ -56,12 +56,12 @@ test('outages, nonincreasing timestamps and impossible jumps are not travelled d
   }
 });
 
-test('valid receiver speed is preserved, including zero; invalid speed falls back', () => {
+test('server speed is preserved, including zero; invalid or missing speed stays unknown', () => {
   const points = [point(0, 37, 127, { speed_kmh: 12 }), point(2, 37.0001, 127, { speed_kmh: 0 }), point(4, 37.0002, 127, { speed_kmh: 999 })];
   const enriched = enrichWithSpeedStops(points);
   assert.equal(enriched[0]._speed, 12);
   assert.equal(enriched[1]._speed, 0);
-  assert.ok(enriched[2]._speed > 10 && enriched[2]._speed < 30);
+  assert.equal(enriched[2]._speed, null);
 });
 
 test('live batch paints points chronologically with their individual speeds, including the equator', async () => {
@@ -74,7 +74,7 @@ test('live batch paints points chronologically with their individual speeds, inc
       ? new vm.SyntheticModule(['getDeviceColor'], function() { this.setExport('getDeviceColor', () => '#123456'); }, { context })
       : new vm.SourceTextModule(await readFile(file, 'utf8'), { context, identifier: file });
     cache.set(file, module);
-    await module.link((specifier, referring) => load(path.resolve(path.dirname(referring.identifier), specifier + '.js')));
+    await module.link((specifier, referring) => load(path.resolve(path.dirname(referring.identifier), specifier.endsWith('.js') ? specifier : specifier + '.js')));
     return module;
   }
   const module = await load(path.join(base, 'lib/wsEventHandler.js')); await module.evaluate();
@@ -85,11 +85,12 @@ test('live batch paints points chronologically with their individual speeds, inc
     mapRef: { current: { updateMarker: (...x) => markers.push(x), addHistoryPoint: (...x) => history.push(x), panToCoord: (...x) => pans.push(x) } },
     setDevices() {}, setLiveSpeed(x) { speeds.push(x); }, onResync() { resyncs.push(true); },
   });
-  handler({ type: 'location', device_id: 1, fix: true, ...point(4, 0, 127.0001), speed_kmh: 9,
+  handler({ type: 'location', device_id: 1, fix: true, ...point(4, 0, 127.0001), speed_kmh: 77,
     fixes: [point(4, 0, 127.0001, { speed_kmh: 9 }), point(2, 0, 127, { speed_kmh: 0 })] });
   assert.equal(markers.length, 2); assert.equal(history.length, 2);
   assert.equal(history[0][4].recordedAt, point(2).recorded_at);
   assert.equal(history[0][4].speedKmh, 0); assert.equal(history[1][4].speedKmh, 9);
+  assert.equal(speeds[0].speedKmh,9,'the same final point drives the marker and live badge');
   assert.equal(pans.length, 0, 'seeker-paused tracking must not move the camera');
   handler({ type:'location',device_id:1,fix:true,...point(1,38,128),speed_kmh:20 });
   assert.equal(markers.length,2,'late backfill must not move the latest marker backwards');
@@ -98,4 +99,20 @@ test('live batch paints points chronologically with their individual speeds, inc
   handler({type:'location',device_id:1,fix:false,...point(10)});
   handler({type:'location',device_id:1,fix:true,...point(6,0,127.0002),speed_kmh:12});
   assert.equal(speeds.at(-1).speedKmh,12,'a no-fix heartbeat must not advance the GPS watermark');
+  handler({type:'location',device_id:1,fix:true,...point(8,0,127.0003),speed_kmh:null,reported_speed_kmh:90});
+  assert.equal(speeds.at(-1).speedKmh,null,'unknown server speed must not fall back to browser geometry or receiver speed');
+  assert.equal(markers.at(-1)[5].speedKmh,null);
+});
+
+test('stop classification never overwrites a server speed', () => {
+  const points = Array.from({ length:151 }, (_,i) => point(i*2,37,127,{speed_kmh:8}));
+  const enriched = enrichWithSpeedStops(points);
+  assert.ok(enriched.every(p=>p._isStop && p._speed===8));
+  assert.equal(enrichWithSpeedStops([point(0,37,127,{speed_kmh:80,speed_source:undefined})])[0]._speed,null);
+});
+
+test('stale live speed expires without pretending the vehicle stopped', () => {
+  const result = liveMotion(80,point(0).recorded_at,epoch+91_000);
+  assert.equal(result.speedKmh,null);
+  assert.equal(result.label,'위치 오래됨');
 });
