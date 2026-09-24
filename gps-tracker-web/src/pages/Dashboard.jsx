@@ -1,3 +1,8 @@
+import RoutePlannerSheet from '../components/RoutePlannerSheet';
+import PinnedDeviceWidget from '../components/PinnedDeviceWidget';
+import OnboardingModal from '../components/OnboardingModal';
+import SwipeableCard from '../components/SwipeableCard';
+import { authScope } from '../authSession';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
@@ -97,6 +102,17 @@ export default function Dashboard({ onLogout }) {
   const setView = useCallback((v) => {
     navigate(viewToPath(v));
   }, [navigate]);
+  const [showRoutePlanner, setShowRoutePlanner] = useState(false);
+  const pinKey = 'gps_cache_pin:' + authScope();
+  const [pinnedId, setPinnedId] = useState(() => Number(localStorage.getItem(pinKey)) || null);
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('onboarding_v2'));
+  const [offlineData, setOfflineData] = useState(false);
+  useEffect(() => {
+    const offline = () => setOfflineData(true), online = () => setOfflineData(false);
+    window.addEventListener('gps-offline-data', offline); window.addEventListener('online', online);
+    return () => { window.removeEventListener('gps-offline-data', offline); window.removeEventListener('online', online); };
+  }, []);
+  const togglePin = id => { const next = pinnedId === id ? null : id; setPinnedId(next); if (next) localStorage.setItem(pinKey, String(next)); else localStorage.removeItem(pinKey); };
   const [devices, setDevices]         = useState([]);
   const [pairMode, setPairMode]       = useState('iccid');
   const [pairUid, setPairUid]         = useState('');
@@ -885,7 +901,7 @@ export default function Dashboard({ onLogout }) {
               const status = classifyDevice(d, meta);
 
               return (
-                <div key={d.id} style={{
+                <SwipeableCard key={d.id} onSwipeLeft={() => setDetailId(d.id)} leftLabel="상세" onSwipeRight={() => togglePin(d.id)} rightLabel="고정" style={{
                   ...s.deviceCard, borderLeft: `4px solid ${color}`,
                   opacity: stale && status.id !== 'sleeping' ? 0.6 : 1,
                 }}>
@@ -953,6 +969,7 @@ export default function Dashboard({ onLogout }) {
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                          <button onClick={() => togglePin(d.id)} style={s.detailBtn} title="홈에 고정">{pinnedId === d.id ? '고정 해제' : '고정'}</button>
                           {/* [2026-09-14 KC] 수신 로그 — GPS 없이도 HTTP 수신마다 리스트업되는
                               공개 진단 페이지 (/diagnostic/device). 허용목록 단말만 조회됨. */}
                           <button onClick={() => window.open('/diagnostic/device?uid=' + encodeURIComponent(d.device_uid), '_blank')}
@@ -982,6 +999,13 @@ export default function Dashboard({ onLogout }) {
                         </div>
                       </div>
 
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                        {[['next_service_date','정비'],['insurance_expiry','보험'],['inspection_expiry','검사']].map(([key,label]) => {
+                          if (!d[key]) return null;
+                          const days = Math.ceil((new Date(d[key] + 'T00:00:00') - new Date()) / 86400000);
+                          return days <= 30 ? <span key={key} style={{ fontSize: 11, color: days < 0 ? 'var(--danger)' : 'var(--text-2)' }}>{label} {days < 0 ? `${-days}일 경과` : `D-${days}`}</span> : null;
+                        })}
+                      </div>
                       {colorPickerId === d.id && (
                         <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                           {PALETTE.map(c => (
@@ -996,7 +1020,7 @@ export default function Dashboard({ onLogout }) {
                       )}
 
                       {detailId === d.id && (
-                        <DeviceDetail device={d} onWiped={async (id) => {
+                        <DeviceDetail device={d} onUpdated={updated => setDevices(ds => ds.map(x => x.id === updated.id ? updated : x))} onWiped={async (id) => {
                           mapRef.current?.removeMarker(id);
                           delete lastMetaRef.current[id];
                           setDetailId(null);
@@ -1005,7 +1029,7 @@ export default function Dashboard({ onLogout }) {
                       )}
                     </>
                   )}
-                </div>
+                </SwipeableCard>
               );
             })}
           </div>
@@ -1373,6 +1397,14 @@ export default function Dashboard({ onLogout }) {
               );
             })()}
 
+            {offlineData && <div role="status" style={{ position: 'absolute', top: 55, left: 16, zIndex: 40, padding: 8, background: 'var(--surface)' }}>오프라인 저장본 · 최신 위치가 아닐 수 있습니다</div>}
+            {view === 'tools' && <button style={{ position: 'absolute', top: 72, left: 16, zIndex: 15, padding: 10 }} onClick={() => { setShowRoutePlanner(v => !v); setShowSeeker(false); setShowGeofence(false); }}>경로 계획</button>}
+            {showRoutePlanner && view === 'tools' && <RoutePlannerSheet mapRef={mapRef} onClose={() => setShowRoutePlanner(false)} />}
+            {view === 'home' && !showMiniSeeker && !pointInfo && <PinnedDeviceWidget
+              device={devices.find(d => d.id === pinnedId)} deviceColor={getDeviceColor(devices.find(d => d.id === pinnedId) || {})}
+              deviceMeta={lastMetaRef.current[pinnedId]} deviceStatus={devices.find(d => d.id === pinnedId) ? classifyDevice(devices.find(d => d.id === pinnedId), lastMetaRef.current[pinnedId]) : null}
+              onPress={() => { const d = devices.find(d => d.id === pinnedId); if (d?.last_lat != null) mapRef.current?.panToCoord?.(d.last_lat, d.last_lng); }}
+              onUnpin={() => togglePin(pinnedId)} />}
             {/* 지오펜스 윈도우 — '운행' 탭에서만, 데스크톱은 우상단 floating, 모바일은 bottom sheet */}
             {showGeofence && view === 'tools' && (
               <GeofenceSheet
@@ -1484,6 +1516,7 @@ export default function Dashboard({ onLogout }) {
         />
       )}
 
+      {showOnboarding && <OnboardingModal onDone={() => setShowOnboarding(false)} />}
       {/* 페어링 튜토리얼 — /devices/pair 진입 + 디바이스 0개 (또는 ?tutorial=1) */}
       {pairTutorialOpen && (
         <PairTutorial

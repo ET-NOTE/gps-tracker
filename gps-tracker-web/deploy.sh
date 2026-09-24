@@ -2,14 +2,18 @@
 # deploy.sh — tar+scp source → build on server → static 산출물 배포
 #
 # 사용법:
-#   bash deploy.sh           # = prod (default) — gps.serial.kr + legacy /gps-tracker/app/ 서브패스
+#   bash deploy.sh prod      # explicit approval required — gps.serial.kr + legacy /gps-tracker/app/ 서브패스
 #   bash deploy.sh prod
 #   bash deploy.sh dev       # = dev-gps.serial.kr 단일 base
 #
 # 메모리: VPS RAM 2.9GB. dev/prod 빌드 동시 실행 금지 (직렬).
 set -e
 
-ENV="${1:-prod}"
+ENV="${1:?Usage: deploy.sh dev|prod (explicit target required)}"
+if [ "$ENV" = prod ] && [ "${PROD_DEPLOY_APPROVED:-}" != yes ]; then
+  echo "Production deployment requires the owner's explicit approval. Set PROD_DEPLOY_APPROVED=yes only after that approval." >&2
+  exit 2
+fi
 # VPS host — 다른 서버 배포 시 `DEPLOY_HOST=my.host.com bash deploy.sh` 형태로 override.
 DEPLOY_HOST="${DEPLOY_HOST:-210.114.18.16}"
 case "$ENV" in
@@ -42,6 +46,7 @@ tar -czf "$TMP_TAR" \
   --exclude='./dist' \
   --exclude='./dist-root' \
   --exclude='./.git' \
+  --exclude='./.env' --exclude='./.env.*' --exclude='./*.dump' --exclude='./uploads' \
   -C . .
 scp "$TMP_TAR" $SERVER:/tmp/
 rm -f "$TMP_TAR"
@@ -70,7 +75,7 @@ fi
 echo "node: \$(node --version)  npm: \$(npm --version)"
 
 cd $REMOTE_DIR
-npm install
+npm ci
 if [ "$ENV" = "prod" ]; then
   # 1) legacy /gps-tracker/app/ 서브패스용 (기본 base) — nginx 에 아직 살아 있음
   npm run build

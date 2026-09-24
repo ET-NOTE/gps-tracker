@@ -27,7 +27,7 @@ async fn active_dates(
 
     let rows: Vec<(NaiveDate,)> = sqlx::query_as(
         r#"SELECT DISTINCT (recorded_at AT TIME ZONE 'Asia/Seoul')::date AS d
-             FROM location_records
+             FROM location_points
             WHERE device_id = $1 AND fix = TRUE AND user_id = $2
             ORDER BY d DESC
             LIMIT 365"#,

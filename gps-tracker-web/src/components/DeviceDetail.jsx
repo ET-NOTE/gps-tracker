@@ -1,3 +1,4 @@
+import VehicleCarePanel from './VehicleCarePanel';
 // (2026-07-29 F8) 트렌디 slim redesign.
 //
 // 이전엔 통계 + 관리 2 탭에 부팅 진단 · 부저 패턴 · lifecycle 이벤트 · 원격 reset 등
@@ -8,7 +9,7 @@
 //   · SIM 데이터 잔량 + 충전 요청
 //   · 공유 링크
 //   · 위험 영역 (삭제)
-// 아래 "고급 진단" 링크 → /diagnostic?device={id}
+// 아래 "고급 진단" 링크 → /device-diagnostics?device={id}
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -32,7 +33,7 @@ function useSection(loader, deviceId) {
   return state;
 }
 
-export default function DeviceDetail({ device, onWiped }) {
+export default function DeviceDetail({ device, onWiped, onUpdated }) {
   const statsQ = useSection(() => api.getDailyStats(device.id, { limit: 7 }), device.id);
   const simQ   = useSection(() => api.getSimInfo(device.id),                   device.id);
   const [wiping, setWiping] = useState(false);
@@ -71,6 +72,7 @@ export default function DeviceDetail({ device, onWiped }) {
       <TodayStrip stats={today} device={device} loading={statsQ.loading} />
 
       <div style={s.body}>
+        <Section eyebrow="차량 · 정비 · 만료일"><VehicleCarePanel key={device.id} device={device} onUpdated={onUpdated} /></Section>
         {/* 수신 상태 */}
         <Section eyebrow="수신 상태">
           <ReceiveStatusBody device={device} />
@@ -93,7 +95,7 @@ export default function DeviceDetail({ device, onWiped }) {
         </Section>
 
         {/* 고급 진단 링크 — 이관된 항목들 접근 */}
-        <Link to={`/diagnostic?device=${device.id}`} style={s.diagLink}>
+        <Link to={`/device-diagnostics?device=${device.id}`} style={s.diagLink}>
           <span style={s.diagLinkLeft}>
             <Icon name="wrench" size={14} />
             <span>고급 진단</span>

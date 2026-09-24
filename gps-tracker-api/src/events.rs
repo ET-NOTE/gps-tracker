@@ -12,6 +12,7 @@ pub struct LocationFix {
     pub lat: Option<f64>,
     pub lng: Option<f64>,
     pub sat: Option<i16>,
+    pub speed_kmh: Option<f32>,
 }
 
 /// (2026-07-29 F7-b) 채팅 메시지 push 용 payload.
@@ -44,6 +45,7 @@ pub enum Event {
         #[serde(skip_serializing_if = "Option::is_none")]
         cbc_mv: Option<i32>,
         heading: Option<f32>,
+        speed_kmh: Option<f32>,
         /// P1: 1 POST 안 모든 fix (firmware batch). legacy single fix POST 는 None.
         /// top-level lat/lng/sat 은 fixes 의 마지막 fix 와 동일 (backward compat).
         #[serde(skip_serializing_if = "Option::is_none")]

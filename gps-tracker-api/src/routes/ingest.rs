@@ -77,6 +77,7 @@ pub struct IngestPayload {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct BatchFix {
+    pub speed_kmh: Option<f32>,
     pub lat: f64,
     pub lng: f64,
     pub sat: Option<i32>,
@@ -97,6 +98,7 @@ pub struct GpsFix {
     pub ttff_s: Option<i32>,
     /// NMEA $GPRMC course over ground, 0~360°. 정지 시/no-fix 시 None.
     pub heading: Option<f32>,
+    pub speed_kmh: Option<f32>,
 }
 
 impl GpsFix {
@@ -222,7 +224,7 @@ pub async fn ingest(
     //   column lat/lng/sat/heading/ttff_s = anchor (가장 최근) fix 값 → devices.last_lat trigger 호환.
     //   geofence check 는 fix 별 그대로.
     //   WS broadcast 도 fix 별 그대로 (frontend dedup 가 처리).
-    let mut fix_records: Vec<(chrono::DateTime<Utc>, f64, f64, Option<i32>, Option<i64>)> = Vec::new();
+    let mut fix_records: Vec<(chrono::DateTime<Utc>, f64, f64, Option<i32>, Option<i64>, Option<f32>)> = Vec::new();
     if let Some(fixes) = &parsed.fixes {
         // [2026-08-28 배치 재전송 dedup] 펌웨어는 200 응답을 못 받으면(RF 순단 등) 같은 fix 를
         //   다음 사이클에 재전송한다(at-least-once). 복원시각(도착시각-age_ms)은 전송마다 수백 ms
@@ -271,8 +273,9 @@ pub async fn ingest(
                 lat: Some(f.lat),
                 lng: Some(f.lng),
                 sat: f.sat.map(|v| v as i16),
+                speed_kmh: f.speed_kmh.filter(|v| v.is_finite() && (0.0..=250.0).contains(v)),
             });
-            fix_records.push((fix_at, f.lat, f.lng, f.sat, f.up_ms));
+            fix_records.push((fix_at, f.lat, f.lng, f.sat, f.up_ms, f.speed_kmh));
             let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, f.lat, f.lng).await;
         }
         if retx_dropped > 0 {
@@ -282,12 +285,13 @@ pub async fn ingest(
 
         // Phase 6D: 1 row + jsonb INSERT.
         // anchor = MAX(fix_at) — recorded_at + column lat/lng/sat 자리. at_ms 는 anchor 기준 음 offset.
-        if let Some(&(anchor_at, anchor_lat, anchor_lng, anchor_sat, _)) = fix_records.iter().max_by_key(|r| r.0) {
-            let jsonb_array: Vec<serde_json::Value> = fix_records.iter().map(|(at, lat, lng, sat, up_ms)| {
+        if let Some(&(anchor_at, anchor_lat, anchor_lng, anchor_sat, _, _)) = fix_records.iter().max_by_key(|r| r.0) {
+            let jsonb_array: Vec<serde_json::Value> = fix_records.iter().map(|(at, lat, lng, sat, up_ms, speed)| {
                 let at_ms = (*at - anchor_at).num_milliseconds();
                 serde_json::json!({
                     "at_ms": at_ms,
                     "lat":   lat,
+                    "speed_kmh": speed.filter(|v| v.is_finite() && (0.0..=250.0).contains(v)),
                     "lng":   lng,
                     "sat":   sat,
                     "up_ms": up_ms,   // [2026-08-29] 단말 uptime ms — 재전송 dedup 워터마크 (구펌웨어 null)
@@ -697,6 +701,7 @@ fn broadcast_location(
         vbat_mv: parsed.vbat_mv,
         cbc_mv: parsed.cbc_mv,
         heading: fix.heading,
+        speed_kmh: fix.speed_kmh.filter(|v| v.is_finite() && (0.0..=250.0).contains(v)),
         fixes: None,
     });
 }
@@ -726,6 +731,7 @@ fn broadcast_batch(
         vbat_mv: parsed.vbat_mv,
         cbc_mv: parsed.cbc_mv,
         heading: None,
+        speed_kmh: fixes.last().and_then(|f| f.speed_kmh),
         fixes: Some(fixes),
     });
 }
@@ -744,10 +750,10 @@ async fn insert_location(
         INSERT INTO location_records (
             device_id, recorded_at, device_uptime_s, source,
             fix, lat, lng, sat, ttff_s,
-            csq, reg, vbat_mv, raw, heading, user_id
+            csq, reg, vbat_mv, raw, heading, user_id, speed_kmh
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                (SELECT owner_id FROM devices WHERE id = $1))
+                (SELECT owner_id FROM devices WHERE id = $1), $15)
         ON CONFLICT (device_id, recorded_at, source) DO NOTHING
         "#,
     )
@@ -765,6 +771,7 @@ async fn insert_location(
     .bind(parsed.vbat_mv)
     .bind(raw)
     .bind(fix.heading)
+    .bind(fix.speed_kmh.filter(|v| v.is_finite() && (0.0..=250.0).contains(v)))
     .execute(&state.db)
     .await?;
     Ok(())

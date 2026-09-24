@@ -105,6 +105,9 @@ async fn analyze(
     Path(device_id): Path<i64>,
     Json(req): Json<AnalyzeRequest>,
 ) -> AppResult<Json<AnalyzeResponse>> {
+    if std::env::var("OPENAI_API_KEY").unwrap_or_default().is_empty() {
+        return Err(AppError::BadRequest("이 환경에는 AI 분석 키가 설정되지 않았습니다.".into()));
+    }
     // 본인 소유 + 표시명
     let dev: Option<(Option<i64>, Option<String>)> =
         sqlx::query_as("SELECT owner_id, display_name FROM devices WHERE id = $1")
@@ -138,7 +141,7 @@ async fn analyze(
 
         let points: Vec<PointRow> = sqlx::query_as(
             r#"SELECT recorded_at, lat, lng
-                 FROM location_records
+                 FROM location_points
                 WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
                   AND recorded_at >= $2 AND recorded_at <= $3
                 ORDER BY recorded_at ASC"#,

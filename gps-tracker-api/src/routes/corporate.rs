@@ -311,11 +311,11 @@ async fn compute_trips_inner_ex(
 
     // 4) 거리 계산용 fixes
     let all_fixes: Vec<(DateTime<Utc>, f64, f64)> = sqlx::query_as(
-        r#"SELECT recorded_at, lat, lng FROM location_records
+        r#"SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng FROM location_points
             WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
-              AND lat IS NOT NULL AND lng IS NOT NULL
+              AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
               AND recorded_at >= $2 AND recorded_at <= $3
-            ORDER BY recorded_at ASC"#,
+            ORDER BY recorded_at ASC,CASE source WHEN 'phone' THEN 0 WHEN 'l80' THEN 1 ELSE 2 END"#,
     )
     .bind(device_id).bind(from).bind(to).bind(user_id)
     .fetch_all(&state.db).await?;
@@ -349,11 +349,11 @@ async fn compute_trips_inner_ex(
     let mut out = Vec::with_capacity(trips.len());
     for (i, (s, e)) in trips.iter().enumerate() {
         let end = e.unwrap_or(to);
-        let slice: Vec<(f64, f64)> = all_fixes.iter()
+        let slice: Vec<(DateTime<Utc>, f64, f64)> = all_fixes.iter()
             .filter(|(t, _, _)| *t >= *s && *t <= end)
-            .map(|(_, la, ln)| (*la, *ln))
+            .copied()
             .collect();
-        let distance_m = path_distance(&slice);
+        let distance_m = crate::services::stats::calculate_metrics(&slice).distance_m;
 
         let row = trip_rows.get(i).cloned().unwrap_or_default();
         let (s_idx, e_idx) = idx_map[i];
@@ -533,7 +533,7 @@ async fn motion_based_trips(
     to: DateTime<Utc>,
 ) -> AppResult<Vec<(DateTime<Utc>, Option<DateTime<Utc>>)>> {
     let times: Vec<DateTime<Utc>> = sqlx::query_scalar(
-        r#"SELECT recorded_at FROM location_records
+        r#"SELECT recorded_at FROM location_points
             WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
               AND recorded_at >= $2 AND recorded_at <= $3
             ORDER BY recorded_at ASC"#,
@@ -587,19 +587,19 @@ async fn collect_trip_endpoints(
                 WITH ORDINALITY AS u(s_at, e_at, idx)
         )
         SELECT t.idx::INT4 AS idx,
-               (SELECT lat FROM location_records lr
+               (SELECT lat FROM location_points lr
                   WHERE lr.device_id = $1 AND lr.user_id = $4 AND lr.fix = TRUE
                     AND lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
                   ORDER BY lr.recorded_at ASC LIMIT 1) AS start_lat,
-               (SELECT lng FROM location_records lr
+               (SELECT lng FROM location_points lr
                   WHERE lr.device_id = $1 AND lr.user_id = $4 AND lr.fix = TRUE
                     AND lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
                   ORDER BY lr.recorded_at ASC LIMIT 1) AS start_lng,
-               (SELECT lat FROM location_records lr
+               (SELECT lat FROM location_points lr
                   WHERE lr.device_id = $1 AND lr.user_id = $4 AND lr.fix = TRUE
                     AND lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
                   ORDER BY lr.recorded_at DESC LIMIT 1) AS end_lat,
-               (SELECT lng FROM location_records lr
+               (SELECT lng FROM location_points lr
                   WHERE lr.device_id = $1 AND lr.user_id = $4 AND lr.fix = TRUE
                     AND lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
                   ORDER BY lr.recorded_at DESC LIMIT 1) AS end_lng
@@ -1553,20 +1553,4 @@ fn parse_date_or_rfc3339_end(s: &str) -> AppResult<DateTime<Utc>> {
     let t = DateTime::parse_from_rfc3339(&format!("{}T23:59:59+09:00", s))
         .map_err(|e| AppError::BadRequest(format!("bad date: {e}")))?;
     Ok(t.with_timezone(&Utc))
-}
-
-fn path_distance(pts: &[(f64, f64)]) -> f64 {
-    if pts.len() < 2 { return 0.0; }
-    let r = std::f64::consts::PI / 180.0;
-    let mut m = 0.0;
-    for i in 1..pts.len() {
-        let (la1, lo1) = pts[i-1];
-        let (la2, lo2) = pts[i];
-        let d_la = (la2 - la1) * r;
-        let d_lo = (lo2 - lo1) * r;
-        let a = (d_la/2.0).sin().powi(2)
-              + (la1*r).cos() * (la2*r).cos() * (d_lo/2.0).sin().powi(2);
-        m += 2.0 * 6_371_000.0 * a.sqrt().asin();
-    }
-    m
 }

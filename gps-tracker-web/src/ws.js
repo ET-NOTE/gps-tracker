@@ -1,3 +1,4 @@
+import { authScope, AUTH_CHANGED } from './authSession';
 // WebSocket client for real-time GPS events.
 // 도메인별 prefix 분기:
 //   gps.serial.kr → /ws/realtime (주 도메인)
@@ -6,7 +7,6 @@ import { activeStorage, tryRefresh, isTokenExpiringSoon } from './api';
 import { chatBus } from './lib/chatBus';
 
 function buildWsUrl() {
-  if (!import.meta.env.PROD) return 'wss://gps.serial.kr/ws/realtime';
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const path  = location.hostname === 'gps.serial.kr' ? '/ws/realtime' : '/gps-tracker/ws/realtime';
   return `${proto}://${location.host}${path}`;
@@ -18,6 +18,9 @@ export class TrackerWS {
     this.onEvent = onEvent;
     this.onStatus = onStatus;   // ('connected' | 'disconnected') => void
     this.token = null;
+    this._scope = authScope();
+    this._authListener = () => { if (this._scope !== authScope()) this.disconnect(); };
+    window.addEventListener(AUTH_CHANGED, this._authListener);
     this.socket = null;
     this.subscribed = new Set();
     this._timer = null;
@@ -67,7 +70,8 @@ export class TrackerWS {
       const s2 = activeStorage();
       t = s2 ? s2.getItem('access_token') : null;
     }
-    if (t) this.token = t;
+    if (this._dead || this._scope !== authScope()) return;
+    this.token = t;
     if (!this.token) {
       // 토큰 없으면 exp backoff 로 재시도 (로그인 직후 등)
       this._timer = setTimeout(() => this._open(), this._reconnectDelay());
@@ -85,6 +89,7 @@ export class TrackerWS {
     };
 
     sock.onmessage = (e) => {
+      if (this._dead || this._scope !== authScope()) return;
       let msg;
       try { msg = JSON.parse(e.data); } catch { return; }
       // (F7-b) chat_message 는 device 컨텍스트와 무관 — chatBus 로 직접 fan-out.
@@ -147,6 +152,8 @@ export class TrackerWS {
 
   disconnect() {
     this._dead = true;
+    this._pending = [];
+    window.removeEventListener(AUTH_CHANGED, this._authListener);
     clearTimeout(this._timer);
     this.socket?.close();
   }

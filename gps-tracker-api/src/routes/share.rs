@@ -133,7 +133,7 @@ async fn extend_share(
         r#"SELECT s.id, s.expires_at
              FROM share_tokens s
              JOIN devices d ON d.id = s.device_id
-            WHERE s.id = $1 AND d.owner_id = $2 AND s.revoked_at IS NULL"#,
+            WHERE s.id = $1 AND d.owner_id = $2 AND s.created_by = $2 AND s.revoked_at IS NULL"#,
     ).bind(share_id).bind(user.user_id)
     .fetch_optional(&state.db).await?;
     let (_, cur_expires) = cur.ok_or(AppError::NotFound)?;
@@ -189,11 +189,11 @@ async fn list_shares(
         r#"SELECT id, token, device_id, expires_at, revoked_at,
                   view_count, last_viewed_at, note, created_at, credits_spent
              FROM share_tokens
-            WHERE device_id = $1
+            WHERE device_id = $1 AND created_by = $2
             ORDER BY created_at DESC
             LIMIT 50"#,
     )
-    .bind(device_id)
+    .bind(device_id).bind(user.user_id)
     .fetch_all(&state.db)
     .await?;
     Ok(Json(rows))
@@ -248,9 +248,11 @@ async fn public_view(
     let row: Option<(Option<String>, Option<String>, Option<String>,
                      Option<DateTime<Utc>>, Option<f64>, Option<f64>)> = sqlx::query_as(
         r#"SELECT display_name, color, icon, last_seen_at, last_lat, last_lng
-             FROM devices WHERE id = $1"#,
+             FROM devices WHERE id = $1 AND EXISTS (
+               SELECT 1 FROM share_tokens s WHERE s.token=$2 AND s.device_id=devices.id
+                 AND s.created_by=devices.owner_id AND s.revoked_at IS NULL AND s.expires_at>now())"#,
     )
-    .bind(device_id)
+    .bind(device_id).bind(&token)
     .fetch_optional(&state.db)
     .await?;
     let (name, color, icon, last_seen, last_lat, last_lng) = row.ok_or(AppError::NotFound)?;
@@ -303,20 +305,25 @@ async fn public_locations(
     let limit = q.limit.unwrap_or(500).clamp(1, 10000);
 
     let rows = sqlx::query_as::<_, PublicLocationRow>(
-        r#"SELECT recorded_at, fix, lat, lng
-             FROM location_records
-            WHERE device_id = $1
+        r#"WITH scoped AS MATERIALIZED (SELECT recorded_at, fix, lat, lng, anchor_at, source
+             FROM location_points p
+            WHERE device_id = $1 AND EXISTS (
+              SELECT 1 FROM share_tokens s JOIN devices d ON d.id=s.device_id
+              WHERE s.token=$6 AND s.device_id=p.device_id AND s.created_by=p.user_id
+                AND d.owner_id=p.user_id AND s.revoked_at IS NULL AND s.expires_at>now())
               AND ($2::timestamptz IS NULL OR recorded_at >= $2)
               AND ($3::timestamptz IS NULL OR recorded_at <= $3)
               AND ($4::bool        IS NULL OR fix = $4)
-            ORDER BY recorded_at DESC
-            LIMIT $5"#,
+          ), anchors AS (
+             SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $5
+          ) SELECT recorded_at,fix,lat,lng FROM scoped JOIN anchors USING(anchor_at,source)
+            ORDER BY recorded_at DESC"#,
     )
     .bind(device_id)
     .bind(q.since)
     .bind(q.until)
     .bind(q.fix_only)
-    .bind(limit)
+    .bind(limit).bind(&token)
     .fetch_all(&state.db)
     .await?;
 
@@ -345,12 +352,15 @@ async fn public_daily_stats(
 
     let rows = sqlx::query_as::<_, PublicDayRow>(
         r#"SELECT date, fix_count
-             FROM daily_stats
-            WHERE device_id = $1 AND fix_count > 0
+             FROM daily_stats ds
+            WHERE device_id = $1 AND fix_count > 0 AND EXISTS (
+              SELECT 1 FROM share_tokens s JOIN devices d ON d.id=s.device_id
+              WHERE s.token=$3 AND s.device_id=ds.device_id AND s.created_by=ds.user_id
+                AND d.owner_id=ds.user_id AND s.revoked_at IS NULL AND s.expires_at>now())
             ORDER BY date DESC
             LIMIT $2"#,
     )
-    .bind(device_id).bind(limit)
+    .bind(device_id).bind(limit).bind(&token)
     .fetch_all(&state.db).await?;
     Ok(Json(rows))
 }
@@ -365,9 +375,9 @@ async fn resolve_token(
 ) -> AppResult<(i64, DateTime<Utc>, Option<String>)> {
     let row: Option<(i64, DateTime<Utc>, Option<DateTime<Utc>>, Option<String>)> =
         sqlx::query_as(
-            r#"SELECT device_id, expires_at, revoked_at, note
-                 FROM share_tokens
-                WHERE token = $1"#,
+            r#"SELECT s.device_id, s.expires_at, s.revoked_at, s.note
+                 FROM share_tokens s JOIN devices d ON d.id=s.device_id
+                WHERE s.token = $1 AND s.created_by=d.owner_id"#,
         )
         .bind(token)
         .fetch_optional(&state.db)

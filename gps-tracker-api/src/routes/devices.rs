@@ -21,6 +21,14 @@ use crate::{
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct DeviceView {
+    pub next_service_date: Option<chrono::NaiveDate>,
+    pub next_service_km: Option<i32>,
+    pub insurance_expiry: Option<chrono::NaiveDate>,
+    pub inspection_expiry: Option<chrono::NaiveDate>,
+    pub car_plate: Option<String>,
+    pub car_model: Option<String>,
+    pub car_image_url: Option<String>,
+
     pub id: i64,
     pub device_uid: String,
     pub display_name: Option<String>,
@@ -83,6 +91,21 @@ pub struct PairRequest {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct UpdateRequest {
+    #[serde(default, deserialize_with = "nullable_patch")]
+    pub next_service_date: Option<Option<chrono::NaiveDate>>,
+    #[serde(default, deserialize_with = "nullable_patch")]
+    pub next_service_km: Option<Option<i32>>,
+    #[serde(default, deserialize_with = "nullable_patch")]
+    pub insurance_expiry: Option<Option<chrono::NaiveDate>>,
+    #[serde(default, deserialize_with = "nullable_patch")]
+    pub inspection_expiry: Option<Option<chrono::NaiveDate>>,
+    #[serde(default, deserialize_with = "nullable_patch")]
+    pub car_plate: Option<Option<String>>,
+    #[serde(default, deserialize_with = "nullable_patch")]
+    pub car_model: Option<Option<String>>,
+    #[serde(default, deserialize_with = "nullable_patch")]
+    pub car_image_url: Option<Option<String>>,
+
     #[validate(length(min = 1, max = 64))]
     pub display_name: Option<String>,
     #[validate(length(min = 1, max = 16))]
@@ -91,12 +114,18 @@ pub struct UpdateRequest {
     pub icon:  Option<String>,        // 예: "car", "person", "pet"
 }
 
+fn nullable_patch<'de, D, T>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where D: serde::Deserializer<'de>, T: Deserialize<'de> {
+    Option::<T>::deserialize(deserializer).map(Some)
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/devices", get(list))
         .route("/devices/scan", get(scan_unpaired))   // [2026-09-14 KC] 최근 ingest 중 미페어링 단말 스캔
         .route("/devices/pair", post(pair))
         .route("/devices/pair-phone", post(pair_phone))
+        .route("/devices/:id/car-image", post(upload_car_image).layer(axum::extract::DefaultBodyLimit::max(6*1024*1024)))
         .route("/devices/:id", get(detail).patch(update).delete(unpair))
         .route("/devices/:id/wipe", post(wipe))                  // 데이터 완전 삭제
         .route("/devices/:id/audit", get(audit_log))             // 감사 로그
@@ -195,6 +224,7 @@ async fn list(
                   d.department, d.vehicle_type,
                   d.enabled, d.note,
                   d.device_kind,
+                  d.next_service_date, d.next_service_km, d.insurance_expiry, d.inspection_expiry, d.car_plate, d.car_model, d.car_image_url,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
@@ -479,20 +509,39 @@ async fn update(
 ) -> AppResult<Json<DeviceView>> {
     req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
 
+    if req.next_service_km.flatten().is_some_and(|v| v < 0) {
+        return Err(AppError::BadRequest("next_service_km must be non-negative".into()));
+    }
+    for v in [&req.car_plate, &req.car_model] {
+        if v.as_ref().and_then(|v| v.as_ref()).is_some_and(|s| s.chars().count()>100) {
+            return Err(AppError::BadRequest("vehicle text too long".into()));
+        }
+    }
+    if let Some(Some(ref url)) = req.car_image_url {
+        let prefix=format!("/uploads/car-images/dev_{id}_");
+        if !url.starts_with(&prefix) || url.contains("..") || url[prefix.len()..].contains('/') {
+            return Err(AppError::BadRequest("invalid car image path".into()));
+        }
+    }
     let res = sqlx::query(
-        r#"UPDATE devices
-              SET display_name = COALESCE($1, display_name),
-                  color        = COALESCE($2, color),
-                  icon         = COALESCE($3, icon)
-            WHERE id = $4 AND owner_id = $5"#,
-    )
-    .bind(&req.display_name)
-    .bind(&req.color)
-    .bind(&req.icon)
-    .bind(id)
-    .bind(user.user_id)
-    .execute(&state.db)
-    .await?;
+        "UPDATE devices SET display_name=COALESCE($1,display_name),color=COALESCE($2,color),icon=COALESCE($3,icon),
+          next_service_date=CASE WHEN $6 THEN $7 ELSE next_service_date END,
+          next_service_km=CASE WHEN $8 THEN $9 ELSE next_service_km END,
+          insurance_expiry=CASE WHEN $10 THEN $11 ELSE insurance_expiry END,
+          inspection_expiry=CASE WHEN $12 THEN $13 ELSE inspection_expiry END,
+          car_plate=CASE WHEN $14 THEN $15 ELSE car_plate END,
+          car_model=CASE WHEN $16 THEN $17 ELSE car_model END,
+          car_image_url=CASE WHEN $18 THEN $19 ELSE car_image_url END
+        WHERE id=$4 AND owner_id=$5")
+        .bind(&req.display_name).bind(&req.color).bind(&req.icon).bind(id).bind(user.user_id)
+        .bind(req.next_service_date.is_some()).bind(req.next_service_date.flatten())
+        .bind(req.next_service_km.is_some()).bind(req.next_service_km.flatten())
+        .bind(req.insurance_expiry.is_some()).bind(req.insurance_expiry.flatten())
+        .bind(req.inspection_expiry.is_some()).bind(req.inspection_expiry.flatten())
+        .bind(req.car_plate.is_some()).bind(req.car_plate.flatten())
+        .bind(req.car_model.is_some()).bind(req.car_model.flatten())
+        .bind(req.car_image_url.is_some()).bind(req.car_image_url.flatten())
+        .execute(&state.db).await?;
 
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound);
@@ -866,16 +915,35 @@ async fn delete_range(
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
-    if q.until < q.from {
+    if q.until < q.from || (q.until-q.from).num_days() > 3660 {
         return Err(AppError::BadRequest("until < from".into()));
     }
     let mut tx = state.db.begin().await?;
-    let locs = sqlx::query(
-        "DELETE FROM location_records WHERE device_id = $1 AND user_id = $2 \
-           AND recorded_at >= $3 AND recorded_at <= $4",
-    )
-    .bind(id).bind(user.user_id).bind(q.from).bind(q.until)
-    .execute(&mut *tx).await?.rows_affected();
+    // Serialize deletion with ownership changes, and keep the invalidation in this transaction.
+    let owned: Option<i64> = sqlx::query_scalar("SELECT id FROM devices WHERE id=$1 AND owner_id=$2 FOR UPDATE")
+        .bind(id).bind(user.user_id).fetch_optional(&mut *tx).await?;
+    if owned.is_none() { return Err(AppError::NotFound); }
+    let locs: i64 = sqlx::query_scalar("SELECT count(*) FROM location_points WHERE device_id=$1 AND user_id=$2 AND recorded_at BETWEEN $3 AND $4")
+        .bind(id).bind(user.user_id).bind(q.from).bind(q.until).fetch_one(&mut *tx).await?;
+    sqlx::query("UPDATE location_records r SET fixes_jsonb=(
+          SELECT COALESCE(jsonb_agg(f ORDER BY (f->>'at_ms')::bigint),'[]'::jsonb)
+          FROM jsonb_array_elements(r.fixes_jsonb) f
+          WHERE NOT (r.recorded_at+COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' BETWEEN $3 AND $4))
+        WHERE device_id=$1 AND user_id=$2 AND fixes_jsonb IS NOT NULL
+          AND EXISTS(SELECT 1 FROM jsonb_array_elements(r.fixes_jsonb) f
+            WHERE r.recorded_at+COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' BETWEEN $3 AND $4)")
+        .bind(id).bind(user.user_id).bind(q.from).bind(q.until).execute(&mut *tx).await?;
+    sqlx::query("DELETE FROM location_records WHERE device_id=$1 AND user_id=$2
+        AND ((fixes_jsonb IS NULL AND recorded_at BETWEEN $3 AND $4) OR fixes_jsonb='[]'::jsonb)")
+        .bind(id).bind(user.user_id).bind(q.from).bind(q.until).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO stats_rebuild_queue(device_id,date)
+        SELECT $1,d::date FROM generate_series(($2::timestamptz AT TIME ZONE 'Asia/Seoul')::date,
+          ($3::timestamptz AT TIME ZONE 'Asia/Seoul')::date,interval '1 day') d
+        ON CONFLICT(device_id,date) DO UPDATE SET generation=stats_rebuild_queue.generation+1")
+        .bind(id).bind(q.from).bind(q.until).execute(&mut *tx).await?;
+    sqlx::query("DELETE FROM daily_stats WHERE device_id=$1 AND user_id=$2 AND date BETWEEN
+        ($3::timestamptz AT TIME ZONE 'Asia/Seoul')::date AND ($4::timestamptz AT TIME ZONE 'Asia/Seoul')::date")
+        .bind(id).bind(user.user_id).bind(q.from).bind(q.until).execute(&mut *tx).await?;
     let evs = sqlx::query(
         "DELETE FROM events WHERE device_id = $1 AND user_id = $2 \
            AND occurred_at >= $3 AND occurred_at <= $4",
@@ -890,8 +958,8 @@ async fn delete_range(
         // [뿌리 B 2026-08-14] 재계산 서브쿼리에 user_id 필터 — 이전 owner 의 좌표를
         //   last_lat/last_lng 로 부활시켜 새 owner 지도에 표시하던 것 차단.
         "WITH last_loc AS ( \
-           SELECT lat, lng, recorded_at FROM location_records \
-             WHERE device_id = $1 AND user_id = $2 ORDER BY recorded_at DESC LIMIT 1 \
+           SELECT lat, lng, recorded_at FROM location_points \
+             WHERE device_id = $1 AND user_id = $2 AND fix=true ORDER BY recorded_at DESC LIMIT 1 \
          ), last_ev AS ( \
            SELECT occurred_at FROM events \
              WHERE device_id = $1 AND user_id = $2 ORDER BY occurred_at DESC LIMIT 1 \
@@ -1057,29 +1125,23 @@ async fn locations_aggregated(
     ).bind(id).bind(user.user_id).fetch_optional(&state.db).await?;
     if owner_ok.is_none() { return Err(AppError::NotFound); }
 
-    let table = match q.bucket.as_str() {
-        "1m" => "location_1min",
-        "5m" => "location_5min",
-        "1h" => "location_1hour",
-        _    => return Err(AppError::BadRequest("bucket must be '1m' | '5m' | '1h'".into())),
+    let interval = match q.bucket.as_str() {
+        "1m" => "1 minute", "5m" => "5 minutes", "1h" => "1 hour",
+        _ => return Err(AppError::BadRequest("bucket must be 1m, 5m or 1h".into())),
     };
     let until = q.until.unwrap_or_else(Utc::now);
-
-    let rows: Vec<(DateTime<Utc>, Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<f32>, Option<i32>, i64)> = sqlx::query_as(&format!(
-        // [뿌리 B 2026-08-14] CAGG 에는 user_id 컬럼이 없어 raw 처럼 필터 못 함 → 현재 owner 가
-        //   페어링한 시점(paired_at) 이후 bucket 만 반환해 이전 owner 의 집계 궤적 노출 차단.
-        //   paired_at NULL(legacy device)이면 제한 없음(-infinity).
-        "SELECT bucket, lat_avg, lng_avg, lat_last, lng_last, sat_avg, vbat_avg, fix_count
-           FROM {table}
-          WHERE device_id = $1 AND bucket >= $2 AND bucket <= $3
-            AND bucket >= COALESCE(
-                  (SELECT paired_at FROM devices WHERE id = $1), '-infinity'::timestamptz)
-          ORDER BY bucket ASC
-          LIMIT 5000"
-    ))
-    .bind(id).bind(q.since).bind(until)
-    .fetch_all(&state.db)
-    .await?;
+    if until < q.since { return Err(AppError::BadRequest("until < since".into())); }
+    let rows: Vec<(DateTime<Utc>, Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<f32>, Option<i32>, i64)> = sqlx::query_as(
+        "SELECT time_bucket($4::text::interval,recorded_at) AS bucket,
+           avg(lat),avg(lng),last(lat,recorded_at),last(lng,recorded_at),
+           avg(sat)::real,avg(vbat_mv)::int,count(*)
+         FROM location_points
+         WHERE device_id=$1 AND user_id=$5 AND fix=true
+           AND recorded_at >= $2 AND recorded_at <= $3
+           AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$5)
+         GROUP BY bucket ORDER BY bucket LIMIT 5000")
+        .bind(id).bind(q.since).bind(until).bind(interval).bind(user.user_id)
+        .fetch_all(&state.db).await?;
 
     let out: Vec<Value> = rows.into_iter().map(|(b, lat_a, lng_a, lat_l, lng_l, sat, vbat, count)| {
         json!({
@@ -1234,6 +1296,7 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   d.department, d.vehicle_type,
                   d.enabled, d.note,
                   d.device_kind,
+                  d.next_service_date, d.next_service_km, d.insurance_expiry, d.inspection_expiry, d.car_plate, d.car_model, d.car_image_url,
                   le.kind        AS last_event_kind,
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
@@ -1353,4 +1416,38 @@ async fn timescaledb_storage_stats(
         "aggregates":    Value::Object(aggregates),
         "retention":     "permanent",  // 2026-06-27 결정 — 1년 retention policy 제거됨
     })))
+}
+
+async fn upload_car_image(
+    State(state): State<AppState>, user: AuthUser, Path(id): Path<i64>,
+    mut multipart: axum::extract::Multipart,
+) -> AppResult<Json<Value>> {
+    let owned: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)")
+        .bind(id).bind(user.user_id).fetch_one(&state.db).await?;
+    if !owned { return Err(AppError::NotFound); }
+    while let Some(field) = multipart.next_field().await.map_err(|e| AppError::BadRequest(e.to_string()))? {
+        if field.name() != Some("file") { continue; }
+        let bytes = field.bytes().await.map_err(|e| AppError::BadRequest(e.to_string()))?;
+        if bytes.len()>5*1024*1024 { return Err(AppError::BadRequest("image exceeds 5 MiB".into())); }
+        let ext = if bytes.starts_with(&[0xff,0xd8,0xff]) { "jpg" }
+            else if bytes.starts_with(b"\x89PNG\r\n\x1a\n") { "png" }
+            else if bytes.starts_with(b"RIFF") && bytes.get(8..12)==Some(b"WEBP") { "webp" }
+            else { return Err(AppError::BadRequest("JPEG, PNG or WebP required".into())); };
+        let root = std::path::PathBuf::from(std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/home/mmm/uploads".into())).join("car-images");
+        tokio::fs::create_dir_all(&root).await.map_err(|e| AppError::Internal(e.into()))?;
+        let name=format!("dev_{id}_{}.{ext}",uuid::Uuid::new_v4());
+        let path=root.join(&name);
+        tokio::fs::write(&path,&bytes).await.map_err(|e| AppError::Internal(e.into()))?;
+        let url=format!("/uploads/car-images/{name}");
+        let result=sqlx::query("UPDATE devices SET car_image_url=$1 WHERE id=$2 AND owner_id=$3")
+            .bind(&url).bind(id).bind(user.user_id).execute(&state.db).await;
+        match result {
+            Ok(r) if r.rows_affected()==1 => return Ok(Json(json!({"url":url,"car_image_url":url}))),
+            other => {
+                let _=tokio::fs::remove_file(&path).await;
+                return Err(other.err().map(AppError::from).unwrap_or(AppError::NotFound));
+            }
+        }
+    }
+    Err(AppError::BadRequest("file required".into()))
 }

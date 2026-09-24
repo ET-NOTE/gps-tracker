@@ -3,7 +3,7 @@
 # 패턴: tar+scp 소스 → 서버에서 cargo build --release → bin/ atomic swap → systemctl restart.
 #
 # 사용법:
-#   bash deploy.sh            # = prod (default)
+#   bash deploy.sh dev        # dev only; target is required
 #   bash deploy.sh prod
 #   bash deploy.sh dev        # → dev-gps.serial.kr (gps_tracker_dev DB, port 3041)
 #
@@ -13,7 +13,11 @@
 # 메모리: VPS RAM 2.9GB. dev/prod 빌드 동시 실행 금지 (직렬).
 set -e
 
-ENV="${1:-prod}"
+ENV="${1:?Usage: deploy.sh dev|prod (explicit target required)}"
+if [ "$ENV" = prod ] && [ "${PROD_DEPLOY_APPROVED:-}" != yes ]; then
+  echo "Production deployment requires the owner's explicit approval. Set PROD_DEPLOY_APPROVED=yes only after that approval." >&2
+  exit 2
+fi
 # VPS host — 다른 서버 배포 시 `DEPLOY_HOST=my.host.com bash deploy.sh` 형태로 override.
 DEPLOY_HOST="${DEPLOY_HOST:-210.114.18.16}"
 case "$ENV" in
@@ -22,7 +26,7 @@ case "$ENV" in
     SERVICE=gps-tracker-api
     BIN_NAME=gps-tracker-api
     REMOTE_HOME=/home/${DEPLOY_USER_PROD:-mmm}/projects/gps-tracker-api
-    HEALTH_URL="${HEALTH_URL_PROD:-https://gps.serial.kr/api/v1/health}"
+    HEALTH_URL="${HEALTH_URL_PROD:-https://gps.serial.kr/health}"
     ;;
   dev)
     # gps-dev 계정 통로. authorized_keys 에 등록된 키 (junior + maintainer) 면 모두 ssh 가능.
@@ -30,7 +34,7 @@ case "$ENV" in
     SERVICE=gps-tracker-api-dev
     BIN_NAME=gps-tracker-api-dev
     REMOTE_HOME=/home/${DEPLOY_USER_DEV:-gps-dev}/projects/gps-tracker-api
-    HEALTH_URL="${HEALTH_URL_DEV:-https://dev-gps.serial.kr/api/v1/health}"
+    HEALTH_URL="${HEALTH_URL_DEV:-https://dev-gps.serial.kr/health}"
     ;;
   *)
     echo "usage: $0 [prod|dev]" >&2
@@ -51,6 +55,7 @@ tar -czf "$TMP_TAR" \
   --exclude='./.git' \
   --exclude='./.idea' \
   --exclude='./.vscode' \
+  --exclude='./.env' --exclude='./.env.*' --exclude='./*.dump' --exclude='./uploads' \
   -C . .
 scp "$TMP_TAR" $SERVER:/tmp/
 rm -f "$TMP_TAR"
@@ -79,7 +84,7 @@ cd $REMOTE_SRC
 # sqlx::migrate! macro 가 cargo 캐시에 의해 새 migration 파일을 못 보고 지나갈 때가 있음.
 # main.rs 를 touch 해서 macro 재실행 강제 (Phase 6A 0043 mig 가 이 함정에 빠진 적 있음).
 touch src/main.rs
-cargo build --release --bin gps-tracker-api
+CARGO_BUILD_JOBS=1 cargo build --locked --release --bin gps-tracker-api
 echo ">>> build OK"
 ENDSSH
 

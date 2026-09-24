@@ -1,3 +1,6 @@
+import { cachedRead } from './lib/offlineCache';
+import { queryClient } from './state/queryClient';
+import { authScope, assertSession, AUTH_CHANGED, notifyAuthChanged } from './authSession';
 import { hydrateDeviceColors } from './colors';
 import { hydratePairTutorialSeen } from './pairTutorialSeen';
 
@@ -23,17 +26,21 @@ function getToken() {
 
 // remember=true → localStorage, false → sessionStorage. 둘 다 미리 클리어해서 충돌 방지.
 export function setTokens(access, refresh, remember = true) {
+  resetSession();
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   sessionStorage.removeItem('access_token');
   sessionStorage.removeItem('refresh_token');
   const s = remember ? localStorage : sessionStorage;
+  s.setItem('auth_session', crypto.randomUUID());
   s.setItem('access_token', access);
   s.setItem('refresh_token', refresh);
   schedulePreemptiveRefresh(access);
+  notifyAuthChanged();
 }
 
 export function clearTokens() {
+  resetSession();
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   sessionStorage.removeItem('access_token');
@@ -43,6 +50,20 @@ export function clearTokens() {
   // 사용자 계정에 매인 module cache 무효화 — 다른 계정 재로그인 시 이전 값 노출 방지.
   hydrateDeviceColors(null);
   hydratePairTutorialSeen(null);
+  notifyAuthChanged();
+}
+
+function resetSession() {
+  refreshAbort?.abort();
+  refreshing = null;
+  void queryClient.cancelQueries();
+  queryClient.clear();
+  localStorage.removeItem('auth_session');
+  sessionStorage.removeItem('auth_session');
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key?.startsWith('gps_cache_')) localStorage.removeItem(key);
+  }
 }
 
 // ── 사전 refresh ─────────────────────────────────────────────────────
@@ -77,6 +98,8 @@ function schedulePreemptiveRefresh(accessToken) {
 }
 
 // 앱 부팅 시 기존 토큰이 있으면 사전 refresh 스케줄.
+const _bootStorage = activeStorage();
+if (_bootStorage && !_bootStorage.getItem('auth_session')) _bootStorage.setItem('auth_session', crypto.randomUUID());
 const _bootToken = getToken();
 if (_bootToken) schedulePreemptiveRefresh(_bootToken);
 
@@ -89,51 +112,73 @@ let refreshing = null;
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+let refreshAbort = null;
 export async function tryRefresh() {
   if (refreshing) return refreshing;
+  const scope = authScope();
   const s = activeStorage();
-  const rt = s ? s.getItem('refresh_token') : null;
-  if (!rt) return 'unauth';
-
-  refreshing = (async () => {
-    // 네트워크 깜빡임 (모바일 셀룰러) 대응: 일시 오류면 한 번 더 시도.
+  const initialRefresh = s?.getItem('refresh_token');
+  if (!initialRefresh) return 'unauth';
+  const controller = new AbortController();
+  refreshAbort = controller;
+  const run = async () => {
+    if (scope !== authScope()) return 'stale';
+    // Another tab may have rotated the token while we waited for its lock.
+    if (s.getItem('refresh_token') !== initialRefresh) return true;
+    const rt = initialRefresh;
+    const current = () => scope === authScope() && s === activeStorage() && s.getItem('refresh_token') === rt;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
+        if (!current()) return 'stale';
         const res = await fetch(`${BASE}/auth/refresh`, {
-          method: 'POST',
+          method: 'POST', signal: controller.signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: rt }),
         });
-        if (res.status === 401 || res.status === 403) {
-          // 진짜 인증 실패 — 더 시도해도 의미 없음
-          return 'unauth';
-        }
+        if (!current()) return scope === authScope() ? true : 'stale';
+        if (res.status === 401 || res.status === 403) return 'unauth';
         if (!res.ok) {
           if (attempt === 0) { await sleep(500); continue; }
           return 'transient';
         }
         const data = await res.json();
-        // 같은 storage 에 새 토큰 쌍 기록 (remember 정책 유지). storage 가 그 사이
-        // 비워졌을 가능성 (다른 탭 logout 등) 도 대비.
-        const cur = activeStorage() || s;
-        cur.setItem('access_token',  data.access_token);
-        cur.setItem('refresh_token', data.refresh_token);
+        if (!current()) return 'stale';
+        s.setItem('access_token', data.access_token);
+        s.setItem('refresh_token', data.refresh_token);
         schedulePreemptiveRefresh(data.access_token);
         return true;
-      } catch {
-        // 네트워크 fetch reject — 일시
+      } catch (e) {
+        if (controller.signal.aborted || !current()) return 'stale';
         if (attempt === 0) { await sleep(500); continue; }
         return 'transient';
       }
     }
     return 'transient';
-  })();
-
-  try { return await refreshing; }
-  finally { refreshing = null; }
+  };
+  const pending = globalThis.navigator?.locks
+    ? navigator.locks.request('gps-auth-refresh', { signal: controller.signal }, run).catch(() => 'stale')
+    : run();
+  refreshing = pending;
+  try { return await pending; }
+  finally { if (refreshing === pending) refreshing = null; }
 }
 
+// Storage events come from other tabs only. Token rotation preserves auth_session.
+let observedScope = authScope();
+window.addEventListener(AUTH_CHANGED, () => { observedScope = authScope(); });
+window.addEventListener('storage', () => {
+  if (observedScope === authScope()) return;
+  refreshAbort?.abort();
+  refreshing = null;
+  void queryClient.cancelQueries();
+  queryClient.clear();
+  hydrateDeviceColors(null);
+  hydratePairTutorialSeen(null);
+  notifyAuthChanged();
+});
+
 async function req(method, path, body, retry = true) {
+  const scope = authScope();
   const res = await fetch(BASE + path, {
     method,
     headers: {
@@ -143,8 +188,11 @@ async function req(method, path, body, retry = true) {
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
+  assertSession(scope);
   if (res.status === 401 && retry) {
     const r = await tryRefresh();
+    assertSession(scope);
+    if (r === 'stale') throw new DOMException('계정이 변경되었습니다.', 'AbortError');
     if (r === 'unauth') {
       // 진짜 만료/취소 — 로그아웃 후 reload
       clearTokens();
@@ -165,7 +213,19 @@ async function req(method, path, body, retry = true) {
   }
 
   const text = await res.text();
+  assertSession(scope);
   return text ? JSON.parse(text) : null;
+}
+
+async function sessionFetch(url, options) {
+  const scope = authScope();
+  const res = await fetch(url, options);
+  assertSession(scope);
+  for (const name of ['json', 'text', 'blob', 'arrayBuffer']) {
+    const read = res[name].bind(res);
+    res[name] = async () => { const data = await read(); assertSession(scope); return data; };
+  }
+  return res;
 }
 
 export const api = {
@@ -186,8 +246,16 @@ export const api = {
                       req('POST', '/auth/password-reset/verify',
                           { email, phone, otp_code, new_password }),
 
+  uploadCarImage: async (id, file) => {
+    const scope = authScope();
+    const body = new FormData(); body.append('file', file);
+    const res = await sessionFetch(`${BASE}/devices/${id}/car-image`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body });
+    const data = await res.json(); assertSession(scope);
+    if (!res.ok) throw new Error(data.error || '사진 업로드 실패');
+    return data;
+  },
   // devices
-  listDevices:  ()                      => req('GET',    '/devices'),
+  listDevices:  () => cachedRead('devices', () => req('GET', '/devices')),
   pairDevice:   (params) => req('POST', '/devices/pair', params),  // { device_uid?, iccid?, display_name? }
   scanDevices:  () => req('GET', '/devices/scan'),                 // [KC] 최근 ingest 중 미페어링 단말 목록
   updateDevice: (id, patch)             => req('PATCH',  `/devices/${id}`, patch),
@@ -302,7 +370,8 @@ export const api = {
     if (params.until)    q.set('until',    params.until);
     if (params.fix_only) q.set('fix_only', 'true');
     const qs = q.toString();
-    return req('GET', `/devices/${deviceId}/locations${qs ? '?' + qs : ''}`);
+    const path = `/devices/${deviceId}/locations${qs ? '?' + qs : ''}`;
+    return cachedRead(path, () => req('GET', path));
   },
 
   // Phase 1 schema — POST 단위 grouping. consumer 가 sampling / marker / polyline 로직 짤 때 활용.
@@ -314,7 +383,8 @@ export const api = {
     if (params.since)    q.set('since',    params.since);
     if (params.until)    q.set('until',    params.until);
     if (params.fix_only) q.set('fix_only', 'true');
-    return req('GET', `/devices/${deviceId}/locations?${q.toString()}`);
+    const path = `/devices/${deviceId}/locations?${q.toString()}`;
+    return cachedRead(path, () => req('GET', path));
   },
 
   // helper: grouped 응답을 legacy flat 형태로 unpack. 기존 consumer 코드 최소 변경용.
@@ -479,7 +549,7 @@ export const api = {
     if (params.to)   q.set('to',   params.to);
     const qs = q.toString();
     const tok = localStorage.getItem('access_token');
-    const res = await fetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`, {
+    const res = await sessionFetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`, {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (!res.ok) {
@@ -505,7 +575,7 @@ export const api = {
     fd.append('kind', kind || 'other');
     if (note) fd.append('note', note);
     const tok = localStorage.getItem('access_token');
-    const res = await fetch(`${BASE}/devices/${deviceId}/documents`, {
+    const res = await sessionFetch(`${BASE}/devices/${deviceId}/documents`, {
       method: 'POST', body: fd,
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
@@ -520,7 +590,7 @@ export const api = {
     const tok = getToken();
     // 브라우저 <a href> 로 열려면 auth header 못 붙임. blob fetch 후 URL.createObjectURL.
     return async () => {
-      const res = await fetch(`${BASE}/documents/${id}/download`, {
+      const res = await sessionFetch(`${BASE}/documents/${id}/download`, {
         headers: tok ? { Authorization: `Bearer ${tok}` } : {},
       });
       if (!res.ok) throw new Error(res.statusText);
@@ -535,7 +605,7 @@ export const api = {
   // (2026-07-28) 문서 인라인 프리뷰 — blob URL 로 <img>/<embed> 렌더.
   fetchDocumentPreview: async (id) => {
     const tok = getToken();
-    const res = await fetch(`${BASE}/documents/${id}/preview`, {
+    const res = await sessionFetch(`${BASE}/documents/${id}/preview`, {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (!res.ok) throw new Error(res.statusText);
@@ -581,7 +651,7 @@ export const api = {
   // 대신 fetch 로 blob → object URL 만들어 사용.
   fetchRentalPhoto:   async (photoId) => {
     const tok = getToken();
-    const res = await fetch(`${BASE}/rentcar/photos/${photoId}`, {
+    const res = await sessionFetch(`${BASE}/rentcar/photos/${photoId}`, {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (!res.ok) throw new Error(res.statusText);
@@ -609,7 +679,7 @@ export const api = {
   // (2026-07-28 Stage-R4) 렌트카 청구서 XLSX.
   rentalInvoiceXlsx: async (id) => {
     const tok = getToken();
-    const res = await fetch(`${BASE}/rentcar/contracts/${id}/invoice.xlsx`, {
+    const res = await sessionFetch(`${BASE}/rentcar/contracts/${id}/invoice.xlsx`, {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (!res.ok) {
@@ -641,7 +711,7 @@ export const api = {
     if (params.purposes?.length)   q.set('purposes',   params.purposes.join(','));
     if (params.departments?.length) q.set('departments', params.departments.join(','));
     const tok = localStorage.getItem('access_token');
-    const res = await fetch(`${BASE}/corporate/report.xlsx?${q.toString()}`, {
+    const res = await sessionFetch(`${BASE}/corporate/report.xlsx?${q.toString()}`, {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (!res.ok) {

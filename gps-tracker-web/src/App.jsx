@@ -1,3 +1,4 @@
+import { authScope, AUTH_CHANGED } from './authSession';
 // 라우팅 — react-router 기반 path-routing.
 //
 // 외부 deep link (예: kakao 알림톡 "단말기 등록하기" 버튼) 가 안정적인 URL 패턴을
@@ -48,8 +49,14 @@ const LazyFallback = () => (
 const BASENAME = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
 export default function App() {
+  const [scope, setScope] = useState(authScope);
+  useEffect(() => {
+    const sync = () => setScope(authScope());
+    window.addEventListener(AUTH_CHANGED, sync);
+    return () => window.removeEventListener(AUTH_CHANGED, sync);
+  }, []);
   return (
-    <BrowserRouter basename={BASENAME || undefined}>
+    <BrowserRouter key={scope} basename={BASENAME || undefined}>
       <Shell />
       <DialogHost />
       <ToastHost />
@@ -128,7 +135,7 @@ function PaletteBridge() {
     registerCommands([
       { id: 'nav-home',    label: '홈 (Dashboard)',       icon: 'home',   group: '이동', run: () => nav('/') },
       { id: 'nav-fleet',   label: 'Fleet 대시보드',        icon: 'route',  group: '이동', run: () => nav('/fleet') },
-      { id: 'nav-diag',    label: '진단 콘솔',              icon: 'wrench', group: '이동', run: () => nav('/diagnostic') },
+      { id: 'nav-diag',    label: '진단 콘솔',              icon: 'wrench', group: '이동', run: () => nav('/device-diagnostics') },
       { id: 'ui-theme',    label: '테마 전환 (다크/라이트)', icon: 'sun',    group: '설정', run: () => toggleTheme() },
       { id: 'auth-logout', label: '로그아웃',                icon: 'power',  group: '설정', run: () => { clearTokens(); window.location.href = '/login'; } },
     ]);
@@ -174,7 +181,7 @@ function Shell() {
         } />
 
         {/* 14_* 진단 콘솔 — Dashboard 외부 풀스크린 */}
-        <Route path="/diagnostic" element={
+        <Route path="/device-diagnostics" element={
           authed ? <DiagnosticPage /> : <RequireAuthRedirect />
         } />
 

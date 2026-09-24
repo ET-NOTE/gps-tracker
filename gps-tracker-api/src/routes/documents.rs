@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 use axum::{
     body::Body,
-    extract::{Multipart, Path, State},
+    extract::{DefaultBodyLimit, Multipart, Path, State},
     http::header,
     response::IntoResponse,
     routing::{delete, get},
@@ -35,7 +35,7 @@ const ALLOWED_MIMES: &[&str] = &[
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/devices/:id/documents", get(list_documents).post(upload_document))
+        .route("/devices/:id/documents", get(list_documents).post(upload_document).layer(DefaultBodyLimit::max(11 * 1024 * 1024)))
         .route("/documents/:id/download", get(download_document))
         .route("/documents/:id/preview",  get(preview_document))
         .route("/documents/:id",          delete(delete_document))
