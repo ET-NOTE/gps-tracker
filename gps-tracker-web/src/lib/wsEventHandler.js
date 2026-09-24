@@ -17,9 +17,10 @@ import { calcSpeedKmh, clickableIntervalM } from './speed';
 export function makeWsEventHandler({
   devRef, mapRef, lastMetaRef, wsDotAccRef,
   filterDeviceIdRef, trackLiveRef,
-  setDevices, setLiveSpeed,
+  setDevices, setLiveSpeed, onResync,
 }) {
   return function handleWsEvent(msg) {
+    if (msg.type === 'resync' || msg.type === 'lagged') { onResync?.(); return; }
     // (2026-07-16) fix 없는 POST 도 vbat/cbc/csq/reg/sat/uptime 메타는 최신값이 옴 —
     // 단말기 카드 배터리 realtime 갱신 위해 msg.type==='location' 이면 fix 유무와 무관하게
     // meta 갱신 + setDevices last_seen_at 통과. 마커/polyline 은 fix+lat+lng 조건에서만.
@@ -27,7 +28,7 @@ export function makeWsEventHandler({
       const prevMetaNoFix = lastMetaRef.current[msg.device_id] || {};
       lastMetaRef.current[msg.device_id] = {
         ...prevMetaNoFix,
-        recordedAt: msg.recorded_at,
+        receivedAt: msg.recorded_at,
         sat: msg.sat ?? prevMetaNoFix.sat,
         vbatMv: msg.vbat_mv ?? prevMetaNoFix.vbatMv,
         cbcMv: msg.cbc_mv ?? prevMetaNoFix.cbcMv,
@@ -45,6 +46,13 @@ export function makeWsEventHandler({
       const label = dev?.display_name || dev?.device_uid || `#${msg.device_id}`;
       const color = getDeviceColor(dev || { id: msg.device_id });
       const prevMeta = lastMetaRef.current[msg.device_id];
+      const previousTime = Date.parse(prevMeta?.recordedAt);
+      const eventTime = Date.parse(msg.recorded_at);
+      if (!Number.isFinite(eventTime)) return;
+      if (Number.isFinite(previousTime) && eventTime <= previousTime) {
+        if (eventTime < previousTime) onResync?.();
+        return;
+      }
       const speedKmh = msg.speed_kmh ?? msg.speedKmh ?? calcSpeedKmh(prevMeta, {
         lat: msg.lat, lng: msg.lng, recordedAt: msg.recorded_at,
       });
@@ -88,8 +96,10 @@ export function makeWsEventHandler({
           .filter(f => Number.isFinite(f.lat) && Number.isFinite(f.lng) && Number.isFinite(Date.parse(f.recorded_at)))
           .slice()
           .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+        if (fixesAsc.some(f => Date.parse(f.recorded_at) < previousTime)) onResync?.();
         for (let i = 0; i < fixesAsc.length; i++) {
           const f = fixesAsc[i];
+          if (Date.parse(f.recorded_at) <= previousTime) continue;
           const isLast = (i === fixesAsc.length - 1);
           const previous = i > 0 ? fixesAsc[i - 1] : null;
           const pointSpeed = f.speed_kmh ?? calcSpeedKmh(previous ? {

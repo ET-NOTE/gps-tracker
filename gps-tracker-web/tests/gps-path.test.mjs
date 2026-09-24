@@ -78,12 +78,12 @@ test('live batch paints points chronologically with their individual speeds, inc
     return module;
   }
   const module = await load(path.join(base, 'lib/wsEventHandler.js')); await module.evaluate();
-  const history = [], markers = [], pans = [];
+  const history = [], markers = [], pans = [], speeds = [], resyncs = [];
   const handler = module.namespace.makeWsEventHandler({
     devRef: { current: [{ id: 1 }] }, lastMetaRef: { current: {} }, wsDotAccRef: { current: {} },
     filterDeviceIdRef: { current: 1 }, trackLiveRef: { current: false },
     mapRef: { current: { updateMarker: (...x) => markers.push(x), addHistoryPoint: (...x) => history.push(x), panToCoord: (...x) => pans.push(x) } },
-    setDevices() {}, setLiveSpeed() {},
+    setDevices() {}, setLiveSpeed(x) { speeds.push(x); }, onResync() { resyncs.push(true); },
   });
   handler({ type: 'location', device_id: 1, fix: true, ...point(4, 0, 127.0001), speed_kmh: 9,
     fixes: [point(4, 0, 127.0001, { speed_kmh: 9 }), point(2, 0, 127, { speed_kmh: 0 })] });
@@ -91,4 +91,11 @@ test('live batch paints points chronologically with their individual speeds, inc
   assert.equal(history[0][4].recordedAt, point(2).recorded_at);
   assert.equal(history[0][4].speedKmh, 0); assert.equal(history[1][4].speedKmh, 9);
   assert.equal(pans.length, 0, 'seeker-paused tracking must not move the camera');
+  handler({ type:'location',device_id:1,fix:true,...point(1,38,128),speed_kmh:20 });
+  assert.equal(markers.length,2,'late backfill must not move the latest marker backwards');
+  assert.equal(speeds.length,1); assert.equal(resyncs.length,1);
+  handler({type:'lagged'});handler({type:'resync'});assert.equal(resyncs.length,3);
+  handler({type:'location',device_id:1,fix:false,...point(10)});
+  handler({type:'location',device_id:1,fix:true,...point(6,0,127.0002),speed_kmh:12});
+  assert.equal(speeds.at(-1).speedKmh,12,'a no-fix heartbeat must not advance the GPS watermark');
 });

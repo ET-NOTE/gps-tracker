@@ -356,6 +356,8 @@ export default function Dashboard({ onLogout }) {
   const lastLoadedFixAtRef = useRef({});
   // (2026-07-01) zoom 변경 시 dot 재-render 위해 refresh 함수 노출
   const refreshFnRef      = useRef(null);
+  const resyncTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(resyncTimerRef.current), []);
   const lastZoomLevelRef  = useRef(null);
   const zoomRefreshTimerRef = useRef(null);
   // (2026-06-30) WS 실시간 path 의 priority sampling — device 별 마지막 dot 위치 + 누적 거리.
@@ -450,25 +452,25 @@ export default function Dashboard({ onLogout }) {
       : api.getActiveDates(filterDeviceId),
   [filterDeviceId]);
 
-  const seekerLoadDayPoints = useCallback((d) =>
+  const seekerLoadDayPoints = useCallback((d, options) =>
     filterDeviceId == null
       ? Promise.resolve([])
-      : api.listLocationsGrouped(filterDeviceId, {
+      : api.listLocationPoints(filterDeviceId, {
           since: `${d}T00:00:00+09:00`,
-          until: `${d}T23:59:59+09:00`,
-          fix_only: true, limit: 10000,
-        }).then(api.flattenGrouped),
+          until: new Date(Date.parse(`${d}T00:00:00+09:00`) + 86400000).toISOString(),
+          fix_only: true,
+        }, options),
   [filterDeviceId]);
 
   // Monthly summaries cover the whole month instead of silently taking only the latest 10,000 posts.
-  const seekerLoadMonthPoints = useCallback((monthYM) => {
+  const seekerLoadMonthPoints = useCallback((monthYM, options) => {
     if (filterDeviceId == null) return Promise.resolve([]);
     const [y, m] = monthYM.split('-').map(Number);
     const ny = m === 12 ? y + 1 : y;
     const nm = m === 12 ? 1 : m + 1;
     return api.getDeviceLocationsAggregated(filterDeviceId, '5m',
       `${monthYM}-01T00:00:00+09:00`,
-      new Date(Date.parse(`${ny}-${String(nm).padStart(2, '0')}-01T00:00:00+09:00`) - 1).toISOString(),
+      `${ny}-${String(nm).padStart(2, '0')}-01T00:00:00+09:00`, options,
     ).then(rows => (rows || []).filter(r => r.lat_last != null && r.lng_last != null).map(r => ({
       recorded_at: r.bucket, lat: r.lat_last, lng: r.lng_last, fix: true,
       sat: r.sat_avg == null ? null : Math.round(r.sat_avg), batch_size: r.fix_count,
@@ -664,6 +666,14 @@ export default function Dashboard({ onLogout }) {
     devRef, mapRef, lastMetaRef, wsDotAccRef,
     filterDeviceIdRef, trackLiveRef,
     setDevices, setLiveSpeed,
+    onResync: () => {
+      if (resyncTimerRef.current) return;
+      resyncTimerRef.current = setTimeout(() => {
+        resyncTimerRef.current = null;
+        lastLoadedFixAtRef.current = {}; // Backfill can change history without changing the newest fix.
+        refreshFnRef.current?.(true);
+      }, 250);
+    },
   });
 
   // ── 디바이스 액션 ─────────────────────────

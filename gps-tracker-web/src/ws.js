@@ -25,6 +25,7 @@ export class TrackerWS {
     this.subscribed = new Set();
     this._timer = null;
     this._dead = false;
+    this._hasConnected = false;
     // (F0-4) 재연결 exp backoff — 5s 고정이 아니라 1s→30s cap 로 지수 증가 + jitter.
     // 대량 client 가 서버 죽음 → 동시 재접속으로 thundering herd 되는 것 방지.
     // 성공 (onopen) 시 리셋. 스킬 순서: 1s, 2s, 4s, 8s, 16s, 30s cap.
@@ -81,11 +82,14 @@ export class TrackerWS {
     this.socket = sock;
 
     sock.onopen = () => {
+      if (this._dead || this.socket !== sock) return;
       this._reconnectAttempts = 0;   // (F0-4) 성공 시 backoff 리셋
       this.onStatus?.('connected');
       if (this.subscribed.size > 0) {
         this._send({ action: 'subscribe', device_ids: [...this.subscribed] });
       }
+      if (this._hasConnected) this.onEvent?.({ type:'resync' });
+      this._hasConnected = true;
     };
 
     sock.onmessage = (e) => {
@@ -117,6 +121,7 @@ export class TrackerWS {
             this._rafScheduled = false;
             const batch = this._pending;
             this._pending = [];
+            if (this._dead || this._scope !== authScope()) return;
             for (const m of batch) {
               try { this.onEvent(m); } catch { /* ignore consumer err */ }
             }
@@ -132,6 +137,7 @@ export class TrackerWS {
     };
 
     sock.onclose = () => {
+      if (this.socket !== sock || this._dead) return;
       this.onStatus?.('disconnected');
       if (!this._dead) {
         this._timer = setTimeout(() => this._open(), this._reconnectDelay());

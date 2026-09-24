@@ -54,6 +54,7 @@ sudo systemd-run --collect --unit="$unit" -p User=gps-dev -p Group=gps-dev \
   -p PrivateTmp=true "$api.next"
 curl --silent --fail --retry 5 --retry-delay 1 --retry-connrefused http://127.0.0.1:3042/health >/dev/null
 sudo python3 "$stage/test_dev_api.py" /home/gps-dev/projects/gps-tracker-api/.env.dev.validation http://127.0.0.1:3042
+sudo python3 "$stage/test_dev_resilience.py" /home/gps-dev/projects/gps-tracker-api/.env.dev.validation http://127.0.0.1:3042
 cleanup
 sudo mv -f "$api.next" "$api"
 sudo ln -s "$target/web" "$dist.next"
@@ -69,4 +70,5 @@ if ! curl --silent --fail --retry 5 --retry-delay 1 --retry-connrefused http://1
   exit 5
 fi
 sudo python3 "$stage/test_dev_api.py" /home/gps-dev/projects/gps-tracker-api/.env.dev https://dev-gps.serial.kr
+sudo python3 "$stage/test_dev_resilience.py" /home/gps-dev/projects/gps-tracker-api/.env.dev https://dev-gps.serial.kr
 echo "Dev release active: $release"

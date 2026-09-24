@@ -41,7 +41,7 @@ function monthWindow(yyyyMm) {
   const [y, m] = yyyyMm.split('-').map(Number);
   const start = new Date(`${yyyyMm}-01T00:00:00+09:00`);
   const next  = new Date(`${m === 12 ? y+1 : y}-${String(m === 12 ? 1 : m+1).padStart(2,'0')}-01T00:00:00+09:00`);
-  return { since: start.toISOString(), until: new Date(next.getTime() - 1).toISOString() };
+  return { since: start.toISOString(), until: next.toISOString() };
 }
 function todayKstStr() {
   return new Date(Date.now() + KST_TZ).toISOString().slice(0, 10);
@@ -321,11 +321,12 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     if (!device?.id || mode !== 'day') return;
     setLoading(true); setError(null);
     let cancelled = false;
+    const controller = new AbortController();
     const w = dayWindow(date, 0, 24);
     // Phase 4B: day 24h = 86,400 fix → raw 5000 cap 으로 누락.
     // 정밀도 override: auto/1m/5m → aggregate, '1h' → 1h aggregate.
     const dayBucket = precision === 'auto' ? '1m' : precision;
-    api.getDeviceLocationsAggregated(device.id, dayBucket, w.since, w.until)
+    api.getDeviceLocationsAggregated(device.id, dayBucket, w.since, w.until, { signal:controller.signal })
     .then(rows => {
       if (cancelled) return;
       const normalized = (rows || [])
@@ -344,7 +345,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     })
     .catch(e => { if (!cancelled) setError(e.message || '데이터를 불러올 수 없습니다.'); })
     .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [device?.id, mode, date, precision, refreshKey]);
 
   // ─── 월간 — 그 달 전체 fetch ────────────────────────────
@@ -356,10 +357,11 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     if (!device?.id || mode !== 'month') return;
     setLoading(true); setError(null);
     let cancelled = false;
+    const controller = new AbortController();
     const w = monthWindow(month);
     // 정밀도 override: month default 1h, user 가 5m 선택 시 더 정밀.
     const monthBucket = precision === 'auto' || precision === '1m' ? '1h' : precision;
-    api.getDeviceLocationsAggregated(device.id, monthBucket, w.since, w.until)
+    api.getDeviceLocationsAggregated(device.id, monthBucket, w.since, w.until, { signal:controller.signal })
     .then(rows => {
       if (cancelled) return;
       // aggregate 응답 → enrich 입력 형태로 normalize. lat_last 사용 (구간 마지막 fix).
@@ -380,7 +382,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     })
     .catch(e => { if (!cancelled) setError(e.message || '데이터를 불러올 수 없습니다.'); })
     .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [device?.id, mode, month, precision, refreshKey]);
 
   // ─── 일간 데이터의 10분 버킷 — 시작 시각 드롭다운 옵션 ──

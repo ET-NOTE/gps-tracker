@@ -3,6 +3,7 @@ import { queryClient } from './state/queryClient';
 import { authScope, assertSession, AUTH_CHANGED, notifyAuthChanged } from './authSession';
 import { hydrateDeviceColors } from './colors';
 import { hydratePairTutorialSeen } from './pairTutorialSeen';
+import { collectHistory, collectAggregates } from './lib/historyPager';
 
 // 도메인 감지: 주 도메인 gps.serial.kr 은 prefix 없이 /api/v1.
 // legacy /gps-tracker/ 서브패스 (localhost dev, 옛 nginx 서브패스 fallback) 는 /gps-tracker/api/v1.
@@ -177,10 +178,11 @@ window.addEventListener('storage', () => {
   notifyAuthChanged();
 });
 
-async function req(method, path, body, retry = true) {
+async function req(method, path, body, retry = true, options = {}) {
   const scope = authScope();
   const res = await fetch(BASE + path, {
     method,
+    signal: options.signal,
     headers: {
       'Content-Type': 'application/json',
       ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
@@ -204,7 +206,7 @@ async function req(method, path, body, retry = true) {
       throw Object.assign(new Error('네트워크 연결이 불안정합니다. 잠시 후 다시 시도해주세요.'),
                           { status: 0, transient: true });
     }
-    return req(method, path, body, false);
+    return req(method, path, body, false, options);
   }
 
   if (!res.ok) {
@@ -332,10 +334,13 @@ export const api = {
   setDevicePostInterval: (id, seconds) => req('POST', `/devices/${id}/post-interval`, { seconds }),
 
   // TimescaleDB continuous aggregate query (bucket = "1m" | "1h"). historical chart 가속용.
-  getDeviceLocationsAggregated: (id, bucket, since, until) => {
-    const q = new URLSearchParams({ bucket, since });
-    if (until) q.set('until', until);
-    return req('GET', `/devices/${id}/locations/aggregated?${q.toString()}`);
+  getDeviceLocationsAggregated: (id, bucket, since, until = new Date().toISOString(), options = {}) => {
+    const scope = authScope();
+    return collectAggregates((from,to) => {
+      assertSession(scope);
+      const q = new URLSearchParams({ bucket, since:from, until:to, until_exclusive:'true' });
+      return req('GET', `/devices/${id}/locations/aggregated?${q}`, undefined, true, options);
+    }, bucket, since, until, options.signal);
   },
 
   // P2: TimescaleDB 운영 지표 — hypertable size, compression ratio, chunk 수. (장치 무관 global)
@@ -361,6 +366,18 @@ export const api = {
 
   // 디바이스가 fix 데이터를 남긴 KST 날짜 목록 (daily_stats catchup 대비 fallback)
   getActiveDates: (deviceId) => req('GET', `/devices/${deviceId}/active-dates`),
+
+  listLocationPoints: (deviceId, params, options = {}) => {
+    const scope = authScope();
+    return collectHistory(cursor => {
+      assertSession(scope);
+      const q = new URLSearchParams({ since:params.since, until:params.until, limit:'2000' });
+      if (params.fix_only !== undefined) q.set('fix_only',String(params.fix_only));
+      if (params.source) q.set('source',params.source);
+      if (cursor) q.set('cursor',cursor);
+      return req('GET',`/devices/${deviceId}/locations/page?${q}`,undefined,true,options);
+    },options);
+  },
 
   // locations (legacy flat schema — 호환용. 점진적으로 listLocationsGrouped 로 전환.)
   listLocations: (deviceId, params = {}) => {

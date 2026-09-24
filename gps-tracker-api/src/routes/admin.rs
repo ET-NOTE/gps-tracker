@@ -378,9 +378,9 @@ async fn recompute_stats(
     }
 
     let dates: Vec<NaiveDate> = sqlx::query_scalar(
-        r#"SELECT DISTINCT (recorded_at AT TIME ZONE 'Asia/Seoul')::date
+        r#"SELECT DISTINCT unnest(location_fix_dates(recorded_at,fixes_jsonb,fix)) AS date
              FROM location_records
-            WHERE device_id = $1 AND fix = TRUE
+            WHERE device_id = $1
             ORDER BY 1 DESC"#,
     )
     .bind(id)

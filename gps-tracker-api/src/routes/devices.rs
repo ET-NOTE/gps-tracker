@@ -1276,6 +1276,7 @@ pub struct AggregatedQuery {
     pub bucket: String, // "1m" | "1h"
     pub since: DateTime<Utc>,
     pub until: Option<DateTime<Utc>>,
+    pub until_exclusive: Option<bool>,
 }
 
 async fn locations_aggregated(
@@ -1304,21 +1305,33 @@ async fn locations_aggregated(
     if until < q.since {
         return Err(AppError::BadRequest("until < since".into()));
     }
+    let seconds = match q.bucket.as_str() {
+        "1m" => 60,
+        "5m" => 300,
+        _ => 3600,
+    };
+    if (until - q.since).num_seconds() > seconds * 4999 {
+        return Err(AppError::BadRequest(
+            "aggregate range too large; request smaller time windows".into(),
+        ));
+    }
     let rows: AggregatedLocationRows = sqlx::query_as(
         "SELECT time_bucket($4::text::interval,recorded_at) AS bucket,
            avg(lat),avg(lng),last(lat,recorded_at),last(lng,recorded_at),
            avg(sat)::real,avg(vbat_mv)::int,count(*)
-         FROM location_points
+         FROM location_points_between($1,$5,$2,$3)
          WHERE device_id=$1 AND user_id=$5 AND fix=true
            AND recorded_at >= $2 AND recorded_at <= $3
+           AND (NOT $6 OR recorded_at < $3)
            AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$5)
-         GROUP BY bucket ORDER BY bucket LIMIT 5000",
+         GROUP BY bucket ORDER BY bucket",
     )
     .bind(id)
     .bind(q.since)
     .bind(until)
     .bind(interval)
     .bind(user.user_id)
+    .bind(q.until_exclusive.unwrap_or(false))
     .fetch_all(&state.db)
     .await?;
 

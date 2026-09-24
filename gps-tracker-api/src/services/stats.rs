@@ -134,7 +134,7 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
         // [뿌리 B 2026-08-14] 현재 owner 데이터만 집계 — 재페어링된 device 에서 이전 owner 의
         //   fix 까지 합산해 통계 혼입되던 것 차단 (upsert user_id 도 EXCLUDED 로 현재 owner 반영).
         r#"SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng
-             FROM location_points
+             FROM location_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3)
             WHERE device_id = $1
               AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
               AND fix = TRUE

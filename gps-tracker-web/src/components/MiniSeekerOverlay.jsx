@@ -50,6 +50,8 @@ function MiniSeekerOverlay({
   const [date,  setDate]  = useState(null);
   const [slots, setSlots] = useState([]);
   const [slotIdx, setSlotIdx] = useState(null);
+  const [loadStatus, setLoadStatus] = useState('');
+  const monthAbortRef = useRef(null);
   // 외부 marker click 으로 phase 2 진입 시, day 데이터 로드 후 시간 sync 대기.
   const pendingTimeRef = useRef(null);
   const slotsRef = useRef([]);
@@ -74,18 +76,24 @@ function MiniSeekerOverlay({
   const loadAndDrawMonth = useCallback((m) => {
     if (!loadMonthPoints || !m) return;
     const myId = ++monthFetchIdRef.current;
-    Promise.resolve(loadMonthPoints(m))
+    monthAbortRef.current?.abort();
+    const controller = new AbortController(); monthAbortRef.current = controller;
+    setLoadStatus('월 경로 불러오는 중…');
+    Promise.resolve(loadMonthPoints(m, { signal:controller.signal }))
       .then(pts => {
         if (myId !== monthFetchIdRef.current) return;
+        setLoadStatus('');
         const list = pts || [];
         if (list.length === 0) { onPathClear?.(); return; }
         onPathChange?.(list, { dense: false });
       })
-      .catch(() => {});
+      .catch(e => { if (myId === monthFetchIdRef.current && e.name !== 'AbortError') {
+        setLoadStatus(e.message || '조회 실패'); onPathClear?.();
+      } });
   }, [loadMonthPoints, onPathChange, onPathClear]);
 
   // A slow month request must not overwrite a subsequently selected day or a closed seeker.
-  useEffect(() => () => { monthFetchIdRef.current++; }, []);
+  useEffect(() => () => { monthFetchIdRef.current++; monthAbortRef.current?.abort(); }, []);
 
   // 1) 날짜 리스트 로드 — 가장 최근 '월' 만 자동 선택 (phase 1 = month picker 로 시작).
   // 일/시간 자동 선택 X. 사용자가 화살표 또는 마커 클릭으로 phase 2 진입.
@@ -113,9 +121,14 @@ function MiniSeekerOverlay({
   useEffect(() => {
     if (!monthPicked || !date) return;
     let cancelled = false;
-    Promise.resolve(loadDayPoints?.(date))
+    const controller = new AbortController();
+    monthAbortRef.current?.abort();
+    setLoadStatus('일간 경로 불러오는 중…'); setSlots([]); onPathClear?.();
+    Promise.resolve(loadDayPoints?.(date, { signal:controller.signal,
+      onProgress: n => { if (!cancelled) setLoadStatus(`${n.toLocaleString()}개 좌표 확인 중…`); } }))
       .then(pts => {
         if (cancelled) return;
+        setLoadStatus('');
         const list = pts || [];
         const buckets = new Map();
         for (const p of list) {
@@ -145,8 +158,8 @@ function MiniSeekerOverlay({
           });
         }
       })
-      .catch(() => {});
-    return () => { cancelled = true; };
+      .catch(e => { if (!cancelled && e.name !== 'AbortError') setLoadStatus(e.message || '조회 실패'); });
+    return () => { cancelled = true; controller.abort(); };
   }, [monthPicked, date, loadDayPoints, onPathChange, onPathClear]);
 
   // 언마운트 시 path 정리
@@ -232,6 +245,7 @@ function MiniSeekerOverlay({
     <>
       {/* 좌하단 floating 패널 — 단일 컬럼 wizard. key 로 phase 전환 시 fade-swap. */}
       <div style={st.panel}>
+        {loadStatus && <div role="status" style={st.empty}>{loadStatus}</div>}
         <div key={monthPicked ? 'day' : 'month'} className="fade-swap" style={st.phaseWrap}>
           {!monthPicked ? (
             <>

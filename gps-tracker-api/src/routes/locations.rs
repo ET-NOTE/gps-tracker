@@ -9,6 +9,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -46,6 +47,7 @@ pub struct ListQuery {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/devices/:id/locations/latest", get(latest))
+        .route("/devices/:id/locations/page", get(page))
         .route("/devices/:id/locations", get(history))
 }
 async fn ensure_owner(state: &AppState, device_id: i64, user_id: i64) -> AppResult<()> {
@@ -63,7 +65,7 @@ async fn ensure_owner(state: &AppState, device_id: i64, user_id: i64) -> AppResu
 }
 const POINTS: &str = "SELECT recorded_at,source,fix,lat,lng,sat,ttff_s,csq,reg,vbat_mv,
     (raw->>'cbc_mv')::int AS cbc_mv,device_uptime_s,heading,speed_kmh,anchor_at
-    FROM location_points WHERE device_id=$1 AND user_id=$2
+    FROM location_points_between($1,$2,$3,$4) WHERE device_id=$1 AND user_id=$2
     AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)";
 async fn latest(
     State(state): State<AppState>,
@@ -71,13 +73,132 @@ async fn latest(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Option<LocationView>>> {
     ensure_owner(&state, id, user.user_id).await?;
-    let row =
-        sqlx::query_as::<_, LocationView>(&format!("{POINTS} ORDER BY recorded_at DESC LIMIT 1"))
-            .bind(id)
-            .bind(user.user_id)
-            .fetch_optional(&state.db)
-            .await?;
+    let row = sqlx::query_as::<_, LocationView>(
+        "WITH newest AS (
+          SELECT location_point_bound(recorded_at,fixes_jsonb,true) AS at
+          FROM location_records WHERE device_id=$1 AND user_id=$2
+            AND location_point_bound(recorded_at,fixes_jsonb,true) IS NOT NULL
+          ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC LIMIT 1
+        ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+          (p.raw->>'cbc_mv')::int AS cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,p.anchor_at
+          FROM newest CROSS JOIN LATERAL location_points_between($1,$2,newest.at,newest.at) p
+          WHERE EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+          ORDER BY p.recorded_at DESC,p.source LIMIT 1",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_optional(&state.db)
+    .await?;
     Ok(Json(row))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PageQuery {
+    pub since: DateTime<Utc>,
+    pub until: DateTime<Utc>, // Exclusive, so adjacent day/page windows never overlap.
+    pub limit: Option<i64>,
+    pub source: Option<String>,
+    pub fix_only: Option<bool>,
+    pub cursor: Option<String>,
+}
+#[derive(Debug, Serialize, Deserialize)]
+struct Cursor {
+    device: i64,
+    user: i64,
+    since: DateTime<Utc>,
+    until: DateTime<Utc>,
+    source: Option<String>,
+    fix_only: Option<bool>,
+    before: DateTime<Utc>,
+    before_source: String,
+}
+async fn page(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Query(q): Query<PageQuery>,
+) -> AppResult<Json<Value>> {
+    ensure_owner(&state, id, user.user_id).await?;
+    if q.until <= q.since || q.until - q.since > chrono::Duration::days(31) {
+        return Err(AppError::BadRequest(
+            "query range must be positive and at most 31 days".into(),
+        ));
+    }
+    let cursor = q
+        .cursor
+        .as_ref()
+        .map(|s| {
+            if s.len() > 2048 {
+                return Err(AppError::BadRequest("invalid cursor".into()));
+            }
+            URL_SAFE_NO_PAD
+                .decode(s)
+                .ok()
+                .and_then(|b| serde_json::from_slice::<Cursor>(&b).ok())
+                .ok_or_else(|| AppError::BadRequest("invalid cursor".into()))
+        })
+        .transpose()?;
+    if cursor.as_ref().is_some_and(|c| {
+        c.device != id
+            || c.user != user.user_id
+            || c.since != q.since
+            || c.until != q.until
+            || c.source != q.source
+            || c.fix_only != q.fix_only
+    }) {
+        return Err(AppError::BadRequest(
+            "cursor does not match this query".into(),
+        ));
+    }
+    let limit = q.limit.unwrap_or(2000).clamp(1, 5000);
+    let end = cursor.as_ref().map_or(q.until, |c| c.before.min(q.until));
+    let mut rows = sqlx::query_as::<_, LocationView>(
+        "SELECT recorded_at,source,fix,lat,lng,sat,ttff_s,csq,reg,vbat_mv,
+          (raw->>'cbc_mv')::int AS cbc_mv,device_uptime_s,heading,speed_kmh,anchor_at
+         FROM location_points_between($1,$2,$3,$4)
+         WHERE recorded_at < $5 AND ($6::text IS NULL OR source=$6)
+           AND ($7::bool IS NULL OR fix=$7)
+           AND ($8::timestamptz IS NULL OR (recorded_at,source)<($8,$9))
+           AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+         ORDER BY recorded_at DESC,source DESC LIMIT $10",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .bind(q.since)
+    .bind(end)
+    .bind(q.until)
+    .bind(&q.source)
+    .bind(q.fix_only)
+    .bind(cursor.as_ref().map(|c| c.before))
+    .bind(cursor.as_ref().map(|c| c.before_source.as_str()))
+    .bind(limit + 1)
+    .fetch_all(&state.db)
+    .await?;
+    let has_more = rows.len() > limit as usize;
+    rows.truncate(limit as usize);
+    let next_cursor = if has_more {
+        let last = rows.last().expect("positive page size");
+        Some(
+            URL_SAFE_NO_PAD.encode(
+                serde_json::to_vec(&Cursor {
+                    device: id,
+                    user: user.user_id,
+                    since: q.since,
+                    until: q.until,
+                    source: q.source,
+                    fix_only: q.fix_only,
+                    before: last.recorded_at,
+                    before_source: last.source.clone(),
+                })
+                .map_err(|e| AppError::Internal(e.into()))?,
+            ),
+        )
+    } else {
+        None
+    };
+    Ok(Json(
+        json!({"items":rows,"next_cursor":next_cursor,"has_more":has_more}),
+    ))
 }
 async fn history(
     State(state): State<AppState>,
