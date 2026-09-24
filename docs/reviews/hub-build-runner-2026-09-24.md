@@ -1,5 +1,7 @@
 # etcom-hub 빌드 러너
 
+아래 실제 실행 결과는 러너 도입 당시 기록이다. 이후 dev 릴리스와 추가 회귀 검사는 [통신 이상 복구·대량 이력 조회 기록](dev-resilience-pagination-2026-09-24.md)에 있다.
+
 Windows가 소스와 배포를 제어하고 Hub는 빌드 산출물만 반환한다.
 
 `Windows Git commit → etcom-hub 컨테이너 빌드·검사 → Windows 해시 확인 → dev VPS 사전 검사·배포`

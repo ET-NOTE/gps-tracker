@@ -170,8 +170,21 @@ try:
             plan=cur.fetchone()[0][0];timings[label]=plan['Execution Time']
         explain('canonical_latest_ms','SELECT recorded_at,lat,lng FROM location_points WHERE device_id=%s AND user_id=%s ORDER BY recorded_at DESC LIMIT 1',(bench,uid))
         explain('indexed_latest_bound_ms','SELECT location_point_bound(recorded_at,fixes_jsonb,true) FROM location_records WHERE device_id=%s AND user_id=%s ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC LIMIT 1',(bench,uid))
+        explain('newest_batch_location_ms',"""WITH newest AS MATERIALIZED (
+          SELECT * FROM location_records WHERE device_id=%s AND user_id=%s
+          AND location_point_bound(recorded_at,fixes_jsonb,true) IS NOT NULL
+          ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC,source,(fixes_jsonb IS NOT NULL) DESC,recorded_at DESC LIMIT 1)
+          SELECT r.recorded_at+COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' AS at,
+            CASE WHEN f IS NULL THEN r.lat ELSE (f->>'lat')::float8 END,
+            CASE WHEN f IS NULL THEN r.lng ELSE (f->>'lng')::float8 END
+          FROM newest r LEFT JOIN LATERAL jsonb_array_elements(r.fixes_jsonb) f ON true ORDER BY 1 DESC LIMIT 1""",(bench,uid))
         explain('canonical_dates_ms',"SELECT DISTINCT (recorded_at AT TIME ZONE 'Asia/Seoul')::date FROM location_points WHERE device_id=%s AND user_id=%s",(bench,uid))
         explain('batch_dates_ms','SELECT DISTINCT unnest(location_fix_dates(recorded_at,fixes_jsonb,fix)) FROM location_records WHERE device_id=%s AND user_id=%s',(bench,uid))
+        window=('2026-09-23T12:00:00Z','2026-09-23T13:00:00Z')
+        explain('canonical_hour_buckets_ms',"SELECT time_bucket('1 minute',recorded_at),avg(lat),avg(lng),count(*) FROM location_points WHERE device_id=%s AND user_id=%s AND recorded_at>=%s AND recorded_at<%s GROUP BY 1",(bench,uid,*window))
+        explain('pruned_hour_buckets_ms',"SELECT time_bucket('1 minute',recorded_at),avg(lat),avg(lng),count(*) FROM location_points_between(%s,%s,%s,%s) WHERE recorded_at<%s GROUP BY 1",(bench,uid,*window,window[1]))
+        assert sql("SELECT count(*) FROM ((SELECT recorded_at,source,lat,lng FROM location_points WHERE device_id=%s AND user_id=%s AND recorded_at>=%s AND recorded_at<%s) EXCEPT (SELECT recorded_at,source,lat,lng FROM location_points_between(%s,%s,%s,%s) WHERE recorded_at<%s)) t",(bench,uid,*window,bench,uid,*window,window[1]))==0
+        assert sql("SELECT count(*) FROM location_points_between(%s,%s,%s,%s) WHERE recorded_at<%s",(bench,uid,*window,window[1]))==3600
         latest,timings['latest_http_100k_ms']=request(api+f'/devices/{bench}/locations/latest')
         assert latest['recorded_at'].startswith('2026-09-24T03:46:40')
     print('MEASUREMENTS '+json.dumps(timings,sort_keys=True))
