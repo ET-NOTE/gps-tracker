@@ -5,7 +5,11 @@ import hashlib
 import hmac
 import json
 import math
+import os
 import pathlib
+import socket
+import ssl
+import struct
 import sys
 import time
 import urllib.parse
@@ -55,6 +59,61 @@ def request(path, body=None):
     req = urllib.request.Request(base+path,data=data,headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
     with urllib.request.urlopen(req,timeout=20) as response:
         return json.load(response)
+
+def verify_websocket():
+    # Small RFC 6455 test client: no extra packages on the resource-limited VPS.
+    # https://www.rfc-editor.org/rfc/rfc6455#section-5.2
+    target = urllib.parse.urlparse(base)
+    sock = socket.create_connection((target.hostname,target.port or 443),timeout=8)
+    if target.scheme=='https':
+        sock = ssl.create_default_context().wrap_socket(sock,server_hostname=target.hostname)
+    stream = sock.makefile('rb')
+    def send(payload, opcode=1):
+        mask=os.urandom(4)
+        assert len(payload)<126
+        sock.sendall(bytes([0x80|opcode,0x80|len(payload)])+mask+bytes(v^mask[i%4] for i,v in enumerate(payload)))
+    def receive():
+        while True:
+            first,second=stream.read(2)
+            assert first&0x80 and not first&0x70 and not second&0x80
+            length=second&127
+            if length==126:length=struct.unpack('!H',stream.read(2))[0]
+            elif length==127:length=struct.unpack('!Q',stream.read(8))[0]
+            assert length<100000
+            data=stream.read(length)
+            if first&15==9:send(data,10);continue
+            assert first&15==1
+            return json.loads(data)
+    try:
+        key=base64.b64encode(os.urandom(16)).decode()
+        endpoint='/gps-tracker/ws/realtime?token='+urllib.parse.quote(token)
+        sock.sendall((f'GET {endpoint} HTTP/1.1\r\nHost: {target.netloc}\r\nUpgrade: websocket\r\n'
+                      f'Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n').encode())
+        assert b' 101 ' in stream.readline()
+        headers={}
+        while True:
+            line=stream.readline().strip()
+            if not line:break
+            k,v=line.decode().split(':',1);headers[k.lower()]=v.strip()
+        expected=base64.b64encode(hashlib.sha1((key+'258EAFA5-E914-47DA-95CA-C5AB0DC85B11').encode()).digest()).decode()
+        assert headers['sec-websocket-accept']==expected
+        live,_=fixture('websocket',[])
+        name=sql('SELECT device_uid FROM devices WHERE id=%s',(live,))[0][0]
+        send(json.dumps(dict(action='subscribe',device_ids=[live])).encode())
+        ack=receive();assert ack['type']=='ack' and ack['accepted']==[live]
+        fixes=[dict(lat=s*5/6371000*180/math.pi,lng=0,sat=12,age_ms=(8-s)*1000,up_ms=s*1000) for s in [0,2,4,6]]
+        request('/gps-tracker/ingest',dict(device_uid=name,boot=1,fixes=fixes))
+        event=receive()
+        while event['type']!='location':event=receive()
+        assert len(event['fixes'])==4 and event['speed_kmh']==18
+        history=request('/gps-tracker/api/v1'+f'/devices/{live}/locations?limit=2')
+        saved={p['recorded_at']:p for p in history}
+        for f in event['fixes']:
+            p=saved[f['recorded_at']]
+            assert p['speed_kmh']==f['speed_kmh'] and p['reported_speed_kmh'] is None
+        print('PASS actual WebSocket subscribe, speedless HTTP batch, DB timestamp precision and REST equality')
+    finally:
+        stream.close();sock.close()
 
 try:
     if migration:
@@ -138,6 +197,32 @@ try:
         request(api+f'/admin/devices/{did}/recompute-stats',{})
         assert sql('SELECT max_speed_kmh FROM daily_stats WHERE device_id=%s',(did,))[0][0]==18
         print('PASS REST latest/history/pages, bucket speed/actual timestamp and daily maximum')
+        verify_websocket()
+    if '--benchmark' in sys.argv:
+        bench, _ = fixture('benchmark',[])
+        sql("""INSERT INTO location_records(device_id,user_id,recorded_at,source,fix,lat,lng,raw,fixes_jsonb)
+          SELECT %s,%s,'2026-09-22T00:00:00Z'::timestamptz+i*interval '100 seconds','l80',true,37,127,
+            jsonb_build_object('boot',1,'fixes',f.points),f.points
+          FROM generate_series(1,1000) i CROSS JOIN LATERAL (
+            SELECT jsonb_agg(jsonb_build_object('at_ms',-j*1000,'lat',37+(i*100-j)*0.00001,
+              'lng',127,'sat',12,'up_ms',(i*100-j)*1000)) AS points FROM generate_series(0,99) j) f""",(bench,uid))
+        metrics = {}
+        def measure(label,query,args):
+            plan = sql('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) '+query,args)[0][0][0]
+            metrics[label] = round(plan['Execution Time'],2)
+            metrics[label+'_jit_ms'] = round(plan.get('JIT',{}).get('Timing',{}).get('Total',0),2)
+        measure('100k_latest_speed_ms',"""WITH newest AS MATERIALIZED (
+          SELECT location_point_bound(recorded_at,fixes_jsonb,true) AS at FROM location_records
+          WHERE device_id=%s AND user_id=%s ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC LIMIT 1)
+          SELECT p.speed_kmh FROM newest n CROSS JOIN LATERAL location_speed_points_between(%s,%s,n.at,n.at) p""",(bench,uid,bench,uid))
+        window = ('2026-09-22T12:00:00Z','2026-09-22T13:00:00Z')
+        measure('3600_point_hour_speed_ms','SELECT count(*),max(speed_kmh) FROM location_speed_points_between(%s,%s,%s,%s) WHERE recorded_at<%s',(bench,uid,*window,window[1]))
+        if not migration:
+            started = time.monotonic()
+            assert request(api+f'/devices/{bench}/locations/latest')['speed_kmh'] is not None
+            metrics['100k_latest_https_ms'] = round((time.monotonic()-started)*1000,2)
+        print('SPEED_BENCHMARK '+json.dumps(metrics))
+
 finally:
     if migration:
         db.rollback()

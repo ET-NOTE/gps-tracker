@@ -67,10 +67,6 @@ async fn ensure_owner(state: &AppState, device_id: i64, user_id: i64) -> AppResu
         Err(AppError::NotFound)
     }
 }
-const POINTS: &str = "SELECT recorded_at,source,fix,lat,lng,sat,ttff_s,csq,reg,vbat_mv,
-    (raw->>'cbc_mv')::int AS cbc_mv,device_uptime_s,heading,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source,anchor_at
-    FROM location_speed_points_between($1,$2,$3,$4) WHERE device_id=$1 AND user_id=$2
-    AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)";
 async fn latest(
     State(state): State<AppState>,
     user: AuthUser,
@@ -158,14 +154,21 @@ async fn page(
     let limit = q.limit.unwrap_or(2000).clamp(1, 5000);
     let end = cursor.as_ref().map_or(q.until, |c| c.before.min(q.until));
     let mut rows = sqlx::query_as::<_, LocationView>(
-        "SELECT recorded_at,source,fix,lat,lng,sat,ttff_s,csq,reg,vbat_mv,
-          (raw->>'cbc_mv')::int AS cbc_mv,device_uptime_s,heading,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source,anchor_at
-         FROM location_speed_points_between($1,$2,$3,$4)
+        "WITH selected AS MATERIALIZED (
+         SELECT recorded_at,source FROM location_points_between($1,$2,$3,$4)
          WHERE recorded_at < $5 AND ($6::text IS NULL OR source=$6)
            AND ($7::bool IS NULL OR fix=$7)
            AND ($8::timestamptz IS NULL OR (recorded_at,source)<($8,$9))
            AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
-         ORDER BY recorded_at DESC,source DESC LIMIT $10",
+         ORDER BY recorded_at DESC,source DESC LIMIT $10
+        ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+        SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+          (p.raw->>'cbc_mv')::int AS cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+          p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+        FROM bounds b CROSS JOIN LATERAL location_speed_points_between($1,$2,b.first,b.last) p
+        JOIN selected s USING(recorded_at,source)
+        WHERE b.first IS NOT NULL
+        ORDER BY p.recorded_at DESC,p.source DESC",
     )
     .bind(id)
     .bind(user.user_id)
@@ -215,16 +218,25 @@ async fn history(
     if matches!((q.since,q.until),(Some(a),Some(b)) if a>b) {
         return Err(AppError::BadRequest("until < since".into()));
     }
-    let rows = sqlx::query_as::<_, LocationView>(&format!(
-        "WITH scoped AS MATERIALIZED ({POINTS}
-        AND ($3::timestamptz IS NULL OR recorded_at >= $3)
-        AND ($4::timestamptz IS NULL OR recorded_at <= $4)
-        AND ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
-        ), anchors AS (
+    let rows = sqlx::query_as::<_, LocationView>(
+        "WITH scoped AS MATERIALIZED (
+          SELECT recorded_at,anchor_at,source FROM location_points_between($1,$2,$3,$4)
+          WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
+            AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+        ), anchors AS MATERIALIZED (
           SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
-        ) SELECT scoped.* FROM scoped JOIN anchors USING(anchor_at,source)
-          ORDER BY recorded_at DESC,source"
-    ))
+        ), bounds AS (
+          SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM scoped JOIN anchors USING(anchor_at,source)
+        ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+          (p.raw->>'cbc_mv')::int AS cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+          p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+        FROM bounds b CROSS JOIN LATERAL location_speed_points_between($1,$2,b.first,b.last) p
+        JOIN anchors a USING(anchor_at,source)
+        WHERE b.first IS NOT NULL AND ($3::timestamptz IS NULL OR p.recorded_at >= $3)
+          AND ($4::timestamptz IS NULL OR p.recorded_at <= $4)
+          AND ($6::bool IS NULL OR p.fix=$6)
+        ORDER BY p.recorded_at DESC,p.source"
+    )
     .bind(id)
     .bind(user.user_id)
     .bind(q.since)

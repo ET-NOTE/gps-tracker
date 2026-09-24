@@ -442,13 +442,14 @@ pub async fn ingest(
             fix_records.iter().map(|p| p.0).min(),
             fix_records.iter().map(|p| p.0).max(),
         ) {
-            let accepted: std::collections::HashSet<_> = fix_records.iter().map(|p| p.0).collect();
+            let accepted: std::collections::HashSet<_> =
+                fix_records.iter().map(|p| p.0.timestamp_micros()).collect();
             batch_for_ws = sqlx::query_as::<_,crate::events::LocationFix>(
                 "SELECT recorded_at,lat,lng,sat,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source
                  FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3)
                  WHERE source='l80' ORDER BY recorded_at")
                 .bind(device_id).bind(first).bind(last).fetch_all(&mut *tx).await?
-                .into_iter().filter(|p| accepted.contains(&p.recorded_at)).collect();
+                .into_iter().filter(|p| accepted.contains(&p.recorded_at.timestamp_micros())).collect();
         }
         tx.commit().await?;
         // Historical backfill must not replay old geofence crossings as current ones.

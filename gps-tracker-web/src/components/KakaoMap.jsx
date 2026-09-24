@@ -224,7 +224,7 @@ class SeekerCanvasOverlay {
 // 관련: PR #9 (song1074) 원 아이디어, 이후 재구현.
 const TIME_SEGMENT_OPACITIES = [0.36, 0.48, 0.60, 0.72, 0.84];
 function speedBucket(p) {
-  if (p._isStop || p._speed == null || p._speed < 5) return 0;       // 정지/도보 미만
+  if (p._speed == null || p._speed < 5) return 0;       // 정지/도보 미만
   if (p._speed < 30)  return 1;                                       // 시내 저속
   if (p._speed < 60)  return 2;                                       // 일반 시내
   if (p._speed < 100) return 3;                                       // 고속도로
