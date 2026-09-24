@@ -235,7 +235,7 @@ function MiniSeekerOverlay({
         <div key={monthPicked ? 'day' : 'month'} className="fade-swap" style={st.phaseWrap}>
           {!monthPicked ? (
             <>
-              <div style={st.panelLabel}>월</div>
+              <div style={st.panelLabel}>월 · 5분 요약</div>
               <div style={st.scroll}>
                 {months.length === 0 ? (
                   <div style={st.empty}>—</div>

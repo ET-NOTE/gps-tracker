@@ -455,26 +455,28 @@ export default function Dashboard({ onLogout }) {
       : api.listLocationsGrouped(filterDeviceId, {
           since: `${d}T00:00:00+09:00`,
           until: `${d}T23:59:59+09:00`,
-          fix_only: true, limit: 5000,
+          fix_only: true, limit: 10000,
         }).then(api.flattenGrouped),
   [filterDeviceId]);
 
-  // 월 wizard 용 — 해당 월의 모든 fix 점 (sample 은 drawSeekerPath 가 maxMarkers 로 처리)
+  // Monthly summaries cover the whole month instead of silently taking only the latest 10,000 posts.
   const seekerLoadMonthPoints = useCallback((monthYM) => {
     if (filterDeviceId == null) return Promise.resolve([]);
     const [y, m] = monthYM.split('-').map(Number);
     const ny = m === 12 ? y + 1 : y;
     const nm = m === 12 ? 1 : m + 1;
-    return api.listLocationsGrouped(filterDeviceId, {
-      since: `${monthYM}-01T00:00:00+09:00`,
-      until: `${ny}-${String(nm).padStart(2, '0')}-01T00:00:00+09:00`,
-      fix_only: true, limit: 10000,
-    }).then(api.flattenGrouped);
+    return api.getDeviceLocationsAggregated(filterDeviceId, '5m',
+      `${monthYM}-01T00:00:00+09:00`,
+      new Date(Date.parse(`${ny}-${String(nm).padStart(2, '0')}-01T00:00:00+09:00`) - 1).toISOString(),
+    ).then(rows => (rows || []).filter(r => r.lat_last != null && r.lng_last != null).map(r => ({
+      recorded_at: r.bucket, lat: r.lat_last, lng: r.lng_last, fix: true,
+      sat: r.sat_avg == null ? null : Math.round(r.sat_avg), batch_size: r.fix_count,
+    })));
   }, [filterDeviceId]);
 
   // opts.dense=false (month 뷰) 는 마커 적당히 (sample ~150), true (day 뷰, 기본) 는 많이 (300).
   // 월 뷰는 maxMarkers 150 으로 — drawSeekerPath 가 균등 sampling 해서 일/시간대 분포가 가시화됨.
-  // 폴리라인은 항상 full path 라 패턴 자체는 다 보임.
+  // 월간은 5분 요약, 일간은 선택 날짜의 원본 점을 표시한다.
   const seekerOnPathChange = useCallback((pts, opts = {}) => {
     mapRef.current?.drawSeekerPath?.(pts, {
       maxMarkers: opts.dense === false ? 150 : 300,
