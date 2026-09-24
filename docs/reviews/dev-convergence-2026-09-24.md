@@ -1,12 +1,14 @@
 # dev 정합·격리·개선 결과 — 2026-09-24
 
+이 문서는 첫 정합 배포 당시 기록이다. 이후 사용자 결정으로 물리 분리는 보류하고, [실시간 GPS·seeker 후속 개선](dev-live-validation-2026-09-24.md)과 [Hub 빌드 러너 전환](hub-build-runner-2026-09-24.md)을 진행했다. 현재 릴리스와 Rustfmt/Clippy 검증 결과는 후속 문서를 따른다.
+
 ## 적용 범위
 
 `codex/gps-dev-hardening`에서 운영 main `c089845`를 기준으로 dev 고유 기능을 이식했다.
 배포 대상은 **dev-gps.serial.kr만**이다. 운영 API/웹/펌웨어를 배포하지 않았으며 운영 배포는 사용자의 명시적 허가가 필요하다.
 KC 스캔, 식별자 기반 ingest, 시험 진단 공개 경로는 유지했다. 부저/reset/POST 주기 명령을 실제 장치에 전송하지 않았다.
 
-현재 dev 릴리스: `dev-20260924-reconcile`.
+이 기록의 대상 dev 릴리스: `dev-20260924-reconcile`.
 
 ## 분리 확인 및 보강
 
