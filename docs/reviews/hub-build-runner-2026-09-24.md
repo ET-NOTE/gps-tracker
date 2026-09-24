@@ -39,10 +39,10 @@ Rustfmt/Clippy와 npm lockfile 검사를 같은 이미지에서 수행한다. No
 
 ## 실제 실행 결과
 
-2026-09-24 Hub 빌드 3회가 성공했고, 마지막 산출물 `dev-20260924-182058-4674da4`를 dev에 배포했다.
-소스 커밋은 `4674da408da984773c94dca871130071b7c902ef`, API SHA256은 `e5bbf5f2874a4b9bfadcfdf887675d71a8051c8b849267cfbf69664fc91b5d81`이다.
+2026-09-24 Hub 빌드 4회가 성공했고, 마지막 산출물 `dev-20260924-182949-5ffeb03`를 dev에 배포했다.
+소스 커밋은 `5ffeb03`이다. 정확한 커밋과 API/웹/소스 SHA256은 산출물의 `manifest.json`에 기록한다.
 
-- Rustfmt, Clippy `-D warnings`, Rust 테스트 3건, 프런트 테스트 11건, API release 및 Vite 빌드 성공.
+- Rustfmt, Clippy `-D warnings`, Rust 테스트 3건, 프런트 테스트 12건, API release 및 Vite 빌드 성공.
 - VPS 임시 API에서 회귀 8건과 실제 dev HTTPS에서 회귀 8건 성공. glibc 차이로 인한 실행 오류 없음.
 - 빌드 중 한 관측에서 CPU 400.61%, 메모리 1.141GiB/6GiB. 이는 관측값이며 최대 사용량 측정은 아니다.
 - 빌드 후 Hub 가용 메모리 26,496MiB, 디스크 54GB(75%), 프로젝트 작업 디렉터리 2.0GB. Docker 이미지가 사용하는 공간은 작업 디렉터리 밖이다.
