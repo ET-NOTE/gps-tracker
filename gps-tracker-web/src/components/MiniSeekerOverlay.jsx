@@ -1,331 +1,175 @@
-// 컴팩트 시커 — 좌하단 floating 패널 + 하단 시간 슬롯 strip.
-//
-// 월 / 일 / 시간 3-phase wizard:
-//   · phase 1 (monthPicked=false): 월 리스트 — 클릭 시 그 월의 마지막 활동일로 자동 점프.
-//                                    지도엔 그 달 전체 데이터가 sample (저밀도) 로 표시.
-//   · phase 2 (monthPicked=true): 그 월의 일 리스트 + 좌상단 ← 뒤로 버튼. 지도엔 day 데이터 (고밀도).
-//   · phase 3 (date 선택 + 슬롯 있음): 하단 strip 으로 10분 단위 시간 선택 → 핀 + panToCoord.
-//
-// 지도 마커 클릭은 외부 (Dashboard onPointInfo) 에서 selectByTime 으로 dispatch:
-//   · monthPicked=false → drill-down: 그 점의 KST 날짜로 phase 2 진입 + day 로드 후 시간 sync.
-//   · monthPicked=true  → 가장 가까운 10분 슬롯 sync (skipPin 옵션 사용 시 핀은 외부가 처리).
-//
-// 데이터/맵 작업은 prop 위임:
-//   - loadDates:        () => Promise<string[]>            (YYYY-MM-DD desc — phase 1/2 메뉴 구성)
-//   - loadDayPoints:    (date) => Promise<Array<point>>    (phase 2: day 그릴 데이터)
-//   - loadMonthPoints:  (month "YYYY-MM") => Promise<...>  (phase 1: 월 그릴 데이터, 선택적)
-//   - onPathChange:     (points, opts?) => void            (opts.dense=true 는 day, false 는 month)
-//   - onPathClear:      () => void
-//   - onSlotSelect:     (point) => void
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+// Compact explorer: month overview -> day path -> ten-minute navigation.
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import Icon from './Icon';
+import { bucket10min, kstDate } from '../lib/seeker';
 
 export const MINI_SEEKER_BOTTOM_HEIGHT = 56;
+export const MINI_SEEKER_PANEL_WIDTH = 128;
+const EMPTY = [];
+const fmtMonthDay = date => date.slice(5).replace('-', '.');
+const fmtMonth = month => month.slice(2);
 
-const SLOT_BUCKET_MIN = 10;
-const KST_OFFSET_MS   = 9 * 3600 * 1000;
-
-function fmtMonthDay(isoDate) { return isoDate.slice(5).replace('-', '.'); }
-function fmtMonth(monthStr)   { return monthStr.slice(2); }   // "26-05"
-function bucketKey(isoUtc) {
-  const t = new Date(isoUtc).getTime() + KST_OFFSET_MS;
-  const d = new Date(t);
-  const hh = String(d.getUTCHours()).padStart(2, '0');
-  const m  = Math.floor(d.getUTCMinutes() / SLOT_BUCKET_MIN) * SLOT_BUCKET_MIN;
-  const mm = String(m).padStart(2, '0');
-  return `${hh}:${mm}`;
-}
-
-function MiniSeekerOverlay({
-  loadDates,
-  loadDayPoints,
-  loadMonthPoints,
-  onPathChange,
-  onPathClear,
-  onSlotSelect,
-}, ref) {
+function MiniSeekerOverlay({ loadDates, loadDayPoints, loadMonthPoints, onPathChange, onPathClear, onSlotSelect }, ref) {
   const [dates, setDates] = useState([]);
+  const [datesStatus, setDatesStatus] = useState({ loading: true, error: null });
+  const [datesRetry, setDatesRetry] = useState(0);
   const [month, setMonth] = useState(null);
   const [monthPicked, setMonthPicked] = useState(false);
-  const [date,  setDate]  = useState(null);
-  const [slots, setSlots] = useState([]);
+  const [date, setDate] = useState(null);
   const [slotIdx, setSlotIdx] = useState(null);
-  const [loadStatus, setLoadStatus] = useState('');
-  const monthAbortRef = useRef(null);
-  // 외부 marker click 으로 phase 2 진입 시, day 데이터 로드 후 시간 sync 대기.
+  const [retry, setRetry] = useState(0);
+  const [result, setResult] = useState(null);
   const pendingTimeRef = useRef(null);
-  const slotsRef = useRef([]);
-  useEffect(() => { slotsRef.current = slots; }, [slots]);
+  const slotsScrollRef = useRef(null);
+  const key = `${monthPicked ? date : month}:${monthPicked}:${retry}`;
+  const current = result?.key === key ? result : null;
+  const slots = current?.slots || EMPTY;
+  const loading = datesStatus.loading || (!!(monthPicked ? date : month) && (!current || current.loading));
+  const error = datesStatus.error || current?.error;
+  const months = useMemo(() => [...new Set(dates.map(d => d.slice(0, 7)))].sort().reverse(), [dates]);
+  const daysInMonth = useMemo(() => dates.filter(d => d.startsWith(month || '?')), [dates, month]);
 
-  // 메뉴 데이터 — 월 / 그 월의 일 리스트
-  const months = useMemo(() => {
-    const set = new Set(dates.map(d => d.slice(0, 7)));
-    return Array.from(set).sort().reverse();
-  }, [dates]);
-  const daysInMonth = useMemo(() => {
-    if (!month) return [];
-    return dates.filter(d => d.startsWith(month));
-  }, [dates, month]);
-
-  // phase 1 (month 뷰) — 명시적으로 호출하는 함수.
-  // selectMonth (월 다시 클릭 포함) / goBackToMonths / 초기 진입 양쪽에서 직접 호출 →
-  // useEffect 의존성으로 인한 same-value 재실행 누락 회피.
-  // 진행 중인 fetch 는 idRef 로 무효화 (race 방지). useCallback 으로 stable deps.
-  // ── 주의 ── 아래의 loadDates useEffect 가 이 함수를 참조하므로 반드시 선행 선언.
-  const monthFetchIdRef = useRef(0);
-  const loadAndDrawMonth = useCallback((m) => {
-    if (!loadMonthPoints || !m) return;
-    const myId = ++monthFetchIdRef.current;
-    monthAbortRef.current?.abort();
-    const controller = new AbortController(); monthAbortRef.current = controller;
-    setLoadStatus('월 경로 불러오는 중…');
-    Promise.resolve(loadMonthPoints(m, { signal:controller.signal }))
-      .then(pts => {
-        if (myId !== monthFetchIdRef.current) return;
-        setLoadStatus('');
-        const list = pts || [];
-        if (list.length === 0) { onPathClear?.(); return; }
-        onPathChange?.(list, { dense: false });
-      })
-      .catch(e => { if (myId === monthFetchIdRef.current && e.name !== 'AbortError') {
-        setLoadStatus(e.message || '조회 실패'); onPathClear?.();
-      } });
-  }, [loadMonthPoints, onPathChange, onPathClear]);
-
-  // A slow month request must not overwrite a subsequently selected day or a closed seeker.
-  useEffect(() => () => { monthFetchIdRef.current++; monthAbortRef.current?.abort(); }, []);
-
-  // 1) 날짜 리스트 로드 — 가장 최근 '월' 만 자동 선택 (phase 1 = month picker 로 시작).
-  // 일/시간 자동 선택 X. 사용자가 화살표 또는 마커 클릭으로 phase 2 진입.
-  // 초기 진입 시 가장 최근 월의 전체 데이터를 지도에 자동 표시.
-  const initDoneRef = useRef(false);
   useEffect(() => {
-    let cancelled = false;
-    Promise.resolve(loadDates?.())
-      .then(ds => {
-        if (cancelled) return;
-        const list = ds || [];
-        setDates(list);
-        if (list.length > 0 && !initDoneRef.current) {
-          initDoneRef.current = true;
-          const latestMonth = list[0].slice(0, 7);
-          setMonth(latestMonth);
-          loadAndDrawMonth(latestMonth);
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [loadDates, loadAndDrawMonth]);
-
-  // 2-b) phase 2 (day 뷰) → day 데이터 + 슬롯 버킷
-  useEffect(() => {
-    if (!monthPicked || !date) return;
-    let cancelled = false;
     const controller = new AbortController();
-    monthAbortRef.current?.abort();
-    setLoadStatus('일간 경로 불러오는 중…'); setSlots([]); onPathClear?.();
-    Promise.resolve(loadDayPoints?.(date, { signal:controller.signal,
-      onProgress: n => { if (!cancelled) setLoadStatus(`${n.toLocaleString()}개 좌표 확인 중…`); } }))
-      .then(pts => {
-        if (cancelled) return;
-        setLoadStatus('');
-        const list = pts || [];
-        const buckets = new Map();
-        for (const p of list) {
-          const k = bucketKey(p.recorded_at);
-          if (!buckets.has(k)) buckets.set(k, p);
-        }
-        const arr = Array.from(buckets.entries()).map(([time, point]) => ({ time, point }));
-        setSlots(arr);
-        setSlotIdx(null);
-        if (list.length > 0) onPathChange?.(list, { dense: true });
-        else onPathClear?.();
+    setDatesStatus({ loading: true, error: null });
+    Promise.resolve(loadDates?.({ signal: controller.signal })).then(rows => {
+      if (controller.signal.aborted) return;
+      const list = [...new Set(rows || [])].sort().reverse();
+      setDates(list);
+      setDatesStatus({ loading: false, error: null });
+      if (list.length) setMonth(m => m || list[0].slice(0, 7));
+    }).catch(e => {
+      if (!controller.signal.aborted) setDatesStatus({ loading: false, error: e.message || '날짜를 불러오지 못했습니다.' });
+    });
+    return () => controller.abort();
+  }, [loadDates, datesRetry]);
 
-        // 외부 drill-down 으로 진입한 경우 시간 sync
-        const pending = pendingTimeRef.current;
-        pendingTimeRef.current = null;
-        if (pending != null && arr.length > 0) {
-          let bestI = 0, bestDiff = Infinity;
-          for (let i = 0; i < arr.length; i++) {
-            const st = new Date(arr[i].point.recorded_at).getTime();
-            const d = Math.abs(st - pending);
-            if (d < bestDiff) { bestDiff = d; bestI = i; }
-          }
-          setSlotIdx(bestI);
-          requestAnimationFrame(() => {
-            document.querySelector(`[data-mini-slot="${bestI}"]`)
-              ?.scrollIntoView?.({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-          });
-        }
-      })
-      .catch(e => { if (!cancelled && e.name !== 'AbortError') setLoadStatus(e.message || '조회 실패'); });
-    return () => { cancelled = true; controller.abort(); };
-  }, [monthPicked, date, loadDayPoints, onPathChange, onPathClear]);
-
-  // 언마운트 시 path 정리
   useEffect(() => {
-    return () => onPathClear?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const period = monthPicked ? date : month;
+    if (!period) return;
+    const controller = new AbortController();
+    setResult({ key, loading: true, slots: EMPTY });
+    setSlotIdx(null);
+    onPathClear?.();
+    const load = monthPicked ? loadDayPoints : loadMonthPoints;
+    Promise.resolve(load?.(period, { signal: controller.signal,
+      onProgress: n => { if (!controller.signal.aborted) setResult({ key, loading: true, slots: EMPTY, progress: n }); },
+    })).then(rows => {
+      if (controller.signal.aborted) return;
+      const list = (rows || []).slice().sort((a, b) => Date.parse(a.recorded_at) - Date.parse(b.recorded_at));
+      const buckets = new Map();
+      if (monthPicked) for (const p of list) {
+        const time = bucket10min(p.recorded_at);
+        if (!buckets.has(time)) buckets.set(time, p);
+      }
+      const arr = [...buckets].map(([time, point]) => ({ time, point }));
+      setResult({ key, loading: false, slots: arr, count: list.length });
+      if (list.length) onPathChange?.(list, { dense: monthPicked });
+      const pending = pendingTimeRef.current;
+      pendingTimeRef.current = null;
+      if (pending != null && arr.length) {
+        const i = nearestSlot(arr, pending);
+        setSlotIdx(i);
+        // Use the loaded day's own point; a month summary can be minutes away.
+        onSlotSelect?.(arr[i].point);
+      }
+    }).catch(e => {
+      if (!controller.signal.aborted) setResult({ key, loading: false, slots: EMPTY, error: e.message || '경로를 불러오지 못했습니다.' });
+    });
+    return () => controller.abort();
+  }, [key, monthPicked, month, date, loadDayPoints, loadMonthPoints, onPathChange, onPathClear, onSlotSelect]);
 
-  // ── 외부 (Dashboard onPointInfo) — 마커 클릭 sync ──────────
+  useEffect(() => () => onPathClear?.(), [onPathClear]);
+  useEffect(() => {
+    if (slotIdx == null) return;
+    slotsScrollRef.current?.querySelector(`[data-mini-slot="${slotIdx}"]`)?.scrollIntoView?.({ block: 'nearest', inline: 'center' });
+  }, [slotIdx, slots]);
+  // React's wheel listeners are passive; use an owned listener only when the strip can scroll.
+  useEffect(() => {
+    const el = slotsScrollRef.current;
+    if (!el) return;
+    const wheel = e => {
+      if (!e.deltaY || e.deltaX || el.scrollWidth <= el.clientWidth) return;
+      const before = el.scrollLeft;
+      el.scrollLeft += e.deltaY;
+      if (el.scrollLeft !== before) e.preventDefault();
+    };
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => el.removeEventListener('wheel', wheel);
+  }, [monthPicked]);
+
   useImperativeHandle(ref, () => ({
     selectByTime(isoUtc, opts = {}) {
-      monthFetchIdRef.current++;
-      const ts = new Date(isoUtc).getTime();
-      if (!monthPicked) {
-        // phase 1 → drill-down: 그 점의 KST 날짜로 phase 2 진입.
-        // 데이터 로드 후 시간 sync 는 pendingTimeRef + useEffect 가 처리.
-        const ds = new Date(ts + KST_OFFSET_MS).toISOString().slice(0, 10);
+      const ts = Date.parse(isoUtc);
+      if (!Number.isFinite(ts)) return;
+      const ds = kstDate(ts);
+      if (!monthPicked || date !== ds) {
         pendingTimeRef.current = ts;
-        const newMonth = ds.slice(0, 7);
-        if (month !== newMonth) setMonth(newMonth);
-        setMonthPicked(true);
-        setDate(ds);
-      } else {
-        // phase 2 → 시간만 sync (핀은 외부 처리 옵션)
-        const arr = slotsRef.current;
-        if (!arr.length) return;
-        let bestI = 0, bestDiff = Infinity;
-        for (let i = 0; i < arr.length; i++) {
-          const st = new Date(arr[i].point.recorded_at).getTime();
-          const d = Math.abs(st - ts);
-          if (d < bestDiff) { bestDiff = d; bestI = i; }
-        }
-        setSlotIdx(bestI);
-        if (!opts.skipPin) onSlotSelect?.(arr[bestI].point);
-        requestAnimationFrame(() => {
-          document.querySelector(`[data-mini-slot="${bestI}"]`)
-            ?.scrollIntoView?.({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        });
+        setMonth(ds.slice(0, 7)); setMonthPicked(true); setDate(ds);
+      } else if (slots.length) {
+        const i = nearestSlot(slots, ts);
+        setSlotIdx(i);
+        if (!opts.skipPin) onSlotSelect?.(slots[i].point);
       }
     },
-  }), [monthPicked, month, onSlotSelect]);
+  }), [monthPicked, date, slots, onSlotSelect]);
 
-  // ── 액션 ────────────────────────────────────────────────
-  // 월 텍스트 클릭 — phase 1 에 머문 채 그 달 전체 포인터를 지도에 (일별 대표 점).
-  // same-value 재클릭 시에도 무조건 재호출 → 핀/카메라 reset.
-  function selectMonth(m) {
-    if (m !== month) setMonth(m);
-    loadAndDrawMonth(m);
-  }
-  // 화살표 클릭 — phase 2 진입 (그 달의 일별 보기). 마지막 활동일 자동 선택.
+  function selectMonth(m) { setMonth(m); setRetry(v => v + 1); }
   function drillIntoMonth(m) {
-    monthFetchIdRef.current++;
-    if (m !== month) setMonth(m);
-    setMonthPicked(true);
-    const days = dates.filter(d => d.startsWith(m));
-    if (days.length > 0) setDate(days[0]);
-    else setDate(null);
+    pendingTimeRef.current = null; setMonth(m); setMonthPicked(true);
+    setDate(dates.find(d => d.startsWith(m)) || null);
   }
-  function selectDay(d) {
-    monthFetchIdRef.current++;
-    setDate(d);
-  }
-  function goBackToMonths() {
-    setMonthPicked(false);
-    setDate(null);
-    setSlots([]);
-    setSlotIdx(null);
-    // 월 데이터 명시적으로 재로드 (이전에 그려진 day path 위에 덮어쓰기)
-    if (month) loadAndDrawMonth(month);
-  }
-  function selectSlot(i) {
-    setSlotIdx(i);
-    const s = slots[i];
-    if (s) onSlotSelect?.(s.point);
-  }
-  function onSlotsWheel(e) {
-    if (e.deltaY === 0) return;
-    e.currentTarget.scrollLeft += e.deltaY;
-    e.preventDefault();
-  }
+  function selectDay(d) { pendingTimeRef.current = null; setDate(d); }
+  function goBackToMonths() { pendingTimeRef.current = null; setMonthPicked(false); setDate(null); }
+  function selectSlot(i) { setSlotIdx(i); if (slots[i]) onSlotSelect?.(slots[i].point); }
+  const loadingText = datesStatus.loading ? '날짜 불러오는 중…'
+    : current?.progress ? `${current.progress.toLocaleString()}개 좌표 확인 중…`
+    : `${monthPicked ? '일간' : '월간'} 경로 불러오는 중…`;
 
-  return (
-    <>
-      {/* 좌하단 floating 패널 — 단일 컬럼 wizard. key 로 phase 전환 시 fade-swap. */}
-      <div style={st.panel}>
-        {loadStatus && <div role="status" style={st.empty}>{loadStatus}</div>}
-        <div key={monthPicked ? 'day' : 'month'} className="fade-swap" style={st.phaseWrap}>
-          {!monthPicked ? (
-            <>
-              <div style={st.panelLabel}>월 · 5분 요약</div>
-              <div style={st.scroll}>
-                {months.length === 0 ? (
-                  <div style={st.empty}>—</div>
-                ) : months.map(m => {
-                  const selected = m === month;
-                  return (
-                    <div key={m}
-                      className="fade-color"
-                      style={{ ...st.monthRow, ...(selected ? st.monthRowOn : null) }}>
-                      <button onClick={() => selectMonth(m)}
-                        className="btn-bounce"
-                        style={st.monthRowText}
-                        title="이 달 전체 보기">
-                        {fmtMonth(m)}
-                      </button>
-                      <button onClick={() => drillIntoMonth(m)}
-                        className="btn-bounce"
-                        style={{
-                          ...st.monthRowDrill,
-                          borderLeftColor: selected ? 'rgba(255,255,255,0.3)' : 'var(--border)',
-                        }}
-                        title="이 달의 일별 보기">
-                        <Icon name="chevron-right" size={10} />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <>
-              <button onClick={goBackToMonths}
-                className="btn-bounce btn-hover-bg"
-                style={st.backBtn} title="월 다시 고르기">
-                <Icon name="chevron-left" size={14} />
-                <span>{month ? fmtMonth(month) : '월'}</span>
-              </button>
-              <div style={st.scroll}>
-                {daysInMonth.length === 0 ? (
-                  <div style={st.empty}>기록 없음</div>
-                ) : daysInMonth.map(d => (
-                  <button key={d} onClick={() => selectDay(d)}
-                    className="btn-bounce fade-color"
-                    style={{ ...st.itemBtn, ...(d === date ? st.itemBtnOn : null) }}>
-                    {fmtMonthDay(d)}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* 하단 시간 strip — phase 2 + 슬롯 있을 때만 */}
-      {monthPicked && (
-        <div style={st.bottomStrip}>
-          <div className="smooth-scroll-x" style={st.slotsScroll} onWheel={onSlotsWheel}>
-            {slots.length === 0 ? (
-              <div style={st.slotsEmpty}>
-                {date ? '이 날에 기록이 없습니다' : '날짜를 고르세요'}
-              </div>
-            ) : slots.map((s, i) => (
-              <button key={s.time + i} data-mini-slot={i}
-                onClick={() => selectSlot(i)}
-                className="btn-bounce fade-color"
-                style={{ ...st.slotBtn, ...(i === slotIdx ? st.slotBtnOn : null) }}>
-                {s.time}
-              </button>
-            ))}
+  return <>
+    <section aria-label="컴팩트 시커" aria-busy={loading} style={st.panel}>
+      {loading && <div role="status" style={st.empty}>{loadingText}</div>}
+      {error && <div role="alert" style={st.empty}>
+        <div>{error}</div>
+        <button style={st.itemBtn} onClick={() => datesStatus.error ? setDatesRetry(v => v + 1) : setRetry(v => v + 1)}>다시 시도</button>
+      </div>}
+      <div key={monthPicked ? 'day' : 'month'} className="fade-swap" style={st.phaseWrap}>
+        {!monthPicked ? <>
+          <div style={st.panelLabel}>월 · 5분 요약</div>
+          <div style={st.scroll}>
+            {!loading && !error && months.length === 0 && <div style={st.empty}>활동 기록 없음</div>}
+            {months.map(m => <div key={m} style={{ ...st.monthRow, ...(m === month ? st.monthRowOn : null) }}>
+              <button aria-label={`${m} 월간 경로`} aria-pressed={m === month} onClick={() => selectMonth(m)} style={st.monthRowText}>{fmtMonth(m)}</button>
+              <button aria-label={`${m} 일별 기록 열기`} onClick={() => drillIntoMonth(m)} style={st.monthRowDrill} title="일별 기록 열기"><Icon name="chevron-right" size={14} /></button>
+            </div>)}
+            {!loading && !error && month && current?.count === 0 && <div style={st.empty}>월 경로 없음</div>}
           </div>
-        </div>
-      )}
-    </>
-  );
+        </> : <>
+          <button onClick={goBackToMonths} style={st.backBtn} aria-label="월 목록으로 돌아가기"><Icon name="chevron-left" size={14} /><span>{month ? fmtMonth(month) : '월'}</span></button>
+          <div style={st.panelLabel}>일간 원본 · KST</div>
+          <div style={st.scroll}>
+            {daysInMonth.map(d => <button key={d} onClick={() => selectDay(d)} aria-label={`${d} 일간 경로`} aria-pressed={d === date}
+              style={{ ...st.itemBtn, ...(d === date ? st.itemBtnOn : null) }}>{fmtMonthDay(d)}</button>)}
+          </div>
+        </>}
+      </div>
+    </section>
+    {monthPicked && <div style={st.bottomStrip}>
+      <div ref={slotsScrollRef} className="smooth-scroll-x" aria-label="10분 간격 위치 선택" style={st.slotsScroll}>
+        {slots.length === 0 ? <div style={st.slotsEmpty}>
+          {loading ? loadingText : error ? '경로를 불러오지 못했습니다' : date ? '이 날에 기록이 없습니다' : '날짜를 고르세요'}
+        </div> : slots.map((s, i) => <button key={s.time} data-mini-slot={i} onClick={() => selectSlot(i)}
+          aria-label={`${s.time} 위치 (한국 시간)`} aria-pressed={i === slotIdx}
+          style={{ ...st.slotBtn, ...(i === slotIdx ? st.slotBtnOn : null) }}>{s.time}</button>)}
+      </div>
+    </div>}
+  </>;
 }
-
+function nearestSlot(slots, ts) {
+  let best = 0;
+  for (let i = 1; i < slots.length; i++) if (Math.abs(Date.parse(slots[i].point.recorded_at) - ts) < Math.abs(Date.parse(slots[best].point.recorded_at) - ts)) best = i;
+  return best;
+}
 export default forwardRef(MiniSeekerOverlay);
 
 const st = {
@@ -335,8 +179,8 @@ const st = {
     // phase 1 일 땐 시간 strip 없으므로 bottom: 8. phase 2 일 땐 bottom: strip 위.
     // 정적 처리: 항상 strip 높이만큼 위에 두고, phase 1 에서 strip 미렌더로 시각적 충돌 없음.
     bottom: `calc(${MINI_SEEKER_BOTTOM_HEIGHT}px + 8px)`,
-    width: 100,
-    maxHeight: 240,
+    width: MINI_SEEKER_PANEL_WIDTH,
+    maxHeight: 300,
     display: 'flex', flexDirection: 'column',
     background: 'var(--surface-2)',
     border: '1px solid var(--border)',
@@ -355,7 +199,7 @@ const st = {
   panelLabel: {
     flexShrink: 0,
     padding: '5px 8px',
-    fontSize: 10, fontWeight: 700,
+    fontSize: 11, fontWeight: 700,
     color: 'var(--text-3)',
     background: 'var(--surface)',
     borderBottom: '1px solid var(--border)',
@@ -388,7 +232,7 @@ const st = {
   },
   itemBtn: {
     flexShrink: 0,
-    padding: '6px 6px',
+    padding: '8px 6px', minHeight: 40,
     background: 'var(--surface)',
     color: 'var(--text-2)',
     border: '1px solid var(--border)',
@@ -430,7 +274,7 @@ const st = {
   },
   monthRowDrill: {
     flexShrink: 0,
-    width: 22,
+    width: 40, minHeight: 40,
     padding: 0,
     background: 'transparent', color: 'inherit',
     border: 'none',
@@ -464,7 +308,7 @@ const st = {
   },
   slotBtn: {
     flexShrink: 0,
-    padding: '7px 14px',
+    padding: '8px 14px', minHeight: 40,
     background: 'var(--surface-2)',
     color: 'var(--text)',
     border: '1px solid var(--border)',

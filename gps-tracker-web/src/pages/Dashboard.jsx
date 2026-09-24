@@ -23,7 +23,7 @@ import { confirmDialog, alertDialog } from '../components/Dialog';
 import DeviceFilter from '../components/DeviceFilter';
 import GeofenceSheet from '../components/GeofenceSheet';
 import SeekerSheet from '../components/SeekerSheet';
-import MiniSeekerOverlay, { MINI_SEEKER_BOTTOM_HEIGHT } from '../components/MiniSeekerOverlay';
+import MiniSeekerOverlay, { MINI_SEEKER_BOTTOM_HEIGHT, MINI_SEEKER_PANEL_WIDTH } from '../components/MiniSeekerOverlay';
 import HomeFenceQuick from '../components/HomeFenceQuick';
 import YesterdaySummaryDialog from '../components/YesterdaySummaryDialog';
 import PointInfoSheet from '../components/PointInfoSheet';
@@ -43,6 +43,7 @@ import Icon from '../components/Icon';
 import useBreakpoint from '../useBreakpoint';
 import { PALETTE, getDeviceColor, hydrateDeviceColors, setDeviceColorCache, getDeviceColorsCache, isStale, isFixStale, ageString, classifyDevice } from '../colors';
 import { applyTheme, currentTheme } from '../theme';
+import { isSeekerVisible, normalizeAggregates, monthWindow } from '../lib/seeker';
 
 // 펜스에 적용 디바이스 한 대라도 안에 있으면 true.
 function isAnyDeviceInsideFence(fence, devices) {
@@ -204,7 +205,7 @@ export default function Dashboard({ onLogout }) {
   //   seekerPaused : 시커 활성 동안 일시 정지 — 시커 닫히면 자동 복원
   // 사용자가 직접 지도 드래그하면 userTrackPref=false 로 영구 끔 (다시 버튼 또는 디바이스 선택해야 부활).
   const [userTrackPref, setUserTrackPref] = useState(false);
-  const [seekerPaused,  setSeekerPaused]  = useState(false);
+  const seekerPaused = isSeekerVisible(view, filterDeviceId, showSeeker, showMiniSeeker);
   const trackLive = userTrackPref && !seekerPaused;
   // (F2-a) me / accountType 을 React Query 로 이전. 이전엔 4곳에서 중복 fetch 됐음
   // (Dashboard, ProfilePanel×3). 이제 dedup + StrictMode 안전 + refetchOnWindowFocus.
@@ -396,11 +397,6 @@ export default function Dashboard({ onLogout }) {
   useEffect(() => { devicesRef.current = devices; }, [devices]);
   useEffect(() => { userPrefsRef.current = userPrefs; }, [userPrefs]);
 
-  // 시커 열림/닫힘에 따라 seekerPaused 자동 토글 — 시커 닫으면 userTrackPref 복원.
-  useEffect(() => {
-    setSeekerPaused(!!(showSeeker || showMiniSeeker));
-  }, [showSeeker, showMiniSeeker]);
-
   // (2026-07-27) 시커 open/close → live layer 전체 (main pin + arrow/cluster dot + solid poly +
   // dashed gap) 를 원자적으로 숨김/복원. 이전엔 setHistoryPointsVisible + setLiveTrailsVisible
   // 두 개로 pointsRef/polyRef 만 감췄고 markersRef (main pin, zIndex 200) 는 그대로 노출되어
@@ -410,9 +406,9 @@ export default function Dashboard({ onLogout }) {
   // element 도 seekerModeRef 참조하여 map:null 로 만들어 WS/refresh 로 오늘 데이터 유입 시에도
   // seeker 위에 안 얹힘. 시커 종료 시 축적된 state 를 필터 규칙대로 즉시 복원.
   useEffect(() => {
-    const seekerActive = !!(showSeeker || showMiniSeeker);
+    const seekerActive = seekerPaused;
     mapRef.current?.setSeekerMode?.(seekerActive);
-  }, [showSeeker, showMiniSeeker]);
+  }, [seekerPaused]);
 
   // 추적이 효과적으로 ON 으로 전환되는 순간 (켜자마자 / 시커 닫고 부활) 즉시 카메라를 디바이스 마지막 위치로.
   // WS 다음 갱신 기다릴 필요 없음.
@@ -445,16 +441,16 @@ export default function Dashboard({ onLogout }) {
     } : null);
   }, [filterDeviceId]);
   useEffect(() => {
-    seekerActiveRef.current = !!(showSeeker || showMiniSeeker);
-  }, [showSeeker, showMiniSeeker]);
+    seekerActiveRef.current = seekerPaused;
+  }, [seekerPaused]);
 
   // MiniSeekerOverlay 핸들러 — useCallback 으로 ref 안정화.
   // filterDeviceId 만 deps. WebSocket·devices 갱신에는 영향 X.
   // 월 wizard 지원을 위해 limit 을 365 로 확장 (1년 활동일).
-  const seekerLoadDates = useCallback(() =>
+  const seekerLoadDates = useCallback((options) =>
     filterDeviceId == null
       ? Promise.resolve([])
-      : api.getActiveDates(filterDeviceId),
+      : api.getActiveDates(filterDeviceId, options),
   [filterDeviceId]);
 
   const seekerLoadDayPoints = useCallback((d, options) =>
@@ -470,17 +466,9 @@ export default function Dashboard({ onLogout }) {
   // Monthly summaries cover the whole month instead of silently taking only the latest 10,000 posts.
   const seekerLoadMonthPoints = useCallback((monthYM, options) => {
     if (filterDeviceId == null) return Promise.resolve([]);
-    const [y, m] = monthYM.split('-').map(Number);
-    const ny = m === 12 ? y + 1 : y;
-    const nm = m === 12 ? 1 : m + 1;
-    return api.getDeviceLocationsAggregated(filterDeviceId, '5m',
-      `${monthYM}-01T00:00:00+09:00`,
-      `${ny}-${String(nm).padStart(2, '0')}-01T00:00:00+09:00`, options,
-    ).then(rows => (rows || []).filter(r => r.lat_last != null && r.lng_last != null).map(r => ({
-      recorded_at: r.recorded_at_last, lat: r.lat_last, lng: r.lng_last, fix: true,
-      speed_kmh:r.speed_kmh, speed_source:r.speed_source, speed_max_kmh:r.speed_max_kmh,
-      sat: r.sat_avg == null ? null : Math.round(r.sat_avg), batch_size: r.fix_count,
-    })));
+    const w = monthWindow(monthYM);
+    return api.getDeviceLocationsAggregated(filterDeviceId, '5m', w.since, w.until, options)
+      .then(normalizeAggregates);
   }, [filterDeviceId]);
 
   // opts.dense=false (month 뷰) 는 마커 적당히 (sample ~150), true (day 뷰, 기본) 는 많이 (300).
@@ -493,9 +481,10 @@ export default function Dashboard({ onLogout }) {
       timeColor: opts.dense !== false,
     });
   }, []);
-  const seekerOnPathClear = useCallback(() =>
-    mapRef.current?.clearSeekerPath?.(),
-  []);
+  const seekerOnPathClear = useCallback(() => {
+    setPointInfo(null);
+    mapRef.current?.clearSeekerPath?.();
+  }, []);
   const seekerOnSlotSelect = useCallback((p) => {
     const dev = devicesRef.current.find(d => d.id === filterDeviceId);
     const color = dev ? getDeviceColor(dev) : '#5B7CFF';
@@ -1460,7 +1449,7 @@ export default function Dashboard({ onLogout }) {
                 onRoadview={({ lat, lng }) => { setPointInfo(null); tryOpenRoadview(lat, lng); }}
                 compact={showMiniSeeker}
                 bottomOffset={showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0}
-                leftOffset={showMiniSeeker ? 100 : 0}
+                leftOffset={showMiniSeeker ? MINI_SEEKER_PANEL_WIDTH : 0}
               />
             )}
 

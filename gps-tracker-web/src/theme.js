@@ -4,6 +4,7 @@
 // localStorage 는 flash 방지용 seed 로 유지 — 재로드 시 서버 응답 오기 전에도 사용자 취향 반영.
 
 import { api } from './api';
+import { useSyncExternalStore } from 'react';
 
 // (F0-5) spacing / radius / shadow 토큰 — 테마 무관 공통.
 // 하드코딩된 padding·borderRadius·boxShadow 를 codemod 로 점진 대체 예정.
@@ -46,10 +47,12 @@ export const THEMES = {
     '--border':     '#E0E0E5',
     '--text':       '#1A1A2E',
     '--text-2':     '#666',
-    '--text-3':     '#999',
-    '--primary':    '#3B82F6',   // 깔끔한 블루
+    '--text-3':     '#686B78',
+    '--primary':    '#2563EB',   // 깔끔한 블루
     '--primary-fg': '#FFFFFF',
-    '--accent':     '#10B981',   // 성공/상태 녹색
+    '--accent':     '#10B981',
+    '--accent-fg':  '#071F16',
+    '--danger-fg':  '#1F0808',   // 성공/상태 녹색
     '--danger':     '#EF4444',
     '--warning':    '#F59E0B',
   },
@@ -60,10 +63,12 @@ export const THEMES = {
     '--border':     '#2A2A3E',
     '--text':       '#FFFFFF',
     '--text-2':     '#AAA',
-    '--text-3':     '#666',
-    '--primary':    '#5B7CFF',   // 다크에서 더 밝은 블루
+    '--text-3':     '#A0A3B5',
+    '--primary':    '#8CA2FF',   // 다크에서 더 밝은 블루
     '--primary-fg': '#0F0F1A',
     '--accent':     '#34D399',
+    '--accent-fg':  '#071F16',
+    '--danger-fg':  '#1F0808',
     '--danger':     '#F87171',
     '--warning':    '#FBBF24',
   },
@@ -77,13 +82,16 @@ export const THEMES = {
  */
 export function applyTheme(name, opts = {}) {
   const { persist = true, syncServer = true } = opts;
-  const map = THEMES[name] || THEMES.dark;
+  name = Object.hasOwn(THEMES, name) ? name : 'dark';
+  const map = THEMES[name];
   const root = document.documentElement;
   // (F0-5) 테마 무관 디자인 토큰은 매 apply 마다 재-set (idempotent) 하지만 실질 부담 없음.
   Object.entries(DESIGN_TOKENS).forEach(([k, v]) => root.style.setProperty(k, v));
   Object.entries(map).forEach(([k, v]) => root.style.setProperty(k, v));
   root.setAttribute('data-theme', name);
-  if (persist) localStorage.setItem('theme', name);
+  root.style.colorScheme = name;
+  if (persist) { try { localStorage.setItem('theme', name); } catch { /* rendering works without storage */ } }
+  window.dispatchEvent(new Event('gps-theme-changed'));
   if (syncServer && hasAuth()) {
     api.patchMyPrefs({ theme: name }).catch(() => { /* offline OK */ });
   }
@@ -96,7 +104,8 @@ function hasAuth() {
 }
 
 export function initTheme() {
-  const saved = localStorage.getItem('theme');
+  let saved;
+  try { saved = localStorage.getItem('theme'); } catch { /* use OS preference */ }
   const prefers = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   // 부트 seed — 서버 patch 안 함 (아직 auth 없거나 서버 값 fetch 전).
   applyTheme(saved || prefers, { syncServer: false });
@@ -109,4 +118,12 @@ export function toggleTheme() {
 
 export function currentTheme() {
   return document.documentElement.getAttribute('data-theme') || 'dark';
+}
+
+function subscribeTheme(listener) {
+  window.addEventListener('gps-theme-changed', listener);
+  return () => window.removeEventListener('gps-theme-changed', listener);
+}
+export function useTheme() {
+  return useSyncExternalStore(subscribeTheme, currentTheme, () => 'dark');
 }

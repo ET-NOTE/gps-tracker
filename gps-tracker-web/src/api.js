@@ -365,7 +365,7 @@ export const api = {
   geofenceHistoryOne:   (id) => req('GET',  `/geofences/${id}/history`),
 
   // 디바이스가 fix 데이터를 남긴 KST 날짜 목록 (daily_stats catchup 대비 fallback)
-  getActiveDates: (deviceId) => req('GET', `/devices/${deviceId}/active-dates`),
+  getActiveDates: (deviceId, options = {}) => req('GET', `/devices/${deviceId}/active-dates`, undefined, true, options),
 
   listLocationPoints: (deviceId, params, options = {}) => {
     const scope = authScope();

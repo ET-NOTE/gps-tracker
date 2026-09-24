@@ -1,4 +1,4 @@
-// 홈 탭 시커 — 선택된 디바이스의 과거 위치 탐색.
+// 운행 탭 상세 시커 — 선택된 디바이스의 과거 위치 탐색.
 // 두 가지 모드:
 //   ① 일간: 한 날짜 + 시간 윈도우. KPI / 슬라이더 / 재생 / AI 분석 모두 한 화면에.
 //   ② 월간: 그 달 전체 — 히트맵 달력 + 그 달 모든 점 지도 표시. 날짜 클릭 → 일간으로.
@@ -9,44 +9,25 @@ import { api } from '../api';
 import { getDeviceColor } from '../colors';
 import Icon from './Icon';
 import useBreakpoint from '../useBreakpoint';
+import useSeekerPoints from '../useSeekerPoints';
+import { dayWindow, bucket10min, kstDate, KST_TIME_OPTIONS, BUCKET_LABEL } from '../lib/seeker';
 import useSwipeDownClose from '../useSwipeDownClose';
-import { enrichWithSpeedStops as enrich, haversineM, analyzePath } from '../lib/stops';
+import { analyzePath } from '../lib/stops';
 import { confirmDialog, alertDialog } from './Dialog';
 
 const KST_TZ = 9 * 3600 * 1000;
+const EMPTY_POINTS = [];
 
 // 옵션 영속 키
 const PREF_SPEED_COLOR = 'seeker_speed_color';
 const PREF_SHOW_STOPS  = 'seeker_show_stops';
 
-function dayWindow(dateStr, startHour = 0, hours = 24) {
-  const start = new Date(`${dateStr}T${String(startHour).padStart(2,'0')}:00:00+09:00`);
-  const end   = new Date(start.getTime() + hours * 3600 * 1000);
-  return { since: start.toISOString(), until: end.toISOString() };
-}
-// "HH:MM" + duration hours → ms 윈도우 (KST 기준)
 function slotWindow(dateStr, slot, hours) {
-  const [h, m] = slot.split(':').map(Number);
-  const start = new Date(`${dateStr}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00+09:00`);
-  return { startMs: start.getTime(), endMs: start.getTime() + hours * 3600 * 1000 };
+  const startMs = Date.parse(`${dateStr}T${slot}:00+09:00`);
+  return { startMs, endMs: Math.min(startMs + hours * 3600000, Date.parse(dayWindow(dateStr).until)) };
 }
-// recorded_at(UTC ISO) → "HH:MM" KST 10분 버킷 ("00:00", "00:10", ..., "23:50")
-function bucket10min(isoUtc) {
-  const kst = new Date(new Date(isoUtc).getTime() + KST_TZ);
-  const h = kst.getUTCHours();
-  const m = Math.floor(kst.getUTCMinutes() / 10) * 10;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-}
-function monthWindow(yyyyMm) {
-  const [y, m] = yyyyMm.split('-').map(Number);
-  const start = new Date(`${yyyyMm}-01T00:00:00+09:00`);
-  const next  = new Date(`${m === 12 ? y+1 : y}-${String(m === 12 ? 1 : m+1).padStart(2,'0')}-01T00:00:00+09:00`);
-  return { since: start.toISOString(), until: next.toISOString() };
-}
-function todayKstStr() {
-  return new Date(Date.now() + KST_TZ).toISOString().slice(0, 10);
-}
-function thisMonthKstStr() { return todayKstStr().slice(0, 7); }
+const todayKstStr = () => kstDate();
+const thisMonthKstStr = () => kstDate().slice(0, 7);
 
 function totalKm(points) {
   return analyzePath(points).distanceM / 1000;
@@ -96,42 +77,6 @@ function download(filename, text, mime) {
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
 }
 
-// 카카오 reverse-geocode — coord → 짧은 주소 (행정동 또는 지번/도로명).
-// 모듈 레벨 캐시 (key: 4자리 반올림 lat,lng) — 같은 위치 재요청 차단.
-const _addrCache = new Map();
-const _addrInflight = new Map();
-function _addrKey(lat, lng) {
-  return `${lat.toFixed(4)},${lng.toFixed(4)}`;
-}
-function reverseGeocode(lat, lng) {
-  const k = _addrKey(lat, lng);
-  if (_addrCache.has(k)) return Promise.resolve(_addrCache.get(k));
-  if (_addrInflight.has(k)) return _addrInflight.get(k);
-  const kakao = typeof window !== 'undefined' ? window.kakao : null;
-  if (!kakao?.maps?.services?.Geocoder) return Promise.resolve(null);
-  const p = new Promise((resolve) => {
-    try {
-      const geo = new kakao.maps.services.Geocoder();
-      geo.coord2Address(lng, lat, (result, status) => {
-        if (status !== kakao.maps.services.Status.OK || !result?.[0]) {
-          _addrCache.set(k, null); resolve(null); return;
-        }
-        const r = result[0];
-        // 우선순위: 도로명 (요약) → 행정동 (region_3depth) → 지번 (region_2depth)
-        const road = r.road_address?.road_name;
-        const dong = r.address?.region_3depth_name;
-        const gu   = r.address?.region_2depth_name;
-        const text = road || dong || gu || null;
-        _addrCache.set(k, text); resolve(text);
-      });
-    } catch (e) {
-      _addrCache.set(k, null); resolve(null);
-    }
-  }).finally(() => _addrInflight.delete(k));
-  _addrInflight.set(k, p);
-  return p;
-}
-
 // ════════════════════════════════════════════════════════════
 // SeekerSheet
 // ════════════════════════════════════════════════════════════
@@ -143,7 +88,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [date, setDate]   = useState(todayKstStr());
   const [startSlot, setStartSlot] = useState('00:00');  // "HH:MM" 10분 버킷
   const [hours, setHours] = useState(24);
-  // Phase 4B-2: 정밀도 토글. day default '1m', month default '1h'. user 가 override.
+  // Auto uses 1m for days and 1h for months; explicit choices are never substituted.
   const [refreshKey, setRefreshKey] = useState(0);
   const [precision, setPrecision] = useState('auto');   // 'auto' | '1m' | '5m' | '1h'
   // 카메라 follow — 재생 중 cursor 가 화면 밖으로 나가면 자동 panTo. default ON.
@@ -202,11 +147,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     api.patchMyPrefs({ seeker: { speed_color: speedColor, show_stops: showStops } }).catch(() => {});
   }, [showStops]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 일간/월간 별로 분리된 raw 데이터 — 모드 전환 시 재패치 안 일어남
-  const [dayPoints, setDayPoints]     = useState([]);  // 그 날짜의 24h 전체
-  const [monthPoints, setMonthPoints] = useState([]);  // 그 달 전체
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState(null);
+  const { points: loadedPoints, loading, error, bucket } = useSeekerPoints(device?.id, mode, date, month, precision, refreshKey);
+  const dayPoints = mode === 'day' ? loadedPoints : EMPTY_POINTS;
+  const monthPoints = mode === 'month' ? loadedPoints : EMPTY_POINTS;
   const [dailyStats, setDailyStats] = useState([]);    // { date, distance_m, moving_s, stop_count, max_speed_kmh, ... }
 
   // 슬라이더 (일간 전용)
@@ -237,15 +180,20 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   // ─── 일별 통계 (365일) — 한 번만 ─────────────────────────
   // active-dates 와 union: daily_stats 가 catchup 안 된 날짜도 시커가 인식하도록.
   const [activeDates, setActiveDates] = useState([]);
+  const [datesLoading, setDatesLoading] = useState(true);
+  const [datesError, setDatesError] = useState(null);
   useEffect(() => {
     if (!device?.id) return;
     let cancelled = false;
-    api.getDailyStats(device.id, { limit: 365 })
-      .then(rows => { if (!cancelled) setDailyStats(rows); })
-      .catch(() => {});
-    api.getActiveDates(device.id)
-      .then(rows => { if (!cancelled) setActiveDates(rows); })
-      .catch(() => {});
+    setDatesLoading(true); setDatesError(null);
+    Promise.allSettled([api.getDailyStats(device.id, { limit: 365 }), api.getActiveDates(device.id)])
+      .then(([stats, dates]) => {
+        if (cancelled) return;
+        if (stats.status === 'fulfilled') setDailyStats(stats.value || []);
+        if (dates.status === 'fulfilled') setActiveDates(dates.value || []);
+        if (stats.status === 'rejected' || dates.status === 'rejected') setDatesError('날짜 또는 통계를 모두 불러오지 못했습니다');
+        setDatesLoading(false);
+      });
     return () => { cancelled = true; };
   }, [device?.id, refreshKey]);
 
@@ -316,79 +264,6 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     });
   }, [events, date, mode]);
 
-  // ─── 일간 — 그 날짜 전체 24h fetch (윈도우는 클라 슬라이스) ─
-  useEffect(() => {
-    if (!device?.id || mode !== 'day') return;
-    setLoading(true); setError(null);
-    let cancelled = false;
-    const controller = new AbortController();
-    const w = dayWindow(date, 0, 24);
-    // Phase 4B: day 24h = 86,400 fix → raw 5000 cap 으로 누락.
-    // 정밀도 override: auto/1m/5m → aggregate, '1h' → 1h aggregate.
-    const dayBucket = precision === 'auto' ? '1m' : precision;
-    api.getDeviceLocationsAggregated(device.id, dayBucket, w.since, w.until, { signal:controller.signal })
-    .then(rows => {
-      if (cancelled) return;
-      const normalized = (rows || [])
-        .filter(r => r.lat_last != null && r.lng_last != null)
-        .map(r => ({
-          recorded_at: r.recorded_at_last,
-          speed_kmh:r.speed_kmh, speed_source:r.speed_source,
-          speed_avg_kmh:r.speed_avg_kmh, speed_max_kmh:r.speed_max_kmh,
-          lat:         r.lat_last,
-          lng:         r.lng_last,
-          sat:         r.sat_avg != null ? Math.round(r.sat_avg) : null,
-          fix:         true,
-          vbat_mv:     r.vbat_avg,
-          batch_size:  r.fix_count,
-        }));
-      const sorted = normalized.slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
-      setDayPoints(enrich(sorted));
-    })
-    .catch(e => { if (!cancelled) setError(e.message || '데이터를 불러올 수 없습니다.'); })
-    .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; controller.abort(); };
-  }, [device?.id, mode, date, precision, refreshKey]);
-
-  // ─── 월간 — 그 달 전체 fetch ────────────────────────────
-  // Phase 5: 월 단위 범위 → 1시간 aggregate view (TimescaleDB continuous aggregate, ms 응답).
-  // 이전 raw 10000 cap → 지금 ~720 row (24h × 30day). 정확도 trade 작음 (1h 평균 위치).
-  const MONTH_CAP = 10000;
-  const [monthCapped, setMonthCapped] = useState(false);
-  useEffect(() => {
-    if (!device?.id || mode !== 'month') return;
-    setLoading(true); setError(null);
-    let cancelled = false;
-    const controller = new AbortController();
-    const w = monthWindow(month);
-    // 정밀도 override: month default 1h, user 가 5m 선택 시 더 정밀.
-    const monthBucket = precision === 'auto' || precision === '1m' ? '1h' : precision;
-    api.getDeviceLocationsAggregated(device.id, monthBucket, w.since, w.until, { signal:controller.signal })
-    .then(rows => {
-      if (cancelled) return;
-      // aggregate 응답 → enrich 입력 형태로 normalize. lat_last 사용 (구간 마지막 fix).
-      const normalized = (rows || [])
-        .filter(r => r.lat_last != null && r.lng_last != null)
-        .map(r => ({
-          recorded_at: r.recorded_at_last,
-          speed_kmh:r.speed_kmh, speed_source:r.speed_source,
-          speed_avg_kmh:r.speed_avg_kmh, speed_max_kmh:r.speed_max_kmh,
-          lat:         r.lat_last,
-          lng:         r.lng_last,
-          sat:         r.sat_avg != null ? Math.round(r.sat_avg) : null,
-          fix:         true,
-          vbat_mv:     r.vbat_avg,
-          batch_size:  r.fix_count,
-        }));
-      const sorted = normalized.slice().sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
-      setMonthCapped(sorted.length >= MONTH_CAP);
-      setMonthPoints(enrich(sorted));
-    })
-    .catch(e => { if (!cancelled) setError(e.message || '데이터를 불러올 수 없습니다.'); })
-    .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; controller.abort(); };
-  }, [device?.id, mode, month, precision, refreshKey]);
-
   // ─── 일간 데이터의 10분 버킷 — 시작 시각 드롭다운 옵션 ──
   const availableSlots = useMemo(() => {
     const set = new Set();
@@ -396,19 +271,13 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     return Array.from(set).sort();
   }, [dayPoints]);
 
-  // 데이터에 startSlot 이 없으면 첫 가용 슬롯으로 자동 점프
-  useEffect(() => {
-    if (mode !== 'day' || availableSlots.length === 0) return;
-    if (!availableSlots.includes(startSlot)) setStartSlot(availableSlots[0]);
-  }, [availableSlots, mode, startSlot]);
-
   // 일간 시간 윈도우로 슬라이스 (재패치 X, 클라 메모이즈)
   const slicedDay = useMemo(() => {
     if (dayPoints.length === 0) return [];
     const { startMs, endMs } = slotWindow(date, startSlot, hours);
     return dayPoints.filter(p => {
       const t = new Date(p.recorded_at).getTime();
-      return t >= startMs && t <= endMs;
+      return t >= startMs && t < endMs;
     });
   }, [dayPoints, startSlot, hours, date]);
 
@@ -420,7 +289,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   // sleep_enter 이벤트가 있으면 eventConfirmed=true → trip 경계 확정 (UI 배지).
   // 1점 trip 은 무시. 일간 모드에서만 활성.
   const trips = useMemo(() => {
-    if (mode !== 'day' || rawPoints.length === 0) return [];
+    if (mode !== 'day' || bucket === '1h' || rawPoints.length === 0) return [];
     const STOP_GAP_MS = 5 * 60 * 1000;
     const sleepTs = dayEvents
       .filter(e => e.kind === 'sleep_enter')
@@ -448,7 +317,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         eventConfirmed: prevConfirmed });
     }
     return out;
-  }, [rawPoints, mode, dayEvents]);
+  }, [rawPoints, mode, dayEvents, bucket]);
 
   // 사용자가 trip pill 선택했으면 그 trip 의 점만, 아니면 전체.
   const points = useMemo(() => {
@@ -458,12 +327,12 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   }, [rawPoints, trips, selectedTripIdx]);
 
   // trip 목록 / 모드 / 데이터 바뀌면 selectedTrip 리셋
-  useEffect(() => { setSelectedTripIdx(null); setCompareIdxs([]); setCompareMode(false); }, [date, mode, hours, startSlot]);
+  useEffect(() => { setSelectedTripIdx(null); setCompareIdxs([]); setCompareMode(false); }, [date, mode, hours, startSlot, precision, refreshKey]);
 
   // 윈도우 변경 시 슬라이더 리셋
   useEffect(() => {
     setIdx(0); setPlaying(false);
-  }, [startSlot, hours, mode, dayPoints, monthPoints]);
+  }, [startSlot, hours, mode, dayPoints, monthPoints, selectedTripIdx]);
 
   // 점 변경 시 지도 다시 그리기
   useEffect(() => {
@@ -574,7 +443,8 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const pathMetrics = useMemo(() => analyzePath(points), [points]);
   const stopCount = pathMetrics.stopCount;
   const maxSpeed = useMemo(() => {
-    let s = 0; for (const p of points) if ((p.speed_max_kmh ?? p._speed) > s) s = p.speed_max_kmh ?? p._speed; return s;
+    const values = points.map(p => p.speed_max_kmh ?? p._speed).filter(Number.isFinite);
+    return values.length ? Math.max(...values) : null;
   }, [points]);
   // Every displayed KPI uses the selected points, not the whole day's cached stats.
   const idleSec = pathMetrics.stoppedS;
@@ -647,7 +517,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
     function onKey(e) {
       // 입력 중에는 무시
       const t = e.target;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+      if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || t?.closest?.('input, textarea, select, button, a, [contenteditable=true], [role=dialog]')) return;
       if (e.key === ' ') {
         e.preventDefault();
         setPlaying(p => !p);
@@ -688,7 +558,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         </button>
         {points.length > 0 && (
           <SpeedSparkline points={points} cursorIdx={idx}
-            maxSpeed={maxSpeed}
+            maxSpeed={maxSpeed ?? 0}
             onSeek={(i) => { setPlaying(false); setIdx(i); }} />
         )}
         <div style={sty.compactRow}>
@@ -696,10 +566,10 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             title={playing ? '일시정지' : '재생'}>
             <Icon name={playing ? 'pause' : 'play'} size={14} fill="currentColor" />
           </button>
-          <input type="range" min={0} max={Math.max(0, points.length - 1)} value={idx}
+          <input aria-label="경로 재생 위치" type="range" min={0} max={Math.max(0, points.length - 1)} value={idx}
             onChange={e => { setPlaying(false); setIdx(Number(e.target.value)); }}
             style={{ flex: 1, accentColor: 'var(--primary)' }} />
-          <select value={playSpeed} onChange={e => setPlaySpeed(Number(e.target.value))}
+          <select aria-label="재생 속도" value={playSpeed} onChange={e => setPlaySpeed(Number(e.target.value))}
             style={sty.smallSelect}>
             <option value={30}>30x</option>
             <option value={60}>60x</option>
@@ -707,8 +577,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             <option value={300}>300x</option>
             <option value={600}>600x</option>
           </select>
-          <button onClick={() => setRefreshKey(v => v + 1)} disabled={loading} style={sty.closeBtn}>새로고침</button>
-        <button onClick={onClose} style={sty.closeBtn} title="닫기">
+          <button onClick={onClose} style={sty.closeBtn} title="닫기">
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -718,6 +587,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             background: 'transparent', border: 'none', padding: '0 4px',
           }}>
             <span>{new Date(cur.recorded_at).toLocaleTimeString('ko-KR', {
+              ...KST_TIME_OPTIONS,
               hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>
             <span style={{ color: 'var(--text-3)' }}>{idx + 1}/{points.length} · {progressPct}%</span>
             {cur._speed != null && (
@@ -730,7 +600,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   }
 
   return (
-    <div style={isDesktop ? sty.deskWindow : sty.bottom}>
+    <section aria-label="상세 시커" style={isDesktop ? sty.deskWindow : sty.bottom}>
       {/* ── 헤더 ── 모바일은 swipe-down 으로도 닫힘. drag handle 시각 표시. */}
       <header style={sty.header} {...swipe}>
         {!isDesktop && <div style={sty.dragHandle} />}
@@ -743,7 +613,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>히스토리</div>
           </div>
         </div>
-        <button onClick={() => setRefreshKey(v => v + 1)} disabled={loading} style={sty.closeBtn}>새로고침</button>
+        <button onClick={() => setRefreshKey(v => v + 1)} disabled={loading} style={{ ...sty.closeBtn, width: 'auto', padding: '0 10px', marginLeft: 'auto', whiteSpace: 'nowrap' }}>새로고침</button>
         <button onClick={onClose} style={sty.closeBtn} title="닫기">
           <Icon name="close" size={14} />
         </button>
@@ -755,7 +625,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
           { id: 'day',   label: '일간' },
           { id: 'month', label: '월간' },
         ].map(t => (
-          <button key={t.id} onClick={() => setMode(t.id)} style={{
+          <button key={t.id} aria-pressed={mode === t.id} onClick={() => setMode(t.id)} style={{
             ...sty.tab, ...(mode === t.id ? sty.tabOn : null),
           }}>{t.label}</button>
         ))}
@@ -768,34 +638,36 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         <ChipToggle label="카메라 따라가기" icon="target" on={cameraFollow} onClick={() => setCameraFollow(v => !v)} />
       </div>
 
-      {/* ── 정밀도 토글 (Phase 4B-2) — day default 1m, month default 1h, user 가 override ── */}
-      <div style={{ display: 'flex', gap: 4, padding: '4px 8px', alignItems: 'center', fontSize: 10, color: '#888' }}>
-        <span>정밀도:</span>
+      <div style={{ display: 'flex', gap: 6, padding: '8px 14px', alignItems: 'center', flexWrap: 'wrap', fontSize: 12, color: 'var(--text-2)' }}>
+        <span>경로 요약</span>
         {['auto', '1m', '5m', '1h'].map(p => (
-          <button key={p} onClick={() => setPrecision(p)} style={{
-            padding: '2px 8px',
-            border: '1px solid ' + (precision === p ? '#1a1a2e' : '#ddd'),
-            background: precision === p ? '#1a1a2e' : 'white',
-            color: precision === p ? 'white' : 'var(--text-2)',
-            borderRadius: 3, cursor: 'pointer', fontSize: 10, fontWeight: 600,
-          }}>{p}</button>
+          <button key={p} aria-pressed={precision === p} onClick={() => setPrecision(p)} style={{
+            padding: '6px 10px', minHeight: 32,
+            border: '1px solid ' + (precision === p ? 'var(--primary)' : 'var(--border)'),
+            background: precision === p ? 'var(--primary)' : 'var(--surface-2)',
+            color: precision === p ? 'var(--primary-fg)' : 'var(--text-2)',
+            borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 12,
+          }}>{p === 'auto' ? '자동' : BUCKET_LABEL[p]}</button>
         ))}
+        <div style={{ width: '100%', fontSize: 11 }}>{BUCKET_LABEL[bucket]} 간격 대표점 · 한국 시간 (KST)</div>
       </div>
 
-      <div style={sty.body}>
+      <div style={sty.body} aria-busy={loading}>
+        {loading && <div role="status" style={sty.empty}>경로 불러오는 중…</div>}
+        {error && <div role="alert" style={{ ...sty.empty, color: 'var(--danger)' }}>
+          <div>{error}</div><button onClick={() => setRefreshKey(v => v + 1)} style={sty.emptyAction}>다시 시도</button>
+        </div>}
+        {datesError && <div role="status" style={{ fontSize: 12, color: 'var(--warning)', marginBottom: 8 }}>{datesError} · 새로고침으로 재시도하세요.</div>}
+
 
         {labCycleOn && device && (
           <CycleListSection
             deviceId={device.id}
             color={color}
             onSeek={(c) => {
-              const d = new Date(c.start);
-              const yyyy = d.getFullYear();
-              const mm = String(d.getMonth() + 1).padStart(2, '0');
-              const dd = String(d.getDate()).padStart(2, '0');
               setMode('day');
-              setDate(`${yyyy}-${mm}-${dd}`);
-              setStartSlot(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
+              setDate(kstDate(c.start));
+              setStartSlot(bucket10min(c.start));
               setHours(Math.max(1, Math.ceil(c.durationS / 3600) + 1));
             }}
           />
@@ -804,9 +676,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         {/* ──────────────── 일간 모드 ──────────────── */}
         {mode === 'day' && (
           <>
-            <DateRow date={date} availDates={availDates}
+            <DateRow date={date} availDates={availDates} pending={datesLoading}
               hasData={availDates.includes(date)}
-              onChange={setDate} />
+              onChange={d => { autoJumpedRef.current = true; setDate(d); }} />
 
             <TimeRangeSlider
               startSlot={startSlot}
@@ -829,7 +701,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                     const start = new Date(t.points[0].recorded_at);
                     const end   = new Date(t.points[t.points.length - 1].recorded_at);
                     const km = totalKm(t.points).toFixed(1);
-                    const fmt = (d) => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    const fmt = (d) => d.toLocaleTimeString('ko-KR', { ...KST_TIME_OPTIONS, hour: '2-digit', minute: '2-digit', hour12: false });
                     const inCompare = compareIdxs.includes(i);
                     const onClick = () => {
                       if (compareMode) {
@@ -884,17 +756,20 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             )}
 
             {/* KPI */}
+            {points.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 8 }}>
+              {bucket === '1h' ? '1시간 요약에서는 거리·운행·정차를 판별하기 어렵습니다. 1분 또는 5분을 선택하세요.' : '거리·운행·정차는 표시 경로의 추정치입니다.'}
+            </div>}
             {points.length > 0 ? (
               <div style={sty.kpiGrid}>
-                <Kpi label="표시 경로 거리" value={`${totalKm(points).toFixed(1)} km`} />
-                <Kpi label="운행시간" value={fmtDuration(pathMetrics.movingS)} />
-                <Kpi label="평균속도" value={avgSpeed > 0 ? `${avgSpeed.toFixed(0)} km/h` : '—'} />
-                <Kpi label="최고속도" value={`${maxSpeed.toFixed(0)} km/h`} />
+                <Kpi label="표시 경로 거리" value={bucket === '1h' ? '—' : `${totalKm(points).toFixed(1)} km`} />
+                <Kpi label="운행시간" value={bucket === '1h' ? '—' : fmtDuration(pathMetrics.movingS)} />
+                <Kpi label="표시 경로 평균속도" value={avgSpeed > 0 ? `${avgSpeed.toFixed(0)} km/h` : '—'} />
+                <Kpi label="최고속도" value={maxSpeed == null ? '—' : `${maxSpeed.toFixed(0)} km/h`} />
                 <Kpi label="정차시간" value={idleSec > 0 ? fmtDuration(idleSec) : '—'} />
-                <Kpi label="정지 횟수" value={`${stopCount}회`} />
+                <Kpi label="정지 횟수" value={bucket === '1h' ? '—' : `${stopCount}회`} />
               </div>
-            ) : (
-              <EmptyState loading={loading} error={error}
+            ) : !loading && !error && (
+              <EmptyState
                 msg={dayPoints.length > 0
                   ? '이 시간 범위에 데이터 없음'
                   : '이 날에 데이터가 없습니다'}
@@ -927,17 +802,17 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             {/* 속도 sparkline + 슬라이더 */}
             {points.length > 0 && (
               <>
-                <SpeedSparkline points={points} cursorIdx={idx} maxSpeed={maxSpeed}
+                <SpeedSparkline points={points} cursorIdx={idx} maxSpeed={maxSpeed ?? 0}
                   onSeek={(i) => { setPlaying(false); setIdx(i); }} />
                 <div style={sty.player}>
                   <button onClick={() => setPlaying(p => !p)} style={sty.playBtn}
                     title={playing ? '일시정지' : '재생'}>
                     <Icon name={playing ? 'pause' : 'play'} size={14} fill="currentColor" />
                   </button>
-                  <input type="range" min={0} max={points.length - 1} value={idx}
+                  <input aria-label="경로 재생 위치" type="range" min={0} max={points.length - 1} value={idx}
                     onChange={e => { setPlaying(false); setIdx(Number(e.target.value)); }}
                     style={{ flex: 1, accentColor: 'var(--primary)' }} />
-                  <select value={playSpeed} onChange={e => setPlaySpeed(Number(e.target.value))}
+                  <select aria-label="재생 속도" value={playSpeed} onChange={e => setPlaySpeed(Number(e.target.value))}
                     style={sty.smallSelect}>
                     <option value={30}>30x</option>
                     <option value={60}>60x</option>
@@ -951,6 +826,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             {cur && (
               <div style={sty.cursorInfo}>
                 <span>{new Date(cur.recorded_at).toLocaleString('ko-KR', {
+                  ...KST_TIME_OPTIONS,
                   hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                 <span style={{ color: 'var(--text-3)' }}>{idx + 1} / {points.length} · {progressPct}%</span>
                 {cur._speed != null && (
@@ -1028,6 +904,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                           {aiHistory.map(r => (
                             <option key={r.id} value={r.id}>
                               {new Date(r.created_at).toLocaleString('ko-KR', {
+                  ...KST_TIME_OPTIONS,
                                 month: 'numeric', day: 'numeric',
                                 hour: '2-digit', minute: '2-digit',
                               })}{r.cost_credits > 0 ? ` (${r.cost_credits} 포인트)` : ' (무료)'}
@@ -1096,12 +973,10 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             points={points}
             loading={loading}
             error={error}
-            capped={monthCapped}
+            activeDates={activeDates}
+            datesLoading={datesLoading}
             onDayClick={(ds) => {
               setDate(ds); setStartSlot('00:00'); setHours(24); setMode('day');
-            }}
-            onTripClick={(ds, slot, hrs) => {
-              setDate(ds); setStartSlot(slot); setHours(hrs); setMode('day');
             }}
           />
         )}
@@ -1119,12 +994,12 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
 // ─── 일간 — 날짜 트리거 + 달력 popover ────────────────────
-function DateRow({ date, availDates, hasData, onChange }) {
+function DateRow({ date, availDates, hasData, onChange, pending }) {
   const [open, setOpen] = useState(false);
   const today = todayKstStr();
   const isToday = date === today;
@@ -1133,7 +1008,7 @@ function DateRow({ date, availDates, hasData, onChange }) {
       <button onClick={() => setOpen(o => !o)} style={{ ...sty.dateBtn, flex: 1 }}>
         <Icon name="route" size={12} style={{ opacity: 0.5 }} />
         <span style={{ flex: 1, textAlign: 'left' }}>{date}</span>
-        {!hasData && <span style={{ fontSize: 10, color: 'var(--warning)' }}>데이터 없음</span>}
+        {!pending && !hasData && <span style={{ fontSize: 10, color: 'var(--warning)' }}>데이터 없음</span>}
         <Icon name={open ? 'close' : 'plus'} size={12} />
       </button>
       {!isToday && (
@@ -1150,7 +1025,7 @@ function DateRow({ date, availDates, hasData, onChange }) {
 }
 
 // ─── 월간 — 헤더 + 히트맵 달력 + 요약 ─────────────────────
-function MonthOverview({ month, onMonthChange, dailyStats, points, loading, error, capped, onDayClick, onTripClick }) {
+function MonthOverview({ month, onMonthChange, dailyStats, activeDates, datesLoading, points, loading, error, onDayClick }) {
   // month: "YYYY-MM"
   function shift(dir) {
     const [y, m] = month.split('-').map(Number);
@@ -1172,20 +1047,10 @@ function MonthOverview({ month, onMonthChange, dailyStats, points, loading, erro
     <>
       {/* 월 네비 */}
       <div style={sty.monthNav}>
-        <button onClick={() => shift(-1)} style={sty.navBtn}>‹</button>
+        <button aria-label="이전 달" onClick={() => shift(-1)} style={sty.navBtn}>‹</button>
         <span style={{ fontSize: 14, fontWeight: 600 }}>{month}</span>
-        <button onClick={() => shift(+1)} style={sty.navBtn}>›</button>
+        <button aria-label="다음 달" onClick={() => shift(+1)} style={sty.navBtn}>›</button>
       </div>
-
-      {capped && (
-        <div style={{
-          fontSize: 11, color: 'var(--warning)',
-          background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)',
-          borderRadius: 6, padding: '6px 10px', marginBottom: 8,
-        }}>
-          ⓘ 매우 활발한 달입니다 — 지도엔 표본 1만 점만 표시됩니다 (KPI/달력은 정확). 자세히는 일간 모드를 사용하세요.
-        </div>
-      )}
 
       {/* 요약 KPI */}
       {totalDays > 0 ? (
@@ -1195,8 +1060,8 @@ function MonthOverview({ month, onMonthChange, dailyStats, points, loading, erro
           <Kpi label="운행시간" value={fmtDuration(totalMin * 60)} />
           <Kpi label="지도 점" value={`${points.length}`} />
         </div>
-      ) : (
-        <EmptyState loading={loading} error={error} msg="이 달에 활동 기록이 없습니다"
+      ) : !loading && !error && !datesLoading && (
+        <EmptyState msg={activeDates.some(d => d.startsWith(month)) ? '경로가 있습니다. 일별 통계 집계를 기다리는 중입니다.' : '이 달에 활동 기록이 없습니다'}
           actions={month !== thisMonthKstStr()
             ? [{ label: '이번 달로', onClick: () => onMonthChange(thisMonthKstStr()) }]
             : []}
@@ -1204,132 +1069,18 @@ function MonthOverview({ month, onMonthChange, dailyStats, points, loading, erro
       )}
 
       {/* 히트맵 달력 (인라인, 항상 노출) */}
-      <HeatCalendar month={month} dailyStats={inMonth}
+      <HeatCalendar month={month} dailyStats={inMonth} activeDates={activeDates}
         maxDistance={maxDistance} onDayClick={onDayClick} />
 
-      {/* 운행 카드 — 점들을 5분 gap 으로 분리해 trip 별로 묶음. 클릭 → 그 trip 의 시간대로 일간 진입 */}
-      <MonthTrips points={points} onTripClick={onTripClick} />
+      <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-2)' }}>
+        날짜를 선택하면 해당 일자의 경로와 운행을 자세히 볼 수 있습니다.
+      </div>
     </>
   );
 }
 
-// 월간 점들을 trip 으로 분리해 카드 리스트로. 같은 일자끼리 그룹.
-function MonthTrips({ points, onTripClick }) {
-  // hooks 규칙: 모든 useMemo 는 early return 전에 호출되어야 함.
-  const trips = useMemo(() => {
-    if (points.length === 0) return [];
-    const STOP_GAP_MS = 5 * 60 * 1000;
-    const out = [];
-    let start = 0;
-    for (let i = 1; i < points.length; i++) {
-      const dt = new Date(points[i].recorded_at) - new Date(points[i - 1].recorded_at);
-      if (dt > STOP_GAP_MS) {
-        if (i - start >= 2) out.push({ points: points.slice(start, i) });
-        start = i;
-      }
-    }
-    if (points.length - start >= 2) out.push({ points: points.slice(start) });
-    return out;
-  }, [points]);
-
-  const grouped = useMemo(() => {
-    const KST = 9 * 3600 * 1000;
-    const map = new Map();
-    for (const t of trips) {
-      const start = new Date(t.points[0].recorded_at);
-      const ds = new Date(start.getTime() + KST).toISOString().slice(0, 10);
-      if (!map.has(ds)) map.set(ds, []);
-      map.get(ds).push(t);
-    }
-    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [trips]);
-
-  // reverse-geocode — trip 별 시작/종료 주소. 비동기, 화면이 점진적 갱신.
-  // key: trip index in flat array (안정적 reference 위해 시작 시각으로).
-  const [addrs, setAddrs] = useState({});  // { [tripKey]: { from, to } }
-  useEffect(() => {
-    let cancelled = false;
-    const tasks = trips.map(async (t, idx) => {
-      const a = t.points[0], b = t.points[t.points.length - 1];
-      const key = a.recorded_at;
-      const [from, to] = await Promise.all([
-        reverseGeocode(a.lat, a.lng),
-        reverseGeocode(b.lat, b.lng),
-      ]);
-      if (cancelled) return;
-      setAddrs(prev => ({ ...prev, [key]: { from, to } }));
-    });
-    return () => { cancelled = true; };
-  }, [trips]);
-
-  if (trips.length === 0) return null;
-
-  return (
-    <div style={{ marginTop: 12 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-        운행 ({trips.length}회)
-      </div>
-      {grouped.map(([ds, dayTrips]) => (
-        <div key={ds} style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 4 }}>
-            {ds.slice(5).replace('-', '.')}
-          </div>
-          {dayTrips.map((t, i) => {
-            const startAt = new Date(t.points[0].recorded_at);
-            const endAt   = new Date(t.points[t.points.length - 1].recorded_at);
-            const km = totalKm(t.points).toFixed(1);
-            const fmt = (d) => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const dur = fmtDuration(Math.max(1, (endAt - startAt) / 1000));
-            const addr = addrs[t.points[0].recorded_at];
-            return (
-              <button key={i}
-                onClick={() => {
-                  // trip 시간대로 일간 진입. 시작 10분 버킷 + 운행 길이 cover
-                  const slot = bucket10min(t.points[0].recorded_at);
-                  const spanMs = endAt - startAt;
-                  const hrs = spanMs <= 60*60*1000 ? 1 : spanMs <= 3*60*60*1000 ? 3 : spanMs <= 6*60*60*1000 ? 6 : 12;
-                  onTripClick?.(ds, slot, hrs);
-                }}
-                style={tcs.card}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>
-                    {fmt(startAt)} ~ {fmt(endAt)}
-                    <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 6 }}>({dur})</span>
-                  </div>
-                  {(addr?.from || addr?.to) && (
-                    <div style={{
-                      fontSize: 11, color: 'var(--text-2)', marginTop: 2,
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>
-                      {addr.from || '?'} → {addr.to || '?'}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-                    {km} km · {t.points.length} 점
-                  </div>
-                </div>
-                <span style={{ fontSize: 14, color: 'var(--text-3)' }}>›</span>
-              </button>
-            );
-          })}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-const tcs = {
-  card: {
-    display: 'flex', alignItems: 'center', gap: 8,
-    width: '100%', padding: '8px 10px', marginBottom: 4,
-    background: 'var(--surface-2)', border: '1px solid var(--border)',
-    borderRadius: 8, cursor: 'pointer',
-    textAlign: 'left',
-  },
-};
-
 // ─── 히트맵 달력 (월간 전용, 인라인) ───────────────────────
-function HeatCalendar({ month, dailyStats, maxDistance, onDayClick }) {
+function HeatCalendar({ month, dailyStats, activeDates, maxDistance, onDayClick }) {
   const today = todayKstStr();
   const map = useMemo(() => {
     const m = new Map();
@@ -1338,7 +1089,7 @@ function HeatCalendar({ month, dailyStats, maxDistance, onDayClick }) {
   }, [dailyStats]);
 
   const [yyyy, mm] = month.split('-').map(Number);
-  const firstDow = new Date(`${month}-01T00:00:00+09:00`).getDay();
+  const firstDow = new Date(`${month}-01T00:00:00Z`).getUTCDay();
   const lastDate = new Date(yyyy, mm, 0).getDate();
 
   const cells = [];
@@ -1360,31 +1111,31 @@ function HeatCalendar({ month, dailyStats, maxDistance, onDayClick }) {
           if (d === null) return <span key={i} />;
           const ds = `${month}-${String(d).padStart(2,'0')}`;
           const stat = map.get(ds);
-          const has = !!stat;
+          const has = !!stat || activeDates.includes(ds);
           const dist = stat?.distance_m || 0;
           const intensity = has ? Math.min(1, dist / maxDistance) : 0;
           const isToday = ds === today;
           return (
-            <button key={i}
+            <button key={i} aria-label={`${ds} 일간 경로`}
               disabled={!has}
               onClick={() => has && onDayClick(ds)}
               title={has
-                ? `${ds} · ${(dist/1000).toFixed(1)}km · ${stat.stop_count || 0}정지`
+                ? stat ? `${ds} · ${(dist/1000).toFixed(1)}km · ${stat.stop_count || 0}정지` : `${ds} · 통계 집계 중`
                 : `${ds} · 데이터 없음`}
               style={{
                 ...cal.cell,
                 cursor: has ? 'pointer' : 'default',
                 opacity: has ? 1 : 0.2,
                 background: has
-                  ? `rgba(91, 124, 255, ${0.15 + intensity * 0.65})`
+                  ? `color-mix(in srgb, var(--primary) ${15 + intensity * 65}%, var(--surface))`
                   : 'transparent',
-                color: intensity > 0.5 ? 'white' : 'var(--text)',
+                color: intensity > 0.5 ? 'var(--primary-fg)' : 'var(--text)',
                 border: isToday ? '1.5px solid var(--primary)' : '1px solid transparent',
               }}>
               <span>{d}</span>
               {has && (
                 <span style={{ fontSize: 8, opacity: 0.85, marginTop: 1 }}>
-                  {dist >= 1000 ? `${(dist/1000).toFixed(0)}k` : `${Math.round(dist)}`}
+                  {stat ? dist >= 1000 ? `${(dist/1000).toFixed(0)}k` : `${Math.round(dist)}` : '·'}
                 </span>
               )}
             </button>
@@ -1396,7 +1147,7 @@ function HeatCalendar({ month, dailyStats, maxDistance, onDayClick }) {
         {[0.15, 0.3, 0.5, 0.7, 0.9].map((a, i) => (
           <span key={i} style={{
             width: 14, height: 8, borderRadius: 2,
-            background: `rgba(91, 124, 255, ${a})`,
+            background: `color-mix(in srgb, var(--primary) ${a * 100}%, var(--surface))`,
           }} />
         ))}
         <span style={{ fontSize: 10, color: 'var(--text-3)' }}>많음</span>
@@ -1448,7 +1199,7 @@ function DataCalendar({ value, availDates, onChange }) {
           const sel = ds === value;
           const isToday = ds === today;
           return (
-            <button key={i}
+            <button key={i} aria-label={`${ds} 일간 경로`}
               disabled={!has}
               onClick={() => has && onChange(ds)}
               title={has ? '' : '데이터 없음'}
@@ -1556,15 +1307,15 @@ function CompareKpis({ trips }) {
     const km = totalKm(pts);
     const start = new Date(pts[0].recorded_at);
     const end   = new Date(pts[pts.length - 1].recorded_at);
-    let max = 0;
-    for (const p of pts) if (p._speed > max) max = p._speed;
+    const speeds = pts.map(p => p.speed_max_kmh ?? p._speed).filter(Number.isFinite);
+    const max = speeds.length ? Math.max(...speeds) : null;
     const metrics = analyzePath(pts);
     const idle = metrics.stoppedS;
     const dur = metrics.movingS;
     const avg = dur > 0 ? km / (dur / 3600) : 0;
     return { km, durSec: dur, max, idle, avg, start, end, points: pts.length };
   });
-  const fmt = (d) => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const fmt = (d) => d.toLocaleTimeString('ko-KR', { ...KST_TIME_OPTIONS, hour: '2-digit', minute: '2-digit', hour12: false });
   const Row = ({ label, a, b, fmtVal }) => {
     const aF = fmtVal(a), bF = fmtVal(b);
     let cmp = '';
@@ -1599,7 +1350,7 @@ function CompareKpis({ trips }) {
           <Row label="이동거리" a={stats[0].km} b={stats[1].km} fmtVal={v => `${v.toFixed(1)} km`} />
           <Row label="운행시간" a={Math.round(stats[0].durSec)} b={Math.round(stats[1].durSec)} fmtVal={v => fmtDuration(v)} />
           <Row label="평균속도" a={stats[0].avg} b={stats[1].avg} fmtVal={v => `${v.toFixed(0)} km/h`} />
-          <Row label="최고속도" a={stats[0].max} b={stats[1].max} fmtVal={v => `${v.toFixed(0)} km/h`} />
+          <Row label="최고속도" a={stats[0].max} b={stats[1].max} fmtVal={v => v == null ? '—' : `${v.toFixed(0)} km/h`} />
           <Row label="정차시간"  a={Math.round(stats[0].idle)} b={Math.round(stats[1].idle)} fmtVal={v => v > 0 ? fmtDuration(v) : '—'} />
           <Row label="점 수"   a={stats[0].points} b={stats[1].points} fmtVal={v => `${v}`} />
         </tbody>
@@ -1697,10 +1448,10 @@ function TimeRangeSlider({ startSlot, hours, availableSlots, onChange }) {
           <span key={i} style={{ ...trsty.dataDot, left: `calc(${p}% - 1px)` }} />
         ))}
         {/* 두 thumb */}
-        <input className="trs-range" type="range" min={0} max={SLOTS - 1} step={1} value={startIdx}
+        <input aria-label="시작 시각 (한국 시간)" aria-valuetext={fmt(startIdx)} className="trs-range" type="range" min={0} max={SLOTS - 1} step={1} value={startIdx}
           onChange={e => setStart(Number(e.target.value))}
           style={{ ...trsty.range, zIndex: 2 }} />
-        <input className="trs-range" type="range" min={1} max={SLOTS} step={1} value={endIdx}
+        <input aria-label="종료 시각 (한국 시간)" aria-valuetext={fmt(endIdx)} className="trs-range" type="range" min={1} max={SLOTS} step={1} value={endIdx}
           onChange={e => setEnd(Number(e.target.value))}
           style={{ ...trsty.range, zIndex: 3 }} />
       </div>
@@ -1760,7 +1511,7 @@ const trsty = {
 
 function ChipToggle({ label, icon, on, onClick }) {
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-pressed={on} style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       padding: '5px 10px', borderRadius: 14,
       border: `1px solid ${on ? 'var(--primary)' : 'var(--border)'}`,
@@ -2169,7 +1920,7 @@ function CycleListSection({ deviceId, color, onSeek }) {
       border: '1px solid var(--border, #e5e7eb)', borderRadius: 8,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 6 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
           ⚗️ 사이클 ({cycles.length}) · 최근 7일
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -2194,7 +1945,7 @@ function CycleListSection({ deviceId, color, onSeek }) {
               padding: '5px 8px', background: 'white', borderRadius: 5, fontSize: 11,
             }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, color: 'var(--text-1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   <span style={{ color, marginRight: 4 }}>●</span>
                   {new Date(c.start).toLocaleString('ko-KR')}
                 </div>
