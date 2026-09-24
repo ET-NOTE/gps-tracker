@@ -11,6 +11,7 @@ import { useLiveWS } from '../hooks/useLiveWS';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { makeWsEventHandler } from '../lib/wsEventHandler';
 import { makeDeviceLoaders } from '../lib/deviceLoader';
+import { liveMotion } from '../lib/liveMotion';
 import KakaoMap from '../components/KakaoMap';
 import ProfilePanel from '../components/ProfilePanel';
 import DeviceDetail from '../components/DeviceDetail';
@@ -1164,8 +1165,9 @@ export default function Dashboard({ onLogout }) {
               const plate = dev?.license_plate;
               const color = liveSpeed?.color || (dev ? getDeviceColor(dev) : '#5B7CFF');
               const speedKmh = liveSpeed?.speedKmh;
-              const active   = dev?.last_event_kind === 'wake';
-              const lastAt   = dev?.last_fix_at || dev?.last_seen_at;
+              const lastAt   = liveSpeed?.recordedAt || dev?.last_fix_at || dev?.last_seen_at;
+              const motion   = liveMotion(speedKmh, lastAt);
+              const active   = motion.moving;
               const ageMs    = lastAt ? Date.now() - new Date(lastAt).getTime() : null;
               const ageText  = ageMs == null ? null
                 : ageMs < 60_000 ? '방금'
@@ -1204,7 +1206,7 @@ export default function Dashboard({ onLogout }) {
                           ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
                           : 'var(--surface-2)',
                         color: active ? 'var(--accent)' : 'var(--text-3)',
-                      }}>{active ? '운행중' : '주차'}</span>
+                      }}>{motion.label}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                       <span style={{

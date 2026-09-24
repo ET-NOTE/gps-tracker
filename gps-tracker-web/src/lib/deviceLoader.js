@@ -147,14 +147,15 @@ export function makeDeviceLoaders({
     if (force) mapRef.current?.clearLiveTrail?.(d.id);
     // bulk 로드 — polyline setPath 는 마지막에 한 번만.
     ordered.forEach((loc, i) => {
-      if (!loc.lat || !loc.lng) return;
+      if (!Number.isFinite(loc.lat) || !Number.isFinite(loc.lng)) return;
       const isLast = (i === ordered.length - 1);
       const g = gapMap[i];
       const meta = isLast
         ? {
             recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv,
             fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng,
-            speedKmh: calcSpeedKmh(
+            speedKmh: Number.isFinite(loc.speed_kmh) && loc.speed_kmh >= 0 && loc.speed_kmh <= 250
+              ? loc.speed_kmh : calcSpeedKmh(
               i > 0
                 ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at }
                 : null,

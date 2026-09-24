@@ -114,7 +114,7 @@ export function makeWsEventHandler({
       }
       setDevices(prev => prev.map(d =>
         d.id === msg.device_id
-          ? { ...d, last_seen_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng }
+          ? { ...d, last_seen_at: msg.recorded_at, last_fix_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng }
           : d
       ));
 

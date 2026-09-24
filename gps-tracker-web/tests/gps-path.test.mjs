@@ -5,9 +5,19 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyzePath, enrichWithSpeedStops } from '../src/lib/stops.js';
+import { liveMotion } from '../src/lib/liveMotion.js';
 
 const epoch = Date.parse('2026-09-24T08:00:00Z');
 const point = (s, lat = 37, lng = 127, extra = {}) => ({ recorded_at: new Date(epoch + s * 1000).toISOString(), lat, lng, ...extra });
+
+test('live GPS status distinguishes movement, low speed, unknown and stale fixes', () => {
+  assert.equal(liveMotion(10, point(0).recorded_at, epoch).label, '이동 중');
+  assert.equal(liveMotion(0, point(0).recorded_at, epoch).label, '정지·저속');
+  assert.equal(liveMotion(null, point(0).recorded_at, epoch).label, '속도 미확인');
+  assert.equal(liveMotion(999, point(0).recorded_at, epoch).label, '속도 미확인');
+  assert.equal(liveMotion(10, point(0).recorded_at, epoch + 301_000).label, '위치 오래됨');
+  assert.equal(liveMotion(10, point(0).recorded_at, epoch - 61_000).label, '위치 오래됨');
+});
 
 test('dense slow travel is moving, independently of GPS sample count', () => {
   const points = Array.from({ length: 301 }, (_, i) => point(i * 2, 37 + i * .000025));
