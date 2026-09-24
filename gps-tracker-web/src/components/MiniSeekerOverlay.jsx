@@ -119,7 +119,7 @@ function MiniSeekerOverlay({ loadDates, loadDayPoints, loadMonthPoints, onPathCh
     pendingTimeRef.current = null; setMonth(m); setMonthPicked(true);
     setDate(dates.find(d => d.startsWith(m)) || null);
   }
-  function selectDay(d) { pendingTimeRef.current = null; setDate(d); }
+  function selectDay(d) { pendingTimeRef.current = null; setDate(d); setRetry(v => v + 1); }
   function goBackToMonths() { pendingTimeRef.current = null; setMonthPicked(false); setDate(null); }
   function selectSlot(i) { setSlotIdx(i); if (slots[i]) onSlotSelect?.(slots[i].point); }
   const loadingText = datesStatus.loading ? '날짜 불러오는 중…'

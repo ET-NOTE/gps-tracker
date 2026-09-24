@@ -1127,7 +1127,7 @@ function HeatCalendar({ month, dailyStats, activeDates, maxDistance, onDayClick 
                 cursor: has ? 'pointer' : 'default',
                 opacity: has ? 1 : 0.2,
                 background: has
-                  ? `color-mix(in srgb, var(--primary) ${15 + intensity * 65}%, var(--surface))`
+                  ? intensity > 0.5 ? 'var(--primary)' : `color-mix(in srgb, var(--primary) ${15 + intensity * 65}%, var(--surface))`
                   : 'transparent',
                 color: intensity > 0.5 ? 'var(--primary-fg)' : 'var(--text)',
                 border: isToday ? '1.5px solid var(--primary)' : '1px solid transparent',
@@ -1556,8 +1556,8 @@ function EmptyState({ loading, error, msg, actions }) {
 const sty = {
   // 모바일/태블릿: 화면 하단 sheet
   bottom: {
-    position: 'fixed', left: 0, right: 0, bottom: 0,
-    maxHeight: '78vh',
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    maxHeight: 'min(78vh, 100%)',
     background: 'var(--surface)',
     borderTop: '1px solid var(--border)',
     borderRadius: '14px 14px 0 0',
@@ -1628,7 +1628,7 @@ const sty = {
 
   // 재생 모드 (모바일) — 화면 하단 minimal 컨트롤만. 지도가 거의 다 보임.
   compact: {
-    position: 'fixed', left: 8, right: 8, bottom: 8,
+    position: 'absolute', left: 8, right: 8, bottom: 8,
     background: 'var(--surface)',
     border: '1px solid var(--border)', borderRadius: 12,
     boxShadow: '0 -4px 20px rgba(0,0,0,0.18)',

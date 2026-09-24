@@ -160,6 +160,18 @@ test('detailed: late result is ignored after mode change; monthly 1m really requ
   await act(async () => r.unmount());
 });
 
+test('monthly calendar keeps raw activity selectable while daily statistics catch up', async () => {
+  const f = await fixture({ getDeviceLocationsAggregated: async () => [], getActiveDates: async () => [kstDate()] });
+  const Seeker = (await f.module('components/SeekerSheet.jsx')).default;
+  let r; await act(async () => { r = create(React.createElement(Seeker, { device: { id:1, color:'#123456' }, mapRef: { current: { clearSeekerPath() {} } }, onClose() {} })); });
+  await act(async () => button(r, '월간').props.onClick());
+  assert.equal(button(r, `${kstDate()} 일간 경로`).props.disabled, false);
+  assert.match(text(r), /일별 통계 집계를 기다리는 중/);
+  await act(async () => button(r, `${kstDate()} 일간 경로`).props.onClick());
+  assert.equal(button(r, '일간').props['aria-pressed'], true);
+  await act(async () => r.unmount());
+});
+
 test('theme: invalid names normalize, storage failure still renders, foregrounds have readable contrast', async () => {
   const f = await fixture(); const theme = await f.module('theme.js');
   let changes = 0; f.window.addEventListener('gps-theme-changed', () => changes++);
