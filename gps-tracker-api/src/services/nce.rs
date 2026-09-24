@@ -17,37 +17,56 @@ use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
 const TOKEN_URL: &str = "https://api.1nce.com/management-api/oauth/token";
-const BASE_URL:  &str = "https://api.1nce.com/management-api/v1";
+const BASE_URL: &str = "https://api.1nce.com/management-api/v1";
 
 #[derive(Deserialize)]
-struct TokenResp { access_token: String }
+struct TokenResp {
+    access_token: String,
+}
 
-async fn obtain_token(client: &reqwest::Client, client_id: &str, client_secret: &str) -> anyhow::Result<String> {
+async fn obtain_token(
+    client: &reqwest::Client,
+    client_id: &str,
+    client_secret: &str,
+) -> anyhow::Result<String> {
     // 1NCE는 JSON body를 요구. (curl -d '{"grant_type":"client_credentials"}')
-    let res: TokenResp = client.post(TOKEN_URL)
+    let res: TokenResp = client
+        .post(TOKEN_URL)
         .basic_auth(client_id, Some(client_secret))
         .json(&serde_json::json!({"grant_type": "client_credentials"}))
-        .send().await?
+        .send()
+        .await?
         .error_for_status()?
-        .json().await?;
+        .json()
+        .await?;
     Ok(res.access_token)
 }
 
 /// 1NCE는 19자리 canonical ICCID 사용. 20자리 들어오면 끝 1자리(Luhn) 자름.
 fn normalize_iccid(iccid: &str) -> String {
-    if iccid.len() == 20 { iccid[..19].to_string() } else { iccid.to_string() }
+    if iccid.len() == 20 {
+        iccid[..19].to_string()
+    } else {
+        iccid.to_string()
+    }
 }
 
 // [2026-08-14] OAuth 토큰 프로세스-와이드 캐시. 기존엔 디바이스마다 resolve_token → 매번 신규
 //   발급 → 100대면 30분 주기마다 토큰 ~101회 발급 → 1NCE auth rate limit 유발. 55분 캐시 +
 //   lock 을 발급 왕복 동안 유지해 동시 만료 시에도 1회만 발급(thundering herd 방지).
-struct CachedToken { token: String, fetched_at: Instant }
+struct CachedToken {
+    token: String,
+    fetched_at: Instant,
+}
 static TOKEN_CACHE: OnceLock<Mutex<Option<CachedToken>>> = OnceLock::new();
-const TOKEN_TTL: Duration = Duration::from_secs(55 * 60);   // 1NCE 토큰 1h 유효 → 55분 캐시
+const TOKEN_TTL: Duration = Duration::from_secs(55 * 60); // 1NCE 토큰 1h 유효 → 55분 캐시
 
 /// 환경변수에서 적절한 인증 토큰을 얻는다. client_credentials 모드는 캐시(발급 왕복 제거).
 async fn resolve_token(client: &reqwest::Client) -> anyhow::Result<String> {
-    if let (Ok(cid), Ok(csec)) = (std::env::var("ONCE_API_CLIENT_ID"), std::env::var("ONCE_API_CLIENT_SECRET")) {
+    if let (Ok(cid), Ok(csec)) = (
+        std::env::var("ONCE_API_CLIENT_ID"),
+        std::env::var("ONCE_API_CLIENT_SECRET"),
+    ) {
         if !cid.is_empty() && !csec.is_empty() {
             let cache = TOKEN_CACHE.get_or_init(|| Mutex::new(None));
             let mut guard = cache.lock().await;
@@ -57,14 +76,21 @@ async fn resolve_token(client: &reqwest::Client) -> anyhow::Result<String> {
                 }
             }
             let tok = obtain_token(client, &cid, &csec).await?;
-            *guard = Some(CachedToken { token: tok.clone(), fetched_at: Instant::now() });
+            *guard = Some(CachedToken {
+                token: tok.clone(),
+                fetched_at: Instant::now(),
+            });
             return Ok(tok);
         }
     }
     if let Ok(t) = std::env::var("ONCE_API_TOKEN") {
-        if !t.is_empty() { return Ok(t); }
+        if !t.is_empty() {
+            return Ok(t);
+        }
     }
-    anyhow::bail!("no 1NCE credentials configured (set ONCE_API_TOKEN or ONCE_API_CLIENT_ID/SECRET)")
+    anyhow::bail!(
+        "no 1NCE credentials configured (set ONCE_API_TOKEN or ONCE_API_CLIENT_ID/SECRET)"
+    )
 }
 
 /// SIM 데이터 충전(top-up) — 1NCE Management API 의 표준 endpoint.
@@ -95,16 +121,16 @@ pub async fn refill_sim(iccid: &str, mb: i32) -> anyhow::Result<Value> {
     let url = format!("{BASE_URL}/sims/{id}/topup?payment_method={payment_method}");
     tracing::info!(iccid = id, mb, %url, "1nce topup: POST");
 
-    let res = client.post(&url)
-        .bearer_auth(&token)
-        .send().await?;
+    let res = client.post(&url).bearer_auth(&token).send().await?;
 
     let status = res.status();
-    let location = res.headers()
+    let location = res
+        .headers()
         .get("Location")
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
-    let allow = res.headers()
+    let allow = res
+        .headers()
         .get("Allow")
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
@@ -132,7 +158,7 @@ pub async fn refill_sim(iccid: &str, mb: i32) -> anyhow::Result<Value> {
 //   1) sim_info_fetched_at IS NULL (한 번도 안 가져온 디바이스)
 //   2) 가장 오래된 fetched_at
 const CACHE_REFRESH_INTERVAL: Duration = Duration::from_secs(30 * 60);
-const CACHE_PER_DEVICE_DELAY: Duration = Duration::from_millis(500);   // rate limit 완화
+const CACHE_PER_DEVICE_DELAY: Duration = Duration::from_millis(500); // rate limit 완화
 
 pub fn spawn_cache_worker(pool: sqlx::PgPool) {
     tokio::spawn(async move {
@@ -164,7 +190,8 @@ async fn refresh_all(pool: &sqlx::PgPool) -> anyhow::Result<()> {
             ORDER BY sim_info_fetched_at NULLS FIRST
             LIMIT 100"#,
     )
-    .fetch_all(pool).await?;
+    .fetch_all(pool)
+    .await?;
 
     for (device_id, iccid) in targets {
         match fetch_sim_usage(&iccid, "", "").await {
@@ -176,8 +203,10 @@ async fn refresh_all(pool: &sqlx::PgPool) -> anyhow::Result<()> {
                               sim_info_error      = NULL
                         WHERE id = $1"#,
                 )
-                .bind(device_id).bind(v)
-                .execute(pool).await;
+                .bind(device_id)
+                .bind(v)
+                .execute(pool)
+                .await;
                 tracing::debug!(device_id, "nce cache refreshed");
             }
             Err(e) => {
@@ -188,8 +217,10 @@ async fn refresh_all(pool: &sqlx::PgPool) -> anyhow::Result<()> {
                               sim_info_error      = $2
                         WHERE id = $1"#,
                 )
-                .bind(device_id).bind(&msg)
-                .execute(pool).await;
+                .bind(device_id)
+                .bind(&msg)
+                .execute(pool)
+                .await;
                 tracing::warn!(device_id, %iccid, "nce cache fetch failed: {msg}");
             }
         }
@@ -223,10 +254,18 @@ pub async fn fetch_order(order_id: &str) -> anyhow::Result<Value> {
 
 /// topup 응답의 `order_url` 에서 마지막 path segment (= order id) 만 추출.
 pub fn extract_order_id(order_url: &str) -> Option<String> {
-    order_url.rsplit('/').next().filter(|s| !s.is_empty()).map(|s| s.to_string())
+    order_url
+        .rsplit('/')
+        .next()
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
 }
 
-pub async fn fetch_sim_usage(iccid: &str, _client_id: &str, _client_secret: &str) -> anyhow::Result<Value> {
+pub async fn fetch_sim_usage(
+    iccid: &str,
+    _client_id: &str,
+    _client_secret: &str,
+) -> anyhow::Result<Value> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(15))
         .build()?;
@@ -236,22 +275,24 @@ pub async fn fetch_sim_usage(iccid: &str, _client_id: &str, _client_secret: &str
 
     // 먼저 SIM 상세 — activation_date 가져와 usage 의 start_dt 로 사용.
     let url = format!("{BASE_URL}/sims/{id}");
-    let info: Value = client.get(&url)
+    let info: Value = client
+        .get(&url)
         .bearer_auth(&token)
-        .send().await?
+        .send()
+        .await?
         .error_for_status()?
-        .json().await?;
+        .json()
+        .await?;
 
     // SIM 사용량 — start_dt 명시 안 하면 오늘만 반환되어 "TOTAL" 도 오늘값.
     // 콘솔처럼 활성화 이후 누적이 필요. activation_date 의 yyyy-mm-dd 부분 사용.
-    let start_dt = info.get("activation_date")
+    let start_dt = info
+        .get("activation_date")
         .and_then(|v| v.as_str())
         .and_then(|s| s.split('T').next())
         .unwrap_or("2020-01-01");
     let url = format!("{BASE_URL}/sims/{id}/usage?start_dt={start_dt}");
-    let res = client.get(&url)
-        .bearer_auth(&token)
-        .send().await?;
+    let res = client.get(&url).bearer_auth(&token).send().await?;
     let status = res.status();
     if !status.is_success() {
         let body = res.text().await.unwrap_or_default();

@@ -55,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
     let state = state::AppState {
         db: pool.clone(),
         config: Arc::new(cfg.clone()),
-        events: events::channel(1024),   // (F11) 256→1024 — 100대 fleet × chat WS 공유 시 lagged drop 감소.
+        events: events::channel(1024), // (F11) 256→1024 — 100대 fleet × chat WS 공유 시 lagged drop 감소.
         fcm: fcm.clone(),
         opinet,
     };
@@ -71,7 +71,10 @@ async fn main() -> anyhow::Result<()> {
 
     // ── CORS ──────────────────────────────────────────────
     let cors = if cfg.cors_allowed_origins.iter().any(|s| s == "*") {
-        CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any)
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
     } else {
         let origins = cfg
             .cors_allowed_origins
@@ -118,7 +121,9 @@ async fn shutdown_signal() {
     };
     #[cfg(unix)]
     let terminate = async {
-        if let Ok(mut sig) = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+        if let Ok(mut sig) =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        {
             sig.recv().await;
         }
     };

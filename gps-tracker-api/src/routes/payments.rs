@@ -32,13 +32,13 @@ use crate::{
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/payments/toss/config",  get(get_config))
-        .route("/payments/toss/init",    post(init_payment))
+        .route("/payments/toss/config", get(get_config))
+        .route("/payments/toss/init", post(init_payment))
         .route("/payments/toss/confirm", post(confirm_payment))
-        .route("/payments/toss/fail",    post(mark_failed))
-        .route("/payments/toss/webhook", post(webhook))      // Toss → 우리 (가상계좌 입금 등 비동기)
-        .route("/payments/orders",       get(list_my_orders))
-        .route("/payments/orders/:id",   get(get_order))
+        .route("/payments/toss/fail", post(mark_failed))
+        .route("/payments/toss/webhook", post(webhook)) // Toss → 우리 (가상계좌 입금 등 비동기)
+        .route("/payments/orders", get(list_my_orders))
+        .route("/payments/orders/:id", get(get_order))
 }
 
 // ─── 클라이언트 키 노출 ──────────────────────────────────
@@ -46,13 +46,13 @@ pub fn router() -> Router<AppState> {
 #[derive(Debug, Serialize)]
 struct TossConfig {
     client_key: Option<String>,
-    enabled:    bool,
+    enabled: bool,
 }
 
 async fn get_config(_user: AuthUser) -> AppResult<Json<TossConfig>> {
     let key = toss::client_key();
     Ok(Json(TossConfig {
-        enabled:    key.is_some(),
+        enabled: key.is_some(),
         client_key: key,
     }))
 }
@@ -65,8 +65,8 @@ struct InitReq {
 
 #[derive(Debug, Serialize)]
 struct InitRes {
-    order_id:   String,
-    amount:     i64,
+    order_id: String,
+    amount: i64,
     order_name: String,
     client_key: String,
 }
@@ -77,7 +77,9 @@ async fn init_payment(
     Json(req): Json<InitReq>,
 ) -> AppResult<Json<InitRes>> {
     if req.amount < 1_000 || req.amount > 1_000_000 {
-        return Err(AppError::BadRequest("amount must be 1,000 ~ 1,000,000 KRW".into()));
+        return Err(AppError::BadRequest(
+            "amount must be 1,000 ~ 1,000,000 KRW".into(),
+        ));
     }
     let client_key = toss::client_key()
         .ok_or_else(|| AppError::Internal(anyhow::anyhow!("TOSS_CLIENT_KEY 미설정")))?;
@@ -90,11 +92,19 @@ async fn init_payment(
         r#"INSERT INTO payment_orders (order_id, user_id, amount)
            VALUES ($1, $2, $3)"#,
     )
-    .bind(&order_id).bind(user.user_id).bind(req.amount)
-    .execute(&state.db).await?;
+    .bind(&order_id)
+    .bind(user.user_id)
+    .bind(req.amount)
+    .execute(&state.db)
+    .await?;
 
     let order_name = format!("포인트 {}원 충전", req.amount);
-    Ok(Json(InitRes { order_id, amount: req.amount, order_name, client_key }))
+    Ok(Json(InitRes {
+        order_id,
+        amount: req.amount,
+        order_name,
+        client_key,
+    }))
 }
 
 // ─── 결제 confirm ────────────────────────────────────────
@@ -103,17 +113,17 @@ struct ConfirmReq {
     #[serde(rename = "paymentKey")]
     payment_key: String,
     #[serde(rename = "orderId")]
-    order_id:    String,
-    amount:      i64,
+    order_id: String,
+    amount: i64,
 }
 
 #[derive(Debug, Serialize)]
 struct ConfirmRes {
-    ok:      bool,
+    ok: bool,
     balance: i64,
-    amount:  i64,
+    amount: i64,
     /// 'confirmed' (즉시 적립 완료) | 'waiting' (가상계좌 입금 대기)
-    status:  String,
+    status: String,
     /// status='waiting' 일 때만 — 가상계좌 정보 (계좌번호, 은행, 예금주, 만료시각)
     virtual_account: Option<Value>,
 }
@@ -124,18 +134,24 @@ async fn confirm_payment(
     Json(req): Json<ConfirmReq>,
 ) -> AppResult<Json<ConfirmRes>> {
     // 1) 우리 DB 의 order 검증
-    let row: Option<(i64, i64, String)> = sqlx::query_as(
-        r#"SELECT user_id, amount, status FROM payment_orders WHERE order_id = $1"#,
-    )
-    .bind(&req.order_id).fetch_optional(&state.db).await?;
+    let row: Option<(i64, i64, String)> =
+        sqlx::query_as(r#"SELECT user_id, amount, status FROM payment_orders WHERE order_id = $1"#)
+            .bind(&req.order_id)
+            .fetch_optional(&state.db)
+            .await?;
     let (owner_id, db_amount, status) = row.ok_or(AppError::NotFound)?;
-    if owner_id != user.user_id { return Err(AppError::NotFound); }
+    if owner_id != user.user_id {
+        return Err(AppError::NotFound);
+    }
     if status != "pending" {
-        return Err(AppError::Conflict(format!("이미 처리된 주문 (status={status})")));
+        return Err(AppError::Conflict(format!(
+            "이미 처리된 주문 (status={status})"
+        )));
     }
     if db_amount != req.amount {
         return Err(AppError::BadRequest(format!(
-            "금액 불일치: 주문 {db_amount}원 ↔ 요청 {}원", req.amount
+            "금액 불일치: 주문 {db_amount}원 ↔ 요청 {}원",
+            req.amount
         )));
     }
 
@@ -149,19 +165,37 @@ async fn confirm_payment(
                       SET status = 'failed', fail_reason = $2
                     WHERE order_id = $1 AND status = 'pending'"#,
             )
-            .bind(&req.order_id).bind(&msg).execute(&state.db).await;
+            .bind(&req.order_id)
+            .bind(&msg)
+            .execute(&state.db)
+            .await;
             return Err(AppError::BadRequest(format!("결제 승인 실패: {msg}")));
         }
     };
 
-    let payment_key  = toss_resp.get("paymentKey").and_then(|v| v.as_str()).unwrap_or(&req.payment_key).to_string();
-    let method       = toss_resp.get("method").and_then(|v| v.as_str()).map(|s| s.to_string());
-    let receipt_url  = toss_resp.get("receipt").and_then(|r| r.get("url")).and_then(|v| v.as_str()).map(|s| s.to_string());
-    let toss_status  = toss_resp.get("status").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let payment_key = toss_resp
+        .get("paymentKey")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&req.payment_key)
+        .to_string();
+    let method = toss_resp
+        .get("method")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    let receipt_url = toss_resp
+        .get("receipt")
+        .and_then(|r| r.get("url"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    let toss_status = toss_resp
+        .get("status")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
 
     // 가상계좌인 경우 toss_status = "WAITING_FOR_DEPOSIT" 으로 옴.
     // 카드/계좌이체는 즉시 "DONE".
-    let is_done    = toss_status == "DONE";
+    let is_done = toss_status == "DONE";
     let is_waiting = toss_status == "WAITING_FOR_DEPOSIT";
 
     if is_waiting {
@@ -178,12 +212,19 @@ async fn confirm_payment(
                       issued_at = NOW()
                 WHERE order_id = $1 AND status = 'pending'"#,
         )
-        .bind(&req.order_id).bind(&payment_key).bind(&method).bind(&receipt_url)
-        .bind(&toss_resp).bind(&va_info)
-        .execute(&state.db).await?;
+        .bind(&req.order_id)
+        .bind(&payment_key)
+        .bind(&method)
+        .bind(&receipt_url)
+        .bind(&toss_resp)
+        .bind(&va_info)
+        .execute(&state.db)
+        .await?;
         let bal = credits::balance(&state.db, user.user_id).await.unwrap_or(0);
         return Ok(Json(ConfirmRes {
-            ok: true, balance: bal, amount: req.amount,
+            ok: true,
+            balance: bal,
+            amount: req.amount,
             status: "waiting".into(),
             virtual_account: va_info,
         }));
@@ -196,18 +237,27 @@ async fn confirm_payment(
         )
         .bind(&req.order_id).bind(format!("unexpected toss status: {toss_status}"))
         .execute(&state.db).await;
-        return Err(AppError::BadRequest(format!("예상치 못한 결제 상태: {toss_status}")));
+        return Err(AppError::BadRequest(format!(
+            "예상치 못한 결제 상태: {toss_status}"
+        )));
     }
 
     // ─ 즉시 결제 (카드/계좌이체) — 포인트 적립 ─
     let bal = credit_payment(
-        &state.db, &req.order_id, user.user_id,
-        &payment_key, method.as_deref(), receipt_url.as_deref(),
+        &state.db,
+        &req.order_id,
+        user.user_id,
+        &payment_key,
+        method.as_deref(),
+        receipt_url.as_deref(),
         &toss_resp,
-    ).await?;
+    )
+    .await?;
 
     Ok(Json(ConfirmRes {
-        ok: true, balance: bal, amount: req.amount,
+        ok: true,
+        balance: bal,
+        amount: req.amount,
         status: "confirmed".into(),
         virtual_account: None,
     }))
@@ -236,8 +286,13 @@ async fn credit_payment(
             WHERE order_id = $1 AND status IN ('pending','waiting')
         RETURNING amount"#,
     )
-    .bind(order_id).bind(payment_key).bind(method).bind(receipt_url).bind(raw)
-    .fetch_optional(&mut *tx).await?;
+    .bind(order_id)
+    .bind(payment_key)
+    .bind(method)
+    .bind(receipt_url)
+    .bind(raw)
+    .fetch_optional(&mut *tx)
+    .await?;
 
     if claimed.is_none() {
         // 이미 confirmed — 멱등 응답
@@ -249,16 +304,21 @@ async fn credit_payment(
     let new_balance: i64 = sqlx::query_scalar(
         "UPDATE users SET credits = credits + $2 WHERE id = $1 RETURNING credits",
     )
-    .bind(user_id).bind(amount)
-    .fetch_one(&mut *tx).await?;
+    .bind(user_id)
+    .bind(amount)
+    .fetch_one(&mut *tx)
+    .await?;
 
     sqlx::query(
         r#"INSERT INTO credit_log (user_id, delta, balance, reason, ref_id, note)
            VALUES ($1, $2, $3, 'topup', NULL, $4)"#,
     )
-    .bind(user_id).bind(amount).bind(new_balance)
+    .bind(user_id)
+    .bind(amount)
+    .bind(new_balance)
     .bind(format!("Toss order {order_id}"))
-    .execute(&mut *tx).await?;
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(new_balance)
 }
@@ -269,8 +329,8 @@ async fn credit_payment(
 struct FailReq {
     #[serde(rename = "orderId")]
     order_id: String,
-    code:     Option<String>,
-    message:  Option<String>,
+    code: Option<String>,
+    message: Option<String>,
 }
 
 async fn mark_failed(
@@ -278,7 +338,8 @@ async fn mark_failed(
     user: AuthUser,
     Json(req): Json<FailReq>,
 ) -> AppResult<Json<Value>> {
-    let reason = format!("{} {}",
+    let reason = format!(
+        "{} {}",
         req.code.as_deref().unwrap_or(""),
         req.message.as_deref().unwrap_or(""),
     );
@@ -287,22 +348,25 @@ async fn mark_failed(
               SET status = 'failed', fail_reason = $3
             WHERE order_id = $1 AND user_id = $2 AND status = 'pending'"#,
     )
-    .bind(&req.order_id).bind(user.user_id).bind(reason)
-    .execute(&state.db).await?;
+    .bind(&req.order_id)
+    .bind(user.user_id)
+    .bind(reason)
+    .execute(&state.db)
+    .await?;
     Ok(Json(json!({ "ok": true })))
 }
 
 // ─── 사용자 본인 주문 이력 ─────────────────────────────
 #[derive(Debug, Serialize, FromRow)]
 struct OrderRow {
-    id:           i64,
-    order_id:     String,
-    amount:       i64,
-    status:       String,
-    method:       Option<String>,
-    receipt_url:  Option<String>,
-    fail_reason:  Option<String>,
-    created_at:   DateTime<Utc>,
+    id: i64,
+    order_id: String,
+    amount: i64,
+    status: String,
+    method: Option<String>,
+    receipt_url: Option<String>,
+    fail_reason: Option<String>,
+    created_at: DateTime<Utc>,
     confirmed_at: Option<DateTime<Utc>>,
 }
 
@@ -317,7 +381,9 @@ async fn list_my_orders(
             WHERE user_id = $1
             ORDER BY created_at DESC LIMIT 50"#,
     )
-    .bind(user.user_id).fetch_all(&state.db).await?;
+    .bind(user.user_id)
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
@@ -332,7 +398,10 @@ async fn get_order(
              FROM payment_orders
             WHERE order_id = $1 AND user_id = $2"#,
     )
-    .bind(&order_id).bind(user.user_id).fetch_optional(&state.db).await?;
+    .bind(&order_id)
+    .bind(user.user_id)
+    .fetch_optional(&state.db)
+    .await?;
     Ok(Json(row.ok_or(AppError::NotFound)?))
 }
 
@@ -364,8 +433,11 @@ async fn webhook(
     body: axum::body::Bytes,
 ) -> AppResult<Json<Value>> {
     // 1) 서명 검증
-    let secret = std::env::var("TOSS_WEBHOOK_SECRET").ok().filter(|s| !s.is_empty());
-    let provided = headers.get("toss-signature")
+    let secret = std::env::var("TOSS_WEBHOOK_SECRET")
+        .ok()
+        .filter(|s| !s.is_empty());
+    let provided = headers
+        .get("toss-signature")
         .or_else(|| headers.get("tosspayments-signature"))
         .or_else(|| headers.get("x-toss-signature"))
         .and_then(|v| v.to_str().ok());
@@ -436,8 +508,16 @@ async fn webhook(
     let ev: WebhookEvent = serde_json::from_slice(&body)
         .map_err(|e| AppError::BadRequest(format!("invalid webhook body: {e}")))?;
 
-    let order_id = ev.data.get("orderId").and_then(|v| v.as_str()).unwrap_or("");
-    let payment_key = ev.data.get("paymentKey").and_then(|v| v.as_str()).unwrap_or("");
+    let order_id = ev
+        .data
+        .get("orderId")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let payment_key = ev
+        .data
+        .get("paymentKey")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let toss_status = ev.data.get("status").and_then(|v| v.as_str()).unwrap_or("");
 
     if order_id.is_empty() {
@@ -447,10 +527,11 @@ async fn webhook(
     tracing::info!(event_type=%ev.event_type, order_id, toss_status, "toss webhook received");
 
     // 3) 우리 DB 의 주문 확인
-    let row: Option<(i64, i64, String)> = sqlx::query_as(
-        "SELECT user_id, amount, status FROM payment_orders WHERE order_id = $1",
-    )
-    .bind(order_id).fetch_optional(&state.db).await?;
+    let row: Option<(i64, i64, String)> =
+        sqlx::query_as("SELECT user_id, amount, status FROM payment_orders WHERE order_id = $1")
+            .bind(order_id)
+            .fetch_optional(&state.db)
+            .await?;
     let Some((user_id, _amount, our_status)) = row else {
         return Ok(Json(json!({"ok": true, "ignored": "order not found"})));
     };
@@ -458,13 +539,27 @@ async fn webhook(
     match (ev.event_type.as_str(), toss_status) {
         // DONE → 적립 (멱등)
         (_, "DONE") if our_status != "confirmed" => {
-            let method      = ev.data.get("method").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let receipt_url = ev.data.get("receipt").and_then(|r| r.get("url")).and_then(|v| v.as_str()).map(|s| s.to_string());
+            let method = ev
+                .data
+                .get("method")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let receipt_url = ev
+                .data
+                .get("receipt")
+                .and_then(|r| r.get("url"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let _ = credit_payment(
-                &state.db, order_id, user_id,
-                payment_key, method.as_deref(), receipt_url.as_deref(),
+                &state.db,
+                order_id,
+                user_id,
+                payment_key,
+                method.as_deref(),
+                receipt_url.as_deref(),
                 &ev.data,
-            ).await;
+            )
+            .await;
         }
         // 취소/만료 → 실패 마킹
         (_, "CANCELED") | (_, "EXPIRED") | (_, "ABORTED") => {
@@ -475,15 +570,19 @@ async fn webhook(
                           raw_response = $3
                     WHERE order_id = $1 AND status IN ('pending','waiting')"#,
             )
-            .bind(order_id).bind(toss_status).bind(&ev.data)
-            .execute(&state.db).await;
+            .bind(order_id)
+            .bind(toss_status)
+            .bind(&ev.data)
+            .execute(&state.db)
+            .await;
         }
         _ => {
             // 그 외 이벤트는 단순 raw_response 갱신만
-            let _ = sqlx::query(
-                "UPDATE payment_orders SET raw_response = $2 WHERE order_id = $1",
-            )
-            .bind(order_id).bind(&ev.data).execute(&state.db).await;
+            let _ = sqlx::query("UPDATE payment_orders SET raw_response = $2 WHERE order_id = $1")
+                .bind(order_id)
+                .bind(&ev.data)
+                .execute(&state.db)
+                .await;
         }
     }
     Ok(Json(json!({"ok": true})))

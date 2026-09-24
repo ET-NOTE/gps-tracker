@@ -17,9 +17,9 @@ use serde_json::{json, Value};
 use std::time::Duration;
 
 const API_URL: &str = "https://alimtalk-api.bizmsg.kr/v2/sender/send";
-const DEFAULT_USERID: &str  = "etcom262";
+const DEFAULT_USERID: &str = "etcom262";
 const DEFAULT_PROFILE: &str = "40d675c26afbef411fddcd688c88f575668f8651";
-const DEFAULT_SENDER: &str  = "01022957774";
+const DEFAULT_SENDER: &str = "01022957774";
 
 /// 회원가입 환영 알림톡 — 비즈엠 승인 템플릿 GPS_MEMBER_SIGNUP.
 ///
@@ -66,37 +66,41 @@ pub async fn send_signup_welcome(phone: &str, display_name: &str) -> anyhow::Res
         message: &message,
         sms_title,
         buttons: vec![button1, button2],
-    }).await
+    })
+    .await
 }
 
 struct SendArgs<'a> {
-    phone:     &'a str,
-    tmpl_id:   &'a str,
-    message:   &'a str,
+    phone: &'a str,
+    tmpl_id: &'a str,
+    message: &'a str,
     sms_title: &'a str,
-    buttons:   Vec<Value>,
+    buttons: Vec<Value>,
 }
 
 async fn send_template(args: SendArgs<'_>) -> anyhow::Result<()> {
     let dev = std::env::var("SMS_DEV_MODE").ok().as_deref() == Some("1");
-    let userid  = std::env::var("BIZMSG_USERID").unwrap_or_else(|_| DEFAULT_USERID.into());
+    let userid = std::env::var("BIZMSG_USERID").unwrap_or_else(|_| DEFAULT_USERID.into());
     let profile = std::env::var("BIZMSG_PROFILE").unwrap_or_else(|_| DEFAULT_PROFILE.into());
-    let sender  = std::env::var("BIZMSG_SMS_SENDER").unwrap_or_else(|_| DEFAULT_SENDER.into());
+    let sender = std::env::var("BIZMSG_SMS_SENDER").unwrap_or_else(|_| DEFAULT_SENDER.into());
 
     if dev {
-        tracing::warn!(phone = args.phone, tmpl = args.tmpl_id,
-            "SMS_DEV_MODE=1 — actual alimtalk skipped");
+        tracing::warn!(
+            phone = args.phone,
+            tmpl = args.tmpl_id,
+            "SMS_DEV_MODE=1 — actual alimtalk skipped"
+        );
         return Ok(());
     }
 
     let mut body_obj = serde_json::Map::new();
     body_obj.insert("message_type".into(), json!("at"));
-    body_obj.insert("phn".into(),       json!(args.phone));
-    body_obj.insert("profile".into(),   json!(profile));
-    body_obj.insert("tmplId".into(),    json!(args.tmpl_id));
-    body_obj.insert("msg".into(),       json!(args.message));
-    body_obj.insert("smsKind".into(),   json!("L"));
-    body_obj.insert("msgSms".into(),    json!(args.message));
+    body_obj.insert("phn".into(), json!(args.phone));
+    body_obj.insert("profile".into(), json!(profile));
+    body_obj.insert("tmplId".into(), json!(args.tmpl_id));
+    body_obj.insert("msg".into(), json!(args.message));
+    body_obj.insert("smsKind".into(), json!("L"));
+    body_obj.insert("msgSms".into(), json!(args.message));
     body_obj.insert("smsSender".into(), json!(sender));
     body_obj.insert("smsLmsTit".into(), json!(args.sms_title));
     body_obj.insert("reserveDt".into(), json!("00000000000000"));
@@ -110,11 +114,13 @@ async fn send_template(args: SendArgs<'_>) -> anyhow::Result<()> {
         .timeout(Duration::from_secs(10))
         .build()?;
 
-    let res = client.post(API_URL)
+    let res = client
+        .post(API_URL)
         .header("Content-Type", "application/json")
         .header("userid", userid)
         .json(&body)
-        .send().await?;
+        .send()
+        .await?;
 
     let status = res.status();
     let text = res.text().await.unwrap_or_default();
@@ -125,8 +131,12 @@ async fn send_template(args: SendArgs<'_>) -> anyhow::Result<()> {
         tracing::info!(phone = args.phone, tmpl = args.tmpl_id, "alimtalk ok");
     } else {
         // 200 응답이지만 본문이 의심스러울 때 — 경고만, 막진 않음 (SMS 폴백이 된 케이스 등)
-        tracing::warn!(phone = args.phone, tmpl = args.tmpl_id, ?text,
-            "alimtalk returned 200 but body suspicious");
+        tracing::warn!(
+            phone = args.phone,
+            tmpl = args.tmpl_id,
+            ?text,
+            "alimtalk returned 200 but body suspicious"
+        );
     }
     Ok(())
 }

@@ -2,7 +2,11 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
-use crate::{config::Config, events::Event, services::{fcm::FcmClient, opinet::OpinetCache}};
+use crate::{
+    config::Config,
+    events::Event,
+    services::{fcm::FcmClient, opinet::OpinetCache},
+};
 
 #[derive(Clone)]
 pub struct AppState {

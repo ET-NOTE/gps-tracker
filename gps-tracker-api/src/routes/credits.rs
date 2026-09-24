@@ -27,18 +27,21 @@ use crate::{
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/credits/balance",          get(balance))
-        .route("/credits/log",              get(log))
-        .route("/credits/topup",            post(self_topup))
-        .route("/credits/requests",         post(create_request).get(list_my_requests))
+        .route("/credits/balance", get(balance))
+        .route("/credits/log", get(log))
+        .route("/credits/topup", post(self_topup))
+        .route(
+            "/credits/requests",
+            post(create_request).get(list_my_requests),
+        )
         .route("/credits/requests/:id/cancel", post(cancel_my_request))
 }
 
 pub fn router_admin() -> Router<AppState> {
     Router::new()
-        .route("/admin/credits/requests",                get(list_all_requests))
-        .route("/admin/credits/requests/:id/approve",    post(approve_request))
-        .route("/admin/credits/requests/:id/reject",     post(reject_request))
+        .route("/admin/credits/requests", get(list_all_requests))
+        .route("/admin/credits/requests/:id/approve", post(approve_request))
+        .route("/admin/credits/requests/:id/reject", post(reject_request))
 }
 
 #[derive(Debug, Serialize)]
@@ -46,29 +49,23 @@ struct BalanceView {
     balance: i64,
 }
 
-async fn balance(
-    State(state): State<AppState>,
-    user: AuthUser,
-) -> AppResult<Json<BalanceView>> {
+async fn balance(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<BalanceView>> {
     let v = credits::balance(&state.db, user.user_id).await?;
     Ok(Json(BalanceView { balance: v }))
 }
 
 #[derive(Debug, Serialize, FromRow)]
 struct CreditLogRow {
-    id:         i64,
-    delta:      i64,
-    balance:    i64,
-    reason:     String,
-    ref_id:     Option<i64>,
-    note:       Option<String>,
+    id: i64,
+    delta: i64,
+    balance: i64,
+    reason: String,
+    ref_id: Option<i64>,
+    note: Option<String>,
     created_at: DateTime<Utc>,
 }
 
-async fn log(
-    State(state): State<AppState>,
-    user: AuthUser,
-) -> AppResult<Json<Vec<CreditLogRow>>> {
+async fn log(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Vec<CreditLogRow>>> {
     let rows = sqlx::query_as::<_, CreditLogRow>(
         r#"SELECT id, delta, balance, reason, ref_id, note, created_at
              FROM credit_log
@@ -77,13 +74,16 @@ async fn log(
             LIMIT 100"#,
     )
     .bind(user.user_id)
-    .fetch_all(&state.db).await?;
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
 // ─── self-topup (개발용, ALLOW_SELF_TOPUP=1) ───────────────
 #[derive(Debug, Deserialize)]
-struct SelfTopupReq { amount: i64 }
+struct SelfTopupReq {
+    amount: i64,
+}
 
 async fn self_topup(
     State(state): State<AppState>,
@@ -97,9 +97,14 @@ async fn self_topup(
         return Err(AppError::BadRequest("amount must be 1..=1_000_000".into()));
     }
     let txn = credits::refund(
-        &state.db, user.user_id, req.amount,
-        "topup", None, Some("self-topup (dev)"),
-    ).await?;
+        &state.db,
+        user.user_id,
+        req.amount,
+        "topup",
+        None,
+        Some("self-topup (dev)"),
+    )
+    .await?;
     Ok(Json(json!({ "ok": true, "balance": txn.balance })))
 }
 
@@ -107,20 +112,20 @@ async fn self_topup(
 #[derive(Debug, Deserialize)]
 struct CreateRequestBody {
     amount: i64,
-    note:   Option<String>,
+    note: Option<String>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
 struct CreditRequestRow {
-    id:             i64,
-    user_id:        i64,
-    amount:         i64,
-    status:         String,
+    id: i64,
+    user_id: i64,
+    amount: i64,
+    status: String,
     payment_method: Option<String>,
-    payment_ref:    Option<String>,
-    note:           Option<String>,
-    requested_at:   DateTime<Utc>,
-    processed_at:   Option<DateTime<Utc>>,
+    payment_ref: Option<String>,
+    note: Option<String>,
+    requested_at: DateTime<Utc>,
+    processed_at: Option<DateTime<Utc>>,
 }
 
 async fn create_request(
@@ -136,7 +141,9 @@ async fn create_request(
     let pending_count: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM credit_topup_requests WHERE user_id = $1 AND status = 'pending'",
     )
-    .bind(user.user_id).fetch_one(&state.db).await?;
+    .bind(user.user_id)
+    .fetch_one(&state.db)
+    .await?;
     if pending_count >= 5 {
         return Err(AppError::Conflict(
             "이미 처리 대기 중인 충전 요청이 5건 있습니다. 관리자 승인을 기다려주세요.".into(),
@@ -150,19 +157,29 @@ async fn create_request(
                      payment_method, payment_ref, note,
                      requested_at, processed_at"#,
     )
-    .bind(user.user_id).bind(req.amount).bind(&req.note)
-    .fetch_one(&state.db).await?;
+    .bind(user.user_id)
+    .bind(req.amount)
+    .bind(&req.note)
+    .fetch_one(&state.db)
+    .await?;
 
     // 채팅 thread 에 시스템 메시지 (관리자 inbox 자동 알림용)
     let body = format!(
         "포인트 충전 요청 #{}: {}원{}",
-        row.id, row.amount,
-        match req.note.as_deref() { Some(n) if !n.is_empty() => format!(" — {n}"), _ => "".into() },
+        row.id,
+        row.amount,
+        match req.note.as_deref() {
+            Some(n) if !n.is_empty() => format!(" — {n}"),
+            _ => "".into(),
+        },
     );
     let _ = post_system_message_to_user_thread(
-        &state, user.user_id, &body,
+        &state,
+        user.user_id,
+        &body,
         json!({"kind": "credit_topup_request", "request_id": row.id, "amount": row.amount}),
-    ).await;
+    )
+    .await;
 
     Ok(Json(row))
 }
@@ -181,7 +198,8 @@ async fn list_my_requests(
             LIMIT 50"#,
     )
     .bind(user.user_id)
-    .fetch_all(&state.db).await?;
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
@@ -203,7 +221,9 @@ async fn cancel_my_request(
             WHERE id = $1
               FOR UPDATE"#,
     )
-    .bind(id).fetch_optional(&mut *tx).await?;
+    .bind(id)
+    .fetch_optional(&mut *tx)
+    .await?;
     let (req_id, owner_id, status) = row.ok_or(AppError::NotFound)?;
     if owner_id != user.user_id {
         // owner 가 아니면 존재 자체를 숨김 (권한 노출 회피)
@@ -222,15 +242,19 @@ async fn cancel_my_request(
                   processed_by = $2
             WHERE id = $1"#,
     )
-    .bind(req_id).bind(user.user_id)
-    .execute(&mut *tx).await?;
+    .bind(req_id)
+    .bind(user.user_id)
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
 
     let _ = post_system_message_to_user_thread(
-        &state, user.user_id,
+        &state,
+        user.user_id,
         &format!("포인트 충전 요청 #{req_id} 사용자 취소"),
         json!({"kind":"credit_topup_user_cancelled","request_id":req_id}),
-    ).await;
+    )
+    .await;
 
     Ok(Json(json!({ "ok": true, "request_id": req_id })))
 }
@@ -239,19 +263,19 @@ async fn cancel_my_request(
 // cancelled_by_user 플래그로 "사용자 본인 취소" 식별
 #[derive(Debug, Serialize, FromRow)]
 struct AdminCreditRequestRow {
-    id:                 i64,
-    user_id:            i64,
-    user_email:         Option<String>,
-    user_display:       Option<String>,
-    amount:             i64,
-    status:             String,
-    payment_method:     Option<String>,
-    note:               Option<String>,
-    requested_at:       DateTime<Utc>,
-    processed_at:       Option<DateTime<Utc>>,
-    processed_by:       Option<i64>,
+    id: i64,
+    user_id: i64,
+    user_email: Option<String>,
+    user_display: Option<String>,
+    amount: i64,
+    status: String,
+    payment_method: Option<String>,
+    note: Option<String>,
+    requested_at: DateTime<Utc>,
+    processed_at: Option<DateTime<Utc>>,
+    processed_by: Option<i64>,
     processed_by_email: Option<String>,
-    cancelled_by_user:  Option<bool>,
+    cancelled_by_user: Option<bool>,
 }
 
 async fn list_all_requests(
@@ -273,7 +297,8 @@ async fn list_all_requests(
             ORDER BY (r.status = 'pending') DESC, r.requested_at DESC
             LIMIT 200"#,
     )
-    .fetch_all(&state.db).await?;
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
@@ -296,20 +321,25 @@ async fn approve_request(
             WHERE id = $1 AND status = 'pending'
         RETURNING user_id, amount"#,
     )
-    .bind(id).bind(admin.user_id)
-    .fetch_optional(&mut *tx).await?;
+    .bind(id)
+    .bind(admin.user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
 
     let (user_id, amount) = match claim {
         Some(v) => v,
         None => {
             tx.rollback().await?;
-            let cur: Option<String> = sqlx::query_scalar(
-                "SELECT status FROM credit_topup_requests WHERE id = $1",
-            )
-            .bind(id).fetch_optional(&state.db).await?;
+            let cur: Option<String> =
+                sqlx::query_scalar("SELECT status FROM credit_topup_requests WHERE id = $1")
+                    .bind(id)
+                    .fetch_optional(&state.db)
+                    .await?;
             return match cur {
-                Some(s) => Err(AppError::Conflict(format!("이미 {s} 상태입니다. 새로고침 해주세요."))),
-                None    => Err(AppError::NotFound),
+                Some(s) => Err(AppError::Conflict(format!(
+                    "이미 {s} 상태입니다. 새로고침 해주세요."
+                ))),
+                None => Err(AppError::NotFound),
             };
         }
     };
@@ -319,30 +349,40 @@ async fn approve_request(
     let new_balance: i64 = sqlx::query_scalar(
         "UPDATE users SET credits = credits + $2 WHERE id = $1 RETURNING credits",
     )
-    .bind(user_id).bind(amount)
-    .fetch_one(&mut *tx).await?;
+    .bind(user_id)
+    .bind(amount)
+    .fetch_one(&mut *tx)
+    .await?;
 
     sqlx::query(
         r#"INSERT INTO credit_log (user_id, delta, balance, reason, ref_id, note)
            VALUES ($1, $2, $3, 'topup', $4, $5)"#,
     )
-    .bind(user_id).bind(amount).bind(new_balance)
-    .bind(req_id).bind(format!("admin approve req#{req_id}"))
-    .execute(&mut *tx).await?;
+    .bind(user_id)
+    .bind(amount)
+    .bind(new_balance)
+    .bind(req_id)
+    .bind(format!("admin approve req#{req_id}"))
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
 
     let _ = post_system_message_to_user_thread(
-        &state, user_id,
-        &format!("포인트 충전 요청 #{req_id} 승인 완료 — {}원 충전됨 (잔액 {}원)",
-            amount, new_balance),
+        &state,
+        user_id,
+        &format!(
+            "포인트 충전 요청 #{req_id} 승인 완료 — {}원 충전됨 (잔액 {}원)",
+            amount, new_balance
+        ),
         json!({
             "kind": "credit_topup_approved",
             "request_id": req_id,
             "amount": amount,
             "balance": new_balance,
         }),
-    ).await;
+    )
+    .await;
 
     Ok(Json(json!({
         "ok":         true,
@@ -353,7 +393,9 @@ async fn approve_request(
 }
 
 #[derive(Debug, Deserialize, Default)]
-struct RejectBody { reason: Option<String> }
+struct RejectBody {
+    reason: Option<String>,
+}
 
 async fn reject_request(
     admin: AdminUser,
@@ -362,7 +404,11 @@ async fn reject_request(
     body: Option<Json<RejectBody>>,
 ) -> AppResult<Json<Value>> {
     let reason = body.and_then(|b| b.0.reason).unwrap_or_default();
-    let reason_opt = if reason.is_empty() { None } else { Some(reason.clone()) };
+    let reason_opt = if reason.is_empty() {
+        None
+    } else {
+        Some(reason.clone())
+    };
 
     // conditional UPDATE — user cancel 과 race 시 한쪽만 성공
     let row: Option<(i64, i64)> = sqlx::query_as(
@@ -374,19 +420,23 @@ async fn reject_request(
             WHERE id = $1 AND status = 'pending'
         RETURNING user_id, amount"#,
     )
-    .bind(id).bind(admin.user_id).bind(reason_opt.as_ref())
-    .fetch_optional(&state.db).await?;
+    .bind(id)
+    .bind(admin.user_id)
+    .bind(reason_opt.as_ref())
+    .fetch_optional(&state.db)
+    .await?;
 
     let (user_id, amount) = match row {
         Some(v) => v,
         None => {
-            let cur: Option<String> = sqlx::query_scalar(
-                "SELECT status FROM credit_topup_requests WHERE id = $1",
-            )
-            .bind(id).fetch_optional(&state.db).await?;
+            let cur: Option<String> =
+                sqlx::query_scalar("SELECT status FROM credit_topup_requests WHERE id = $1")
+                    .bind(id)
+                    .fetch_optional(&state.db)
+                    .await?;
             return match cur {
                 Some(s) => Err(AppError::Conflict(format!("이미 {s} 상태입니다."))),
-                None    => Err(AppError::NotFound),
+                None => Err(AppError::NotFound),
             };
         }
     };
@@ -395,12 +445,18 @@ async fn reject_request(
     let body = if reason.is_empty() {
         format!("포인트 충전 요청 #{req_id} 반려됨 ({}원)", amount)
     } else {
-        format!("포인트 충전 요청 #{req_id} 반려됨 ({}원) — {}", amount, reason)
+        format!(
+            "포인트 충전 요청 #{req_id} 반려됨 ({}원) — {}",
+            amount, reason
+        )
     };
     let _ = post_system_message_to_user_thread(
-        &state, user_id, &body,
+        &state,
+        user_id,
+        &body,
         json!({"kind":"credit_topup_rejected","request_id":req_id,"amount":amount}),
-    ).await;
+    )
+    .await;
 
     Ok(Json(json!({ "ok": true, "request_id": req_id })))
 }
@@ -429,18 +485,22 @@ async fn post_system_message_to_user_thread(
         r#"INSERT INTO chat_messages (thread_id, sender_role, sender_id, body, meta)
            VALUES ($1, 'system', NULL, $2, $3)"#,
     )
-    .bind(thread_id).bind(body).bind(&meta)
-    .execute(&state.db).await?;
+    .bind(thread_id)
+    .bind(body)
+    .bind(&meta)
+    .execute(&state.db)
+    .await?;
 
     // 시스템 메시지의 종류로 push 대상 결정:
     //   request_*  / *_user_cancelled : 관리자 inbox (사용자 액션)
     //   *_approved / *_rejected       : 사용자 (관리자 액션)
     let kind = meta.get("kind").and_then(|v| v.as_str()).unwrap_or("");
-    let to_admins = matches!(kind,
+    let to_admins = matches!(
+        kind,
         "credit_topup_request"
-        | "credit_topup_user_cancelled"
-        | "sim_topup_request"
-        | "sim_topup_user_cancelled"
+            | "credit_topup_user_cancelled"
+            | "sim_topup_request"
+            | "sim_topup_user_cancelled"
     );
     let pool = state.db.clone();
     let fcm = state.fcm.clone();
@@ -449,14 +509,24 @@ async fn post_system_message_to_user_thread(
     tokio::spawn(async move {
         if to_admins {
             crate::services::fcm::push_to_admins(
-                fcm.as_deref(), &pool, Some(user_id),
-                "새 요청", &body_owned, meta_owned,
-            ).await;
+                fcm.as_deref(),
+                &pool,
+                Some(user_id),
+                "새 요청",
+                &body_owned,
+                meta_owned,
+            )
+            .await;
         } else {
             crate::services::fcm::push_to_user(
-                fcm.as_deref(), &pool, user_id,
-                "충전 처리 알림", &body_owned, meta_owned,
-            ).await;
+                fcm.as_deref(),
+                &pool,
+                user_id,
+                "충전 처리 알림",
+                &body_owned,
+                meta_owned,
+            )
+            .await;
         }
     });
 

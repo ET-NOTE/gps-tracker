@@ -15,9 +15,7 @@ const WS_BASE: &str = "wss://gps.serial.kr";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let http = Client::builder()
-        .timeout(Duration::from_secs(10))
-        .build()?;
+    let http = Client::builder().timeout(Duration::from_secs(10)).build()?;
 
     let ts = chrono::Utc::now().timestamp_millis();
     let email1 = format!("ws-u1-{}@gps.serial.test", ts);
@@ -93,12 +91,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ack = next_text(&mut reader).await?;
     println!("ack: {ack}");
     assert_eq!(ack["type"], "ack");
-    let accepted: Vec<i64> = ack["accepted"].as_array().unwrap().iter()
-        .filter_map(|v| v.as_i64()).collect();
-    let rejected: Vec<i64> = ack["rejected"].as_array().unwrap().iter()
-        .filter_map(|v| v.as_i64()).collect();
+    let accepted: Vec<i64> = ack["accepted"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|v| v.as_i64())
+        .collect();
+    let rejected: Vec<i64> = ack["rejected"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|v| v.as_i64())
+        .collect();
     assert!(accepted.contains(&did_owned), "owned should be accepted");
-    assert!(rejected.contains(&did_stranger), "stranger should be rejected");
+    assert!(
+        rejected.contains(&did_stranger),
+        "stranger should be rejected"
+    );
 
     // 양쪽 디바이스에 ingest
     for uid in [&uid_owned, &uid_stranger] {

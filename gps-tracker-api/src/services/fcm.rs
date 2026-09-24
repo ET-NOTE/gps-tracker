@@ -26,10 +26,10 @@ const FCM_SCOPE: &str = "https://www.googleapis.com/auth/firebase.messaging";
 struct PendingEvent {
     id: i64,
     device_id: i64,
-    device_name: Option<String>,   // devices.display_name JOIN — 알림 본문 노출용
+    device_name: Option<String>, // devices.display_name JOIN — 알림 본문 노출용
     kind: String,
     data: Option<Value>,
-    user_id: Option<i64>,    // 이벤트 생성 시점의 owner — 해당 사용자에게만 푸시
+    user_id: Option<i64>, // 이벤트 생성 시점의 owner — 해당 사용자에게만 푸시
 }
 
 /// 알림 본문에 노출할 디바이스 라벨. display_name 있으면 우선, 없으면 #ID 폴백.
@@ -127,7 +127,12 @@ impl FcmClient {
     /// INVALID_ARGUMENT 는 페이로드 버그 — Err 로 올려서 호출자가 인지하게.
     /// (예전엔 INVALID_ARGUMENT 도 Ok(false) 처리하면서 멀쩡한 토큰을
     ///  비활성화하는 버그가 있었음.)
-    pub async fn send_to_token(&self, access_token: &str, fcm_token: &str, message: Value) -> anyhow::Result<bool> {
+    pub async fn send_to_token(
+        &self,
+        access_token: &str,
+        fcm_token: &str,
+        message: Value,
+    ) -> anyhow::Result<bool> {
         let url = format!(
             "https://fcm.googleapis.com/v1/projects/{}/messages:send",
             self.sa.project_id
@@ -183,10 +188,10 @@ fn stringify_data(v: &Value) -> Value {
     for (k, val) in map {
         let s = match val {
             Value::String(s) => s.clone(),
-            Value::Null      => String::new(),
-            Value::Bool(b)   => b.to_string(),
+            Value::Null => String::new(),
+            Value::Bool(b) => b.to_string(),
             Value::Number(n) => n.to_string(),
-            other            => other.to_string(),  // JSON 직렬화
+            other => other.to_string(), // JSON 직렬화
         };
         out.insert(k.clone(), Value::String(s));
     }
@@ -225,8 +230,11 @@ pub fn spawn(pool: PgPool, client: Option<Arc<FcmClient>>) {
                     // 연속 실패 시 점진적 backoff: 30s → 60s → 5min → 30min 유지.
                     let idx = (oauth_fails as usize).min(OAUTH_BACKOFF_SEC.len() - 1);
                     let delay = OAUTH_BACKOFF_SEC[idx];
-                    tracing::warn!(consecutive_fails = oauth_fails + 1, delay_sec = delay,
-                        "fcm worker: OAuth failure backoff");
+                    tracing::warn!(
+                        consecutive_fails = oauth_fails + 1,
+                        delay_sec = delay,
+                        "fcm worker: OAuth failure backoff"
+                    );
                     oauth_fails = oauth_fails.saturating_add(1);
                     sleep(Duration::from_secs(delay)).await;
                 }
@@ -258,7 +266,9 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
         match c.access_token().await {
             Ok(t) => Some(t),
             Err(e) => {
-                tracing::error!("fcm: failed to get access token: {e:#} — skipping batch (rows untouched)");
+                tracing::error!(
+                    "fcm: failed to get access token: {e:#} — skipping batch (rows untouched)"
+                );
                 return Ok(BatchOutcome::OAuthFail);
             }
         }
@@ -356,12 +366,15 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
                 r#"SELECT id, token FROM fcm_tokens
                     WHERE user_id = $1 AND active = TRUE"#,
             )
-            .bind(uid).fetch_all(pool).await.unwrap_or_default(),
-            None => vec![],   // user_id 없는 이벤트 (legacy) — 푸시 안 보냄
+            .bind(uid)
+            .fetch_all(pool)
+            .await
+            .unwrap_or_default(),
+            None => vec![], // user_id 없는 이벤트 (legacy) — 푸시 안 보냄
         };
 
         let title = title_for_kind(&ev.kind, ev.device_id);
-        let body  = body_for_event(pool, &ev).await;
+        let body = body_for_event(pool, &ev).await;
         let message = json!({
             "notification": { "title": title, "body": body },
             "data": {
@@ -406,20 +419,20 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
 
 fn title_for_kind(kind: &str, _device_id: i64) -> String {
     match kind {
-        "low_batt"        => "🔋 배터리 부족".into(),
-        "offline"         => "📡 통신 두절".into(),
-        "signal_loss"     => "📶 통신 약함".into(),
-        "online"          => "✅ 통신 복구".into(),
-        "sleep_enter"     => "🌙 정지".into(),
-        "wake"            => "☀️ 활성".into(),
+        "low_batt" => "🔋 배터리 부족".into(),
+        "offline" => "📡 통신 두절".into(),
+        "signal_loss" => "📶 통신 약함".into(),
+        "online" => "✅ 통신 복구".into(),
+        "sleep_enter" => "🌙 정지".into(),
+        "wake" => "☀️ 활성".into(),
         "cycle_first_fix" => "🚗 운행 시작".into(),
-        "geofence_in"     => "📍 지오펜스 진입".into(),
-        "geofence_out"    => "📍 지오펜스 이탈".into(),
-        "geofence_armed"  => "📍 지오펜스 활성화".into(),
-        "brownout"        => "⚡ 전원 불안정".into(),
-        "gps_anomaly"     => "🛰️ GPS 신호 불안정".into(),
-        "lost"            => "❗ 장치 미응답".into(),   // (2026-07-29) push 는 skip, title 은 in-app 로그용
-        _                 => "🔔 시리얼링크 위치추적기".into(),
+        "geofence_in" => "📍 지오펜스 진입".into(),
+        "geofence_out" => "📍 지오펜스 이탈".into(),
+        "geofence_armed" => "📍 지오펜스 활성화".into(),
+        "brownout" => "⚡ 전원 불안정".into(),
+        "gps_anomaly" => "🛰️ GPS 신호 불안정".into(),
+        "lost" => "❗ 장치 미응답".into(), // (2026-07-29) push 는 skip, title 은 in-app 로그용
+        _ => "🔔 시리얼링크 위치추적기".into(),
     }
 }
 
@@ -439,7 +452,9 @@ async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
     let dev = dev_label(ev);
     match ev.kind.as_str() {
         "low_batt" => {
-            let v = ev.data.as_ref()
+            let v = ev
+                .data
+                .as_ref()
                 .and_then(|d| d.get("vbat_mv"))
                 .and_then(|v| v.as_i64())
                 .unwrap_or(0);
@@ -447,9 +462,15 @@ async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
             format!("{dev} 배터리 약 {pct}% 남았습니다 — 충전이 필요합니다")
         }
         "geofence_armed" => {
-            let d      = ev.data.as_ref();
-            let name   = d.and_then(|x| x.get("geofence_name")).and_then(|v| v.as_str()).unwrap_or("펜스");
-            let inside = d.and_then(|x| x.get("inside")).and_then(|v| v.as_bool()).unwrap_or(false);
+            let d = ev.data.as_ref();
+            let name = d
+                .and_then(|x| x.get("geofence_name"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("펜스");
+            let inside = d
+                .and_then(|x| x.get("inside"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             if inside {
                 format!("{dev}: '{name}' 감시 시작 — 현재 펜스 안에 있습니다")
             } else {
@@ -457,11 +478,17 @@ async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
             }
         }
         "geofence_in" | "geofence_out" => {
-            let name = ev.data.as_ref()
+            let name = ev
+                .data
+                .as_ref()
                 .and_then(|x| x.get("geofence_name"))
                 .and_then(|v| v.as_str())
                 .unwrap_or("펜스");
-            let action = if ev.kind == "geofence_in" { "진입" } else { "이탈" };
+            let action = if ev.kind == "geofence_in" {
+                "진입"
+            } else {
+                "이탈"
+            };
             format!("{dev}: '{name}' {action}")
         }
         "brownout" => {
@@ -472,11 +499,21 @@ async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
         }
         // (2026-07-29) 'lost' 는 push allowed 에서 skip 되지만 방어적으로 body 도 정리.
         "lost" => {
-            let hrs = ev.data.as_ref().and_then(|x| x.get("hours_since_sleep")).and_then(|v| v.as_i64()).unwrap_or(24);
+            let hrs = ev
+                .data
+                .as_ref()
+                .and_then(|x| x.get("hours_since_sleep"))
+                .and_then(|v| v.as_i64())
+                .unwrap_or(24);
             format!("{dev}: {hrs}시간 넘게 응답 없음")
         }
         "offline" => {
-            let m = ev.data.as_ref().and_then(|x| x.get("silence_min")).and_then(|v| v.as_i64()).unwrap_or(0);
+            let m = ev
+                .data
+                .as_ref()
+                .and_then(|x| x.get("silence_min"))
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0);
             if m >= 60 {
                 let hrs = m / 60;
                 format!("{dev}: {hrs}시간 이상 통신이 끊겼습니다")
@@ -487,7 +524,12 @@ async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
             }
         }
         "signal_loss" => {
-            let m = ev.data.as_ref().and_then(|x| x.get("silence_min")).and_then(|v| v.as_i64()).unwrap_or(0);
+            let m = ev
+                .data
+                .as_ref()
+                .and_then(|x| x.get("silence_min"))
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0);
             format!("{dev}: {}분간 신호가 약합니다", m.max(5))
         }
         "online" => {
@@ -501,15 +543,21 @@ async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
         }
         // (2026-07-29) 좌표 · 위성수 대신 주소 — Kakao reverse-geo 캐시 사용.
         "cycle_first_fix" => {
-            let lat = ev.data.as_ref().and_then(|x| x.get("lat")).and_then(|v| v.as_f64());
-            let lng = ev.data.as_ref().and_then(|x| x.get("lng")).and_then(|v| v.as_f64());
+            let lat = ev
+                .data
+                .as_ref()
+                .and_then(|x| x.get("lat"))
+                .and_then(|v| v.as_f64());
+            let lng = ev
+                .data
+                .as_ref()
+                .and_then(|x| x.get("lng"))
+                .and_then(|v| v.as_f64());
             match (lat, lng) {
-                (Some(lat), Some(lng)) => {
-                    match resolve_addr(pool, lat, lng).await {
-                        Some(addr) => format!("{dev} 운행을 시작했습니다 — 출발지: {addr}"),
-                        None       => format!("{dev} 운행을 시작했습니다"),
-                    }
-                }
+                (Some(lat), Some(lng)) => match resolve_addr(pool, lat, lng).await {
+                    Some(addr) => format!("{dev} 운행을 시작했습니다 — 출발지: {addr}"),
+                    None => format!("{dev} 운행을 시작했습니다"),
+                },
                 _ => format!("{dev} 운행을 시작했습니다"),
             }
         }
@@ -536,8 +584,13 @@ pub async fn push_to_user(
         r#"SELECT id, token FROM fcm_tokens
             WHERE user_id = $1 AND active = TRUE"#,
     )
-    .bind(user_id).fetch_all(pool).await.unwrap_or_default();
-    if tokens.is_empty() { return; }
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    if tokens.is_empty() {
+        return;
+    }
     send_to_tokens(c, pool, tokens, title, body, data).await;
 }
 
@@ -558,8 +611,13 @@ pub async fn push_to_admins(
             WHERE u.role = 'admin' AND t.active = TRUE
               AND ($1::BIGINT IS NULL OR t.user_id <> $1)"#,
     )
-    .bind(exclude_user_id).fetch_all(pool).await.unwrap_or_default();
-    if tokens.is_empty() { return; }
+    .bind(exclude_user_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    if tokens.is_empty() {
+        return;
+    }
     send_to_tokens(c, pool, tokens, title, body, data).await;
 }
 
@@ -587,10 +645,12 @@ async fn send_to_tokens(
     });
     for (token_id, token) in tokens {
         match client.send_to_token(&access, &token, message.clone()).await {
-            Ok(true)  => tracing::debug!(token_id, "fcm push: sent"),
+            Ok(true) => tracing::debug!(token_id, "fcm push: sent"),
             Ok(false) => {
                 let _ = sqlx::query("UPDATE fcm_tokens SET active = FALSE WHERE id = $1")
-                    .bind(token_id).execute(pool).await;
+                    .bind(token_id)
+                    .execute(pool)
+                    .await;
             }
             Err(e) => tracing::warn!(token_id, "fcm push: {e:#}"),
         }

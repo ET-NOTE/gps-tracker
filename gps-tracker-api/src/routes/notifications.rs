@@ -8,54 +8,53 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::{
-    auth::AuthUser,
-    error::AppResult,
-    state::AppState,
-};
+use crate::{auth::AuthUser, error::AppResult, state::AppState};
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct NotificationSettings {
-    pub user_id:               i64,
-    pub motion_alert:          bool,
-    pub low_batt_alert:        bool,
-    pub offline_alert:         bool,
-    pub geofence_alert:        bool,
-    pub device_health_alert:   bool,
-    pub lost_alert:            bool,
+    pub user_id: i64,
+    pub motion_alert: bool,
+    pub low_batt_alert: bool,
+    pub offline_alert: bool,
+    pub geofence_alert: bool,
+    pub device_health_alert: bool,
+    pub lost_alert: bool,
     // STATUS 확장 (0014)
-    pub signal_loss_alert:     bool,
-    pub online_alert:          bool,
-    pub sleep_alert:           bool,
-    pub wake_alert:            bool,
-    pub cycle_first_fix_alert: bool,    // 0036: 매 사이클 첫 fix 알림 (default FALSE)
+    pub signal_loss_alert: bool,
+    pub online_alert: bool,
+    pub sleep_alert: bool,
+    pub wake_alert: bool,
+    pub cycle_first_fix_alert: bool, // 0036: 매 사이클 첫 fix 알림 (default FALSE)
     pub low_batt_threshold_mv: i32,
-    pub offline_minutes:       i32,
-    pub signal_loss_minutes:   i32,
-    pub created_at:            DateTime<Utc>,
-    pub updated_at:            DateTime<Utc>,
+    pub offline_minutes: i32,
+    pub signal_loss_minutes: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateSettings {
-    pub motion_alert:          Option<bool>,
-    pub low_batt_alert:        Option<bool>,
-    pub offline_alert:         Option<bool>,
-    pub geofence_alert:        Option<bool>,
-    pub device_health_alert:   Option<bool>,
-    pub lost_alert:            Option<bool>,
-    pub signal_loss_alert:     Option<bool>,
-    pub online_alert:          Option<bool>,
-    pub sleep_alert:           Option<bool>,
-    pub wake_alert:            Option<bool>,
+    pub motion_alert: Option<bool>,
+    pub low_batt_alert: Option<bool>,
+    pub offline_alert: Option<bool>,
+    pub geofence_alert: Option<bool>,
+    pub device_health_alert: Option<bool>,
+    pub lost_alert: Option<bool>,
+    pub signal_loss_alert: Option<bool>,
+    pub online_alert: Option<bool>,
+    pub sleep_alert: Option<bool>,
+    pub wake_alert: Option<bool>,
     pub cycle_first_fix_alert: Option<bool>,
     pub low_batt_threshold_mv: Option<i32>,
-    pub offline_minutes:       Option<i32>,
-    pub signal_loss_minutes:   Option<i32>,
+    pub offline_minutes: Option<i32>,
+    pub signal_loss_minutes: Option<i32>,
 }
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/notifications/settings", get(get_settings).patch(update_settings))
+    Router::new().route(
+        "/notifications/settings",
+        get(get_settings).patch(update_settings),
+    )
 }
 
 const SELECT_COLS: &str = r#"

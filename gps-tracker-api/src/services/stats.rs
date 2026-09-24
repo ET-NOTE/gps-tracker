@@ -6,9 +6,9 @@
 // 정지 구간 식별: 5분 이상 같은 위치(반경 50m) 머무름.
 // 평균 속도: 총거리 / moving_s (s>0 일 때).
 
-use std::time::Duration;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::PgPool;
+use std::time::Duration;
 use tokio::time::sleep;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(300); // 5분
@@ -20,8 +20,8 @@ fn haversine_m(la1: f64, lo1: f64, la2: f64, lo2: f64) -> f64 {
     let to_rad = std::f64::consts::PI / 180.0;
     let dla = (la2 - la1) * to_rad;
     let dlo = (lo2 - lo1) * to_rad;
-    let a = (dla/2.0).sin().powi(2)
-        + (la1*to_rad).cos() * (la2*to_rad).cos() * (dlo/2.0).sin().powi(2);
+    let a = (dla / 2.0).sin().powi(2)
+        + (la1 * to_rad).cos() * (la2 * to_rad).cos() * (dlo / 2.0).sin().powi(2);
     2.0 * EARTH_R_M * a.sqrt().asin()
 }
 
@@ -38,23 +38,33 @@ pub fn spawn_worker(pool: PgPool) {
 }
 
 async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
-    let queued: Vec<(i64,NaiveDate,i64)> = sqlx::query_as("SELECT device_id,date,generation FROM stats_rebuild_queue ORDER BY date LIMIT 100")
-        .fetch_all(pool).await?;
-    for (did,date,generation) in queued {
-        aggregate_one(pool,did,date).await?;
-        sqlx::query("DELETE FROM stats_rebuild_queue WHERE device_id=$1 AND date=$2 AND generation=$3")
-            .bind(did).bind(date).bind(generation).execute(pool).await?;
+    let queued: Vec<(i64, NaiveDate, i64)> = sqlx::query_as(
+        "SELECT device_id,date,generation FROM stats_rebuild_queue ORDER BY date LIMIT 100",
+    )
+    .fetch_all(pool)
+    .await?;
+    for (did, date, generation) in queued {
+        aggregate_one(pool, did, date).await?;
+        sqlx::query(
+            "DELETE FROM stats_rebuild_queue WHERE device_id=$1 AND date=$2 AND generation=$3",
+        )
+        .bind(did)
+        .bind(date)
+        .bind(generation)
+        .execute(pool)
+        .await?;
     }
     // 오늘 / 어제 (KST 기준)
     let now_kst = Utc::now() + chrono::Duration::hours(9);
     let today = now_kst.date_naive();
-    let yest  = today - chrono::Duration::days(1);
+    let yest = today - chrono::Duration::days(1);
 
     // 활성 디바이스 (최근 36h 내 ingest 있던 것만) — 평소 worker.
     let active_ids: Vec<i64> = sqlx::query_scalar(
-        "SELECT id FROM devices WHERE last_seen_at > now() - interval '36 hours'"
+        "SELECT id FROM devices WHERE last_seen_at > now() - interval '36 hours'",
     )
-    .fetch_all(pool).await?;
+    .fetch_all(pool)
+    .await?;
 
     for did in active_ids {
         for date in [yest, today] {
@@ -74,16 +84,26 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
                   SELECT 1 FROM daily_stats ds WHERE ds.device_id = lr.device_id
             )
             LIMIT 50"#,
-    ).fetch_all(pool).await?;
+    )
+    .fetch_all(pool)
+    .await?;
 
     for did in legacy {
         let dates: Vec<NaiveDate> = sqlx::query_scalar(
             r#"SELECT DISTINCT (recorded_at AT TIME ZONE 'Asia/Seoul')::date
                  FROM location_points
                 WHERE device_id = $1 AND fix = TRUE"#,
-        ).bind(did).fetch_all(pool).await.unwrap_or_default();
+        )
+        .bind(did)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
 
-        tracing::info!(device_id = did, dates = dates.len(), "daily_stats legacy catchup");
+        tracing::info!(
+            device_id = did,
+            dates = dates.len(),
+            "daily_stats legacy catchup"
+        );
         for date in dates {
             if let Err(e) = aggregate_one(pool, did, date).await {
                 tracing::warn!(device_id = did, date = %date, "daily_stats catchup: {e:#}");
@@ -95,14 +115,19 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
 }
 
 pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> anyhow::Result<()> {
-    let mut tx=pool.begin().await?;
-    sqlx::query("SELECT id FROM devices WHERE id=$1 FOR UPDATE").bind(device_id).execute(&mut *tx).await?;
+    let mut tx = pool.begin().await?;
+    sqlx::query("SELECT id FROM devices WHERE id=$1 FOR UPDATE")
+        .bind(device_id)
+        .execute(&mut *tx)
+        .await?;
     // KST 날짜 → UTC 범위 (KST = UTC+9)
     let start_kst = date.and_hms_opt(0, 0, 0).unwrap();
-    let end_kst   = (date + chrono::Duration::days(1)).and_hms_opt(0, 0, 0).unwrap();
+    let end_kst = (date + chrono::Duration::days(1))
+        .and_hms_opt(0, 0, 0)
+        .unwrap();
     // KST → UTC: -9시간
     let start_utc = start_kst - chrono::Duration::hours(9);
-    let end_utc   = end_kst   - chrono::Duration::hours(9);
+    let end_utc = end_kst - chrono::Duration::hours(9);
 
     // fix=true 점만, 시간순
     let rows: Vec<(DateTime<Utc>, f64, f64)> = sqlx::query_as(
@@ -142,10 +167,16 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
 
     let n = rows.len();
     let first_at = rows[0].0;
-    let last_at  = rows[n-1].0;
+    let last_at = rows[n - 1].0;
     let duration_s = (last_at - first_at).num_seconds().max(0) as i32;
 
-    let Metrics {distance_m,moving_s,stop_count,max_speed,avg_speed} = calculate_metrics(&rows);
+    let Metrics {
+        distance_m,
+        moving_s,
+        stop_count,
+        max_speed,
+        avg_speed,
+    } = calculate_metrics(&rows);
 
     sqlx::query(
         r#"INSERT INTO daily_stats
@@ -185,43 +216,69 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
 }
 
 #[derive(Default, Debug)]
-pub(crate) struct Metrics { pub distance_m:f64, moving_s:i64, stop_count:i32, max_speed:f64, avg_speed:f64 }
-pub(crate) fn calculate_metrics(rows:&[(DateTime<Utc>,f64,f64)]) -> Metrics {
-    let mut out=Metrics::default();
-    if rows.len()<2 { return out; }
+pub(crate) struct Metrics {
+    pub distance_m: f64,
+    moving_s: i64,
+    stop_count: i32,
+    max_speed: f64,
+    avg_speed: f64,
+}
+pub(crate) fn calculate_metrics(rows: &[(DateTime<Utc>, f64, f64)]) -> Metrics {
+    let mut out = Metrics::default();
+    if rows.len() < 2 {
+        return out;
+    }
     // A stop is a sustained cluster around a fixed anchor, not a succession of short steps.
-    let mut anchor=0;
-    let mut stop_seconds=0;
-    let mut observed_seconds=0;
-    let mut cluster_distance=0.0;
+    let mut anchor = 0;
+    let mut stop_seconds = 0;
+    let mut observed_seconds = 0;
+    let mut cluster_distance = 0.0;
     for i in 1..rows.len() {
-        let (t0,la0,lo0)=rows[i-1];
-        let (t1,la1,lo1)=rows[i];
-        let dt=(t1-t0).num_seconds();
-        let d=haversine_m(la0,lo0,la1,lo1);
-        let speed=if dt>0 {d/dt as f64*3.6} else {0.0};
-        if dt<=0 || dt>600 || speed>250.0 {
-            let duration=(rows[i-1].0-rows[anchor].0).num_seconds();
-            if duration>=STOP_THRESHOLD_S { out.stop_count+=1; stop_seconds+=duration; out.distance_m-=cluster_distance; }
-            anchor=i; cluster_distance=0.0;
+        let (t0, la0, lo0) = rows[i - 1];
+        let (t1, la1, lo1) = rows[i];
+        let dt = (t1 - t0).num_seconds();
+        let d = haversine_m(la0, lo0, la1, lo1);
+        let speed = if dt > 0 { d / dt as f64 * 3.6 } else { 0.0 };
+        if dt <= 0 || dt > 600 || speed > 250.0 {
+            let duration = (rows[i - 1].0 - rows[anchor].0).num_seconds();
+            if duration >= STOP_THRESHOLD_S {
+                out.stop_count += 1;
+                stop_seconds += duration;
+                out.distance_m -= cluster_distance;
+            }
+            anchor = i;
+            cluster_distance = 0.0;
             continue;
         }
-        observed_seconds+=dt;
-        out.distance_m+=d;
-        out.max_speed=out.max_speed.max(speed);
-        if haversine_m(rows[anchor].1,rows[anchor].2,la1,lo1)<=STOP_THRESHOLD_M {
-            cluster_distance+=d;
+        observed_seconds += dt;
+        out.distance_m += d;
+        out.max_speed = out.max_speed.max(speed);
+        if haversine_m(rows[anchor].1, rows[anchor].2, la1, lo1) <= STOP_THRESHOLD_M {
+            cluster_distance += d;
         } else {
-            let duration=(rows[i-1].0-rows[anchor].0).num_seconds();
-            if duration>=STOP_THRESHOLD_S { out.stop_count+=1; stop_seconds+=duration; out.distance_m-=cluster_distance; }
-            anchor=i; cluster_distance=0.0;
+            let duration = (rows[i - 1].0 - rows[anchor].0).num_seconds();
+            if duration >= STOP_THRESHOLD_S {
+                out.stop_count += 1;
+                stop_seconds += duration;
+                out.distance_m -= cluster_distance;
+            }
+            anchor = i;
+            cluster_distance = 0.0;
         }
     }
-    let duration=(rows.last().unwrap().0-rows[anchor].0).num_seconds();
-    if duration>=STOP_THRESHOLD_S { out.stop_count+=1; stop_seconds+=duration; out.distance_m-=cluster_distance; }
-    out.distance_m=out.distance_m.max(0.0);
-    out.moving_s=(observed_seconds-stop_seconds).max(0);
-    out.avg_speed=if out.moving_s>0 {out.distance_m/out.moving_s as f64*3.6} else {0.0};
+    let duration = (rows.last().unwrap().0 - rows[anchor].0).num_seconds();
+    if duration >= STOP_THRESHOLD_S {
+        out.stop_count += 1;
+        stop_seconds += duration;
+        out.distance_m -= cluster_distance;
+    }
+    out.distance_m = out.distance_m.max(0.0);
+    out.moving_s = (observed_seconds - stop_seconds).max(0);
+    out.avg_speed = if out.moving_s > 0 {
+        out.distance_m / out.moving_s as f64 * 3.6
+    } else {
+        0.0
+    };
     out
 }
 
@@ -230,17 +287,37 @@ mod tests {
     use super::*;
     #[test]
     fn slow_continuous_travel_is_not_a_stop() {
-        let t=DateTime::from_timestamp(1700000000,0).unwrap();
-        let rows:Vec<_>=(0..41).map(|i|(t+chrono::Duration::seconds(i*15),37.0+i as f64*0.00027,127.0)).collect();
-        let m=calculate_metrics(&rows);
-        assert_eq!(m.stop_count,0); assert_eq!(m.moving_s,600); assert!(m.distance_m>1100.0);
+        let t = DateTime::from_timestamp(1700000000, 0).unwrap();
+        let rows: Vec<_> = (0..41)
+            .map(|i| {
+                (
+                    t + chrono::Duration::seconds(i * 15),
+                    37.0 + i as f64 * 0.00027,
+                    127.0,
+                )
+            })
+            .collect();
+        let m = calculate_metrics(&rows);
+        assert_eq!(m.stop_count, 0);
+        assert_eq!(m.moving_s, 600);
+        assert!(m.distance_m > 1100.0);
     }
     #[test]
     fn stationary_jitter_and_unobserved_gaps_do_not_inflate_distance() {
-        let t=DateTime::from_timestamp(1700000000,0).unwrap();
-        let mut rows:Vec<_>=(0..21).map(|i|(t+chrono::Duration::seconds(i*15),37.0+(i%2) as f64*0.00002,127.0)).collect();
-        rows.push((t+chrono::Duration::hours(2),38.0,128.0));
-        let m=calculate_metrics(&rows);
-        assert_eq!(m.stop_count,1); assert_eq!(m.moving_s,0); assert!(m.distance_m<0.1);
+        let t = DateTime::from_timestamp(1700000000, 0).unwrap();
+        let mut rows: Vec<_> = (0..21)
+            .map(|i| {
+                (
+                    t + chrono::Duration::seconds(i * 15),
+                    37.0 + (i % 2) as f64 * 0.00002,
+                    127.0,
+                )
+            })
+            .collect();
+        rows.push((t + chrono::Duration::hours(2), 38.0, 128.0));
+        let m = calculate_metrics(&rows);
+        assert_eq!(m.stop_count, 1);
+        assert_eq!(m.moving_s, 0);
+        assert!(m.distance_m < 0.1);
     }
 }

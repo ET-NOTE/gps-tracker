@@ -31,7 +31,12 @@ pub fn haversine_m(lat1: f64, lng1: f64, lat2: f64, lng2: f64) -> f64 {
 
 /// ingest 직후 호출. 이 디바이스에 적용되는 모든 활성 지오펜스를 검사하고
 /// in/out 트랜지션 발생 시 events 삽입.
-pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f64) -> anyhow::Result<()> {
+pub async fn check_after_ingest(
+    pool: &PgPool,
+    device_id: i64,
+    lat: f64,
+    lng: f64,
+) -> anyhow::Result<()> {
     // owner의 활성 지오펜스 중 device_id 일치하거나 NULL(전체 적용)
     let fences: Vec<(i64, f64, f64, i32, String)> = sqlx::query_as(
         r#"SELECT g.id, g.center_lat, g.center_lng, g.radius_m, g.name
@@ -72,8 +77,8 @@ pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f6
         //   반경의 30% 와 10m 중 작은 값 → 소형 펜스도 진입 가능하고 대형은 기존 10m 유지.
         let hyst = (radius_f * 0.3).min(GEOFENCE_HYSTERESIS_M);
         let inside_now = match prev {
-            None        => dist <= radius_f,
-            Some(true)  => dist <= radius_f + hyst,
+            None => dist <= radius_f,
+            Some(true) => dist <= radius_f + hyst,
             Some(false) => dist <= radius_f - hyst,
         };
 
@@ -96,7 +101,11 @@ pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f6
 
         // 트랜지션 발생 — 이벤트 + 상태 갱신 한 트랜잭션 안에.
         if prev != Some(inside_now) {
-            let kind = if inside_now { "geofence_in" } else { "geofence_out" };
+            let kind = if inside_now {
+                "geofence_in"
+            } else {
+                "geofence_out"
+            };
             sqlx::query(
                 r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
                    VALUES ($1, $2, now(), $3,
@@ -125,7 +134,13 @@ pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f6
             .execute(&mut *tx)
             .await?;
 
-            tracing::info!(device_id, gid, kind, dist_m=dist as i64, "geofence transition");
+            tracing::info!(
+                device_id,
+                gid,
+                kind,
+                dist_m = dist as i64,
+                "geofence transition"
+            );
         }
 
         tx.commit().await?;
@@ -176,8 +191,13 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
                 WHERE device_id = $1
                   AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
                 ORDER BY occurred_at DESC LIMIT 1"#,
-        ).bind(device_id).fetch_optional(pool).await?;
-        if last_event.as_deref() == Some("sleep_enter") { continue; }
+        )
+        .bind(device_id)
+        .fetch_optional(pool)
+        .await?;
+        if last_event.as_deref() == Some("sleep_enter") {
+            continue;
+        }
 
         // ── 'stuck' 단계 (1분+, 활성 상태에서 갑자기 무응답) ─────────
         // 운영 중 LTE module hang / SHCONN 누락 등 — signal_loss (5분) 전에 빠른 가시화.
@@ -200,7 +220,9 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
                                          AND kind = 'online'), '-infinity'::timestamptz))
                     ORDER BY occurred_at DESC LIMIT 1"#,
             )
-            .bind(device_id).fetch_optional(pool).await?;
+            .bind(device_id)
+            .fetch_optional(pool)
+            .await?;
             if recent_stuck.is_none() {
                 sqlx::query(
                     r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
@@ -209,8 +231,14 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
                 )
                 .bind(device_id)
                 .bind(json!({ "silence_min": silence_min, "last_event": last_event }))
-                .execute(pool).await?;
-                tracing::info!(device_id, silence_min, ?last_event, "stuck event inserted (active state silent)");
+                .execute(pool)
+                .await?;
+                tracing::info!(
+                    device_id,
+                    silence_min,
+                    ?last_event,
+                    "stuck event inserted (active state silent)"
+                );
             }
         }
 
@@ -231,8 +259,12 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
                                          AND kind = 'online'), '-infinity'::timestamptz))
                     ORDER BY occurred_at DESC LIMIT 1"#,
             )
-            .bind(device_id).fetch_optional(pool).await?;
-            if recent_offline.is_some() { continue; }
+            .bind(device_id)
+            .fetch_optional(pool)
+            .await?;
+            if recent_offline.is_some() {
+                continue;
+            }
 
             sqlx::query(
                 r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
@@ -241,7 +273,8 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
             )
             .bind(device_id)
             .bind(json!({ "reason": "no_data_received", "silence_min": silence_min }))
-            .execute(pool).await?;
+            .execute(pool)
+            .await?;
             tracing::info!(device_id, silence_min, "offline event inserted");
         } else if silence_min >= signal_min as i64 {
             // SIGNAL_LOSS 단계 (5~30분) — 복구(online) 이후 signal_loss/offline 없을 때만 (24h 리마인더 유지)
@@ -258,8 +291,12 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
                                          AND kind = 'online'), '-infinity'::timestamptz))
                     ORDER BY occurred_at DESC LIMIT 1"#,
             )
-            .bind(device_id).fetch_optional(pool).await?;
-            if recent_either.is_some() { continue; }
+            .bind(device_id)
+            .fetch_optional(pool)
+            .await?;
+            if recent_either.is_some() {
+                continue;
+            }
 
             sqlx::query(
                 r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
@@ -268,7 +305,8 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
             )
             .bind(device_id)
             .bind(json!({ "silence_min": silence_min }))
-            .execute(pool).await?;
+            .execute(pool)
+            .await?;
             tracing::info!(device_id, silence_min, "signal_loss event inserted");
         }
     }
@@ -286,7 +324,10 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
         ) le ON le.kind = 'sleep_enter'
             WHERE le.occurred_at < now() - interval '24 hours'
               AND d.last_seen_at < now() - interval '24 hours'"#,
-    ).fetch_all(pool).await.unwrap_or_default();
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
 
     for (device_id, sleep_at) in lost_candidates {
         // 이미 lost 이벤트가 있고 그게 sleep_at 보다 최신이면 스킵
@@ -295,9 +336,14 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
                 WHERE device_id = $1 AND kind = 'lost'
                   AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
                 ORDER BY occurred_at DESC LIMIT 1"#,
-        ).bind(device_id).fetch_optional(pool).await?;
+        )
+        .bind(device_id)
+        .fetch_optional(pool)
+        .await?;
         if let Some(t) = recent_lost {
-            if t > sleep_at { continue; }
+            if t > sleep_at {
+                continue;
+            }
         }
 
         let hours = (chrono::Utc::now() - sleep_at).num_hours().max(24);
@@ -308,7 +354,8 @@ async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
         )
         .bind(device_id)
         .bind(json!({ "hours_since_sleep": hours, "sleep_at": sleep_at }))
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
         tracing::warn!(device_id, hours, "lost event inserted");
     }
     Ok(())

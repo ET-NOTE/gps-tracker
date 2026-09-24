@@ -19,12 +19,15 @@ use std::time::Duration;
 const CONFIRM_URL: &str = "https://api.tosspayments.com/v1/payments/confirm";
 
 pub fn client_key() -> Option<String> {
-    std::env::var("TOSS_CLIENT_KEY").ok().filter(|s| !s.is_empty())
+    std::env::var("TOSS_CLIENT_KEY")
+        .ok()
+        .filter(|s| !s.is_empty())
 }
 
 fn secret_key() -> anyhow::Result<String> {
     std::env::var("TOSS_SECRET_KEY")
-        .ok().filter(|s| !s.is_empty())
+        .ok()
+        .filter(|s| !s.is_empty())
         .ok_or_else(|| anyhow::anyhow!("TOSS_SECRET_KEY not configured"))
 }
 
@@ -43,9 +46,7 @@ pub async fn confirm_payment(
     amount: i64,
 ) -> anyhow::Result<Value> {
     let auth = auth_header()?;
-    let client = Client::builder()
-        .timeout(Duration::from_secs(20))
-        .build()?;
+    let client = Client::builder().timeout(Duration::from_secs(20)).build()?;
 
     let body = json!({
         "paymentKey": payment_key,
@@ -53,11 +54,13 @@ pub async fn confirm_payment(
         "amount":     amount,
     });
 
-    let res = client.post(CONFIRM_URL)
+    let res = client
+        .post(CONFIRM_URL)
         .header("Authorization", &auth)
-        .header("Content-Type",  "application/json")
+        .header("Content-Type", "application/json")
         .json(&body)
-        .send().await?;
+        .send()
+        .await?;
 
     let status = res.status();
     let text = res.text().await.unwrap_or_default();
@@ -66,7 +69,8 @@ pub async fn confirm_payment(
     if status.is_success() {
         Ok(parsed)
     } else {
-        let msg = parsed.get("message")
+        let msg = parsed
+            .get("message")
             .and_then(|v| v.as_str())
             .unwrap_or(&text)
             .to_string();
