@@ -28,7 +28,7 @@ const SUBTABS = [
 
 function initialAdminSubTab() {
   if (typeof window === 'undefined') return 'users';
-  const v = localStorage.getItem('admin_subtab');
+  const v = new URLSearchParams(window.location.search).get('tab') || localStorage.getItem('admin_subtab');
   return SUBTABS.some(t => t.id === v) ? v : 'users';
 }
 
@@ -1003,7 +1003,7 @@ function PaymentsTab() {
 // ════════════════════════════════════════════════════════════
 function ChatAdminTab() {
   const [threads, setThreads] = useState(null);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState(() => { const n = Number(new URLSearchParams(window.location.search).get('thread')); return Number.isSafeInteger(n) && n > 0 ? n : null; });
   const [error, setError] = useState(null);
 
   // 필터 — 사용자 검색 (스레드 목록에 즉시 반영, 클라이언트 사이드)

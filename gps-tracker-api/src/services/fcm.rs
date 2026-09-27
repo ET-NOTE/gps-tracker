@@ -1,4 +1,4 @@
-// FCM 워커 — events 테이블의 미통보 행을 폴링해 사용자의 활성 fcm_tokens로 발송한다.
+// FCM: transactional event enqueue and durable per-recipient delivery retries.
 //
 // 두 가지 모드:
 //   - dry-run : FCM_SERVICE_ACCOUNT_PATH 미설정. 발송 없이 notified_at만 마킹 (큐 적체 방지).
@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::{FromRow, PgPool};
@@ -67,13 +68,20 @@ pub struct FcmClient {
     sa: ServiceAccount,
     http: reqwest::Client,
     cached_token: Mutex<Option<(String, Instant)>>,
+    send_url: String,
 }
 
 impl FcmClient {
     pub fn try_load(path: &str) -> anyhow::Result<Self> {
         let raw = std::fs::read_to_string(path)?;
         let sa: ServiceAccount = serde_json::from_str(&raw)?;
+        EncodingKey::from_rsa_pem(sa.private_key.as_bytes())?;
+        let send_url = format!(
+            "https://fcm.googleapis.com/v1/projects/{}/messages:send",
+            sa.project_id
+        );
         Ok(Self {
+            send_url,
             sa,
             http: reqwest::Client::builder()
                 .timeout(Duration::from_secs(20))
@@ -123,58 +131,32 @@ impl FcmClient {
         Ok(res.access_token)
     }
 
-    /// returns Ok(true) on 200, Ok(false) ONLY on token-invalid (UNREGISTERED).
-    /// INVALID_ARGUMENT 는 페이로드 버그 — Err 로 올려서 호출자가 인지하게.
-    /// (예전엔 INVALID_ARGUMENT 도 Ok(false) 처리하면서 멀쩡한 토큰을
-    ///  비활성화하는 버그가 있었음.)
-    pub async fn send_to_token(
-        &self,
-        access_token: &str,
-        fcm_token: &str,
-        message: Value,
-    ) -> anyhow::Result<bool> {
-        let url = format!(
-            "https://fcm.googleapis.com/v1/projects/{}/messages:send",
-            self.sa.project_id
-        );
-
-        // FCM HTTP v1 의 data 필드는 모든 값이 string 이어야 함.
-        // 호출자가 number/bool 을 넣어도 자동 변환.
-        let data = stringify_data(&message["data"]);
-
-        let body = json!({
-            "message": {
-                "token":        fcm_token,
-                "notification": message["notification"],
-                "data":         data,
-                "android":      message["android"],
-            }
-        });
-        let res = self
+    async fn send_to_token(&self, access: &str, token: &str, message: Value) -> Delivery {
+        let body = json!({"message": {"token":token, "notification":message["notification"],
+            "data":stringify_data(&message["data"]), "android":message["android"]}});
+        let response = match self
             .http
-            .post(&url)
-            .bearer_auth(access_token)
+            .post(&self.send_url)
+            .bearer_auth(access)
             .json(&body)
             .send()
-            .await?;
-
-        let status = res.status();
-        if status.is_success() {
-            return Ok(true);
+            .await
+        {
+            Ok(res) => res,
+            Err(_) => return Delivery::Retry(60, "transport".into()),
+        };
+        let status = response.status().as_u16();
+        let retry_after = response
+            .headers()
+            .get("retry-after")
+            .and_then(|v| v.to_str().ok())
+            .map(retry_after_seconds)
+            .unwrap_or(60);
+        if status == 401 {
+            *self.cached_token.lock().await = None;
         }
-
-        let text = res.text().await.unwrap_or_default();
-        // UNREGISTERED / NOT_FOUND 만 토큰 invalid 로 처리.
-        // INVALID_ARGUMENT 은 페이로드 잘못 — 토큰 그대로 둠.
-        if status.as_u16() == 404 || text.contains("UNREGISTERED") {
-            tracing::info!(
-                token_prefix = &fcm_token[..16.min(fcm_token.len())],
-                status=%status,
-                "fcm: token unregistered, will deactivate"
-            );
-            return Ok(false);
-        }
-        anyhow::bail!("fcm send {status}: {text}");
+        let payload = response.json::<Value>().await.unwrap_or(Value::Null);
+        classify_response(status, &payload, retry_after)
     }
 }
 
@@ -198,223 +180,230 @@ fn stringify_data(v: &Value) -> Value {
     Value::Object(out)
 }
 
-/// 공통 client 빌드 — main 에서 한 번 호출, worker / chat push 에 공유.
-pub fn make_client(service_account_path: Option<&str>) -> Option<Arc<FcmClient>> {
-    let path = service_account_path?;
-    match FcmClient::try_load(path) {
-        Ok(c) => {
-            tracing::info!(project = %c.sa.project_id, "fcm: live mode");
-            Some(Arc::new(c))
-        }
-        Err(e) => {
-            tracing::error!("fcm: failed to load service account at {path}: {e:#} — dry-run");
-            None
-        }
-    }
+#[derive(Debug, PartialEq)]
+enum Delivery {
+    Sent,
+    Unregistered,
+    Retry(u64, String),
+    Permanent(String),
 }
 
-/// OAuth 실패 시 사용할 backoff 계단 (sec). Google API down 시 5s 마다 hammer 하지 않도록.
-const OAUTH_BACKOFF_SEC: &[u64] = &[30, 60, 300, 1800];
+fn retry_after_seconds(value: &str) -> u64 {
+    value
+        .parse::<u64>()
+        .ok()
+        .or_else(|| {
+            chrono::DateTime::parse_from_rfc2822(value)
+                .ok()
+                .map(|d| (d.timestamp() - chrono::Utc::now().timestamp()).max(0) as u64)
+        })
+        .unwrap_or(60)
+        .min(86400)
+}
 
-/// Spawn the polling worker. client None 이면 dry-run.
+fn classify_response(status: u16, body: &Value, retry_after: u64) -> Delivery {
+    if (200..300).contains(&status) {
+        return Delivery::Sent;
+    }
+    let unregistered = body["error"]["details"].as_array().is_some_and(|details| {
+        details.iter().any(|d| {
+            d["@type"] == "type.googleapis.com/google.firebase.fcm.v1.FcmError"
+                && d["errorCode"] == "UNREGISTERED"
+        })
+    });
+    if unregistered {
+        return Delivery::Unregistered;
+    }
+    if matches!(status, 401 | 408 | 429 | 500..=599) {
+        return Delivery::Retry(retry_after.max(60), format!("http_{status}"));
+    }
+    Delivery::Permanent(format!("http_{status}"))
+}
+
+fn retry_delay(attempt: i32, minimum: u64) -> u64 {
+    (60u64.saturating_mul(1 << (attempt.saturating_sub(1).min(8) as u32)))
+        .min(21600)
+        .max(minimum)
+}
+
+/// A configured but invalid key must fail startup, never consume events in dry-run.
+pub fn make_client(path: Option<&str>) -> anyhow::Result<Option<Arc<FcmClient>>> {
+    path.map(|p| FcmClient::try_load(p).map(Arc::new))
+        .transpose()
+}
+
 pub fn spawn(pool: PgPool, client: Option<Arc<FcmClient>>) {
     if client.is_none() {
         tracing::info!("fcm worker: dry-run mode (no FCM client)");
     }
-
     tokio::spawn(async move {
-        let mut oauth_fails: u32 = 0;
         loop {
-            match process_batch(&pool, client.as_deref()).await {
-                Ok(BatchOutcome::OAuthFail) => {
-                    // 연속 실패 시 점진적 backoff: 30s → 60s → 5min → 30min 유지.
-                    let idx = (oauth_fails as usize).min(OAUTH_BACKOFF_SEC.len() - 1);
-                    let delay = OAUTH_BACKOFF_SEC[idx];
-                    tracing::warn!(
-                        consecutive_fails = oauth_fails + 1,
-                        delay_sec = delay,
-                        "fcm worker: OAuth failure backoff"
-                    );
-                    oauth_fails = oauth_fails.saturating_add(1);
-                    sleep(Duration::from_secs(delay)).await;
-                }
-                Ok(_) => {
-                    if oauth_fails > 0 {
-                        tracing::info!(prev_fails = oauth_fails, "fcm worker: OAuth recovered");
-                        oauth_fails = 0;
-                    }
-                    sleep(POLL_INTERVAL).await;
-                }
-                Err(e) => {
-                    tracing::warn!("fcm worker batch error: {e:#}");
-                    sleep(POLL_INTERVAL).await;
-                }
+            if let Err(e) = process_batch(&pool, client.as_deref()).await {
+                tracing::warn!("fcm worker batch deferred: {e:#}");
+                sleep(Duration::from_secs(60)).await;
+            } else {
+                sleep(POLL_INTERVAL).await;
             }
         }
     });
 }
 
-enum BatchOutcome {
-    Done,
-    OAuthFail,
-}
-
-async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Result<BatchOutcome> {
-    // OAuth 토큰을 먼저 확보 — 실패하면 claim 자체를 안 함 (다음 폴링에서 재시도).
-    // 이렇게 안 하면 claim 후 토큰 fetch 실패 시 marked 행이 발송 없이 손실.
-    let access = if let Some(c) = client {
-        match c.access_token().await {
-            Ok(t) => Some(t),
-            Err(e) => {
-                tracing::error!(
-                    "fcm: failed to get access token: {e:#} — skipping batch (rows untouched)"
-                );
-                return Ok(BatchOutcome::OAuthFail);
-            }
-        }
-    } else {
-        None
-    };
-
-    // 원자적 claim — notified_at 을 발송 전 미리 마킹하고 RETURNING 으로 페이로드 회수.
-    // FOR UPDATE SKIP LOCKED 로 동시에 떠 있을 수 있는 다른 워커/재시작과 충돌 없이 잠금.
-    //
-    // 트레이드오프: 발송 직후 크래시 시 옛 코드는 무한 재발송 → 사용자 스팸 폭우.
-    // 새 코드는 발송 전 마킹 → 매우 드문 크래시 직전 1건 발송 실패 가능성 (수용).
-    //  · "스팸 1000번" >> "1건 누락" — 후자 선택.
-    //  · 정말 critical alert 면 별도 retry 컬럼 도입 필요 (지금 범주 아님).
+/// Event evaluation and per-recipient enqueue commit together. Sending happens
+/// after commit, so HTTP failures and restarts cannot consume unsent events.
+async fn enqueue_events(pool: &PgPool) -> anyhow::Result<()> {
+    let mut tx = pool.begin().await?;
     let pending: Vec<PendingEvent> = sqlx::query_as(
-        r#"WITH claimed AS (
-              SELECT id FROM events
-               WHERE notified_at IS NULL
-               ORDER BY occurred_at
-               LIMIT $1
-               FOR UPDATE SKIP LOCKED
-           ),
-           marked AS (
-              UPDATE events e
-                 SET notified_at = now()
-                WHERE id IN (SELECT id FROM claimed)
-            RETURNING e.id, e.device_id, e.kind, e.data, e.user_id
-           )
-           SELECT m.id, m.device_id,
-                  d.display_name AS device_name,
-                  m.kind, m.data, m.user_id
-             FROM marked m
-        LEFT JOIN devices d ON d.id = m.device_id"#,
+        r#"SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id
+           FROM events e LEFT JOIN devices d ON d.id=e.device_id
+           WHERE e.notified_at IS NULL ORDER BY e.occurred_at LIMIT $1
+           FOR UPDATE OF e SKIP LOCKED"#,
     )
     .bind(BATCH)
-    .fetch_all(pool)
+    .fetch_all(&mut *tx)
     .await?;
-
-    if pending.is_empty() {
-        return Ok(BatchOutcome::Done);
-    }
-
     for ev in pending {
-        // ─ 알림 설정 체크: 이벤트의 user_id 기준 (이벤트 생성 시점 owner 의 설정).
-        //   현재 owner 가 바뀐 경우에도 원래 owner 가 그들의 설정대로 받음.
         let allowed: bool = if let Some(uid) = ev.user_id {
             sqlx::query_scalar(
-                r#"SELECT
-                     CASE $2
-                       WHEN 'low_batt'       THEN COALESCE(ns.low_batt_alert,    TRUE)
-                       WHEN 'motion'         THEN COALESCE(ns.motion_alert,      TRUE)
-                       WHEN 'offline'        THEN COALESCE(ns.offline_alert,     TRUE)
-                       WHEN 'signal_loss'    THEN COALESCE(ns.signal_loss_alert, FALSE)
-                       -- [2026-08-14] stuck = signal_loss(5분) 전 1분 무응답 조기단계. 같은 계열이라
-                       --   signal_loss_alert 설정에 종속(기본 OFF). 누락 시 ELSE TRUE 로 강제푸시되던 버그 수정.
-                       WHEN 'stuck'          THEN COALESCE(ns.signal_loss_alert, FALSE)
-                       WHEN 'online'         THEN COALESCE(ns.online_alert,      TRUE)
-                       WHEN 'sleep_enter'    THEN COALESCE(ns.sleep_alert,       FALSE)
-                       WHEN 'wake'           THEN COALESCE(ns.wake_alert,        FALSE)
-                       WHEN 'cycle_first_fix' THEN COALESCE(ns.cycle_first_fix_alert, FALSE)
-                       WHEN 'geofence_in'    THEN COALESCE(ns.geofence_alert,    TRUE)
-                       WHEN 'geofence_out'   THEN COALESCE(ns.geofence_alert,    TRUE)
-                       WHEN 'geofence_armed' THEN COALESCE(ns.geofence_alert,    TRUE)
-                       WHEN 'brownout'       THEN COALESCE(ns.device_health_alert, TRUE)
-                       WHEN 'gps_anomaly'    THEN COALESCE(ns.device_health_alert, TRUE)
-                       WHEN 'lost'           THEN COALESCE(ns.lost_alert,        TRUE)
-                       ELSE TRUE
-                     END
-                  FROM (SELECT 1) _
-             LEFT JOIN notification_settings ns ON ns.user_id = $1"#,
-            )
-            .bind(uid).bind(&ev.kind)
-            .fetch_optional(pool).await.ok().flatten().unwrap_or(true)
-        } else {
-            // legacy event without user_id — skip (unsafe to push)
-            false
-        };
-
-        // (2026-07-29) 24시간 무응답 'lost' 알림 제거 — 사용자 스팸 리포트.
-        // event 자체는 여전히 events 테이블에 기록 (진단용, /diagnostic 에서 확인 가능).
-        // 단지 push 만 skip. lost_alert notification_setting 무시.
-        let allowed = allowed && ev.kind != "lost";
-
-        if !allowed {
-            tracing::debug!(event_id = ev.id, kind = %ev.kind, "fcm: muted");
-            // notified_at 은 batch claim 단계에서 이미 마킹됨 — 별도 UPDATE 불필요.
-            continue;
-        }
-
-        // 푸시 대상: 이벤트 발생 시점의 user_id (== device.owner_id at insert time).
-        // 이 사용자가 unpair 했더라도 그들의 다른 디바이스용 토큰으로 알림 도달 — 정상.
-        // 신규 owner 가 받는 알림은 "그들의" 이벤트 (user_id 본인 일치) 만.
-        let tokens: Vec<(i64, String)> = match ev.user_id {
-            Some(uid) => sqlx::query_as(
-                r#"SELECT id, token FROM fcm_tokens
-                    WHERE user_id = $1 AND active = TRUE"#,
+                r#"SELECT CASE $2
+                   WHEN 'low_batt' THEN COALESCE(ns.low_batt_alert,TRUE)
+                   WHEN 'offline' THEN COALESCE(ns.offline_alert,TRUE)
+                   WHEN 'signal_loss' THEN COALESCE(ns.signal_loss_alert,TRUE)
+                   WHEN 'online' THEN COALESCE(ns.online_alert,FALSE)
+                   WHEN 'sleep_enter' THEN COALESCE(ns.sleep_alert,FALSE)
+                   WHEN 'wake' THEN COALESCE(ns.wake_alert,FALSE)
+                   WHEN 'cycle_first_fix' THEN COALESCE(ns.cycle_first_fix_alert,FALSE)
+                   WHEN 'geofence_in' THEN COALESCE(ns.geofence_alert,TRUE)
+                   WHEN 'geofence_out' THEN COALESCE(ns.geofence_alert,TRUE)
+                   WHEN 'geofence_armed' THEN COALESCE(ns.geofence_alert,TRUE)
+                   WHEN 'brownout' THEN COALESCE(ns.device_health_alert,TRUE)
+                   WHEN 'gps_anomaly' THEN COALESCE(ns.device_health_alert,TRUE)
+                   WHEN 'lost' THEN FALSE ELSE TRUE END
+                   FROM (SELECT 1) x LEFT JOIN notification_settings ns ON ns.user_id=$1"#,
             )
             .bind(uid)
-            .fetch_all(pool)
-            .await
-            .unwrap_or_default(),
-            None => vec![], // user_id 없는 이벤트 (legacy) — 푸시 안 보냄
-        };
-
-        let title = title_for_kind(&ev.kind, ev.device_id);
-        let body = body_for_event(pool, &ev).await;
-        let message = json!({
-            "notification": { "title": title, "body": body },
-            "data": {
-                "kind":      ev.kind,
-                "device_id": ev.device_id.to_string(),
-                "event_id":  ev.id.to_string(),
-            },
-            "android": { "priority": "HIGH" },
-        });
-
-        if let (Some(c), Some(at)) = (client, access.as_deref()) {
-            for (token_id, token) in &tokens {
-                match c.send_to_token(at, token, message.clone()).await {
-                    Ok(true) => {
-                        tracing::info!(event_id = ev.id, token_id, "fcm: sent");
-                    }
-                    Ok(false) => {
-                        // mark inactive
-                        let _ = sqlx::query("UPDATE fcm_tokens SET active = FALSE WHERE id = $1")
-                            .bind(token_id)
-                            .execute(pool)
-                            .await;
-                    }
-                    Err(e) => {
-                        tracing::warn!(event_id = ev.id, token_id, "fcm: send error: {e:#}");
-                    }
-                }
-            }
+            .bind(&ev.kind)
+            .fetch_one(&mut *tx)
+            .await?
         } else {
-            tracing::debug!(
-                event_id = ev.id,
-                device_id = ev.device_id,
-                kind = %ev.kind,
-                token_count = tokens.len(),
-                "fcm: dry-run skip"
+            false
+        };
+        if allowed {
+            let message = notification(
+                &title_for_kind(&ev.kind, ev.device_id),
+                &body_for_event(pool, &ev).await,
+                json!({"kind":ev.kind,
+                    "device_id":ev.device_id.to_string(),"event_id":ev.id.to_string()}),
             );
+            sqlx::query(
+                r#"INSERT INTO fcm_outbox(event_id,token_id,user_id,binding_hash,message)
+                SELECT $1,id,user_id,revocation_hash,$3 FROM fcm_tokens WHERE user_id=$2 AND active
+                ON CONFLICT(event_id,token_id) DO NOTHING"#,
+            )
+            .bind(ev.id)
+            .bind(ev.user_id)
+            .bind(message)
+            .execute(&mut *tx)
+            .await?;
         }
-        // notified_at 은 batch claim 단계에서 이미 마킹됨.
+        sqlx::query("UPDATE events SET notified_at=now() WHERE id=$1")
+            .bind(ev.id)
+            .execute(&mut *tx)
+            .await?;
     }
-    Ok(BatchOutcome::Done)
+    tx.commit().await?;
+    Ok(())
+}
+
+#[derive(FromRow)]
+struct QueuedPush {
+    id: i64,
+    token_id: i64,
+    token: String,
+    message: Value,
+    attempts: i32,
+    binding_hash: Option<String>,
+}
+
+async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Result<()> {
+    let Some(client) = client else {
+        sqlx::query("UPDATE events SET notified_at=now() WHERE id IN (SELECT id FROM events WHERE notified_at IS NULL ORDER BY occurred_at LIMIT $1)")
+            .bind(BATCH).execute(pool).await?;
+        return Ok(());
+    };
+    await_queue_cleanup(pool).await?;
+    enqueue_events(pool).await?;
+    let access = client.access_token().await?;
+    for _ in 0..BATCH {
+        let item: Option<QueuedPush> = sqlx::query_as(
+            r#"WITH picked AS (
+            SELECT id FROM fcm_outbox WHERE status='pending' AND available_at<=now()
+              AND (lease_until IS NULL OR lease_until<now()) ORDER BY available_at,id
+            LIMIT 1 FOR UPDATE SKIP LOCKED
+          ), claimed AS (
+            UPDATE fcm_outbox o SET lease_until=now()+interval '90 seconds',attempts=attempts+1
+            FROM picked p WHERE o.id=p.id RETURNING o.*)
+          SELECT c.id,c.token_id,t.token,c.message,c.attempts,c.binding_hash FROM claimed c
+          JOIN fcm_tokens t ON t.id=c.token_id AND t.active AND t.user_id=c.user_id
+            AND t.revocation_hash IS NOT DISTINCT FROM c.binding_hash"#,
+        )
+        .fetch_optional(pool)
+        .await?;
+        let Some(item) = item else { break };
+        let outcome = client
+            .send_to_token(&access, &item.token, item.message)
+            .await;
+        let (status, delay, error) = match outcome {
+            Delivery::Sent => {
+                tracing::info!(delivery_id = item.id, token_id = item.token_id, "fcm: sent");
+                ("sent", 0, None)
+            }
+            Delivery::Unregistered => {
+                sqlx::query("UPDATE fcm_tokens SET active=FALSE WHERE id=$1 AND revocation_hash IS NOT DISTINCT FROM $2")
+                    .bind(item.token_id).bind(&item.binding_hash).execute(pool).await?;
+                ("cancelled", 0, Some("unregistered".to_string()))
+            }
+            Delivery::Retry(minimum, error) if item.attempts < 10 => {
+                let delay =
+                    retry_delay(item.attempts, minimum) + rand::thread_rng().gen_range(0..=15);
+                tracing::warn!(
+                    delivery_id = item.id,
+                    attempt = item.attempts,
+                    delay,
+                    error,
+                    "fcm: retry scheduled"
+                );
+                ("pending", delay as i64, Some(error))
+            }
+            Delivery::Retry(_, error) | Delivery::Permanent(error) => {
+                tracing::error!(delivery_id = item.id, error, "fcm: delivery dead-lettered");
+                ("dead", 0, Some(error))
+            }
+        };
+        sqlx::query(r#"UPDATE fcm_outbox SET status=$2, available_at=now()+$3*interval '1 second',
+            lease_until=NULL,last_error=$4,finished_at=CASE WHEN $2='pending' THEN NULL ELSE now() END
+            WHERE id=$1"#).bind(item.id).bind(status).bind(delay).bind(error).execute(pool).await?;
+    }
+    Ok(())
+}
+
+async fn await_queue_cleanup(pool: &PgPool) -> anyhow::Result<()> {
+    sqlx::query(r#"UPDATE fcm_outbox o SET status='cancelled',finished_at=now(),last_error='binding_revoked'
+        WHERE status='pending' AND NOT EXISTS (SELECT 1 FROM fcm_tokens t WHERE t.id=o.token_id
+          AND t.user_id=o.user_id AND t.active AND t.revocation_hash IS NOT DISTINCT FROM o.binding_hash)"#)
+        .execute(pool).await?;
+    sqlx::query("UPDATE fcm_outbox SET status='dead',finished_at=now(),last_error='expired' WHERE status='pending' AND created_at<now()-interval '24 hours'")
+        .execute(pool).await?;
+    sqlx::query("DELETE FROM fcm_outbox WHERE id IN (SELECT id FROM fcm_outbox WHERE finished_at<now()-interval '14 days' LIMIT 200)")
+        .execute(pool).await?;
+    sqlx::query("DELETE FROM fcm_revocations WHERE secret_hash IN (SELECT secret_hash FROM fcm_revocations WHERE created_at<now()-interval '30 days' LIMIT 200)")
+        .execute(pool).await?;
+    Ok(())
+}
+
+fn notification(title: &str, body: &str, data: Value) -> Value {
+    let body: String = body.chars().take(200).collect();
+    json!({"notification":{"title":title,"body":body}, "data":data,
+        "android":{"priority":"HIGH", "notification":{"channel_id":"baljachwi_default", "icon":"ic_stat_notification"}}})
 }
 
 fn title_for_kind(kind: &str, _device_id: i64) -> String {
@@ -565,12 +554,7 @@ async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
     }
 }
 
-// ─── 채팅/시스템 푸시 (events 워커와 별개, on-demand) ──────────────
-//
-// chat_messages INSERT 직후 호출. 본 트랜잭션과 무관하게 best-effort 로 송신.
-// FcmClient 가 None (dry-run 또는 미설정) 이면 곧장 종료.
-
-/// 특정 사용자의 활성 fcm_tokens 로 푸시
+// Chat and system notifications use the same durable per-recipient queue.
 pub async fn push_to_user(
     client: Option<&FcmClient>,
     pool: &PgPool,
@@ -579,22 +563,22 @@ pub async fn push_to_user(
     body: &str,
     data: Value,
 ) {
-    let Some(c) = client else { return };
-    let tokens: Vec<(i64, String)> = sqlx::query_as(
-        r#"SELECT id, token FROM fcm_tokens
-            WHERE user_id = $1 AND active = TRUE"#,
-    )
-    .bind(user_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
-    if tokens.is_empty() {
+    if client.is_none() {
         return;
     }
-    send_to_tokens(c, pool, tokens, title, body, data).await;
+    let result = sqlx::query(
+        r#"INSERT INTO fcm_outbox(token_id,user_id,binding_hash,message)
+        SELECT id,user_id,revocation_hash,$2 FROM fcm_tokens WHERE user_id=$1 AND active"#,
+    )
+    .bind(user_id)
+    .bind(notification(title, body, data))
+    .execute(pool)
+    .await;
+    if let Err(e) = result {
+        tracing::error!("fcm chat enqueue failed: {e}");
+    }
 }
 
-/// 모든 admin 의 활성 fcm_tokens 로 푸시 (제외 사용자: 발신자 자신)
 pub async fn push_to_admins(
     client: Option<&FcmClient>,
     pool: &PgPool,
@@ -603,56 +587,190 @@ pub async fn push_to_admins(
     body: &str,
     data: Value,
 ) {
-    let Some(c) = client else { return };
-    let tokens: Vec<(i64, String)> = sqlx::query_as(
-        r#"SELECT t.id, t.token
-             FROM fcm_tokens t
-             JOIN users u ON u.id = t.user_id
-            WHERE u.role = 'admin' AND t.active = TRUE
-              AND ($1::BIGINT IS NULL OR t.user_id <> $1)"#,
-    )
-    .bind(exclude_user_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
-    if tokens.is_empty() {
+    if client.is_none() {
         return;
     }
-    send_to_tokens(c, pool, tokens, title, body, data).await;
+    let result = sqlx::query(
+        r#"INSERT INTO fcm_outbox(token_id,user_id,binding_hash,message)
+        SELECT t.id,t.user_id,t.revocation_hash,$2 FROM fcm_tokens t JOIN users u ON u.id=t.user_id
+        WHERE u.role='admin' AND t.active AND ($1::bigint IS NULL OR t.user_id<>$1)"#,
+    )
+    .bind(exclude_user_id)
+    .bind(notification(title, body, data))
+    .execute(pool)
+    .await;
+    if let Err(e) = result {
+        tracing::error!("fcm admin enqueue failed: {e}");
+    }
 }
 
-async fn send_to_tokens(
-    client: &FcmClient,
-    pool: &PgPool,
-    tokens: Vec<(i64, String)>,
-    title: &str,
-    body: &str,
-    data: Value,
-) {
-    let access = match client.access_token().await {
-        Ok(t) => t,
-        Err(e) => {
-            tracing::warn!("fcm push: token fail: {e:#}");
-            return;
-        }
-    };
-    // notification body 200자 cap (FCM size limit + UI 가독성)
-    let body_short: String = body.chars().take(200).collect();
-    let message = json!({
-        "notification": { "title": title, "body": body_short },
-        "data": data,
-        "android": { "priority": "HIGH" },
-    });
-    for (token_id, token) in tokens {
-        match client.send_to_token(&access, &token, message.clone()).await {
-            Ok(true) => tracing::debug!(token_id, "fcm push: sent"),
-            Ok(false) => {
-                let _ = sqlx::query("UPDATE fcm_tokens SET active = FALSE WHERE id = $1")
-                    .bind(token_id)
-                    .execute(pool)
-                    .await;
-            }
-            Err(e) => tracing::warn!(token_id, "fcm push: {e:#}"),
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    /// Run against a disposable PostgreSQL database on the build runner only.
+    #[tokio::test]
+    #[ignore = "requires GPS_FCM_TEST_DB on the isolated build runner"]
+    async fn durable_queue_recovers_without_cross_account_or_partial_success_replay() {
+        use axum::{extract::State, routing::post, Json, Router};
+        use std::collections::HashMap;
+        let url = std::env::var("GPS_FCM_TEST_DB").expect("dedicated test database required");
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(4)
+            .connect(&url)
+            .await
+            .unwrap();
+        sqlx::raw_sql(r#"
+          CREATE TABLE users(id bigint PRIMARY KEY,role text);
+          CREATE TABLE devices(id bigint PRIMARY KEY,display_name text);
+          CREATE TABLE events(id bigserial PRIMARY KEY,device_id bigint,user_id bigint,kind text,data jsonb,
+                              occurred_at timestamptz DEFAULT now(),notified_at timestamptz);
+          CREATE TABLE fcm_tokens(id bigserial PRIMARY KEY,user_id bigint REFERENCES users(id),token text UNIQUE,
+                                 active bool DEFAULT true);
+          CREATE TABLE notification_settings(user_id bigint PRIMARY KEY,low_batt_alert bool,offline_alert bool,
+              signal_loss_alert bool,online_alert bool,sleep_alert bool,wake_alert bool,cycle_first_fix_alert bool,
+              geofence_alert bool,device_health_alert bool);
+          INSERT INTO users VALUES (1,'user'),(2,'user');
+          INSERT INTO devices VALUES (1,'test device');
+        "#).execute(&pool).await.unwrap();
+        sqlx::raw_sql(include_str!("../../migrations/0065_fcm_delivery_queue.sql"))
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::raw_sql(r#"
+          INSERT INTO fcm_tokens(user_id,token,revocation_hash) VALUES (1,'good','A'),(1,'retry','B');
+          INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{}');
+        "#).execute(&pool).await.unwrap();
+        let counts = Arc::new(Mutex::new(HashMap::<String, usize>::new()));
+        let app = Router::new()
+            .route(
+                "/send",
+                post(
+                    |State(counts): State<Arc<Mutex<HashMap<String, usize>>>>,
+                     Json(body): Json<Value>| async move {
+                        let token = body["message"]["token"].as_str().unwrap().to_owned();
+                        let mut counts = counts.lock().await;
+                        let count = counts.entry(token.clone()).or_default();
+                        *count += 1;
+                        if token == "retry" && *count == 1 {
+                            (
+                                axum::http::StatusCode::SERVICE_UNAVAILABLE,
+                                Json(json!({"error":{}})),
+                            )
+                        } else {
+                            (axum::http::StatusCode::OK, Json(json!({"name":"test"})))
+                        }
+                    },
+                ),
+            )
+            .with_state(counts.clone());
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        let client = FcmClient {
+            sa: ServiceAccount {
+                project_id: "test".into(),
+                private_key: String::new(),
+                client_email: String::new(),
+                token_uri: String::new(),
+            },
+            http: reqwest::Client::new(),
+            send_url: format!("http://{addr}/send"),
+            cached_token: Mutex::new(Some((
+                "test".into(),
+                Instant::now() + Duration::from_secs(3600),
+            ))),
+        };
+        process_batch(&pool, Some(&client)).await.unwrap();
+        let states: Vec<String> =
+            sqlx::query_scalar("SELECT status FROM fcm_outbox ORDER BY token_id")
+                .fetch_all(&pool)
+                .await
+                .unwrap();
+        assert_eq!(states, ["sent", "pending"]);
+        sqlx::query("UPDATE fcm_outbox SET available_at=now() WHERE status='pending'")
+            .execute(&pool)
+            .await
+            .unwrap();
+        process_batch(&pool, Some(&client)).await.unwrap();
+        assert_eq!(counts.lock().await.get("good"), Some(&1));
+        assert_eq!(counts.lock().await.get("retry"), Some(&2));
+        // A new process can reclaim an expired lease, while a revoked/reassigned
+        // binding is cancelled rather than leaking an old owner's notification.
+        sqlx::raw_sql(
+            r#"
+          INSERT INTO fcm_outbox(token_id,user_id,binding_hash,message,lease_until)
+            SELECT id,user_id,revocation_hash,'{}',now()-interval '1 second' FROM fcm_tokens;
+          UPDATE fcm_tokens SET user_id=2,revocation_hash='new-owner' WHERE token='good';
+        "#,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        process_batch(&pool, Some(&client)).await.unwrap();
+        assert_eq!(counts.lock().await.get("good"), Some(&1));
+        assert_eq!(counts.lock().await.get("retry"), Some(&3));
+        let cancelled: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM fcm_outbox WHERE status='cancelled'")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(cancelled, 1);
+        // A database failure during enqueue must leave the event unconsumed.
+        sqlx::raw_sql(r#"
+          CREATE FUNCTION reject_push() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test'; END $$;
+          CREATE TRIGGER fail_push BEFORE INSERT ON fcm_outbox FOR EACH ROW EXECUTE FUNCTION reject_push();
+          INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{}');
+        "#).execute(&pool).await.unwrap();
+        assert!(enqueue_events(&pool).await.is_err());
+        let pending: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM events WHERE notified_at IS NULL")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(pending, 1);
+        server.abort();
+        pool.close().await;
+    }
+    #[test]
+    fn retry_and_token_errors_are_distinct() {
+        assert_eq!(
+            classify_response(503, &json!({}), 120),
+            Delivery::Retry(120, "http_503".into())
+        );
+        assert_eq!(
+            classify_response(429, &json!({}), 0),
+            Delivery::Retry(60, "http_429".into())
+        );
+        assert_eq!(
+            classify_response(404, &json!({}), 60),
+            Delivery::Permanent("http_404".into())
+        );
+        assert_eq!(
+            classify_response(400, &json!({"error":{"status":"INVALID_ARGUMENT"}}), 60),
+            Delivery::Permanent("http_400".into())
+        );
+        let invalid = json!({"error":{"details":[{"@type":"type.googleapis.com/google.firebase.fcm.v1.FcmError","errorCode":"UNREGISTERED"}]}});
+        assert_eq!(classify_response(404, &invalid, 60), Delivery::Unregistered);
+        assert_eq!(retry_delay(1, 60), 60);
+        assert_eq!(retry_delay(5, 3600), 3600);
+        assert_eq!(retry_delay(100, 0), 15360);
+    }
+    #[test]
+    fn channel_data_and_unicode_body_are_preserved() {
+        let n = notification(
+            "제목",
+            &"한".repeat(201),
+            json!({"thread_id":42,"kind":"chat_user_message"}),
+        );
+        assert_eq!(
+            n["notification"]["body"].as_str().unwrap().chars().count(),
+            200
+        );
+        assert_eq!(
+            n["android"]["notification"]["channel_id"],
+            "baljachwi_default"
+        );
+        assert_eq!(stringify_data(&n["data"])["thread_id"], "42");
+        assert_eq!(retry_after_seconds("120"), 120);
     }
 }

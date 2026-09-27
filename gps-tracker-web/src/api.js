@@ -41,6 +41,7 @@ export function setTokens(access, refresh, remember = true) {
 }
 
 export function clearTokens() {
+  window.dispatchEvent(new Event('gps-auth-clearing'));
   resetSession();
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');

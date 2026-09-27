@@ -73,6 +73,10 @@ pub fn router() -> Router<AppState> {
         .route("/auth/refresh", post(refresh))
         .route("/auth/fcm-token", post(register_fcm_token))
         .route("/auth/fcm-token/revoke", post(unregister_fcm_token))
+        .route(
+            "/auth/fcm-token/revoke-installation",
+            post(revoke_fcm_installation),
+        )
         .route("/auth/ping", get(|| async { "pong" }))
         // 아이디 찾기 (2-step: phone OTP → 결과)
         .route("/auth/find-id/send-otp", post(find_id_send_otp))
@@ -340,6 +344,9 @@ pub struct FcmTokenRequest {
     pub token: String,
     pub platform: String, // "android" / "ios"
     pub app_version: Option<String>,
+    pub installation_id: Option<String>,
+    pub generation: Option<i64>,
+    pub revocation_key: Option<String>,
 }
 
 pub async fn register_fcm_token(
@@ -347,29 +354,59 @@ pub async fn register_fcm_token(
     user: AuthUser,
     Json(req): Json<FcmTokenRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if req.token.is_empty() {
-        return Err(AppError::BadRequest("token is empty".into()));
+    if req.token.is_empty()
+        || req.token.len() > 4096
+        || !req.token.is_ascii()
+        || !matches!(req.platform.as_str(), "android" | "ios" | "web")
+        || req.app_version.as_ref().is_some_and(|s| s.len() > 64)
+    {
+        return Err(AppError::BadRequest("invalid push registration".into()));
     }
-
-    // Upsert: same token (UNIQUE) → reassign to this user, mark active.
-    sqlx::query(
-        r#"
-        INSERT INTO fcm_tokens (user_id, token, platform, app_version, active, last_used_at)
-        VALUES ($1, $2, $3, $4, TRUE, now())
-        ON CONFLICT (token) DO UPDATE
-           SET user_id      = EXCLUDED.user_id,
-               platform     = EXCLUDED.platform,
-               app_version  = EXCLUDED.app_version,
-               active       = TRUE,
-               last_used_at = now()
-        "#,
-    )
-    .bind(user.user_id)
-    .bind(&req.token)
-    .bind(&req.platform)
-    .bind(&req.app_version)
-    .execute(&state.db)
-    .await?;
+    let modern =
+        req.installation_id.is_some() || req.generation.is_some() || req.revocation_key.is_some();
+    if modern
+        && !(req
+            .installation_id
+            .as_ref()
+            .is_some_and(|s| (32..=128).contains(&s.len()))
+            && req.generation.is_some_and(|n| n > 0)
+            && req
+                .revocation_key
+                .as_ref()
+                .is_some_and(|s| (32..=128).contains(&s.len())))
+    {
+        return Err(AppError::BadRequest("invalid installation binding".into()));
+    }
+    let secret_hash = req.revocation_key.as_deref().map(hash_refresh);
+    let mut tx = state.db.begin().await?;
+    if let Some(ref hash) = secret_hash {
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 65))")
+            .bind(hash)
+            .execute(&mut *tx)
+            .await?;
+    }
+    let result = sqlx::query(
+        r#"INSERT INTO fcm_tokens (user_id, token, platform, app_version, active, last_used_at,
+                                  installation_id, registration_generation, revocation_hash)
+        SELECT $1,$2,$3,$4,TRUE,now(),$5,$6,$7
+        WHERE NOT EXISTS (SELECT 1 FROM fcm_revocations WHERE secret_hash=$7)
+        ON CONFLICT (token) DO UPDATE SET
+            user_id=EXCLUDED.user_id, platform=EXCLUDED.platform, app_version=EXCLUDED.app_version,
+            active=TRUE, last_used_at=now(), installation_id=EXCLUDED.installation_id,
+            registration_generation=EXCLUDED.registration_generation, revocation_hash=EXCLUDED.revocation_hash
+        WHERE EXCLUDED.installation_id IS NULL
+           OR fcm_tokens.installation_id IS DISTINCT FROM EXCLUDED.installation_id
+           OR EXCLUDED.registration_generation > fcm_tokens.registration_generation
+           OR (EXCLUDED.registration_generation = fcm_tokens.registration_generation
+               AND fcm_tokens.active AND fcm_tokens.user_id=EXCLUDED.user_id
+               AND fcm_tokens.revocation_hash=EXCLUDED.revocation_hash)"#)
+        .bind(user.user_id).bind(&req.token).bind(&req.platform).bind(&req.app_version)
+        .bind(&req.installation_id).bind(req.generation).bind(secret_hash)
+        .execute(&mut *tx).await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::BadRequest("stale push registration".into()));
+    }
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({"ok": true})))
 }
@@ -390,6 +427,40 @@ pub async fn unregister_fcm_token(
         .execute(&state.db)
         .await?;
     Ok(Json(serde_json::json!({"ok": true})))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RevokeInstallation {
+    token: String,
+    revocation_key: String,
+}
+
+/// A random per-binding capability permits logout recovery after JWT expiry.
+/// It can only disable that binding; it cannot read data or revoke its successor.
+pub async fn revoke_fcm_installation(
+    State(state): State<AppState>,
+    Json(req): Json<RevokeInstallation>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !(32..=128).contains(&req.revocation_key.len()) || req.token.len() > 4096 {
+        return Err(AppError::BadRequest("invalid revocation".into()));
+    }
+    let hash = hash_refresh(&req.revocation_key);
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 65))")
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO fcm_revocations(secret_hash) VALUES ($1) ON CONFLICT DO NOTHING")
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE fcm_tokens SET active=FALSE WHERE token=$1 AND revocation_hash=$2")
+        .bind(&req.token)
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(Json(serde_json::json!({"ok":true})))
 }
 
 fn hash_refresh(token: &str) -> String {

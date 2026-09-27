@@ -14,7 +14,7 @@ import { startPhoneTracker, stopPhoneTracker } from '../lib/phoneTracker';
 
 function initialProfileTab() {
   if (typeof window === 'undefined') return 'account';
-  const v = localStorage.getItem('profile_tab');
+  const v = new URLSearchParams(window.location.search).get('tab') || localStorage.getItem('profile_tab');
   return ['account','credit','chat','notif','theme','lab'].includes(v) ? v : 'account';
 }
 

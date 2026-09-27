@@ -32,6 +32,7 @@ async fn main() -> anyhow::Result<()> {
     // ── config & db ───────────────────────────────────────
     let cfg = config::Config::from_env().context("failed to load config")?;
     tracing::info!(bind = %cfg.bind_addr, "starting gps-tracker-api");
+    let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref())?;
 
     let pool = db::make_pool(&cfg.database_url)
         .await
@@ -45,7 +46,6 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("migrations up to date");
 
     // FCM 클라이언트 — events 워커와 채팅 푸시가 공유
-    let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref());
 
     // (2026-07-28) Stage-4D: 오피넷 유가 캐시. 부팅 시 첫 fetch 시도 + 6h 주기 refresh.
     // OPINET_API_KEY env 미설정 시 fetch 실패 → 하드코딩 기본값 fallback.
