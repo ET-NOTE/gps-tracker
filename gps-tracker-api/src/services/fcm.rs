@@ -11,6 +11,7 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use super::notification_policy as policy;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -31,13 +32,14 @@ struct PendingEvent {
     kind: String,
     data: Option<Value>,
     user_id: Option<i64>, // 이벤트 생성 시점의 owner — 해당 사용자에게만 푸시
+    occurred_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// 알림 본문에 노출할 디바이스 라벨. display_name 있으면 우선, 없으면 #ID 폴백.
 fn dev_label(ev: &PendingEvent) -> String {
     match ev.device_name.as_deref() {
-        Some(s) if !s.is_empty() => s.to_string(),
-        _ => format!("디바이스 #{}", ev.device_id),
+        Some(s) if !s.trim().is_empty() => policy::compact(s, 28),
+        _ => format!("내 장치 #{}", ev.device_id),
     }
 }
 
@@ -253,7 +255,7 @@ pub fn spawn(pool: PgPool, client: Option<Arc<FcmClient>>) {
 async fn enqueue_events(pool: &PgPool) -> anyhow::Result<()> {
     let mut tx = pool.begin().await?;
     let pending: Vec<PendingEvent> = sqlx::query_as(
-        r#"SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id
+        r#"SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id,e.occurred_at
            FROM events e LEFT JOIN devices d ON d.id=e.device_id
            WHERE e.notified_at IS NULL ORDER BY e.occurred_at LIMIT $1
            FOR UPDATE OF e SKIP LOCKED"#,
@@ -262,38 +264,8 @@ async fn enqueue_events(pool: &PgPool) -> anyhow::Result<()> {
     .fetch_all(&mut *tx)
     .await?;
     for ev in pending {
-        let allowed: bool = if let Some(uid) = ev.user_id {
-            sqlx::query_scalar(
-                r#"SELECT CASE $2
-                   WHEN 'low_batt' THEN COALESCE(ns.low_batt_alert,TRUE)
-                   WHEN 'offline' THEN COALESCE(ns.offline_alert,TRUE)
-                   WHEN 'signal_loss' THEN COALESCE(ns.signal_loss_alert,TRUE)
-                   WHEN 'online' THEN COALESCE(ns.online_alert,FALSE)
-                   WHEN 'sleep_enter' THEN COALESCE(ns.sleep_alert,FALSE)
-                   WHEN 'wake' THEN COALESCE(ns.wake_alert,FALSE)
-                   WHEN 'cycle_first_fix' THEN COALESCE(ns.cycle_first_fix_alert,FALSE)
-                   WHEN 'geofence_in' THEN COALESCE(ns.geofence_alert,TRUE)
-                   WHEN 'geofence_out' THEN COALESCE(ns.geofence_alert,TRUE)
-                   WHEN 'geofence_armed' THEN COALESCE(ns.geofence_alert,TRUE)
-                   WHEN 'brownout' THEN COALESCE(ns.device_health_alert,TRUE)
-                   WHEN 'gps_anomaly' THEN COALESCE(ns.device_health_alert,TRUE)
-                   WHEN 'lost' THEN FALSE ELSE TRUE END
-                   FROM (SELECT 1) x LEFT JOIN notification_settings ns ON ns.user_id=$1"#,
-            )
-            .bind(uid)
-            .bind(&ev.kind)
-            .fetch_one(&mut *tx)
-            .await?
-        } else {
-            false
-        };
-        if allowed {
-            let message = notification(
-                &title_for_kind(&ev.kind, ev.device_id),
-                &body_for_event(pool, &ev).await,
-                json!({"kind":ev.kind,
-                    "device_id":ev.device_id.to_string(),"event_id":ev.id.to_string()}),
-            );
+        if policy::relevant(pool, ev.id).await? {
+            let message = event_message(pool, &ev).await;
             sqlx::query(
                 r#"INSERT INTO fcm_outbox(event_id,token_id,user_id,binding_hash,message)
                 SELECT $1,id,user_id,revocation_hash,$3 FROM fcm_tokens WHERE user_id=$2 AND active
@@ -322,6 +294,8 @@ struct QueuedPush {
     message: Value,
     attempts: i32,
     binding_hash: Option<String>,
+    event_id: Option<i64>,
+    created_at: chrono::DateTime<chrono::Utc>,
 }
 
 async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Result<()> {
@@ -342,13 +316,52 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
           ), claimed AS (
             UPDATE fcm_outbox o SET lease_until=now()+interval '90 seconds',attempts=attempts+1
             FROM picked p WHERE o.id=p.id RETURNING o.*)
-          SELECT c.id,c.token_id,t.token,c.message,c.attempts,c.binding_hash FROM claimed c
+          SELECT c.id,c.token_id,t.token,c.message,c.attempts,c.binding_hash,c.event_id,c.created_at FROM claimed c
           JOIN fcm_tokens t ON t.id=c.token_id AND t.active AND t.user_id=c.user_id
             AND t.revocation_hash IS NOT DISTINCT FROM c.binding_hash"#,
         )
         .fetch_optional(pool)
         .await?;
-        let Some(item) = item else { break };
+        let Some(mut item) = item else { break };
+        if let Some(event) = item.event_id {
+            if !policy::relevant(pool, event).await? {
+                cancel_delivery(pool, item.id, "no_longer_relevant").await?;
+                continue;
+            }
+            let ev: PendingEvent = sqlx::query_as("SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id,e.occurred_at FROM events e JOIN devices d ON d.id=e.device_id WHERE e.id=$1")
+                .bind(event).fetch_one(pool).await?;
+            item.message = event_message(pool, &ev).await;
+        } else if !matches!(
+            item.message["data"]["kind"].as_str(),
+            Some("chat_admin_message" | "chat_user_message")
+        ) {
+            cancel_delivery(pool, item.id, "unsupported_notification").await?;
+            continue;
+        } else if item.message["data"]["notification_channel"]
+            .as_str()
+            .is_none()
+        {
+            // Also upgrades already queued messages to the new channels/expiry.
+            item.message = policy::message(
+                item.message["notification"]["title"]
+                    .as_str()
+                    .unwrap_or("새 상담 메시지"),
+                item.message["notification"]["body"]
+                    .as_str()
+                    .unwrap_or("앱에서 메시지를 확인해 주세요."),
+                item.message["data"].clone(),
+                item.created_at,
+            );
+        }
+        let expires = chrono::DateTime::parse_from_rfc3339(
+            item.message["data"]["expires_at"].as_str().unwrap_or(""),
+        )?;
+        let seconds = (expires.with_timezone(&chrono::Utc) - chrono::Utc::now()).num_seconds();
+        if seconds <= 0 {
+            cancel_delivery(pool, item.id, "expired").await?;
+            continue;
+        }
+        item.message["android"]["ttl"] = json!(format!("{seconds}s"));
         let outcome = client
             .send_to_token(&access, &item.token, item.message)
             .await;
@@ -386,6 +399,12 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
     Ok(())
 }
 
+async fn cancel_delivery(pool: &PgPool, id: i64, reason: &str) -> anyhow::Result<()> {
+    sqlx::query("UPDATE fcm_outbox SET status='cancelled',finished_at=now(),lease_until=NULL,last_error=$2 WHERE id=$1")
+        .bind(id).bind(reason).execute(pool).await?;
+    Ok(())
+}
+
 async fn await_queue_cleanup(pool: &PgPool) -> anyhow::Result<()> {
     sqlx::query(r#"UPDATE fcm_outbox o SET status='cancelled',finished_at=now(),last_error='binding_revoked'
         WHERE status='pending' AND NOT EXISTS (SELECT 1 FROM fcm_tokens t WHERE t.id=o.token_id
@@ -401,35 +420,26 @@ async fn await_queue_cleanup(pool: &PgPool) -> anyhow::Result<()> {
 }
 
 fn notification(title: &str, body: &str, data: Value) -> Value {
-    let body: String = body.chars().take(200).collect();
-    json!({"notification":{"title":title,"body":body}, "data":data,
-        "android":{"priority":"HIGH", "notification":{"channel_id":"baljachwi_default", "icon":"ic_stat_notification"}}})
+    policy::message(title, body, data, chrono::Utc::now())
 }
 
-fn title_for_kind(kind: &str, _device_id: i64) -> String {
+fn title_for_kind(kind: &str) -> &'static str {
     match kind {
-        "low_batt" => "🔋 배터리 부족".into(),
-        "offline" => "📡 통신 두절".into(),
-        "signal_loss" => "📶 통신 약함".into(),
-        "online" => "✅ 통신 복구".into(),
-        "sleep_enter" => "🌙 정지".into(),
-        "wake" => "☀️ 활성".into(),
-        "cycle_first_fix" => "🚗 운행 시작".into(),
-        "geofence_in" => "📍 지오펜스 진입".into(),
-        "geofence_out" => "📍 지오펜스 이탈".into(),
-        "geofence_armed" => "📍 지오펜스 활성화".into(),
-        "brownout" => "⚡ 전원 불안정".into(),
-        "gps_anomaly" => "🛰️ GPS 신호 불안정".into(),
-        "lost" => "❗ 장치 미응답".into(), // (2026-07-29) push 는 skip, title 은 in-app 로그용
-        _ => "🔔 시리얼링크 위치추적기".into(),
+        "low_batt" => "배터리 확인 필요",
+        "offline" => "연결 확인 필요",
+        "signal_loss" => "새 정보 수신 지연",
+        "online" => "연결이 복구되었습니다",
+        "sleep_enter" => "절전 모드로 전환",
+        "wake" => "장치 작동 재개",
+        "motion" => "움직임 감지",
+        "cycle_first_fix" => "위치가 확인되었습니다",
+        "geofence_in" => "설정한 구역에 들어왔습니다",
+        "geofence_out" => "설정한 구역을 벗어났습니다",
+        "geofence_armed" => "구역 알림 설정 완료",
+        "brownout" => "전원 확인 필요",
+        "gps_anomaly" => "위치 확인 지연",
+        _ => "장치 상태 안내", // Unknown events are denied by the policy.
     }
-}
-
-/// 배터리 mV → 대략적인 % 환산. LiPo 3.4V(0%) ~ 4.2V(100%) 선형 근사.
-/// 사용자에게 mV 는 무의미 — % 로 안내.
-fn vbat_to_pct(mv: i64) -> i32 {
-    let pct = ((mv - 3400) as f64 / 800.0 * 100.0).round() as i32;
-    pct.clamp(0, 100)
 }
 
 async fn resolve_addr(pool: &PgPool, lat: f64, lng: f64) -> Option<String> {
@@ -437,121 +447,58 @@ async fn resolve_addr(pool: &PgPool, lat: f64, lng: f64) -> Option<String> {
     r.pop().flatten().map(|x| x.short())
 }
 
-async fn body_for_event(pool: &PgPool, ev: &PendingEvent) -> String {
-    let dev = dev_label(ev);
-    match ev.kind.as_str() {
-        "low_batt" => {
-            let v = ev
-                .data
-                .as_ref()
-                .and_then(|d| d.get("vbat_mv"))
-                .and_then(|v| v.as_i64())
-                .unwrap_or(0);
-            let pct = vbat_to_pct(v);
-            format!("{dev} 배터리 약 {pct}% 남았습니다 — 충전이 필요합니다")
-        }
-        "geofence_armed" => {
-            let d = ev.data.as_ref();
-            let name = d
-                .and_then(|x| x.get("geofence_name"))
-                .and_then(|v| v.as_str())
-                .unwrap_or("펜스");
-            let inside = d
-                .and_then(|x| x.get("inside"))
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            if inside {
-                format!("{dev}: '{name}' 감시 시작 — 현재 펜스 안에 있습니다")
-            } else {
-                format!("{dev}: '{name}' 감시 시작 — 현재 펜스 밖에 있습니다")
-            }
-        }
-        "geofence_in" | "geofence_out" => {
-            let name = ev
-                .data
-                .as_ref()
-                .and_then(|x| x.get("geofence_name"))
-                .and_then(|v| v.as_str())
-                .unwrap_or("펜스");
-            let action = if ev.kind == "geofence_in" {
-                "진입"
-            } else {
-                "이탈"
-            };
-            format!("{dev}: '{name}' {action}")
-        }
-        "brownout" => {
-            format!("{dev}: 전원이 불안정합니다 — 배터리·연결 상태를 확인해 주세요")
-        }
-        "gps_anomaly" => {
-            format!("{dev}: GPS 신호가 약합니다 — 지하 · 실내 · 터널 통과 가능성")
-        }
-        // (2026-07-29) 'lost' 는 push allowed 에서 skip 되지만 방어적으로 body 도 정리.
-        "lost" => {
-            let hrs = ev
-                .data
-                .as_ref()
-                .and_then(|x| x.get("hours_since_sleep"))
-                .and_then(|v| v.as_i64())
-                .unwrap_or(24);
-            format!("{dev}: {hrs}시간 넘게 응답 없음")
-        }
-        "offline" => {
-            let m = ev
-                .data
-                .as_ref()
-                .and_then(|x| x.get("silence_min"))
-                .and_then(|v| v.as_i64())
-                .unwrap_or(0);
-            if m >= 60 {
-                let hrs = m / 60;
-                format!("{dev}: {hrs}시간 이상 통신이 끊겼습니다")
-            } else if m > 0 {
-                format!("{dev}: {m}분간 통신이 끊겼습니다")
-            } else {
-                format!("{dev}: 통신이 끊겼습니다")
-            }
-        }
-        "signal_loss" => {
-            let m = ev
-                .data
-                .as_ref()
-                .and_then(|x| x.get("silence_min"))
-                .and_then(|v| v.as_i64())
-                .unwrap_or(0);
-            format!("{dev}: {}분간 신호가 약합니다", m.max(5))
-        }
-        "online" => {
-            format!("{dev}: 통신이 복구되었습니다")
-        }
-        "sleep_enter" => {
-            format!("{dev}: 정지 상태로 전환되었습니다")
-        }
-        "wake" => {
-            format!("{dev}: 다시 활성 상태입니다")
-        }
-        // (2026-07-29) 좌표 · 위성수 대신 주소 — Kakao reverse-geo 캐시 사용.
-        "cycle_first_fix" => {
-            let lat = ev
-                .data
-                .as_ref()
-                .and_then(|x| x.get("lat"))
-                .and_then(|v| v.as_f64());
-            let lng = ev
-                .data
-                .as_ref()
-                .and_then(|x| x.get("lng"))
-                .and_then(|v| v.as_f64());
-            match (lat, lng) {
-                (Some(lat), Some(lng)) => match resolve_addr(pool, lat, lng).await {
-                    Some(addr) => format!("{dev} 운행을 시작했습니다 — 출발지: {addr}"),
-                    None => format!("{dev} 운행을 시작했습니다"),
-                },
-                _ => format!("{dev} 운행을 시작했습니다"),
-            }
-        }
-        _ => format!("{dev} 알림"),
+fn body_for_event(ev: &PendingEvent, address: Option<&str>) -> String {
+    let d = ev.data.as_ref();
+    let area = d
+        .and_then(|d| d["geofence_name"].as_str())
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("설정한 구역");
+    match policy::kind(&ev.kind, d) {
+        "low_batt" => "배터리 잔량이 부족할 수 있습니다. 배터리와 전원 연결을 확인해 주세요.".into(),
+        "geofence_armed" => match d.and_then(|d| d["inside"].as_bool()) {
+            Some(true) => format!("‘{area}’의 출입 알림을 켰습니다. 현재 구역 안에 있습니다."),
+            Some(false) => format!("‘{area}’의 출입 알림을 켰습니다. 현재 구역 밖에 있습니다."),
+            None => format!("‘{area}’의 출입 알림을 켰습니다."),
+        },
+        "geofence_in" => format!("‘{area}’ 안에서 위치가 확인되었습니다."),
+        "geofence_out" => format!("‘{area}’ 밖에서 위치가 확인되었습니다. 앱에서 위치를 확인해 주세요."),
+        "brownout" => "전압 저하로 장치가 재시작되었습니다. 배터리와 전원 연결을 확인해 주세요.".into(),
+        "gps_anomaly" => "장치의 위치를 확인하는 데 시간이 걸리고 있습니다. 실내나 지하에서는 위치 확인이 늦어질 수 있습니다.".into(),
+        "offline" | "signal_loss" => {
+            let minutes = d.and_then(|d| d["silence_min"].as_i64()).filter(|m| *m > 0);
+            let elapsed = minutes.map(|m| format!("최근 {m}분간")).unwrap_or_else(|| "최근".into());
+            let action = if ev.kind == "offline" { " 장치의 전원과 통신 상태를 확인해 주세요." } else { " 연결이 돌아오면 새 정보가 갱신됩니다." };
+            format!("{elapsed} 장치의 새 정보가 도착하지 않았습니다.{action}")
+        },
+        "online" => "장치에서 정보를 다시 받고 있습니다. 앱에서 최신 상태를 확인할 수 있습니다.".into(),
+        "sleep_enter" => "배터리를 아끼기 위해 장치가 절전 모드로 전환되었습니다.".into(),
+        "wake" => "장치가 절전 모드에서 깨어났거나 다시 켜졌습니다. 새 위치를 확인하고 있습니다.".into(),
+        "motion" => "움직임이 감지되어 장치가 깨어났습니다. 실제 이동 여부는 앱에서 위치를 확인해 주세요.".into(),
+        "cycle_first_fix" => address.map(|a| format!("새 위치가 확인되었습니다. 위치: {a}")).unwrap_or_else(|| "새 위치가 확인되었습니다. 앱에서 위치를 확인해 주세요.".into()),
+        _ => String::new(),
     }
+}
+
+async fn event_message(pool: &PgPool, ev: &PendingEvent) -> Value {
+    let kind = policy::kind(&ev.kind, ev.data.as_ref());
+    let address = if kind == "cycle_first_fix" {
+        match ev
+            .data
+            .as_ref()
+            .and_then(|d| Some((d["lat"].as_f64()?, d["lng"].as_f64()?)))
+        {
+            Some((lat, lng)) => resolve_addr(pool, lat, lng).await,
+            None => None,
+        }
+    } else {
+        None
+    };
+    policy::message(
+        &format!("{} · {}", dev_label(ev), title_for_kind(kind)),
+        &body_for_event(ev, address.as_deref()),
+        json!({"kind":kind,"device_id":ev.device_id.to_string(),"event_id":ev.id.to_string()}),
+        ev.occurred_at,
+    )
 }
 
 // Chat and system notifications use the same durable per-recipient queue.
@@ -621,16 +568,18 @@ mod tests {
             .unwrap();
         sqlx::raw_sql(r#"
           CREATE TABLE users(id bigint PRIMARY KEY,role text);
-          CREATE TABLE devices(id bigint PRIMARY KEY,display_name text);
+          CREATE TABLE devices(id bigint PRIMARY KEY,display_name text,owner_id bigint,last_seen_at timestamptz,last_fix_at timestamptz);
+          CREATE TABLE location_records(device_id bigint,user_id bigint,vbat_mv integer,recorded_at timestamptz DEFAULT now());
           CREATE TABLE events(id bigserial PRIMARY KEY,device_id bigint,user_id bigint,kind text,data jsonb,
                               occurred_at timestamptz DEFAULT now(),notified_at timestamptz);
           CREATE TABLE fcm_tokens(id bigserial PRIMARY KEY,user_id bigint REFERENCES users(id),token text UNIQUE,
                                  active bool DEFAULT true);
           CREATE TABLE notification_settings(user_id bigint PRIMARY KEY,low_batt_alert bool,offline_alert bool,
               signal_loss_alert bool,online_alert bool,sleep_alert bool,wake_alert bool,cycle_first_fix_alert bool,
-              geofence_alert bool,device_health_alert bool);
+              geofence_alert bool,device_health_alert bool,motion_alert bool,low_batt_threshold_mv integer,
+              signal_loss_minutes integer,offline_minutes integer);
           INSERT INTO users VALUES (1,'user'),(2,'user');
-          INSERT INTO devices VALUES (1,'test device');
+          INSERT INTO devices VALUES (1,'test device',1,now(),NULL);
         "#).execute(&pool).await.unwrap();
         sqlx::raw_sql(include_str!("../../migrations/0065_fcm_delivery_queue.sql"))
             .execute(&pool)
@@ -638,7 +587,7 @@ mod tests {
             .unwrap();
         sqlx::raw_sql(r#"
           INSERT INTO fcm_tokens(user_id,token,revocation_hash) VALUES (1,'good','A'),(1,'retry','B');
-          INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{}');
+          INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{"vbat_mv":3200}');
         "#).execute(&pool).await.unwrap();
         let counts = Arc::new(Mutex::new(HashMap::<String, usize>::new()));
         let app = Router::new()
@@ -699,7 +648,7 @@ mod tests {
         sqlx::raw_sql(
             r#"
           INSERT INTO fcm_outbox(token_id,user_id,binding_hash,message,lease_until)
-            SELECT id,user_id,revocation_hash,'{}',now()-interval '1 second' FROM fcm_tokens;
+            SELECT id,user_id,revocation_hash,'{"data":{"kind":"chat_admin_message"}}',now()-interval '1 second' FROM fcm_tokens;
           UPDATE fcm_tokens SET user_id=2,revocation_hash='new-owner' WHERE token='good';
         "#,
         )
@@ -715,11 +664,67 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(cancelled, 1);
+        // An offline retry must be cancelled once a heartbeat has recovered it.
+        sqlx::raw_sql("UPDATE devices SET last_seen_at=now()-interval '2 hours'; INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'offline','{\"silence_min\":120}')")
+            .execute(&pool).await.unwrap();
+        enqueue_events(&pool).await.unwrap();
+        sqlx::query("UPDATE devices SET last_seen_at=now() WHERE id=1")
+            .execute(&pool)
+            .await
+            .unwrap();
+        process_batch(&pool, Some(&client)).await.unwrap();
+        assert_eq!(counts.lock().await.get("retry"), Some(&3));
+        let stale: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM fcm_outbox WHERE last_error='no_longer_relevant'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(stale, 1);
+        // Internal diagnostics cannot bypass preferences as generic notifications.
+        let stuck: i64 = sqlx::query_scalar(
+            "INSERT INTO events(device_id,user_id,kind) VALUES(1,1,'stuck') RETURNING id",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert!(!policy::relevant(&pool, stuck).await.unwrap());
+        sqlx::query("INSERT INTO notification_settings(user_id,motion_alert,wake_alert,cycle_first_fix_alert) VALUES(1,false,true,true)").execute(&pool).await.unwrap();
+        let motion: i64 = sqlx::query_scalar("INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'wake','{\"wake_cause\":\"motion\"}') RETURNING id").fetch_one(&pool).await.unwrap();
+        assert!(!policy::relevant(&pool, motion).await.unwrap());
+        sqlx::query("UPDATE notification_settings SET motion_alert=true,wake_alert=false")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(policy::relevant(&pool, motion).await.unwrap());
+        sqlx::query("UPDATE devices SET owner_id=2")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(!policy::relevant(&pool, motion).await.unwrap());
+        sqlx::query("UPDATE devices SET owner_id=1")
+            .execute(&pool)
+            .await
+            .unwrap();
+        let old: i64 = sqlx::query_scalar("INSERT INTO events(device_id,user_id,kind,occurred_at) VALUES(1,1,'cycle_first_fix',now()-interval '2 hours') RETURNING id").fetch_one(&pool).await.unwrap();
+        assert!(!policy::relevant(&pool, old).await.unwrap());
+        sqlx::query("INSERT INTO location_records(device_id,user_id,vbat_mv) VALUES(1,1,3900)")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(!policy::relevant(&pool, 1).await.unwrap());
+        sqlx::query("UPDATE notification_settings SET low_batt_threshold_mv=4000")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(policy::relevant(&pool, 1).await.unwrap());
+        // Consume these policy fixtures before testing the failed transaction.
+        enqueue_events(&pool).await.unwrap();
         // A database failure during enqueue must leave the event unconsumed.
         sqlx::raw_sql(r#"
           CREATE FUNCTION reject_push() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test'; END $$;
           CREATE TRIGGER fail_push BEFORE INSERT ON fcm_outbox FOR EACH ROW EXECUTE FUNCTION reject_push();
-          INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{}');
+          INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{"vbat_mv":3200}');
         "#).execute(&pool).await.unwrap();
         assert!(enqueue_events(&pool).await.is_err());
         let pending: i64 =
@@ -762,15 +767,32 @@ mod tests {
             &"한".repeat(201),
             json!({"thread_id":42,"kind":"chat_user_message"}),
         );
-        assert_eq!(
-            n["notification"]["body"].as_str().unwrap().chars().count(),
-            200
-        );
+        assert!(n["notification"]["body"].as_str().unwrap().chars().count() <= 200);
+        assert!(n["notification"]["body"].as_str().unwrap().contains('…'));
         assert_eq!(
             n["android"]["notification"]["channel_id"],
-            "baljachwi_default"
+            "gps_messages_v1"
         );
         assert_eq!(stringify_data(&n["data"])["thread_id"], "42");
         assert_eq!(retry_after_seconds("120"), 120);
+    }
+    #[test]
+    fn copy_does_not_invent_movement_signal_strength_or_battery_percentage() {
+        let mut ev = PendingEvent {
+            id: 1,
+            device_id: 1,
+            device_name: Some("내 차".into()),
+            kind: "signal_loss".into(),
+            data: Some(json!({"silence_min":1})),
+            user_id: Some(1),
+            occurred_at: chrono::Utc::now(),
+        };
+        assert!(body_for_event(&ev, None).starts_with("최근 1분간"));
+        assert!(!body_for_event(&ev, None).contains("신호가 약"));
+        ev.kind = "cycle_first_fix".into();
+        assert!(!title_for_kind(&ev.kind).contains("운행"));
+        assert!(!body_for_event(&ev, Some("서울 강남구")).contains("출발"));
+        ev.kind = "low_batt".into();
+        assert!(!body_for_event(&ev, None).contains('%'));
     }
 }

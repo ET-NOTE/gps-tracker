@@ -38,11 +38,11 @@ def jwt(uid):
     msg = enc({'alg':'HS256','typ':'JWT'}) + b'.' + enc({'sub':str(uid),'iat':int(time.time()),'exp':int(time.time())+600,'typ':'access'})
     return (msg+b'.'+base64.urlsafe_b64encode(hmac.new(env['JWT_SECRET'].encode(),msg,hashlib.sha256).digest()).rstrip(b'=')).decode()
 
-def request(path, uid=None, data=None, expected=200):
+def request(path, uid=None, data=None, expected=200, method=None):
     headers = {'Content-Type':'application/json'}
     if uid: headers['Authorization'] = 'Bearer '+jwt(uid)
     raw = None if data is None else json.dumps(data).encode()
-    req = urllib.request.Request(base+path, data=raw, headers=headers)
+    req = urllib.request.Request(base+path, data=raw, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=30) as r: status, body = r.status, r.read()
     except urllib.error.HTTPError as e: status, body = e.code, e.read()
@@ -97,6 +97,18 @@ try:
     device_log = request('/gps-tracker/diagnostic/device/data?uid='+device_uid)
     assert device_uid in json.dumps(device_log)
     print('PASS public diagnostic pages and anonymous DHT telemetry')
+    request(api+'/notifications/settings',a,{'low_batt_threshold_mv':4000,'signal_loss_minutes':1,'offline_minutes':10},method='PATCH')
+    request(api+'/notifications/settings',a,{'signal_loss_minutes':10},expected=400,method='PATCH')
+    request(api+'/notifications/settings',a,{'low_batt_threshold_mv':5000},expected=400,method='PATCH')
+    assert request(api+'/notifications/settings',a)['signal_loss_minutes']==1
+    request('/gps-tracker/ingest',data={'device_uid':device_uid,'vbat_mv':3900,'l80':{'fix':False}})
+    assert sql("SELECT count(*) FROM events e JOIN devices d ON d.id=e.device_id WHERE d.device_uid=%s AND e.kind='low_batt' AND e.data->>'threshold_mv'='4000'",(device_uid,))==1
+    sql("DELETE FROM events WHERE device_id=(SELECT id FROM devices WHERE device_uid=%s) AND kind='low_batt'",(device_uid,))
+    request(api+'/notifications/settings',a,{'low_batt_threshold_mv':3500},method='PATCH')
+    request('/gps-tracker/ingest',data={'device_uid':device_uid,'vbat_mv':3900,'l80':{'fix':False}})
+    request('/gps-tracker/ingest',data={'device_uid':device_uid,'vbat_mv':0,'l80':{'fix':False}})
+    assert sql("SELECT count(*) FROM events WHERE device_id=(SELECT id FROM devices WHERE device_uid=%s) AND kind='low_batt'",(device_uid,))==0
+    print('PASS configured battery threshold, invalid measurement and atomic settings validation')
 finally:
     sql('DELETE FROM diag_dht WHERE device_uid=%s',(device_uid,))
     sql('DELETE FROM devices WHERE device_uid=%s',(device_uid,))

@@ -41,6 +41,7 @@ docker run --rm --name "gps-build-$release" --cpus=4 --memory=6g --memory-swap=6
     node --version >> /out/toolchain.txt
     getconf GNU_LIBC_VERSION >> /out/toolchain.txt
   '
+tr -d '\r' < "$job/src/ops/test-fcm-policy.sh" | bash -s -- "$job" "$root" "$image"
 cp "$job/source.tar.gz" "$job/out/source.tar.gz"
 builder_image=$(docker image inspect "$image" --format '{{.Id}}')
 python3 - "$job/out" "$release" "$commit" "$builder_image" <<'PY'
