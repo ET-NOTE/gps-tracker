@@ -117,11 +117,14 @@ try:
     assert health and health.get('release') == release and health.get('environment') == 'production'
     for path,digest in baseline['kc_html'].items(): assert hashlib.sha256(get(path)).hexdigest() == digest
     assert sha(env_file) == baseline['env_sha256']
-    # Malformed body is rejected during JSON extraction, before device lookup or writes.
+    # Semantic payload deserialization returns our JSON 400 before device lookup
+    # or writes (the route first extracts Json<Value>, so this is not Axum 422).
     for scheme in ('http','https'):
         req=urllib.request.Request(scheme+'://gps.serial.kr/ingest',data=b'{"device_uid":{}}',headers={'Content-Type':'application/json'})
         try: urllib.request.urlopen(req,timeout=15);raise AssertionError('malformed ingest accepted')
-        except urllib.error.HTTPError as e: assert e.code == 422
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+            assert json.loads(e.read()).get('error','').startswith('invalid payload:')
     log = json.loads(get('/diagnostic/device/data?uid=esp-release-readonly-check'))
     assert log.get('uid') == 'esp-release-readonly-check' and 'error' not in log
     previous_web = backup/'web.previous-dir'
