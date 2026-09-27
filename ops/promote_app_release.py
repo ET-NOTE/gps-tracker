@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import pathlib
+import pwd
 import shutil
 import subprocess
 import sys
@@ -59,7 +60,15 @@ shutil.copytree(stage/'web',target/'web')
 for old in (web/'assets').iterdir():
     if old.is_file() and not (target/'web/assets'/old.name).exists(): shutil.copy2(old,target/'web/assets'/old.name)
 upload = pathlib.Path(values.get('UPLOAD_DIR','/home/mmm/uploads'))
-assert upload.is_absolute() and upload.is_dir()
+assert upload.is_absolute()
+# Older production has no uploads until the first attachment. Prepare the
+# configured storage with the API service owner's permissions before cutover.
+if not upload.exists():
+    assert upload == pathlib.Path('/home/mmm/uploads'), 'review a non-default missing upload directory'
+    upload.mkdir(mode=0o755)
+    owner = pwd.getpwnam('mmm')
+    os.chown(upload,owner.pw_uid,owner.pw_gid)
+assert upload.is_dir() and not upload.is_symlink()
 (target/'web/uploads').symlink_to(upload, target_is_directory=True)
 shutil.copy2(stage/'source.tar.gz',target/'source.tar.gz')
 shutil.copy2(stage/'manifest.json',target/'build-manifest.json')
