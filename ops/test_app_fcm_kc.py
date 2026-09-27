@@ -25,7 +25,7 @@ db = psycopg2.connect(env['DATABASE_URL']); db.autocommit = True
 cur = db.cursor()
 run = uuid.uuid4().hex
 users, hashes = [], []
-device_uid = 'kc-review-' + run
+device_uid = 'esp-kc-review-' + run
 token = 'synthetic-fcm-' + run
 api = '/gps-tracker/api/v1'
 
@@ -94,6 +94,8 @@ try:
     assert diag['total'] == 1 and diag['items'][0]['temp_c'] == 24
     assert request('/gps-tracker/diagnostic').startswith(b'<!DOCTYPE') or b'<html' in request('/gps-tracker/diagnostic')
     assert b'<html' in request('/gps-tracker/diagnostic/device')
+    device_log = request('/gps-tracker/diagnostic/device/data?uid='+device_uid)
+    assert device_uid in json.dumps(device_log)
     print('PASS public diagnostic pages and anonymous DHT telemetry')
 finally:
     sql('DELETE FROM diag_dht WHERE device_uid=%s',(device_uid,))

@@ -44,6 +44,11 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("migration failed")?;
     tracing::info!("migrations up to date");
+    // Apply an additive release while the current API still accepts KC uploads.
+    // No listeners, external calls or background workers run in this mode.
+    if std::env::var("GPS_MIGRATE_ONLY").as_deref() == Ok("1") {
+        return Ok(());
+    }
 
     // FCM 클라이언트 — events 워커와 채팅 푸시가 공유
 
