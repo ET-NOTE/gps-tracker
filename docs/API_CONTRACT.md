@@ -78,6 +78,10 @@ OTP 는 운영에선 Bizm SMS (`BIZMSG_*`), 개발에선 `SMS_DEV_MODE=1` 로 �
 
 `POST /auth/fcm-token/revoke-installation`은 `{token, revocation_key}`를 받는다. 이 경로만 JWT 대신 무작위 해제 키를 검증하며, 일치하는 등록만 비활성화한다. 늦은 최초 등록을 막는 tombstone을 30일 보관한다. 이전 계정의 해제가 새 계정 등록을 취소하지 않는다. 응답은 매칭 여부를 노출하지 않는 `{ "ok": true }`다. 키와 토큰은 로그/URL에 넣지 않는다. 기존 JWT 기반 `/revoke`도 유지한다.
 
+#### 알림 설정 검증
+
+`PATCH /notifications/settings`의 배터리 기준은 3000~4200mV, 수신 지연은 1~30분, 연결 확인은 5~120분이며 수신 지연보다 길어야 한다. 서버는 현재 설정을 잠근 뒤 부분 변경을 합쳐 검증한다. 잘못된 조합은 HTTP 400으로 거부하고 기존 값을 보존한다. 배터리 발생 조건은 이 설정을 실제로 참조한다. `motion_alert`는 움직임 센서에 의한 wake를 제어하고, 일반 wake와 중복 푸시하지 않는다.
+
 ### 3-2. 디바이스
 
 | Method | Path | 설명 |

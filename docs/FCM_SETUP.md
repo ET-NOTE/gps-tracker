@@ -65,16 +65,16 @@ FCM_SERVICE_ACCOUNT_PATH=/home/deploy/secrets/gps-tracker-e21be-firebase-adminsd
 API 재시작 후 journal 확인:
 ```bash
 sudo journalctl -u gps-tracker-api -n 30 | grep -i fcm
-# INFO gps_tracker_api::services::fcm: fcm: live mode project=gps-tracker-e21be
+# 발송이 있었을 때 fcm: sent / retry scheduled / delivery dead-lettered 확인
 ```
 
-`live mode` 가 떠야 활성이다. `dry-run mode (no FCM client)`는 path 미설정일 때만 선택한다. 경로를 명시했는데 파일 읽기/파싱에 실패하면 API 시작을 실패시켜 알림을 조용히 소모하지 않는다. dev에는 운영 FCM 자격 증명을 넣지 않는다.
+`dry-run mode (no FCM client)`는 path 미설정일 때만 선택한다. 경로를 명시했는데 파일 읽기/파싱에 실패하면 API 시작을 실패시켜 알림을 조용히 소모하지 않는다. 실제 발송 여부는 outbox와 `fcm: sent` 로그로 확인한다. dev에는 운영 FCM 자격 증명을 넣지 않는다.
 
 ### 서버측 동작 요약 (src/services/fcm.rs)
 
 - `events.notified_at IS NULL`인 이벤트를 최대 50개 평가한다. 사용자 설정 확인, 활성 토큰별 큐 삽입, notified_at 갱신을 하나의 DB 트랜잭션으로 처리한다. notified_at은 **평가/큐 기록 완료**이며 휴대폰 수신 완료가 아니다.
-- 수신자별 `fcm_outbox` 상태는 `pending|sent|dead|cancelled`다. 90초 lease로 선점하며 FCM 수락 후 sent로 기록한다. 프로세스가 중단되면 만료된 lease를 다시 처리한다.
-- 429/408/401/5xx 및 네트워크 오류는 Retry-After를 존중하며 60초부터 최대 6시간의 지수 백오프와 jitter로 재시도한다. 401은 OAuth 캐시를 무효화한다. 최대 10회 시도, 메시지 유효기간 24시간, 완료 기록 보관 14일이다.
+- 수신자별 `fcm_outbox` 상태는 `pending|sent|dead|cancelled`다. 90초 lease로 선점하며 FCM 수락 후 sent로 기록한다. 프로세스가 중단되면 만료된 lease를 다시 처리한다. 재시도 직전에도 현재 소유권·알림 설정·장치 상태·발생 시각을 확인한다.
+- 429/408/401/5xx 및 네트워크 오류는 Retry-After를 존중하며 지수 백오프와 jitter로 재시도한다. 401은 OAuth 캐시를 무효화한다. 최대 10회 시도, 유효기간은 종류별 15분/1시간/24시간, 완료 기록 보관 14일이다.
 - 구조화된 FCM `UNREGISTERED`만 토큰을 비활성화한다. 기타 영구 오류는 dead 상태로 남긴다. 로그아웃/계정 변경으로 binding이 달라진 대기 메시지는 취소한다.
 - 상담 알림도 같은 발송 큐를 사용한다. 다만 상담 메시지 저장과 enqueue는 아직 별도 트랜잭션이므로 그 사이 장애에서 푸시가 누락될 가능성은 남아 있다.
 - FCM 수락 직후 응답 또는 DB 완료 기록이 유실되면 중복 가능성이 있다. exactly-once 전달을 보장하지 않는다. sent도 OS의 실제 표시/열람을 의미하지 않는다.
@@ -181,7 +181,7 @@ App Store Connect / Xcode 자동 서명을 쓰면 자동 처리. 수동이라면
 
 ## 5. Flutter 앱 측 (lib/fcm.dart 동작)
 
-Android 1.0.1+7의 `FcmService`가 초기화·토큰 회전·알림 스트림을 소유한다. `PushRegistration`은 요청을 직렬화하고 서버 성공 후에만 등록을 확정한다. 신뢰 origin의 localStorage와 sessionStorage를 모두 읽으며, 인증 변경 이벤트와 초기 동기화/폴링을 결합한다.
+Android 1.0.2+8의 `FcmService`가 초기화·토큰 회전·알림 스트림을 소유한다. `PushRegistration`은 요청을 직렬화하고 서버 성공 후에만 등록을 확정한다. 신뢰 origin의 localStorage와 sessionStorage를 모두 읽으며, 인증 변경 이벤트와 초기 동기화/폴링을 결합한다.
 
 설치 ID·등록 세대·해제 키·대기 중인 해제 요청은 SharedPreferences에 보관한다. JWT는 이 복구 상태에 저장하지 않는다. HTTP timeout은 12초, 실패 재시도는 4초부터 최대 300초, 성공한 등록의 재확인은 12시간이다. 로그아웃은 JWT가 만료돼도 설치 해제 capability로 복구한다. 토큰 회전 시 저장된 계정을 처리하기 전에 WebView의 인증 상태가 확인되기를 기다린다.
 
@@ -202,7 +202,20 @@ FirebaseMessaging.onMessage.listen((msg) {
 - **terminated** 에서 알림 탭 → 콜드 스타트: `FirebaseMessaging.instance.getInitialMessage()` 가 페이로드 반환
 - **background** 에서 알림 탭: `FirebaseMessaging.onMessageOpenedApp` 스트림 emit
 
-원격 탭뿐 아니라 로컬 알림 탭/launch details도 같은 목적지 처리로 연결한다. WebView가 준비되기 전 받은 목적지는 보관한다. 장치 이벤트는 `/?device=<id>`, 관리자 답변은 `/profile?tab=chat`, 사용자 상담 메시지는 `/admin?tab=chat&thread=<id>`로 이동한다. 숫자 ID만 경로에 넣는다. 서버·manifest·로컬 알림은 `baljachwi_default` 채널과 `ic_stat_notification` 아이콘을 사용하며, 알림 권한 거부 상태는 앱 설정 안내로 표시한다.
+원격 탭뿐 아니라 로컬 알림 탭/launch details도 같은 목적지 처리로 연결한다. WebView가 준비되기 전 받은 목적지는 보관한다. 장치 이벤트는 `/?device=<id>`, 관리자 답변은 `/profile?tab=chat`, 사용자 상담 메시지는 `/admin?tab=chat&thread=<id>`로 이동한다. 숫자 ID만 경로에 넣는다. 아이콘은 `ic_stat_notification`이며, 알림 권한 거부 상태는 앱 설정 안내로 표시한다.
+
+### 2026-09-28: 사용자 알림 정책
+
+- `gps_alerts_v1`(장치 확인 필요): 연결 확인, 배터리/전원 확인, 움직임으로 깨어남, 구역 이탈. 높은 중요도.
+- `gps_updates_v1`(장치 상태 안내): 새 정보 수신 지연, 연결 복구, 위치 확인, 절전/일반 깨움, 구역 진입/설정. 낮은 중요도이며 기본 소리·진동 없음.
+- `gps_messages_v1`(상담 메시지): 일반 중요도. 문의/답변 전용.
+- 기존 앱의 `baljachwi_default` 채널은 호환 목적으로 유지한다. 새 채널의 소리/중요도 분리는 **1.0.2+8 설치 후** 적용된다. 서버가 아직 앱에서 생성하지 않은 채널을 지정하면 FCM은 manifest 기본 채널을 사용한다. [Firebase 채널 규칙](https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#AndroidNotification)
+- 채널 중요도는 Android 8+ 표시 방식이며, FCM의 HIGH/NORMAL 전송 우선순위와 별개다. 일반 상태 안내는 NORMAL 전송으로 보낸다. 기존 OS에서 사용자가 선택한 채널 설정을 덮어쓰지 않는다.
+- 제목에 장치 이름을 넣고, 본문에는 관찰한 사실·필요한 행동·발생 시각(KST)을 표시한다. `cycle_first_fix`는 실제 이동을 보장하지 않으므로 ‘위치가 확인되었습니다’로 안내한다. 통신 수신 지연을 전파 세기 약화로 단정하지 않으며, 배터리 전압을 임의의 잔량 %로 표시하지 않는다.
+- `wake_cause=motion`인 wake 이벤트는 `motion_alert`로 제어하고 별도 일반 wake 알림을 중복 생성하지 않는다. 기타 wake는 `wake_alert`로 제어한다. 내부 `stuck`, `lost`, 알려지지 않은 종류는 진단 기록으로 남기고 푸시에서 제외한다.
+- 연결/작동 상태 알림은 발생 후 15분, 배터리·전원·GPS 이상과 구역 출입은 1시간, 상담은 24시간까지 유효하다. FCM TTL도 남은 시간으로 제한한다. 복구 heartbeat, 설정 해제, 소유자 변경, 더 최신의 같은 상태/연결 상태/같은 구역 전환이 확인되면 대기 알림을 취소한다.
+- data에는 `occurred_at`, `expires_at`, `notification_channel`, `notification_tag`가 추가된다. 상태별 tag로 알림함의 이전 상태를 교체하고 앱 foreground에서도 안정된 ID와 발생 시각을 사용한다. 만료된 foreground 알림은 표시하지 않는다.
+- 서버가 이미 FCM에 넘긴 메시지는 이후 복구 상태를 소급 확인할 수 없다. TTL/상태 tag는 이 창을 줄이는 장치이며, 전달 취소나 exactly-once를 보장하지 않는다. [Firebase 메시지 유효기간](https://firebase.google.com/docs/cloud-messaging/customize-messages/setting-message-lifespan)
 
 ---
 
@@ -215,8 +228,8 @@ FirebaseMessaging.onMessage.listen((msg) {
   "message": {
     "token": "<fcm_token>",
     "notification": {
-      "title": "🔋 배터리 부족",
-      "body":  "1호차 배터리 3420mV"
+      "title": "1호차 · 배터리 확인 필요",
+      "body":  "배터리 잔량이 부족할 수 있습니다. 배터리와 전원 연결을 확인해 주세요. · 09.28 09:00"
     },
     "data": {
       "kind":      "low_batt",
@@ -225,7 +238,8 @@ FirebaseMessaging.onMessage.listen((msg) {
     },
     "android": {
       "priority": "HIGH",
-      "notification": { "channel_id": "baljachwi_default", "icon": "ic_stat_notification" }
+      "ttl": "3599s",
+      "notification": { "channel_id": "gps_alerts_v1", "icon": "ic_stat_notification" }
     }
   }
 }
@@ -244,7 +258,7 @@ DB 의 `notification_settings` 테이블이 사용자별 토글을 보관. 서�
 | `events.kind` | 설정 컬럼 | 기본값 |
 |---|---|---|
 | `low_batt`       | `low_batt_alert`       | TRUE |
-| `motion`         | `motion_alert`         | TRUE |
+| `motion` / 움직임에 의한 `wake` | `motion_alert` | TRUE |
 | `offline`        | `offline_alert`        | TRUE |
 | `signal_loss`    | `signal_loss_alert`    | FALSE |
 | `online`         | `online_alert`         | TRUE |
@@ -255,9 +269,11 @@ DB 의 `notification_settings` 테이블이 사용자별 토글을 보관. 서�
 | `geofence_armed` | `geofence_alert`       | TRUE |
 | `brownout`       | `device_health_alert`  | TRUE |
 | `gps_anomaly`    | `device_health_alert`  | TRUE |
-| `lost`           | `lost_alert`           | TRUE |
+| `lost`           | 진단 기록만 유지, 푸시 제외 | — |
 
 프론트엔드는 `PATCH /api/v1/notifications/settings` 로 변경.
+
+배터리 발생 기준은 실제 소유자의 `low_batt_threshold_mv`를 적용하며 기본 3500mV다. 사용자가 조정한 값도 ingest와 발송 재확인에 모두 적용한다. 유효하지 않은 0mV 측정은 알림을 만들지 않는다. UI는 전압 설정을 별도 접기 영역으로 제공하고 전압이 잔량 %가 아님을 안내한다. 저장 중 겹치는 조작을 막으며 실패 시 실제 저장된 값으로 되돌린다.
 
 ---
 
