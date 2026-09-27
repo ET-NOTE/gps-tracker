@@ -55,6 +55,8 @@ baseline = {'env_sha256':sha(env_file),'nginx_sha256':sha(nginx),'api_sha256':sh
     'kc_html':{p:hashlib.sha256(get(p)).hexdigest() for p in ['/diagnostic','/diagnostic/device']}}
 (backup/'promotion-baseline.json').write_text(json.dumps(baseline,indent=2))
 target.mkdir(parents=True)
+# nginx must traverse the release parent even when created under umask 0027.
+target.parent.chmod(0o755)
 shutil.copytree(stage/'web',target/'web')
 # Keep the previous hashed chunks for already-open browsers' lazy imports.
 for old in (web/'assets').iterdir():
@@ -115,6 +117,10 @@ try:
         except Exception: pass
         time.sleep(1)
     assert health and health.get('release') == release and health.get('environment') == 'production'
+    assert hashlib.sha256(get('/')).hexdigest() == sha(target/'web/index.html')
+    public_manifest = json.loads(get('/version.json'))
+    assert public_manifest['target'] == 'production' and public_manifest['git_commit'] == manifest['git_commit']
+    assert hashlib.sha256(get('/devices')).hexdigest() == sha(target/'web/index.html')
     for path,digest in baseline['kc_html'].items(): assert hashlib.sha256(get(path)).hexdigest() == digest
     assert sha(env_file) == baseline['env_sha256']
     # Semantic payload deserialization returns our JSON 400 before device lookup

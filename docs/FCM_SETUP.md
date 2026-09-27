@@ -21,7 +21,7 @@
 
 1. Flutter 앱이 디바이스 토큰을 받음 (`FirebaseMessaging.getToken()`)
 2. 토큰을 백엔드에 등록 (`POST /api/v1/auth/fcm-token`)
-3. 백엔드는 events 워커가 이벤트 감지 → FCM HTTP v1 호출 (OAuth2 자기 서명 JWT)
+3. 백엔드는 이벤트를 수신자별 `fcm_outbox`에 기록하고, 발송 워커가 FCM HTTP v1을 호출한다 (OAuth2 자기 서명 JWT).
 4. FCM 이 해당 토큰의 디바이스로 푸시 deliver
 5. 앱이 foreground / background / terminated 어디서든 핸들링
 
@@ -68,18 +68,17 @@ sudo journalctl -u gps-tracker-api -n 30 | grep -i fcm
 # INFO gps_tracker_api::services::fcm: fcm: live mode project=gps-tracker-e21be
 ```
 
-`live mode` 가 떠야 활성. `dry-run mode (no FCM client)` 면 path 미설정 또는 JSON 파싱 실패.
+`live mode` 가 떠야 활성이다. `dry-run mode (no FCM client)`는 path 미설정일 때만 선택한다. 경로를 명시했는데 파일 읽기/파싱에 실패하면 API 시작을 실패시켜 알림을 조용히 소모하지 않는다. dev에는 운영 FCM 자격 증명을 넣지 않는다.
 
 ### 서버측 동작 요약 (src/services/fcm.rs)
 
-- `make_client(Some(path))` 가 JSON 로드, `dry-run` 시 None 반환
-- `spawn(pool, client)` 가 5초마다 `events.notified_at IS NULL` 폴링 (BATCH 50)
-- 각 이벤트마다:
-  1. `notification_settings` 에서 사용자가 해당 종류 알림 켜뒀는지 체크
-  2. `fcm_tokens` 에서 `user_id` 의 활성 토큰들 가져옴
-  3. OAuth2 access_token (캐시, 1시간) 으로 FCM v1 호출
-  4. UNREGISTERED → `fcm_tokens.active = FALSE` 처리
-  5. `events.notified_at = now()` 마킹 (중복 발송 방지)
+- `events.notified_at IS NULL`인 이벤트를 최대 50개 평가한다. 사용자 설정 확인, 활성 토큰별 큐 삽입, notified_at 갱신을 하나의 DB 트랜잭션으로 처리한다. notified_at은 **평가/큐 기록 완료**이며 휴대폰 수신 완료가 아니다.
+- 수신자별 `fcm_outbox` 상태는 `pending|sent|dead|cancelled`다. 90초 lease로 선점하며 FCM 수락 후 sent로 기록한다. 프로세스가 중단되면 만료된 lease를 다시 처리한다.
+- 429/408/401/5xx 및 네트워크 오류는 Retry-After를 존중하며 60초부터 최대 6시간의 지수 백오프와 jitter로 재시도한다. 401은 OAuth 캐시를 무효화한다. 최대 10회 시도, 메시지 유효기간 24시간, 완료 기록 보관 14일이다.
+- 구조화된 FCM `UNREGISTERED`만 토큰을 비활성화한다. 기타 영구 오류는 dead 상태로 남긴다. 로그아웃/계정 변경으로 binding이 달라진 대기 메시지는 취소한다.
+- 상담 알림도 같은 발송 큐를 사용한다. 다만 상담 메시지 저장과 enqueue는 아직 별도 트랜잭션이므로 그 사이 장애에서 푸시가 누락될 가능성은 남아 있다.
+- FCM 수락 직후 응답 또는 DB 완료 기록이 유실되면 중복 가능성이 있다. exactly-once 전달을 보장하지 않는다. sent도 OS의 실제 표시/열람을 의미하지 않는다.
+- 의도적인 dev dry-run은 이벤트를 평가 완료로 표시하고 외부 FCM을 호출하지 않는다.
 
 ---
 
@@ -182,20 +181,11 @@ App Store Connect / Xcode 자동 서명을 쓰면 자동 처리. 수동이라면
 
 ## 5. Flutter 앱 측 (lib/fcm.dart 동작)
 
-```dart
-await initFirebase();                                  // 1. Firebase.initializeApp
-await FirebaseMessaging.instance.requestPermission();  // 2. Android 13+ / iOS 권한
-final token = await FirebaseMessaging.instance.getToken();  // 3. FCM 토큰
+Android 1.0.1+7의 `FcmService`가 초기화·토큰 회전·알림 스트림을 소유한다. `PushRegistration`은 요청을 직렬화하고 서버 성공 후에만 등록을 확정한다. 신뢰 origin의 localStorage와 sessionStorage를 모두 읽으며, 인증 변경 이벤트와 초기 동기화/폴링을 결합한다.
 
-// 4. WebView 가 로그인 완료 (localStorage.access_token 세팅) 후
-//    JS bridge 로 access_token 폴링 → POST /api/v1/auth/fcm-token
-await registerFcmTokenWithBackend(fcmToken: token, jwt: jwt);
+설치 ID·등록 세대·해제 키·대기 중인 해제 요청은 SharedPreferences에 보관한다. JWT는 이 복구 상태에 저장하지 않는다. HTTP timeout은 12초, 실패 재시도는 4초부터 최대 300초, 성공한 등록의 재확인은 12시간이다. 로그아웃은 JWT가 만료돼도 설치 해제 capability로 복구한다. 토큰 회전 시 저장된 계정을 처리하기 전에 WebView의 인증 상태가 확인되기를 기다린다.
 
-// 5. 토큰 회전 감지
-FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-  await registerFcmTokenWithBackend(fcmToken: newToken, jwt: jwt);
-});
-```
+오프라인 해제는 다음 네트워크/앱 실행 기회까지 지연될 수 있다. 이미 FCM/OS에 전달된 시스템 알림은 소급 취소를 보장하지 않는다. 앱은 여전히 notification+data 메시지를 사용한다. 별도 dev applicationId/Firebase flavor는 이번 운영 앱 개선 범위에 포함하지 않았다.
 
 ### foreground 메시지
 
@@ -212,7 +202,7 @@ FirebaseMessaging.onMessage.listen((msg) {
 - **terminated** 에서 알림 탭 → 콜드 스타트: `FirebaseMessaging.instance.getInitialMessage()` 가 페이로드 반환
 - **background** 에서 알림 탭: `FirebaseMessaging.onMessageOpenedApp` 스트림 emit
 
-둘 다 `data.device_id` 를 보고 `https://gps.serial.kr/?device=<id>` 로 WebView 라우팅 (`lib/main.dart` 의 `_navigateForDeepLink`).
+원격 탭뿐 아니라 로컬 알림 탭/launch details도 같은 목적지 처리로 연결한다. WebView가 준비되기 전 받은 목적지는 보관한다. 장치 이벤트는 `/?device=<id>`, 관리자 답변은 `/profile?tab=chat`, 사용자 상담 메시지는 `/admin?tab=chat&thread=<id>`로 이동한다. 숫자 ID만 경로에 넣는다. 서버·manifest·로컬 알림은 `baljachwi_default` 채널과 `ic_stat_notification` 아이콘을 사용하며, 알림 권한 거부 상태는 앱 설정 안내로 표시한다.
 
 ---
 
@@ -233,7 +223,10 @@ FirebaseMessaging.onMessage.listen((msg) {
       "device_id": "2995",
       "event_id":  "12345"
     },
-    "android": { "priority": "HIGH" }
+    "android": {
+      "priority": "HIGH",
+      "notification": { "channel_id": "baljachwi_default", "icon": "ic_stat_notification" }
+    }
   }
 }
 ```
@@ -272,11 +265,13 @@ DB 의 `notification_settings` 테이블이 사용자별 토글을 보관. 서�
 
 | 증상 | 원인 / 해결 |
 |---|---|
-| journal 에 `dry-run mode` | `FCM_SERVICE_ACCOUNT_PATH` 미설정 또는 JSON 읽기 실패. 경로 / 권한 확인 |
-| journal 에 `fcm: token unregistered, will deactivate` | 앱이 재설치되어 토큰이 무효화됨. 자동으로 `fcm_tokens.active=FALSE`. 앱 재로그인 시 새 토큰 등록 |
+| journal 에 `dry-run mode` | `FCM_SERVICE_ACCOUNT_PATH` 미설정. dev에서는 의도된 동작. 명시한 파일이 잘못되면 API 시작 실패 |
+| outbox `cancelled`, last_error `unregistered` | FCM이 토큰을 무효로 판정. `fcm_tokens.active=FALSE`. 앱에서 새 토큰 등록 |
+| outbox `pending`, attempts 증가 | 일시 오류로 재시도 중. available_at/lease_until과 비밀값을 제거한 오류 코드 확인 |
+| outbox `dead` | 영구 오류, 최대 시도 또는 24시간 만료. 원인 해결 없이 일괄 재전송하지 말 것 |
 | Android 알림 안 옴 (Foreground 만 떠름) | `flutter_local_notifications` 채널 importance HIGH 인지 확인 |
 | iOS 알림 안 옴 | (1) APNs 키 Firebase 에 업로드했는지 (2) Push Notifications + Background Modes capability 체크 (3) provisioning profile 재발급 (4) 실기기 + production build 로 테스트 (시뮬레이터는 푸시 못 받음) |
-| Android 13+ 권한 거부 | `requestPermission()` 거부됐을 때 fallback UI 필요. 설정 → 앱 → 알림 토글로 안내 |
+| Android 13+ 권한 거부 | 앱의 알림 차단 안내에서 OS 앱 설정으로 이동. 복귀 시 권한 상태 재확인 |
 | 푸시 본문에 `null` 표시 | 서버 `body_for_event` 가 `data.<필드>` 못 찾음. 이벤트 발행 시 `data` JSON 확인 |
 | FCM 응답 `INVALID_ARGUMENT` | 페이로드 버그 (예: data 필드에 nested object). 서버 로그의 정확한 메시지 확인. **이전엔 invalid 토큰으로 오인하던 버그가 있었으므로 다시 발생하면 토큰을 비활성화하지 말 것** |
 
