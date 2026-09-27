@@ -10,52 +10,55 @@ use sqlx::FromRow;
 
 use crate::{
     auth::AuthUser,
-    error::AppResult,
+    error::{AppError, AppResult},
     state::AppState,
 };
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct NotificationSettings {
-    pub user_id:               i64,
-    pub motion_alert:          bool,
-    pub low_batt_alert:        bool,
-    pub offline_alert:         bool,
-    pub geofence_alert:        bool,
-    pub device_health_alert:   bool,
-    pub lost_alert:            bool,
+    pub user_id: i64,
+    pub motion_alert: bool,
+    pub low_batt_alert: bool,
+    pub offline_alert: bool,
+    pub geofence_alert: bool,
+    pub device_health_alert: bool,
+    pub lost_alert: bool,
     // STATUS 확장 (0014)
-    pub signal_loss_alert:     bool,
-    pub online_alert:          bool,
-    pub sleep_alert:           bool,
-    pub wake_alert:            bool,
-    pub cycle_first_fix_alert: bool,    // 0036: 매 사이클 첫 fix 알림 (default FALSE)
+    pub signal_loss_alert: bool,
+    pub online_alert: bool,
+    pub sleep_alert: bool,
+    pub wake_alert: bool,
+    pub cycle_first_fix_alert: bool, // 0036: 매 사이클 첫 fix 알림 (default FALSE)
     pub low_batt_threshold_mv: i32,
-    pub offline_minutes:       i32,
-    pub signal_loss_minutes:   i32,
-    pub created_at:            DateTime<Utc>,
-    pub updated_at:            DateTime<Utc>,
+    pub offline_minutes: i32,
+    pub signal_loss_minutes: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateSettings {
-    pub motion_alert:          Option<bool>,
-    pub low_batt_alert:        Option<bool>,
-    pub offline_alert:         Option<bool>,
-    pub geofence_alert:        Option<bool>,
-    pub device_health_alert:   Option<bool>,
-    pub lost_alert:            Option<bool>,
-    pub signal_loss_alert:     Option<bool>,
-    pub online_alert:          Option<bool>,
-    pub sleep_alert:           Option<bool>,
-    pub wake_alert:            Option<bool>,
+    pub motion_alert: Option<bool>,
+    pub low_batt_alert: Option<bool>,
+    pub offline_alert: Option<bool>,
+    pub geofence_alert: Option<bool>,
+    pub device_health_alert: Option<bool>,
+    pub lost_alert: Option<bool>,
+    pub signal_loss_alert: Option<bool>,
+    pub online_alert: Option<bool>,
+    pub sleep_alert: Option<bool>,
+    pub wake_alert: Option<bool>,
     pub cycle_first_fix_alert: Option<bool>,
     pub low_batt_threshold_mv: Option<i32>,
-    pub offline_minutes:       Option<i32>,
-    pub signal_loss_minutes:   Option<i32>,
+    pub offline_minutes: Option<i32>,
+    pub signal_loss_minutes: Option<i32>,
 }
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/notifications/settings", get(get_settings).patch(update_settings))
+    Router::new().route(
+        "/notifications/settings",
+        get(get_settings).patch(update_settings),
+    )
 }
 
 const SELECT_COLS: &str = r#"
@@ -90,10 +93,23 @@ async fn update_settings(
     user: AuthUser,
     Json(req): Json<UpdateSettings>,
 ) -> AppResult<Json<NotificationSettings>> {
+    let mut tx = state.db.begin().await?;
     sqlx::query("INSERT INTO notification_settings (user_id) VALUES ($1) ON CONFLICT DO NOTHING")
         .bind(user.user_id)
-        .execute(&state.db)
+        .execute(&mut *tx)
         .await?;
+    let current: (i32,i32,i32) = sqlx::query_as("SELECT low_batt_threshold_mv,signal_loss_minutes,offline_minutes FROM notification_settings WHERE user_id=$1 FOR UPDATE")
+        .bind(user.user_id).fetch_one(&mut *tx).await?;
+    let battery = req.low_batt_threshold_mv.unwrap_or(current.0);
+    let signal = req.signal_loss_minutes.unwrap_or(current.1);
+    let offline = req.offline_minutes.unwrap_or(current.2);
+    if !(3000..=4200).contains(&battery)
+        || !(1..=30).contains(&signal)
+        || !(5..=120).contains(&offline)
+        || signal >= offline
+    {
+        return Err(AppError::BadRequest("배터리 기준은 3000~4200mV, 수신 지연은 1~30분, 연결 확인은 5~120분으로 설정해 주세요. 연결 확인 시간은 수신 지연 시간보다 길어야 합니다.".into()));
+    }
 
     sqlx::query(
         r#"UPDATE notification_settings
@@ -129,8 +145,8 @@ async fn update_settings(
     .bind(req.low_batt_threshold_mv)
     .bind(req.offline_minutes)
     .bind(req.signal_loss_minutes)
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await?;
-
+    tx.commit().await?;
     get_settings(State(state), user).await
 }

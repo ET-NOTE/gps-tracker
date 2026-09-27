@@ -13,8 +13,8 @@ import { enrichWithSpeedStops, haversineM, compactStopMarkerIndexes } from './st
 import { getDeviceColor, isStale } from '../colors';
 // (F6-c) calcSpeedKmh / clickableIntervalM 중복 → lib/speed.js 로 통합.
 // Re-export 로 기존 import 경로 유지.
-import { calcSpeedKmh, clickableIntervalM } from './speed';
-export { calcSpeedKmh, clickableIntervalM };
+import { serverSpeed, clickableIntervalM } from './speed';
+export { serverSpeed, clickableIntervalM };
 
 // Home view stop cluster 흡수 반경 — seeker 기본 (35m) 과 통일.
 export const HOME_STOP_MERGE_RADIUS_M = 35;
@@ -122,7 +122,7 @@ export function computeClickableIndices(enriched, gapMap, intervalM = 30) {
 // force 는 loadDevicesIncremental 전용 (기존 device 도 재렌더 강제).
 export function makeDeviceLoaders({
   mapRef, devRef, lastMetaRef, lastLoadedFixAtRef, wsRef,
-  setDevices, setDevicesLoaded,
+  setDevices, setDevicesLoaded, onLatest,
 }) {
   function renderDeviceFixes(d, locs, opts = {}) {
     const { force = false } = opts;
@@ -147,24 +147,21 @@ export function makeDeviceLoaders({
     if (force) mapRef.current?.clearLiveTrail?.(d.id);
     // bulk 로드 — polyline setPath 는 마지막에 한 번만.
     ordered.forEach((loc, i) => {
-      if (!loc.lat || !loc.lng) return;
+      if (!Number.isFinite(loc.lat) || !Number.isFinite(loc.lng)) return;
       const isLast = (i === ordered.length - 1);
       const g = gapMap[i];
       const meta = isLast
         ? {
             recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: loc.vbat_mv, cbcMv: loc.cbc_mv,
             fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng,
-            speedKmh: calcSpeedKmh(
-              i > 0
-                ? { lat: ordered[i - 1].lat, lng: ordered[i - 1].lng, recordedAt: ordered[i - 1].recorded_at }
-                : null,
-              { lat: loc.lat, lng: loc.lng, recordedAt: loc.recorded_at },
-            ),
+            speedKmh: serverSpeed(loc),
             deviceId: d.id, deviceLabel: label, ...(g || {}),
           }
         : { stale, recordedAt: loc.recorded_at };
       mapRef.current?.updateMarker(d.id, loc.lat, loc.lng, label, color, meta, { deferPolyline: !isLast });
-      if (isLast) lastMetaRef.current[d.id] = meta;
+      if (isLast && !(Date.parse(loc.recorded_at) < Date.parse(lastMetaRef.current[d.id]?.recordedAt))) {
+        lastMetaRef.current[d.id] = meta; onLatest?.(d, meta);
+      }
     });
     mapRef.current?.flushLiveTrail?.(d.id);
     mapRef.current?.clearHistoryPoints(d.id);

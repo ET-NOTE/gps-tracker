@@ -22,12 +22,12 @@ const VARIANT = {
   },
   danger: {
     background: 'var(--danger)',
-    color:      '#FFF',
+    color:      'var(--danger-fg)',
     border:     'none',
   },
   success: {
     background: 'var(--accent)',
-    color:      '#FFF',
+    color:      'var(--accent-fg)',
     border:     'none',
   },
   link: {
@@ -60,6 +60,8 @@ export default function Button({
   const s = SIZE[size] || SIZE.md;
   return (
     <button
+      type="button"
+      aria-busy={busy || undefined}
       disabled={disabled || busy}
       {...rest}
       style={{

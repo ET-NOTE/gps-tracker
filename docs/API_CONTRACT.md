@@ -63,11 +63,24 @@ OTP 는 운영에선 Bizm SMS (`BIZMSG_*`), 개발에선 `SMS_DEV_MODE=1` 로 �
 | POST | `/auth/password-reset/send-otp`, `/verify` | 비밀번호 재설정 |
 | POST | `/auth/fcm-token` | FCM 토큰 등록 ([FCM_SETUP.md](FCM_SETUP.md) 참고) |
 | POST | `/auth/fcm-token/revoke` | FCM 토큰 해제 |
+| POST | `/auth/fcm-token/revoke-installation` | 설치 등록 해제 capability 검증; JWT 없이 만료/오프라인 로그아웃 복구 |
 | GET  | `/auth/ping` | `"pong"` (헬스) |
 | GET / POST | `/auth/phones` | 본인 휴대폰 목록 / 추가 OTP |
 | POST | `/auth/phones/verify` | OTP 검증 |
 | PUT  | `/auth/phones/:id/primary` | 메인 번호 지정 |
 | DELETE | `/auth/phones/:id` | 번호 제거 |
+
+#### FCM 설치 등록 (Android 1.0.1+7)
+
+`POST /auth/fcm-token`은 Bearer JWT와 `{token, platform, app_version?}`를 받는다. 기존 앱 요청도 지원한다. 새 앱은 `installation_id`, 양의 정수 `generation`, `revocation_key`를 세트로 추가한다. 설치 ID와 해제 키는 앱이 각각 무작위 256비트 값으로 생성하며 문자열 길이 32~128자를 허용한다. `platform`은 `android|ios|web`, token은 비어 있지 않은 ASCII 문자열 최대 4096바이트, app_version은 최대 64바이트다.
+
+같은 토큰·설치의 낮은 세대 등록, 해제된 키를 사용한 늦은 요청은 HTTP 400 `stale push registration`으로 거부한다. 같은 세대는 활성 상태이며 사용자·해제 키가 같은 경우에만 재시도할 수 있다. 성공은 `{ "ok": true }`다.
+
+`POST /auth/fcm-token/revoke-installation`은 `{token, revocation_key}`를 받는다. 이 경로만 JWT 대신 무작위 해제 키를 검증하며, 일치하는 등록만 비활성화한다. 늦은 최초 등록을 막는 tombstone을 30일 보관한다. 이전 계정의 해제가 새 계정 등록을 취소하지 않는다. 응답은 매칭 여부를 노출하지 않는 `{ "ok": true }`다. 키와 토큰은 로그/URL에 넣지 않는다. 기존 JWT 기반 `/revoke`도 유지한다.
+
+#### 알림 설정 검증
+
+`PATCH /notifications/settings`의 배터리 기준은 3000~4200mV, 수신 지연은 1~30분, 연결 확인은 5~120분이며 수신 지연보다 길어야 한다. 서버는 현재 설정을 잠근 뒤 부분 변경을 합쳐 검증한다. 잘못된 조합은 HTTP 400으로 거부하고 기존 값을 보존한다. 배터리 발생 조건은 이 설정을 실제로 참조한다. `motion_alert`는 움직임 센서에 의한 wake를 제어하고, 일반 wake와 중복 푸시하지 않는다.
 
 ### 3-2. 디바이스
 

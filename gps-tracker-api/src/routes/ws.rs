@@ -25,7 +25,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 use tokio::sync::broadcast::error::RecvError;
 
-use crate::{auth::jwt, events::{Event, EventTarget}, state::AppState};
+use crate::{auth::jwt, events::EventTarget, state::AppState};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -71,8 +71,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64) {
     }
 
     // 클라이언트 → 서버: subscribe 메시지를 (string, Vec<accepted>, Vec<rejected>) 패킹해 전달
-    let (cmd_tx, mut cmd_rx) =
-        tokio::sync::mpsc::channel::<(Vec<i64>, Vec<i64>)>(8);
+    let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel::<(Vec<i64>, Vec<i64>)>(8);
 
     let subs_for_recv = subs.clone();
     let db_for_recv = state.db.clone();
@@ -126,7 +125,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64) {
     //   unpair→타인에게 re-pair 되어도 이 WS 의 subs 에 남아 새 owner 의 실시간 좌표가 계속 샘.
     //   30s 주기로 재조회해 더 이상 소유하지 않는 device 를 프루닝(노출 창 ≤30s, per-message 비용 0).
     let mut revalidate = tokio::time::interval(std::time::Duration::from_secs(30));
-    revalidate.tick().await;   // 즉시 발화하는 첫 tick 소비
+    revalidate.tick().await; // 즉시 발화하는 첫 tick 소비
 
     // SEND: broadcast 이벤트 + ack 메시지 + 주기 재검증 멀티플렉싱
     loop {

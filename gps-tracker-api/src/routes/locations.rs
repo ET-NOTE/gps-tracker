@@ -1,22 +1,20 @@
-// /api/v1/devices/:id/locations/* — 위치 시계열 조회.
-// 모든 응답은 owner_id 일치 강제 (소유 안 한 디바이스는 404).
-
-use axum::{
-    extract::{Path, Query, State},
-    routing::get,
-    Json, Router,
-};
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use sqlx::FromRow;
-use std::collections::BTreeMap;
-
+// All public and private readers use the same batch-expanded stream.
 use crate::{
     auth::AuthUser,
     error::{AppError, AppResult},
     state::AppState,
 };
+use axum::{
+    extract::{Path, Query, State},
+    routing::get,
+    Json, Router,
+};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use sqlx::FromRow;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct LocationView {
@@ -30,98 +28,186 @@ pub struct LocationView {
     pub csq: Option<i16>,
     pub reg: Option<i16>,
     pub vbat_mv: Option<i32>,
-    /// SIM7080 AT+CBC 자체 측정 (모듈 VBAT 핀 = 배선 loss 뒤). raw JSONB 에서 parse.
     pub cbc_mv: Option<i32>,
     pub device_uptime_s: Option<i32>,
     pub heading: Option<f32>,
+    pub speed_kmh: Option<f32>,
+    pub reported_speed_kmh: Option<f32>,
+    pub speed_interval_s: Option<f32>,
+    pub speed_reason: String,
+    pub speed_source: String,
+    #[serde(skip)]
+    pub anchor_at: DateTime<Utc>,
 }
-
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
-    /// 최대 반환 개수 (default 100, max 1000)
     pub limit: Option<i64>,
-    /// recorded_at >= since (RFC3339)
     pub since: Option<DateTime<Utc>>,
-    /// recorded_at <= until (RFC3339)
     pub until: Option<DateTime<Utc>>,
-    /// 'l80' 또는 'lte_gnss' 한 가지만 필터
     pub source: Option<String>,
-    /// fix=true 만 (오류 좌표 제외)
     pub fix_only: Option<bool>,
-    /// Phase 1: POST 단위 grouping 응답 (raw->>'at_ms' + raw->>'ts' 기준).
-    /// true = 새 grouped schema (PostGroup[]). false 또는 미지정 = legacy flat (LocationView[]).
     pub grouped: Option<bool>,
 }
-
-/// 새 grouped schema 의 row (raw 까지 포함해서 SQL 에서 한 번 fetch).
-#[derive(Debug, FromRow)]
-struct LocationRowRaw {
-    recorded_at: DateTime<Utc>,
-    source: String,
-    fix: bool,
-    lat: Option<f64>,
-    lng: Option<f64>,
-    sat: Option<i16>,
-    ttff_s: Option<i32>,
-    csq: Option<i16>,
-    reg: Option<i16>,
-    vbat_mv: Option<i32>,
-    cbc_mv: Option<i32>,   // raw->>'cbc_mv' — SIM7080 자체 측정 (배선 loss 진단용)
-    device_uptime_s: Option<i32>,
-    heading: Option<f32>,
-    raw: Option<Value>,
-    // Phase 6: anchor row 만 NOT NULL. batch 의 14 sibling row 는 NULL.
-    fixes_jsonb: Option<Value>,
-}
-
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route(
-            "/devices/:id/locations/latest",
-            get(latest),
-        )
-        .route(
-            "/devices/:id/locations",
-            get(history),
-        )
+        .route("/devices/:id/locations/latest", get(latest))
+        .route("/devices/:id/locations/page", get(page))
+        .route("/devices/:id/locations", get(history))
 }
-
 async fn ensure_owner(state: &AppState, device_id: i64, user_id: i64) -> AppResult<()> {
-    let exists: Option<i64> = sqlx::query_scalar(
-        r#"SELECT id FROM devices WHERE id = $1 AND owner_id = $2"#,
-    )
-    .bind(device_id)
-    .bind(user_id)
-    .fetch_optional(&state.db)
-    .await?;
-    exists.map(|_| ()).ok_or(AppError::NotFound)
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)")
+            .bind(device_id)
+            .bind(user_id)
+            .fetch_one(&state.db)
+            .await?;
+    if exists {
+        Ok(())
+    } else {
+        Err(AppError::NotFound)
+    }
 }
-
 async fn latest(
     State(state): State<AppState>,
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Option<LocationView>>> {
     ensure_owner(&state, id, user.user_id).await?;
-
-    // user_id 필터 — 이전 owner 의 위치 이력 노출 차단 (재페어링 시 본인 데이터는
-    // user_id 가 일치하므로 자동 복구).
     let row = sqlx::query_as::<_, LocationView>(
-        r#"SELECT recorded_at, source, fix, lat, lng, sat, ttff_s,
-                  csq, reg, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv,
-                  device_uptime_s, heading
-             FROM location_records
-            WHERE device_id = $1 AND user_id = $2
-            ORDER BY recorded_at DESC
-            LIMIT 1"#,
+        "WITH newest AS MATERIALIZED (
+          SELECT location_point_bound(recorded_at,fixes_jsonb,true) AS at
+          FROM location_records WHERE device_id=$1 AND user_id=$2
+            AND location_point_bound(recorded_at,fixes_jsonb,true) IS NOT NULL
+          ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC LIMIT 1
+        ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+          (p.raw->>'cbc_mv')::int AS cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+          p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+          FROM newest n CROSS JOIN LATERAL location_speed_points_between($1,$2,n.at,n.at) p
+          WHERE EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+          ORDER BY p.source LIMIT 1",
     )
-    .bind(id).bind(user.user_id)
+    .bind(id)
+    .bind(user.user_id)
     .fetch_optional(&state.db)
     .await?;
-
     Ok(Json(row))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct PageQuery {
+    pub since: DateTime<Utc>,
+    pub until: DateTime<Utc>, // Exclusive, so adjacent day/page windows never overlap.
+    pub limit: Option<i64>,
+    pub source: Option<String>,
+    pub fix_only: Option<bool>,
+    pub cursor: Option<String>,
+}
+#[derive(Debug, Serialize, Deserialize)]
+struct Cursor {
+    device: i64,
+    user: i64,
+    since: DateTime<Utc>,
+    until: DateTime<Utc>,
+    source: Option<String>,
+    fix_only: Option<bool>,
+    before: DateTime<Utc>,
+    before_source: String,
+}
+async fn page(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Query(q): Query<PageQuery>,
+) -> AppResult<Json<Value>> {
+    ensure_owner(&state, id, user.user_id).await?;
+    if q.until <= q.since || q.until - q.since > chrono::Duration::days(31) {
+        return Err(AppError::BadRequest(
+            "query range must be positive and at most 31 days".into(),
+        ));
+    }
+    let cursor = q
+        .cursor
+        .as_ref()
+        .map(|s| {
+            if s.len() > 2048 {
+                return Err(AppError::BadRequest("invalid cursor".into()));
+            }
+            URL_SAFE_NO_PAD
+                .decode(s)
+                .ok()
+                .and_then(|b| serde_json::from_slice::<Cursor>(&b).ok())
+                .ok_or_else(|| AppError::BadRequest("invalid cursor".into()))
+        })
+        .transpose()?;
+    if cursor.as_ref().is_some_and(|c| {
+        c.device != id
+            || c.user != user.user_id
+            || c.since != q.since
+            || c.until != q.until
+            || c.source != q.source
+            || c.fix_only != q.fix_only
+    }) {
+        return Err(AppError::BadRequest(
+            "cursor does not match this query".into(),
+        ));
+    }
+    let limit = q.limit.unwrap_or(2000).clamp(1, 5000);
+    let end = cursor.as_ref().map_or(q.until, |c| c.before.min(q.until));
+    let mut rows = sqlx::query_as::<_, LocationView>(
+        "WITH selected AS MATERIALIZED (
+         SELECT recorded_at,source FROM location_points_between($1,$2,$3,$4)
+         WHERE recorded_at < $5 AND ($6::text IS NULL OR source=$6)
+           AND ($7::bool IS NULL OR fix=$7)
+           AND ($8::timestamptz IS NULL OR (recorded_at,source)<($8,$9))
+           AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+         ORDER BY recorded_at DESC,source DESC LIMIT $10
+        ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+        SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+          (p.raw->>'cbc_mv')::int AS cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+          p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+        FROM bounds b CROSS JOIN LATERAL location_speed_points_between($1,$2,b.first,b.last) p
+        JOIN selected s USING(recorded_at,source)
+        WHERE b.first IS NOT NULL
+        ORDER BY p.recorded_at DESC,p.source DESC",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .bind(q.since)
+    .bind(end)
+    .bind(q.until)
+    .bind(&q.source)
+    .bind(q.fix_only)
+    .bind(cursor.as_ref().map(|c| c.before))
+    .bind(cursor.as_ref().map(|c| c.before_source.as_str()))
+    .bind(limit + 1)
+    .fetch_all(&state.db)
+    .await?;
+    let has_more = rows.len() > limit as usize;
+    rows.truncate(limit as usize);
+    let next_cursor = if has_more {
+        let last = rows.last().expect("positive page size");
+        Some(
+            URL_SAFE_NO_PAD.encode(
+                serde_json::to_vec(&Cursor {
+                    device: id,
+                    user: user.user_id,
+                    since: q.since,
+                    until: q.until,
+                    source: q.source,
+                    fix_only: q.fix_only,
+                    before: last.recorded_at,
+                    before_source: last.source.clone(),
+                })
+                .map_err(|e| AppError::Internal(e.into()))?,
+            ),
+        )
+    } else {
+        None
+    };
+    Ok(Json(
+        json!({"items":rows,"next_cursor":next_cursor,"has_more":has_more}),
+    ))
+}
 async fn history(
     State(state): State<AppState>,
     user: AuthUser,
@@ -129,260 +215,56 @@ async fn history(
     Query(q): Query<ListQuery>,
 ) -> AppResult<Json<Value>> {
     ensure_owner(&state, id, user.user_id).await?;
-
-    let limit = q.limit.unwrap_or(100).clamp(1, 10000);
-    let grouped = q.grouped.unwrap_or(false);
-
-    // 조건이 NULL이면 무시되도록 COALESCE 패턴 사용. raw + fixes_jsonb 까지 가져옴 (grouped=true 시 사용).
-    let rows = sqlx::query_as::<_, LocationRowRaw>(
-        r#"SELECT recorded_at, source, fix, lat, lng, sat, ttff_s,
-                  csq, reg, vbat_mv,
-                  (raw->>'cbc_mv')::int AS cbc_mv,
-                  device_uptime_s, heading, raw, fixes_jsonb
-             FROM location_records
-            WHERE device_id = $1 AND user_id = $7
-              AND ($2::timestamptz IS NULL OR recorded_at >= $2)
-              AND ($3::timestamptz IS NULL OR recorded_at <= $3)
-              AND ($4::text        IS NULL OR source = $4)
-              AND ($5::bool        IS NULL OR fix = $5)
-            ORDER BY recorded_at DESC
-            LIMIT $6"#,
+    if matches!((q.since,q.until),(Some(a),Some(b)) if a>b) {
+        return Err(AppError::BadRequest("until < since".into()));
+    }
+    let rows = sqlx::query_as::<_, LocationView>(
+        "WITH scoped AS MATERIALIZED (
+          SELECT recorded_at,anchor_at,source FROM location_points_between($1,$2,$3,$4)
+          WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
+            AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+        ), anchors AS MATERIALIZED (
+          SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
+        ), bounds AS (
+          SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM scoped JOIN anchors USING(anchor_at,source)
+        ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+          (p.raw->>'cbc_mv')::int AS cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+          p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+        FROM bounds b CROSS JOIN LATERAL location_speed_points_between($1,$2,b.first,b.last) p
+        JOIN anchors a USING(anchor_at,source)
+        WHERE b.first IS NOT NULL AND ($3::timestamptz IS NULL OR p.recorded_at >= $3)
+          AND ($4::timestamptz IS NULL OR p.recorded_at <= $4)
+          AND ($6::bool IS NULL OR p.fix=$6)
+        ORDER BY p.recorded_at DESC,p.source"
     )
     .bind(id)
+    .bind(user.user_id)
     .bind(q.since)
     .bind(q.until)
-    .bind(q.source.as_deref())
+    .bind(q.source)
     .bind(q.fix_only)
-    .bind(limit)
-    .bind(user.user_id)
+    .bind(q.limit.unwrap_or(100).clamp(1, 10000))
     .fetch_all(&state.db)
     .await?;
-
-    if grouped {
-        // Phase 1: POST 단위 grouping. key = (raw.at_ms, raw.ts).
-        // 둘 중 하나라도 None 이면 legacy/anonymous row — group key 에 recorded_at 도 포함해서 사실상 row 별 unique group.
-        //
-        // Phase 6C: anchor row (fixes_jsonb NOT NULL) 가 그룹에 있으면 그 jsonb 만 unnest
-        // 해서 fixes 채움. 같은 그룹의 14 column-sibling 은 무시 (이미 jsonb 에 포함됨).
-        // anchor 없으면 legacy column 경로 그대로 — backward compat 100%.
-        //
-        // 결과는 post_at DESC.
-        let mut buckets: BTreeMap<(i64, i64, i64), GroupedPostBuilder> = BTreeMap::new();
-        for row in rows {
-            let at_ms = row.raw.as_ref().and_then(|r| r.get("at_ms")).and_then(|v| v.as_i64()).unwrap_or(-1);
-            let ts    = row.raw.as_ref().and_then(|r| r.get("ts"   )).and_then(|v| v.as_i64()).unwrap_or(-1);
-            // legacy row (at_ms/ts 없음) → recorded_at 자체를 key 에 넣어 row 별 group.
-            let row_unique = if at_ms < 0 && ts < 0 { row.recorded_at.timestamp_micros() } else { 0 };
-            let key = (at_ms, ts, row_unique);
-            let group = buckets.entry(key).or_insert_with(|| GroupedPostBuilder {
-                post_at:    row.recorded_at,
-                uptime_s:   row.raw.as_ref().and_then(|r| r.get("ts")).and_then(|v| v.as_i64()).map(|v| v as i32),
-                vbat_mv:    row.vbat_mv,
-                cbc_mv:     row.cbc_mv,
-                csq:        row.csq,
-                reg:        row.reg,
-                ttff_s:     row.ttff_s,
-                heading:    row.heading,
-                column_fixes: Vec::new(),
-                anchor_jsonb: None,
-                anchor_at:    None,
-            });
-            if row.recorded_at > group.post_at { group.post_at = row.recorded_at; }
-            if let Some(jsonb) = &row.fixes_jsonb {
-                // anchor row — jsonb + anchor metadata 보존 (모든 fix 에 공유).
-                group.anchor_jsonb = Some(jsonb.clone());
-                group.anchor_at    = Some(row.recorded_at);
-                group.ttff_s       = row.ttff_s;
-                group.heading      = row.heading;
-                group.vbat_mv      = row.vbat_mv;
-                group.cbc_mv       = row.cbc_mv;
-                group.csq          = row.csq;
-                group.reg          = row.reg;
-            }
-            // column_fixes — anchor 없을 때 fallback 으로 사용. anchor 있으면 무시.
-            group.column_fixes.push(GroupedFix {
-                recorded_at: row.recorded_at,
-                source:      row.source,
-                fix:         row.fix,
-                lat:         row.lat,
-                lng:         row.lng,
-                sat:         row.sat,
-                ttff_s:      row.ttff_s,
-                heading:     row.heading,
-            });
-        }
-        // fixes 는 시간순 ASC 가 polyline 그리기 자연.
-        let mut groups: Vec<GroupedPost> = buckets.into_values().map(|b| {
-            let fixes = match (b.anchor_jsonb.as_ref(), b.anchor_at) {
-                (Some(jsonb), Some(anchor_at)) => unnest_jsonb_fixes(jsonb, anchor_at, b.ttff_s, b.heading),
-                _ => b.column_fixes,
-            };
-            let mut sorted = fixes;
-            sorted.sort_by(|a, b| a.recorded_at.cmp(&b.recorded_at));
-            GroupedPost {
-                post_at:    b.post_at,
-                uptime_s:   b.uptime_s,
-                vbat_mv:    b.vbat_mv,
-                cbc_mv:     b.cbc_mv,
-                csq:        b.csq,
-                reg:        b.reg,
-                batch_size: sorted.len() as i32,
-                fixes:      sorted,
-            }
-        }).collect();
-        // [2026-08-28 재전송 사본 필터] 과거에 이미 중복 저장된 배치(재전송 — ingest dedup 도입
-        //   이전 데이터)를 조회 시점에 정화. 규칙 = ingest 와 동일한 running-max cutoff:
-        //   배치를 도착순(ASC)으로 훑으며, 같은 source 의 "지금까지 채택된 최종 fix 시각 +500ms"
-        //   이전의 fix 는 재전송 사본으로 제외. 사본은 복원 타임스탬프가 수백 ms 어긋나 interleave
-        //   되는데, 이 규칙은 어긋남 크기와 무관하게 겹침 구간을 통째로 걷어낸다 (GNSS fix 간격
-        //   >= 1s 라 정상 fix 는 안 걸림). DB 는 불변 (read-side 정화).
-        //   2026-08-27 sss 실증: 역방향 점프 68건 중 사본 기인 38건 전량 제거 (잔여는 GPS 노이즈).
-        groups.sort_by(|a, b| a.post_at.cmp(&b.post_at));   // 도착순 ASC 순회
-        {
-            let mut run_max: std::collections::HashMap<String, DateTime<Utc>> = Default::default();
-            for g in groups.iter_mut() {
-                g.fixes.retain(|f| {
-                    if f.lat.is_none() || f.lng.is_none() { return true; }   // no-fix row 는 유지
-                    if let Some(m) = run_max.get(&f.source) {
-                        if f.recorded_at <= *m + chrono::Duration::milliseconds(500) { return false; }
-                    }
-                    run_max.insert(f.source.clone(), f.recorded_at);
-                    true
-                });
-                g.batch_size = g.fixes.len() as i32;
-            }
-            groups.retain(|g| !g.fixes.is_empty());
-        }
-        groups.sort_by(|a, b| b.post_at.cmp(&a.post_at));   // 최신 POST 먼저
-        Ok(Json(json!(groups)))
-    } else {
-        // Legacy flat — LocationView schema. Phase 6C-3: anchor row 의 fixes_jsonb 가 있으면
-        // unnest 해서 flat 결과에 넣고, 같은 그룹의 column-sibling 14 row 는 skip.
-        // 그룹 키는 grouped 경로와 동일 (uptime_s, at_ms).
-        // 비 batch row (anchor 없음) 는 그대로 1 fix.
-        let mut anchor_keys: std::collections::HashSet<(i64, i64)> = std::collections::HashSet::new();
-        for r in &rows {
-            if r.fixes_jsonb.is_some() {
-                let at_ms = r.raw.as_ref().and_then(|j| j.get("at_ms")).and_then(|v| v.as_i64()).unwrap_or(-1);
-                let ts    = r.raw.as_ref().and_then(|j| j.get("ts"   )).and_then(|v| v.as_i64()).unwrap_or(-1);
-                if at_ms >= 0 || ts >= 0 { anchor_keys.insert((at_ms, ts)); }
-            }
-        }
-
-        let mut flat: Vec<LocationView> = Vec::with_capacity(rows.len());
-        // [2026-08-28 재전송 사본 필터] grouped 경로와 동일한 running-max cutoff — row 를 도착순
-        //   (ASC, 쿼리는 DESC 라 rev())으로 순회하며 같은 source 의 채택된 최종 fix 시각 +500ms
-        //   이전 fix 를 사본으로 제외 (좌표 없는 row 는 유지).
-        let mut run_max: std::collections::HashMap<String, DateTime<Utc>> = Default::default();
-        let mut keep_fix = |source: &str, at: DateTime<Utc>, has_coord: bool| -> bool {
-            if !has_coord { return true; }
-            if let Some(m) = run_max.get(source) {
-                if at <= *m + chrono::Duration::milliseconds(500) { return false; }
-            }
-            run_max.insert(source.to_string(), at);
-            true
-        };
-        for r in rows.into_iter().rev() {
-            let at_ms = r.raw.as_ref().and_then(|j| j.get("at_ms")).and_then(|v| v.as_i64()).unwrap_or(-1);
-            let ts    = r.raw.as_ref().and_then(|j| j.get("ts"   )).and_then(|v| v.as_i64()).unwrap_or(-1);
-            let key   = (at_ms, ts);
-            if let Some(jsonb) = &r.fixes_jsonb {
-                // anchor row — jsonb 의 모든 fix 를 flat 에 추가 (재전송 사본은 keep_fix 가 제외)
-                for fix in unnest_jsonb_fixes(jsonb, r.recorded_at, r.ttff_s, r.heading) {
-                    if !keep_fix(&fix.source, fix.recorded_at, fix.lat.is_some() && fix.lng.is_some()) {
-                        continue;
-                    }
-                    flat.push(LocationView {
-                        recorded_at: fix.recorded_at,
-                        source: fix.source, fix: fix.fix,
-                        lat: fix.lat, lng: fix.lng, sat: fix.sat,
-                        ttff_s: fix.ttff_s,
-                        csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv, cbc_mv: r.cbc_mv,
-                        device_uptime_s: r.device_uptime_s,
-                        heading: fix.heading,
-                    });
-                }
-            } else if (at_ms >= 0 || ts >= 0) && anchor_keys.contains(&key) {
-                // 같은 batch 의 sibling column row — anchor jsonb 가 이미 담음 → skip
-            } else {
-                // 비 batch row (legacy) — 그대로 (재전송 사본은 keep_fix 가 제외)
-                if keep_fix(&r.source, r.recorded_at, r.lat.is_some() && r.lng.is_some()) {
-                    flat.push(LocationView {
-                        recorded_at: r.recorded_at, source: r.source, fix: r.fix,
-                        lat: r.lat, lng: r.lng, sat: r.sat, ttff_s: r.ttff_s,
-                        csq: r.csq, reg: r.reg, vbat_mv: r.vbat_mv, cbc_mv: r.cbc_mv,
-                        device_uptime_s: r.device_uptime_s, heading: r.heading,
-                    });
-                }
-            }
-        }
-        // recorded_at DESC 보장 (row 순회를 ASC 로 뒤집었고 jsonb unnest 도 ASC).
-        flat.sort_by(|a, b| b.recorded_at.cmp(&a.recorded_at));
-        Ok(Json(json!(flat)))
+    if !q.grouped.unwrap_or(false) {
+        return Ok(Json(json!(rows)));
     }
-}
-
-/// Phase 6C: 그룹 빌더. anchor row 의 jsonb 가 있으면 그것을 unnest, 없으면 column_fixes 사용.
-struct GroupedPostBuilder {
-    post_at:      DateTime<Utc>,
-    uptime_s:     Option<i32>,
-    vbat_mv:      Option<i32>,
-    cbc_mv:       Option<i32>,
-    csq:          Option<i16>,
-    reg:          Option<i16>,
-    ttff_s:       Option<i32>,
-    heading:      Option<f32>,
-    column_fixes: Vec<GroupedFix>,
-    anchor_jsonb: Option<Value>,
-    anchor_at:    Option<DateTime<Utc>>,
-}
-
-/// jsonb 포맷 A unnest: anchor_at + at_ms (음 offset) = fix recorded_at.
-/// jsonb 에 없는 source/ttff_s/heading 은 anchor row 의 column 값에서 복사.
-fn unnest_jsonb_fixes(
-    jsonb: &Value,
-    anchor_at: DateTime<Utc>,
-    ttff_s: Option<i32>,
-    heading: Option<f32>,
-) -> Vec<GroupedFix> {
-    let arr = match jsonb.as_array() { Some(a) => a, None => return Vec::new() };
-    arr.iter().filter_map(|item| {
-        let at_ms = item.get("at_ms").and_then(|v| v.as_i64()).unwrap_or(0);
-        let lat   = item.get("lat").and_then(|v| v.as_f64());
-        let lng   = item.get("lng").and_then(|v| v.as_f64());
-        let sat   = item.get("sat").and_then(|v| v.as_i64()).map(|v| v as i16);
-        if lat.is_none() || lng.is_none() { return None; }
-        Some(GroupedFix {
-            recorded_at: anchor_at + chrono::Duration::milliseconds(at_ms),
-            source:      "l80".to_string(),  // batch fix 는 항상 GNSS (ingest.rs 참고)
-            fix:         true,
-            lat, lng, sat,
-            ttff_s,
-            heading,
+    let mut groups: BTreeMap<(DateTime<Utc>, Option<i32>), Vec<LocationView>> = BTreeMap::new();
+    for row in rows {
+        groups
+            .entry((row.anchor_at, row.device_uptime_s))
+            .or_default()
+            .push(row);
+    }
+    let posts: Vec<Value> = groups
+        .into_iter()
+        .rev()
+        .map(|((at, uptime), mut fixes)| {
+            fixes.sort_by_key(|f| f.recorded_at);
+            let r = &fixes[0];
+            json!({"post_at":at,"uptime_s":uptime,"vbat_mv":r.vbat_mv,"cbc_mv":r.cbc_mv,
+            "csq":r.csq,"reg":r.reg,"batch_size":fixes.len(),"fixes":fixes})
         })
-    }).collect()
-}
-
-#[derive(Debug, Serialize)]
-struct GroupedFix {
-    recorded_at: DateTime<Utc>,
-    source:      String,
-    fix:         bool,
-    lat:         Option<f64>,
-    lng:         Option<f64>,
-    sat:         Option<i16>,
-    ttff_s:      Option<i32>,
-    heading:     Option<f32>,
-}
-
-#[derive(Debug, Serialize)]
-struct GroupedPost {
-    post_at:    DateTime<Utc>,
-    uptime_s:   Option<i32>,
-    vbat_mv:    Option<i32>,
-    cbc_mv:     Option<i32>,
-    csq:        Option<i16>,
-    reg:        Option<i16>,
-    batch_size: i32,
-    fixes:      Vec<GroupedFix>,
+        .collect();
+    Ok(Json(json!(posts)))
 }

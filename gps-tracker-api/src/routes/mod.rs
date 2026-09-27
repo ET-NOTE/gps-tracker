@@ -21,7 +21,10 @@ pub mod sim_requests;
 pub mod stats;
 pub mod ws;
 
-use axum::{routing::{get, post}, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 
 use crate::state::AppState;
 
@@ -37,7 +40,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(geofences::router())
         .merge(stats::router())
         .merge(share::router_authed())
-        .merge(share::router_public())   // 인증 없이 호출 (/share/:token 등)
+        .merge(share::router_public()) // 인증 없이 호출 (/share/:token 등)
         .merge(ai::router())
         .merge(credits::router())
         .merge(credits::router_admin())
@@ -50,8 +53,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(sim_requests::router_admin())
         .merge(chat::router_user())
         .merge(chat::router_admin())
-        .merge(admin::router())
-        ;
+        .merge(admin::router());
 
     Router::new()
         .route("/health", get(health::health))
@@ -61,7 +63,10 @@ pub fn build_router(state: AppState) -> Router {
         .route("/gps-tracker/diagnostic", get(diag::diag_page))
         .route("/gps-tracker/diagnostic/data", get(diag::diag_data))
         .route("/gps-tracker/diagnostic/device", get(diag::device_log_page))
-        .route("/gps-tracker/diagnostic/device/data", get(diag::device_log_data))
+        .route(
+            "/gps-tracker/diagnostic/device/data",
+            get(diag::device_log_data),
+        )
         .nest("/gps-tracker/api/v1", api_v1)
         .nest("/gps-tracker/ws", ws::router())
         .with_state(state)

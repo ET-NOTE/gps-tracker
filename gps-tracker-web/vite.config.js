@@ -11,14 +11,9 @@ export default defineConfig({
   server: {
     port: 8003,
     proxy: {
-      // 로컬 dev: api.js 가 '/gps-tracker/api/v1/...' 로 요청 → gps.serial.kr 로 프록시하면서
-      // prefix 를 벗겨 '/api/v1/...' (주 도메인 라우팅) 으로 전달.
-      '/gps-tracker/api': {
-        target: 'https://gps.serial.kr',
-        changeOrigin: true,
-        secure: true,
-        rewrite: (p) => p.replace(/^\/gps-tracker/, ''),
-      },
+      '/gps-tracker/api': { target: 'https://dev-gps.serial.kr', changeOrigin: true, secure: true },
+      '/gps-tracker/ws': { target: 'wss://dev-gps.serial.kr', changeOrigin: true, secure: true, ws: true },
+      '/ingest': { target: 'https://dev-gps.serial.kr', changeOrigin: true, secure: true },
     },
   },
   build: {

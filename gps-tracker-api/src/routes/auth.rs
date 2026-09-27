@@ -1,7 +1,7 @@
 use axum::{
     extract::State,
     http::HeaderMap,
-    routing::{delete, get, patch, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use chrono::{DateTime, Duration, Utc};
@@ -25,8 +25,8 @@ pub struct RegisterRequest {
     /// 알림톡/푸시 personalization 에 사용 — 필수. 1~20자.
     #[validate(length(min = 1, max = 20))]
     pub display_name: String,
-    pub phone:    String,                  // 휴대폰 (digits-only 또는 dash 포함)
-    pub otp_code: String,                  // 4자리 인증번호 (send-otp 후 받은 값)
+    pub phone: String,    // 휴대폰 (digits-only 또는 dash 포함)
+    pub otp_code: String, // 4자리 인증번호 (send-otp 후 받은 값)
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -44,7 +44,11 @@ pub struct LoginRequest {
 /// remember_me=true → config.jwt_refresh_ttl_days (운영 default 30일)
 /// remember_me=false → 1일 (브라우저 닫으면 어차피 sessionStorage 에서 사라지지만 백엔드도 만료시킴)
 fn refresh_ttl_for(state: &AppState, remember_me: bool) -> i64 {
-    if remember_me { state.config.jwt_refresh_ttl_days } else { 1 }
+    if remember_me {
+        state.config.jwt_refresh_ttl_days
+    } else {
+        1
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -63,16 +67,20 @@ pub struct TokenPair {
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/auth/register",  post(register))
-        .route("/auth/send-otp",  post(send_otp))
+        .route("/auth/register", post(register))
+        .route("/auth/send-otp", post(send_otp))
         .route("/auth/login", post(login))
         .route("/auth/refresh", post(refresh))
         .route("/auth/fcm-token", post(register_fcm_token))
         .route("/auth/fcm-token/revoke", post(unregister_fcm_token))
+        .route(
+            "/auth/fcm-token/revoke-installation",
+            post(revoke_fcm_installation),
+        )
         .route("/auth/ping", get(|| async { "pong" }))
         // 아이디 찾기 (2-step: phone OTP → 결과)
         .route("/auth/find-id/send-otp", post(find_id_send_otp))
-        .route("/auth/find-id/verify",   post(find_id_verify))
+        .route("/auth/find-id/verify", post(find_id_verify))
         // 비밀번호 재설정 (email + phone OTP → reset)
         .route("/auth/password-reset/send-otp", post(reset_send_otp))
         .route("/auth/password-reset/verify", post(reset_verify))
@@ -89,12 +97,11 @@ pub async fn get_prefs(
     State(state): State<AppState>,
     user: AuthUser,
 ) -> AppResult<Json<serde_json::Value>> {
-    let row: Option<serde_json::Value> = sqlx::query_scalar(
-        "SELECT prefs FROM users WHERE id = $1",
-    )
-    .bind(user.user_id)
-    .fetch_optional(&state.db)
-    .await?;
+    let row: Option<serde_json::Value> =
+        sqlx::query_scalar("SELECT prefs FROM users WHERE id = $1")
+            .bind(user.user_id)
+            .fetch_optional(&state.db)
+            .await?;
     Ok(Json(row.unwrap_or_else(|| serde_json::json!({}))))
 }
 
@@ -104,15 +111,15 @@ pub async fn patch_prefs(
     Json(patch): Json<serde_json::Value>,
 ) -> AppResult<Json<serde_json::Value>> {
     if !patch.is_object() {
-        return Err(crate::error::AppError::BadRequest("body must be a JSON object".into()));
+        return Err(crate::error::AppError::BadRequest(
+            "body must be a JSON object".into(),
+        ));
     }
-    sqlx::query(
-        "UPDATE users SET prefs = COALESCE(prefs, '{}'::jsonb) || $2::jsonb WHERE id = $1",
-    )
-    .bind(user.user_id)
-    .bind(&patch)
-    .execute(&state.db)
-    .await?;
+    sqlx::query("UPDATE users SET prefs = COALESCE(prefs, '{}'::jsonb) || $2::jsonb WHERE id = $1")
+        .bind(user.user_id)
+        .bind(&patch)
+        .execute(&state.db)
+        .await?;
     get_prefs(State(state), user).await
 }
 
@@ -122,14 +129,14 @@ pub async fn patch_prefs(
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct MeResponse {
-    pub id:              i64,
-    pub email:           String,
-    pub display_name:    Option<String>,
-    pub phone:           String,           // OTP 인증된 가입 번호 (NOT NULL — 마이그레이션 0024)
-    pub phone_verified:  bool,
+    pub id: i64,
+    pub email: String,
+    pub display_name: Option<String>,
+    pub phone: String, // OTP 인증된 가입 번호 (NOT NULL — 마이그레이션 0024)
+    pub phone_verified: bool,
     pub secondary_phone: Option<String>,
-    pub role:            String,
-    pub created_at:      DateTime<Utc>,
+    pub role: String,
+    pub created_at: DateTime<Utc>,
 }
 
 pub async fn me(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<MeResponse>> {
@@ -145,7 +152,7 @@ pub async fn me(State(state): State<AppState>, user: AuthUser) -> AppResult<Json
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateMeRequest {
-    pub display_name:    Option<String>,
+    pub display_name: Option<String>,
     pub secondary_phone: Option<String>,
 }
 
@@ -173,7 +180,7 @@ pub async fn update_me(
 pub struct ChangePasswordRequest {
     pub current_password: String,
     #[validate(length(min = 8))]
-    pub new_password:     String,
+    pub new_password: String,
 }
 
 pub async fn change_password(
@@ -181,7 +188,8 @@ pub async fn change_password(
     user: AuthUser,
     Json(req): Json<ChangePasswordRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
-    req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    req.validate()
+        .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
 
     let cur_hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
         .bind(user.user_id)
@@ -202,10 +210,12 @@ pub async fn change_password(
         .await?;
 
     // 보안: 모든 기존 refresh 토큰 무효화 → 다른 세션 강제 로그아웃
-    sqlx::query("UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL")
-        .bind(user.user_id)
-        .execute(&state.db)
-        .await?;
+    sqlx::query(
+        "UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL",
+    )
+    .bind(user.user_id)
+    .execute(&state.db)
+    .await?;
 
     Ok(Json(serde_json::json!({"ok": true})))
 }
@@ -224,13 +234,13 @@ pub struct CleanupRequest {
     pub password: String,
     /// corporate_info row 삭제 (사업자 등록번호 / 회사명 / 주소 / 대표자)
     #[serde(default)]
-    pub corporate_info:    bool,
+    pub corporate_info: bool,
     /// staff (직원 명단) 모두 삭제. 단 trip_annotations.driver_staff_id 는 SET NULL 로 보존.
     #[serde(default)]
-    pub staff:             bool,
+    pub staff: bool,
     /// 보유 디바이스의 account_type_override 모두 NULL — user.account_type 으로 통일
     #[serde(default)]
-    pub device_overrides:  bool,
+    pub device_overrides: bool,
 }
 
 pub async fn cleanup_me(
@@ -251,14 +261,18 @@ pub async fn cleanup_me(
 
     if req.corporate_info {
         let r = sqlx::query("DELETE FROM corporate_info WHERE user_id = $1")
-            .bind(user.user_id).execute(&mut *tx).await?;
+            .bind(user.user_id)
+            .execute(&mut *tx)
+            .await?;
         summary.insert("corporate_info_deleted".into(), r.rows_affected().into());
     }
 
     if req.staff {
         // staff_id 가 trip_annotations 에 박혀있을 수 있으나 FK 가 ON DELETE SET NULL 이라 안전
         let r = sqlx::query("DELETE FROM staff WHERE user_id = $1")
-            .bind(user.user_id).execute(&mut *tx).await?;
+            .bind(user.user_id)
+            .execute(&mut *tx)
+            .await?;
         summary.insert("staff_deleted".into(), r.rows_affected().into());
     }
 
@@ -328,8 +342,11 @@ pub async fn delete_me(
 #[derive(Debug, Deserialize)]
 pub struct FcmTokenRequest {
     pub token: String,
-    pub platform: String,            // "android" / "ios"
+    pub platform: String, // "android" / "ios"
     pub app_version: Option<String>,
+    pub installation_id: Option<String>,
+    pub generation: Option<i64>,
+    pub revocation_key: Option<String>,
 }
 
 pub async fn register_fcm_token(
@@ -337,29 +354,59 @@ pub async fn register_fcm_token(
     user: AuthUser,
     Json(req): Json<FcmTokenRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if req.token.is_empty() {
-        return Err(AppError::BadRequest("token is empty".into()));
+    if req.token.is_empty()
+        || req.token.len() > 4096
+        || !req.token.is_ascii()
+        || !matches!(req.platform.as_str(), "android" | "ios" | "web")
+        || req.app_version.as_ref().is_some_and(|s| s.len() > 64)
+    {
+        return Err(AppError::BadRequest("invalid push registration".into()));
     }
-
-    // Upsert: same token (UNIQUE) → reassign to this user, mark active.
-    sqlx::query(
-        r#"
-        INSERT INTO fcm_tokens (user_id, token, platform, app_version, active, last_used_at)
-        VALUES ($1, $2, $3, $4, TRUE, now())
-        ON CONFLICT (token) DO UPDATE
-           SET user_id      = EXCLUDED.user_id,
-               platform     = EXCLUDED.platform,
-               app_version  = EXCLUDED.app_version,
-               active       = TRUE,
-               last_used_at = now()
-        "#,
-    )
-    .bind(user.user_id)
-    .bind(&req.token)
-    .bind(&req.platform)
-    .bind(&req.app_version)
-    .execute(&state.db)
-    .await?;
+    let modern =
+        req.installation_id.is_some() || req.generation.is_some() || req.revocation_key.is_some();
+    if modern
+        && !(req
+            .installation_id
+            .as_ref()
+            .is_some_and(|s| (32..=128).contains(&s.len()))
+            && req.generation.is_some_and(|n| n > 0)
+            && req
+                .revocation_key
+                .as_ref()
+                .is_some_and(|s| (32..=128).contains(&s.len())))
+    {
+        return Err(AppError::BadRequest("invalid installation binding".into()));
+    }
+    let secret_hash = req.revocation_key.as_deref().map(hash_refresh);
+    let mut tx = state.db.begin().await?;
+    if let Some(ref hash) = secret_hash {
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 65))")
+            .bind(hash)
+            .execute(&mut *tx)
+            .await?;
+    }
+    let result = sqlx::query(
+        r#"INSERT INTO fcm_tokens (user_id, token, platform, app_version, active, last_used_at,
+                                  installation_id, registration_generation, revocation_hash)
+        SELECT $1,$2,$3,$4,TRUE,now(),$5,$6,$7
+        WHERE NOT EXISTS (SELECT 1 FROM fcm_revocations WHERE secret_hash=$7)
+        ON CONFLICT (token) DO UPDATE SET
+            user_id=EXCLUDED.user_id, platform=EXCLUDED.platform, app_version=EXCLUDED.app_version,
+            active=TRUE, last_used_at=now(), installation_id=EXCLUDED.installation_id,
+            registration_generation=EXCLUDED.registration_generation, revocation_hash=EXCLUDED.revocation_hash
+        WHERE EXCLUDED.installation_id IS NULL
+           OR fcm_tokens.installation_id IS DISTINCT FROM EXCLUDED.installation_id
+           OR EXCLUDED.registration_generation > fcm_tokens.registration_generation
+           OR (EXCLUDED.registration_generation = fcm_tokens.registration_generation
+               AND fcm_tokens.active AND fcm_tokens.user_id=EXCLUDED.user_id
+               AND fcm_tokens.revocation_hash=EXCLUDED.revocation_hash)"#)
+        .bind(user.user_id).bind(&req.token).bind(&req.platform).bind(&req.app_version)
+        .bind(&req.installation_id).bind(req.generation).bind(secret_hash)
+        .execute(&mut *tx).await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::BadRequest("stale push registration".into()));
+    }
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({"ok": true})))
 }
@@ -374,28 +421,69 @@ pub async fn unregister_fcm_token(
     user: AuthUser,
     Json(req): Json<FcmTokenDelete>,
 ) -> AppResult<Json<serde_json::Value>> {
-    sqlx::query(
-        r#"UPDATE fcm_tokens SET active = FALSE WHERE token = $1 AND user_id = $2"#,
-    )
-    .bind(&req.token)
-    .bind(user.user_id)
-    .execute(&state.db)
-    .await?;
+    sqlx::query(r#"UPDATE fcm_tokens SET active = FALSE WHERE token = $1 AND user_id = $2"#)
+        .bind(&req.token)
+        .bind(user.user_id)
+        .execute(&state.db)
+        .await?;
     Ok(Json(serde_json::json!({"ok": true})))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RevokeInstallation {
+    token: String,
+    revocation_key: String,
+}
+
+/// A random per-binding capability permits logout recovery after JWT expiry.
+/// It can only disable that binding; it cannot read data or revoke its successor.
+pub async fn revoke_fcm_installation(
+    State(state): State<AppState>,
+    Json(req): Json<RevokeInstallation>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !(32..=128).contains(&req.revocation_key.len()) || req.token.len() > 4096 {
+        return Err(AppError::BadRequest("invalid revocation".into()));
+    }
+    let hash = hash_refresh(&req.revocation_key);
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 65))")
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO fcm_revocations(secret_hash) VALUES ($1) ON CONFLICT DO NOTHING")
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE fcm_tokens SET active=FALSE WHERE token=$1 AND revocation_hash=$2")
+        .bind(&req.token)
+        .bind(&hash)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(Json(serde_json::json!({"ok":true})))
 }
 
 fn hash_refresh(token: &str) -> String {
     let digest = Sha256::digest(token.as_bytes());
     let mut s = String::with_capacity(digest.len() * 2);
     for b in digest.iter() {
-        s.push_str(&format!("{:02x}", b));
+        s.push_str(&format!("{b:02x}"));
     }
     s
 }
 
-async fn issue_pair(state: &AppState, user_id: i64, user_agent: Option<&str>, ttl_days: i64) -> AppResult<TokenPair> {
-    let access = jwt::issue_access(user_id, &state.config.jwt_secret, state.config.jwt_access_ttl_min)
-        .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt access: {e}")))?;
+async fn issue_pair(
+    state: &AppState,
+    user_id: i64,
+    user_agent: Option<&str>,
+    ttl_days: i64,
+) -> AppResult<TokenPair> {
+    let access = jwt::issue_access(
+        user_id,
+        &state.config.jwt_secret,
+        state.config.jwt_access_ttl_min,
+    )
+    .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt access: {e}")))?;
     let refresh = jwt::issue_refresh(user_id, &state.config.jwt_secret, ttl_days)
         .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt refresh: {e}")))?;
 
@@ -428,7 +516,8 @@ pub async fn register(
     headers: HeaderMap,
     Json(req): Json<RegisterRequest>,
 ) -> AppResult<Json<TokenPair>> {
-    req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    req.validate()
+        .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
 
     // 1) 휴대폰 정규화 + OTP 검증
     let phone = crate::services::sms::normalize_phone(&req.phone)
@@ -451,8 +540,12 @@ pub async fn register(
         r#"INSERT INTO users (email, password_hash, display_name, phone, phone_verified)
            VALUES ($1, $2, $3, $4, TRUE) RETURNING id"#,
     )
-    .bind(&req.email).bind(&pw_hash).bind(&req.display_name).bind(&phone)
-    .fetch_one(&mut *tx).await
+    .bind(&req.email)
+    .bind(&pw_hash)
+    .bind(&req.display_name)
+    .bind(&phone)
+    .fetch_one(&mut *tx)
+    .await
     .map_err(|e| {
         if let sqlx::Error::Database(db) = &e {
             if db.code().as_deref() == Some("23505") {
@@ -472,7 +565,9 @@ pub async fn register(
     let phone_for_at = phone.clone();
     let name_for_at = req.display_name.clone();
     tokio::spawn(async move {
-        if let Err(e) = crate::services::alimtalk::send_signup_welcome(&phone_for_at, &name_for_at).await {
+        if let Err(e) =
+            crate::services::alimtalk::send_signup_welcome(&phone_for_at, &name_for_at).await
+        {
             tracing::warn!(phone = %phone_for_at, "signup welcome alimtalk failed: {e:#}");
         }
     });
@@ -512,9 +607,13 @@ pub async fn send_otp(
         r#"SELECT COUNT(*) FROM otp_codes
             WHERE phone = $1 AND created_at > NOW() - INTERVAL '24 hours'"#,
     )
-    .bind(&phone).fetch_one(&state.db).await?;
+    .bind(&phone)
+    .fetch_one(&state.db)
+    .await?;
     if today_count >= 5 {
-        return Err(AppError::BadRequest("하루 발송 횟수(5회)를 초과했습니다. 내일 다시 시도해주세요".into()));
+        return Err(AppError::BadRequest(
+            "하루 발송 횟수(5회)를 초과했습니다. 내일 다시 시도해주세요".into(),
+        ));
     }
 
     // 글로벌 중복 차단 없음 — 0027 정책.
@@ -526,8 +625,11 @@ pub async fn send_otp(
         r#"INSERT INTO otp_codes (phone, code, purpose, expires_at)
            VALUES ($1, $2, 'register', $3)"#,
     )
-    .bind(&phone).bind(&code).bind(expires)
-    .execute(&state.db).await?;
+    .bind(&phone)
+    .bind(&code)
+    .bind(expires)
+    .execute(&state.db)
+    .await?;
 
     // 실 발송 — 실패해도 row 는 남음. 사용자가 재시도하면 다른 row 가 latest 가 됨.
     if let Err(e) = crate::services::sms::send_otp(&phone, &code).await {
@@ -537,7 +639,9 @@ pub async fn send_otp(
 
     let dev_code = if std::env::var("SMS_DEV_MODE").ok().as_deref() == Some("1") {
         Some(code.clone())
-    } else { None };
+    } else {
+        None
+    };
 
     Ok(Json(SendOtpResponse {
         ok: true,
@@ -550,11 +654,12 @@ pub async fn send_otp(
 
 // [2026-08-14] 로그인 brute-force 방어 임계 (15분 창).
 const LOGIN_WINDOW_MIN: i64 = 15;
-const LOGIN_MAX_PER_EMAIL: i64 = 10;   // 이메일당 실패 상한
-const LOGIN_MAX_PER_IP: i64 = 30;      // IP당 실패 상한 (여러 이메일 스프레이 차단)
+const LOGIN_MAX_PER_EMAIL: i64 = 10; // 이메일당 실패 상한
+const LOGIN_MAX_PER_IP: i64 = 30; // IP당 실패 상한 (여러 이메일 스프레이 차단)
 
 fn client_ip(headers: &HeaderMap) -> String {
-    headers.get("x-real-ip")
+    headers
+        .get("x-real-ip")
         .or_else(|| headers.get("x-forwarded-for"))
         .and_then(|v| v.to_str().ok())
         // x-forwarded-for 는 "client, proxy1, ..." 형식일 수 있어 첫 항목만.
@@ -567,7 +672,8 @@ pub async fn login(
     headers: HeaderMap,
     Json(req): Json<LoginRequest>,
 ) -> AppResult<Json<TokenPair>> {
-    req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    req.validate()
+        .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
     let ip = client_ip(&headers);
 
     // ── rate limit: 최근 15분 실패 횟수로 잠금 (이메일 단위 + IP 단위) ──
@@ -576,28 +682,31 @@ pub async fn login(
             WHERE email = $1 AND success = FALSE
               AND created_at > NOW() - ($2 || ' minutes')::interval"#,
     )
-    .bind(&req.email).bind(LOGIN_WINDOW_MIN.to_string())
-    .fetch_one(&state.db).await?;
+    .bind(&req.email)
+    .bind(LOGIN_WINDOW_MIN.to_string())
+    .fetch_one(&state.db)
+    .await?;
     let ip_fails: i64 = sqlx::query_scalar(
         r#"SELECT COUNT(*) FROM login_attempts
             WHERE ip = $1 AND success = FALSE
               AND created_at > NOW() - ($2 || ' minutes')::interval"#,
     )
-    .bind(&ip).bind(LOGIN_WINDOW_MIN.to_string())
-    .fetch_one(&state.db).await?;
+    .bind(&ip)
+    .bind(LOGIN_WINDOW_MIN.to_string())
+    .fetch_one(&state.db)
+    .await?;
     if email_fails >= LOGIN_MAX_PER_EMAIL || ip_fails >= LOGIN_MAX_PER_IP {
         tracing::warn!(email = %req.email, %ip, email_fails, ip_fails, "login locked (rate limit)");
-        return Err(AppError::TooManyRequests(
-            format!("로그인 시도가 너무 많습니다. {LOGIN_WINDOW_MIN}분 후 다시 시도해주세요.")
-        ));
+        return Err(AppError::TooManyRequests(format!(
+            "로그인 시도가 너무 많습니다. {LOGIN_WINDOW_MIN}분 후 다시 시도해주세요."
+        )));
     }
 
-    let row: Option<(i64, String)> = sqlx::query_as(
-        r#"SELECT id, password_hash FROM users WHERE email = $1"#,
-    )
-    .bind(&req.email)
-    .fetch_optional(&state.db)
-    .await?;
+    let row: Option<(i64, String)> =
+        sqlx::query_as(r#"SELECT id, password_hash FROM users WHERE email = $1"#)
+            .bind(&req.email)
+            .fetch_optional(&state.db)
+            .await?;
 
     // 실패(계정 없음 / 비번 불일치) 는 동일하게 기록 + 동일 에러 → enumeration·잠금 우회 방지.
     let ok = match &row {
@@ -605,18 +714,26 @@ pub async fn login(
         None => false,
     };
     if !ok {
-        let _ = sqlx::query(
-            "INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, FALSE)",
-        ).bind(&req.email).bind(&ip).execute(&state.db).await;
+        let _ =
+            sqlx::query("INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, FALSE)")
+                .bind(&req.email)
+                .bind(&ip)
+                .execute(&state.db)
+                .await;
         return Err(AppError::Unauthorized);
     }
     let user_id = row.unwrap().0;
 
     // 성공 → 이 이메일의 실패 기록 소거(즉시 잠금 해제) + 성공 기록.
     let _ = sqlx::query("DELETE FROM login_attempts WHERE email = $1 AND success = FALSE")
-        .bind(&req.email).execute(&state.db).await;
+        .bind(&req.email)
+        .execute(&state.db)
+        .await;
     let _ = sqlx::query("INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, TRUE)")
-        .bind(&req.email).bind(&ip).execute(&state.db).await;
+        .bind(&req.email)
+        .bind(&ip)
+        .execute(&state.db)
+        .await;
 
     let ua = headers.get("user-agent").and_then(|v| v.to_str().ok());
     let ttl_days = refresh_ttl_for(&state, req.remember_me);
@@ -653,7 +770,7 @@ pub async fn refresh(
 
     let ttl_days = match row {
         Some(d) => d as i64,
-        None    => return Err(AppError::Unauthorized),
+        None => return Err(AppError::Unauthorized),
     };
 
     let ua = headers.get("user-agent").and_then(|v| v.to_str().ok());
@@ -680,14 +797,14 @@ pub struct FindIdSendOtpResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct FindIdVerifyRequest {
-    pub phone:    String,
+    pub phone: String,
     pub otp_code: String,
 }
 
 #[derive(Debug, Serialize)]
 pub struct FindIdAccount {
     pub email_masked: String,
-    pub created_at:   DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize)]
@@ -719,14 +836,21 @@ pub async fn find_id_send_otp(
         "SELECT COUNT(*) FROM otp_codes WHERE phone = $1 AND created_at > NOW() - INTERVAL '24 hours'",
     ).bind(&phone).fetch_one(&state.db).await?;
     if today_count >= 5 {
-        return Err(AppError::BadRequest("하루 발송 횟수(5회)를 초과했습니다".into()));
+        return Err(AppError::BadRequest(
+            "하루 발송 횟수(5회)를 초과했습니다".into(),
+        ));
     }
 
     let code = crate::services::sms::generate_code();
     let expires = Utc::now() + Duration::minutes(3);
     sqlx::query(
         "INSERT INTO otp_codes (phone, code, purpose, expires_at) VALUES ($1, $2, 'find_id', $3)",
-    ).bind(&phone).bind(&code).bind(expires).execute(&state.db).await?;
+    )
+    .bind(&phone)
+    .bind(&code)
+    .bind(expires)
+    .execute(&state.db)
+    .await?;
 
     if let Err(e) = crate::services::sms::send_otp(&phone, &code).await {
         tracing::warn!(%phone, "find_id send-otp failed: {e:#}");
@@ -735,8 +859,14 @@ pub async fn find_id_send_otp(
 
     let dev_code = if std::env::var("SMS_DEV_MODE").ok().as_deref() == Some("1") {
         Some(code.clone())
-    } else { None };
-    Ok(Json(FindIdSendOtpResponse { ok: true, expires_in_sec: 180, dev_code }))
+    } else {
+        None
+    };
+    Ok(Json(FindIdSendOtpResponse {
+        ok: true,
+        expires_in_sec: 180,
+        dev_code,
+    }))
 }
 
 // ─── 아이디 찾기 step2: OTP 검증 + 메인 보유자 (≤3) 반환 ─
@@ -769,10 +899,17 @@ pub async fn find_id_verify(
          ORDER BY u.created_at ASC
          LIMIT 3
         "#,
-    ).bind(&phone).fetch_all(&state.db).await?;
+    )
+    .bind(&phone)
+    .fetch_all(&state.db)
+    .await?;
 
-    let accounts = rows.into_iter()
-        .map(|(email, created_at)| FindIdAccount { email_masked: mask_email(&email), created_at })
+    let accounts = rows
+        .into_iter()
+        .map(|(email, created_at)| FindIdAccount {
+            email_masked: mask_email(&email),
+            created_at,
+        })
         .collect();
     Ok(Json(FindIdVerifyResponse { accounts }))
 }
@@ -819,7 +956,9 @@ pub async fn reset_send_otp(
 
     if user_id.is_none() {
         // 정보 노출 줄이기 위해 동일 메시지 — 단, 같이 SMS 안 보냄.
-        return Err(AppError::BadRequest("일치하는 계정을 찾을 수 없습니다".into()));
+        return Err(AppError::BadRequest(
+            "일치하는 계정을 찾을 수 없습니다".into(),
+        ));
     }
 
     // 24h 5회 제한 (otp_codes 공유 카운트)
@@ -827,14 +966,21 @@ pub async fn reset_send_otp(
         "SELECT COUNT(*) FROM otp_codes WHERE phone = $1 AND created_at > NOW() - INTERVAL '24 hours'",
     ).bind(&phone).fetch_one(&state.db).await?;
     if today_count >= 5 {
-        return Err(AppError::BadRequest("하루 발송 횟수(5회)를 초과했습니다".into()));
+        return Err(AppError::BadRequest(
+            "하루 발송 횟수(5회)를 초과했습니다".into(),
+        ));
     }
 
     let code = crate::services::sms::generate_code();
     let expires = Utc::now() + Duration::minutes(3);
     sqlx::query(
         "INSERT INTO otp_codes (phone, code, purpose, expires_at) VALUES ($1, $2, 'reset', $3)",
-    ).bind(&phone).bind(&code).bind(expires).execute(&state.db).await?;
+    )
+    .bind(&phone)
+    .bind(&code)
+    .bind(expires)
+    .execute(&state.db)
+    .await?;
 
     if let Err(e) = crate::services::sms::send_otp(&phone, &code).await {
         tracing::warn!(%phone, "reset send-otp failed: {e:#}");
@@ -843,15 +989,21 @@ pub async fn reset_send_otp(
 
     let dev_code = if std::env::var("SMS_DEV_MODE").ok().as_deref() == Some("1") {
         Some(code.clone())
-    } else { None };
+    } else {
+        None
+    };
 
-    Ok(Json(ResetSendOtpResponse { ok: true, expires_in_sec: 180, dev_code }))
+    Ok(Json(ResetSendOtpResponse {
+        ok: true,
+        expires_in_sec: 180,
+        dev_code,
+    }))
 }
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct ResetVerifyRequest {
-    pub email:    String,
-    pub phone:    String,
+    pub email: String,
+    pub phone: String,
     pub otp_code: String,
     #[validate(length(min = 8))]
     pub new_password: String,
@@ -866,7 +1018,8 @@ pub async fn reset_verify(
     State(state): State<AppState>,
     Json(req): Json<ResetVerifyRequest>,
 ) -> AppResult<Json<ResetVerifyResponse>> {
-    req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    req.validate()
+        .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
     let phone = crate::services::sms::normalize_phone(&req.phone)
         .ok_or_else(|| AppError::BadRequest("올바른 휴대폰 번호".into()))?;
 
@@ -882,8 +1035,10 @@ pub async fn reset_verify(
            )
         "#,
     )
-    .bind(&req.email).bind(&phone)
-    .fetch_optional(&state.db).await?
+    .bind(&req.email)
+    .bind(&phone)
+    .fetch_optional(&state.db)
+    .await?
     .ok_or_else(|| AppError::BadRequest("일치하는 계정을 찾을 수 없습니다".into()))?;
 
     // OTP 검증 + 소모 (atomic + constant-time)
@@ -894,10 +1049,17 @@ pub async fn reset_verify(
 
     let mut tx = state.db.begin().await?;
     sqlx::query("UPDATE users SET password_hash = $2 WHERE id = $1")
-        .bind(user_id).bind(&new_hash).execute(&mut *tx).await?;
+        .bind(user_id)
+        .bind(&new_hash)
+        .execute(&mut *tx)
+        .await?;
     // 모든 refresh 무효화 (보안)
-    sqlx::query("UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL")
-        .bind(user_id).execute(&mut *tx).await?;
+    sqlx::query(
+        "UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL",
+    )
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
 
     Ok(Json(ResetVerifyResponse { ok: true }))

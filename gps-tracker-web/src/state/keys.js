@@ -1,3 +1,4 @@
+import { authScope } from '../authSession';
 // (2026-07-28) Phase F2 — Query key 통합.
 //
 // React Query 는 key 배열 기반 캐시. 오탈자로 다른 key 쓰면 캐시 miss + dedup 실패.
@@ -9,7 +10,7 @@
 //   queryClient.invalidateQueries({ queryKey: qk.devices() })
 //   queryClient.invalidateQueries({ queryKey: qk.rentals() })   // 모든 rental query 무효화
 
-export const qk = {
+const keys = {
   // ── 나 ──
   me:          () => ['me'],
   accountType: () => ['account-type'],
@@ -39,3 +40,6 @@ export const qk = {
   fuelPrices: () => ['fuel-prices'],
   documents:  (deviceId) => ['documents', deviceId],
 };
+
+export const qk = Object.fromEntries(Object.entries(keys).map(([name, key]) =>
+  [name, (...args) => [authScope(), ...key(...args)]]));

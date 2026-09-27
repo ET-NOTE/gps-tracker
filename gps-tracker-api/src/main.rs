@@ -32,6 +32,7 @@ async fn main() -> anyhow::Result<()> {
     // ── config & db ───────────────────────────────────────
     let cfg = config::Config::from_env().context("failed to load config")?;
     tracing::info!(bind = %cfg.bind_addr, "starting gps-tracker-api");
+    let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref())?;
 
     let pool = db::make_pool(&cfg.database_url)
         .await
@@ -43,9 +44,13 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("migration failed")?;
     tracing::info!("migrations up to date");
+    // Apply an additive release while the current API still accepts KC uploads.
+    // No listeners, external calls or background workers run in this mode.
+    if std::env::var("GPS_MIGRATE_ONLY").as_deref() == Ok("1") {
+        return Ok(());
+    }
 
     // FCM 클라이언트 — events 워커와 채팅 푸시가 공유
-    let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref());
 
     // (2026-07-28) Stage-4D: 오피넷 유가 캐시. 부팅 시 첫 fetch 시도 + 6h 주기 refresh.
     // OPINET_API_KEY env 미설정 시 fetch 실패 → 하드코딩 기본값 fallback.
@@ -55,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
     let state = state::AppState {
         db: pool.clone(),
         config: Arc::new(cfg.clone()),
-        events: events::channel(1024),   // (F11) 256→1024 — 100대 fleet × chat WS 공유 시 lagged drop 감소.
+        events: events::channel(1024), // (F11) 256→1024 — 100대 fleet × chat WS 공유 시 lagged drop 감소.
         fcm: fcm.clone(),
         opinet,
     };
@@ -71,7 +76,10 @@ async fn main() -> anyhow::Result<()> {
 
     // ── CORS ──────────────────────────────────────────────
     let cors = if cfg.cors_allowed_origins.iter().any(|s| s == "*") {
-        CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any)
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
     } else {
         let origins = cfg
             .cors_allowed_origins
@@ -92,7 +100,10 @@ async fn main() -> anyhow::Result<()> {
     //   가정하고 abort. 클라이언트는 408/503 받음.
     let app = routes::build_router(state)
         .layer(DefaultBodyLimit::max(1024 * 1024))
-        .layer(TimeoutLayer::new(Duration::from_secs(30)))
+        .layer(TimeoutLayer::with_status_code(
+            axum::http::StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(30),
+        ))
         .layer(TraceLayer::new_for_http())
         .layer(cors);
 
@@ -118,7 +129,9 @@ async fn shutdown_signal() {
     };
     #[cfg(unix)]
     let terminate = async {
-        if let Ok(mut sig) = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+        if let Ok(mut sig) =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        {
             sig.recv().await;
         }
     };

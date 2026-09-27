@@ -6,10 +6,11 @@ pub mod housekeeping;
 // partition_worker 제거 — TimescaleDB hypertable 도입 후 chunk 자동 관리 (migration 0040).
 pub mod kakao_geo;
 pub mod nce;
+pub mod notification_policy;
 pub mod openai;
+pub mod opinet;
+pub mod reservation_alerts;
 pub mod sms;
 pub mod stats;
 pub mod toss;
 pub mod xlsx_report;
-pub mod opinet;
-pub mod reservation_alerts;

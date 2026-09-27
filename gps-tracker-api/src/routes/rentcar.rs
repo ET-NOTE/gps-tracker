@@ -20,7 +20,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::FromRow;
 
-use crate::{auth::AuthUser, services::credits, error::{AppError, AppResult}, state::AppState};
+use crate::{
+    auth::AuthUser,
+    error::{AppError, AppResult},
+    services::credits,
+    state::AppState,
+};
 
 // (2026-07-29 R-Sub) 렌트카 별도 구독 kind. corporate_report (법인) 와 분리 —
 // 각 계정 유형은 독립 구독. 가격은 ENV RENTCAR_REPORT_PRICE 로 오버라이드 가능.
@@ -28,43 +33,71 @@ const SUB_KIND: &str = "rentcar_report";
 const SUB_PRICE: i64 = 30_000;
 fn rentcar_sub_price() -> i64 {
     std::env::var("RENTCAR_REPORT_PRICE")
-        .ok().and_then(|s| s.parse().ok()).unwrap_or(SUB_PRICE)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(SUB_PRICE)
 }
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/rentcar/contracts", get(list_contracts).post(create_contract))
-        .route("/rentcar/contracts/:id", patch(update_contract).delete(delete_contract))
+        .route(
+            "/rentcar/contracts",
+            get(list_contracts).post(create_contract),
+        )
+        .route(
+            "/rentcar/contracts/:id",
+            patch(update_contract).delete(delete_contract),
+        )
         .route("/rentcar/contracts/:id/return", post(return_contract))
         .route("/rentcar/contracts/:id/invoice.xlsx", get(invoice_xlsx))
         // (R6) 임차인
-        .route("/rentcar/renters",             get(list_renters))
-        .route("/rentcar/renters/:phone",      get(renter_detail))
-        .route("/rentcar/blacklist",           get(list_blacklist).post(add_blacklist))
-        .route("/rentcar/blacklist/:id",       axum::routing::delete(remove_blacklist))
-        .route("/rentcar/blacklist/check",     get(check_blacklist))
+        .route("/rentcar/renters", get(list_renters))
+        .route("/rentcar/renters/:phone", get(renter_detail))
+        .route(
+            "/rentcar/blacklist",
+            get(list_blacklist).post(add_blacklist),
+        )
+        .route(
+            "/rentcar/blacklist/:id",
+            axum::routing::delete(remove_blacklist),
+        )
+        .route("/rentcar/blacklist/check", get(check_blacklist))
         // (R9-a) 인수/반납 QR 토큰 발급 + 사진 조회 (owner)
-        .route("/rentcar/contracts/:id/handoff-tokens", get(list_handoff_tokens).post(issue_handoff_token))
-        .route("/rentcar/handoff-tokens/:id",           axum::routing::delete(revoke_handoff_token))
-        .route("/rentcar/photos/:id",                   get(get_photo).delete(delete_photo))
+        .route(
+            "/rentcar/contracts/:id/handoff-tokens",
+            get(list_handoff_tokens).post(issue_handoff_token),
+        )
+        .route(
+            "/rentcar/handoff-tokens/:id",
+            axum::routing::delete(revoke_handoff_token),
+        )
+        .route("/rentcar/photos/:id", get(get_photo).delete(delete_photo))
         // (R9-a 확장) owner 가 계약별 사진 (파손·연료·오도미터) 업로드/조회 갤러리
-        .route("/rentcar/contracts/:id/photos",         get(list_photos).post(upload_photo))
+        .route(
+            "/rentcar/contracts/:id/photos",
+            get(list_photos).post(upload_photo),
+        )
         // (R9-a) public — 임차인 auth-free 링크
-        .route("/rentcar/handoff/:token",               get(handoff_view))
+        .route("/rentcar/handoff/:token", get(handoff_view))
         // [2026-08-14] handoff 사진(오도미터+파손/연료 최대 7장 × 4MB, base64 +33%)은 전역 1MB
         //   body limit 을 초과 → 인수/반납 자체가 413 실패했음. 이 라우트만 40MB 로 오버라이드.
-        .route("/rentcar/handoff/:token/submit",
-               post(handoff_submit).layer(DefaultBodyLimit::max(40 * 1024 * 1024)))
+        .route(
+            "/rentcar/handoff/:token/submit",
+            post(handoff_submit).layer(DefaultBodyLimit::max(40 * 1024 * 1024)),
+        )
         // (2026-07-29 R-Sub) 구독
-        .route("/rentcar/subscription", get(get_subscription).post(buy_subscription))
+        .route(
+            "/rentcar/subscription",
+            get(get_subscription).post(buy_subscription),
+        )
 }
 
 // ─── 구독 ────────────────────────────────────────────
 #[derive(Debug, Serialize)]
 struct SubscriptionView {
-    active:      bool,
-    expires_at:  Option<DateTime<Utc>>,
-    price_krw:   i64,
+    active: bool,
+    expires_at: Option<DateTime<Utc>>,
+    price_krw: i64,
 }
 
 async fn get_subscription(
@@ -75,8 +108,11 @@ async fn get_subscription(
         r#"SELECT MAX(expires_at) FROM subscriptions
             WHERE user_id = $1 AND kind = $2 AND expires_at > NOW()"#,
     )
-    .bind(user.user_id).bind(SUB_KIND)
-    .fetch_optional(&state.db).await?.flatten();
+    .bind(user.user_id)
+    .bind(SUB_KIND)
+    .fetch_optional(&state.db)
+    .await?
+    .flatten();
     Ok(Json(SubscriptionView {
         active: exp.is_some(),
         expires_at: exp,
@@ -95,26 +131,41 @@ async fn buy_subscription(
     let mut tx = state.db.begin().await?;
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
         .bind(format!("sub:{}:{}", SUB_KIND, user.user_id))
-        .execute(&mut *tx).await?;
+        .execute(&mut *tx)
+        .await?;
     credits::charge_tx(
-        &mut tx, user.user_id, price,
-        "subscription", None, Some("rentcar_report 1개월"),
-    ).await?;
+        &mut tx,
+        user.user_id,
+        price,
+        "subscription",
+        None,
+        Some("rentcar_report 1개월"),
+    )
+    .await?;
     // 기존 active 있으면 그 끝에 30일 추가, 없으면 now+30일 (lock 하에 읽어 겹침 없음)
     let cur_exp: Option<DateTime<Utc>> = sqlx::query_scalar(
         r#"SELECT MAX(expires_at) FROM subscriptions
             WHERE user_id = $1 AND kind = $2 AND expires_at > NOW()"#,
     )
-    .bind(user.user_id).bind(SUB_KIND).fetch_optional(&mut *tx).await?.flatten();
+    .bind(user.user_id)
+    .bind(SUB_KIND)
+    .fetch_optional(&mut *tx)
+    .await?
+    .flatten();
     let starts_at = cur_exp.unwrap_or_else(Utc::now);
     let expires_at = starts_at + chrono::Duration::days(30);
     sqlx::query(
         r#"INSERT INTO subscriptions (user_id, kind, starts_at, expires_at, paid_credits, note)
            VALUES ($1, $2, $3, $4, $5, $6)"#,
     )
-    .bind(user.user_id).bind(SUB_KIND).bind(starts_at).bind(expires_at).bind(price)
+    .bind(user.user_id)
+    .bind(SUB_KIND)
+    .bind(starts_at)
+    .bind(expires_at)
+    .bind(price)
     .bind("self-purchase")
-    .execute(&mut *tx).await?;
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(Json(SubscriptionView {
         active: true,
@@ -125,78 +176,78 @@ async fn buy_subscription(
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct Contract {
-    pub id:                  i64,
-    pub user_id:             i64,
-    pub device_id:           i64,
-    pub device_name:         Option<String>,
-    pub license_plate:       Option<String>,
-    pub renter_name:         String,
-    pub renter_phone:        Option<String>,
-    pub renter_id_last4:     Option<String>,
-    pub starts_at:           DateTime<Utc>,
-    pub ends_at:             DateTime<Utc>,
-    pub rate_type:           String,
-    pub rate_amount_krw:     i64,
+    pub id: i64,
+    pub user_id: i64,
+    pub device_id: i64,
+    pub device_name: Option<String>,
+    pub license_plate: Option<String>,
+    pub renter_name: String,
+    pub renter_phone: Option<String>,
+    pub renter_id_last4: Option<String>,
+    pub starts_at: DateTime<Utc>,
+    pub ends_at: DateTime<Utc>,
+    pub rate_type: String,
+    pub rate_amount_krw: i64,
     pub included_km_per_day: Option<i32>,
-    pub over_km_price_krw:   Option<i32>,
-    pub deposit_krw:         i64,
-    pub return_odometer_km:  Option<i32>,
-    pub pickup_odometer_km:  Option<i32>,
-    pub settled_amount_krw:  Option<i64>,
-    pub settled_at:          Option<DateTime<Utc>>,
-    pub pickup_location:     Option<String>,
-    pub return_location:     Option<String>,
-    pub status:              String,
-    pub note:                Option<String>,
-    pub created_at:          DateTime<Utc>,
+    pub over_km_price_krw: Option<i32>,
+    pub deposit_krw: i64,
+    pub return_odometer_km: Option<i32>,
+    pub pickup_odometer_km: Option<i32>,
+    pub settled_amount_krw: Option<i64>,
+    pub settled_at: Option<DateTime<Utc>>,
+    pub pickup_location: Option<String>,
+    pub return_location: Option<String>,
+    pub status: String,
+    pub note: Option<String>,
+    pub created_at: DateTime<Utc>,
     // (2026-07-28 R4) settlement breakdown
-    pub base_fee_krw:        Option<i64>,
-    pub late_hours:          Option<i32>,
-    pub late_fee_krw:        Option<i64>,
-    pub over_km:             Option<i32>,
-    pub over_km_fee_krw:     Option<i64>,
-    pub extra_fee_krw:       Option<i64>,
-    pub refund_krw:          Option<i64>,
-    pub returned_at:         Option<DateTime<Utc>>,
-    pub settlement_json:     Option<Value>,
+    pub base_fee_krw: Option<i64>,
+    pub late_hours: Option<i32>,
+    pub late_fee_krw: Option<i64>,
+    pub over_km: Option<i32>,
+    pub over_km_fee_krw: Option<i64>,
+    pub extra_fee_krw: Option<i64>,
+    pub refund_krw: Option<i64>,
+    pub returned_at: Option<DateTime<Utc>>,
+    pub settlement_json: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ContractQuery {
-    pub status:    Option<String>,
+    pub status: Option<String>,
     pub device_id: Option<i64>,
-    pub from:      Option<String>,
-    pub to:        Option<String>,
+    pub from: Option<String>,
+    pub to: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ContractPayload {
-    pub device_id:           i64,
-    pub renter_name:         String,
-    pub renter_phone:        Option<String>,
-    pub renter_id_last4:     Option<String>,
-    pub starts_at:           DateTime<Utc>,
-    pub ends_at:             DateTime<Utc>,
-    pub rate_type:           Option<String>,
-    pub rate_amount_krw:     Option<i64>,
+    pub device_id: i64,
+    pub renter_name: String,
+    pub renter_phone: Option<String>,
+    pub renter_id_last4: Option<String>,
+    pub starts_at: DateTime<Utc>,
+    pub ends_at: DateTime<Utc>,
+    pub rate_type: Option<String>,
+    pub rate_amount_krw: Option<i64>,
     pub included_km_per_day: Option<i32>,
-    pub over_km_price_krw:   Option<i32>,
-    pub deposit_krw:         Option<i64>,
-    pub pickup_odometer_km:  Option<i32>,
-    pub pickup_location:     Option<String>,
-    pub return_location:     Option<String>,
-    pub status:              Option<String>,
-    pub note:                Option<String>,
+    pub over_km_price_krw: Option<i32>,
+    pub deposit_krw: Option<i64>,
+    pub pickup_odometer_km: Option<i32>,
+    pub pickup_location: Option<String>,
+    pub return_location: Option<String>,
+    pub status: Option<String>,
+    pub note: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ReturnPayload {
     pub return_odometer_km: Option<i32>,
-    pub return_location:    Option<String>,
-    pub extra_fee_krw:      Option<i64>,
-    pub extra_fee_label:    Option<String>,   // (R4) 기타 요금 사유 (세차·파손 등)
-    pub returned_at:        Option<DateTime<Utc>>, // (R4) 실제 반납 시각 (null → NOW())
-    pub note:               Option<String>,
+    pub return_location: Option<String>,
+    pub extra_fee_krw: Option<i64>,
+    pub extra_fee_label: Option<String>, // (R4) 기타 요금 사유 (세차·파손 등)
+    pub returned_at: Option<DateTime<Utc>>, // (R4) 실제 반납 시각 (null → NOW())
+    pub note: Option<String>,
 }
 
 // (R4) 지연 반납 할증 배수 — 1.5배.
@@ -205,9 +256,9 @@ const LATE_FEE_MULTIPLIER: f64 = 1.5;
 // (R4) rate_type 별 1시간 당 환산 요금 (지연 요금 계산용).
 fn hourly_rate(rate_type: &str, rate_amount: i64) -> i64 {
     match rate_type {
-        "hourly"  => rate_amount,
-        "monthly" => rate_amount / 720,   // 30d × 24h
-        _         => rate_amount / 24,    // daily
+        "hourly" => rate_amount,
+        "monthly" => rate_amount / 720, // 30d × 24h
+        _ => rate_amount / 24,          // daily
     }
 }
 
@@ -216,16 +267,24 @@ fn fmt_krw(n: i64) -> String {
     let b = s.as_bytes();
     let mut out = String::new();
     for (i, c) in b.iter().enumerate() {
-        if i > 0 && (b.len() - i) % 3 == 0 { out.push(','); }
+        if i > 0 && (b.len() - i) % 3 == 0 {
+            out.push(',');
+        }
         out.push(*c as char);
     }
-    if n < 0 { format!("-{out}") } else { out }
+    if n < 0 {
+        format!("-{out}")
+    } else {
+        out
+    }
 }
 
 async fn verify_device_owner(state: &AppState, uid: i64, device_id: i64) -> AppResult<()> {
-    let owner: Option<Option<i64>> = sqlx::query_scalar(
-        "SELECT owner_id FROM devices WHERE id = $1",
-    ).bind(device_id).fetch_optional(&state.db).await?;
+    let owner: Option<Option<i64>> =
+        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
+            .bind(device_id)
+            .fetch_optional(&state.db)
+            .await?;
     match owner {
         Some(Some(o)) if o == uid => Ok(()),
         _ => Err(AppError::NotFound),
@@ -239,8 +298,11 @@ async fn verify_device_owner(state: &AppState, uid: i64, device_id: i64) -> AppR
 //     겹침 데이터/extension 권한 리스크로 앱층에서 원자 보장 (migration 0059 주석 참고).
 async fn check_contract_overlap(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    user_id: i64, device_id: i64,
-    starts_at: DateTime<Utc>, ends_at: DateTime<Utc>, exclude_id: Option<i64>,
+    user_id: i64,
+    device_id: i64,
+    starts_at: DateTime<Utc>,
+    ends_at: DateTime<Utc>,
+    exclude_id: Option<i64>,
 ) -> AppResult<()> {
     let hit: Option<i64> = sqlx::query_scalar(
         r#"SELECT id FROM rental_contracts
@@ -249,17 +311,30 @@ async fn check_contract_overlap(
               AND ($5::bigint IS NULL OR id <> $5)
               AND starts_at < $4 AND ends_at > $3
             LIMIT 1"#,
-    ).bind(user_id).bind(device_id).bind(starts_at).bind(ends_at).bind(exclude_id)
-     .fetch_optional(&mut **tx).await?;
+    )
+    .bind(user_id)
+    .bind(device_id)
+    .bind(starts_at)
+    .bind(ends_at)
+    .bind(exclude_id)
+    .fetch_optional(&mut **tx)
+    .await?;
     if let Some(eid) = hit {
-        return Err(AppError::Conflict(format!("이 차량의 해당 기간에 겹치는 활성 계약이 있습니다 (id={eid})")));
+        return Err(AppError::Conflict(format!(
+            "이 차량의 해당 기간에 겹치는 활성 계약이 있습니다 (id={eid})"
+        )));
     }
     Ok(())
 }
 
-async fn lock_device_rental(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, device_id: i64) -> AppResult<()> {
+async fn lock_device_rental(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    device_id: i64,
+) -> AppResult<()> {
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
-        .bind(format!("rental:{device_id}")).execute(&mut **tx).await?;
+        .bind(format!("rental:{device_id}"))
+        .execute(&mut **tx)
+        .await?;
     Ok(())
 }
 
@@ -269,33 +344,68 @@ async fn list_contracts(
     Query(q): Query<ContractQuery>,
 ) -> AppResult<Json<Vec<Contract>>> {
     let now = Utc::now();
-    let from = q.from.as_deref()
-        .and_then(|s| DateTime::parse_from_rfc3339(s).ok().map(|d| d.with_timezone(&Utc)))
+    let from = q
+        .from
+        .as_deref()
+        .and_then(|s| {
+            DateTime::parse_from_rfc3339(s)
+                .ok()
+                .map(|d| d.with_timezone(&Utc))
+        })
         .unwrap_or_else(|| now - chrono::Duration::days(30));
-    let to = q.to.as_deref()
-        .and_then(|s| DateTime::parse_from_rfc3339(s).ok().map(|d| d.with_timezone(&Utc)))
-        .unwrap_or_else(|| now + chrono::Duration::days(90));
-    let statuses: Option<Vec<String>> = q.status.as_deref().map(|s|
-        s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect::<Vec<_>>())
+    let to =
+        q.to.as_deref()
+            .and_then(|s| {
+                DateTime::parse_from_rfc3339(s)
+                    .ok()
+                    .map(|d| d.with_timezone(&Utc))
+            })
+            .unwrap_or_else(|| now + chrono::Duration::days(90));
+    let statuses: Option<Vec<String>> = q
+        .status
+        .as_deref()
+        .map(|s| {
+            s.split(',')
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
+                .collect::<Vec<_>>()
+        })
         .filter(|v| !v.is_empty());
 
-    let rows: Vec<Contract> = if let (Some(dev_id), Some(ref sts)) = (q.device_id, statuses.as_ref()) {
-        sqlx::query_as(SQL_LIST_DEV_STATUS)
-            .bind(user.user_id).bind(dev_id).bind(from).bind(to).bind(sts)
-            .fetch_all(&state.db).await?
-    } else if let Some(dev_id) = q.device_id {
-        sqlx::query_as(SQL_LIST_DEV)
-            .bind(user.user_id).bind(dev_id).bind(from).bind(to)
-            .fetch_all(&state.db).await?
-    } else if let Some(ref sts) = statuses {
-        sqlx::query_as(SQL_LIST_STATUS)
-            .bind(user.user_id).bind(from).bind(to).bind(sts)
-            .fetch_all(&state.db).await?
-    } else {
-        sqlx::query_as(SQL_LIST_ALL)
-            .bind(user.user_id).bind(from).bind(to)
-            .fetch_all(&state.db).await?
-    };
+    let rows: Vec<Contract> =
+        if let (Some(dev_id), Some(ref sts)) = (q.device_id, statuses.as_ref()) {
+            sqlx::query_as(SQL_LIST_DEV_STATUS)
+                .bind(user.user_id)
+                .bind(dev_id)
+                .bind(from)
+                .bind(to)
+                .bind(sts)
+                .fetch_all(&state.db)
+                .await?
+        } else if let Some(dev_id) = q.device_id {
+            sqlx::query_as(SQL_LIST_DEV)
+                .bind(user.user_id)
+                .bind(dev_id)
+                .bind(from)
+                .bind(to)
+                .fetch_all(&state.db)
+                .await?
+        } else if let Some(ref sts) = statuses {
+            sqlx::query_as(SQL_LIST_STATUS)
+                .bind(user.user_id)
+                .bind(from)
+                .bind(to)
+                .bind(sts)
+                .fetch_all(&state.db)
+                .await?
+        } else {
+            sqlx::query_as(SQL_LIST_ALL)
+                .bind(user.user_id)
+                .bind(from)
+                .bind(to)
+                .fetch_all(&state.db)
+                .await?
+        };
     Ok(Json(rows))
 }
 
@@ -305,40 +415,61 @@ async fn create_contract(
     Json(req): Json<ContractPayload>,
 ) -> AppResult<Json<Contract>> {
     if req.ends_at <= req.starts_at {
-        return Err(AppError::BadRequest("ends_at must be after starts_at".into()));
+        return Err(AppError::BadRequest(
+            "ends_at must be after starts_at".into(),
+        ));
     }
     if req.renter_name.trim().is_empty() {
         return Err(AppError::BadRequest("renter_name required".into()));
     }
     verify_device_owner(&state, user.user_id, req.device_id).await?;
     let rate_type = req.rate_type.unwrap_or_else(|| "daily".into());
-    if !matches!(rate_type.as_str(), "hourly"|"daily"|"monthly") {
-        return Err(AppError::BadRequest(format!("invalid rate_type: {rate_type}")));
+    if !matches!(rate_type.as_str(), "hourly" | "daily" | "monthly") {
+        return Err(AppError::BadRequest(format!(
+            "invalid rate_type: {rate_type}"
+        )));
     }
     let status = req.status.unwrap_or_else(|| "draft".into());
-    if !matches!(status.as_str(), "draft"|"active"|"returned"|"overdue"|"cancelled") {
+    if !matches!(
+        status.as_str(),
+        "draft" | "active" | "returned" | "overdue" | "cancelled"
+    ) {
         return Err(AppError::BadRequest(format!("invalid status: {status}")));
     }
     // [뿌리 A] device 락 하에 겹침 검사 + INSERT 원자화 (동시 생성 double-booking 차단)
     let mut tx = state.db.begin().await?;
     lock_device_rental(&mut tx, req.device_id).await?;
-    if matches!(status.as_str(), "active"|"overdue") {
-        check_contract_overlap(&mut tx, user.user_id, req.device_id, req.starts_at, req.ends_at, None).await?;
+    if matches!(status.as_str(), "active" | "overdue") {
+        check_contract_overlap(
+            &mut tx,
+            user.user_id,
+            req.device_id,
+            req.starts_at,
+            req.ends_at,
+            None,
+        )
+        .await?;
     }
     let row: Contract = sqlx::query_as(SQL_INSERT)
-        .bind(user.user_id).bind(req.device_id)
+        .bind(user.user_id)
+        .bind(req.device_id)
         .bind(req.renter_name.trim())
         .bind(req.renter_phone.as_deref())
         .bind(req.renter_id_last4.as_deref())
-        .bind(req.starts_at).bind(req.ends_at)
-        .bind(&rate_type).bind(req.rate_amount_krw.unwrap_or(0))
-        .bind(req.included_km_per_day).bind(req.over_km_price_krw)
+        .bind(req.starts_at)
+        .bind(req.ends_at)
+        .bind(&rate_type)
+        .bind(req.rate_amount_krw.unwrap_or(0))
+        .bind(req.included_km_per_day)
+        .bind(req.over_km_price_krw)
         .bind(req.deposit_krw.unwrap_or(0))
         .bind(req.pickup_odometer_km)
         .bind(req.pickup_location.as_deref())
         .bind(req.return_location.as_deref())
-        .bind(&status).bind(req.note.as_deref())
-        .fetch_one(&mut *tx).await?;
+        .bind(&status)
+        .bind(req.note.as_deref())
+        .fetch_one(&mut *tx)
+        .await?;
     tx.commit().await?;
     Ok(Json(row))
 }
@@ -350,7 +481,9 @@ async fn update_contract(
     Json(req): Json<ContractPayload>,
 ) -> AppResult<Json<Contract>> {
     if req.ends_at <= req.starts_at {
-        return Err(AppError::BadRequest("ends_at must be after starts_at".into()));
+        return Err(AppError::BadRequest(
+            "ends_at must be after starts_at".into(),
+        ));
     }
     // (2026-07-29) 보안 fix — 이전엔 verify_device_owner 를 create_contract 에만 두고
     // update_contract 에선 누락. 결과: 자기 계약을 PATCH 하여 device_id 를 임의 타인 device 로
@@ -359,33 +492,53 @@ async fn update_contract(
     verify_device_owner(&state, user.user_id, req.device_id).await?;
     let rate_type = req.rate_type.unwrap_or_else(|| "daily".into());
     // [뿌리 A 2026-08-14] create 와 동일 값 검증 이식 — 미검증 시 DB CHECK 위반이 400 대신 500.
-    if !matches!(rate_type.as_str(), "hourly"|"daily"|"monthly") {
-        return Err(AppError::BadRequest(format!("invalid rate_type: {rate_type}")));
+    if !matches!(rate_type.as_str(), "hourly" | "daily" | "monthly") {
+        return Err(AppError::BadRequest(format!(
+            "invalid rate_type: {rate_type}"
+        )));
     }
     let status = req.status.unwrap_or_else(|| "draft".into());
-    if !matches!(status.as_str(), "draft"|"active"|"returned"|"overdue"|"cancelled") {
+    if !matches!(
+        status.as_str(),
+        "draft" | "active" | "returned" | "overdue" | "cancelled"
+    ) {
         return Err(AppError::BadRequest(format!("invalid status: {status}")));
     }
     // [뿌리 A] device 락 하에 겹침 검사(자기 자신 제외) + UPDATE 원자화
     let mut tx = state.db.begin().await?;
     lock_device_rental(&mut tx, req.device_id).await?;
-    if matches!(status.as_str(), "active"|"overdue") {
-        check_contract_overlap(&mut tx, user.user_id, req.device_id, req.starts_at, req.ends_at, Some(id)).await?;
+    if matches!(status.as_str(), "active" | "overdue") {
+        check_contract_overlap(
+            &mut tx,
+            user.user_id,
+            req.device_id,
+            req.starts_at,
+            req.ends_at,
+            Some(id),
+        )
+        .await?;
     }
     let row: Option<Contract> = sqlx::query_as(SQL_UPDATE)
-        .bind(id).bind(user.user_id).bind(req.device_id)
+        .bind(id)
+        .bind(user.user_id)
+        .bind(req.device_id)
         .bind(req.renter_name.trim())
         .bind(req.renter_phone.as_deref())
         .bind(req.renter_id_last4.as_deref())
-        .bind(req.starts_at).bind(req.ends_at)
-        .bind(&rate_type).bind(req.rate_amount_krw.unwrap_or(0))
-        .bind(req.included_km_per_day).bind(req.over_km_price_krw)
+        .bind(req.starts_at)
+        .bind(req.ends_at)
+        .bind(&rate_type)
+        .bind(req.rate_amount_krw.unwrap_or(0))
+        .bind(req.included_km_per_day)
+        .bind(req.over_km_price_krw)
         .bind(req.deposit_krw.unwrap_or(0))
         .bind(req.pickup_odometer_km)
         .bind(req.pickup_location.as_deref())
         .bind(req.return_location.as_deref())
-        .bind(&status).bind(req.note.as_deref())
-        .fetch_optional(&mut *tx).await?;
+        .bind(&status)
+        .bind(req.note.as_deref())
+        .fetch_optional(&mut *tx)
+        .await?;
     let row = row.ok_or(AppError::NotFound)?;
     tx.commit().await?;
     Ok(Json(row))
@@ -400,9 +553,12 @@ async fn return_contract(
     #[derive(FromRow)]
     struct Cur {
         status: String,
-        rate_type: String, rate_amount_krw: i64,
-        starts_at: DateTime<Utc>, ends_at: DateTime<Utc>,
-        included_km_per_day: Option<i32>, over_km_price_krw: Option<i32>,
+        rate_type: String,
+        rate_amount_krw: i64,
+        starts_at: DateTime<Utc>,
+        ends_at: DateTime<Utc>,
+        included_km_per_day: Option<i32>,
+        over_km_price_krw: Option<i32>,
         pickup_odometer_km: Option<i32>,
         deposit_krw: i64,
     }
@@ -410,21 +566,27 @@ async fn return_contract(
         r#"SELECT status, rate_type, rate_amount_krw, starts_at, ends_at,
                   included_km_per_day, over_km_price_krw, pickup_odometer_km, deposit_krw
              FROM rental_contracts WHERE id = $1 AND user_id = $2"#,
-    ).bind(id).bind(user.user_id).fetch_optional(&state.db).await?;
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_optional(&state.db)
+    .await?;
     let cur = cur.ok_or(AppError::NotFound)?;
     // [뿌리 A 2026-08-14] status 가드 — 취소·이미반납·draft 계약 반납 재처리 차단
     //   (기존엔 가드 없어 cancelled/returned 재호출 시 정산 재계산·덮어쓰기 → 수기 정산 소실).
-    if !matches!(cur.status.as_str(), "active"|"overdue") {
+    if !matches!(cur.status.as_str(), "active" | "overdue") {
         return Err(AppError::Conflict(format!(
-            "반납 처리는 active/overdue 계약만 가능합니다 (현재 상태: {})", cur.status)));
+            "반납 처리는 active/overdue 계약만 가능합니다 (현재 상태: {})",
+            cur.status
+        )));
     }
 
     // ── 1. 기본 요금 (계약 기간 × unit rate) ─────────────────────────
     let dur = cur.ends_at - cur.starts_at;
     let (units_raw, unit_label) = match cur.rate_type.as_str() {
-        "hourly"  => ((dur.num_minutes() as f64 / 60.0).ceil() as i64, "시간"),
-        "monthly" => ((dur.num_days()    as f64 / 30.0).ceil() as i64, "개월"),
-        _         => ((dur.num_hours()   as f64 / 24.0).ceil() as i64, "일"),
+        "hourly" => ((dur.num_minutes() as f64 / 60.0).ceil() as i64, "시간"),
+        "monthly" => ((dur.num_days() as f64 / 30.0).ceil() as i64, "개월"),
+        _ => ((dur.num_hours() as f64 / 24.0).ceil() as i64, "일"),
     };
     let units = units_raw.max(1);
     let base_fee = cur.rate_amount_krw * units;
@@ -432,9 +594,12 @@ async fn return_contract(
     // ── 2. 초과 주행 요금 ────────────────────────────────────────────
     let mut over_km_val: i32 = 0;
     let mut over_km_fee: i64 = 0;
-    if let (Some(ret_od), Some(pick_od), Some(included_per_day), Some(over_price)) =
-        (req.return_odometer_km, cur.pickup_odometer_km, cur.included_km_per_day, cur.over_km_price_krw)
-    {
+    if let (Some(ret_od), Some(pick_od), Some(included_per_day), Some(over_price)) = (
+        req.return_odometer_km,
+        cur.pickup_odometer_km,
+        cur.included_km_per_day,
+        cur.over_km_price_krw,
+    ) {
         let driven = (ret_od - pick_od).max(0);
         let days = ((dur.num_hours() as f64 / 24.0).ceil() as i32).max(1);
         let allowed = included_per_day * days;
@@ -447,11 +612,15 @@ async fn return_contract(
     let late_hours: i32 = if returned_at > cur.ends_at {
         let d = returned_at - cur.ends_at;
         ((d.num_minutes() as f64 / 60.0).ceil() as i32).max(0)
-    } else { 0 };
+    } else {
+        0
+    };
     let hourly = hourly_rate(&cur.rate_type, cur.rate_amount_krw);
     let late_fee: i64 = if late_hours > 0 {
         ((late_hours as f64) * (hourly as f64) * LATE_FEE_MULTIPLIER).round() as i64
-    } else { 0 };
+    } else {
+        0
+    };
 
     // ── 4. 기타 (수동 입력) ──────────────────────────────────────────
     let extra_fee = req.extra_fee_krw.unwrap_or(0);
@@ -535,14 +704,23 @@ async fn return_contract(
           FROM upd
      LEFT JOIN devices d ON d.id = upd.device_id"#,
     )
-    .bind(id).bind(user.user_id)
-    .bind(req.return_odometer_km).bind(req.return_location.as_deref())
-    .bind(subtotal).bind(req.note.as_deref())
-    .bind(base_fee).bind(late_hours).bind(late_fee)
-    .bind(over_km_val).bind(over_km_fee)
-    .bind(extra_fee).bind(refund).bind(returned_at)
+    .bind(id)
+    .bind(user.user_id)
+    .bind(req.return_odometer_km)
+    .bind(req.return_location.as_deref())
+    .bind(subtotal)
+    .bind(req.note.as_deref())
+    .bind(base_fee)
+    .bind(late_hours)
+    .bind(late_fee)
+    .bind(over_km_val)
+    .bind(over_km_fee)
+    .bind(extra_fee)
+    .bind(refund)
+    .bind(returned_at)
     .bind(&settlement)
-    .fetch_one(&state.db).await?;
+    .fetch_one(&state.db)
+    .await?;
     Ok(Json(row))
 }
 
@@ -552,8 +730,14 @@ async fn delete_contract(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
     let n = sqlx::query("DELETE FROM rental_contracts WHERE id = $1 AND user_id = $2")
-        .bind(id).bind(user.user_id).execute(&state.db).await?.rows_affected();
-    if n == 0 { return Err(AppError::NotFound); }
+        .bind(id)
+        .bind(user.user_id)
+        .execute(&state.db)
+        .await?
+        .rows_affected();
+    if n == 0 {
+        return Err(AppError::NotFound);
+    }
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 
@@ -565,8 +749,10 @@ async fn invoice_xlsx(
     Path(id): Path<i64>,
 ) -> AppResult<axum::response::Response> {
     let row: Option<Contract> = sqlx::query_as(SQL_INVOICE_SELECT)
-        .bind(id).bind(user.user_id)
-        .fetch_optional(&state.db).await?;
+        .bind(id)
+        .bind(user.user_id)
+        .fetch_optional(&state.db)
+        .await?;
     let c = row.ok_or(AppError::NotFound)?;
     if c.status != "returned" {
         return Err(AppError::BadRequest("아직 반납되지 않은 계약입니다".into()));
@@ -575,25 +761,44 @@ async fn invoice_xlsx(
     let corp: Option<CorpLite> = sqlx::query_as(
         r#"SELECT company_name, business_number, representative, address
              FROM corporate_info WHERE user_id = $1"#,
-    ).bind(user.user_id).fetch_optional(&state.db).await.ok().flatten();
+    )
+    .bind(user.user_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
 
     let bytes = build_invoice_xlsx(&c, corp.as_ref())
         .map_err(|e| AppError::Internal(anyhow::anyhow!("xlsx: {e}")))?;
 
-    let plate = c.license_plate.clone().unwrap_or_else(|| c.device_id.to_string());
-    let fname = format!("청구서_{}_{}_{}.xlsx",
+    let plate = c
+        .license_plate
+        .clone()
+        .unwrap_or_else(|| c.device_id.to_string());
+    let fname = format!(
+        "청구서_{}_{}_{}.xlsx",
         plate,
         c.renter_name,
-        c.settled_at.map(|d| fmt_kst(d, "%Y%m%d")).unwrap_or_else(|| "unknown".into()));
+        c.settled_at
+            .map(|d| fmt_kst(d, "%Y%m%d"))
+            .unwrap_or_else(|| "unknown".into())
+    );
     // RFC5987 filename* — 한글 포함.
     let enc = url_encode(&fname);
     let cd = format!("attachment; filename=\"invoice.xlsx\"; filename*=UTF-8''{enc}");
 
     let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE,
-        HeaderValue::from_static("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-    headers.insert(header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&cd).unwrap_or_else(|_| HeaderValue::from_static("attachment; filename=\"invoice.xlsx\"")));
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ),
+    );
+    headers.insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_str(&cd)
+            .unwrap_or_else(|_| HeaderValue::from_static("attachment; filename=\"invoice.xlsx\"")),
+    );
     Ok((StatusCode::OK, headers, bytes).into_response())
 }
 
@@ -608,8 +813,10 @@ fn url_encode(s: &str) -> String {
     let mut out = String::new();
     for b in s.as_bytes() {
         match b {
-            b'A'..=b'Z'|b'a'..=b'z'|b'0'..=b'9'|b'-'|b'_'|b'.'|b'~' => out.push(*b as char),
-            _ => out.push_str(&format!("%{:02X}", b)),
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(*b as char)
+            }
+            _ => out.push_str(&format!("%{b:02X}")),
         }
     }
     out
@@ -617,13 +824,16 @@ fn url_encode(s: &str) -> String {
 
 #[derive(FromRow)]
 struct CorpLite {
-    company_name:    Option<String>,
+    company_name: Option<String>,
     business_number: Option<String>,
-    representative:  Option<String>,
-    address:         Option<String>,
+    representative: Option<String>,
+    address: Option<String>,
 }
 
-fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, rust_xlsxwriter::XlsxError> {
+fn build_invoice_xlsx(
+    c: &Contract,
+    corp: Option<&CorpLite>,
+) -> Result<Vec<u8>, rust_xlsxwriter::XlsxError> {
     use rust_xlsxwriter::{Color, Format, FormatAlign, FormatBorder, Workbook};
 
     let mut wb = Workbook::new();
@@ -635,32 +845,69 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
     ws.set_column_width(3, 18.0)?;
     ws.set_column_width(4, 4.0)?;
 
-    let title_fmt = Format::new().set_bold().set_font_size(20).set_align(FormatAlign::Center);
-    let sub_fmt   = Format::new().set_align(FormatAlign::Center).set_font_color(Color::RGB(0x666666));
-    let label_fmt = Format::new().set_bold().set_background_color(Color::RGB(0xF5F5F7))
-                     .set_border(FormatBorder::Thin).set_align(FormatAlign::Center);
+    let title_fmt = Format::new()
+        .set_bold()
+        .set_font_size(20)
+        .set_align(FormatAlign::Center);
+    let sub_fmt = Format::new()
+        .set_align(FormatAlign::Center)
+        .set_font_color(Color::RGB(0x666666));
+    let label_fmt = Format::new()
+        .set_bold()
+        .set_background_color(Color::RGB(0xF5F5F7))
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Center);
     let value_fmt = Format::new().set_border(FormatBorder::Thin);
-    let value_r   = Format::new().set_border(FormatBorder::Thin).set_align(FormatAlign::Right).set_num_format("#,##0");
-    let line_hdr  = Format::new().set_bold().set_background_color(Color::RGB(0xEEF2FF))
-                     .set_border(FormatBorder::Thin).set_align(FormatAlign::Center);
-    let total_l   = Format::new().set_bold().set_background_color(Color::RGB(0xF5F5F7))
-                     .set_border(FormatBorder::Thin).set_align(FormatAlign::Right);
-    let total_v   = Format::new().set_bold().set_border(FormatBorder::Thin)
-                     .set_align(FormatAlign::Right).set_num_format("#,##0");
-    let refund_l  = Format::new().set_bold().set_background_color(Color::RGB(0xDCFCE7))
-                     .set_border(FormatBorder::Thin).set_align(FormatAlign::Right);
-    let refund_v  = Format::new().set_bold().set_background_color(Color::RGB(0xDCFCE7))
-                     .set_border(FormatBorder::Thin).set_align(FormatAlign::Right).set_num_format("#,##0");
-    let charge_l  = Format::new().set_bold().set_background_color(Color::RGB(0xFEE2E2))
-                     .set_border(FormatBorder::Thin).set_align(FormatAlign::Right);
-    let charge_v  = Format::new().set_bold().set_background_color(Color::RGB(0xFEE2E2))
-                     .set_border(FormatBorder::Thin).set_align(FormatAlign::Right).set_num_format("#,##0");
+    let value_r = Format::new()
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Right)
+        .set_num_format("#,##0");
+    let line_hdr = Format::new()
+        .set_bold()
+        .set_background_color(Color::RGB(0xEEF2FF))
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Center);
+    let total_l = Format::new()
+        .set_bold()
+        .set_background_color(Color::RGB(0xF5F5F7))
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Right);
+    let total_v = Format::new()
+        .set_bold()
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Right)
+        .set_num_format("#,##0");
+    let refund_l = Format::new()
+        .set_bold()
+        .set_background_color(Color::RGB(0xDCFCE7))
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Right);
+    let refund_v = Format::new()
+        .set_bold()
+        .set_background_color(Color::RGB(0xDCFCE7))
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Right)
+        .set_num_format("#,##0");
+    let charge_l = Format::new()
+        .set_bold()
+        .set_background_color(Color::RGB(0xFEE2E2))
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Right);
+    let charge_v = Format::new()
+        .set_bold()
+        .set_background_color(Color::RGB(0xFEE2E2))
+        .set_border(FormatBorder::Thin)
+        .set_align(FormatAlign::Right)
+        .set_num_format("#,##0");
 
     // ── 타이틀 ───────────────────────────────────────
     ws.merge_range(0, 1, 0, 3, "렌 트 카   청 구 서", &title_fmt)?;
     ws.set_row_height(0, 32.0)?;
-    let settled_ymd = c.settled_at.map(|d| fmt_kst(d, "%Y-%m-%d")).unwrap_or_default();
-    ws.merge_range(1, 1, 1, 3, &format!("발행일: {}", settled_ymd), &sub_fmt)?;
+    let settled_ymd = c
+        .settled_at
+        .map(|d| fmt_kst(d, "%Y-%m-%d"))
+        .unwrap_or_default();
+    ws.merge_range(1, 1, 1, 3, &format!("발행일: {settled_ymd}"), &sub_fmt)?;
 
     // ── 임대인 (회사) ─────────────────────────────────
     let mut r: u32 = 3;
@@ -682,7 +929,14 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
         r += 1;
     } else {
         ws.write_string_with_format(r, 1, "회사 정보", &label_fmt)?;
-        ws.merge_range(r, 2, r, 3, "(회사 정보 페이지에서 입력해주세요)", &value_fmt)?;
+        ws.merge_range(
+            r,
+            2,
+            r,
+            3,
+            "(회사 정보 페이지에서 입력해주세요)",
+            &value_fmt,
+        )?;
         r += 1;
     }
 
@@ -694,10 +948,24 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
     ws.merge_range(r, 2, r, 3, c.renter_name.as_str(), &value_fmt)?;
     r += 1;
     ws.write_string_with_format(r, 1, "연락처", &label_fmt)?;
-    ws.merge_range(r, 2, r, 3, c.renter_phone.as_deref().unwrap_or("-"), &value_fmt)?;
+    ws.merge_range(
+        r,
+        2,
+        r,
+        3,
+        c.renter_phone.as_deref().unwrap_or("-"),
+        &value_fmt,
+    )?;
     r += 1;
     ws.write_string_with_format(r, 1, "신분증 뒤4", &label_fmt)?;
-    ws.merge_range(r, 2, r, 3, c.renter_id_last4.as_deref().unwrap_or("-"), &value_fmt)?;
+    ws.merge_range(
+        r,
+        2,
+        r,
+        3,
+        c.renter_id_last4.as_deref().unwrap_or("-"),
+        &value_fmt,
+    )?;
     r += 1;
 
     // ── 계약 정보 ────────────────────────────────────
@@ -705,26 +973,44 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
     ws.merge_range(r, 1, r, 3, "계약 정보", &line_hdr)?;
     r += 1;
     ws.write_string_with_format(r, 1, "차량", &label_fmt)?;
-    let vehicle = format!("{} ({})",
+    let vehicle = format!(
+        "{} ({})",
         c.device_name.as_deref().unwrap_or("-"),
-        c.license_plate.as_deref().unwrap_or("-"));
+        c.license_plate.as_deref().unwrap_or("-")
+    );
     ws.merge_range(r, 2, r, 3, &vehicle, &value_fmt)?;
     r += 1;
     ws.write_string_with_format(r, 1, "계약 시작", &label_fmt)?;
-    ws.merge_range(r, 2, r, 3, &fmt_kst(c.starts_at, "%Y-%m-%d %H:%M"), &value_fmt)?;
+    ws.merge_range(
+        r,
+        2,
+        r,
+        3,
+        &fmt_kst(c.starts_at, "%Y-%m-%d %H:%M"),
+        &value_fmt,
+    )?;
     r += 1;
     ws.write_string_with_format(r, 1, "계약 종료", &label_fmt)?;
-    ws.merge_range(r, 2, r, 3, &fmt_kst(c.ends_at, "%Y-%m-%d %H:%M"), &value_fmt)?;
+    ws.merge_range(
+        r,
+        2,
+        r,
+        3,
+        &fmt_kst(c.ends_at, "%Y-%m-%d %H:%M"),
+        &value_fmt,
+    )?;
     r += 1;
     ws.write_string_with_format(r, 1, "실제 반납", &label_fmt)?;
-    let ret_s = c.returned_at.map(|d| fmt_kst(d, "%Y-%m-%d %H:%M"))
+    let ret_s = c
+        .returned_at
+        .map(|d| fmt_kst(d, "%Y-%m-%d %H:%M"))
         .unwrap_or_else(|| "-".into());
     ws.merge_range(r, 2, r, 3, &ret_s, &value_fmt)?;
     r += 1;
     if c.pickup_odometer_km.is_some() || c.return_odometer_km.is_some() {
         ws.write_string_with_format(r, 1, "주행거리", &label_fmt)?;
         let pick = c.pickup_odometer_km.unwrap_or(0);
-        let ret  = c.return_odometer_km.unwrap_or(0);
+        let ret = c.return_odometer_km.unwrap_or(0);
         let s = format!("{} → {} km ({}km)", pick, ret, (ret - pick).max(0));
         ws.merge_range(r, 2, r, 3, &s, &value_fmt)?;
         r += 1;
@@ -735,26 +1021,28 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
     ws.merge_range(r, 1, r, 3, "정산 내역", &line_hdr)?;
     r += 1;
     ws.write_string_with_format(r, 1, "항목", &label_fmt)?;
-    ws.write_string_with_format(r, 2, "설명",  &label_fmt)?;
+    ws.write_string_with_format(r, 2, "설명", &label_fmt)?;
     ws.write_string_with_format(r, 3, "금액(원)", &label_fmt)?;
     r += 1;
-    if let Some(Value::Object(map)) = c.settlement_json.as_ref().map(|v| v.clone()).map(|v| v)
-        .and_then(|v| if v.is_object() { Some(v) } else { None })
+    if let Some(Value::Object(map)) =
+        c.settlement_json
+            .clone()
+            .and_then(|v| if v.is_object() { Some(v) } else { None })
     {
         if let Some(Value::Array(arr)) = map.get("lines") {
             for line in arr {
-                let kind  = line.get("kind").and_then(|v| v.as_str()).unwrap_or("");
+                let kind = line.get("kind").and_then(|v| v.as_str()).unwrap_or("");
                 let label = line.get("label").and_then(|v| v.as_str()).unwrap_or("");
-                let amt   = line.get("amount").and_then(|v| v.as_i64()).unwrap_or(0);
+                let amt = line.get("amount").and_then(|v| v.as_i64()).unwrap_or(0);
                 let kind_ko = match kind {
-                    "base"    => "기본료",
+                    "base" => "기본료",
                     "over_km" => "초과주행",
-                    "late"    => "지연반납",
-                    "extra"   => "기타",
+                    "late" => "지연반납",
+                    "extra" => "기타",
                     _ => kind,
                 };
                 ws.write_string_with_format(r, 1, kind_ko, &value_fmt)?;
-                ws.write_string_with_format(r, 2, label,   &value_fmt)?;
+                ws.write_string_with_format(r, 2, label, &value_fmt)?;
                 ws.write_number_with_format(r, 3, amt as f64, &value_r)?;
                 r += 1;
             }
@@ -762,8 +1050,8 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
     }
     // ── 소계 · 보증금 · 잔액 ────────────────────────
     let subtotal = c.settled_amount_krw.unwrap_or(0);
-    let deposit  = c.deposit_krw;
-    let balance  = c.refund_krw.unwrap_or(deposit - subtotal);
+    let deposit = c.deposit_krw;
+    let balance = c.refund_krw.unwrap_or(deposit - subtotal);
     ws.merge_range(r, 1, r, 2, "소계", &total_l)?;
     ws.write_number_with_format(r, 3, subtotal as f64, &total_v)?;
     r += 1;
@@ -782,7 +1070,8 @@ fn build_invoice_xlsx(c: &Contract, corp: Option<&CorpLite>) -> Result<Vec<u8>, 
     Ok(buf)
 }
 
-const SQL_INVOICE_SELECT: &str = "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
+const SQL_INVOICE_SELECT: &str =
+    "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
     c.renter_name, c.renter_phone, c.renter_id_last4, c.starts_at, c.ends_at,
     c.rate_type, c.rate_amount_krw, c.included_km_per_day, c.over_km_price_krw,
     c.deposit_krw, c.return_odometer_km, c.pickup_odometer_km,
@@ -793,7 +1082,8 @@ const SQL_INVOICE_SELECT: &str = "SELECT c.id, c.user_id, c.device_id, d.display
     FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
     WHERE c.id = $1 AND c.user_id = $2";
 
-const SQL_LIST_ALL: &str = "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
+const SQL_LIST_ALL: &str =
+    "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
     c.renter_name, c.renter_phone, c.renter_id_last4, c.starts_at, c.ends_at,
     c.rate_type, c.rate_amount_krw, c.included_km_per_day, c.over_km_price_krw,
     c.deposit_krw, c.return_odometer_km, c.pickup_odometer_km,
@@ -804,7 +1094,8 @@ const SQL_LIST_ALL: &str = "SELECT c.id, c.user_id, c.device_id, d.display_name 
     FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.starts_at < $3 AND c.ends_at > $2
     ORDER BY c.starts_at DESC";
-const SQL_LIST_DEV: &str = "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
+const SQL_LIST_DEV: &str =
+    "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
     c.renter_name, c.renter_phone, c.renter_id_last4, c.starts_at, c.ends_at,
     c.rate_type, c.rate_amount_krw, c.included_km_per_day, c.over_km_price_krw,
     c.deposit_krw, c.return_odometer_km, c.pickup_odometer_km,
@@ -815,7 +1106,8 @@ const SQL_LIST_DEV: &str = "SELECT c.id, c.user_id, c.device_id, d.display_name 
     FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.device_id = $2 AND c.starts_at < $4 AND c.ends_at > $3
     ORDER BY c.starts_at DESC";
-const SQL_LIST_STATUS: &str = "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
+const SQL_LIST_STATUS: &str =
+    "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
     c.renter_name, c.renter_phone, c.renter_id_last4, c.starts_at, c.ends_at,
     c.rate_type, c.rate_amount_krw, c.included_km_per_day, c.over_km_price_krw,
     c.deposit_krw, c.return_odometer_km, c.pickup_odometer_km,
@@ -826,7 +1118,8 @@ const SQL_LIST_STATUS: &str = "SELECT c.id, c.user_id, c.device_id, d.display_na
     FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.starts_at < $3 AND c.ends_at > $2 AND c.status = ANY($4::TEXT[])
     ORDER BY c.starts_at DESC";
-const SQL_LIST_DEV_STATUS: &str = "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
+const SQL_LIST_DEV_STATUS: &str =
+    "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
     c.renter_name, c.renter_phone, c.renter_id_last4, c.starts_at, c.ends_at,
     c.rate_type, c.rate_amount_krw, c.included_km_per_day, c.over_km_price_krw,
     c.deposit_krw, c.return_odometer_km, c.pickup_odometer_km,
@@ -895,18 +1188,18 @@ LEFT JOIN devices d ON d.id = upd.device_id"#;
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct RenterSummary {
-    pub renter_phone:    String,
-    pub renter_name:     Option<String>,
+    pub renter_phone: String,
+    pub renter_name: Option<String>,
     pub contracts_count: i64,
-    pub returned_count:  i64,
-    pub overdue_count:   i64,
-    pub late_count:      i64,
-    pub total_revenue:   i64,
-    pub first_at:        DateTime<Utc>,
-    pub last_at:         DateTime<Utc>,
-    pub blacklisted:     bool,
+    pub returned_count: i64,
+    pub overdue_count: i64,
+    pub late_count: i64,
+    pub total_revenue: i64,
+    pub first_at: DateTime<Utc>,
+    pub last_at: DateTime<Utc>,
+    pub blacklisted: bool,
     pub blacklist_severity: Option<String>,
-    pub blacklist_reason:   Option<String>,
+    pub blacklist_reason: Option<String>,
 }
 
 async fn list_renters(
@@ -938,7 +1231,10 @@ async fn list_renters(
      LEFT JOIN renter_blacklist b
             ON b.user_id = $1 AND b.renter_phone = a.renter_phone
          ORDER BY a.last_at DESC"#,
-    ).bind(user.user_id).fetch_all(&state.db).await?;
+    )
+    .bind(user.user_id)
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
@@ -972,7 +1268,11 @@ async fn renter_detail(
           FROM agg a
      LEFT JOIN renter_blacklist b
             ON b.user_id = $1 AND b.renter_phone = a.renter_phone"#,
-    ).bind(user.user_id).bind(&phone).fetch_optional(&state.db).await?;
+    )
+    .bind(user.user_id)
+    .bind(&phone)
+    .fetch_optional(&state.db)
+    .await?;
     let summary = summary.ok_or(AppError::NotFound)?;
 
     // 계약 이력 (최대 100건, 최신순)
@@ -988,21 +1288,25 @@ async fn renter_detail(
              FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
             WHERE c.user_id = $1 AND c.renter_phone = $2
          ORDER BY c.starts_at DESC LIMIT 100"#,
-    ).bind(user.user_id).bind(&phone).fetch_all(&state.db).await?;
+    )
+    .bind(user.user_id)
+    .bind(&phone)
+    .fetch_all(&state.db)
+    .await?;
 
     Ok(Json(json!({ "summary": summary, "contracts": contracts })))
 }
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct BlacklistEntry {
-    pub id:            i64,
-    pub user_id:       i64,
-    pub renter_phone:  String,
-    pub renter_name:   Option<String>,
-    pub reason:        String,
-    pub severity:      String,
-    pub created_at:    DateTime<Utc>,
-    pub created_by:    Option<i64>,
+    pub id: i64,
+    pub user_id: i64,
+    pub renter_phone: String,
+    pub renter_name: Option<String>,
+    pub reason: String,
+    pub severity: String,
+    pub created_at: DateTime<Utc>,
+    pub created_by: Option<i64>,
 }
 
 async fn list_blacklist(
@@ -1012,16 +1316,19 @@ async fn list_blacklist(
     let rows: Vec<BlacklistEntry> = sqlx::query_as(
         r#"SELECT id, user_id, renter_phone, renter_name, reason, severity, created_at, created_by
              FROM renter_blacklist WHERE user_id = $1 ORDER BY created_at DESC"#,
-    ).bind(user.user_id).fetch_all(&state.db).await?;
+    )
+    .bind(user.user_id)
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
 #[derive(Debug, Deserialize)]
 pub struct BlacklistPayload {
     pub renter_phone: String,
-    pub renter_name:  Option<String>,
-    pub reason:       String,
-    pub severity:     Option<String>,  // 'warn' (default) | 'block'
+    pub renter_name: Option<String>,
+    pub reason: String,
+    pub severity: Option<String>, // 'warn' (default) | 'block'
 }
 
 async fn add_blacklist(
@@ -1036,7 +1343,7 @@ async fn add_blacklist(
         return Err(AppError::BadRequest("reason required".into()));
     }
     let sev = req.severity.unwrap_or_else(|| "warn".into());
-    if !matches!(sev.as_str(), "warn"|"block") {
+    if !matches!(sev.as_str(), "warn" | "block") {
         return Err(AppError::BadRequest(format!("invalid severity: {sev}")));
     }
     let row: BlacklistEntry = sqlx::query_as(
@@ -1061,8 +1368,14 @@ async fn remove_blacklist(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
     let n = sqlx::query("DELETE FROM renter_blacklist WHERE id = $1 AND user_id = $2")
-        .bind(id).bind(user.user_id).execute(&state.db).await?.rows_affected();
-    if n == 0 { return Err(AppError::NotFound); }
+        .bind(id)
+        .bind(user.user_id)
+        .execute(&state.db)
+        .await?
+        .rows_affected();
+    if n == 0 {
+        return Err(AppError::NotFound);
+    }
     Ok(Json(json!({ "ok": true })))
 }
 
@@ -1079,13 +1392,22 @@ async fn check_blacklist(
     let entry: Option<BlacklistEntry> = sqlx::query_as(
         r#"SELECT id, user_id, renter_phone, renter_name, reason, severity, created_at, created_by
              FROM renter_blacklist WHERE user_id = $1 AND renter_phone = $2"#,
-    ).bind(user.user_id).bind(q.phone.trim()).fetch_optional(&state.db).await?;
+    )
+    .bind(user.user_id)
+    .bind(q.phone.trim())
+    .fetch_optional(&state.db)
+    .await?;
 
     // 재방문 여부 — 이 phone 으로 계약 몇 건?
     let visits: i64 = sqlx::query_scalar(
         r#"SELECT COUNT(*)::BIGINT FROM rental_contracts
             WHERE user_id = $1 AND renter_phone = $2"#,
-    ).bind(user.user_id).bind(q.phone.trim()).fetch_one(&state.db).await.unwrap_or(0);
+    )
+    .bind(user.user_id)
+    .bind(q.phone.trim())
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(0);
 
     Ok(Json(json!({
         "blacklisted": entry.is_some(),
@@ -1103,14 +1425,13 @@ async fn check_blacklist(
 // ═══════════════════════════════════════════════════════════════
 
 const HANDOFF_DEFAULT_TTL_HOURS: i64 = 72;
-const HANDOFF_MAX_PHOTO_BYTES:   usize = 4 * 1024 * 1024;  // 4MB
+const HANDOFF_MAX_PHOTO_BYTES: usize = 4 * 1024 * 1024; // 4MB
 
 fn generate_handoff_token() -> String {
     use rand::RngCore;
-    let mut buf = [0u8; 16];   // 128 bit → base64 22자
+    let mut buf = [0u8; 16]; // 128 bit → base64 22자
     rand::thread_rng().fill_bytes(&mut buf);
-    const ALPHABET: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     let mut out = String::with_capacity(22);
     let mut acc: u32 = 0;
     let mut bits: u32 = 0;
@@ -1130,21 +1451,21 @@ fn generate_handoff_token() -> String {
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct HandoffToken {
-    pub id:          i64,
+    pub id: i64,
     pub contract_id: i64,
-    pub user_id:     i64,
-    pub purpose:     String,
-    pub token:       String,
-    pub created_at:  DateTime<Utc>,
-    pub expires_at:  DateTime<Utc>,
-    pub used_at:     Option<DateTime<Utc>>,
-    pub revoked_at:  Option<DateTime<Utc>>,
+    pub user_id: i64,
+    pub purpose: String,
+    pub token: String,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+    pub revoked_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct IssueTokenPayload {
-    pub purpose:       String,             // pickup | return
-    pub expires_hours: Option<i64>,        // 기본 72
+    pub purpose: String,            // pickup | return
+    pub expires_hours: Option<i64>, // 기본 72
 }
 
 async fn issue_handoff_token(
@@ -1153,14 +1474,21 @@ async fn issue_handoff_token(
     Path(contract_id): Path<i64>,
     Json(req): Json<IssueTokenPayload>,
 ) -> AppResult<Json<HandoffToken>> {
-    if !matches!(req.purpose.as_str(), "pickup"|"return") {
-        return Err(AppError::BadRequest("purpose must be pickup or return".into()));
+    if !matches!(req.purpose.as_str(), "pickup" | "return") {
+        return Err(AppError::BadRequest(
+            "purpose must be pickup or return".into(),
+        ));
     }
-    let hours = req.expires_hours.unwrap_or(HANDOFF_DEFAULT_TTL_HOURS).clamp(1, 720);
+    let hours = req
+        .expires_hours
+        .unwrap_or(HANDOFF_DEFAULT_TTL_HOURS)
+        .clamp(1, 720);
     // 소유권 확인
-    let owner_check: Option<i64> = sqlx::query_scalar(
-        "SELECT user_id FROM rental_contracts WHERE id = $1"
-    ).bind(contract_id).fetch_optional(&state.db).await?;
+    let owner_check: Option<i64> =
+        sqlx::query_scalar("SELECT user_id FROM rental_contracts WHERE id = $1")
+            .bind(contract_id)
+            .fetch_optional(&state.db)
+            .await?;
     match owner_check {
         Some(uid) if uid == user.user_id => {}
         _ => return Err(AppError::NotFound),
@@ -1201,8 +1529,15 @@ async fn revoke_handoff_token(
         r#"UPDATE rental_handoff_tokens
               SET revoked_at = NOW()
             WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL AND used_at IS NULL"#,
-    ).bind(id).bind(user.user_id).execute(&state.db).await?.rows_affected();
-    if n == 0 { return Err(AppError::NotFound); }
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .execute(&state.db)
+    .await?
+    .rows_affected();
+    if n == 0 {
+        return Err(AppError::NotFound);
+    }
     Ok(Json(json!({ "ok": true })))
 }
 
@@ -1210,21 +1545,21 @@ async fn revoke_handoff_token(
 
 #[derive(Debug, Serialize)]
 struct HandoffView {
-    purpose:         String,
-    status:          String,      // "ready" | "used" | "revoked" | "expired"
-    contract_id:     i64,
-    company_name:    Option<String>,
-    device_name:     Option<String>,
-    license_plate:   Option<String>,
-    renter_name:     String,
-    starts_at:       DateTime<Utc>,
-    ends_at:         DateTime<Utc>,
-    rate_type:       String,
+    purpose: String,
+    status: String, // "ready" | "used" | "revoked" | "expired"
+    contract_id: i64,
+    company_name: Option<String>,
+    device_name: Option<String>,
+    license_plate: Option<String>,
+    renter_name: String,
+    starts_at: DateTime<Utc>,
+    ends_at: DateTime<Utc>,
+    rate_type: String,
     rate_amount_krw: i64,
-    deposit_krw:     i64,
-    pickup_odometer_km: Option<i32>,   // return purpose 시 참고용
-    used_at:         Option<DateTime<Utc>>,
-    submitted_photo_id: Option<i64>,   // used 시 photo 조회용
+    deposit_krw: i64,
+    pickup_odometer_km: Option<i32>, // return purpose 시 참고용
+    used_at: Option<DateTime<Utc>>,
+    submitted_photo_id: Option<i64>, // used 시 photo 조회용
 }
 
 async fn load_handoff_by_token(pool: &sqlx::PgPool, token: &str) -> AppResult<HandoffView> {
@@ -1255,28 +1590,52 @@ async fn load_handoff_by_token(pool: &sqlx::PgPool, token: &str) -> AppResult<Ha
              JOIN rental_contracts c ON c.id = t.contract_id
         LEFT JOIN devices d ON d.id = c.device_id
             WHERE t.token = $1"#,
-    ).bind(token).fetch_optional(pool).await?;
+    )
+    .bind(token)
+    .fetch_optional(pool)
+    .await?;
     let r = r.ok_or(AppError::NotFound)?;
 
-    let status = if r.revoked_at.is_some()          { "revoked" }
-                 else if r.used_at.is_some()        { "used" }
-                 else if r.expires_at <= Utc::now() { "expired" }
-                 else                               { "ready" };
+    let status = if r.revoked_at.is_some() {
+        "revoked"
+    } else if r.used_at.is_some() {
+        "used"
+    } else if r.expires_at <= Utc::now() {
+        "expired"
+    } else {
+        "ready"
+    };
 
     // used 이면 임차인이 제출한 사진 id (동일 purpose)
     let submitted_photo_id: Option<i64> = if status == "used" {
-        let kind = if r.purpose == "pickup" { "pickup_odometer" } else { "return_odometer" };
+        let kind = if r.purpose == "pickup" {
+            "pickup_odometer"
+        } else {
+            "return_odometer"
+        };
         sqlx::query_scalar(
             r#"SELECT id FROM rental_photos
                 WHERE contract_id = $1 AND kind = $2
              ORDER BY uploaded_at DESC LIMIT 1"#,
-        ).bind(r.contract_id).bind(kind).fetch_optional(pool).await.ok().flatten()
-    } else { None };
+        )
+        .bind(r.contract_id)
+        .bind(kind)
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten()
+    } else {
+        None
+    };
 
     // owner 회사명
-    let company_name: Option<String> = sqlx::query_scalar(
-        "SELECT company_name FROM corporate_info WHERE user_id = $1"
-    ).bind(r.user_id).fetch_optional(pool).await.ok().flatten();
+    let company_name: Option<String> =
+        sqlx::query_scalar("SELECT company_name FROM corporate_info WHERE user_id = $1")
+            .bind(r.user_id)
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
 
     Ok(HandoffView {
         purpose: r.purpose,
@@ -1307,19 +1666,19 @@ async fn handoff_view(
 
 #[derive(Debug, Deserialize)]
 pub struct HandoffExtraPhoto {
-    pub kind:     String,   // 'damage' | 'fuel' — purpose 와 결합해 DB kind 로 매핑
+    pub kind: String, // 'damage' | 'fuel' — purpose 와 결합해 DB kind 로 매핑
     pub data_url: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct HandoffSubmitPayload {
-    pub odometer_km:      i32,
-    pub signature_svg:    String,       // SVG dataURL 또는 raw <svg> — 프론트가 작성
-    pub photo_data_url:   String,       // "data:image/jpeg;base64,..."
-    pub renter_confirmed_name: Option<String>,   // 임차인이 이름 확인 재입력
+    pub odometer_km: i32,
+    pub signature_svg: String, // SVG dataURL 또는 raw <svg> — 프론트가 작성
+    pub photo_data_url: String, // "data:image/jpeg;base64,..."
+    pub renter_confirmed_name: Option<String>, // 임차인이 이름 확인 재입력
     // (2026-07-28 R9-b) 추가 사진 (파손 · 연료 게이지) — max 6장
     #[serde(default)]
-    pub extra_photos:     Vec<HandoffExtraPhoto>,
+    pub extra_photos: Vec<HandoffExtraPhoto>,
 }
 
 const HANDOFF_MAX_EXTRA_PHOTOS: usize = 6;
@@ -1336,7 +1695,9 @@ async fn handoff_submit(
         return Err(AppError::BadRequest("사진이 비어 있습니다".into()));
     }
     if req.extra_photos.len() > HANDOFF_MAX_EXTRA_PHOTOS {
-        return Err(AppError::BadRequest(format!("사진은 최대 {}장까지", HANDOFF_MAX_EXTRA_PHOTOS)));
+        return Err(AppError::BadRequest(format!(
+            "사진은 최대 {HANDOFF_MAX_EXTRA_PHOTOS}장까지"
+        )));
     }
     // 오도미터 사진 파싱
     let (odo_mime, odo_bytes) = parse_data_url(&req.photo_data_url)
@@ -1345,10 +1706,14 @@ async fn handoff_submit(
         return Err(AppError::BadRequest("photo too large (>4MB)".into()));
     }
     // 추가 사진 파싱 + kind 매핑 검증
-    let mut extras_parsed: Vec<(String, String, Vec<u8>)> = Vec::with_capacity(req.extra_photos.len());
+    let mut extras_parsed: Vec<(String, String, Vec<u8>)> =
+        Vec::with_capacity(req.extra_photos.len());
     for p in &req.extra_photos {
-        if !matches!(p.kind.as_str(), "damage"|"fuel") {
-            return Err(AppError::BadRequest(format!("invalid extra kind: {}", p.kind)));
+        if !matches!(p.kind.as_str(), "damage" | "fuel") {
+            return Err(AppError::BadRequest(format!(
+                "invalid extra kind: {}",
+                p.kind
+            )));
         }
         let (m, b) = parse_data_url(&p.data_url)
             .ok_or_else(|| AppError::BadRequest("extra photo data_url invalid".into()))?;
@@ -1360,51 +1725,84 @@ async fn handoff_submit(
 
     // 토큰 상태 검증
     #[derive(FromRow)]
-    struct Tk { id: i64, contract_id: i64, user_id: i64, purpose: String,
-                expires_at: DateTime<Utc>, used_at: Option<DateTime<Utc>>, revoked_at: Option<DateTime<Utc>> }
+    struct Tk {
+        id: i64,
+        contract_id: i64,
+        user_id: i64,
+        purpose: String,
+        expires_at: DateTime<Utc>,
+        used_at: Option<DateTime<Utc>>,
+        revoked_at: Option<DateTime<Utc>>,
+    }
     let tk: Option<Tk> = sqlx::query_as(
         r#"SELECT id, contract_id, user_id, purpose, expires_at, used_at, revoked_at
              FROM rental_handoff_tokens WHERE token = $1"#,
-    ).bind(&token).fetch_optional(&state.db).await?;
+    )
+    .bind(&token)
+    .fetch_optional(&state.db)
+    .await?;
     let tk = tk.ok_or(AppError::NotFound)?;
-    if tk.revoked_at.is_some() { return Err(AppError::BadRequest("취소된 링크입니다".into())); }
-    if tk.used_at.is_some()    { return Err(AppError::BadRequest("이미 제출된 링크입니다".into())); }
-    if tk.expires_at <= Utc::now() { return Err(AppError::BadRequest("만료된 링크입니다".into())); }
+    if tk.revoked_at.is_some() {
+        return Err(AppError::BadRequest("취소된 링크입니다".into()));
+    }
+    if tk.used_at.is_some() {
+        return Err(AppError::BadRequest("이미 제출된 링크입니다".into()));
+    }
+    if tk.expires_at <= Utc::now() {
+        return Err(AppError::BadRequest("만료된 링크입니다".into()));
+    }
 
     // (R9-b) return purpose 시 자동 settlement 위해 계약 요약 미리 로드.
     #[derive(FromRow)]
     struct Cur {
-        rate_type: String, rate_amount_krw: i64,
-        starts_at: DateTime<Utc>, ends_at: DateTime<Utc>,
-        included_km_per_day: Option<i32>, over_km_price_krw: Option<i32>,
-        pickup_odometer_km: Option<i32>, deposit_krw: i64,
+        rate_type: String,
+        rate_amount_krw: i64,
+        starts_at: DateTime<Utc>,
+        ends_at: DateTime<Utc>,
+        included_km_per_day: Option<i32>,
+        over_km_price_krw: Option<i32>,
+        pickup_odometer_km: Option<i32>,
+        deposit_krw: i64,
     }
     let cur: Cur = sqlx::query_as(
         r#"SELECT rate_type, rate_amount_krw, starts_at, ends_at,
                   included_km_per_day, over_km_price_krw, pickup_odometer_km, deposit_krw
              FROM rental_contracts WHERE id = $1"#,
-    ).bind(tk.contract_id).fetch_one(&state.db).await?;
+    )
+    .bind(tk.contract_id)
+    .fetch_one(&state.db)
+    .await?;
 
     let mut tx = state.db.begin().await?;
 
-    let photo_kind = if tk.purpose == "pickup" { "pickup_odometer" } else { "return_odometer" };
+    let photo_kind = if tk.purpose == "pickup" {
+        "pickup_odometer"
+    } else {
+        "return_odometer"
+    };
     let photo_id: i64 = sqlx::query_scalar(
         r#"INSERT INTO rental_photos (contract_id, user_id, kind, mime, bytes, uploaded_by_token)
            VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id"#,
     )
-    .bind(tk.contract_id).bind(tk.user_id).bind(photo_kind).bind(&odo_mime).bind(&odo_bytes).bind(tk.id)
-    .fetch_one(&mut *tx).await?;
+    .bind(tk.contract_id)
+    .bind(tk.user_id)
+    .bind(photo_kind)
+    .bind(&odo_mime)
+    .bind(&odo_bytes)
+    .bind(tk.id)
+    .fetch_one(&mut *tx)
+    .await?;
 
     // 추가 사진 저장 (damage/fuel × purpose)
     let mut extra_photo_ids: Vec<i64> = Vec::with_capacity(extras_parsed.len());
     for (kind_short, mime, bytes) in &extras_parsed {
         let db_kind = match (tk.purpose.as_str(), kind_short.as_str()) {
             ("pickup", "damage") => "pickup_damage",
-            ("pickup", "fuel")   => "pickup_fuel",
+            ("pickup", "fuel") => "pickup_fuel",
             ("return", "damage") => "return_damage",
-            ("return", "fuel")   => "return_fuel",
-            _ => continue,   // 위 검증에서 걸러짐, defensive
+            ("return", "fuel") => "return_fuel",
+            _ => continue, // 위 검증에서 걸러짐, defensive
         };
         let id: i64 = sqlx::query_scalar(
             r#"INSERT INTO rental_photos (contract_id, user_id, kind, mime, bytes, uploaded_by_token)
@@ -1428,19 +1826,38 @@ async fn handoff_submit(
                 updated_at            = NOW()
               WHERE id = $1"#,
         )
-        .bind(tk.contract_id).bind(req.odometer_km).bind(&req.signature_svg)
-        .execute(&mut *tx).await?;
+        .bind(tk.contract_id)
+        .bind(req.odometer_km)
+        .bind(&req.signature_svg)
+        .execute(&mut *tx)
+        .await?;
     } else {
         // (R9-b) 반납: 자동 settlement 실행. return_contract 와 동일 공식.
         // 임차인 self-return 은 extra_fee = 0 (파손비/세차비 등은 owner 가 별도 편집).
-        let (settled_json, subtotal, base_fee, late_hours, late_fee, over_km_val, over_km_fee, refund, returned_at) =
-            compute_settlement(
-                &cur.rate_type, cur.rate_amount_krw,
-                cur.starts_at, cur.ends_at,
-                cur.included_km_per_day, cur.over_km_price_krw,
-                cur.pickup_odometer_km, cur.deposit_krw,
-                req.odometer_km, None, None, None,
-            );
+        let (
+            settled_json,
+            subtotal,
+            base_fee,
+            late_hours,
+            late_fee,
+            over_km_val,
+            over_km_fee,
+            refund,
+            returned_at,
+        ) = compute_settlement(
+            &cur.rate_type,
+            cur.rate_amount_krw,
+            cur.starts_at,
+            cur.ends_at,
+            cur.included_km_per_day,
+            cur.over_km_price_krw,
+            cur.pickup_odometer_km,
+            cur.deposit_krw,
+            req.odometer_km,
+            None,
+            None,
+            None,
+        );
 
         sqlx::query(
             r#"UPDATE rental_contracts SET
@@ -1462,19 +1879,31 @@ async fn handoff_submit(
                 updated_at            = NOW()
               WHERE id = $1"#,
         )
-        .bind(tk.contract_id).bind(req.odometer_km).bind(&req.signature_svg)
-        .bind(subtotal).bind(base_fee).bind(late_hours).bind(late_fee)
-        .bind(over_km_val).bind(over_km_fee).bind(refund).bind(returned_at)
+        .bind(tk.contract_id)
+        .bind(req.odometer_km)
+        .bind(&req.signature_svg)
+        .bind(subtotal)
+        .bind(base_fee)
+        .bind(late_hours)
+        .bind(late_fee)
+        .bind(over_km_val)
+        .bind(over_km_fee)
+        .bind(refund)
+        .bind(returned_at)
         .bind(&settled_json)
-        .execute(&mut *tx).await?;
+        .execute(&mut *tx)
+        .await?;
         settlement_out = Some(settled_json);
     }
     // [2026-08-14 TOCTOU] AND used_at IS NULL 가드 + rows_affected 확인 — 동일 토큰 동시 제출 시
     //   먼저 소진한 쪽만 성공, 진 쪽은 0건 → tx 전체 롤백(사진·정산 중복 차단). 기존엔 가드 없어
     //   두 제출이 둘 다 성공해 사진 중복 insert + settlement 2회 계산됐음.
     let consumed = sqlx::query(
-        "UPDATE rental_handoff_tokens SET used_at = NOW() WHERE id = $1 AND used_at IS NULL")
-        .bind(tk.id).execute(&mut *tx).await?;
+        "UPDATE rental_handoff_tokens SET used_at = NOW() WHERE id = $1 AND used_at IS NULL",
+    )
+    .bind(tk.id)
+    .execute(&mut *tx)
+    .await?;
     if consumed.rows_affected() == 0 {
         return Err(AppError::Conflict("이미 제출 처리된 링크입니다".into()));
     }
@@ -1482,7 +1911,11 @@ async fn handoff_submit(
     tx.commit().await?;
 
     // Owner 알림 event insert (기존 FCM 워커 push)
-    let evt_kind = if tk.purpose == "pickup" { "rental_pickup_done" } else { "rental_return_done" };
+    let evt_kind = if tk.purpose == "pickup" {
+        "rental_pickup_done"
+    } else {
+        "rental_return_done"
+    };
     let _ = sqlx::query(
         r#"INSERT INTO events (device_id, user_id, occurred_at, kind, data)
            SELECT c.device_id, c.user_id, NOW(), $2,
@@ -1493,9 +1926,14 @@ async fn handoff_submit(
                     'photo_id',    $4::BIGINT,
                     'extra_photo_ids', $5::JSONB)
              FROM rental_contracts c WHERE c.id = $1"#,
-    ).bind(tk.contract_id).bind(evt_kind).bind(req.odometer_km).bind(photo_id)
+    )
+    .bind(tk.contract_id)
+    .bind(evt_kind)
+    .bind(req.odometer_km)
+    .bind(photo_id)
     .bind(serde_json::to_value(&extra_photo_ids).unwrap_or_default())
-    .execute(&state.db).await;
+    .execute(&state.db)
+    .await;
 
     // 이름 확인값과 불일치면 audit 로그 성격 note 붙임 (best-effort)
     if let Some(name) = req.renter_confirmed_name.as_deref() {
@@ -1507,8 +1945,12 @@ async fn handoff_submit(
                         CASE WHEN COALESCE(note,'') = '' THEN '' ELSE E'\n' END ||
                         '[' || $2 || ' handoff] 임차인 확인 이름: ' || $3
                     WHERE id = $1"#,
-            ).bind(tk.contract_id).bind(&tk.purpose).bind(name)
-            .execute(&state.db).await;
+            )
+            .bind(tk.contract_id)
+            .bind(&tk.purpose)
+            .bind(name)
+            .execute(&state.db)
+            .await;
         }
     }
 
@@ -1540,9 +1982,9 @@ fn compute_settlement(
 ) -> (Value, i64, i64, i32, i64, i32, i64, i64, DateTime<Utc>) {
     let dur = ends_at - starts_at;
     let (units_raw, unit_label) = match rate_type {
-        "hourly"  => ((dur.num_minutes() as f64 / 60.0).ceil() as i64, "시간"),
-        "monthly" => ((dur.num_days()    as f64 / 30.0).ceil() as i64, "개월"),
-        _         => ((dur.num_hours()   as f64 / 24.0).ceil() as i64, "일"),
+        "hourly" => ((dur.num_minutes() as f64 / 60.0).ceil() as i64, "시간"),
+        "monthly" => ((dur.num_days() as f64 / 30.0).ceil() as i64, "개월"),
+        _ => ((dur.num_hours() as f64 / 24.0).ceil() as i64, "일"),
     };
     let units = units_raw.max(1);
     let base_fee = rate_amount_krw * units;
@@ -1563,11 +2005,15 @@ fn compute_settlement(
     let late_hours: i32 = if returned_at > ends_at {
         let d = returned_at - ends_at;
         ((d.num_minutes() as f64 / 60.0).ceil() as i32).max(0)
-    } else { 0 };
+    } else {
+        0
+    };
     let hourly = hourly_rate(rate_type, rate_amount_krw);
     let late_fee: i64 = if late_hours > 0 {
         ((late_hours as f64) * (hourly as f64) * LATE_FEE_MULTIPLIER).round() as i64
-    } else { 0 };
+    } else {
+        0
+    };
 
     let extra_fee = extra_fee_override.unwrap_or(0);
     let extra_label = extra_label_override.unwrap_or("기타").to_string();
@@ -1606,7 +2052,17 @@ fn compute_settlement(
         "deposit": deposit_krw,
         "balance": refund,
     });
-    (settlement, subtotal, base_fee, late_hours, late_fee, over_km_val, over_km_fee, refund, returned_at)
+    (
+        settlement,
+        subtotal,
+        base_fee,
+        late_hours,
+        late_fee,
+        over_km_val,
+        over_km_fee,
+        refund,
+        returned_at,
+    )
 }
 
 async fn get_photo(
@@ -1615,31 +2071,41 @@ async fn get_photo(
     Path(id): Path<i64>,
 ) -> AppResult<axum::response::Response> {
     #[derive(FromRow)]
-    struct Row { mime: String, bytes: Vec<u8>, user_id: i64 }
-    let row: Option<Row> = sqlx::query_as(
-        "SELECT mime, bytes, user_id FROM rental_photos WHERE id = $1"
-    ).bind(id).fetch_optional(&state.db).await?;
+    struct Row {
+        mime: String,
+        bytes: Vec<u8>,
+        user_id: i64,
+    }
+    let row: Option<Row> =
+        sqlx::query_as("SELECT mime, bytes, user_id FROM rental_photos WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await?;
     let row = row.ok_or(AppError::NotFound)?;
     if row.user_id != user.user_id {
         return Err(AppError::NotFound);
     }
     let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE,
-        HeaderValue::from_str(&row.mime).unwrap_or_else(|_| HeaderValue::from_static("image/jpeg")));
-    headers.insert(header::CACHE_CONTROL,
-        HeaderValue::from_static("private, max-age=86400"));
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_str(&row.mime).unwrap_or_else(|_| HeaderValue::from_static("image/jpeg")),
+    );
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("private, max-age=86400"),
+    );
     Ok((StatusCode::OK, headers, row.bytes).into_response())
 }
 
 // (R9-a 확장) owner 계약별 사진 목록 (썸네일 갤러리 뷰용).
 #[derive(Debug, Serialize, FromRow)]
 pub struct PhotoMeta {
-    pub id:          i64,
+    pub id: i64,
     pub contract_id: i64,
-    pub kind:        String,
-    pub mime:        String,
+    pub kind: String,
+    pub mime: String,
     pub uploaded_at: DateTime<Utc>,
-    pub size_bytes:  i64,
+    pub size_bytes: i64,
 }
 
 async fn list_photos(
@@ -1653,19 +2119,27 @@ async fn list_photos(
              FROM rental_photos
             WHERE contract_id = $1 AND user_id = $2
          ORDER BY uploaded_at ASC"#,
-    ).bind(contract_id).bind(user.user_id).fetch_all(&state.db).await?;
+    )
+    .bind(contract_id)
+    .bind(user.user_id)
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UploadPhotoPayload {
-    pub kind:      String,           // pickup_odometer|pickup_damage|pickup_fuel|return_*
-    pub data_url:  String,
+    pub kind: String, // pickup_odometer|pickup_damage|pickup_fuel|return_*
+    pub data_url: String,
 }
 
 const OWNER_ALLOWED_KINDS: &[&str] = &[
-    "pickup_odometer","pickup_damage","pickup_fuel",
-    "return_odometer","return_damage","return_fuel",
+    "pickup_odometer",
+    "pickup_damage",
+    "pickup_fuel",
+    "return_odometer",
+    "return_damage",
+    "return_fuel",
 ];
 
 async fn upload_photo(
@@ -1678,9 +2152,11 @@ async fn upload_photo(
         return Err(AppError::BadRequest(format!("invalid kind: {}", req.kind)));
     }
     // 소유권 확인
-    let owner: Option<i64> = sqlx::query_scalar(
-        "SELECT user_id FROM rental_contracts WHERE id = $1"
-    ).bind(contract_id).fetch_optional(&state.db).await?;
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT user_id FROM rental_contracts WHERE id = $1")
+            .bind(contract_id)
+            .fetch_optional(&state.db)
+            .await?;
     match owner {
         Some(uid) if uid == user.user_id => {}
         _ => return Err(AppError::NotFound),
@@ -1696,8 +2172,13 @@ async fn upload_photo(
            RETURNING id, contract_id, kind, mime, uploaded_at,
                      OCTET_LENGTH(bytes)::BIGINT AS size_bytes"#,
     )
-    .bind(contract_id).bind(user.user_id).bind(&req.kind).bind(&mime).bind(&bytes)
-    .fetch_one(&state.db).await?;
+    .bind(contract_id)
+    .bind(user.user_id)
+    .bind(&req.kind)
+    .bind(&mime)
+    .bind(&bytes)
+    .fetch_one(&state.db)
+    .await?;
     Ok(Json(row))
 }
 
@@ -1707,8 +2188,14 @@ async fn delete_photo(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
     let n = sqlx::query("DELETE FROM rental_photos WHERE id = $1 AND user_id = $2")
-        .bind(id).bind(user.user_id).execute(&state.db).await?.rows_affected();
-    if n == 0 { return Err(AppError::NotFound); }
+        .bind(id)
+        .bind(user.user_id)
+        .execute(&state.db)
+        .await?
+        .rows_affected();
+    if n == 0 {
+        return Err(AppError::NotFound);
+    }
     Ok(Json(json!({ "ok": true })))
 }
 
@@ -1721,10 +2208,14 @@ fn parse_data_url(s: &str) -> Option<(String, Vec<u8>)> {
     } else {
         (meta.to_string(), false)
     };
-    if !is_b64 { return None; }  // urlencoded 미지원
-    // base64 decode
+    if !is_b64 {
+        return None;
+    } // urlencoded 미지원
+      // base64 decode
     let bytes = base64_decode(b64)?;
-    if !mime.starts_with("image/") { return None; }
+    if !mime.starts_with("image/") {
+        return None;
+    }
     Some((mime, bytes))
 }
 
@@ -1733,7 +2224,10 @@ fn base64_decode(s: &str) -> Option<Vec<u8>> {
         let mut t = [-1i8; 256];
         let a = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         let mut i = 0;
-        while i < 64 { t[a[i] as usize] = i as i8; i += 1; }
+        while i < 64 {
+            t[a[i] as usize] = i as i8;
+            i += 1;
+        }
         // URL-safe 대체 문자
         t[b'-' as usize] = 62;
         t[b'_' as usize] = 63;
@@ -1744,9 +2238,13 @@ fn base64_decode(s: &str) -> Option<Vec<u8>> {
     let mut acc: u32 = 0;
     let mut bits: u32 = 0;
     for &b in s.as_bytes() {
-        if b == b'\n' || b == b'\r' || b == b' ' { continue; }
+        if b == b'\n' || b == b'\r' || b == b' ' {
+            continue;
+        }
         let v = T[b as usize];
-        if v < 0 { return None; }
+        if v < 0 {
+            return None;
+        }
         acc = (acc << 6) | (v as u32);
         bits += 6;
         if bits >= 8 {

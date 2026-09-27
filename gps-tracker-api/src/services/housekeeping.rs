@@ -12,7 +12,7 @@ use sqlx::PgPool;
 use std::time::Duration;
 
 const RUN_INTERVAL: Duration = Duration::from_secs(24 * 3600);
-const STARTUP_DELAY:  Duration = Duration::from_secs(60);   // 부팅 직후 안정화 후 시작
+const STARTUP_DELAY: Duration = Duration::from_secs(60); // 부팅 직후 안정화 후 시작
 
 pub fn spawn_worker(pool: PgPool) {
     tokio::spawn(async move {
@@ -32,7 +32,7 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
     //    각 테이블 시간 컬럼을 30일 grace 로 필터.
     let queries: &[(&str, &str)] = &[
         ("location_records", "recorded_at"),
-        ("events",           "occurred_at"),
+        ("events", "occurred_at"),
         ("trip_annotations", "trip_started_at"),
     ];
     for (table, time_col) in queries {
@@ -57,20 +57,30 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
         "DELETE FROM daily_stats t USING devices d \
           WHERE t.device_id = d.id \
             AND t.user_id IS DISTINCT FROM d.owner_id \
-            AND t.date < (CURRENT_DATE - 30)"
-    ).execute(pool).await?;
+            AND t.date < (CURRENT_DATE - 30)",
+    )
+    .execute(pool)
+    .await?;
     if r.rows_affected() > 0 {
-        tracing::info!(deleted = r.rows_affected(), "housekeeping: daily_stats orphan cleaned");
+        tracing::info!(
+            deleted = r.rows_affected(),
+            "housekeeping: daily_stats orphan cleaned"
+        );
     }
 
     // 2) share_tokens — revoke / expire 후 30일 지난 것
     let r = sqlx::query(
         "DELETE FROM share_tokens \
           WHERE (revoked_at IS NOT NULL AND revoked_at < now() - interval '30 days') \
-             OR (expires_at < now() - interval '30 days')"
-    ).execute(pool).await?;
+             OR (expires_at < now() - interval '30 days')",
+    )
+    .execute(pool)
+    .await?;
     if r.rows_affected() > 0 {
-        tracing::info!(deleted = r.rows_affected(), "housekeeping: stale share tokens cleaned");
+        tracing::info!(
+            deleted = r.rows_affected(),
+            "housekeeping: stale share tokens cleaned"
+        );
     }
 
     // 3) refresh_tokens — 만료 후 7일 지난 것 (revoke 됐든 안 됐든).
@@ -79,10 +89,15 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
     // 7일 grace — 시계 어긋남이나 디버깅용 history 짧게 보존.
     let r = sqlx::query(
         "DELETE FROM refresh_tokens \
-          WHERE expires_at < now() - interval '7 days'"
-    ).execute(pool).await?;
+          WHERE expires_at < now() - interval '7 days'",
+    )
+    .execute(pool)
+    .await?;
     if r.rows_affected() > 0 {
-        tracing::info!(deleted = r.rows_affected(), "housekeeping: stale refresh tokens cleaned");
+        tracing::info!(
+            deleted = r.rows_affected(),
+            "housekeeping: stale refresh tokens cleaned"
+        );
     }
 
     // 4) geofence_states — 펜스가 삭제되거나 사용자가 디바이스 unpair 한 후 남는 stale row.
@@ -95,16 +110,23 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
             AND (s.last_transition_at IS NULL OR s.last_transition_at < now() - interval '90 days')"
     ).execute(pool).await?;
     if r.rows_affected() > 0 {
-        tracing::info!(deleted = r.rows_affected(), "housekeeping: orphan geofence_states cleaned");
+        tracing::info!(
+            deleted = r.rows_affected(),
+            "housekeeping: orphan geofence_states cleaned"
+        );
     }
 
     // 5) device_audit_log — wipe 시 명시적으로 비우지만, 디바이스 자체가 사라진 경우
     // CASCADE 가 잡음. 그 외에 너무 오래된 (1년+) 감사 기록은 디스크 절약 차원에서 정리.
-    let r = sqlx::query(
-        "DELETE FROM device_audit_log WHERE occurred_at < now() - interval '365 days'"
-    ).execute(pool).await?;
+    let r =
+        sqlx::query("DELETE FROM device_audit_log WHERE occurred_at < now() - interval '365 days'")
+            .execute(pool)
+            .await?;
     if r.rows_affected() > 0 {
-        tracing::info!(deleted = r.rows_affected(), "housekeeping: ancient device audit cleaned");
+        tracing::info!(
+            deleted = r.rows_affected(),
+            "housekeeping: ancient device audit cleaned"
+        );
     }
 
     // 6) (R6 PIPA) 렌트카 임차인 개인정보 자동 파기.
@@ -117,11 +139,15 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
           WHERE status = 'returned'
             AND settled_at IS NOT NULL
             AND settled_at < NOW() - interval '180 days'
-            AND renter_id_last4 IS NOT NULL"
-    ).execute(pool).await?;
+            AND renter_id_last4 IS NOT NULL",
+    )
+    .execute(pool)
+    .await?;
     if r.rows_affected() > 0 {
-        tracing::info!(purged = r.rows_affected(),
-            "housekeeping: PIPA renter_id_last4 purged (>=180d after return)");
+        tracing::info!(
+            purged = r.rows_affected(),
+            "housekeeping: PIPA renter_id_last4 purged (>=180d after return)"
+        );
     }
     let r = sqlx::query(
         "UPDATE rental_contracts
@@ -129,19 +155,26 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
           WHERE status = 'returned'
             AND settled_at IS NOT NULL
             AND settled_at < NOW() - interval '1095 days'
-            AND renter_phone IS NOT NULL"
-    ).execute(pool).await?;
+            AND renter_phone IS NOT NULL",
+    )
+    .execute(pool)
+    .await?;
     if r.rows_affected() > 0 {
-        tracing::info!(purged = r.rows_affected(),
-            "housekeeping: PIPA renter_phone purged (>=3y after return)");
+        tracing::info!(
+            purged = r.rows_affected(),
+            "housekeeping: PIPA renter_phone purged (>=3y after return)"
+        );
     }
 
     // 7) login_attempts — brute-force 카운트용. 창(15분) 훨씬 지난 것 정리 (1일 grace).
-    let r = sqlx::query(
-        "DELETE FROM login_attempts WHERE created_at < now() - interval '1 day'"
-    ).execute(pool).await?;
+    let r = sqlx::query("DELETE FROM login_attempts WHERE created_at < now() - interval '1 day'")
+        .execute(pool)
+        .await?;
     if r.rows_affected() > 0 {
-        tracing::info!(deleted = r.rows_affected(), "housekeeping: old login_attempts cleaned");
+        tracing::info!(
+            deleted = r.rows_affected(),
+            "housekeeping: old login_attempts cleaned"
+        );
     }
 
     Ok(())

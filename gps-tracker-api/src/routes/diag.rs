@@ -95,7 +95,9 @@ pub async fn diag_data(
         })
         .collect();
 
-    Ok(Json(json!({ "count": items.len(), "total": total, "offset": offset, "items": items })))
+    Ok(Json(
+        json!({ "count": items.len(), "total": total, "offset": offset, "items": items }),
+    ))
 }
 
 pub async fn diag_page() -> Html<&'static str> {
@@ -147,7 +149,9 @@ pub async fn device_log_data(
     Query(q): Query<DeviceLogQuery>,
 ) -> AppResult<Json<Value>> {
     if !device_allowed(&state.db, &q.uid).await {
-        return Ok(Json(json!({ "error": "not allowed", "items": [], "total": 0 })));
+        return Ok(Json(
+            json!({ "error": "not allowed", "items": [], "total": 0 }),
+        ));
     }
     let limit = q.limit.unwrap_or(240).clamp(1, 2000);
     let offset = q.offset.unwrap_or(0).max(0);
@@ -197,7 +201,9 @@ pub async fn device_log_data(
             })
         })
         .collect();
-    Ok(Json(json!({ "uid": q.uid, "count": items.len(), "total": total, "offset": offset, "items": items })))
+    Ok(Json(
+        json!({ "uid": q.uid, "count": items.len(), "total": total, "offset": offset, "items": items }),
+    ))
 }
 
 pub async fn device_log_page() -> Html<&'static str> {

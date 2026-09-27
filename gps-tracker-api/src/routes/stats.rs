@@ -1,10 +1,18 @@
 // /api/v1/devices/:id/stats/daily
-use axum::{extract::{Path, Query, State}, routing::get, Json, Router};
+use axum::{
+    extract::{Path, Query, State},
+    routing::get,
+    Json, Router,
+};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::{auth::AuthUser, error::{AppError, AppResult}, state::AppState};
+use crate::{
+    auth::AuthUser,
+    error::{AppError, AppResult},
+    state::AppState,
+};
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -20,18 +28,27 @@ async fn active_dates(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Vec<NaiveDate>>> {
     // owner 검증
-    let owner: Option<i64> = sqlx::query_scalar(
-        "SELECT owner_id FROM devices WHERE id = $1",
-    ).bind(id).fetch_optional(&state.db).await?.flatten();
-    if owner != Some(user.user_id) { return Err(AppError::NotFound); }
+    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .flatten();
+    if owner != Some(user.user_id) {
+        return Err(AppError::NotFound);
+    }
 
     let rows: Vec<(NaiveDate,)> = sqlx::query_as(
-        r#"SELECT DISTINCT (recorded_at AT TIME ZONE 'Asia/Seoul')::date AS d
+        r#"SELECT DISTINCT unnest(location_fix_dates(recorded_at,fixes_jsonb,fix)) AS d
              FROM location_records
-            WHERE device_id = $1 AND fix = TRUE AND user_id = $2
+            WHERE device_id = $1 AND user_id = $2
+              AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
             ORDER BY d DESC
             LIMIT 365"#,
-    ).bind(id).bind(user.user_id).fetch_all(&state.db).await?;
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_all(&state.db)
+    .await?;
 
     Ok(Json(rows.into_iter().map(|(d,)| d).collect()))
 }
@@ -39,22 +56,22 @@ async fn active_dates(
 #[derive(Debug, Deserialize)]
 pub struct DailyQuery {
     pub from: Option<NaiveDate>,
-    pub to:   Option<NaiveDate>,
+    pub to: Option<NaiveDate>,
     pub limit: Option<i64>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct DailyRow {
-    pub date:           NaiveDate,
-    pub fix_count:      i32,
-    pub distance_m:     f64,
-    pub duration_s:     i32,
-    pub moving_s:       i32,
-    pub stop_count:     i32,
-    pub max_speed_kmh:  f32,
-    pub avg_speed_kmh:  f32,
-    pub first_fix_at:   Option<DateTime<Utc>>,
-    pub last_fix_at:    Option<DateTime<Utc>>,
+    pub date: NaiveDate,
+    pub fix_count: i32,
+    pub distance_m: f64,
+    pub duration_s: i32,
+    pub moving_s: i32,
+    pub stop_count: i32,
+    pub max_speed_kmh: f32,
+    pub avg_speed_kmh: f32,
+    pub first_fix_at: Option<DateTime<Utc>>,
+    pub last_fix_at: Option<DateTime<Utc>>,
 }
 
 async fn daily(
@@ -65,7 +82,10 @@ async fn daily(
 ) -> AppResult<Json<Vec<DailyRow>>> {
     // 본인 소유 검증
     let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(id).fetch_optional(&state.db).await?.flatten();
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }

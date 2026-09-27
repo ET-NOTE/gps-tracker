@@ -166,7 +166,7 @@ export default function DiagnosticPage() {
 
         {/* TimescaleDB continuous aggregate — 시간대별 fix 수 / 평균 위성 추세 (raw 대신 view scan, ms 응답). */}
         {aggregated && aggregated.rows.length > 0 && (
-          <SectionCard title={`📈 시간대 추세 (${aggregated.bucket} bucket — TimescaleDB continuous aggregate)`}>
+          <SectionCard title={`📈 시간대 추세 (${aggregated.bucket} 구간 · 배치 좌표 포함)`}>
             <div style={{ display: 'flex', gap: 6, marginBottom: 10, fontSize: 11, alignItems: 'center' }}>
               <span style={{ color: '#666' }}>간격:</span>
               {['auto', '1m', '5m', '1h'].map(b => (

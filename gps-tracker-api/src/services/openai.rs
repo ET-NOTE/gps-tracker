@@ -9,33 +9,41 @@ const URL: &str = "https://api.openai.com/v1/chat/completions";
 
 #[derive(Debug, Serialize)]
 pub struct ChatMessage<'a> {
-    pub role:    &'a str,         // "system" | "user"
+    pub role: &'a str, // "system" | "user"
     pub content: &'a str,
 }
 
 #[derive(Debug, Deserialize)]
 struct ChatResp {
     choices: Vec<Choice>,
-    usage:   Option<Usage>,
-    model:   Option<String>,
+    usage: Option<Usage>,
+    model: Option<String>,
 }
 #[derive(Debug, Deserialize)]
-struct Choice { message: Msg }
+struct Choice {
+    message: Msg,
+}
 #[derive(Debug, Deserialize)]
-struct Msg { content: Option<String> }
+struct Msg {
+    content: Option<String>,
+}
 #[derive(Debug, Deserialize)]
-struct Usage { prompt_tokens: i32, completion_tokens: i32 }
+struct Usage {
+    prompt_tokens: i32,
+    completion_tokens: i32,
+}
 
 pub struct ChatResult {
-    pub text:        String,
-    pub tokens_in:   Option<i32>,
-    pub tokens_out:  Option<i32>,
-    pub model:       Option<String>,
+    pub text: String,
+    pub tokens_in: Option<i32>,
+    pub tokens_out: Option<i32>,
+    pub model: Option<String>,
 }
 
 pub async fn chat(messages: &[ChatMessage<'_>], max_tokens: u32) -> anyhow::Result<ChatResult> {
     let key = std::env::var("OPENAI_API_KEY")
-        .ok().filter(|s| !s.is_empty())
+        .ok()
+        .filter(|s| !s.is_empty())
         .ok_or_else(|| anyhow::anyhow!("OPENAI_API_KEY not configured"))?;
     let model = std::env::var("OPENAI_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string());
 
@@ -54,10 +62,12 @@ pub async fn chat(messages: &[ChatMessage<'_>], max_tokens: u32) -> anyhow::Resu
         .timeout(Duration::from_secs(90))
         .build()?;
 
-    let res = client.post(URL)
+    let res = client
+        .post(URL)
         .bearer_auth(&key)
         .json(&body)
-        .send().await?;
+        .send()
+        .await?;
 
     let status = res.status();
     if !status.is_success() {
@@ -65,21 +75,27 @@ pub async fn chat(messages: &[ChatMessage<'_>], max_tokens: u32) -> anyhow::Resu
         anyhow::bail!("openai {status}: {txt}");
     }
     let parsed: ChatResp = res.json().await?;
-    let text = parsed.choices.into_iter()
+    let text = parsed
+        .choices
+        .into_iter()
         .next()
         .and_then(|c| c.message.content)
         .unwrap_or_default();
     Ok(ChatResult {
         text,
-        tokens_in:  parsed.usage.as_ref().map(|u| u.prompt_tokens),
+        tokens_in: parsed.usage.as_ref().map(|u| u.prompt_tokens),
         tokens_out: parsed.usage.as_ref().map(|u| u.completion_tokens),
-        model:      parsed.model,
+        model: parsed.model,
     })
 }
 
 // 디버그용 raw 호출 (현재는 미사용 — 향후 streaming 대비)
 #[allow(dead_code)]
-pub fn raw_url() -> &'static str { URL }
+pub fn raw_url() -> &'static str {
+    URL
+}
 
 #[allow(dead_code)]
-pub fn dummy_value() -> Value { Value::Null }
+pub fn dummy_value() -> Value {
+    Value::Null
+}

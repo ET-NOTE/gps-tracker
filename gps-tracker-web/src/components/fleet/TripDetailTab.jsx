@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../api';
 import { haversineM } from '../../lib/stops';
+import { serverSpeed } from '../../lib/speed';
 import Icon from '../Icon';
 
 // 참고 이미지의 555 km/h 같은 명백 이상치. GPS 튀는 값 잡음 필터.
@@ -51,11 +52,12 @@ export default function TripDetailTab({ deviceId, trip, mapRef }) {
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
       const prev = i > 0 ? points[i - 1] : null;
-      let speed = null, dm = 0, dt = 0;
+      const speed = serverSpeed(p);
+      let dm = 0, dt = 0;
       if (prev) {
         dm = haversineM(prev.lat, prev.lng, p.lat, p.lng);
         dt = (new Date(p.recorded_at) - new Date(prev.recorded_at)) / 1000;
-        if (dt > 0.1) speed = (dm / dt) * 3.6;   // km/h
+        if (!(dt > 0) || dt > 600 || dm / dt * 3.6 > 250) dm = 0;
       }
       cumM += dm;
       out.push({ ...p, _speed: speed, _cumM: cumM });

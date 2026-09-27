@@ -17,7 +17,7 @@ export function hydrateDeviceColors(map) {
 }
 
 export function getDeviceColorsCache() {
-  return _deviceColorsCache;
+  return _deviceColorsCache ? { ..._deviceColorsCache } : null;
 }
 
 function pickCached(id) {

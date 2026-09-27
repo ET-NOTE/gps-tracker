@@ -149,3 +149,18 @@ button { user-select: none; }
   /* A4 가로 — 컬럼 많은 운행일지에 적합. 여백 12mm 표준 */
   @page { size: A4 landscape; margin: 12mm; }
 }
+
+/* Shared keyboard visibility also covers older inline outline:none controls. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

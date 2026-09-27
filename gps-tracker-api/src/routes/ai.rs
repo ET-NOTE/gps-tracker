@@ -1,6 +1,10 @@
 // /api/v1/devices/:id/route/analyze — ChatGPT 기반 운행 인사이트 (rate-limited).
 
-use axum::{extract::{Path, Query, State}, routing::{get, post}, Json, Router};
+use axum::{
+    extract::{Path, Query, State},
+    routing::{get, post},
+    Json, Router,
+};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -18,15 +22,17 @@ use crate::{
 
 const ENDPOINT: &str = "route_analyze";
 const ADMIN_EMAIL: &str = "admin@admin.com";
-const COST_PER_ANALYSIS: i64 = 20;       // 회당 20 KRW (포인트)
-const MAX_POINTS_TO_GPT: usize = 40;     // 균등 분포 샘플
-const MAX_OUT_TOKENS:    u32 = 900;
+const COST_PER_ANALYSIS: i64 = 20; // 회당 20 KRW (포인트)
+const MAX_OUT_TOKENS: u32 = 900;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/devices/:id/route/analyze",  post(analyze))
-        .route("/devices/:id/ai-analyses",    get(list_analyses))
-        .route("/ai-analyses/:id",            get(get_analysis).delete(delete_analysis))
+        .route("/devices/:id/route/analyze", post(analyze))
+        .route("/devices/:id/ai-analyses", get(list_analyses))
+        .route(
+            "/ai-analyses/:id",
+            get(get_analysis).delete(delete_analysis),
+        )
         .route("/ai/usage", get(usage_today))
 }
 
@@ -38,65 +44,62 @@ pub fn router() -> Router<AppState> {
 // 응답 호환: used_today/limit 필드는 프론트가 기존 코드 유지하도록 남겨두되, 의미는 무시.
 #[derive(Debug, Serialize)]
 struct UsageView {
-    used_today:        i64,
-    limit:             i64,
-    unlimited:         bool,
+    used_today: i64,
+    limit: i64,
+    unlimited: bool,
     cost_per_analysis: i64,
-    credit_balance:    i64,
+    credit_balance: i64,
 }
 
-async fn usage_today(
-    State(state): State<AppState>,
-    user: AuthUser,
-) -> AppResult<Json<UsageView>> {
+async fn usage_today(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<UsageView>> {
     let email = user_email(&state, user.user_id).await?;
     let unlimited = email.as_deref() == Some(ADMIN_EMAIL);
     let used = today_count(&state, user.user_id).await?;
-    let bal  = credits::balance(&state.db, user.user_id).await.unwrap_or(0);
+    let bal = credits::balance(&state.db, user.user_id).await.unwrap_or(0);
     Ok(Json(UsageView {
-        used_today:        used,
-        limit:             0,                          // legacy
+        used_today: used,
+        limit: 0, // legacy
         unlimited,
         cost_per_analysis: COST_PER_ANALYSIS,
-        credit_balance:    bal,
+        credit_balance: bal,
     }))
 }
 
 // ─── 분석 본 함수 ───────────────────────────────────────────────
 #[derive(Debug, Deserialize)]
 pub struct AnalyzeRequest {
-    pub date: NaiveDate,    // KST 기준 yyyy-mm-dd
+    pub date: NaiveDate, // KST 기준 yyyy-mm-dd
 }
 
 #[derive(Debug, Serialize)]
 pub struct AnalyzeResponse {
-    pub date:           NaiveDate,
-    pub analysis:       String,
-    pub used_today:     i64,
-    pub limit:          i64,            // legacy, 프론트 기존 호환용 0
-    pub unlimited:      bool,
-    pub model:          Option<String>,
+    pub date: NaiveDate,
+    pub analysis: String,
+    pub used_today: i64,
+    pub limit: i64, // legacy, 프론트 기존 호환용 0
+    pub unlimited: bool,
+    pub model: Option<String>,
     pub credit_charged: i64,
     pub credit_balance: i64,
-    pub analysis_id:    Option<i64>,    // 영구 저장된 분석 row id (재조회용)
+    pub analysis_id: Option<i64>, // 영구 저장된 분석 row id (재조회용)
 }
 
 #[derive(Debug, FromRow)]
 struct PointRow {
     recorded_at: DateTime<Utc>,
-    lat:         Option<f64>,
-    lng:         Option<f64>,
+    lat: Option<f64>,
+    lng: Option<f64>,
 }
 
 #[derive(Debug, FromRow)]
 struct DailyStatsRow {
-    distance_m:    f64,
-    moving_s:      i32,
-    stop_count:    i32,
+    distance_m: f64,
+    moving_s: i32,
+    stop_count: i32,
     max_speed_kmh: f32,
     avg_speed_kmh: f32,
-    first_fix_at:  Option<DateTime<Utc>>,
-    last_fix_at:   Option<DateTime<Utc>>,
+    first_fix_at: Option<DateTime<Utc>>,
+    last_fix_at: Option<DateTime<Utc>>,
 }
 
 async fn analyze(
@@ -105,12 +108,24 @@ async fn analyze(
     Path(device_id): Path<i64>,
     Json(req): Json<AnalyzeRequest>,
 ) -> AppResult<Json<AnalyzeResponse>> {
+    if std::env::var("OPENAI_API_KEY")
+        .unwrap_or_default()
+        .is_empty()
+    {
+        return Err(AppError::BadRequest(
+            "이 환경에는 AI 분석 키가 설정되지 않았습니다.".into(),
+        ));
+    }
     // 본인 소유 + 표시명
     let dev: Option<(Option<i64>, Option<String>)> =
         sqlx::query_as("SELECT owner_id, display_name FROM devices WHERE id = $1")
-            .bind(device_id).fetch_optional(&state.db).await?;
+            .bind(device_id)
+            .fetch_optional(&state.db)
+            .await?;
     let (owner, display_name) = dev.ok_or(AppError::NotFound)?;
-    if owner != Some(user.user_id) { return Err(AppError::NotFound); }
+    if owner != Some(user.user_id) {
+        return Err(AppError::NotFound);
+    }
 
     // 포인트 차감 (admin email 은 무료). 잔액 부족이면 charge 가 BadRequest.
     let email = user_email(&state, user.user_id).await?;
@@ -119,35 +134,49 @@ async fn analyze(
     let charged_txn = if unlimited {
         None
     } else {
-        Some(credits::charge(
-            &state.db, user.user_id, COST_PER_ANALYSIS,
-            "ai_analysis", None,
-            Some(&format!("device {} {}", device_id, req.date)),
-        ).await?)
+        Some(
+            credits::charge(
+                &state.db,
+                user.user_id,
+                COST_PER_ANALYSIS,
+                "ai_analysis",
+                None,
+                Some(&format!("device {} {}", device_id, req.date)),
+            )
+            .await?,
+        )
     };
 
     // 차감 이후 실패하면 환불해야 함. 분석 본 로직을 inner 로 묶고 결과 처리.
-    let outcome: AppResult<(String, Option<String>, Option<i32>, Option<i32>)> = (async {
+    let outcome: AnalysisOutcome = (async {
         // 데이터 적재 — date 를 KST 자정~다음날 자정 범위로 변환
         let start = format!("{}T00:00:00+09:00", req.date);
-        let end   = format!("{}T23:59:59+09:00", req.date);
+        let end = format!("{}T23:59:59+09:00", req.date);
         let start: DateTime<Utc> = chrono::DateTime::parse_from_rfc3339(&start)
-            .map_err(|e| AppError::BadRequest(format!("invalid date: {e}")))?.with_timezone(&Utc);
-        let end:   DateTime<Utc> = chrono::DateTime::parse_from_rfc3339(&end)
-            .map_err(|e| AppError::BadRequest(format!("invalid date: {e}")))?.with_timezone(&Utc);
+            .map_err(|e| AppError::BadRequest(format!("invalid date: {e}")))?
+            .with_timezone(&Utc);
+        let end: DateTime<Utc> = chrono::DateTime::parse_from_rfc3339(&end)
+            .map_err(|e| AppError::BadRequest(format!("invalid date: {e}")))?
+            .with_timezone(&Utc);
 
         let points: Vec<PointRow> = sqlx::query_as(
             r#"SELECT recorded_at, lat, lng
-                 FROM location_records
+                 FROM location_points
                 WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
                   AND recorded_at >= $2 AND recorded_at <= $3
                 ORDER BY recorded_at ASC"#,
         )
-        .bind(device_id).bind(start).bind(end).bind(user.user_id)
-        .fetch_all(&state.db).await?;
+        .bind(device_id)
+        .bind(start)
+        .bind(end)
+        .bind(user.user_id)
+        .fetch_all(&state.db)
+        .await?;
 
         if points.len() < 3 {
-            return Err(AppError::BadRequest("이 날짜에 분석할 fix 데이터가 부족합니다.".into()));
+            return Err(AppError::BadRequest(
+                "이 날짜에 분석할 fix 데이터가 부족합니다.".into(),
+            ));
         }
 
         let stats: Option<DailyStatsRow> = sqlx::query_as(
@@ -156,8 +185,11 @@ async fn analyze(
                  FROM daily_stats
                 WHERE device_id = $1 AND user_id = $3 AND date = $2"#,
         )
-        .bind(device_id).bind(req.date).bind(user.user_id)
-        .fetch_optional(&state.db).await?;
+        .bind(device_id)
+        .bind(req.date)
+        .bind(user.user_id)
+        .fetch_optional(&state.db)
+        .await?;
 
         let stops = extract_stops(&points, 50.0, 5 * 60);
         let enriched = enrich_speeds(&points);
@@ -166,18 +198,35 @@ async fn analyze(
 
         let prompt = build_prompt(
             display_name.as_deref().unwrap_or("디바이스"),
-            req.date, &stops, stats.as_ref(), &signals, &geo,
+            req.date,
+            &stops,
+            stats.as_ref(),
+            &signals,
+            &geo,
         );
 
         let messages = [
-            ChatMessage { role: "system", content: SYSTEM_PROMPT },
-            ChatMessage { role: "user",   content: &prompt },
+            ChatMessage {
+                role: "system",
+                content: SYSTEM_PROMPT,
+            },
+            ChatMessage {
+                role: "user",
+                content: &prompt,
+            },
         ];
-        let result = openai::chat(&messages, MAX_OUT_TOKENS).await
+        let result = openai::chat(&messages, MAX_OUT_TOKENS)
+            .await
             .map_err(|e| AppError::Internal(anyhow::anyhow!("openai: {e:#}")))?;
 
-        Ok((result.text, result.model, result.tokens_in, result.tokens_out))
-    }).await;
+        Ok((
+            result.text,
+            result.model,
+            result.tokens_in,
+            result.tokens_out,
+        ))
+    })
+    .await;
 
     let (text, model, tokens_in, tokens_out) = match outcome {
         Ok(v) => v,
@@ -185,9 +234,14 @@ async fn analyze(
             // 차감했으면 환불 (best-effort)
             if charged_txn.is_some() {
                 let _ = credits::refund(
-                    &state.db, user.user_id, COST_PER_ANALYSIS,
-                    "ai_refund", None, Some("ai_analysis 실패 자동 환불"),
-                ).await;
+                    &state.db,
+                    user.user_id,
+                    COST_PER_ANALYSIS,
+                    "ai_refund",
+                    None,
+                    Some("ai_analysis 실패 자동 환불"),
+                )
+                .await;
             }
             return Err(e);
         }
@@ -198,9 +252,13 @@ async fn analyze(
         r#"INSERT INTO ai_usage_log (user_id, endpoint, tokens_in, tokens_out, model)
            VALUES ($1, $2, $3, $4, $5)"#,
     )
-    .bind(user.user_id).bind(ENDPOINT)
-    .bind(tokens_in).bind(tokens_out).bind(model.as_deref())
-    .execute(&state.db).await;
+    .bind(user.user_id)
+    .bind(ENDPOINT)
+    .bind(tokens_in)
+    .bind(tokens_out)
+    .bind(model.as_deref())
+    .execute(&state.db)
+    .await;
 
     // 영구 저장 — 본문 + 메타. 같은 (device,date) 에 여러 번 분석 가능 (이력 누적).
     let charged = if unlimited { 0 } else { COST_PER_ANALYSIS };
@@ -217,7 +275,7 @@ async fn analyze(
     let used_today = used + 1;
     let balance = match &charged_txn {
         Some(t) => t.balance,
-        None    => credits::balance(&state.db, user.user_id).await.unwrap_or(0),
+        None => credits::balance(&state.db, user.user_id).await.unwrap_or(0),
     };
     Ok(Json(AnalyzeResponse {
         date: req.date,
@@ -235,20 +293,20 @@ async fn analyze(
 // ─── 분석 이력 조회 ──────────────────────────────────────
 #[derive(Debug, FromRow, Serialize)]
 struct AnalysisRow {
-    id:           i64,
-    device_id:    i64,
-    target_date:  NaiveDate,
-    analysis:     String,
-    model:        Option<String>,
-    tokens_in:    Option<i32>,
-    tokens_out:   Option<i32>,
+    id: i64,
+    device_id: i64,
+    target_date: NaiveDate,
+    analysis: String,
+    model: Option<String>,
+    tokens_in: Option<i32>,
+    tokens_out: Option<i32>,
     cost_credits: i64,
-    created_at:   DateTime<Utc>,
+    created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
 struct AnalysisListQuery {
-    date:  Option<NaiveDate>,    // 특정 일자 필터 (선택)
+    date: Option<NaiveDate>, // 특정 일자 필터 (선택)
     limit: Option<i64>,
 }
 
@@ -259,11 +317,14 @@ async fn list_analyses(
     Query(q): Query<AnalysisListQuery>,
 ) -> AppResult<Json<Vec<AnalysisRow>>> {
     // 본인 디바이스 검증
-    let owner: Option<i64> = sqlx::query_scalar(
-        "SELECT owner_id FROM devices WHERE id = $1",
-    )
-    .bind(device_id).fetch_optional(&state.db).await?.flatten();
-    if owner != Some(user.user_id) { return Err(AppError::NotFound); }
+    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
+        .bind(device_id)
+        .fetch_optional(&state.db)
+        .await?
+        .flatten();
+    if owner != Some(user.user_id) {
+        return Err(AppError::NotFound);
+    }
 
     let limit = q.limit.unwrap_or(50).clamp(1, 200);
     let rows = if let Some(d) = q.date {
@@ -274,8 +335,12 @@ async fn list_analyses(
                 WHERE device_id = $1 AND user_id = $2 AND target_date = $3
                 ORDER BY created_at DESC LIMIT $4"#,
         )
-        .bind(device_id).bind(user.user_id).bind(d).bind(limit)
-        .fetch_all(&state.db).await?
+        .bind(device_id)
+        .bind(user.user_id)
+        .bind(d)
+        .bind(limit)
+        .fetch_all(&state.db)
+        .await?
     } else {
         sqlx::query_as::<_, AnalysisRow>(
             r#"SELECT id, device_id, target_date, analysis, model,
@@ -284,8 +349,11 @@ async fn list_analyses(
                 WHERE device_id = $1 AND user_id = $2
                 ORDER BY created_at DESC LIMIT $3"#,
         )
-        .bind(device_id).bind(user.user_id).bind(limit)
-        .fetch_all(&state.db).await?
+        .bind(device_id)
+        .bind(user.user_id)
+        .bind(limit)
+        .fetch_all(&state.db)
+        .await?
     };
     Ok(Json(rows))
 }
@@ -301,7 +369,10 @@ async fn get_analysis(
              FROM ai_analyses
             WHERE id = $1 AND user_id = $2"#,
     )
-    .bind(id).bind(user.user_id).fetch_optional(&state.db).await?;
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_optional(&state.db)
+    .await?;
     Ok(Json(row.ok_or(AppError::NotFound)?))
 }
 
@@ -311,10 +382,14 @@ async fn delete_analysis(
     Path(id): Path<i64>,
 ) -> AppResult<Json<serde_json::Value>> {
     let n = sqlx::query("DELETE FROM ai_analyses WHERE id = $1 AND user_id = $2")
-        .bind(id).bind(user.user_id)
-        .execute(&state.db).await?
+        .bind(id)
+        .bind(user.user_id)
+        .execute(&state.db)
+        .await?
         .rows_affected();
-    if n == 0 { return Err(AppError::NotFound); }
+    if n == 0 {
+        return Err(AppError::NotFound);
+    }
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 
@@ -359,9 +434,9 @@ const SYSTEM_PROMPT: &str = "\
 // GPT 입력 토큰을 줄이면서 정확도를 높임.
 
 struct GeoContext {
-    stop_addrs:     Vec<Option<Resolved>>,         // index = stop index
-    start_addr:     Option<Resolved>,
-    end_addr:       Option<Resolved>,
+    stop_addrs: Vec<Option<Resolved>>, // index = stop index
+    start_addr: Option<Resolved>,
+    end_addr: Option<Resolved>,
     waypoint_addrs: Vec<(DateTime<Utc>, Resolved)>, // 시간 정렬, 4점 균등 분포
 }
 
@@ -373,21 +448,29 @@ async fn resolve_geography(
     // 좌표 모음 — 동시 호출
     let mut coords: Vec<(f64, f64)> = Vec::new();
     // [0..stops.len()) = stops
-    for (_, _, la, ln) in stops { coords.push((*la, *ln)); }
+    for (_, _, la, ln) in stops {
+        coords.push((*la, *ln));
+    }
 
     // 시작/끝
     let start_lat_lng = points.iter().find_map(|p| Some((p.lat?, p.lng?)));
-    let end_lat_lng   = points.iter().rev().find_map(|p| Some((p.lat?, p.lng?)));
+    let end_lat_lng = points.iter().rev().find_map(|p| Some((p.lat?, p.lng?)));
     let start_idx = coords.len();
-    if let Some(c) = start_lat_lng { coords.push(c); }
+    if let Some(c) = start_lat_lng {
+        coords.push(c);
+    }
     let end_idx = coords.len();
-    if let Some(c) = end_lat_lng { coords.push(c); }
+    if let Some(c) = end_lat_lng {
+        coords.push(c);
+    }
 
     // 경유 waypoints — 시간 균등 4점 (출발/도착 제외)
     let wp_times: Vec<DateTime<Utc>> = {
         let mut v = vec![];
-        let pts: Vec<&PointRow> = points.iter()
-            .filter(|p| p.lat.is_some() && p.lng.is_some()).collect();
+        let pts: Vec<&PointRow> = points
+            .iter()
+            .filter(|p| p.lat.is_some() && p.lng.is_some())
+            .collect();
         if pts.len() >= 6 {
             for i in 1..=4 {
                 let idx = (pts.len() * i) / 5;
@@ -411,8 +494,16 @@ async fn resolve_geography(
     let stop_addrs: Vec<Option<Resolved>> = (0..stops.len())
         .map(|i| resolved.get(i).cloned().flatten())
         .collect();
-    let start_addr = if start_lat_lng.is_some() { resolved.get(start_idx).cloned().flatten() } else { None };
-    let end_addr   = if end_lat_lng.is_some()   { resolved.get(end_idx).cloned().flatten() } else { None };
+    let start_addr = if start_lat_lng.is_some() {
+        resolved.get(start_idx).cloned().flatten()
+    } else {
+        None
+    };
+    let end_addr = if end_lat_lng.is_some() {
+        resolved.get(end_idx).cloned().flatten()
+    } else {
+        None
+    };
     let mut waypoint_addrs: Vec<(DateTime<Utc>, Resolved)> = Vec::new();
     for (i, t) in wp_times.iter().enumerate() {
         if let Some(Some(r)) = resolved.get(waypoint_start + i) {
@@ -420,7 +511,12 @@ async fn resolve_geography(
         }
     }
 
-    GeoContext { stop_addrs, start_addr, end_addr, waypoint_addrs }
+    GeoContext {
+        stop_addrs,
+        start_addr,
+        end_addr,
+        waypoint_addrs,
+    }
 }
 
 fn build_prompt(
@@ -432,7 +528,7 @@ fn build_prompt(
     geo: &GeoContext,
 ) -> String {
     let mut buf = String::new();
-    let kst = chrono::FixedOffset::east_opt(9*3600).unwrap();
+    let kst = chrono::FixedOffset::east_opt(9 * 3600).unwrap();
     buf.push_str(&format!("디바이스: {name}\n날짜: {date}\n\n"));
 
     // ── KPI ────────────────────────────────────────────
@@ -444,18 +540,24 @@ fn build_prompt(
             s.avg_speed_kmh, s.max_speed_kmh, s.stop_count,
         ));
         if let (Some(a), Some(b)) = (s.first_fix_at, s.last_fix_at) {
-            buf.push_str(&format!("- 첫 fix {} / 마지막 fix {}\n",
+            buf.push_str(&format!(
+                "- 첫 fix {} / 마지막 fix {}\n",
                 a.with_timezone(&kst).format("%H:%M"),
                 b.with_timezone(&kst).format("%H:%M"),
             ));
         }
     }
     if signals.night_dist_km > 0.1 {
-        buf.push_str(&format!("- 야간(22~06시) 운행: {:.1} km / {} 분\n",
-            signals.night_dist_km, signals.night_minutes));
+        buf.push_str(&format!(
+            "- 야간(22~06시) 운행: {:.1} km / {} 분\n",
+            signals.night_dist_km, signals.night_minutes
+        ));
     }
     if signals.signal_gaps > 0 {
-        buf.push_str(&format!("- 신호 두절 (>10분 갭): {}건\n", signals.signal_gaps));
+        buf.push_str(&format!(
+            "- 신호 두절 (>10분 갭): {}건\n",
+            signals.signal_gaps
+        ));
     }
     buf.push('\n');
 
@@ -474,11 +576,11 @@ fn build_prompt(
     buf.push_str("## 출발/도착\n");
     match &geo.start_addr {
         Some(a) => buf.push_str(&format!("- 출발: {}\n", a.short())),
-        None    => buf.push_str("- 출발: (주소 해석 불가)\n"),
+        None => buf.push_str("- 출발: (주소 해석 불가)\n"),
     }
     match &geo.end_addr {
         Some(a) => buf.push_str(&format!("- 도착: {}\n", a.short())),
-        None    => buf.push_str("- 도착: (주소 해석 불가)\n"),
+        None => buf.push_str("- 도착: (주소 해석 불가)\n"),
     }
     buf.push('\n');
 
@@ -492,14 +594,16 @@ fn build_prompt(
             let tag = stop_position_tag(stops.len(), i);
             let loc = match geo.stop_addrs.get(i).and_then(|o| o.as_ref()) {
                 Some(r) => r.short(),
-                None    => format!("{:.5},{:.5}", lat, lng),
+                None => format!("{lat:.5},{lng:.5}"),
             };
             buf.push_str(&format!(
                 "{}. {}~{} ({}분) {}{}\n",
                 i + 1,
                 a.with_timezone(&kst).format("%H:%M"),
                 b.with_timezone(&kst).format("%H:%M"),
-                dur_min, loc, tag,
+                dur_min,
+                loc,
+                tag,
             ));
         }
     }
@@ -518,16 +622,22 @@ fn build_prompt(
         buf.push('\n');
     }
 
-    buf.push_str("위 데이터로 시스템 프롬프트의 4개 섹션을 작성해주세요. \
+    buf.push_str(
+        "위 데이터로 시스템 프롬프트의 4개 섹션을 작성해주세요. \
 출발/도착/정차 위치는 위에 명시된 주소·건물명을 그대로 인용하고, \
-'자동 감지된 이상 신호'는 운영 관점 의미로 풀어 설명해주세요.");
+'자동 감지된 이상 신호'는 운영 관점 의미로 풀어 설명해주세요.",
+    );
     buf
 }
 
 fn stop_position_tag(total: usize, idx: usize) -> &'static str {
-    if idx == 0 { "  [출발지로 추정]" }
-    else if idx + 1 == total && total >= 2 { "  [도착지로 추정]" }
-    else { "" }
+    if idx == 0 {
+        "  [출발지로 추정]"
+    } else if idx + 1 == total && total >= 2 {
+        "  [도착지로 추정]"
+    } else {
+        ""
+    }
 }
 
 // ─── 이상 신호 자동 검출 ──────────────────────────────────────
@@ -537,20 +647,18 @@ fn stop_position_tag(total: usize, idx: usize) -> &'static str {
 
 #[derive(Debug, Default)]
 pub struct Signals {
-    pub alerts:        Vec<String>,
+    pub alerts: Vec<String>,
     pub night_dist_km: f64,
     pub night_minutes: i64,
-    pub signal_gaps:   i32,
+    pub signal_gaps: i32,
 }
 
 #[derive(Debug, Clone, Copy)]
 struct Seg {
-    t:     DateTime<Utc>,
-    lat:   f64,
-    lng:   f64,
-    speed: f64,   // km/h, 0 이면 정지로 봄
-    dt_s:  i64,
-    dist:  f64,   // m, 직전 점에서 이동 거리
+    t: DateTime<Utc>,
+    speed: f64, // km/h, 0 이면 정지로 봄
+    dt_s: i64,
+    dist: f64, // m, 직전 점에서 이동 거리
 }
 
 fn enrich_speeds(points: &[PointRow]) -> Vec<Seg> {
@@ -560,23 +668,29 @@ fn enrich_speeds(points: &[PointRow]) -> Vec<Seg> {
         let Some((lat, lng)) = pll(p) else { continue };
         let (speed, dt, dist) = if let Some((pt, pla, pln)) = prev {
             let dt = (p.recorded_at - pt).num_seconds().max(0);
-            let d  = haversine_m(pla, pln, lat, lng);
-            let s  = if dt > 0 { (d / dt as f64) * 3.6 } else { 0.0 };
+            let d = haversine_m(pla, pln, lat, lng);
+            let s = if dt > 0 { (d / dt as f64) * 3.6 } else { 0.0 };
             (s, dt, d)
-        } else { (0.0, 0, 0.0) };
-        out.push(Seg { t: p.recorded_at, lat, lng, speed, dt_s: dt, dist });
+        } else {
+            (0.0, 0, 0.0)
+        };
+        out.push(Seg {
+            t: p.recorded_at,
+            speed,
+            dt_s: dt,
+            dist,
+        });
         prev = Some((p.recorded_at, lat, lng));
     }
     out
 }
 
-fn detect_anomalies(
-    seg: &[Seg],
-    stops: &[(DateTime<Utc>, DateTime<Utc>, f64, f64)],
-) -> Signals {
-    let kst = chrono::FixedOffset::east_opt(9*3600).unwrap();
+fn detect_anomalies(seg: &[Seg], stops: &[(DateTime<Utc>, DateTime<Utc>, f64, f64)]) -> Signals {
+    let kst = chrono::FixedOffset::east_opt(9 * 3600).unwrap();
     let mut s = Signals::default();
-    if seg.is_empty() { return s; }
+    if seg.is_empty() {
+        return s;
+    }
 
     // ── 과속 의심: 60초 이상 평균 100 km/h 초과 구간
     {
@@ -586,7 +700,11 @@ fn detect_anomalies(
         for i in 1..seg.len() {
             let g = &seg[i];
             if g.speed > 100.0 && g.dt_s > 0 && g.dt_s < 60 {
-                if start.is_none() { start = Some(i); acc_d = 0.0; acc_t = 0; }
+                if start.is_none() {
+                    start = Some(i);
+                    acc_d = 0.0;
+                    acc_t = 0;
+                }
                 acc_d += g.dist;
                 acc_t += g.dt_s;
             } else if let Some(si) = start.take() {
@@ -596,10 +714,12 @@ fn detect_anomalies(
                         "과속 의심 — {} ~ {} ({}분), 평균 {:.0} km/h",
                         seg[si].t.with_timezone(&kst).format("%H:%M"),
                         g.t.with_timezone(&kst).format("%H:%M"),
-                        acc_t / 60, avg,
+                        acc_t / 60,
+                        avg,
                     ));
                 }
-                acc_d = 0.0; acc_t = 0;
+                acc_d = 0.0;
+                acc_t = 0;
             }
         }
     }
@@ -609,19 +729,25 @@ fn detect_anomalies(
     let mut harsh_accel = 0;
     let mut harsh_examples: Vec<String> = vec![];
     for i in 1..seg.len() {
-        let a = &seg[i-1];
+        let a = &seg[i - 1];
         let b = &seg[i];
-        if b.dt_s == 0 || b.dt_s > 30 { continue; }
+        if b.dt_s == 0 || b.dt_s > 30 {
+            continue;
+        }
         let delta = b.speed - a.speed;
         // 거의 멈춰 있는 상태에서의 변화는 노이즈 — 둘 다 30 km/h 이상에서만 카운트
-        if a.speed < 20.0 && b.speed < 20.0 { continue; }
+        if a.speed < 20.0 && b.speed < 20.0 {
+            continue;
+        }
         if delta >= 30.0 {
             harsh_accel += 1;
             if harsh_examples.len() < 3 {
                 harsh_examples.push(format!(
                     "급가속 {} — {:.0}→{:.0} km/h ({}초)",
                     b.t.with_timezone(&kst).format("%H:%M"),
-                    a.speed, b.speed, b.dt_s,
+                    a.speed,
+                    b.speed,
+                    b.dt_s,
                 ));
             }
         } else if delta <= -30.0 {
@@ -630,7 +756,9 @@ fn detect_anomalies(
                 harsh_examples.push(format!(
                     "급감속 {} — {:.0}→{:.0} km/h ({}초)",
                     b.t.with_timezone(&kst).format("%H:%M"),
-                    a.speed, b.speed, b.dt_s,
+                    a.speed,
+                    b.speed,
+                    b.dt_s,
                 ));
             }
         }
@@ -638,21 +766,27 @@ fn detect_anomalies(
     if harsh_accel + harsh_brake > 0 {
         s.alerts.push(format!(
             "급가속 {}회 / 급감속 {}회 — 예: {}",
-            harsh_accel, harsh_brake, harsh_examples.join(", "),
+            harsh_accel,
+            harsh_brake,
+            harsh_examples.join(", "),
         ));
     }
 
     // ── 이상 정차: 출발지/도착지가 아닌데 10분 이상 머문 구간
     if stops.len() >= 2 {
         for (i, (a, b, lat, lng)) in stops.iter().enumerate() {
-            if i == 0 || i + 1 == stops.len() { continue; }   // 출발/도착은 정상
+            if i == 0 || i + 1 == stops.len() {
+                continue;
+            } // 출발/도착은 정상
             let dur_min = (*b - *a).num_seconds() / 60;
             if dur_min >= 10 {
                 s.alerts.push(format!(
                     "이동 중 장기 정차 — {} ~ {} ({}분), {:.5},{:.5}",
                     a.with_timezone(&kst).format("%H:%M"),
                     b.with_timezone(&kst).format("%H:%M"),
-                    dur_min, lat, lng,
+                    dur_min,
+                    lat,
+                    lng,
                 ));
             }
         }
@@ -667,7 +801,7 @@ fn detect_anomalies(
                 if gaps.len() < 3 {
                     gaps.push(format!(
                         "{} ~ {} ({}분)",
-                        seg[i-1].t.with_timezone(&kst).format("%H:%M"),
+                        seg[i - 1].t.with_timezone(&kst).format("%H:%M"),
                         seg[i].t.with_timezone(&kst).format("%H:%M"),
                         seg[i].dt_s / 60,
                     ));
@@ -677,7 +811,8 @@ fn detect_anomalies(
         if s.signal_gaps > 0 {
             s.alerts.push(format!(
                 "신호 두절 {}건 (>10분 갭) — 예: {}",
-                s.signal_gaps, gaps.join(", "),
+                s.signal_gaps,
+                gaps.join(", "),
             ));
         }
     }
@@ -685,12 +820,12 @@ fn detect_anomalies(
     // ── 야간 운행 (22:00~06:00 KST): 거리·시간 누적
     {
         let mut dist_m = 0.0;
-        let mut secs   = 0i64;
-        for i in 1..seg.len() {
-            let h = seg[i].t.with_timezone(&kst).hour();
-            if (h >= 22 || h < 6) && seg[i].speed > 5.0 {
-                dist_m += seg[i].dist;
-                secs   += seg[i].dt_s;
+        let mut secs = 0i64;
+        for item in seg.iter().skip(1) {
+            let h = item.t.with_timezone(&kst).hour();
+            if !(6..22).contains(&h) && item.speed > 5.0 {
+                dist_m += item.dist;
+                secs += item.dt_s;
             }
         }
         s.night_dist_km = dist_m / 1000.0;
@@ -709,7 +844,9 @@ fn detect_anomalies(
         let mut last_move: Option<DateTime<Utc>> = None;
         for g in seg.iter() {
             if g.speed > 5.0 {
-                if start.is_none() { start = Some(g.t); }
+                if start.is_none() {
+                    start = Some(g.t);
+                }
                 last_move = Some(g.t);
             } else if let (Some(st), Some(lm)) = (start, last_move) {
                 if (lm - st).num_seconds() >= 7200 {
@@ -750,16 +887,24 @@ fn extract_stops(
     let mut stops = vec![];
     let mut i = 0;
     while i < points.len() {
-        let Some((la, ln)) = pll(&points[i]) else { i += 1; continue; };
+        let Some((la, ln)) = pll(&points[i]) else {
+            i += 1;
+            continue;
+        };
         let mut j = i + 1;
         while j < points.len() {
-            let Some((la2, ln2)) = pll(&points[j]) else { j += 1; continue; };
-            if haversine_m(la, ln, la2, ln2) > radius_m { break; }
+            let Some((la2, ln2)) = pll(&points[j]) else {
+                j += 1;
+                continue;
+            };
+            if haversine_m(la, ln, la2, ln2) > radius_m {
+                break;
+            }
             j += 1;
         }
         let span = (points[j.saturating_sub(1)].recorded_at - points[i].recorded_at).num_seconds();
         if span >= min_secs && j > i + 1 {
-            stops.push((points[i].recorded_at, points[j-1].recorded_at, la, ln));
+            stops.push((points[i].recorded_at, points[j - 1].recorded_at, la, ln));
             i = j;
         } else {
             i += 1;
@@ -776,14 +921,17 @@ fn haversine_m(la1: f64, lo1: f64, la2: f64, lo2: f64) -> f64 {
     let r = std::f64::consts::PI / 180.0;
     let d_la = (la2 - la1) * r;
     let d_lo = (lo2 - lo1) * r;
-    let a = (d_la/2.0).sin().powi(2)
-          + (la1*r).cos() * (la2*r).cos() * (d_lo/2.0).sin().powi(2);
+    let a =
+        (d_la / 2.0).sin().powi(2) + (la1 * r).cos() * (la2 * r).cos() * (d_lo / 2.0).sin().powi(2);
     2.0 * 6_371_000.0 * a.sqrt().asin()
 }
 
 async fn user_email(state: &AppState, uid: i64) -> AppResult<Option<String>> {
     let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-        .bind(uid).fetch_optional(&state.db).await?.flatten();
+        .bind(uid)
+        .fetch_optional(&state.db)
+        .await?
+        .flatten();
     Ok(email)
 }
 
@@ -798,3 +946,5 @@ async fn today_count(state: &AppState, uid: i64) -> AppResult<i64> {
     .fetch_optional(&state.db).await?.flatten();
     Ok(n.unwrap_or(0))
 }
+
+type AnalysisOutcome = AppResult<(String, Option<String>, Option<i32>, Option<i32>)>;

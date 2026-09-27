@@ -12,27 +12,30 @@
 
 import { getDeviceColor } from '../colors';
 import { haversineM } from './stops';
-import { calcSpeedKmh, clickableIntervalM } from './speed';
+import { serverSpeed, clickableIntervalM } from './speed';
 
 export function makeWsEventHandler({
   devRef, mapRef, lastMetaRef, wsDotAccRef,
   filterDeviceIdRef, trackLiveRef,
-  setDevices, setLiveSpeed,
+  setDevices, setLiveSpeed, onResync,
 }) {
   return function handleWsEvent(msg) {
+    if (msg.type === 'resync' || msg.type === 'lagged') { onResync?.(); return; }
     // (2026-07-16) fix 없는 POST 도 vbat/cbc/csq/reg/sat/uptime 메타는 최신값이 옴 —
     // 단말기 카드 배터리 realtime 갱신 위해 msg.type==='location' 이면 fix 유무와 무관하게
     // meta 갱신 + setDevices last_seen_at 통과. 마커/polyline 은 fix+lat+lng 조건에서만.
-    if (msg.type === 'location' && !(msg.fix && msg.lat && msg.lng)) {
+    if (msg.type === 'location' && !(msg.fix && Number.isFinite(msg.lat) && Number.isFinite(msg.lng))) {
       const prevMetaNoFix = lastMetaRef.current[msg.device_id] || {};
       lastMetaRef.current[msg.device_id] = {
         ...prevMetaNoFix,
-        recordedAt: msg.recorded_at,
+        receivedAt: msg.recorded_at,
         sat: msg.sat ?? prevMetaNoFix.sat,
         vbatMv: msg.vbat_mv ?? prevMetaNoFix.vbatMv,
         cbcMv: msg.cbc_mv ?? prevMetaNoFix.cbcMv,
         fix: false,
+        speedKmh: null,
       };
+      if (filterDeviceIdRef.current === msg.device_id) setLiveSpeed(previous => previous ? { ...previous, speedKmh: null } : null);
       setDevices(prev => prev.map(d =>
         d.id === msg.device_id
           ? { ...d, last_seen_at: msg.recorded_at }
@@ -40,14 +43,21 @@ export function makeWsEventHandler({
       ));
       return;
     }
-    if (msg.type === 'location' && msg.fix && msg.lat && msg.lng) {
+    if (msg.type === 'location' && msg.fix && Number.isFinite(msg.lat) && Number.isFinite(msg.lng)) {
       const dev = devRef.current.find(d => d.id === msg.device_id);
       const label = dev?.display_name || dev?.device_uid || `#${msg.device_id}`;
       const color = getDeviceColor(dev || { id: msg.device_id });
       const prevMeta = lastMetaRef.current[msg.device_id];
-      const speedKmh = msg.speed_kmh ?? msg.speedKmh ?? calcSpeedKmh(prevMeta, {
-        lat: msg.lat, lng: msg.lng, recordedAt: msg.recorded_at,
-      });
+      const previousTime = Date.parse(prevMeta?.recordedAt);
+      const eventTime = Date.parse(msg.recorded_at);
+      if (!Number.isFinite(eventTime)) return;
+      if (Number.isFinite(previousTime) && eventTime <= previousTime) {
+        if (eventTime < previousTime) onResync?.();
+        return;
+      }
+      const latestFix = Array.isArray(msg.fixes) && msg.fixes.length
+        ? msg.fixes.reduce((a,b) => Date.parse(a.recorded_at) >= Date.parse(b.recorded_at) ? a : b) : msg;
+      const speedKmh = serverSpeed(latestFix);
       const meta = {
         recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv, cbcMv: msg.cbc_mv,
         fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
@@ -85,18 +95,21 @@ export function makeWsEventHandler({
         // chronological 하게 동작. 이전엔 배치가 뒤섞이면 폴리라인 지그재그 + 화살표 반대방향.
         // 마지막 = 배치 안 가장 최근 fix (기존 계약: top-level lat/lng/sat 과 동일).
         const fixesAsc = msg.fixes
-          .filter(f => f.lat != null && f.lng != null && f.recorded_at)
+          .filter(f => Number.isFinite(f.lat) && Number.isFinite(f.lng) && Number.isFinite(Date.parse(f.recorded_at)))
           .slice()
           .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+        if (fixesAsc.some(f => Date.parse(f.recorded_at) < previousTime)) onResync?.();
         for (let i = 0; i < fixesAsc.length; i++) {
           const f = fixesAsc[i];
+          if (Date.parse(f.recorded_at) <= previousTime) continue;
           const isLast = (i === fixesAsc.length - 1);
-          const fMeta = isLast ? meta : {
+          const pointSpeed = serverSpeed(f);
+          const fMeta = isLast ? { ...meta, speedKmh: pointSpeed } : {
             recordedAt: f.recorded_at, sat: f.sat, fix: true, stale: false,
-            deviceId: msg.device_id, deviceLabel: label,
+            deviceId: msg.device_id, deviceLabel: label, speedKmh: pointSpeed,
           };
           mapRef.current?.updateMarker(msg.device_id, f.lat, f.lng, label, color, fMeta);
-          addPoint(f.lat, f.lng, f.recorded_at, f.sat, true, null);
+          addPoint(f.lat, f.lng, f.recorded_at, f.sat, true, pointSpeed);
         }
       } else if (msg.lat != null && msg.lng != null) {
         // legacy: batch 없음 (구 firmware). top-level 하나만.
@@ -110,7 +123,7 @@ export function makeWsEventHandler({
       }
       setDevices(prev => prev.map(d =>
         d.id === msg.device_id
-          ? { ...d, last_seen_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng }
+          ? { ...d, last_seen_at: msg.recorded_at, last_fix_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng }
           : d
       ));
 

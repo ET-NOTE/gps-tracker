@@ -8,13 +8,13 @@ import { useMe, useAccountType, useSetAccountType, useChatUnread, qk } from '../
 import Icon from './Icon';
 import ChatPanel from './ChatPanel';
 import NotificationSettings from './NotificationSettings';
-import { currentTheme, toggleTheme } from '../theme';
+import { useTheme, toggleTheme } from '../theme';
 import { confirmDialog, alertDialog, promptDialog } from './Dialog';
 import { startPhoneTracker, stopPhoneTracker } from '../lib/phoneTracker';
 
 function initialProfileTab() {
   if (typeof window === 'undefined') return 'account';
-  const v = localStorage.getItem('profile_tab');
+  const v = new URLSearchParams(window.location.search).get('tab') || localStorage.getItem('profile_tab');
   return ['account','credit','chat','notif','theme','lab'].includes(v) ? v : 'account';
 }
 
@@ -26,6 +26,7 @@ export default function ProfilePanel({ onLogout, accountType }) {
   const { data: me } = useMe();
   const qc = useQueryClient();
   const setMe = (next) => qc.setQueryData(qk.me(), next);
+  const theme = useTheme();
   const [tab, setTabRaw] = useState(initialProfileTab);
   const setTab = (v) => { setTabRaw(v); try { localStorage.setItem('profile_tab', v); } catch {} };
   // (F2-c) useChatUnread hook — 10s refetchInterval + dedup 로 ChatPanel 과 하나의 fetch 공유.
@@ -43,7 +44,7 @@ export default function ProfilePanel({ onLogout, accountType }) {
       { id: 'chat',   label: '관리자 채팅', icon: 'message', badge: chatUnread },
     ]),
     { id: 'notif',    label: '알림',     icon: 'warn' },
-    { id: 'theme',    label: '테마',     icon: currentTheme() === 'dark' ? 'moon' : 'sun' },
+    { id: 'theme',    label: '테마',     icon: theme === 'dark' ? 'moon' : 'sun' },
     // 연구소 — 실험적 / 옵트인 기능. 안정화되면 다른 곳으로 옮겨가거나 default 화.
     { id: 'lab',      label: '연구소',   icon: 'spark' },
   ];
@@ -1035,15 +1036,14 @@ function NotifTab() {
 
 // ─── 테마 ───────────────────────────────────────────────
 function ThemeTab() {
-  const [, force] = useState(0);
-  const cur = currentTheme();
+  const cur = useTheme();
   return (
     <Card>
       <div style={{ ...st.cardTitle, marginBottom: 8 }}>화면 테마</div>
       <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>
         현재: <b style={{ color: 'var(--text)' }}>{cur === 'dark' ? '다크' : '라이트'}</b>
       </div>
-      <button onClick={() => { toggleTheme(); force(x => x + 1); }} style={{
+      <button onClick={toggleTheme} style={{
         ...st.btnSecondary,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       }}>

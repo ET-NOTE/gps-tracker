@@ -17,7 +17,6 @@ use axum::{extract::State, http::HeaderMap, Json};
 use chrono::Utc;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use sqlx::Row;
 
 use crate::{
     error::{AppError, AppResult},
@@ -25,20 +24,15 @@ use crate::{
     state::AppState,
 };
 
-const LOW_BATT_THRESHOLD_MV: i32 = 3500;
-
 #[derive(Debug, Deserialize)]
 pub struct IngestPayload {
     pub ts: Option<i32>,
-    pub boot: Option<i64>,
-    pub awake: Option<i64>,
     pub csq: Option<i32>,
     pub reg: Option<i32>,
     pub vbat_mv: Option<i32>,
     /// (F11) SIM7080G AT+CBC 로 읽는 모듈 전압 — 이전엔 raw JSONB 안 저장만 됐음.
     /// WS broadcast 에 실어 실시간 모듈 헬스 관측 (ProfilePanel/Fleet 배터리 표시).
     pub cbc_mv: Option<i32>,
-    pub at_ms: Option<i32>,
     pub l80: Option<GpsFix>,
     pub lte: Option<GpsFix>,
     /// (2026-07-30) 스마트폰 tracker (Flutter geolocator + browser API) — l80/lte 와 별개 source.
@@ -50,14 +44,14 @@ pub struct IngestPayload {
 
     // Phase C: SIM 식별자 (ICCID/IMEI/IMSI) — 디바이스 안정 식별용
     pub iccid: Option<String>,
-    pub imei:  Option<String>,
-    pub imsi:  Option<String>,
+    pub imei: Option<String>,
+    pub imsi: Option<String>,
 
     // Round 4: sleep/wake 관찰 가능성
-    pub event:        Option<String>,    // "wake" | "sleep_enter"
-    pub wake:         Option<String>,    // "motion" | "switch" | "boot" | "timer" | ...
+    pub event: Option<String>,           // "wake" | "sleep_enter"
+    pub wake: Option<String>,            // "motion" | "switch" | "boot" | "timer" | ...
     pub sleep_reason: Option<String>,    // "switch" / "motion_idle" 등 (event=sleep_enter 일 때)
-    pub diag:         Option<serde_json::Value>,  // RTC + 사이클 카운터
+    pub diag: Option<serde_json::Value>, // RTC + 사이클 카운터
     // 진짜 정지 시각 — sleep_enter 페이로드 보낼 때 펌웨어가 마지막 모션 후 경과 초 첨부.
     // 백엔드: occurred_at - offset = stopped_at. (펌웨어가 epoch 시각 못 가져도 보낼 수 있음)
     pub stopped_offset_s: Option<i64>,
@@ -77,6 +71,7 @@ pub struct IngestPayload {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct BatchFix {
+    pub speed_kmh: Option<f32>,
     pub lat: f64,
     pub lng: f64,
     pub sat: Option<i32>,
@@ -97,12 +92,64 @@ pub struct GpsFix {
     pub ttff_s: Option<i32>,
     /// NMEA $GPRMC course over ground, 0~360°. 정지 시/no-fix 시 None.
     pub heading: Option<f32>,
+    pub speed_kmh: Option<f32>,
 }
 
 impl GpsFix {
     fn sat_count(&self) -> Option<i32> {
         self.sat.or(self.sat_used).or(self.sat_view)
     }
+}
+
+#[derive(Clone, sqlx::FromRow)]
+struct ReceivedFix {
+    at: chrono::DateTime<Utc>,
+    up_ms: Option<i64>,
+    lat: f64,
+    lng: f64,
+    boot: Option<String>,
+    boot_id: Option<String>,
+}
+fn is_retransmission(old: &ReceivedFix, new: &ReceivedFix) -> bool {
+    if old.boot_id != new.boot_id || old.boot != new.boot {
+        return false;
+    }
+    let delta = (old.at - new.at).num_milliseconds().abs();
+    match (old.up_ms, new.up_ms) {
+        (Some(a), Some(b)) => a == b && delta <= 30_000,
+        _ => delta <= 500 && old.lat == new.lat && old.lng == new.lng,
+    }
+}
+fn validate_coordinates(p: &IngestPayload) -> AppResult<()> {
+    let valid = |lat: f64, lng: f64| {
+        lat.is_finite()
+            && lng.is_finite()
+            && (-90.0..=90.0).contains(&lat)
+            && (-180.0..=180.0).contains(&lng)
+    };
+    for f in p.fixes.iter().flatten() {
+        if !valid(f.lat, f.lng)
+            || f.age_ms.is_some_and(|v| {
+                v < 0
+                    || Utc::now()
+                        .checked_sub_signed(chrono::Duration::milliseconds(v))
+                        .is_none()
+            })
+            || f.up_ms.is_some_and(|v| v < 0)
+        {
+            return Err(AppError::BadRequest(
+                "invalid GPS coordinate, age or uptime".into(),
+            ));
+        }
+    }
+    for f in [&p.l80, &p.lte, &p.phone].into_iter().flatten() {
+        if f.fix && !matches!((f.lat,f.lng),(Some(lat),Some(lng)) if valid(lat,lng)) {
+            return Err(AppError::BadRequest(
+                "a valid fix requires latitude and longitude".into(),
+            ));
+        }
+    }
+    Ok(())
 }
 
 pub async fn ingest(
@@ -122,10 +169,12 @@ pub async fn ingest(
     let parsed: IngestPayload = serde_json::from_value(payload.clone())
         .map_err(|e| AppError::BadRequest(format!("invalid payload: {e}")))?;
 
+    validate_coordinates(&parsed)?;
+
     let device_uid = parsed
         .device_uid
         .clone()
-        .unwrap_or_else(|| format!("anon-{}", remote_ip));
+        .unwrap_or_else(|| format!("anon-{remote_ip}"));
 
     // 식별자 우선순위 (production-ready):
     //   1) ICCID 일치 (= SIM 정체성. 동일 SIM은 어떤 모뎀에 있든 같은 logical device)
@@ -137,63 +186,70 @@ pub async fn ingest(
     let mut device_id: Option<i64> = None;
     if let Some(iccid) = parsed.iccid.as_deref() {
         device_id = sqlx::query_scalar("SELECT id FROM devices WHERE iccid = $1 LIMIT 1")
-            .bind(iccid).fetch_optional(&state.db).await?;
+            .bind(iccid)
+            .fetch_optional(&state.db)
+            .await?;
     }
     if device_id.is_none() {
         device_id = sqlx::query_scalar("SELECT id FROM devices WHERE device_uid = $1")
-            .bind(&device_uid).fetch_optional(&state.db).await?;
+            .bind(&device_uid)
+            .fetch_optional(&state.db)
+            .await?;
     }
 
     // 매칭된 행이 있으면 갱신, 없으면 INSERT. IMEI 변경 감지 시 audit 기록.
-    let device_id: i64 = match device_id {
-        Some(id) => {
-            // 갱신 전 기존 IMEI 조회 (변경 여부 비교용)
-            let prev_imei: Option<String> =
-                sqlx::query_scalar("SELECT imei FROM devices WHERE id = $1")
-                    .bind(id).fetch_one(&state.db).await?;
+    let device_id: i64 =
+        match device_id {
+            Some(id) => {
+                // 갱신 전 기존 IMEI 조회 (변경 여부 비교용)
+                let prev_imei: Option<String> =
+                    sqlx::query_scalar("SELECT imei FROM devices WHERE id = $1")
+                        .bind(id)
+                        .fetch_one(&state.db)
+                        .await?;
 
-            sqlx::query(
-                r#"UPDATE devices
+                sqlx::query(
+                    r#"UPDATE devices
                       SET last_seen_at = now(),
                           device_uid   = $2,
                           iccid        = COALESCE(devices.iccid, $3),
                           imei         = COALESCE($4, imei),
                           imsi         = COALESCE($5, imsi)
                     WHERE id = $1"#,
-            )
-            .bind(id)
-            .bind(&device_uid)
-            .bind(&parsed.iccid)
-            .bind(&parsed.imei)
-            .bind(&parsed.imsi)
-            .execute(&state.db)
-            .await?;
+                )
+                .bind(id)
+                .bind(&device_uid)
+                .bind(&parsed.iccid)
+                .bind(&parsed.imei)
+                .bind(&parsed.imsi)
+                .execute(&state.db)
+                .await?;
 
-            // IMEI 가 바뀌었으면 = SIM 카드가 다른 모뎀으로 옮겨감 → swap 기록
-            if let (Some(old), Some(new)) = (prev_imei.as_deref(), parsed.imei.as_deref()) {
-                if !old.is_empty() && old != new {
-                    let _ = sqlx::query(
-                        r#"INSERT INTO device_audit_log (device_id, event_type, actor, data)
+                // IMEI 가 바뀌었으면 = SIM 카드가 다른 모뎀으로 옮겨감 → swap 기록
+                if let (Some(old), Some(new)) = (prev_imei.as_deref(), parsed.imei.as_deref()) {
+                    if !old.is_empty() && old != new {
+                        let _ = sqlx::query(
+                            r#"INSERT INTO device_audit_log (device_id, event_type, actor, data)
                            VALUES ($1, 'sim_swap', 'system', $2)"#,
-                    )
-                    .bind(id)
-                    .bind(json!({
-                        "from_imei": old,
-                        "to_imei": new,
-                        "iccid": parsed.iccid,
-                    }))
-                    .execute(&state.db)
-                    .await;
-                    tracing::info!(device_id = id, from = old, to = new, "audit: imei changed");
+                        )
+                        .bind(id)
+                        .bind(json!({
+                            "from_imei": old,
+                            "to_imei": new,
+                            "iccid": parsed.iccid,
+                        }))
+                        .execute(&state.db)
+                        .await;
+                        tracing::info!(device_id = id, from = old, to = new, "audit: imei changed");
+                    }
                 }
-            }
 
-            id
-        }
-        None => sqlx::query_scalar(
-            // ON CONFLICT 로 동시 ingest race 방어. 동일 device_uid 두 ingest 가
-            // 동시에 INSERT 시도 → 한쪽은 UPDATE 경로로 진입해 id 반환.
-            r#"INSERT INTO devices (device_uid, api_key_hash, last_seen_at, iccid, imei, imsi)
+                id
+            }
+            None => sqlx::query_scalar(
+                // ON CONFLICT 로 동시 ingest race 방어. 동일 device_uid 두 ingest 가
+                // 동시에 INSERT 시도 → 한쪽은 UPDATE 경로로 진입해 id 반환.
+                r#"INSERT INTO devices (device_uid, api_key_hash, last_seen_at, iccid, imei, imsi)
                VALUES ($1, '', now(), $2, $3, $4)
                ON CONFLICT (device_uid) DO UPDATE
                   SET last_seen_at = now(),
@@ -201,98 +257,123 @@ pub async fn ingest(
                       imei  = COALESCE(EXCLUDED.imei, devices.imei),
                       imsi  = COALESCE(EXCLUDED.imsi, devices.imsi)
                RETURNING id"#,
-        )
-        .bind(&device_uid)
-        .bind(&parsed.iccid)
-        .bind(&parsed.imei)
-        .bind(&parsed.imsi)
-        .fetch_one(&state.db)
-        .await?,
-    };
+            )
+            .bind(&device_uid)
+            .bind(&parsed.iccid)
+            .bind(&parsed.imei)
+            .bind(&parsed.imsi)
+            .fetch_one(&state.db)
+            .await?,
+        };
 
     // l80 / lte 각각 location_records로 INSERT (있는 것만)
     let recorded_at = Utc::now();
 
     // sss 24h 테스트: fixes array 가 있으면 각 fix 별로 별도 insert (recorded_at - age_ms).
     // 이 경우 기존 l80 단일 fix 는 array 의 마지막 element 와 동일 → skip (중복 방지).
-    let has_batch = parsed.fixes.as_ref().map_or(false, |f| !f.is_empty());
+    let has_batch = parsed.fixes.as_ref().is_some_and(|f| !f.is_empty());
     // P1: WS broadcast 는 batch 끝에 1회 (N회 → 1회).
     let mut batch_for_ws: Vec<crate::events::LocationFix> = Vec::new();
     // Phase 6D: batch 는 1 row + fixes_jsonb 만 INSERT (이전 N row → 1 row).
     //   column lat/lng/sat/heading/ttff_s = anchor (가장 최근) fix 값 → devices.last_lat trigger 호환.
     //   geofence check 는 fix 별 그대로.
     //   WS broadcast 도 fix 별 그대로 (frontend dedup 가 처리).
-    let mut fix_records: Vec<(chrono::DateTime<Utc>, f64, f64, Option<i32>, Option<i64>)> = Vec::new();
-    if let Some(fixes) = &parsed.fixes {
-        // [2026-08-28 배치 재전송 dedup] 펌웨어는 200 응답을 못 받으면(RF 순단 등) 같은 fix 를
-        //   다음 사이클에 재전송한다(at-least-once). 복원시각(도착시각-age_ms)은 전송마다 수백 ms
-        //   어긋나 기존 (device,recorded_at,source) 키로는 dedup 불가 → 사본이 interleave 저장되어
-        //   궤적 지그재그·방향화살표 역방향 유발 (2026-08-27 sss 실증: 운행 1회에 겹침 배치 7쌍).
-        //   해법: 이 단말의 "직전 저장 fix 최종시각(=MAX(recorded_at), anchor 가 배치 최신 fix)"
-        //   이전(+500ms 여유)의 fix 는 재전송 사본으로 드롭. GNSS fix 는 1s 간격이라 오인 없음.
-        //   전부 사본이면 insert 자체가 스킵되지만 200 은 반환 → 단말이 batch 를 비워 재전송 종료.
-        // 직전 저장 배치: recorded_at(= 그 배치 최종 fix 시각, wall-clock 폴백용) + fixes_jsonb
-        // (up_ms 정확 dedup 용 — [2026-08-29] 신펌웨어는 fix 마다 up_ms 를 실음).
-        let last: Option<(chrono::DateTime<Utc>, Option<Value>)> = sqlx::query_as(
-            "SELECT recorded_at, fixes_jsonb FROM location_records \
-              WHERE device_id = $1 AND source = 'l80' \
-              ORDER BY recorded_at DESC LIMIT 1",
-        )
-        .bind(device_id)
-        .fetch_optional(&state.db)
-        .await
-        .ok()
-        .flatten();
-        let wall_cutoff = last.as_ref().map(|(t, _)| *t + chrono::Duration::milliseconds(500));
-        // 직전 배치의 최대 up_ms — 단말 uptime 기준 "여기까지 저장됨" 워터마크.
-        let last_up_ms: Option<i64> = last
-            .as_ref()
-            .and_then(|(_, j)| j.as_ref())
-            .and_then(|j| j.as_array())
-            .and_then(|arr| arr.iter().filter_map(|it| it.get("up_ms").and_then(|v| v.as_i64())).max());
-        // 같은 부팅 세션 판정 — 이번 POST 의 uptime(ts, 초)이 워터마크 이상 진행됐으면 같은 부팅.
-        //   재부팅이면 ts 가 리셋되어 false → wall-clock 폴백 (재전송 batch 는 RAM 이라 재부팅을
-        //   넘어 존재할 수 없음 → 폴백으로 충분). ts 는 초 절삭이라 +999ms 보정.
-        let same_boot = matches!((parsed.ts, last_up_ms),
-            (Some(ts), Some(lu)) if (ts as i64) * 1000 + 999 >= lu);
+    type StoredFix = (
+        chrono::DateTime<Utc>,
+        f64,
+        f64,
+        Option<i32>,
+        Option<i64>,
+        Option<f32>,
+    );
+    let mut fix_records: Vec<StoredFix> = Vec::new();
+    if let Some(fixes) = parsed.fixes.as_ref().filter(|f| !f.is_empty()) {
+        // Serialize competing retransmissions with pairing/deletion/stat aggregation.
+        let mut tx = state.db.begin().await?;
+        sqlx::query("SELECT id FROM devices WHERE id=$1 FOR UPDATE")
+            .bind(device_id)
+            .execute(&mut *tx)
+            .await?;
+        let candidates: Vec<_> = fixes
+            .iter()
+            .map(|f| {
+                (
+                    recorded_at - chrono::Duration::milliseconds(f.age_ms.unwrap_or(0)),
+                    f,
+                )
+            })
+            .collect();
+        let mut existing: Vec<ReceivedFix> = if let (Some(first), Some(last)) = (
+            candidates.iter().map(|(t, _)| *t).min(),
+            candidates.iter().map(|(t, _)| *t).max(),
+        ) {
+            sqlx::query_as(
+                "SELECT r.recorded_at + COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' AS at,
+                 (f->>'up_ms')::bigint AS up_ms,(f->>'lat')::float8 AS lat,(f->>'lng')::float8 AS lng,
+                 r.raw->>'boot' AS boot,r.raw->>'boot_id' AS boot_id
+                 FROM location_records r CROSS JOIN LATERAL jsonb_array_elements(r.fixes_jsonb) f
+                 WHERE r.device_id=$1 AND r.source='l80'
+                   AND r.user_id IS NOT DISTINCT FROM (SELECT owner_id FROM devices WHERE id=$1)
+                   AND location_point_bound(r.recorded_at,r.fixes_jsonb,true)>=$2
+                   AND location_point_bound(r.recorded_at,r.fixes_jsonb,false)<=$3")
+            .bind(device_id).bind(first-chrono::Duration::seconds(30))
+            .bind(last+chrono::Duration::seconds(30)).fetch_all(&mut *tx).await?
+        } else {
+            Vec::new()
+        };
+        let boot = payload
+            .get("boot")
+            .filter(|v| !v.is_null())
+            .map(|v| v.as_str().map_or_else(|| v.to_string(), str::to_string));
+        let boot_id = payload
+            .get("boot_id")
+            .and_then(Value::as_str)
+            .map(str::to_string);
         let mut retx_dropped = 0usize;
-        for f in fixes {
-            let age_ms = f.age_ms.unwrap_or(0);
-            let fix_at = recorded_at - chrono::Duration::milliseconds(age_ms);
-            // [2026-08-29] dedup 판정: ① up_ms 정확 비교 (같은 부팅 + 양쪽 up_ms 존재 — 재전송
-            //   사본은 up_ms 불변이라 산술적으로 정확) ② 아니면 wall-clock cutoff (기존 규칙).
-            let dup = match (f.up_ms, last_up_ms, same_boot) {
-                (Some(u), Some(lu), true) => u <= lu,
-                _ => wall_cutoff.map_or(false, |cut| fix_at <= cut),
+        for (fix_at, f) in candidates {
+            let incoming = ReceivedFix {
+                at: fix_at,
+                up_ms: f.up_ms,
+                lat: f.lat,
+                lng: f.lng,
+                boot: boot.clone(),
+                boot_id: boot_id.clone(),
             };
-            if dup { retx_dropped += 1; continue; }
-            batch_for_ws.push(crate::events::LocationFix {
-                recorded_at: fix_at,
-                lat: Some(f.lat),
-                lng: Some(f.lng),
-                sat: f.sat.map(|v| v as i16),
-            });
-            fix_records.push((fix_at, f.lat, f.lng, f.sat, f.up_ms));
-            let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, f.lat, f.lng).await;
+            if existing.iter().any(|old| is_retransmission(old, &incoming)) {
+                retx_dropped += 1;
+                continue;
+            }
+            existing.push(incoming);
+            fix_records.push((fix_at, f.lat, f.lng, f.sat, f.up_ms, f.speed_kmh));
         }
         if retx_dropped > 0 {
-            tracing::info!(device_id, retx_dropped, total = fixes.len(),
-                "batch retx dedup: overlapping fixes dropped");
+            tracing::info!(
+                device_id,
+                retx_dropped,
+                total = fixes.len(),
+                "batch retx dedup: overlapping fixes dropped"
+            );
         }
 
         // Phase 6D: 1 row + jsonb INSERT.
         // anchor = MAX(fix_at) — recorded_at + column lat/lng/sat 자리. at_ms 는 anchor 기준 음 offset.
-        if let Some(&(anchor_at, anchor_lat, anchor_lng, anchor_sat, _)) = fix_records.iter().max_by_key(|r| r.0) {
-            let jsonb_array: Vec<serde_json::Value> = fix_records.iter().map(|(at, lat, lng, sat, up_ms)| {
-                let at_ms = (*at - anchor_at).num_milliseconds();
-                serde_json::json!({
-                    "at_ms": at_ms,
-                    "lat":   lat,
-                    "lng":   lng,
-                    "sat":   sat,
-                    "up_ms": up_ms,   // [2026-08-29] 단말 uptime ms — 재전송 dedup 워터마크 (구펌웨어 null)
+        if let Some(&(anchor_at, anchor_lat, anchor_lng, anchor_sat, _, _)) =
+            fix_records.iter().max_by_key(|r| r.0)
+        {
+            let jsonb_array: Vec<serde_json::Value> = fix_records
+                .iter()
+                .map(|(at, lat, lng, sat, up_ms, speed)| {
+                    let at_ms = (*at - anchor_at).num_milliseconds();
+                    serde_json::json!({
+                        "at_ms": at_ms,
+                        "lat":   lat,
+                        "speed_kmh": speed.filter(|v| v.is_finite() && (0.0..=250.0).contains(v)),
+                        "lng":   lng,
+                        "sat":   sat,
+                        "up_ms": up_ms,   // [2026-08-29] 단말 uptime ms — 재전송 dedup 워터마크 (구펌웨어 null)
+                    })
                 })
-            }).collect();
+                .collect();
             sqlx::query(
                 r#"INSERT INTO location_records (
                        device_id, recorded_at, device_uptime_s, source,
@@ -311,47 +392,138 @@ pub async fn ingest(
             .bind(anchor_lat)
             .bind(anchor_lng)
             .bind(anchor_sat)
-            .bind::<Option<i32>>(None)               // ttff_s — batch fix 에 없음
+            .bind::<Option<i32>>(None) // ttff_s — batch fix 에 없음
             .bind(parsed.csq)
             .bind(parsed.reg)
             .bind(parsed.vbat_mv)
             .bind(&payload)
-            .bind::<Option<f32>>(None)               // heading — batch fix 에 없음
+            .bind::<Option<f32>>(None) // heading — batch fix 에 없음
             .bind(serde_json::Value::Array(jsonb_array))
-            .execute(&state.db)
+            .execute(&mut *tx)
             .await?;
         }
 
+        if let Some(&(at, lat, lng, _, _, _)) = fix_records.iter().max_by_key(|f| f.0) {
+            sqlx::query(
+                "UPDATE devices SET last_lat=$1,last_lng=$2,last_fix_at=$3 WHERE id=$4
+                        AND (last_fix_at IS NULL OR last_fix_at<=$3)",
+            )
+            .bind(lat)
+            .bind(lng)
+            .bind(at)
+            .bind(device_id)
+            .execute(&mut *tx)
+            .await?;
+            let dates: Vec<_> = fix_records
+                .iter()
+                .flat_map(|f| {
+                    [
+                        (f.0 + chrono::Duration::hours(9)).date_naive(),
+                        (f.0 + chrono::Duration::hours(9) + chrono::Duration::seconds(65))
+                            .date_naive(),
+                    ]
+                })
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect();
+            sqlx::query(
+                "INSERT INTO stats_rebuild_queue(device_id,date)
+                SELECT $1,unnest($2::date[]) ON CONFLICT(device_id,date)
+                DO UPDATE SET generation=stats_rebuild_queue.generation+1",
+            )
+            .bind(device_id)
+            .bind(dates)
+            .execute(&mut *tx)
+            .await?;
+        }
+        if let (Some(first), Some(last)) = (
+            fix_records.iter().map(|p| p.0).min(),
+            fix_records.iter().map(|p| p.0).max(),
+        ) {
+            let accepted: std::collections::HashSet<_> =
+                fix_records.iter().map(|p| p.0.timestamp_micros()).collect();
+            batch_for_ws = sqlx::query_as::<_,crate::events::LocationFix>(
+                "SELECT recorded_at,lat,lng,sat,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source
+                 FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3)
+                 WHERE source='l80' ORDER BY recorded_at")
+                .bind(device_id).bind(first).bind(last).fetch_all(&mut *tx).await?
+                .into_iter().filter(|p| accepted.contains(&p.recorded_at.timestamp_micros())).collect();
+        }
+        tx.commit().await?;
+        // Historical backfill must not replay old geofence crossings as current ones.
+        if let Some(&(at, lat, lng, _, _, _)) = fix_records.iter().max_by_key(|f| f.0) {
+            let current: bool =
+                sqlx::query_scalar("SELECT last_fix_at=$2 FROM devices WHERE id=$1")
+                    .bind(device_id)
+                    .bind(at)
+                    .fetch_one(&state.db)
+                    .await?;
+            if current {
+                let _ =
+                    crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng)
+                        .await;
+            }
+        }
+
         // batch 끝에 1회 broadcast — 마지막 fix metadata 를 top-level 에, 모두를 fixes array 로.
-        if let (Some(last_fix), Some(last_meta)) = (batch_for_ws.last().cloned(), parsed.fixes.as_ref().and_then(|v| v.last())) {
-            broadcast_batch(&state, device_id, last_fix.recorded_at, "l80",
-                Some(last_meta.lat), Some(last_meta.lng), last_meta.sat.map(|v| v as i16),
-                &parsed, batch_for_ws.clone());
+        if let Some(event) = batch_event(device_id, &parsed, batch_for_ws) {
+            let _ = state.events.send(event);
         }
     }
 
     if !has_batch {
         if let Some(l80) = &parsed.l80 {
-            insert_location(&state, device_id, recorded_at, "l80", l80, &parsed, &payload).await?;
-            broadcast_location(&state, device_id, recorded_at, "l80", l80, &parsed);
+            insert_location(
+                &state,
+                device_id,
+                recorded_at,
+                "l80",
+                l80,
+                &parsed,
+                &payload,
+            )
+            .await?;
+            broadcast_location(&state, device_id, recorded_at, "l80", l80, &parsed).await?;
             if let (true, Some(lat), Some(lng)) = (l80.fix, l80.lat, l80.lng) {
-                let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
+                let _ =
+                    crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng)
+                        .await;
             }
         }
     }
     if let Some(lte) = &parsed.lte {
-        insert_location(&state, device_id, recorded_at, "lte_gnss", lte, &parsed, &payload).await?;
-        broadcast_location(&state, device_id, recorded_at, "lte_gnss", lte, &parsed);
+        insert_location(
+            &state,
+            device_id,
+            recorded_at,
+            "lte_gnss",
+            lte,
+            &parsed,
+            &payload,
+        )
+        .await?;
+        broadcast_location(&state, device_id, recorded_at, "lte_gnss", lte, &parsed).await?;
         if let (true, Some(lat), Some(lng)) = (lte.fix, lte.lat, lte.lng) {
-            let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
+            let _ =
+                crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
         }
     }
     // (2026-07-30) 스마트폰 tracker — 자체 GPS/WiFi/셀 hybrid fix. source='phone' 별도 라벨.
     if let Some(phone) = &parsed.phone {
-        insert_location(&state, device_id, recorded_at, "phone", phone, &parsed, &payload).await?;
-        broadcast_location(&state, device_id, recorded_at, "phone", phone, &parsed);
+        insert_location(
+            &state,
+            device_id,
+            recorded_at,
+            "phone",
+            phone,
+            &parsed,
+            &payload,
+        )
+        .await?;
+        broadcast_location(&state, device_id, recorded_at, "phone", phone, &parsed).await?;
         if let (true, Some(lat), Some(lng)) = (phone.fix, phone.lat, phone.lng) {
-            let _ = crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
+            let _ =
+                crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
         }
     }
 
@@ -366,30 +538,44 @@ pub async fn ingest(
             // motion/boot/sw_reset/brownout/crash 만 마킹.
             let wc = parsed.wake.as_deref().unwrap_or("");
             if wc != "timer" {
-                let _ = sqlx::query(
-                    "UPDATE devices SET cycle_first_fix_pending = TRUE WHERE id = $1"
-                )
-                .bind(device_id)
-                .execute(&state.db)
-                .await;
+                let _ =
+                    sqlx::query("UPDATE devices SET cycle_first_fix_pending = TRUE WHERE id = $1")
+                        .bind(device_id)
+                        .execute(&state.db)
+                        .await;
             }
         }
     }
 
     // 0036: cycle_first_fix — wake 후 첫 fix 도착 시 1회 발송.
     // wake 이벤트 분기에서 pending=TRUE 마킹됨. 첫 fix=true 도착 시 atomic 토글 + event insert.
-    let first_fix_xy: Option<(f64, f64)> = parsed.l80.as_ref()
+    let first_fix_xy: Option<(f64, f64)> = parsed
+        .l80
+        .as_ref()
         .and_then(|l| if l.fix { Some((l.lat?, l.lng?)) } else { None })
-        .or_else(|| parsed.lte.as_ref()
-            .and_then(|l| if l.fix { Some((l.lat?, l.lng?)) } else { None }));
+        .or_else(|| {
+            parsed
+                .lte
+                .as_ref()
+                .and_then(|l| if l.fix { Some((l.lat?, l.lng?)) } else { None })
+        });
     if let Some((lat, lng)) = first_fix_xy {
         let claimed: Option<(i64,)> = sqlx::query_as(
             "UPDATE devices SET cycle_first_fix_pending = FALSE \
              WHERE id = $1 AND cycle_first_fix_pending = TRUE \
-             RETURNING id"
-        ).bind(device_id).fetch_optional(&state.db).await.ok().flatten();
+             RETURNING id",
+        )
+        .bind(device_id)
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten();
         if claimed.is_some() {
-            let sat = parsed.l80.as_ref().and_then(|l| l.sat_count()).unwrap_or(-1);
+            let sat = parsed
+                .l80
+                .as_ref()
+                .and_then(|l| l.sat_count())
+                .unwrap_or(-1);
             let data = json!({ "lat": lat, "lng": lng, "sat": sat });
             let _ = sqlx::query(
                 "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'cycle_first_fix', $3, (SELECT owner_id FROM devices WHERE id = $1))"
@@ -416,7 +602,10 @@ pub async fn ingest(
         .await
         .ok()
         .flatten();
-        if matches!(last_event_kind.as_deref(), Some("offline") | Some("signal_loss")) {
+        if matches!(
+            last_event_kind.as_deref(),
+            Some("offline") | Some("signal_loss")
+        ) {
             let recovered_from = last_event_kind.unwrap();
             let _ = sqlx::query(
                 "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'online', $3, (SELECT owner_id FROM devices WHERE id = $1))",
@@ -433,7 +622,10 @@ pub async fn ingest(
     // 디바운스 — 24시간 내에 이미 low_batt 이벤트 있으면 스킵 (푸시 스팸 방지).
     // 24h 후에도 여전히 임계 미만이면 다시 한 번 발송 (리마인더).
     if let Some(v) = parsed.vbat_mv {
-        if v < LOW_BATT_THRESHOLD_MV {
+        let threshold: i32 = sqlx::query_scalar("SELECT COALESCE(ns.low_batt_threshold_mv,3500) FROM devices d LEFT JOIN notification_settings ns ON ns.user_id=d.owner_id WHERE d.id=$1")
+            .bind(device_id).fetch_one(&state.db).await?;
+        // Missing/unusable ADC measurements must not produce a false 0% alarm.
+        if (2500..=5000).contains(&v) && v < threshold {
             let recent: Option<bool> = sqlx::query_scalar(
                 r#"SELECT TRUE FROM events
                     WHERE device_id = $1
@@ -449,7 +641,7 @@ pub async fn ingest(
             .flatten();
 
             if recent.is_none() {
-                let data = json!({ "vbat_mv": v, "threshold_mv": LOW_BATT_THRESHOLD_MV });
+                let data = json!({ "vbat_mv": v, "threshold_mv": threshold });
                 let _ = sqlx::query(
                     "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM devices WHERE id = $1))",
                 )
@@ -473,16 +665,21 @@ pub async fn ingest(
 
     // last_lat/lng 업데이트 — 우선순위: phone > l80 > lte, fix=true 일 때만.
     // (2026-07-30) phone tracker 우선 (l80/lte 는 firmware 만 보냄, 겹치지 않음).
-    let fix_for_update = parsed.phone.as_ref().filter(|x| x.fix)
-        .or_else(|| parsed.l80.as_ref().filter(|x| x.fix))
+    let fix_for_update = parsed
+        .phone
+        .as_ref()
+        .filter(|x| x.fix)
+        .or_else(|| parsed.l80.as_ref().filter(|x| x.fix && !has_batch))
         .or_else(|| parsed.lte.as_ref().filter(|x| x.fix));
     if let Some(fix) = fix_for_update {
         if let (Some(lat), Some(lng)) = (fix.lat, fix.lng) {
             sqlx::query(
-                "UPDATE devices SET last_lat = $1, last_lng = $2, last_fix_at = now() WHERE id = $3",
+                "UPDATE devices SET last_lat = $1, last_lng = $2, last_fix_at = $3 WHERE id = $4
+                   AND (last_fix_at IS NULL OR last_fix_at <= $3)",
             )
             .bind(lat)
             .bind(lng)
+            .bind(recorded_at)
             .bind(device_id)
             .execute(&state.db)
             .await?;
@@ -507,14 +704,28 @@ pub async fn ingest(
     if let Some(kind) = parsed.event.as_deref() {
         if kind == "sleep_enter" || kind == "wake" {
             let mut data = serde_json::Map::new();
-            if let Some(d) = &parsed.diag { data.insert("diag".into(), d.clone()); }
-            if let Some(w) = &parsed.wake { data.insert("wake_cause".into(), Value::String(w.clone())); }
-            if let Some(r) = &parsed.sleep_reason { data.insert("sleep_reason".into(), Value::String(r.clone())); }
-            if let Some(v) = parsed.vbat_mv { data.insert("vbat_mv".into(), v.into()); }
-            if let Some(c) = parsed.csq { data.insert("csq".into(), c.into()); }
+            if let Some(d) = &parsed.diag {
+                data.insert("diag".into(), d.clone());
+            }
+            if let Some(w) = &parsed.wake {
+                data.insert("wake_cause".into(), Value::String(w.clone()));
+            }
+            if let Some(r) = &parsed.sleep_reason {
+                data.insert("sleep_reason".into(), Value::String(r.clone()));
+            }
+            if let Some(v) = parsed.vbat_mv {
+                data.insert("vbat_mv".into(), v.into());
+            }
+            if let Some(c) = parsed.csq {
+                data.insert("csq".into(), c.into());
+            }
             // (2026-07-02) reg 도 저장 — 이전엔 payload 는 오는데 event data 에 안 담겼음.
-            if let Some(r) = parsed.reg { data.insert("reg".into(), r.into()); }
-            if let Some(t) = parsed.ts { data.insert("uptime_s".into(), t.into()); }
+            if let Some(r) = parsed.reg {
+                data.insert("reg".into(), r.into());
+            }
+            if let Some(t) = parsed.ts {
+                data.insert("uptime_s".into(), t.into());
+            }
             if let Some(off) = parsed.stopped_offset_s {
                 data.insert("stopped_offset_s".into(), off.into());
             }
@@ -545,27 +756,50 @@ pub async fn ingest(
             let stopped_offset_s = parsed.stopped_offset_s.unwrap_or(-1);
             let uptime_s = parsed.ts.unwrap_or(-1);
             let vbat_mv = parsed.vbat_mv.unwrap_or(-1);
-            let (boots, wakes, motion_wakes, brownouts, last_sleep_uptime_s) = parsed.diag.as_ref()
-                .map(|d| (
-                    d.get("boots").and_then(|v| v.as_i64()).unwrap_or(-1),
-                    d.get("wakes").and_then(|v| v.as_i64()).unwrap_or(-1),
-                    d.get("motion_wakes").and_then(|v| v.as_i64()).unwrap_or(-1),
-                    d.get("brownouts").and_then(|v| v.as_i64()).unwrap_or(-1),
-                    d.get("last_sleep_uptime_s").and_then(|v| v.as_i64()).unwrap_or(-1),
-                ))
+            let (boots, wakes, motion_wakes, brownouts, last_sleep_uptime_s) = parsed
+                .diag
+                .as_ref()
+                .map(|d| {
+                    (
+                        d.get("boots").and_then(|v| v.as_i64()).unwrap_or(-1),
+                        d.get("wakes").and_then(|v| v.as_i64()).unwrap_or(-1),
+                        d.get("motion_wakes").and_then(|v| v.as_i64()).unwrap_or(-1),
+                        d.get("brownouts").and_then(|v| v.as_i64()).unwrap_or(-1),
+                        d.get("last_sleep_uptime_s")
+                            .and_then(|v| v.as_i64())
+                            .unwrap_or(-1),
+                    )
+                })
                 .unwrap_or((-1, -1, -1, -1, -1));
             let build_tag = parsed.build_tag.as_deref().unwrap_or("-");
             let reset_cause = parsed.reset_cause.as_deref().unwrap_or("-");
             let last_op = parsed.last_op.as_deref().unwrap_or("-");
             let antenna = parsed.antenna.as_deref().unwrap_or("-");
             let gps_fix = parsed.l80.as_ref().map(|l| l.fix).unwrap_or(false);
-            let gps_sat = parsed.l80.as_ref().and_then(|l| l.sat_count()).unwrap_or(-1);
+            let gps_sat = parsed
+                .l80
+                .as_ref()
+                .and_then(|l| l.sat_count())
+                .unwrap_or(-1);
             tracing::info!(
-                device_id, kind, build_tag, reset_cause, last_op, antenna,
-                wake_cause, sleep_reason,
-                uptime_s, vbat_mv,
-                gps_fix, gps_sat,
-                boots, wakes, motion_wakes, brownouts, last_sleep_uptime_s, stopped_offset_s,
+                device_id,
+                kind,
+                build_tag,
+                reset_cause,
+                last_op,
+                antenna,
+                wake_cause,
+                sleep_reason,
+                uptime_s,
+                vbat_mv,
+                gps_fix,
+                gps_sat,
+                boots,
+                wakes,
+                motion_wakes,
+                brownouts,
+                last_sleep_uptime_s,
+                stopped_offset_s,
                 "lifecycle event ingested"
             );
 
@@ -577,14 +811,20 @@ pub async fn ingest(
     // Round 4: diag 카운터 비교 → 새로 발생한 brownout / gps_anomaly 분류
     // 누락 필드는 -1 sentinel — 비교에서 skip, UPDATE 에서도 기존 값 보존 (COALESCE)
     if let Some(diag) = parsed.diag.as_ref() {
-        let new_brownouts     = diag.get("brownouts").and_then(|v| v.as_i64()).unwrap_or(-1);
-        let new_no_fix_cycles = diag.get("no_fix_cycles").and_then(|v| v.as_i64()).unwrap_or(-1);
+        let new_brownouts = diag.get("brownouts").and_then(|v| v.as_i64()).unwrap_or(-1);
+        let new_no_fix_cycles = diag
+            .get("no_fix_cycles")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(-1);
 
         if new_brownouts >= 0 || new_no_fix_cycles >= 0 {
             // 직전 캐시값 조회 (devices 테이블)
             let prev: Option<(i32, i32)> = sqlx::query_as(
-                "SELECT rtc_brownouts, rtc_no_fix_cycles FROM devices WHERE id = $1"
-            ).bind(device_id).fetch_optional(&state.db).await?;
+                "SELECT rtc_brownouts, rtc_no_fix_cycles FROM devices WHERE id = $1",
+            )
+            .bind(device_id)
+            .fetch_optional(&state.db)
+            .await?;
             let (prev_brown, prev_no_fix) = prev.unwrap_or((0, 0));
 
             // brownout 증가분 → 이벤트 + 캐시 갱신
@@ -595,7 +835,7 @@ pub async fn ingest(
                 ).bind(device_id).bind(recorded_at).bind(json!({
                     "delta": delta, "total": new_brownouts, "vbat_mv": parsed.vbat_mv,
                 })).execute(&state.db).await;
-                tracing::warn!(device_id, delta, total=new_brownouts, "brownout event");
+                tracing::warn!(device_id, delta, total = new_brownouts, "brownout event");
             }
 
             // gps_anomaly — no_fix_cycles 가 직전 대비 +2 이상 증가 시 (노이즈 1회는 무시)
@@ -615,12 +855,21 @@ pub async fn ingest(
                 "UPDATE devices
                     SET rtc_brownouts     = COALESCE($1, rtc_brownouts),
                         rtc_no_fix_cycles = COALESCE($2, rtc_no_fix_cycles)
-                  WHERE id = $3"
+                  WHERE id = $3",
             )
-            .bind(if new_brownouts     >= 0 { Some(new_brownouts     as i32) } else { None })
-            .bind(if new_no_fix_cycles >= 0 { Some(new_no_fix_cycles as i32) } else { None })
+            .bind(if new_brownouts >= 0 {
+                Some(new_brownouts as i32)
+            } else {
+                None
+            })
+            .bind(if new_no_fix_cycles >= 0 {
+                Some(new_no_fix_cycles as i32)
+            } else {
+                None
+            })
             .bind(device_id)
-            .execute(&state.db).await;
+            .execute(&state.db)
+            .await;
         }
     }
 
@@ -634,8 +883,10 @@ pub async fn ingest(
         RETURNING id"#,
     )
     .bind(device_id)
-    .fetch_optional(&state.db).await
-    .ok().flatten();
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
 
     // 원격 reset atomic claim — beep 과 동일 패턴.
     // reset 이 우선 (둘 다 pending 이면 reset 만 dispatch. reset 후 부저는 다음 사이클에서 다시 트리거 가능).
@@ -646,18 +897,26 @@ pub async fn ingest(
         RETURNING id"#,
     )
     .bind(device_id)
-    .fetch_optional(&state.db).await
-    .ok().flatten();
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
 
     // POST 주기 원격 조정 atomic claim — cmd 와 독립적으로 동봉 가능 (별도 키).
     // 단일 device 24h 테스트라 SELECT+UPDATE 2-step (race 무시).
     let interval_seconds: Option<i32> = {
-        let s: Option<i32> = sqlx::query_scalar(
-            "SELECT post_interval_pending FROM devices WHERE id = $1"
-        ).bind(device_id).fetch_optional(&state.db).await.ok().flatten();
+        let s: Option<i32> =
+            sqlx::query_scalar("SELECT post_interval_pending FROM devices WHERE id = $1")
+                .bind(device_id)
+                .fetch_optional(&state.db)
+                .await
+                .ok()
+                .flatten();
         if s.is_some() {
             let _ = sqlx::query("UPDATE devices SET post_interval_pending = NULL WHERE id = $1")
-                .bind(device_id).execute(&state.db).await;
+                .bind(device_id)
+                .execute(&state.db)
+                .await;
         }
         s
     };
@@ -677,14 +936,32 @@ pub async fn ingest(
     Ok(Json(resp))
 }
 
-fn broadcast_location(
+async fn broadcast_location(
     state: &AppState,
     device_id: i64,
     recorded_at: chrono::DateTime<Utc>,
     source: &str,
     fix: &GpsFix,
     parsed: &IngestPayload,
-) {
+) -> AppResult<()> {
+    let point = sqlx::query_as::<_,crate::events::LocationFix>(
+        "SELECT recorded_at,lat,lng,sat,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source
+         FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$2)
+         WHERE source=$3")
+        .bind(device_id).bind(recorded_at).bind(source).fetch_optional(&state.db).await?;
+    let (speed_kmh, speed_details) = point
+        .map(|p| (p.speed_kmh, p.speed_details))
+        .unwrap_or_else(|| {
+            (
+                None,
+                crate::events::SpeedDetails {
+                    speed_source: "server_coordinate_v1".into(),
+                    speed_reason: "insufficient_history".into(),
+                    ..Default::default()
+                },
+            )
+        });
+
     let _ = state.events.send(Event::Location {
         device_id,
         recorded_at,
@@ -697,37 +974,37 @@ fn broadcast_location(
         vbat_mv: parsed.vbat_mv,
         cbc_mv: parsed.cbc_mv,
         heading: fix.heading,
+        speed_kmh,
+        speed_details,
         fixes: None,
     });
+    Ok(())
 }
 
 /// P1: batch broadcast — 1 POST 의 모든 fix 를 단일 message 로.
 /// top-level fields 는 마지막 fix (legacy consumer 호환), fixes array 에 전체.
-fn broadcast_batch(
-    state: &AppState,
+fn batch_event(
     device_id: i64,
-    last_at: chrono::DateTime<Utc>,
-    source: &str,
-    last_lat: Option<f64>,
-    last_lng: Option<f64>,
-    last_sat: Option<i16>,
     parsed: &IngestPayload,
     fixes: Vec<crate::events::LocationFix>,
-) {
-    let _ = state.events.send(Event::Location {
+) -> Option<Event> {
+    let last = fixes.iter().max_by_key(|f| f.recorded_at)?;
+    Some(Event::Location {
         device_id,
-        recorded_at: last_at,
-        source: source.to_string(),
+        recorded_at: last.recorded_at,
+        source: "l80".to_string(),
         fix: true,
-        lat: last_lat,
-        lng: last_lng,
-        sat: last_sat,
+        lat: last.lat,
+        lng: last.lng,
+        sat: last.sat,
         ttff_s: None,
         vbat_mv: parsed.vbat_mv,
         cbc_mv: parsed.cbc_mv,
         heading: None,
+        speed_kmh: last.speed_kmh,
+        speed_details: last.speed_details.clone(),
         fixes: Some(fixes),
-    });
+    })
 }
 
 async fn insert_location(
@@ -744,10 +1021,10 @@ async fn insert_location(
         INSERT INTO location_records (
             device_id, recorded_at, device_uptime_s, source,
             fix, lat, lng, sat, ttff_s,
-            csq, reg, vbat_mv, raw, heading, user_id
+            csq, reg, vbat_mv, raw, heading, user_id, speed_kmh
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                (SELECT owner_id FROM devices WHERE id = $1))
+                (SELECT owner_id FROM devices WHERE id = $1), $15)
         ON CONFLICT (device_id, recorded_at, source) DO NOTHING
         "#,
     )
@@ -765,7 +1042,89 @@ async fn insert_location(
     .bind(parsed.vbat_mv)
     .bind(raw)
     .bind(fix.heading)
+    .bind(
+        fix.speed_kmh
+            .filter(|v| v.is_finite() && (0.0..=250.0).contains(v)),
+    )
     .execute(&state.db)
     .await?;
+    if fix.fix {
+        sqlx::query(
+            "INSERT INTO stats_rebuild_queue(device_id,date)
+          SELECT $1, d FROM (SELECT DISTINCT unnest(ARRAY[
+            ($2::timestamptz AT TIME ZONE 'Asia/Seoul')::date,
+            (($2::timestamptz+interval '65 seconds') AT TIME ZONE 'Asia/Seoul')::date]) AS d) days
+          ON CONFLICT(device_id,date) DO UPDATE SET generation=stats_rebuild_queue.generation+1",
+        )
+        .bind(device_id)
+        .bind(recorded_at)
+        .execute(&state.db)
+        .await?;
+    }
     Ok(())
+}
+
+#[cfg(test)]
+mod batch_tests {
+    use super::*;
+
+    #[test]
+    fn retransmissions_do_not_drop_late_new_points_or_new_boots() {
+        let original = ReceivedFix {
+            at: Utc::now(),
+            up_ms: Some(1000),
+            lat: 37.0,
+            lng: 127.0,
+            boot: Some("1".into()),
+            boot_id: None,
+        };
+        let mut retry = original.clone();
+        retry.at += chrono::Duration::milliseconds(300);
+        assert!(is_retransmission(&original, &retry));
+        retry.up_ms = Some(999);
+        assert!(!is_retransmission(&original, &retry));
+        retry.up_ms = Some(1000);
+        retry.boot = Some("2".into());
+        assert!(!is_retransmission(&original, &retry));
+        retry.boot = Some("1".into());
+        retry.at += chrono::Duration::hours(1);
+        assert!(!is_retransmission(&original, &retry));
+    }
+    #[test]
+    fn broadcast_anchor_is_the_newest_accepted_fix_not_input_order() {
+        let payload: IngestPayload = serde_json::from_value(json!({"ts": 100})).unwrap();
+        let newer = crate::events::LocationFix {
+            recorded_at: Utc::now(),
+            lat: Some(37.1),
+            lng: Some(127.1),
+            sat: Some(12),
+            speed_kmh: Some(18.0),
+            speed_details: Default::default(),
+        };
+        let older = crate::events::LocationFix {
+            recorded_at: newer.recorded_at - chrono::Duration::seconds(2),
+            lat: Some(37.0),
+            lng: Some(127.0),
+            sat: Some(8),
+            speed_kmh: Some(0.0),
+            speed_details: Default::default(),
+        };
+        let event = batch_event(1, &payload, vec![newer.clone(), older]).unwrap();
+        if let Event::Location {
+            recorded_at,
+            lat,
+            speed_kmh,
+            fixes,
+            ..
+        } = event
+        {
+            assert_eq!(recorded_at, newer.recorded_at);
+            assert_eq!(lat, newer.lat);
+            assert_eq!(speed_kmh, Some(18.0));
+            assert_eq!(fixes.unwrap().len(), 2);
+        } else {
+            panic!("expected location event");
+        }
+        assert!(batch_event(1, &payload, vec![]).is_none());
+    }
 }

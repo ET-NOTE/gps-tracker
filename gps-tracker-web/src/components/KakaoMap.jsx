@@ -224,7 +224,7 @@ class SeekerCanvasOverlay {
 // 관련: PR #9 (song1074) 원 아이디어, 이후 재구현.
 const TIME_SEGMENT_OPACITIES = [0.36, 0.48, 0.60, 0.72, 0.84];
 function speedBucket(p) {
-  if (p._isStop || p._speed == null || p._speed < 5) return 0;       // 정지/도보 미만
+  if (p._speed == null || p._speed < 5) return 0;       // 정지/도보 미만
   if (p._speed < 30)  return 1;                                       // 시내 저속
   if (p._speed < 60)  return 2;                                       // 일반 시내
   if (p._speed < 100) return 3;                                       // 고속도로
@@ -806,7 +806,59 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     delete pinTweenRef.current[deviceId];
   }
 
+  const routePlanRef = useRef({ markers: [], polys: [] });
+  useEffect(() => () => { routePlanRef.current.markers.forEach(m => m.setMap(null)); routePlanRef.current.polys.forEach(p => p.setMap(null)); }, []);
   useImperativeHandle(ref, () => ({
+    drawRoutePlan(waypoints) {
+      // 기존 route 제거
+      routePlanRef.current.markers.forEach(m => m.setMap(null));
+      routePlanRef.current.polys.forEach(p => p.setMap(null));
+      routePlanRef.current = { markers: [], polys: [] };
+      if (!mapRef.current || !waypoints?.length) return;
+
+      const kakao = window.kakao.maps;
+      const latLngs = waypoints.map(w => new kakao.LatLng(w.lat, w.lng));
+
+      // 번호 마커 (캔버스 기반)
+      waypoints.forEach((w, i) => {
+        const c = document.createElement('canvas');
+        c.width = 32; c.height = 32;
+        const ctx = c.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(16, 16, 14, 0, Math.PI * 2);
+        ctx.fillStyle = i === 0 ? '#10B981' : i === waypoints.length - 1 ? '#EF4444' : '#4f46e5';
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), 16, 17);
+        const img = new kakao.MarkerImage(c.toDataURL(), new kakao.Size(32, 32), { offset: new kakao.Point(16, 16) });
+        const marker = new kakao.Marker({ map: mapRef.current, position: latLngs[i], image: img, zIndex: 300 });
+        routePlanRef.current.markers.push(marker);
+      });
+
+      // 경로 폴리라인
+      if (latLngs.length >= 2) {
+        const poly = new kakao.Polyline({
+          map: mapRef.current, path: latLngs,
+          strokeWeight: 4, strokeColor: '#4f46e5',
+          strokeOpacity: 0.85, strokeStyle: 'solid',
+        });
+        routePlanRef.current.polys.push(poly);
+      }
+
+      // 바운드 맞추기
+      const bounds = new kakao.LatLngBounds();
+      latLngs.forEach(ll => bounds.extend(ll));
+      mapRef.current.setBounds(bounds, 60);
+    },
+
+    clearRoutePlan() {
+      routePlanRef.current.markers.forEach(m => m.setMap(null));
+      routePlanRef.current.polys.forEach(p => p.setMap(null));
+      routePlanRef.current = { markers: [], polys: [] };
+    },
+
+
     /** 현재 Kakao map zoom level (1=최대 확대 ~ 14=최대 축소). Dashboard 의 clickable dot 간격 계산용. */
     getZoomLevel() { return zoomLevelRef.current; },
 
@@ -878,25 +930,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       //     - 없으면 prev→curr bearing (>= 8m 이동 시만; 그 미만은 GPS 노이즈)
       //     - 이전 값 유지 (stopped 상태에서 회전 안 함)
       const pinPrev = pinStateRef.current[deviceId];
-      const dtS = pinPrev ? (newRecordedAt - (pinPrev.lastAt || 0)) / 1000 : 0;
       const distM = pinPrev ? distanceM(
         { lat: pinPrev.lastLat, lng: pinPrev.lastLng }, { lat, lng }
       ) : 0;
-      // (F10-fix) stopped/moving 판정 개선 — 이전 (distM>=8 && dtS<60) 은 GPS 노이즈 (정차 시
-      // 15s 안 8m 튀는 것 정상) 로 stopped 인데 moving 오판정. 또 0.48km/h 이하 저속 정속
-      // (아주 느린 walking) 은 moving 인데 stopped 오판정. 개선:
-      //   1) meta.speedKmh 우선 (firmware 계산 또는 wsEventHandler calcSpeedKmh) — >= 3km/h → moving
-      //   2) speed 없으면 distM/dtS 로 fallback — 실 속도 3km/h = 25m/30s → distM>=15 && dtS<=60 → moving
-      let pinState;
-      if (meta.stale) pinState = 'offline';
-      else if (!pinPrev) pinState = 'stopped';
-      else if (typeof meta.speedKmh === 'number' && Number.isFinite(meta.speedKmh)) {
-        pinState = meta.speedKmh >= 3 ? 'moving' : 'stopped';
-      } else if (dtS > 0 && dtS <= 60 && distM >= 15) {
-        pinState = 'moving';
-      } else {
-        pinState = 'stopped';
-      }
+      // Motion uses the server speed; browser geometry is only used for direction.
+      const pinState = meta.stale ? 'offline'
+        : Number.isFinite(meta.speedKmh) && meta.speedKmh >= 3 ? 'moving' : 'stopped';
       let pinAngle;
       if (typeof meta.heading === 'number' && Number.isFinite(meta.heading)) {
         pinAngle = meta.heading;

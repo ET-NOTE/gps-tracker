@@ -31,19 +31,22 @@ use crate::{
 
 pub fn router_user() -> Router<AppState> {
     Router::new()
-        .route("/sim-requests",            post(create_request).get(list_my_requests))
-        .route("/sim-requests/pricing",    get(pricing))
+        .route("/sim-requests", post(create_request).get(list_my_requests))
+        .route("/sim-requests/pricing", get(pricing))
         .route("/sim-requests/:id/cancel", post(cancel_my_request))
 }
 
 pub fn router_admin() -> Router<AppState> {
     Router::new()
-        .route("/admin/sim-requests",                       get(list_all_requests))
-        .route("/admin/sim-requests/:id/process",           post(process_request))
-        .route("/admin/sim-requests/:id/order",             get(admin_order_info))
-        .route("/admin/sim-requests/:id/manual-complete",   post(manual_complete))
-        .route("/admin/sim-requests/:id/manual-fail",       post(manual_fail))
-        .route("/admin/sim-requests/:id/cancel",            post(cancel_request))
+        .route("/admin/sim-requests", get(list_all_requests))
+        .route("/admin/sim-requests/:id/process", post(process_request))
+        .route("/admin/sim-requests/:id/order", get(admin_order_info))
+        .route(
+            "/admin/sim-requests/:id/manual-complete",
+            post(manual_complete),
+        )
+        .route("/admin/sim-requests/:id/manual-fail", post(manual_fail))
+        .route("/admin/sim-requests/:id/cancel", post(cancel_request))
 }
 
 // ─── 가격 정책 ─────────────────────────────────────────
@@ -54,7 +57,9 @@ const TOPUP_UNIT_MB: i32 = 500;
 
 fn topup_cost() -> i64 {
     std::env::var("SIM_TOPUP_COST")
-        .ok().and_then(|s| s.parse().ok()).unwrap_or(143_000)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(143_000)
 }
 
 // 입력 data_mb 무관하게 1회 top-up 가격 고정. UI 도 500MB 만 보내지만 안전 fallback.
@@ -64,18 +69,18 @@ fn calc_cost(_data_mb: i32) -> i64 {
 
 #[derive(Debug, Serialize)]
 struct Pricing {
-    topup_mb:    i32,        // 1회 충전 데이터량 (1NCE plan 고정)
-    topup_cost:  i64,        // 1회 충전 가격 (포인트)
-    currency:    &'static str,
-    note:        &'static str,
+    topup_mb: i32,   // 1회 충전 데이터량 (1NCE plan 고정)
+    topup_cost: i64, // 1회 충전 가격 (포인트)
+    currency: &'static str,
+    note: &'static str,
 }
 
 async fn pricing(_user: AuthUser) -> AppResult<Json<Pricing>> {
     Ok(Json(Pricing {
-        topup_mb:   TOPUP_UNIT_MB,
+        topup_mb: TOPUP_UNIT_MB,
         topup_cost: topup_cost(),
-        currency:   "POINT",
-        note:       "1NCE 정책상 1회 충전 단위는 500MB 고정.",
+        currency: "POINT",
+        note: "1NCE 정책상 1회 충전 단위는 500MB 고정.",
     }))
 }
 
@@ -83,15 +88,15 @@ async fn pricing(_user: AuthUser) -> AppResult<Json<Pricing>> {
 #[derive(Debug, Deserialize)]
 struct CreateReq {
     device_id: i64,
-    data_mb:   i32,
+    data_mb: i32,
 }
 
 #[derive(Debug, Serialize)]
 struct CreateRes {
-    request_id:   i64,
+    request_id: i64,
     cost_credits: i64,
-    balance:      i64,
-    status:       String,
+    balance: i64,
+    status: String,
 }
 
 async fn create_request(
@@ -103,13 +108,17 @@ async fn create_request(
         return Err(AppError::BadRequest("data_mb must be 1..=10000".into()));
     }
     // 본인 디바이스인지 + iccid 스냅샷
-    let row: Option<(Option<i64>, Option<String>)> = sqlx::query_as(
-        "SELECT owner_id, iccid FROM devices WHERE id = $1",
-    )
-    .bind(req.device_id).fetch_optional(&state.db).await?;
+    let row: Option<(Option<i64>, Option<String>)> =
+        sqlx::query_as("SELECT owner_id, iccid FROM devices WHERE id = $1")
+            .bind(req.device_id)
+            .fetch_optional(&state.db)
+            .await?;
     let (owner, iccid) = row.ok_or(AppError::NotFound)?;
-    if owner != Some(user.user_id) { return Err(AppError::NotFound); }
-    let iccid = iccid.ok_or_else(|| AppError::BadRequest("디바이스에 등록된 SIM(ICCID)이 없습니다.".into()))?;
+    if owner != Some(user.user_id) {
+        return Err(AppError::NotFound);
+    }
+    let iccid = iccid
+        .ok_or_else(|| AppError::BadRequest("디바이스에 등록된 SIM(ICCID)이 없습니다.".into()))?;
 
     let cost = calc_cost(req.data_mb);
 
@@ -119,61 +128,76 @@ async fn create_request(
            VALUES ($1, $2, $3, $4, $5, 'pending')
            RETURNING id"#,
     )
-    .bind(user.user_id).bind(req.device_id)
-    .bind(&iccid).bind(req.data_mb).bind(cost)
-    .fetch_one(&state.db).await?;
+    .bind(user.user_id)
+    .bind(req.device_id)
+    .bind(&iccid)
+    .bind(req.data_mb)
+    .bind(cost)
+    .fetch_one(&state.db)
+    .await?;
 
     // 2) 포인트 차감 (부족이면 요청 cancelled 로 마크 후 에러)
     let txn = match credits::charge(
-        &state.db, user.user_id, cost,
-        "sim_topup", Some(request_id),
+        &state.db,
+        user.user_id,
+        cost,
+        "sim_topup",
+        Some(request_id),
         Some(&format!("{}MB to {}", req.data_mb, iccid)),
-    ).await {
+    )
+    .await
+    {
         Ok(t) => t,
         Err(e) => {
             let _ = sqlx::query(
                 "UPDATE sim_topup_requests SET status = 'cancelled', note = $2 WHERE id = $1",
             )
-            .bind(request_id).bind(format!("credit charge failed: {e}"))
-            .execute(&state.db).await;
+            .bind(request_id)
+            .bind(format!("credit charge failed: {e}"))
+            .execute(&state.db)
+            .await;
             return Err(e);
         }
     };
 
     // 3) 채팅 시스템 메시지 자동 등록 (admin inbox 에 노출)
     let _ = post_system_message_to_user_thread(
-        &state, user.user_id,
-        &format!("SIM 데이터 충전 요청 #{request_id}: {}MB ({}원 차감, ICCID {iccid})",
-            req.data_mb, cost),
+        &state,
+        user.user_id,
+        &format!(
+            "SIM 데이터 충전 요청 #{request_id}: {}MB ({}원 차감, ICCID {iccid})",
+            req.data_mb, cost
+        ),
         json!({
             "kind": "sim_topup_request",
             "request_id": request_id,
             "data_mb": req.data_mb,
             "cost": cost,
         }),
-    ).await;
+    )
+    .await;
 
     Ok(Json(CreateRes {
         request_id,
         cost_credits: cost,
-        balance:      txn.balance,
-        status:       "pending".into(),
+        balance: txn.balance,
+        status: "pending".into(),
     }))
 }
 
 #[derive(Debug, Serialize, FromRow)]
 struct SimRequestRow {
-    id:           i64,
-    user_id:      i64,
-    device_id:    i64,
-    iccid:        Option<String>,
-    data_mb:      i32,
+    id: i64,
+    user_id: i64,
+    device_id: i64,
+    iccid: Option<String>,
+    data_mb: i32,
     cost_credits: i64,
-    status:       String,
+    status: String,
     api_response: Option<Value>,
     requested_at: DateTime<Utc>,
     processed_at: Option<DateTime<Utc>>,
-    note:         Option<String>,
+    note: Option<String>,
 }
 
 async fn list_my_requests(
@@ -189,7 +213,8 @@ async fn list_my_requests(
             LIMIT 50"#,
     )
     .bind(user.user_id)
-    .fetch_all(&state.db).await?;
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
@@ -197,21 +222,21 @@ async fn list_my_requests(
 // processed_by + cancelled_by_user 로 "유저 취소" vs "관리자 취소/처리" 구분 노출
 #[derive(Debug, Serialize, FromRow)]
 struct AdminSimRequestRow {
-    id:                 i64,
-    user_id:            i64,
-    user_email:         Option<String>,
-    device_id:          i64,
-    device_name:        Option<String>,
-    iccid:              Option<String>,
-    data_mb:            i32,
-    cost_credits:       i64,
-    status:             String,
-    requested_at:       DateTime<Utc>,
-    processed_at:       Option<DateTime<Utc>>,
-    note:               Option<String>,
-    processed_by:       Option<i64>,
+    id: i64,
+    user_id: i64,
+    user_email: Option<String>,
+    device_id: i64,
+    device_name: Option<String>,
+    iccid: Option<String>,
+    data_mb: i32,
+    cost_credits: i64,
+    status: String,
+    requested_at: DateTime<Utc>,
+    processed_at: Option<DateTime<Utc>>,
+    note: Option<String>,
+    processed_by: Option<i64>,
     processed_by_email: Option<String>,
-    cancelled_by_user:  Option<bool>,    // status='cancelled' 일 때만 의미 있음
+    cancelled_by_user: Option<bool>, // status='cancelled' 일 때만 의미 있음
 }
 
 async fn list_all_requests(
@@ -234,7 +259,8 @@ async fn list_all_requests(
             ORDER BY (r.status = 'pending') DESC, r.requested_at DESC
             LIMIT 200"#,
     )
-    .fetch_all(&state.db).await?;
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
@@ -252,20 +278,20 @@ async fn list_all_requests(
 //                 ?refresh_sim=1 일 때만 1NCE 라이브 호출.
 #[derive(serde::Serialize)]
 struct AdminOrderInfo {
-    request_id:  i64,
-    status:      String,
-    order_id:    Option<String>,
-    order:       Option<Value>,
+    request_id: i64,
+    status: String,
+    order_id: Option<String>,
+    order: Option<Value>,
     order_cached_at: Option<DateTime<Utc>>,
-    sim:         Option<Value>,
-    sim_cached_at:   Option<DateTime<Utc>>,
-    error:       Option<String>,
+    sim: Option<Value>,
+    sim_cached_at: Option<DateTime<Utc>>,
+    error: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default)]
 struct OrderInfoQuery {
     #[serde(default)]
-    refresh:     bool,
+    refresh: bool,
     #[serde(default)]
     refresh_sim: bool,
 }
@@ -276,13 +302,16 @@ async fn admin_order_info(
     Path(id): Path<i64>,
     axum::extract::Query(q): axum::extract::Query<OrderInfoQuery>,
 ) -> AppResult<Json<AdminOrderInfo>> {
-    let row: Option<(String, Option<String>, Option<i64>, Option<Value>, Option<Value>, Option<DateTime<Utc>>)> = sqlx::query_as(
+    let row: SimRequestStatusRow = sqlx::query_as(
         r#"SELECT status, iccid, device_id, api_response, order_info, order_fetched_at
              FROM sim_topup_requests
             WHERE id = $1"#,
     )
-    .bind(id).fetch_optional(&state.db).await?;
-    let (status, iccid, device_id, api_resp, cached_order, cached_at) = row.ok_or(AppError::NotFound)?;
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?;
+    let (status, iccid, device_id, api_resp, cached_order, cached_at) =
+        row.ok_or(AppError::NotFound)?;
 
     // order_url 에서 마지막 path segment (= order_id) 추출
     let order_id = api_resp
@@ -318,8 +347,10 @@ async fn admin_order_info(
                               SET order_info = $2, order_fetched_at = NOW()
                             WHERE id = $1"#,
                     )
-                    .bind(id).bind(&v)
-                    .execute(&state.db).await;
+                    .bind(id)
+                    .bind(&v)
+                    .execute(&state.db)
+                    .await;
                     out.order = Some(v);
                     out.order_cached_at = Some(Utc::now());
                 }
@@ -334,7 +365,9 @@ async fn admin_order_info(
             let cached: Option<(Option<Value>, Option<DateTime<Utc>>)> = sqlx::query_as(
                 "SELECT sim_info_cache, sim_info_fetched_at FROM devices WHERE id = $1",
             )
-            .bind(did).fetch_optional(&state.db).await?;
+            .bind(did)
+            .fetch_optional(&state.db)
+            .await?;
             if let Some((Some(v), at)) = cached {
                 out.sim = Some(v);
                 out.sim_cached_at = at;
@@ -353,8 +386,10 @@ async fn admin_order_info(
                                       sim_info_error = NULL
                                 WHERE id = $1"#,
                         )
-                        .bind(did).bind(&v)
-                        .execute(&state.db).await;
+                        .bind(did)
+                        .bind(&v)
+                        .execute(&state.db)
+                        .await;
                     }
                     out.sim = Some(v);
                     out.sim_cached_at = Some(Utc::now());
@@ -362,7 +397,7 @@ async fn admin_order_info(
                 Err(e) => {
                     let merge = match out.error.take() {
                         Some(prev) => format!("{prev}; sim fetch: {e:#}"),
-                        None       => format!("sim fetch: {e:#}"),
+                        None => format!("sim fetch: {e:#}"),
                     };
                     out.error = Some(merge);
                 }
@@ -391,12 +426,14 @@ async fn process_request(
             WHERE id = $1 AND status = 'pending'
         RETURNING user_id, iccid, data_mb, cost_credits"#,
     )
-    .bind(id).bind(admin.user_id)
-    .fetch_optional(&state.db).await?;
+    .bind(id)
+    .bind(admin.user_id)
+    .fetch_optional(&state.db)
+    .await?;
 
     let (user_id, iccid, data_mb, cost) = match claim {
         Some(v) => v,
-        None    => return claim_failed(&state.db, id).await,
+        None => return claim_failed(&state.db, id).await,
     };
     let req_id = id;
     let iccid = iccid.ok_or_else(|| AppError::BadRequest("iccid missing".into()))?;
@@ -404,10 +441,13 @@ async fn process_request(
     // 2) 1NCE 호출 — 이 사이에 user 가 cancel 을 누르면 status='cancelled' 로 바꾸려 하나
     //    우리가 이미 'processing' 이므로 user 의 conditional UPDATE 는 실패 (Conflict).
     let api_result = match crate::services::nce::refill_sim(&iccid, data_mb).await {
-        Ok(v)  => v,
+        Ok(v) => v,
         Err(e) => json!({ "ok": false, "error": format!("{e:#}") }),
     };
-    let ok = api_result.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
+    let ok = api_result
+        .get("ok")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
 
     // 3) 결과 기록
     if ok {
@@ -418,21 +458,29 @@ async fn process_request(
                       processed_at = NOW()
                 WHERE id = $1"#,
         )
-        .bind(req_id).bind(&api_result)
-        .execute(&state.db).await?;
+        .bind(req_id)
+        .bind(&api_result)
+        .execute(&state.db)
+        .await?;
 
         let _ = post_system_message_to_user_thread(
-            &state, user_id,
+            &state,
+            user_id,
             &format!("SIM 충전 요청 #{req_id} 처리 완료 ({data_mb}MB)"),
             json!({"kind":"sim_topup_done","request_id":req_id}),
-        ).await;
+        )
+        .await;
     } else {
         // 실패 → 환불 + 상태 failed
         let _ = credits::refund(
-            &state.db, user_id, cost,
-            "sim_topup_refund", Some(req_id),
+            &state.db,
+            user_id,
+            cost,
+            "sim_topup_refund",
+            Some(req_id),
             Some("1NCE 충전 실패 자동 환불"),
-        ).await;
+        )
+        .await;
         sqlx::query(
             r#"UPDATE sim_topup_requests
                   SET status = 'failed',
@@ -440,14 +488,18 @@ async fn process_request(
                       processed_at = NOW()
                 WHERE id = $1"#,
         )
-        .bind(req_id).bind(&api_result)
-        .execute(&state.db).await?;
+        .bind(req_id)
+        .bind(&api_result)
+        .execute(&state.db)
+        .await?;
 
         let _ = post_system_message_to_user_thread(
-            &state, user_id,
-            &format!("SIM 충전 요청 #{req_id} 실패 — {}원 자동 환불됨", cost),
+            &state,
+            user_id,
+            &format!("SIM 충전 요청 #{req_id} 실패 — {cost}원 자동 환불됨"),
             json!({"kind":"sim_topup_failed","request_id":req_id}),
-        ).await;
+        )
+        .await;
     }
 
     Ok(Json(json!({
@@ -459,13 +511,14 @@ async fn process_request(
 
 // claim 실패 시 현재 status 를 보고 NotFound / Conflict 결정.
 async fn claim_failed(db: &sqlx::PgPool, id: i64) -> AppResult<Json<Value>> {
-    let cur: Option<String> = sqlx::query_scalar(
-        "SELECT status FROM sim_topup_requests WHERE id = $1",
-    )
-    .bind(id).fetch_optional(db).await?;
+    let cur: Option<String> =
+        sqlx::query_scalar("SELECT status FROM sim_topup_requests WHERE id = $1")
+            .bind(id)
+            .fetch_optional(db)
+            .await?;
     match cur {
         Some(s) => Err(AppError::Conflict(format!("이미 {s} 상태입니다"))),
-        None    => Err(AppError::NotFound),
+        None => Err(AppError::NotFound),
     }
 }
 
@@ -488,22 +541,28 @@ async fn manual_complete(
             WHERE id = $1 AND status = 'pending'
         RETURNING user_id, data_mb, cost_credits"#,
     )
-    .bind(id).bind(admin.user_id)
+    .bind(id)
+    .bind(admin.user_id)
     .bind(json!({ "manual": true, "via": "1nce_console" }))
-    .fetch_optional(&state.db).await?;
+    .fetch_optional(&state.db)
+    .await?;
 
     let (user_id, data_mb, _cost) = match claim {
         Some(v) => v,
-        None    => return claim_failed(&state.db, id).await,
+        None => return claim_failed(&state.db, id).await,
     };
 
     let _ = post_system_message_to_user_thread(
-        &state, user_id,
+        &state,
+        user_id,
         &format!("SIM 충전 요청 #{id} 처리 완료 ({data_mb}MB)"),
         json!({"kind":"sim_topup_done","request_id":id,"manual":true}),
-    ).await;
+    )
+    .await;
 
-    Ok(Json(json!({ "ok": true, "request_id": id, "manual": true })))
+    Ok(Json(
+        json!({ "ok": true, "request_id": id, "manual": true }),
+    ))
 }
 
 // ─── 관리자: 콘솔 충전 실패 마킹 (환불) ────────────────
@@ -522,28 +581,38 @@ async fn manual_fail(
             WHERE id = $1 AND status = 'pending'
         RETURNING user_id, cost_credits"#,
     )
-    .bind(id).bind(admin.user_id)
+    .bind(id)
+    .bind(admin.user_id)
     .bind(json!({ "manual": true, "via": "1nce_console", "outcome": "failed" }))
-    .fetch_optional(&state.db).await?;
+    .fetch_optional(&state.db)
+    .await?;
 
     let (user_id, cost) = match claim {
         Some(v) => v,
-        None    => return claim_failed(&state.db, id).await,
+        None => return claim_failed(&state.db, id).await,
     };
 
     let _ = credits::refund(
-        &state.db, user_id, cost,
-        "sim_topup_refund", Some(id),
+        &state.db,
+        user_id,
+        cost,
+        "sim_topup_refund",
+        Some(id),
         Some("1NCE 콘솔 수동 처리 실패 — 환불"),
-    ).await;
+    )
+    .await;
 
     let _ = post_system_message_to_user_thread(
-        &state, user_id,
-        &format!("SIM 충전 요청 #{id} 실패 — {}원 자동 환불됨", cost),
+        &state,
+        user_id,
+        &format!("SIM 충전 요청 #{id} 실패 — {cost}원 자동 환불됨"),
         json!({"kind":"sim_topup_failed","request_id":id,"manual":true}),
-    ).await;
+    )
+    .await;
 
-    Ok(Json(json!({ "ok": true, "request_id": id, "manual": true, "refunded": cost })))
+    Ok(Json(
+        json!({ "ok": true, "request_id": id, "manual": true, "refunded": cost }),
+    ))
 }
 
 // ─── 관리자: 요청 취소 (환불) ──────────────────────────
@@ -583,8 +652,9 @@ async fn cancel_pending_sim_request(
 
     // owner 검증 + status='pending' 검증을 conditional UPDATE 한 번으로
     let claim: Option<(i64, i64)> = match require_owner {
-        Some(owner) => sqlx::query_as(
-            r#"UPDATE sim_topup_requests
+        Some(owner) => {
+            sqlx::query_as(
+                r#"UPDATE sim_topup_requests
                   SET status = 'cancelled',
                       processed_at = NOW(),
                       processed_by = $2
@@ -592,20 +662,28 @@ async fn cancel_pending_sim_request(
                   AND status = 'pending'
                   AND user_id = $3
             RETURNING user_id, cost_credits"#,
-        )
-        .bind(req_id).bind(actor_id).bind(owner)
-        .fetch_optional(&mut *tx).await?,
-        None => sqlx::query_as(
-            r#"UPDATE sim_topup_requests
+            )
+            .bind(req_id)
+            .bind(actor_id)
+            .bind(owner)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        None => {
+            sqlx::query_as(
+                r#"UPDATE sim_topup_requests
                   SET status = 'cancelled',
                       processed_at = NOW(),
                       processed_by = $2
                 WHERE id = $1
                   AND status = 'pending'
             RETURNING user_id, cost_credits"#,
-        )
-        .bind(req_id).bind(actor_id)
-        .fetch_optional(&mut *tx).await?,
+            )
+            .bind(req_id)
+            .bind(actor_id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
     };
 
     let (user_id, cost) = match claim {
@@ -614,13 +692,16 @@ async fn cancel_pending_sim_request(
             // 무엇 때문에 실패했는지 — 존재하지 않거나, 이미 처리됐거나, owner 가 아니거나
             tx.rollback().await?;
             // owner 검증을 위해 별도 조회
-            let row: Option<(i64, String)> = sqlx::query_as(
-                "SELECT user_id, status FROM sim_topup_requests WHERE id = $1",
-            )
-            .bind(req_id).fetch_optional(&state.db).await?;
+            let row: Option<(i64, String)> =
+                sqlx::query_as("SELECT user_id, status FROM sim_topup_requests WHERE id = $1")
+                    .bind(req_id)
+                    .fetch_optional(&state.db)
+                    .await?;
             return match (row, require_owner) {
                 (None, _) => Err(AppError::NotFound),
-                (Some((owner, _)), Some(req_owner)) if owner != req_owner => Err(AppError::NotFound),
+                (Some((owner, _)), Some(req_owner)) if owner != req_owner => {
+                    Err(AppError::NotFound)
+                }
                 (Some((_, s)), _) => Err(AppError::Conflict(format!(
                     "이미 처리된 요청입니다 (status={s}). 새로고침 해주세요."
                 ))),
@@ -632,16 +713,22 @@ async fn cancel_pending_sim_request(
     let new_balance: i64 = sqlx::query_scalar(
         "UPDATE users SET credits = credits + $2 WHERE id = $1 RETURNING credits",
     )
-    .bind(user_id).bind(cost)
-    .fetch_one(&mut *tx).await?;
+    .bind(user_id)
+    .bind(cost)
+    .fetch_one(&mut *tx)
+    .await?;
 
     sqlx::query(
         r#"INSERT INTO credit_log (user_id, delta, balance, reason, ref_id, note)
            VALUES ($1, $2, $3, 'sim_topup_refund', $4, $5)"#,
     )
-    .bind(user_id).bind(cost).bind(new_balance)
-    .bind(req_id).bind(reason)
-    .execute(&mut *tx).await?;
+    .bind(user_id)
+    .bind(cost)
+    .bind(new_balance)
+    .bind(req_id)
+    .bind(reason)
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
 
@@ -653,10 +740,12 @@ async fn cancel_pending_sim_request(
         "sim_topup_admin_cancelled"
     };
     let _ = post_system_message_to_user_thread(
-        state, user_id,
-        &format!("SIM 충전 요청 #{req_id} 취소 — {}원 환불됨 ({reason})", cost),
+        state,
+        user_id,
+        &format!("SIM 충전 요청 #{req_id} 취소 — {cost}원 환불됨 ({reason})"),
         json!({"kind": kind, "request_id": req_id, "by": reason}),
-    ).await;
+    )
+    .await;
 
     Ok(Json(json!({
         "ok":         true,
@@ -692,16 +781,20 @@ async fn post_system_message_to_user_thread(
         r#"INSERT INTO chat_messages (thread_id, sender_role, sender_id, body, meta)
            VALUES ($1, 'system', NULL, $2, $3)"#,
     )
-    .bind(thread_id).bind(body).bind(&meta)
-    .execute(&state.db).await?;
+    .bind(thread_id)
+    .bind(body)
+    .bind(&meta)
+    .execute(&state.db)
+    .await?;
 
     // 푸시 — credits.rs 와 동일 규칙
     let kind = meta.get("kind").and_then(|v| v.as_str()).unwrap_or("");
-    let to_admins = matches!(kind,
+    let to_admins = matches!(
+        kind,
         "sim_topup_request"
-        | "sim_topup_user_cancelled"
-        | "credit_topup_request"
-        | "credit_topup_user_cancelled"
+            | "sim_topup_user_cancelled"
+            | "credit_topup_request"
+            | "credit_topup_user_cancelled"
     );
     let pool = state.db.clone();
     let fcm = state.fcm.clone();
@@ -710,16 +803,35 @@ async fn post_system_message_to_user_thread(
     tokio::spawn(async move {
         if to_admins {
             crate::services::fcm::push_to_admins(
-                fcm.as_deref(), &pool, Some(user_id),
-                "새 요청", &body_owned, meta_owned,
-            ).await;
+                fcm.as_deref(),
+                &pool,
+                Some(user_id),
+                "새 요청",
+                &body_owned,
+                meta_owned,
+            )
+            .await;
         } else {
             crate::services::fcm::push_to_user(
-                fcm.as_deref(), &pool, user_id,
-                "충전 처리 알림", &body_owned, meta_owned,
-            ).await;
+                fcm.as_deref(),
+                &pool,
+                user_id,
+                "충전 처리 알림",
+                &body_owned,
+                meta_owned,
+            )
+            .await;
         }
     });
 
     Ok(())
 }
+
+type SimRequestStatusRow = Option<(
+    String,
+    Option<String>,
+    Option<i64>,
+    Option<Value>,
+    Option<Value>,
+    Option<DateTime<Utc>>,
+)>;

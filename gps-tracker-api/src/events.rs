@@ -5,13 +5,25 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use tokio::sync::broadcast;
 
+#[derive(Clone, Debug, Default, Serialize, sqlx::FromRow)]
+pub struct SpeedDetails {
+    pub reported_speed_kmh: Option<f32>,
+    pub speed_interval_s: Option<f32>,
+    pub speed_reason: String,
+    pub speed_source: String,
+}
+
 /// P1: WS 의 batch broadcast 용 fix entry. 1 POST = N fix array.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, sqlx::FromRow)]
 pub struct LocationFix {
     pub recorded_at: DateTime<Utc>,
     pub lat: Option<f64>,
     pub lng: Option<f64>,
     pub sat: Option<i16>,
+    pub speed_kmh: Option<f32>,
+    #[serde(flatten)]
+    #[sqlx(flatten)]
+    pub speed_details: SpeedDetails,
 }
 
 /// (2026-07-29 F7-b) 채팅 메시지 push 용 payload.
@@ -44,11 +56,15 @@ pub enum Event {
         #[serde(skip_serializing_if = "Option::is_none")]
         cbc_mv: Option<i32>,
         heading: Option<f32>,
+        speed_kmh: Option<f32>,
+        #[serde(flatten)]
+        speed_details: SpeedDetails,
         /// P1: 1 POST 안 모든 fix (firmware batch). legacy single fix POST 는 None.
         /// top-level lat/lng/sat 은 fixes 의 마지막 fix 와 동일 (backward compat).
         #[serde(skip_serializing_if = "Option::is_none")]
         fixes: Option<Vec<LocationFix>>,
     },
+    #[allow(clippy::enum_variant_names)] // Keep the existing event vocabulary and wire contract.
     DeviceEvent {
         device_id: i64,
         kind: String,
