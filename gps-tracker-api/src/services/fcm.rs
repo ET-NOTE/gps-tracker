@@ -472,7 +472,7 @@ fn body_for_event(ev: &PendingEvent, address: Option<&str>) -> String {
         },
         "online" => "장치에서 정보를 다시 받고 있습니다. 앱에서 최신 상태를 확인할 수 있습니다.".into(),
         "sleep_enter" => "배터리를 아끼기 위해 장치가 절전 모드로 전환되었습니다.".into(),
-        "wake" => "장치가 절전 모드에서 깨어났거나 다시 켜졌습니다. 새 위치를 확인하고 있습니다.".into(),
+        "wake" => "장치가 절전 모드에서 깨어났거나 다시 켜졌습니다. 최신 정보는 앱에서 확인해 주세요.".into(),
         "motion" => "움직임이 감지되어 장치가 깨어났습니다. 실제 이동 여부는 앱에서 위치를 확인해 주세요.".into(),
         "cycle_first_fix" => address.map(|a| format!("새 위치가 확인되었습니다. 위치: {a}")).unwrap_or_else(|| "새 위치가 확인되었습니다. 앱에서 위치를 확인해 주세요.".into()),
         _ => String::new(),

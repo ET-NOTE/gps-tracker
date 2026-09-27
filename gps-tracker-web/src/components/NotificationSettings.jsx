@@ -92,9 +92,13 @@ export default function NotificationSettings() {
           sub="위치 확인이 반복해서 지연되거나 전압 저하로 장치가 재시작될 때"
           value={s.device_health_alert ?? true}
           onChange={v => patch({ device_health_alert: v })} />
-        <NumField label="배터리 알림 전압 (mV)"
-          value={s.low_batt_threshold_mv} min={3000} max={4200}
-          onCommit={v => patch({ low_batt_threshold_mv: v })} />
+        <details style={{ color: 'var(--text-2)', fontSize: 12 }}>
+          <summary style={{ cursor: 'pointer', padding: '8px 0' }}>배터리 알림 기준 조정</summary>
+          <p>전압은 배터리 잔량(%)과 다릅니다. 기준을 잘 모르면 기본값 3500mV를 유지해 주세요.</p>
+          <NumField label="배터리 알림 전압 (mV)"
+            value={s.low_batt_threshold_mv} min={3000} max={4200}
+            onCommit={v => patch({ low_batt_threshold_mv: v })} />
+        </details>
       </Group>
 
       {/* ─── 그 외 ──────────────────────────────── */}

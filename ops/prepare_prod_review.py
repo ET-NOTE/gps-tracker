@@ -5,6 +5,8 @@ logical hypertable CSV accompanies the schema/catalog dump. Both are REQUIRED.
 No production decompression, extension upgrade, or database writes are performed.
 """
 import gzip
+import argparse
+import re
 import json
 import os
 import pathlib
@@ -14,8 +16,14 @@ import urllib.parse
 import psycopg2
 
 os.umask(0o077)
-backup = pathlib.Path('/home/mmm/backups/gps-app-fcm-20260927')
-clone = 'gps_tracker_dev_prodreview_20260927'
+parser = argparse.ArgumentParser()
+parser.add_argument('--backup-dir', default='/home/mmm/backups/gps-app-fcm-20260927')
+parser.add_argument('--clone', default='gps_tracker_dev_prodreview_20260927')
+args = parser.parse_args()
+backup = pathlib.Path(args.backup_dir).resolve()
+assert backup.parent == pathlib.Path('/home/mmm/backups') and backup.is_dir()
+clone = args.clone
+assert re.fullmatch(r'gps_tracker_dev_prodreview_[0-9]{8}',clone)
 assert clone.startswith('gps_tracker_dev_prodreview_') and clone != 'gps_tracker'
 values = {}
 for line in (backup/'prod.env').read_text().splitlines():
