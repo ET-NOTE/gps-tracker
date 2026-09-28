@@ -1,4 +1,4 @@
-//! Read-only monitor for the unclaimed UNO bench device; independent of KC routes.
+//! Public status monitor for the fixed UNO bench device; independent of KC routes.
 use axum::{
     extract::{Query, State},
     http::header,
@@ -26,7 +26,8 @@ pub async fn data(
     State(state): State<AppState>,
     Query(_query): Query<ShieldQuery>,
 ) -> AppResult<Response> {
-    // A single snapshot; UID is fixed and every record joins the ownership guard.
+    // The operator explicitly keeps this bench UID's status public after pairing.
+    // A single snapshot; the UID is fixed and never selected through user input.
     // No raw payload, subscriber IDs, precise coordinates, or KC devices are exposed.
     let value: Value = sqlx::query_scalar(include_str!("arduino_shield.sql"))
         .bind("uno-shield-test")

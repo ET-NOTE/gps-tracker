@@ -1,6 +1,6 @@
 WITH shield AS (
     SELECT id, last_seen_at FROM devices
-    WHERE device_uid = $1 AND owner_id IS NULL
+    WHERE device_uid = $1
 ), recent AS (
     SELECT r.recorded_at, r.device_uptime_s, r.fix, r.sat, r.csq, r.reg,
            CASE WHEN r.raw #>> '{diag,pv_mv}' ~ '^[0-9]{1,5}$'

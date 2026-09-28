@@ -54,9 +54,13 @@ try:
     assert all(r['pv_mv'] is None for r in json.loads(sql(statement))['items'])
     sql('UPDATE devices SET owner_id=123 WHERE id=1;')
     value = json.loads(sql(statement))
-    assert not value['available'] and value['last_seen_at'] is None
-    assert value['count_24h'] == 0 and value['items'] == []
-    print('Shield monitor SQL passed: fixed UID, owner guard, 24h window, 100-row limit, safe fields and malformed PV.')
+    assert value['available'] and value['last_seen_at'] is not None
+    assert value['count_24h'] == 103 and len(value['items']) == 100
+    assert not any(k in value['items'][0] for k in ('raw', 'iccid', 'lat', 'lng', 'owner_id'))
+    sql("DELETE FROM devices WHERE device_uid='uno-shield-test';")
+    value = json.loads(sql(statement))
+    assert not value['available'] and value['count_24h'] == 0 and value['items'] == []
+    print('Shield monitor SQL passed: fixed UID before/after pairing, private-device exclusion, 24h window, 100-row limit, safe fields and malformed PV.')
 finally:
     subprocess.run(['docker', 'rm', '-f', name], stdout=subprocess.DEVNULL,
                    stderr=subprocess.DEVNULL)

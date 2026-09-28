@@ -1,4 +1,4 @@
-"""API-only deployment of the shield monitor; preserves SPA, env, schema and KC routes.
+"""API-only update of the shield monitor; preserves SPA, env, schema and KC routes.
 
 Run prepare, copy backup.tar.gz offsite and write offsite-verified.json with its
 SHA-256, then apply. Deploy dev before prod. No DB records are written here.
@@ -20,7 +20,7 @@ import psycopg2
 
 mode, environment, release = sys.argv[1:]
 assert mode in ('prepare', 'apply') and environment in ('dev', 'prod')
-assert re.fullmatch(r'dev-20260928-[0-9]{6}-a7be64e', release)
+assert re.fullmatch(r'dev-20260928-[0-9]{6}-[a-f0-9]{7}', release)
 prod = environment == 'prod'
 port = 3040 if prod else 3041
 domain = 'gps.serial.kr' if prod else 'dev-gps.serial.kr'
@@ -33,7 +33,8 @@ stage = pathlib.Path('/home/mmm/gps-artifacts') / release
 backup = pathlib.Path('/home/mmm/backups') / ('gps-shield-' + environment + '-' + release)
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 manifest = json.loads((stage / 'manifest.json').read_text())
-assert manifest['git_commit'].startswith('a7be64e')
+assert manifest['release'] == release
+assert manifest['git_commit'].startswith(release.rsplit('-', 1)[1])
 assert sha(stage / 'gps-tracker-api-dev') == manifest['api_sha256']
 assert sha(stage / 'source.tar.gz') == manifest['source_sha256']
 os.umask(0o027)
@@ -65,34 +66,23 @@ def checked_status(path, expected):
 
 if mode == 'prepare':
     assert not backup.exists(), 'Backup already exists; inspect it before retrying.'
-    assert json.loads(get('/health'))['release'] == 'dev-20260928-005731-18c829d'
+    assert json.loads(get('/health'))['release'] == 'dev-20260928-101122-a7be64e'
     if prod:
         assert json.loads(get('/health', 'dev-gps.serial.kr'))['release'] == release
     old = nginx.read_text()
-    assert old.count('    location /diagnostic {') == 1 and '/arduino-shield' not in old
-    addition = '''    # Dedicated UNO monitor; existing KC diagnostic locations are unchanged.
-    location = /arduino-shield/ { return 308 /arduino-shield; }
-    location = /arduino-shield {
-        proxy_pass http://127.0.0.1:PORT/gps-tracker/arduino-shield;
-        proxy_set_header Host $host;
-    }
-    location = /arduino-shield/data {
-        proxy_pass http://127.0.0.1:PORT/gps-tracker/arduino-shield/data;
-        proxy_set_header Host $host;
-    }
-
-'''.replace('PORT', str(port))
+    assert old.count('    location /diagnostic {') == 1
+    assert old.count('    location = /arduino-shield {') == 1
+    assert old.count('    location = /arduino-shield/data {') == 1
     backup.mkdir(mode=0o700, parents=True)
     shutil.copy2(api, backup / 'api.previous')
     shutil.copy2(nginx, backup / 'nginx.previous')
-    (backup / 'nginx.next').write_text(old.replace('    location /diagnostic {', addition + '    location /diagnostic {'))
     before = dict(api=sha(api), nginx=sha(nginx), env=sha(env), schema=schema(),
                   pages={p: hashlib.sha256(get(p)).hexdigest() for p in
                          ['/', '/version.json', '/diagnostic', '/diagnostic/device']})
     assert before['schema'][0] == 65
     (backup / 'before.json').write_text(json.dumps(before, indent=2))
     with tarfile.open(backup / 'backup.tar.gz', 'w:gz') as archive:
-        for filename in ['api.previous', 'nginx.previous', 'nginx.next', 'before.json']:
+        for filename in ['api.previous', 'nginx.previous', 'before.json']:
             archive.add(backup / filename, arcname=filename)
     print(json.dumps({'backup': str(backup), 'sha256': sha(backup / 'backup.tar.gz')}))
     sys.exit(0)
@@ -107,8 +97,6 @@ shutil.copy2(stage / 'gps-tracker-api-dev', next_api)
 os.chown(next_api, stat.st_uid, stat.st_gid)
 next_api.chmod(0o755)
 try:
-    nginx.write_bytes((backup / 'nginx.next').read_bytes())
-    subprocess.run(['nginx', '-t'], check=True)
     os.replace(next_api, api)
     subprocess.run(['systemctl', 'restart', service], check=True)
     for attempt in range(20):
@@ -122,8 +110,7 @@ try:
         time.sleep(.5)
     else:
         raise RuntimeError('API health failed')
-    subprocess.run(['systemctl', 'reload', 'nginx'], check=True)
-    # Reload signals the master; an old worker can serve the first request.
+    # Existing nginx routes already proxy these endpoints; no reload is needed.
     for attempt in range(20):
         page = get('/arduino-shield')
         if '아두이노 쉴드 수신 모니터' in page.decode():
@@ -134,8 +121,11 @@ try:
         raise RuntimeError('Public shield route did not become ready')
     data = json.loads(get('/arduino-shield/data'))
     assert data['device_uid'] == 'uno-shield-test' and len(data['items']) <= 100
+    if prod:
+        assert data['available'] and data['count_24h'] > 0 and data['items']
+    assert all(not {'lat', 'lng', 'iccid', 'raw', 'owner_id'} & row.keys() for row in data['items'])
     checked_status('/arduino-shield/data?uid=esp-release-readonly-check', 400)
-    assert schema() == before['schema'] and sha(env) == before['env']
+    assert schema() == before['schema'] and sha(env) == before['env'] and sha(nginx) == before['nginx']
     for path, digest in before['pages'].items():
         assert hashlib.sha256(get(path)).hexdigest() == digest, path
     for scheme in ['http', 'https']:
@@ -156,8 +146,5 @@ except Exception:
     os.chown(next_api, stat.st_uid, stat.st_gid)
     next_api.chmod(0o755)
     os.replace(next_api, api)
-    nginx.write_bytes((backup / 'nginx.previous').read_bytes())
     subprocess.run(['systemctl', 'restart', service], check=True)
-    subprocess.run(['nginx', '-t'], check=True)
-    subprocess.run(['systemctl', 'reload', 'nginx'], check=True)
     raise
