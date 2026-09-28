@@ -96,3 +96,33 @@ The previous executable cannot accept new embedded SQLx migration versions, so a
 symlink-only rollback is insufficient. Prefer a forward fix; if restore is needed,
 preserve a fresh post-upgrade dump before supervised restoration of the dedicated
 Shield backup. Do not discard new telemetry or touch GPS databases automatically.
+
+## Follow-up: guided onboarding and Toss status, 17:44 KST
+
+- Checked only presence/mode of credentials: GPS has live Toss client/secret keys,
+  webhook configuration and the existing payments module/table. Shield has no Toss
+  credentials, payment routes or payment_orders table. Key values were never printed.
+  This confirms configuration presence on GPS, not a new successful payment test.
+- `/guide` now walks through device registration → the three example lessons
+  (Shield connection, DHT measurement, server upload) → checking data → USIM recharge.
+  Lesson detail pages link forward through that sequence, and each guide stage has
+  a check before proceeding. Registration and device-upload credentials are explained
+  separately. The guide distinguishes serial-only DHT readings from the synthetic
+  Python upload example and explains that actual measurements need transmitting firmware.
+- The guide, USIM page and service information explicitly state that online card
+  payment is not yet available on Shield; point funding currently uses the operator.
+  Toss wiring is still outstanding. No credential copying, payment or topup occurred.
+- Release `shield-20260928-174328-71b27a7` (source `71b27a7`), artifact SHA256
+  `120d1b5fec64664a8e73b13556aa5aabd8fcc9aeb545de4fc8f40acff6fccb22`.
+  The etcom-hub build passed existing Rust 3/frontend 9 tests and Clippy. Preview
+  browser navigation through all three examples to the data page and production
+  guide rendering passed. Existing administrator-edited posts were not overwritten.
+- App-only deployment used `deploy-app.py`: schema 1–6, all loaded nginx files,
+  Shield credentials and GPS binary/process remained unchanged. Only Shield restarted;
+  a real device report was six seconds old immediately after deployment.
+- Before deployment, offsite backup `shield-20260928T084400Z.tar.gz` (SHA256
+  `4ed4135d86b7da51d76a9df03394ff7d60587b2efaf0bb0b827780dde1be8212`) was restored
+  in PostgreSQL 14: users 2, devices 1, readings 115, location records 659, posts 7,
+  audit 1, no requests or financial entries. This UI release has the same schema as
+  its immediate predecessor, so the app-only deployer can restore that release on
+  failed readiness without restoring the database.
