@@ -7,3 +7,13 @@
 검증: etcom-hub의 격리 PostgreSQL에서 계정 등록 전/후 이력 유지, 다른 장치 제외, 24시간 범위, 최신 100건, PV 이상값 처리를 확인했다. 11:48:12~11:50:42 COM26 관찰 중 HTTP 200 위치 전송 3회를 확인했다. 장치 소유 관계나 펌웨어를 변경할 필요는 없다.
 
 운영 적용은 이전 사용자 지시에 따라 별도 명시적 허가 후 진행한다. 배포 도구는 현재 a7be64e API를 기준으로 백업/해시 확인 후 API 실행 파일만 교체하고 실패 시 복구한다. 제품 웹·nginx·KC 라우트·환경 파일·DB 스키마를 유지하며 개발 서버를 먼저 검증한다. 구체적인 릴리스/배포 결과는 검증 후 추가한다.
+
+## 검증 및 운영 반영 준비
+
+- 소스 `dd57257`, 릴리스 `dev-20260928-115217-dd57257`.
+- API SHA-256 `4629570e16ccc39dbfa31a2b1b219d559fbe0bf599c71f87ed080ace03228b46`.
+- etcom-hub에서 Rust fmt/clippy, 일반 단위 시험 8개, 격리 FCM DB 시험 1개, 웹 회귀 시험 29개 및 빌드 통과.
+- dev API 배포 및 공개 라우트 검증 완료. dev는 실제 쉴드 수신 대상이 아니므로 수신 목록은 비어 있다. 등록 전후 조회 정책은 격리 DB 시험으로 검증했다.
+- dev `/`, `/version.json`, `/diagnostic`, `/diagnostic/device`의 응답 해시와 nginx/env 해시 유지, DB migration 65/65 유지. 임의 UID 쿼리 거부와 잘못된 HTTP/HTTPS ingest의 기존 400 응답 확인.
+- 운영 서버에는 아직 적용하지 않았다. 운영 API 백업을 VPS와 Windows 양쪽에 확보하고 SHA-256 일치 확인: `28705afef07e36e65255ef7886f776c63b91c047d1b1440eee6f8e34822a1e88`.
+- VPS 백업: `/home/mmm/backups/gps-shield-prod-dev-20260928-115217-dd57257`. Windows: `%LOCALAPPDATA%\GPS-PrivateBackups\gps-shield-prod-dev-20260928-115217-dd57257`.
