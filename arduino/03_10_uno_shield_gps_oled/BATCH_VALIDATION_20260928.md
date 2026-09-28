@@ -46,3 +46,5 @@ etcom-hub에서 실제 스케치를 호스트 모뎀 스텁과 C++17/ASan/UBSan/
 운영 API/DB/웹은 변경하지 않았다. dev API 릴리스는 `dev-20260928-123509-e2bb6e0`이다. prod 반영은 서버 전용 경로 배포 후 일반 v11 업로드 순서로 명시적 승인을 받아 진행한다. 현재 시험 종료 후에는 기존 검증된 prod 일반 v10으로 복귀하여 기존 수신을 유지한다.
 
 원본 시리얼은 개인 `%LOCALAPPDATA%/GPS-Monitoring/shield-batch-v11-20260928` 및 `shield-batch-v11-normal-20260928`에 보관한다. 진단 로그에 실제 좌표가 있으므로 저장소에 포함하지 않는다. `03_8`, `idf_caltest`, KC 펌웨어는 수정하지 않았다.
+
+운영 복귀 확인: v10 원본 HEX 해시 확인 후 `upload --verify`를 수행했다. 12:45:56 KST 상태 보고, **12:47:00 KST 유효 위치 보고**가 prod 장치 3015/사용자 25에 저장됐으며 build tag는 `shield-opt-20260928-v10`이다. 모든 시리얼 모니터를 종료했다.
