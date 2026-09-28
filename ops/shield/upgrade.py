@@ -17,7 +17,9 @@ import tarfile
 import time
 import urllib.request
 
-NGINX=Path('/etc/nginx/sites-available')
+# Some legacy enabled hosts are regular files rather than symlinks. Always edit
+# the loaded file; do not assume sites-available is the active configuration.
+NGINX=Path('/etc/nginx/sites-enabled')
 CONFIGS=('gps.serial.kr','dev-gps.serial.kr.conf','seriallog.com','shield.serial.kr.conf')
 ENV=Path('/etc/shield-api/shield.env')
 
