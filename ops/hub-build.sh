@@ -36,12 +36,14 @@ docker run --rm --name "gps-build-$release" --cpus=4 --memory=6g --memory-swap=6
     cp /work/ops/test_dev_resilience.py /out/test_dev_resilience.py
     cp /work/ops/test_dev_speed.py /out/test_dev_speed.py
     cp /work/ops/test_app_fcm_kc.py /out/test_app_fcm_kc.py
+    cp /work/ops/test_shield_selector.py /out/test_shield_selector.py
     cp /work/ops/deploy-dev-artifact.sh /out/deploy-dev-artifact.sh
     rustc --version > /out/toolchain.txt
     node --version >> /out/toolchain.txt
     getconf GNU_LIBC_VERSION >> /out/toolchain.txt
   '
 tr -d '\r' < "$job/src/ops/test-fcm-policy.sh" | bash -s -- "$job" "$root" "$image"
+python3 "$job/src/ops/test_shield_monitor.py"
 cp "$job/source.tar.gz" "$job/out/source.tar.gz"
 builder_image=$(docker image inspect "$image" --format '{{.Id}}')
 python3 - "$job/out" "$release" "$commit" "$builder_image" <<'PY'
