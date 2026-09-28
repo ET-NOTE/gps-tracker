@@ -2,8 +2,17 @@
 name    = "gps-tracker-api"
 version = "0.1.0"
 edition = "2021"
+default-run = "gps-tracker-api"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/ET-NOTE/gps-tracker"
+
+[features]
+shield = []
+
+[[bin]]
+name = "shield-api"
+path = "src/bin/shield-api.rs"
+required-features = ["shield"]
 
 [dependencies]
 # Web framework + async runtime
