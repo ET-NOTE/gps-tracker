@@ -1,5 +1,7 @@
 # 2026-09-28 UNO 쉴드 통신 복구 검증
 
+이 문서는 v7 통신 복구 당시의 기록이다. 후속 v9 연속 측위 및 RF 비교 시험은 [GNSS_VALIDATION_20260928.md](GNSS_VALIDATION_20260928.md)를 참고한다.
+
 대상: COM26(CH340), Arduino UNO R3 / ATmega328P, 모니터 115200 baud.
 
 ## 최종 결과

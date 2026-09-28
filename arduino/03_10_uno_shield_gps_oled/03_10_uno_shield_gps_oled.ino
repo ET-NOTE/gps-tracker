@@ -25,7 +25,7 @@
 #include <U8x8lib.h>
 #include "shield_policy.h"
 
-#define SHIELD_BUILD_TAG "shield-http-20260928-v7"
+#define SHIELD_BUILD_TAG "shield-gnss-20260928-v9"
 
 #if !defined(ARDUINO_AVR_UNO)
 #error "Select Arduino UNO (arduino:avr:uno)."
@@ -71,12 +71,16 @@ const bool BATTERY_ONLY_1S_LIION = true;
 // Existing test endpoint/APN/UID retained; never send ICCID or a fixture VBAT.
 bool oledReady=false, gnssEnabled=false, gnssFix=false, gnssSeen=false;
 bool restartPending=false;
+bool radioRestorePending=false; // Manual RF test: clear only after confirmed CFUN=1.
 bool traceNetwork=false;
 uint16_t pvMv=0;
 int8_t satellitesView=-1;
+int8_t gnssRawFix=-1;
+shield::GnssState gnssState=shield::GNSS_NO_REPLY;
 uint32_t gnssStamp=0, gnssPoll=0, uiStamp=0, batteryStamp=0;
 uint32_t positionStamp=0;
 char latitude[13]="", longitude[14]="", utc[19]="", hdop[7]="";
+char lastPositionUtc[19]=""; // Preserve across empty/error replies; they cannot refresh old fixes.
 static void receiveLines();
 static uint8_t command(const __FlashStringHelper *cmd, uint32_t timeout);
 static void serviceUi();
@@ -87,31 +91,55 @@ static void initDisplay();
 // Splits CSV in place, preserving empty fields (strtok would lose them).
 static void parseGnss(char *csv) {
   while (*csv==' ') ++csv;
-  char previousUtc[sizeof(utc)];
-  strcpy(previousUtc, utc);
-  gnssFix=false; satellitesView=-1;
+  gnssFix=false; satellitesView=-1; gnssRawFix=-1;
   latitude[0]=longitude[0]=utc[0]=hdop[0]='\0';
-  uint8_t index=0; bool running=false, fixed=false;
+  uint8_t index=0; bool running=false, fieldsValid=true;
   char *field=csv;
   for (;;) {
     char *comma=strchr(field, ',');
     if (comma) *comma='\0';
-    if(index==0) running=(*field=='1');
-    if(index==1) fixed=(*field=='1');
-    if(index==2) { strncpy(utc,field,sizeof(utc)-1); utc[sizeof(utc)-1]=0; }
-    if(index==3) { strncpy(latitude,field,sizeof(latitude)-1); latitude[sizeof(latitude)-1]=0; }
-    if(index==4) { strncpy(longitude,field,sizeof(longitude)-1); longitude[sizeof(longitude)-1]=0; }
-    if(index==10) { strncpy(hdop,field,sizeof(hdop)-1); hdop[sizeof(hdop)-1]=0; }
-    if(index==14 && *field) satellitesView=atoi(field);
+    if(index==0) { running=!strcmp(field,"1"); fieldsValid=running || !strcmp(field,"0"); }
+    if(index==1) gnssRawFix=!strcmp(field,"1") ? 1 : (!strcmp(field,"0") ? 0 : -1);
+    if(index==2) fieldsValid=shield::copyField(utc,sizeof(utc),field) && fieldsValid;
+    if(index==3) fieldsValid=shield::copyField(latitude,sizeof(latitude),field) && fieldsValid;
+    if(index==4) fieldsValid=shield::copyField(longitude,sizeof(longitude),field) && fieldsValid;
+    if(index==10) fieldsValid=shield::copyField(hdop,sizeof(hdop),field) && fieldsValid;
+    if(index==14) satellitesView=shield::satelliteCount(field);
     // CGNSINF field 15 (zero-based) is reserved, NOT satellites used.
     if(!comma) break;
     field=comma+1; ++index;
   }
   gnssEnabled=running;
-  if (strcmp(previousUtc, utc) && shield::validUtc(utc)) positionStamp=millis();
-  gnssFix=running && fixed && shield::usableFix(latitude, longitude, utc, hdop, satellitesView)
-      && !shield::due(millis(), positionStamp, shield::FIX_FRESH_MS);
+  if(!fieldsValid || (running && index<14)) gnssState=shield::GNSS_BAD_FIELDS;
+  else if(!running) gnssState=shield::GNSS_OFF;
+  else if(gnssRawFix<0) gnssState=shield::GNSS_NO_FIX_STATUS;
+  else if(!gnssRawFix) gnssState=shield::GNSS_NO_FIX;
+  else if(!shield::decimalInRange(latitude,-90,90) || !shield::decimalInRange(longitude,-180,180)) gnssState=shield::GNSS_BAD_COORD;
+  else if(!shield::validUtc(utc)) gnssState=shield::GNSS_BAD_UTC;
+  else if(!shield::decimalInRange(hdop,0.1,5.0)) gnssState=shield::GNSS_BAD_HDOP;
+  else if(satellitesView<4) gnssState=shield::GNSS_BAD_SV;
+  else {
+    if(strcmp(lastPositionUtc,utc)) { strcpy(lastPositionUtc,utc); positionStamp=millis(); }
+    gnssState=shield::due(millis(),positionStamp,shield::FIX_FRESH_MS) ? shield::GNSS_STALE : shield::GNSS_READY;
+  }
+  gnssFix=gnssState==shield::GNSS_READY;
   gnssSeen=true; gnssStamp=millis();
+}
+
+static const __FlashStringHelper *gnssReason() {
+  switch(gnssState) {
+    case shield::GNSS_OFF: return F("POWER_OFF");
+    case shield::GNSS_NO_FIX: return F("NO_FIX");
+    case shield::GNSS_NO_FIX_STATUS: return F("NO_FIX_STATUS");
+    case shield::GNSS_BAD_FIELDS: return F("BAD_FIELDS");
+    case shield::GNSS_BAD_COORD: return F("BAD_COORD");
+    case shield::GNSS_BAD_UTC: return F("BAD_UTC");
+    case shield::GNSS_BAD_HDOP: return F("BAD_HDOP");
+    case shield::GNSS_BAD_SV: return F("BAD_SV");
+    case shield::GNSS_STALE: return F("STALE_UTC");
+    case shield::GNSS_READY: return F("READY");
+    default: return F("NO_REPLY");
+  }
 }
 
 // Rough open-circuit voltage estimate, NOT measured capacity or a fuel gauge.
@@ -182,18 +210,21 @@ static void serviceUi() {
   oled.drawString(0,row,buf); row=(row+1)%8;
 }
 static void serviceGnss() {
-  if(stage!=6 || restartPending || millis()-gnssPoll<5000UL) return;
+  if(stage!=6 || restartPending || postFailures || millis()-gnssPoll<5000UL) return;
   gnssPoll=millis();
   if(!gnssEnabled) {
     gnssEnabled=(command(F("AT+CGNSPWR=1"),2000)==1);
-    if(!gnssEnabled) { Serial.println(F("[GPS] GNSS power command failed; retrying.")); return; }
+    if(!gnssEnabled) { gnssState=shield::GNSS_OFF; Serial.println(F("[GPS] GNSS power command failed; retrying.")); return; }
   }
   gnssSeen=false; gnssFix=false;
   if(command(F("AT+CGNSINF"),2000)!=1 || !gnssSeen) {
-    gnssSeen=false; gnssFix=false;
+    gnssSeen=false; gnssFix=false; gnssState=shield::GNSS_NO_REPLY;
     Serial.println(F("[GPS] No valid CGNSINF reply.")); return;
   }
   Serial.print(gnssFix?F("[GPS] FIX "):F("[GPS] WAIT "));
+  Serial.print(F("reason=")); Serial.print(gnssReason());
+  Serial.print(F(" raw_fix=")); Serial.print(gnssRawFix);
+  Serial.print(F(" window_s=")); Serial.print((millis()-lastPostMs)/1000UL); Serial.print(' ');
   Serial.print(F("SV=")); Serial.print(satellitesView);
   Serial.print(F(" HDOP=")); Serial.print(hdop[0] ? hdop : "?");
   if(gnssFix) {
@@ -348,6 +379,11 @@ static void stageConfig() {
   if (command(F("AT+CSCLK=0"), 2000) != 1) ++fail;
   // Register LTE first; do not run GNSS while recovering the radio connection.
   if(command(F("AT+CGNSPWR=0"),3000)==1) gnssEnabled=false;
+  // Read configuration only: CGNSMOD writes persist and reboot the module.
+  traceNetwork=true;
+  command(F("AT+CGMR"),2000);
+  command(F("AT+CGNSMOD?"),2000);
+  traceNetwork=false;
   if (fail == 0) Serial.println(F("[2/5] 초기 설정: 완료"));
   else {
     Serial.print(F("[2/5] 초기 설정: 일부 실패("));
@@ -398,6 +434,49 @@ static void networkDiagnostics() {
   traceNetwork=false;
 }
 
+static void gnssDiagnostics() {
+  traceNetwork=true;
+  command(F("AT+CGMR"),2000);
+  command(F("AT+CGNSMOD?"),2000);
+  command(F("AT+CFUN?"),2000);
+  command(F("AT+CGNSPWR?"),2000);
+  command(F("AT+CGNSINF"),2000);
+  traceNetwork=false;
+}
+
+static bool restoreRadio() {
+  if(command(F("AT+CGNSPWR=0"),3000)!=1) return false;
+  gnssEnabled=false; gnssSeen=false; gnssFix=false;
+  if(command(F("AT+CFUN=1"),10000)!=1) return false;
+  radioRestorePending=false;
+  return true;
+}
+
+// Explicit diagnostic key only. No recurring RF resets in the normal scheduler.
+static void isolatedGnssTest() {
+  if(stage!=6 || restartPending) return;
+  Serial.println(F("[GPS TEST] LTE off, GNSS only: up to 180s; LTE restores automatically."));
+  if(command(F("AT+CGNSPWR=0"),3000)!=1) return;
+  gnssEnabled=false; gnssSeen=false; gnssFix=false;
+  radioRestorePending=true; // A timeout may still have disabled RF.
+  if(command(F("AT+CFUN=0"),10000)==1 && !restartPending) {
+    pdpActive=false; regStat=-1;
+    gnssEnabled=command(F("AT+CGNSPWR=1"),3000)==1;
+    if(gnssEnabled) {
+      postFailures=0; lastPostMs=millis(); gnssPoll=lastPostMs-5000UL;
+      gnssDiagnostics();
+      const uint32_t start=millis();
+      while(!restartPending && !shield::due(millis(),start,180000UL)) {
+        receiveLines(); serviceUi(); serviceGnss();
+        if(gnssFix && gnssSeen) break;
+      }
+      Serial.println(gnssFix ? F("[GPS TEST] FIX obtained with LTE off.") : F("[GPS TEST] No qualified fix within 180s."));
+    }
+  }
+  if(!restoreRadio()) Serial.println(F("[GPS TEST] LTE restore pending; automatic retry."));
+  stage=1;
+}
+
 // ── [5/5] 서버 전송 시험 ──────────────────────────────────────────────
 static bool waitPrompt(uint32_t timeout) {   // AT+SHBOD 의 '>' 프롬프트(개행 없이 도착)
   lineLength=0; discardLine=false; reply=0;
@@ -428,8 +507,8 @@ static uint8_t waitReply(uint32_t timeout) {
   return 0;
 }
 static int buildPayload(char *body, size_t capacity, bool withFix) {
-  int n=snprintf_P(body,capacity,PSTR("{\"device_uid\":\"uno-shield-test\",\"build_tag\":\"" SHIELD_BUILD_TAG "\",\"ts\":%lu,\"csq\":%d,\"reg\":%d,\"diag\":{\"pv_mv\":%u}"),
-      (unsigned long)(millis()/1000UL),rssi,regStat,pvMv);
+  int n=snprintf_P(body,capacity,PSTR("{\"device_uid\":\"uno-shield-test\",\"build_tag\":\"" SHIELD_BUILD_TAG "\",\"ts\":%lu,\"csq\":%d,\"reg\":%d,\"diag\":{\"pv_mv\":%u,\"gnss\":%u}"),
+      (unsigned long)(millis()/1000UL),rssi,regStat,pvMv,(unsigned)gnssState);
   if(n<0 || (size_t)n>=capacity) return -1;
   int tail;
   if(withFix) {
@@ -442,6 +521,8 @@ static int buildPayload(char *body, size_t capacity, bool withFix) {
 // Called only with GNSS stopped. Every exit is cleaned up by stageServer().
 static bool postReport(bool withFix) {
   Serial.println(F("[5/5] 데이터망 연결 확인"));
+  pollNetwork(); // LTE queries/recovery belong to the GNSS-off phase.
+  if(regStat!=1 && regStat!=5) return false;
   command(F("AT+SHDISC"), 3000); // Already disconnected may return ERROR.
   pdpActive = false;
   command(F("AT+CNACT?"), 3000);
@@ -476,7 +557,9 @@ static bool postReport(bool withFix) {
   if(command(F("AT+SHCHEAD"),2000)!=1 ||
      command(F("AT+SHAHEAD=\"Content-Type\",\"application/json\""),2000)!=1) return false;
   if(restartPending) return false;
-  withFix=withFix && !shield::due(millis(),positionStamp,shield::MAX_SEND_AGE_MS);
+  if(withFix && shield::due(millis(),positionStamp,shield::MAX_SEND_AGE_MS)) {
+    withFix=false; gnssState=shield::GNSS_STALE;
+  }
   char body[256];
   readBattery();
   const int length=buildPayload(body,sizeof(body),withFix);
@@ -511,14 +594,17 @@ static void stageServer() {
       // A failed connection may leave a stale bearer. Recover before GNSS resumes.
       if(!success) command(F("AT+CNACT=0,0"),5000);
     }
-    gnssEnabled=command(F("AT+CGNSPWR=1"),3000)==1;
-    if(!gnssEnabled) Serial.println(F("[GPS] GNSS 복구 실패; 5초 후 재시도"));
+    // Recover failed HTTP while GNSS is off; short retry loops must not chop acquisition.
+    if(success) {
+      gnssEnabled=command(F("AT+CGNSPWR=1"),3000)==1;
+      if(!gnssEnabled) Serial.println(F("[GPS] GNSS 복구 실패; 5초 후 재시도"));
+    }
   }
   gnssSeen=false; gnssFix=false; gnssPoll=millis();
   lastPostMs=millis();
   if(success) {
     postFailures=0; postDelayMs=shield::POST_INTERVAL_MS;
-    Serial.println(F("[5/5] 성공: 서버 응답 HTTP 200 — 60초 후 다음 전송"));
+    Serial.println(F("[5/5] 성공: HTTP 200 — GPS 연속 측위 최대 600초, FIX 있으면 60초 주기"));
   } else {
     if(postFailures<4) ++postFailures;
     postDelayMs=shield::retryDelay(postFailures);
@@ -544,6 +630,7 @@ void setup() {
   Serial.println(F("[안내] 자동 순서: 1.모뎀통신 2.초기설정 3.유심 4.망등록 5.서버전송"));
   Serial.println(F("[안내] 키: r=처음부터 다시, s=유심/망 재확인, p=서버 재시험, g=GPS 조회, 1/0=DTR HIGH/LOW"));
   Serial.println(F("[안내] d=통신 진단, n=무선 기능 재등록 1회"));
+  Serial.println(F("[안내] g=GNSS 상세 조회, i=LTE 끄고 GNSS 180초 시험 후 자동 복구"));
   Serial.println(F("[안내] 모뎀 전원은 별도 3.3~4.2V 500mA 이상 + GND 공통이어야 함"));
   listenFor(300);
 }
@@ -554,13 +641,19 @@ void loop() {
     restartPending=false; stage=1; gnssPoll=0;
     Serial.println(F("[RECOVERY] RDY received: restarting modem checks."));
   }
+  if(radioRestorePending) {
+    if(restoreRadio()) stage=1;
+    else listenFor(10000);
+    return;
+  }
   serviceUi();
   if (Serial.available()) {
     const char key = (char)Serial.read();
     if (key == 'r') { stage = 1; Serial.println(F("[안내] 처음부터 다시 검사")); }
     else if (key == 's') { stage = 3; Serial.println(F("[안내] 유심/망 재확인")); }
     else if (key == 'p') { if(stage>=5) { stageServer(); stage=6; } }
-    else if (key == 'g') { gnssPoll=millis()-5000UL; }
+    else if (key == 'g') { gnssDiagnostics(); gnssPoll=millis()-5000UL; }
+    else if (key == 'i') { isolatedGnssTest(); }
     else if (key == 'd') { networkDiagnostics(); }
     else if (key == 'n') {
       Serial.println(F("[NET] 무선 기능 재등록 (수동 요청 1회)"));
@@ -578,6 +671,7 @@ void loop() {
       Serial.println(key == '1' ? F("HIGH") : F("LOW (주의: 모뎀 전원붕괴 시 UNO 도 멈출 수 있음)"));
     }
   }
+  if(radioRestorePending) return;
   serviceGnss();
   if(restartPending) return;
   const uint32_t now = millis();
@@ -621,8 +715,8 @@ void loop() {
   }
   if (stage == 5) { stageServer(); stage = 6; return; }
 
-  // Registration recovery and scheduled posting both remain active after failures.
-  if (shield::due(now,lastPollMs,15000UL)) {
+  // SIM7080G shares LTE/GNSS RF resources. Do not interrupt acquisition to re-register.
+  if (!gnssEnabled && shield::due(now,lastPollMs,15000UL)) {
     lastPollMs=now;
     pollNetwork();
     if (regStat!=1 && regStat!=5) {
@@ -630,5 +724,6 @@ void loop() {
       stage=3; return;
     }
   }
-  if(shield::due(millis(),lastPostMs,postDelayMs)) { stageServer(); stage=6; }
+  const bool freshFix=gnssFix && gnssSeen && !shield::due(millis(),positionStamp,shield::FIX_FRESH_MS);
+  if(shield::reportDue(millis(),lastPostMs,postDelayMs,postFailures,gnssEnabled,freshFix)) { stageServer(); stage=6; }
 }

@@ -13,3 +13,7 @@ python3 -c 'import json; rows=[json.loads(line) for line in open("/tmp/uno-shiel
 ```
 
 Covers GNSS/HTTP sequencing, cleanup after failed connection/configuration/request, timeout and modem reboot, GNSS restore failure, non-200 responses, automatic retry and periodic posting, registration loss, malformed/low-quality/stale fixes, JSON generation and buffer limits, and timer wraparound. These host tests complement the AVR build and live COM26/server verification; they do not model UART timing, electrical behavior or cellular connectivity.
+
+Also verifies the bounded 600-second no-fix acquisition window, 60-second reporting with a fresh fix, no network recovery during GNSS acquisition, recovery with GNSS kept off after HTTP failures, missing raw fix status, overlong coordinates, and invalid/overflowing satellite counts.
+
+Manual RF-off GNSS diagnostics cover timeout, early fix, uncertain CFUN=0 result, failed CFUN=1 recovery and modem reboot. Empty GNSS replies must not refresh the timestamp of an old coordinate.

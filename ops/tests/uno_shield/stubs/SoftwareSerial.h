@@ -5,7 +5,7 @@ public:
   SoftwareSerial(int,int) {}
   std::deque<char> rx;
   std::vector<std::string> commands, bodies;
-  std::string current, body, failCommand, timeoutCommand, rebootCommand;
+  std::string current, body, failCommand, timeoutCommand, rebootCommand, gnssReply;
   unsigned remaining=0;
   bool gnss=true, pdp=true, rejectGnssRestore=false, delayedPrompt=false, pendingPrompt=false;
   int status=200;
@@ -35,6 +35,7 @@ public:
     if(cmd=="AT+CNACT?") queue(pdp?"\r\n+CNACT: 0,1,\"10.0.0.1\"\r\n":"\r\n+CNACT: 0,0,\"0.0.0.0\"\r\n");
     if(cmd=="AT+CEREG?") queue("\r\n+CEREG: 0,5\r\n");
     if(cmd=="AT+CSQ") queue("\r\n+CSQ: 20,0\r\n");
+    if(cmd=="AT+CGNSINF" && !gnssReply.empty()) queue("\r\n+CGNSINF: "+gnssReply+"\r\n");
     if(cmd.rfind("AT+SHBOD=",0)==0) {
       remaining=(unsigned)std::stoul(cmd.substr(9));
       if(delayedPrompt) pendingPrompt=true;else queue("\r\n>");
