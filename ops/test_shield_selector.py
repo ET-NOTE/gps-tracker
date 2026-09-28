@@ -37,7 +37,7 @@ def get(path,user=None,status=200):
     except urllib.error.HTTPError as error: code,body,cache=error.code,error.read(),error.headers.get('Cache-Control')
     assert code==status,(path,code,status,body[:150])
     if status==200 and path.startswith('/gps-tracker/api/v1/shield-monitor'):assert cache=='no-store'
-    return json.loads(body)
+    return json.loads(body) if body[:1] in (b'{',b'[') else body
 
 def device(user,label,prefix='uno-shield-',kind='hardware'):
     uid=prefix+run+'-'+label
