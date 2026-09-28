@@ -18,6 +18,7 @@ pub mod phones;
 pub mod profile_type;
 pub mod rentcar;
 pub mod share;
+pub mod shield_ingest;
 pub mod sim_requests;
 pub mod stats;
 pub mod ws;
@@ -60,6 +61,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/health", get(health::health))
         .route("/gps-tracker/health", get(health::health))
         .route("/gps-tracker/ingest", post(ingest::ingest))
+        .route("/gps-tracker/ingest/shield", post(shield_ingest::ingest))
         .route("/gps-tracker/dht", post(diag::dht_ingest))
         .route("/gps-tracker/arduino-shield", get(arduino_shield::page))
         .route(
