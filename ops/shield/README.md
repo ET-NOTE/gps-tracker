@@ -1,6 +1,6 @@
 # Shield build and deployment
 
-This service is separate from GPS/KC. **Production changes require the user's explicit approval.** The included scripts build and test; they do not deploy to the VPS.
+This service is separate from GPS/KC. **Production changes require the user's explicit approval.** The first launch was approved and performed on 2026-09-28; see [the deployment record](../../docs/reviews/shield-production-2026-09-28.md). Build/test scripts never deploy. `deploy.py` is an explicit, step-by-step production operator tool.
 
 ## Build
 
@@ -39,13 +39,24 @@ Stop the two named preview containers and remove their disposable volumes when t
 7. Check SPA deep links/downloads, HTTPS secure host-only cookie, unauthorized API, invitation consumption, device ownership/claim/key, REST/WS updates and logout revocation. Use a dedicated synthetic device. Compare the GPS/KC baseline again, including `/diagnostic` and ongoing receipt where a certification device is online.
 8. Register Shield DB dump backups with the existing backup/offsite process and verify a restore on the runner before inviting real users. Monitor disk and API RSS/connection count. Auth metadata is pruned automatically; telemetry is not silently deleted. Agree retention before scaling.
 
-No invocation of a production apply step is included in this task's automated build or tests. The API's `invite` and `provision [name]` CLI commands emit one-time secrets; run under the Shield service environment and store/hand over through a private channel. Do not publish them in PRs or logs. Operators must provide the key to firmware separately from the owner's claim code.
+No production apply step is invoked by automated builds or preview tests. `deploy.py` runs `prepare`, `install`, `challenge`, `activate`, `retire-page`, and `verify` separately. It requires an explicit release and archive SHA256. Copy and verify the `prepare` backup offsite before `install`; provision the certificate with the established ACME account between `challenge` and `activate`. Initial-creation steps deliberately stop if names or files already exist; inspect partial state instead of rerunning blindly. It supports Ubuntu 22.04 Python 3.10. Graceful nginx reload readiness is polled with certificate validation enabled.
+
+`verify-production.py smoke` creates two recorded synthetic accounts and a keyed test device in **Shield only**. Its 34 checks never call SIM or payment services. After browser inspection, `cleanup` removes exactly the generated identities and dependent telemetry. It refuses unknown identities and does not touch GPS. The API's `invite` and `provision [name]` CLI commands emit one-time secrets; run under the Shield service environment and store/hand over through a private channel. Do not publish them in PRs or logs. Operators must provide the key to firmware separately from the owner's claim code.
+
+## Production backups
+
+- VPS: `shield-backup.timer` runs daily at 02:35 Asia/Seoul plus up to five minutes of jitter. Root-only `/var/backups/shield` contains seven days of PostgreSQL custom dumps plus the Shield environment, nginx config, service unit and release metadata. These archives contain secrets; never serve them through HTTP or put them in Git. Telemetry itself is not pruned.
+- Runner: the system `shield-backup-pull.timer` runs as `etcom-hub` at 03:20 Asia/Seoul plus up to five minutes of jitter. `/home/etcom-hub/backups/shield` is mode 0700; it retains fourteen days of mode-0600 archives and checksums. A dedicated SSH key is restricted to exporting the newest Shield backup, with no shell, forwarding or PTY. Pin the already trusted VPS host key; do not disable host checking.
+- Initial install: upload the backup scripts/units and the runner's **public** `backup-pull-key.pub`, then run `install-backup.py` as root. It adds a Shield-only nginx reload hook after successful certificate renewal. The runner's `ssh-config` and `known_hosts` are installed privately, outside Git; they use the dedicated key and `StrictHostKeyChecking yes`. Install the pull units under `/etc/systemd/system` and enable the timer; user lingering is unnecessary.
+- `verify-backup.py` restores a copied dump in a new, unexposed PostgreSQL 14 container on the runner, checks schema versions and counts, then removes only that test container. Count equality assumes a quiescent source; live backups are transaction-consistent but a later count snapshot may differ.
+- Check failures with `systemctl --failed` and the two backup service journals. There is no new external notification integration. The latest launch backup was also copied to Windows. Restore credentials only into the intended Shield service; never into GPS or a publicly bound test container.
 
 ## Rollback
 
 - New service launch failure: stop only `shield-api`; disable only the Shield vhost, run `nginx -t`, then graceful reload. Leave GPS releases/services unchanged.
 - Existing Shield upgrade: restore previous `/srv/shield/current` symlink and restart only Shield. DB changes must be backward compatible; take and restore the dedicated Shield backup if a future incompatible migration requires it. Never use a GPS dump to restore Shield.
 - Do not automatically delete accounts, telemetry, certificates, roles or databases during rollback. HBA rollback restores the saved config only if necessary and after checking intervening changes; keep credential isolation if the new service is merely stopped.
+- If rolling back Shield while the old page redirects there, restore only the old monitor locations from the saved GPS nginx config after checking for intervening changes, then `nginx -t` and reload. Preserve the KC and ingest locations. Keep backups active even while the app is stopped.
 - Actual device cutover is separate. Preserve the last known working firmware and GPS endpoint until HTTPS/key authentication and new-account ownership are verified. No broad nginx redirects from the old ingest path.
 
 ## Protocol

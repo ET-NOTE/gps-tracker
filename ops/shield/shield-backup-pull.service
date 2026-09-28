@@ -1,0 +1,9 @@
+[Unit]
+Description=Copy the Shield backup off the VPS
+
+[Service]
+Type=oneshot
+User=etcom-hub
+Group=etcom-hub
+ExecStart=/usr/bin/python3 /home/etcom-hub/backups/shield/pull-backup.py
+UMask=0077
