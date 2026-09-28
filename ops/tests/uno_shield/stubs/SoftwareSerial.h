@@ -8,6 +8,7 @@ public:
   std::string current, body, failCommand, timeoutCommand, rebootCommand, gnssReply;
   unsigned remaining=0;
   bool gnss=true, pdp=true, rejectGnssRestore=false, delayedPrompt=false, pendingPrompt=false;
+  bool http=false;
   int status=200;
   void queue(const std::string &s) { for(char c:s) rx.push_back(c); }
   void end() {}
@@ -22,12 +23,22 @@ public:
     }
     if(c!='\r') { current.push_back((char)c);return 1; }
     const std::string cmd=current;current.clear();commands.push_back(cmd);
-    if(cmd==rebootCommand) { queue("\r\nRDY\r\n"); return 1; }
-    if(cmd==timeoutCommand) return 1;
+    if(cmd==rebootCommand) { http=false; queue("\r\nRDY\r\n"); return 1; }
+    if(cmd==timeoutCommand) {
+      if(cmd=="AT+SHCONN") http=true; // Applied command, lost reply.
+      if(cmd=="AT+SHDISC") http=false;
+      return 1;
+    }
     if(cmd==failCommand || (rejectGnssRestore && cmd=="AT+CGNSPWR=1")) { queue("\r\n+CME ERROR: operation not allowed\r\n");return 1; }
     if(cmd=="AT+SHSSL=0,\"\"") { queue("\r\n+CME ERROR: operation not allowed\r\n");return 1; }
     // This emulates the regression: SH* commands are rejected while GNSS is on.
     if(cmd.rfind("AT+SH",0)==0 && gnss) { queue("\r\nERROR\r\n");return 1; }
+    if(cmd=="AT+SHSTATE?") queue(http?"\r\n+SHSTATE: 1\r\n":"\r\n+SHSTATE: 0\r\n");
+    if(cmd=="AT+SHCONN") http=true;
+    if(cmd=="AT+SHDISC") {
+      if(!http) { queue("\r\nERROR\r\n");return 1; }
+      http=false;
+    }
     if(cmd=="AT+CGNSPWR=0") gnss=false;
     if(cmd=="AT+CGNSPWR=1") gnss=true;
     if(cmd=="AT+CNACT=0,0") pdp=false;

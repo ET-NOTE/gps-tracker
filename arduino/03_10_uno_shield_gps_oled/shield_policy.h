@@ -7,6 +7,9 @@ namespace shield {
 const uint32_t POST_INTERVAL_MS = 60000UL;
 // Give a cold/weak-signal acquisition an uninterrupted, bounded window.
 const uint32_t GNSS_ACQUIRE_MS = 600000UL;
+// After a transmitted fix, allow a shorter warm reacquisition window once.
+// A no-fix report returns the next window to GNSS_ACQUIRE_MS.
+const uint32_t GNSS_REACQUIRE_MS = 120000UL;
 const uint32_t FIX_FRESH_MS = 15000UL;
 const uint32_t MAX_SEND_AGE_MS = 60000UL;
 
@@ -22,9 +25,10 @@ inline uint32_t retryDelay(uint8_t failures) {
 }
 
 inline bool reportDue(uint32_t now, uint32_t lastPost, uint32_t delay,
-                      uint8_t failures, bool gnssOn, bool freshFix) {
+                      uint8_t failures, bool gnssOn, bool freshFix,
+                      uint32_t acquisitionMs) {
   if (!due(now, lastPost, delay)) return false;
-  return failures || !gnssOn || freshFix || due(now, lastPost, GNSS_ACQUIRE_MS);
+  return failures || !gnssOn || freshFix || due(now, lastPost, acquisitionMs);
 }
 
 // Never accept a truncated coordinate or turn malformed/overflowing SV into a count.

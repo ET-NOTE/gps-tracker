@@ -25,7 +25,17 @@
 #include <U8x8lib.h>
 #include "shield_policy.h"
 
-#define SHIELD_BUILD_TAG "shield-gnss-20260928-v9"
+#ifndef SHIELD_DIAGNOSTICS
+#define SHIELD_DIAGNOSTICS 0
+#endif
+#if SHIELD_DIAGNOSTICS != 0 && SHIELD_DIAGNOSTICS != 1
+#error "SHIELD_DIAGNOSTICS must be 0 or 1."
+#endif
+#if SHIELD_DIAGNOSTICS
+#define SHIELD_BUILD_TAG "shield-opt-20260928-v10-dbg"
+#else
+#define SHIELD_BUILD_TAG "shield-opt-20260928-v10"
+#endif
 
 #if !defined(ARDUINO_AVR_UNO)
 #error "Select Arduino UNO (arduino:avr:uno)."
@@ -53,6 +63,8 @@ uint8_t stage = 1;              // 1~5 진행, 6=주기 전송/재시도 대기
 uint32_t lastPollMs = 0, lastNoteMs = 0, regStartMs = 0;
 uint32_t lastPostMs = 0, postDelayMs = shield::POST_INTERVAL_MS;
 uint8_t postFailures = 0;
+uint32_t acquisitionMs = shield::GNSS_ACQUIRE_MS;
+int8_t httpState = -1;          // -1=unknown, 0=confirmed closed, 1=open
 
 // ===== User settings =====
 // Default: SSD1306 128x64 I2C OLED. For SH1106 set OLED_SH1106 to 1.
@@ -71,8 +83,10 @@ const bool BATTERY_ONLY_1S_LIION = true;
 // Existing test endpoint/APN/UID retained; never send ICCID or a fixture VBAT.
 bool oledReady=false, gnssEnabled=false, gnssFix=false, gnssSeen=false;
 bool restartPending=false;
+#if SHIELD_DIAGNOSTICS
 bool radioRestorePending=false; // Manual RF test: clear only after confirmed CFUN=1.
 bool traceNetwork=false;
+#endif
 uint16_t pvMv=0;
 int8_t satellitesView=-1;
 int8_t gnssRawFix=-1;
@@ -126,6 +140,7 @@ static void parseGnss(char *csv) {
   gnssSeen=true; gnssStamp=millis();
 }
 
+#if SHIELD_DIAGNOSTICS
 static const __FlashStringHelper *gnssReason() {
   switch(gnssState) {
     case shield::GNSS_OFF: return F("POWER_OFF");
@@ -141,6 +156,7 @@ static const __FlashStringHelper *gnssReason() {
     default: return F("NO_REPLY");
   }
 }
+#endif
 
 // Rough open-circuit voltage estimate, NOT measured capacity or a fuel gauge.
 static int batteryPercent() {
@@ -221,6 +237,7 @@ static void serviceGnss() {
     gnssSeen=false; gnssFix=false; gnssState=shield::GNSS_NO_REPLY;
     Serial.println(F("[GPS] No valid CGNSINF reply.")); return;
   }
+#if SHIELD_DIAGNOSTICS
   Serial.print(gnssFix?F("[GPS] FIX "):F("[GPS] WAIT "));
   Serial.print(F("reason=")); Serial.print(gnssReason());
   Serial.print(F(" raw_fix=")); Serial.print(gnssRawFix);
@@ -233,6 +250,7 @@ static void serviceGnss() {
     Serial.print(F(" UTC=")); Serial.print(utc);
   }
   Serial.print(F(" PV=")); Serial.print(pvMv); Serial.println(F("mV"));
+#endif
 }
 
 // ── 수신/파싱 (화면 출력 없음 — 판정에 필요한 값만 뽑는다) ───────────────
@@ -242,8 +260,11 @@ static void receiveLines() {
     if (c == '\r' || c == '\n') {
       if (!discardLine && lineLength) {
         line[lineLength] = '\0';
+#if SHIELD_DIAGNOSTICS
         if(traceNetwork) { Serial.print(F("[NET RX] ")); Serial.println(line); }
+#endif
         int a, b;
+        if (sscanf(line, "+SHSTATE: %d", &a)==1 && (a==0 || a==1)) httpState=a;
         if (!strncmp(line, "+CGNSINF:", 9)) { parseGnss(line+9); lineLength=0; discardLine=false; continue; }
         if (sscanf(line, "+CNACT: %d,%d", &a, &b)==2 && a==0) {
           const char *ip=strchr(line, '"');
@@ -271,6 +292,7 @@ static void receiveLines() {
           simReady = false; pdpActive = false;
           ++modemReboots;
           restartPending=true; gnssEnabled=false; gnssSeen=false; gnssFix=false;
+          httpState=-1; acquisitionMs=shield::GNSS_ACQUIRE_MS;
           regStat=-1; httpStatus=-1;
           // RDY 반복 수신 시 화면 도배 방지: 경고는 3초당 1회만
           static uint32_t lastWarnMs = 0;
@@ -380,10 +402,12 @@ static void stageConfig() {
   // Register LTE first; do not run GNSS while recovering the radio connection.
   if(command(F("AT+CGNSPWR=0"),3000)==1) gnssEnabled=false;
   // Read configuration only: CGNSMOD writes persist and reboot the module.
+#if SHIELD_DIAGNOSTICS
   traceNetwork=true;
   command(F("AT+CGMR"),2000);
   command(F("AT+CGNSMOD?"),2000);
   traceNetwork=false;
+#endif
   if (fail == 0) Serial.println(F("[2/5] 초기 설정: 완료"));
   else {
     Serial.print(F("[2/5] 초기 설정: 일부 실패("));
@@ -406,8 +430,10 @@ static bool stageSim() {
     return false;
   }
   Serial.println(F("[3/5] 유심 인식: 정상 (PIN 잠금 없음)"));
+#if SHIELD_DIAGNOSTICS
   if (command(F("AT+CCID"), 3000) == 1) Serial.println(F("[3/5] 유심 카드번호 조회: 성공"));
   else Serial.println(F("[3/5] 유심 카드번호 조회: 실패 (인식은 정상 — 참고용)"));
+#endif
   return true;
 }
 
@@ -418,6 +444,7 @@ static void pollNetwork() {
   command(F("AT+CEREG?"), 2000);
 }
 
+#if SHIELD_DIAGNOSTICS
 static void networkDiagnostics() {
   traceNetwork=true;
   Serial.println(F("[NET] registration/attach/GNSS diagnostics"));
@@ -476,6 +503,7 @@ static void isolatedGnssTest() {
   if(!restoreRadio()) Serial.println(F("[GPS TEST] LTE restore pending; automatic retry."));
   stage=1;
 }
+#endif
 
 // ── [5/5] 서버 전송 시험 ──────────────────────────────────────────────
 static bool waitPrompt(uint32_t timeout) {   // AT+SHBOD 의 '>' 프롬프트(개행 없이 도착)
@@ -490,7 +518,7 @@ static bool waitPrompt(uint32_t timeout) {   // AT+SHBOD 의 '>' 프롬프트(�
         line[lineLength]=0;
         if (!strcmp(line,"ERROR") || !strncmp(line,"+CME ERROR:",11) || !strcmp(line,"RDY")) {
           Serial.print(F("[BODY ERROR] ")); Serial.println(line);
-          if (!strcmp(line,"RDY")) restartPending=true;
+          if (!strcmp(line,"RDY")) { restartPending=true; httpState=-1; acquisitionMs=shield::GNSS_ACQUIRE_MS; }
           lineLength=0; return false;
         }
         lineLength=0;
@@ -518,12 +546,23 @@ static int buildPayload(char *body, size_t capacity, bool withFix) {
   return tail<0 || (size_t)tail>=capacity-n ? -1 : n+tail;
 }
 
+// Query only when the modem state is uncertain (boot, timeout, reboot).
+// Never resume GNSS or configure a new session until closure is confirmed.
+static bool closeHttp() {
+  if(httpState<0 && (command(F("AT+SHSTATE?"),2000)!=1 || httpState<0)) return false;
+  if(httpState==0) return true;
+  httpState=-1; // A timeout may still have closed it; check on the next retry.
+  if(command(F("AT+SHDISC"),3000)!=1) return false;
+  httpState=0;
+  return true;
+}
+
 // Called only with GNSS stopped. Every exit is cleaned up by stageServer().
-static bool postReport(bool withFix) {
+static bool postReport(bool &withFix) {
   Serial.println(F("[5/5] 데이터망 연결 확인"));
   pollNetwork(); // LTE queries/recovery belong to the GNSS-off phase.
   if(regStat!=1 && regStat!=5) return false;
-  command(F("AT+SHDISC"), 3000); // Already disconnected may return ERROR.
+  if(!closeHttp()) return false;
   pdpActive = false;
   command(F("AT+CNACT?"), 3000);
   if (!pdpActive) {
@@ -541,7 +580,10 @@ static bool postReport(bool withFix) {
      command(F("AT+SHCONF=\"HEADERLEN\",350"),2000)!=1 ||
      command(F("AT+SHSSL=0"),2000)!=1) return false; // Index 0 accepts no certificate argument.
   Serial.println(F("[5/5] 서버 연결 중…"));
+  httpState=-1; // SHCONN may take effect even if its reply times out.
   if(command(F("AT+SHCONN"),30000)!=1) {
+#if SHIELD_DIAGNOSTICS
+    if(postFailures==0) {
     traceNetwork=true;
     command(F("AT+CGNSPWR?"),2000);
     command(F("AT+CGATT?"),2000);
@@ -552,8 +594,11 @@ static bool postReport(bool withFix) {
     command(F("AT+CDNSGIP=\"gps.serial.kr\",1,2000"),3000);
     listenFor(5000);
     traceNetwork=false;
+    }
+#endif
     return false;
   }
+  httpState=1;
   if(command(F("AT+SHCHEAD"),2000)!=1 ||
      command(F("AT+SHAHEAD=\"Content-Type\",\"application/json\""),2000)!=1) return false;
   if(restartPending) return false;
@@ -564,7 +609,7 @@ static bool postReport(bool withFix) {
   readBattery();
   const int length=buildPayload(body,sizeof(body),withFix);
   if(length<0) { Serial.println(F("[5/5] 본문 크기 초과")); return false; }
-#if defined(__AVR__)
+#if SHIELD_DIAGNOSTICS && defined(__AVR__)
   extern char __heap_start, *__brkval;
   Serial.print(F("[MEM] HTTP free SRAM="));
   Serial.println((int)(SP-(uintptr_t)(__brkval ? __brkval : &__heap_start)));
@@ -583,14 +628,14 @@ static bool postReport(bool withFix) {
 static void stageServer() {
   Serial.println(F("[5/5] 서버 전송 시작 (gps.serial.kr)"));
   httpStatus=-1;
-  const bool withFix=gnssFix && gnssSeen && !shield::due(millis(),positionStamp,shield::FIX_FRESH_MS);
+  bool withFix=gnssFix && gnssSeen && !shield::due(millis(),positionStamp,shield::FIX_FRESH_MS);
   // SIM7080G SH* must not run while the internal GNSS owns its resources.
   const bool stopped=command(F("AT+CGNSPWR=0"),3000)==1;
   if(stopped) { gnssEnabled=false; listenFor(300); }
-  const bool success=stopped && !restartPending && postReport(withFix);
+  bool success=stopped && !restartPending && postReport(withFix);
   if(!restartPending) {
     if(stopped) {
-      command(F("AT+SHDISC"),3000);
+      if(!closeHttp()) success=false;
       // A failed connection may leave a stale bearer. Recover before GNSS resumes.
       if(!success) command(F("AT+CNACT=0,0"),5000);
     }
@@ -602,9 +647,14 @@ static void stageServer() {
   }
   gnssSeen=false; gnssFix=false; gnssPoll=millis();
   lastPostMs=millis();
+  acquisitionMs=success && withFix ? shield::GNSS_REACQUIRE_MS : shield::GNSS_ACQUIRE_MS;
   if(success) {
     postFailures=0; postDelayMs=shield::POST_INTERVAL_MS;
-    Serial.println(F("[5/5] 성공: HTTP 200 — GPS 연속 측위 최대 600초, FIX 있으면 60초 주기"));
+    Serial.print(F("[5/5] 성공: HTTP 200 — GPS 대기 최대 "));
+    Serial.print(acquisitionMs/1000UL); Serial.println(F("초, FIX 있으면 60초 주기"));
+    Serial.print(F("[GPS] state=")); Serial.print((unsigned)gnssState);
+    Serial.print(F(" SV=")); Serial.print(satellitesView);
+    Serial.print(F(" PV=")); Serial.print(pvMv); Serial.println(F("mV"));
   } else {
     if(postFailures<4) ++postFailures;
     postDelayMs=shield::retryDelay(postFailures);
@@ -628,9 +678,13 @@ void setup() {
   Serial.println(F("===== SIM7080G 쉴드 검사 (UNO) — 한글 안내판 ====="));
   Serial.println(F("[BUILD] " SHIELD_BUILD_TAG));
   Serial.println(F("[안내] 자동 순서: 1.모뎀통신 2.초기설정 3.유심 4.망등록 5.서버전송"));
+#if SHIELD_DIAGNOSTICS
   Serial.println(F("[안내] 키: r=처음부터 다시, s=유심/망 재확인, p=서버 재시험, g=GPS 조회, 1/0=DTR HIGH/LOW"));
   Serial.println(F("[안내] d=통신 진단, n=무선 기능 재등록 1회"));
   Serial.println(F("[안내] g=GNSS 상세 조회, i=LTE 끄고 GNSS 180초 시험 후 자동 복구"));
+#else
+  Serial.println(F("[안내] 일반 빌드: 자동 운용, 수동 진단 키 비활성"));
+#endif
   Serial.println(F("[안내] 모뎀 전원은 별도 3.3~4.2V 500mA 이상 + GND 공통이어야 함"));
   listenFor(300);
 }
@@ -639,14 +693,18 @@ void loop() {
   receiveLines();
   if(restartPending) {
     restartPending=false; stage=1; gnssPoll=0;
+    httpState=-1; acquisitionMs=shield::GNSS_ACQUIRE_MS;
     Serial.println(F("[RECOVERY] RDY received: restarting modem checks."));
   }
+#if SHIELD_DIAGNOSTICS
   if(radioRestorePending) {
     if(restoreRadio()) stage=1;
     else listenFor(10000);
     return;
   }
+#endif
   serviceUi();
+#if SHIELD_DIAGNOSTICS
   if (Serial.available()) {
     const char key = (char)Serial.read();
     if (key == 'r') { stage = 1; Serial.println(F("[안내] 처음부터 다시 검사")); }
@@ -659,9 +717,11 @@ void loop() {
       Serial.println(F("[NET] 무선 기능 재등록 (수동 요청 1회)"));
       if(command(F("AT+CGNSPWR=0"),3000)==1) {
         gnssEnabled=false; gnssSeen=false; gnssFix=false;
+        radioRestorePending=true;
         command(F("AT+CFUN=0"),10000);
         listenFor(1000);
-        command(F("AT+CFUN=1"),10000);
+        restoreRadio();
+        httpState=-1;
         stage=1;
       }
     }
@@ -672,6 +732,7 @@ void loop() {
     }
   }
   if(radioRestorePending) return;
+#endif
   serviceGnss();
   if(restartPending) return;
   const uint32_t now = millis();
@@ -725,5 +786,5 @@ void loop() {
     }
   }
   const bool freshFix=gnssFix && gnssSeen && !shield::due(millis(),positionStamp,shield::FIX_FRESH_MS);
-  if(shield::reportDue(millis(),lastPostMs,postDelayMs,postFailures,gnssEnabled,freshFix)) { stageServer(); stage=6; }
+  if(shield::reportDue(millis(),lastPostMs,postDelayMs,postFailures,gnssEnabled,freshFix,acquisitionMs)) { stageServer(); stage=6; }
 }

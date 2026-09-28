@@ -27,6 +27,7 @@ inline int analogRead(int) { return 429; }
 class Print {
 public:
   std::string output;
+  std::deque<char> input;
   virtual ~Print() = default;
   virtual size_t write(uint8_t c) { output.push_back((char)c); return 1; }
   void print(const char *s) { while(*s) write((uint8_t)*s++); }
@@ -38,7 +39,7 @@ public:
   template<typename T> void println(T value) { print(value); println(); }
   template<typename T> void println(T value,int) { println(value); }
   void begin(unsigned long) {}
-  int available() { return 0; }
-  int read() { return -1; }
+  int available() { return (int)input.size(); }
+  int read() { if(input.empty()) return -1; const char c=input.front(); input.pop_front(); return c; }
 };
 inline Print Serial;
