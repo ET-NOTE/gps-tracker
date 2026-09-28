@@ -64,6 +64,20 @@ def checked_status(path, expected):
     assert status == expected, (path, status)
 
 
+def planned_nginx(old):
+    pattern = r'    location = /ingest \{\n.*?\n    \}'
+    assert len(re.findall(pattern, old, re.S)) == 2
+    if '/ingest/shield' in old:
+        assert old.count('    location = /ingest/shield {') == 2
+        return old
+    # Substitute each original match once. Repeated str.replace(..., 1) targets
+    # the first server twice when its HTTP/HTTPS legacy blocks are identical.
+    def add_route(match):
+        block = match.group(0)
+        return block + '\n\n' + block.replace('/ingest', '/ingest/shield').replace('64k;', '8k;')
+    return re.sub(pattern, add_route, old, flags=re.S)
+
+
 if mode == 'prepare':
     assert not backup.exists(), 'Backup already exists; inspect it before retrying.'
     baseline = json.loads(get('/health'))['release']
@@ -76,11 +90,7 @@ if mode == 'prepare':
     assert old.count('    location = /arduino-shield/data {') == 1
     has_route = '/ingest/shield' in old
     assert not has_route or not prod
-    blocks = re.findall(r'    location = /ingest \{\n.*?\n    \}', old, re.S)
-    assert len(blocks) == 2
-    planned = old
-    for block in ([] if has_route else blocks):
-        planned = planned.replace(block, block + '\n\n' + block.replace('/ingest', '/ingest/shield').replace('64k;', '8k;'), 1)
+    planned = planned_nginx(old)
     backup.mkdir(mode=0o700, parents=True)
     shutil.copy2(api, backup / 'api.previous')
     shutil.copy2(nginx, backup / 'nginx.previous')
