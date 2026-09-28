@@ -254,8 +254,11 @@ export default function DataPage() {
       const a = document.createElement("a");
       a.href = url;
       a.download = `${selected.device_uid}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.hidden = true;
+      document.body.appendChild(a);
       a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (e) {
       if (e.name !== "AbortError") setError(e.message);
     } finally {

@@ -70,12 +70,17 @@ fn check_config(url: &str, origin: &str, bind: SocketAddr, production: bool) -> 
         if production {
             name == "shield_prod" && db.get_username() == "shield_app"
         } else {
-            name.starts_with("shield_test") || name == "shield_dev"
+            (name.starts_with("shield_test") || name == "shield_dev")
+                && (db.get_username().starts_with("shield_test")
+                    || db.get_username() == "shield_dev_app")
         },
         "Shield requires its own database and role"
     );
     anyhow::ensure!(
-        db.get_username() != "gps_tracker_dev_app" && db.get_username() != "mmm",
+        !matches!(
+            db.get_username(),
+            "gps_tracker_app" | "gps_tracker_dev_app" | "mmm"
+        ),
         "GPS credentials are forbidden"
     );
     anyhow::ensure!(
@@ -300,6 +305,15 @@ mod tests {
                 "https://shield.serial.kr",
                 bind,
                 true
+            )
+            .is_err());
+        }
+        for role in ["gps_tracker_app", "gps_tracker_dev_app", "postgres"] {
+            assert!(check_config(
+                &format!("postgres://{role}@localhost/shield_test"),
+                "http://localhost:8043",
+                bind,
+                false
             )
             .is_err());
         }
