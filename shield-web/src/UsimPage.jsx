@@ -203,6 +203,10 @@ export default function UsimPage() {
       )}
       <section className="panel request-panel">
         <h2>USIM 데이터 충전 요청</h2>
+        <p className="notice">
+          온라인 카드 결제는 아직 준비 중입니다. 포인트가 부족하면 제품
+          담당자에게 충전을 요청해 주세요.
+        </p>
         <p>
           {selected?.display_name || "장치 선택"} · 1회 500 MB ·{" "}
           {number(sim?.cost_credits, 0)} P

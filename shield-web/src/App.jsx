@@ -28,6 +28,7 @@ import { demoData } from "./demo";
 import { PostsProvider, usePosts, PostStatus } from "./posts";
 import AdminPage from "./AdminPage";
 import UsimPage from "./UsimPage";
+import GuidePage, { LessonNavigation } from "./GuidePage";
 
 function Header() {
   const { user, logout } = useContext(Session);
@@ -315,8 +316,8 @@ function Examples() {
         <Icon name="book" size={47} />
         <div>
           <small>처음 사용하시나요?</small>
-          <h2>쉴드 연결부터 첫 데이터 전송까지</h2>
-          <p>보드 설정과 장치 등록을 먼저 완료해 주세요.</p>
+          <h2>장치 등록부터 데이터 확인, USIM 충전까지</h2>
+          <p>쉴드 연결 → 온습도 측정 → 서버 전송 순서로 실습하세요.</p>
         </div>
         <span className="button">
           시작 가이드 <Icon name="arrow" size={16} />
@@ -380,10 +381,10 @@ function Examples() {
     </main>
   );
 }
-function ExampleDetail({ guide = false }) {
+function ExampleDetail() {
   const { posts: examples, loading, error } = usePosts();
   const { id } = useParams();
-  const e = examples.find((e) => e.id === (guide ? "start" : id));
+  const e = examples.find((e) => e.id === id);
   if (!e)
     return loading || error ? (
       <main className="container">
@@ -454,9 +455,13 @@ function ExampleDetail({ guide = false }) {
               </p>
             </>
           )}
-          <Link className="button" to="/data">
-            내 데이터에서 확인하기 <Icon name="arrow" size={16} />
-          </Link>
+          {["start", "dht11", "upload"].includes(e.id) ? (
+            <LessonNavigation id={e.id} />
+          ) : (
+            <Link className="button" to="/data">
+              내 데이터에서 확인하기 <Icon name="arrow" size={16} />
+            </Link>
+          )}
         </article>
         <aside className="article-aside">
           <Board variant={e.variant} />
@@ -672,7 +677,8 @@ function About() {
         <p>
           USIM 잔량은 통신사 조회값으로 표시합니다. 충전 요청은 Shield 전용
           포인트를 사용하며, 관리자의 확인 후 통신사에 주문합니다. 기존 GPS
-          계정의 포인트와는 별도로 관리됩니다.
+          계정의 포인트와는 별도로 관리됩니다. 온라인 카드 결제는 아직 준비
+          중입니다. 포인트 충전은 제품 담당자에게 요청해 주세요.
         </p>
         <h2>지원이 필요하면</h2>
         <p>
@@ -693,14 +699,27 @@ function NotFound() {
     </main>
   );
 }
+function RouteScroll() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const target = hash && document.getElementById(hash.slice(1));
+      if (target) target.scrollIntoView();
+      else window.scrollTo(0, 0);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, hash]);
+  return null;
+}
 export default function App() {
   return (
     <SessionProvider>
       <PostsProvider>
         <Header />
+        <RouteScroll />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/guide" element={<ExampleDetail guide />} />
+          <Route path="/guide" element={<GuidePage />} />
           <Route path="/examples" element={<Examples />} />
           <Route path="/examples/:id" element={<ExampleDetail />} />
           <Route path="/login" element={<Auth />} />
