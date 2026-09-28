@@ -12,7 +12,7 @@
 
 기본 일반 빌드 식별자: `shield-batch-20260928-v11`. `SHIELD_DIAGNOSTICS=1`인 진단 빌드는 `shield-batch-20260928-v11-dbg`이다. 대상은 UNO R3(`arduino:avr:uno`)이며 **03_8 및 KC 펌웨어는 수정하지 않는다.**
 
-일반 빌드는 수동 RF/DTR 조작, 상세 좌표 로그, 모뎀 정보 조회, 자동 DNS 진단, SRAM 계측을 컴파일에서 제외한다. 자동 통신 복구·위치 유효성 검사·OLED·PV 측정·서버 진단 코드는 두 빌드에서 동일하다. 일반 로그에는 전송 결과와 GNSS 상태 코드·위성 수·PV 요약을 남긴다. 변경 검증은 [OPTIMIZATION_VALIDATION_20260928.md](OPTIMIZATION_VALIDATION_20260928.md) 참고.
+일반 빌드는 수동 RF/DTR 조작, 상세 좌표 로그, 모뎀 정보 조회, 자동 DNS 진단, SRAM 계측을 컴파일에서 제외한다. 자동 통신 복구·위치 유효성 검사·OLED·PV 측정·서버 진단 코드는 두 빌드에서 동일하다. 일반 로그에는 전송 결과와 GNSS 상태 코드·위성 수·PV 요약을 남긴다. v10 정리 검증은 [OPTIMIZATION_VALIDATION_20260928.md](OPTIMIZATION_VALIDATION_20260928.md), v11 배치 검증은 [BATCH_VALIDATION_20260928.md](BATCH_VALIDATION_20260928.md) 참고.
 
 실기 결과: [GNSS_VALIDATION_20260928.md](GNSS_VALIDATION_20260928.md). 실내 비교 시험 이후 하늘이 보이는 실외로 옮기자 동일한 v9에서 유효 위치를 확보했고, 2026-09-28 11:15:51 KST부터 좌표·위성 수가 서버에 저장됐다. 초기 좌표 수렴 중 큰 변화가 관찰되어 측위 성공과 위치 정확도는 구분해서 평가한다.
 
