@@ -14,7 +14,17 @@ pub struct Post {
     variant: String,
     steps: Vec<String>,
     #[serde(default)]
+    images: Vec<PostImage>,
+    #[serde(default)]
     code: String,
+}
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct PostImage {
+    id: String,
+    after_step: usize,
+    alt: String,
+    caption: String,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -44,6 +54,14 @@ fn validate(p: &Post) -> Result<()> {
             .iter()
             .any(|s| s.trim().is_empty() || s.chars().count() > 2000)
         || p.code.len() > 16000
+        || p.images.len() > 20
+        || p.images.iter().any(|i| {
+            !images::valid_id(&i.id)
+                || i.after_step > p.steps.len()
+                || i.alt.trim().is_empty()
+                || i.alt.chars().count() > 200
+                || i.caption.chars().count() > 500
+        })
     {
         return Err(bad(
             "제목·설명·단계·예제 코드의 길이와 형식을 확인해 주세요.",
@@ -72,6 +90,17 @@ pub async fn save(
         return Err(bad("게시물 주소를 확인해 주세요."));
     }
     let mut tx = app.db.begin().await?;
+    let image_ids: Vec<String> = v.content.images.iter().map(|i| i.id.clone()).collect();
+    let found: Vec<String> =
+        sqlx::query_scalar("SELECT id FROM post_images WHERE id=ANY($1) FOR KEY SHARE")
+            .bind(&image_ids)
+            .fetch_all(&mut *tx)
+            .await?;
+    if image_ids.iter().any(|id| !found.contains(id)) {
+        return Err(bad(
+            "사진이 만료되었거나 존재하지 않습니다. 해당 사진을 다시 추가해 주세요.",
+        ));
+    }
     let before:Option<Value>=sqlx::query_scalar("SELECT jsonb_build_object('content',content,'published',published,'revision',revision) FROM content_posts WHERE slug=$1 FOR UPDATE").bind(&slug).fetch_optional(&mut *tx).await?;
     if before
         .as_ref()
@@ -93,6 +122,21 @@ pub async fn save(
             "게시물이 변경되었습니다. 다시 불러와 주세요.".into(),
         )
     })?;
+    sqlx::query("DELETE FROM post_image_links WHERE post_slug=$1")
+        .bind(&slug)
+        .execute(&mut *tx)
+        .await?;
+    for id in &found {
+        sqlx::query("INSERT INTO post_image_links(post_slug,image_id) VALUES($1,$2)")
+            .bind(&slug)
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+    }
+    sqlx::query("UPDATE post_images SET attached_at=coalesce(attached_at,now()) WHERE id=ANY($1)")
+        .bind(&found)
+        .execute(&mut *tx)
+        .await?;
     admin::audit(&mut tx,Some(actor),"post.save","post",&slug,json!({"before":before,"after":{"content":content,"published":v.published,"revision":revision}})).await?;
     tx.commit().await?;
     Ok(Json(json!({"ok":true,"revision":revision})))

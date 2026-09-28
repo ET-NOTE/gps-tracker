@@ -1,3 +1,4 @@
+import PostBody from "./PostBody";
 import React, { useContext, useEffect, useState } from "react";
 import {
   Link,
@@ -405,14 +406,7 @@ function ExampleDetail() {
           <span className="badge">
             {e.level} · 약 {e.minutes}분
           </span>
-          <ol>
-            {e.steps.map((s, i) => (
-              <li key={i}>
-                <span>{i + 1}</span>
-                <p>{s}</p>
-              </li>
-            ))}
-          </ol>
+          <PostBody post={e} />
           {e.code && (
             <>
               <h2>예제 코드</h2>

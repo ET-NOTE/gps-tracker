@@ -5,6 +5,7 @@ import { Session } from "./session";
 import { usePosts } from "./posts";
 import { Intro, date, number } from "./components";
 import { states } from "./UsimPage";
+import PostEditor from "./PostEditor";
 const tabs = {
   overview: "운영 현황",
   posts: "게시물",
@@ -242,148 +243,25 @@ export default function AdminPage() {
         </div>
       )}
       {tab === "posts" && edit && (
-        <section className="panel editor">
-          <h2>{edit.revision ? "게시물 편집" : "새 게시물"}</h2>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              mutate(
-                `/admin/posts/${edit.content.id}`,
-                {
-                  content: edit.content,
-                  published: edit.published,
-                  revision: edit.revision,
-                },
-                "게시물을 저장했습니다. 공개 페이지에도 반영됩니다.",
-              );
-            }}
-          >
-            <fieldset disabled={busy}>
-              <div className="form-grid">
-                {[
-                  ["id", "주소 슬러그"],
-                  ["title", "제목"],
-                  ["description", "요약"],
-                  ["category", "분류"],
-                ].map(([key, label]) => (
-                  <label key={key}>
-                    {label}
-                    <input
-                      required
-                      value={edit.content[key]}
-                      disabled={key === "id" && edit.revision > 0}
-                      maxLength={
-                        key === "description" ? 500 : key === "title" ? 120 : 40
-                      }
-                      onChange={(e) =>
-                        setEdit({
-                          ...edit,
-                          content: { ...edit.content, [key]: e.target.value },
-                        })
-                      }
-                    />
-                  </label>
-                ))}
-                <label>
-                  난이도
-                  <select
-                    value={edit.content.level}
-                    onChange={(e) =>
-                      setEdit({
-                        ...edit,
-                        content: { ...edit.content, level: e.target.value },
-                      })
-                    }
-                  >
-                    {["입문", "기초", "응용"].map((x) => (
-                      <option key={x}>{x}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  소요 시간 (분)
-                  <input
-                    type="number"
-                    min="1"
-                    max="600"
-                    value={edit.content.minutes}
-                    onChange={(e) =>
-                      setEdit({
-                        ...edit,
-                        content: {
-                          ...edit.content,
-                          minutes: Number(e.target.value),
-                        },
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  그림
-                  <select
-                    value={edit.content.variant}
-                    onChange={(e) =>
-                      setEdit({
-                        ...edit,
-                        content: { ...edit.content, variant: e.target.value },
-                      })
-                    }
-                  >
-                    <option value="board">쉴드</option>
-                    <option value="sensor">센서</option>
-                    <option value="data">데이터</option>
-                  </select>
-                </label>
-              </div>
-              <label>
-                본문 단계 (한 줄에 한 단계)
-                <textarea
-                  required
-                  rows="10"
-                  value={edit.content.steps.join("\n")}
-                  onChange={(e) =>
-                    setEdit({
-                      ...edit,
-                      content: {
-                        ...edit.content,
-                        steps: e.target.value.split("\n"),
-                      },
-                    })
-                  }
-                />
-              </label>
-              <label>
-                예제 코드
-                <textarea
-                  rows="10"
-                  className="code-editor"
-                  maxLength={16000}
-                  value={edit.content.code || ""}
-                  onChange={(e) =>
-                    setEdit({
-                      ...edit,
-                      content: { ...edit.content, code: e.target.value },
-                    })
-                  }
-                />
-              </label>
-              <label className="check-line">
-                <input
-                  type="checkbox"
-                  checked={edit.published}
-                  onChange={(e) =>
-                    setEdit({ ...edit, published: e.target.checked })
-                  }
-                />
-                공개 페이지에 게시
-              </label>
-              <button className="button">저장</button>
-              <button type="button" onClick={() => setEdit(null)}>
-                편집 닫기
-              </button>
-            </fieldset>
-          </form>
-        </section>
+        <PostEditor
+          key={edit.revision ? edit.content.id : "new"}
+          edit={edit}
+          setEdit={setEdit}
+          busy={busy}
+          saveError={error}
+          onClose={() => setEdit(null)}
+          onSave={() =>
+            mutate(
+              `/admin/posts/${edit.content.id}`,
+              {
+                content: edit.content,
+                published: edit.published,
+                revision: edit.revision,
+              },
+              "게시물을 저장했습니다.",
+            )
+          }
+        />
       )}
       {tab === "users" && (
         <>

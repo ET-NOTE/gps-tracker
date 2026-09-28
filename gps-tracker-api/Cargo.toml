@@ -7,7 +7,7 @@ license = "AGPL-3.0-or-later"
 repository = "https://github.com/ET-NOTE/gps-tracker"
 
 [features]
-shield = []
+shield = ["dep:image"]
 
 [[bin]]
 name = "shield-api"
@@ -65,6 +65,7 @@ uuid            = { version = "1", features = ["v4", "serde"] }
 base64          = "0.22"
 subtle          = "2"     # constant-time 비교 (OTP 등)
 hmac            = "0.12"  # webhook 서명 검증 (Toss)
+image           = { version = "=0.25.10", default-features = false, features = ["png", "jpeg", "webp"], optional = true }
 
 # XLSX 생성 — 국세청 별지 제73호 + 우리 전용 운행기록부 export.
 # rust_xlsxwriter 는 pure Rust (native), Excel/Numbers/LibreOffice 호환.

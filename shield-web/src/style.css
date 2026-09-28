@@ -1073,10 +1073,102 @@ select {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.instructions li > p {
+.instructions li > p,
+.instructions .post-step > p {
   margin: 1px 0 0;
   color: #425e75;
   line-height: 1.9;
+}
+.post-step {
+  min-width: 0;
+  width: 100%;
+}
+.post-step > p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.post-photo {
+  margin: 20px 0;
+}
+.post-photo img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  max-height: 900px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.post-photo figcaption {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.post-editor .editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.post-editor .photo-drop {
+  padding: 20px;
+  background: var(--primary-soft);
+  border: 2px dashed var(--primary);
+  border-radius: 12px;
+}
+.post-editor .photo-drop p {
+  font-size: 14px;
+  color: var(--muted);
+}
+.post-editor .step-edit {
+  border: 1px solid var(--line);
+  padding: 18px;
+  border-radius: 10px;
+  margin: 18px 0;
+}
+.post-editor .photo-edit {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr);
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 18px 0;
+  background: var(--surface);
+}
+.post-editor .photo-edit > img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.post-editor .photo-fields label:first-child {
+  margin-top: 0;
+}
+.post-editor > button {
+  margin-top: 12px;
+}
+.post-preview {
+  margin-top: 25px;
+  border-top: 1px solid var(--line);
+  padding: 25px 0 0;
+}
+.post-preview pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 620px) {
+  .post-editor .photo-edit {
+    grid-template-columns: 1fr;
+  }
+  .post-editor .step-edit {
+    padding: 12px;
+  }
+  .post-editor .panel-title {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
 }
 .instructions h2 {
   margin-top: 20px;

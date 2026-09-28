@@ -136,3 +136,40 @@ valid for this release**. Prefer a forward fix. If restoration is necessary, sto
 only Shield, preserve a new dump containing post-upgrade data, restore the verified
 pre-upgrade Shield backup under operator supervision, restore old env/config/symlink,
 then restart Shield. Never restore/drop a GPS database or silently discard new data.
+
+## Post photos (schema 7)
+
+Admin → 게시물 → 편집 supports clipboard image paste in the body area, file selection
+and file drop. Each text step has its own photo insertion button. Photos have alt
+text, captions and an insertion position; moving a step moves its photos, and
+removing a text step keeps photos at the previous insertion point. Preview uses
+the same renderer as the public article. Changes become visible only after Save.
+
+- Browser accepts PNG/JPEG/WebP up to 10 MiB, applies orientation and reduces the
+  longest edge to 1,600 px. The admin-only raw upload endpoint accepts up to 2 MiB.
+- Server decodes with 1,600 px/24 MiB limits and re-encodes canonical WebP, stripping
+  metadata. Stored images are at most 1.5 MiB. Conversion shares the password-work
+  semaphore to stay within the service's 128 MiB limit. No new service or volume.
+- At most 20 photos per post; total storage is capped at 100 MiB/1,000 distinct
+  assets, with SHA-256 deduplication. Only never-saved uploads older than 24 hours
+  are pruned during the next upload. Any image ever saved in a post is retained
+  for audit/history, even if removed later. Quota expansion requires an operator.
+- `post_images` bytea and `post_image_links` are in **shield_prod**, not GPS.
+  Public reads require a current published post reference; otherwise only an
+  active admin may read. Unpublishing/removing the last public reference revokes
+  access, with no-store/nosniff responses. Someone who already downloaded a public
+  photo still has that copy. Text is rendered as text; SVG/HTML uploads are rejected.
+- Daily and offsite dumps include the assets in the same database snapshot.
+  Backup metadata records each image SHA-256; restore verification checks image
+  hashes, table counts and schema versions.
+
+For the first 6 → 7 upgrade use `deploy-app.py --post-images-upgrade` with the
+reviewed release/checksum, previous release and fresh backup digest. It permits
+only the new Shield image-upload nginx location/rate zone, installs the image-aware
+backup script and restarts Shield. Other nginx files and the GPS binary/process
+must match the pre-deployment baseline. The schema rollback caveat above applies.
+Subsequent app-only releases can use `deploy-app.py` without this flag on schema 7.
+
+`test-post-images.py` runs only on the etcom-hub preview: authorization, content
+validation, deduplication, optimistic revision conflicts, publishing/privacy and
+bounded image processing. It never calls payment/topup endpoints.

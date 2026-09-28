@@ -2,6 +2,7 @@ mod admin;
 mod auth;
 mod content;
 mod devices;
+mod images;
 mod ingest;
 mod nce;
 mod usim;
@@ -128,6 +129,7 @@ async fn migrate(db: &PgPool) -> anyhow::Result<()> {
             include_str!("operations.sql"),
         ),
         ("Unique provider order link", include_str!("order-link.sql")),
+        ("Shield post images", include_str!("post-images.sql")),
     ];
     let migrations = sources
         .into_iter()
@@ -312,6 +314,8 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/admin/invites",post(admin::invite))
         .route("/api/admin/posts",get(content::admin_list))
         .route("/api/admin/posts/:slug",post(content::save))
+        .route("/api/admin/post-images",post(images::upload))
+        .route("/api/post-images/:id",get(images::get_image))
         .route("/api/devices",get(devices::list))
         .route("/api/devices/claim",post(devices::claim))
         .route("/api/devices/:id/summary",get(devices::summary))
