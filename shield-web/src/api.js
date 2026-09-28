@@ -1,3 +1,9 @@
+export function timeRange(hours, now = Date.now()) {
+  return {
+    since: new Date(now - hours * 3600000).toISOString(),
+    until: new Date(now).toISOString(),
+  };
+}
 export async function request(path, { method = "GET", body, signal } = {}) {
   const response = await fetch("/api" + path, {
     method,

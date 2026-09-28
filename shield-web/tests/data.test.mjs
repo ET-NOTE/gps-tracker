@@ -1,7 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { csv, exportReadings } from "../src/api.js";
+import { csv, exportReadings, timeRange } from "../src/api.js";
 import { pathSegments, validCsq } from "../src/telemetry.js";
+
+test("seven-day window never exceeds the API maximum as the clock advances", (t) => {
+  let now = 1790000000000;
+  t.mock.method(Date, "now", () => now++);
+  const range = timeRange(168);
+  assert.equal(Date.parse(range.until) - Date.parse(range.since), 7 * 86400000);
+});
 
 test("unknown CSQ does not become a valid zero signal", () => {
   for (const value of [null, undefined, -1, 99, "20", NaN, 1.2])

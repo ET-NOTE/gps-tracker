@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Session } from "./session";
-import { request, query, exportReadings } from "./api";
+import { request, query, exportReadings, timeRange } from "./api";
 import {
   Icon,
   Intro,
@@ -105,10 +105,7 @@ export default function DataPage() {
     [exporting, setExporting] = useState(false);
   const exporter = useRef(null),
     generation = useRef(0);
-  const [range, setRange] = useState(() => ({
-    since: new Date(Date.now() - 86400000).toISOString(),
-    until: new Date().toISOString(),
-  }));
+  const [range, setRange] = useState(() => timeRange(24));
   useEffect(() => {
     const abort = new AbortController();
     request("/devices", { signal: abort.signal })
@@ -138,10 +135,7 @@ export default function DataPage() {
     setBundle(null);
     setCursors([{}]);
     setPage(0);
-    setRange({
-      since: new Date(Date.now() - hours * 3600000).toISOString(),
-      until: new Date().toISOString(),
-    });
+    setRange(timeRange(hours));
   }, [id, hours]);
   useEffect(() => {
     if (!id) return;
@@ -182,11 +176,7 @@ export default function DataPage() {
     };
   }, [id, range, page, tick, reload]);
   const refresh = useCallback(() => {
-    if (page === 0)
-      setRange({
-        since: new Date(Date.now() - hours * 3600000).toISOString(),
-        until: new Date().toISOString(),
-      });
+    if (page === 0) setRange(timeRange(hours));
     else setTick((t) => t + 1);
   }, [hours, page]);
   useEffect(() => {
@@ -280,6 +270,7 @@ export default function DataPage() {
           close={() => setClaim(false)}
           done={(id) => {
             setId(id);
+            setParams({ device: String(id) }, { replace: true });
             setInventory((v) => v + 1);
             setClaim(false);
           }}
