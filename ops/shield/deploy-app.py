@@ -64,7 +64,8 @@ def main():
     expected=baseline()
     if args.post_images_upgrade:
         config=Path('/etc/nginx/sites-enabled/shield.serial.kr.conf')
-        proposed=(target/'ops/shield.serial.kr.conf').read_text()
+        # Same ACME webroot substitution as the original production installer.
+        proposed=(target/'ops/shield.serial.kr.conf').read_text().replace('/var/lib/letsencrypt','/var/www/certbot')
         zone='limit_req_zone $binary_remote_addr zone=shield_images:1m rate=30r/m;\n'
         block='''    location = /api/admin/post-images {
         client_max_body_size 2m;
@@ -80,7 +81,7 @@ def main():
         assert proposed.count(zone)==1 and proposed.count(block)==1
         assert proposed.replace(zone,'').replace(block,'')==config.read_text(), 'Unexpected nginx drift'
         shutil.copyfile(config,record/'nginx.before.conf')
-        shutil.copyfile(target/'ops/shield.serial.kr.conf',config)
+        config.write_text(proposed)
         try:run('nginx','-t')
         except Exception:
             shutil.copyfile(record/'nginx.before.conf',config)
