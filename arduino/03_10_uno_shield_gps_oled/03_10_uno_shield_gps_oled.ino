@@ -1,6 +1,6 @@
 // GPS/OLED extension: default SSD1306 128x64; A4=SDA, A5=SCL.
 // A0 senses PV, not BAT+. See README for battery estimation and calibration.
-// Qualified GNSS fixes and periodic health reports use the existing test UID.
+// Qualified GNSS fixes and periodic health reports use a provisioned device UID.
 // =====================================================================
 // 03_10_uno_shield_gps_oled — UNO R3 + SIM7080G 쉴드 검사 + GPS/OLED/배터리 표시
 //   (03_8 기반 HW팀 확장판, 2026-09-23 feedback 흡수. PWRKEY 회로 정정:
@@ -12,11 +12,10 @@
 // 모니터: 115200 baud
 //
 // 검사 흐름(자동): [1/5] 모뎀 통신 → [2/5] 초기 설정 → [3/5] 유심 →
-//                 [4/5] 망 등록 → [5/5] 서버 전송(gps.serial.kr, HTTP 200 판정)
+//                 [4/5] 망 등록 → [5/5] 서버 전송(shield.serial.kr, HTTPS 200 판정)
 // 실패 시 해당 단계에서 점검 힌트를 출력하고 자동 재시도한다.
 //
-// ※ 서버 전송은 device_uid="uno-shield-test" 로만 보내고 유심 번호(ICCID)는
-//   싣지 않는다 → 운영 단말 데이터와 절대 섞이지 않음.
+// 단말 키/고유 UID는 비공개 헤더에서 제공한다. ICCID는 페이로드에 싣지 않는다.
 // =====================================================================
 #include <Arduino.h>
 #include <SoftwareSerial.h>
@@ -26,6 +25,15 @@
 #include "shield_policy.h"
 #include "shield_batch.h"
 
+#ifndef SHIELD_PLATFORM_TARGET
+#define SHIELD_PLATFORM_TARGET 1
+#endif
+#if SHIELD_PLATFORM_TARGET
+#include <shield_credentials.h>
+#define SHIELD_SERVER_HOST "shield.serial.kr"
+static_assert(sizeof(SHIELD_DEVICE_UID)>1 && sizeof(SHIELD_DEVICE_UID)<=65,"Invalid device UID");
+static_assert(sizeof(SHIELD_DEVICE_KEY)==65,"Device key must contain 64 characters");
+#else
 #ifndef SHIELD_DEV_TARGET
 #define SHIELD_DEV_TARGET 0
 #endif
@@ -33,6 +41,8 @@
 #define SHIELD_SERVER_HOST "dev-gps.serial.kr"
 #else
 #define SHIELD_SERVER_HOST "gps.serial.kr"
+#endif
+#define SHIELD_DEVICE_UID "uno-shield-test"
 #endif
 
 #ifndef SHIELD_DIAGNOSTICS
@@ -42,9 +52,9 @@
 #error "SHIELD_DIAGNOSTICS must be 0 or 1."
 #endif
 #if SHIELD_DIAGNOSTICS
-#define SHIELD_BUILD_TAG "shield-batch-20260928-v11-dbg"
+#define SHIELD_BUILD_TAG "shield-tls-20260928-v12-dbg"
 #else
-#define SHIELD_BUILD_TAG "shield-batch-20260928-v11"
+#define SHIELD_BUILD_TAG "shield-tls-20260928-v12"
 #endif
 
 #if !defined(ARDUINO_AVR_UNO)
@@ -75,6 +85,10 @@ uint32_t lastPostMs = 0, postDelayMs = shield::POST_INTERVAL_MS;
 uint8_t postFailures = 0;
 uint32_t acquisitionMs = shield::GNSS_ACQUIRE_MS;
 int8_t httpState = -1;          // -1=unknown, 0=confirmed closed, 1=open
+#if SHIELD_PLATFORM_TARGET
+bool tlsTimeReady=false, clockValid=false;
+int8_t ntpResult=-1;
+#endif
 
 // ===== User settings =====
 // Default: SSD1306 128x64 I2C OLED. For SH1106 set OLED_SH1106 to 1.
@@ -107,7 +121,7 @@ char latitude[13]="", longitude[14]="", utc[19]="", hdop[7]="";
 shield::Batch pendingFixes;
 char lastPositionUtc[19]=""; // Preserve across empty/error replies; they cannot refresh old fixes.
 static void receiveLines();
-static uint8_t command(const __FlashStringHelper *cmd, uint32_t timeout);
+static uint8_t command(const __FlashStringHelper *cmd, uint32_t timeout, bool sensitive=false);
 static void serviceUi();
 static void serviceGnss();
 static void parseGnss(char *csv);
@@ -272,10 +286,16 @@ static void receiveLines() {
     if (c == '\r' || c == '\n') {
       if (!discardLine && lineLength) {
         line[lineLength] = '\0';
+        // A modem that still echoes commands must not leak the private key.
+        if(strstr(line,"X-Device-Key")) { lineLength=0; discardLine=false; continue; }
 #if SHIELD_DIAGNOSTICS
         if(traceNetwork) { Serial.print(F("[NET RX] ")); Serial.println(line); }
 #endif
         int a, b;
+#if SHIELD_PLATFORM_TARGET
+        if(sscanf(line,"+CNTP: %d",&a)==1) ntpResult=(int8_t)a;
+        if(sscanf(line,"+CCLK: \"%d/",&a)==1) clockValid=a>=26 && a<=69;
+#endif
         if (sscanf(line, "+SHSTATE: %d", &a)==1 && (a==0 || a==1)) httpState=a;
         if (!strncmp(line, "+CGNSINF:", 9)) { parseGnss(line+9); lineLength=0; discardLine=false; continue; }
         if (sscanf(line, "+CNACT: %d,%d", &a, &b)==2 && a==0) {
@@ -306,6 +326,9 @@ static void receiveLines() {
           restartPending=true; gnssEnabled=false; gnssSeen=false; gnssFix=false;
           httpState=-1; acquisitionMs=shield::GNSS_ACQUIRE_MS;
           regStat=-1; httpStatus=-1;
+#if SHIELD_PLATFORM_TARGET
+          tlsTimeReady=false;
+#endif
           // RDY 반복 수신 시 화면 도배 방지: 경고는 3초당 1회만
           static uint32_t lastWarnMs = 0;
           if (millis() - lastWarnMs < 3000) { lineLength = 0; discardLine = false; continue; }
@@ -331,7 +354,7 @@ static void listenFor(uint32_t duration) {
 }
 
 // AT 명령 전송(화면 출력 없음). 반환 1=OK, 2=ERROR, 0=무응답
-static uint8_t command(const __FlashStringHelper *cmd, uint32_t timeout) {
+static uint8_t command(const __FlashStringHelper *cmd, uint32_t timeout, bool sensitive) {
   if(restartPending) return 0;
   listenFor(80);
   if(restartPending) return 0;
@@ -343,11 +366,11 @@ static uint8_t command(const __FlashStringHelper *cmd, uint32_t timeout) {
     receiveLines();
     if(restartPending) return 0;
     if (reply) {
-      if (reply != 1) { Serial.print(F("[AT FAIL] ")); Serial.println(cmd); }
+      if (reply != 1) { Serial.print(F("[AT FAIL] ")); Serial.println(sensitive?F("[private header]"):cmd); }
       return reply;
     }
   }
-  Serial.print(F("[AT TIMEOUT] ")); Serial.println(cmd);
+  Serial.print(F("[AT TIMEOUT] ")); Serial.println(sensitive?F("[private header]"):cmd);
   listenFor(300);   // 지연 응답 격리 — 다음 명령의 OK 로 오인 방지
   return 0;
 }
@@ -548,10 +571,14 @@ static uint8_t waitReply(uint32_t timeout) {
 }
 // Two passes over the same snapshot: count bytes, then stream without a full JSON buffer.
 static int writePayload(bool transmit, uint32_t reportUptime) {
-  char part[192];
-  int length=snprintf_P(part,sizeof(part),PSTR("{\"device_uid\":\"uno-shield-test\",\"shield_v\":1,\"build_tag\":\"" SHIELD_BUILD_TAG "\",\"ts\":%lu,\"csq\":%d,\"reg\":%d,\"diag\":{\"pv_mv\":%u,\"gnss\":%u},\"points\":["),
+  char part[112];
+  // Stream the longer unique UID directly from flash; do not grow the SRAM buffer.
+  int length=sizeof("{\"device_uid\":\"" SHIELD_DEVICE_UID "\",\"shield_v\":1,\"build_tag\":\"" SHIELD_BUILD_TAG "\"")-1;
+  if(transmit) modem.print(F("{\"device_uid\":\"" SHIELD_DEVICE_UID "\",\"shield_v\":1,\"build_tag\":\"" SHIELD_BUILD_TAG "\""));
+  int header=snprintf_P(part,sizeof(part),PSTR(",\"ts\":%lu,\"csq\":%d,\"reg\":%d,\"diag\":{\"pv_mv\":%u,\"gnss\":%u},\"points\":["),
       (unsigned long)reportUptime,rssi,regStat,pvMv,(unsigned)gnssState);
-  if(length<0 || (size_t)length>=sizeof(part)) return -1;
+  if(header<0 || (size_t)header>=sizeof(part)) return -1;
+  length+=header;
   if(transmit) modem.print(part);
   for(uint8_t i=0;i<pendingFixes.count;++i) {
     const shield::BatchPoint &p=pendingFixes.points[i];
@@ -576,6 +603,32 @@ static bool closeHttp() {
   return true;
 }
 
+#if SHIELD_PLATFORM_TARGET
+static bool prepareTls() {
+  // RTC may reset to 1980 after losing power. Synchronize once per modem boot;
+  // never disable certificate validity checks to work around an unset clock.
+  if(!tlsTimeReady) {
+    ntpResult=-1;
+    if(command(F("AT+CNTPCID=0"),2000)!=1 ||
+       command(F("AT+CNTP=\"time.cloudflare.com\",0"),2000)!=1 ||
+       command(F("AT+CNTP"),5000)!=1) return false;
+    const uint32_t start=millis();
+    while(ntpResult<0 && !restartPending && !shield::due(millis(),start,45000UL)) {
+      receiveLines(); serviceUi();
+    }
+    clockValid=false;
+    if(ntpResult!=1 || command(F("AT+CCLK?"),2000)!=1 || !clockValid) {
+      Serial.println(F("[TLS] Clock sync pending; upload withheld.")); return false;
+    }
+    tlsTimeReady=true;
+  }
+  return command(F("AT+CSSLCFG=\"SSLVERSION\",1,3"),2000)==1 &&
+         command(F("AT+CSSLCFG=\"IGNORERTCTIME\",1,0"),2000)==1 &&
+         command(F("AT+CSSLCFG=\"SNI\",1,\"" SHIELD_SERVER_HOST "\""),2000)==1 &&
+         command(F("AT+SHSSL=1,\"shield-ca.pem\""),2000)==1;
+}
+#endif
+
 // Called only with GNSS stopped. Every exit is cleaned up by stageServer().
 static bool postReport(bool &withFix) {
   Serial.println(F("[5/5] 데이터망 연결 확인"));
@@ -594,13 +647,18 @@ static bool postReport(bool &withFix) {
     if(!pdpActive) { Serial.println(F("[5/5] PDP 연결 실패")); return false; }
   }
   Serial.println(F("[5/5] 데이터망 연결: 성공"));
+#if SHIELD_PLATFORM_TARGET
+  if(!prepareTls() || command(F("AT+SHCONF=\"URL\",\"https://" SHIELD_SERVER_HOST "\""),3000)!=1) return false;
+#else
   if(command(F("AT+SHCONF=\"URL\",\"http://" SHIELD_SERVER_HOST "\""),3000)!=1 ||
+     command(F("AT+SHSSL=0"),2000)!=1) return false;
+#endif
+  if(
      command(F("AT+SHCONF=\"BODYLEN\",1024"),2000)!=1 ||
-     command(F("AT+SHCONF=\"HEADERLEN\",350"),2000)!=1 ||
-     command(F("AT+SHSSL=0"),2000)!=1) return false; // Index 0 accepts no certificate argument.
+     command(F("AT+SHCONF=\"HEADERLEN\",350"),2000)!=1) return false;
   Serial.println(F("[5/5] 서버 연결 중…"));
   httpState=-1; // SHCONN may take effect even if its reply times out.
-  if(command(F("AT+SHCONN"),30000)!=1) {
+  if(command(F("AT+SHCONN"),60000)!=1) {
 #if SHIELD_DIAGNOSTICS
     if(postFailures==0) {
     traceNetwork=true;
@@ -610,7 +668,7 @@ static bool postReport(bool &withFix) {
     command(F("AT+CNACT?"),2000);
     command(F("AT+SHSTATE?"),2000);
     command(F("AT+CDNSPDPID=0"),2000);
-    command(F("AT+CDNSGIP=\"gps.serial.kr\",1,2000"),3000);
+    command(F("AT+CDNSGIP=\"" SHIELD_SERVER_HOST "\",1,2000"),3000);
     listenFor(5000);
     traceNetwork=false;
     }
@@ -620,6 +678,9 @@ static bool postReport(bool &withFix) {
   httpState=1;
   if(command(F("AT+SHCHEAD"),2000)!=1 ||
      command(F("AT+SHAHEAD=\"Content-Type\",\"application/json\""),2000)!=1) return false;
+#if SHIELD_PLATFORM_TARGET
+  if(command(F("AT+SHAHEAD=\"X-Device-Key\",\"" SHIELD_DEVICE_KEY "\""),2000,true)!=1) return false;
+#endif
   if(restartPending) return false;
   if(withFix && shield::due(millis(),positionStamp,shield::MAX_SEND_AGE_MS)) {
     withFix=false; gnssState=shield::GNSS_STALE;
@@ -717,6 +778,9 @@ void loop() {
   receiveLines();
   if(restartPending) {
     restartPending=false; stage=1; gnssPoll=0;
+#if SHIELD_PLATFORM_TARGET
+    tlsTimeReady=false;
+#endif
     httpState=-1; acquisitionMs=shield::GNSS_ACQUIRE_MS;
     Serial.println(F("[RECOVERY] RDY received: restarting modem checks."));
   }

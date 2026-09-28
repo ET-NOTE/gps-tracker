@@ -16,6 +16,9 @@ static void reset() {
   regStat=5;rssi=20;httpStatus=-1;latitude[0]=longitude[0]=utc[0]=hdop[0]=0;
   lastPositionUtc[0]=0;pendingFixes=shield::Batch();
   httpState=-1;acquisitionMs=shield::GNSS_ACQUIRE_MS;
+#if SHIELD_PLATFORM_TARGET
+  tlsTimeReady=false;clockValid=false;ntpResult=-1;
+#endif
 }
 static void fix(const char *value="1,1,20260928090000.000,37.500000,127.000000,10,0,0,1,,1.2,1,1,,8,,2,2") {
   char csv[220];strcpy(csv,value);parseGnss(csv);
@@ -52,7 +55,13 @@ int main() {
 
   reset();fix();stageServer();assert(httpStatus==200 && postFailures==0 && modem.gnss);
   assert(indexOf("AT+CGNSPWR=0")<indexOf("AT+SHCONN"));
+#if SHIELD_PLATFORM_TARGET
+  assert(indexOf("AT+SHSSL=1,\"shield-ca.pem\"")<indexOf("AT+SHCONN"));
+  assert(indexOf("AT+CSSLCFG=\"IGNORERTCTIME\",1,0")<indexOf("AT+SHCONN"));
+  assert(indexOf("AT+CNTP")<indexOf("AT+SHCONN"));
+#else
   assert(indexOf("AT+SHSSL=0")<indexOf("AT+SHCONN"));
+#endif
   assert(indexOf("AT+SHREQ=\"/ingest/shield\",3")<indexOf("AT+CGNSPWR=1"));
   assert(modem.bodies.size()==1 && modem.bodies[0].find("\"points\":[[")!=std::string::npos);
   assert(modem.bodies[0].find("vbat_mv")==std::string::npos);
@@ -63,6 +72,27 @@ int main() {
   modem.commands.clear();fix();stageServer();
   assert(std::count(modem.commands.begin(),modem.commands.end(),"AT+SHDISC")==1);
   assert(indexOf("AT+SHSTATE?")==modem.commands.size()); // Known closed needs no extra query.
+#if SHIELD_PLATFORM_TARGET
+  assert(indexOf("AT+CNTP")==modem.commands.size()); // No repeated NTP each upload.
+  for(const char *failure : {"AT+CSSLCFG=\"IGNORERTCTIME\",1,0","AT+SHSSL=1,\"shield-ca.pem\"","AT+SHCONN"}) {
+    reset();modem.failCommand=failure;stageServer();
+    assert(postFailures==1 && modem.bodies.empty());
+    assert(indexOf("AT+SHAHEAD=\"X-Device-Key\",\"" SHIELD_DEVICE_KEY "\"")==modem.commands.size());
+  }
+  reset();modem.ntpCode=65;stageServer();assert(modem.bodies.empty() && !tlsTimeReady);
+  reset();modem.rtcValid=false;stageServer();assert(modem.bodies.empty() && !tlsTimeReady);
+  reset();modem.failCommand="AT+SHAHEAD=\"X-Device-Key\",\"" SHIELD_DEVICE_KEY "\"";stageServer();
+  assert(modem.bodies.empty() && Serial.output.find(SHIELD_DEVICE_KEY)==std::string::npos);
+  reset();modem.timeoutCommand="AT+SHAHEAD=\"X-Device-Key\",\"" SHIELD_DEVICE_KEY "\"";stageServer();
+  assert(modem.bodies.empty() && Serial.output.find(SHIELD_DEVICE_KEY)==std::string::npos);
+  reset();tlsTimeReady=true;modem.queue("RDY\r\n");receiveLines();assert(!tlsTimeReady);
+  reset();tlsTimeReady=true;restartPending=true;loop();assert(!tlsTimeReady); // waitPrompt's reset path.
+  reset();modem.queue("AT+SHAHEAD=\"X-Device-Key\",\"" SHIELD_DEVICE_KEY "\"\r\n");
+#if SHIELD_DIAGNOSTICS
+  traceNetwork=true;
+#endif
+  receiveLines();assert(Serial.output.find(SHIELD_DEVICE_KEY)==std::string::npos);
+#endif
 
   reset();modem.http=true;stageServer(); // UNO reset with modem still connected.
   assert(postFailures==0 && !modem.http && httpState==0);

@@ -4,13 +4,37 @@
 - **OLED**(SSD1306 128x64 I2C, A4/A5; SH1106 은 `OLED_SH1106 1`) — 단계/재부팅수/PV전압/배터리%/망/GPS/HTTP 8행 로테이션
 - **GPS**: 모뎀 내장 GNSS(CGNSINF) 5초 폴링. 품질 기준을 통과한 좌표를 10초 이상 간격으로 최대 8개 모아 전송
 - **배터리**: A0=PV 분압(100k/100k) 실측 표시. 1S Li-ion OCV 근사 % (연료게이지 아님)
-- 서버 주소 `http://gps.serial.kr/ingest/shield`, `device_uid=uno-shield-test`, ICCID 미전송. 여러 쉴드에서 동시에 같은 UID를 사용하지 않을 것
+- 기본 서버 주소 `https://shield.serial.kr/ingest/shield`, 장치별 고유 UID/키 인증. ICCID는 측정 페이로드에 싣지 않는다.
 
-## 2026-09-28 통신 복구 / 일반·진단 빌드 분리
+## 2026-09-28 v12 · Shield 전용 서버 전환
+
+현재 일반 빌드는 `shield-tls-20260928-v12`, 진단 빌드는 끝에 `-dbg`가 붙는다. 실물 시험 쉴드는 신규 Shield 계정에 등록하고 COM26에 v12를 업로드했다. 실제 HTTPS 수신·GNSS 좌표·계정 화면을 확인했다. [TLS 및 전환 검증](TLS_VALIDATION_20260928.md)을 참고한다. `03_8`, IDF/KC 코드에는 변경이 없다.
+
+- `SHIELD_PLATFORM_TARGET=1`이 기본이다. 빌드 시 비공개 include 경로에 `shield_credentials.h`를 제공한다. 형식은 `shield_credentials.example.h`를 참고하고, 실제 키나 키가 포함된 HEX를 Git에 넣지 않는다.
+- SIM7080G 고객 파일 영역에 ISRG Root X1을 `shield-ca.pem`으로 설치·변환해야 한다. `tools/tls_bridge`와 `tools/provision_tls.py`는 초기 설치/검증용이며 작업 후 반드시 일반 펌웨어를 다시 올린다. 상세 절차와 인증서 체크섬은 검증 문서에 있다.
+- TLS 1.2, 서버 SNI, CA 검증과 인증서 유효기간 검사를 사용한다. 부팅/모뎀 재시작 후 NTP 동기화가 성공해야 키 헤더와 본문을 보낸다. 매 POST마다 NTP를 반복하지 않는다. 동기화·인증서·연결 실패 시 기존 통신 복구 정책으로 재시도한다.
+- 기존 8점 배치·UTC·GNSS/LTE 전환은 유지한다. 긴 장치 UID는 플래시에서 스트리밍하고 임시 문자열 버퍼는 112바이트로 줄였다. 키 헤더 실패/시간 초과/모뎀 echo는 로그에서 숨긴다.
+- `SHIELD_PLATFORM_TARGET=0`은 이전 GPS 프로토콜 회귀/명시적 롤백용이다. 그때만 `SHIELD_DEV_TARGET`가 적용된다. 새 쉴드 장치를 공용 시험 UID로 배포하지 않는다.
+
+실물 v12 빌드 예시(비공개 헤더는 이미 발급된 해당 장치의 값을 사용):
+
+```powershell
+$cli = 'C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe'
+$output = Join-Path $env:LOCALAPPDATA 'GPS-Builds\uno-shield-20260928-v12'
+$privateInclude = Join-Path $env:LOCALAPPDATA 'GPS-Builds\shield-private-include'
+& $cli compile --fqbn arduino:avr:uno --warnings all --build-path $output --build-property "compiler.cpp.extra_flags=-I$privateInclude" arduino/03_10_uno_shield_gps_oled
+if ($LASTEXITCODE -eq 0) {
+  & $cli upload --fqbn arduino:avr:uno --port COM26 --verify --input-dir $output arduino/03_10_uno_shield_gps_oled
+}
+```
+
+진단 빌드는 별도 출력 경로와 `compiler.cpp.extra_flags=-I<private-path> -DSHIELD_DIAGNOSTICS=1`을 사용한다. UNO 여유 SRAM은 정적 계산상 562바이트이므로 진단 코드를 일반 빌드에 상시 추가하지 않는다.
+
+## v11까지의 통신 복구 / 일반·진단 빌드 분리 기록
 
 **v11은 전용 서버 경로 배포가 먼저 필요하다. prod 반영은 명시적 승인 후 서버 → 펌웨어 순서로 수행한다.** `SHIELD_DEV_TARGET=1`은 dev-gps.serial.kr만 사용한다.
 
-기본 일반 빌드 식별자: `shield-batch-20260928-v11`. `SHIELD_DIAGNOSTICS=1`인 진단 빌드는 `shield-batch-20260928-v11-dbg`이다. 대상은 UNO R3(`arduino:avr:uno`)이며 **03_8 및 KC 펌웨어는 수정하지 않는다.**
+v11 당시 일반 빌드 식별자: `shield-batch-20260928-v11`. `SHIELD_DIAGNOSTICS=1`인 진단 빌드는 `shield-batch-20260928-v11-dbg`이다. 대상은 UNO R3(`arduino:avr:uno`)이며 **03_8 및 KC 펌웨어는 수정하지 않는다.**
 
 일반 빌드는 수동 RF/DTR 조작, 상세 좌표 로그, 모뎀 정보 조회, 자동 DNS 진단, SRAM 계측을 컴파일에서 제외한다. 자동 통신 복구·위치 유효성 검사·OLED·PV 측정·서버 진단 코드는 두 빌드에서 동일하다. 일반 로그에는 전송 결과와 GNSS 상태 코드·위성 수·PV 요약을 남긴다. v10 정리 검증은 [OPTIMIZATION_VALIDATION_20260928.md](OPTIMIZATION_VALIDATION_20260928.md), v11 배치 검증은 [BATCH_VALIDATION_20260928.md](BATCH_VALIDATION_20260928.md) 참고.
 
@@ -18,7 +42,7 @@
 
 - HTTP 작업 전에 `CGNSPWR=0` 성공을 확인한다. 전송 성공 후 GNSS를 복구한다. 전송 실패 중에는 GNSS를 끈 상태로 통신부터 복구하여 짧은 재시도 때문에 측위를 반복 중단하지 않는다. 도중 `RDY`가 수신되면 전송을 중단하고 초기 검사로 복귀한다.
 - 초기 LTE 등록/재등록 중에는 GNSS를 켜지 않는다. 서버 전송 대기 단계에서만 GNSS를 폴링한다.
-- SSL 설정은 `AT+SHSSL=0`으로 초기화한다. 기존 `AT+SHSSL=0,""`는 실기에서 거부됐으며, 0번 인덱스는 인증서 인자를 받지 않는다(AT manual 13.2.2).
+- v11 HTTP/legacy 대상에 한해 SSL 설정은 `AT+SHSSL=0`으로 초기화한다. 기존 `AT+SHSSL=0,""`는 실기에서 거부됐으며, 0번 인덱스는 인증서 인자를 받지 않는다(AT manual 13.2.2). v12의 기본 Shield 대상은 위의 TLS 설정을 사용한다.
 - 부팅 직후 상태를 한 번 전송한다. 유효한 위치가 있으면 이전 전송 완료부터 최소 60초 간격으로 전송한다. 최초 측위와 장시간 미수신은 최대 600초를 기다린다. 위치를 전송한 직후 구간에서는 일시적인 위치 상실에 최대 120초를 기다린 뒤 상태를 전송한다. 그 보고에 위치가 없거나 전송에 실패하면 다음 구간은 다시 600초로 돌아가 장시간 미수신 중 짧은 중단이 반복되지 않게 한다. 측위 중에는 서버 수신 페이지가 일시적으로 오래된 수신으로 표시될 수 있다. GNSS 켜기 실패 시에는 60초 상태 보고를 유지한다. 이 시간은 전송 완료 기준 대기이며 실제 수신 간격에는 HTTP 작업 시간이 더해진다.
 - 연속 HTTP 실패 시 15/30/60/120초 대기 후 자동 재시도한다. 실패 시 PDP를 정리하고 다음 시도에서 재연결한다.
 - 등록 상태 확인·재등록은 GNSS가 꺼진 통신 단계에서 실행한다. 측위 도중 일시적인 LTE 조회 실패가 GNSS를 끄지 않도록 했다. GNSS가 꺼진 재시도 대기 중에는 15초마다 확인하며 마지막 조회의 성공값을 계속 재사용하지 않는다.
@@ -59,7 +83,7 @@ USB 모니터 115200 baud. **다음 수동 키는 진단 빌드에서만 동작�
 
 `i`는 전송 대기 단계에서만 실행하는 **수동 비교 시험**이다. GNSS를 끈 뒤 `CFUN=0`으로 LTE RF를 중지하고 GNSS만 최대 180초 가동한다. 유효한 위치를 얻으면 일찍 종료한다. 결과는 시리얼에 남기며 종료 후 GNSS off → `CFUN=1` → 초기 망 검사로 자동 복귀한다. LTE 복구 명령이 실패/시간 초과하거나 모뎀이 재부팅해도 복구 대기 상태를 유지하여 재시도한다. 이 시험의 180초 동안 일반 키 입력과 HTTP 전송은 대기하며 위치는 시험 로그로 확인한다. 정상 동작에서 `CFUN=0/1`을 반복 실행하지 않는다. 상세 조회 로그에는 좌표가 포함될 수 있으므로 개인 로그로 보관한다.
 
-빌드 예시(2026-09-28 승인된 서버 배포와 prod 일반 v11 업로드 완료):
+아래는 v11 Git 소스에 대한 당시 빌드 기록이다. 현재 v12는 위의 비공개 헤더 포함 절차를 사용한다.
 
 ```powershell
 $cli = 'C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe'
