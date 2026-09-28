@@ -28,6 +28,8 @@ def sql(query, args=()):
     return c.fetchall() if c.description else []
 
 def send(body, expected=200, path='/gps-tracker/ingest/shield'):
+    if base.startswith('https://') and path == '/gps-tracker/ingest/shield':
+        path = '/ingest/shield'
     req = urllib.request.Request(base + path, json.dumps(body).encode(), {'Content-Type':'application/json'})
     try:
         with urllib.request.urlopen(req, timeout=20) as r: status, data = r.status, r.read()
@@ -46,6 +48,7 @@ try:
     ts = int(time.time())-150
     points = [[ts+i*10,37000000+i*100,127000000,8] for i in range(6)]
     payload = dict(shield_v=1,device_uid=uid,build_tag='shield-contract-test',ts=1000,csq=20,reg=5,diag=dict(pv_mv=4100,gnss=10),points=points)
+    sql("INSERT INTO events(device_id,user_id,kind,occurred_at,data) VALUES(%s,%s,'offline',now()-interval '10 seconds','{}')",(device,a))
     result = send(payload)
     assert result['accepted']==6 and result['duplicate']==0
     actual = stream(device,a)
@@ -59,6 +62,8 @@ try:
     print('PASS one LTE batch row, six UTC points, common speed, owner isolation')
 
     assert send(payload)['duplicate']==6
+    assert sql("SELECT count(*) FROM events WHERE device_id=%s AND user_id=%s AND kind='online'",(device,a))[0][0]==1
+    print('PASS one communication recovery event across retries')
     overlap=copy.deepcopy(payload)
     overlap['points']=points[-2:]+[[ts+60,37000600,127000000,8]]
     assert send(overlap)['accepted']==1

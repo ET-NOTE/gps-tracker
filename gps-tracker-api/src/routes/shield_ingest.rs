@@ -174,6 +174,14 @@ pub async fn ingest(
             VALUES($1,$2,$3,$4,'lte_gnss',false,$5,$6,$7)")
             .bind(id).bind(owner).bind(now).bind(p.ts).bind(p.csq).bind(p.reg).bind(&raw).execute(&mut *tx).await?;
     }
+    // Keep communication recovery notifications working on this independent path.
+    // Serialize with the device lock so a retry cannot emit a second recovery.
+    sqlx::query("INSERT INTO events(device_id,kind,occurred_at,data,user_id)
+        SELECT $1,'online',$3,jsonb_build_object('recovered_from',previous.kind),$2
+        FROM (SELECT kind FROM events WHERE device_id=$1 AND user_id=$2
+              AND kind IN ('online','signal_loss','offline') ORDER BY occurred_at DESC LIMIT 1) previous
+        WHERE previous.kind IN ('signal_loss','offline')")
+        .bind(id).bind(owner).bind(now).execute(&mut *tx).await?;
     tx.commit().await?;
     if let Some(last) = broadcast.last() {
         let _ = state.events.send(Event::Location {
