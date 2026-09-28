@@ -100,7 +100,8 @@ def main():
         assert baseline()==expected, 'Unrelated runtime configuration changed'
         if args.post_images_upgrade:
             run('systemctl','reload','nginx')
-            shutil.copyfile(target/'ops/backup.py','/usr/local/sbin/shield-backup')
+            # read_text normalizes older Windows-origin release line endings.
+            Path('/usr/local/sbin/shield-backup').write_text((target/'ops/backup.py').read_text())
             os.chmod('/usr/local/sbin/shield-backup',0o700)
     except Exception:
         # Only roll back an app release while the prior schema is still intact.
