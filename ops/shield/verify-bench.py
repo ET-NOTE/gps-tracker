@@ -48,7 +48,11 @@ def main():
         assert status == 200 and readings['items']
         latest = readings['items'][0]
         assert latest['build_tag'] == 'shield-tls-20260928-v12'
-        age = (now-dt.datetime.fromisoformat(latest['received_at'].replace('Z', '+00:00'))).total_seconds()
+        stamp = latest['received_at'].replace('Z', '+00:00')
+        # Ubuntu 22.04 Python 3.10 fromisoformat rejects 1/2/4/5 fractional digits.
+        # PostgreSQL JSON omits trailing zeros; strptime accepts all 1..6 digits.
+        received = dt.datetime.strptime(stamp, '%Y-%m-%dT%H:%M:%S.%f%z' if '.' in stamp else '%Y-%m-%dT%H:%M:%S%z')
+        age = (now-received).total_seconds()
         assert 0 <= age < 720, 'No fresh real-device report'
         status, locations, _ = client.call(f'/api/devices/{device}/locations?{period}')
         assert status == 200
