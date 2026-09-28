@@ -10,14 +10,14 @@
 - `etcom-hub`에서 빌드된 파일만 VPS에 배포했다. VPS에서 컴파일하지 않았다.
 - PostgreSQL 14 엔진은 기존과 공유하지만 DB `shield_prod`, 로그인 역할 `shield_app`, 계정·세션·장치·데이터는 독립이다. OS 사용자도 `gps-shield`로 별도다.
 - `shield.serial.kr` A 레코드가 기존 VPS `210.114.18.16`을 가리킴을 확인했다. 기존 ACME 계정으로 전용 TLS 인증서를 발급했고 만료일은 2026-12-27이다. 자동 갱신과 해당 인증서 갱신 후 nginx 검사·reload hook을 구성했다.
-- 가입은 7일/1회 초대코드 방식이다. 소유자용 코드를 발급해 Windows의 개인 파일로 전달하며 Git이나 공개 URL에는 넣지 않았다. GPS 비밀번호/JWT/FCM 토큰을 복사하지 않았다.
+- 가입은 7일/1회 초대코드 방식이다. 소유자용 코드는 발급 후 아래 실물 계정 생성에 소비했다. 새 비밀번호/단말 키는 Windows의 개인 파일로 전달하며 Git이나 공개 URL에는 넣지 않았다. GPS 비밀번호/JWT/FCM 토큰을 복사하지 않았다.
 
 ## GPS/KC 보존과 화면 축소
 
 - GPS nginx에서 **세 개의 기존 monitor location만** 수정했다. `/arduino-shield` 및 끝 `/` 경로는 `https://shield.serial.kr/data`로 302; `/arduino-shield/data`는 410.
 - `/diagnostic`, `/diagnostic/data`, `/dht`, `/ingest`, `/ingest/shield`, 스캔·페어링·FCM의 코드와 라우팅은 보존했다. 기존 운영 API/웹 빌드를 교체하지 않았다.
 - GPS API SHA256 `81214c4f4c49ee361a92271f913271ccc9bc633b7d0e41e51807df945cae79d9` 유지. 실행 PID 55990 및 시작 시각 유지. GPS 홈과 KC 진단 페이지의 HTTP 상태 및 응답 본문 SHA256이 배포 전과 같았다.
-- `idf-caltest`, `03_8`, 실제 UNO `03_10` v11은 변경·업로드하지 않았다. 실제 장치 `uno-shield-test`는 기존 GPS 수신 경로와 소유자 연결을 유지한다. **배포 후 15:18:53 KST에도 기존 GPS에서 마지막 수신 시각 갱신을 확인했다.** 새 사이트가 현재 그 실제 장치를 자동으로 보여주는 상태는 아니다.
+- 초기 웹 배포에서는 `idf-caltest`, `03_8`, 실제 UNO `03_10` v11을 변경·업로드하지 않았고, 15:18:53 KST까지 기존 GPS 수신을 확인했다. 이어 사용자의 실제 단말 귀속 요청으로 **03_10만 아래 v12 전환을 수행했다.** IDF/KC 및 03_8은 계속 보존한다.
 - DB는 권한/HBA 추가 후 설정 reload만 수행했으며 PostgreSQL 서비스를 재시작하지 않았다. nginx는 전체 설정 검사 후 graceful reload했다.
 - 신규 서비스의 분리는 논리적/권한적 분리다. VPS·PostgreSQL 엔진·스토리지·클러스터 관리자는 공유한다.
 
@@ -37,10 +37,22 @@
 - PostgreSQL 14 격리 컨테이너에 실제 복사본 복원 성공: users 2, devices 1, readings 1, location_records 5, schema versions 1~4. 검증 컨테이너는 삭제했다. 합성 계정 정리·최초 초대 발급 이후 새 백업을 다시 생성하고 offsite 복사를 완료했다.
 - 스케줄/서비스 실패는 systemd journal로 확인한다. 새로운 외부 알림 채널은 연결하지 않았다.
 
+## 실물 계정 및 단말 전환 · 후속 승인 적용
+
+- 사용자가 테스트 계정 생성과 현재 쉴드의 귀속을 요청했다. `enroll-bench.py`는 GPS에서 기존 장치/소유권을 읽기 전용으로 확인하고, 신규 Shield 계정 가입→고유 UID/키 발급→등록 코드 소비를 정상 API/CLI로 수행했다.
+- `user@user.com`은 **Shield의 독립 계정**이다. 새 비밀번호는 Windows `%LOCALAPPDATA%/GPS-Builds/shield-test-account.txt`에 저장했다. private enrollment JSON은 재실행 시 결과 불명 중복 가입을 방지한다. 비밀번호/키는 Git·PR·일반 출력에 남기지 않았다.
+- Shield user 3 / device 2, 표시 이름 `실물 Arduino 쉴드`. 실물 SIM ICCID는 로컬 AT 조회 후 `verify-bench.py --attach-sim`으로 이 장치에 연결했다. 기존 GPS의 장치 3015/소유자/원본 데이터는 변경하지 않았다.
+- SIM7080G의 CA/날짜 검증 HTTPS를 실제 확인한 후 `shield-tls-20260928-v12`를 COM26에 readback 검증 업로드했다. 장치별 키 헤더와 새로운 UID로 **shield.serial.kr에만** 보낸다. 이전 GPS HTTP 전송은 종료됐다.
+- 잘못된 CA 및 인증서 유효기간 전 RTC에서 실제 연결 거절을 확인했다. 모뎀 RTC 초기값이 1980년이어서 부팅/모뎀 재시작 후 NTP 동기화를 추가했다. TLS 확인 이전에는 키/본문을 보내지 않는다.
+- 15:39:22 KST 첫 실제 상태, 15:40:51 KST부터 6점 GNSS 배치 수신. 새 계정으로 로그인한 운영 브라우저에서 새로고침 없는 위치·수신 기록 갱신, 지도, PV 그래프를 확인했다. 온습도는 센서 미연결 상태이므로 빈 값으로 유지한다.
+- GPS 이전 시험 UID 마지막 수신은 15:26:41 KST로 유지되며 이후 실제 보고는 Shield DB에만 쌓인다. 재검사에서 GPS 실행 파일/프로세스, 홈/KC diagnostic 응답이 모두 변경 전과 같았다.
+- 펌웨어 변경과 검증 기록은 `codex/uno-shield-http-recovery` 브랜치의 `03_10/TLS_VALIDATION_20260928.md`로 관리한다. 서비스의 실행 릴리스는 그대로 `7c1307a`; 운영 도구 추가만으로 서비스 재시작/교체를 하지 않았다.
+- 전환 후 15:46 KST 백업 `shield-20260928T064612Z.tar.gz` 생성·러너 복사·PostgreSQL 14 복원 성공. 실제 계정 1 / 장치 1 / 수신 7 / 위치 레코드 31(유효 좌표 29와 초기 무측위 상태 2)을 확인했다. 자동 백업 스케줄은 계속 유지한다.
+
 ## 후속 ToDo와 순서
 
-- [ ] `user@user.com`이 **Shield 전용 계정**으로 가입. 실제 단말용 고유 UID/키/등록 코드를 발급하고 신규 소유권을 확인한다.
-- [ ] 실제 SIM7080G의 인증서 검증 HTTPS·키 헤더를 구현/확인한 뒤 펌웨어 전송 주소를 전환한다. 현재 v11에 도메인만 치환하면 인증에 실패한다. 전환 전까지 GPS ingest를 유지한다.
+- [x] `user@user.com`의 Shield 전용 계정 생성, 실제 단말의 고유 UID/키 및 소유권 등록.
+- [x] 실제 SIM7080G의 CA/인증서 날짜 검증 HTTPS·키 헤더 적용, v12 업로드와 전용 DB 실제 수신 확인. GPS legacy ingest는 명시적 롤백 여지를 두고 아직 유지한다.
 - [ ] 필요한 과거 데이터는 해당 단말·소유자 범위만 복사하여 UTC/건수/중복을 검증한다. GPS 원본 삭제는 포함하지 않는다.
 - [ ] 실물 수신 전환 후 GPS 쉴드 전용 monitor 라우터·HTML/SQL·공개 시험 예외를 제거한다. 이어서 필요 없어진 legacy Shield ingest를 종료한다. KC/IDF의 일반 ingest/diagnostic은 그대로 둔다.
 - [ ] USIM: 기존 `services/nce.rs`의 OAuth·ICCID 정규화·잔량/주문 조회·topup 전송 구현을 재사용한다. 새 DB에서 ICCID-단말-소유권, 캐시, 요청/장부 상태를 연결한다. GPS 장부를 런타임에 조회하거나 두 서비스에서 같은 요청을 처리하지 않는다.

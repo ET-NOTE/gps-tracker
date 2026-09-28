@@ -61,6 +61,10 @@ No production apply step is invoked by automated builds or preview tests. `deplo
 
 ## Protocol
 
+The first real-device cutover is recorded in the deployment report. `enroll-bench.py` is the explicitly approved one-device operator: it verifies the old GPS device owner read-only, creates an independent Shield password, provisions/claims the new UID and stores a mode-0600 resumable state in `/home/mmm/shield-deploy`. Never rerun it for unrelated devices or copy the private state into a release. The original first-owner invitation has been consumed.
+
+`verify-bench.py` signs in to that account and verifies ownership, fresh v12 reports and GPS coordinates (`--require-fix`). Optional `--attach-sim` reads the privately collected modem ICCID and only attaches it to the exact enrolled device/owner; uniqueness prevents attaching another device's SIM. These commands never call a provider, topup or payment API and never write GPS rows. Local credentials, hardware identifiers, raw coordinates and HEX files remain outside Git. The normal firmware must replace the temporary certificate-provisioning bridge before handing the device over.
+
 POST `/ingest/shield`, JSON <=8 KiB, `X-Device-Key` header. `shield_v=1` accepts GPS points; `shield_v=2` additionally accepts sensor samples. Top-level fields: `device_uid`, `build_tag`, `ts` (uptime seconds), `csq`, `reg`, `diag` (`pv_mv`, `gnss` optional), `points`, and optional `sensors`.
 
 - GPS tuple: `[utc_seconds, latitude_microdegrees, longitude_microdegrees, satellites]`, ascending UTC, max 8, satellites >=4.
