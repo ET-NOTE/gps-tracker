@@ -48,7 +48,7 @@ No production apply step is invoked by automated builds or preview tests. `deplo
 - VPS: `shield-backup.timer` runs daily at 02:35 Asia/Seoul plus up to five minutes of jitter. Root-only `/var/backups/shield` contains seven days of PostgreSQL custom dumps plus the Shield environment, nginx config, service unit and release metadata. These archives contain secrets; never serve them through HTTP or put them in Git. Telemetry itself is not pruned.
 - Runner: the system `shield-backup-pull.timer` runs as `etcom-hub` at 03:20 Asia/Seoul plus up to five minutes of jitter. `/home/etcom-hub/backups/shield` is mode 0700; it retains fourteen days of mode-0600 archives and checksums. A dedicated SSH key is restricted to exporting the newest Shield backup, with no shell, forwarding or PTY. Pin the already trusted VPS host key; do not disable host checking.
 - Initial install: upload the backup scripts/units and the runner's **public** `backup-pull-key.pub`, then run `install-backup.py` as root. It adds a Shield-only nginx reload hook after successful certificate renewal. The runner's `ssh-config` and `known_hosts` are installed privately, outside Git; they use the dedicated key and `StrictHostKeyChecking yes`. Install the pull units under `/etc/systemd/system` and enable the timer; user lingering is unnecessary.
-- `verify-backup.py` restores a copied dump in a new, unexposed PostgreSQL 14 container on the runner, checks schema versions and counts, then removes only that test container. Count equality assumes a quiescent source; live backups are transaction-consistent but a later count snapshot may differ.
+- `verify-backup.py` restores a copied dump in a new, unexposed PostgreSQL 14 container on the runner, checks schema versions and counts, then removes only that test container. The dump and metadata now share an exported MVCC snapshot, so counts match even during live ingestion. Checks include CMS, audit, channels and USIM/credit ledgers when present.
 - Check failures with `systemctl --failed` and the two backup service journals. There is no new external notification integration. The latest launch backup was also copied to Windows. Restore credentials only into the intended Shield service; never into GPS or a publicly bound test container.
 
 ## Rollback
@@ -72,3 +72,67 @@ POST `/ingest/shield`, JSON <=8 KiB, `X-Device-Key` header. `shield_v=1` accepts
 - Timestamp window: -15 minutes..+30 seconds. Adjust the PC/device clock before retries. Never fabricate UTC from uptime.
 - Same payload retry is idempotent; overlapping measured samples use a unique key. Empty GPS yields a no-fix status. Absent sensors yield receipt-time status with no temperature/humidity.
 - Keys are sent only over verified HTTPS in operation. HTTP redirects are not a substitute for firmware TLS. No GPS account cookie or legacy JWT authenticates this endpoint.
+
+## Administration, USIM and dynamic sensors
+
+Migration 5 adds users.role/disabled/credit_balance, posts with optimistic revisions,
+append-only audit and credit/SIM events, sensor channel definitions and per-reading
+values. Migration 6 makes provider order IDs unique. Existing v1/v2 GPS/sensor
+payloads continue to work; legacy DHT readings are backfilled as `dht11` channels.
+
+- The same `/login` serves both roles. `/admin` and every admin API independently
+  require an active admin. Role changes, disabling accounts and session revocation
+  invalidate sessions; at least one active administrator must remain.
+- `enroll-admin.py` creates the requested separate `admin@user.com`, using a private
+  resumable state. `grant-admin <email>` is an operator-only bootstrap command;
+  admins subsequently manage roles, names, disabled accounts and invites in the UI.
+- Posts are stored in Shield DB and seeded only when missing. Titles, descriptions,
+  steps, code, categories and publishing are editable. React renders plain text;
+  there is no arbitrary HTML execution. Conflicting revisions return 409.
+- 1NCE uses only `SHIELD_NCE_*`, never a runtime GPS environment/database lookup.
+  The operator installs selected credentials once during migration. API v1 is the
+  currently verified version; follow the provider's v2 migration before v1 retirement.
+  SIM quota reads are cached for 30 minutes, manual refresh throttled to 5 minutes.
+  Remaining MB comes from quota.volume, capacity from quota.total_volume.
+- `SHIELD_TOPUP_COST` is points per 500 MB, copied from the existing GPS operational
+  setting (default 143000). New accounts have zero points. No card gateway is implied.
+  Admin point adjustments require a reason and are audited. GPS balances/history
+  are not merged into independent Shield identities.
+- A user request atomically reserves points. Admin approval does not send an order.
+  Explicit execution requires the exact request reference. One durable transition
+  sends exactly one provider POST with no automatic retries. A timeout/crash/ambiguous
+  response remains unresolved; no refund or new order is inferred. Definitive
+  rejection or cancellation before transmission refunds once. Reconciliation reads
+  the provider order, checks SIM/type/order uniqueness and records the operator's
+  confirmation note. It is an operator confirmation, not inferred payment settlement.
+- Preview purchase paths run only against `mock-nce.py` on loopback with mock-only
+  credentials; `test-operations.py` refuses other settings. Production verification
+  never executes a topup or payment request.
+- v3 payload: `sensor_set` (stable key), `channels: [{key,label,unit}]`, and
+  `sensors: [{at,values:{key:number}}]`. Each reading stores channel IDs to preserve
+  meaning across sensor changes. Units are immutable per set/key: use a new set
+  when replacing the sensor configuration. Maximum 16 channels per batch, 32 samples,
+  64 channels across the device, 8 KiB total body; sensor values must be finite.
+  The published `dynamic-sensors` example documents a soil/light payload. Cards,
+  chart selectors, history columns and CSV use metadata rather than fixed DHT fields.
+  The latest measurement activates a set; delayed older batches cannot reactivate it.
+
+## Approved operations upgrade
+
+`upgrade.py prepare --release <id> --sha256 <digest>` stages a checksum-verified
+artifact and saves old/proposed nginx configs and the GPS binary/process/page baseline.
+Take a fresh `shield-backup` first, pull it to the runner and pass restore verification.
+Inspect the proposed diff, then `apply` with `--verified-backup-sha256 <digest>`.
+Only Shield restarts. GPS/dev Shield ingest and monitor APIs return 410; the old
+page redirects to Shield. The legacy seriallog API alias also blocks the retired
+monitor. GPS `/ingest`, `/dht`, diagnostic, scanning, JWT, FCM and USIM APIs stay intact.
+Legacy Shield code is removed from the GPS source for its next release; the live
+GPS binary is intentionally not replaced during KC testing. Old device telemetry
+and ownership are retained. The migrated bench had no GPS SIM link or pending order.
+
+Migrations are additive to telemetry but the old binary's embedded SQLx migration
+list cannot start against newer versions. Therefore **symlink-only rollback is not
+valid for this release**. Prefer a forward fix. If restoration is necessary, stop
+only Shield, preserve a new dump containing post-upgrade data, restore the verified
+pre-upgrade Shield backup under operator supervision, restore old env/config/symlink,
+then restart Shield. Never restore/drop a GPS database or silently discard new data.

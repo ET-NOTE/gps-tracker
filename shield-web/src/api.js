@@ -35,7 +35,7 @@ export function csv(rows) {
   };
   return "\ufeff" + rows.map((row) => row.map(cell).join(",")).join("\r\n");
 }
-export async function exportReadings(id, range, signal) {
+export async function exportReadings(id, range, signal, channels = []) {
   let cursor = {},
     all = [],
     seen = new Set();
@@ -59,8 +59,10 @@ export async function exportReadings(id, range, signal) {
       "기록 시각(UTC)",
       "측정 시각(UTC)",
       "수신 시각(UTC)",
-      "온도(°C)",
-      "습도(%)",
+      "센서 구성",
+      ...channels.map(
+        (c) => `${c.label} (${c.unit}) [${c.sensor_set}/${c.key}]`,
+      ),
       "PV(mV)",
       "CSQ",
       "망 등록",
@@ -70,8 +72,8 @@ export async function exportReadings(id, range, signal) {
       r.recorded_at,
       r.measured_at,
       r.received_at,
-      r.temp_c,
-      r.hum_pct,
+      r.sensor_set,
+      ...channels.map((c) => r.values_json?.[c.id]),
       r.pv_mv,
       r.csq,
       r.reg,

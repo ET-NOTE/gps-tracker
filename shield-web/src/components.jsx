@@ -279,8 +279,10 @@ export function Metric({ icon, label, value, unit, hint }) {
     </article>
   );
 }
-export function Chart({ points = [], field = "temp_c" }) {
-  const unit = field === "hum_pct" ? "%" : field === "pv_mv" ? "mV" : "°C";
+export function Chart({ points = [], field = "temp_c", unit: channelUnit }) {
+  const unit =
+    channelUnit ??
+    (field === "hum_pct" ? "%" : field === "pv_mv" ? "mV" : "°C");
   const values = points
     .map((p) => p[field])
     .filter((v) => typeof v === "number");

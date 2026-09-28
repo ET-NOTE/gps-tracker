@@ -99,7 +99,8 @@ export default function DataPage() {
     [bundle, setBundle] = useState(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
-    [field, setField] = useState("temp_c"),
+    [field, setField] = useState(""),
+    [showHistory, setShowHistory] = useState(false),
     [cursors, setCursors] = useState([{}]),
     [page, setPage] = useState(0),
     [exporting, setExporting] = useState(false);
@@ -225,6 +226,14 @@ export default function DataPage() {
     latest = summary?.latest,
     position = summary?.position,
     rows = bundle?.readings.items || [];
+  const allChannels = summary?.channels || [];
+  const channels = allChannels.filter((c) => showHistory || c.active);
+  const actualField =
+    field === "pv_mv" || channels.some((c) => String(c.id) === field)
+      ? field
+      : String((channels.find((c) => c.active) || channels[0])?.id ?? "pv_mv");
+  const selectedChannel = allChannels.find((c) => String(c.id) === actualField);
+
   const select = (e) => {
     const value = Number(e.target.value);
     setBundle(null);
@@ -236,7 +245,7 @@ export default function DataPage() {
     exporter.current = abort;
     setExporting(true);
     try {
-      const text = await exportReadings(id, range, abort.signal);
+      const text = await exportReadings(id, range, abort.signal, allChannels);
       if (abort.signal.aborted) return;
       const url = URL.createObjectURL(
         new Blob([text], { type: "text/csv;charset=utf-8" }),
@@ -372,27 +381,25 @@ export default function DataPage() {
             </label>
           </div>
           <div className="metrics">
+            {channels.map((c) => (
+              <Metric
+                key={c.id}
+                icon="data"
+                label={c.label}
+                value={number(c.latest?.value, 2)}
+                unit={c.unit}
+                hint={`${c.sensor_set} · ${c.latest ? date(c.latest.at) : "미수신"}${c.active ? "" : " · 이전 센서"}`}
+              />
+            ))}
             <Metric
-              icon="temp"
-              label="최근 온도"
-              value={number(summary?.temperature?.value)}
-              unit="°C"
-              hint={
-                summary?.temperature == null
-                  ? "온도 미수신"
-                  : date(summary.temperature.measured_at)
-              }
-            />
-            <Metric
-              icon="drop"
-              label="최근 습도"
-              value={number(summary?.humidity?.value, 0)}
-              unit="%"
-              hint={
-                summary?.humidity == null
-                  ? "습도 미수신"
-                  : date(summary.humidity.measured_at)
-              }
+              icon="signal"
+              label="PV 입력 전압"
+              value={number(
+                latest?.pv_mv == null ? null : latest.pv_mv / 1000,
+                3,
+              )}
+              unit="V"
+              hint="쉴드 A0 실측 · 배터리 잔량이 아닙니다"
             />
             <Metric
               icon="signal"
@@ -425,12 +432,14 @@ export default function DataPage() {
                 </div>
                 <div className="tabs small-tabs">
                   {[
-                    ["temp_c", "온도"],
-                    ["hum_pct", "습도"],
                     ["pv_mv", "PV"],
+                    ...channels.map((c) => [
+                      String(c.id),
+                      `${c.label} · ${c.sensor_set}`,
+                    ]),
                   ].map(([key, label]) => (
                     <button
-                      className={field === key ? "active" : ""}
+                      className={actualField === key ? "active" : ""}
                       key={key}
                       onClick={() => setField(key)}
                     >
@@ -439,8 +448,32 @@ export default function DataPage() {
                   ))}
                 </div>
               </div>
-              <Chart points={summary?.chart || []} field={field} />
-              {field !== "pv_mv" && (
+              <label className="check-line">
+                <input
+                  type="checkbox"
+                  checked={showHistory}
+                  onChange={(e) => setShowHistory(e.target.checked)}
+                />
+                이전 센서 구성도 보기
+              </label>
+              {!channels.length && (
+                <p className="muted">
+                  수신한 센서 채널이 있으면 카드와 기록 열이 자동으로
+                  추가됩니다. 현재는 쉴드 자체 측정값을 표시합니다.
+                </p>
+              )}
+              <Chart
+                points={
+                  actualField === "pv_mv"
+                    ? summary?.chart || []
+                    : selectedChannel?.chart || []
+                }
+                field={actualField === "pv_mv" ? "pv_mv" : "value"}
+                unit={
+                  actualField === "pv_mv" ? "mV" : selectedChannel?.unit || ""
+                }
+              />
+              {actualField !== "pv_mv" && (
                 <div className="chart-stats">
                   {[
                     ["min", "최저"],
@@ -450,12 +483,8 @@ export default function DataPage() {
                     <div key={key}>
                       {label}
                       <strong>
-                        {number(
-                          summary?.stats[
-                            (field === "temp_c" ? "temp" : "hum") + "_" + key
-                          ],
-                        )}
-                        {field === "temp_c" ? "°C" : "%"}
+                        {number(selectedChannel?.stats?.[key], 2)}{" "}
+                        {selectedChannel?.unit}
                       </strong>
                     </div>
                   ))}
@@ -494,8 +523,10 @@ export default function DataPage() {
                   <tr>
                     {[
                       "기록 시각",
-                      "온도 (°C)",
-                      "습도 (%)",
+                      "센서 구성",
+                      ...channels.map(
+                        (c) => `${c.label} (${c.unit}) · ${c.sensor_set}`,
+                      ),
                       "PV (V)",
                       "CSQ",
                       "측정 기준",
@@ -509,8 +540,10 @@ export default function DataPage() {
                   {rows.map((r) => (
                     <tr key={r.id}>
                       <td>{date(r.recorded_at)}</td>
-                      <td>{number(r.temp_c)}</td>
-                      <td>{number(r.hum_pct)}</td>
+                      <td>{r.sensor_set || "쉴드 상태"}</td>
+                      {channels.map((c) => (
+                        <td key={c.id}>{number(r.values_json?.[c.id], 2)}</td>
+                      ))}
                       <td>
                         {number(r.pv_mv == null ? null : r.pv_mv / 1000, 3)}
                       </td>

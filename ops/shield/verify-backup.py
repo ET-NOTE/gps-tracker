@@ -33,7 +33,8 @@ def main():
             run('docker','cp',str(dump),CONTAINER+':/tmp/shield.dump')
             run('docker','exec',CONTAINER,'pg_restore','--exit-on-error','--no-owner','--no-acl','-U','postgres','-d','shield_restore_test','/tmp/shield.dump')
             observed={}
-            for table in ('users','devices','readings','location_records'):
+            for table in ('users','devices','readings','location_records','content_posts','audit_log','sensor_channels','sim_requests','sim_ledger','credit_entries'):
+                if table not in meta['counts_after_dump']:continue
                 observed[table]=int(run('docker','exec',CONTAINER,'psql','-U','postgres','-d','shield_restore_test','-Atqc',f'SELECT count(*) FROM {table}'))
                 assert observed[table]==meta['counts_after_dump'][table],table+' restore count mismatch'
             versions=json.loads(run('docker','exec',CONTAINER,'psql','-U','postgres','-d','shield_restore_test','-Atqc','SELECT json_agg(version ORDER BY version) FROM _sqlx_migrations'))

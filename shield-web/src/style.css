@@ -1761,3 +1761,148 @@ dialog > p {
     transition: none !important;
   }
 }
+
+/* Operational views share the same design tokens as device data. */
+.metrics {
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+}
+.metrics.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.admin-page > .panel,
+.request-panel {
+  padding: 24px;
+  margin: 18px 0;
+}
+.admin-tabs {
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.admin-toolbar,
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+}
+.admin-toolbar input {
+  max-width: 320px;
+}
+.admin-posts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.admin-posts .panel {
+  padding: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.admin-posts .panel > div {
+  width: 100%;
+}
+.admin-posts h2 {
+  margin: 12px 0;
+  font-size: 19px;
+}
+.editor {
+  border: 2px solid var(--primary);
+  scroll-margin-top: 90px;
+}
+.editor fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 15px 0;
+  font-weight: 600;
+}
+.editor textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface, #fff);
+  font: inherit;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0 18px;
+}
+.check-line,
+.editor .check-line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 0 16px;
+}
+.check-line input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.block {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+}
+.secret-code,
+.audit-detail,
+.code-editor {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-family: ui-monospace, monospace;
+}
+.secret-code {
+  display: block;
+  padding: 18px;
+  background: var(--soft, #f1f8f9);
+  margin: 12px 0;
+}
+.audit-detail {
+  max-height: 480px;
+  overflow: auto;
+}
+.history td button {
+  margin: 3px;
+  white-space: nowrap;
+}
+.request-panel h2,
+.history > h2 {
+  margin: 18px;
+}
+progress {
+  width: 100%;
+  height: 16px;
+  accent-color: var(--primary);
+}
+@media (max-width: 640px) {
+  .admin-page > .panel,
+  .request-panel {
+    padding: 16px;
+  }
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-tabs button {
+    flex: 1 0 auto;
+  }
+  .admin-toolbar input {
+    max-width: 100%;
+  }
+}

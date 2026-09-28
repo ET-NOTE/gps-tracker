@@ -21,7 +21,7 @@ fn session_token(app: &App, h: &HeaderMap) -> Option<String> {
 }
 pub async fn user(app: &App, h: &HeaderMap) -> Result<i64> {
     let token = session_token(app, h).ok_or_else(denied)?;
-    sqlx::query_scalar("SELECT user_id FROM sessions WHERE token_hash=$1 AND expires_at>now()")
+    sqlx::query_scalar("SELECT s.user_id FROM sessions s JOIN users u ON u.id=s.user_id WHERE token_hash=$1 AND expires_at>now() AND NOT u.disabled")
         .bind(hash(&token))
         .fetch_optional(&app.db)
         .await?
@@ -142,7 +142,7 @@ pub async fn login(
     rate(&app, "login-global".into(), 100).await?;
     rate(&app, format!("login:{}", hash(&email)), 10).await?;
     let row: Option<(i64, String)> =
-        sqlx::query_as("SELECT id,password_hash FROM users WHERE email=$1")
+        sqlx::query_as("SELECT id,password_hash FROM users WHERE email=$1 AND NOT disabled")
             .bind(email)
             .fetch_optional(&app.db)
             .await?;
@@ -179,7 +179,7 @@ pub async fn login(
 }
 pub async fn session(State(app): State<App>, h: HeaderMap) -> Result<Json<Value>> {
     let id = user(&app, &h).await?;
-    let value:Value=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'email',email,'display_name',display_name) FROM users WHERE id=$1").bind(id).fetch_one(&app.db).await?;
+    let value:Value=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'email',email,'display_name',display_name,'role',role,'credit_balance',credit_balance) FROM users WHERE id=$1").bind(id).fetch_one(&app.db).await?;
     Ok(Json(value))
 }
 pub async fn logout(State(app): State<App>, h: HeaderMap) -> Result<Response> {

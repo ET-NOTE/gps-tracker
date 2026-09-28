@@ -25,7 +25,9 @@ import {
   relative,
 } from "./components";
 import { demoData } from "./demo";
-import { examples, dhtCode } from "./examples";
+import { PostsProvider, usePosts, PostStatus } from "./posts";
+import AdminPage from "./AdminPage";
+import UsimPage from "./UsimPage";
 
 function Header() {
   const { user, logout } = useContext(Session);
@@ -39,6 +41,7 @@ function Header() {
           <NavLink to="/examples">예제 라이브러리</NavLink>
           <NavLink to="/data">내 데이터</NavLink>
           <NavLink to="/usim">내 USIM</NavLink>
+          {user?.role === "admin" && <NavLink to="/admin">관리</NavLink>}
         </nav>
         <div className="account">
           {user ? (
@@ -87,6 +90,7 @@ function Footer() {
   );
 }
 function Home() {
+  const { posts: examples } = usePosts();
   const { user } = useContext(Session);
   return (
     <>
@@ -291,6 +295,7 @@ function ExampleCard({ example: e }) {
   );
 }
 function Examples() {
+  const { posts: examples } = usePosts();
   const [search, setSearch] = useState(""),
     [category, setCategory] = useState("전체"),
     [level, setLevel] = useState("전체");
@@ -328,18 +333,16 @@ function Examples() {
       </label>
       <div className="filter-bar">
         <div className="tabs">
-          {["전체", "시작하기", "센서", "GPS", "LTE 통신", "데이터 연동"].map(
-            (c) => (
-              <button
-                key={c}
-                aria-pressed={category === c}
-                className={category === c ? "active" : ""}
-                onClick={() => setCategory(c)}
-              >
-                {c}
-              </button>
-            ),
-          )}
+          {["전체", ...new Set(examples.map((e) => e.category))].map((c) => (
+            <button
+              key={c}
+              aria-pressed={category === c}
+              className={category === c ? "active" : ""}
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
         </div>
         <select
           aria-label="예제 난이도"
@@ -349,8 +352,10 @@ function Examples() {
           <option value="전체">난이도 전체</option>
           <option>입문</option>
           <option>기초</option>
+          <option>응용</option>
         </select>
       </div>
+      <PostStatus />
       <p className="muted">예제 {shown.length}개</p>
       <div className="example-grid">
         {shown.map((e) => (
@@ -376,9 +381,17 @@ function Examples() {
   );
 }
 function ExampleDetail({ guide = false }) {
+  const { posts: examples, loading, error } = usePosts();
   const { id } = useParams();
   const e = examples.find((e) => e.id === (guide ? "start" : id));
-  if (!e) return <NotFound />;
+  if (!e)
+    return loading || error ? (
+      <main className="container">
+        <PostStatus />
+      </main>
+    ) : (
+      <NotFound />
+    );
   return (
     <main className="container article">
       <Intro
@@ -399,24 +412,27 @@ function ExampleDetail({ guide = false }) {
               </li>
             ))}
           </ol>
-          {e.id === "dht11" && (
+          {e.code && (
             <>
-              <h2>시리얼 측정 예제</h2>
-              <p className="muted">
-                이 예제는 온습도 측정까지 수행합니다. 서버 전송은 별도 예제를
-                참고하세요.
-              </p>
+              <h2>예제 코드</h2>
               <pre>
-                <code>{dhtCode}</code>
+                <code>{e.code}</code>
               </pre>
-              <a
+              <button
                 className="outline"
-                href="/downloads/dht11_serial.ino"
-                download
+                onClick={() => {
+                  const url = URL.createObjectURL(
+                    new Blob([e.code], { type: "text/plain;charset=utf-8" }),
+                  );
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = e.id + "-example.txt";
+                  a.click();
+                  setTimeout(() => URL.revokeObjectURL(url), 10000);
+                }}
               >
-                <Icon name="download" />
-                스케치 다운로드
-              </a>
+                현재 예제 코드 다운로드
+              </button>
             </>
           )}
           {e.id === "upload" && (
@@ -466,7 +482,7 @@ function Auth() {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const next = ["/data", "/usim"].includes(params.get("next"))
+  const next = ["/data", "/usim", "/admin"].includes(params.get("next"))
     ? params.get("next")
     : "/data";
   useEffect(() => {
@@ -610,7 +626,14 @@ function Protected({ children }) {
       />
       <Link
         className="button"
-        to={"/login?next=" + (pathname === "/usim" ? "/usim" : "/data")}
+        to={
+          "/login?next=" +
+          (pathname === "/usim"
+            ? "/usim"
+            : pathname === "/admin"
+              ? "/admin"
+              : "/data")
+        }
       >
         로그인하고 시작하기
       </Link>
@@ -624,93 +647,6 @@ function Protected({ children }) {
     </main>
   ) : (
     <React.Fragment key={user.id}>{children}</React.Fragment>
-  );
-}
-function Usim() {
-  const [devices, setDevices] = useState([]),
-    [id, setId] = useState(""),
-    [error, setError] = useState("");
-  const { reload } = useContext(Session);
-  useEffect(() => {
-    const a = new AbortController();
-    request("/devices", { signal: a.signal })
-      .then((d) => {
-        setDevices(d);
-        setId(String(d[0]?.id || ""));
-      })
-      .catch((e) => {
-        if (e.name !== "AbortError") {
-          setError(e.message);
-          if (e.status === 401) reload();
-        }
-      });
-    return () => a.abort();
-  }, [reload]);
-  const d = devices.find((d) => String(d.id) === id);
-  return (
-    <main className="container">
-      <Intro
-        crumb="내 USIM"
-        title="내 USIM"
-        description="장치에 연결된 USIM의 상태를 확인하세요."
-      />
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      )}
-      <section className="panel usim-card">
-        <Icon name="sim" size={46} />
-        <div>
-          <label>
-            디바이스
-            <select
-              value={id}
-              onChange={(e) => setId(e.target.value)}
-              aria-label="USIM 장치 선택"
-            >
-              {devices.length ? (
-                devices.map((d) => (
-                  <option value={d.id} key={d.id}>
-                    {d.display_name}
-                  </option>
-                ))
-              ) : (
-                <option>등록된 장치 없음</option>
-              )}
-            </select>
-          </label>
-          <h2>
-            {d?.sim_last4
-              ? `USIM ···· ${d.sim_last4}`
-              : "아직 연결된 USIM 정보가 없습니다"}
-          </h2>
-          <p className="muted">
-            단말의 위치 전송과 USIM 잔량 연동은 별도입니다.
-          </p>
-        </div>
-      </section>
-      <section className="panel usim-info">
-        <h2>잔량과 충전 안내</h2>
-        <p>
-          통신사 조회가 연결된 USIM의 확인된 잔량만 표시합니다. 현재는 조회
-          연동과 충전 상품을 준비하고 있습니다.
-        </p>
-        <div className="usim-placeholder">
-          <span>남은 데이터</span>
-          <strong>
-            — <small>조회 미연동</small>
-          </strong>
-        </div>
-        <p className="notice">
-          실제 충전 상품·가격·유효기간이 확정된 뒤 결제를 제공합니다. 현재
-          결제나 충전은 실행되지 않습니다.
-        </p>
-        <Link className="outline" to="/guide">
-          USIM 연결 가이드 <Icon name="arrow" size={16} />
-        </Link>
-      </section>
-    </main>
   );
 }
 function About() {
@@ -734,8 +670,9 @@ function About() {
         </p>
         <h2>USIM과 결제</h2>
         <p>
-          USIM 충전은 상품과 처리 절차가 확정된 뒤 제공합니다. 현재 화면에서
-          비용이 청구되거나 충전 요청이 발생하지 않습니다.
+          USIM 잔량은 통신사 조회값으로 표시합니다. 충전 요청은 Shield 전용
+          포인트를 사용하며, 관리자의 확인 후 통신사에 주문합니다. 기존 GPS
+          계정의 포인트와는 별도로 관리됩니다.
         </p>
         <h2>지원이 필요하면</h2>
         <p>
@@ -759,33 +696,43 @@ function NotFound() {
 export default function App() {
   return (
     <SessionProvider>
-      <Header />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/guide" element={<ExampleDetail guide />} />
-        <Route path="/examples" element={<Examples />} />
-        <Route path="/examples/:id" element={<ExampleDetail />} />
-        <Route path="/login" element={<Auth />} />
-        <Route
-          path="/data"
-          element={
-            <Protected>
-              <DataPage />
-            </Protected>
-          }
-        />
-        <Route
-          path="/usim"
-          element={
-            <Protected>
-              <Usim />
-            </Protected>
-          }
-        />
-        <Route path="/about" element={<About />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Footer />
+      <PostsProvider>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/guide" element={<ExampleDetail guide />} />
+          <Route path="/examples" element={<Examples />} />
+          <Route path="/examples/:id" element={<ExampleDetail />} />
+          <Route path="/login" element={<Auth />} />
+          <Route
+            path="/data"
+            element={
+              <Protected>
+                <DataPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/usim"
+            element={
+              <Protected>
+                <UsimPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <Protected>
+                <AdminPage />
+              </Protected>
+            }
+          />
+          <Route path="/about" element={<About />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Footer />
+      </PostsProvider>
     </SessionProvider>
   );
 }

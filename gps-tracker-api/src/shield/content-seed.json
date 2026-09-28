@@ -1,0 +1,117 @@
+[
+  {
+    "id": "start",
+    "category": "시작하기",
+    "level": "입문",
+    "minutes": 10,
+    "title": "쉴드 연결부터 첫 데이터까지",
+    "description": "보드와 안테나를 연결하고 나만의 장치를 등록하세요.",
+    "variant": "board",
+    "steps": [
+      "UNO의 전원을 끄고 쉴드를 연결합니다. LTE·GNSS 안테나와 USIM 연결을 확인합니다.",
+      "Arduino IDE에서 Arduino AVR Boards와 필요한 라이브러리를 설치하고 보드를 Arduino Uno로 선택합니다.",
+      "초대코드로 가입한 뒤 제품의 일회용 등록 코드로 장치를 연결합니다. 단말 키는 공개 저장소에 올리지 않습니다.",
+      "Shield 전용 펌웨어에 발급된 단말 ID·키를 설정합니다. 데이터 수신 주소는 https://shield.serial.kr/ingest/shield 입니다. GPS 서비스의 주소와 키는 사용할 수 없습니다.",
+      "115200 baud 시리얼 로그에서 망 등록과 전송 결과를 확인하고 내 데이터에서 수신 시각을 확인합니다."
+    ],
+    "code": ""
+  },
+  {
+    "id": "dht11",
+    "category": "센서",
+    "level": "입문",
+    "minutes": 15,
+    "title": "DHT11 온습도 측정",
+    "description": "온도와 습도를 읽고 시리얼 모니터에서 확인해요.",
+    "variant": "sensor",
+    "steps": [
+      "전원을 끄고 DHT11 데이터선을 D2에 연결합니다. 센서 모듈의 VCC·GND 표기를 확인합니다.",
+      "Arduino 라이브러리 매니저에서 Adafruit DHT sensor library와 Adafruit Unified Sensor를 설치합니다.",
+      "아래 스케치를 업로드하고 115200 baud 시리얼 모니터를 엽니다.",
+      "유효하지 않은 값은 전송하지 않습니다. 2초 이상 간격으로 측정합니다."
+    ],
+    "code": "#include <DHT.h>\nDHT sensor(2, DHT11); // D2: modem D8/D9와 분리\nvoid setup() { Serial.begin(115200); sensor.begin(); }\nvoid loop() {\n  delay(2500);\n  float temperature = sensor.readTemperature();\n  float humidity = sensor.readHumidity();\n  if (isnan(temperature) || isnan(humidity)) {\n    Serial.println(\"Sensor read failed\"); return;\n  }\n  Serial.print(temperature); Serial.print(\" C, \");\n  Serial.print(humidity); Serial.println(\" %\");\n}\n"
+  },
+  {
+    "id": "gnss",
+    "category": "GPS",
+    "level": "기초",
+    "minutes": 15,
+    "title": "GPS 위치 확인",
+    "description": "SIM7080G 내장 GNSS의 위치와 측위 상태를 확인해요.",
+    "variant": "board",
+    "steps": [
+      "쉴드의 GNSS 안테나를 하늘이 보이는 곳에 고정합니다. 별도 L80 수신기를 사용하지 않습니다.",
+      "모뎀 통신을 확인하고 AT+CGNSPWR=1로 GNSS를 켭니다.",
+      "AT+CGNSINF 응답의 fix·UTC·위도·경도·품질을 확인합니다. fix=0이면 유효 위치로 처리하지 않습니다.",
+      "이 제품은 LTE 통신과 GNSS 사용을 순서대로 전환합니다. 제공 펌웨어의 GNSS off → HTTP → GNSS on 순서를 유지하세요.",
+      "이 페이지의 지도는 유효 위치가 들어와야 표시됩니다. GPS 대기 상태도 통신 수신과 별도로 확인할 수 있습니다."
+    ],
+    "code": ""
+  },
+  {
+    "id": "upload",
+    "category": "LTE 통신",
+    "level": "기초",
+    "minutes": 20,
+    "title": "서버로 데이터 보내기",
+    "description": "수신 형식과 단말 인증을 합성 데이터로 먼저 확인해요.",
+    "variant": "data",
+    "steps": [
+      "장치 등록 후 발급된 단말 ID와 단말 키를 준비합니다. 브라우저 로그인 정보와는 별개입니다.",
+      "다운로드한 Python 예제에 환경변수로 주소·단말 ID·단말 키를 전달합니다.",
+      "스크립트는 실제 측정값이 아닌 합성 온습도·좌표를 전송합니다. 전용 시험 장치로만 실행하세요.",
+      "응답의 accepted·duplicate를 확인합니다. 같은 표본의 재전송은 중복 저장되지 않습니다."
+    ],
+    "code": ""
+  },
+  {
+    "id": "status",
+    "category": "시작하기",
+    "level": "입문",
+    "minutes": 5,
+    "title": "쉴드 연결 상태 확인",
+    "description": "통신 수신과 GPS 위치 확보를 구분해서 확인해요.",
+    "variant": "board",
+    "steps": [
+      "내 데이터의 마지막 수신 시각을 확인합니다. 새로고침 오류는 단말 오프라인과 구분됩니다.",
+      "CSQ 0~31 범위만 신호로 표시합니다. 99는 미확인이며 0 dBm이 아닙니다.",
+      "GNSS가 측위 중이면 위치가 없을 수 있습니다. 이전 좌표는 측정 시각을 함께 확인하세요.",
+      "PV는 A0 입력 전압입니다. 배터리 잔량으로 해석하지 않습니다."
+    ],
+    "code": ""
+  },
+  {
+    "id": "history",
+    "category": "데이터 연동",
+    "level": "기초",
+    "minutes": 15,
+    "title": "센서 기록과 GPS 경로 보기",
+    "description": "기간별 그래프, 좌표, 수신 기록을 함께 살펴봐요.",
+    "variant": "data",
+    "steps": [
+      "장치를 선택하고 최근 1시간·24시간·7일 범위를 선택합니다.",
+      "그래프는 5분 평균이며 표의 원본 기록과 구분됩니다. 수신이 끊긴 구간은 선으로 이어 그리지 않습니다.",
+      "지도에는 최근 유효 위치와 조회 범위의 최신 1,000개 좌표를 표시합니다.",
+      "CSV는 선택한 조회 범위의 모든 센서 기록을 페이지 끝까지 받아 내려받습니다. 읽기 실패 시 일부 파일을 완성본으로 저장하지 않습니다."
+    ],
+    "code": ""
+  },
+  {
+    "id": "dynamic-sensors",
+    "category": "센서",
+    "level": "응용",
+    "minutes": 20,
+    "title": "센서를 바꾸고 데이터 이어 보기",
+    "description": "온습도·조도·압력 등 센서 종류에 맞는 카드와 표를 자동으로 구성합니다.",
+    "variant": "data",
+    "steps": [
+      "단말 ID와 USIM은 그대로 두고, 센서 연결과 펌웨어의 측정 코드를 변경합니다.",
+      "shield_v: 3 형식에 sensor_set과 채널의 key·label·unit을 선언합니다. 아래 JSON의 at은 현재 UTC 초로 변경합니다.",
+      "/ingest/shield 주소에 JSON POST로 전송하고 X-Device-Key 헤더에 발급된 단말 키를 넣습니다. 브라우저 로그인과 별개입니다.",
+      "내 데이터에서 수신된 채널별 카드·그래프·표를 확인합니다. 이전 센서 구성도 보기를 켜면 교체 전 이력을 함께 확인할 수 있습니다.",
+      "단위나 센서 구성이 바뀌면 sensor_set을 새 이름으로 지정합니다. 같은 구성·key의 단위를 바꾸지 않습니다. 장치당 누적 채널은 64개, 배치당 채널 16개·측정 32개까지입니다."
+    ],
+    "code": "{\n  \"shield_v\": 3,\n  \"device_uid\": \"YOUR_DEVICE_UID\",\n  \"build_tag\": \"soil-sensor-v1\",\n  \"ts\": 1000,\n  \"csq\": 20,\n  \"reg\": 5,\n  \"diag\": {},\n  \"points\": [],\n  \"sensor_set\": \"soil-v1\",\n  \"channels\": [\n    {\n      \"key\": \"moisture\",\n      \"label\": \"토양 수분\",\n      \"unit\": \"%\"\n    },\n    {\n      \"key\": \"light\",\n      \"label\": \"조도\",\n      \"unit\": \"lx\"\n    }\n  ],\n  \"sensors\": [\n    {\n      \"at\": 0,\n      \"values\": {\n        \"moisture\": 43.5,\n        \"light\": 720\n      }\n    }\n  ]\n}"
+  }
+]

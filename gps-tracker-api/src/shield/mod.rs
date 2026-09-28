@@ -1,6 +1,10 @@
+mod admin;
 mod auth;
+mod content;
 mod devices;
 mod ingest;
+mod nce;
+mod usim;
 
 use axum::{
     extract::{DefaultBodyLimit, Request, State},
@@ -29,9 +33,11 @@ pub struct App {
     secure: bool,
     password_slots: Arc<Semaphore>,
     events: broadcast::Sender<(i64, i64)>,
+    nce: nce::Provider,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+#[derive(Debug)]
 pub struct Error(StatusCode, String);
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
@@ -117,6 +123,11 @@ async fn migrate(db: &PgPool) -> anyhow::Result<()> {
             "shared GPS speed",
             include_str!("../../migrations/0064_server_coordinate_speed.sql"),
         ),
+        (
+            "Shield administration and dynamic sensors",
+            include_str!("operations.sql"),
+        ),
+        ("Unique provider order link", include_str!("order-link.sql")),
     ];
     let migrations = sources
         .into_iter()
@@ -195,10 +206,42 @@ pub async fn run() -> anyhow::Result<()> {
         );
     }
     migrate(&db).await?;
+    content::seed(&db).await?;
     let args: Vec<_> = env::args().skip(1).collect();
     if let Some(command) = args.first() {
         match command.as_str() {
             "migrate" => {}
+            "grant-admin" => {
+                let email = args
+                    .get(1)
+                    .ok_or_else(|| anyhow::anyhow!("Email required"))?;
+                let mut tx = db.begin().await?;
+                sqlx::query("SELECT pg_advisory_xact_lock(8043001)")
+                    .execute(&mut *tx)
+                    .await?;
+                let id: i64 = sqlx::query_scalar(
+                    "UPDATE users SET role='admin',disabled=false WHERE email=$1 RETURNING id",
+                )
+                .bind(email.trim().to_lowercase())
+                .fetch_one(&mut *tx)
+                .await?;
+                sqlx::query("DELETE FROM sessions WHERE user_id=$1")
+                    .bind(id)
+                    .execute(&mut *tx)
+                    .await?;
+                admin::audit(
+                    &mut tx,
+                    None,
+                    "admin.bootstrap",
+                    "user",
+                    &id.to_string(),
+                    json!({"method":"operator CLI"}),
+                )
+                .await
+                .map_err(|_| anyhow::anyhow!("Audit failed"))?;
+                tx.commit().await?;
+                println!("{}", json!({"user_id":id,"role":"admin"}));
+            }
             "invite" => {
                 let code = secret();
                 sqlx::query(
@@ -231,7 +274,9 @@ pub async fn run() -> anyhow::Result<()> {
         secure: production,
         password_slots: Arc::new(Semaphore::new(2)),
         events: broadcast::channel(128).0,
+        nce: nce::Provider::config(production)?,
     };
+    usim::worker(app.clone());
     let maintenance = app.db.clone();
     tokio::spawn(async move {
         let mut hourly = tokio::time::interval(Duration::from_secs(3600));
@@ -255,15 +300,33 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/auth/login",post(auth::login))
         .route("/api/auth/logout",post(auth::logout))
         .route("/api/auth/session",get(auth::session))
+        .route("/api/posts",get(content::list))
+        .route("/api/admin/overview",get(admin::overview))
+        .route("/api/admin/users",get(admin::users))
+        .route("/api/admin/users/:id",post(admin::edit_user))
+        .route("/api/admin/users/:id/revoke",post(admin::revoke_sessions))
+        .route("/api/admin/users/:id/credits",post(usim::adjust))
+        .route("/api/admin/devices",get(admin::devices))
+        .route("/api/admin/devices/:id",post(admin::edit_device))
+        .route("/api/admin/audit",get(admin::events))
+        .route("/api/admin/invites",post(admin::invite))
+        .route("/api/admin/posts",get(content::admin_list))
+        .route("/api/admin/posts/:slug",post(content::save))
         .route("/api/devices",get(devices::list))
         .route("/api/devices/claim",post(devices::claim))
         .route("/api/devices/:id/summary",get(devices::summary))
         .route("/api/devices/:id/readings",get(devices::readings))
         .route("/api/devices/:id/locations",get(devices::locations))
+        .route("/api/devices/:id/usim",get(usim::get))
+        .route("/api/devices/:id/usim/refresh",post(usim::refresh))
+        .route("/api/sim-requests",get(usim::requests).post(usim::create))
+        .route("/api/sim-requests/:id/history",get(usim::history))
+        .route("/api/sim-requests/:id/action",post(usim::action))
+        .route("/api/credits",get(usim::credits))
         .route("/api/ws",get(devices::ws))
-        .route("/ingest/shield",post(ingest::ingest))
+        .route("/ingest/shield",post(ingest::ingest).layer(DefaultBodyLimit::max(8192)))
         .layer(middleware::from_fn_with_state(app.clone(),headers))
-        .layer(DefaultBodyLimit::max(8192))
+        .layer(DefaultBodyLimit::max(131072))
         .layer(TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT,Duration::from_secs(20)))
         .with_state(app);
     let listener = tokio::net::TcpListener::bind(bind).await?;

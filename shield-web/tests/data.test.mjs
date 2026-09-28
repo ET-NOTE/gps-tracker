@@ -99,3 +99,36 @@ test("CSV forwards cancellation", async (t) => {
     name: "AbortError",
   });
 });
+
+test("CSV keeps units and empty values separate across sensor replacements", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => ({
+    ok: true,
+    json: async () => ({
+      items: [
+        { sensor_set: "soil-v1", values_json: { 11: 0 } },
+        { sensor_set: "pressure-v2", values_json: { 12: 102.7 } },
+      ],
+      next: null,
+    }),
+  }));
+  const text = await exportReadings(1, {}, undefined, [
+    {
+      id: 11,
+      label: "토양 수분",
+      unit: "%",
+      sensor_set: "soil-v1",
+      key: "moisture",
+    },
+    {
+      id: 12,
+      label: "압력",
+      unit: "kPa",
+      sensor_set: "pressure-v2",
+      key: "pressure",
+    },
+  ]);
+  assert.ok(text.includes("토양 수분 (%) [soil-v1/moisture]"));
+  assert.ok(text.includes("압력 (kPa) [pressure-v2/pressure]"));
+  assert.ok(text.includes('"soil-v1","0",""'));
+  assert.ok(text.includes('"pressure-v2","","102.7"'));
+});

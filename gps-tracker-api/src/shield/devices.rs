@@ -92,7 +92,16 @@ pub async fn summary(
         .bind(r.until)
         .fetch_optional(&app.db)
         .await?;
-    Ok(Json(value.ok_or_else(missing)?))
+    let mut value = value.ok_or_else(missing)?;
+    let channels: Vec<Value> = sqlx::query_scalar(include_str!("channel-summary.sql"))
+        .bind(id)
+        .bind(user)
+        .bind(r.since)
+        .bind(r.until)
+        .fetch_all(&app.db)
+        .await?;
+    value["channels"] = json!(channels);
+    Ok(Json(value))
 }
 pub async fn readings(
     State(app): State<App>,
@@ -104,7 +113,7 @@ pub async fn readings(
     own(&app, user, id).await?;
     r.validate()?;
     let limit = r.limit.unwrap_or(50).clamp(1, 1000);
-    let mut rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(v) FROM (SELECT id,recorded_at,received_at,measured_at,temp_c,hum_pct,pv_mv,csq,reg,gnss,build_tag,device_uptime_s FROM readings WHERE device_id=$1 AND user_id=$2 AND recorded_at>=$3 AND recorded_at<$4 AND ($5::timestamptz IS NULL OR (recorded_at,id)<($5,$6)) AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2) ORDER BY recorded_at DESC,id DESC LIMIT $7) v")
+    let mut rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(v) FROM (SELECT id,recorded_at,received_at,measured_at,temp_c,hum_pct,pv_mv,csq,reg,gnss,build_tag,device_uptime_s,sensor_set,values_json FROM readings WHERE device_id=$1 AND user_id=$2 AND recorded_at>=$3 AND recorded_at<$4 AND ($5::timestamptz IS NULL OR (recorded_at,id)<($5,$6)) AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2) ORDER BY recorded_at DESC,id DESC LIMIT $7) v")
         .bind(id).bind(user).bind(r.since).bind(r.until).bind(r.before).bind(r.before_id.unwrap_or(i64::MAX)).bind(limit+1).fetch_all(&app.db).await?;
     let more = rows.len() > limit as usize;
     rows.truncate(limit as usize);

@@ -23,15 +23,30 @@ def main():
     assert not archive.exists()
     with tempfile.TemporaryDirectory(prefix='work-',dir=ROOT) as tmp:
         work=Path(tmp)
-        with (work/'shield_prod.dump').open('wb') as f:
-            subprocess.run(['sudo','-u','postgres','pg_dump','-Fc','--no-owner','--no-acl','shield_prod'],stdout=f,check=True)
+        # Dump and count the same MVCC snapshot, even while devices keep sending.
+        with subprocess.Popen(['sudo','-u','postgres','psql','-XAtq','-v','ON_ERROR_STOP=1','-d','shield_prod'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True) as session:
+            def query(sql):
+                session.stdin.write(sql+'\n');session.stdin.flush()
+                value=session.stdout.readline().strip()
+                assert value, 'Snapshot query failed'
+                return value
+            snapshot=query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SELECT pg_export_snapshot();')
+            assert re.fullmatch(r'[0-9A-Fa-f-]+',snapshot)
+            tables=('users','devices','readings','location_records','content_posts','audit_log','sensor_channels','sim_requests','sim_ledger','credit_entries')
+            counts={}
+            for table in tables:
+                if query(f"SELECT to_regclass('{table}') IS NOT NULL;")=='t':
+                    counts[table]=int(query(f'SELECT count(*) FROM {table};'))
+            counts['schema_versions']=json.loads(query('SELECT json_agg(version ORDER BY version) FROM _sqlx_migrations;'))
+            with (work/'shield_prod.dump').open('wb') as f:
+                subprocess.run(['sudo','-u','postgres','pg_dump','-Fc','--no-owner','--no-acl','--snapshot='+snapshot,'shield_prod'],stdout=f,check=True)
+            session.stdin.write('ROLLBACK;\n\\q\n');session.stdin.flush()
+            assert session.wait(timeout=10)==0
         subprocess.run(['pg_restore','--list',str(work/'shield_prod.dump')],check=True,stdout=subprocess.DEVNULL)
         for source,name in [('/etc/shield-api/shield.env','shield.env'),('/etc/nginx/sites-available/shield.serial.kr.conf','nginx.conf'),('/etc/systemd/system/shield-api.service','shield-api.service')]:
             shutil.copyfile(source,work/name)
-        sql="SELECT json_build_object('users',(SELECT count(*) FROM users),'devices',(SELECT count(*) FROM devices),'readings',(SELECT count(*) FROM readings),'location_records',(SELECT count(*) FROM location_records),'schema_versions',(SELECT json_agg(version ORDER BY version) FROM _sqlx_migrations));"
-        counts=json.loads(subprocess.check_output(['sudo','-u','postgres','psql','-XAt','-d','shield_prod','-c',sql],text=True))
         (work/'metadata.json').write_text(json.dumps({'created_at':stamp,'database':'shield_prod','release':Path('/srv/shield/current/release.txt').read_text().strip(),'counts_after_dump':counts},indent=2))
-        # The count snapshot is advisory for live databases; quiescent restore tests compare exactly.
+        # counts_after_dump retains the metadata key used by older restore tooling.
         with tarfile.open(str(archive)+'.partial','w:gz') as tar:
             for file in work.iterdir():tar.add(file,arcname=file.name)
         os.replace(str(archive)+'.partial',archive)

@@ -221,10 +221,6 @@ function AuthRoute({ onLogin }) {
     <Auth
       onLogin={() => {
         onLogin();
-        if (next?.split('?')[0] === '/arduino-shield') {
-          window.location.assign(next);
-          return;
-        }
         navigate(next || '/', { replace: true });
       }}
     />

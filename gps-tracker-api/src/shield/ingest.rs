@@ -1,6 +1,7 @@
 use super::*;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+use std::collections::{BTreeMap, HashSet};
 use subtle::ConstantTimeEq;
 
 #[derive(Deserialize)]
@@ -15,6 +16,15 @@ struct Sensor {
     at: i64,
     temp_c: Option<f32>,
     hum_pct: Option<f32>,
+    #[serde(default)]
+    values: BTreeMap<String, f64>,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Channel {
+    key: String,
+    label: String,
+    unit: String,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -29,9 +39,18 @@ struct Payload {
     points: Vec<(i64, i32, i32, u8)>,
     #[serde(default)]
     sensors: Vec<Sensor>,
+    sensor_set: Option<String>,
+    #[serde(default)]
+    channels: Vec<Channel>,
+}
+fn valid_key(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 40
+        && s.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
 }
 fn validate(p: &Payload, now: i64) -> Result<()> {
-    if !matches!(p.shield_v, 1 | 2)
+    if !matches!(p.shield_v, 1..=3)
         || p.device_uid.len() > 64
         || p.build_tag.len() > 80
         || p.ts < 0
@@ -44,6 +63,29 @@ fn validate(p: &Payload, now: i64) -> Result<()> {
         || p.diag.gnss.is_some_and(|v| !(0..=10).contains(&v))
     {
         return Err(bad("Invalid Shield payload"));
+    }
+    let keys: HashSet<_> = p.channels.iter().map(|c| c.key.as_str()).collect();
+    if p.shield_v == 3 {
+        if !p.sensor_set.as_deref().is_some_and(valid_key)
+            || p.channels.is_empty()
+            || p.channels.len() > 16
+            || keys.len() != p.channels.len()
+            || p.sensors.is_empty()
+            || p.channels.iter().any(|c| {
+                !valid_key(&c.key)
+                    || c.label.trim().is_empty()
+                    || c.label.chars().count() > 40
+                    || c.unit.chars().count() > 12
+                    || c.unit.chars().any(char::is_control)
+            })
+        {
+            return Err(bad("Invalid sensor channel definitions"));
+        }
+    } else if p.sensor_set.is_some()
+        || !p.channels.is_empty()
+        || p.sensors.iter().any(|s| !s.values.is_empty())
+    {
+        return Err(bad("Dynamic channels require shield_v=3"));
     }
     let valid_time = |at: i64| at >= now - 900 && at <= now + 30;
     let mut previous = 0;
@@ -62,7 +104,14 @@ fn validate(p: &Payload, now: i64) -> Result<()> {
     for s in &p.sensors {
         if !valid_time(s.at)
             || s.at <= previous
-            || (s.temp_c.is_none() && s.hum_pct.is_none())
+            || (s.temp_c.is_none() && s.hum_pct.is_none() && s.values.is_empty())
+            || (p.shield_v == 3
+                && (s.temp_c.is_some()
+                    || s.hum_pct.is_some()
+                    || s.values.len() > 16
+                    || s.values.iter().any(|(k, v)| {
+                        !keys.contains(k.as_str()) || !v.is_finite() || v.abs() > 1e12
+                    })))
             || s.temp_c
                 .is_some_and(|v| !v.is_finite() || !(-40.0..=85.0).contains(&v))
             || s.hum_pct
@@ -104,6 +153,63 @@ pub async fn ingest(
             "Register the device before uploading".into(),
         )
     })?;
+    let sensor_set = if p.shield_v == 3 {
+        p.sensor_set.clone()
+    } else if !p.sensors.is_empty() {
+        Some("dht11".into())
+    } else {
+        None
+    };
+    let definitions = if p.shield_v == 3 {
+        p.channels
+    } else {
+        let mut c = Vec::new();
+        if p.sensors.iter().any(|s| s.temp_c.is_some()) {
+            c.push(Channel {
+                key: "temp_c".into(),
+                label: "온도".into(),
+                unit: "°C".into(),
+            });
+        }
+        if p.sensors.iter().any(|s| s.hum_pct.is_some()) {
+            c.push(Channel {
+                key: "hum_pct".into(),
+                label: "습도".into(),
+                unit: "%".into(),
+            });
+        }
+        c
+    };
+    let mut channel_ids = BTreeMap::new();
+    for c in definitions {
+        let row:Option<(i64,String)>=sqlx::query_as("SELECT id,unit FROM sensor_channels WHERE device_id=$1 AND sensor_set=$2 AND metric_key=$3").bind(id).bind(&sensor_set).bind(&c.key).fetch_optional(&mut *tx).await?;
+        let channel = if let Some((channel, unit)) = row {
+            if unit != c.unit {
+                return Err(bad(
+                    "Sensor unit changed; use a new sensor_set to preserve history",
+                ));
+            }
+            channel
+        } else {
+            let count: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM sensor_channels WHERE device_id=$1")
+                    .bind(id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+            if count >= 64 {
+                return Err(bad("Device channel limit reached"));
+            }
+            sqlx::query_scalar("INSERT INTO sensor_channels(device_id,sensor_set,metric_key,label,unit) VALUES($1,$2,$3,$4,$5) RETURNING id").bind(id).bind(&sensor_set).bind(&c.key).bind(&c.label).bind(&c.unit).fetch_one(&mut *tx).await?
+        };
+        channel_ids.insert(c.key, channel);
+    }
+    if let Some(at) = p
+        .sensors
+        .last()
+        .and_then(|s| DateTime::from_timestamp(s.at, 0))
+    {
+        sqlx::query("UPDATE devices SET active_sensor_set=$2,sensor_set_at=$3 WHERE id=$1 AND (sensor_set_at IS NULL OR sensor_set_at<$3)").bind(id).bind(&sensor_set).bind(at).execute(&mut *tx).await?;
+    }
     sqlx::query("UPDATE devices SET last_seen_at=$1 WHERE id=$2")
         .bind(now)
         .bind(id)
@@ -133,18 +239,29 @@ pub async fn ingest(
             at: 0,
             temp_c: None,
             hum_pct: None,
+            values: BTreeMap::new(),
         }]
     } else {
         p.sensors
     };
     for sample in samples {
+        let mut values = serde_json::Map::new();
+        for (key, value) in &sample.values {
+            values.insert(channel_ids[key].to_string(), json!(value));
+        }
+        if let Some(value) = sample.temp_c {
+            values.insert(channel_ids["temp_c"].to_string(), json!(value));
+        }
+        if let Some(value) = sample.hum_pct {
+            values.insert(channel_ids["hum_pct"].to_string(), json!(value));
+        }
         let measured = if sample.at == 0 {
             None
         } else {
             DateTime::from_timestamp(sample.at, 0)
         };
-        sqlx::query("INSERT INTO readings(message_id,device_id,user_id,recorded_at,received_at,measured_at,temp_c,hum_pct,pv_mv,csq,reg,gnss,build_tag,device_uptime_s) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) ON CONFLICT DO NOTHING")
-            .bind(message).bind(id).bind(user).bind(measured.unwrap_or(now)).bind(now).bind(measured).bind(sample.temp_c).bind(sample.hum_pct).bind(p.diag.pv_mv.map(i32::from)).bind(p.csq).bind(p.reg).bind(p.diag.gnss).bind(&p.build_tag).bind(p.ts).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO readings(message_id,device_id,user_id,recorded_at,received_at,measured_at,temp_c,hum_pct,pv_mv,csq,reg,gnss,build_tag,device_uptime_s,sensor_set,values_json) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) ON CONFLICT DO NOTHING")
+            .bind(message).bind(id).bind(user).bind(measured.unwrap_or(now)).bind(now).bind(measured).bind(sample.temp_c).bind(sample.hum_pct).bind(p.diag.pv_mv.map(i32::from)).bind(p.csq).bind(p.reg).bind(p.diag.gnss).bind(&p.build_tag).bind(p.ts).bind(&sensor_set).bind(Value::Object(values)).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     let _ = app.events.send((user, id));
