@@ -24,6 +24,16 @@
 #include <Wire.h>
 #include <U8x8lib.h>
 #include "shield_policy.h"
+#include "shield_batch.h"
+
+#ifndef SHIELD_DEV_TARGET
+#define SHIELD_DEV_TARGET 0
+#endif
+#if SHIELD_DEV_TARGET
+#define SHIELD_SERVER_HOST "dev-gps.serial.kr"
+#else
+#define SHIELD_SERVER_HOST "gps.serial.kr"
+#endif
 
 #ifndef SHIELD_DIAGNOSTICS
 #define SHIELD_DIAGNOSTICS 0
@@ -32,9 +42,9 @@
 #error "SHIELD_DIAGNOSTICS must be 0 or 1."
 #endif
 #if SHIELD_DIAGNOSTICS
-#define SHIELD_BUILD_TAG "shield-opt-20260928-v10-dbg"
+#define SHIELD_BUILD_TAG "shield-batch-20260928-v11-dbg"
 #else
-#define SHIELD_BUILD_TAG "shield-opt-20260928-v10"
+#define SHIELD_BUILD_TAG "shield-batch-20260928-v11"
 #endif
 
 #if !defined(ARDUINO_AVR_UNO)
@@ -94,6 +104,7 @@ shield::GnssState gnssState=shield::GNSS_NO_REPLY;
 uint32_t gnssStamp=0, gnssPoll=0, uiStamp=0, batteryStamp=0;
 uint32_t positionStamp=0;
 char latitude[13]="", longitude[14]="", utc[19]="", hdop[7]="";
+shield::Batch pendingFixes;
 char lastPositionUtc[19]=""; // Preserve across empty/error replies; they cannot refresh old fixes.
 static void receiveLines();
 static uint8_t command(const __FlashStringHelper *cmd, uint32_t timeout);
@@ -138,6 +149,7 @@ static void parseGnss(char *csv) {
   }
   gnssFix=gnssState==shield::GNSS_READY;
   gnssSeen=true; gnssStamp=millis();
+  if (gnssFix) pendingFixes.add(latitude, longitude, utc, satellitesView, positionStamp);
 }
 
 #if SHIELD_DIAGNOSTICS
@@ -534,16 +546,23 @@ static uint8_t waitReply(uint32_t timeout) {
   while (millis() - start < timeout) { receiveLines(); if (restartPending) return 0; if (reply) return reply; }
   return 0;
 }
-static int buildPayload(char *body, size_t capacity, bool withFix) {
-  int n=snprintf_P(body,capacity,PSTR("{\"device_uid\":\"uno-shield-test\",\"build_tag\":\"" SHIELD_BUILD_TAG "\",\"ts\":%lu,\"csq\":%d,\"reg\":%d,\"diag\":{\"pv_mv\":%u,\"gnss\":%u}"),
-      (unsigned long)(millis()/1000UL),rssi,regStat,pvMv,(unsigned)gnssState);
-  if(n<0 || (size_t)n>=capacity) return -1;
-  int tail;
-  if(withFix) {
-    // Use the LTE source for the modem's internal GNSS (CGNSINF has no used count).
-    tail=snprintf_P(body+n,capacity-n,PSTR(",\"lte\":{\"fix\":true,\"lat\":%s,\"lng\":%s,\"sat_view\":%d}}"),latitude,longitude,satellitesView);
-  } else tail=snprintf_P(body+n,capacity-n,PSTR(",\"lte\":{\"fix\":false}}"));
-  return tail<0 || (size_t)tail>=capacity-n ? -1 : n+tail;
+// Two passes over the same snapshot: count bytes, then stream without a full JSON buffer.
+static int writePayload(bool transmit, uint32_t reportUptime) {
+  char part[192];
+  int length=snprintf_P(part,sizeof(part),PSTR("{\"device_uid\":\"uno-shield-test\",\"shield_v\":1,\"build_tag\":\"" SHIELD_BUILD_TAG "\",\"ts\":%lu,\"csq\":%d,\"reg\":%d,\"diag\":{\"pv_mv\":%u,\"gnss\":%u},\"points\":["),
+      (unsigned long)reportUptime,rssi,regStat,pvMv,(unsigned)gnssState);
+  if(length<0 || (size_t)length>=sizeof(part)) return -1;
+  if(transmit) modem.print(part);
+  for(uint8_t i=0;i<pendingFixes.count;++i) {
+    const shield::BatchPoint &p=pendingFixes.points[i];
+    const int n=snprintf_P(part,sizeof(part),PSTR("%s[%lu,%ld,%ld,%u]"),i?",":"",
+        (unsigned long)p.utc_s,(long)p.lat_e6,(long)p.lng_e6,p.sat_view);
+    if(n<0 || (size_t)n>=sizeof(part)) return -1;
+    length+=n;
+    if(transmit) modem.print(part);
+  }
+  if(transmit) modem.print(F("]}"));
+  return length+2;
 }
 
 // Query only when the modem state is uncertain (boot, timeout, reboot).
@@ -575,7 +594,7 @@ static bool postReport(bool &withFix) {
     if(!pdpActive) { Serial.println(F("[5/5] PDP 연결 실패")); return false; }
   }
   Serial.println(F("[5/5] 데이터망 연결: 성공"));
-  if(command(F("AT+SHCONF=\"URL\",\"http://gps.serial.kr\""),3000)!=1 ||
+  if(command(F("AT+SHCONF=\"URL\",\"http://" SHIELD_SERVER_HOST "\""),3000)!=1 ||
      command(F("AT+SHCONF=\"BODYLEN\",1024"),2000)!=1 ||
      command(F("AT+SHCONF=\"HEADERLEN\",350"),2000)!=1 ||
      command(F("AT+SHSSL=0"),2000)!=1) return false; // Index 0 accepts no certificate argument.
@@ -605,28 +624,33 @@ static bool postReport(bool &withFix) {
   if(withFix && shield::due(millis(),positionStamp,shield::MAX_SEND_AGE_MS)) {
     withFix=false; gnssState=shield::GNSS_STALE;
   }
-  char body[256];
+  pendingFixes.prune(millis());
   readBattery();
-  const int length=buildPayload(body,sizeof(body),withFix);
-  if(length<0) { Serial.println(F("[5/5] 본문 크기 초과")); return false; }
+  const uint32_t reportUptime=millis()/1000UL;
+  const int length=writePayload(false,reportUptime);
+  if(length<0 || length>1024) { Serial.println(F("[5/5] 본문 크기 초과")); return false; }
 #if SHIELD_DIAGNOSTICS && defined(__AVR__)
   extern char __heap_start, *__brkval;
   Serial.print(F("[MEM] HTTP free SRAM="));
   Serial.println((int)(SP-(uintptr_t)(__brkval ? __brkval : &__heap_start)));
 #endif
   Serial.println(withFix ? F("[5/5] 위치+상태 전송") : F("[5/5] 상태 전송 (유효한 GPS 없음)"));
+  Serial.print(F("[BATCH] points=")); Serial.print(pendingFixes.count);
+  Serial.print(F(" bytes=")); Serial.println(length);
   modem.print(F("AT+SHBOD=")); modem.print(length); modem.print(F(",10000\r"));
   if(!waitPrompt(3000)) { listenFor(10500); return false; } // Let data-entry timeout expire.
-  modem.print(body);
+  if(writePayload(true,reportUptime)!=length) return false;
   if(waitReply(10000)!=1) { Serial.println(F("[5/5] 본문 접수 실패")); return false; }
-  if(command(F("AT+SHREQ=\"/ingest\",3"),12000)!=1) return false;
+  if(command(F("AT+SHREQ=\"/ingest/shield\",3"),12000)!=1) return false;
   const uint32_t start=millis();
   while(httpStatus<0 && !restartPending && millis()-start<30000UL) { receiveLines(); serviceUi(); }
-  return !restartPending && httpStatus==200;
+  const bool accepted=!restartPending && httpStatus==200;
+  if(accepted) pendingFixes.acknowledge();
+  return accepted;
 }
 
 static void stageServer() {
-  Serial.println(F("[5/5] 서버 전송 시작 (gps.serial.kr)"));
+  Serial.println(F("[5/5] 서버 전송 시작 (" SHIELD_SERVER_HOST ")"));
   httpStatus=-1;
   bool withFix=gnssFix && gnssSeen && !shield::due(millis(),positionStamp,shield::FIX_FRESH_MS);
   // SIM7080G SH* must not run while the internal GNSS owns its resources.

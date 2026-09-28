@@ -14,7 +14,7 @@ static void reset() {
   gnssState=shield::GNSS_NO_REPLY;gnssRawFix=-1;satellitesView=-1;
   lastPostMs=fakeMillis;lastPollMs=fakeMillis;gnssPoll=fakeMillis;
   regStat=5;rssi=20;httpStatus=-1;latitude[0]=longitude[0]=utc[0]=hdop[0]=0;
-  lastPositionUtc[0]=0;
+  lastPositionUtc[0]=0;pendingFixes=shield::Batch();
   httpState=-1;acquisitionMs=shield::GNSS_ACQUIRE_MS;
 }
 static void fix(const char *value="1,1,20260928090000.000,37.500000,127.000000,10,0,0,1,,1.2,1,1,,8,,2,2") {
@@ -53,8 +53,8 @@ int main() {
   reset();fix();stageServer();assert(httpStatus==200 && postFailures==0 && modem.gnss);
   assert(indexOf("AT+CGNSPWR=0")<indexOf("AT+SHCONN"));
   assert(indexOf("AT+SHSSL=0")<indexOf("AT+SHCONN"));
-  assert(indexOf("AT+SHREQ=\"/ingest\",3")<indexOf("AT+CGNSPWR=1"));
-  assert(modem.bodies.size()==1 && modem.bodies[0].find("\"fix\":true")!=std::string::npos);
+  assert(indexOf("AT+SHREQ=\"/ingest/shield\",3")<indexOf("AT+CGNSPWR=1"));
+  assert(modem.bodies.size()==1 && modem.bodies[0].find("\"points\":[[")!=std::string::npos);
   assert(modem.bodies[0].find("vbat_mv")==std::string::npos);
   assert(acquisitionMs==shield::GNSS_REACQUIRE_MS);
   assert(std::count(modem.commands.begin(),modem.commands.end(),"AT+SHDISC")==1);
@@ -77,19 +77,41 @@ int main() {
 
   reset();stageServer();assert(httpStatus==200);
   assert(acquisitionMs==shield::GNSS_ACQUIRE_MS);
-  assert(modem.bodies[0].find("\"fix\":false")!=std::string::npos && modem.bodies[0].find("\"lat\"")==std::string::npos);
+  assert(modem.bodies[0].find("\"points\":[]")!=std::string::npos && modem.bodies[0].find("\"lat\"")==std::string::npos);
   std::cout<<modem.bodies[0]<<"\n";
-  char tiny[10];assert(buildPayload(tiny,sizeof(tiny),true)==-1);
-  strcpy(latitude,"-90.000000");strcpy(longitude,"-180.000000");satellitesView=99;fakeMillis=UINT32_MAX-100;
-  char maximum[256];assert(buildPayload(maximum,sizeof(maximum),true)>0);
+  assert(shield::coordinateE6("-90.000001")==-90000001);
+  assert(shield::coordinateE6("127.123456789")==127123456);
+  assert(shield::coordinateE6("-0.000001")==-1);
+  assert(shield::utcSeconds("20260928090000.000")==1790586000UL);
+  assert(shield::utcSeconds("20280229000000.000")==1835395200UL);
+  assert(shield::utcSeconds("21000101000000.000")==0);
+  reset();
+  for(unsigned i=0;i<10;++i) {
+    char stamp[19];snprintf(stamp,sizeof(stamp),"2026092809%02u%02u.000",i/6,(i%6)*10);
+    assert(pendingFixes.add("-90.000000","-180.000000",stamp,99,fakeMillis+i*10000));
+  }
+  assert(pendingFixes.count==8);
+  assert(pendingFixes.points[0].utc_s==1790586020UL);
+  assert(!pendingFixes.add("0","0","20260928090130.000",8,fakeMillis));
+  const int maxLength=writePayload(false,UINT32_MAX/1000);assert(maxLength>400 && maxLength<=1024);
+  fakeMillis+=90000;modem.gnss=false;bool fresh=false;assert(postReport(fresh));
+  assert(pendingFixes.count==0 && modem.bodies[0].size()<=1024);
+  std::cout<<modem.bodies[0]<<"\n";
+  reset();fix();modem.status=503;stageServer();assert(pendingFixes.count==1);
+  const auto before=pendingFixes.points[0].utc_s;modem.status=200;stageServer();
+  assert(pendingFixes.count==0 && modem.bodies[0].find(std::to_string(before))!=std::string::npos);
+  assert(modem.bodies[1].find(std::to_string(before))!=std::string::npos);
+  reset();fix();fakeMillis+=600000;pendingFixes.prune(fakeMillis);assert(pendingFixes.count==0);
+  reset();fakeMillis=UINT32_MAX-1000;fix();pendingFixes.prune(10000);assert(pendingFixes.count==1);
+  pendingFixes.prune(600000);assert(pendingFixes.count==0);
   reset();fix();fakeMillis+=shield::MAX_SEND_AGE_MS;modem.gnss=false;gnssEnabled=false;
   bool expiredFix=true;assert(postReport(expiredFix));
   assert(!expiredFix && gnssState==shield::GNSS_STALE);
-  assert(modem.bodies[0].find("\"lat\"")==std::string::npos);
+  assert(modem.bodies[0].find("\"points\":[[")!=std::string::npos); // Old but retained samples keep their original UTC.
   reset();stage=3;gnssPoll=0;serviceGnss();assert(modem.commands.empty());
   stage=4;serviceGnss();assert(modem.commands.empty()); // Do not start GNSS during LTE registration.
 
-  for(const char *failure : {"AT+SHCONN","AT+SHCONF=\"BODYLEN\",1024","AT+SHCHEAD","AT+SHREQ=\"/ingest\",3"}) {
+  for(const char *failure : {"AT+SHCONN","AT+SHCONF=\"BODYLEN\",1024","AT+SHCHEAD","AT+SHREQ=\"/ingest/shield\",3"}) {
     reset();modem.failCommand=failure;stageServer();
     assert(postFailures==1 && postDelayMs==15000 && !modem.gnss && !modem.pdp);
     assert(Serial.output.find("[AT FAIL]")!=std::string::npos);

@@ -53,7 +53,7 @@ public:
       return 1;
     }
     queue("\r\nOK\r\n");
-    if(cmd=="AT+SHREQ=\"/ingest\",3") queue("\r\n+SHREQ: \"POST\","+std::to_string(status)+",2\r\n");
+    if(cmd=="AT+SHREQ=\"/ingest/shield\",3") queue("\r\n+SHREQ: \"POST\","+std::to_string(status)+",2\r\n");
     return 1;
   }
 };
