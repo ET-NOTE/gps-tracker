@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<title>아두이노 쉴드 수신 모니터 · GPS</title>
+<style>
+:root{--primary:#17665b;--primary-soft:#e9f5ef;--ink:#183332;--muted:#627775;--line:#dbe5e1;--paper:#fff;--bg:#f3f6f3;--warning:#986018;--bad:#b33c39;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg);font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}button{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);padding:10px 15px}button:hover{border-color:var(--primary)}button:disabled{opacity:.55;cursor:wait}button:focus-visible,input:focus-visible{outline:3px solid #75b9a9;outline-offset:3px}main{max-width:1160px;margin:0 auto;padding:38px 28px 48px}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.12em;color:var(--primary);margin:0 0 12px}.top{display:flex;align-items:center;justify-content:space-between;gap:20px}h1{font-size:clamp(25px,4vw,34px);letter-spacing:-.055em;margin:0 0 9px}h2{font-size:18px;margin:0}.subtitle,.muted{color:var(--muted);font-size:14px;line-height:1.6}.subtitle{margin:0}.status{display:inline-flex;gap:8px;align-items:center;padding:9px 13px;border-radius:999px;background:#e8edeb;font-size:13px;font-weight:650;white-space:nowrap}.status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.status.live{color:var(--primary);background:var(--primary-soft)}.status.warn{color:var(--warning);background:#fff3df}.status.error{color:var(--bad);background:#fcecea}.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:15px;margin:25px 0 20px}.toolbar label{display:flex;align-items:center;gap:7px;font-size:14px}.toolbar input{accent-color:var(--primary);width:17px;height:17px}.toolbar .updated{margin-left:auto;font-size:12px;color:var(--muted)}.error-box{border:1px solid #edc6c3;background:#fff0ef;border-radius:10px;padding:13px 16px;color:var(--bad);font-size:14px;margin-bottom:18px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:21px}.card .label{font-size:13px;color:var(--muted);margin-bottom:14px}.value{font-size:29px;font-weight:700;letter-spacing:-.04em;line-height:1.3}.hint{color:var(--muted);font-size:12px;margin-top:9px;line-height:1.5}.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;margin-top:20px;overflow:hidden}.panel-head{padding:21px 22px 15px;display:flex;align-items:center;justify-content:space-between;gap:15px}.panel-head p{margin:5px 0 0}.chart-wrap{padding:0 20px 18px}.chart{width:100%;height:165px;display:block}.chart text{font-family:inherit;font-size:11px;fill:var(--muted)}.details{display:flex;gap:24px;flex-wrap:wrap;padding:15px 22px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}.details strong{color:var(--ink);font-weight:600}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}th,td{padding:13px 20px;text-align:left;border-top:1px solid var(--line)}th{background:#f8faf8;color:var(--muted);font-size:12px;font-weight:600}td:last-child{max-width:240px;overflow:hidden;text-overflow:ellipsis}tbody tr:hover{background:#fafcfb}.fix{color:var(--primary);font-weight:600}.empty{text-align:center;padding:35px 18px;color:var(--muted);line-height:1.7}footer{margin-top:20px;color:var(--muted);font-size:12px;line-height:1.8}code{font:inherit;font-variant-numeric:tabular-nums}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}[hidden]{display:none!important}
+@media(max-width:760px){main{padding:26px 16px}.cards{grid-template-columns:repeat(2,1fr)}.top{align-items:flex-start;flex-direction:column;gap:15px}.card{padding:17px}.value{font-size:25px}.toolbar .updated{width:100%;margin-left:0}.panel-head{align-items:flex-start;flex-direction:column}.details{gap:10px 20px}th,td{padding:12px 15px}.chart-wrap{padding:0 10px 10px}}
+</style>
+</head>
+<body><main>
+<p class="eyebrow">ARDUINO SHIELD · LIVE MONITOR</p>
+<header class="top"><div><h1>아두이노 쉴드 수신 모니터</h1><p class="subtitle">UNO + SIM7080G · <code>uno-shield-test</code></p></div><span id="status" class="status" role="status">확인 중</span></header>
+<div class="toolbar"><button id="refresh" type="button">지금 새로고침</button><label><input id="auto" type="checkbox" checked>10초마다 자동 갱신</label><span class="updated" id="updated">첫 데이터를 불러오는 중입니다.</span></div>
+<div id="error" class="error-box" role="alert" hidden></div>
+<section class="cards" aria-label="수신 요약">
+<article class="card"><div class="label">마지막 수신</div><div class="value" id="age">—</div><div class="hint" id="seen">서버 도착 시각 기준</div></article>
+<article class="card"><div class="label">최근 24시간 수신</div><div class="value" id="count">—</div><div class="hint">서버에 저장된 상태 보고</div></article>
+<article class="card"><div class="label">PV 전압</div><div class="value" id="pv">—</div><div class="hint">A0 실측값 · 배터리 잔량과 다릅니다</div></article>
+<article class="card"><div class="label">GPS 위치</div><div class="value" id="gps">—</div><div class="hint" id="gpsHint">통신 수신과 위치 확보는 별도입니다</div></article>
+</section>
+<section class="panel" aria-labelledby="chartTitle"><div class="panel-head"><div><h2 id="chartTitle">PV 전압 추이</h2><p class="muted" id="chartNote">최근 수신 기록을 확인합니다.</p></div><span class="muted">단위 V</span></div><div class="chart-wrap"><svg id="chart" class="chart" viewBox="0 0 1040 165" role="img" aria-label="수신된 PV 전압 추이"></svg></div><div class="details"><span>통신망 <strong id="network">—</strong></span><span>신호 CSQ <strong id="signal">—</strong></span><span>펌웨어 <strong id="build">—</strong></span></div></section>
+<section class="panel" aria-labelledby="historyTitle"><div class="panel-head"><div><h2 id="historyTitle">수신 이력</h2><p class="muted">최근 24시간 중 최신 100건 · 한국 시각(KST)</p></div><button id="download" type="button" disabled>CSV 내려받기</button></div><div class="table-wrap"><table><thead><tr><th scope="col">수신 시각</th><th scope="col">수신 간격</th><th scope="col">가동 시간</th><th scope="col">PV 전압</th><th scope="col">GPS</th><th scope="col">CSQ</th><th scope="col">통신망</th><th scope="col">펌웨어</th></tr></thead><tbody id="rows"></tbody></table></div><div id="empty" class="empty">수신 기록을 불러오는 중입니다.</div></section>
+<footer>쉴드 전용 확인 화면입니다. KC 시험 페이지와 별도로 동작합니다.<br>단말은 전송 완료 후 60초 대기하며, 실패하면 재시도하므로 수신 간격이 달라질 수 있습니다. 연결 상태는 최근 수신 시각으로 판단합니다.</footer>
+</main>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  let data = null, busy = false, timer = null, fetchedAt = 0, failed = false;
+  const fmt = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  const time = value => value && Number.isFinite(Date.parse(value)) ? fmt.format(new Date(value)) : '—';
+  const voltage = value => typeof value === 'number' && value >= 0 && value <= 20000 ? (value/1000).toFixed(3)+' V' : '—';
+  const signal = value => value >= 0 && value <= 31 && value !== null ? String(value) : '미확인';
+  const network = value => ({1:'홈망 등록',5:'로밍 등록',2:'망 탐색',3:'등록 거절',0:'미등록'})[value] || '미확인';
+  const duration = seconds => !Number.isFinite(seconds) || seconds < 0 ? '—' : seconds < 60 ? Math.floor(seconds)+'초' : seconds < 3600 ? Math.floor(seconds/60)+'분 '+Math.floor(seconds%60)+'초' : Math.floor(seconds/3600)+'시간 '+Math.floor(seconds%3600/60)+'분';
+  function updateStatus() {
+    if (!data) return;
+    const age = data.last_seen_at ? Math.max(0,(Date.parse(data.server_now)-Date.parse(data.last_seen_at)+Date.now()-fetchedAt)/1000) : null;
+    $('age').textContent = age === null ? '수신 전' : duration(age)+' 전';
+    $('status').className = 'status'+(failed ? ' error' : age !== null && age < 180 ? ' live' : ' warn');
+    $('status').textContent = failed ? '조회 실패 · 이전 값' : age === null ? '수신 대기' : age < 180 ? '최근 수신 정상' : '수신 지연';
+  }
+  function chart(items) {
+    const root=$('chart'); root.replaceChildren();
+    const points=items.filter(x=>typeof x.pv_mv==='number' && x.pv_mv>=0 && x.pv_mv<=20000).slice().reverse();
+    const node=(name,attrs,text) => {const n=document.createElementNS('http://www.w3.org/2000/svg',name);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text!==undefined)n.textContent=text;root.append(n);return n;};
+    if(!points.length){node('text',{x:520,y:82,'text-anchor':'middle'},'PV 전압이 수신되면 그래프가 표시됩니다.');$('chartNote').textContent='아직 전압 기록이 없습니다.';return;}
+    const values=points.map(p=>p.pv_mv/1000),lo=Math.min(...values)-.025,hi=Math.max(...values)+.025;
+    const start=Date.parse(points[0].recorded_at),end=Date.parse(points.at(-1).recorded_at);
+    const x=p=>end===start?535:55+(Date.parse(p.recorded_at)-start)/(end-start)*960;
+    const y=p=>125-(p.pv_mv/1000-lo)/(hi-lo)*105;
+    [0,.5,1].forEach(t=>{const yy=125-t*105;node('line',{x1:55,y1:yy,x2:1015,y2:yy,stroke:'#e7eeea'});node('text',{x:45,y:yy+4,'text-anchor':'end'},(lo+t*(hi-lo)).toFixed(2));});
+    node('polyline',{points:points.map(p=>x(p)+','+y(p)).join(' '),fill:'none',stroke:'#17665b','stroke-width':2.5,'stroke-linejoin':'round'});
+    const last=points.at(-1);node('circle',{cx:x(last),cy:y(last),r:4,fill:'#17665b'});
+    node('text',{x:55,y:153},time(points[0].recorded_at));node('text',{x:1015,y:153,'text-anchor':'end'},time(last.recorded_at));
+    $('chartNote').textContent=points.length+'개 수신값 · 최저 '+Math.min(...values).toFixed(3)+' V / 최고 '+Math.max(...values).toFixed(3)+' V';
+  }
+  function render() {
+    const items=data.items, latest=items[0];
+    $('seen').textContent=time(data.last_seen_at);
+    $('count').textContent=Number(data.count_24h).toLocaleString('ko-KR')+'건';
+    $('pv').textContent=latest?voltage(latest.pv_mv):'—';
+    $('gps').textContent=latest ? latest.fix ? '위치 확보' : '측위 대기' : '수신 전';
+    $('gpsHint').textContent=latest?.fix ? '품질 기준을 통과한 위치가 수신됐습니다' : '좌표가 없어도 상태 보고는 수신됩니다';
+    $('network').textContent=latest?network(latest.reg):'—';$('signal').textContent=latest?signal(latest.csq):'—';$('build').textContent=latest?.build_tag || '—';
+    const body=$('rows');body.replaceChildren();
+    items.forEach((r,i)=>{const tr=document.createElement('tr');const gap=items[i+1]?(Date.parse(r.recorded_at)-Date.parse(items[i+1].recorded_at))/1000:null;
+      [time(r.recorded_at),gap===null?'—':duration(gap),duration(r.device_uptime_s),voltage(r.pv_mv),r.fix?'위치 확보':'측위 대기',signal(r.csq),network(r.reg),r.build_tag||'—'].forEach((value,j)=>{const td=document.createElement('td');td.textContent=value;if(j===4 && r.fix)td.className='fix';tr.append(td);});body.append(tr);});
+    $('empty').hidden=items.length>0;$('empty').textContent=data.available?'최근 24시간 수신 기록이 없습니다. 단말의 전원과 통신 상태를 확인해 주세요.':'아직 공개 시험 장치의 수신 기록이 없습니다.';
+    $('download').disabled=!items.length;chart(items);updateStatus();
+  }
+  function schedule(){clearTimeout(timer);if($('auto').checked && !document.hidden)timer=setTimeout(load,10000);}
+  async function load(){
+    if(busy)return;busy=true;$('refresh').disabled=true;
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+    try{const base=location.pathname.replace(/\/$/,'');const response=await fetch(base+'/data',{cache:'no-store',signal:controller.signal});if(!response.ok)throw new Error('HTTP '+response.status);const next=await response.json();if(!Array.isArray(next.items) || !Number.isFinite(Date.parse(next.server_now)))throw new Error('invalid response');data=next;fetchedAt=Date.now();failed=false;$('error').hidden=true;$('updated').textContent='마지막 갱신 '+time(data.server_now);render();}
+    catch(error){failed=true;$('error').hidden=false;$('error').textContent='수신 기록을 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 시도해 주세요. 기존 값은 유지됩니다.';if(!data){$('status').className='status error';$('status').textContent='조회 실패';$('empty').textContent='새로고침으로 다시 확인할 수 있습니다.';}updateStatus();}
+    finally{clearTimeout(timeout);busy=false;$('refresh').disabled=false;schedule();}
+  }
+  $('refresh').addEventListener('click',load);$('auto').addEventListener('change',schedule);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(timer);else if($('auto').checked)load();});
+  setInterval(updateStatus,1000);
+  $('download').addEventListener('click',()=>{if(!data)return;const escape=value=>{let s=String(value??'');if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};const rows=[['수신시각(UTC)','가동초','PV_mV','GPS_fix','CSQ','등록상태','펌웨어'],...data.items.map(r=>[r.recorded_at,r.device_uptime_s,r.pv_mv,r.fix,r.csq,r.reg,r.build_tag])];const blob=new Blob(['\ufeff'+rows.map(row=>row.map(escape).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='arduino-shield-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+  load();
+})();
+</script></body></html>

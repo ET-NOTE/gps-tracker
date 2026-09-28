@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod ai;
+pub mod arduino_shield;
 pub mod auth;
 pub mod chat;
 pub mod corporate;
@@ -60,6 +61,11 @@ pub fn build_router(state: AppState) -> Router {
         .route("/gps-tracker/health", get(health::health))
         .route("/gps-tracker/ingest", post(ingest::ingest))
         .route("/gps-tracker/dht", post(diag::dht_ingest))
+        .route("/gps-tracker/arduino-shield", get(arduino_shield::page))
+        .route(
+            "/gps-tracker/arduino-shield/data",
+            get(arduino_shield::data),
+        )
         .route("/gps-tracker/diagnostic", get(diag::diag_page))
         .route("/gps-tracker/diagnostic/data", get(diag::diag_data))
         .route("/gps-tracker/diagnostic/device", get(diag::device_log_page))
