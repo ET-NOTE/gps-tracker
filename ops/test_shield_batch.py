@@ -1,4 +1,11 @@
 """Synthetic shield v1 contract checks. Refuses production; cleans only test objects."""
+import base64
+import hashlib
+import hmac
+import os
+import socket
+import ssl
+import struct
 import copy
 import json
 import pathlib
@@ -39,6 +46,67 @@ def send(body, expected=200, path='/gps-tracker/ingest/shield'):
 
 def stream(device, user):
     return sql("SELECT extract(epoch FROM recorded_at)::bigint,source,lat,lng,speed_kmh,speed_reason FROM location_speed_points_between(%s,%s,now()-interval '20 minutes',now()+interval '1 minute') ORDER BY recorded_at", (device, user))
+
+def verify_websocket(live, user, payload):
+    encode=lambda v:base64.urlsafe_b64encode(json.dumps(v,separators=(',',':')).encode()).rstrip(b'=')
+    msg=encode({'alg':'HS256','typ':'JWT'})+b'.'+encode({'sub':str(user),'iat':int(time.time()),'exp':int(time.time())+60,'typ':'access'})
+    secret=env['JWT_SECRET'].strip().strip('"').strip("'")
+    token=(msg+b'.'+base64.urlsafe_b64encode(hmac.new(secret.encode(),msg,hashlib.sha256).digest()).rstrip(b'=')).decode()
+    def request(path):
+        req=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+token})
+        with urllib.request.urlopen(req,timeout=10) as r:return json.load(r)
+    # Small RFC 6455 test client: no extra packages on the resource-limited VPS.
+    # https://www.rfc-editor.org/rfc/rfc6455#section-5.2
+    target = urllib.parse.urlparse(base)
+    sock = socket.create_connection((target.hostname,target.port or 443),timeout=8)
+    if target.scheme=='https':
+        sock = ssl.create_default_context().wrap_socket(sock,server_hostname=target.hostname)
+    stream = sock.makefile('rb')
+    def send(payload, opcode=1):
+        mask=os.urandom(4)
+        assert len(payload)<126
+        sock.sendall(bytes([0x80|opcode,0x80|len(payload)])+mask+bytes(v^mask[i%4] for i,v in enumerate(payload)))
+    def receive():
+        while True:
+            first,second=stream.read(2)
+            assert first&0x80 and not first&0x70 and not second&0x80
+            length=second&127
+            if length==126:length=struct.unpack('!H',stream.read(2))[0]
+            elif length==127:length=struct.unpack('!Q',stream.read(8))[0]
+            assert length<100000
+            data=stream.read(length)
+            if first&15==9:send(data,10);continue
+            assert first&15==1
+            return json.loads(data)
+    try:
+        key=base64.b64encode(os.urandom(16)).decode()
+        endpoint='/gps-tracker/ws/realtime?token='+urllib.parse.quote(token)
+        sock.sendall((f'GET {endpoint} HTTP/1.1\r\nHost: {target.netloc}\r\nUpgrade: websocket\r\n'
+                      f'Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n').encode())
+        assert b' 101 ' in stream.readline()
+        headers={}
+        while True:
+            line=stream.readline().strip()
+            if not line:break
+            k,v=line.decode().split(':',1);headers[k.lower()]=v.strip()
+        expected=base64.b64encode(hashlib.sha1((key+'258EAFA5-E914-47DA-95CA-C5AB0DC85B11').encode()).digest()).decode()
+        assert headers['sec-websocket-accept']==expected
+        send(json.dumps(dict(action='subscribe',device_ids=[live])).encode())
+        ack=receive()
+        if ack['type']=='hello':ack=receive()
+        assert ack['type']=='ack' and ack['accepted']==[live]
+        globals()['send'](payload)
+        event=receive()
+        while event['type']!='location':event=receive()
+        assert len(event['fixes'])==2 and event['source']=='lte_gnss' and 3.9<event['speed_kmh']<4.1
+        history=request('/gps-tracker/api/v1'+f'/devices/{live}/locations?limit=2')
+        saved={p['recorded_at']:p for p in history}
+        for f in event['fixes']:
+            p=saved[f['recorded_at']]
+            assert p['speed_kmh']==f['speed_kmh'] and p['reported_speed_kmh'] is None
+        print('PASS shield WebSocket point array, LTE source and identical REST per-point speeds')
+    finally:
+        stream.close();sock.close()
 
 try:
     for name in ('a','b'):
@@ -95,6 +163,8 @@ try:
     assert send(switched)['accepted']==1
     assert len(stream(device,b))==1
     print('PASS no-fix heartbeat and ownership retention')
+    live=copy.deepcopy(payload);live['points']=[[ts+80,37000800,127000000,8],[ts+90,37000900,127000000,8]]
+    verify_websocket(device,b,live)
 
     old = {'device_uid':legacy_uid,'ts':100,'l80':{'fix':True,'lat':37,'lng':127,'sat':8},
            'fixes':[{'lat':37,'lng':127,'sat':8,'age_ms':10000,'up_ms':90000},
