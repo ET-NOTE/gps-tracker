@@ -34,6 +34,7 @@ pub fn build_router(state: AppState) -> Router {
     // /gps-tracker prefix는 nginx가 stripping하지 않고 그대로 proxy_pass하므로
     // 여기서도 동일 prefix로 라우트.
     let api_v1 = Router::new()
+        .merge(arduino_shield::router())
         .merge(auth::router())
         .merge(devices::router())
         .merge(documents::router())

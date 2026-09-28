@@ -259,6 +259,8 @@ export const api = {
   },
   // devices
   listDevices:  () => cachedRead('devices', () => req('GET', '/devices')),
+  listShieldDevices: (signal) => req('GET', '/shield-monitor/devices', undefined, true, { signal }),
+  getShieldStatus: (id, signal) => req('GET', `/shield-monitor/devices/${id}`, undefined, true, { signal }),
   pairDevice:   (params) => req('POST', '/devices/pair', params),  // { device_uid?, iccid?, display_name? }
   scanDevices:  () => req('GET', '/devices/scan'),                 // [KC] 최근 ingest 중 미페어링 단말 목록
   updateDevice: (id, patch)             => req('PATCH',  `/devices/${id}`, patch),

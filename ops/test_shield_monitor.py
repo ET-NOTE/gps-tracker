@@ -43,7 +43,8 @@ try:
         (1,now()-interval '25 hours','lte_gnss',1,false,0,24,5,'{}'),
         (1,now(),'phone',1,true,8,24,5,'{}');
     ''')
-    statement = query.replace('$1', "'uno-shield-test'") + ';'
+    sql("ALTER TABLE location_records ADD COLUMN user_id bigint, ADD COLUMN fixes_jsonb jsonb;")
+    statement = query.replace('$1', "'uno-shield-test'").replace('$2', 'NULL') + ';'
     value = json.loads(sql(statement))
     assert value['available'] and value['count_24h'] == 103 and len(value['items']) == 100
     assert all(r['pv_mv'] == 4180 and r['build_tag'] == 'test' for r in value['items'])
