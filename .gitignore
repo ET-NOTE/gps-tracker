@@ -7,6 +7,8 @@ gps-tracker-e21be-firebase-adminsdk-*.json
 **/.env.production
 *.pem
 *.key
+**/shield_credentials.h
+!ops/tests/uno_shield/stubs/shield_credentials.h
 *.keystore
 !**/debug.keystore.example
 
@@ -67,4 +69,5 @@ Thumbs.db
 
 # ===== build / cache =====
 .cache/
+__pycache__/
 *.log
