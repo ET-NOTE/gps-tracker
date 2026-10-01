@@ -20,3 +20,13 @@
 - 새로고침 경고는 코드 연결을 검토했으며 브라우저별 강제 종료 시 내용 복원은 제공하지 않는다. 자동 임시저장 기능은 이번 범위에 포함하지 않는다.
 
 Shield 프론트만 변경한다. API·DB 스키마·결제·1NCE 주문 로직·GPS/KC 수신에는 변경이 없다.
+
+## 운영 반영
+
+- 소스 `0510998`, 릴리스 `shield-20261001-213325-0510998`.
+- SHA-256 `e8b55427ac44dbcd3a348efaab3db081cf753054ee8f5415e1e25b8732663745`.
+- etcom-hub: Rust 5개, 프론트 14개 테스트, Clippy, GPS check, production build 통과.
+- 백업 `shield-20261001T123327Z.tar.gz`, SHA-256 `c6f3903567c4f544b417b0d123e45362cd7525f4a525f6b146217eda8504df75`. etcom-hub 별도 PostgreSQL 14에서 schema 1–9, 테이블 건수, 이미지/파일 해시 복원 검증 통과.
+- app-only 배포. GPS binary/PID/시작 시각, nginx, Shield 환경 파일, schema 1–9 불변 확인.
+- 운영 자산 `index-BRXzr1kS.js`, `index-BWymDRzP.css` 확인. 운영 편집기에서 제목을 임시 입력하고 탭 전환 경고 → 계속 편집 → 제목 유지 → 원래 값 복원 → 변경 없음 상태를 확인했다. 서버에 검증 내용을 저장하지 않았다. 브라우저 오류/경고 없음.
+- 운영 점검 28개 통과. 결제·USIM 요청·장부·잔액은 0건/0이며 금융 호출은 수행하지 않았다.
