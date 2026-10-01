@@ -170,7 +170,7 @@ export function Catalog({ kind }) {
             : "무료 예제를 한곳에서 바로 시작하세요."
         }
       />
-      <div className="catalog-filters">
+      {(kind !== "project" || available.length > 0) && <div className="catalog-filters">
         <div className="tabs" aria-label="예제 카테고리">
           {categories.map((c) => (
             <button
@@ -192,10 +192,10 @@ export function Catalog({ kind }) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </label>
-      </div>
+      </div>}
       <PostStatus />
       <p className="muted">
-        {shown.length}개 {kind === "project" ? "프로젝트" : "예제"}
+        {kind === "project" && !available.length ? "프로젝트 공개 준비 중" : `${shown.length}개 ${kind === "project" ? "프로젝트" : "예제"}`}
       </p>
       <div className="catalog-grid full-catalog">
         {shown.map((p) => (

@@ -21,10 +21,12 @@
 .simple-quick .quick-card { padding:21px; justify-content:center; gap:14px; }
 .simple-quick h2 { font-size:14px; white-space:nowrap; margin:0; }
 .simple-quick>.button { align-self:center; min-height:60px; font-size:14px; }
+.home-content { min-height:0; padding-top:20px; padding-bottom:0; }
 .home-content>.panel { margin-bottom:10px; }
 .home-device-select { display:flex; align-items:center; gap:10px; font-size:13px; }
 .home-device-select select { max-width:220px; }
 .start-strip { background:linear-gradient(115deg,var(--primary-soft),#f6fdfe); padding:30px 0 36px; margin-top:30px; }
+.start-strip .container { min-height:0; padding-bottom:0; }
 .start-strip h2 { font-size:23px; margin:6px 0 20px; }
 .start-strip .container>div { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:25px; }
 .start-strip a { background:var(--paper); border:1px solid var(--line); border-radius:9px; display:flex; align-items:center; gap:20px; padding:22px; }
