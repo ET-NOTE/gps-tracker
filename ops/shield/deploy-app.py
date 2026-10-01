@@ -2,7 +2,8 @@
 """Apply a reviewed Shield release, optionally the specific portal migration.
 
 Default mode requires unchanged schema/configuration.
---portal-upgrade permits schema 7 -> 8 and only the attachment upload location.
+--portal-upgrade is the historical schema 7 -> 8 attachment step.
+--commerce-upgrade permits 8 -> 9, Shield payment CSP and private callback logs.
 Never changes credentials, database settings or GPS code. Requires a fresh backup.
 """
 import argparse
@@ -35,6 +36,7 @@ def main():
     p.add_argument('--release',required=True);p.add_argument('--sha256',required=True)
     p.add_argument('--previous',required=True);p.add_argument('--backup-sha256',required=True)
     p.add_argument('--portal-upgrade',action='store_true')
+    p.add_argument('--commerce-upgrade',action='store_true')
     args=p.parse_args();assert os.geteuid()==0;os.umask(0o077)
     for name in [args.release,args.previous]:assert re.fullmatch(r'shield-\d{8}-\d{6}-[a-f0-9]{7}',name)
     assert re.fullmatch(r'[a-f0-9]{64}',args.sha256)
@@ -43,9 +45,11 @@ def main():
     backup=Path('/var/backups/shield/latest.tar.gz').resolve()
     assert digest(backup)==args.backup_sha256 and time.time()-backup.stat().st_mtime<3600
     old_schema=schema()
-    if args.portal_upgrade:assert old_schema==list(range(1,8))
-    else:assert old_schema in (list(range(1,8)),list(range(1,9)))
-    target_schema=old_schema+([8] if args.portal_upgrade else [])
+    assert not (args.portal_upgrade and args.commerce_upgrade)
+    if args.commerce_upgrade:assert old_schema==list(range(1,9))
+    elif args.portal_upgrade:assert old_schema==list(range(1,8))
+    else:assert old_schema in (list(range(1,8)),list(range(1,9)),list(range(1,10)))
+    target_schema=old_schema+([9] if args.commerce_upgrade else [8] if args.portal_upgrade else [])
     archive=Path('/home/mmm/shield-deploy')/args.release/(args.release+'.tar.gz')
     assert digest(archive)==args.sha256
     target=previous.parent/args.release;assert not target.exists()
@@ -87,6 +91,24 @@ def main():
             shutil.copyfile(record/'nginx.before.conf',config)
             raise
         expected['nginx'][config.name]=digest(config)
+    if args.commerce_upgrade:
+        config=Path('/etc/nginx/sites-enabled/shield.serial.kr.conf')
+        proposed=(target/'ops/shield.serial.kr.conf').read_text().replace('/var/lib/letsencrypt','/var/www/certbot')
+        prior=proposed.replace("script-src 'self' https://js.tosspayments.com;","script-src 'self';").replace("connect-src 'self' wss://shield.serial.kr https://*.tosspayments.com; frame-src https://*.tosspayments.com;","connect-src 'self' wss://shield.serial.kr;").replace("form-action 'self' https://*.tosspayments.com","form-action 'self'")
+        block="""    # Payment return queries contain a payment key; never write them to access logs.
+    location ~ ^/points/(success|fail)$ {
+        access_log off;
+        try_files /index.html =404;
+    }
+"""
+        assert prior.count(block)==1 and prior.replace(block,'')==config.read_text(), 'Unexpected nginx drift'
+        shutil.copyfile(config,record/'nginx.before.conf')
+        config.write_text(proposed)
+        try:run('nginx','-t')
+        except Exception:
+            shutil.copyfile(record/'nginx.before.conf',config)
+            raise
+        expected['nginx'][config.name]=digest(config)
     new=Path('/srv/shield/current.app-upgrade');assert not new.exists()
     new.symlink_to(target);os.replace(new,current)
     try:
@@ -98,7 +120,7 @@ def main():
         else:raise RuntimeError('Shield release did not become healthy')
         assert schema()==target_schema, 'Unexpected schema change; do not roll back blindly'
         assert baseline()==expected, 'Unrelated runtime configuration changed'
-        if args.portal_upgrade:
+        if args.portal_upgrade or args.commerce_upgrade:
             run('systemctl','reload','nginx')
             # read_text normalizes older Windows-origin release line endings.
             Path('/usr/local/sbin/shield-backup').write_text((target/'ops/backup.py').read_text())
@@ -106,11 +128,11 @@ def main():
     except Exception:
         # Only roll back an app release while the prior schema is still intact.
         if schema()==state['schema']:
-            if args.portal_upgrade:
+            if args.portal_upgrade or args.commerce_upgrade:
                 shutil.copyfile(record/'nginx.before.conf',config)
                 run('nginx','-t');run('systemctl','reload','nginx')
             new.symlink_to(previous);os.replace(new,current);run('systemctl','restart','shield-api')
         raise
-    print(json.dumps({'release':args.release,'GPS':'unchanged','nginx':'Shield attachment upload only' if args.portal_upgrade else 'unchanged','schema':schema()}))
+    print(json.dumps({'release':args.release,'GPS':'unchanged','nginx':'Shield payment CSP and callback logs only' if args.commerce_upgrade else 'Shield attachment upload only' if args.portal_upgrade else 'unchanged','schema':schema()}))
 
 if __name__=='__main__':main()

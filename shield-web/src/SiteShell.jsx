@@ -2,7 +2,9 @@ import React, { useContext, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Session } from "./session";
 import { Brand, Icon, number } from "./components";
+import { useCommerce } from "./Commerce";
 export function Header() {
+  const { points } = useCommerce();
   const { user } = useContext(Session);
   const [open, setOpen] = useState(false);
   return (
@@ -29,6 +31,7 @@ export function Header() {
             ["/projects", "응용프로젝트"],
             ["/data", "내 데이터"],
             ["/devices", "내장치"],
+            ["/pricing", "요금 안내"],
             ["/faq", "FAQ"],
           ].map(([to, label]) => (
             <NavLink key={to} to={to}>
@@ -44,10 +47,14 @@ export function Header() {
                 <span>P</span>
                 {number(user.credit_balance, 0)} P
               </Link>
-              <Link className="outline compact" to="/points">
+              <button className="outline compact" onClick={points}>
                 포인트충전
-              </Link>
-              <Link className="account-link" to="/account" aria-label="마이페이지">
+              </button>
+              <Link
+                className="account-link"
+                to="/account"
+                aria-label="마이페이지"
+              >
                 <Icon name="user" size={18} />
                 <span>마이페이지</span>
               </Link>
@@ -69,6 +76,7 @@ export function Footer() {
       <Brand />
       <nav aria-label="하단 메뉴">
         <Link to="/about">서비스 안내</Link>
+        <Link to="/pricing">이용 요금 안내</Link>
         <Link to="/faq">FAQ</Link>
         <Link to="/account">마이페이지</Link>
       </nav>

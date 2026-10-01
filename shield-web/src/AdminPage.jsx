@@ -1,3 +1,10 @@
+import { FaqAdmin } from "./FaqPage";
+import {
+  UserStats,
+  UserDetail,
+  reception,
+  exportUsers,
+} from "./UserManagement";
 import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { request, query } from "./api";
@@ -8,7 +15,8 @@ import { states } from "./UsimPage";
 import PostEditor from "./PostEditor";
 const tabs = {
   overview: "운영 현황",
-  posts: "게시물",
+  posts: "예제·가이드",
+  faqs: "FAQ 관리",
   users: "사용자",
   devices: "장치·USIM",
   requests: "충전 요청",
@@ -50,6 +58,8 @@ export default function AdminPage() {
     [tick, setTick] = useState(0),
     [before, setBefore] = useState(null),
     [search, setSearch] = useState(""),
+    [status, setStatus] = useState("all"),
+    [viewUser, setViewUser] = useState(null),
     [edit, setEdit] = useState(null),
     [secret, setSecret] = useState(null),
     [details, setDetails] = useState(null);
@@ -58,14 +68,21 @@ export default function AdminPage() {
     setBefore(null);
     setEdit(null);
     setDetails(null);
+    setViewUser(null);
     setError("");
   }, [tab]);
   useEffect(() => {
-    if (user?.role !== "admin") return;
+    if (user?.role !== "admin" || tab === "faqs") return;
     const a = new AbortController();
-    request(paths[tab] + "?" + query({ before, q: search }), {
-      signal: a.signal,
-    })
+    setData(null);
+    request(
+      paths[tab] +
+        "?" +
+        query({ before, q: search, status, all: tab === "credits" }),
+      {
+        signal: a.signal,
+      },
+    )
       .then(setData)
       .catch((e) => {
         if (e.name !== "AbortError") {
@@ -74,7 +91,7 @@ export default function AdminPage() {
         }
       });
     return () => a.abort();
-  }, [tab, before, search, tick, user?.role, reload]);
+  }, [tab, before, search, status, tick, user?.role, reload]);
   async function mutate(path, body, success = "저장했습니다.") {
     setBusy(true);
     setError("");
@@ -133,7 +150,9 @@ export default function AdminPage() {
           {notice}
         </p>
       )}
-      <div className="admin-toolbar">
+      {tab === "users" && <UserStats tick={tick} />}
+      {tab === "faqs" && <FaqAdmin />}
+      <div className="admin-toolbar" hidden={tab === "faqs"}>
         <button
           className="outline"
           onClick={() => {
@@ -162,6 +181,26 @@ export default function AdminPage() {
                 setBefore(null);
               }}
             />
+            <select
+              aria-label="사용자 상태"
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setBefore(null);
+              }}
+            >
+              <option value="all">전체 상태</option>
+              <option value="active">활성</option>
+              <option value="disabled">이용 중지</option>
+              <option value="admin">관리자</option>
+            </select>
+            <button
+              className="outline"
+              disabled={!rows.length}
+              onClick={() => exportUsers(rows)}
+            >
+              현재 목록 CSV 다운로드
+            </button>
             <button
               className="outline"
               disabled={busy}
@@ -174,7 +213,7 @@ export default function AdminPage() {
                 if (r) setSecret(r);
               }}
             >
-              초대코드 발급
+              + 사용자 초대
             </button>
           </>
         )}
@@ -195,7 +234,8 @@ export default function AdminPage() {
               devices: "장치",
               reports_today: "오늘 수신",
               open_requests: "처리 대기",
-              posts: "게시물",
+              posts: "예제·가이드",
+              faqs: "FAQ 관리",
             }).map(([k, label]) => (
               <article className="metric" key={k}>
                 <div>
@@ -252,7 +292,7 @@ export default function AdminPage() {
           </p>
         </section>
       )}
-      {tab === "posts" && (
+      {tab === "posts" && !edit && (
         <div className="admin-posts">
           {rows.map((p) => (
             <article className="panel" key={p.content.id}>
@@ -299,7 +339,16 @@ export default function AdminPage() {
       {tab === "users" && (
         <>
           <Table
-            headings={["사용자", "역할", "상태", "장치", "포인트", "관리"]}
+            headings={[
+              "사용자",
+              "역할·계정",
+              "장치·수신",
+              "USIM·잔량",
+              "포인트",
+              "누적 결제",
+              "가입일",
+              "관리",
+            ]}
           >
             {rows.map((u) => (
               <tr key={u.id}>
@@ -307,11 +356,32 @@ export default function AdminPage() {
                   {u.email}
                   <small className="block">{u.display_name}</small>
                 </td>
-                <td>{u.role === "admin" ? "관리자" : "사용자"}</td>
-                <td>{u.disabled ? "이용 중지" : "활성"}</td>
-                <td>{u.device_count}</td>
-                <td>{number(u.credit_balance, 0)} P</td>
                 <td>
+                  {u.role === "admin" ? "관리자" : "사용자"}
+                  <small className="block">
+                    {u.disabled ? "이용 중지" : "활성"}
+                  </small>
+                </td>
+                <td>
+                  {u.device_count}대
+                  <small className="block">{reception(u)}</small>
+                </td>
+                <td>
+                  {u.sim_count}개
+                  <small className="block">
+                    {number(u.remaining_mb, 2)} MB
+                  </small>
+                  <small className="block">
+                    {u.quota_checked_at
+                      ? date(u.quota_checked_at)
+                      : "잔량 조회 대기"}
+                  </small>
+                </td>
+                <td>{number(u.credit_balance, 0)} P</td>
+                <td>₩{number(u.paid_total, 0)}</td>
+                <td>{date(u.created_at)}</td>
+                <td>
+                  <button onClick={() => setViewUser(u)}>보기</button>
                   <button onClick={() => setEdit({ ...u, kind: "user" })}>
                     수정
                   </button>
@@ -344,6 +414,13 @@ export default function AdminPage() {
               </tr>
             ))}
           </Table>
+          {viewUser && (
+            <UserDetail
+              key={viewUser.id}
+              user={viewUser}
+              close={() => setViewUser(null)}
+            />
+          )}
           {edit?.kind === "user" && (
             <section className="panel editor">
               <h2>{edit.email}</h2>
@@ -743,7 +820,7 @@ export default function AdminPage() {
           <pre className="audit-detail">{JSON.stringify(details, null, 2)}</pre>
         </section>
       )}
-      {!["posts", "overview"].includes(tab) && (
+      {!["posts", "overview", "faqs"].includes(tab) && (
         <div className="pagination">
           <span>{rows.length}건 표시</span>
           <button disabled={!before} onClick={() => setBefore(null)}>

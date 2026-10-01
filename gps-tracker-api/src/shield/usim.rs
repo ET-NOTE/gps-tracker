@@ -3,6 +3,9 @@ use axum::extract::{Path, Query};
 use serde::Deserialize;
 use sqlx::{Postgres, Transaction};
 
+pub fn sales_enabled() -> bool {
+    env::var("SHIELD_SIM_SALES_ENABLED").as_deref() == Ok("true")
+}
 pub fn price() -> i64 {
     env::var("SHIELD_TOPUP_COST")
         .ok()
@@ -21,7 +24,7 @@ pub async fn get(State(app): State<App>, h: HeaderMap, Path(id): Path<i64>) -> R
     allowed(&app, &h, id).await?;
     let data:Option<Value>=sqlx::query_scalar("SELECT jsonb_build_object('last4',right(sim_iccid,4),'usage',sim_info,'updated_at',sim_updated_at,'attempted_at',sim_attempted_at,'error',sim_error,'linked',sim_iccid IS NOT NULL) FROM devices WHERE id=$1").bind(id).fetch_optional(&app.db).await?;
     Ok(Json(
-        json!({"sim":data.ok_or_else(missing)?,"provider":app.nce.status(),"topup_mb":500,"cost_credits":price()}),
+        json!({"sim":data.ok_or_else(missing)?,"provider":app.nce.status(),"topup_mb":500,"cost_credits":price(),"sales_enabled":sales_enabled()}),
     ))
 }
 pub async fn refresh(
@@ -115,6 +118,7 @@ async fn ledger(
 #[serde(deny_unknown_fields)]
 pub struct Create {
     device_id: i64,
+    cost_credits: i64,
     idempotency_key: String,
     #[serde(default)]
     note: String,
@@ -129,6 +133,14 @@ pub async fn create(
 ) -> Result<Json<Value>> {
     let user = auth::user(&app, &h).await?;
     devices::own(&app, user, v.device_id).await?;
+    if !sales_enabled() {
+        return Err(bad("USIM 충전 상품을 준비 중입니다."));
+    }
+    if v.cost_credits != price() {
+        return Err(bad(
+            "상품 가격이 변경되었습니다. 충전창을 다시 열어 주세요.",
+        ));
+    }
     if !request_key(&v.idempotency_key) || v.note.chars().count() > 300 {
         return Err(bad("요청 내용을 확인해 주세요."));
     }
@@ -443,7 +455,7 @@ pub async fn credits(
     Query(p): Query<admin::Page>,
 ) -> Result<Json<Value>> {
     let user = auth::user(&app, &h).await?;
-    let admin = admin::require(&app, &h).await.is_ok();
+    let admin = p.all.unwrap_or(false) && admin::require(&app, &h).await.is_ok();
     let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',e.id,'user_email',u.email,'amount',amount,'balance_after',balance_after,'kind',kind,'request_id',request_id,'note',note,'created_at',e.created_at) FROM credit_entries e JOIN users u ON u.id=e.user_id WHERE ($1 OR e.user_id=$2) AND e.id<$3 ORDER BY e.id DESC LIMIT 100").bind(admin).bind(user).bind(p.before.unwrap_or(i64::MAX)).fetch_all(&app.db).await?;
     Ok(Json(json!(rows)))
 }

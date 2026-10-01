@@ -33,10 +33,12 @@ pub async fn audit(
 pub struct Page {
     pub before: Option<i64>,
     pub q: Option<String>,
+    pub status: Option<String>,
+    pub all: Option<bool>,
 }
 pub async fn overview(State(app): State<App>, h: HeaderMap) -> Result<Json<Value>> {
     require(&app, &h).await?;
-    let counts:Value=sqlx::query_scalar("SELECT jsonb_build_object('users',(SELECT count(*) FROM users),'devices',(SELECT count(*) FROM devices),'reports_today',(SELECT count(*) FROM messages WHERE received_at>=date_trunc('day',now() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul'),'open_requests',(SELECT count(*) FROM sim_requests WHERE status IN ('pending','approved','submitting','submitted','unknown')),'posts',(SELECT count(*) FROM content_posts))").fetch_one(&app.db).await?;
+    let counts:Value=sqlx::query_scalar("SELECT jsonb_build_object('users',(SELECT count(*) FROM users),'devices',(SELECT count(*) FROM devices),'reports_today',(SELECT count(*) FROM messages WHERE received_at>=date_trunc('day',now() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul'),'open_requests',(SELECT count(*) FROM sim_requests WHERE status IN ('pending','approved','submitting','submitted','unknown')),'posts',(SELECT count(*) FROM content_posts),'faqs',(SELECT count(*) FROM faqs WHERE NOT archived))").fetch_one(&app.db).await?;
     Ok(Json(json!({"counts":counts,"provider":app.nce.status()})))
 }
 pub async fn users(
@@ -45,8 +47,8 @@ pub async fn users(
     Query(p): Query<Page>,
 ) -> Result<Json<Value>> {
     require(&app, &h).await?;
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'email',email,'display_name',display_name,'role',role,'disabled',disabled,'credit_balance',credit_balance,'created_at',created_at,'device_count',(SELECT count(*) FROM devices d WHERE d.owner_id=u.id)) FROM users u WHERE id<$1 AND (email ILIKE $2 OR display_name ILIKE $2) ORDER BY id DESC LIMIT 100")
-        .bind(p.before.unwrap_or(i64::MAX)).bind(format!("%{}%",p.q.unwrap_or_default().chars().take(100).collect::<String>())).fetch_all(&app.db).await?;
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'email',email,'display_name',display_name,'role',role,'disabled',disabled,'credit_balance',credit_balance,'created_at',created_at,'device_count',(SELECT count(*) FROM devices d WHERE d.owner_id=u.id),'online_count',(SELECT count(*) FROM devices d WHERE d.owner_id=u.id AND last_seen_at>now()-interval '3 minutes'),'sim_count',(SELECT count(*) FROM devices d WHERE d.owner_id=u.id AND sim_iccid IS NOT NULL),'remaining_mb',(SELECT sum((sim_info->>'remaining_mb')::numeric) FROM devices d WHERE d.owner_id=u.id),'quota_checked_at',(SELECT min(sim_updated_at) FROM devices d WHERE d.owner_id=u.id AND sim_iccid IS NOT NULL),'paid_total',(SELECT coalesce(sum(amount),0) FROM point_orders p WHERE p.user_id=u.id AND status='paid')) FROM users u WHERE id<$1 AND (email ILIKE $2 OR display_name ILIKE $2) AND ($3='all' OR ($3='active' AND NOT disabled) OR ($3='disabled' AND disabled) OR ($3='admin' AND role='admin')) ORDER BY id DESC LIMIT 100")
+        .bind(p.before.unwrap_or(i64::MAX)).bind(format!("%{}%",p.q.unwrap_or_default().chars().take(100).collect::<String>())).bind(p.status.unwrap_or("all".into())).fetch_all(&app.db).await?;
     Ok(Json(json!(rows)))
 }
 #[derive(Deserialize)]
@@ -219,4 +221,19 @@ pub async fn invite(State(app): State<App>, h: HeaderMap) -> Result<Json<Value>>
     .await?;
     tx.commit().await?;
     Ok(Json(json!({"invite_code":code,"expires_in_days":7})))
+}
+
+pub async fn user_summary(State(app): State<App>, h: HeaderMap) -> Result<Json<Value>> {
+    require(&app, &h).await?;
+    let data:Value=sqlx::query_scalar("SELECT jsonb_build_object('users',(SELECT count(*) FROM users),'total',coalesce(sum(amount),0),'today',coalesce(sum(amount) FILTER(WHERE paid_at>=date_trunc('day',now() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul'),0),'month',coalesce(sum(amount) FILTER(WHERE paid_at>=date_trunc('month',now() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul'),0)) FROM point_orders WHERE status='paid'").fetch_one(&app.db).await?;
+    Ok(Json(data))
+}
+pub async fn user_detail(
+    State(app): State<App>,
+    h: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<Json<Value>> {
+    require(&app, &h).await?;
+    let data:Value=sqlx::query_scalar("SELECT jsonb_build_object('devices',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',d.id,'name',display_name,'last_seen_at',last_seen_at,'last4',right(sim_iccid,4),'usage',sim_info,'checked_at',sim_updated_at)) FROM (SELECT * FROM devices WHERE owner_id=$1 ORDER BY id LIMIT 100) d),'[]'::jsonb),'payments',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',id,'amount',amount,'status',status,'created_at',created_at,'paid_at',paid_at)) FROM (SELECT * FROM point_orders WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100) p),'[]'::jsonb))").bind(id).fetch_one(&app.db).await?;
+    Ok(Json(data))
 }

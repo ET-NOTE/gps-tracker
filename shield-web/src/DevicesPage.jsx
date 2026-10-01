@@ -1,3 +1,4 @@
+import { useCommerce } from "./Commerce";
 import { validCsq } from "./telemetry";
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -20,6 +21,7 @@ import {
 } from "./DeviceNavigation";
 import { simState } from "./deviceState";
 export default function DevicesPage() {
+  const { usim: openUsim } = useCommerce();
   const [tick, setTick] = useState(0),
     { devices, loading, error: inventoryError } = useDeviceList(tick),
     [selected, select] = useSelectedDevice(devices);
@@ -130,7 +132,9 @@ export default function DevicesPage() {
                         {status.label}
                       </p>
                       <small className="muted">
-                        {lastSeen ? `마지막 수신 ${date(lastSeen)} · ${relative(lastSeen)}` : "아직 수신된 데이터가 없습니다"}
+                        {lastSeen
+                          ? `마지막 수신 ${date(lastSeen)} · ${relative(lastSeen)}`
+                          : "아직 수신된 데이터가 없습니다"}
                       </small>
                     </div>
                   </div>
@@ -141,12 +145,12 @@ export default function DevicesPage() {
                     >
                       장치 이름 변경
                     </button>
-                    <Link
+                    <button
                       className="outline"
-                      to={`/usim?device=${selected.id}`}
+                      onClick={() => openUsim(selected.id)}
                     >
                       USIM 충전
-                    </Link>
+                    </button>
                     <button
                       className="outline"
                       onClick={() => setTick((t) => t + 1)}
@@ -275,7 +279,9 @@ export default function DevicesPage() {
                       <section className="panel">
                         <div className="panel-title">
                           <h2>USIM 및 사용 정보</h2>
-                          <Link to={`/usim?device=${selected.id}`}>충전 →</Link>
+                          <button onClick={() => openUsim(selected.id)}>
+                            충전 →
+                          </button>
                         </div>
                         <dl className="detail-list">
                           <div>
@@ -312,7 +318,11 @@ export default function DevicesPage() {
                           </div>
                           <div>
                             <dt>마지막 조회</dt>
-                            <dd>{sim?.updated_at ? date(sim.updated_at) : "조회 전"}</dd>
+                            <dd>
+                              {sim?.updated_at
+                                ? date(sim.updated_at)
+                                : "조회 전"}
+                            </dd>
                           </div>
                         </dl>
                         {usage && (
@@ -331,7 +341,7 @@ export default function DevicesPage() {
                             className="button"
                             to={`/usim?device=${selected.id}`}
                           >
-                            USIM 충전 확인
+                            USIM 충전 내역
                           </Link>
                         )}
                       </section>
@@ -373,9 +383,7 @@ export default function DevicesPage() {
                                       2,
                                     )}
                                   </td>
-                                  <td>
-                                    {validCsq(r.csq) ? r.csq : "—"}
-                                  </td>
+                                  <td>{validCsq(r.csq) ? r.csq : "—"}</td>
                                 </tr>
                               ))}
                             </tbody>

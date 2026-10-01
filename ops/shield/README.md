@@ -209,3 +209,46 @@ bounded image processing. It never calls payment/topup endpoints.
   telemetry, so an offline bench is reported separately from API/UI verification.
 
 See `docs/reviews/shield-portal-2026-10-01.md` for the deployment and backup evidence.
+
+
+### Wallet, FAQ and user-management rollout (schema 9)
+
+`deploy-app.py --commerce-upgrade` is the narrow 8 → 9 transition. A fresh verified
+backup is required. Only the Shield nginx CSP (Toss SDK/frames/connect/form) and
+payment-return access-log suppression are changed. GPS binary, process, nginx and
+Shield environment hashes are compared. Never roll an older binary back across a
+completed schema migration; forward-fix, or restore deliberately after assessing
+new data. Both backup and offsite restore verification include `point_orders` and `faqs`.
+
+The point wallet uses server-selected 10,000 / 30,000 / 50,000 / 100,000 KRW packs,
+1 KRW = 1 point. Order creation is account-bound and idempotent. Confirmation binds
+owner, amount and payment key before a single provider approval. Only a verified
+`DONE` response with exact order/key/amount/currency and no cancellations credits the
+wallet in the same transaction as the payment status and append-only ledger/audit.
+Unknown results retain their key for read-only reconciliation; retries never issue a
+second approval. Card payments only; no virtual-account or recurring-payment flow.
+User history offers result lookup. Operator payment refunds/cancellations and their
+wallet reconciliation are a separate activation prerequisite, not simulated refunds.
+
+Production remains **disabled** without explicit `SHIELD_TOSS_ENABLED=true` and a
+matching Shield `live_ck_` / `live_sk_` pair. GPS keys are never inherited or copied.
+Confirm the merchant's Shield domain/return URLs and refund operating procedure
+before activation. Preview payments require a loopback mock, even if test keys exist.
+`test-commerce.py` cannot use a real Toss endpoint. No real payment was used to test.
+SDK contract: https://docs.tosspayments.com/guides/v2/payment-window/integration
+API contract: https://docs.tosspayments.com/reference
+
+`SHIELD_SIM_SALES_ENABLED` defaults false while the user's new USIM catalog/prices
+are pending. Existing requests and ledgers stay available. When explicitly enabled,
+the established provider supports a single 500MB SKU, with server-side quote validation
+and the existing reserve/approve/execute/refund workflow. Do not label a 1GB/5GB/10GB
+mockup product as delivered through that adapter: volume-to-provider fulfillment must
+be specified with the final catalog. Never test real 1NCE orders. Projects remain
+coming soon and do not expose paid code/files or invent prices.
+
+FAQ content is DB-driven, published/hidden/archived with revision conflict detection,
+audit history and restore-to-hidden. Public views never include drafts/archives.
+Admin user totals count paid orders only (Asia/Seoul day/month); adjustments do not
+inflate sales. User details and CSV export omit raw subscriber identifiers; CSV
+formula characters are escaped. CSV exports explicitly cover the currently loaded
+page (up to 100 accounts), not all accounts silently.

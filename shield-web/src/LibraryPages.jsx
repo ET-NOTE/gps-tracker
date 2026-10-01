@@ -1,3 +1,4 @@
+import { ProjectBody } from "./PostBody";
 import React, { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Board, Icon, Intro } from "./components";
@@ -170,32 +171,36 @@ export function Catalog({ kind }) {
             : "무료 예제를 한곳에서 바로 시작하세요."
         }
       />
-      {(kind !== "project" || available.length > 0) && <div className="catalog-filters">
-        <div className="tabs" aria-label="예제 카테고리">
-          {categories.map((c) => (
-            <button
-              key={c}
-              aria-pressed={category === c}
-              className={category === c ? "active" : ""}
-              onClick={() => setCategory(c)}
-            >
-              {c}
-            </button>
-          ))}
+      {(kind !== "project" || available.length > 0) && (
+        <div className="catalog-filters">
+          <div className="tabs" aria-label="예제 카테고리">
+            {categories.map((c) => (
+              <button
+                key={c}
+                aria-pressed={category === c}
+                className={category === c ? "active" : ""}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+          <label className="search">
+            <Icon name="search" size={18} />
+            <input
+              aria-label="예제 검색"
+              placeholder="예제 검색"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
         </div>
-        <label className="search">
-          <Icon name="search" size={18} />
-          <input
-            aria-label="예제 검색"
-            placeholder="예제 검색"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
-      </div>}
+      )}
       <PostStatus />
       <p className="muted">
-        {kind === "project" && !available.length ? "프로젝트 공개 준비 중" : `${shown.length}개 ${kind === "project" ? "프로젝트" : "예제"}`}
+        {kind === "project" && !available.length
+          ? "프로젝트 공개 준비 중"
+          : `${shown.length}개 ${kind === "project" ? "프로젝트" : "예제"}`}
       </p>
       <div className="catalog-grid full-catalog">
         {shown.map((p) => (
@@ -243,18 +248,7 @@ export function LessonPage({ guide = false }) {
           title={post.title}
           description={post.description}
         />
-        <section className="panel project-intro">
-          <Board variant={post.variant} />
-          <div>
-            <span className="badge warm">유료 프로젝트 · 준비 중</span>
-            <h2>프로젝트 공개를 준비하고 있습니다.</h2>
-            <p>{post.steps.join("\n")}</p>
-            <p className="muted">상품·가격·배포 일정이 확정되면 안내합니다.</p>
-            <Link to="/examples/all" className="outline">
-              무료 예제 먼저 보기
-            </Link>
-          </div>
-        </section>
+        <ProjectBody post={post} />
       </main>
     );
   return (

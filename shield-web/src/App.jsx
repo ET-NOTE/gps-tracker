@@ -18,7 +18,10 @@ import { Header, Footer } from "./SiteShell";
 import Home from "./HomePage";
 import { Library, Catalog, LessonPage, GuidePage } from "./LibraryPages";
 import DevicesPage from "./DevicesPage";
-import { FaqPage, AccountPage, PointsPage } from "./AccountPages";
+import { AccountPage, PointsPage } from "./AccountPages";
+
+import FaqPage from "./FaqPage";
+import { CommerceProvider, PricingPage, PaymentReturn } from "./Commerce";
 
 function Auth() {
   const { user, changed } = useContext(Session);
@@ -252,62 +255,87 @@ export default function App() {
   return (
     <SessionProvider>
       <PostsProvider>
-        <Header />
-        <RouteScroll />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/guide" element={<GuidePage />} />
-          <Route path="/examples" element={<Library />} />
-          <Route path="/examples/:id" element={<LessonPage />} />
-          <Route path="/login" element={<Auth />} />
-          <Route path="/examples/all" element={<Catalog key="example" kind="example" />} />
-          <Route path="/projects" element={<Catalog key="project" kind="project" />} />
-          <Route path="/data" element={<DataPage />} />
-          <Route
-            path="/devices"
-            element={
-              <Protected>
-                <DevicesPage />
-              </Protected>
-            }
-          />
-          <Route path="/faq" element={<FaqPage />} />
-          <Route
-            path="/account"
-            element={
-              <Protected>
-                <AccountPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/points"
-            element={
-              <Protected>
-                <PointsPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/usim"
-            element={
-              <Protected>
-                <UsimPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <Protected>
-                <AdminPage />
-              </Protected>
-            }
-          />
-          <Route path="/about" element={<About />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Footer />
+        <CommerceProvider>
+          <Header />
+          <RouteScroll />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/guide" element={<GuidePage />} />
+            <Route path="/examples" element={<Library />} />
+            <Route path="/examples/:id" element={<LessonPage />} />
+            <Route path="/login" element={<Auth />} />
+            <Route
+              path="/examples/all"
+              element={<Catalog key="example" kind="example" />}
+            />
+            <Route
+              path="/projects"
+              element={<Catalog key="project" kind="project" />}
+            />
+            <Route path="/data" element={<DataPage />} />
+            <Route
+              path="/devices"
+              element={
+                <Protected>
+                  <DevicesPage />
+                </Protected>
+              }
+            />
+            <Route path="/faq" element={<FaqPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route
+              path="/points/success"
+              element={
+                <Protected>
+                  <PaymentReturn />
+                </Protected>
+              }
+            />
+            <Route
+              path="/points/fail"
+              element={
+                <Protected>
+                  <PaymentReturn />
+                </Protected>
+              }
+            />
+            <Route
+              path="/account"
+              element={
+                <Protected>
+                  <AccountPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/points"
+              element={
+                <Protected>
+                  <PointsPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/usim"
+              element={
+                <Protected>
+                  <UsimPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <Protected>
+                  <AdminPage />
+                </Protected>
+              }
+            />
+            <Route path="/about" element={<About />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Footer />
+        </CommerceProvider>
       </PostsProvider>
     </SessionProvider>
   );

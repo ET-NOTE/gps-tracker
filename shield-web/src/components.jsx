@@ -4,6 +4,8 @@ import { pathSegments } from "./telemetry";
 
 export function Icon({ name, size = 22, ...props }) {
   const paths = {
+    chat: <path d="M4 3h16v13H9l-5 5z"/>,
+    mail: <><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 5 10 8L22 5"/></>,
     chip: (
       <>
         <rect x="5" y="5" width="14" height="14" rx="3" />

@@ -51,7 +51,7 @@ def main():
         time.sleep(.1)
     c.check('real adapter reads fake-provider quota',siminfo['sim']['usage']['remaining_mb']==321.25)
     c.check('non-owner SIM blocked',anon.call(f'/api/devices/{id}/usim')[0]==401)
-    req={'device_id':id,'idempotency_key':str(uuid.uuid4())}
+    req={'device_id':id,'cost_credits':100,'idempotency_key':str(uuid.uuid4())}
     c.check('insufficient balance rolls request back',user.call('/api/sim-requests',req)[0]==400 and c.sql(f'SELECT count(*) FROM sim_requests WHERE user_id={user_id}')=='0')
     adjust={'amount':1000,'note':'preview-only mock funding','idempotency_key':str(uuid.uuid4())}
     assert admin.call(f'/api/admin/users/{user_id}/credits',adjust)[0]==200
@@ -65,7 +65,7 @@ def main():
     c.check('cancellation refunds exactly once',user.call(f'/api/sim-requests/{rid}/action',{'action':'cancel'})[0]==400 and user.call('/api/auth/session')[1]['credit_balance']==1000)
     for provider_mode,target in [('success','submitted'),('reject','failed'),('unknown','unknown')]:
         mode(provider_mode)
-        rid=user.call('/api/sim-requests',{'device_id':id,'idempotency_key':str(uuid.uuid4())})[1]['id']
+        rid=user.call('/api/sim-requests',{'device_id':id,'cost_credits':100,'idempotency_key':str(uuid.uuid4())})[1]['id']
         assert admin.call(f'/api/sim-requests/{rid}/action',{'action':'approve','note':'mock only'})[0]==200
         row=wait_status(admin,rid,'approved');before=count()
         c.check('wrong execution reference blocked '+provider_mode,admin.call(f'/api/sim-requests/{rid}/action',{'action':'execute','confirm_reference':'wrong'})[0]==400)

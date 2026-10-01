@@ -1,3 +1,4 @@
+import { useCommerce } from "./Commerce";
 import { Link, useSearchParams } from "react-router-dom";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { request } from "./api";
@@ -15,6 +16,7 @@ export const states = {
   completed: "처리 확인 완료",
 };
 export default function UsimPage() {
+  const { usim: openUsim } = useCommerce();
   const [params, setParams] = useSearchParams();
   const requestKey = useRef(crypto.randomUUID());
   const { user, reload } = useContext(Session);
@@ -216,43 +218,14 @@ export default function UsimPage() {
         </section>
       )}
       <section className="panel request-panel">
-        <h2>USIM 데이터 충전 요청</h2>
-        <p className="notice">
-          온라인 카드 결제는 아직 준비 중입니다. 포인트가 부족하면 제품
-          담당자에게 충전을 요청해 주세요.
-        </p>
-        <p>
-          {selected?.display_name || "장치 선택"} · 1회 500 MB ·{" "}
-          {number(sim?.cost_credits, 0)} P
-        </p>
-        <p className="muted">
-          접수 시 포인트를 차감하고 관리자가 확인 후 통신사에 주문합니다. 전송
-          전 취소·반려 또는 통신사의 확정 거절은 환불됩니다. 결과 확인 중에는
-          중복 주문하지 않습니다.
-        </p>
-        <label className="check-line">
-          <input
-            type="checkbox"
-            checked={agree}
-            onChange={(e) => setAgree(e.target.checked)}
-          />
-          대상 USIM과 포인트 차감 내용을 확인했습니다.
-        </label>
-        <button
-          className="button"
-          disabled={
-            busy || !s?.linked || !agree || open || !sim?.provider.configured
-          }
-          onClick={() =>
-            act(
-              "/sim-requests",
-              { device_id: Number(id), idempotency_key: requestKey.current },
-              "충전 요청을 접수했습니다.",
-            )
-          }
-        >
-          {open ? "진행 중인 요청이 있습니다" : "충전 요청 접수"}
+        <h2>USIM 데이터 충전</h2>
+        <p>장치와 상품, 포인트 잔액을 확인하고 충전을 요청하세요.</p>
+        <button className="button" disabled={!id} onClick={() => openUsim(id)}>
+          USIM 충전하기
         </button>
+        <Link className="text-link" to="/pricing">
+          이용 요금 안내 →
+        </Link>
       </section>
       <section className="panel history">
         <h2>충전 요청 내역</h2>

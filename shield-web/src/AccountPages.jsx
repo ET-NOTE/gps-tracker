@@ -4,99 +4,7 @@ import { Session } from "./session";
 import { Intro, Icon, number, date } from "./components";
 import { request } from "./api";
 import { useDeviceList } from "./DeviceNavigation";
-const questions = [
-  [
-    "시작하기",
-    "처음 연결할 때 무엇이 필요한가요?",
-    "쉴드와 Arduino Uno, LTE·GNSS 안테나, 사용 가능한 USIM을 준비하세요. 전원을 끈 상태에서 연결하고 시작가이드의 순서대로 진행해 주세요.",
-    "/guide",
-  ],
-  [
-    "시작하기",
-    "초대코드와 장치 등록 코드는 다른가요?",
-    "초대코드는 계정을 만들 때, 제품의 일회용 등록 코드는 내 장치를 계정에 연결할 때 사용합니다. 이미 사용한 등록 코드는 다시 사용할 수 없습니다.",
-    "/devices",
-  ],
-  [
-    "데이터",
-    "데이터가 없는데 그래프가 보여요.",
-    "장치가 없거나 아직 수신하지 않은 경우에는 “데모 데이터” 표시와 함께 합성 데이터를 보여드립니다. 내 장치의 실제 측정값과는 별개입니다.",
-    "/data",
-  ],
-  [
-    "장치",
-    "오프라인이면 전원이 꺼진 건가요?",
-    "온라인은 최근 3분 안에 서버가 데이터를 받은 상태입니다. 오프라인은 수신이 멈춘 상태로 전원·망 연결·전송 주기를 함께 확인해 주세요. 전원 OFF를 직접 확인한 것은 아닙니다.",
-    "/devices",
-  ],
-  [
-    "장치",
-    "통신은 되는데 위치가 미수신이에요.",
-    "SIM7080G 내장 GNSS가 위치를 확보해야 합니다. GNSS 안테나를 하늘이 보이는 곳에 고정하고 기다려 주세요. 센서/통신 수신과 GNSS 측위는 각각 확인합니다.",
-    "/examples/gnss",
-  ],
-  [
-    "데이터",
-    "다른 센서를 연결해도 되나요?",
-    "가능합니다. 서버에 센서 이름·단위·값을 함께 보내면 데이터 화면이 해당 센서에 맞춰 표시됩니다. 센서 구성이나 단위가 바뀌면 새 구성 키를 사용해 이전 기록을 보존하세요.",
-    "/examples/dynamic-sensors",
-  ],
-  [
-    "USIM·포인트",
-    "USIM은 어떻게 충전하나요?",
-    "내 장치에서 대상을 선택하고 USIM 충전으로 이동하세요. 대상과 비용을 확인해 포인트로 요청하면 관리자가 확인 후 처리합니다. 포인트가 부족하면 제품 담당자에게 문의해 주세요.",
-    "/devices",
-  ],
-  [
-    "USIM·포인트",
-    "온라인 포인트 충전과 유료 프로젝트 구매가 가능한가요?",
-    "현재 온라인 카드 결제와 유료 프로젝트 판매는 준비 중입니다. 결제 기능이 열리기 전에는 구매나 자동 결제가 진행되지 않습니다.",
-    "/points",
-  ],
-  [
-    "데이터",
-    "GPS 서비스 계정과 같이 쓰나요?",
-    "Shield는 계정과 데이터를 별도로 관리합니다. Shield 전용 계정으로 로그인하고 전용 장치 ID와 키를 사용하세요.",
-    "/login",
-  ],
-];
-export function FaqPage() {
-  const [search, setSearch] = useState("");
-  const shown = questions.filter((q) =>
-    q.slice(0, 3).join(" ").includes(search.trim()),
-  );
-  return (
-    <main className="container faq-page">
-      <Intro
-        title="자주 묻는 질문"
-        description="쉴드 연결부터 데이터와 USIM까지."
-      />
-      <label className="search">
-        <Icon name="search" />
-        <input
-          aria-label="FAQ 검색"
-          placeholder="궁금한 내용을 검색하세요"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </label>
-      <div className="faq-list">
-        {shown.map(([category, q, answer, to]) => (
-          <details className="panel" key={q}>
-            <summary>
-              <span className="badge neutral">{category}</span>
-              <strong>{q}</strong>
-              <span>＋</span>
-            </summary>
-            <p>{answer}</p>
-            <Link to={to}>관련 페이지 →</Link>
-          </details>
-        ))}
-      </div>
-      {!shown.length && <p className="empty">검색 결과가 없습니다.</p>}
-    </main>
-  );
-}
+import { useCommerce } from "./Commerce";
 export function AccountPage() {
   const { user, logout } = useContext(Session),
     { devices, loading, error } = useDeviceList(),
@@ -158,18 +66,27 @@ export function AccountPage() {
   );
 }
 export function PointsPage() {
-  const { user } = useContext(Session),
+  const { points } = useCommerce();
+  const [orders, setOrders] = useState([]),
+    [tick, setTick] = useState(0);
+  const { user, reload } = useContext(Session),
     [rows, setRows] = useState(null),
     [error, setError] = useState("");
   useEffect(() => {
     const a = new AbortController();
-    request("/credits", { signal: a.signal })
-      .then(setRows)
+    Promise.all([
+      request("/credits", { signal: a.signal }),
+      request("/payments", { signal: a.signal }),
+    ])
+      .then(([r, o]) => {
+        setRows(r);
+        setOrders(o);
+      })
       .catch((e) => {
         if (e.name !== "AbortError") setError(e.message);
       });
     return () => a.abort();
-  }, [user.id]);
+  }, [user.id, tick]);
   return (
     <main className="container points-page">
       <Intro
@@ -182,21 +99,84 @@ export function PointsPage() {
           <p>보유 포인트</p>
           <h2>{number(user.credit_balance, 0)} P</h2>
         </div>
-        <span className="badge warm">온라인 충전 준비 중</span>
+        <button className="button" onClick={points}>
+          포인트 충전하기
+        </button>
       </section>
-      <section className="panel">
-        <h2>포인트 충전 안내</h2>
-        <p>
-          온라인 카드 결제는 준비 중입니다. 충전이 필요하면 제품 담당자에게 계정
-          이메일과 필요한 금액을 알려 주세요.
-        </p>
-        <p className="muted">
-          현재 화면에서 결제가 발생하지 않습니다. USIM 충전 요청은 보유 포인트로
-          내 장치에서 진행할 수 있습니다.
-        </p>
-        <Link className="button" to="/devices">
-          내 장치 · USIM 관리 →
-        </Link>
+      <section className="panel point-uses">
+        <div>
+          <h2>USIM 데이터 충전</h2>
+          <p>보유 포인트로 내 장치의 데이터를 충전하세요.</p>
+          <Link className="outline" to="/devices">
+            내 장치에서 충전 →
+          </Link>
+        </div>
+        <div>
+          <h2>응용 프로젝트</h2>
+          <p>상품은 공개 준비 중입니다.</p>
+          <Link className="outline" to="/projects">
+            프로젝트 보기 →
+          </Link>
+        </div>
+      </section>
+      <section className="panel history">
+        <h2>포인트 결제 내역</h2>
+        {orders.length ? (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>주문 시각</th>
+                  <th>금액</th>
+                  <th>상태</th>
+                  <th>조회</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.id}>
+                    <td>{date(o.created_at)}</td>
+                    <td>₩{number(o.amount, 0)}</td>
+                    <td>
+                      {
+                        {
+                          pending: "결제 전",
+                          paid: "충전 완료",
+                          confirming: "확인 중",
+                          unknown: "결과 확인 필요",
+                        }[o.status]
+                      }
+                    </td>
+                    <td>
+                      {["unknown", "confirming"].includes(o.status) && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const r = await request(
+                                `/payments/${o.id}/reconcile`,
+                                { method: "POST", body: {} },
+                              );
+                              if (r.status === "unknown") setError(r.message);
+                              else setError("");
+                              setTick((t) => t + 1);
+                              await reload();
+                            } catch (e) {
+                              setError(e.message);
+                            }
+                          }}
+                        >
+                          결과 다시 조회
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="empty">아직 결제 내역이 없습니다.</p>
+        )}
       </section>
       <section className="panel history">
         <h2>포인트 이용 내역</h2>
@@ -223,6 +203,7 @@ export function PointsPage() {
                     <td>{date(r.created_at)}</td>
                     <td>
                       {{
+                        payment: "결제 충전",
                         adjustment: "관리자 조정",
                         charge: "사용",
                         refund: "환불",

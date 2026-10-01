@@ -2,10 +2,12 @@ mod admin;
 mod auth;
 mod content;
 mod devices;
+mod faq;
 mod files;
 mod images;
 mod ingest;
 mod nce;
+mod payments;
 mod usim;
 
 use axum::{
@@ -36,6 +38,7 @@ pub struct App {
     password_slots: Arc<Semaphore>,
     events: broadcast::Sender<(i64, i64)>,
     nce: nce::Provider,
+    payments: payments::Provider,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -132,6 +135,7 @@ async fn migrate(db: &PgPool) -> anyhow::Result<()> {
         ("Unique provider order link", include_str!("order-link.sql")),
         ("Shield post images", include_str!("post-images.sql")),
         ("Shield portal and attachments", include_str!("portal.sql")),
+        ("Shield wallet and FAQs", include_str!("commerce.sql")),
     ];
     let migrations = sources
         .into_iter()
@@ -279,6 +283,7 @@ pub async fn run() -> anyhow::Result<()> {
         password_slots: Arc::new(Semaphore::new(2)),
         events: broadcast::channel(128).0,
         nce: nce::Provider::config(production)?,
+        payments: payments::Provider::config(production)?,
     };
     usim::worker(app.clone());
     let maintenance = app.db.clone();
@@ -305,6 +310,15 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/auth/logout",post(auth::logout))
         .route("/api/auth/session",get(auth::session))
         .route("/api/posts",get(content::list))
+        .route("/api/faqs",get(faq::list))
+        .route("/api/admin/faqs",get(faq::admin_list))
+        .route("/api/admin/faqs/:id",post(faq::save))
+        .route("/api/commerce",get(payments::config))
+        .route("/api/payments",get(payments::list).post(payments::create))
+        .route("/api/payments/confirm",post(payments::confirm))
+        .route("/api/payments/:id/reconcile",post(payments::reconcile))
+        .route("/api/admin/user-summary",get(admin::user_summary))
+        .route("/api/admin/users/:id/detail",get(admin::user_detail))
         .route("/api/site-settings",get(content::settings))
         .route("/api/admin/site-settings",post(content::save_settings))
         .route("/api/admin/overview",get(admin::overview))
