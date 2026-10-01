@@ -194,6 +194,10 @@ export default function Lesson({ post, preview = false }) {
   const fallback = (post.images || []).filter((p) => p.after_step === 0);
   const move = (next) => {
     setStep(next);
+    if (preview) {
+      card.current?.closest(".live-preview")?.scrollTo({ top: 0 });
+      return;
+    }
     card.current?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "instant"

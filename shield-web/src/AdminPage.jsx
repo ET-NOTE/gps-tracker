@@ -1,3 +1,4 @@
+import useEditProtection from "./useEditProtection";
 import { FaqAdmin } from "./FaqPage";
 import {
   UserStats,
@@ -5,7 +6,7 @@ import {
   reception,
   exportUsers,
 } from "./UserManagement";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { request, query } from "./api";
 import { Session } from "./session";
@@ -58,11 +59,46 @@ export default function AdminPage() {
     [tick, setTick] = useState(0),
     [before, setBefore] = useState(null),
     [search, setSearch] = useState(""),
+    [settledSearch, setSettledSearch] = useState(""),
     [status, setStatus] = useState("all"),
     [viewUser, setViewUser] = useState(null),
     [edit, setEdit] = useState(null),
     [secret, setSecret] = useState(null),
-    [details, setDetails] = useState(null);
+    [details, setDetails] = useState(null),
+    [editorVersion, setEditorVersion] = useState(0),
+    [uploadBusy, setUploadBusy] = useState(false),
+    [faqStatus, setFaqStatus] = useState({ dirty: false, busy: false });
+  useEffect(() => {
+    const timer = setTimeout(() => setSettledSearch(search), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+  const editInitial = useRef(null);
+  const dirty = !!edit && JSON.stringify(edit) !== editInitial.current;
+  const protection = useEditProtection({
+    dirty: dirty || uploadBusy || faqStatus.dirty,
+    busy: busy || faqStatus.busy,
+  });
+  function openEdit(next) {
+    protection.leave(() => {
+      editInitial.current = JSON.stringify(next);
+      setEditorVersion((v) => v + 1);
+      setEdit(next);
+    });
+  }
+  function changeTab(key) {
+    if (key === tab) return;
+    protection.leave(() => {
+      setData(null);
+      setEdit(null);
+      setTab(key);
+      setBefore(null);
+      setSearch("");
+      setSettledSearch("");
+      setStatus("all");
+      setNotice("");
+      setSecret(null);
+    });
+  }
   useEffect(() => {
     setData(null);
     setBefore(null);
@@ -75,10 +111,16 @@ export default function AdminPage() {
     if (user?.role !== "admin" || tab === "faqs") return;
     const a = new AbortController();
     setData(null);
+    setError("");
     request(
       paths[tab] +
         "?" +
-        query({ before, q: search, status, all: tab === "credits" }),
+        query({
+          before,
+          q: tab === "users" ? settledSearch : undefined,
+          status: tab === "users" ? status : undefined,
+          all: tab === "credits",
+        }),
       {
         signal: a.signal,
       },
@@ -91,8 +133,13 @@ export default function AdminPage() {
         }
       });
     return () => a.abort();
-  }, [tab, before, search, status, tick, user?.role, reload]);
-  async function mutate(path, body, success = "저장했습니다.") {
+  }, [tab, before, settledSearch, status, tick, user?.role, reload]);
+  async function mutate(
+    path,
+    body,
+    success = "저장했습니다.",
+    { closeEditor = true } = {},
+  ) {
     setBusy(true);
     setError("");
     setNotice("");
@@ -100,8 +147,9 @@ export default function AdminPage() {
       const result = await request(path, { method: "POST", body });
       setNotice(success);
       setTick((v) => v + 1);
-      setEdit(null);
-      await posts.reload();
+      if (closeEditor) setEdit(null);
+      if (path.startsWith("/admin/posts/") || path === "/admin/site-settings")
+        await posts.reload();
       return result;
     } catch (e) {
       setError(e.message);
@@ -120,6 +168,7 @@ export default function AdminPage() {
   const rows = Array.isArray(data) ? data : [];
   return (
     <main className="container admin-page">
+      {protection.prompt}
       <Intro
         title="관리"
         description="게시물과 계정, 장치 및 USIM 운영 이력을 관리합니다."
@@ -130,11 +179,8 @@ export default function AdminPage() {
             key={key}
             className={key === tab ? "active" : ""}
             aria-pressed={key === tab}
-            onClick={() => {
-              setData(null);
-              setEdit(null);
-              setTab(key);
-            }}
+            disabled={busy || faqStatus.busy}
+            onClick={() => changeTab(key)}
           >
             {label}
           </button>
@@ -151,7 +197,9 @@ export default function AdminPage() {
         </p>
       )}
       {tab === "users" && <UserStats tick={tick} />}
-      {tab === "faqs" && <FaqAdmin />}
+      {tab === "faqs" && (
+        <FaqAdmin requestLeave={protection.leave} onStatus={setFaqStatus} />
+      )}
       <div className="admin-toolbar" hidden={tab === "faqs"}>
         <button
           className="outline"
@@ -165,7 +213,8 @@ export default function AdminPage() {
         {tab === "posts" && (
           <button
             className="button"
-            onClick={() => setEdit(structuredClone(emptyPost))}
+            disabled={busy}
+            onClick={() => openEdit(structuredClone(emptyPost))}
           >
             게시물 추가
           </button>
@@ -173,6 +222,7 @@ export default function AdminPage() {
         {tab === "users" && (
           <>
             <input
+              maxLength={100}
               aria-label="사용자 검색"
               placeholder="이메일·이름 검색"
               value={search}
@@ -209,6 +259,7 @@ export default function AdminPage() {
                   "/admin/invites",
                   {},
                   "초대코드를 발급했습니다.",
+                  { closeEditor: false },
                 );
                 if (r) setSecret(r);
               }}
@@ -225,6 +276,11 @@ export default function AdminPage() {
           <code className="secret-code">{secret.invite_code}</code>
           <button onClick={() => setSecret(null)}>닫기</button>
         </section>
+      )}
+      {tab !== "faqs" && data === null && !error && (
+        <p role="status" className="notice">
+          불러오는 중…
+        </p>
       )}
       {tab === "overview" && data?.counts && (
         <>
@@ -248,7 +304,7 @@ export default function AdminPage() {
           <section className="panel">
             <h2>1NCE 연결</h2>
             <p>
-              조회: {data.provider.configured ? "연결됨" : "설정 필요"} · 주문
+              조회: {data.provider.configured ? "설정됨" : "설정 필요"} · 주문
               전송:{" "}
               {data.provider.topup_enabled ? "관리자 승인 후 가능" : "비활성화"}
             </p>
@@ -272,6 +328,7 @@ export default function AdminPage() {
                   "/admin/site-settings",
                   { guide_slug: e.target.value },
                   "시작가이드를 변경했습니다.",
+                  { closeEditor: false },
                 )
               }
             >
@@ -292,7 +349,7 @@ export default function AdminPage() {
           </p>
         </section>
       )}
-      {tab === "posts" && !edit && (
+      {tab === "posts" && data !== null && !edit && (
         <div className="admin-posts">
           {rows.map((p) => (
             <article className="panel" key={p.content.id}>
@@ -306,7 +363,7 @@ export default function AdminPage() {
               </div>
               <button
                 className="outline"
-                onClick={() => setEdit(structuredClone(p))}
+                onClick={() => openEdit(structuredClone(p))}
               >
                 편집
               </button>
@@ -317,12 +374,14 @@ export default function AdminPage() {
       )}
       {tab === "posts" && edit && (
         <PostEditor
-          key={edit.revision ? edit.content.id : "new"}
+          key={editorVersion}
           edit={edit}
           setEdit={setEdit}
           busy={busy}
+          dirty={dirty}
+          onUploadBusy={setUploadBusy}
           saveError={error}
-          onClose={() => setEdit(null)}
+          onClose={() => protection.leave(() => setEdit(null))}
           onSave={() =>
             mutate(
               `/admin/posts/${edit.content.id}`,
@@ -336,7 +395,7 @@ export default function AdminPage() {
           }
         />
       )}
-      {tab === "users" && (
+      {tab === "users" && data !== null && (
         <>
           <Table
             headings={[
@@ -382,12 +441,12 @@ export default function AdminPage() {
                 <td>{date(u.created_at)}</td>
                 <td>
                   <button onClick={() => setViewUser(u)}>보기</button>
-                  <button onClick={() => setEdit({ ...u, kind: "user" })}>
+                  <button onClick={() => openEdit({ ...u, kind: "user" })}>
                     수정
                   </button>
                   <button
                     onClick={() =>
-                      setEdit({
+                      openEdit({
                         ...u,
                         kind: "credit",
                         amount: 0,
@@ -522,7 +581,7 @@ export default function AdminPage() {
           )}
         </>
       )}
-      {tab === "devices" && (
+      {tab === "devices" && data !== null && (
         <>
           <Table headings={["장치", "소유자", "최근 수신", "USIM", "관리"]}>
             {rows.map((d) => (
@@ -538,7 +597,7 @@ export default function AdminPage() {
                   <small className="block">{d.sim_error}</small>
                 </td>
                 <td>
-                  <button onClick={() => setEdit(d)}>수정</button>
+                  <button onClick={() => openEdit(d)}>수정</button>
                   <button
                     onClick={async () => {
                       try {
@@ -612,7 +671,7 @@ export default function AdminPage() {
           )}
         </>
       )}
-      {tab === "requests" && (
+      {tab === "requests" && data !== null && (
         <>
           <Table
             headings={["요청", "사용자·장치", "USIM", "상태", "포인트", "관리"]}
@@ -633,7 +692,7 @@ export default function AdminPage() {
                 <td>
                   <button
                     onClick={() =>
-                      setEdit({
+                      openEdit({
                         ...r,
                         note: "",
                         confirm_reference: "",
@@ -780,7 +839,7 @@ export default function AdminPage() {
           )}
         </>
       )}
-      {tab === "credits" && (
+      {tab === "credits" && data !== null && (
         <Table headings={["시각", "사용자", "구분", "변동", "잔액", "사유"]}>
           {rows.map((r) => (
             <tr key={r.id}>
@@ -794,7 +853,7 @@ export default function AdminPage() {
           ))}
         </Table>
       )}
-      {tab === "audit" && (
+      {tab === "audit" && data !== null && (
         <Table headings={["시각", "담당자", "작업", "대상", "상세"]}>
           {rows.map((r) => (
             <tr key={r.id}>
@@ -820,7 +879,7 @@ export default function AdminPage() {
           <pre className="audit-detail">{JSON.stringify(details, null, 2)}</pre>
         </section>
       )}
-      {!["posts", "overview", "faqs"].includes(tab) && (
+      {data !== null && !["posts", "overview", "faqs"].includes(tab) && (
         <div className="pagination">
           <span>{rows.length}건 표시</span>
           <button disabled={!before} onClick={() => setBefore(null)}>

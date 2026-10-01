@@ -591,3 +591,18 @@
 .faq-edit {
   scroll-margin-top: 90px;
 }
+
+.edit-protection {
+  width: min(480px, calc(100% - 32px));
+}
+.edit-protection::backdrop {
+  background: #10203088;
+}
+.edit-protection .editor-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.form-grid .form-wide {
+  grid-column: 1 / -1;
+}

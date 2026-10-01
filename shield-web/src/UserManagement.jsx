@@ -6,6 +6,8 @@ export function UserStats({ tick }) {
     [error, setError] = useState("");
   useEffect(() => {
     const a = new AbortController();
+    setData(null);
+    setError("");
     request("/admin/user-summary", { signal: a.signal })
       .then(setData)
       .catch((e) => {
@@ -31,7 +33,7 @@ export function UserStats({ tick }) {
             <p>{label}</p>
             <strong>
               {k !== "users" ? "₩ " : ""}
-              {data ? number(data[k], 0) : "…"}
+              {data ? number(data[k], 0) : error ? "—" : "…"}
               {k === "users" ? "명" : ""}
             </strong>
           </article>
@@ -97,6 +99,8 @@ export function UserDetail({ user, close }) {
     [error, setError] = useState("");
   useEffect(() => {
     const a = new AbortController();
+    setData(null);
+    setError("");
     request(`/admin/users/${user.id}/detail`, { signal: a.signal })
       .then(setData)
       .catch((e) => {

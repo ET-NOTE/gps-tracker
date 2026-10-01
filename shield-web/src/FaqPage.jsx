@@ -133,8 +133,9 @@ const empty = {
   position: 0,
   revision: 0,
 };
-export function FaqAdmin() {
-  const editorRef = useRef(null);
+export function FaqAdmin({ requestLeave, onStatus }) {
+  const editorRef = useRef(null),
+    initialEdit = useRef(null);
   const [rows, setRows] = useState(null),
     [tick, setTick] = useState(0),
     [error, setError] = useState(""),
@@ -145,8 +146,22 @@ export function FaqAdmin() {
     [edit, setEdit] = useState(null),
     [busy, setBusy] = useState(false),
     [page, setPage] = useState(0);
+  const dirty = !!edit && JSON.stringify(edit) !== initialEdit.current;
+  useEffect(() => {
+    onStatus({ dirty, busy });
+  }, [dirty, busy, onStatus]);
+  useEffect(() => () => onStatus({ dirty: false, busy: false }), [onStatus]);
+  function openEditor(next) {
+    requestLeave(() => {
+      initialEdit.current = JSON.stringify(next);
+      setEdit(next);
+      setNotice("");
+    });
+  }
   useEffect(() => {
     const a = new AbortController();
+    setError("");
+    setRows(null);
     request("/admin/faqs", { signal: a.signal })
       .then(setRows)
       .catch((e) => {
@@ -186,8 +201,14 @@ export function FaqAdmin() {
       (!category || r.category === category) &&
       (r.question + " " + r.answer)
         .toLowerCase()
-        .includes(search.toLowerCase()),
+        .includes(search.trim().toLowerCase()),
   );
+  useEffect(() => {
+    if (rows !== null)
+      setPage((p) =>
+        Math.min(p, Math.max(0, Math.ceil(filtered.length / 10) - 1)),
+      );
+  }, [rows, filtered.length]);
   return (
     <section className="faq-admin">
       <div className="panel-title">
@@ -197,7 +218,11 @@ export function FaqAdmin() {
             질문을 공개하거나 숨기고, 수정 이력을 남깁니다.
           </p>
         </div>
-        <button className="button" onClick={() => setEdit({ ...empty })}>
+        <button
+          className="button"
+          disabled={busy}
+          onClick={() => openEditor({ ...empty })}
+        >
           + FAQ 추가
         </button>
       </div>
@@ -277,13 +302,15 @@ export function FaqAdmin() {
                 </td>
                 <td>{date(r.updated_at)}</td>
                 <td>
-                  <button disabled={busy} onClick={() => setEdit({ ...r })}>
+                  <button disabled={busy} onClick={() => openEditor({ ...r })}>
                     수정
                   </button>
                   <button
                     disabled={busy}
                     onClick={() =>
-                      save({ ...r, archived: !r.archived, published: false })
+                      requestLeave(() =>
+                        save({ ...r, archived: !r.archived, published: false }),
+                      )
                     }
                   >
                     {r.archived ? "숨김으로 복원" : "보관"}
@@ -293,9 +320,10 @@ export function FaqAdmin() {
             ))}
           </tbody>
         </table>
-        {rows === null ? (
+        {rows === null && !error ? (
           <p role="status">불러오는 중…</p>
         ) : (
+          rows !== null &&
           !filtered.length && <p className="empty">해당 FAQ가 없습니다.</p>
         )}
       </div>
@@ -321,6 +349,11 @@ export function FaqAdmin() {
             }}
           >
             <h2>{edit.id ? "FAQ 편집" : "새 FAQ"}</h2>
+            {dirty && (
+              <p className="muted" role="status">
+                저장하지 않은 변경 내용이 있습니다.
+              </p>
+            )}
             <fieldset disabled={busy}>
               {[
                 ["category", "분류", 40],
@@ -371,7 +404,10 @@ export function FaqAdmin() {
               </label>
               <div className="editor-actions">
                 <button className="button">저장</button>
-                <button type="button" onClick={() => setEdit(null)}>
+                <button
+                  type="button"
+                  onClick={() => requestLeave(() => setEdit(null))}
+                >
                   편집 닫기
                 </button>
               </div>

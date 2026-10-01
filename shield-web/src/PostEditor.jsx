@@ -7,6 +7,8 @@ export default function PostEditor({
   edit,
   setEdit,
   busy,
+  dirty,
+  onUploadBusy,
   saveError,
   onSave,
   onClose,
@@ -20,6 +22,10 @@ export default function PostEditor({
     [progress, setProgress] = useState("");
   const [error, setError] = useState(""),
     [preview, setPreview] = useState(true);
+  useEffect(() => {
+    onUploadBusy(uploading || fileBusy);
+  }, [uploading, fileBusy, onUploadBusy]);
+  useEffect(() => () => onUploadBusy(false), [onUploadBusy]);
   const content = edit.content,
     photos = content.images || [];
   useEffect(() => {
@@ -185,7 +191,12 @@ export default function PostEditor({
       ref={root}
     >
       <div className="panel-title">
-        <h2>{edit.revision ? "게시물 편집" : "새 게시물"}</h2>
+        <h2>
+          {edit.revision ? "게시물 편집" : "새 게시물"}{" "}
+          <span className={"badge " + (edit.published ? "" : "neutral")}>
+            {edit.published ? "공개" : "초안"}
+          </span>
+        </h2>
         <button
           type="button"
           onClick={() => setPreview(!preview)}
@@ -202,9 +213,13 @@ export default function PostEditor({
           저장하기
         </button>
       </div>
-      <p className="muted">
-        사진과 글을 수정한 뒤 아래 저장 버튼을 눌러 주세요. 저장 전에는 공개
-        페이지가 바뀌지 않습니다.
+      <p className="muted" role="status">
+        {busy
+          ? "저장 중…"
+          : dirty
+            ? "저장하지 않은 변경 내용이 있습니다."
+            : "변경 내용이 없습니다."}{" "}
+        저장 전에는 공개 페이지가 바뀌지 않습니다.
       </p>
       {(error || saveError) && (
         <p className="error" role="alert">
@@ -251,7 +266,6 @@ export default function PostEditor({
                 {[
                   ["id", "주소 슬러그"],
                   ["title", "제목"],
-                  ["description", "요약"],
                   ["category", "분류"],
                 ].map(([key, label]) => (
                   <label key={key}>
@@ -270,6 +284,16 @@ export default function PostEditor({
                     />
                   </label>
                 ))}
+                <label className="form-wide">
+                  요약
+                  <textarea
+                    required
+                    rows={3}
+                    maxLength={500}
+                    value={content.description}
+                    onChange={(e) => change("description", e.target.value)}
+                  />
+                </label>
                 <label>
                   난이도
                   <select
