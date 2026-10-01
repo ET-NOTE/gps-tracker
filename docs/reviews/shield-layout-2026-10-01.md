@@ -29,3 +29,18 @@
 - FAQ 검색 동작 및 콘솔 오류 없음 확인. 데이터 변경/결제/USIM 충전 테스트는 하지 않았다.
 
 이번 수정은 Shield 프론트만 변경한다. 스키마 9, 서버 로직, KC/GPS 수신 파싱은 유지한다.
+
+## 운영 반영
+
+- 소스 `821bc57`, 릴리스 `shield-20261001-133119-821bc57`.
+- SHA-256 `c466b6febe440b4037169ab5c107c5e3040b752e686656621774930ee5fc3029`.
+- etcom-hub 빌드: Rust 5, 프론트 14, Clippy, GPS check, production build 통과.
+- 배포 전 백업 `shield-20261001T043120Z.tar.gz`, SHA-256
+  `7b564ee450d38653c22f5caee647b856148001f6c6718ff3db6a5c76a3058fb1`.
+  별도 PostgreSQL 14 복원에서 schema 1–9와 테이블 건수·첨부 해시를 확인했다.
+- app-only 배포로 schema 1–9, nginx, GPS binary/PID/시작 시각, Shield 환경 파일 불변.
+- 운영 자산 `index-1fyAk_uP.js`, `index-PcTGRyI7.css` 반영 확인.
+  운영 FAQ/예제 제목 시작 y=144.797px 일치, header/main/footer 폭 일치,
+  검색 input border=0 확인. 390px에서 실제 메뉴 → 시작가이드 이동/메뉴 닫힘 확인.
+- 운영 점검 28개 통과. 실물 장치 소유권/USIM 캐시 유지,
+  포인트 주문·USIM 요청·장부·포인트 변동은 계속 0건이다.
