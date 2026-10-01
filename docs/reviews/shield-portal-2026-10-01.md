@@ -67,4 +67,39 @@
 스키마 8 적용 후 SQLx 이전 바이너리로 단순 symlink rollback은 불가하다.
 전진 수정 우선이며 DB 복구가 필요하면 신규 수신 데이터를 먼저 보존해야 한다.
 
-운영 릴리스와 배포 후 검증 결과는 배포를 마친 뒤 추가한다.
+## 배포 결과
+
+- 앱 소스 `3af0714`, 운영 릴리스 `shield-20261001-112744-3af0714`.
+  Artifact SHA-256 `25175617d124f7363c2ed0e49f0af0d47661de7d3a5d1c0a60f2b3fe43a693ac`.
+- etcom-hub에서 GPS 기본 타깃 check, Rust 단위 5, Clippy `-D warnings`,
+  Shield release build, 프론트 테스트 14와 production build 통과.
+- Schema 1–8, Shield API active. GPS binary SHA
+  `81214c4f4c49ee361a92271f913271ccc9bc633b7d0e41e51807df945cae79d9`, PID 55990,
+  시작 시각 2026-09-28 12:51:52 KST 불변. Shield 환경 파일과 GPS nginx 불변.
+- 기존 start 예제의 content가 이전 seed와 완전히 같은지 확인하고서만 3단계
+  예제로 갱신했다. 공개 상태/실제 revision을 사용했고 before 문서를 비공개
+  operator directory에 남겼다. 다른 운영 게시물은 유지했다.
+- 운영 HTTPS의 174,200-byte 합성 텍스트 첨부파일 업로드/관리자 다운로드와
+  원본 바이트/응답 헤더를 검증했다. 익명 및 일반 사용자 조회는 404,
+  익명 업로드는 401. 파일은 미첨부 비공개이고 실제 상품 자료를 노출하지 않았다.
+- `verify-portal.py`는 운영 HTTPS 헤더의 대소문자를 정규화한다. 최초 확인 때
+  header dictionary의 키 대소문자 차이로 중단된 검증은 정규화 후 통과했다.
+- 운영 브라우저에서 새 메뉴/홈/공통 3단계 가이드 표시를 확인했다.
+- 실물 장치의 소유권과 기존 기록/API 조회는 정상. 마지막 실제 수신은
+  **2026-09-30 20:50:01 KST**. 배포 전부터 수신이 없으므로 `verify-bench`
+  fresh-report 조건은 충족하지 못했다. 현재 실물 실시간 수신 성공으로 보고하지
+  않으며, 신규 수신/좌표 검증은 장치 재연결 후 가능하다.
+- Shield process RSS 계열 `MemoryCurrent` 약 41.1 MiB, restart 0. VPS 가용 RAM
+  약 1,117 MiB, 디스크 여유 4.2 GiB. Preview 최대 5 MiB 파일 검사 후 OOM false.
+- 실제 sim_requests / sim_ledger / credit_entries 각각 0건 유지.
+
+### 백업 복원
+
+- 배포 전 `shield-20261001T022819Z.tar.gz`, SHA-256
+  `8a12c88df0d299db47b5eb05ebacbbaa9b1493570910921b8538569152568a06`.
+  Offsite PostgreSQL 14 복원: schema 1–7, 이미지 1개 해시 검증.
+- 배포 후 `shield-20261001T023138Z.tar.gz`, SHA-256
+  `66fc5388f6142fc9bfe581a99593c2eda17ed69ff6d443c9a50856db341e748b`.
+  Offsite 복원: users 2, devices 1, readings 1,773, location_records 8,115,
+  content_posts 7, audit_log 5, post_images 1, post_image_links 0, post_files 1,
+  post_file_links 0, site_settings 1, schema 1–8. 이미지/파일 바이트 해시 각각 1개 일치.

@@ -47,7 +47,7 @@ export function Header() {
               <Link className="outline compact" to="/points">
                 포인트충전
               </Link>
-              <Link className="account-link" to="/account">
+              <Link className="account-link" to="/account" aria-label="마이페이지">
                 <Icon name="user" size={18} />
                 <span>마이페이지</span>
               </Link>

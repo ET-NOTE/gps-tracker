@@ -14,6 +14,7 @@ export default function Home() {
     [failure, setFailure] = useState("");
   useEffect(() => {
     if (!selected) {
+      setFailure("");
       setResult(null);
       return;
     }

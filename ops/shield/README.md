@@ -163,13 +163,49 @@ the same renderer as the public article. Changes become visible only after Save.
   Backup metadata records each image SHA-256; restore verification checks image
   hashes, table counts and schema versions.
 
-For the first 6 → 7 upgrade use `deploy-app.py --post-images-upgrade` with the
-reviewed release/checksum, previous release and fresh backup digest. It permits
-only the new Shield image-upload nginx location/rate zone, installs the image-aware
-backup script and restarts Shield. Other nginx files and the GPS binary/process
-must match the pre-deployment baseline. The schema rollback caveat above applies.
-Subsequent app-only releases can use `deploy-app.py` without this flag on schema 7.
+The historical 6 → 7 deployment is documented in
+`docs/reviews/shield-post-images-2026-09-28.md`. Current deployment tooling targets
+schema 7 → 8 or an app-only update on schema 7/8; it does not combine older upgrades.
 
 `test-post-images.py` runs only on the etcom-hub preview: authorization, content
 validation, deduplication, optimistic revision conflicts, publishing/privacy and
 bounded image processing. It never calls payment/topup endpoints.
+
+## Device portal and lesson attachments (schema 8)
+
+- `/guide` renders the published free example selected in Admin → 게시물. Publication
+  and guide changes share a transaction lock, so the active guide cannot become a
+  draft or paid introduction. Existing administrator content is never reseeded.
+- `/examples` introduces free lessons and coming-soon projects. Categories/search
+  appear on `/examples/all` and `/projects`. Projects have no price/payment/download
+  until the product catalog and delivery policy are approved.
+- Steps support titles, previous/next navigation and multiple photos with 5-second
+  autoplay, pause/manual controls and reduced-motion support. Admins can upload up
+  to 10 attachments, assigning each to every step or a specific step. Moving/deleting
+  steps also moves/preserves photos, titles and attachments.
+- `post_files` stores attachment bytes with SHA-256 IDs; `post_file_links` controls
+  public visibility. Active admins upload/read drafts. Anonymous downloads require
+  a current published free example reference. Files use attachment disposition,
+  encoded names, no-store, nosniff and sandbox headers; no inline rendering.
+- Allowlisted code/text/PDF/ZIP types only; 5 MiB per file, 100 MiB/500 assets total.
+  Upload rate/concurrency limits share existing Shield resource budgets. As with
+  images, never-attached uploads expire after 24 hours on the next upload; previously
+  referenced files remain for audit. Backup/restore verifies both image and file bytes.
+- `/data` displays labeled synthetic demos for anonymous or empty accounts/devices.
+  An API error is not replaced by a demo. Private data resets across account changes.
+  Device selection appears in the sidebar and URL. Existing dynamic sensor channels,
+  chart/history/CSV ownership rules remain in force.
+- `/devices` provides claim, owner rename (audited), recent data/location and cached
+  USIM information. Online means a report in the last 3 minutes, not a confirmed
+  power state. Missing quota is not zero; expired/disabled/exhausted SIMs need attention.
+- Apply the reviewed schema 7 → 8 artifact with `deploy-app.py --portal-upgrade`,
+  previous release/artifact SHA/fresh backup SHA arguments. It permits only the exact
+  new Shield attachment nginx location and installs the updated backup script.
+  Later app-only schema-8 releases omit this flag. Only Shield restarts.
+- `test-portal.py` tests the disposable preview; `verify-portal.py` tests HTTPS with
+  a private synthetic attachment and optional seed-pair compare-and-swap guide update.
+  Neither calls billing APIs. Credentials and guide seed pairs live only in the
+  private operator directory. `verify-bench.py` additionally requires fresh hardware
+  telemetry, so an offline bench is reported separately from API/UI verification.
+
+See `docs/reviews/shield-portal-2026-10-01.md` for the deployment and backup evidence.
