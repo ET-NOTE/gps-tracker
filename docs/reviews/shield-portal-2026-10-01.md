@@ -69,7 +69,7 @@
 
 ## 배포 결과
 
-- 앱 소스 `3af0714`, 운영 릴리스 `shield-20261001-112744-3af0714`.
+- 최초 포털 앱 소스 `3af0714`, 초기 운영 릴리스 `shield-20261001-112744-3af0714`.
   Artifact SHA-256 `25175617d124f7363c2ed0e49f0af0d47661de7d3a5d1c0a60f2b3fe43a693ac`.
 - etcom-hub에서 GPS 기본 타깃 check, Rust 단위 5, Clippy `-D warnings`,
   Shield release build, 프론트 테스트 14와 production build 통과.
@@ -89,7 +89,7 @@
   **2026-09-30 20:50:01 KST**. 배포 전부터 수신이 없으므로 `verify-bench`
   fresh-report 조건은 충족하지 못했다. 현재 실물 실시간 수신 성공으로 보고하지
   않으며, 신규 수신/좌표 검증은 장치 재연결 후 가능하다.
-- Shield process RSS 계열 `MemoryCurrent` 약 41.1 MiB, restart 0. VPS 가용 RAM
+- Shield 서비스 `MemoryCurrent` 약 41.1 MiB, restart 0. VPS 가용 RAM
   약 1,117 MiB, 디스크 여유 4.2 GiB. Preview 최대 5 MiB 파일 검사 후 OOM false.
 - 실제 sim_requests / sim_ledger / credit_entries 각각 0건 유지.
 
@@ -103,3 +103,19 @@
   Offsite 복원: users 2, devices 1, readings 1,773, location_records 8,115,
   content_posts 7, audit_log 5, post_images 1, post_image_links 0, post_files 1,
   post_file_links 0, site_settings 1, schema 1–8. 이미지/파일 바이트 해시 각각 1개 일치.
+
+### 최종 UI 보정 배포
+
+- 현재 운영: **`shield-20261001-113716-ca01c4a`**, source `ca01c4a`.
+  Artifact SHA-256 `64deea3c1e96ba3c8a7689b65820c571392dde87a0b27dea16f1ba82f1998284`.
+- 계정 카드 여백, 모바일 마이페이지 접근성 이름, 로그아웃 후 홈 오류 상태 초기화,
+  홈 공통 컨테이너의 불필요한 최소 높이와 미등록 프로젝트 목록 안내를 보정했다.
+  schema 8과 nginx는 그대로다. 최종 빌드의 Rust 5/프론트 14/Clippy/GPS check 통과.
+- 최종 웹 자산 `index-Dwz8s2Gk.js`를 운영 브라우저에서 확인했고, 홈 전체 화면에서
+  과도한 하단 여백이 없는지 확인했다. 출시 전 상품의 빈 검색 필터/0개 표시 대신
+  프로젝트 공개 준비 중 안내를 표시한다. 등록된 프로젝트부터 카테고리/검색을 제공한다.
+- 최종 snapshot `shield-20261001T023816Z.tar.gz`, SHA-256
+  `e497d92ee84e2332d0f030b85c06739a63ec040bd1eefb7c7e2c451b113c9ba3`.
+  PostgreSQL 14 offsite 복원에서 위와 동일한 건수, schema 1–8 및 이미지/파일 SHA 통과.
+- 모든 배포 단계에서 GPS binary/process, Shield 환경 설정과 관련 없는 nginx 설정
+  불변을 확인했다. 실제 충전 요청·장부는 계속 0건이다.
