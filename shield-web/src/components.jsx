@@ -498,7 +498,7 @@ export function Intro({ crumb, title, description, children }) {
           {crumb || title}
         </p>
         <h1>{title}</h1>
-        <p>{description}</p>
+        {description && <p className="page-description">{description}</p>}
       </div>
       {children}
     </div>

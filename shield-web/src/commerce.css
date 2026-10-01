@@ -219,15 +219,14 @@
   padding: 30px;
 }
 .faq-heading {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.85fr);
   gap: 30px;
-  align-items: center;
-  justify-content: space-between;
+  align-items: start;
 }
 .faq-heading .search {
-  max-width: 560px;
-  flex: 1;
-  margin: 0;
+  width: 100%;
+  margin: 62px 0 0;
 }
 .faq-layout {
   display: grid;
@@ -277,6 +276,7 @@
   font-weight: 500;
 }
 .faq-answers details p {
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
   color: var(--muted);
   font-size: 14px;
@@ -469,7 +469,7 @@
     display: block;
   }
   .faq-heading .search {
-    margin-bottom: 24px;
+    margin: 0 0 24px;
   }
   .user-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
