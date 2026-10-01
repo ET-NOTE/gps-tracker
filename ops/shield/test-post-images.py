@@ -24,7 +24,8 @@ def main():
     admin,user,anon=c.Client(),c.Client(),c.Client()
     for client,key in [(admin,'admin_email'),(user,'user_email')]:
         assert client.call('/api/auth/login',{'email':fixture[key],'password':fixture['password']})[0]==200
-    body=png();upload='/api/admin/post-images'
+    # Each run owns unique pixels even if a prior browser fixture is public.
+    body=png(noisy=True);upload='/api/admin/post-images'
     c.check('anonymous upload denied',raw(anon,upload,body)[0]==401)
     c.check('ordinary user upload denied',raw(user,upload,body)[0]==403)
     c.check('cross-origin upload denied',raw(admin,upload,body,'https://evil.example')[0]==403)

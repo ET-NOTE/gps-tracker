@@ -32,7 +32,7 @@ def main():
                 return value
             snapshot=query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SELECT pg_export_snapshot();')
             assert re.fullmatch(r'[0-9A-Fa-f-]+',snapshot)
-            tables=('users','devices','readings','location_records','content_posts','audit_log','sensor_channels','sim_requests','sim_ledger','credit_entries','post_images','post_image_links')
+            tables=('users','devices','readings','location_records','content_posts','audit_log','sensor_channels','sim_requests','sim_ledger','credit_entries','post_images','post_image_links','post_files','post_file_links','site_settings')
             counts={}
             for table in tables:
                 if query(f"SELECT to_regclass('{table}') IS NOT NULL;")=='t':
@@ -40,6 +40,8 @@ def main():
             counts['schema_versions']=json.loads(query('SELECT json_agg(version ORDER BY version) FROM _sqlx_migrations;'))
             if 'post_images' in counts:
                 counts['image_hashes']=json.loads(query("SELECT coalesce(json_object_agg(id,encode(sha256(data),'hex')),'{}'::json) FROM post_images;"))
+            if 'post_files' in counts:
+                counts['file_hashes']=json.loads(query("SELECT coalesce(json_object_agg(id,encode(sha256(data),'hex')),'{}'::json) FROM post_files;"))
             with (work/'shield_prod.dump').open('wb') as f:
                 subprocess.run(['sudo','-u','postgres','pg_dump','-Fc','--no-owner','--no-acl','--snapshot='+snapshot,'shield_prod'],stdout=f,check=True)
             session.stdin.write('ROLLBACK;\n\\q\n');session.stdin.flush()

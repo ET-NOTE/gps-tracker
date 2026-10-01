@@ -14,9 +14,25 @@ pub struct Post {
     variant: String,
     steps: Vec<String>,
     #[serde(default)]
+    step_titles: Vec<String>,
+    #[serde(default = "example_kind")]
+    kind: String,
+    #[serde(default)]
+    attachments: Vec<Attachment>,
+    #[serde(default)]
     images: Vec<PostImage>,
     #[serde(default)]
     code: String,
+}
+fn example_kind() -> String {
+    "example".into()
+}
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct Attachment {
+    id: String,
+    title: String,
+    after_step: usize,
 }
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -54,6 +70,19 @@ fn validate(p: &Post) -> Result<()> {
             .iter()
             .any(|s| s.trim().is_empty() || s.chars().count() > 2000)
         || p.code.len() > 16000
+        || !["example", "project"].contains(&p.kind.as_str())
+        || (!p.step_titles.is_empty() && p.step_titles.len() != p.steps.len())
+        || p.step_titles
+            .iter()
+            .any(|s| s.trim().is_empty() || s.chars().count() > 80)
+        || p.attachments.len() > 10
+        || p.attachments.iter().any(|a| {
+            !images::valid_id(&a.id)
+                || a.title.trim().is_empty()
+                || a.title.chars().count() > 120
+                || a.after_step > p.steps.len()
+        })
+        || (p.kind == "project" && (!p.code.is_empty() || !p.attachments.is_empty()))
         || p.images.len() > 20
         || p.images.iter().any(|i| {
             !images::valid_id(&i.id)
@@ -90,6 +119,26 @@ pub async fn save(
         return Err(bad("게시물 주소를 확인해 주세요."));
     }
     let mut tx = app.db.begin().await?;
+    // Guide configuration and post publication must change atomically.
+    let guide: Option<String> =
+        sqlx::query_scalar("SELECT guide_slug FROM site_settings WHERE singleton FOR UPDATE")
+            .fetch_one(&mut *tx)
+            .await?;
+    if guide.as_deref().unwrap_or("start") == slug && (!v.published || v.content.kind != "example")
+    {
+        return Err(bad("시작가이드로 사용 중입니다. 다른 공개 기본 예제를 시작가이드로 지정한 뒤 변경해 주세요."));
+    }
+    let file_ids: Vec<String> = v.content.attachments.iter().map(|a| a.id.clone()).collect();
+    let file_found: Vec<String> =
+        sqlx::query_scalar("SELECT id FROM post_files WHERE id=ANY($1) ORDER BY id FOR KEY SHARE")
+            .bind(&file_ids)
+            .fetch_all(&mut *tx)
+            .await?;
+    if file_ids.iter().any(|id| !file_found.contains(id)) {
+        return Err(bad(
+            "첨부파일이 만료되었거나 없습니다. 파일을 다시 추가해 주세요.",
+        ));
+    }
     let image_ids: Vec<String> = v.content.images.iter().map(|i| i.id.clone()).collect();
     let found: Vec<String> =
         sqlx::query_scalar("SELECT id FROM post_images WHERE id=ANY($1) FOR KEY SHARE")
@@ -137,9 +186,68 @@ pub async fn save(
         .bind(&found)
         .execute(&mut *tx)
         .await?;
+    sqlx::query("DELETE FROM post_file_links WHERE post_slug=$1")
+        .bind(&slug)
+        .execute(&mut *tx)
+        .await?;
+    for id in &file_found {
+        sqlx::query("INSERT INTO post_file_links(post_slug,file_id) VALUES($1,$2)")
+            .bind(&slug)
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+    }
+    sqlx::query("UPDATE post_files SET attached_at=coalesce(attached_at,now()) WHERE id=ANY($1)")
+        .bind(&file_found)
+        .execute(&mut *tx)
+        .await?;
     admin::audit(&mut tx,Some(actor),"post.save","post",&slug,json!({"before":before,"after":{"content":content,"published":v.published,"revision":revision}})).await?;
     tx.commit().await?;
     Ok(Json(json!({"ok":true,"revision":revision})))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Settings {
+    guide_slug: String,
+}
+pub async fn settings(State(app): State<App>) -> Result<Json<Value>> {
+    let guide: String = sqlx::query_scalar(
+        "SELECT coalesce(guide_slug,'start') FROM site_settings WHERE singleton",
+    )
+    .fetch_one(&app.db)
+    .await?;
+    Ok(Json(json!({"guide_slug":guide})))
+}
+pub async fn save_settings(
+    State(app): State<App>,
+    h: HeaderMap,
+    Json(v): Json<Settings>,
+) -> Result<Json<Value>> {
+    let actor = admin::require(&app, &h).await?;
+    let mut tx = app.db.begin().await?;
+    let before: Option<String> =
+        sqlx::query_scalar("SELECT guide_slug FROM site_settings WHERE singleton FOR UPDATE")
+            .fetch_one(&mut *tx)
+            .await?;
+    let allowed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM content_posts WHERE slug=$1 AND published AND coalesce(content->>'kind','example')='example')").bind(&v.guide_slug).fetch_one(&mut *tx).await?;
+    if !allowed {
+        return Err(bad("공개된 기본 예제를 선택해 주세요."));
+    }
+    sqlx::query("UPDATE site_settings SET guide_slug=$1 WHERE singleton")
+        .bind(&v.guide_slug)
+        .execute(&mut *tx)
+        .await?;
+    admin::audit(
+        &mut tx,
+        Some(actor),
+        "site.guide",
+        "site",
+        "guide",
+        json!({"before":before,"after":v.guide_slug}),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(json!({"ok":true})))
 }
 pub async fn seed(db: &PgPool) -> anyhow::Result<()> {
     let posts: Vec<Value> = serde_json::from_str(include_str!("content-seed.json"))?;

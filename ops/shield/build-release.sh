@@ -4,6 +4,7 @@ set -euo pipefail
 : "${SHIELD_RELEASE:?Set an immutable Shield release ID}"
 [[ "$SHIELD_RELEASE" =~ ^shield-[0-9]{8}-[0-9]{6}-[a-f0-9]{7,40}$ ]]
 cd /work/gps-tracker-api
+cargo check --locked --bin gps-tracker-api
 cargo test --locked --release --features shield --bin shield-api
 cargo clippy --locked --features shield --bin shield-api -- -D warnings
 GPS_RELEASE="$SHIELD_RELEASE" cargo build --locked --release --features shield --bin shield-api

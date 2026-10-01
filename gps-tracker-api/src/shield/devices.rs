@@ -31,6 +31,49 @@ pub struct Claim {
     claim_code: String,
     display_name: String,
 }
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Rename {
+    display_name: String,
+}
+pub async fn rename(
+    State(app): State<App>,
+    h: HeaderMap,
+    Path(id): Path<i64>,
+    Json(v): Json<Rename>,
+) -> Result<Json<Value>> {
+    let user = auth::user(&app, &h).await?;
+    let name = v.display_name.trim();
+    if name.is_empty() || name.chars().count() > 60 {
+        return Err(bad("장치 이름은 1~60자로 입력해 주세요."));
+    }
+    let mut tx = app.db.begin().await?;
+    let before: String = sqlx::query_scalar(
+        "SELECT display_name FROM devices WHERE id=$1 AND owner_id=$2 FOR UPDATE",
+    )
+    .bind(id)
+    .bind(user)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(missing)?;
+    sqlx::query("UPDATE devices SET display_name=$1 WHERE id=$2 AND owner_id=$3")
+        .bind(name)
+        .bind(id)
+        .bind(user)
+        .execute(&mut *tx)
+        .await?;
+    admin::audit(
+        &mut tx,
+        Some(user),
+        "device.rename",
+        "device",
+        &id.to_string(),
+        json!({"before":before,"after":name}),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(json!({"ok":true})))
+}
 pub async fn claim(
     State(app): State<App>,
     h: HeaderMap,

@@ -11,7 +11,6 @@ import { request, query, exportReadings, timeRange } from "./api";
 import {
   Icon,
   Intro,
-  Metric,
   Chart,
   MapPanel,
   number,
@@ -19,7 +18,9 @@ import {
   relative,
 } from "./components";
 import { validCsq } from "./telemetry";
-function ClaimDialog({ done, close }) {
+import { DeviceSidebar } from "./DeviceNavigation";
+import DemoDashboard from "./DemoDashboard";
+export function ClaimDialog({ done, close }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const dialog = useRef();
@@ -86,7 +87,7 @@ function ClaimDialog({ done, close }) {
     </dialog>
   );
 }
-export default function DataPage() {
+function LiveDataPage() {
   const { reload } = useContext(Session);
   const [params, setParams] = useSearchParams();
   const [devices, setDevices] = useState([]),
@@ -130,6 +131,19 @@ export default function DataPage() {
       });
     return () => abort.abort();
   }, [inventory, reload]);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!document.hidden) setInventory((v) => v + 1);
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    const wanted = devices.find((d) => String(d.id) === params.get("device"));
+    if (wanted && wanted.id !== id) {
+      setBundle(null);
+      setId(wanted.id);
+    }
+  }, [params, devices, id]);
   useEffect(() => {
     exporter.current?.abort();
     setExporting(false);
@@ -265,7 +279,7 @@ export default function DataPage() {
     }
   };
   return (
-    <main className="container">
+    <main className="container workspace-page">
       <Intro
         title="내 데이터"
         description="내 디바이스에서 전송한 센서 값과 위치를 확인하세요."
@@ -298,322 +312,315 @@ export default function DataPage() {
           </button>
         </p>
       )}
-      {!devices.length ? (
-        <section className="panel empty">
-          <Icon name="chip" size={46} />
-          <h2>
-            {loading
-              ? "장치를 확인하고 있습니다"
-              : "아직 등록된 쉴드가 없습니다"}
-          </h2>
-          <p>제품의 등록 코드로 첫 번째 쉴드를 연결해 주세요.</p>
-          <button className="button" onClick={() => setClaim(true)}>
-            디바이스 등록
-          </button>
-        </section>
-      ) : (
-        <>
-          <div className="device-toolbar panel">
-            <label>
-              디바이스
-              <select aria-label="디바이스" value={id || ""} onChange={select}>
-                {devices.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.display_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="device-status">
-              <span>{selected?.device_uid}</span>
-              <span>
-                <i
-                  className={
-                    "status-dot " +
-                    (!summary?.device.last_seen_at ||
-                    Date.now() - Date.parse(summary.device.last_seen_at) >
-                      180000
-                      ? "quiet"
-                      : "")
-                  }
-                />
-                {summary?.device.last_seen_at
-                  ? relative(summary.device.last_seen_at)
-                  : "수신 대기"}
-              </span>
-            </div>
-            <label>
-              조회 기간
-              <select
-                value={hours}
-                onChange={(e) => {
-                  setHours(Number(e.target.value));
-                  setAuto(true);
-                }}
-              >
-                <option value={1}>최근 1시간</option>
-                <option value={24}>최근 24시간</option>
-                <option value={168}>최근 7일</option>
-              </select>
-            </label>
-            <button
-              className="outline"
-              onClick={download}
-              disabled={exporting || !summary?.total}
-            >
-              <Icon name="download" size={17} />
-              {exporting ? "전체 기록 수집 중…" : "CSV 다운로드"}
-            </button>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={auto}
-                onChange={(e) => {
-                  setAuto(e.target.checked);
-                  if (e.target.checked) {
-                    setPage(0);
-                    setCursors([{}]);
-                    refresh();
-                  }
-                }}
-              />
-              실시간 갱신
-            </label>
-          </div>
-          <div className="metrics">
-            {channels.map((c) => (
-              <Metric
-                key={c.id}
-                icon="data"
-                label={c.label}
-                value={number(c.latest?.value, 2)}
-                unit={c.unit}
-                hint={`${c.sensor_set} · ${c.latest ? date(c.latest.at) : "미수신"}${c.active ? "" : " · 이전 센서"}`}
-              />
-            ))}
-            <Metric
-              icon="signal"
-              label="PV 입력 전압"
-              value={number(
-                latest?.pv_mv == null ? null : latest.pv_mv / 1000,
-                3,
-              )}
-              unit="V"
-              hint="쉴드 A0 실측 · 배터리 잔량이 아닙니다"
-            />
-            <Metric
-              icon="signal"
-              label="LTE 신호"
-              value={validCsq(latest?.csq) ? String(latest.csq) : "—"}
-              unit="CSQ"
-              hint={
-                validCsq(latest?.csq)
-                  ? `${-113 + 2 * latest.csq} dBm (CSQ 환산)`
-                  : "신호 미확인"
-              }
-            />
-            <Metric
-              icon="data"
-              label="오늘 수신"
-              value={number(summary?.received_today, 0)}
-              unit="건"
-              hint="한국 시각 · 중복 제외 보고 수"
-            />
-          </div>
-          <div className="data-charts">
-            <section className="panel">
-              <div className="panel-title">
+      <div className="device-workspace">
+        <DeviceSidebar
+          devices={devices.map((d) =>
+            d.id === id && summary
+              ? { ...d, last_seen_at: summary.device.last_seen_at }
+              : d,
+          )}
+          selected={id}
+          onSelect={(value) => select({ target: { value } })}
+          onRegister={() => setClaim(true)}
+          loading={loading && !devices.length}
+        />
+        <div className="workspace-main">
+          {!devices.length ? (
+            loading ? (
+              <p className="panel empty" role="status">
+                장치를 불러오는 중입니다.
+              </p>
+            ) : (
+              !error && (
+                <DemoDashboard message="등록된 장치가 없어 데모 데이터를 표시합니다." />
+              )
+            )
+          ) : (
+            <>
+              <div className="device-heading">
                 <div>
-                  <h2>센서 변화</h2>
-                  <p>
-                    5분 평균 ·{" "}
-                    {hours === 168 ? "최근 7일" : `최근 ${hours}시간`}
+                  <h2>{selected?.display_name}</h2>
+                  <p className="muted">
+                    마지막 수신{" "}
+                    {relative(
+                      summary?.device.last_seen_at || selected?.last_seen_at,
+                    )}
                   </p>
                 </div>
-                <div className="tabs small-tabs">
-                  {[
-                    ["pv_mv", "PV"],
-                    ...channels.map((c) => [
-                      String(c.id),
-                      `${c.label} · ${c.sensor_set}`,
-                    ]),
-                  ].map(([key, label]) => (
-                    <button
-                      className={actualField === key ? "active" : ""}
-                      key={key}
-                      onClick={() => setField(key)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <Link className="outline" to={`/devices?device=${id}`}>
+                  장치 관리
+                </Link>
               </div>
-              <label className="check-line">
-                <input
-                  type="checkbox"
-                  checked={showHistory}
-                  onChange={(e) => setShowHistory(e.target.checked)}
-                />
-                이전 센서 구성도 보기
-              </label>
-              {!channels.length && (
-                <p className="muted">
-                  수신한 센서 채널이 있으면 카드와 기록 열이 자동으로
-                  추가됩니다. 현재는 쉴드 자체 측정값을 표시합니다.
-                </p>
+              <div className="device-toolbar panel">
+                <label>
+                  조회 기간
+                  <select
+                    value={hours}
+                    onChange={(e) => {
+                      setHours(Number(e.target.value));
+                      setAuto(true);
+                    }}
+                  >
+                    <option value={1}>최근 1시간</option>
+                    <option value={24}>최근 24시간</option>
+                    <option value={168}>최근 7일</option>
+                  </select>
+                </label>
+                <button
+                  className="outline"
+                  onClick={download}
+                  disabled={exporting || !summary?.total}
+                >
+                  <Icon name="download" size={17} />
+                  {exporting ? "전체 기록 수집 중…" : "CSV 다운로드"}
+                </button>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={auto}
+                    onChange={(e) => {
+                      setAuto(e.target.checked);
+                      if (e.target.checked) {
+                        setPage(0);
+                        setCursors([{}]);
+                        refresh();
+                      }
+                    }}
+                  />
+                  실시간 갱신
+                </label>
+              </div>
+              {!loading && summary && !latest && !error && (
+                <DemoDashboard message="아직 이 장치에서 받은 데이터가 없습니다. 아래는 데모입니다." />
               )}
-              <Chart
-                points={
-                  actualField === "pv_mv"
-                    ? summary?.chart || []
-                    : selectedChannel?.chart || []
-                }
-                field={actualField === "pv_mv" ? "pv_mv" : "value"}
-                unit={
-                  actualField === "pv_mv" ? "mV" : selectedChannel?.unit || ""
-                }
-              />
-              {actualField !== "pv_mv" && (
-                <div className="chart-stats">
-                  {[
-                    ["min", "최저"],
-                    ["avg", "평균"],
-                    ["max", "최고"],
-                  ].map(([key, label]) => (
-                    <div key={key}>
-                      {label}
-                      <strong>
-                        {number(selectedChannel?.stats?.[key], 2)}{" "}
-                        {selectedChannel?.unit}
-                      </strong>
+              {(latest || loading) && (
+                <>
+                  <div className="data-charts">
+                    <section className="panel">
+                      <div className="panel-title">
+                        <div>
+                          <h2>센서 변화</h2>
+                          <p>
+                            5분 평균 ·{" "}
+                            {hours === 168 ? "최근 7일" : `최근 ${hours}시간`}
+                          </p>
+                        </div>
+                        <div className="tabs small-tabs">
+                          {[
+                            ["pv_mv", "PV"],
+                            ...channels.map((c) => [
+                              String(c.id),
+                              `${c.label} · ${c.sensor_set}`,
+                            ]),
+                          ].map(([key, label]) => (
+                            <button
+                              className={actualField === key ? "active" : ""}
+                              key={key}
+                              onClick={() => setField(key)}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <label className="check-line">
+                        <input
+                          type="checkbox"
+                          checked={showHistory}
+                          onChange={(e) => setShowHistory(e.target.checked)}
+                        />
+                        이전 센서 구성도 보기
+                      </label>
+                      {!channels.length && (
+                        <p className="muted">
+                          수신한 센서 채널이 있으면 그래프와 기록 열이 자동으로
+                          추가됩니다. 현재는 쉴드 자체 측정값을 표시합니다.
+                        </p>
+                      )}
+                      <Chart
+                        points={
+                          actualField === "pv_mv"
+                            ? summary?.chart || []
+                            : selectedChannel?.chart || []
+                        }
+                        field={actualField === "pv_mv" ? "pv_mv" : "value"}
+                        unit={
+                          actualField === "pv_mv"
+                            ? "mV"
+                            : selectedChannel?.unit || ""
+                        }
+                      />
+                      {actualField !== "pv_mv" && (
+                        <div className="chart-stats">
+                          {[
+                            ["min", "최저"],
+                            ["avg", "평균"],
+                            ["max", "최고"],
+                          ].map(([key, label]) => (
+                            <div key={key}>
+                              {label}
+                              <strong>
+                                {number(selectedChannel?.stats?.[key], 2)}{" "}
+                                {selectedChannel?.unit}
+                              </strong>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                    <MapPanel
+                      key={id}
+                      position={position}
+                      locations={bundle?.locations.items}
+                    />
+                  </div>
+                  <section className="panel history">
+                    <div className="panel-title">
+                      <div>
+                        <h2>
+                          데이터 수신 기록{" "}
+                          <span className="muted">
+                            총 {number(summary?.total, 0)}건
+                          </span>
+                        </h2>
+                        <p>
+                          한국 시각 · 센서 UTC가 없으면 서버 수신 시각으로 표시
+                        </p>
+                      </div>
+                      <button
+                        className="icon-button"
+                        aria-label="수신 기록 새로고침"
+                        onClick={refresh}
+                        disabled={loading}
+                      >
+                        <Icon name="clock" />
+                      </button>
                     </div>
-                  ))}
-                </div>
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            {[
+                              "기록 시각",
+                              "센서 구성",
+                              ...channels.map(
+                                (c) =>
+                                  `${c.label} (${c.unit}) · ${c.sensor_set}`,
+                              ),
+                              "PV (V)",
+                              "CSQ",
+                              "측정 기준",
+                              "펌웨어",
+                            ].map((s) => (
+                              <th key={s}>{s}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((r) => (
+                            <tr key={r.id}>
+                              <td>{date(r.recorded_at)}</td>
+                              <td>{r.sensor_set || "쉴드 상태"}</td>
+                              {channels.map((c) => (
+                                <td key={c.id}>
+                                  {number(r.values_json?.[c.id], 2)}
+                                </td>
+                              ))}
+                              <td>
+                                {number(
+                                  r.pv_mv == null ? null : r.pv_mv / 1000,
+                                  3,
+                                )}
+                              </td>
+                              <td>{validCsq(r.csq) ? r.csq : "—"}</td>
+                              <td>
+                                <span className="badge neutral">
+                                  {r.measured_at ? "센서 측정" : "상태 수신"}
+                                </span>
+                              </td>
+                              <td>{r.build_tag}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {!rows.length && (
+                      <p className="empty">
+                        {loading
+                          ? "기록을 불러오는 중입니다."
+                          : "이 기간에 수신된 기록이 없습니다."}
+                      </p>
+                    )}
+                    <div className="pagination">
+                      <span>
+                        {loading
+                          ? "갱신 중…"
+                          : `${page + 1}페이지 · ${rows.length}건 표시`}
+                      </span>
+                      <div>
+                        <button
+                          disabled={!page}
+                          onClick={() => {
+                            setAuto(false);
+                            setPage((p) => p - 1);
+                          }}
+                        >
+                          이전
+                        </button>
+                        <strong>{page + 1}</strong>
+                        <button
+                          disabled={!bundle?.readings.next || loading}
+                          onClick={() => {
+                            setAuto(false);
+                            setCursors((c) => [
+                              ...c.slice(0, page + 1),
+                              bundle.readings.next,
+                            ]);
+                            setPage((p) => p + 1);
+                          }}
+                        >
+                          다음
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                  <p className="muted footnote">
+                    지도 경로는 조회 기간 중 최신 1,000개 좌표까지 표시합니다.
+                    PV는 배터리 잔량이 아닙니다. GNSS 위치가 없어도 센서와 통신
+                    상태는 수신됩니다.
+                  </p>
+                </>
               )}
-            </section>
-            <MapPanel
-              key={id}
-              position={position}
-              locations={bundle?.locations.items}
-            />
-          </div>
-          <section className="panel history">
-            <div className="panel-title">
-              <div>
-                <h2>
-                  데이터 수신 기록{" "}
-                  <span className="muted">
-                    총 {number(summary?.total, 0)}건
-                  </span>
-                </h2>
-                <p>한국 시각 · 센서 UTC가 없으면 서버 수신 시각으로 표시</p>
-              </div>
-              <button
-                className="icon-button"
-                aria-label="수신 기록 새로고침"
-                onClick={refresh}
-                disabled={loading}
-              >
-                <Icon name="clock" />
-              </button>
-            </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    {[
-                      "기록 시각",
-                      "센서 구성",
-                      ...channels.map(
-                        (c) => `${c.label} (${c.unit}) · ${c.sensor_set}`,
-                      ),
-                      "PV (V)",
-                      "CSQ",
-                      "측정 기준",
-                      "펌웨어",
-                    ].map((s) => (
-                      <th key={s}>{s}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.id}>
-                      <td>{date(r.recorded_at)}</td>
-                      <td>{r.sensor_set || "쉴드 상태"}</td>
-                      {channels.map((c) => (
-                        <td key={c.id}>{number(r.values_json?.[c.id], 2)}</td>
-                      ))}
-                      <td>
-                        {number(r.pv_mv == null ? null : r.pv_mv / 1000, 3)}
-                      </td>
-                      <td>{validCsq(r.csq) ? r.csq : "—"}</td>
-                      <td>
-                        <span className="badge neutral">
-                          {r.measured_at ? "센서 측정" : "상태 수신"}
-                        </span>
-                      </td>
-                      <td>{r.build_tag}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {!rows.length && (
-              <p className="empty">
-                {loading
-                  ? "기록을 불러오는 중입니다."
-                  : "이 기간에 수신된 기록이 없습니다."}
-              </p>
-            )}
-            <div className="pagination">
-              <span>
-                {loading
-                  ? "갱신 중…"
-                  : `${page + 1}페이지 · ${rows.length}건 표시`}
-              </span>
-              <div>
-                <button
-                  disabled={!page}
-                  onClick={() => {
-                    setAuto(false);
-                    setPage((p) => p - 1);
-                  }}
-                >
-                  이전
-                </button>
-                <strong>{page + 1}</strong>
-                <button
-                  disabled={!bundle?.readings.next || loading}
-                  onClick={() => {
-                    setAuto(false);
-                    setCursors((c) => [
-                      ...c.slice(0, page + 1),
-                      bundle.readings.next,
-                    ]);
-                    setPage((p) => p + 1);
-                  }}
-                >
-                  다음
-                </button>
-              </div>
-            </div>
-          </section>
-          <p className="muted footnote">
-            지도 경로는 조회 기간 중 최신 1,000개 좌표까지 표시합니다. PV는
-            배터리 잔량이 아닙니다. GNSS 위치가 없어도 센서와 통신 상태는
-            수신됩니다.
-          </p>
-          <Link className="help-banner" to="/guide">
-            <Icon name="book" />
-            <span>
-              <strong>데이터가 보이지 않나요?</strong> 디바이스 연결과 첫 데이터
-              전송 가이드를 확인하세요.
-            </span>
-            <Icon name="arrow" size={16} />
-          </Link>
-        </>
-      )}
+              <Link className="help-banner" to="/guide">
+                <Icon name="book" />
+                <span>
+                  <strong>데이터가 보이지 않나요?</strong> 디바이스 연결과 첫
+                  데이터 전송 가이드를 확인하세요.
+                </span>
+                <Icon name="arrow" size={16} />
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
     </main>
   );
+}
+
+export default function DataPage() {
+  const { user } = useContext(Session);
+  if (user === undefined)
+    return (
+      <main className="container empty" role="status">
+        데이터를 준비하고 있습니다.
+      </main>
+    );
+  if (!user)
+    return (
+      <main className="container workspace-page">
+        <Intro title="내 데이터" />
+        <DemoDashboard sidebar />
+      </main>
+    );
+  return <LiveDataPage key={user.id} />;
 }

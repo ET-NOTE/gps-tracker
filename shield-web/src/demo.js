@@ -1,7 +1,7 @@
-export function demoData() {
+export function demoData(hours = 4) {
   const now = Date.now();
   const points = Array.from({ length: 48 }, (_, i) => ({
-    at: new Date(now - (47 - i) * 300000).toISOString(),
+    at: new Date(now - ((47 - i) * hours * 3600000) / 47).toISOString(),
     temp_c: 23.2 + i * 0.035 + Math.sin(i / 5) * 0.38,
     hum_pct: 57 + Math.sin(i / 7) * 2.1,
     pv_mv: 4160 + Math.sin(i / 6) * 12,

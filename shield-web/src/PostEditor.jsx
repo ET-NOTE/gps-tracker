@@ -1,3 +1,4 @@
+import AttachmentEditor from "./AttachmentEditor";
 import React, { useEffect, useRef, useState } from "react";
 import PostBody, { imageUrl } from "./PostBody";
 import { uploadPostImage, moveStep, removeStep } from "./postImages";
@@ -13,6 +14,7 @@ export default function PostEditor({
   const root = useRef(null),
     picker = useRef(null),
     task = useRef(null);
+  const [fileBusy, setFileBusy] = useState(false);
   const [position, setPosition] = useState(edit.content.steps.length);
   const [uploading, setUploading] = useState(false),
     [progress, setProgress] = useState("");
@@ -35,7 +37,7 @@ export default function PostEditor({
     );
   }
   async function addPhotos(files, at = position) {
-    if (task.current || busy) return;
+    if (task.current || busy || fileBusy) return;
     const items = Array.from(files);
     if (!items.length) return;
     if (items.length + photos.length > 20) {
@@ -206,10 +208,31 @@ export default function PostEditor({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!uploading && !busy) onSave();
+          if (!uploading && !fileBusy && !busy) onSave();
         }}
       >
-        <fieldset disabled={busy || uploading}>
+        <fieldset disabled={busy || uploading || fileBusy}>
+          <label>
+            콘텐츠 종류
+            <select
+              value={content.kind || "example"}
+              onChange={(e) => change("kind", e.target.value)}
+            >
+              <option value="example">기본 예제 · 무료</option>
+              <option
+                value="project"
+                disabled={!!content.code || !!content.attachments?.length}
+              >
+                응용 프로젝트 · 준비 중
+              </option>
+            </select>
+          </label>
+          {content.kind === "project" && (
+            <p className="notice">
+              응용 프로젝트는 소개용으로 표시됩니다. 판매 준비 전 유료 코드·배포
+              파일은 등록할 수 없습니다.
+            </p>
+          )}
           <div className="form-grid">
             {[
               ["id", "주소 슬러그"],
@@ -357,6 +380,24 @@ export default function PostEditor({
                   </div>
                 </div>
                 <label>
+                  {i + 1}단계 제목
+                  <input
+                    required
+                    maxLength={80}
+                    value={content.step_titles?.[i] ?? `${i + 1}단계`}
+                    onChange={(e) =>
+                      change(
+                        "step_titles",
+                        content.steps.map((_, j) =>
+                          j === i
+                            ? e.target.value
+                            : content.step_titles?.[j] || `${j + 1}단계`,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <label>
                   {i + 1}단계 내용
                   <textarea
                     required
@@ -389,15 +430,34 @@ export default function PostEditor({
             <button
               type="button"
               disabled={content.steps.length >= 50}
-              onClick={() => change("steps", [...content.steps, ""])}
+              onClick={() =>
+                changeContent((c) => ({
+                  ...c,
+                  steps: [...c.steps, ""],
+                  step_titles: [
+                    ...c.steps.map(
+                      (_, i) => c.step_titles?.[i] || `${i + 1}단계`,
+                    ),
+                    `${c.steps.length + 1}단계`,
+                  ],
+                }))
+              }
             >
               + 단계 추가
             </button>
           </div>
+          {content.kind !== "project" && (
+            <AttachmentEditor
+              content={content}
+              change={change}
+              onBusy={setFileBusy}
+            />
+          )}
           <label>
             예제 코드
             <textarea
               rows={10}
+              disabled={content.kind === "project"}
               className="code-editor"
               maxLength={16000}
               value={content.code || ""}
@@ -418,22 +478,17 @@ export default function PostEditor({
         </fieldset>
       </form>
       <button type="button" disabled={busy} onClick={onClose}>
-        {uploading ? "업로드 취소하고 편집 닫기" : "편집 닫기"}
+        {uploading || fileBusy ? "업로드 취소하고 편집 닫기" : "편집 닫기"}
       </button>
       {preview && (
         <section
-          className="instructions post-preview"
+          className="post-preview"
           aria-label="게시물 미리보기"
         >
           <span className="badge">저장 전 미리보기</span>
           <h2>{content.title || "제목"}</h2>
           <p>{content.description}</p>
           <PostBody post={content} />
-          {content.code && (
-            <pre>
-              <code>{content.code}</code>
-            </pre>
-          )}
         </section>
       )}
     </section>

@@ -2,6 +2,7 @@ mod admin;
 mod auth;
 mod content;
 mod devices;
+mod files;
 mod images;
 mod ingest;
 mod nce;
@@ -130,6 +131,7 @@ async fn migrate(db: &PgPool) -> anyhow::Result<()> {
         ),
         ("Unique provider order link", include_str!("order-link.sql")),
         ("Shield post images", include_str!("post-images.sql")),
+        ("Shield portal and attachments", include_str!("portal.sql")),
     ];
     let migrations = sources
         .into_iter()
@@ -303,6 +305,8 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/auth/logout",post(auth::logout))
         .route("/api/auth/session",get(auth::session))
         .route("/api/posts",get(content::list))
+        .route("/api/site-settings",get(content::settings))
+        .route("/api/admin/site-settings",post(content::save_settings))
         .route("/api/admin/overview",get(admin::overview))
         .route("/api/admin/users",get(admin::users))
         .route("/api/admin/users/:id",post(admin::edit_user))
@@ -316,8 +320,11 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/admin/posts/:slug",post(content::save))
         .route("/api/admin/post-images",post(images::upload))
         .route("/api/post-images/:id",get(images::get_image))
+        .route("/api/admin/post-files",post(files::upload))
+        .route("/api/post-files/:id",get(files::download))
         .route("/api/devices",get(devices::list))
         .route("/api/devices/claim",post(devices::claim))
+        .route("/api/devices/:id",post(devices::rename))
         .route("/api/devices/:id/summary",get(devices::summary))
         .route("/api/devices/:id/readings",get(devices::readings))
         .route("/api/devices/:id/locations",get(devices::locations))

@@ -1,3 +1,4 @@
+import { Link, useSearchParams } from "react-router-dom";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { request } from "./api";
 import { Session } from "./session";
@@ -14,6 +15,7 @@ export const states = {
   completed: "처리 확인 완료",
 };
 export default function UsimPage() {
+  const [params, setParams] = useSearchParams();
   const requestKey = useRef(crypto.randomUUID());
   const { user, reload } = useContext(Session);
   const [devices, setDevices] = useState([]),
@@ -32,7 +34,13 @@ export default function UsimPage() {
     request("/devices", { signal: a.signal })
       .then((d) => {
         setDevices(d);
-        setId(String(d[0]?.id || ""));
+        setId(
+          String(
+            d.find((x) => String(x.id) === params.get("device"))?.id ||
+              d[0]?.id ||
+              "",
+          ),
+        );
       })
       .catch((e) => {
         if (e.name !== "AbortError") setError(e.message);
@@ -54,7 +62,7 @@ export default function UsimPage() {
       request("/credits", { signal: a.signal }),
     ])
       .then(([s, r, c]) => {
-        setSim(s);
+        setSim({ ...s, deviceId: id });
         setRows(r);
         setCredits(c);
         setError("");
@@ -88,7 +96,7 @@ export default function UsimPage() {
       setBusy(false);
     }
   }
-  const s = sim?.sim,
+  const s = sim?.deviceId === id ? sim.sim : null,
     usage = s?.usage,
     selected = devices.find((d) => String(d.id) === id);
   const open = rows.some(
@@ -101,9 +109,12 @@ export default function UsimPage() {
   return (
     <main className="container">
       <Intro
-        title="내 USIM"
+        title="USIM 충전"
         description="장치의 데이터 잔량과 충전 요청·포인트 내역을 확인하세요."
       />
+      <Link className="text-link" to={"/devices" + (id ? "?device=" + id : "")}>
+        ← 내 장치로 돌아가기
+      </Link>
       {error && (
         <p className="error" role="alert">
           {error}
@@ -120,7 +131,10 @@ export default function UsimPage() {
           <select
             aria-label="USIM 장치 선택"
             value={id}
-            onChange={(e) => setId(e.target.value)}
+            onChange={(e) => {
+              setId(e.target.value);
+              setParams({ device: e.target.value }, { replace: true });
+            }}
           >
             {devices.length ? (
               devices.map((d) => (

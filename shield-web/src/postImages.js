@@ -56,27 +56,35 @@ export async function uploadPostImage(file, signal) {
 export function moveStep(content, from, to) {
   const steps = [...content.steps];
   [steps[from], steps[to]] = [steps[to], steps[from]];
+  const titles = content.step_titles?.length ? [...content.step_titles] : [];
+  if (titles.length) [titles[from], titles[to]] = [titles[to], titles[from]];
+  const position = (x) => ({
+    ...x,
+    after_step:
+      x.after_step === from + 1
+        ? to + 1
+        : x.after_step === to + 1
+          ? from + 1
+          : x.after_step,
+  });
   return {
     ...content,
     steps,
-    images: (content.images || []).map((x) => ({
-      ...x,
-      after_step:
-        x.after_step === from + 1
-          ? to + 1
-          : x.after_step === to + 1
-            ? from + 1
-            : x.after_step,
-    })),
+    step_titles: titles,
+    images: (content.images || []).map(position),
+    attachments: (content.attachments || []).map(position),
   };
 }
 export function removeStep(content, index) {
+  const position = (x) => ({
+    ...x,
+    after_step: x.after_step > index ? x.after_step - 1 : x.after_step,
+  });
   return {
     ...content,
     steps: content.steps.filter((_, i) => i !== index),
-    images: (content.images || []).map((x) => ({
-      ...x,
-      after_step: x.after_step > index ? x.after_step - 1 : x.after_step,
-    })),
+    step_titles: (content.step_titles || []).filter((_, i) => i !== index),
+    images: (content.images || []).map(position),
+    attachments: (content.attachments || []).map(position),
   };
 }

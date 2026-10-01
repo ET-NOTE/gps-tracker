@@ -220,6 +220,39 @@ export default function AdminPage() {
         </>
       )}
       {tab === "posts" && (
+        <section className="panel guide-setting">
+          <label>
+            시작가이드로 표시할 예제
+            <select
+              aria-label="시작가이드 예제 선택"
+              value={posts.settings.guide_slug}
+              disabled={busy || !data}
+              onChange={(e) =>
+                mutate(
+                  "/admin/site-settings",
+                  { guide_slug: e.target.value },
+                  "시작가이드를 변경했습니다.",
+                )
+              }
+            >
+              {rows
+                .filter(
+                  (p) =>
+                    p.published && (p.content.kind || "example") === "example",
+                )
+                .map((p) => (
+                  <option key={p.content.id} value={p.content.id}>
+                    {p.content.title}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <p className="muted">
+            선택한 예제와 시작가이드는 같은 본문·사진·첨부파일을 사용합니다.
+          </p>
+        </section>
+      )}
+      {tab === "posts" && (
         <div className="admin-posts">
           {rows.map((p) => (
             <article className="panel" key={p.content.id}>

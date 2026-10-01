@@ -25,3 +25,14 @@ test("removing text retains all images and shifts later anchors", () => {
     [0, 1, 1, 2],
   );
 });
+
+test("step titles and multiple downloads follow edits without losing files", () => {
+  const source = { ...post, step_titles: ["Connect", "Upload", "Read"], attachments: post.images };
+  const moved = moveStep(source, 2, 0);
+  assert.deepEqual(moved.step_titles, ["Read", "Upload", "Connect"]);
+  assert.deepEqual(moved.attachments.map(x => x.after_step), [0, 3, 2, 1]);
+  const removed = removeStep(moved, 0);
+  assert.equal(removed.attachments.length, 4);
+  assert.deepEqual(removed.step_titles, ["Upload", "Connect"]);
+  assert.deepEqual(removed.attachments.map(x => x.after_step), [0, 2, 1, 0]);
+});
