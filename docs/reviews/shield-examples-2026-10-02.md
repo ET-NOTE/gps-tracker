@@ -45,3 +45,7 @@
 - 정렬된 04 스케치의 실제 JSON 템플릿으로 격리 preview 인증·수신·소유자 센서 조회 통과.
 - `refresh-example-code.py`는 이전 게시 코드와 일치하는 경우에만 코드/기존 첨부 ID를 교체한다. 관리자 본문·이미지·게시 여부·추가 첨부는 보존하고 revision 충돌 시 중단한다.
 - 배포 전 백업 `shield-20261002T065612Z.tar.gz` / SHA256 `c9775cf56e7c0e4bc48c187d6d715a98eee91169ae1c2513ea9b2a05c9699c49`. 별도 PostgreSQL 14 복원과 이미지/첨부 해시 검증 통과.
+
+운영 반영 완료: `shield-20261002-155845-16098be`, 아티팩트 SHA256 `50fdd4fc561f1a6f991c0b7afbeffcb5f4ba630ec7d8660b07310b8b3c0f3f23`. etcom-hub에서 Rust 5/프론트 14/Clippy/GPS check·빌드 통과 후 배포했다. 스키마 1~9, GPS 바이너리/프로세스, nginx와 Shield 환경 설정은 불변이다. 운영 점검 28개 통과, 금융 요청 없음.
+
+게시된 예제 5개 코드/첨부를 갱신하고 기존 본문·사진·다른 게시물과 금융 장부 불변을 확인했다. 운영 브라우저 1280/320px에서 코드 대비·첨부 여백·넘침 없음 확인. Firebase ZIP 실제 다운로드 SHA256 `6aa33b6bb01852522e84d449b0b908e28f57db611d44936670884ff76e4f773a` 일치, 콘솔 경고/오류 없음. 로컬 배포 폴더의 변경 전 해시를 확인한 뒤 ZIP·INO·INDEX만 갱신해 사용자 파일을 보존했다. `code-readability-fixed.png`에 수정 화면을 기록했다.
