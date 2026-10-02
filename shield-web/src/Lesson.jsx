@@ -174,7 +174,7 @@ export function DownloadList({ post, step }) {
       {post.code && (
         <details className="code-details">
           <summary>코드 펼쳐 보기</summary>
-          <pre>
+          <pre tabIndex={0} role="region" aria-label="예제 코드">
             <code>{post.code}</code>
           </pre>
         </details>

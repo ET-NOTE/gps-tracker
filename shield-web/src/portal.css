@@ -107,15 +107,19 @@ a.catalog-card:hover { border-color:var(--primary); box-shadow:0 7px 22px #00899
 .lesson-pagination { display:flex; align-items:center; justify-content:space-between; gap:15px; margin:26px 0; }
 .lesson-pagination>span { color:var(--muted); font-size:13px; }
 .lesson-pagination .button,.lesson-pagination .outline { min-width:120px; }
-.lesson-downloads { margin:25px 0; }
+.lesson-downloads { margin:25px 0; padding:24px; min-width:0; }
+.lesson-downloads>.panel-title { padding:0 0 18px; }
 .lesson-downloads h2 { display:flex; gap:8px; align-items:center; font-size:17px; }
 .download-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .download-item { display:flex; align-items:center; gap:12px; padding:16px; color:var(--primary-dark); background:var(--bg); border:1px solid var(--line); border-radius:7px; text-align:left; }
-.download-item>span { flex:1; overflow-wrap:anywhere; }
-.download-item>small { color:var(--muted); font-size:11px; }
+.download-item>svg { flex-shrink:0; }
+.download-item>span { flex:1; min-width:0; overflow-wrap:anywhere; }
+.download-item>small { flex-shrink:0; color:var(--muted); font-size:11px; }
 .code-details { margin-top:18px; }
-.code-details summary { cursor:pointer; color:var(--primary); font-size:13px; }
-.code-details pre { max-height:400px; overflow:auto; white-space:pre-wrap; background:var(--bg); padding:20px; font-size:12px; }
+.code-details summary { cursor:pointer; color:var(--primary-dark); font-size:14px; padding:6px 0; }
+.code-details pre { max-height:480px; margin:12px 0 0; overflow:auto; white-space:pre; overflow-wrap:normal; background:var(--bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:20px; font:14px/1.7 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; tab-size:2; }
+.code-details pre code { color:inherit; font:inherit; }
+.code-details :is(summary,pre):focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
 .lesson-related { display:flex; flex-wrap:wrap; gap:20px; justify-content:space-between; font-size:13px; margin:30px 0; }
 .workspace-page>.page-intro { margin-bottom:24px; }
 .device-workspace { display:grid; grid-template-columns:215px minmax(0,1fr); gap:24px; align-items:start; }
@@ -267,7 +271,10 @@ a.catalog-card:hover { border-color:var(--primary); box-shadow:0 7px 22px #00899
   .lesson-progress button>strong { font-size:12px; }
   .photo-carousel img { height:245px; }
   .lesson-pagination .button,.lesson-pagination .outline { min-width:80px; font-size:12px; padding:11px; }
+  .lesson-downloads { padding:18px; }
   .download-list { grid-template-columns:1fr; }
+  .download-item { padding:14px 12px; gap:8px; }
+  .code-details pre { padding:16px; }
   .device-workspace { grid-template-columns:minmax(0,1fr); }
   .device-sidebar { position:static; padding:12px; min-width:0; }
   .sidebar-heading { margin-bottom:10px; }
