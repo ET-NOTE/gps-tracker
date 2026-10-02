@@ -31,3 +31,7 @@
 `ops/shield/publish-examples.py`로 정상 관리자 API를 사용한다. 5개의 새 slug만 생성하며 기존 글/시작가이드/이미지 수정은 보존한다. 파일 SHA 확인 후 업로드, revision=0 신규 저장, 공개 첨부 다운로드 재검증, 금융 테이블 불변 검사를 한다. 재실행 시 기존 튜토리얼이 운영자 편집 내용과 다르면 덮어쓰지 않는다.
 
 게시 전 백업 `shield-20261002T063857Z.tar.gz`, SHA256 `9cf5e948f147979abc2b85ee890ffce981814719b19f368da162ed43560ebb19`. 러너 별도 PostgreSQL 14 복원/첨부 해시 검증 완료. 기존 게시물 7개·이미지 링크 4개를 보존한다. 앱 배포나 서비스 재시작 없이 콘텐츠만 추가한다.
+
+게시 완료: 소스 `ab66e21`, `shield-uno-connect`, `shield-uno-dht11`, `shield-uno-gnss`, `shield-uno-upload`, `shield-uno-firebase` 5개. 각 3개 첨부의 공개 다운로드 SHA-256 확인, 기존 7개 글 내용/revision과 금융 테이블 불변 확인. 관리자가 추가한 기존 이미지도 유지했다.
+
+운영 브라우저에서 Firebase 단계 이동·`(이미지)` 문구·코드/첨부 표시 확인. ZIP 실제 다운로드 `05_firebase.zip` 성공, 콘솔 오류/경고 없음. 사용자용 로컬 완성본은 `E:\project\2025\shield-examples\2026-10-02`에 ZIP·압축 해제한 스케치·README·소스 커밋/해시 INDEX.json으로 제공했다. 실행 중인 앱 릴리스는 기존 `shield-20261001-213325-0510998`을 유지한다.
