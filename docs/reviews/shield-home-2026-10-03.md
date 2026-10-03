@@ -17,3 +17,5 @@
 워크스페이스 루트의 `KakaoTalk_20261002_220809094.png`를 `shield-web/src/assets/shield-product.png`로 복사해 홈의 설명 그림을 교체했다. 원본 RGBA 1191×1321, 1,120,332 bytes, SHA256 `b079ddd4c43a2c0be8ac8f8386279f9b9ca4737b6d23cf2f4eadfe34ce3720b3`. 원본 파일·투명도·제품 형태는 수정하지 않았다. 빌드 시 Vite가 해시가 포함된 정적 파일명으로 배포한다.
 
 원본 크기 속성으로 공간을 예약하고 object-fit:contain으로 두 안테나와 제품 전체를 유지한다. PC 높이 300~420px, 모바일 300px. 로컬 320/390/768/1440px에서 이미지 로드·자연 비율·제목 두 줄·가로 넘침 없음 확인. 변경은 홈 제품 사진과 해당 CSS뿐이다.
+
+사진 반영 릴리스 `shield-20261003-162446-2f9a5a0`, 아티팩트 SHA256 `dbc06267923ce072e3b912f01b63b06fc15e1a2638d5ffce3fa2198ea83d5b88`. 백업 `shield-20261003T072459Z.tar.gz` / SHA256 `adcb96755eca1f89a8c44b46fcc9f2490f6e344c79e8cc2490751ca588a8aa39` 복원·첨부 검증 완료. etcom-hub 빌드와 Rust 5/프론트 14/Clippy/GPS check, 운영 점검 28개 통과. 배포된 PNG의 원본 SHA 일치, 운영 브라우저 이미지 로드 및 콘솔 오류 없음 확인. GPS·nginx·Shield 환경 설정·DB 스키마 변경 없음.
