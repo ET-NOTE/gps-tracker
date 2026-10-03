@@ -9,3 +9,5 @@
 - 변경은 HomePage.jsx와 홈에 한정된 CSS다. API, DB, GPS/KC, 결제와 실물 펌웨어는 수정하지 않는다.
 
 배포 전 백업 `shield-20261003T071544Z.tar.gz`, SHA256 `0686ae1495b2e87437ed88cfb79d512fc73df54ef7e9f7a9cbab1880c183e260`.
+
+운영 배포 완료: `shield-20261003-161804-208e16d`, 아티팩트 SHA256 `8929ec4b3601fcfed12e7df6a96680888ab5bd4adf2c72ebd6fe2ba60f700580`. etcom-hub Rust 5/프론트 14/Clippy/GPS check 및 빌드 통과. 백업을 별도 PostgreSQL 14에 복원해 스키마와 이미지 63개·첨부 25개의 해시까지 확인했다. 배포 후 GPS 바이너리/프로세스·nginx·Shield 환경 설정·스키마 불변, 운영 점검 28개 통과. 운영 홈에 요청 문구/제품 배치가 표시되며 브라우저 콘솔 경고·오류 없음.
