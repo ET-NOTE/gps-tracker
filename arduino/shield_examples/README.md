@@ -1,6 +1,6 @@
 # Arduino UNO R3 · SIM7080G 쉴드 따라 하기
 
-5개의 독립 예제입니다. 기존 `03_8`, 실물 시험용 `03_10`, KC 펌웨어를 바꾸거나 자동 업로드하지 않습니다.
+6개의 독립 예제입니다. 기존 `03_8`, 실물 시험용 `03_10`, KC 펌웨어를 바꾸거나 자동 업로드하지 않습니다.
 각 ZIP을 풀고 **폴더 이름과 같은 .ino**를 Arduino IDE로 여세요. `src` 폴더도 함께 있어야 합니다.
 저장소 원본을 받았다면 `python tools/package_examples.py`를 실행하여 `dist/`의 완성 스케치/ZIP을 만드세요.
 
@@ -11,6 +11,7 @@
 | 3 | 03_gnss | SIM7080G 내장 GNSS 좌표·UTC·가시 위성 | GNSS 안테나·하늘 시야 |
 | 4 | 04_shield_upload | HTTPS → Shield 내 데이터의 센서 카드·표 | 계정·장치 등록·UID/단말 키·APN·CA |
 | 5 | 05_firebase | LTE HTTPS → Firebase 함수 → Firestore 최신 측정 | 사용자 소유 Firebase 프로젝트·배포·별도 장치 키·CA |
+| 6 | 06_first_upload | 센서 없이 LTE 상태 → Shield 내 장치 | 계정·장치 등록·UID/단말 키·APN·CA |
 
 ## 공통 준비
 
@@ -23,14 +24,14 @@
 
 ## placeholder와 키
 
-예제 4/5의 `config.example.h`를 같은 폴더의 `config.h`로 복사합니다. `YOUR_*`를 본인 값으로 바꿉니다. placeholder 상태도 컴파일되지만 전송은 `[STOP]`으로 중단됩니다. `config.h`는 Git 제외 대상입니다.
+예제 4/5/6의 `config.example.h`를 같은 폴더의 `config.h`로 복사합니다. `YOUR_*`를 본인 값으로 바꿉니다. placeholder 상태도 컴파일되지만 전송은 `[STOP]`으로 중단됩니다. `config.h`는 Git 제외 대상입니다.
 
 - `SHIELD_APN`: USIM 사업자의 APN. 1NCE는 `iot.1nce.net`이지만 다른 USIM에 그대로 쓰지 않습니다.
 - `SHIELD_UID`/`SHIELD_KEY`: Shield 장치 프로비저닝으로 발급된 값. 키는 소문자 16진수 64자입니다. 로그인 비밀번호, ICCID, 일회용 등록 코드와 다릅니다. 내 장치에서 먼저 본인 계정에 등록해야 합니다. 키를 받지 못했다면 운영자에게 발급 자료를 요청하세요. 예제에 다른 사람의 시험 키를 복사하지 않습니다.
 - `FIREBASE_DEVICE_ID`/`FIREBASE_DEVICE_KEY`: 사용자 Firebase 예제 전용으로 새로 만드는 값. Shield 키나 Firebase 서비스 계정 JSON을 넣지 않습니다.
 - 전송 주기는 기본 60초 **대기 + 망/NTP/HTTPS 처리 시간**입니다. 실시간 1초 스트리밍이나 전송 보장 큐가 아닙니다. 실패 시 다음 주기에 새 표본을 측정합니다.
 
-## TLS 루트 CA 설치 (예제 4/5 최초 한 번)
+## TLS 루트 CA 설치 (예제 4/5/6 최초 한 번)
 
 PC에 Python 3.10 이상을 설치하고 `python -m pip install pyserial==3.5`를 실행합니다.
 아래 `COMx`는 실제 포트, Firebase 호스트는 배포 결과의 도메인으로 바꿉니다.
@@ -53,7 +54,7 @@ python tools/install_ca.py --port COMx --pem shield-root.pem --sha256 YOUR_PRINT
 python tools/install_ca.py --port COMx --pem firebase-root.pem --sha256 YOUR_PRINTED_SHA256 --name firebase-example-ca.pem
 ```
 
-4. `Installed`를 확인한 후 예제 4 또는 5를 업로드합니다. 설치 과정은 UNO를 리셋하고 READY를 기다립니다. 모뎀 파일 저장 영역의 **예제 전용 이름**에만 쓰며 기존 시험 장치의 `shield-ca.pem`을 덮어쓰지 않습니다.
+4. `Installed`를 확인한 후 예제 4, 5 또는 6을 업로드합니다. 설치 과정은 UNO를 리셋하고 READY를 기다립니다. 모뎀 파일 저장 영역의 **예제 전용 이름**에만 쓰며 기존 시험 장치의 `shield-ca.pem`을 덮어쓰지 않습니다.
 5. 인증서 오류에는 올바른 CA·NTP 시각·호스트를 확인합니다. `SHSSL=0`, 빈 CA, 날짜 검사 무시는 사용하지 않습니다. 서버 체인이 바뀌면 새 이름으로 CA를 다시 받아 검증/설치하세요. PC 검증은 실물 모뎀의 TLS 호환성 검증을 대신하지 않습니다.
 
 ## 출력 읽기
@@ -70,6 +71,14 @@ python tools/install_ca.py --port COMx --pem firebase-root.pem --sha256 YOUR_PRI
 | 409 | Shield 장치 등록 미완료 또는 Firebase 오래된/충돌 표본. |
 | 429 | 전송을 줄이고 기다리세요. 즉시 재전송하지 않습니다. |
 | 5xx | 서버 설정/일시 장애 확인. Firebase는 함수 로그를 확인합니다. |
+
+## 센서 없이 첫 전송 (예제 6)
+
+처음 시작한다면 장치 등록 → `01_connection`으로 CA 설치 → `06_first_upload` 순서로 진행합니다.
+06 ZIP에는 인증서 설치에 필요한 01_connection 스케치도 포함되어 있습니다.
+전송 설정은 예제 4와 같지만 DHT 라이브러리나 추가 센서는 필요 없습니다. 실제 모뎀의 CSQ와 망 등록 상태만 보냅니다.
+HTTP 200 후 **내 장치의 마지막 수신 시각·LTE·최근 데이터**를 확인합니다. 온습도와 GPS 좌표는 보내지 않으므로 해당 카드·지도는 비어 있어도 정상입니다.
+단말 키는 상품과 함께 발급된 본인 값만 사용합니다. 등록 코드나 로그인 비밀번호로 대체할 수 없습니다.
 
 ## 검증 범위와 출처
 

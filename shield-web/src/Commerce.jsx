@@ -60,7 +60,7 @@ export function CommerceProvider({ children }) {
       {modal && modal.kind !== "contact" && !user && (
         <Modal title="로그인이 필요합니다" close={close}>
           <p>내 계정의 포인트와 USIM을 확인하려면 로그인해 주세요.</p>
-          <Link className="button" to="/login?next=/points">
+          <Link className="button" to={"/login?next=" + encodeURIComponent(modal.kind === "usim" ? pathname : "/points")}>
             로그인
           </Link>
         </Modal>

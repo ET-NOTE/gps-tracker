@@ -1,0 +1,17 @@
+{
+  "folder": "06_first_upload",
+  "content": {
+    "id": "shield-uno-first-upload",
+    "title": "센서 없이 첫 서버 전송: LTE 상태 확인",
+    "description": "추가 센서 없이 실제 쉴드의 LTE 신호와 망 등록 상태를 Shield 서버로 보내고, 내 장치에서 마지막 수신을 확인합니다.",
+    "category": "서버 연동", "level": "기초", "minutes": 30, "variant": "data", "kind": "example",
+    "step_titles": ["연결과 장치 등록", "예제와 설정 준비", "HTTPS 인증서 설치", "업로드와 수신 확인", "센서·GPS 예제로 확장"],
+    "steps": [
+      "전원을 끈 상태에서 UNO R3에 SIM7080G 쉴드와 LTE·GNSS 안테나, 지정 배터리·USIM을 연결합니다. [첫 연결 예제](/examples/shield-uno-connect)에서 전원과 포트를 확인하세요.\n[내 장치](/devices)에서 본인 제품의 일회용 등록 코드로 장치를 먼저 등록합니다. 등록되지 않은 장치의 전송은 409로 거절됩니다.\n본인 장치의 UID와 단말 키를 준비하세요. 단말 키는 소문자 16진수 64자이며 로그인 비밀번호·USIM 번호·일회용 등록 코드와 다릅니다. 발급 자료가 없다면 운영자에게 요청하세요.",
+      "아래 ZIP을 풀고 06_first_upload/06_first_upload.ino를 엽니다. src 폴더를 유지하세요. DHT 센서와 추가 라이브러리는 필요 없습니다.\n[Arduino 설치](/examples/arduino-basics-install), [COM 포트 확인](/examples/arduino-basics-com-port), [업로드 방법](/examples/arduino-basics-upload)을 먼저 확인하세요. 보드는 Arduino AVR Boards의 Arduino Uno입니다.\nconfig.example.h를 같은 폴더의 config.h로 복사하고 SHIELD_APN·SHIELD_UID·SHIELD_KEY의 YOUR_*를 본인 값으로 바꿉니다. 1NCE APN은 iot.1nce.net입니다. HOST=shield.serial.kr, PATH=/ingest/shield를 유지합니다.\nconfig.h와 단말 키는 게시물·스크린샷·공유 ZIP에 넣지 않습니다. placeholder 상태도 컴파일되지만 실행하면 [STOP]으로 전송이 멈춥니다.",
+      "ZIP에 포함된 01_connection/01_connection.ino를 먼저 업로드하여 [READY]를 확인한 뒤 시리얼 모니터를 닫습니다. 전송 스케치와 인증서 설치용 스케치를 구분하세요.\nPC에 Python 3.10 이상과 pyserial을 설치하고 ZIP의 README에 있는 fetch_ca.py와 install_ca.py 순서를 따릅니다. 다운로드한 인증서의 SHA256 확인 후 shield-example-ca.pem 이름으로 모뎀에 설치합니다.\n도구가 Installed를 표시한 뒤 다음 단계로 이동합니다. CA·NTP 시각·TLS 오류를 피하려고 HTTPS 검증을 끄지 않습니다.\n(이미지) 본인 PC의 인증서 검증 및 Installed 출력. 실제 인증서 설치 화면은 추후 캡처 예정입니다.",
+      "06_first_upload.ino로 돌아와 설정을 확인하고 컴파일·업로드합니다. 시리얼 모니터를 115200 baud로 엽니다.\n[HTTP] 200은 서버가 실제 모뎀 상태를 접수했다는 뜻입니다. [내 장치](/devices)에서 마지막 수신 시각, LTE, 최근 데이터를 확인하세요. 기본 주기는 60초 대기에 망 연결·HTTPS 처리 시간이 더해집니다.\n이 코드는 온습도나 위치를 만들지 않습니다. sensors 없이 shield_v=2로 CSQ·망 등록 상태만 전송하므로 센서 그래프와 지도는 비어 있어도 정상입니다.\nHTTP -1은 망·APN·NTP·CA, 401/403은 UID·단말 키, 409는 장치 등록을 확인합니다. 실패하면 즉시 반복하지 않고 다음 주기에 새 상태를 보냅니다.\n(이미지) 실물 모뎀의 HTTP 200 출력. 웹 화면 체험은 [내 장치 데모](/devices?demo=1)로 확인할 수 있습니다.",
+      "온습도는 [DHT11 로컬 측정](/examples/shield-uno-dht11)을 완료한 뒤 [DHT11 → Shield 전송](/examples/shield-uno-upload)으로 이어갑니다.\n위치는 [SIM7080G GNSS 확인](/examples/shield-uno-gnss)에서 실제 좌표를 시리얼로 확인합니다. GNSS 예제 자체는 서버로 좌표를 보내지 않습니다.\n외부 서버는 [Firebase 예제](/examples/shield-uno-firebase)를 참고하세요. 사용자 소유 프로젝트 준비와 웹 콘솔 작업이 필요합니다.\nUSIM 잔량은 내 장치에서 확인하며 충전 진입점은 [내 장치](/devices)와 [요금 안내](/pricing) 양쪽에 있습니다.\n검증 범위는 UNO 컴파일과 격리된 서버의 페이로드 접수 검사입니다. 이번 예제를 실물에 새로 업로드한 검증은 하지 않았습니다."
+    ]
+  }
+}

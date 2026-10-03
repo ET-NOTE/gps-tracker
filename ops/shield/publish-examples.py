@@ -18,8 +18,8 @@ def main():
     assert c.BASE=='https://shield.serial.kr' and os.geteuid()==0
     os.umask(0o077);directory=a.directory.resolve()
     items=json.loads((directory/'publication.json').read_text())
-    expected={'shield-uno-connect','shield-uno-dht11','shield-uno-gnss','shield-uno-upload','shield-uno-firebase'}
-    assert {x['content']['id'] for x in items}==expected and len(items)==5
+    expected={'shield-uno-connect','shield-uno-dht11','shield-uno-gnss','shield-uno-upload','shield-uno-firebase','shield-uno-first-upload'}
+    assert {x['content']['id'] for x in items}==expected and len(items)==6
     for item in items:
         for asset in item['assets']:
             file=(directory/asset['path']).resolve();assert file.is_relative_to(directory)

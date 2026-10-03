@@ -33,6 +33,8 @@ function Auth() {
   const next = [
     "/data",
     "/devices",
+    "/devices?register=1",
+    "/pricing",
     "/usim",
     "/admin",
     "/account",
@@ -275,11 +277,7 @@ export default function App() {
             <Route path="/data" element={<DataPage />} />
             <Route
               path="/devices"
-              element={
-                <Protected>
-                  <DevicesPage />
-                </Protected>
-              }
+              element={<DevicesPage />}
             />
             <Route path="/faq" element={<FaqPage />} />
             <Route path="/pricing" element={<PricingPage />} />

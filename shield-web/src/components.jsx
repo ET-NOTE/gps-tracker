@@ -488,15 +488,15 @@ export function MapPanel({ position, locations = [], demo = false }) {
   );
 }
 
-export function Intro({ crumb, title, description, children }) {
+export function Intro({ crumb, title, description, children, breadcrumb = true }) {
   return (
     <div className="page-intro">
       <div>
-        <p className="breadcrumb">
+        {breadcrumb && <p className="breadcrumb">
           <Link to="/">홈</Link>
           <span>/</span>
           {crumb || title}
-        </p>
+        </p>}
         <h1>{title}</h1>
         {description && <p className="page-description">{description}</p>}
       </div>

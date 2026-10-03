@@ -1,7 +1,9 @@
-import { useCommerce } from "./Commerce";
+import { Modal, useCommerce } from "./Commerce";
 import { validCsq } from "./telemetry";
-import React, { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import React, { useContext, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Session } from "./session";
+import { deviceDemo } from "./deviceDemo";
 import { request, query, timeRange } from "./api";
 import {
   Board,
@@ -21,19 +23,28 @@ import {
 } from "./DeviceNavigation";
 import { simState } from "./deviceState";
 export default function DevicesPage() {
-  const { usim: openUsim } = useCommerce();
+  const { usim: realUsim } = useCommerce(),
+    { user } = useContext(Session),
+    navigate = useNavigate(),
+    [params, setParams] = useSearchParams(),
+    sample = useMemo(() => deviceDemo(), []),
+    [demoUsim, setDemoUsim] = useState(false);
   const [tick, setTick] = useState(0),
     { devices, loading, error: inventoryError } = useDeviceList(tick),
-    [selected, select] = useSelectedDevice(devices);
-  const [params, setParams] = useSearchParams(),
-    [claim, setClaim] = useState(false),
+    demo = params.get("demo") === "1" || (!loading && !inventoryError && !devices.length),
+    shownDevices = demo ? [sample.summary.device] : devices,
+    [selected, select] = useSelectedDevice(shownDevices);
+  const [claim, setClaim] = useState(false),
     [result, setResult] = useState(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [editing, setEditing] = useState(false),
     [name, setName] = useState("");
+  const register = () => user ? setClaim(true)
+    : navigate("/login?next=" + encodeURIComponent("/devices?register=1"));
+  const openUsim = (id) => demo ? setDemoUsim(true) : realUsim(id);
   useEffect(() => {
-    if (params.get("register") === "1") {
+    if (params.get("register") === "1" && user) {
       setClaim(true);
       setParams(
         (p) => {
@@ -44,13 +55,13 @@ export default function DevicesPage() {
         { replace: true },
       );
     }
-  }, [params, setParams]);
+  }, [params, setParams, user]);
   useEffect(() => {
     setEditing(false);
     setName(selected?.display_name || "");
   }, [selected?.id, selected?.display_name]);
   useEffect(() => {
-    if (!selected) return;
+    if (!selected || demo) return;
     const abort = new AbortController();
     setError("");
     Promise.all([
@@ -71,15 +82,15 @@ export default function DevicesPage() {
         if (e.name !== "AbortError") setError(e.message);
       });
     return () => abort.abort();
-  }, [selected?.id, selected?.last_seen_at, tick]);
-  const data = result?.id === selected?.id ? result : null,
+  }, [selected?.id, selected?.last_seen_at, tick, demo]);
+  const data = demo ? sample : result?.id === selected?.id ? result : null,
     summary = data?.summary,
     latest = summary?.latest,
     position = summary?.position,
     sim = data?.sim.sim,
     usage = sim?.usage,
     lastSeen = summary?.device.last_seen_at || selected?.last_seen_at,
-    status = connectionState(lastSeen),
+    status = demo ? { label: "온라인 · 데모", tone: "" } : connectionState(lastSeen),
     simStatus = simState(sim);
   const channels = (summary?.channels || [])
       .filter((c) => c.active)
@@ -87,17 +98,26 @@ export default function DevicesPage() {
     rows = data?.readings.items || [];
   return (
     <main className="container workspace-page">
-      <Intro title="내 장치" />
+      <Intro title="내 장치">
+        {devices.length > 0 && <Link className="outline" to={demo ? "/devices" : "/devices?demo=1"}>
+          {demo ? "내 실제 장치 보기" : "데모 둘러보기"}
+        </Link>}
+      </Intro>
+      {demo && <div className="demo-notice" role="status">
+        <span className="badge demo">데모 장치</span>
+        <span>장치 상태·수신 기록·USIM 잔량은 체험용 예시입니다. 실제 장치나 잔액이 아닙니다.</span>
+      </div>}
       <div className="device-workspace">
         <DeviceSidebar
-          devices={devices}
+          devices={shownDevices}
           selected={selected?.id}
           onSelect={select}
-          onRegister={() => setClaim(true)}
+          onRegister={register}
           loading={loading}
+          demo={demo}
         />
         <div className="workspace-main">
-          {(inventoryError || error) && (
+          {!demo && (inventoryError || error) && (
             <p className="error" role="alert">
               {inventoryError || error}{" "}
               <button onClick={() => setTick((t) => t + 1)}>다시 시도</button>
@@ -112,7 +132,7 @@ export default function DevicesPage() {
                   : "첫 번째 쉴드를 등록하세요"}
               </h2>
               <p>제품과 함께 받은 등록 코드로 내 장치를 연결하세요.</p>
-              <button className="button" onClick={() => setClaim(true)}>
+              <button className="button" onClick={register}>
                 ＋ 내 장치 등록
               </button>
               <Link className="text-link" to="/data">
@@ -141,6 +161,7 @@ export default function DevicesPage() {
                   <div className="device-actions">
                     <button
                       className="outline"
+                      disabled={demo}
                       onClick={() => setEditing(!editing)}
                     >
                       장치 이름 변경
@@ -149,17 +170,18 @@ export default function DevicesPage() {
                       className="outline"
                       onClick={() => openUsim(selected.id)}
                     >
-                      USIM 충전
+                      USIM 충전하기
                     </button>
                     <button
                       className="outline"
+                      disabled={demo}
                       onClick={() => setTick((t) => t + 1)}
                     >
                       새로고침
                     </button>
                   </div>
                 </div>
-                {editing && (
+                {editing && !demo && (
                   <form
                     className="rename-form"
                     onSubmit={async (e) => {
@@ -219,7 +241,7 @@ export default function DevicesPage() {
                             <tr>
                               <th>서버 연결</th>
                               <td>{status.label}</td>
-                              <td>최근 3분 수신 기준</td>
+                              <td>{demo ? "체험용 온라인 상태" : "최근 3분 수신 기준"}</td>
                             </tr>
                             <tr>
                               <th>LTE</th>
@@ -279,8 +301,8 @@ export default function DevicesPage() {
                       <section className="panel">
                         <div className="panel-title">
                           <h2>USIM 및 사용 정보</h2>
-                          <button onClick={() => openUsim(selected.id)}>
-                            충전 →
+                          <button className="text-link" onClick={() => openUsim(selected.id)}>
+                            USIM 충전하기 →
                           </button>
                         </div>
                         <dl className="detail-list">
@@ -304,7 +326,7 @@ export default function DevicesPage() {
                           </div>
                           <div>
                             <dt>사용 기한</dt>
-                            <dd>{usage?.expires_at || "확인된 기한 없음"}</dd>
+                            <dd>{demo ? "데모에서는 기한을 표시하지 않습니다" : usage?.expires_at || "확인된 기한 없음"}</dd>
                           </div>
                           <div>
                             <dt>상태</dt>
@@ -333,7 +355,7 @@ export default function DevicesPage() {
                           />
                         )}
                         <p className="muted">
-                          {sim?.error ||
+                          {demo ? "350 / 500 MB는 화면 안내를 위한 예시 잔량입니다." : sim?.error ||
                             "통신사 마지막 조회값이며 집계 지연이 있을 수 있습니다."}
                         </p>
                         {simStatus.warning && (
@@ -350,7 +372,7 @@ export default function DevicesPage() {
                       <section className="panel history">
                         <div className="panel-title">
                           <h2>최근 데이터</h2>
-                          <Link to={`/data?device=${selected.id}`}>
+                          <Link to={demo ? "/data" : `/data?device=${selected.id}`}>
                             전체 보기 →
                           </Link>
                         </div>
@@ -397,7 +419,7 @@ export default function DevicesPage() {
                           </p>
                         )}
                       </section>
-                      <MapPanel key={selected.id} position={position} />
+                      <MapPanel key={selected.id} position={position} demo={demo} />
                     </div>
                   </>
                 )
@@ -406,16 +428,31 @@ export default function DevicesPage() {
           )}
         </div>
       </div>
-      {claim && (
+      {claim && user && (
         <ClaimDialog
           close={() => setClaim(false)}
           done={(id) => {
-            select(id);
+            navigate(`/devices?device=${encodeURIComponent(id)}`);
             setTick((t) => t + 1);
             setClaim(false);
           }}
         />
       )}
+      {demo && demoUsim && <Modal title="USIM 충전 안내 · 데모" close={() => setDemoUsim(false)}>
+        <p className="notice">체험 화면입니다. 실제 포인트 차감이나 USIM 충전 요청은 실행되지 않습니다.</p>
+        <h3>USIM 잔량 예시</h3>
+        <p><strong>350 MB / 500 MB</strong> · 예시 USIM ···· 1234</p>
+        <ol className="demo-recharge-steps">
+          <li>로그인 후 내 장치에서 제품의 등록 코드로 쉴드를 등록합니다.</li>
+          <li>장착된 USIM의 실제 잔량과 상태를 확인합니다.</li>
+          <li>내 장치 또는 요금 안내의 USIM 충전하기에서 같은 장치를 선택합니다.</li>
+          <li>상품이 판매 중일 때 용량·차감 포인트를 확인하고 충전을 요청합니다.</li>
+        </ol>
+        <div className="actions">
+          <Link className="button" to="/pricing">요금 안내 보기</Link>
+          <button className="outline" onClick={() => setDemoUsim(false)}>닫기</button>
+        </div>
+      </Modal>}
     </main>
   );
 }

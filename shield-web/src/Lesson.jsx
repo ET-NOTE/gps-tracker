@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Board, Icon } from "./components";
+import { lessonLinks } from "./lessonContent";
+function LessonText({ text }) {
+  return lessonLinks(text).map((part, i) => !part.href ? part.text :
+    part.href.startsWith("/") ? <Link key={i} to={part.href}>{part.text}</Link> :
+      <a key={i} href={part.href} target="_blank" rel="noopener noreferrer">{part.text}</a>);
+}
 export function PhotoCarousel({ photos, variant }) {
   const [index, setIndex] = useState(0),
     [playing, setPlaying] = useState(
@@ -73,6 +79,8 @@ export function PhotoCarousel({ photos, variant }) {
         />
         {photo.caption && <figcaption>{photo.caption}</figcaption>}
       </figure>
+      <a className="photo-original" href={`/api/post-images/${encodeURIComponent(photo.id)}`}
+        target="_blank" rel="noopener noreferrer">이미지 크게 보기 ↗</a>
       {count > 1 && (
         <div className="carousel-controls">
           <button
@@ -245,7 +253,7 @@ export default function Lesson({ post, preview = false }) {
                 .map((line, i) => (
                   <li key={i}>
                     <span>{i + 1}</span>
-                    <p>{line}</p>
+                    <p><LessonText text={line} /></p>
                   </li>
                 ))}
             </ol>

@@ -1,9 +1,10 @@
 import { ProjectBody } from "./PostBody";
 import React, { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { Board, Icon, Intro } from "./components";
 import { usePosts, PostStatus } from "./posts";
 import Lesson from "./Lesson";
+import { lessonReplacement, visibleLessons, featuredLessons } from "./lessonContent";
 const kindOf = (p) => p.kind || "example";
 export function ExampleCard({ post, compact = false }) {
   const project = kindOf(post) === "project";
@@ -97,8 +98,8 @@ function GuideBanner() {
   );
 }
 export function Library() {
-  const { posts, loading, error } = usePosts(),
-    examples = posts.filter((p) => kindOf(p) === "example"),
+  const { posts, settings, loading, error } = usePosts(),
+    examples = featuredLessons(posts, settings.guide_slug),
     projects = posts.filter((p) => kindOf(p) === "project");
   return (
     <main className="container library-page">
@@ -151,7 +152,7 @@ export function Catalog({ kind }) {
   const { posts, loading, error } = usePosts(),
     [category, setCategory] = useState("전체"),
     [search, setSearch] = useState("");
-  const available = posts.filter((p) => kindOf(p) === kind),
+  const available = visibleLessons(posts).filter((p) => kindOf(p) === kind),
     categories = ["전체", ...new Set(available.map((p) => p.category))];
   const shown = available.filter(
     (p) =>
@@ -240,6 +241,8 @@ export function LessonPage({ guide = false }) {
         </Link>
       </main>
     );
+  const replacement = !guide && lessonReplacement(id, posts);
+  if (replacement) return <Navigate to={`/examples/${replacement}`} replace />;
   if (kindOf(post) === "project")
     return (
       <main className="container">
@@ -255,16 +258,14 @@ export function LessonPage({ guide = false }) {
     <main className="container lesson-page">
       <Intro
         crumb={guide ? "시작가이드" : "예제 라이브러리"}
-        title={guide ? `${post.steps.length}단계로 시작하세요` : post.title}
+        breadcrumb={!guide}
+        title={post.title}
         description={post.description}
       />
       <Lesson post={post} key={post.id} />
-      <div className="lesson-related">
+      {!guide && <div className="lesson-related">
         <Link to="/examples/all">← 전체 예제</Link>
-        {guide && (
-          <Link to={"/examples/" + post.id}>예제 라이브러리에서 보기 →</Link>
-        )}
-      </div>
+      </div>}
     </main>
   );
 }

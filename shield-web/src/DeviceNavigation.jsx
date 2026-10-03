@@ -60,7 +60,7 @@ export function useDeviceList(tick = 0) {
       abort?.abort();
       clearInterval(timer);
     };
-  }, [user?.id, tick, reload]);
+  }, [user?.id, user === undefined, tick, reload]);
   return result.owner === (user?.id ?? null)
     ? result
     : { devices: [], loading: true, error: "" };

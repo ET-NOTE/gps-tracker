@@ -5,6 +5,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def build():
     dist=ROOT/'dist';dist.mkdir(exist_ok=True)
     posts=json.loads((ROOT/'articles.json').read_text(encoding='utf-8'))
+    posts.append(json.loads((ROOT/'06_first_upload/article.json').read_text(encoding='utf-8')))
     manifest=[]
     for item in posts:
         folder=item['folder'];files={}
@@ -17,6 +18,10 @@ def build():
             for name in ['ShieldModem.h','ShieldModem.cpp','ShieldParsing.h']:add(ROOT/'common'/name,'src/'+name)
         for name in ['fetch_ca.py','install_ca.py']:add(ROOT/'tools'/name,'tools/'+name)
         add(ROOT/'README.md','README.md')
+        if folder=='06_first_upload':
+            add(ROOT/'01_connection/01_connection.ino','01_connection/01_connection.ino')
+            for name in ['ShieldModem.h','ShieldModem.cpp','ShieldParsing.h']:
+                add(ROOT/'common'/name,'01_connection/src/'+name)
         if folder=='05_firebase':
             for name in ['README.md','firebase.json','firestore.rules','firestore.indexes.json',
                          'functions/package.json','functions/package-lock.json','functions/index.js',
