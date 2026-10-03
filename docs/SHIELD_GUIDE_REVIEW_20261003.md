@@ -31,4 +31,12 @@ DHT11 실제 배선·측정 출력, GNSS 실제 수신 출력, 인증서 설치�
 
 ## 배포
 
-Shield만 배포한다. GPS/KC 소스·서비스·nginx·환경 설정·펌웨어 변경 없음. 구체적인 릴리스 및 운영 확인 결과는 배포 후 기록한다.
+Shield 릴리스 `shield-20261003-190848-f6f71a0`를 etcom-hub에서 빌드하고 아티팩트를 설치했다. SHA256 `2e8587daec855c64aa910e2e7163071c4406dc8fe5743620d0e9558f8caae233`. Rust 5개/프론트 17개 검사 및 Clippy/GPS check 통과.
+
+배포 전 백업 `shield-20261003T100352Z.tar.gz`, SHA256 `20eb675629fe9d11707996d3020c5cca5145758e1cc6625d57a947fb19001eaf`를 hub에 복사하고 PostgreSQL 14 복원, Schema 1~9, 63 이미지/25 파일 해시 검증을 통과했다.
+
+게시 결과: start revision 9(사진 5/첨부 3), 기존 UNO 5개 revision 3, first-upload revision 1. 공개 첨부 18개의 실제 응답 해시 확인. USIM 데모 이미지 `5c82eb6494a730b9a44f0a8937512f80641d72b26e18ba08725db9504f830eb6`. 대상 외 글은 동일함을 확인했다. 변경 전 전체 CMS 스냅샷과 결과는 VPS의 `/home/mmm/shield-deploy/guide-review-20261003/publication/`에 보호 저장했다.
+
+운영 점검 28개 통과: 장치 귀속·잔량 보존, DB 역할 분리, 결제·충전 신규 판매 닫힘. 결제 주문/USIM 요청/장부/포인트 전부 0건 유지. GPS 바이너리/PID/시작 시각, nginx, Shield 환경 설정 불변. 펌웨어와 KC 변경 없음.
+
+운영 브라우저에서도 예제 제목, breadcrumb/하단 링크 제거, 흰 이미지 여백, 단계별 다운로드, USIM 데모 이미지와 안내 모달을 확인했다. 실물/공유 키 없이 6개 ZIP·스케치 폴더를 `E:\project\2025\shield-examples\2026-10-03`에 전달했다.
