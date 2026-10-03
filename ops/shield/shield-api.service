@@ -1,0 +1,29 @@
+[Unit]
+Description=Shield account and telemetry API
+After=network.target postgresql.service
+
+[Service]
+User=gps-shield
+Group=gps-shield
+WorkingDirectory=/srv/shield/current
+EnvironmentFile=/etc/shield-api/shield.env
+ExecStart=/srv/shield/current/shield-api
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+MemoryMax=128M
+CPUQuota=100%
+TasksMax=64
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

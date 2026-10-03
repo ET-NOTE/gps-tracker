@@ -1,0 +1,8 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // This tutorial is read in Firebase console. Client SDK/anonymous access is closed.
+    // The HTTPS function uses its managed service identity and validates the device key.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

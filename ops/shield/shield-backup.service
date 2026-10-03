@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up the independent Shield database and configuration
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/shield-backup
+UMask=0077
+Nice=10
+IOSchedulingClass=idle

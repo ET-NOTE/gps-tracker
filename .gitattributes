@@ -4,6 +4,9 @@
 # bash heredoc 안에 임베드되는 SQL 도 LF
 *.sql text eol=lf
 
+# Linux에서 직접 실행되는 Shield 운영 스크립트
+ops/shield/*.py text eol=lf
+
 # Windows 전용은 CRLF
 *.bat text eol=crlf
 *.ps1 text eol=crlf
