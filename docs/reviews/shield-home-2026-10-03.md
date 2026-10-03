@@ -11,3 +11,9 @@
 배포 전 백업 `shield-20261003T071544Z.tar.gz`, SHA256 `0686ae1495b2e87437ed88cfb79d512fc73df54ef7e9f7a9cbab1880c183e260`.
 
 운영 배포 완료: `shield-20261003-161804-208e16d`, 아티팩트 SHA256 `8929ec4b3601fcfed12e7df6a96680888ab5bd4adf2c72ebd6fe2ba60f700580`. etcom-hub Rust 5/프론트 14/Clippy/GPS check 및 빌드 통과. 백업을 별도 PostgreSQL 14에 복원해 스키마와 이미지 63개·첨부 25개의 해시까지 확인했다. 배포 후 GPS 바이너리/프로세스·nginx·Shield 환경 설정·스키마 불변, 운영 점검 28개 통과. 운영 홈에 요청 문구/제품 배치가 표시되며 브라우저 콘솔 경고·오류 없음.
+
+## 사용자 제공 실물 제품 사진
+
+워크스페이스 루트의 `KakaoTalk_20261002_220809094.png`를 `shield-web/src/assets/shield-product.png`로 복사해 홈의 설명 그림을 교체했다. 원본 RGBA 1191×1321, 1,120,332 bytes, SHA256 `b079ddd4c43a2c0be8ac8f8386279f9b9ca4737b6d23cf2f4eadfe34ce3720b3`. 원본 파일·투명도·제품 형태는 수정하지 않았다. 빌드 시 Vite가 해시가 포함된 정적 파일명으로 배포한다.
+
+원본 크기 속성으로 공간을 예약하고 object-fit:contain으로 두 안테나와 제품 전체를 유지한다. PC 높이 300~420px, 모바일 300px. 로컬 320/390/768/1440px에서 이미지 로드·자연 비율·제목 두 줄·가로 넘침 없음 확인. 변경은 홈 제품 사진과 해당 CSS뿐이다.

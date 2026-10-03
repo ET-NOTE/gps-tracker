@@ -17,8 +17,8 @@
 .simple-hero h1 { font-size:clamp(30px,3.4vw,48px); line-height:1.42; letter-spacing:-1.8px; margin:0; word-break:keep-all; overflow-wrap:break-word; }
 .simple-hero .hero-copy { min-width:0; padding:12px 0; }
 .simple-hero .hero-copy>.hero-description { margin:24px 0 30px; font-size:16px; line-height:1.9; color:var(--ink); word-break:keep-all; overflow-wrap:break-word; }
-.simple-hero .hero-art { padding:0; }
-.simple-hero .hero-art .board-art { width:100%; max-height:360px; margin:0; }
+.simple-hero .hero-art { height:auto; padding:0; }
+.simple-hero .hero-product { display:block; width:100%; height:clamp(300px,34vw,420px); object-fit:contain; }
 .simple-quick { grid-template-columns:repeat(3,minmax(0,1fr)) 1.15fr; gap:18px; margin:0 0 35px; }
 .simple-quick .quick-card { padding:21px; justify-content:center; gap:14px; }
 .simple-quick h2 { font-size:14px; white-space:nowrap; margin:0; }
@@ -250,7 +250,7 @@ a.catalog-card:hover { border-color:var(--primary); box-shadow:0 7px 22px #00899
   .simple-hero .hero-copy>.hero-description { max-width:540px; margin:20px auto 24px; font-size:14px; }
   .simple-hero .hero-description br { display:none; }
   .simple-hero .actions { justify-content:center; }
-  .simple-hero .hero-art .board-art { max-height:230px; }
+  .simple-hero .hero-product { height:300px; }
   .simple-hero h1 { font-size:clamp(24px,5.7vw,34px); letter-spacing:-1.2px; }
   .simple-quick { gap:10px; }
   .simple-quick .quick-card { padding:15px 8px; gap:8px; }

@@ -2,7 +2,8 @@ import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Session } from "./session";
 import { request, query, timeRange } from "./api";
-import { Board, Icon, Chart, Metric, number } from "./components";
+import { Icon, Chart, Metric, number } from "./components";
+import shieldProduct from "./assets/shield-product.png";
 import { useDeviceList, useSelectedDevice } from "./DeviceNavigation";
 import DemoDashboard from "./DemoDashboard";
 export default function Home() {
@@ -64,8 +65,14 @@ export default function Home() {
             </div>
           </div>
           <div className="hero-art">
-            <div className="orb" />
-            <Board />
+            <img
+              className="hero-product"
+              src={shieldProduct}
+              alt="LTE GPS Shield 실물 제품과 연결된 LTE·GNSS 안테나"
+              width={1191}
+              height={1321}
+              decoding="async"
+            />
           </div>
         </div>
       </section>
