@@ -44,10 +44,15 @@ export default function Home() {
         <div className="hero-inner">
           <div className="hero-copy">
             <h1>
-              LTE + GPS를
+              LTE와 GPS를 하나의 쉴드에
               <br />
-              가장 쉽게 시작하세요
+              센서 확장까지 더 간편하게
             </h1>
+            <p className="hero-description">
+              USIM 기반 LTE 통신과 GPS 기능을 지원하며,
+              <br />{" "}
+              다양한 센서를 추가로 연결해 여러 IoT 프로젝트를 손쉽게 구현할 수 있습니다.
+            </p>
             <div className="actions">
               <Link className="button" to="/guide">
                 시작 가이드 <Icon name="arrow" size={17} />
