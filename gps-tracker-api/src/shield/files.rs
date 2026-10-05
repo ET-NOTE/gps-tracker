@@ -6,6 +6,167 @@ use axum::{
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DriveFile {
+    url: String,
+    filename: String,
+    // Optional one-time migration of a content-addressed attachment; posts and old links stay intact.
+    existing_id: Option<String>,
+}
+
+fn drive_url(input: &str) -> Option<String> {
+    let input = input.trim();
+    if input.len() > 1000 || input.chars().any(|c| c.is_control() || c == '\\') {
+        return None;
+    }
+    let url = reqwest::Url::parse(input).ok()?;
+    if url.scheme() != "https"
+        || url.host_str() != Some("drive.google.com")
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.port().is_some()
+        || url.fragment().is_some()
+    {
+        return None;
+    }
+    let params: Vec<_> = url.query_pairs().collect();
+    let ids: Vec<_> = params.iter().filter(|(k, _)| k == "id").collect();
+    let keys: Vec<_> = params.iter().filter(|(k, _)| k == "resourcekey").collect();
+    if ids.len() > 1 || keys.len() > 1 {
+        return None;
+    }
+    let segments: Vec<_> = url.path_segments()?.collect();
+    let id = match segments.as_slice() {
+        ["file", "d", id, "view"] | ["file", "d", id] if ids.is_empty() => id.to_string(),
+        ["open"] | ["uc"] if ids.len() == 1 => ids[0].1.to_string(),
+        _ => return None,
+    };
+    let safe = |s: &str| {
+        !s.is_empty()
+            && s.len() <= 200
+            && s.bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    };
+    if id.len() < 10 || !safe(&id) {
+        return None;
+    }
+    let mut canonical = format!("https://drive.google.com/file/d/{id}/view");
+    if let Some((_, key)) = keys.first() {
+        if !safe(key) {
+            return None;
+        }
+        canonical.push_str("?resourcekey=");
+        canonical.push_str(key);
+    }
+    Some(canonical)
+}
+
+pub async fn register_drive(
+    State(app): State<App>,
+    h: HeaderMap,
+    Json(input): Json<DriveFile>,
+) -> Result<Json<Value>> {
+    let actor = admin::require(&app, &h).await?;
+    auth::rate(&app, format!("post-files:{actor}"), 60).await?;
+    let url = drive_url(&input.url).ok_or_else(|| {
+        bad("Google Drive 파일의 공유 링크를 입력해 주세요. 폴더 링크는 사용할 수 없습니다.")
+    })?;
+    let name = input.filename.trim();
+    if !valid_name(name) {
+        return Err(bad(
+            "파일 이름과 확장자를 입력해 주세요. 예: example.zip, example.ino, GUIDE.md",
+        ));
+    }
+    let id = if let Some(id) = input.existing_id.as_ref() {
+        if !images::valid_id(id) {
+            return Err(bad("첨부파일 식별자를 확인해 주세요."));
+        }
+        id.clone()
+    } else {
+        format!(
+            "{:x}",
+            Sha256::digest(format!("google-drive:{url}").as_bytes())
+        )
+    };
+    let mut tx = app.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(8043003)")
+        .execute(&mut *tx)
+        .await?;
+    let existing: Option<(String, Option<String>)> =
+        sqlx::query_as("SELECT filename,drive_url FROM post_files WHERE id=$1 FOR UPDATE")
+            .bind(&id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let filename = if let Some((filename, current)) = existing {
+        if current.as_ref().is_some_and(|value| value != &url)
+            || (current.is_none() && input.existing_id.is_none())
+        {
+            return Err(Error(
+                StatusCode::CONFLICT,
+                "이미 연결된 파일입니다. 다른 링크는 새 첨부로 추가해 주세요.".into(),
+            ));
+        }
+        if current.is_none() {
+            sqlx::query("UPDATE post_files SET drive_url=$2 WHERE id=$1")
+                .bind(&id)
+                .bind(&url)
+                .execute(&mut *tx)
+                .await?;
+            admin::audit(
+                &mut tx,
+                Some(actor),
+                "post.file.drive",
+                "post_file",
+                &id,
+                json!({"url":url,"migrated":true}),
+            )
+            .await?;
+        }
+        // A repeated registration keeps an unreferenced entry alive until the editor saves.
+        sqlx::query("UPDATE post_files SET created_at=now() WHERE id=$1 AND attached_at IS NULL")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
+        filename
+    } else {
+        if input.existing_id.is_some() {
+            return Err(Error(
+                StatusCode::NOT_FOUND,
+                "기존 첨부파일이 없습니다.".into(),
+            ));
+        }
+        sqlx::query("DELETE FROM post_files WHERE attached_at IS NULL AND created_at<now()-interval '1 day' AND NOT EXISTS(SELECT 1 FROM post_file_links WHERE file_id=post_files.id)").execute(&mut *tx).await?;
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM post_files")
+            .fetch_one(&mut *tx)
+            .await?;
+        if count >= 500 {
+            return Err(bad(
+                "첨부파일 보관 한도에 도달했습니다. 운영 담당자에게 문의해 주세요.",
+            ));
+        }
+        sqlx::query("INSERT INTO post_files(id,filename,drive_url,created_by) VALUES($1,$2,$3,$4)")
+            .bind(&id)
+            .bind(name)
+            .bind(&url)
+            .bind(actor)
+            .execute(&mut *tx)
+            .await?;
+        admin::audit(
+            &mut tx,
+            Some(actor),
+            "post.file.drive",
+            "post_file",
+            &id,
+            json!({"filename":name,"url":url,"migrated":false}),
+        )
+        .await?;
+        name.to_string()
+    };
+    tx.commit().await?;
+    Ok(Json(json!({"id":id,"filename":filename,"drive_url":url})))
+}
+
+#[derive(Deserialize)]
 pub struct Upload {
     name: String,
 }
@@ -129,6 +290,16 @@ pub async fn download(
     if !public && admin::require(&app, &h).await.is_err() {
         return Err(missing());
     }
+    // Check the destination before loading any stored bytes. The VPS never proxies Drive content.
+    let destination: Option<Option<String>> =
+        sqlx::query_scalar("SELECT drive_url FROM post_files WHERE id=$1")
+            .bind(&id)
+            .fetch_optional(&app.db)
+            .await?;
+    if let Some(url) = destination.ok_or_else(missing)? {
+        let url = drive_url(&url).ok_or_else(missing)?;
+        return Ok(axum::response::Redirect::temporary(&url).into_response());
+    }
     let (filename, data): (String, Vec<u8>) =
         sqlx::query_as("SELECT filename,data FROM post_files WHERE id=$1")
             .bind(&id)
@@ -151,4 +322,35 @@ pub async fn download(
         data,
     )
         .into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::drive_url;
+    #[test]
+    fn drive_links_are_canonical_file_links_only() {
+        let view = "https://drive.google.com/file/d/abc123_DEF-456/view";
+        assert_eq!(drive_url(&format!("{view}?usp=sharing")), Some(view.into()));
+        assert_eq!(
+            drive_url("https://drive.google.com/open?id=abc123_DEF-456"),
+            Some(view.into())
+        );
+        assert_eq!(drive_url("https://drive.google.com/uc?export=download&id=abc123_DEF-456&resourcekey=0-abc123"), Some(format!("{view}?resourcekey=0-abc123")));
+        for invalid in [
+            "http://drive.google.com/file/d/abc123_DEF-456/view",
+            "https://drive.google.com.evil.test/file/d/abc123_DEF-456/view",
+            "https://user@drive.google.com/file/d/abc123_DEF-456/view",
+            "https://drive.google.com:444/file/d/abc123_DEF-456/view",
+            "https://drive.google.com/drive/folders/abc123_DEF-456",
+            "https://drive.google.com/open?id=abc123_DEF-456&id=other123456",
+            "https://drive.google.com/file/d/abc%2F123_DEF-456/view",
+            "https://drive.google.com/file/d/abc123_DEF-456/view#fragment",
+            "https://drive.google.com/file/d/abc123_DEF-456/view?resourcekey=abc&resourcekey=def",
+            "https://drive.google.com/file/d/abc123_DEF-456/view?resourcekey=https://evil.test",
+            "https://drive.google.com/\\evil.test",
+            "https://drive.google.com/file/d/abc123_DEF-456/\nview",
+        ] {
+            assert_eq!(drive_url(invalid), None, "{invalid}");
+        }
+    }
 }

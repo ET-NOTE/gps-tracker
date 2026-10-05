@@ -120,21 +120,11 @@ export function PhotoCarousel({ photos, variant }) {
     </section>
   );
 }
-function saveCode(post) {
-  const url = URL.createObjectURL(
-    new Blob([post.code], { type: "text/plain;charset=utf-8" }),
-  );
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = post.id + (post.id === "dht11" ? ".ino" : "-example.txt");
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-}
 export function DownloadList({ post, step }) {
   const files = (post.attachments || []).filter(
     (f) => f.after_step === 0 || f.after_step === step + 1,
   );
-  if (!files.length && !post.code && post.id !== "upload") return null;
+  if (!files.length && !post.code) return null;
   return (
     <section className="lesson-downloads panel">
       <div className="panel-title">
@@ -143,41 +133,21 @@ export function DownloadList({ post, step }) {
           첨부파일 · 예제 코드
         </h2>
       </div>
+      {files.length > 0 && <p className="muted">첨부파일은 Google Drive에서 열립니다. 파일을 확인한 뒤 다운로드하세요.</p>}
       <div className="download-list">
         {files.map((f, i) => (
           <a
             className="download-item"
             key={`${f.id}-${i}`}
             href={`/api/post-files/${encodeURIComponent(f.id)}`}
-            download
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <Icon name="download" />
             <span>{f.title}</span>
-            <small>다운로드</small>
+            <small>Drive에서 열기 ↗</small>
           </a>
         ))}
-        {post.code && (
-          <button
-            type="button"
-            className="download-item"
-            onClick={() => saveCode(post)}
-          >
-            <Icon name="code" />
-            <span>예제 코드</span>
-            <small>다운로드</small>
-          </button>
-        )}
-        {post.id === "upload" && (
-          <a
-            className="download-item"
-            href="/downloads/send_sample.py"
-            download
-          >
-            <Icon name="code" />
-            <span>Python 전송 예제</span>
-            <small>다운로드</small>
-          </a>
-        )}
       </div>
       {post.code && (
         <details className="code-details">

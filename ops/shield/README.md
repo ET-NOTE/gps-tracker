@@ -252,3 +252,33 @@ Admin user totals count paid orders only (Asia/Seoul day/month); adjustments do 
 inflate sales. User details and CSV export omit raw subscriber identifiers; CSV
 formula characters are escaped. CSV exports explicitly cover the currently loaded
 page (up to 100 accounts), not all accounts silently.
+
+### Google Drive attachments (schema 10)
+
+The editor now registers Google Drive **file** links and display filenames instead
+of uploading binary attachments to the VPS. Upload only free public example assets
+to a dedicated Drive folder, share as "Anyone with the link / Viewer", allow
+downloads, and verify access without signing in before adding the link. Photos
+remain in the existing image store. Drive availability and sharing remain managed
+in Google Drive; hiding a Shield post does not revoke a previously shared Drive URL.
+
+`POST /api/admin/post-files/drive` canonicalizes HTTPS drive.google.com file URLs,
+requires an active administrator and same-origin request, and audits additions.
+No Google credentials are stored and no remote content is fetched by the API.
+New records contain metadata only. `/api/post-files/:id` checks the existing free
+published-example/admin permissions, then returns a no-store 307 to Drive without
+loading or proxying file bytes. Paid projects still cannot contain attachments.
+
+For existing files, the same endpoint's optional `existing_id` maps the original
+ID to Drive, retaining all post content, revisions and attachment positions. A
+different destination cannot silently overwrite a prior mapping. Verify uploaded
+file hashes first. Existing binary data is retained for deliberate recovery;
+unmapped historical files still use the legacy endpoint. The operator-only legacy
+upload endpoint remains compatible, but is no longer used by the editor.
+
+Use `deploy-app.py --drive-upgrade` for the reviewed 9 → 10 release, with a fresh
+offsite-restored backup. No nginx, GPS or Shield environment change is needed.
+Backup/restore verifies Drive metadata and any retained bytes. Do not start a
+schema-9 binary after migration; forward-fix or deliberately restore after assessing
+new data. `test-drive-files.py` runs only against shield_test and never contacts
+Google, payment providers, or production.

@@ -42,6 +42,8 @@ def main():
                 counts['image_hashes']=json.loads(query("SELECT coalesce(json_object_agg(id,encode(sha256(data),'hex')),'{}'::json) FROM post_images;"))
             if 'post_files' in counts:
                 counts['file_hashes']=json.loads(query("SELECT coalesce(json_object_agg(id,encode(sha256(data),'hex')),'{}'::json) FROM post_files;"))
+                if 10 in counts['schema_versions']:
+                    counts['drive_links']=json.loads(query("SELECT coalesce(json_object_agg(id,drive_url),'{}'::json) FROM post_files WHERE drive_url IS NOT NULL;"))
             with (work/'shield_prod.dump').open('wb') as f:
                 subprocess.run(['sudo','-u','postgres','pg_dump','-Fc','--no-owner','--no-acl','--snapshot='+snapshot,'shield_prod'],stdout=f,check=True)
             session.stdin.write('ROLLBACK;\n\\q\n');session.stdin.flush()

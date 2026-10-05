@@ -46,7 +46,10 @@ def main():
             if 'file_hashes' in meta['counts_after_dump']:
                 hashes=json.loads(run('docker','exec',CONTAINER,'psql','-U','postgres','-d','shield_restore_test','-Atqc',"SELECT coalesce(json_object_agg(id,encode(sha256(data),'hex')),'{}'::json) FROM post_files"))
                 assert hashes==meta['counts_after_dump']['file_hashes'], 'Attachment bytes changed during backup/restore'
-                assert all(id==digest for id,digest in hashes.items()), 'Attachment content hash mismatch'
+                assert all(id==digest or (digest is None and id in meta['counts_after_dump'].get('drive_links',{})) for id,digest in hashes.items()), 'Attachment content hash mismatch or missing source'
+            if 'drive_links' in meta['counts_after_dump']:
+                links=json.loads(run('docker','exec',CONTAINER,'psql','-U','postgres','-d','shield_restore_test','-Atqc',"SELECT coalesce(json_object_agg(id,drive_url),'{}'::json) FROM post_files WHERE drive_url IS NOT NULL"))
+                assert links==meta['counts_after_dump']['drive_links'], 'Drive destinations changed during backup/restore'
             result={'archive':archive.name,'postgres_major':14,'restored_counts':observed,'schema_versions':versions,'image_hashes_verified':len(meta['counts_after_dump'].get('image_hashes',{})),'file_hashes_verified':len(meta['counts_after_dump'].get('file_hashes',{})),'result':'passed'}
             (ROOT/'restore-result.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
         finally:run('docker','rm','-fv',CONTAINER)

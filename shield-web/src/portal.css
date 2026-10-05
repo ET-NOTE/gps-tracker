@@ -96,6 +96,10 @@ a.catalog-card:hover { border-color:var(--primary); box-shadow:0 7px 22px #00899
 .lesson-copy li p { font-size:14px; line-height:1.9; margin:0; overflow-wrap:anywhere; }
 .lesson-tip { background:var(--primary-soft); color:var(--primary-dark); border:1px solid #d4eaec; display:flex; align-items:center; gap:10px; padding:15px; margin:26px 0 0; font-size:12px; border-radius:5px; }
 .photo-carousel { min-width:0; }
+.drive-attachment-form { display:grid; gap:12px; grid-template-columns:minmax(0,1fr) minmax(0,2fr); align-items:end; margin:16px 0; }
+.drive-attachment-form label { min-width:0; }
+.drive-attachment-form button { justify-self:start; }
+@media(max-width:760px) { .drive-attachment-form { grid-template-columns:minmax(0,1fr); } }
 .photo-original { display:inline-block; margin-top:8px; font-size:12px; text-decoration:underline; text-underline-offset:3px; }
 .photo-carousel figure { margin:0; touch-action:pan-y; }
 .photo-carousel img { display:block; width:100%; height:310px; object-fit:contain; background:var(--paper); border-radius:8px; }

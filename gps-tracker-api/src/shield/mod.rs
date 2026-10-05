@@ -136,6 +136,7 @@ async fn migrate(db: &PgPool) -> anyhow::Result<()> {
         ("Shield post images", include_str!("post-images.sql")),
         ("Shield portal and attachments", include_str!("portal.sql")),
         ("Shield wallet and FAQs", include_str!("commerce.sql")),
+        ("Shield Google Drive attachments", include_str!("drive-files.sql")),
     ];
     let migrations = sources
         .into_iter()
@@ -335,6 +336,7 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/admin/post-images",post(images::upload))
         .route("/api/post-images/:id",get(images::get_image))
         .route("/api/admin/post-files",post(files::upload))
+        .route("/api/admin/post-files/drive",post(files::register_drive))
         .route("/api/post-files/:id",get(files::download))
         .route("/api/devices",get(devices::list))
         .route("/api/devices/claim",post(devices::claim))
