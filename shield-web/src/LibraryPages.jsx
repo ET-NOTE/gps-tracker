@@ -1,12 +1,39 @@
 import { ProjectBody } from "./PostBody";
-import React, { useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import React from "react";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { Board, Icon, Intro } from "./components";
 import { usePosts, PostStatus } from "./posts";
 import Lesson from "./Lesson";
 import { lessonReplacement, visibleLessons, featuredLessons } from "./lessonContent";
 const kindOf = (p) => p.kind || "example";
-export function ExampleCard({ post, compact = false }) {
+const categoryOf = (p) => p.category?.trim() || "기타";
+const categoryDetails = new Map([
+  ["시작하기", ["code", "쉴드 연결과 개발 환경 설정부터 첫 데이터 전송까지 시작해 보세요."]],
+  ["센서·데이터활용", ["data", "센서 측정, GPS 위치 확인과 수집한 데이터 활용을 함께 배워보세요."]],
+  ["외부서버연동", ["server", "데이터베이스와 외부 서비스를 연결해 프로젝트를 확장해 보세요."]],
+  ["데이터 연동", ["database", "다양한 데이터 소스와 서비스를 연결하는 방법을 알아보세요."]],
+  ["센서", ["data", "온도, 습도 등 센서에서 측정한 데이터를 다뤄보세요."]],
+  ["GPS", ["pin", "현재 위치를 확인하고 GPS 데이터를 활용해 보세요."]],
+  ["서버 연동", ["server", "API 호출과 데이터 전송으로 서버와 통신하는 방법을 배워보세요."]],
+  ["Firebase", ["database", "Firebase에 데이터를 저장하고 활용하는 방법을 알아보세요."]],
+  ["아두이노 기초(공용)", ["chip", "아두이노와 친숙해지고 배선, 컴파일, 업로드의 기본을 익혀보세요."]],
+  ["기타", ["book", "쉴드를 활용하는 다양한 예제를 확인해 보세요."]],
+]);
+const categoryHref = (category) => "/examples/all?" + new URLSearchParams({ category });
+function categoryGroups(examples) {
+  const counts = new Map();
+  for (const post of examples) {
+    const category = categoryOf(post);
+    counts.set(category, (counts.get(category) || 0) + 1);
+  }
+  const names = [...categoryDetails.keys()].filter((name) => counts.has(name));
+  names.push(...[...counts.keys()].filter((name) => !categoryDetails.has(name)).sort((a, b) => a.localeCompare(b, "ko")));
+  return names.map((name) => ({ name, count: counts.get(name),
+    icon: categoryDetails.get(name)?.[0] || "book",
+    description: categoryDetails.get(name)?.[1] || `${name} 관련 예제를 모았습니다. 필요한 예제를 선택해 시작하세요.`,
+  }));
+}
+export function ExampleCard({ post }) {
   const project = kindOf(post) === "project";
   const icon =
     post.category === "GPS"
@@ -18,7 +45,7 @@ export function ExampleCard({ post, compact = false }) {
           : "code";
   return (
     <Link
-      className={`catalog-card ${project ? "project-card" : ""} ${compact ? "compact-card" : ""}`}
+      className={`catalog-card ${project ? "project-card" : ""}`}
       to={"/examples/" + post.id}
     >
       <div className="catalog-art">
@@ -33,14 +60,10 @@ export function ExampleCard({ post, compact = false }) {
       </div>
       <div className="catalog-copy">
         <h3>{post.title}</h3>
-        {!compact && <p>{post.description}</p>}
+        <p>{post.description}</p>
         <div className="tags">
           <span>{post.category}</span>
-          {!compact && (
-            <span>
-              {post.level} · {post.minutes}분
-            </span>
-          )}
+          <span>{post.level} · {post.minutes}분</span>
         </div>
         <strong>
           {project ? "프로젝트 소개" : "예제 보기"}{" "}
@@ -101,14 +124,27 @@ export function Library() {
   const { posts, settings, loading, error } = usePosts(),
     examples = featuredLessons(posts, settings.guide_slug),
     projects = posts.filter((p) => kindOf(p) === "project");
+  const [params, setParams] = useSearchParams(),
+    search = params.get("q") || "",
+    categories = categoryGroups(examples),
+    shown = categories.filter((c) => (c.name + " " + c.description).toLowerCase().includes(search.trim().toLowerCase()));
   return (
     <main className="container library-page">
-      <div className="library-heading">
+      <div className="category-heading">
         <Intro
           title="예제 라이브러리"
-          description="필요한 예제만, 바로 시작하세요."
-        />
-        <Board small />
+          description="카테고리를 선택하고, 필요한 예제부터 시작하세요."
+        >
+          <label className="search">
+            <Icon name="search" size={20} />
+            <input aria-label="카테고리 검색" placeholder="카테고리 검색" value={search}
+              onChange={(e) => setParams((previous) => {
+                const next = new URLSearchParams(previous);
+                if (e.target.value) next.set("q", e.target.value); else next.delete("q");
+                return next;
+              }, { replace: true })} />
+          </label>
+        </Intro>
       </div>
       <PostStatus />
       <section className="library-section">
@@ -116,15 +152,27 @@ export function Library() {
           <h2>
             기본 예제 <span className="badge">무료</span>
           </h2>
-          <Link to="/examples/all">전체 보기 →</Link>
+          <Link to="/examples/all">모든 예제 보기 →</Link>
         </div>
-        <div className="catalog-grid">
-          {examples.slice(0, 6).map((p) => (
-            <ExampleCard key={p.id} post={p} compact />
+        <nav className="category-grid" aria-label="기본 예제 카테고리">
+          {shown.map((category) => (
+            <Link className="category-card" key={category.name} to={categoryHref(category.name)}>
+              <div className="category-card-top">
+                <span className="category-icon"><Icon name={category.icon} size={36} /></span>
+                <span className="badge">{category.count}개 예제</span>
+              </div>
+              <h3>{category.name}</h3>
+              <div className="category-card-copy"><p>{category.description}</p><Icon name="arrow" size={20} /></div>
+            </Link>
           ))}
-        </div>
+        </nav>
         {!loading && !error && !examples.length && (
           <p className="empty">기본 예제를 준비하고 있습니다.</p>
+        )}
+        {!loading && !error && examples.length > 0 && !shown.length && (
+          <div className="panel empty"><p>검색한 카테고리가 없습니다. 다른 검색어를 입력해 주세요.</p>
+            <button className="outline" onClick={() => setParams({}, { replace: true })}>검색 초기화</button>
+          </div>
         )}
       </section>
       <section className="library-section">
@@ -149,14 +197,23 @@ export function Library() {
   );
 }
 export function Catalog({ kind }) {
-  const { posts, loading, error } = usePosts(),
-    [category, setCategory] = useState("전체"),
-    [search, setSearch] = useState("");
-  const available = visibleLessons(posts).filter((p) => kindOf(p) === kind),
-    categories = ["전체", ...new Set(available.map((p) => p.category))];
+  const { posts, settings, loading, error } = usePosts(),
+    [params, setParams] = useSearchParams(),
+    category = params.get("category") || "",
+    search = params.get("q") || "";
+  const available = kind === "example" ? featuredLessons(posts, settings.guide_slug)
+      : visibleLessons(posts).filter((p) => kindOf(p) === kind),
+    categories = ["", ...categoryGroups(available).map((c) => c.name)];
+  function filter(key, value, replace = false) {
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value) next.set(key, value); else next.delete(key);
+      return next;
+    }, { replace });
+  }
   const shown = available.filter(
     (p) =>
-      (category === "전체" || p.category === category) &&
+      (!category || categoryOf(p) === category) &&
       (p.title + " " + p.description)
         .toLowerCase()
         .includes(search.trim().toLowerCase()),
@@ -164,12 +221,12 @@ export function Catalog({ kind }) {
   return (
     <main className="container catalog-page">
       <Intro
-        crumb="예제 라이브러리"
-        title={kind === "project" ? "응용 프로젝트" : "기본 예제"}
+        crumb={<Link to="/examples">예제 라이브러리</Link>}
+        title={kind === "project" ? "응용 프로젝트" : category ? `${category} 예제` : "전체 기본 예제"}
         description={
           kind === "project"
             ? "쉴드를 활용한 프로젝트를 준비하고 있습니다."
-            : "무료 예제를 한곳에서 바로 시작하세요."
+            : categoryDetails.get(category)?.[1] || "무료 예제를 한곳에서 바로 시작하세요."
         }
       />
       {(kind !== "project" || available.length > 0) && (
@@ -180,9 +237,9 @@ export function Catalog({ kind }) {
                 key={c}
                 aria-pressed={category === c}
                 className={category === c ? "active" : ""}
-                onClick={() => setCategory(c)}
+                onClick={() => filter("category", c)}
               >
-                {c}
+                {c || "전체"}
               </button>
             ))}
           </div>
@@ -192,17 +249,17 @@ export function Catalog({ kind }) {
               aria-label="예제 검색"
               placeholder="예제 검색"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => filter("q", e.target.value, true)}
             />
           </label>
         </div>
       )}
       <PostStatus />
-      <p className="muted">
+      {!loading && !error && <p className="muted" role="status">
         {kind === "project" && !available.length
           ? "프로젝트 공개 준비 중"
           : `${shown.length}개 ${kind === "project" ? "프로젝트" : "예제"}`}
-      </p>
+      </p>}
       <div className="catalog-grid full-catalog">
         {shown.map((p) => (
           <ExampleCard key={p.id} post={p} />
@@ -213,10 +270,11 @@ export function Catalog({ kind }) {
       ) : !shown.length && !loading && !error ? (
         <div className="panel empty">
           검색 결과가 없습니다. 다른 검색어나 카테고리를 선택해 주세요.
+          <Link className="text-link" to={kind === "project" ? "/projects" : "/examples/all"}>필터 초기화 →</Link>
         </div>
       ) : null}
       <Link className="text-link" to="/examples">
-        ← 예제 라이브러리
+        ← 예제 카테고리 보기
       </Link>
     </main>
   );
@@ -264,7 +322,7 @@ export function LessonPage({ guide = false }) {
       />
       <Lesson post={post} key={post.id} />
       {!guide && <div className="lesson-related">
-        <Link to="/examples/all">← 전체 예제</Link>
+        <Link to={categoryHref(categoryOf(post))}>← {categoryOf(post)} 예제</Link>
       </div>}
     </main>
   );

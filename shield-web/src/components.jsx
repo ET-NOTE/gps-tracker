@@ -23,6 +23,8 @@ export function Icon({ name, size = 22, ...props }) {
         <path d="M4 19V9h4v10m3 0V4h4v15m3 0v-7h3v7M2 21h21" />
       </>
     ),
+    database: <><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></>,
+    server: <><rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01M12 6.5h5M12 17.5h5"/></>,
     sim: (
       <>
         <path d="M7 2h8l4 4v16H5V4z" />
