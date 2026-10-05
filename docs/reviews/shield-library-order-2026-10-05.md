@@ -60,3 +60,24 @@ restore while preserving new data.
 Screenshots: `%LOCALAPPDATA%\GPS-Builds\shield-order-20261005\` contains
 `production-order-admin.png` and `production-basic-categories.png`. Preview API,
 DB, local Vite and SSH tunnel were stopped after verification.
+
+## Library landing simplification
+
+Follow-up release `shield-20261005-172117-5f3951b` (SHA-256
+`d4bb3af39f23a09a0b382ef3f3c51b7f6c95e0c170bd397ac7d3a6a8486cd4c2`)
+removes the application-project section and redundant 기본 예제/무료 heading and
+전체 보기 link from `/examples`. The start-guide banner now precedes the complete
+category grid. Categories still use the saved display order and search; the
+separate projects route and category lesson-card navigation remain available.
+
+This changes two frontend files only. Final standard build checks passed (Rust 6,
+frontend 21, Clippy, GPS check and Vite). Production browser verified four category
+cards, no project cards or redundant section title/link, guide above cards, and
+the working guide link. At 390px there was no horizontal overflow and the guide
+button used a full row. Screenshot:
+`%LOCALAPPDATA%\GPS-Builds\shield-library-focus-20261005\production-library.png`.
+
+Deployment kept schema 1–12, GPS runtime, nginx and Shield environment unchanged.
+Before-release backup `shield-20261005T082024Z.tar.gz` was restored and verified on
+etcom-hub (all counts, image/file hashes and ordering metadata). No content edits,
+schema changes or financial actions were performed.
