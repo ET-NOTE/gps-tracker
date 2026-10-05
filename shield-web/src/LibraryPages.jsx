@@ -163,12 +163,6 @@ export function Library({ basic = false }) {
       <PostStatus />
       {!basic && <GuideBanner />}
       <section className="library-section">
-        {!basic && <div className="section-heading">
-          <h2>
-            기본 예제 <span className="badge">무료</span>
-          </h2>
-          <Link to="/examples/all">기본 예제 전체 보기 →</Link>
-        </div>}
         <nav className="category-grid" aria-label="기본 예제 카테고리">
           {shown.map((category) => (
             <CategoryCard key={category.name} category={category}
