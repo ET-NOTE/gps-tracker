@@ -97,6 +97,7 @@ a.catalog-card:hover { border-color:var(--primary); box-shadow:0 7px 22px #00899
 .catalog-filters .tabs button { font-size:12px; }
 .catalog-filters .search { width:260px; margin:0; flex-shrink:0; }
 .slim-guide { margin:35px 0 0; padding:25px 30px; }
+.library-page>.slim-guide { margin:0 0 30px; }
 .slim-guide h2 { font-size:20px; }
 .project-intro { padding:28px; display:grid; grid-template-columns:1fr 1.15fr; gap:40px; align-items:center; }
 .project-intro>.board-art { width:100%; }

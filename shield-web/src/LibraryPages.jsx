@@ -136,8 +136,7 @@ function GuideBanner() {
 }
 export function Library({ basic = false }) {
   const { posts, settings, categoryThumbnails, libraryOrder, loading, error } = usePosts(),
-    examples = featuredLessons(posts, settings.guide_slug),
-    projects = posts.filter((p) => kindOf(p) === "project");
+    examples = featuredLessons(posts, settings.guide_slug);
   const [params, setParams] = useSearchParams(),
     search = params.get("q") || "",
     categories = categoryGroups(examples, libraryOrder.categories),
@@ -162,6 +161,7 @@ export function Library({ basic = false }) {
         </Intro>
       </div>
       <PostStatus />
+      {!basic && <GuideBanner />}
       <section className="library-section">
         {!basic && <div className="section-heading">
           <h2>
@@ -184,24 +184,6 @@ export function Library({ basic = false }) {
           </div>
         )}
       </section>
-      {!basic && <section className="library-section">
-        <div className="section-heading">
-          <h2>
-            응용 프로젝트 <span className="badge warm">유료 · 준비 중</span>
-          </h2>
-          <Link to="/projects">전체 보기 →</Link>
-        </div>
-        {projects.length ? (
-          <div className="catalog-grid">
-            {projects.slice(0, 3).map((p) => (
-              <ExampleCard key={p.id} post={p} />
-            ))}
-          </div>
-        ) : !loading && !error ? (
-          <PlannedProjects />
-        ) : null}
-      </section>}
-      {!basic && <GuideBanner />}
     </main>
   );
 }
