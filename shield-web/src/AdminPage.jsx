@@ -14,9 +14,11 @@ import { usePosts } from "./posts";
 import { Intro, date, number } from "./components";
 import { states } from "./UsimPage";
 import PostEditor from "./PostEditor";
+import CategoryAdmin from "./CategoryAdmin";
 const tabs = {
   overview: "운영 현황",
   posts: "예제·가이드",
+  categories: "카테고리",
   faqs: "FAQ 관리",
   users: "사용자",
   devices: "장치·USIM",
@@ -108,7 +110,7 @@ export default function AdminPage() {
     setError("");
   }, [tab]);
   useEffect(() => {
-    if (user?.role !== "admin" || tab === "faqs") return;
+    if (user?.role !== "admin" || ["faqs", "categories"].includes(tab)) return;
     const a = new AbortController();
     setData(null);
     setError("");
@@ -200,7 +202,8 @@ export default function AdminPage() {
       {tab === "faqs" && (
         <FaqAdmin requestLeave={protection.leave} onStatus={setFaqStatus} />
       )}
-      <div className="admin-toolbar" hidden={tab === "faqs"}>
+      {tab === "categories" && <CategoryAdmin requestLeave={protection.leave} onStatus={setFaqStatus} />}
+      <div className="admin-toolbar" hidden={["faqs", "categories"].includes(tab)}>
         <button
           className="outline"
           onClick={() => {
@@ -277,7 +280,7 @@ export default function AdminPage() {
           <button onClick={() => setSecret(null)}>닫기</button>
         </section>
       )}
-      {tab !== "faqs" && data === null && !error && (
+      {!["faqs", "categories"].includes(tab) && data === null && !error && (
         <p role="status" className="notice">
           불러오는 중…
         </p>
@@ -879,7 +882,7 @@ export default function AdminPage() {
           <pre className="audit-detail">{JSON.stringify(details, null, 2)}</pre>
         </section>
       )}
-      {data !== null && !["posts", "overview", "faqs"].includes(tab) && (
+      {data !== null && !["posts", "overview", "faqs", "categories"].includes(tab) && (
         <div className="pagination">
           <span>{rows.length}건 표시</span>
           <button disabled={!before} onClick={() => setBefore(null)}>

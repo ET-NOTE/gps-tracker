@@ -282,3 +282,27 @@ Backup/restore verifies Drive metadata and any retained bytes. Do not start a
 schema-9 binary after migration; forward-fix or deliberately restore after assessing
 new data. `test-drive-files.py` runs only against shield_test and never contacts
 Google, payment providers, or production.
+
+### Category and lesson thumbnails (schema 11)
+
+Administrators can set a category thumbnail in **카테고리** and a lesson/project
+thumbnail in the post editor. Both accept file selection, clipboard images and
+drag/drop through the existing normalized image pipeline. Images fit inside white
+cards without cropping; removal restores the default illustration/icon. An alt
+description is required. Unsaved previews do not change public cards.
+
+Post thumbnails use the existing post revision and image links. Category settings
+have their own revision conflict check and audit entry. Public category images are
+accessible only while that category has a published example. Draft-only images
+remain administrator-only. Removed images are retained for history. Backups verify
+category metadata and all image bytes on restore.
+
+Lesson line controls allow **순서 번호** or **! 안내**. A line prefixed with `! `
+renders as an unnumbered notice; later numbered lines continue without counting
+the notice. Existing lesson text is not rewritten.
+
+Use `deploy-app.py --thumbnail-upgrade` for the 10 → 11 migration after a fresh
+offsite-restored backup. This adds an empty category table; existing posts and
+files stay intact. Do not start a schema-10 binary against schema 11.
+`test-thumbnails.py` exercises authorization, publication, removal, conflicts and
+shared image references exclusively in `shield_test`.

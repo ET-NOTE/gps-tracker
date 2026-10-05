@@ -5,6 +5,7 @@ Default mode requires unchanged schema/configuration.
 --portal-upgrade is the historical schema 7 -> 8 attachment step.
 --commerce-upgrade permits 8 -> 9, Shield payment CSP and private callback logs.
 --drive-upgrade permits 9 -> 10, attachment destinations only.
+--thumbnail-upgrade permits 10 -> 11, category thumbnails only.
 Never changes credentials, database settings or GPS code. Requires a fresh backup.
 """
 import argparse
@@ -39,6 +40,7 @@ def main():
     p.add_argument('--portal-upgrade',action='store_true')
     p.add_argument('--commerce-upgrade',action='store_true')
     p.add_argument('--drive-upgrade',action='store_true')
+    p.add_argument('--thumbnail-upgrade',action='store_true')
     args=p.parse_args();assert os.geteuid()==0;os.umask(0o077)
     for name in [args.release,args.previous]:assert re.fullmatch(r'shield-\d{8}-\d{6}-[a-f0-9]{7}',name)
     assert re.fullmatch(r'[a-f0-9]{64}',args.sha256)
@@ -47,12 +49,13 @@ def main():
     backup=Path('/var/backups/shield/latest.tar.gz').resolve()
     assert digest(backup)==args.backup_sha256 and time.time()-backup.stat().st_mtime<3600
     old_schema=schema()
-    assert sum([args.portal_upgrade,args.commerce_upgrade,args.drive_upgrade])<=1
-    if args.drive_upgrade:assert old_schema==list(range(1,10))
+    assert sum([args.portal_upgrade,args.commerce_upgrade,args.drive_upgrade,args.thumbnail_upgrade])<=1
+    if args.thumbnail_upgrade:assert old_schema==list(range(1,11))
+    elif args.drive_upgrade:assert old_schema==list(range(1,10))
     elif args.commerce_upgrade:assert old_schema==list(range(1,9))
     elif args.portal_upgrade:assert old_schema==list(range(1,8))
-    else:assert old_schema in tuple(list(range(1,n)) for n in (8,9,10,11))
-    target_schema=old_schema+([10] if args.drive_upgrade else [9] if args.commerce_upgrade else [8] if args.portal_upgrade else [])
+    else:assert old_schema in tuple(list(range(1,n)) for n in (8,9,10,11,12))
+    target_schema=old_schema+([11] if args.thumbnail_upgrade else [10] if args.drive_upgrade else [9] if args.commerce_upgrade else [8] if args.portal_upgrade else [])
     archive=Path('/home/mmm/shield-deploy')/args.release/(args.release+'.tar.gz')
     assert digest(archive)==args.sha256
     target=previous.parent/args.release;assert not target.exists()
@@ -125,7 +128,7 @@ def main():
         assert baseline()==expected, 'Unrelated runtime configuration changed'
         if args.portal_upgrade or args.commerce_upgrade:
             run('systemctl','reload','nginx')
-        if args.portal_upgrade or args.commerce_upgrade or args.drive_upgrade:
+        if args.portal_upgrade or args.commerce_upgrade or args.drive_upgrade or args.thumbnail_upgrade:
             # read_text normalizes older Windows-origin release line endings.
             Path('/usr/local/sbin/shield-backup').write_text((target/'ops/backup.py').read_text())
             os.chmod('/usr/local/sbin/shield-backup',0o700)

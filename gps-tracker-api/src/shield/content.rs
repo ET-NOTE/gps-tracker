@@ -21,6 +21,8 @@ pub struct Post {
     attachments: Vec<Attachment>,
     #[serde(default)]
     images: Vec<PostImage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    thumbnail: Option<images::Thumbnail>,
     #[serde(default)]
     code: String,
 }
@@ -84,6 +86,9 @@ fn validate(p: &Post) -> Result<()> {
         })
         || (p.kind == "project" && (!p.code.is_empty() || !p.attachments.is_empty()))
         || p.images.len() > 20
+        || p.thumbnail
+            .as_ref()
+            .is_some_and(|t| !images::valid_thumbnail(t))
         || p.images.iter().any(|i| {
             !images::valid_id(&i.id)
                 || i.after_step > p.steps.len()
@@ -139,9 +144,12 @@ pub async fn save(
             "첨부파일이 만료되었거나 없습니다. 파일을 다시 추가해 주세요.",
         ));
     }
-    let image_ids: Vec<String> = v.content.images.iter().map(|i| i.id.clone()).collect();
+    let mut image_ids: Vec<String> = v.content.images.iter().map(|i| i.id.clone()).collect();
+    if let Some(t) = &v.content.thumbnail {
+        image_ids.push(t.id.clone());
+    }
     let found: Vec<String> =
-        sqlx::query_scalar("SELECT id FROM post_images WHERE id=ANY($1) FOR KEY SHARE")
+        sqlx::query_scalar("SELECT id FROM post_images WHERE id=ANY($1) ORDER BY id FOR KEY SHARE")
             .bind(&image_ids)
             .fetch_all(&mut *tx)
             .await?;

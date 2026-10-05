@@ -20,7 +20,7 @@ const categoryDetails = new Map([
   ["기타", ["book", "쉴드를 활용하는 다양한 예제를 확인해 보세요."]],
 ]);
 const categoryHref = (category) => "/examples/all?" + new URLSearchParams({ category });
-function categoryGroups(examples) {
+export function categoryGroups(examples) {
   const counts = new Map();
   for (const post of examples) {
     const category = categoryOf(post);
@@ -33,8 +33,21 @@ function categoryGroups(examples) {
     description: categoryDetails.get(name)?.[1] || `${name} 관련 예제를 모았습니다. 필요한 예제를 선택해 시작하세요.`,
   }));
 }
-export function ExampleCard({ post }) {
+export function CategoryCard({ category, thumbnail, preview = false }) {
+  const Tag = preview ? "article" : Link;
+  return <Tag className="category-card" {...(!preview && { to: categoryHref(category.name) })}>
+    <div className={"category-card-top " + (thumbnail ? "has-thumbnail" : "")}>
+      {thumbnail ? <img className="category-cover" src={`/api/post-images/${thumbnail.id}`} alt={thumbnail.alt} loading="lazy" />
+        : <span className="category-icon"><Icon name={category.icon} size={36} /></span>}
+      <span className="badge">{category.count}개 예제</span>
+    </div>
+    <h3>{category.name}</h3>
+    <div className="category-card-copy"><p>{category.description}</p><Icon name="arrow" size={20} /></div>
+  </Tag>;
+}
+export function ExampleCard({ post, preview = false }) {
   const project = kindOf(post) === "project";
+  const Tag = preview ? "article" : Link;
   const icon =
     post.category === "GPS"
       ? "pin"
@@ -44,12 +57,12 @@ export function ExampleCard({ post }) {
           ? "signal"
           : "code";
   return (
-    <Link
+    <Tag
       className={`catalog-card ${project ? "project-card" : ""}`}
-      to={"/examples/" + post.id}
+      {...(!preview && { to: "/examples/" + post.id })}
     >
-      <div className="catalog-art">
-        {project ? (
+      <div className={"catalog-art " + (post.thumbnail ? "has-thumbnail" : "")}>
+        {post.thumbnail ? <img className="catalog-cover" src={`/api/post-images/${post.thumbnail.id}`} alt={post.thumbnail.alt} loading="lazy" /> : project ? (
           <Board variant={post.variant} small />
         ) : (
           <Icon name={icon} size={40} />
@@ -70,7 +83,7 @@ export function ExampleCard({ post }) {
           <Icon name="arrow" size={15} />
         </strong>
       </div>
-    </Link>
+    </Tag>
   );
 }
 function PlannedProjects() {
@@ -121,7 +134,7 @@ function GuideBanner() {
   );
 }
 export function Library() {
-  const { posts, settings, loading, error } = usePosts(),
+  const { posts, settings, categoryThumbnails, loading, error } = usePosts(),
     examples = featuredLessons(posts, settings.guide_slug),
     projects = posts.filter((p) => kindOf(p) === "project");
   const [params, setParams] = useSearchParams(),
@@ -156,14 +169,8 @@ export function Library() {
         </div>
         <nav className="category-grid" aria-label="기본 예제 카테고리">
           {shown.map((category) => (
-            <Link className="category-card" key={category.name} to={categoryHref(category.name)}>
-              <div className="category-card-top">
-                <span className="category-icon"><Icon name={category.icon} size={36} /></span>
-                <span className="badge">{category.count}개 예제</span>
-              </div>
-              <h3>{category.name}</h3>
-              <div className="category-card-copy"><p>{category.description}</p><Icon name="arrow" size={20} /></div>
-            </Link>
+            <CategoryCard key={category.name} category={category}
+              thumbnail={categoryThumbnails.find(t => t.category === category.name)?.thumbnail} />
           ))}
         </nav>
         {!loading && !error && !examples.length && (

@@ -39,3 +39,20 @@ export function lessonLinks(text) {
   if (start < text.length) parts.push({ text: text.slice(start) });
   return parts;
 }
+
+// An explicit "! " prefix marks a non-sequential note without changing stored step structure.
+export function lessonLines(text) {
+  let number = 0;
+  return text.split("\n").map((line, index) => {
+    const value = line.trim(), notice = /^!\s+/.test(value);
+    const content = notice ? value.replace(/^!\s+/, "") : value;
+    return { index, text: content, notice, number: content && !notice ? ++number : null };
+  }).filter(line => line.text);
+}
+export function setLessonLineNotice(text, index, notice) {
+  return text.split("\n").map((line, i) => {
+    if (i !== index || !line.trim()) return line;
+    const content = line.trim().replace(/^!\s+/, "");
+    return notice ? `! ${content}` : content;
+  }).join("\n");
+}

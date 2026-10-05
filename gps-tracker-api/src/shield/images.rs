@@ -7,6 +7,16 @@ const UPLOAD_LIMIT: usize = 2 * 1024 * 1024;
 const STORED_LIMIT: usize = 1536 * 1024;
 const STORAGE_LIMIT: i64 = 100 * 1024 * 1024;
 
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Thumbnail {
+    pub id: String,
+    pub alt: String,
+}
+pub fn valid_thumbnail(t: &Thumbnail) -> bool {
+    valid_id(&t.id) && !t.alt.trim().is_empty() && t.alt.chars().count() <= 200
+}
+
 fn unavailable() -> Error {
     Error(StatusCode::NOT_FOUND, "사진을 찾을 수 없습니다.".into())
 }
@@ -90,7 +100,7 @@ pub async fn upload(State(app): State<App>, request: Request) -> Result<Json<Val
         .await?;
     // Only abandoned uploads expire. Anything ever saved in a post is retained
     // for the audit/history, even after it is removed from the current revision.
-    sqlx::query("DELETE FROM post_images WHERE attached_at IS NULL AND created_at<now()-interval '1 day' AND NOT EXISTS(SELECT 1 FROM post_image_links WHERE image_id=post_images.id)").execute(&mut *tx).await?;
+    sqlx::query("DELETE FROM post_images WHERE attached_at IS NULL AND created_at<now()-interval '1 day' AND NOT EXISTS(SELECT 1 FROM post_image_links WHERE image_id=post_images.id) AND NOT EXISTS(SELECT 1 FROM category_thumbnails WHERE image_id=post_images.id)").execute(&mut *tx).await?;
     let existing: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM post_images WHERE id=$1)")
         .bind(&id)
         .fetch_one(&mut *tx)
@@ -146,7 +156,7 @@ pub async fn get_image(
     if !valid_id(&id) {
         return Err(unavailable());
     }
-    let published: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM post_image_links l JOIN content_posts p ON p.slug=l.post_slug WHERE l.image_id=$1 AND p.published)")
+    let published: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM post_image_links l JOIN content_posts p ON p.slug=l.post_slug WHERE l.image_id=$1 AND p.published) OR EXISTS(SELECT 1 FROM category_thumbnails c JOIN content_posts p ON coalesce(nullif(btrim(p.content->>'category'),''),'기타')=c.category WHERE c.image_id=$1 AND p.published AND coalesce(p.content->>'kind','example')='example')")
         .bind(&id).fetch_one(&app.db).await?;
     if !published && admin::require(&app, &h).await.is_err() {
         return Err(unavailable());

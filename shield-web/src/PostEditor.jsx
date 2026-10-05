@@ -2,6 +2,9 @@ import AttachmentEditor from "./AttachmentEditor";
 import React, { useEffect, useRef, useState } from "react";
 import PostBody, { imageUrl } from "./PostBody";
 import { uploadPostImage, moveStep, removeStep } from "./postImages";
+import ThumbnailPicker from "./ThumbnailPicker";
+import { ExampleCard } from "./LibraryPages";
+import { lessonLines, setLessonLineNotice } from "./lessonContent";
 
 export default function PostEditor({
   edit,
@@ -17,14 +20,15 @@ export default function PostEditor({
     picker = useRef(null),
     task = useRef(null);
   const [fileBusy, setFileBusy] = useState(false);
+  const [thumbnailBusy, setThumbnailBusy] = useState(false);
   const [position, setPosition] = useState(edit.content.steps.length);
   const [uploading, setUploading] = useState(false),
     [progress, setProgress] = useState("");
   const [error, setError] = useState(""),
     [preview, setPreview] = useState(true);
   useEffect(() => {
-    onUploadBusy(uploading || fileBusy);
-  }, [uploading, fileBusy, onUploadBusy]);
+    onUploadBusy(uploading || fileBusy || thumbnailBusy);
+  }, [uploading, fileBusy, thumbnailBusy, onUploadBusy]);
   useEffect(() => () => onUploadBusy(false), [onUploadBusy]);
   const content = edit.content,
     photos = content.images || [];
@@ -43,7 +47,7 @@ export default function PostEditor({
     );
   }
   async function addPhotos(files, at = position) {
-    if (task.current || busy || fileBusy) return;
+    if (task.current || busy || fileBusy || thumbnailBusy) return;
     const items = Array.from(files);
     if (!items.length) return;
     if (items.length + photos.length > 20) {
@@ -208,7 +212,7 @@ export default function PostEditor({
           type="submit"
           form="post-edit-form"
           className="button"
-          disabled={busy || uploading || fileBusy}
+          disabled={busy || uploading || fileBusy || thumbnailBusy}
         >
           저장하기
         </button>
@@ -237,10 +241,10 @@ export default function PostEditor({
             id="post-edit-form"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!uploading && !fileBusy && !busy) onSave();
+              if (!uploading && !fileBusy && !thumbnailBusy && !busy) onSave();
             }}
           >
-            <fieldset disabled={busy || uploading || fileBusy}>
+            <fieldset disabled={busy || uploading || fileBusy || thumbnailBusy}>
               <label>
                 콘텐츠 종류
                 <select
@@ -317,7 +321,7 @@ export default function PostEditor({
                   />
                 </label>
                 <label>
-                  목록 대표 그림
+                  썸네일 없을 때 기본 그림
                   <select
                     value={content.variant}
                     onChange={(e) => change("variant", e.target.value)}
@@ -328,6 +332,8 @@ export default function PostEditor({
                   </select>
                 </label>
               </div>
+              <ThumbnailPicker label="강의 썸네일" value={content.thumbnail} onChange={value => change("thumbnail", value)}
+                onBusy={setThumbnailBusy} disabled={busy || uploading || fileBusy} />
               <div
                 className="post-compose"
                 onPaste={paste}
@@ -456,6 +462,17 @@ export default function PostEditor({
                         }
                       />
                     </label>
+                    <details className="line-options">
+                      <summary>문장별 표시 (번호 / ! 안내)</summary>
+                      <p className="muted">안내로 지정한 문장은 순서 번호에 포함되지 않습니다. 내용 앞에 ‘! ’를 입력해도 됩니다.</p>
+                      {lessonLines(step).map(line => <label key={line.index}>
+                        <span>{line.text.slice(0, 60)}{line.text.length > 60 ? "…" : ""}</span>
+                        <select aria-label={`${i + 1}단계 ${line.index + 1}번째 줄 표시`} value={line.notice ? "notice" : "number"}
+                          onChange={e => change("steps", content.steps.map((s, j) => j === i ? setLessonLineNotice(s, line.index, e.target.value === "notice") : s))}>
+                          <option value="number">순서 번호</option><option value="notice">! 안내</option>
+                        </select>
+                      </label>)}
+                    </details>
                     {imagesAt(i + 1)}
                     <button
                       className="outline"
@@ -520,7 +537,7 @@ export default function PostEditor({
             </fieldset>
           </form>
           <button type="button" disabled={busy} onClick={onClose}>
-            {uploading || fileBusy ? "업로드 취소하고 편집 닫기" : "편집 닫기"}
+            {uploading || fileBusy || thumbnailBusy ? "업로드 취소하고 편집 닫기" : "편집 닫기"}
           </button>
         </div>
         {preview && (
@@ -529,6 +546,10 @@ export default function PostEditor({
             aria-label="게시물 미리보기"
           >
             <span className="badge">사용자 화면 · 저장 전 미리보기</span>
+            <details className="thumbnail-card-preview" open={!!content.thumbnail}>
+              <summary>목록 카드 미리보기</summary>
+              <ExampleCard post={content} preview />
+            </details>
             <h2>{content.title || "제목"}</h2>
             <p>{content.description}</p>
             <PostBody post={content} />

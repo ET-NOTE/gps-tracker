@@ -9,16 +9,19 @@ import { request } from "./api";
 const Posts = createContext(null);
 export function PostsProvider({ children }) {
   const [posts, setPosts] = useState([]),
+    [categoryThumbnails, setCategoryThumbnails] = useState([]),
     [settings, setSettings] = useState({ guide_slug: "start" }),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
   const reload = useCallback(async () => {
     try {
-      const [next, config] = await Promise.all([
+      const [next, config, thumbnails] = await Promise.all([
         request("/posts"),
         request("/site-settings"),
+        request("/category-thumbnails"),
       ]);
       setPosts(next);
+      setCategoryThumbnails(thumbnails);
       setSettings(config);
       setError("");
     } catch (e) {
@@ -31,7 +34,7 @@ export function PostsProvider({ children }) {
     reload();
   }, [reload]);
   return (
-    <Posts.Provider value={{ posts, settings, error, loading, reload }}>
+    <Posts.Provider value={{ posts, settings, categoryThumbnails, error, loading, reload }}>
       {children}
     </Posts.Provider>
   );

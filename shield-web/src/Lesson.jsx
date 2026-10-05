@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Board, Icon } from "./components";
-import { lessonLinks } from "./lessonContent";
+import { lessonLinks, lessonLines } from "./lessonContent";
 function LessonText({ text }) {
   return lessonLinks(text).map((part, i) => !part.href ? part.text :
     part.href.startsWith("/") ? <Link key={i} to={part.href}>{part.text}</Link> :
@@ -217,13 +217,11 @@ export default function Lesson({ post, preview = false }) {
                 : titles[active]}
             </h3>
             <ol>
-              {(post.steps[active] || "단계 내용을 입력해 주세요.")
-                .split("\n")
-                .filter(Boolean)
-                .map((line, i) => (
-                  <li key={i}>
-                    <span>{i + 1}</span>
-                    <p><LessonText text={line} /></p>
+              {lessonLines(post.steps[active] || "단계 내용을 입력해 주세요.")
+                .map((line) => (
+                  <li key={line.index} className={line.notice ? "lesson-notice" : ""}>
+                    <span aria-label={line.notice ? "안내" : undefined}>{line.notice ? "!" : line.number}</span>
+                    <p><LessonText text={line.text} /></p>
                   </li>
                 ))}
             </ol>
