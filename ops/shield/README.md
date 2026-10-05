@@ -306,3 +306,20 @@ offsite-restored backup. This adds an empty category table; existing posts and
 files stay intact. Do not start a schema-10 binary against schema 11.
 `test-thumbnails.py` exercises authorization, publication, removal, conflicts and
 shared image references exclusively in `shield_test`.
+
+### Library display order (schema 12)
+
+관리자 → 노출 순서 controls category positions and the lessons inside each category.
+Arrow buttons and direct position selection support keyboard and mobile editing.
+Changes become public only after saving; unsaved navigation and stale revisions
+are protected. The editor shows the same public examples as the library, excluding
+untouched legacy redirects. Saved order overrides guide/attachment priority. New
+categories/lessons append after saved entries; hidden/renamed items are filtered
+on reads without changing authored posts. Public metadata contains no draft IDs.
+
+`/examples/all` now displays category cards. `/examples/all?category=...` shows
+the selected category's lesson cards. Existing lesson URLs stay valid.
+
+Use `deploy-app.py --order-upgrade` for 11 → 12. The initial empty configuration
+preserves the previous order until an administrator saves. Backup restore verifies
+order content and revision. This release never updates post content/revisions.

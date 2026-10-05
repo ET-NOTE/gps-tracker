@@ -6,6 +6,7 @@ mod faq;
 mod files;
 mod images;
 mod thumbnails;
+mod library_order;
 mod ingest;
 mod nce;
 mod payments;
@@ -139,6 +140,7 @@ async fn migrate(db: &PgPool) -> anyhow::Result<()> {
         ("Shield wallet and FAQs", include_str!("commerce.sql")),
         ("Shield Google Drive attachments", include_str!("drive-files.sql")),
         ("Shield category thumbnails", include_str!("thumbnails.sql")),
+        ("Shield library display order", include_str!("library-order.sql")),
     ];
     let migrations = sources
         .into_iter()
@@ -339,6 +341,8 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/post-images/:id",get(images::get_image))
         .route("/api/category-thumbnails",get(thumbnails::list))
         .route("/api/admin/category-thumbnails",get(thumbnails::admin_list).post(thumbnails::save))
+        .route("/api/library-order",get(library_order::list))
+        .route("/api/admin/library-order",get(library_order::admin_list).post(library_order::save))
         .route("/api/admin/post-files",post(files::upload))
         .route("/api/admin/post-files/drive",post(files::register_drive))
         .route("/api/post-files/:id",get(files::download))

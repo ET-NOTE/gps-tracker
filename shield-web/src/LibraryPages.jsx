@@ -5,8 +5,9 @@ import { Board, Icon, Intro } from "./components";
 import { usePosts, PostStatus } from "./posts";
 import Lesson from "./Lesson";
 import { lessonReplacement, visibleLessons, featuredLessons } from "./lessonContent";
+import { categoryName, sortByOrder, sortLessons } from "./libraryOrder";
 const kindOf = (p) => p.kind || "example";
-const categoryOf = (p) => p.category?.trim() || "기타";
+const categoryOf = categoryName;
 const categoryDetails = new Map([
   ["시작하기", ["code", "쉴드 연결과 개발 환경 설정부터 첫 데이터 전송까지 시작해 보세요."]],
   ["센서·데이터활용", ["data", "센서 측정, GPS 위치 확인과 수집한 데이터 활용을 함께 배워보세요."]],
@@ -20,7 +21,7 @@ const categoryDetails = new Map([
   ["기타", ["book", "쉴드를 활용하는 다양한 예제를 확인해 보세요."]],
 ]);
 const categoryHref = (category) => "/examples/all?" + new URLSearchParams({ category });
-export function categoryGroups(examples) {
+export function categoryGroups(examples, order = []) {
   const counts = new Map();
   for (const post of examples) {
     const category = categoryOf(post);
@@ -28,7 +29,7 @@ export function categoryGroups(examples) {
   }
   const names = [...categoryDetails.keys()].filter((name) => counts.has(name));
   names.push(...[...counts.keys()].filter((name) => !categoryDetails.has(name)).sort((a, b) => a.localeCompare(b, "ko")));
-  return names.map((name) => ({ name, count: counts.get(name),
+  return sortByOrder(names, order, name => name).map((name) => ({ name, count: counts.get(name),
     icon: categoryDetails.get(name)?.[0] || "book",
     description: categoryDetails.get(name)?.[1] || `${name} 관련 예제를 모았습니다. 필요한 예제를 선택해 시작하세요.`,
   }));
@@ -133,20 +134,21 @@ function GuideBanner() {
     </Link>
   );
 }
-export function Library() {
-  const { posts, settings, categoryThumbnails, loading, error } = usePosts(),
+export function Library({ basic = false }) {
+  const { posts, settings, categoryThumbnails, libraryOrder, loading, error } = usePosts(),
     examples = featuredLessons(posts, settings.guide_slug),
     projects = posts.filter((p) => kindOf(p) === "project");
   const [params, setParams] = useSearchParams(),
     search = params.get("q") || "",
-    categories = categoryGroups(examples),
+    categories = categoryGroups(examples, libraryOrder.categories),
     shown = categories.filter((c) => (c.name + " " + c.description).toLowerCase().includes(search.trim().toLowerCase()));
   return (
     <main className="container library-page">
       <div className="category-heading">
         <Intro
-          title="예제 라이브러리"
-          description="카테고리를 선택하고, 필요한 예제부터 시작하세요."
+          crumb={basic ? <Link to="/examples">예제 라이브러리</Link> : undefined}
+          title={basic ? "기본 예제" : "예제 라이브러리"}
+          description={basic ? "무료 예제를 한곳에서 바로 시작하세요." : "카테고리를 선택하고, 필요한 예제부터 시작하세요."}
         >
           <label className="search">
             <Icon name="search" size={20} />
@@ -161,12 +163,12 @@ export function Library() {
       </div>
       <PostStatus />
       <section className="library-section">
-        <div className="section-heading">
+        {!basic && <div className="section-heading">
           <h2>
             기본 예제 <span className="badge">무료</span>
           </h2>
-          <Link to="/examples/all">모든 예제 보기 →</Link>
-        </div>
+          <Link to="/examples/all">기본 예제 전체 보기 →</Link>
+        </div>}
         <nav className="category-grid" aria-label="기본 예제 카테고리">
           {shown.map((category) => (
             <CategoryCard key={category.name} category={category}
@@ -182,7 +184,7 @@ export function Library() {
           </div>
         )}
       </section>
-      <section className="library-section">
+      {!basic && <section className="library-section">
         <div className="section-heading">
           <h2>
             응용 프로젝트 <span className="badge warm">유료 · 준비 중</span>
@@ -198,23 +200,24 @@ export function Library() {
         ) : !loading && !error ? (
           <PlannedProjects />
         ) : null}
-      </section>
-      <GuideBanner />
+      </section>}
+      {!basic && <GuideBanner />}
     </main>
   );
 }
 export function Catalog({ kind }) {
-  const { posts, settings, loading, error } = usePosts(),
+  const { posts, settings, libraryOrder, loading, error } = usePosts(),
     [params, setParams] = useSearchParams(),
     category = params.get("category") || "",
     search = params.get("q") || "";
-  const available = kind === "example" ? featuredLessons(posts, settings.guide_slug)
+  const available = kind === "example" ? sortLessons(featuredLessons(posts, settings.guide_slug), libraryOrder)
       : visibleLessons(posts).filter((p) => kindOf(p) === kind),
-    categories = ["", ...categoryGroups(available).map((c) => c.name)];
+    categories = ["", ...categoryGroups(available, kind === "example" ? libraryOrder.categories : []).map((c) => c.name)];
   function filter(key, value, replace = false) {
     setParams((previous) => {
       const next = new URLSearchParams(previous);
       if (value) next.set(key, value); else next.delete(key);
+      if (key === "category") next.delete("q");
       return next;
     }, { replace });
   }
@@ -225,10 +228,11 @@ export function Catalog({ kind }) {
         .toLowerCase()
         .includes(search.trim().toLowerCase()),
   );
+  if (kind === "example" && !category) return <Library basic />;
   return (
     <main className="container catalog-page">
       <Intro
-        crumb={<Link to="/examples">예제 라이브러리</Link>}
+        crumb={<Link to={kind === "example" ? "/examples/all" : "/examples"}>{kind === "example" ? "기본 예제" : "예제 라이브러리"}</Link>}
         title={kind === "project" ? "응용 프로젝트" : category ? `${category} 예제` : "전체 기본 예제"}
         description={
           kind === "project"
@@ -246,7 +250,7 @@ export function Catalog({ kind }) {
                 className={category === c ? "active" : ""}
                 onClick={() => filter("category", c)}
               >
-                {c || "전체"}
+                {c || (kind === "example" ? "카테고리 전체" : "전체")}
               </button>
             ))}
           </div>
@@ -280,7 +284,7 @@ export function Catalog({ kind }) {
           <Link className="text-link" to={kind === "project" ? "/projects" : "/examples/all"}>필터 초기화 →</Link>
         </div>
       ) : null}
-      <Link className="text-link" to="/examples">
+      <Link className="text-link" to={kind === "example" ? "/examples/all" : "/examples"}>
         ← 예제 카테고리 보기
       </Link>
     </main>

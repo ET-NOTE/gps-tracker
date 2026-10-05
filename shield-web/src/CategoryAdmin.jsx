@@ -6,13 +6,13 @@ import { CategoryCard, categoryGroups } from "./LibraryPages";
 import ThumbnailPicker from "./ThumbnailPicker";
 
 export default function CategoryAdmin({ requestLeave, onStatus }) {
-  const { posts, settings, reload } = usePosts();
+  const { posts, settings, libraryOrder, reload } = usePosts();
   const [rows, setRows] = useState([]), [edit, setEdit] = useState(null), [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [uploading, setUploading] = useState(false);
   const [error, setError] = useState(""), [notice, setNotice] = useState("");
   const initial = useRef(""), selected = useRef("");
   const dirty = !!edit && JSON.stringify(edit) !== initial.current;
-  const groups = categoryGroups(featuredLessons(posts, settings.guide_slug));
+  const groups = categoryGroups(featuredLessons(posts, settings.guide_slug), libraryOrder.categories);
   for (const row of rows) if (!groups.some(g => g.name === row.category)) groups.push({ name: row.category, count: 0, icon: "book", description: "현재 공개된 예제가 없습니다." });
   useEffect(() => { onStatus({ dirty: dirty || uploading, busy }); }, [dirty, uploading, busy, onStatus]);
   useEffect(() => () => onStatus({ dirty: false, busy: false }), [onStatus]);

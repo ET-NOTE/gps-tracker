@@ -349,3 +349,18 @@ a.catalog-card:hover { border-color:var(--primary); box-shadow:0 7px 22px #00899
   .category-grid { grid-template-columns:minmax(0,1fr); gap:14px; }
   .category-card h3 { margin-top:16px; }
 }
+.order-admin-grid{display:grid;grid-template-columns:minmax(250px,1fr) minmax(0,1.8fr);gap:24px;align-items:start}
+.library-order-admin .section-heading{align-items:start}
+.library-order-admin .section-heading>div:first-child{min-width:0;flex:1}
+.library-order-admin .section-heading .editor-actions{flex-shrink:0}
+.order-list{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:12px}
+.order-list>li{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:8px;background:white;min-width:0}
+.order-list>li.selected{border-color:var(--primary);background:var(--primary-soft)}
+.order-category{flex:1 1 130px;text-align:left;background:transparent;padding:4px;color:var(--ink);overflow-wrap:anywhere}
+.order-category small{display:block;color:var(--muted);font-weight:400;margin-top:4px}
+.order-controls{display:flex;align-items:center;gap:6px;margin-left:auto}
+.order-controls select{width:94px;min-width:0;padding:9px 24px 9px 8px}
+.order-controls button{padding:8px 12px;min-width:36px;min-height:40px}
+.order-lesson{flex:1 1 240px;min-width:0;display:flex;align-items:center;gap:12px;overflow-wrap:anywhere}
+.order-lesson img{width:64px;height:48px;object-fit:contain;background:white;flex-shrink:0}
+@media(max-width:850px){.order-admin-grid{grid-template-columns:1fr}.library-order-admin .section-heading{flex-direction:column;align-items:stretch}.library-order-admin .editor-actions{flex-wrap:wrap}}
