@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Approved launch checks: only disposable Shield fixtures; never SIM billing.
 
-Run as root on the VPS. `cleanup` deletes only the recorded synthetic fixture.
+Run as root on the VPS. `cleanup` removes recorded synthetic device data and
+revokes fixture access, retaining disabled actors required by immutable audits.
 Secrets stay in a mode-0600 file, outside the release and source repositories.
 """
 import argparse
@@ -162,14 +163,20 @@ def cleanup():
     for email in (f['email'],f['other_email']):assert re.fullmatch(r'launch-(smoke|other)-[0-9a-f]{12}@example\.test',email)
     ids=','.join("'"+s+"'" for s in (f['email'],f['other_email']))
     assert pg(f'SELECT count(*) FROM users WHERE email IN ({ids});')=='2'
+    assert pg(f"SELECT count(*) FROM devices WHERE owner_id IN (SELECT id FROM users WHERE email IN ({ids})) AND (id<>{int(f['device_id'])} OR sim_iccid IS NOT NULL);")=='0'
+    for table in ('sim_requests','point_orders','credit_entries'):
+        assert pg(f'SELECT count(*) FROM {table} WHERE user_id IN (SELECT id FROM users WHERE email IN ({ids}));')=='0'
     pg(f'''BEGIN;
 DELETE FROM daily_stats WHERE device_id IN (SELECT id FROM devices WHERE owner_id IN (SELECT id FROM users WHERE email IN ({ids})));
+DELETE FROM sensor_channels WHERE device_id IN (SELECT id FROM devices WHERE owner_id IN (SELECT id FROM users WHERE email IN ({ids})));
 DELETE FROM devices WHERE owner_id IN (SELECT id FROM users WHERE email IN ({ids}));
 DELETE FROM invites WHERE consumed_by IN (SELECT id FROM users WHERE email IN ({ids}));
-DELETE FROM users WHERE email IN ({ids});
+DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE email IN ({ids}));
+UPDATE users SET disabled=true,display_name='배포 검증 전용 · 종료' WHERE email IN ({ids});
+DELETE FROM users u WHERE email IN ({ids}) AND NOT EXISTS(SELECT 1 FROM audit_log a WHERE a.actor_id=u.id);
 COMMIT;''')
     FIXTURE.unlink()
-    print('Only the two recorded synthetic accounts and their test device/data removed')
+    print('Recorded synthetic device/data removed; fixture sessions revoked; immutable audit actors retained disabled')
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('step',choices=['smoke','isolation','cleanup']);args=parser.parse_args()

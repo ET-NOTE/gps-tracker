@@ -46,3 +46,39 @@ remains unverified and is labelled as such in the lesson and README.
 SIMCom references:
 - https://files.waveshare.com/upload/0/02/SIM7070_SIM7080_SIM7090_Series_AT_Command_Manual_V1.03.pdf
 - https://files.waveshare.com/upload/b/bb/SIM7070_SIM7080_SIM7090_Series_HTTP%28S%29_Application_Note_V1.02.pdf
+
+## Production result
+
+Deployed `shield-20261006-182948-3fee7c8` from the clean Git source on etcom-hub.
+Archive SHA256: `6796d5c24bb39460bae86e680808030273c55248f3d3087fa33f9a8ab2f208ac`.
+Schema 1–13 healthy; Shield and GPS services active. Deployment verified the GPS
+binary hash/process and every non-Shield nginx configuration remained unchanged.
+Shield environment and credentials remained unchanged. nginx syntax and recent
+Shield warning/error journal checks passed.
+
+- 34 existing production smoke/isolation/WebSocket checks passed.
+- 20 production checks passed for the four actual UNO templates, HTTP issuance,
+  one-time/no-store response, duplicate handling, rejected sensor data, HTTPS
+  redirects, owner visibility and revocation. Only synthetic fixture data used.
+- Synthetic device, sensor channels, readings and sessions removed. One disabled
+  synthetic actor is retained because HTTP setting changes have immutable audit
+  records. Cleanup now respects that constraint; no audit trigger was bypassed.
+- No real device enabled for HTTP: `http_demo_links` has zero rows after testing.
+- New post https://shield.serial.kr/examples/shield-uno-http-pairing is public,
+  revision 1. All 28 previous posts and guide/order/thumbnail/payment settings
+  preserved. Three anonymous Google Drive download hashes and metadata redirects
+  passed. Browser checked the published four-step page and three attachment links.
+- ZIP: https://drive.google.com/file/d/1n5q4T2X4QWVSZFphOJ1Q_k1OUrJWpdkv/view
+- Sketch: https://drive.google.com/file/d/1t-G4LUXglseUnit7Y7oppiw8RPQSQosJ/view
+- Guide: https://drive.google.com/file/d/161DnGlZWts9SkLHrf1fYMtf0H9oKEVcJ/view
+
+Before backup: `shield-20261006T092948Z.tar.gz`, SHA256
+`b7e67bf30ae04e05959ac971ac8e086dfa07d1111feb79c29d5e008bdb93b508`.
+After backup: `shield-20261006T093254Z.tar.gz`, SHA256
+`8317be52daa575c72016ec4141d29c45e74401d06d43f7b35ac22a5f4dd83c06`.
+Both restored offsite on PostgreSQL 14. After restore: 29 posts, 64 verified image
+hashes, 44 verified file hashes, schema 1–13; original one device, 1,774 readings,
+8,116 location records preserved. Financial tables remain empty.
+
+Physical LTE/TLS execution remains pending; server compatibility is verified,
+not a substitute for uploading and running each sketch on the actual shield.
