@@ -7,8 +7,7 @@
 #include <Arduino.h>
 
 // ── 빌드 플래그 ───────────────────────────────────────────────────
-//  · 모니터링 세션: FQBN esp32:esp32:esp32c3:CDCOnBoot=cdc + BUZZER_ENABLED 1
-//  · 운영(배터리):  FQBN esp32:esp32:esp32c3 (CDCOnBoot=default) + BUZZER_ENABLED 0
+// 운영/KC 선택은 CMake FIRMWARE_PROFILE로만 한다. 소스 토글을 바꾸지 않는다.
 #define BUZZER_ENABLED 1   // (2026-07-02) 능동 부저 활성. LTE POST 무해 재확인(2026-07-03). 운영/필드 ON 유지 결정.
 // ⚠️[2026-08-14] 위 "무해 재확인"은 구보드 기준. 마그네틱 부저(GPIO1 직결)의 LTE 간섭은 진단 이력상
 //   신PCB 에서 deterministic 이었고 firmware 로 차단 불가(플라이백 다이오드 = hardware fix 필수).
@@ -92,6 +91,7 @@
 //   생명신호(부팅 URC/AT OK/바이트) 있으면 펄스 금지(켜진 SIM7080 PWRKEY 펄스=전원토글=종료 → 부팅↔종료 레이스).
 #define LTE_BOOT_PROBE_MS         3000      // 초기 생명신호 탐지 창 (짧게)
 #define LTE_BOOT_WAIT_MS          12000     // 부팅 완료(AT OK)까지 대기 상한 (SIM7080 cold boot ~5-8s)
+#define LTE_SHUTDOWN_TIMEOUT_MS   12000UL   // CPOWD 정상 종료 URC 대기 상한; 미확인은 레일 차단으로 처리
 
 // ── recovery (복구 state machine, Block 7) ───────────────────────
 //  원본 복구 경로 1·3·4·5·6 을 단일 결정기로 통합 (매 tick 단일 액션).
@@ -211,11 +211,16 @@
 //     · AT+COPS=0 명시 (수동 PLMN 고정 잔재 차단 — 시험용 PLMN 에 붙어야 함)
 //     · AT+CBANDCFG 밴드 락 + 응답 캡처 출력 (인증범위 증빙: 선언서 + 설정로그 + 캡처)
 //     · sleep/부저 OFF (시험 중 deep sleep 진입·GPIO1 노이즈원 차단)
-//   ⚠️ 운영 배포 전 반드시 0 원복! (TIMER_WAKE_ENABLED 교훈과 동일한 토글 함정 주의)
+//   빌드 프로파일에서 값을 주입한다. 운영/KC 산출물은 별도 디렉터리에 저장한다.
 //   ⚠️ CBANDCFG 는 모듈 NVRAM 저장 — 시험 후 다른 밴드 필요 시 docs/kc_test_build.md 의
 //      복원 커맨드로 해제. (단, 밴드 제한으로 인증받으면 양산 펌웨어도 락 유지가 원칙)
 // =================================================================
-#define KC_TEST_BUILD   0     // ★ 1 = KC 시험 빌드 (운영 배포 전 0 원복 필수!)
+#ifndef KC_TEST_BUILD
+  #error "KC_TEST_BUILD must come from an explicit CMake firmware profile"
+#endif
+#if KC_TEST_BUILD != 0 && KC_TEST_BUILD != 1
+  #error "Invalid KC_TEST_BUILD"
+#endif
 
 #if KC_TEST_BUILD
   // 인증 대상 밴드 락 — 시험소 견적 확정 후 조정. 실측(2026-08-27, device 3005) = Cat-M1 B5.

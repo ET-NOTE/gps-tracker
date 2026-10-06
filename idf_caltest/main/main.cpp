@@ -20,6 +20,7 @@
 #include <Preferences.h>    // HW-DIAG: NVS 크래시 카운터 (INT-WDT RTC 소실에도 유지)
 #include <esp_system.h>
 #include "config.h"
+#include "firmware_info.h"
 #include "buzzer.h"
 #include "hw_power.h"
 #include "gps.h"
@@ -118,6 +119,7 @@ void setup() {
   delay(2000);   // USB CDC 안정화 대기
   Serial.println();
   Serial.println(F("=== 15_a_modular — Block 8: sleep_mgr (non-blocking CDC) ==="));
+  Serial.println(firmware::settings);
 #if KC_TEST_BUILD
   Serial.println(F("*********************************************************"));
   Serial.println(F("*  KC TEST BUILD — 콜박스 시험용 (운영 배포 금지!)          *"));

@@ -4,20 +4,31 @@
 > Anritsu MT8821C / R&S CMW500 류 + 시험용 USIM PLMN 001/01)는 RRC 등록까지만 세우고
 > PDP/데이터 세션은 안 붙는 경우가 많음 → 운영 펌웨어의 복구 에스컬레이션이 시험을 망침.
 
-## 빌드 방법
+## 빌드 방법 (2026-10-06 프로파일 분리)
 
-[idf_caltest/main/config.h](../idf_caltest/main/config.h) 맨 아래:
+ESP-IDF 5.5.4 환경에서 저장소 루트 기준:
 
-```c
-#define KC_TEST_BUILD   1     // ← 0 → 1
+```sh
+python idf_caltest/tools/build_firmware.py kc
+python idf_caltest/tools/build_firmware.py operating
 ```
 
-```
-idf.py fullclean 없이 그냥: idf.py build
-플래시:                    idf.py -p COMxx flash
+소스의 KC 플래그를 수동으로 변경하지 않습니다. CMake 프로파일이 값을 주입합니다.
+KC 산출물은 `idf_caltest/build/kc/`, 운영 산출물은 `idf_caltest/build/operating/`에 저장합니다.
+각 디렉터리의 `manifest.json`에서 실제 바이너리 설정과 해시를 확인합니다.
+프로파일 없이 빌드하거나 공용 build 디렉터리를 지정하면 실패합니다.
+
+기존 `build/caltest.bin` 및 시험센터에 입고된 펌웨어는 그대로 보존합니다.
+새 KC 후보를 빌드하는 것과 시험센터 장치에 갱신하는 것은 별도 작업입니다.
+플래시는 대상/배선을 확인한 뒤 해당 IDF 빌드 환경에서만 실행합니다.
+
+```sh
+cd idf_caltest
+idf.py -B build/kc -p COMxx flash monitor
 ```
 
-**⚠️ 시험 끝나면 반드시 0 원복 후 재빌드.** (TIMER_WAKE 토글 사고와 동일한 함정 — 운영 배포 전 grep 확인: `grep "KC_TEST_BUILD   1" idf_caltest/main/config.h` 가 안 나와야 함)
+모든 절전 진입점에 SLEEP_DISABLED 가드를 적용하여 timer/bounce 경로에서도
+KC 펌웨어가 모뎀/레일을 종료하지 않도록 했습니다. RF 등록/밴드/복구 정책은 유지합니다.
 
 ## KC_TEST_BUILD=1 이 바꾸는 것
 

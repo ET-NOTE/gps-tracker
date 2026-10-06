@@ -8,6 +8,8 @@
 #include <Arduino.h>
 
 namespace hw_power {
+  bool holdOffForSleep(); // hold shared rail OFF and PWRKEY/DTR idle through deep sleep
+  void releaseSleepHold();
   void init();          // 핀 모드 + DTR/PWRKEY idle. (레일 상태는 안 바꿈)
   void railOn();        // PWR_EN LOW → GPS+LTE 전원 ON. inrush settle 포함.
   void railOff();       // PWR_EN HIGH → 레일 OFF.

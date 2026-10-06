@@ -26,7 +26,7 @@ static uint32_t bootMs_          = 0;
 static const char *wakeReason_   = "boot";
 static const char *resetCause_   = "?";
 static bool     timerWake_       = false;
-static bool     inSleep_         = false;
+[[maybe_unused]] static bool inSleep_ = false;
 
 static uint32_t stationarySince_ = 0;
 static float    lastDrift_       = 0;
@@ -36,9 +36,68 @@ static bool     lastGpsAvail_    = false;
 // [2026-08-14] "sleep 미진입" 진단 — 현재 블로킹 게이트 + window 리셋 원인별 카운트 (telemetry 로 노출)
 static const char *stayCause_    = "boot";
 static uint16_t rstActive_ = 0, rstDrift_ = 0, rstNoGps_ = 0;
+static uint32_t sleepAborts_ = 0;
+static bool resumeReportPending_ = false;
+[[maybe_unused]] static bool sleepIntentSent_ = false;
+[[maybe_unused]] static bool movementDuringSleep_ = false;
+RTC_DATA_ATTR static uint32_t rtcShutdownUnconfirmed_ = 0;
+
+#if !SLEEP_DISABLED
+// Read the latched interrupt BEFORE tick() clears it. Retain movement observed
+// during HTTP/CPOWD even if the device becomes quiet again before they return.
+static void observeSleepMotion() {
+  const bool asserted = digitalRead(PIN_LIS_INT) == LOW;
+  motion::tick();
+  if (asserted || !motion::ok() || motion::badStreak() || motion::active())
+    movementDuringSleep_ = true;
+}
+
+static bool settleBeforeSleep() {
+  const uint32_t start = millis();
+  uint32_t highSince = start;
+  // One stale latch may be from the sleep beep. After this settling stage no
+  // interrupt is discarded: movement cancels the entire sleep attempt.
+  motion::clearLatch();
+  while (millis() - start < SLEEP_PRE_SETTLE_MAX_MS) {
+    lwdt::feed();
+    const bool asserted = digitalRead(PIN_LIS_INT) == LOW;
+    motion::tick();
+    if (!motion::ok() || motion::badStreak()) return false;
+    if (asserted || motion::active()) highSince = millis();
+    else if (millis() - highSince >= 300) {
+      const int mag = motion::rawMagMg();
+      return mag >= MOTION_MAG_MIN_MG && mag <= MOTION_MAG_MAX_MG;
+    }
+    delay(20);
+  }
+  return false;
+}
+
+static bool abortSleep(const char *cause, bool wakeArmed = false,
+                       bool railWasCut = false, bool shutdownStarted = false,
+                       lte::ShutdownResult result = lte::ShutdownResult::NotStarted) {
+  lte::setSleepObserver(nullptr);
+  if (wakeArmed) esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+  gpio_deep_sleep_hold_dis();
+  gpio_hold_dis((gpio_num_t)PIN_BUZZER);
+  hw_power::releaseSleepHold();
+  if (railWasCut) hw_power::railOn();
+  if (shutdownStarted) lte::resumeAfterSleepAbort(railWasCut, result);
+  inSleep_ = false;
+  timerWake_ = false; // movement/sensor failure promotes timer heartbeat to tracking
+  stationarySince_ = 0;
+  if (sleepIntentSent_) resumeReportPending_ = true;
+  sleepIntentSent_ = false;
+  stayCause_ = cause;
+  sleepAborts_++;
+  bc::set("sleep_abort");
+  Serial.printf("[SLEEP] aborted: %s; tracking resumed\n", cause);
+  return false;
+}
+#endif
 
 // window 리셋 헬퍼 — 진행중이던 window 가 죽은 경우만 카운트 (게이트가 0 을 유지하는 tick 은 비카운트)
-static void resetWindow(const char *cause, uint16_t &cnt) {
+[[maybe_unused]] static void resetWindow(const char *cause, uint16_t &cnt) {
   if (stationarySince_ != 0) cnt++;
   stationarySince_ = 0;
   stayCause_ = cause;
@@ -64,99 +123,88 @@ static const char *resetReasonStr(esp_reset_reason_t r) {
 
 // -----------------------------------------------------------------
 bool enterDeepSleep(const char *reason) {
+#if SLEEP_DISABLED
+  // All entry points (stationary, timer, bounce, future callers) obey the KC gate.
+  stayCause_ = "disabled";
+  return false;
+#else
   if (inSleep_) return false;
-  // [2026-07-14 fix#2] wake 소스(LIS) 없으면 아무것도 teardown 하기 전에 abort.
-  //   (기존엔 sleep_enter POST + pulsePwrKey + railOff 뒤에 체크 → LIS 미검출 시 모뎀·레일 죽인 채
-  //    sleep 취소하고 정상복귀 → LTE/GPS 먹통으로 영구히 돎. checkStationary 도 !ok() 로 재진입 차단.)
-  if (!motion::ok()) {
-    Serial.println(F("[SLEEP] LIS 미검출 — wake 소스 없어 sleep 취소 (teardown 전)"));
-    return false;
-  }
-  // [2026-08-14] teardown 前 진동 settle 게이트 — INT 가 300ms 연속 HIGH 로 안정돼야 진입.
-  //   기존엔 teardown(모뎀킬+railOff) 후 10s 대기 → 타임아웃이면 INT LOW 인 채 sleep
-  //   → GPIO-LOW wake 라 즉시 재기동 = sleep↔wake churn(레일 인러시 반복). 진동 지속 = 아직
-  //   움직임이므로 취소가 정답. 취소 시 아무것도 teardown 안 한 상태라 그대로 정상 동작.
-  {
-    motion::clearLatch();
-    uint32_t s = millis(), highSince = 0;
-    bool settled = false;
-    while (millis() - s < SLEEP_PRE_SETTLE_MAX_MS) {
-      lwdt::feed();
-      motion::clearLatch();
-      delay(20);
-      if (digitalRead(PIN_LIS_INT) == HIGH) {
-        if (highSince == 0) highSince = millis();
-        if (millis() - highSince >= 300) { settled = true; break; }
-      } else highSince = 0;
-    }
-    if (!settled) {
-      Serial.printf("[SLEEP] 진동 지속 (INT 미안정 %lums) — sleep 취소 (reason=%s)\n",
-        (unsigned long)SLEEP_PRE_SETTLE_MAX_MS, reason);
-      return false;
-    }
-  }
+  sleepIntentSent_ = false;
+  if (!motion::ok()) return abortSleep("no_lis");
   inSleep_ = true;
-  bc::set("sleep");
-  buzzer::beep(2, 150, 120); buzzer::flush();        // (2026-07-03) sleep 진입 청각 신호 2회 (wake 6회와 구분)
-  rtcLastSleepUpS_ = (millis() - bootMs_) / 1000;   // 다음 세션 diag 용 (RTC 보존)
-  Serial.printf("[SLEEP] deep sleep 진입 (reason=%s uptime=%lus)\n",
-    reason, (unsigned long)((millis() - bootMs_) / 1000));
+  bc::set("sleep_prepare");
+  buzzer::beep(2, 150, 120);
+  buzzer::flush();
+  delay(BUZZ_RINGDOWN_MS);
+  if (!settleBeforeSleep()) return abortSleep("settle_abort");
 
-  // 서버 sleep_enter 이벤트 — LTE 살아있을 때, 전원 차단 전에 전송.
+  movementDuringSleep_ = false;
+  lte::setSleepObserver(observeSleepMotion);
+  observeSleepMotion();
+  if (movementDuringSleep_) return abortSleep("motion_before_post");
+
   if (lte::ready()) {
-    // [2026-08-14] 미전송 batch flush — deep sleep = 재부팅이라 batch(최대 120 fix)가 소실됨.
-    //   LTE stuck 후 RECOVERY_STAY_AWAKE 초과로 sleep 하는 경로에선 마지막 주행 꼬리가 통째로
-    //   날아가던 것. ready 일 때 1회만 시도, 실패는 감수(다음 세션은 어차피 새 batch).
     if (gps::batchCount() > 0) {
       static char fbody[8192];
       uint8_t posted = telemetry::buildPayload(fbody, sizeof(fbody), bootMs_, false);
       int fst = -1;
-      lte::httpPost(fbody, &fst);
-      if (fst == 200 && posted > 0) gps::batchDrop(posted);
+      const bool sent = lte::httpPost(fbody, &fst);
+      if (sent && fst == 200 && posted > 0) gps::batchDrop(posted);
       Serial.printf("[SLEEP] batch flush: %u fix, status=%d\n", posted, fst);
     }
-    static char sbody[640];
+    observeSleepMotion();
+    if (movementDuringSleep_) return abortSleep("motion_after_flush");
+    // Last online notification is sleep intent. It can still be cancelled;
+    // sleep_aborts in subsequent telemetry explains the resumed session.
+    static char sbody[1024];
     telemetry::buildSleepPayload(sbody, sizeof(sbody), bootMs_, reason);
     int st = -1;
-    lte::httpPost(sbody, &st);
+    const bool sent = lte::httpPost(sbody, &st);
+    sleepIntentSent_ = sent && st == 200;
     Serial.printf("[SLEEP] sleep_enter POST status=%d\n", st);
-  } else {
-    Serial.println(F("[SLEEP] LTE not ready — sleep_enter event 생략"));
   }
+  observeSleepMotion();
+  if (movementDuringSleep_) return abortSleep("motion_after_post");
 
-  // ★[2026-07-13] 절전 진입 모뎀 킬 펄스 — PWR_EN 차단만으론 SIM7080 VBAT 벌크캡 잔류로 완전 off 안 됨.
-  //   레일 차단 전(모뎀 살아있을 때) PWRKEY 펄스로 능동 파워다운 → 그 뒤 railOff 로 레일 차단.
-  hw_power::pulsePwrKey();   // 켜진 SIM7080 PWRKEY 토글 = power-down 신호
-  hw_power::railOff();   // GPS+LTE 전원 차단 (LIS 는 항시전원 → wake 소스 유지)
-  // (wake 소스 체크는 함수 최상단으로 이동 — fix#2)
+  // Validate wake configuration before shutting down communications.
+  if (esp_deep_sleep_enable_gpio_wakeup(1ULL << PIN_LIS_INT, ESP_GPIO_WAKEUP_GPIO_LOW) != ESP_OK)
+    return abortSleep("wake_gpio_error", true);
+#if TIMER_WAKE_ENABLED
+  if (esp_sleep_enable_timer_wakeup(TIMER_WAKE_INTERVAL_US) != ESP_OK)
+    return abortSleep("wake_timer_error", true);
+#endif
 
-  // LIS latch clear + INT idle(HIGH) 안정 대기 → 자가-wake 방지 (max 10s)
-  motion::clearLatch();
-  uint32_t s = millis(), highSince = 0;
-  while (millis() - s < 10000) {
-    lwdt::feed();   // LIS settle 대기는 hang 아님
-    motion::clearLatch();
-    delay(20);
-    if (digitalRead(PIN_LIS_INT) == HIGH) {
-      if (highSince == 0) highSince = millis();
-      if (millis() - highSince >= 300) break;
-    } else highSince = 0;
-  }
-  Serial.printf("[SLEEP] LIS settled in %lums\n", (unsigned long)(millis() - s));
+  const lte::ShutdownResult shutdown = lte::shutdownForSleep();
+  if (shutdown == lte::ShutdownResult::Unconfirmed) rtcShutdownUnconfirmed_++;
+  observeSleepMotion();
+  if (movementDuringSleep_)
+    return abortSleep("motion_during_shutdown", true, false, true, shutdown);
 
-  // 능동 부저: deep sleep 중 GPIO1 floating→HIGH 로 울리는 것 방지 — LOW 로 래치.
+  hw_power::railOff();
+  // Any motion now restores both GPS and LTE. Do not clear and ignore a stuck
+  // LOW interrupt or sleep anyway after a settle timeout.
+  observeSleepMotion();
+  const int mag = motion::rawMagMg();
+  if (movementDuringSleep_ || mag < MOTION_MAG_MIN_MG || mag > MOTION_MAG_MAX_MG)
+    return abortSleep("final_motion_or_sensor", true, true, true, shutdown);
+
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
-  gpio_hold_en((gpio_num_t)PIN_BUZZER);
+  if (!hw_power::holdOffForSleep() || gpio_hold_en((gpio_num_t)PIN_BUZZER) != ESP_OK)
+    return abortSleep("gpio_hold_error", true, true, true, shutdown);
   gpio_deep_sleep_hold_en();
-
-  esp_deep_sleep_enable_gpio_wakeup(1ULL << PIN_LIS_INT, ESP_GPIO_WAKEUP_GPIO_LOW);
-#if TIMER_WAKE_ENABLED
-  esp_sleep_enable_timer_wakeup(TIMER_WAKE_INTERVAL_US);   // 0이면 모션 wake only (timer HB 없음)
-#endif
+  lte::setSleepObserver(nullptr);
+  bc::set("sleep");
+  Serial.printf("[SLEEP] enter reason=%s shutdown=%d\n", reason, (int)shutdown);
   Serial.flush();
+  // Keep LIS latch untouched here. An event after this read remains LOW and
+  // immediately wakes the CPU, instead of being erased in the entry race.
+  if (digitalRead(PIN_LIS_INT) == LOW)
+    return abortSleep("final_interrupt", true, true, true, shutdown);
+  rtcLastSleepUpS_ = (millis() - bootMs_) / 1000;
   esp_deep_sleep_start();
-  return true;   // unreachable — deep sleep 은 리부팅으로만 복귀
+  return true;
+#endif
 }
 
 // -----------------------------------------------------------------
@@ -177,7 +225,7 @@ void begin(uint32_t bootMs) {
     else wakeReason_ = "gpio";
   } else if (wc == ESP_SLEEP_WAKEUP_TIMER) {
     wakeReason_ = "timer";
-#if !OBSERVE_MODE
+#if !OBSERVE_MODE && !SLEEP_DISABLED
     timerWake_  = true;   // 관찰 모드에선 timer wake 를 normal 로 취급 (heartbeat 즉시 re-sleep 안 함)
 #endif
   } else {
@@ -196,7 +244,7 @@ void begin(uint32_t bootMs) {
   //   가짜 wake 로 오판해 re-sleep → 즉시 모션 wake 재발 → sleep↔wake churn(레일 인러시 반복,
   //   추적 시작 지연) 위험. 신 판정 = "외로운 범프만 re-sleep": 관찰창 동안 ①INT 재어서트 없음
   //   ②raw |Δ| 최대 < 활동임계 둘 다 만족 시에만 re-sleep. 주행/애매하면 정상 기동해 추적.
-  if (motionWake && motion::ok()) {
+  if (!SLEEP_DISABLED && motionWake && motion::ok()) {
     motion::clearLatch();
     uint32_t obs = millis();
     bool intReassert = false;
@@ -303,6 +351,7 @@ void timerWakeTick() {
 }
 
 void onPostSuccess() {
+  resumeReportPending_ = false; // clear only after the resume/wake POST succeeds
   if (timerWake_) {
     if (motion::active()) {   // [2026-08-14] POST 완료 시점에 이동중이면 승격 (즉시 re-sleep 안 함)
       Serial.println(F("[SLEEP] timer-wake POST ok + 이동중 — 정상 세션 승격"));
@@ -319,6 +368,9 @@ void onPostSuccess() {
 bool timerWakeMode()      { return timerWake_; }
 const char* wakeReason()  { return wakeReason_; }
 const char* resetCause()  { return resetCause_; }
+uint32_t sleepAborts() { return sleepAborts_; }
+bool resumeReportPending() { return resumeReportPending_; }
+uint32_t shutdownUnconfirmed() { return rtcShutdownUnconfirmed_; }
 uint32_t lastSleepUptimeS() { return rtcLastSleepUpS_; }
 bool     stationaryActive() { return stationarySince_ != 0; }
 uint32_t stationaryHeldMs() { return stationarySince_ ? (millis() - stationarySince_) : 0; }

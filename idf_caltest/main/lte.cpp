@@ -10,6 +10,9 @@
 namespace lte {
 
 static HardwareSerial serial(1);   // UART1 — LTE RX=2/TX=4
+static bool serialStarted_ = false;
+static void (*sleepObserver_)() = nullptr;
+void setSleepObserver(void (*observer)()) { sleepObserver_ = observer; }
 static String   lastResp;
 static bool     ready_        = false;
 static int      csq_          = -1;
@@ -33,6 +36,7 @@ static bool     serverReset_    = false;
 
 // -----------------------------------------------------------------
 static void drain() {
+  if (sleepObserver_) sleepObserver_();
   while (serial.available()) {
     char c = (char)serial.read();
     lastResp += c;
@@ -145,7 +149,56 @@ static void powerOn() {
 void init() {
   serial.setRxBufferSize(LTE_RX_BUF);   // HW팀 기대값(표준): begin 前 호출 필수 — RX 오버플로우 여유
   serial.begin(LTE_BAUD, SERIAL_8N1, PIN_LTE_RX, PIN_LTE_TX);
+  serialStarted_ = true;
   powerOn();
+}
+
+ShutdownResult shutdownForSleep() {
+#if SLEEP_DISABLED
+  return ShutdownResult::NotStarted;
+#else
+  // Bounce re-sleep runs before UART/powerOn. Never pulse an unknown/off modem.
+  if (!serialStarted_) return ShutdownResult::NotStarted;
+  ready_ = false;
+  csq_ = -1; reg_ = -1;
+  snprintf(ip_, sizeof(ip_), "-");
+  bringReset();
+  resetHttpKeepalive();
+  while (serial.available()) serial.read();
+  lastResp = "";
+  serial.print("AT+CPOWD=1\r\n");
+  const uint32_t start = millis();
+  while (millis() - start < LTE_SHUTDOWN_TIMEOUT_MS) {
+    lwdt::feed();
+    drain();
+    // sendAT intentionally rejects POWER DOWN; shutdown has its own collector.
+    if (lastResp.indexOf("NORMAL POWER DOWN") >= 0) {
+      Serial.println(F("[LTE] shutdown confirmed (NORMAL POWER DOWN)"));
+      return ShutdownResult::Confirmed;
+    }
+    delay(10);
+  }
+  Serial.println(F("[LTE] shutdown unconfirmed — bounded rail-off fallback"));
+  return ShutdownResult::Unconfirmed;
+#endif
+}
+
+void resumeAfterSleepAbort(bool railWasCut, ShutdownResult result) {
+  if (!serialStarted_) return; // early bounce path continues regular setup()
+  if (result == ShutdownResult::Unconfirmed) {
+    // CPOWD may still be in flight. Fully discharge before probing/pulsing so a
+    // late shutdown cannot turn off the modem we have just resumed.
+    hw_power::railCycle();
+    railWasCut = true;
+  }
+  if (railWasCut) gps::reconfigure();
+  // Give the single CPOWD attempt time to finish before powerOn probes. Caller
+  // waits for shutdownForSleep's result; it never cancels that command halfway.
+  waitUartIdle(200, 1000); // trailing CPOWD CR/LF must not look like a booting modem
+  powerOn();
+  ready_ = false;
+  bringReset();
+  resetHttpKeepalive();
 }
 
 // (2026-07-08) bringUp non-blocking 리팩터: 90초 블로킹 reg-wait 제거.

@@ -1,15 +1,42 @@
 #include "hw_power.h"
 #include "config.h"
+#include "driver/gpio.h"
 
 namespace hw_power {
 
 void init() {
+#if !KC_TEST_BUILD
+  // Set safe levels before releasing deep-sleep holds (new PCB, active-low EN).
+  digitalWrite(PIN_PWR_EN, HIGH);
+  digitalWrite(PIN_PWRKEY, LTE_PWRKEY_IDLE);
+  digitalWrite(PIN_DTR, LTE_DTR_IDLE);
+#endif
   pinMode(PIN_PWR_EN, OUTPUT);
   // DTR/PWRKEY 는 idle 로 세팅 (레일 전원과 독립). SIM7080 default: DTR LOW=active.
   pinMode(PIN_DTR, OUTPUT);
   digitalWrite(PIN_DTR, LTE_DTR_IDLE);
   pinMode(PIN_PWRKEY, OUTPUT);
   digitalWrite(PIN_PWRKEY, LTE_PWRKEY_IDLE);
+  releaseSleepHold();
+}
+
+void releaseSleepHold() {
+  gpio_hold_dis((gpio_num_t)PIN_PWR_EN);
+  gpio_hold_dis((gpio_num_t)PIN_PWRKEY);
+  gpio_hold_dis((gpio_num_t)PIN_DTR);
+}
+
+bool holdOffForSleep() {
+  digitalWrite(PIN_PWR_EN, HIGH);
+  digitalWrite(PIN_PWRKEY, LTE_PWRKEY_IDLE);
+  digitalWrite(PIN_DTR, LTE_DTR_IDLE);
+  if (gpio_hold_en((gpio_num_t)PIN_PWR_EN) != ESP_OK ||
+      gpio_hold_en((gpio_num_t)PIN_PWRKEY) != ESP_OK ||
+      gpio_hold_en((gpio_num_t)PIN_DTR) != ESP_OK) {
+    releaseSleepHold();
+    return false;
+  }
+  return true;
 }
 
 void railOn() {
