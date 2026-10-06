@@ -1,5 +1,4 @@
-// 지도 우상단의 컴팩트 디바이스 필터.
-// 모든 해상도에서 단일 드롭다운으로 통일 — 좌측 MapControls 와 충돌 없음.
+// MapTopOverlay's first row. Its menu floats over the summary only while open.
 import { useEffect, useRef, useState } from 'react';
 import { getDeviceColor } from '../colors';
 import Icon from './Icon';
@@ -28,7 +27,7 @@ export default function DeviceFilter({ devices, selected, onChange }) {
 
   return (
     <div ref={wrapRef} style={s.wrap}>
-      <button onClick={() => setOpen(o => !o)} style={s.trigger}>
+      <button aria-label="단말기 선택" aria-expanded={open} onClick={() => setOpen(o => !o)} style={s.trigger}>
         <span style={{ width: 8, height: 8, borderRadius: 4, background: color, flexShrink: 0 }} />
         <span style={s.triggerLabel}>{label}</span>
         <Icon name={open ? 'close' : 'filter'} size={12} />
@@ -62,9 +61,8 @@ function Item({ color, on, onClick, children }) {
 
 const s = {
   wrap: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
+    position: 'relative',
+    maxWidth: '100%',
     zIndex: 6,
     pointerEvents: 'none',
     display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
@@ -72,7 +70,7 @@ const s = {
   trigger: {
     pointerEvents: 'auto',
     display: 'inline-flex', alignItems: 'center', gap: 8,
-    maxWidth: 220,
+    maxWidth: '100%', minHeight: 40,
     padding: '7px 12px',
     background: 'var(--surface)', color: 'var(--text)',
     border: '1px solid var(--border)', borderRadius: 18,
@@ -84,9 +82,10 @@ const s = {
     maxWidth: 140,
   },
   menu: {
+    position: 'absolute', top: '100%', left: 0,
     pointerEvents: 'auto',
     marginTop: 6,
-    minWidth: 200, maxWidth: 280,
+    width: 280, maxWidth: 'calc(100vw - 80px)',
     background: 'var(--surface)',
     border: '1px solid var(--border)',
     borderRadius: 10, overflow: 'hidden',

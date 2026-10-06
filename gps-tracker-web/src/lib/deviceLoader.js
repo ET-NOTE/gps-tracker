@@ -9,6 +9,7 @@
 //   );
 
 import { api } from '../api';
+import { isCachedResponse } from './offlineCache';
 import { enrichWithSpeedStops, haversineM, compactStopMarkerIndexes } from './stops';
 import { getDeviceColor, isStale } from '../colors';
 // (F6-c) calcSpeedKmh / clickableIntervalM 중복 → lib/speed.js 로 통합.
@@ -122,7 +123,7 @@ export function computeClickableIndices(enriched, gapMap, intervalM = 30) {
 // force 는 loadDevicesIncremental 전용 (기존 device 도 재렌더 강제).
 export function makeDeviceLoaders({
   mapRef, devRef, lastMetaRef, lastLoadedFixAtRef, wsRef,
-  setDevices, setDevicesLoaded, onLatest,
+  setDevices, setDevicesLoaded, onLatest, onDataSource,
 }) {
   function renderDeviceFixes(d, locs, opts = {}) {
     const { force = false } = opts;
@@ -206,6 +207,7 @@ export function makeDeviceLoaders({
   async function loadDevicesIncremental(force = false) {
     try {
       const list = await api.listDevices();
+      onDataSource?.('devices', isCachedResponse(list), list.map(d => d.id));
       const oldIds = new Set(devRef.current.map(d => d.id));
       const newIds = new Set(list.map(d => d.id));
       oldIds.forEach(id => {
@@ -230,7 +232,11 @@ export function makeDeviceLoaders({
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
         const locs = api.flattenGrouped(groups);
         renderDeviceFixes(d, locs, { force });
-        lastLoadedFixAtRef.current[d.id] = d.last_fix_at || d.last_seen_at || null;
+        const cached = isCachedResponse(groups);
+        onDataSource?.(d.id, cached);
+        // Retry a saved history even when the device's newest fix has not changed.
+        // Otherwise the normal refresh skips it forever after connectivity recovers.
+        lastLoadedFixAtRef.current[d.id] = cached ? null : d.last_fix_at || d.last_seen_at || null;
       }));
     } catch (e) { console.error('refresh', e); }
   }
@@ -241,6 +247,7 @@ export function makeDeviceLoaders({
       const targetId = targetIdRaw ? parseInt(targetIdRaw, 10) : NaN;
 
       const list = await api.listDevices();
+      onDataSource?.('devices', isCachedResponse(list), list.map(d => d.id));
       setDevices(list);
       devRef.current = list;
       wsRef.current?.subscribe(list.map(d => d.id));
@@ -251,6 +258,9 @@ export function makeDeviceLoaders({
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
         const locs = api.flattenGrouped(groups);
         renderDeviceFixes(d, locs);
+        const cached = isCachedResponse(groups);
+        onDataSource?.(d.id, cached);
+        lastLoadedFixAtRef.current[d.id] = cached ? null : d.last_fix_at || d.last_seen_at || null;
       }));
       // (F12) setDevicesLoaded 를 Promise.all 이후로 이동 — 이전엔 devices state 만 세팅되고
       // renderDeviceFixes 미완료 상태에서도 true 였음. Dashboard 의 filter-restore useEffect

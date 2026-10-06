@@ -11,16 +11,14 @@ import { useLiveWS } from '../hooks/useLiveWS';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { makeWsEventHandler } from '../lib/wsEventHandler';
 import { makeDeviceLoaders } from '../lib/deviceLoader';
-import { liveMotion } from '../lib/liveMotion';
 import KakaoMap from '../components/KakaoMap';
 import ProfilePanel from '../components/ProfilePanel';
 import DeviceDetail from '../components/DeviceDetail';
 import BottomNav from '../components/BottomNav';
 import SideRail from '../components/SideRail';
-import MapControls from '../components/MapControls';
+import MapTopOverlay from '../components/MapTopOverlay';
 import RoadviewModal, { probeRoadview } from '../components/RoadviewModal';
 import { confirmDialog, alertDialog } from '../components/Dialog';
-import DeviceFilter from '../components/DeviceFilter';
 import GeofenceSheet from '../components/GeofenceSheet';
 import SeekerSheet from '../components/SeekerSheet';
 import MiniSeekerOverlay, { MINI_SEEKER_BOTTOM_HEIGHT, MINI_SEEKER_PANEL_WIDTH } from '../components/MiniSeekerOverlay';
@@ -89,14 +87,6 @@ function viewToPath(v) {
 //   calcSpeedKmh · computeHomeSinceISO · POLYLINE_GAP_THRESHOLD_S · computeGapMap ·
 //   clickableIntervalM · computeClickableIndices · HOME_STOP_MERGE_RADIUS_M
 
-function speedTone(speedKmh) {
-  if (speedKmh == null) return '#94A3B8';
-  if (speedKmh < 5) return '#64748B';
-  if (speedKmh < 30) return '#10B981';
-  if (speedKmh < 70) return '#3B82F6';
-  return '#F97316';
-}
-
 export default function Dashboard({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -108,11 +98,15 @@ export default function Dashboard({ onLogout }) {
   const pinKey = 'gps_cache_pin:' + authScope();
   const [pinnedId, setPinnedId] = useState(() => Number(localStorage.getItem(pinKey)) || null);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('onboarding_v2'));
-  const [offlineData, setOfflineData] = useState(false);
-  useEffect(() => {
-    const offline = () => setOfflineData(true), online = () => setOfflineData(false);
-    window.addEventListener('gps-offline-data', offline); window.addEventListener('online', online);
-    return () => { window.removeEventListener('gps-offline-data', offline); window.removeEventListener('online', online); };
+  const [cachedMapSources, setCachedMapSources] = useState({});
+  const onMapDataSource = useCallback((key, cached, deviceIds) => {
+    setCachedMapSources(previous => {
+      const next = deviceIds
+        ? Object.fromEntries(Object.entries(previous).filter(([id]) => id === 'devices' || deviceIds.some(d => String(d) === id)))
+        : { ...previous };
+      if (cached) next[key] = true; else delete next[key];
+      return next;
+    });
   }, []);
   const togglePin = id => { const next = pinnedId === id ? null : id; setPinnedId(next); if (next) localStorage.setItem(pinKey, String(next)); else localStorage.removeItem(pinKey); };
   const [devices, setDevices]         = useState([]);
@@ -512,6 +506,7 @@ export default function Dashboard({ onLogout }) {
   const { loadDevices, loadDevicesIncremental } = makeDeviceLoaders({
     mapRef, devRef, lastMetaRef, lastLoadedFixAtRef, wsRef,
     setDevices, setDevicesLoaded,
+    onDataSource: onMapDataSource,
     onLatest: (d, meta) => {
       if (filterDeviceIdRef.current === d.id) setLiveSpeed({ deviceId:d.id,
         label:d.display_name || d.device_uid, color:getDeviceColor(d), speedKmh:meta.speedKmh, recordedAt:meta.recordedAt });
@@ -527,6 +522,14 @@ export default function Dashboard({ onLogout }) {
   }, []);
   const refreshFn = useAutoRefresh(doRefresh, { intervalMs: 30_000, minIntervalMs: 8_000 });
   useEffect(() => { refreshFnRef.current = refreshFn; }, [refreshFn]);
+  useEffect(() => {
+    // Browser connectivity alone is not proof of fresh data. Re-read first;
+    // successful responses clear only their own saved-data notices.
+    const recover = () => refreshFnRef.current?.(true);
+    window.addEventListener('online', recover);
+    return () => window.removeEventListener('online', recover);
+  }, []);
+
 
 
   const handleMapReady = useCallback(() => {
@@ -1158,82 +1161,14 @@ export default function Dashboard({ onLogout }) {
               } : undefined}
               onUserPan={handleUserPan}
               onViewChange={handleMapViewChange} />
-            <MapControls mapRef={mapRef} onOpenRoadview={openRoadview} />
-            {devices.length > 0 && (
-              <DeviceFilter
-                devices={devices}
-                selected={filterDeviceId}
-                onChange={persistFilterDevice}
-              />
-            )}
-            {view === 'home' && trackLive && filterDeviceId !== null && (() => {
-              // (2026-07-28) Stage-4J: 알약 확장 — 차량번호 뱃지 + 실시간 상태 + 마지막 활동 시각.
-              // 이미지 1 좌측 device 요약 카드 스타일 참조. 지도 위에 floating pill.
-              const dev = devices.find(d => d.id === filterDeviceId);
-              const label = liveSpeed?.label || dev?.display_name || dev?.device_uid || '실시간 추적';
-              const plate = dev?.license_plate;
-              const color = liveSpeed?.color || (dev ? getDeviceColor(dev) : '#5B7CFF');
-              const rawSpeed = liveSpeed?.speedKmh;
-              const lastAt   = liveSpeed?.recordedAt || dev?.last_fix_at || dev?.last_seen_at;
-              const motion   = liveMotion(rawSpeed, lastAt, speedNow);
-              const speedKmh = motion.speedKmh;
-              const active   = motion.moving;
-              const ageMs    = lastAt ? Date.now() - new Date(lastAt).getTime() : null;
-              const ageText  = ageMs == null ? null
-                : ageMs < 60_000 ? '방금'
-                : ageMs < 3600_000 ? `${Math.floor(ageMs / 60_000)}분 전`
-                : ageMs < 86400_000 ? `${Math.floor(ageMs / 3600_000)}시간 전`
-                : `${Math.floor(ageMs / 86400_000)}일 전`;
-              return (
-                <div style={{
-                  position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-                  zIndex: 13, minWidth: 200, padding: '10px 14px', borderRadius: 16,
-                  background: 'rgba(255,255,255,.96)', border: '1px solid var(--border)',
-                  boxShadow: '0 8px 24px rgba(15,23,42,.18)', display: 'flex',
-                  alignItems: 'center', gap: 12, backdropFilter: 'blur(10px)', pointerEvents: 'none',
-                }}>
-                  <span style={{
-                    width: 10, height: 10, borderRadius: 999, flexShrink: 0,
-                    background: color || speedTone(speedKmh),
-                    boxShadow: '0 0 0 4px rgba(59,130,246,.12)',
-                  }} />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{
-                        maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
-                      }}>{label}</span>
-                      {plate && (
-                        <span style={{
-                          fontSize: 9, padding: '1px 6px', borderRadius: 3,
-                          background: 'var(--surface-2)', color: 'var(--text-2)', fontWeight: 800,
-                          letterSpacing: '0.02em',
-                        }}>{plate}</span>
-                      )}
-                      <span style={{
-                        fontSize: 9, padding: '1px 6px', borderRadius: 999, fontWeight: 800,
-                        background: active
-                          ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
-                          : 'var(--surface-2)',
-                        color: active ? 'var(--accent)' : 'var(--text-3)',
-                      }}>{motion.label}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                      <span style={{
-                        fontSize: 24, lineHeight: 1, fontWeight: 800, letterSpacing: '-.03em',
-                        fontVariantNumeric: 'tabular-nums', color: speedTone(speedKmh),
-                      }}>
-                        {speedKmh == null ? '--' : Math.round(speedKmh)}
-                        <small style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}> km/h · 추정</small>
-                      </span>
-                      {ageText && (
-                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>· {ageText}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+            <MapTopOverlay
+              devices={devices} selected={filterDeviceId} onSelect={persistFilterDevice}
+              mapRef={mapRef} onOpenRoadview={openRoadview}
+              showSpeed={view === 'home' && trackLive && filterDeviceId !== null}
+              liveSpeed={liveSpeed} now={speedNow} cachedSources={cachedMapSources}
+            >
+              {view === 'tools' && <button style={{ pointerEvents: 'auto', padding: 10 }} onClick={() => { setShowRoutePlanner(v => !v); setShowSeeker(false); setShowGeofence(false); }}>경로 계획</button>}
+            </MapTopOverlay>
 
             {/* 홈 — 지도 가장자리 활용 지오펜스 레이어.
                   우하단 FAB 칼럼: 펜스 ON/OFF 토글 + 새 펜스 만들기 (토글 ON 일 때만)
@@ -1408,8 +1343,6 @@ export default function Dashboard({ onLogout }) {
               );
             })()}
 
-            {offlineData && <div role="status" style={{ position: 'absolute', top: 55, left: 16, zIndex: 40, padding: 8, background: 'var(--surface)' }}>오프라인 저장본 · 최신 위치가 아닐 수 있습니다</div>}
-            {view === 'tools' && <button style={{ position: 'absolute', top: 72, left: 16, zIndex: 15, padding: 10 }} onClick={() => { setShowRoutePlanner(v => !v); setShowSeeker(false); setShowGeofence(false); }}>경로 계획</button>}
             {showRoutePlanner && view === 'tools' && <RoutePlannerSheet mapRef={mapRef} onClose={() => setShowRoutePlanner(false)} />}
             {view === 'home' && !showMiniSeeker && !pointInfo && <PinnedDeviceWidget
               device={devices.find(d => d.id === pinnedId)} deviceColor={getDeviceColor(devices.find(d => d.id === pinnedId) || {})}

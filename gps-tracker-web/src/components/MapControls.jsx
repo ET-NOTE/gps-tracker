@@ -82,8 +82,7 @@ export default function MapControls({ mapRef, onOpenRoadview }) {
 
 const s = {
   wrap: {
-    position: 'absolute',
-    right: 12, top: 12,
+    position: 'relative',
     display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
     zIndex: 5,
     pointerEvents: 'none',
