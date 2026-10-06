@@ -1,0 +1,36 @@
+{
+  "release": "gps-web-20261006-210059-dede6c6",
+  "source_commit": "dede6c6",
+  "scope": "GPS web mobile design consistency",
+  "tests": {
+    "automated_passed": 41,
+    "runner": "etcom-hub",
+    "visual_widths": [
+      320,
+      390,
+      1280
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "console_errors": 0,
+    "fixture": "mock data, no live account writes",
+    "physical_android_driving": "not directly verified"
+  },
+  "changes": [
+    "Device cards prioritize status and recent receipt; secondary actions use an in-flow disclosure",
+    "Single home device/speed card and labeled map actions",
+    "Readable status color pairs and shared 44px controls",
+    "Map point detail and tool sheets fit map bounds",
+    "Zero metrics distinct from missing; today selected by KST date"
+  ],
+  "production": {
+    "api_unchanged": true,
+    "kc_unchanged": true,
+    "services_restarted": false,
+    "assets_verified": true,
+    "artifact_sha256": "7229c0892dd1294f7a14d0a369ddab39dca0fd96db749976fafb7cd5de58b1ea",
+    "previous_web": "/home/mmm/releases/gps-web-20261006-202508-6221d69/web"
+  }
+}
