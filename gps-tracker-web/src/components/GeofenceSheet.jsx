@@ -299,7 +299,7 @@ const s = {
   },
   tabOn: {
     color: 'var(--primary)',
-    borderBottomColor: 'var(--primary)',
+    borderBottom: '2px solid var(--primary)',
     fontWeight: 600,
   },
   body: {
