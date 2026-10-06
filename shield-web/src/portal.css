@@ -367,3 +367,6 @@ a.catalog-card:hover { border-color:var(--primary); box-shadow:0 7px 22px #00899
 .order-lesson img{width:64px;height:48px;object-fit:contain;background:white;flex-shrink:0}
 @media(max-width:850px){.order-admin-grid{grid-template-columns:1fr}.library-order-admin .section-heading{flex-direction:column;align-items:stretch}.library-order-admin .editor-actions{flex-wrap:wrap}}
 @media(max-width:520px){.order-admin-grid>.panel{padding:16px}}
+.http-demo-code { margin-block: 1.25rem; padding: 1rem; border: 1px solid var(--line); border-radius: 8px; }
+.http-demo-code input { width: 100%; font-family: ui-monospace, monospace; margin-block: .5rem; }
+.http-demo-code p { overflow-wrap: anywhere; }

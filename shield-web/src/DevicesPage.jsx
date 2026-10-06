@@ -22,6 +22,7 @@ import {
   connectionState,
 } from "./DeviceNavigation";
 import { simState } from "./deviceState";
+import HttpDemoDialog from "./HttpDemoDialog";
 export default function DevicesPage() {
   const { usim: realUsim } = useCommerce(),
     { user } = useContext(Session),
@@ -39,6 +40,7 @@ export default function DevicesPage() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [editing, setEditing] = useState(false),
+    [httpDemo, setHttpDemo] = useState(false),
     [name, setName] = useState("");
   const register = () => user ? setClaim(true)
     : navigate("/login?next=" + encodeURIComponent("/devices?register=1"));
@@ -58,6 +60,7 @@ export default function DevicesPage() {
   }, [params, setParams, user]);
   useEffect(() => {
     setEditing(false);
+    setHttpDemo(false);
     setName(selected?.display_name || "");
   }, [selected?.id, selected?.display_name]);
   useEffect(() => {
@@ -165,6 +168,9 @@ export default function DevicesPage() {
                       onClick={() => setEditing(!editing)}
                     >
                       장치 이름 변경
+                    </button>
+                    <button className="outline" disabled={demo} onClick={() => setHttpDemo(true)}>
+                      HTTP 학습 연결
                     </button>
                     <button
                       className="outline"
@@ -428,6 +434,7 @@ export default function DevicesPage() {
           )}
         </div>
       </div>
+      {httpDemo && user && selected && !demo && <HttpDemoDialog key={`${user.id}:${selected.id}`} device={selected} close={() => setHttpDemo(false)} />}
       {claim && user && (
         <ClaimDialog
           close={() => setClaim(false)}

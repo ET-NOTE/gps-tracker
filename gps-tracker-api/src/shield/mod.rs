@@ -8,6 +8,7 @@ mod images;
 mod thumbnails;
 mod library_order;
 mod ingest;
+mod http_demo;
 mod nce;
 mod payments;
 mod usim;
@@ -141,6 +142,7 @@ async fn migrate(db: &PgPool) -> anyhow::Result<()> {
         ("Shield Google Drive attachments", include_str!("drive-files.sql")),
         ("Shield category thumbnails", include_str!("thumbnails.sql")),
         ("Shield library display order", include_str!("library-order.sql")),
+        ("Shield opt-in HTTP education", include_str!("http-demo.sql")),
     ];
     let migrations = sources
         .into_iter()
@@ -168,7 +170,7 @@ async fn headers(State(app): State<App>, request: Request, next: Next) -> Respon
     // Browser mutations require the exact origin. Device uploads use a separate
     // per-device credential and cannot authenticate with a browser cookie.
     if request.method() != axum::http::Method::GET
-        && request.uri().path() != "/ingest/shield"
+        && !matches!(request.uri().path(), "/ingest/shield" | "/ingest/shield-demo")
         && request
             .headers()
             .get(header::ORIGIN)
@@ -349,6 +351,7 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/devices",get(devices::list))
         .route("/api/devices/claim",post(devices::claim))
         .route("/api/devices/:id",post(devices::rename))
+        .route("/api/devices/:id/http-demo",get(http_demo::get).post(http_demo::set))
         .route("/api/devices/:id/summary",get(devices::summary))
         .route("/api/devices/:id/readings",get(devices::readings))
         .route("/api/devices/:id/locations",get(devices::locations))
@@ -360,6 +363,7 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/credits",get(usim::credits))
         .route("/api/ws",get(devices::ws))
         .route("/ingest/shield",post(ingest::ingest).layer(DefaultBodyLimit::max(8192)))
+        .route("/ingest/shield-demo",post(ingest::ingest_demo).layer(DefaultBodyLimit::max(1024)))
         .layer(middleware::from_fn_with_state(app.clone(),headers))
         .layer(DefaultBodyLimit::max(131072))
         .layer(TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT,Duration::from_secs(20)))

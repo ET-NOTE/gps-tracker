@@ -323,3 +323,34 @@ the selected category's lesson cards. Existing lesson URLs stay valid.
 Use `deploy-app.py --order-upgrade` for 11 → 12. The initial empty configuration
 preserves the previous order until an administrator saves. Backup restore verifies
 order content and revision. This release never updates post content/revisions.
+
+### Educational HTTP pairing (schema 13)
+
+Existing examples 04/06 and new 07 keep HTTPS `/ingest/shield` with the operational
+device key. New 08 uses only `http://shield.serial.kr/ingest/shield-demo` and a
+separate, explicitly enabled, 24-hour educational UID. The owner enables/rotates/
+disables it in 내 장치 → HTTP 학습 연결, through the HTTPS authenticated session.
+It is displayed once, stored as a hash, and never recorded in audit/access logs.
+Rotation, expiry, disabling and loss of ownership reject subsequent uploads.
+
+The UID is a bearer capability transmitted **unencrypted**, not an alternative
+production credential. Only v2 LTE status (`example-http-8`, CSQ, registration,
+uptime, `diag.gnss=0`, empty points) is accepted. Sensor/GPS/voltage payloads and
+operational key headers are rejected. Limits: 1 KiB, 30 requests/device/15 minutes,
+and nginx 10 requests/IP/minute with burst 10. The rest of HTTP remains HTTPS 308.
+No device is enabled by this migration. Original GPS/KC routes are unchanged.
+
+Use `deploy-app.py --http-demo-upgrade` for the exact schema 12 → 13 change after
+a fresh restored backup. The nginx guard permits only the two exact demo locations
+and their rate zone. Backup/restore now includes `http_demo_links`. The prior binary
+does not accept schema 13: do not switch back blindly or drop the table. To stop
+HTTP exposure, restore the recorded Shield nginx configuration, `nginx -t`, reload,
+and keep the schema-13 binary while fixing forward. A database restore requires a
+separate assessment of all data created after the backup.
+
+`test-http-demo.py` exercises all four actual UNO printf payloads and capability
+isolation against `shield_test`; `test-http-proxy.py` checks the exact nginx routes
+and schema migration against PostgreSQL 14 using disposable loopback containers.
+`verify-http-examples.py` checks production using only the recorded launch fixture.
+`publish-easy-https.py --lesson http` creates only the new HTTP post and verified
+Drive metadata. It refuses to overwrite an existing post.

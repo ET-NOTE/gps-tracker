@@ -128,25 +128,78 @@ pub async fn ingest(
     h: HeaderMap,
     Json(raw): Json<Value>,
 ) -> Result<Json<Value>> {
+    ingest_inner(app, h, raw, false).await
+}
+pub async fn ingest_demo(
+    State(app): State<App>,
+    h: HeaderMap,
+    Json(raw): Json<Value>,
+) -> Result<Json<Value>> {
+    ingest_inner(app, h, raw, true).await
+}
+async fn ingest_inner(app: App, h: HeaderMap, raw: Value, demo: bool) -> Result<Json<Value>> {
     let p: Payload =
         serde_json::from_value(raw.clone()).map_err(|_| bad("Invalid Shield payload"))?;
     let now = Utc::now();
     validate(&p, now.timestamp())?;
-    let key = h
-        .get("x-device-key")
-        .and_then(|v| v.to_str().ok())
-        .filter(|v| v.len() == 64)
-        .ok_or_else(denied)?;
+    // The HTTP lesson accepts only status, never sensor/GPS samples or operational keys.
+    let demo_hash = if demo {
+        if !http_demo::valid_uid(&p.device_uid) || h.contains_key("x-device-key") {
+            return Err(denied());
+        }
+        if p.shield_v != 2
+            || p.build_tag != "example-http-8"
+            || !p.points.is_empty()
+            || !p.sensors.is_empty()
+            || p.sensor_set.is_some()
+            || !p.channels.is_empty()
+            || p.diag.pv_mv.is_some()
+            || p.diag.gnss != Some(0)
+        {
+            return Err(bad(
+                "HTTP lesson accepts LTE status only; use HTTPS for sensors and GPS",
+            ));
+        }
+        let digest = hash(&p.device_uid);
+        let id: Option<i64> = sqlx::query_scalar("SELECT l.device_id FROM http_demo_links l JOIN devices d ON d.id=l.device_id AND d.owner_id=l.owner_id JOIN users u ON u.id=l.owner_id WHERE l.uid_hash=$1 AND l.expires_at>now() AND NOT u.disabled")
+            .bind(&digest).fetch_optional(&app.db).await?;
+        auth::rate(
+            &app,
+            format!("http-demo-ingest:{}", id.ok_or_else(denied)?),
+            30,
+        )
+        .await?;
+        Some(digest)
+    } else {
+        None
+    };
     let mut tx = app.db.begin().await?;
-    let device: Option<(i64, Option<i64>, String)> =
-        sqlx::query_as("SELECT id,owner_id,key_hash FROM devices WHERE device_uid=$1 FOR UPDATE")
-            .bind(&p.device_uid)
-            .fetch_optional(&mut *tx)
-            .await?;
-    let (id, owner, expected) = device.ok_or_else(denied)?;
-    if expected.as_bytes().ct_eq(hash(key).as_bytes()).unwrap_u8() != 1 {
-        return Err(denied());
-    }
+    let (id, owner) = if let Some(digest) = demo_hash {
+        // Same device-row lock as key ingestion and settings changes; recheck after locking.
+        let id: Option<i64> = sqlx::query_scalar("SELECT d.id FROM devices d JOIN http_demo_links l ON l.device_id=d.id WHERE l.uid_hash=$1 FOR UPDATE OF d")
+            .bind(&digest).fetch_optional(&mut *tx).await?;
+        let id = id.ok_or_else(denied)?;
+        let owner: Option<i64> = sqlx::query_scalar("SELECT l.owner_id FROM http_demo_links l JOIN devices d ON d.id=l.device_id AND d.owner_id=l.owner_id JOIN users u ON u.id=l.owner_id WHERE l.device_id=$1 AND l.uid_hash=$2 AND l.expires_at>now() AND NOT u.disabled FOR UPDATE OF l")
+            .bind(id).bind(&digest).fetch_optional(&mut *tx).await?;
+        (id, Some(owner.ok_or_else(denied)?))
+    } else {
+        let key = h
+            .get("x-device-key")
+            .and_then(|v| v.to_str().ok())
+            .filter(|v| v.len() == 64)
+            .ok_or_else(denied)?;
+        let device: Option<(i64, Option<i64>, String)> = sqlx::query_as(
+            "SELECT id,owner_id,key_hash FROM devices WHERE device_uid=$1 FOR UPDATE",
+        )
+        .bind(&p.device_uid)
+        .fetch_optional(&mut *tx)
+        .await?;
+        let (id, owner, expected) = device.ok_or_else(denied)?;
+        if expected.as_bytes().ct_eq(hash(key).as_bytes()).unwrap_u8() != 1 {
+            return Err(denied());
+        }
+        (id, owner)
+    };
     let user = owner.ok_or_else(|| {
         Error(
             StatusCode::CONFLICT,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create only the new HTTPS tutorial, with verified public Drive attachments.
+"""Create one new HTTPS/HTTP tutorial, with verified public Drive attachments.
 
 Run on the VPS after a backup/restore check. No app deployment, device writes,
 old-post updates, start-guide changes, or financial API calls.
@@ -32,14 +32,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', type=Path, required=True)
     parser.add_argument('--publish', action='store_true')
+    parser.add_argument('--lesson', choices=['https', 'http'], default='https')
     args = parser.parse_args()
+    slug = SLUG if args.lesson == 'https' else 'shield-uno-http-pairing'
     assert os.geteuid() == 0 and c.BASE == 'https://shield.serial.kr'
     os.umask(0o077)
     directory = args.directory.resolve()
     item = json.loads((directory / 'publication.json').read_text())
     links = json.loads((directory / 'drive-links.json').read_text())
     content = copy.deepcopy(item['content'])
-    assert content['id'] == SLUG and content['kind'] == 'example'
+    assert content['id'] == slug and content['kind'] == 'example'
     assert not content['attachments'] and len(item['assets']) == 3
     assert set(links) == {a['path'] for a in item['assets']}
     for asset in item['assets']:
@@ -73,9 +75,9 @@ def main():
         assert status == 200
         existing = {r['content']['id']: r for r in rows}
         # Never overwrite this or any other post after administrators edit it.
-        assert SLUG not in existing, 'Post already exists; inspect it instead of overwriting'
+        assert slug not in existing, 'Post already exists; inspect it instead of overwriting'
         print(json.dumps({'action': 'create' if args.publish else 'dry run',
-                          'slug': SLUG, 'verified_drive_downloads': len(links)}))
+                          'slug': slug, 'verified_drive_downloads': len(links)}))
         if not args.publish:
             return
         (directory / f'posts-before-{int(time.time())}.json').write_text(json.dumps(rows, ensure_ascii=False, indent=2))
@@ -84,10 +86,10 @@ def main():
             assert status == 200, ('Drive registration', status, file)
             assert file['drive_url'] == links[asset['path']]['url']
             content['attachments'].append({'id': file['id'], 'title': asset['title'], 'after_step': 0})
-        status, result, _ = admin.call('/api/admin/posts/' + SLUG,
+        status, result, _ = admin.call('/api/admin/posts/' + slug,
                                      {'content': content, 'published': True, 'revision': 0})
         assert status == 200, (status, result)
-        public = next(p for p in anon.call('/api/posts')[1] if p['id'] == SLUG)
+        public = next(p for p in anon.call('/api/posts')[1] if p['id'] == slug)
         assert {k: v for k, v in public.items() if k not in ('revision', 'updated_at')} == content
         for attachment, asset in zip(content['attachments'], item['assets']):
             status, body, headers = anon.call('/api/post-files/' + attachment['id'])
@@ -95,9 +97,9 @@ def main():
             assert status == 307 and body == '' and headers['cache-control'] == 'no-store'
             assert headers['location'] == links[asset['path']]['url']
         after = {r['content']['id']: r for r in admin.call('/api/admin/posts')[1]}
-        assert all(after[slug] == post for slug, post in existing.items())
+        assert all(after[old_slug] == post for old_slug, post in existing.items())
         assert protected == c.pg(protected_sql)
-        report = {'url': c.BASE + '/examples/' + SLUG, 'revision': public['revision'],
+        report = {'url': c.BASE + '/examples/' + slug, 'revision': public['revision'],
                   'drive_files': len(links), 'existing_posts_preserved': len(existing),
                   'guide_order_thumbnails_financial': 'unchanged',
                   'hardware_validation': 'pending'}
