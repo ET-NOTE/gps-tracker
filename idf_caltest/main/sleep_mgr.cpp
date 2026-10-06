@@ -270,10 +270,15 @@ void begin(uint32_t bootMs) {
         Serial.println(F("[SLEEP] bounce streak 상한 — 오판 escape, 정상 기동"));
       } else {
         rtcBounce_++;
+        const uint32_t previousMotionWakes = rtcWakeMotion_, previousWakes = rtcWake_;
         if (rtcWakeMotion_ > 0) rtcWakeMotion_--;
         if (rtcWake_ > 0) rtcWake_--;
-        enterDeepSleep("bounce_resleep");
-        // ↑ 취소(진동 재감지)로 돌아오면 그대로 정상 기동 (teardown 전이라 무해)
+        if (!enterDeepSleep("bounce_resleep")) {
+          // This was a real wake after all. Keep counters and proceed with setup.
+          rtcWakeMotion_ = previousMotionWakes;
+          rtcWake_ = previousWakes;
+          rtcBounce_ = 0;
+        }
       }
 #endif
     } else {
@@ -285,6 +290,7 @@ void begin(uint32_t bootMs) {
 // -----------------------------------------------------------------
 void checkStationary() {
 #if SLEEP_DISABLED
+  stayCause_ = "disabled";
   return;
 #else
   if (inSleep_ || !motion::ok()) { stayCause_ = motion::ok() ? "sleeping" : "no_lis"; return; }
@@ -326,8 +332,8 @@ void checkStationary() {
       if (sinceOk < RECOVERY_STAY_AWAKE_MS) { stayCause_ = "lte_recovery"; return; }
     }
     if (!enterDeepSleep(gpsConfident ? "stationary" : "stationary_lis_only")) {
-      // 진입 취소(pre-settle 진동 감지) = 아직 움직임 → window 리셋하고 재관찰
-      resetWindow("settle_abort", rstActive_);
+      // abortSleep already reset the window; retain its specific diagnostic cause.
+      rstActive_++;
     }
   } else {
     stayCause_ = "window";

@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parent
-SCENARIOS = ["success", "wrap", "timeout", "post_fail", "early_bounce", "no_lis", "active",
+SCENARIOS = ["success", "wrap", "timeout", "post_fail", "early_bounce", "bounce_abort", "no_lis", "active",
              "stuck_low", "i2c_error", "raw_error", "during_flush", "during_event",
              "wake_error", "timer_error", "during_shutdown", "timeout_motion",
              "sensor_shutdown", "after_rail", "sensor_after_rail", "hold_error", "final_interrupt"]

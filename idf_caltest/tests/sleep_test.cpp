@@ -16,7 +16,10 @@ static std::vector<std::string> trace;
 SerialStub Serial;
 uint32_t millis() { return clockMs; }
 void delay(uint32_t ms) { clockMs += ms; }
-int digitalRead(int) { return pinLow ? LOW : HIGH; }
+int digitalRead(int) {
+  if(scenario=="bounce_abort" && sleep_mgr::inSleep_) return LOW;
+  return pinLow ? LOW : HIGH;
+}
 void digitalWrite(int, int) {}
 void pinMode(int, int) {}
 int analogReadMilliVolts(int) { return 1900; }
@@ -38,7 +41,9 @@ void esp_deep_sleep_start() {
   assert(armed && held && railOff && !pinLow);
   trace.push_back("sleep"); slept=true;
 }
-esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_WAKEUP_TIMER; }
+esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() {
+  return scenario=="bounce_abort" ? ESP_SLEEP_WAKEUP_GPIO : ESP_SLEEP_WAKEUP_TIMER;
+}
 uint64_t esp_sleep_get_gpio_wakeup_status() { return 1ULL<<PIN_LIS_INT; }
 esp_reset_reason_t esp_reset_reason() { return ESP_RST_DEEPSLEEP; }
 namespace bc { void set(const char*) {} const char* last() { return "sleep_prepare"; } }
@@ -108,6 +113,14 @@ uint32_t postOks() { return 1; } uint32_t postFails() { return 0; }
 
 int main(int argc,char** argv) {
   assert(argc==2); scenario=argv[1];
+#if !KC_TEST_BUILD
+  if(scenario=="bounce_abort") {
+    sleep_mgr::begin(0);
+    assert(sleep_mgr::wakeCount()==1 && sleep_mgr::wakeMotion()==1);
+    assert(sleep_mgr::sleepAborts()==1 && !slept && shutdowns==0 && !railOff);
+    puts("PASS"); return 0;
+  }
+#endif
   if(scenario=="payload") {
     char body[8192], sleep[1024];
     const auto count=telemetry::buildPayload(body,sizeof(body),0,true);
