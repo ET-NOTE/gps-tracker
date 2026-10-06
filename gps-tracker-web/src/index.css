@@ -9,7 +9,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 input, button, textarea, select { font-family: inherit; color: inherit; }
-button { user-select: none; }
+button { user-select: none; touch-action: manipulation; }
+:where(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 
 /* 전역 색상 보조 클래스 */
 .surface  { background: var(--surface); }
@@ -164,3 +165,9 @@ button:disabled { cursor: not-allowed; }
     scroll-behavior: auto !important;
   }
 }
+
+/* User panels share comfortable input targets; compact switch artwork stays inside its control. */
+.gps-map-tool button, .gps-map-tool select,
+.gps-user-panel button, .gps-user-panel select, .gps-user-panel input:not([type="checkbox"]):not([type="radio"]) { min-height: var(--touch-target); }
+.gps-map-tool button, .gps-user-panel button { touch-action: manipulation; }
+.gps-map-tool input, .gps-map-tool select, .gps-user-panel input, .gps-user-panel select { max-width: 100%; }

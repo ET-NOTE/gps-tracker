@@ -14,6 +14,7 @@ import { makeDeviceLoaders } from '../lib/deviceLoader';
 import KakaoMap from '../components/KakaoMap';
 import ProfilePanel from '../components/ProfilePanel';
 import DeviceDetail from '../components/DeviceDetail';
+import DeviceCardSummary from '../components/DeviceCardSummary';
 import BottomNav from '../components/BottomNav';
 import SideRail from '../components/SideRail';
 import MapTopOverlay from '../components/MapTopOverlay';
@@ -41,11 +42,11 @@ import PairTutorial, { shouldShowPairTutorial, hydratePairTutorialSeen } from '.
 import UnpairModal from '../components/UnpairModal';
 import Icon from '../components/Icon';
 import useBreakpoint from '../useBreakpoint';
-import { PALETTE, getDeviceColor, hydrateDeviceColors, setDeviceColorCache, getDeviceColorsCache, isStale, isFixStale, ageString, classifyDevice } from '../colors';
+import { PALETTE, getDeviceColor, hydrateDeviceColors, setDeviceColorCache, getDeviceColorsCache, classifyDevice } from '../colors';
 import { applyTheme, currentTheme } from '../theme';
 import { isSeekerVisible, normalizeAggregates, monthWindow } from '../lib/seeker';
 
-// 펜스에 적용 디바이스 한 대라도 안에 있으면 true.
+// 펜스에 적용 단말기 한 대라도 안에 있으면 true.
 function isAnyDeviceInsideFence(fence, devices) {
   const targets = fence.device_id
     ? devices.filter(d => d.id === fence.device_id)
@@ -116,10 +117,10 @@ export default function Dashboard({ onLogout }) {
   const [pairError, setPairError]     = useState('');
   const [pairLoading, setPairLoading] = useState(false);
   const [pairOpen, setPairOpen]       = useState(false);
-  // [2026-09-14 KC] 미페어링 단말 스캔 탭 — 최근 ingest 중인 단말을 목록으로 보여주고 원클릭 페어링
+  // [2026-09-14 KC] 미연결 단말 스캔 탭 — 최근 ingest 중인 단말을 목록으로 보여주고 원클릭 연결
   const [scanRows, setScanRows]       = useState(null);   // null=미조회, []=없음
   const [scanLoading, setScanLoading] = useState(false);
-  const [scanBusyUid, setScanBusyUid] = useState(null);   // 페어링 진행 중인 행
+  const [scanBusyUid, setScanBusyUid] = useState(null);   // 연결 진행 중인 행
 
   async function runScan() {
     setScanLoading(true); setPairError('');
@@ -139,7 +140,7 @@ export default function Dashboard({ onLogout }) {
       await api.pairDevice({ device_uid: row.device_uid, display_name: name });
       setPairLabel('');
       await loadDevices();
-      await runScan();               // 페어링된 행은 목록에서 빠짐
+      await runScan();               // 연결된 행은 목록에서 빠짐
     } catch (e) { setPairError(e.message); }
     finally { setScanBusyUid(null); }
   }
@@ -157,7 +158,7 @@ export default function Dashboard({ onLogout }) {
     }
   }, [location.pathname, location.search, navigate]);
 
-  // devices 가 첫 로드된 뒤 — deep link 였고 디바이스 0개 또는 ?tutorial=1 이면 튜토리얼 표시.
+  // devices 가 첫 로드된 뒤 — deep link 였고 단말기 0개 또는 ?tutorial=1 이면 튜토리얼 표시.
   // devices 가 useState([]) 초기값이라, "정말로 fetch 끝났는지" 별도로 tracking.
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   useEffect(() => {
@@ -191,9 +192,9 @@ export default function Dashboard({ onLogout }) {
     return () => clearInterval(timer);
   }, []);
   // 라이브 추적 — 두 상태 분리:
-  //   userTrackPref: 사용자가 의도한 ON/OFF (버튼·디바이스 선택으로만 변경)
+  //   userTrackPref: 사용자가 의도한 ON/OFF (버튼·단말기 선택으로만 변경)
   //   seekerPaused : 시커 활성 동안 일시 정지 — 시커 닫히면 자동 복원
-  // 사용자가 직접 지도 드래그하면 userTrackPref=false 로 영구 끔 (다시 버튼 또는 디바이스 선택해야 부활).
+  // 사용자가 직접 지도 드래그하면 userTrackPref=false 로 영구 끔 (다시 버튼 또는 단말기 선택해야 부활).
   const [userTrackPref, setUserTrackPref] = useState(false);
   const seekerPaused = isSeekerVisible(view, filterDeviceId, showSeeker, showMiniSeeker);
   const trackLive = userTrackPref && !seekerPaused && !fullToolOpen;
@@ -208,7 +209,7 @@ export default function Dashboard({ onLogout }) {
   const isDelivery  = accountType === 'delivery';
 
   // ── 사용자 UI 환경설정 (계정 귀속) ────────────────────────
-  // prefs.filter_device_id — 다른 PC 에서 로그인해도 마지막 선택 디바이스 복원
+  // prefs.filter_device_id — 다른 PC 에서 로그인해도 마지막 선택 단말기 복원
   const [userPrefs, setUserPrefs]   = useState(null);
   const userPrefsRef                = useRef(null);
   const [mapReady, setMapReady]     = useState(false);
@@ -363,7 +364,7 @@ export default function Dashboard({ onLogout }) {
   const miniSeekerRef = useRef(null);
 
   // 연구소 — 오늘 첫 열람 어제 운행 요약 팝업.
-  // 트리거: userPrefs.lab_first_view_summary === true 일 때, 사용자가 디바이스 필터를
+  // 트리거: userPrefs.lab_first_view_summary === true 일 때, 사용자가 단말기 필터를
   // null → not-null 로 바꾼 첫 순간 (해당 device, 그 KST 날짜에 한해 1회).
   // 중복 방지: localStorage 키 'lab_summary_shown:<userId>:<deviceId>' = KST yyyy-mm-dd.
   const [yesterdayDialog, setYesterdayDialog] = useState(null);   // null | { deviceName, dateStr, stats }
@@ -380,7 +381,7 @@ export default function Dashboard({ onLogout }) {
     }
   }, [view, isDesktop]);
 
-  // 디바이스 목록을 ref 에 미러링 — 콜백이 매번 리렌더되는 걸 막기 위해.
+  // 단말기 목록을 ref 에 미러링 — 콜백이 매번 리렌더되는 걸 막기 위해.
   // (WebSocket 이벤트 → setDevices → 리렌더 → MiniSeeker prop 새 fn → useEffect 재실행 →
   //  drawSeekerPath 재호출 → setBounds 가 카메라 리셋. ref 로 의존성 끊음.)
   const devicesRef = useRef(devices);
@@ -400,7 +401,7 @@ export default function Dashboard({ onLogout }) {
     mapRef.current?.setSeekerMode?.(seekerActive);
   }, [seekerPaused]);
 
-  // 추적이 효과적으로 ON 으로 전환되는 순간 (켜자마자 / 시커 닫고 부활) 즉시 카메라를 디바이스 마지막 위치로.
+  // 추적이 효과적으로 ON 으로 전환되는 순간 (켜자마자 / 시커 닫고 부활) 즉시 카메라를 단말기 마지막 위치로.
   // WS 다음 갱신 기다릴 필요 없음.
   useEffect(() => {
     if (!trackLive || filterDeviceId == null) return;
@@ -552,7 +553,7 @@ export default function Dashboard({ onLogout }) {
 
   // 사용자 액션으로 필터 변경 시 — 즉시 서버 저장 (race 방지).
   // 새로고침 사이에 PATCH 가 날아가지 않도록 디바운스 X.
-  // 사용자가 디바이스를 선택하면 라이브 추적도 자동 ON (디바이스 따라가기 자연스러움).
+  // 사용자가 단말기를 선택하면 라이브 추적도 자동 ON (단말기 따라가기 자연스러움).
   const persistFilterDevice = useCallback((id) => {
     setFilterDeviceId(id);
     mapRef.current?.filterToDevice(id);
@@ -564,7 +565,7 @@ export default function Dashboard({ onLogout }) {
     }
   }, []);
 
-  // 사용자가 직접 지도를 드래그한 경우 — 추적 의도 자체를 끔. 다시 버튼 또는 디바이스 선택해야 부활.
+  // 사용자가 직접 지도를 드래그한 경우 — 추적 의도 자체를 끔. 다시 버튼 또는 단말기 선택해야 부활.
   // 단, 시커 활성 중 발생한 드래그는 무시 — 시커 조작이 일으킨 이동까지 사용자 의도로 잡으면
   // 시커 닫고 나서 추적이 의도와 다르게 OFF 인 상태로 유지됨.
   const handleUserPan = useCallback(() => {
@@ -599,9 +600,9 @@ export default function Dashboard({ onLogout }) {
     }, 200);
   }, [filterDeviceId]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 연구소: 디바이스 필터 (non-null) 시 어제 운행 요약 팝업.
-  // 토글 OFF (default): 디바이스별 1회만 노출 (인트로). userPrefs.summary_seen 로 영구 기억.
-  // 토글 ON: 디바이스를 잡을 때마다 매번 노출 (대신 OFF 로 돌아가도 다시 인트로는 안 봄).
+  // 연구소: 단말기 필터 (non-null) 시 어제 운행 요약 팝업.
+  // 토글 OFF (default): 단말기별 1회만 노출 (인트로). userPrefs.summary_seen 로 영구 기억.
+  // 토글 ON: 단말기를 잡을 때마다 매번 노출 (대신 OFF 로 돌아가도 다시 인트로는 안 봄).
   useEffect(() => {
     if (!me?.id) return;   // me 로드 전엔 매핑 애매
     if (filterDeviceId == null) return;
@@ -626,7 +627,7 @@ export default function Dashboard({ onLogout }) {
         const stats = rows?.[0]?.date === yesterday ? rows[0] : null;
         const dev = devicesRef.current.find(d => d.id === filterDeviceId);
         setYesterdayDialog({
-          deviceName: dev?.display_name || dev?.device_uid || '디바이스',
+          deviceName: dev?.display_name || dev?.device_uid || '단말기',
           dateStr: yesterday,
           stats,
         });
@@ -635,7 +636,7 @@ export default function Dashboard({ onLogout }) {
         // 통신 오류 — 그래도 팝업 한 번 (empty 모드).
         const dev = devicesRef.current.find(d => d.id === filterDeviceId);
         setYesterdayDialog({
-          deviceName: dev?.display_name || dev?.device_uid || '디바이스',
+          deviceName: dev?.display_name || dev?.device_uid || '단말기',
           dateStr: yesterday,
           stats: null,
         });
@@ -643,14 +644,14 @@ export default function Dashboard({ onLogout }) {
   }, [filterDeviceId, userPrefs?.lab_first_view_summary, view, me?.id]);
 
   // 펜스 항상 그리기 — fences/devices/showFences/geofenceAlert/filterDeviceId 변경 시 재계산.
-  // 표시 조건: showFences AND geofenceAlert (master). 필터된 디바이스가 있으면 그에 맞는 펜스만.
+  // 표시 조건: showFences AND geofenceAlert (master). 필터된 단말기가 있으면 그에 맞는 펜스만.
   useEffect(() => {
     if (!mapRef.current) return;
     mapRef.current.clearAllGeofences();
     if (!showFences || !geofenceAlert) return;
     fences.forEach(f => {
       if (!f.active) return;
-      // 장치 필터 존중: 특정 디바이스 선택 시 그 디바이스 또는 '전체 디바이스' 펜스만
+      // 장치 필터 존중: 특정 단말기 선택 시 그 단말기 또는 '전체 단말기' 펜스만
       if (filterDeviceId !== null && f.device_id !== null && f.device_id !== filterDeviceId) return;
       const inside = isAnyDeviceInsideFence(f, devices);
       mapRef.current?.drawGeofence(
@@ -676,7 +677,7 @@ export default function Dashboard({ onLogout }) {
     },
   });
 
-  // ── 디바이스 액션 ─────────────────────────
+  // ── 단말기 액션 ─────────────────────────
   async function handlePair() {
     setPairError('');
     let body = {};
@@ -710,7 +711,7 @@ export default function Dashboard({ onLogout }) {
     } catch (e) { alert(e.message); }
   }
 
-  // 페어링 해제 모달 — 단일 모달에서 보관/삭제/취소 명시 선택
+  // 연결 해제 모달 — 단일 모달에서 보관/삭제/취소 명시 선택
   const [unpairTarget, setUnpairTarget] = useState(null);  // device 또는 null
   const [unpairBusy, setUnpairBusy]     = useState(false);
   function handleUnpair(id) {
@@ -726,10 +727,10 @@ export default function Dashboard({ onLogout }) {
       await loadDevices();
       setUnpairTarget(null);
       await alertDialog({
-        title: '페어링 해제 완료',
+        title: '연결 해제 완료',
         body: purge
           ? '본인 데이터까지 영구 삭제됐습니다. 결제 이력 (포인트, SIM 충전, AI 분석) 은 보존.'
-          : '데이터는 보관됐습니다. 같은 계정으로 다시 페어링하면 자동 복구됩니다.',
+          : '데이터는 보관됐습니다. 같은 계정으로 다시 연결하면 자동 복구됩니다.',
         tone: 'success',
       });
     } catch (e) {
@@ -794,11 +795,11 @@ export default function Dashboard({ onLogout }) {
           <div style={s.page}>
             <div style={s.section}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: pairOpen ? 8 : 0 }}>
-                <div style={{ ...s.sectionTitle, marginBottom: 0 }}>디바이스 추가</div>
+                <div style={{ ...s.sectionTitle, marginBottom: 0 }}>단말기 추가</div>
                 <button onClick={() => { setPairOpen(o => !o); setPairError(''); }}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '5px 10px', fontSize: 11, fontWeight: 600,
+                    padding: '5px 10px', fontSize: 13, fontWeight: 600,
                     background: pairOpen ? 'var(--surface-2)' : 'var(--primary)',
                     color:      pairOpen ? 'var(--text)'      : 'var(--primary-fg)',
                     border: 'none', borderRadius: 6, cursor: 'pointer',
@@ -834,7 +835,7 @@ export default function Dashboard({ onLogout }) {
                         value={pairIccid}
                         onChange={e => setPairIccid(e.target.value.replace(/[^0-9A-Fa-f]/g, ''))}
                         style={s.input} />
-                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                      <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 4 }}>
                         OLED 첫 줄 「SIM ...12345678」 의 숫자
                       </div>
                     </>
@@ -847,8 +848,8 @@ export default function Dashboard({ onLogout }) {
                   {pairMode === 'scan' && (
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                          최근 10분 내 신호를 보내온 미페어링 단말
+                        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>
+                          최근 10분 내 신호를 보내온 미연결 단말
                         </div>
                         <button onClick={runScan} disabled={scanLoading}
                           style={{ ...s.smallBtn, opacity: scanLoading ? 0.6 : 1 }}>
@@ -870,13 +871,13 @@ export default function Dashboard({ onLogout }) {
                             <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {r.device_uid}
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+                            <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 2 }}>
                               {r.iccid_tail ? `SIM ${r.iccid_tail} · ` : ''}{r.ago_s}초 전 수신
                             </div>
                           </div>
                           <button onClick={() => pairFromScan(r)} disabled={scanBusyUid !== null}
                             style={{ ...s.smallBtn, opacity: scanBusyUid === r.device_uid ? 0.6 : 1 }}>
-                            {scanBusyUid === r.device_uid ? '...' : '페어링'}
+                            {scanBusyUid === r.device_uid ? '...' : '연결'}
                           </button>
                         </div>
                       ))}
@@ -890,30 +891,28 @@ export default function Dashboard({ onLogout }) {
                   {pairMode !== 'scan' && (
                     <button onClick={async () => { const ok = await handlePair(); if (ok) setPairOpen(false); }} disabled={pairLoading}
                       style={{ ...s.btn, marginTop: 8, opacity: pairLoading ? 0.6 : 1 }}>
-                      {pairLoading ? '...' : '페어링'}
+                      {pairLoading ? '...' : '연결'}
                     </button>
                   )}
                 </>
               )}
             </div>
 
-            <div style={s.sectionTitle}>내 디바이스 ({devices.length})</div>
+            <div style={s.sectionTitle}>내 단말기 ({devices.length})</div>
             {devices.length === 0 && (
               <div style={{ color: 'var(--text-3)', fontSize: 13, padding: '8px 0' }}>
-                아직 등록된 디바이스가 없습니다.
+                아직 등록된 단말기가 없습니다.
               </div>
             )}
 
             {devices.map(d => {
               const color = getDeviceColor(d);
-              const stale = isStale(d.last_seen_at);
               const meta  = lastMetaRef.current[d.id];
               const status = classifyDevice(d, meta);
 
               return (
                 <SwipeableCard key={d.id} onSwipeLeft={() => setDetailId(d.id)} leftLabel="상세" onSwipeRight={() => togglePin(d.id)} rightLabel="고정" style={{
                   ...s.deviceCard, borderLeft: `4px solid ${color}`,
-                  opacity: stale && status.id !== 'sleeping' ? 0.6 : 1,
                 }}>
                   {editId === d.id ? (
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -924,104 +923,29 @@ export default function Dashboard({ onLogout }) {
                     </div>
                   ) : (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div onClick={() => {
-                          // 데스크톱은 패널 유지 (지도가 옆에 보임). 모바일은 home 으로 전환해야
-                          // 지도가 보이므로 그때만 view 변경.
-                          if (!isDesktop) setView('home');
-                          persistFilterDevice(d.id);
-                        }}
-                          style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}>
-                          <div style={{ fontWeight: 'bold', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <span>{d.display_name || d.device_uid}</span>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 4,
-                              padding: '1px 7px', borderRadius: 8,
-                              background: 'var(--surface-2)',
-                              fontSize: 10, fontWeight: 500,
-                              color: status.color,
-                              border: `1px solid ${status.color}33`,
-                            }}>
-                              <span style={{ width: 6, height: 6, borderRadius: 3, background: status.color }} />
-                              {status.label}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{d.device_uid}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                                  title="마지막 LTE 통신">
-                              <Icon name="refresh" size={11} /> {ageString(d.last_seen_at)}
-                            </span>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 4,
-                              color: isFixStale(d.last_fix_at) ? 'var(--danger)' : undefined,
-                            }} title="마지막 GPS 좌표 수신">
-                              <Icon name="mapPin" size={11} /> {ageString(d.last_fix_at)}
-                            </span>
-                            {(() => {
-                              // 실시간 meta 우선, 없으면 device row 의 last_vbat_mv (서버 LATERAL JOIN) fallback.
-                              // → 새로고침 후에도 즉시 최신 vbat 표시, LTE 끊긴 상태에서도 마지막 값 유지.
-                              const vbat = meta?.vbatMv ?? d.last_vbat_mv;
-                              const cbc  = meta?.cbcMv  ?? d.last_cbc_mv;
-                              if (!vbat) return null;
-                              return (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                                      title={cbc ? `ADC ${vbat}mV / 모듈 ${cbc}mV` : `${vbat}mV`}>
-                                  <Icon name="battery" size={11} /> {vbat}mV{cbc ? ` (${cbc})` : ''}
-                                </span>
-                              );
-                            })()}
-                            {meta?.sat !== undefined && meta?.sat !== null && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                <Icon name="sat" size={11} /> sat {meta.sat}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
-                          <button onClick={() => togglePin(d.id)} style={s.detailBtn} title="홈에 고정">{pinnedId === d.id ? '고정 해제' : '고정'}</button>
-                          {/* [2026-09-14 KC] 수신 로그 — GPS 없이도 HTTP 수신마다 리스트업되는
-                              공개 진단 페이지 (/diagnostic/device). 허용목록 단말만 조회됨. */}
-                          <button onClick={() => window.open('/diagnostic/device?uid=' + encodeURIComponent(d.device_uid), '_blank')}
-                            style={s.detailBtn}
-                            title="수신 로그 (GPS 없이도 통신 수신 확인, 로그인 불필요)">
-                            <Icon name="refresh" size={13} />
-                            <span>수신</span>
-                          </button>
-                          <button onClick={() => setDetailId(detailId === d.id ? null : d.id)}
-                            style={{
-                              ...s.detailBtn,
-                              ...(detailId === d.id ? s.detailBtnActive : {}),
-                            }}
-                            title="통계 / 상세 정보">
-                            <Icon name="bar" size={13} />
-                            <span>통계</span>
-                          </button>
-                          <button onClick={() => setColorPickerId(colorPickerId === d.id ? null : d.id)}
-                            style={{ background: color, width: 18, height: 18, borderRadius: 9, padding: 0,
-                                     border: '2px solid var(--surface)', boxShadow: '0 0 0 1px var(--border)',
-                                     cursor: 'pointer', flexShrink: 0 }}
-                            title="색상 변경" />
-                          <button onClick={() => { setEditId(d.id); setEditLabel(d.display_name || ''); }}
-                            style={s.iconBtnSmall} title="이름 변경"><Icon name="edit" size={13} /></button>
-                          <button onClick={() => handleUnpair(d.id)}
-                            style={{ ...s.iconBtnSmall, color: 'var(--danger)' }} title="페어링 해제"><Icon name="unlink" size={13} /></button>
-                        </div>
-                      </div>
+                      <DeviceCardSummary device={d} meta={meta} status={status} color={color}
+                        pinned={pinnedId === d.id} detailOpen={detailId === d.id}
+                        onView={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}
+                        onDetail={() => setDetailId(detailId === d.id ? null : d.id)}
+                        onPin={() => togglePin(d.id)}
+                        onReceive={() => window.open('/diagnostic/device?uid=' + encodeURIComponent(d.device_uid), '_blank')}
+                        onColor={() => setColorPickerId(colorPickerId === d.id ? null : d.id)}
+                        onRename={() => { setEditId(d.id); setEditLabel(d.display_name || ''); }}
+                        onUnpair={() => handleUnpair(d.id)} />
 
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                         {[['next_service_date','정비'],['insurance_expiry','보험'],['inspection_expiry','검사']].map(([key,label]) => {
                           if (!d[key]) return null;
                           const days = Math.ceil((new Date(d[key] + 'T00:00:00') - new Date()) / 86400000);
-                          return days <= 30 ? <span key={key} style={{ fontSize: 11, color: days < 0 ? 'var(--danger)' : 'var(--text-2)' }}>{label} {days < 0 ? `${-days}일 경과` : `D-${days}`}</span> : null;
+                          return days <= 30 ? <span key={key} style={{ fontSize: 13, color: days < 0 ? 'var(--danger)' : 'var(--text-2)' }}>{label} {days < 0 ? `${-days}일 경과` : `D-${days}`}</span> : null;
                         })}
                       </div>
                       {colorPickerId === d.id && (
                         <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                           {PALETTE.map(c => (
-                            <button key={c} onClick={() => handlePickColor(d.id, c)}
+                            <button key={c} aria-label={`단말기 색상 ${c}`} aria-pressed={c === color} onClick={() => handlePickColor(d.id, c)}
                               style={{
-                                width: 24, height: 24, borderRadius: 12, padding: 0,
+                                width: 44, height: 44, borderRadius: 22, padding: 0,
                                 background: c, border: c === color ? '2px solid var(--text)' : '1px solid var(--border)',
                                 cursor: 'pointer',
                               }} />
@@ -1158,10 +1082,11 @@ export default function Dashboard({ onLogout }) {
               } : undefined}
               onUserPan={handleUserPan}
               onViewChange={handleMapViewChange} />
-            {!fullToolOpen && <MapTopOverlay
+            {!fullToolOpen && !pointInfo && <MapTopOverlay
               devices={devices} selected={filterDeviceId} onSelect={persistFilterDevice}
               mapRef={mapRef} onOpenRoadview={openRoadview}
               showSpeed={view === 'home' && trackLive && filterDeviceId !== null}
+              historyMode={showMiniSeeker}
               liveSpeed={liveSpeed} now={speedNow} cachedSources={cachedMapSources}
             />}
 
@@ -1170,14 +1095,9 @@ export default function Dashboard({ onLogout }) {
                   좌하단: 등록된 펜스 목록 (scrollable, 토글 ON 일 때만)
                   showFences 가 토글의 상태 — 기존 지도 펜스 원 표시 플래그와 공유.
                   알람 토글 / 이력은 홈의 운행 도구 → 지오펜스 관리에서 확인. */}
-            {view === 'home' && !fullToolOpen && (!pointInfo || showMiniSeeker) && (() => {
+            {view === 'home' && !fullToolOpen && !pointInfo && (() => {
               const stripLift = showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0;
-              // 툴팁: 모바일·PC 모두 좌측 패널 옆에 떠 — 펜스 list 와 같은 좌측 영역 점유.
-              // FAB lift 는 모바일만 (PC 는 FAB 가 우측이라 충돌 X).
-              // FenceList lift 는 양쪽 — tooltip 위쪽으로 list 띄움.
-              const tooltipLiftForFab  = (!isDesktop && pointInfo && showMiniSeeker) ? 120 : 0;
-              const tooltipLiftForList = (pointInfo && showMiniSeeker) ? 120 : 0;
-              const fabBottom = (isDesktop ? 24 : 16) + stripLift + tooltipLiftForFab;
+              const fabBottom = (isDesktop ? 24 : 16) + stripLift;
               return (
                 <HomeFenceQuick
                   devices={devices}
@@ -1185,21 +1105,22 @@ export default function Dashboard({ onLogout }) {
                   fences={fences}
                   onChange={loadFences}
                   filterDeviceId={filterDeviceId}
-                  bottomLift={stripLift + tooltipLiftForList}
+                  bottomLift={stripLift}
                   fabBottom={fabBottom}
                   enabled={showFences}
                   onToggleEnabled={setShowFences}
                   listSide={isDesktop ? 'right' : 'left'}
+                  showList={!showMiniSeeker}
                 />
               );
             })()}
 
-            {view === 'home' && !fullToolOpen && (!pointInfo || showMiniSeeker) && (
+            {view === 'home' && !fullToolOpen && !pointInfo && (
               <MapActions
                 hasDevice={hasSelectedDevice} tracking={userTrackPref} paused={seekerPaused}
                 miniOpen={showMiniSeeker}
                 bottom={(isDesktop ? 24 : 16) + (showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0)
-                  + (!isDesktop && pointInfo && showMiniSeeker ? 120 : 0) + (showFences ? 60 : 0) + 60}
+                  + (showFences ? 60 : 0) + 60}
                 onTracking={() => {
                   setUserTrackPref(p => !p);
                   if (!seekerPaused) mapRef.current?.focusDevice?.(filterDeviceId, { level: 3 });
@@ -1252,7 +1173,7 @@ export default function Dashboard({ onLogout }) {
               />
             )}
 
-            {/* 컴팩트 시커 오버레이 — home + 디바이스 필터, 패널 시커/지오펜스 중복 X.
+            {/* 컴팩트 시커 오버레이 — home + 단말기 필터, 패널 시커/지오펜스 중복 X.
                 월/일/시간 3-phase wizard 통합 (구 HomeMapSeeker 흡수). */}
             {showMiniSeeker && view === 'home' && filterDeviceId !== null && (
               <MiniSeekerOverlay
@@ -1316,10 +1237,10 @@ export default function Dashboard({ onLogout }) {
         />
       )}
 
-      {/* 페어링 해제 모달 — 보관/삭제/취소 명시 선택 */}
+      {/* 연결 해제 모달 — 보관/삭제/취소 명시 선택 */}
       {unpairTarget && (
         <UnpairModal
-          deviceName={unpairTarget.display_name || unpairTarget.device_uid || `디바이스 #${unpairTarget.id}`}
+          deviceName={unpairTarget.display_name || unpairTarget.device_uid || `단말기 #${unpairTarget.id}`}
           busy={unpairBusy}
           onClose={() => !unpairBusy && setUnpairTarget(null)}
           onKeep={() => performUnpair(unpairTarget.id, false)}
@@ -1328,7 +1249,7 @@ export default function Dashboard({ onLogout }) {
       )}
 
       {showOnboarding && <OnboardingModal onDone={() => setShowOnboarding(false)} />}
-      {/* 페어링 튜토리얼 — /devices/pair 진입 + 디바이스 0개 (또는 ?tutorial=1) */}
+      {/* 연결 튜토리얼 — /devices/pair 진입 + 단말기 0개 (또는 ?tutorial=1) */}
       {pairTutorialOpen && (
         <PairTutorial
           onClose={() => setPairTutorialOpen(false)}
@@ -1388,25 +1309,6 @@ const s = {
     width: 28, height: 28, borderRadius: 6,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     transition: 'background .15s, color .15s',
-  },
-  iconBtnSmall: {
-    background: 'transparent', border: 'none', cursor: 'pointer',
-    color: 'var(--text-3)',
-    width: 22, height: 22, borderRadius: 5,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    transition: 'color .15s',
-  },
-  detailBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: 4,
-    padding: '5px 10px', borderRadius: 6,
-    background: 'var(--primary)', color: 'var(--primary-fg)',
-    border: 'none', cursor: 'pointer',
-    fontSize: 12, fontWeight: 600,
-    boxShadow: '0 1px 2px rgba(59,130,246,0.25)',
-    transition: 'background .15s, transform .05s',
-  },
-  detailBtnActive: {
-    background: 'var(--text)', color: 'var(--surface)',
   },
   deviceCard: {
     background: 'var(--surface)',

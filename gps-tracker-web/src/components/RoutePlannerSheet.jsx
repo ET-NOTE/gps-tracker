@@ -1,3 +1,4 @@
+import { mapSheet } from './mapSheetStyles';
 // 경로 계획 (Route Planner) — 여러 목적지 입력 → 최단 순서 순서 제안 → 지도 표시.
 // 알고리즘: nearest-neighbor TSP (client-side, haversine 거리).
 // 주소 검색: kakao.maps.services.Places (키워드 검색).
@@ -134,30 +135,27 @@ export default function RoutePlannerSheet({ mapRef, onClose }) {
   } : {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     maxHeight: 'min(80vh, 100%)',
-    borderRadius: '20px 20px 0 0',
-    boxShadow: '0 -4px 24px rgba(0,0,0,.18)',
+    borderRadius: mapSheet.surface.borderRadius,
+    boxShadow: mapSheet.surface.boxShadow,
     background: 'var(--surface)', border: '1px solid var(--border)',
     display: 'flex', flexDirection: 'column', zIndex: 20, overflow: 'hidden',
   };
 
   return (
-    <div style={panelStyle}>
+    <div className="gps-map-tool" style={panelStyle}>
       {/* 헤더 */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px',
-        borderBottom: '1px solid var(--border)', flexShrink: 0,
-      }}>
+      <div style={mapSheet.header}>
         <div style={{
           width: 36, height: 36, borderRadius: 10,
-          background: '#4f46e520', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--status-info-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Icon name="mapPin" size={18} style={{ color: '#4f46e5' }} />
+          <Icon name="mapPin" size={18} style={{ color: 'var(--primary)' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>경로 계획</div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)' }}>직선거리로 방문 순서 제안 · 도로 경로 아님</div>
+          <div style={{ fontSize: 12, color: 'var(--text-2)' }}>직선거리로 방문 순서 제안 · 도로 경로 아님</div>
         </div>
-        <button aria-label="경로 계획 닫기" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-2)', padding: 4 }}>
+        <button aria-label="경로 계획 닫기" onClick={onClose} style={mapSheet.close}>
           <Icon name="close" size={20} />
         </button>
       </div>
@@ -183,7 +181,7 @@ export default function RoutePlannerSheet({ mapRef, onClose }) {
               }}
             />
             {searching && (
-              <span style={{ fontSize: 10, color: 'var(--text-2)' }}>검색 중…</span>
+              <span style={{ fontSize: 12, color: 'var(--text-2)' }}>검색 중…</span>
             )}
           </div>
           {/* 검색 결과 드롭다운 */}
@@ -201,7 +199,7 @@ export default function RoutePlannerSheet({ mapRef, onClose }) {
                   cursor: 'pointer', borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none',
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.label}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2 }}>{s.addr}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{s.addr}</div>
                 </button>
               ))}
             </div>
@@ -220,14 +218,14 @@ export default function RoutePlannerSheet({ mapRef, onClose }) {
                 <div style={{
                   width: 26, height: 26, borderRadius: 13, flexShrink: 0,
                   background: i === 0 ? '#10B981' : i === waypoints.length - 1 ? '#EF4444' : '#4f46e5',
-                  color: '#fff', fontWeight: 700, fontSize: 12,
+                  color: 'var(--primary-fg)', fontWeight: 700, fontSize: 12,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   {i + 1}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.label}</div>
-                  {w.addr && <div style={{ fontSize: 11, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.addr}</div>}
+                  {w.addr && <div style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.addr}</div>}
                 </div>
                 <button aria-label={`${w.label} 목적지 제거`} onClick={() => removeWaypoint(w.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-2)', padding: 2 }}>
                   <Icon name="close" size={14} />
@@ -252,7 +250,7 @@ export default function RoutePlannerSheet({ mapRef, onClose }) {
             <Icon name="route" size={15} style={{ color: optimized ? '#4f46e5' : 'var(--text-2)' }} />
             <span style={{ fontSize: 13, color: 'var(--text)' }}>
               직선거리 합계: <strong>{totalKm.toFixed(1)} km</strong>
-              {optimized && <span style={{ fontSize: 11, color: '#4f46e5', marginLeft: 6 }}>• 순서 제안됨</span>}
+              {optimized && <span style={{ fontSize: 12, color: 'var(--primary)', marginLeft: 6 }}>• 순서 제안됨</span>}
             </span>
           </div>
         )}
@@ -262,7 +260,7 @@ export default function RoutePlannerSheet({ mapRef, onClose }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={optimize} style={{
               flex: 1, padding: '10px 0', borderRadius: 10,
-              background: '#4f46e5', color: '#fff', border: 'none',
+              background: '#4f46e5', color: 'var(--primary-fg)', border: 'none',
               fontWeight: 700, fontSize: 13, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}>

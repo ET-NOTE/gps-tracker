@@ -104,7 +104,7 @@ export default function Modal({
                   border: 'none', cursor: 'pointer',
                   padding: 'var(--space-1) var(--space-2)',
                   borderRadius: 'var(--radius-sm)',
-                  fontSize: 18, lineHeight: 1,
+                  fontSize: 18, lineHeight: 1, minWidth: 44, minHeight: 44,
                 }}
               >×</button>
             )}

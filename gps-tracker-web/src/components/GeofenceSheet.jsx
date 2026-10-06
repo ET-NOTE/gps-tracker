@@ -1,3 +1,5 @@
+import Switch from './ui/Switch';
+import { mapSheet } from './mapSheetStyles';
 // 홈 탭에서 지오펜스 관리를 띄우는 시트.
 // - mobile/tablet: 화면 하단 슬라이드업 시트
 // - desktop:       지도 우측 패널 (380px)
@@ -26,7 +28,7 @@ export default function GeofenceSheet({
   const isDesktop = bp === 'desktop';
   const [tab, setTab] = useState('list');   // 'list' | 'history'
 
-  // 모달 내 디바이스 선택 — 전역 필터 default, 사용자가 모달 내에서 임의 변경 가능.
+  // 모달 내 단말기 선택 — 전역 필터 default, 사용자가 모달 내에서 임의 변경 가능.
   // null = 전체. 전역 필터 변경 시 동기화.
   const [localDevId, setLocalDevId] = useState(filterDeviceId ?? null);
   useEffect(() => { setLocalDevId(filterDeviceId ?? null); }, [filterDeviceId]);
@@ -38,14 +40,14 @@ export default function GeofenceSheet({
 
   return (
     <>
-      <div style={isDesktop ? s.deskWindow : s.bottom}>
+      <div className="gps-map-tool" style={isDesktop ? s.deskWindow : s.bottom}>
         <header style={s.header} {...swipe}>
           {!isDesktop && <div style={s.dragHandle} />}
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
             <Icon name="fence" size={16} style={{ color: 'var(--primary)' }} />
             지오펜스
           </span>
-          <button onClick={onClose} style={s.closeBtn} title="닫기">
+          <button onClick={onClose} style={s.closeBtn} title="닫기" aria-label="닫기">
             <Icon name="close" size={14} />
           </button>
         </header>
@@ -68,13 +70,13 @@ export default function GeofenceSheet({
           />
         </div>
 
-        {/* 디바이스 필터 — 모달 안에서 자유 선택 (전역 필터와 별개) */}
+        {/* 단말기 필터 — 모달 안에서 자유 선택 (전역 필터와 별개) */}
         <div style={s.deviceFilter}>
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>보기 대상</span>
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>보기 대상</span>
           <select value={localDevId ?? 'all'}
             onChange={e => setLocalDevId(e.target.value === 'all' ? null : parseInt(e.target.value, 10))}
             style={s.deviceSelect}>
-            <option value="all">전체 디바이스</option>
+            <option value="all">전체 단말기</option>
             {devices.map(d => (
               <option key={d.id} value={d.id}>
                 {d.display_name || d.device_uid}
@@ -118,25 +120,9 @@ function ToggleRow({ label, sub, value, disabled, onChange, primary }) {
     }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: primary ? 600 : 500, color: 'var(--text)' }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{sub}</div>}
       </div>
-      <button onClick={() => !disabled && onChange?.(!value)}
-        disabled={disabled}
-        style={{
-          position: 'relative', width: 40, height: 22, borderRadius: 11,
-          border: 'none', padding: 0,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          background: value ? 'var(--primary)' : 'var(--surface-2)',
-          transition: 'background .15s',
-        }}>
-        <span style={{
-          position: 'absolute', top: 2, left: 2,
-          width: 18, height: 18, borderRadius: 9,
-          background: 'white',
-          transform: `translateX(${value ? 18 : 0}px)`,
-          transition: 'transform .15s',
-        }} />
-      </button>
+      <Switch label={label} checked={value} disabled={disabled} onChange={onChange} />
     </div>
   );
 }
@@ -154,7 +140,7 @@ function HistoryView({ devices, filterDeviceId }) {
   if (error) return <div style={s.empty}>{error}</div>;
   if (rows === null) return <div style={s.empty}>로딩...</div>;
 
-  // 필터 존중 — 선택된 디바이스의 이벤트만
+  // 필터 존중 — 선택된 단말기의 이벤트만
   const filtered = filterDeviceId == null
     ? rows
     : rows.filter(r => r.device_id === filterDeviceId);
@@ -163,7 +149,7 @@ function HistoryView({ devices, filterDeviceId }) {
     return <div style={s.empty}>
       {filterDeviceId == null
         ? <>아직 펜스 이벤트가 없습니다.<br />펜스 진입·이탈·활성화 시 여기에 기록됩니다.</>
-        : <>이 디바이스의 펜스 이벤트가 아직 없습니다.</>}
+        : <>이 단말기의 펜스 이벤트가 아직 없습니다.</>}
     </div>;
   }
 
@@ -185,14 +171,14 @@ function HistoryView({ devices, filterDeviceId }) {
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
                 {r.geofence_name || `펜스 #${r.geofence_id ?? '?'}`} <span style={{ color: meta.color, fontWeight: 500 }}>· {meta.label}</span>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
                 {devName}{distTxt && ` · ${distTxt}`}
                 {r.kind === 'geofence_armed' && r.inside !== null && (
                   <> · {r.inside ? '안에 있음' : '밖에 있음'}</>
                 )}
               </div>
             </div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
               {fmtTime(r.occurred_at)}
             </div>
           </div>
@@ -223,9 +209,9 @@ const s = {
     maxHeight: 'min(78vh, 100%)',
     background: 'var(--surface)',
     borderTop: '1px solid var(--border)',
-    borderRadius: '14px 14px 0 0',
+    borderRadius: mapSheet.surface.borderRadius,
     display: 'flex', flexDirection: 'column',
-    boxShadow: '0 -8px 24px rgba(0,0,0,.25)',
+    boxShadow: mapSheet.surface.boxShadow,
     zIndex: 11,
     paddingBottom: 'env(safe-area-inset-bottom, 0)',
     animation: 'fadeInUp .18s ease-out',
@@ -244,14 +230,7 @@ const s = {
     zIndex: 11,
     animation: 'fadeInDown .18s ease-out',
   },
-  header: {
-    position: 'relative',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '12px 14px',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-    touchAction: 'none',
-  },
+  header: { ...mapSheet.header, touchAction: 'none' },
   dragHandle: {
     position: 'absolute',
     top: 6, left: '50%', transform: 'translateX(-50%)',
@@ -259,12 +238,7 @@ const s = {
     background: 'var(--text-3)', opacity: 0.35,
     pointerEvents: 'none',
   },
-  closeBtn: {
-    background: 'transparent', border: 'none', cursor: 'pointer',
-    color: 'var(--text-2)',
-    width: 28, height: 28, borderRadius: 6,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  },
+  closeBtn: mapSheet.close,
   toggleBlock: {
     flexShrink: 0,
     background: 'var(--surface-2)',

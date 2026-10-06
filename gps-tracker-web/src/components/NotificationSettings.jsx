@@ -1,3 +1,4 @@
+import Switch from './ui/Switch';
 // 알림 설정 — STATUS 분류와 1:1 매핑.
 //   통신 상태:    signal_loss / offline / online (복구)
 //   배터리:       low_batt
@@ -123,12 +124,12 @@ function Group({ title, desc, children }) {
   return (
     <div>
       <div style={{
-        fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
+        fontSize: 12, fontWeight: 700, color: 'var(--text-2)',
         textTransform: 'uppercase', letterSpacing: '0.04em',
         marginBottom: 4,
       }}>{title}</div>
       {desc && (
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>{desc}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>{desc}</div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{children}</div>
     </div>
@@ -140,16 +141,9 @@ function Toggle({ label, sub, value, onChange }) {
     <div style={row}>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 13, color: 'var(--text)' }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{sub}</div>}
       </div>
-      <button type="button" role="switch" aria-label={label} aria-checked={!!value} onClick={() => onChange(!value)} style={{
-        ...sw, background: value ? 'var(--accent)' : 'var(--surface)',
-        flexShrink: 0,
-      }}>
-        <span style={{
-          ...swKnob, transform: `translateX(${value ? 20 : 0}px)`,
-        }} />
-      </button>
+      <Switch label={label} checked={value} onChange={onChange} />
     </div>
   );
 }
@@ -179,16 +173,6 @@ const row = {
   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
   gap: 12, padding: '10px 12px',
   background: 'var(--surface-2)', borderRadius: 8,
-};
-const sw    = {
-  position: 'relative', width: 44, height: 24, borderRadius: 12,
-  border: '1px solid var(--border)', cursor: 'pointer',
-  transition: 'background .15s', padding: 0,
-};
-const swKnob = {
-  position: 'absolute', left: 1, top: 1, width: 20, height: 20, borderRadius: 10,
-  background: 'white', transition: 'transform .15s',
-  boxShadow: '0 1px 3px rgba(0,0,0,.2)',
 };
 const input = {
   width: 80, padding: '4px 8px',

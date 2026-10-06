@@ -186,6 +186,10 @@ test('theme: invalid names normalize, storage failure still renders, foregrounds
   const ratio = (a,b) => (Math.max(luminance(a),luminance(b))+.05)/(Math.min(luminance(a),luminance(b))+.05);
   for (const tokens of Object.values(theme.THEMES)) {
     assert.ok(ratio(tokens['--primary'], tokens['--primary-fg']) >= 4.5);
+    for (const state of ['success', 'warning', 'danger', 'info']) {
+      assert.ok(ratio(tokens[`--status-${state}-text`], tokens[`--status-${state}-bg`]) >= 4.5, state);
+    }
+    assert.ok(ratio(tokens['--accent'], tokens['--accent-fg']) >= 4.5);
     assert.ok(ratio(tokens['--text-3'], tokens['--surface']) >= 4.5);
     assert.ok(ratio(tokens['--text-3'], tokens['--surface-2']) >= 4.5);
   }

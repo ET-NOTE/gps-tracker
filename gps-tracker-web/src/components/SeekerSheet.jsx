@@ -1,4 +1,5 @@
-// 홈 운행 도구의 상세 시커 — 선택된 디바이스의 과거 위치 탐색.
+import { mapSheet } from './mapSheetStyles';
+// 홈 운행 도구의 상세 운행 분석 — 선택된 단말기의 과거 위치 탐색.
 // 두 가지 모드:
 //   ① 일간: 한 날짜 + 시간 윈도우. KPI / 슬라이더 / 재생 / AI 분석 모두 한 화면에.
 //   ② 월간: 그 달 전체 — 히트맵 달력 + 그 달 모든 점 지도 표시. 날짜 클릭 → 일간으로.
@@ -178,7 +179,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   }, []);
 
   // ─── 일별 통계 (365일) — 한 번만 ─────────────────────────
-  // active-dates 와 union: daily_stats 가 catchup 안 된 날짜도 시커가 인식하도록.
+  // active-dates 와 union: daily_stats 가 catchup 안 된 날짜도 운행 분석가 인식하도록.
   const [activeDates, setActiveDates] = useState([]);
   const [datesLoading, setDatesLoading] = useState(true);
   const [datesError, setDatesError] = useState(null);
@@ -577,7 +578,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             <option value={300}>300x</option>
             <option value={600}>600x</option>
           </select>
-          <button onClick={onClose} style={sty.closeBtn} title="닫기">
+          <button onClick={onClose} style={sty.closeBtn} title="닫기" aria-label="닫기">
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -600,7 +601,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   }
 
   return (
-    <section aria-label="상세 시커" style={isDesktop ? sty.deskWindow : sty.bottom}>
+    <section aria-label="상세 운행 분석" className="gps-map-tool" style={isDesktop ? sty.deskWindow : sty.bottom}>
       {/* ── 헤더 ── 모바일은 swipe-down 으로도 닫힘. drag handle 시각 표시. */}
       <header style={sty.header} {...swipe}>
         {!isDesktop && <div style={sty.dragHandle} />}
@@ -608,13 +609,13 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
           <Icon name="route" size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {device?.display_name || device?.device_uid || '디바이스'}
+              {device?.display_name || device?.device_uid || '단말기'}
             </div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>히스토리</div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 1 }}>운행 분석</div>
           </div>
         </div>
         <button onClick={() => setRefreshKey(v => v + 1)} disabled={loading} style={{ ...sty.closeBtn, width: 'auto', padding: '0 10px', marginLeft: 'auto', whiteSpace: 'nowrap' }}>새로고침</button>
-        <button onClick={onClose} style={sty.closeBtn} title="닫기">
+        <button onClick={onClose} style={sty.closeBtn} title="닫기" aria-label="닫기">
           <Icon name="close" size={14} />
         </button>
       </header>
@@ -642,14 +643,14 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         <span>경로 요약</span>
         {['auto', '1m', '5m', '1h'].map(p => (
           <button key={p} aria-pressed={precision === p} onClick={() => setPrecision(p)} style={{
-            padding: '6px 10px', minHeight: 32,
+            padding: '6px 10px', minHeight: 44,
             border: '1px solid ' + (precision === p ? 'var(--primary)' : 'var(--border)'),
             background: precision === p ? 'var(--primary)' : 'var(--surface-2)',
             color: precision === p ? 'var(--primary-fg)' : 'var(--text-2)',
             borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 12,
           }}>{p === 'auto' ? '자동' : BUCKET_LABEL[p]}</button>
         ))}
-        <div style={{ width: '100%', fontSize: 11 }}>{BUCKET_LABEL[bucket]} 간격 대표점 · 한국 시간 (KST)</div>
+        <div style={{ width: '100%', fontSize: 12 }}>{BUCKET_LABEL[bucket]} 간격 대표점 · 한국 시간 (KST)</div>
       </div>
 
       <div style={sty.body} aria-busy={loading}>
@@ -721,9 +722,9 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                         title={`${fmt(start)}~${fmt(end)}, ${km} km${t.eventConfirmed ? ' (이벤트 확정)' : ''}`}>
                         운행 {i + 1}
                         {t.eventConfirmed && (
-                          <span style={{ fontSize: 9, marginLeft: 3, opacity: 0.85 }} title="sleep/wake 이벤트로 경계 확정">●</span>
+                          <span style={{ fontSize: 12, marginLeft: 3, opacity: 0.85 }} title="sleep/wake 이벤트로 경계 확정">●</span>
                         )}
-                        <span style={{ fontSize: 9, marginLeft: 4, opacity: 0.7 }}>
+                        <span style={{ fontSize: 12, marginLeft: 4, opacity: 0.7 }}>
                           {fmt(start)}~{fmt(end)} · {km}km
                         </span>
                       </button>
@@ -746,7 +747,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                 )}
                 {compareMode && compareIdxs.length < 2 && (
                   <div style={{
-                    fontSize: 11, color: 'var(--text-3)', marginBottom: 8, textAlign: 'center',
+                    fontSize: 12, color: 'var(--text-3)', marginBottom: 8, textAlign: 'center',
                     background: 'var(--surface-2)', borderRadius: 6, padding: 8,
                   }}>
                     비교할 운행 {2 - compareIdxs.length}개 더 선택하세요
@@ -756,7 +757,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
             )}
 
             {/* KPI */}
-            {points.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 8 }}>
+            {points.length > 0 && <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 8 }}>
               {bucket === '1h' ? '1시간 요약에서는 거리·운행·정차를 판별하기 어렵습니다. 1분 또는 5분을 선택하세요.' : '거리·운행·정차는 표시 경로의 추정치입니다.'}
             </div>}
             {points.length > 0 ? (
@@ -879,13 +880,13 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                     AI 운행 분석
                     {aiHistory.length > 0 && (
                       <span style={{
-                        fontSize: 10, padding: '1px 6px', borderRadius: 8,
+                        fontSize: 12, padding: '1px 6px', borderRadius: 8,
                         background: 'var(--surface)', color: 'var(--primary)',
                         border: '1px solid var(--primary)',
                       }}>{aiHistory.length}</span>
                     )}
                   </span>
-                  <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
                     {aiUsage
                       ? aiUsage.unlimited
                         ? '무제한'
@@ -900,7 +901,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                       <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center' }}>
                         <select value={selectedAiId || ''}
                           onChange={e => setSelectedAiId(parseInt(e.target.value, 10))}
-                          style={{ ...sty.smallSelect, flex: 1, padding: '6px 8px', fontSize: 11 }}>
+                          style={{ ...sty.smallSelect, flex: 1, padding: '6px 8px', fontSize: 12 }}>
                           {aiHistory.map(r => (
                             <option key={r.id} value={r.id}>
                               {new Date(r.created_at).toLocaleString('ko-KR', {
@@ -914,7 +915,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                         {selectedAnalysis && (
                           <button onClick={() => handleDeleteAnalysis(selectedAnalysis.id)}
                             style={{
-                              padding: '5px 8px', fontSize: 10,
+                              padding: '5px 8px', fontSize: 12,
                               background: 'transparent', color: 'var(--danger)',
                               border: '1px solid var(--danger)', borderRadius: 4, cursor: 'pointer',
                             }} title="이 분석 삭제">
@@ -929,7 +930,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
                       <>
                         <div style={sty.aiText}>{aiText}</div>
                         <div style={{
-                          fontSize: 10, color: 'var(--text-3)', marginBottom: 6,
+                          fontSize: 12, color: 'var(--text-3)', marginBottom: 6,
                           display: 'flex', justifyContent: 'space-between', gap: 6,
                         }}>
                           <span>{selectedAnalysis?.model || ''}</span>
@@ -984,13 +985,13 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         {/* 속도 색상 범례 */}
         {speedColor && points.length > 0 && (
           <div style={sty.legend}>
-            <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 4 }}>속도</span>
+            <span style={{ fontSize: 12, color: 'var(--text-3)', marginRight: 4 }}>속도</span>
             <Legend color="#EF4444" label="정지/저속" />
             <Legend color="#F59E0B" label="<30" />
             <Legend color="#10B981" label="<60" />
             <Legend color="#3B82F6" label="<100" />
             <Legend color="#8B5CF6" label=">100" />
-            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>km/h</span>
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>km/h</span>
           </div>
         )}
       </div>
@@ -1008,7 +1009,7 @@ function DateRow({ date, availDates, hasData, onChange, pending }) {
       <button onClick={() => setOpen(o => !o)} style={{ ...sty.dateBtn, flex: 1 }}>
         <Icon name="route" size={12} style={{ opacity: 0.5 }} />
         <span style={{ flex: 1, textAlign: 'left' }}>{date}</span>
-        {!pending && !hasData && <span style={{ fontSize: 10, color: 'var(--warning)' }}>데이터 없음</span>}
+        {!pending && !hasData && <span style={{ fontSize: 12, color: 'var(--warning)' }}>데이터 없음</span>}
         <Icon name={open ? 'close' : 'plus'} size={12} />
       </button>
       {!isToday && (
@@ -1143,14 +1144,14 @@ function HeatCalendar({ month, dailyStats, activeDates, maxDistance, onDayClick 
         })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
-        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>적음</span>
+        <span style={{ fontSize: 12, color: 'var(--text-3)' }}>적음</span>
         {[0.15, 0.3, 0.5, 0.7, 0.9].map((a, i) => (
           <span key={i} style={{
             width: 14, height: 8, borderRadius: 2,
             background: `color-mix(in srgb, var(--primary) ${a * 100}%, var(--surface))`,
           }} />
         ))}
-        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>많음</span>
+        <span style={{ fontSize: 12, color: 'var(--text-3)' }}>많음</span>
       </div>
     </div>
   );
@@ -1231,7 +1232,7 @@ function DataCalendar({ value, availDates, onChange }) {
 function Kpi({ label, value }) {
   return (
     <div style={sty.kpiCell}>
-      <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 14, fontWeight: 700 }}>{value}</div>
     </div>
   );
@@ -1364,13 +1365,13 @@ const cmpsty = {
     borderRadius: 8, padding: 8, marginBottom: 10,
     overflowX: 'auto',
   },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 11 },
-  thLbl: { textAlign: 'left', padding: '4px 6px', color: 'var(--text-3)', fontWeight: 500, fontSize: 10 },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
+  thLbl: { textAlign: 'left', padding: '4px 6px', color: 'var(--text-3)', fontWeight: 500, fontSize: 12 },
   th:    { textAlign: 'right', padding: '4px 6px', color: 'var(--primary)', fontWeight: 600, whiteSpace: 'nowrap' },
-  thDiff:{ textAlign: 'right', padding: '4px 6px', color: 'var(--text-3)', fontSize: 10 },
+  thDiff:{ textAlign: 'right', padding: '4px 6px', color: 'var(--text-3)', fontSize: 12 },
   lblCell: { padding: '4px 6px', color: 'var(--text-2)', whiteSpace: 'nowrap' },
   valCell: { padding: '4px 6px', textAlign: 'right', color: 'var(--text)', fontWeight: 500, whiteSpace: 'nowrap' },
-  diffCell: { padding: '4px 6px', textAlign: 'right', fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' },
+  diffCell: { padding: '4px 6px', textAlign: 'right', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' },
 };
 
 // 듀얼 thumb 시간 범위 슬라이더 — 10분 단위 (144 슬롯/일).
@@ -1437,7 +1438,7 @@ function TimeRangeSlider({ startSlot, hours, availableSlots, onChange }) {
       `}</style>
       <div style={trsty.label}>
         <span style={{ fontWeight: 600, color: 'var(--text)' }}>{fmt(startIdx)} ~ {fmt(endIdx)}</span>
-        <span style={{ color: 'var(--text-3)', fontSize: 10 }}>{durLabel}</span>
+        <span style={{ color: 'var(--text-3)', fontSize: 12 }}>{durLabel}</span>
       </div>
       <div style={trsty.sliderBox}>
         {/* 트랙 + active 구간 */}
@@ -1502,10 +1503,10 @@ const trsty = {
     overflowX: 'auto', WebkitOverflowScrolling: 'touch',
   },
   preset: {
-    padding: '4px 8px', minHeight: 28,
+    padding: '4px 8px', minHeight: 44,
     background: 'transparent', color: 'var(--text-2)',
     border: '1px solid var(--border)', borderRadius: 12,
-    fontSize: 10, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+    fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
   },
 };
 
@@ -1517,7 +1518,7 @@ function ChipToggle({ label, icon, on, onClick }) {
       border: `1px solid ${on ? 'var(--primary)' : 'var(--border)'}`,
       background: on ? 'var(--primary)' : 'transparent',
       color: on ? 'var(--primary-fg)' : 'var(--text-2)',
-      fontSize: 11, fontWeight: 500, cursor: 'pointer',
+      fontSize: 12, fontWeight: 500, cursor: 'pointer',
       transition: 'all .12s',
     }}>
       <Icon name={icon} size={12} />
@@ -1527,7 +1528,7 @@ function ChipToggle({ label, icon, on, onClick }) {
 }
 function Legend({ color, label }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--text-2)' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'var(--text-2)' }}>
       <span style={{ width: 10, height: 3, background: color, borderRadius: 2 }} />
       {label}
     </span>
@@ -1560,9 +1561,9 @@ const sty = {
     maxHeight: 'min(78vh, 100%)',
     background: 'var(--surface)',
     borderTop: '1px solid var(--border)',
-    borderRadius: '14px 14px 0 0',
+    borderRadius: mapSheet.surface.borderRadius,
     display: 'flex', flexDirection: 'column',
-    boxShadow: '0 -8px 24px rgba(0,0,0,.25)',
+    boxShadow: mapSheet.surface.boxShadow,
     zIndex: 11,
     paddingBottom: 'env(safe-area-inset-bottom, 0)',
     animation: 'fadeInUp .18s ease-out',
@@ -1581,14 +1582,7 @@ const sty = {
     zIndex: 11,
     animation: 'fadeInUp .18s ease-out',
   },
-  header: {
-    position: 'relative',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '12px 14px',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-    touchAction: 'none', // 헤더 위 swipe 가 페이지 스크롤로 새지 않도록.
-  },
+  header: { ...mapSheet.header, touchAction: 'none' },
   // 모바일 sheet 상단 끌기 인디케이터 — 사용자에게 swipe-down 가능 신호.
   dragHandle: {
     position: 'absolute',
@@ -1597,12 +1591,7 @@ const sty = {
     background: 'var(--text-3)', opacity: 0.35,
     pointerEvents: 'none',
   },
-  closeBtn: {
-    background: 'transparent', border: 'none', cursor: 'pointer',
-    color: 'var(--text-2)',
-    width: 28, height: 28, borderRadius: 6,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  },
+  closeBtn: mapSheet.close,
   tabs: {
     display: 'flex', flexShrink: 0,
     borderBottom: '1px solid var(--border)',
@@ -1637,15 +1626,15 @@ const sty = {
     paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0))',
   },
   compactExpand: {
-    position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
-    width: 48, height: 28, borderRadius: 14,
+    position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)',
+    width: 48, height: 44, borderRadius: 14,
     background: 'var(--surface)', color: 'var(--text-2)',
     border: '1px solid var(--border)', cursor: 'pointer',
     fontSize: 14, fontWeight: 700,
     boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
   },
   compactRow: {
-    display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
+    display: 'flex', alignItems: 'center', gap: 8, marginTop: 14,
   },
   dateBtn: {
     display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -1655,10 +1644,10 @@ const sty = {
     color: 'var(--text)', fontSize: 12, cursor: 'pointer',
   },
   todayBtn: {
-    padding: '0 12px', minHeight: 32,
+    padding: '0 12px', minHeight: 44,
     background: 'var(--surface-2)', color: 'var(--primary)',
     border: '1px solid var(--primary)', borderRadius: 6,
-    fontSize: 11, fontWeight: 600, cursor: 'pointer',
+    fontSize: 12, fontWeight: 600, cursor: 'pointer',
     flexShrink: 0,
   },
   windowRow: { display: 'flex', gap: 6, marginBottom: 10 },
@@ -1669,7 +1658,7 @@ const sty = {
     color: 'var(--text)',
   },
   smallSelect: {
-    padding: 4, fontSize: 11,
+    padding: 4, fontSize: 12,
     background: 'var(--surface-2)',
     border: '1px solid var(--border)', borderRadius: 4,
     color: 'var(--text)',
@@ -1685,7 +1674,7 @@ const sty = {
     border: '1px solid var(--border)', borderRadius: 14,
     fontSize: 12, fontWeight: 500, cursor: 'pointer',
     whiteSpace: 'nowrap', flexShrink: 0,
-    minHeight: 32,        // 모바일 터치 타겟 (≥32px)
+    minHeight: 44,        // 모바일 터치 타겟 (≥32px)
   },
   tripPillOn: {
     background: 'var(--primary)', color: 'var(--primary-fg)',
@@ -1707,14 +1696,14 @@ const sty = {
     marginTop: 4,
   },
   playBtn: {
-    width: 38, height: 38, borderRadius: 19, border: 'none',
+    width: 44, height: 44, borderRadius: 19, border: 'none',
     background: 'var(--primary)', color: 'var(--primary-fg)',
     fontSize: 14, cursor: 'pointer', flexShrink: 0,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
   },
   cursorInfo: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    fontSize: 11, color: 'var(--text-2)',
+    fontSize: 12, color: 'var(--text-2)',
     padding: '6px 4px 0',
     gap: 8, flexWrap: 'wrap',
   },
@@ -1723,17 +1712,17 @@ const sty = {
   },
   toolBtn: {
     display: 'inline-flex', alignItems: 'center', gap: 4,
-    padding: '5px 10px', minHeight: 28,
+    padding: '5px 10px', minHeight: 44,
     background: 'var(--surface-2)', color: 'var(--text-2)',
     border: '1px solid var(--border)', borderRadius: 6,
-    fontSize: 11, fontWeight: 500, cursor: 'pointer',
+    fontSize: 12, fontWeight: 500, cursor: 'pointer',
   },
   monthNav: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '4px 6px', marginBottom: 10,
   },
   navBtn: {
-    width: 32, height: 32, borderRadius: 8,
+    width: 44, height: 44, borderRadius: 8,
     background: 'var(--surface-2)', color: 'var(--text)',
     border: '1px solid var(--border)', cursor: 'pointer',
     fontSize: 18, lineHeight: 1,
@@ -1746,10 +1735,10 @@ const sty = {
     marginBottom: 10,
   },
   emptyAction: {
-    padding: '6px 12px', minHeight: 30,
+    padding: '6px 12px', minHeight: 44,
     background: 'transparent', color: 'var(--primary)',
     border: '1px solid var(--primary)', borderRadius: 6,
-    fontSize: 11, fontWeight: 500, cursor: 'pointer',
+    fontSize: 12, fontWeight: 500, cursor: 'pointer',
   },
   legend: {
     display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center',
@@ -1814,7 +1803,7 @@ const cal = {
     marginBottom: 8,
   },
   navBtn: {
-    width: 28, height: 28, borderRadius: 6,
+    width: 44, height: 44, borderRadius: 6,
     background: 'var(--surface-2)', color: 'var(--text)',
     border: '1px solid var(--border)', cursor: 'pointer',
     fontSize: 16, lineHeight: 1,
@@ -1824,15 +1813,15 @@ const cal = {
     marginBottom: 4,
   },
   dow: {
-    fontSize: 10, fontWeight: 600, textAlign: 'center', padding: 2,
+    fontSize: 12, fontWeight: 600, textAlign: 'center', padding: 2,
   },
   grid: {
     display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3,
   },
   cell: {
     position: 'relative',
-    aspectRatio: '1', minHeight: 32,
-    fontSize: 11,
+    aspectRatio: '1', minHeight: 44,
+    fontSize: 12,
     background: 'transparent',
     color: 'var(--text)',
     border: '1px solid transparent',
@@ -1925,42 +1914,42 @@ function CycleListSection({ deviceId, color, onSeek }) {
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
           <button onClick={handleDeleteToday} disabled={loading || busy} style={{
-            fontSize: 11, padding: '3px 8px', border: '1px solid var(--danger)',
+            fontSize: 12, padding: '3px 8px', border: '1px solid var(--danger)',
             background: 'transparent', color: 'var(--danger)', borderRadius: 4, cursor: 'pointer',
           }} title="오늘 (KST 자정~자정) 전체 좌표+이벤트 삭제">🗑 오늘</button>
           <button onClick={refresh} disabled={loading || busy} style={{
-            fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)',
+            fontSize: 12, padding: '3px 8px', border: '1px solid var(--border)',
             background: 'transparent', borderRadius: 4, cursor: 'pointer',
           }}>{loading ? '⏳' : '🔄'}</button>
         </div>
       </div>
-      {error && <div style={{ fontSize: 11, color: 'var(--danger)', marginBottom: 6 }}>⚠ {error}</div>}
+      {error && <div style={{ fontSize: 12, color: 'var(--danger)', marginBottom: 6 }}>⚠ {error}</div>}
       {cycles.length === 0 ? (
-        <div style={{ fontSize: 11, color: 'var(--text-3)', padding: '4px 0' }}>이 윈도우에 사이클 없음</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', padding: '4px 0' }}>이 윈도우에 사이클 없음</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto' }}>
           {cycles.map((c, i) => (
             <div key={c.start} style={{
               display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: 6,
-              padding: '5px 8px', background: 'white', borderRadius: 5, fontSize: 11,
+              padding: '5px 8px', background: 'white', borderRadius: 5, fontSize: 12,
             }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   <span style={{ color, marginRight: 4 }}>●</span>
                   {new Date(c.start).toLocaleString('ko-KR')}
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
                   {c.endKnown ? `${Math.round(c.durationS / 60)}분` : '진행중'}
                   {c.sleepReason && c.sleepReason !== '-' ? ` · ${c.sleepReason}` : ''}
                   {c.wakeCause && c.wakeCause !== '-' ? ` · wake:${c.wakeCause}` : ''}
                 </div>
               </div>
               <button onClick={() => onSeek(c)} disabled={busy} style={{
-                fontSize: 11, padding: '3px 8px', border: 'none', background: 'var(--primary)',
+                fontSize: 12, padding: '3px 8px', border: 'none', background: 'var(--primary)',
                 color: 'white', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
               }}>▶ 보기</button>
               <button onClick={() => handleDelete(c)} disabled={busy} style={{
-                fontSize: 11, padding: '3px 6px', border: '1px solid var(--danger)',
+                fontSize: 12, padding: '3px 6px', border: '1px solid var(--danger)',
                 background: 'transparent', color: 'var(--danger)', borderRadius: 4, cursor: 'pointer',
               }} title="이 사이클 삭제">🗑</button>
             </div>

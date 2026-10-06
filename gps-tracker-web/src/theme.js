@@ -20,6 +20,11 @@ export const DESIGN_TOKENS = {
   '--space-8':  '32px',
   '--space-10': '40px',
   '--space-12': '48px',
+  '--font-caption': '12px',
+  '--font-secondary': '13px',
+  '--font-body': '14px',
+  '--font-title': '16px',
+  '--touch-target': '44px',
   // border-radius
   '--radius-xs':  '3px',
   '--radius-sm':  '6px',
@@ -55,6 +60,10 @@ export const THEMES = {
     '--danger-fg':  '#1F0808',   // 성공/상태 녹색
     '--danger':     '#EF4444',
     '--warning':    '#F59E0B',
+    '--status-success-text': '#047857', '--status-success-bg': '#ECFDF5',
+    '--status-warning-text': '#92400E', '--status-warning-bg': '#FFFBEB',
+    '--status-danger-text': '#B91C1C', '--status-danger-bg': '#FEF2F2',
+    '--status-info-text': '#1D4ED8', '--status-info-bg': '#EFF6FF',
   },
   dark: {
     '--bg':         '#0F0F1A',
@@ -71,6 +80,10 @@ export const THEMES = {
     '--danger-fg':  '#1F0808',
     '--danger':     '#F87171',
     '--warning':    '#FBBF24',
+    '--status-success-text': '#6EE7B7', '--status-success-bg': '#12352C',
+    '--status-warning-text': '#FCD34D', '--status-warning-bg': '#3C2B12',
+    '--status-danger-text': '#FCA5A5', '--status-danger-bg': '#422126',
+    '--status-info-text': '#BFDBFE', '--status-info-bg': '#1E304B',
   },
 };
 

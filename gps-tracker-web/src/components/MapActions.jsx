@@ -22,7 +22,7 @@ export default function MapActions({ hasDevice, tracking, paused, miniOpen, bott
   return <div ref={root} className="map-actions" style={{ bottom }}>
     {expanded && <div className="map-tools-menu" role="group" aria-label="운행 도구 목록">
       <button onClick={() => open('seeker')} disabled={!hasDevice}>
-        <Icon name="route" size={18} /><span>상세 시커<small>운행 분석·경로 재생</small></span>
+        <Icon name="route" size={18} /><span>운행 분석<small>운행 분석·경로 재생</small></span>
       </button>
       <button onClick={() => open('geofence')}>
         <Icon name="fence" size={18} /><span>지오펜스 관리<small>펜스 설정·알림·이력</small></span>
@@ -30,20 +30,20 @@ export default function MapActions({ hasDevice, tracking, paused, miniOpen, bott
       <button onClick={() => open('route')}>
         <Icon name="mapPin" size={18} /><span>경로 계획<small>방문할 목적지 정리</small></span>
       </button>
-      {!hasDevice && <p>상세 시커는 단말기를 선택한 뒤 사용할 수 있습니다.</p>}
+      {!hasDevice && <p>운행 분석는 단말기를 선택한 뒤 사용할 수 있습니다.</p>}
     </div>}
     <button className="map-action btn-bounce" title="운행 도구" aria-label="운행 도구"
       aria-expanded={expanded} data-active={expanded} onClick={() => setExpanded(value => !value)}>
-      <Icon name={expanded ? 'close' : 'wrench'} size={20} />
+      <Icon name={expanded ? 'close' : 'wrench'} size={18} /><span>도구</span>
     </button>
     {hasDevice && <>
       <button className="map-action map-action-tracking btn-bounce" title={trackingLabel} aria-label={trackingLabel}
         aria-pressed={tracking} data-active={tracking} data-paused={paused} onClick={() => { setExpanded(false); onTracking(); }}>
-        <Icon name="target" size={20} />
+        <Icon name="target" size={18} /><span>{tracking ? (paused ? '추적 대기' : '추적 중') : '자동 추적'}</span>
       </button>
-      <button className="map-action btn-bounce" title="컴팩트 시커" aria-label="컴팩트 시커" aria-pressed={miniOpen}
+      <button className="map-action btn-bounce" title="이동 기록" aria-label="이동 기록" aria-pressed={miniOpen}
         data-active={miniOpen} onClick={() => { setExpanded(false); onMini(); }}>
-        <Icon name="clock" size={20} />
+        <Icon name="clock" size={18} /><span>이동 기록</span>
       </button>
     </>}
   </div>;

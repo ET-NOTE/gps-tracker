@@ -23,10 +23,7 @@ export default function MapControls({ mapRef, onOpenRoadview }) {
     mapRef.current?.toggleCadastral(next);
   }
 
-  // 모바일에서 "눈 아이콘 → 지도/위성 → 다시 눈" 시 두번째 눈 클릭이 자주 씹힘.
-  // 원인: ① 36x36 작은 hit-area + Kakao 지도의 touch-drag 핸들러가 미세 움직임 흡수
-  //       ② 300ms 클릭 지연 + ghost click 충돌
-  // 대책: touchAction:'manipulation' (지연 제거) + onPointerUp 우선 + stopPropagation.
+  // Native click supports touch, mouse and keyboard without double toggling.
   function toggleExpanded(e) {
     e.stopPropagation();
     setExpanded(prev => !prev);
@@ -36,11 +33,11 @@ export default function MapControls({ mapRef, onOpenRoadview }) {
     <div style={s.wrap}>
       {/* 항상 보이는 토글 — 눈 아이콘. 펼친 상태일 때 primary 색상으로 활성 표시. */}
       <button
-        onPointerUp={toggleExpanded}
-        onClick={(e) => e.stopPropagation()}  // 중복 발화 방지 (pointerUp 이 이미 처리)
+        onClick={toggleExpanded}
+        aria-label="지도 옵션" aria-expanded={expanded}
         title={expanded ? '컨트롤 숨기기' : '지도 옵션'}
         style={{ ...s.iconBtn, ...(expanded ? s.iconOn : null) }}>
-        <Icon name="eye" size={16} />
+        <Icon name="map" size={18} /><span>지도</span>
       </button>
 
       {/* 펼침 그룹 — 토글 활성 시에만 노출. */}
@@ -50,8 +47,7 @@ export default function MapControls({ mapRef, onOpenRoadview }) {
           <div style={{ ...s.segment, animation: 'fadeInUp .15s ease-out' }}>
             {TYPES.map(t => (
               <button key={t.id}
-                onPointerUp={(e) => { e.stopPropagation(); selectType(t.id); }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); selectType(t.id); }} aria-pressed={mapType === t.id}
                 title={t.title}
                 style={{ ...s.segBtn, ...(mapType === t.id ? s.segOn : null) }}>
                 {t.label}
@@ -60,19 +56,17 @@ export default function MapControls({ mapRef, onOpenRoadview }) {
           </div>
           {/* 지적 */}
           <button
-            onPointerUp={(e) => { e.stopPropagation(); toggleCad(); }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); toggleCad(); }} aria-pressed={cadastral}
             title="지적도"
             style={{ ...s.iconBtn, ...(cadastral ? s.iconOn : null), animation: 'fadeInUp .15s ease-out' }}>
             지적
           </button>
           {/* 로드뷰 — 길 모양 (route) 아이콘 */}
           <button
-            onPointerUp={(e) => { e.stopPropagation(); onOpenRoadview?.(); }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onOpenRoadview?.(); }}
             title="현재 중심으로 로드뷰"
             style={{ ...s.iconBtn, animation: 'fadeInUp .15s ease-out' }}>
-            <Icon name="route" size={16} />
+            <Icon name="cam" size={18} /><span>로드뷰</span>
           </button>
         </>
       )}
@@ -97,10 +91,10 @@ const s = {
     boxShadow: '0 1px 3px rgba(0,0,0,.12)',
   },
   segBtn: {
-    padding: '8px 12px', minWidth: 44, minHeight: 40,
+    padding: '8px 12px', minWidth: 44, minHeight: 44,
     background: 'transparent', color: 'var(--text-2)',
     border: 'none', cursor: 'pointer',
-    fontSize: 11, fontWeight: 600, letterSpacing: '.02em',
+    fontSize: 12, fontWeight: 600, letterSpacing: '.02em',
     touchAction: 'manipulation',  // 300ms 클릭 지연 + double-tap zoom 차단 → 모바일 빠른 응답
     userSelect: 'none',
   },
@@ -108,12 +102,12 @@ const s = {
     background: 'var(--primary)', color: 'var(--primary-fg)',
   },
   iconBtn: {
-    width: 40, height: 40,        // 36 → 40 (Material 48dp 권고에 더 가깝게, 핀치 영역 확장)
+    width: 60, height: 48,        // 36 → 40 (Material 48dp 권고에 더 가깝게, 핀치 영역 확장)
     background: 'var(--surface)', color: 'var(--text-2)',
     border: '1px solid var(--border)',
     borderRadius: 8, cursor: 'pointer',
-    fontSize: 11, fontWeight: 600,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 12, fontWeight: 600,
+    display: 'inline-flex', flexDirection: 'column', gap: 3, alignItems: 'center', justifyContent: 'center',
     pointerEvents: 'auto',
     boxShadow: '0 1px 3px rgba(0,0,0,.12)',
     touchAction: 'manipulation',

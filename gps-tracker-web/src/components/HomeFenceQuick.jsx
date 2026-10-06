@@ -43,6 +43,7 @@ export default function HomeFenceQuick({
   fabBottom = 16,   // 우하단 FAB 칼럼의 기준 bottom — Dashboard 가 계산해서 넘김 (strip + tooltip lift 포함)
   enabled = true,   // 펜스 토글 (= Dashboard 의 showFences) — false 면 토글 FAB 만 노출.
   onToggleEnabled,  // (v) => void
+  showList = true,
   listSide = 'left',   // 'left' (모바일 기본, 좌하단) | 'right' (PC, FAB 칼럼 왼쪽 우하단)
 }) {
   // 홈 DeviceFilter 의 선택을 따름 — 전체면 모든 펜스, 디바이스면 해당 펜스+전체 펜스
@@ -67,14 +68,14 @@ export default function HomeFenceQuick({
             onCreated={onChange}
             fabBottom={fabBottom}
           />
-          <FenceList
+          {showList && <FenceList
             fences={list}
             devices={devices}
             mapRef={mapRef}
             onChange={onChange}
             bottomLift={bottomLift}
             side={listSide}
-          />
+          />}
         </>
       )}
     </>
@@ -88,7 +89,8 @@ export default function HomeFenceQuick({
 function FenceToggle({ on, onClick, count, fabBottom }) {
   return (
     <button onClick={onClick}
-      title={on ? '펜스 끄기' : '펜스 켜기'}
+      aria-label={on ? '펜스 표시 끄기' : '펜스 표시 켜기'} aria-pressed={on}
+      title={on ? '펜스 표시 끄기' : '펜스 표시 켜기'}
       className="btn-bounce"
       style={{
         ...ts.btn,
@@ -97,7 +99,7 @@ function FenceToggle({ on, onClick, count, fabBottom }) {
         color: on ? 'var(--primary-fg, white)' : 'var(--primary)',
         border: on ? 'none' : '1px solid var(--border)',
       }}>
-      <Icon name="fence" size={20} />
+      <Icon name="fence" size={18} /><span>펜스 표시</span>
       {on && count > 0 && <span style={ts.badge}>{count}</span>}
     </button>
   );
@@ -106,9 +108,9 @@ const ts = {
   // 기존 FAB 와 동일 사이즈 (48x48 원형) — trackLive/miniSeeker 와 통일.
   btn: {
     position: 'absolute', right: 16,
-    width: 48, height: 48, borderRadius: 24,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 3,
-    fontSize: 11, fontWeight: 700, cursor: 'pointer',
+    width: 60, height: 48, borderRadius: 12,
+    display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+    fontSize: 12, fontWeight: 700, cursor: 'pointer',
     boxShadow: '0 4px 12px rgba(0,0,0,.25)',
     zIndex: 12,
     transition: 'background .15s, color .15s, bottom .22s ease',
@@ -118,8 +120,8 @@ const ts = {
     top: -4, right: -4,
     minWidth: 18, height: 18, padding: '0 4px',
     borderRadius: 9,
-    background: 'var(--accent)', color: 'white',
-    fontSize: 10, lineHeight: '18px', fontWeight: 700,
+    background: 'var(--accent)', color: 'var(--accent-fg)',
+    fontSize: 12, lineHeight: '18px', fontWeight: 700,
     fontVariantNumeric: 'tabular-nums',
     boxShadow: '0 1px 3px rgba(0,0,0,.3)',
     textAlign: 'center',
@@ -221,7 +223,7 @@ function FenceCreator({ mapRef, filterDeviceId, onCreated, fabBottom }) {
         className="btn-bounce"
         style={{ ...cs.fab, bottom: fabBottom + 60 }}
         title="새 지오펜스">
-        <Icon name="plus" size={20} />
+        <Icon name="plus" size={18} /><span>펜스 추가</span>
       </button>
     );
   }
@@ -310,7 +312,7 @@ function FenceList({ fences, devices, mapRef, onChange, bottomLift, side = 'left
   // 바텀 라인 = 8px 갭 → DateBox / 컴팩트 툴팁 (둘 다 `+ 8px`) 과 정렬.
   const dateBoxPresent = bottomLift > 0;
   const positionStyle = side === 'right'
-    ? { right: 76, bottom: `calc(${bottomLift}px + 8px)`,
+    ? { right: 84, bottom: `calc(${bottomLift}px + 8px)`,
         maxHeight: dateBoxPresent ? 'calc(100% - 300px)' : 'calc(100% - 220px)' }
     : { left: dateBoxPresent ? 116 : 8, bottom: `calc(${bottomLift}px + 8px)`,
         maxHeight: dateBoxPresent ? 'calc(100% - 300px)' : 'calc(100% - 220px)' };
@@ -323,32 +325,32 @@ function FenceList({ fences, devices, mapRef, onChange, bottomLift, side = 'left
       <div style={ls.scroll}>
         {fences.map(f => {
           const inside = isAnyInside(f, devices);
-          const dot = f.active ? (inside ? '#EF4444' : '#10B981') : 'var(--text-3)';
+          const dot = f.active ? (inside ? 'var(--status-warning-text)' : 'var(--status-success-text)') : 'var(--text-3)';
           return (
             <div key={f.id}
               className="fade-color"
-              style={{ ...ls.row, opacity: f.active ? 1 : 0.55 }}>
+              style={ls.row}>
               <button onClick={() => focus(f)}
                 className="btn-bounce btn-hover-bg"
                 style={ls.rowMain} title="펜스로 이동">
                 <span style={{ ...ls.dot, background: dot }} />
                 <span style={ls.name}>{f.name}</span>
                 {f.active && (
-                  <span style={{ ...ls.badge, color: inside ? '#EF4444' : '#10B981' }}>
-                    {inside ? '안' : '밖'}
+                  <span style={{ ...ls.badge, color: inside ? 'var(--status-warning-text)' : 'var(--status-success-text)' }}>
+                    {inside ? '내부' : '외부'}
                   </span>
                 )}
               </button>
               <button onClick={() => toggle(f)}
                 className="btn-bounce btn-hover-bg"
                 style={ls.iconBtn}
-                title={f.active ? '비활성화' : '활성화'}>
+                aria-label={`${f.name} ${f.active ? '비활성화' : '활성화'}`} title={f.active ? '비활성화' : '활성화'}>
                 {f.active ? '●' : '○'}
               </button>
               <button onClick={() => remove(f)}
                 className="btn-bounce btn-hover-bg"
                 style={{ ...ls.iconBtn, color: 'var(--danger)' }}
-                title="삭제">
+                title="삭제" aria-label={`${f.name} 삭제`}>
                 <Icon name="trash2" size={11} />
               </button>
             </div>
@@ -368,8 +370,8 @@ const cs = {  // creator
   fab: {
     // fence cluster — toggle (+0) 바로 위 슬롯 (+60). 같은 primary 컬러로 페어 시각 통일.
     position: 'absolute', right: 16,
-    width: 48, height: 48, borderRadius: 24,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 60, height: 48, borderRadius: 12,
+    display: 'inline-flex', flexDirection: 'column', gap: 3, fontSize: 12, alignItems: 'center', justifyContent: 'center',
     background: 'var(--surface)', color: 'var(--primary)',
     border: '1px solid var(--primary)',
     boxShadow: '0 4px 12px rgba(0,0,0,.25)',
@@ -380,8 +382,8 @@ const cs = {  // creator
   },
   popover: {
     // FAB 칼럼 (right:16, width:48) 왼쪽으로 — right:76. bottom 은 fabBottom+16 (FAB 칼럼 하단 정렬).
-    position: 'absolute', right: 76,
-    width: 260, maxWidth: 'calc(100vw - 92px)',
+    position: 'absolute', right: 84,
+    width: 260, maxWidth: 'calc(100vw - 100px)',
     zIndex: 13,
     padding: 10,
     background: 'var(--surface)',
@@ -398,7 +400,7 @@ const cs = {  // creator
     fontSize: 12, fontWeight: 700, color: 'var(--text)',
   },
   popClose: {
-    width: 22, height: 22, borderRadius: 11,
+    width: 44, height: 44, borderRadius: 11,
     background: 'transparent', color: 'var(--text-3)',
     border: '1px solid var(--border)', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -409,7 +411,7 @@ const cs = {  // creator
     background: 'var(--surface-2)',
     border: '1px solid var(--border)',
     borderRadius: 5,
-    color: 'var(--text)', fontSize: 11,
+    color: 'var(--text)', fontSize: 14, minHeight: 44,
     boxSizing: 'border-box',
     marginTop: 2,
   },
@@ -417,7 +419,7 @@ const cs = {  // creator
     padding: '0 10px',
     background: 'var(--surface-2)', color: 'var(--text-2)',
     border: '1px solid var(--border)', borderRadius: 5,
-    fontSize: 11, cursor: 'pointer',
+    fontSize: 13, cursor: 'pointer', minHeight: 44,
     flexShrink: 0,
   },
   searchMenu: {
@@ -432,33 +434,33 @@ const cs = {  // creator
     border: 'none', borderBottom: '1px solid var(--border)',
     cursor: 'pointer',
   },
-  searchItemMain: { fontSize: 11, fontWeight: 500, color: 'var(--text)' },
-  searchItemSub:  { fontSize: 10, color: 'var(--text-3)', marginTop: 2 },
+  searchItemMain: { fontSize: 12, fontWeight: 500, color: 'var(--text)' },
+  searchItemSub:  { fontSize: 12, color: 'var(--text-3)', marginTop: 2 },
   centerHint: {
-    fontSize: 10, color: 'var(--text-3)',
+    fontSize: 12, color: 'var(--text-3)',
     display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap',
   },
   unpickBtn: {
     marginLeft: 4,
     background: 'transparent', border: 'none', color: 'var(--text-3)',
-    cursor: 'pointer', fontSize: 10, padding: 0,
+    cursor: 'pointer', fontSize: 12, padding: 0,
   },
   radiusRow: {
     display: 'flex', alignItems: 'center', gap: 6,
   },
-  radiusLabel: { fontSize: 11, color: 'var(--text-2)' },
+  radiusLabel: { fontSize: 12, color: 'var(--text-2)' },
   createBtn: {
     width: '100%', padding: '8px 10px',
     background: 'var(--primary)', color: 'var(--primary-fg, white)',
     border: 'none', borderRadius: 6,
-    fontSize: 12, fontWeight: 600, cursor: 'pointer',
+    fontSize: 14, fontWeight: 600, cursor: 'pointer', minHeight: 44,
   },
 };
 
 const ls = {  // list — left/right/bottom/maxHeight 은 side 별로 inline 으로 주입.
   wrap: {
     position: 'absolute',
-    width: 156,
+    width: 230, maxWidth: 'calc(100% - 100px)',
     minHeight: 60,
     background: 'var(--surface)',
     border: '1px solid var(--border)',
@@ -473,7 +475,7 @@ const ls = {  // list — left/right/bottom/maxHeight 은 side 별로 inline 으
     flexShrink: 0,
     display: 'flex', alignItems: 'center', gap: 4,
     padding: '5px 8px',
-    fontSize: 10, fontWeight: 700, color: 'var(--text-3)',
+    fontSize: 12, fontWeight: 700, color: 'var(--text-3)',
     borderBottom: '1px solid var(--border)',
     background: 'var(--surface-2)',
     borderTopLeftRadius: 8, borderTopRightRadius: 8,
@@ -490,14 +492,14 @@ const ls = {  // list — left/right/bottom/maxHeight 은 side 별로 inline 으
     display: 'flex', alignItems: 'center', gap: 2,
     padding: '2px 4px',
     borderRadius: 5,
-    minHeight: 28,
+    minHeight: 44,
   },
   rowMain: {
     flex: 1, minWidth: 0,
     display: 'flex', alignItems: 'center', gap: 5,
     background: 'transparent', border: 'none',
     cursor: 'pointer', padding: '2px 0',
-    textAlign: 'left',
+    textAlign: 'left', minHeight: 44,
   },
   dot: {
     width: 6, height: 6, borderRadius: 3,
@@ -506,14 +508,14 @@ const ls = {  // list — left/right/bottom/maxHeight 은 side 별로 inline 으
   name: {
     flex: 1, minWidth: 0,
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-    fontSize: 11, fontWeight: 600, color: 'var(--text)',
+    fontSize: 12, fontWeight: 600, color: 'var(--text)',
   },
   badge: {
     flexShrink: 0,
-    fontSize: 9, fontWeight: 600,
+    fontSize: 12, fontWeight: 600,
   },
   iconBtn: {
-    width: 22, height: 22, borderRadius: 11,
+    width: 44, height: 44, borderRadius: 11,
     background: 'transparent', color: 'var(--text-3)',
     border: 'none', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',

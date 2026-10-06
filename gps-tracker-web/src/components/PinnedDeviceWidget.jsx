@@ -13,7 +13,7 @@ export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, de
     <div style={{
       position: 'absolute',
       bottom: bottomOffset + 14,
-      left: 14, right: 80, maxWidth: 360,
+      left: 14, right: 88, maxWidth: 360,
       zIndex: 20,
       pointerEvents: 'auto',
     }}>
@@ -54,7 +54,7 @@ export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, de
               {name}
             </span>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, display: 'flex', gap: 8 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2, display: 'flex', gap: 8 }}>
             <span>{ageString(device.last_seen_at)}</span>
             {deviceMeta?.vbatMv && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>

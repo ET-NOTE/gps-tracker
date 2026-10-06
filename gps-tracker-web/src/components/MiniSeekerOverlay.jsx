@@ -127,7 +127,7 @@ function MiniSeekerOverlay({ loadDates, loadDayPoints, loadMonthPoints, onPathCh
     : `${monthPicked ? '일간' : '월간'} 경로 불러오는 중…`;
 
   return <>
-    <section aria-label="컴팩트 시커" aria-busy={loading} style={st.panel}>
+    <section aria-label="이동 기록" aria-busy={loading} style={st.panel}>
       {loading && <div role="status" style={st.empty}>{loadingText}</div>}
       {error && <div role="alert" style={st.empty}>
         <div>{error}</div>
@@ -199,7 +199,7 @@ const st = {
   panelLabel: {
     flexShrink: 0,
     padding: '5px 8px',
-    fontSize: 11, fontWeight: 700,
+    fontSize: 12, fontWeight: 700,
     color: 'var(--text-3)',
     background: 'var(--surface)',
     borderBottom: '1px solid var(--border)',
@@ -217,7 +217,7 @@ const st = {
     cursor: 'pointer',
     fontVariantNumeric: 'tabular-nums',
     lineHeight: 1,
-    minHeight: 30,
+    minHeight: 44,
   },
   scroll: {
     flex: 1, minHeight: 0,
@@ -227,12 +227,12 @@ const st = {
     scrollbarWidth: 'thin',
   },
   empty: {
-    fontSize: 11, color: 'var(--text-3)',
+    fontSize: 12, color: 'var(--text-3)',
     textAlign: 'center', padding: 6,
   },
   itemBtn: {
     flexShrink: 0,
-    padding: '8px 6px', minHeight: 40,
+    padding: '8px 6px', minHeight: 44,
     background: 'var(--surface)',
     color: 'var(--text-2)',
     border: '1px solid var(--border)',
@@ -274,7 +274,7 @@ const st = {
   },
   monthRowDrill: {
     flexShrink: 0,
-    width: 40, minHeight: 40,
+    width: 44, minHeight: 44,
     padding: 0,
     background: 'transparent', color: 'inherit',
     border: 'none',
@@ -302,13 +302,13 @@ const st = {
     height: '100%',
   },
   slotsEmpty: {
-    fontSize: 11, color: 'var(--text-3)',
+    fontSize: 12, color: 'var(--text-3)',
     padding: '0 8px',
     alignSelf: 'center',
   },
   slotBtn: {
     flexShrink: 0,
-    padding: '8px 14px', minHeight: 40,
+    padding: '8px 14px', minHeight: 44,
     background: 'var(--surface-2)',
     color: 'var(--text)',
     border: '1px solid var(--border)',

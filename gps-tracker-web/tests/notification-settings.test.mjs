@@ -12,10 +12,16 @@ async function component(api) {
   const context = vm.createContext({ console });
   const source = await readFile(new URL('../src/components/NotificationSettings.jsx', import.meta.url), 'utf8');
   const m = new vm.SourceTextModule((await transform(source, {loader:'jsx', jsx:'automatic', format:'esm'})).code, {context});
-  await m.link(async name => {
+  async function link(name) {
+    if (name === './ui/Switch') {
+      const code = await readFile(new URL('../src/components/ui/Switch.jsx', import.meta.url), 'utf8');
+      const child = new vm.SourceTextModule((await transform(code, {loader:'jsx', jsx:'automatic', format:'esm'})).code, {context});
+      await child.link(link); return child;
+    }
     const values = name === 'react' ? React : name === 'react/jsx-runtime' ? jsx : {api};
     return new vm.SyntheticModule(Object.keys(values), function() { for (const [k,v] of Object.entries(values)) this.setExport(k,v); }, {context});
-  });
+  }
+  await m.link(link);
   await m.evaluate();
   return m.namespace.default;
 }

@@ -31,7 +31,7 @@ async function fixture(api = {}) {
       else if (file.endsWith('/api.js')) module = synthetic({ api });
       else if (file.endsWith('/authSession.js')) module = synthetic({ authScope: () => scope,
         assertSession: previous => { if (previous !== scope) throw new DOMException('changed', 'AbortError'); } });
-      else if (file.endsWith('/colors.js')) module = synthetic({ getDeviceColor: () => '#2563eb', isStale: () => false });
+      else if (file.endsWith('/colors.js')) module = synthetic({ getDeviceColor: () => '#2563eb', isStale: () => false, isFixStale: () => false, ageString: () => '방금' });
       else if (file.endsWith('/Icon.jsx')) module = synthetic({ default: () => null });
       else if (file.endsWith('.css')) module = synthetic({});
       else {
@@ -225,4 +225,44 @@ test('old /tools links redirect Home with parameters intact and replace their hi
     assert.equal(location.pathname, '/profile');
     await act(async () => r.unmount());
   }
+});
+
+
+test('device card preserves all actions without executing them on expand, and closes after selection', async () => {
+  const f = await fixture(); const Card = (await f.module('components/DeviceCardSummary.jsx')).default;
+  const calls = []; let r;
+  await act(async () => { r = create(React.createElement(Card, {
+    device: { id: 1, device_uid: 'test-only', display_name: 'Test', last_vbat_mv: 4100 },
+    status: { label: '오프라인', color: 'red' }, color: 'blue',
+    onView: () => calls.push('view'), onDetail: () => calls.push('detail'),
+    onPin: () => calls.push('pin'), onReceive: () => calls.push('receive'), onColor: () => calls.push('color'),
+    onRename: () => calls.push('rename'), onUnpair: () => calls.push('unpair'),
+  })); });
+  const toggle = () => r.root.findByProps({ 'aria-label': '단말기 더보기' });
+  for (let i = 0; i < 5; i++) {
+    await act(async () => toggle().props.onClick());
+    assert.equal(calls.length, i, 'opening actions must not change the device');
+    const buttons = r.root.findByProps({ 'aria-label': '단말기 작업' }).findAllByType('button');
+    await act(async () => buttons[i].props.onClick());
+    assert.equal(toggle().props['aria-expanded'], false);
+  }
+  assert.deepEqual(calls, ['pin', 'receive', 'color', 'rename', 'unpair']);
+  await act(async () => r.root.findByProps({ className: 'device-primary-actions' }).findAllByType('button')[0].props.onClick());
+  assert.equal(calls.at(-1), 'view');
+  assert.match(JSON.stringify(r.toJSON()), /오프라인/);
+  await act(async () => r.unmount());
+});
+
+test('map options support native click activation and propagate the chosen map layer', async () => {
+  const f = await fixture(); const Controls = (await f.module('components/MapControls.jsx')).default;
+  const layers = []; let r;
+  await act(async () => { r = create(React.createElement(Controls, { mapRef: { current: { setMapType: v => layers.push(v) } } })); });
+  const toggle = () => r.root.findByProps({ 'aria-label': '지도 옵션' });
+  await act(async () => toggle().props.onClick({ stopPropagation() {} }));
+  assert.equal(toggle().props['aria-expanded'], true);
+  await act(async () => r.root.findByProps({ title: '위성+라벨' }).props.onClick({ stopPropagation() {} }));
+  assert.deepEqual(layers, ['hybrid']);
+  await act(async () => toggle().props.onClick({ stopPropagation() {} }));
+  assert.equal(toggle().props['aria-expanded'], false);
+  await act(async () => r.unmount());
 });

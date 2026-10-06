@@ -1,3 +1,4 @@
+import { todayStats, formatDuration, formatDistance } from '../lib/deviceStats';
 import VehicleCarePanel from './VehicleCarePanel';
 // (2026-07-29 F8) 트렌디 slim redesign.
 //
@@ -40,7 +41,7 @@ export default function DeviceDetail({ device, onWiped, onUpdated }) {
 
   async function handleWipe() {
     const ok1 = await confirmDialog({
-      title: '디바이스 데이터 완전 삭제',
+      title: '단말기 데이터 완전 삭제',
       body: '위치 기록·이벤트를 포함한 모든 데이터를 되돌릴 수 없이 삭제합니다.',
       confirmLabel: '계속',
       cancelLabel: '닫기',
@@ -64,10 +65,10 @@ export default function DeviceDetail({ device, onWiped, onUpdated }) {
     } finally { setWiping(false); }
   }
 
-  const today = statsQ.data?.[0];
+  const today = todayStats(statsQ.data);
 
   return (
-    <div style={s.shell}>
+    <div className="gps-user-panel" style={s.shell}>
       {/* KPI 스트립 — 오늘 하이라이트 */}
       <TodayStrip stats={today} device={device} loading={statsQ.loading} />
 
@@ -110,7 +111,7 @@ export default function DeviceDetail({ device, onWiped, onUpdated }) {
         <Section eyebrow="위험 영역" tone="danger">
           <button onClick={handleWipe} disabled={wiping} style={s.dangerBtn}>
             <Icon name="trash2" size={13} />
-            {wiping ? '삭제 중...' : '디바이스 + 모든 데이터 영구 삭제'}
+            {wiping ? '삭제 중...' : '단말기 + 모든 데이터 영구 삭제'}
           </button>
         </Section>
       </div>
@@ -122,8 +123,8 @@ export default function DeviceDetail({ device, onWiped, onUpdated }) {
 // KPI 스트립 — 3 metric: 오늘 km · 오늘 시간 · 배터리
 // ═══════════════════════════════════════════════════════════
 function TodayStrip({ stats, device, loading }) {
-  const km = stats?.distance_m ? (stats.distance_m / 1000).toFixed(1) : '—';
-  const dur = stats?.moving_s ? fmtDur(stats.moving_s) : '—';
+  const km = formatDistance(stats?.distance_m);
+  const dur = formatDuration(stats?.moving_s);
   const vbat = device?.last_vbat_mv;
   const vbatV = vbat ? (vbat / 1000).toFixed(2) : '—';
   const vbatWarn = vbat && vbat < 3500;
@@ -188,7 +189,7 @@ function ReceiveStatusBody({ device }) {
 // ═══════════════════════════════════════════════════════════
 function WeeklyBody({ stats }) {
   if (!stats?.length) return <Muted>아직 집계된 데이터가 없습니다 (최초 5분 후 반영)</Muted>;
-  const today = stats[0];
+  const today = todayStats(stats);
   const sum7 = stats.reduce((a, r) => ({
     distance_m: a.distance_m + r.distance_m,
     moving_s:   a.moving_s   + r.moving_s,
@@ -196,14 +197,14 @@ function WeeklyBody({ stats }) {
     max:        Math.max(a.max, r.max_speed_kmh),
   }), { distance_m: 0, moving_s: 0, stop_count: 0, max: 0 });
 
-  const km = (m) => (m / 1000).toFixed(2);
+  const km = (m) => formatDistance(m, 2);
 
   return (
     <div style={s.grid2}>
-      <WeekCell label="이동거리" today={`${km(today.distance_m)} km`} week={`${km(sum7.distance_m)} km`} />
-      <WeekCell label="운행시간" today={fmtDur(today.moving_s)}        week={fmtDur(sum7.moving_s)} />
-      <WeekCell label="정지구간" today={`${today.stop_count}회`}        week={`${sum7.stop_count}회`} />
-      <WeekCell label="최고속도" today={`${today.max_speed_kmh.toFixed(1)} km/h`} week={`${sum7.max.toFixed(1)} km/h`} />
+      <WeekCell label="이동거리" today={`${km(today?.distance_m)} km`} week={`${km(sum7.distance_m)} km`} />
+      <WeekCell label="운행시간" today={formatDuration(today?.moving_s)}        week={formatDuration(sum7.moving_s)} />
+      <WeekCell label="정지구간" today={`${today?.stop_count ?? '—'}회`}        week={`${sum7.stop_count}회`} />
+      <WeekCell label="최고속도" today={`${today?.max_speed_kmh?.toFixed(1) ?? '—'} km/h`} week={`${sum7.max.toFixed(1)} km/h`} />
     </div>
   );
 }
@@ -356,13 +357,13 @@ function SimTopupRequest({ deviceId, simReady }) {
         {busy ? '요청 중...' : `${mb}MB 충전 · ${cost.toLocaleString()} 포인트 요청`}
       </button>
       {insufficient && (
-        <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 6 }}>
+        <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>
           포인트 부족. 내정보 → 포인트 충전 먼저.
         </div>
       )}
       {recent.length > 0 && (
         <div style={{ marginTop: 10 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 4 }}>최근 요청</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>최근 요청</div>
           {recent.map(r => (
             <SimReqRow key={r.id} r={r} STATUS_LABEL={STATUS_LABEL} STATUS_COLOR={STATUS_COLOR}
               onCancelled={refreshAll} />
@@ -392,13 +393,13 @@ function SimReqRow({ r, STATUS_LABEL, STATUS_COLOR, onCancelled }) {
     } finally { setBusy(false); }
   }
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, padding: '3px 0', gap: 6 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '3px 0', gap: 6 }}>
       <span style={{ color: 'var(--text-2)' }}>{r.data_mb}MB · {r.cost_credits.toLocaleString()}원</span>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <span style={{ color: STATUS_COLOR[r.status] || 'var(--text-3)' }}>{STATUS_LABEL[r.status] || r.status}</span>
         {r.status === 'pending' && (
           <button onClick={cancel} disabled={busy} style={{
-            padding: '2px 6px', fontSize: 10,
+            padding: '2px 6px', fontSize: 12,
             background: 'transparent', color: 'var(--danger)',
             border: '1px solid var(--danger)', borderRadius: 3,
             cursor: 'pointer', opacity: busy ? 0.5 : 1,
@@ -417,7 +418,7 @@ function Section({ eyebrow, tone, children }) {
     <div style={{ marginTop: 16 }}>
       <div style={{
         fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
-        fontSize: 10.5, fontWeight: 500,
+        fontSize: 12.5, fontWeight: 500,
         color: tone === 'danger' ? 'var(--danger)' : 'var(--text-2)',
         textTransform: 'uppercase', letterSpacing: '0.11em',
         marginBottom: 8,
@@ -444,14 +445,14 @@ function Cell({ label, v, sub, warn, ok, mono }) {
       borderRadius: 6, padding: '8px 10px',
       borderLeft: warn ? '3px solid var(--danger)' : ok ? '3px solid var(--accent)' : '3px solid transparent',
     }}>
-      <div style={{ fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.02em' }}>{label}</div>
+      <div style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '0.02em' }}>{label}</div>
       <div style={{
         fontSize: mono ? 12 : 13, fontWeight: 600,
         color: warn ? 'var(--danger)' : 'var(--text)',
         fontFamily: mono ? 'ui-monospace, Menlo, Consolas, monospace' : 'inherit',
         marginTop: 2,
       }}>{v}</div>
-      {sub && <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 1 }}>{sub}</div>}
     </div>
   );
 }
@@ -459,14 +460,14 @@ function Cell({ label, v, sub, warn, ok, mono }) {
 function WeekCell({ label, today, week }) {
   return (
     <div style={{ background: 'var(--surface-2)', borderRadius: 6, padding: '10px 12px' }}>
-      <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{label}</div>
+      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{label}</div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{today}</span>
-        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>오늘</span>
+        <span style={{ fontSize: 12, color: 'var(--text-3)' }}>오늘</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
         <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{week}</span>
-        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>7일</span>
+        <span style={{ fontSize: 12, color: 'var(--text-3)' }}>7일</span>
       </div>
     </div>
   );
@@ -476,11 +477,7 @@ function Muted({ children }) {
   return <div style={{ color: 'var(--text-3)', fontSize: 12, fontStyle: 'italic' }}>{children}</div>;
 }
 
-function fmtDur(sec) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
+
 
 // ═══════════════════════════════════════════════════════════
 // styles
@@ -504,7 +501,7 @@ const s = {
   },
   stripeK: {
     fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
-    fontSize: 10, letterSpacing: '0.08em',
+    fontSize: 12, letterSpacing: '0.08em',
     color: 'var(--text-3)', textTransform: 'uppercase',
     marginBottom: 4,
   },
@@ -528,10 +525,10 @@ const s = {
   },
   simUsed: { fontSize: 20, fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 },
   simUsedUnit: { fontSize: 12, fontWeight: 400, color: 'var(--text-3)' },
-  simMeta: { fontSize: 11, color: 'var(--text-2)', marginTop: 4 },
+  simMeta: { fontSize: 12, color: 'var(--text-2)', marginTop: 4 },
   simRefresh: {
     display: 'inline-flex', alignItems: 'center', gap: 4,
-    padding: '4px 8px', fontSize: 10.5, fontWeight: 500,
+    padding: '4px 8px', fontSize: 12.5, fontWeight: 500,
     background: 'transparent', color: 'var(--text-2)',
     border: '1px solid var(--border)', borderRadius: 4,
     cursor: 'pointer', whiteSpace: 'nowrap',
@@ -543,13 +540,13 @@ const s = {
   gaugeFill: { height: '100%', transition: 'width .3s' },
   simFoot: {
     display: 'flex', justifyContent: 'space-between',
-    fontSize: 10.5, color: 'var(--text-3)', marginTop: 6,
+    fontSize: 12.5, color: 'var(--text-3)', marginTop: 6,
   },
   mono: { fontFamily: 'ui-monospace, Menlo, Consolas, monospace' },
 
   topupHead: {
     display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-    fontSize: 11.5, color: 'var(--text-2)', marginBottom: 8,
+    fontSize: 12.5, color: 'var(--text-2)', marginBottom: 8,
   },
   topupSep: { color: 'var(--text-3)' },
   topupBtn: {
@@ -571,7 +568,7 @@ const s = {
   diagLinkLeft: { display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600 },
   diagLinkRight: {
     display: 'inline-flex', alignItems: 'center', gap: 6,
-    fontSize: 11, color: 'var(--text-3)', fontWeight: 400,
+    fontSize: 12, color: 'var(--text-3)', fontWeight: 400,
   },
 
   dangerBtn: {

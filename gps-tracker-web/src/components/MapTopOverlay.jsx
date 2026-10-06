@@ -1,6 +1,5 @@
 import DeviceFilter from './DeviceFilter';
 import MapControls from './MapControls';
-import { getDeviceColor } from '../colors';
 import { liveMotion } from '../lib/liveMotion';
 import './MapTopOverlay.css';
 
@@ -15,7 +14,7 @@ export function mapCacheNotice(sources, selected) {
 }
 
 export default function MapTopOverlay({ devices, selected, onSelect, mapRef, onOpenRoadview,
-  showSpeed, liveSpeed, now, cachedSources = {}, children }) {
+  showSpeed, liveSpeed, now, historyMode = false, cachedSources = {}, children }) {
   const device = devices.find(d => d.id === selected);
   // A device change must never briefly display the previous device's speed/name.
   const sample = liveSpeed?.deviceId === selected ? liveSpeed : null;
@@ -28,21 +27,19 @@ export default function MapTopOverlay({ devices, selected, onSelect, mapRef, onO
     : ageMs < 86400_000 ? `${Math.floor(ageMs / 3600_000)}시간 전` : `${Math.floor(ageMs / 86400_000)}일 전`;
   return <div className="map-top-overlay">
     <div className="map-top-main">
-      {devices.length > 0 && <DeviceFilter devices={devices} selected={selected} onChange={onSelect} />}
-      {showSpeed && device && <div className="map-live-summary" aria-label="실시간 운행 정보">
-        <span className="map-live-dot" style={{ background: getDeviceColor(device) }} />
-        <div className="map-live-details">
-          <div className="map-live-heading">
-            <span className="map-live-name" title={device.display_name || device.device_uid}>{device.display_name || device.device_uid}</span>
-            <span className="map-live-state" data-moving={motion.moving}>{motion.label}</span>
-          </div>
-          {device.license_plate && <span className="map-live-plate">{device.license_plate}</span>}
+      {devices.length > 0 && <div className="map-device-card">
+        <DeviceFilter devices={devices} selected={selected} onChange={onSelect} integrated />
+        {showSpeed && device ? <div className="map-live-summary" aria-label="실시간 운행 정보">
           <div className="map-live-reading">
             <strong>{motion.speedKmh == null ? '--' : Math.round(motion.speedKmh)}</strong>
             <span>km/h · 추정</span>
-            {ageText && <span className="map-live-age">{ageText}</span>}
           </div>
-        </div>
+          <div className="map-live-context">
+            <span className="map-live-state" data-moving={motion.moving}>{motion.label}</span>
+            <span className="map-live-age">{ageText ? `위치 ${ageText}` : '위치 수신 전'}</span>
+          </div>
+        </div> : device && <div className="map-view-mode">{historyMode ? '이동 기록 조회 중' : '지도 탐색 중 · 자동 추적 꺼짐'}</div>}
+        {device?.license_plate && <div className="map-live-plate">{device.license_plate}</div>}
       </div>}
       {notice && <div className="map-cache-notice" role="status">{notice}</div>}
       {children}
