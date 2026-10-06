@@ -12,6 +12,7 @@ public:
   bool prepareCertificate();
   bool connect(const char *apn);
   int post(const char *key, const char *body);
+  int bootstrap(char *response, uint16_t capacity);
   void printError();
   bool needsReset() const { return lost || restarted; }
   int signal = 99, registration = -1;
@@ -28,6 +29,11 @@ private:
   uint16_t caOffset = 0;
   int fileSize = -1, state = -1, ntp = -1, http = -1;
   uint32_t received = 0, clock = 0;
+  char *responseBuffer = nullptr;
+  uint16_t responseCapacity = 0, responseRead = 0, responseRemaining = 0;
+  int responseSize = -1;
+  bool readingResponse = false, responseStarted = false;
+  int exchange(const char *key, const char *body, bool enrollment);
   void parse();
   void receive();
   void drain(uint32_t ms);

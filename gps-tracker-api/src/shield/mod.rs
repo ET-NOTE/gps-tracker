@@ -2,6 +2,7 @@ mod admin;
 mod auth;
 mod content;
 mod devices;
+mod device_setup;
 mod faq;
 mod files;
 mod images;
@@ -143,6 +144,7 @@ async fn migrate(db: &PgPool) -> anyhow::Result<()> {
         ("Shield category thumbnails", include_str!("thumbnails.sql")),
         ("Shield library display order", include_str!("library-order.sql")),
         ("Shield opt-in HTTP education", include_str!("http-demo.sql")),
+        ("Shield upload-first enrollment", include_str!("device-enrollments.sql")),
     ];
     let migrations = sources
         .into_iter()
@@ -170,7 +172,7 @@ async fn headers(State(app): State<App>, request: Request, next: Next) -> Respon
     // Browser mutations require the exact origin. Device uploads use a separate
     // per-device credential and cannot authenticate with a browser cookie.
     if request.method() != axum::http::Method::GET
-        && !matches!(request.uri().path(), "/ingest/shield" | "/ingest/shield-demo")
+        && !matches!(request.uri().path(), "/ingest/shield" | "/ingest/shield-demo" | "/device/bootstrap")
         && request
             .headers()
             .get(header::ORIGIN)
@@ -349,6 +351,7 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/api/admin/post-files/drive",post(files::register_drive))
         .route("/api/post-files/:id",get(files::download))
         .route("/api/devices",get(devices::list))
+        .route("/device/bootstrap",post(device_setup::bootstrap).layer(DefaultBodyLimit::max(128)))
         .route("/api/devices/claim",post(devices::claim))
         .route("/api/devices/:id",post(devices::rename))
         .route("/api/devices/:id/http-demo",get(http_demo::get).post(http_demo::set))

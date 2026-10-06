@@ -370,3 +370,8 @@ a.catalog-card:hover { border-color:var(--primary); box-shadow:0 7px 22px #00899
 .http-demo-code { margin-block: 1.25rem; padding: 1rem; border: 1px solid var(--line); border-radius: 8px; }
 .http-demo-code input { width: 100%; font-family: ui-monospace, monospace; margin-block: .5rem; }
 .http-demo-code p { overflow-wrap: anywhere; }
+.device-setup-fields { display: grid; gap: 1rem; }
+.device-setup-fields label { display: grid; gap: .5rem; }
+.device-setup-fields input { width: 100%; }
+.setup-next-steps { padding-left: 1.4rem; margin-block: 1rem 1.5rem; }
+.setup-next-steps li { margin-block: .75rem; line-height: 1.7; }

@@ -14,6 +14,8 @@ struct Modem {
   bool tlsFails = false, dateFails = false, noDownload = false, convertFails = false;
   bool corruptWrite = false, noBodyPrompt = false, noHttpResult = false, noNtp = false;
   bool noState = false, rebootTls = false, simReady = true;
+  std::string responseBody;
+  bool readTruncated = false, readWrongLength = false, readNoHeader = false;
   int status = 200, connected = 0, writes = 0, conversions = 0;
   Modem() {
     wire = Wire{}; Serial.text.clear(); fakeMillis = 0;
@@ -56,7 +58,10 @@ struct Modem {
         wire.answer("\r\n> ");
       } else if (cmd.find("AT+SHREQ=") == 0) {
         ok();
-        if (!noHttpResult) wire.answer("\r\n+SHREQ: \"POST\"," + std::to_string(status) + ",0\r\n");
+        if (!noHttpResult) wire.answer("\r\n+SHREQ: \"POST\"," + std::to_string(status) + "," + std::to_string(responseBody.size()) + "\r\n");
+      } else if (cmd.find("AT+SHREAD=") == 0) {
+        ok(); // Documented response order: OK, then SHREAD URC and raw bytes.
+        if (!readNoHeader) wire.answer("\r\n+SHREAD: " + std::to_string(responseBody.size() + (readWrongLength ? 1 : 0)) + "\r\n" + (readTruncated ? responseBody.substr(0, 30) : responseBody));
       } else ok();
     };
   }
@@ -117,5 +122,17 @@ int main() {
     Modem m; m.status = status; EasyHttps c; ready(c); assert(c.connect("iot.1nce.net"));
     assert(c.post(key, body) == status && !c.needsReset());
   }
-  std::cout << "17 modem transcript scenarios passed (simulation, not hardware TLS).\n";
+  for (int fault = 0; fault < 5; ++fault) {
+    Modem m; EasyHttps c; ready(c); assert(c.connect("iot.1nce.net"));
+    m.responseBody = "uno-shield-" + std::string(32, 'a') + "\n" + key + "\n" + std::string(16, 'b') + "\n";
+    m.readTruncated = fault == 1; m.readWrongLength = fault == 2; m.readNoHeader = fault == 3;
+    if (fault == 4) m.responseBody += "x";
+    char output[256]; int result = c.bootstrap(output, sizeof(output));
+    assert((result == 200) == (fault == 0));
+    if (!fault) assert(std::string(output) == m.responseBody && !c.needsReset());
+    else assert(output[0] == 0);
+    assert(m.saw("AT+SHREQ=\"/device/bootstrap\",3") && !m.saw("AT+SHAHEAD=\"X-Device-Key\""));
+    assert(Serial.text.find(key) == std::string::npos);
+  }
+  std::cout << "22 modem transcript scenarios passed (simulation, not hardware TLS).\n";
 }

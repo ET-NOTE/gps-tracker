@@ -20,73 +20,8 @@ import {
 import { validCsq } from "./telemetry";
 import { DeviceSidebar } from "./DeviceNavigation";
 import DemoDashboard from "./DemoDashboard";
-export function ClaimDialog({ done, close }) {
-  const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  const dialog = useRef();
-  useEffect(() => {
-    dialog.current.showModal();
-  }, []);
-  return (
-    <dialog ref={dialog} onCancel={close}>
-      <div className="dialog-heading">
-        <h2>내 쉴드 등록</h2>
-        <button aria-label="닫기" className="icon-button" onClick={close}>
-          <Icon name="close" />
-        </button>
-      </div>
-      <p>제품과 함께 받은 일회용 등록 코드를 입력하세요.</p>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError("");
-          const f = new FormData(e.currentTarget);
-          try {
-            const d = await request("/devices/claim", {
-              method: "POST",
-              body: { display_name: f.get("name"), claim_code: f.get("code") },
-            });
-            done(d.id);
-          } catch (e) {
-            setError(e.message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <label>
-          장치 이름
-          <input
-            name="name"
-            required
-            maxLength={60}
-            placeholder="예: 창가 온습도 센서"
-            autoFocus
-          />
-        </label>
-        <label>
-          장치 등록 코드
-          <input
-            name="code"
-            autoComplete="off"
-            required
-            minLength={64}
-            maxLength={64}
-          />
-        </label>
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-        <button className="button" disabled={busy}>
-          {busy ? "등록 중…" : "장치 등록"}
-        </button>
-      </form>
-    </dialog>
-  );
-}
+import DeviceRegistration from "./DeviceSetup";
+export const ClaimDialog = DeviceRegistration;
 function LiveDataPage() {
   const { reload } = useContext(Session);
   const [params, setParams] = useSearchParams();

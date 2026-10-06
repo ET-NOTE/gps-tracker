@@ -28,7 +28,14 @@ void EasyHttps::parse() {
   if (sscanf(line, "+CNTP: %d", &a) == 1) ntp = a;
   if (sscanf(line, "+SHSTATE: %d", &a) == 1) state = a;
   if (sscanf(line, "+CFSGFIS: %d", &a) == 1) fileSize = a;
-  if (!strncmp(line, "+SHREQ:", 7)) { const char *p = strchr(line, ','); if (p) http = atoi(p + 1); }
+  if (!strncmp(line, "+SHREQ:", 7)) {
+    const char *p = strchr(line, ',');
+    if (p && sscanf(p + 1, "%d,%d", &a, &b) == 2) { http = a; responseSize = b; }
+  }
+  if (readingResponse && sscanf(line, "+SHREAD: %d", &a) == 1) {
+    if (responseStarted || a != responseSize || a < 1 || a >= responseCapacity) lost = true;
+    else { responseStarted = true; responseRemaining = a; }
+  }
   if (!strncmp(line, "+CCLK:", 6)) {
     char *p = strchr(line, '"');
     if (p) { char *q = strchr(++p, '"'); if (q) { *q = 0; clock = shield_example::clockEpoch(p); } }
@@ -39,8 +46,14 @@ void EasyHttps::receive() {
   while (uart.available()) {
     char c = uart.read();
     ++received;
+    if (responseRemaining) {
+      responseBuffer[responseRead++] = c;
+      if (!--responseRemaining) responseBuffer[responseRead] = 0;
+      continue;
+    }
     if (wantPrompt && c == '>') { prompt = true; wantPrompt = false; }
-    if (c == '\r' || c == '\n') {
+    if (c == '\r') continue;
+    if (c == '\n') {
       if (length && !overflow) { line[length] = 0; parse(); }
       if (overflow && checkingCa) caMismatch = true;
       length = 0;
@@ -208,8 +221,25 @@ bool EasyHttps::connect(const char *apn) {
 }
 
 int EasyHttps::post(const char *key, const char *body) {
+  if (!shield_example::hexKey(key)) return -1;
+  return exchange(key, body, false);
+}
+
+int EasyHttps::bootstrap(char *response, uint16_t capacity) {
+  if (!response || capacity < 127) return -1;
+  responseBuffer = response; responseCapacity = capacity;
+  responseRead = responseRemaining = 0; responseStarted = false;
+  response[0] = 0;
+  int status = exchange(nullptr, "{}", true);
+  readingResponse = false; responseRemaining = 0;
+  responseBuffer = nullptr; responseCapacity = 0;
+  if (status != 200) memset(response, 0, capacity);
+  return status;
+}
+
+int EasyHttps::exchange(const char *key, const char *body, bool enrollment) {
   stage = TLS_CONFIG;
-  if (!certificateReady || !shield_example::hexKey(key) || strlen(body) > 256 || needsReset()) return -1;
+  if (!certificateReady || strlen(body) > 256 || needsReset()) return -1;
   stage = CLOCK; clock = 0;
   if (!command(F("AT+CCLK?")) || !clock) return -1;
   stage = TLS_CONFIG;
@@ -230,21 +260,35 @@ int EasyHttps::post(const char *key, const char *body) {
     // Key and body are sent only after the modem reports a connected TLS session.
     if (!command(F("AT+SHCHEAD")) || !command(F("AT+SHAHEAD=\"Content-Type\",\"application/json\""))) break;
     char cmd[100];
-    snprintf_P(cmd, sizeof(cmd), PSTR("AT+SHAHEAD=\"X-Device-Key\",\"%s\""), key);
-    bool headerOk = commandRam(cmd);
-    memset(cmd, 0, sizeof(cmd));
-    if (!headerOk) break;
-    drain(60); resetReply(); prompt = false; wantPrompt = true; http = -1;
+    if (key) {
+      snprintf_P(cmd, sizeof(cmd), PSTR("AT+SHAHEAD=\"X-Device-Key\",\"%s\""), key);
+      bool headerOk = commandRam(cmd);
+      memset(cmd, 0, sizeof(cmd));
+      if (!headerOk) break;
+    }
+    drain(60); resetReply(); prompt = false; wantPrompt = true; http = responseSize = -1;
     uart.print(F("AT+SHBOD=")); uart.print(strlen(body)); uart.print(F(",10000\r"));
     uint32_t start = millis();
     while (!prompt && reply != 2 && !restarted && millis() - start < 3000) receive();
     wantPrompt = false;
     if (!prompt || needsReset()) { lost = true; break; }
     resetReply(); uart.print(body);
-    if (!wait(10000) || !command(F("AT+SHREQ=\"/ingest/shield\",3"), 15000)) break;
+    if (!wait(10000) || !command(enrollment ? F("AT+SHREQ=\"/device/bootstrap\",3") : F("AT+SHREQ=\"/ingest/shield\",3"), 15000)) break;
     start = millis();
     while (http < 0 && !restarted && millis() - start < 45000UL) receive();
     if (http < 0) lost = true;
+    if (needsReset()) break;
+    if (enrollment && http == 200) {
+      if (responseSize != 126 || responseSize >= responseCapacity) break;
+      snprintf_P(cmd, sizeof(cmd), PSTR("AT+SHREAD=0,%d"), responseSize);
+      readingResponse = true;
+      if (!commandRam(cmd, 10000)) break;
+      // SIM7080G may return OK before its SHREAD data URC. Wait for both.
+      start = millis();
+      while ((!responseStarted || responseRemaining) && !needsReset() && millis() - start < 10000UL) receive();
+      readingResponse = false;
+      if (!responseStarted || responseRemaining) lost = true;
+    }
     if (!needsReset()) result = http;
   } while (false);
   Stage failure = stage;

@@ -82,14 +82,22 @@ pub async fn claim(
     let user = auth::user(&app, &h).await?;
     auth::rate(&app, format!("claim:{user}"), 20).await?;
     let name = input.display_name.trim();
-    if input.claim_code.len() != 64 || name.is_empty() || name.chars().count() > 60 {
+    let code: String = input.claim_code.chars().filter(|c| *c != '-' && !c.is_ascii_whitespace()).collect::<String>().to_ascii_lowercase();
+    if !matches!(code.len(), 16 | 64) || !code.bytes().all(|b| b.is_ascii_hexdigit())
+        || name.is_empty() || name.chars().count() > 60 || name.chars().any(char::is_control) {
         return Err(bad("장치 이름과 등록 코드를 확인해 주세요."));
     }
-    let id:Option<i64>=sqlx::query_scalar("UPDATE devices SET owner_id=$1,display_name=$2,paired_at=now(),claim_hash=NULL WHERE claim_hash=$3 AND owner_id IS NULL RETURNING id")
-        .bind(user).bind(name).bind(hash(&input.claim_code)).fetch_optional(&app.db).await?;
-    Ok(Json(
-        json!({"id":id.ok_or_else(||bad("이미 등록되었거나 유효하지 않은 장치 코드입니다."))?}),
-    ))
+    let mut tx = app.db.begin().await?;
+    sqlx::query("SELECT id FROM users WHERE id=$1 FOR UPDATE").bind(user).execute(&mut *tx).await?;
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM devices WHERE owner_id=$1").bind(user).fetch_one(&mut *tx).await?;
+    if count >= 50 { return Err(bad("계정에 등록할 수 있는 장치는 최대 50개입니다.")); }
+    let id: Option<i64> = sqlx::query_scalar("UPDATE devices d SET owner_id=$1,display_name=$2,paired_at=now(),claim_hash=NULL WHERE claim_hash=$3 AND owner_id IS NULL AND ($4 OR EXISTS(SELECT 1 FROM device_enrollments e WHERE e.device_id=d.id AND e.expires_at>now())) RETURNING id")
+        .bind(user).bind(name).bind(hash(&code)).bind(code.len()==64).fetch_optional(&mut *tx).await?;
+    let id = id.ok_or_else(||bad("이미 등록되었거나 만료된 등록 코드입니다. 시리얼 모니터의 코드를 확인해 주세요."))?;
+    sqlx::query("DELETE FROM device_enrollments WHERE device_id=$1").bind(id).execute(&mut *tx).await?;
+    admin::audit(&mut tx, Some(user), "device.claim", "device", &id.to_string(), json!({"method":if code.len()==16 {"serial"} else {"product"}})).await?;
+    tx.commit().await?;
+    Ok(Json(json!({"id":id})))
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

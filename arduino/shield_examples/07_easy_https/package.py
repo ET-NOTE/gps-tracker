@@ -15,7 +15,7 @@ def main():
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     folder = ROOT.name
-    names = [folder + '.ino', 'config.example.h', 'README.md', 'src/EasyHttps.h',
+    names = [folder + '.ino', 'README.md', 'src/Enrollment.h', 'src/EasyHttps.h',
              'src/EasyHttps.cpp', 'src/ShieldRootCA.h', 'src/ShieldParsing.h']
     files = {name: (ROOT / name).read_bytes().replace(b'\r\n', b'\n') for name in names}
     files['.gitignore'] = b'config.h\n'
