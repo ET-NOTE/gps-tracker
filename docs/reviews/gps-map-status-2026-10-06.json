@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-06",
+  "release": "gps-web-20261006-201034-09fbf0e",
+  "source_commit": "09fbf0edad71f1bfd33c947b6e142f35f37b616d",
+  "scope": "GPS web only",
+  "artifact_sha256": "b829e214c92d79215921000b7d0a5755119ce869b6f412a7528d55b932737677",
+  "changes": [
+    "Map-only response provenance replaces a global offline latch",
+    "Successful reads clear their own cached source; unchanged-fix history is retried",
+    "Device selector, speed summary, notice and controls share a bounded flow layout",
+    "Device switch cannot show previous device speed"
+  ],
+  "tests": {
+    "cases": [
+      "long device name and vehicle plate",
+      "cached history notice",
+      "expanded map controls",
+      "device dropdown and device switch"
+    ],
+    "visual_widths": [
+      320,
+      390,
+      1280
+    ],
+    "console_errors": 0,
+    "automated_passed": 33,
+    "runner": "etcom-hub",
+    "actual_android_driving": "not directly verified"
+  },
+  "production": {
+    "release": "gps-web-20261006-201034-09fbf0e",
+    "previous_web": "/home/mmm/releases/prod-20260928-005731-18c829d/web",
+    "api_unchanged": true,
+    "kc_unchanged": true,
+    "services_restarted": false,
+    "assets_verified": true
+  },
+  "actual_api_sha256": "81214c4f4c49ee361a92271f913271ccc9bc633b7d0e41e51807df945cae79d9",
+  "rollback_web": "/home/mmm/releases/prod-20260928-005731-18c829d/web"
+}
