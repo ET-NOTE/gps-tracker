@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-06",
+  "release": "gps-web-20261006-202508-6221d69",
+  "source_commit": "6221d69f35ae45bbbf50c7a1df6e0b89ab0670c5",
+  "scope": "GPS web only: merge Driving into Home",
+  "artifact_sha256": "134a7350a58dde55167ae1ad21b91e5029d1d06cf66b6d856d9d9b423926fdcf",
+  "changes": [
+    "Remove Driving from mobile and desktop navigation",
+    "Home floating tools menu: detailed seeker, geofence management/history, route planner",
+    "Single active map tool and live-follow suspension/restoration",
+    "Legacy /tools URLs replace-redirect Home, preserving query and fragment",
+    "Panel and fixed-device widget bounds avoid floating controls and bottom navigation"
+  ],
+  "tests": {
+    "console_errors_after_fix": 0,
+    "runner": "etcom-hub",
+    "visual_widths": [
+      320,
+      390,
+      1280
+    ],
+    "actual_android_driving": "not directly verified",
+    "automated_passed": 37,
+    "cases": [
+      "all three former Driving panels open and close",
+      "geofence list/history toggle",
+      "expanded tools with fence creator visible",
+      "role tabs retained",
+      "selected-device guard and exclusive seeker modes",
+      "old tools link carries device query to Home login"
+    ]
+  },
+  "production": {
+    "release": "gps-web-20261006-202508-6221d69",
+    "previous_web": "/home/mmm/releases/gps-web-20261006-201034-09fbf0e/web",
+    "api_unchanged": true,
+    "kc_unchanged": true,
+    "services_restarted": false,
+    "assets_verified": true
+  },
+  "actual_api_sha256": "81214c4f4c49ee361a92271f913271ccc9bc633b7d0e41e51807df945cae79d9",
+  "rollback_web": "/home/mmm/releases/gps-web-20261006-201034-09fbf0e/web"
+}
