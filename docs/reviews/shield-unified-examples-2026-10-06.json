@@ -1,0 +1,342 @@
+{
+  "date": "2026-10-06",
+  "release": "shield-20261006-212530-15e168e",
+  "release_commit": "15e168e",
+  "artifact_sha256": "f2127c8d015ffc877e489181ed49cce18eb2243055afa4ad0adecd876195679c",
+  "prior_release": "shield-20261006-192955-447c0ca",
+  "scope": "Shield example firmware, account-facing setup copy, public tutorials and FAQ; no real firmware flash or financial action",
+  "changes": [
+    "04/06/07 share EasyHttps, EEPROM enrollment and ShieldSetup; 1NCE APN included; no manual UID/key/config/CA installation",
+    "Preserved 07 v2 EEPROM format at 768..896; shared identity survives switching latest 04/06/07 on the same UNO",
+    "08 accepts a 24-hour classroom code from Serial after upload, RAM only; never reads long-lived HTTPS credentials",
+    "05 keeps external Firebase host/path/name/secret/CA setup separate; includes 1NCE APN and the required 01 bridge",
+    "01/02/03 clarified as local-only. Corrected inaccurate server-send claims while preserving administrator wiring/photos",
+    "Start guide now uploads before registration; associated step photos moved with the relevant step",
+    "11 posts and 2 FAQ answers updated with revision checks; 24 public Drive files; no public file bytes served from VPS",
+    "A legacy omitted images field normalized to [] at API save; post-write verifier confirmed the canonical content without another content write"
+  ],
+  "verification": {
+    "uno_avr_core": "1.8.6",
+    "uno_compiles": [
+      {
+        "folder": "01_connection",
+        "passed": true,
+        "memory": "Sketch uses 11196 bytes (34%) of program storage space. Maximum is 32256 bytes.\nGlobal variables use 769 bytes (37%) of dynamic memory, leaving 1279 bytes for local variables. Maximum is 2048 bytes."
+      },
+      {
+        "folder": "02_dht11",
+        "passed": true,
+        "memory": "Sketch uses 5202 bytes (16%) of program storage space. Maximum is 32256 bytes.\nGlobal variables use 219 bytes (10%) of dynamic memory, leaving 1829 bytes for local variables. Maximum is 2048 bytes."
+      },
+      {
+        "folder": "03_gnss",
+        "passed": true,
+        "memory": "Sketch uses 11380 bytes (35%) of program storage space. Maximum is 32256 bytes.\nGlobal variables use 773 bytes (37%) of dynamic memory, leaving 1275 bytes for local variables. Maximum is 2048 bytes."
+      },
+      {
+        "folder": "04_shield_upload",
+        "passed": true,
+        "memory": "Sketch uses 23918 bytes (74%) of program storage space. Maximum is 32256 bytes.\nGlobal variables use 1340 bytes (65%) of dynamic memory, leaving 708 bytes for local variables. Maximum is 2048 bytes."
+      },
+      {
+        "folder": "05_firebase",
+        "passed": true,
+        "memory": "Sketch uses 18514 bytes (57%) of program storage space. Maximum is 32256 bytes.\nGlobal variables use 1158 bytes (56%) of dynamic memory, leaving 890 bytes for local variables. Maximum is 2048 bytes."
+      },
+      {
+        "folder": "06_first_upload",
+        "passed": true,
+        "memory": "Sketch uses 19426 bytes (60%) of program storage space. Maximum is 32256 bytes.\nGlobal variables use 1129 bytes (55%) of dynamic memory, leaving 919 bytes for local variables. Maximum is 2048 bytes."
+      },
+      {
+        "folder": "07_easy_https",
+        "passed": true,
+        "memory": "Sketch uses 19424 bytes (60%) of program storage space. Maximum is 32256 bytes.\nGlobal variables use 1129 bytes (55%) of dynamic memory, leaving 919 bytes for local variables. Maximum is 2048 bytes."
+      },
+      {
+        "folder": "08_shield_http_pairing",
+        "passed": true,
+        "memory": "Sketch uses 12298 bytes (38%) of program storage space. Maximum is 32256 bytes.\nGlobal variables use 895 bytes (43%) of dynamic memory, leaving 1153 bytes for local variables. Maximum is 2048 bytes."
+      }
+    ],
+    "host_simulation": [
+      "ASan/UBSan + -Werror",
+      "22 HTTPS modem fault/response scenarios",
+      "UTC/body-size bounds",
+      "automatic enrollment, response wipe, cross-sketch EEPROM reuse, explicit NEW, 429 backoff",
+      "130 interrupted EEPROM writes and 128 corruptions",
+      "10 HTTP modem scenarios",
+      "serial CRLF, bounded input, 9 malformed forms and replacement"
+    ],
+    "preview": [
+      "20 HTTPS bootstrap checks",
+      "40 four-template/HTTP isolation checks using automatic bootstrap",
+      "3 actual-payload contract scripts"
+    ],
+    "build": [
+      "GPS compile check",
+      "6 Shield Rust tests",
+      "strict Clippy",
+      "21 frontend tests",
+      "production Vite build on etcom-hub"
+    ],
+    "production": [
+      "34 baseline checks",
+      "11 automatic enrollment checks",
+      "20 four-example/HTTPS-edge checks",
+      "synthetic devices cleaned; immutable audit actor retained disabled"
+    ],
+    "browser": [
+      "desktop registration dialog, HTTP explanation, current guide step order, preserved images, no console errors",
+      "390px viewport override did not apply in current IAB; measured 1280px, so no mobile result claimed"
+    ],
+    "drive": {
+      "anonymous_download_sha256_checked": 24,
+      "redirects_checked": 24
+    },
+    "publication": {
+      "posts": {
+        "start": 10,
+        "upload": 2,
+        "dynamic-sensors": 3,
+        "shield-uno-connect": 4,
+        "shield-uno-dht11": 11,
+        "shield-uno-gnss": 9,
+        "shield-uno-upload": 5,
+        "shield-uno-firebase": 9,
+        "shield-uno-first-upload": 8,
+        "shield-uno-easy-https": 3,
+        "shield-uno-http-pairing": 2
+      },
+      "other_posts_preserved": 18,
+      "photos": "all retained",
+      "drive_redirects": 24,
+      "faq_updated": [
+        2,
+        9
+      ],
+      "account_device_financial_counts": "unchanged",
+      "category_order_thumbnails": "unchanged",
+      "hardware_validation": "pending"
+    },
+    "hardware": "Actual modem LTE/CA/HTTPS operation on these v3 sketches remains unverified; not flashed automatically"
+  },
+  "invariants": {
+    "GPS_API_binary_process": "unchanged by Shield rollout",
+    "nginx": "unchanged",
+    "schema": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "invitation_signup": "unchanged",
+    "real_device_HTTP_learning": "disabled",
+    "KC_diagnostic_routes": {
+      "/diagnostic": {
+        "status": 200,
+        "sha256": "978ab4ea058ac487446c07d0fb8c212f1fc22b4e6a25bbbebeba00af9cd75ffd"
+      },
+      "/diagnostic/device": {
+        "status": 200,
+        "sha256": "8276603977df1bafec117508d1fb292625704ed01146f7a2e25be94d43b32cec"
+      }
+    }
+  },
+  "backups": [
+    {
+      "phase": "before",
+      "file": "shield-20261006T122139Z.tar.gz",
+      "sha256": "d1e1f9cd57841816a567a4426042ad732a80e61398f8ba35032dfb108b72e7cd",
+      "offsite_postgres14_restore": "passed"
+    },
+    {
+      "phase": "after",
+      "file": "shield-20261006T123230Z.tar.gz",
+      "sha256": "ca8366eec2b820e98c1abe605b214b0045c5db09d14f7cc5de45249c92cab238",
+      "offsite_postgres14_restore": "passed"
+    }
+  ],
+  "assets": [
+    {
+      "path": "01_connection_v3.zip",
+      "title": "v3 전체 예제 ZIP · 이 파일로 시작",
+      "sha256": "4b7be1ed28bbbbb6bbb85c5a7c20d5a4ded9d4d7c046fa7d82046ef3f6f89354",
+      "url": "https://drive.google.com/file/d/1cjR5NQbqklbGkGWKsSnQqoZkl1QqAZBC/view",
+      "filename": "01_connection_v3.zip"
+    },
+    {
+      "path": "01_connection/01_connection.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "8f99bdf97d1c7b0499dad708a3ee9631ad38f18547493935d0e7c39fe9c53440",
+      "url": "https://drive.google.com/file/d/11iu3-_i4-3S-ZVjqBfCLvB-NYJ6cj-YC/view",
+      "filename": "01_connection_v3.ino"
+    },
+    {
+      "path": "01_connection_GUIDE_v3.md",
+      "title": "v3 단계별 따라 하기 안내",
+      "sha256": "fb4897c0cbee5c6ad6f8a16430db383dfa4c190e1f8ed9a4a3ff563620ab9f05",
+      "url": "https://drive.google.com/file/d/1nvAaxVJP283raH0p-WjolYZqXjyNICvO/view",
+      "filename": "01_connection_GUIDE_v3.md"
+    },
+    {
+      "path": "02_dht11_v3.zip",
+      "title": "v3 전체 예제 ZIP · 이 파일로 시작",
+      "sha256": "21eea4d401f180f3c45128e3887d0c411a4815954119bded4aaccc7520872a9f",
+      "url": "https://drive.google.com/file/d/15vfOfuOqrruFhbvhwK3UTEVps3Plw33I/view",
+      "filename": "02_dht11_v3.zip"
+    },
+    {
+      "path": "02_dht11/02_dht11.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "37065ebe6cf5ed7998c7815b1d049b1ce38a552af671facece497d2e549043a8",
+      "url": "https://drive.google.com/file/d/1eQKP_r2rP0SUT4Xb0xSG6hFXIyi7sE24/view",
+      "filename": "02_dht11_v3.ino"
+    },
+    {
+      "path": "02_dht11_GUIDE_v3.md",
+      "title": "v3 단계별 따라 하기 안내",
+      "sha256": "5988e3f3c3dba182caf15fea5cf3d87980969c584d57a2118de9215b09556e4d",
+      "url": "https://drive.google.com/file/d/1RxzmcP3hOHl_6XySIMESI0iN2SAUeCHE/view",
+      "filename": "02_dht11_GUIDE_v3.md"
+    },
+    {
+      "path": "03_gnss_v3.zip",
+      "title": "v3 전체 예제 ZIP · 이 파일로 시작",
+      "sha256": "fa97329c40260d1e7fc88941c30986973dce89bf7d6e9da67f9dc1902ae557c3",
+      "url": "https://drive.google.com/file/d/1_wTPqif5yF50Le57WpZFpyR-cMRAv7a6/view",
+      "filename": "03_gnss_v3.zip"
+    },
+    {
+      "path": "03_gnss/03_gnss.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "32323991c77f8d4be4ecad43eb6c80e8cb26203062860dbdfdfe63cfc7d0ecfc",
+      "url": "https://drive.google.com/file/d/1UF5iIS5wc4jPJ2Q7BePVR7dWXADXWb6B/view",
+      "filename": "03_gnss_v3.ino"
+    },
+    {
+      "path": "03_gnss_GUIDE_v3.md",
+      "title": "v3 단계별 따라 하기 안내",
+      "sha256": "87412e11d86189279cf8af588f9b9398d0d4ad2935b1988a31c0d532d06a80df",
+      "url": "https://drive.google.com/file/d/1qeAQn9RZrwKJ1YljnH55WN_nVyg7miaS/view",
+      "filename": "03_gnss_GUIDE_v3.md"
+    },
+    {
+      "path": "04_shield_upload_v3.zip",
+      "title": "v3 전체 예제 ZIP · 이 파일로 시작",
+      "sha256": "b16ef42ad3b07eb1463756ce15c1eda2e4e1f278e1ddf67eeb96b5821d8ffb6a",
+      "url": "https://drive.google.com/file/d/1kYA9ccHjIM-HKOxFzqAzGBqCsGRw5BNJ/view",
+      "filename": "04_shield_upload_v3.zip"
+    },
+    {
+      "path": "04_shield_upload/04_shield_upload.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "fa12ac4576e762bc0e28a196797e6ab7af226fcde6ddadc7571d17d99f3424b3",
+      "url": "https://drive.google.com/file/d/1cortCljbCjQMaPV2eUIlkZP6MatoMWuh/view",
+      "filename": "04_shield_upload_v3.ino"
+    },
+    {
+      "path": "04_shield_upload_GUIDE_v3.md",
+      "title": "v3 단계별 따라 하기 안내",
+      "sha256": "bfb1182980507bb5e81b10a660cbe7b13b75282819d6b5db4ac8a24a39a9ca80",
+      "url": "https://drive.google.com/file/d/18tPCrhPeSfskFbJNYdl8aI0OpXhtZKF0/view",
+      "filename": "04_shield_upload_GUIDE_v3.md"
+    },
+    {
+      "path": "05_firebase_v3.zip",
+      "title": "v3 전체 예제 ZIP · 이 파일로 시작",
+      "sha256": "2677a554ce4b109bf3fe38dc7bf6ae03f1e5972f336f8d223229aaac7b1abf5b",
+      "url": "https://drive.google.com/file/d/1EtvSJTAn5PQ6VfYh-8EFzeBgA_yohlHC/view",
+      "filename": "05_firebase_v3.zip"
+    },
+    {
+      "path": "05_firebase/05_firebase.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "97f1e9306089bc896de0e1e9c64b96e1db44206d348d3d2e0dd60b24972676c3",
+      "url": "https://drive.google.com/file/d/1C2v6SfFBhr_zrCrNZKwGY6yHSfzPM5fp/view",
+      "filename": "05_firebase_v3.ino"
+    },
+    {
+      "path": "05_firebase_GUIDE_v3.md",
+      "title": "v3 단계별 따라 하기 안내",
+      "sha256": "6e3430c0e5083c8a75abbcedf45b25b8163c283bd75adc4115479d5686ed653e",
+      "url": "https://drive.google.com/file/d/1tvmL2tnjALQwQ77-0kQLX6o8g78_Gbfo/view",
+      "filename": "05_firebase_GUIDE_v3.md"
+    },
+    {
+      "path": "06_first_upload_v3.zip",
+      "title": "v3 전체 예제 ZIP · 이 파일로 시작",
+      "sha256": "0ec90b679221c0cb684d77846d5f30bc0fe33d776926f851d7965f0a0e9769d7",
+      "url": "https://drive.google.com/file/d/1un5QqJ6rK-xy6peGms2QOD7hHpE0eo2p/view",
+      "filename": "06_first_upload_v3.zip"
+    },
+    {
+      "path": "06_first_upload/06_first_upload.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "055c00f8cd857ccf912a2f4831986a29c0693fe18ca6a045a842da9f26ddafe2",
+      "url": "https://drive.google.com/file/d/1SZZxJs5d5pf-mRAHEnZ-590X7AzOblge/view",
+      "filename": "06_first_upload_v3.ino"
+    },
+    {
+      "path": "06_first_upload_GUIDE_v3.md",
+      "title": "v3 단계별 따라 하기 안내",
+      "sha256": "43b2d02a7fe3b582381d6f9b37e559ea7ce75a36dfd993338f972e0685c080d0",
+      "url": "https://drive.google.com/file/d/1jF5KGL1TluaGGpdQep-MlG-5Yk546c4K/view",
+      "filename": "06_first_upload_GUIDE_v3.md"
+    },
+    {
+      "path": "07_easy_https_v3.zip",
+      "title": "v3 전체 예제 ZIP · 이 파일로 시작",
+      "sha256": "020d718966019e90b73eab63cda540c2ae66c1fb6e5531d41c59516798c89a4a",
+      "url": "https://drive.google.com/file/d/19cVWfZtUW68CZmZqyxBTHFEw4N1q6y8f/view",
+      "filename": "07_easy_https_v3.zip"
+    },
+    {
+      "path": "07_easy_https/07_easy_https.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "fb7a8a047cb0bc603edc311c5bc7f9c918caecca93e65d2069cff606e3357907",
+      "url": "https://drive.google.com/file/d/1guCfncTSrs3p7wOdnNPCRHF6VSQQSgpn/view",
+      "filename": "07_easy_https_v3.ino"
+    },
+    {
+      "path": "07_easy_https_GUIDE_v3.md",
+      "title": "v3 단계별 따라 하기 안내",
+      "sha256": "2bee2aa154017e4b27f8b8ae63779b13b19c12b4430a7a155c1f22250d770ffc",
+      "url": "https://drive.google.com/file/d/1BJOt1gA0EVAwPvr-n82mB3kJaNzysYu5/view",
+      "filename": "07_easy_https_GUIDE_v3.md"
+    },
+    {
+      "path": "08_shield_http_pairing_v3.zip",
+      "title": "v3 전체 예제 ZIP · 이 파일로 시작",
+      "sha256": "1f411dfa3ecb584ff3787c9f9bc988e41df42b92f2c48e94e491bde42661dbed",
+      "url": "https://drive.google.com/file/d/1gmEj7_c7e0Z62-nRmuIBUNZ2CNOSpPTS/view",
+      "filename": "08_shield_http_pairing_v3.zip"
+    },
+    {
+      "path": "08_shield_http_pairing/08_shield_http_pairing.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "4634b2d61a5a17a5ed6a1746e2f3db7744c9d73a6339728c450ca87b96a83cea",
+      "url": "https://drive.google.com/file/d/13zC8v4jbdnPJxtwGhLuOKfBH6yVQC-mk/view",
+      "filename": "08_shield_http_pairing_v3.ino"
+    },
+    {
+      "path": "08_shield_http_pairing_GUIDE_v3.md",
+      "title": "v3 단계별 따라 하기 안내",
+      "sha256": "d9a2697d8d42e1f5b72be8ee427ec6fa2fbdc17972669483bb6c2250d88a7618",
+      "url": "https://drive.google.com/file/d/1lSAnARoswPiV22yBQUQcITLHHC0_-QSp/view",
+      "filename": "08_shield_http_pairing_GUIDE_v3.md"
+    }
+  ],
+  "local_packages": "E:\\project\\2025\\shield-examples\\2026-10-06-unified\\packages",
+  "proof": "E:\\project\\2025\\shield-examples\\2026-10-06-unified\\shield-guide-live.png"
+}

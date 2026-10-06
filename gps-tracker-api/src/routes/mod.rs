@@ -1,6 +1,5 @@
 pub mod admin;
 pub mod ai;
-pub mod arduino_shield;
 pub mod auth;
 pub mod chat;
 pub mod corporate;
@@ -18,7 +17,6 @@ pub mod phones;
 pub mod profile_type;
 pub mod rentcar;
 pub mod share;
-pub mod shield_ingest;
 pub mod sim_requests;
 pub mod stats;
 pub mod ws;
@@ -34,7 +32,6 @@ pub fn build_router(state: AppState) -> Router {
     // /gps-tracker prefix는 nginx가 stripping하지 않고 그대로 proxy_pass하므로
     // 여기서도 동일 prefix로 라우트.
     let api_v1 = Router::new()
-        .merge(arduino_shield::router())
         .merge(auth::router())
         .merge(devices::router())
         .merge(documents::router())
@@ -62,13 +59,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/health", get(health::health))
         .route("/gps-tracker/health", get(health::health))
         .route("/gps-tracker/ingest", post(ingest::ingest))
-        .route("/gps-tracker/ingest/shield", post(shield_ingest::ingest))
         .route("/gps-tracker/dht", post(diag::dht_ingest))
-        .route("/gps-tracker/arduino-shield", get(arduino_shield::page))
-        .route(
-            "/gps-tracker/arduino-shield/data",
-            get(arduino_shield::data),
-        )
         .route("/gps-tracker/diagnostic", get(diag::diag_page))
         .route("/gps-tracker/diagnostic/data", get(diag::diag_data))
         .route("/gps-tracker/diagnostic/device", get(diag::device_log_page))

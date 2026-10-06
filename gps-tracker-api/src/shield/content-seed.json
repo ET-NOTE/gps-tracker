@@ -1,0 +1,134 @@
+[
+  {
+    "category": "시작하기",
+    "description": "쉴드를 연결하고 예제를 그대로 업로드한 뒤, 시리얼 등록 코드로 내 장치에 연결하고 서버 수신·USIM 잔량을 확인하세요.",
+    "id": "start",
+    "kind": "example",
+    "level": "입문",
+    "minutes": 35,
+    "step_titles": [
+      "쉴드 연결",
+      "예제 그대로 업로드",
+      "시리얼 등록 코드로 장치 연결",
+      "서버 데이터 전송 확인",
+      "USIM 데이터 확인"
+    ],
+    "steps": [
+      "시리얼링크 LTE쉴드의 스위치를 사진과 같이 OFF로 되어있는지 확인합니다.\nLTE·GPS안테나, 배터리를 장착합니다\n아두이노 우노에 시리얼링크 LTE쉴드를 장착합니다.\nUNO R3용 예제입니다. 배선과 장착 방향을 확인한 뒤 제품 안내에 따라 전원을 켜고 USB를 PC에 연결합니다. [첫 연결 점검](/examples/shield-uno-connect)을 참고하세요.",
+      "아래 v3 전체 ZIP을 새 폴더에 풀고 06_first_upload/06_first_upload.ino를 엽니다. src 폴더를 함께 유지하세요.\n[Arduino 설치](/examples/arduino-basics-install) · [COM 포트 확인](/examples/arduino-basics-com-port) · [업로드 방법](/examples/arduino-basics-upload)을 참고해 Arduino AVR Boards → Arduino Uno와 실제 포트를 선택합니다. 설정 파일 생성이나 값 입력 없이 그대로 업로드하세요. Python·인증서 브리지·추가 라이브러리가 필요 없습니다.\n시리얼 모니터를 115200 baud로 열고 [AUTO v3]를 확인합니다. 예전 ZIP의 config.h를 가져오지 마세요.\n[첫 서버 전송 상세 안내](/examples/shield-uno-first-upload)에서 전체 과정을 볼 수 있습니다.",
+      "시리얼 모니터를 115200 baud로 열고 [REGISTER] 뒤에 표시된 등록 코드를 복사합니다. [내 장치](/devices) → 장치 등록에 그 코드와 원하는 이름을 입력하세요. 사용자가 옮길 값은 이 등록 코드 하나입니다.\n1NCE APN·서버 주소·HTTPS 인증서 준비가 포함되어 있어 연결 정보를 따로 찾거나 코드에 입력할 필요가 없습니다.\n등록 코드는 24시간 동안 한 번 사용할 수 있습니다. 웹 등록 전 [HTTPS] 409는 등록 대기이며, 등록 후 다음 전송부터 200으로 바뀝니다. 이미 등록한 같은 보드는 다시 등록하지 않습니다.",
+      "서버통신예제에서 데이터 전송 주소는 https://shield.serial.kr/ingest/shield 입니다. \n사용자 서버를 이용하실경우 서버 전송 코드를 직접 수정하셔야 합니다. \n(당사 서버 외의 서버관련 문의는 받지않으며 타사 서버셋팅필요시 별도 비용이 청구됩니다.)\n[내 장치](/devices)에서 해당 장치를 선택하고 마지막 수신 시각·LTE·최근 데이터를 확인합니다.\n첫 전송 코드는 온습도나 GPS 좌표를 보내지 않습니다. 센서 그래프와 지도에 값이 없어도 정상입니다. [DHT11 측정](/examples/shield-uno-dht11) 후 [온습도 서버 전송](/examples/shield-uno-upload)을 진행하면 [내 데이터](/data)에서 실제 센서 값을 볼 수 있습니다.\n[GNSS 확인](/examples/shield-uno-gnss)은 하늘이 보이는 곳에서 좌표를 시리얼로 읽는 별도 예제입니다. 이 예제 자체는 지도용 좌표를 서버에 보내지 않습니다.\n왼쪽 내 데이터 화면은 기능 안내를 위한 데모이며 첫 전송 예제의 실제 수신 결과가 아닙니다.",
+      "USIM 잔량과 충전은 내 장치에서 확인합니다.\nUSIM데이터는 최초 제공 데이터 외 유상으로 충전하셔야합니다.\n시리얼링크 쉴드는 허가받은 당사 제공 USIM 외 타사 통신사 USIM을 장착이 불가합니다.\n[내 장치](/devices)의 USIM 및 사용 정보에서 잔량·상태·마지막 조회 시각을 확인합니다.\nUSIM 충전하기는 [내 장치](/devices)와 [요금 안내](/pricing) 양쪽에서 사용할 수 있습니다. 본인 장치와 판매 중인 상품을 선택하고 차감 포인트를 확인하세요.\n왼쪽 화면과 [내 장치 데모](/devices?demo=1)의 350 / 500 MB는 체험용 예시입니다. 데모에서는 결제나 실제 충전이 실행되지 않습니다."
+    ],
+    "title": "쉴드 연결 및 데이터전송 하기",
+    "variant": "board",
+    "code": "#include \"src/ShieldSetup.h\"\n\n// 1NCE + UNO R3: upload the complete ZIP unchanged.\n// Register once using the serial [REGISTER] code; no settings to fill in.\nShieldSetup shield;\nchar payload[256];\n\nvoid setup() {\n  shield.begin();\n}\n\nvoid loop() {\n  if (!shield.connect(payload, sizeof(payload))) {\n    shield.pause();\n    return;\n  }\n  // Real LTE status only. This sketch does not send GPS or sensor values.\n  int n = snprintf_P(\n      payload, sizeof(payload),\n      PSTR(\"{\\\"shield_v\\\":2,\\\"device_uid\\\":\\\"%s\\\",\\\"build_tag\\\":\\\"example-status-1\\\",\\\"ts\\\":%lu,\"\n           \"\\\"csq\\\":%d,\\\"reg\\\":%d,\\\"diag\\\":{\\\"gnss\\\":0},\\\"points\\\":[]}\"),\n      shield.device.uid, millis() / 1000UL, shield.modem.signal, shield.modem.registration);\n  if (n < 0 || n >= (int)sizeof(payload)) ShieldSetup::stop();\n  shield.send(payload);\n  shield.pause();\n}\n"
+  },
+  {
+    "id": "dht11",
+    "category": "센서",
+    "level": "입문",
+    "minutes": 15,
+    "title": "DHT11 온습도 측정",
+    "description": "온도와 습도를 읽고 시리얼 모니터에서 확인해요.",
+    "variant": "sensor",
+    "steps": [
+      "전원을 끄고 DHT11 데이터선을 D2에 연결합니다. 센서 모듈의 VCC·GND 표기를 확인합니다.",
+      "Arduino 라이브러리 매니저에서 Adafruit DHT sensor library와 Adafruit Unified Sensor를 설치합니다.",
+      "아래 스케치를 업로드하고 115200 baud 시리얼 모니터를 엽니다.",
+      "유효하지 않은 값은 전송하지 않습니다. 2초 이상 간격으로 측정합니다."
+    ],
+    "code": "#include <DHT.h>\nDHT sensor(2, DHT11); // D2: modem D8/D9와 분리\nvoid setup() { Serial.begin(115200); sensor.begin(); }\nvoid loop() {\n  delay(2500);\n  float temperature = sensor.readTemperature();\n  float humidity = sensor.readHumidity();\n  if (isnan(temperature) || isnan(humidity)) {\n    Serial.println(\"Sensor read failed\"); return;\n  }\n  Serial.print(temperature); Serial.print(\" C, \");\n  Serial.print(humidity); Serial.println(\" %\");\n}\n"
+  },
+  {
+    "id": "gnss",
+    "category": "GPS",
+    "level": "기초",
+    "minutes": 15,
+    "title": "GPS 위치 확인",
+    "description": "SIM7080G 내장 GNSS의 위치와 측위 상태를 확인해요.",
+    "variant": "board",
+    "steps": [
+      "쉴드의 GNSS 안테나를 하늘이 보이는 곳에 고정합니다. 별도 L80 수신기를 사용하지 않습니다.",
+      "모뎀 통신을 확인하고 AT+CGNSPWR=1로 GNSS를 켭니다.",
+      "AT+CGNSINF 응답의 fix·UTC·위도·경도·품질을 확인합니다. fix=0이면 유효 위치로 처리하지 않습니다.",
+      "이 제품은 LTE 통신과 GNSS 사용을 순서대로 전환합니다. 제공 펌웨어의 GNSS off → HTTP → GNSS on 순서를 유지하세요.",
+      "이 페이지의 지도는 유효 위치가 들어와야 표시됩니다. GPS 대기 상태도 통신 수신과 별도로 확인할 수 있습니다."
+    ],
+    "code": ""
+  },
+  {
+    "category": "LTE 통신",
+    "description": "예제를 수정 없이 업로드하고 시리얼 등록 코드로 연결해 실제 LTE 수신을 확인합니다.",
+    "id": "upload",
+    "level": "기초",
+    "minutes": 20,
+    "steps": [
+      "전원을 끄고 UNO R3에 SIM7080G 쉴드·LTE 안테나·개통된 1NCE USIM을 연결합니다. 제품 규격의 전원을 사용하고 [첫 연결 점검](/examples/shield-uno-connect)을 참고하세요.\nShield 계정으로 로그인해 두세요. 장치는 업로드 후 직접 등록합니다. 추가 센서나 별도의 연결 정보 발급은 필요 없습니다.",
+      "아래 v3 전체 ZIP을 새 폴더에 풀고 06_first_upload/06_first_upload.ino를 엽니다. src 폴더를 함께 유지하세요.\n[Arduino 설치](/examples/arduino-basics-install) · [COM 포트 확인](/examples/arduino-basics-com-port) · [업로드 방법](/examples/arduino-basics-upload)을 참고해 Arduino AVR Boards → Arduino Uno와 실제 포트를 선택합니다. 설정 파일 생성이나 값 입력 없이 그대로 업로드하세요. Python·인증서 브리지·추가 라이브러리가 필요 없습니다.\n시리얼 모니터를 115200 baud로 열고 [AUTO v3]를 확인합니다. 예전 ZIP의 config.h를 가져오지 마세요.",
+      "시리얼 모니터를 115200 baud로 열고 [REGISTER] 뒤에 표시된 등록 코드를 복사합니다. [내 장치](/devices) → 장치 등록에 그 코드와 원하는 이름을 입력하세요. 사용자가 옮길 값은 이 등록 코드 하나입니다.\n1NCE APN·서버 주소·HTTPS 인증서 준비가 포함되어 있어 연결 정보를 따로 찾거나 코드에 입력할 필요가 없습니다.\n등록 코드는 24시간 동안 한 번 사용할 수 있습니다. 웹 등록 전 [HTTPS] 409는 등록 대기이며, 등록 후 다음 전송부터 200으로 바뀝니다. 이미 등록한 같은 보드는 다시 등록하지 않습니다.\n(이미지) 등록 코드를 가린 시리얼 출력과 내 장치 등록 창.",
+      "[HTTPS] 200은 서버가 실제 LTE 상태를 접수했다는 뜻입니다. [내 장치](/devices)에서 등록한 이름을 선택하고 마지막 수신 시각·LTE·최근 데이터를 확인합니다.\nCSQ·망 등록 상태·UNO 가동 시간만 보냅니다. 임의의 TEXT·온습도·GPS 좌표를 보내는 예제는 아니므로 센서 카드와 지도에 값이 없어도 정상입니다.\n전송 주기는 60초 대기와 통신 처리 시간입니다. 실제 장치가 없다면 [내 장치 데모](/devices?demo=1)를 체험할 수 있습니다.\n(이미지) 실제 HTTPS 200과 내 장치의 마지막 수신 화면."
+    ],
+    "title": "서버로 데이터 보내기",
+    "variant": "data",
+    "step_titles": [
+      "쉴드 준비",
+      "전체 ZIP 그대로 업로드",
+      "등록 코드로 연결",
+      "수신 확인"
+    ],
+    "kind": "example",
+    "code": "#include \"src/ShieldSetup.h\"\n\n// 1NCE + UNO R3: upload the complete ZIP unchanged.\n// Register once using the serial [REGISTER] code; no settings to fill in.\nShieldSetup shield;\nchar payload[256];\n\nvoid setup() {\n  shield.begin();\n}\n\nvoid loop() {\n  if (!shield.connect(payload, sizeof(payload))) {\n    shield.pause();\n    return;\n  }\n  // Real LTE status only. This sketch does not send GPS or sensor values.\n  int n = snprintf_P(\n      payload, sizeof(payload),\n      PSTR(\"{\\\"shield_v\\\":2,\\\"device_uid\\\":\\\"%s\\\",\\\"build_tag\\\":\\\"example-status-1\\\",\\\"ts\\\":%lu,\"\n           \"\\\"csq\\\":%d,\\\"reg\\\":%d,\\\"diag\\\":{\\\"gnss\\\":0},\\\"points\\\":[]}\"),\n      shield.device.uid, millis() / 1000UL, shield.modem.signal, shield.modem.registration);\n  if (n < 0 || n >= (int)sizeof(payload)) ShieldSetup::stop();\n  shield.send(payload);\n  shield.pause();\n}\n"
+  },
+  {
+    "id": "status",
+    "category": "시작하기",
+    "level": "입문",
+    "minutes": 5,
+    "title": "쉴드 연결 상태 확인",
+    "description": "통신 수신과 GPS 위치 확보를 구분해서 확인해요.",
+    "variant": "board",
+    "steps": [
+      "내 데이터의 마지막 수신 시각을 확인합니다. 새로고침 오류는 단말 오프라인과 구분됩니다.",
+      "CSQ 0~31 범위만 신호로 표시합니다. 99는 미확인이며 0 dBm이 아닙니다.",
+      "GNSS가 측위 중이면 위치가 없을 수 있습니다. 이전 좌표는 측정 시각을 함께 확인하세요.",
+      "PV는 A0 입력 전압입니다. 배터리 잔량으로 해석하지 않습니다."
+    ],
+    "code": ""
+  },
+  {
+    "id": "history",
+    "category": "데이터 연동",
+    "level": "기초",
+    "minutes": 15,
+    "title": "센서 기록과 GPS 경로 보기",
+    "description": "기간별 그래프, 좌표, 수신 기록을 함께 살펴봐요.",
+    "variant": "data",
+    "steps": [
+      "장치를 선택하고 최근 1시간·24시간·7일 범위를 선택합니다.",
+      "그래프는 5분 평균이며 표의 원본 기록과 구분됩니다. 수신이 끊긴 구간은 선으로 이어 그리지 않습니다.",
+      "지도에는 최근 유효 위치와 조회 범위의 최신 1,000개 좌표를 표시합니다.",
+      "CSV는 선택한 조회 범위의 모든 센서 기록을 페이지 끝까지 받아 내려받습니다. 읽기 실패 시 일부 파일을 완성본으로 저장하지 않습니다."
+    ],
+    "code": ""
+  },
+  {
+    "category": "센서·데이터활용",
+    "code": "#include \"src/ShieldSetup.h\"\n#include <DHT.h>\n\n// 1NCE + UNO R3, DHT11 DATA on D2. Upload the complete ZIP unchanged.\n// Install Adafruit DHT sensor library and Adafruit Unified Sensor first.\nShieldSetup shield;\nDHT sensor(2, DHT11);\nchar body[448];\n\nvoid setup() {\n  sensor.begin();\n  shield.begin();\n  delay(2000);\n}\n\nvoid loop() {\n  if (!shield.connect(body, sizeof(body))) {\n    shield.pause();\n    return;\n  }\n  float t = sensor.readTemperature(), h = sensor.readHumidity();\n  uint32_t at = shield.modem.utcNow();\n  if (!at || isnan(t) || isnan(h) || t < 0 || t > 50 || h < 0 || h > 100) {\n    Serial.println(F(\"[DATA] Missing clock or valid DHT11 reading; nothing sent.\"));\n    shield.pause();\n    return;\n  }\n  char temp[12], hum[12];\n  dtostrf(t, 1, 1, temp);\n  dtostrf(h, 1, 1, hum);\n  int n = snprintf_P(\n      body, sizeof(body),\n      PSTR(\n          \"{\\\"shield_v\\\":3,\\\"device_uid\\\":\\\"%s\\\",\\\"build_tag\\\":\\\"example-dht11-1\\\",\\\"ts\\\":%lu,\"\n          \"\\\"csq\\\":%d,\\\"reg\\\":%d,\\\"diag\\\":{\\\"gnss\\\":0},\\\"points\\\":[],\\\"sensor_set\\\":\\\"dht11-example\\\",\"\n          \"\\\"channels\\\":[{\\\"key\\\":\\\"temperature\\\",\\\"label\\\":\\\"Temperature\\\",\\\"unit\\\":\\\"C\\\"},\"\n          \"{\\\"key\\\":\\\"humidity\\\",\\\"label\\\":\\\"Humidity\\\",\\\"unit\\\":\\\"%%\\\"}],\"\n          \"\\\"sensors\\\":[{\\\"at\\\":%lu,\\\"values\\\":{\\\"temperature\\\":%s,\\\"humidity\\\":%s}}]}\"),\n      shield.device.uid, millis() / 1000UL, shield.modem.signal, shield.modem.registration, at, temp, hum);\n  if (n < 0 || n >= (int)sizeof(body)) {\n    Serial.println(F(\"[STOP] Payload too large.\"));\n    while (true)\n      delay(1000);\n  }\n  shield.send(body);\n  // Failed samples are not queued. The next cycle reads a fresh sensor value.\n  shield.pause();\n}\n",
+    "description": "온습도·조도·압력 등 센서 종류에 맞는 카드와 표를 자동으로 구성합니다.",
+    "id": "dynamic-sensors",
+    "kind": "example",
+    "level": "응용",
+    "minutes": 20,
+    "step_titles": [],
+    "steps": [
+      "[DHT11 서버 전송](/examples/shield-uno-upload)의 최신 ZIP으로 시작하세요. 한 번 등록한 같은 보드·USIM을 유지한 채 센서 배선과 측정 코드를 바꾸면 기존 계정의 내 데이터로 이어집니다.",
+      "아래 DHT11 전송 코드를 출발점으로 삼아 sensor_set과 channels의 key·label·unit, 실제 센서 측정 부분을 함께 수정합니다. 장치 식별 정보는 shield.device.uid에서 자동으로 가져오고 at은 shield.modem.utcNow()로 얻습니다. 사용자가 별도 발급값을 입력하지 않습니다.",
+      "예제의 ShieldSetup이 HTTPS 연결과 인증을 처리합니다. 사용자에게 별도 연결 정보를 발급받아 코드에 입력하도록 요구하지 않습니다. body의 JSON만 센서 구성에 맞게 만들고 shield.send(body)를 호출하세요. 등록 전에는 시리얼 등록 코드로 내 장치에 먼저 연결합니다.",
+      "내 데이터에서 수신된 채널별 카드·그래프·표를 확인합니다. 이전 센서 구성도 보기를 켜면 교체 전 이력을 함께 확인할 수 있습니다.",
+      "단위나 센서 구성이 바뀌면 sensor_set을 새 이름으로 지정합니다. 같은 구성·key의 단위를 바꾸지 않습니다. 장치당 누적 채널은 64개, 배치당 채널 16개·측정 32개까지입니다.\n이 수치는 서버 상한입니다. UNO 예제는 448바이트 버퍼를 사용하므로 큰 구성을 그대로 보낼 수 없습니다. 페이로드 길이 검사를 유지하고 필요한 채널만 넣으세요."
+    ],
+    "title": "센서를 바꾸고 데이터 이어 보기",
+    "variant": "data"
+  }
+]

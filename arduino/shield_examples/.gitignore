@@ -1,0 +1,7 @@
+**/config.h
+dist/
+**/node_modules/
+**/.env*
+**/.secret*
+**/.firebase/
+**/*-debug.log

@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-06",
+  "release": "shield-20261006-192955-447c0ca",
+  "artifact_sha256": "f57f19d64e60a80ec349c345b21255bd883fb56b3275a1ea78834c1b2d19355d",
+  "schema": [
+    13,
+    14
+  ],
+  "lesson": "https://shield.serial.kr/examples/shield-uno-easy-https",
+  "post_revision": 2,
+  "flow": [
+    "upload unchanged 07 v2 with 1NCE SIM",
+    "read serial REGISTER code at 115200",
+    "signed-in tester claims code in My devices",
+    "next HTTPS LTE status visible to owner"
+  ],
+  "scope": {
+    "gps_kc": "unchanged binary, process and config",
+    "real_board_credentials": "unchanged",
+    "existing_28_posts": "unchanged",
+    "signup": "existing invitation policy retained",
+    "financial_actions": 0
+  },
+  "checks": {
+    "uno_flash_bytes": 19308,
+    "uno_sram_bytes": 1125,
+    "modem_transcript_scenarios": 22,
+    "eeprom_interrupted_writes": 130,
+    "eeprom_corruptions": 128,
+    "rust_tests": 6,
+    "web_tests": 21,
+    "preview_enrollment": 20,
+    "preview_baseline": 40,
+    "preview_four_examples": 38,
+    "nginx_proxy": 14,
+    "postgres14_migration_isolation": "passed",
+    "production_baseline": 34,
+    "production_enrollment": 11,
+    "actual_modem_lte": "not performed"
+  },
+  "backup_before": {
+    "archive": "shield-20261006T103031Z.tar.gz",
+    "sha256": "ac7c3b4a10f6be61eb6446736f72805c0940836ddf8074f6f82338734bb56f39"
+  },
+  "backup_after": {
+    "archive": "shield-20261006T103249Z.tar.gz",
+    "sha256": "65e75bb029aa36ffc04def18da4a7458e780c655a5b3878256cf0bd55b062ecd"
+  },
+  "drive_assets": [
+    {
+      "path": "07_easy_https.zip",
+      "title": "간편 HTTPS 전체 ZIP · 이 파일로 시작",
+      "sha256": "c9933cbbb0ea24e76b332b48baf6cabb3ae83e7983b747c3438e2488d64d93bd",
+      "url": "https://drive.google.com/file/d/1iMvbqM2E1nRGE1-Yt1GfqWQ0FamfUTR4/view",
+      "filename": "07_easy_https_v2.zip"
+    },
+    {
+      "path": "07_easy_https/07_easy_https.ino",
+      "title": "스케치 코드 · src는 전체 ZIP에 포함",
+      "sha256": "97b067537ddadbd8d4114a3934ba37c79764cd5f6bf38b41e8cec4c346405b84",
+      "url": "https://drive.google.com/file/d/1J010q5_ERquQuKiMpOhkBrw8On1ozGhG/view",
+      "filename": "07_easy_https_v2.ino"
+    },
+    {
+      "path": "07_easy_https/GUIDE.md",
+      "title": "단계별 따라 하기 안내",
+      "sha256": "633721dfec3e5da115b72f09e676c0b83449f8af71707efe13714f1c62d60d2a",
+      "url": "https://drive.google.com/file/d/1FsaWTgpuY-ZS9ga6Yb7My3HkUcbGX5np/view",
+      "filename": "07_easy_https_v2_GUIDE.md"
+    }
+  ],
+  "recovery": "Unclaimed code expires after 24 hours. Serial NEW clears only EEPROM 768..896 and creates a fresh identity; old server history is retained.",
+  "notes": [
+    "EEPROM persists across reset/sketch upload; not encrypted against physical reads.",
+    "Anonymous bootstrap pending records bounded to 512 and 60 per 15 min globally plus 6 per min/IP at nginx.",
+    "Claim is one-use, owner session required, limited to 50 devices per account.",
+    "Rollback after migration requires a compatible schema14 build; prior binaries do not understand the added migration."
+  ]
+}

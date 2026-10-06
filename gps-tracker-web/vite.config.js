@@ -19,10 +19,7 @@ export default defineConfig({
   build: {
     outDir: process.env.VITE_OUT || 'dist',
     rollupOptions: {
-      input: { main: 'index.html', 'shield-monitor': 'src/shieldMonitor.js' },
       output: {
-        // The API HTML appends the release ID; shared dependencies retain hashed names.
-        entryFileNames: chunk => chunk.name === 'shield-monitor' ? 'assets/shield-monitor.js' : 'assets/[name]-[hash].js',
         // node_modules 통째로 vendor chunk 로 분리 — 앱 배포마다 변하지 않으므로
         // 브라우저 캐시 효과 최대화 (main chunk 만 재다운로드).
         manualChunks(id) {

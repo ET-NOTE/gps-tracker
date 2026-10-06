@@ -1,0 +1,8 @@
+# Prepend these rules before broader localhost rules. Do not replace pg_hba.conf.
+# Only shield_app matches. Existing GPS / KC roles continue through old rules.
+local shield_prod shield_app scram-sha-256
+host shield_prod shield_app 127.0.0.1/32 scram-sha-256
+host shield_prod shield_app ::1/128 scram-sha-256
+local all shield_app reject
+host all shield_app 0.0.0.0/0 reject
+host all shield_app ::0/0 reject
