@@ -68,7 +68,7 @@ test('shared time/sampling contract: KST midnight, explicit monthly 1m, visible 
   assert.equal(bucket10min('2026-09-23T15:11:00Z'), '00:10');
   assert.equal(seekerBucket('month', '1m'), '1m');
   assert.equal(seekerBucket('month', 'auto'), '1h');
-  assert.equal(isSeekerVisible('home', 1, true, false), false);
+  assert.equal(isSeekerVisible('home', 1, true, false), true);
   assert.equal(isSeekerVisible('tools', 1, false, true), false);
   assert.equal(isSeekerVisible('home', 1, false, true), true);
   assert.equal(isSeekerVisible('home', null, true, true), false);

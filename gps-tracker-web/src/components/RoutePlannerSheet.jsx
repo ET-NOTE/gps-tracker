@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { haversineM } from '../lib/stops';
 import useBreakpoint from '../useBreakpoint';
-import { BOTTOM_NAV_HEIGHT } from './BottomNav';
 
 // ── TSP: nearest-neighbor heuristic ─────────────────────────────────
 function nearestNeighborTSP(points) {
@@ -127,18 +126,18 @@ export default function RoutePlannerSheet({ mapRef, onClose }) {
   }, [mapRef]);
 
   const panelStyle = isDesktop ? {
-    position: 'absolute', top: 80, left: 16,
-    width: 340, maxHeight: 'calc(100vh - 120px)',
+    position: 'absolute', top: 12, left: 12,
+    width: 340, maxWidth: 'calc(100% - 24px)', maxHeight: 'calc(100% - 24px)',
     borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,.22)',
     background: 'var(--surface)', border: '1px solid var(--border)',
     display: 'flex', flexDirection: 'column', zIndex: 20, overflow: 'hidden',
   } : {
-    position: 'fixed', bottom: BOTTOM_NAV_HEIGHT, left: 0, right: 0,
-    maxHeight: `calc(80vh - ${BOTTOM_NAV_HEIGHT}px)`,
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    maxHeight: 'min(80vh, 100%)',
     borderRadius: '20px 20px 0 0',
     boxShadow: '0 -4px 24px rgba(0,0,0,.18)',
     background: 'var(--surface)', border: '1px solid var(--border)',
-    display: 'flex', flexDirection: 'column', zIndex: 200, overflow: 'hidden',
+    display: 'flex', flexDirection: 'column', zIndex: 20, overflow: 'hidden',
   };
 
   return (

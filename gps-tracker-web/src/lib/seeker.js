@@ -30,5 +30,5 @@ export function normalizeAggregates(rows) {
     })).sort((a, b) => Date.parse(a.recorded_at) - Date.parse(b.recorded_at));
 }
 export function isSeekerVisible(view, deviceId, detailed, mini) {
-  return deviceId != null && ((view === 'tools' && detailed) || (view === 'home' && mini));
+  return view === 'home' && deviceId != null && (detailed || mini);
 }

@@ -5,9 +5,6 @@ import Icon from './Icon';
 const BASE_TABS = [
   { id: 'home',    label: '홈',     icon: 'home',   toggleable: false },
   { id: 'devices', label: '단말기', icon: 'list',   toggleable: true  },
-  // 운행 — 지도+패널 도구 (seeker / 지오펜스). 데스크톱은 home 처럼 지도 노출 +
-  // FAB 띄움. toggleable=false 라 같은 탭 두 번 눌러도 home 으로 안 빠짐.
-  { id: 'tools',   label: '운행',   icon: 'mapPin', toggleable: false },
   { id: 'profile', label: '내정보', icon: 'user',   toggleable: true  },
 ];
 

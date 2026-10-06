@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as React from 'react';
 import * as jsx from 'react/jsx-runtime';
+import * as Router from 'react-router-dom';
 import { create, act } from 'react-test-renderer';
 import { transform } from 'esbuild';
 
@@ -26,6 +27,7 @@ async function fixture(api = {}) {
       let module;
       if (file === 'react') module = synthetic(React);
       else if (file === 'react/jsx-runtime') module = synthetic(jsx);
+      else if (file === 'react-router-dom') module = synthetic(Router);
       else if (file.endsWith('/api.js')) module = synthetic({ api });
       else if (file.endsWith('/authSession.js')) module = synthetic({ authScope: () => scope,
         assertSession: previous => { if (previous !== scope) throw new DOMException('changed', 'AbortError'); } });
@@ -129,4 +131,98 @@ test('map notices follow selected device; changing selection cannot show previou
   assert.match(JSON.stringify(rendered.toJSON()), /Second/);
   assert.doesNotMatch(JSON.stringify(rendered.toJSON()), /First/);
   await act(async () => rendered.unmount());
+});
+
+test('both navigation surfaces remove Driving while keeping role-specific destinations', async () => {
+  const f = await fixture();
+  for (const file of ['components/BottomNav.jsx', 'components/SideRail.jsx']) {
+    const Navigation = (await f.module(file)).default;
+    const changes = [];
+    let r;
+    await act(async () => { r = create(React.createElement(Navigation, {
+      active: 'home', onChange: v => changes.push(v), isAdmin: true, isCorporate: true, isRentcar: true, isDelivery: true,
+    })); });
+    const buttons = r.root.findAllByType('button');
+    assert.equal(buttons.length, 7, 'three general tabs plus four authorized role tabs');
+    assert.deepEqual(buttons.slice(0, 3).map(b => b.findByType('div').children.join('')), ['홈', '단말기', '내정보']);
+    await act(async () => buttons[1].props.onClick());
+    assert.deepEqual(changes, ['devices']);
+    await act(async () => r.unmount());
+  }
+});
+
+test('home tool menu exposes all former Driving actions and requires a device only for the seeker', async () => {
+  const f = await fixture(); const Actions = (await f.module('components/MapActions.jsx')).default;
+  const opened = [];
+  let r;
+  const props = { hasDevice: false, bottom: 76, onTool: value => opened.push(value) };
+  await act(async () => { r = create(React.createElement(Actions, props)); });
+  const toggle = () => r.root.findByProps({ 'aria-label': '운행 도구' });
+  await act(async () => toggle().props.onClick());
+  let group = r.root.findByProps({ 'aria-label': '운행 도구 목록' });
+  assert.equal(group.findAllByType('button')[0].props.disabled, true);
+  assert.match(JSON.stringify(r.toJSON()), /지오펜스 관리/);
+  assert.match(JSON.stringify(r.toJSON()), /경로 계획/);
+  await act(async () => group.findAllByType('button')[1].props.onClick());
+  assert.deepEqual(opened, ['geofence']);
+  assert.equal(toggle().props['aria-expanded'], false);
+  await act(async () => r.update(React.createElement(Actions, { ...props, hasDevice: true })));
+  await act(async () => toggle().props.onClick());
+  group = r.root.findByProps({ 'aria-label': '운행 도구 목록' });
+  assert.equal(group.findAllByType('button')[0].props.disabled, false);
+  await act(async () => group.findAllByType('button')[0].props.onClick());
+  assert.deepEqual(opened, ['geofence', 'seeker']);
+  await act(async () => r.unmount());
+});
+
+test('mini/detail/management/planner are exclusive; leaving Home or losing the device releases the map', async () => {
+  const f = await fixture(); const { useHomeMapTools } = await f.module('hooks/useHomeMapTools.js');
+  const { isSeekerVisible } = await f.module('lib/seeker.js');
+  let controls, r;
+  function Probe({ view = 'home', hasDevice = true }) {
+    controls = useHomeMapTools(view, hasDevice);
+    return null;
+  }
+  await act(async () => { r = create(React.createElement(Probe)); });
+  const active = () => [controls.showMiniSeeker, controls.showSeeker, controls.showGeofence, controls.showRoutePlanner].filter(Boolean).length;
+  await act(async () => controls.toggleMini());
+  assert.equal(controls.showMiniSeeker, true);
+  await act(async () => controls.openTool('seeker'));
+  assert.equal(active(), 1); assert.equal(controls.showSeeker, true);
+  assert.equal(isSeekerVisible('home', 1, controls.showSeeker, controls.showMiniSeeker), true, 'live layers must pause for detail on Home');
+  for (const tool of ['geofence', 'route']) {
+    await act(async () => controls.openTool(tool));
+    assert.equal(active(), 1); assert.equal(controls.fullToolOpen, true);
+  }
+  await act(async () => controls.closeTool());
+  assert.equal(active(), 0); assert.equal(controls.fullToolOpen, false);
+  await act(async () => controls.openTool('seeker'));
+  await act(async () => r.update(React.createElement(Probe, { hasDevice: false })));
+  assert.equal(active(), 0); assert.equal(controls.fullToolOpen, false, 'no invisible sheet trapping the controls');
+  await act(async () => r.update(React.createElement(Probe)));
+  await act(async () => controls.openTool('route'));
+  await act(async () => r.update(React.createElement(Probe, { view: 'devices' })));
+  await act(async () => r.update(React.createElement(Probe)));
+  assert.equal(active(), 0, 'returning Home starts with the live map');
+  await act(async () => r.unmount());
+});
+
+test('old /tools links redirect Home with parameters intact and replace their history entry', async () => {
+  const f = await fixture(); const Redirect = (await f.module('components/LegacyToolsRedirect.jsx')).default;
+  for (const pathname of ['/tools', '/tools/history']) {
+    let r, location, navigate;
+    function Probe() { location = Router.useLocation(); navigate = Router.useNavigate(); return null; }
+    await act(async () => {
+      r = create(React.createElement(Router.MemoryRouter, { initialEntries: ['/profile', `${pathname}?device=42&date=2026-10-06#history`] },
+        React.createElement(Router.Routes, null,
+          React.createElement(Router.Route, { path: '/tools/*', element: React.createElement(Redirect) }),
+          React.createElement(Router.Route, { path: '*', element: React.createElement(Probe) }))));
+    });
+    assert.equal(location.pathname, '/');
+    assert.equal(location.search, '?device=42&date=2026-10-06');
+    assert.equal(location.hash, '#history');
+    await act(async () => navigate(-1));
+    assert.equal(location.pathname, '/profile');
+    await act(async () => r.unmount());
+  }
 });

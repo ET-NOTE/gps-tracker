@@ -219,8 +219,8 @@ const s = {
   },
   // 모바일/태블릿: 화면 하단 sheet (FAB 우하단 영역은 살짝 가려지지만 한 번에 하나만 열림)
   bottom: {
-    position: 'fixed', left: 0, right: 0, bottom: 0,
-    maxHeight: '78vh',
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    maxHeight: 'min(78vh, 100%)',
     background: 'var(--surface)',
     borderTop: '1px solid var(--border)',
     borderRadius: '14px 14px 0 0',

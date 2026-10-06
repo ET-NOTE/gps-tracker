@@ -13,7 +13,7 @@ export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, de
     <div style={{
       position: 'absolute',
       bottom: bottomOffset + 14,
-      left: 14, right: 14,
+      left: 14, right: 80, maxWidth: 360,
       zIndex: 20,
       pointerEvents: 'auto',
     }}>

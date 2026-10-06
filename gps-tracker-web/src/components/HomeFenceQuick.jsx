@@ -1,6 +1,6 @@
 // 홈 탭 — 지오펜스 가장자리 레이어 (지도 가림 최소).
 //
-// 패널 형식 (운행 탭) 의 풀 기능 (알람 토글 / 이력 탭) 은 빼고, 가장자리만 사용:
+// 홈 운행 도구의 패널 의 풀 기능 (알람 토글 / 이력 탭) 은 빼고, 가장자리만 사용:
 //   ┌────────────────────────────┐
 //   │ [DeviceFilter]   [+ 펜스] │ ← 우상단 = 새로 만들기 (popover)
 //   │                            │
@@ -82,7 +82,7 @@ export default function HomeFenceQuick({
 }
 
 // ────────────────────────────────────────────────────────────
-// 우하단 FAB 칼럼 — geofence 가 운행 탭으로 이전하면서 비워진 자리에 ON/OFF 토글.
+// 우하단 FAB 칼럼의 지도 표시 ON/OFF 토글.
 // 기존 FAB (trackLive +180, miniSeeker +60) 와 같은 column. 토글 = 가장 아래 (+0).
 // ────────────────────────────────────────────────────────────
 function FenceToggle({ on, onClick, count, fabBottom }) {
@@ -203,7 +203,7 @@ function FenceCreator({ mapRef, filterDeviceId, onCreated, fabBottom }) {
         center_lng: center.lng,
         radius_m:   parseInt(radius, 10),
         // 홈 DeviceFilter 선택 그대로 — 전체면 모든 디바이스 적용 (null).
-        // 더 정교한 적용은 운행 탭에서 편집.
+        // 더 정교한 적용은 운행 도구 → 지오펜스 관리에서 편집.
         device_id:  filterDeviceId ?? null,
       });
       closeAndReset();

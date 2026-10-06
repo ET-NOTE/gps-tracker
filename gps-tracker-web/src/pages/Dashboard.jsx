@@ -17,6 +17,8 @@ import DeviceDetail from '../components/DeviceDetail';
 import BottomNav from '../components/BottomNav';
 import SideRail from '../components/SideRail';
 import MapTopOverlay from '../components/MapTopOverlay';
+import MapActions from '../components/MapActions';
+import { useHomeMapTools } from '../hooks/useHomeMapTools';
 import RoadviewModal, { probeRoadview } from '../components/RoadviewModal';
 import { confirmDialog, alertDialog } from '../components/Dialog';
 import GeofenceSheet from '../components/GeofenceSheet';
@@ -65,14 +67,12 @@ function isAnyDeviceInsideFence(fence, devices) {
 
 // pathname → view (route 제외 시 'home')
 //   /devices, /devices/pair → 'devices'
-//   /tools*                 → 'tools'
 //   /profile*               → 'profile'
 //   /admin*                 → 'admin'
 //   /corporate*             → 'corporate'
 //   else                    → 'home'
 function pathToView(p) {
   if (p.startsWith('/devices'))   return 'devices';
-  if (p.startsWith('/tools'))     return 'tools';
   if (p.startsWith('/profile'))   return 'profile';
   if (p.startsWith('/admin'))     return 'admin';
   if (p.startsWith('/corporate')) return 'corporate';
@@ -94,7 +94,6 @@ export default function Dashboard({ onLogout }) {
   const setView = useCallback((v) => {
     navigate(viewToPath(v));
   }, [navigate]);
-  const [showRoutePlanner, setShowRoutePlanner] = useState(false);
   const pinKey = 'gps_cache_pin:' + authScope();
   const [pinnedId, setPinnedId] = useState(() => Number(localStorage.getItem(pinKey)) || null);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('onboarding_v2'));
@@ -178,14 +177,11 @@ export default function Dashboard({ onLogout }) {
   const [roadview, setRoadview]       = useState(null);    // {lat, lng, panoId} or null
   const [toast, setToast]             = useState(null);     // 가벼운 중앙 토스트 메시지 (1초)
   const [filterDeviceId, setFilterDeviceId] = useState(null);  // null=전체, 또는 device id
+  const hasSelectedDevice = devices.some(device => device.id === filterDeviceId);
+  const { showRoutePlanner, showGeofence, showSeeker, showMiniSeeker, fullToolOpen, openTool, closeTool, toggleMini } = useHomeMapTools(view, hasSelectedDevice);
   const [, setTick]                   = useState(0);
   const bp        = useBreakpoint();
   const isDesktop = bp === 'desktop';
-  const [showGeofence, setShowGeofence] = useState(false);
-  const [showSeeker,  setShowSeeker]    = useState(false);
-  // 컴팩트 시커 — 좌측 날짜 + 하단 시간 슬롯 오버레이. 지오펜스/패널 시커와 mutex.
-  // 월/일/시간 wizard 통합 (HomeMapSeeker 흡수).
-  const [showMiniSeeker, setShowMiniSeeker] = useState(false);
   // 모바일 친화 마커 클릭 정보 sheet (kakao InfoWindow 대체).
   const [pointInfo, setPointInfo] = useState(null);
   const [liveSpeed, setLiveSpeed] = useState(null);
@@ -200,7 +196,7 @@ export default function Dashboard({ onLogout }) {
   // 사용자가 직접 지도 드래그하면 userTrackPref=false 로 영구 끔 (다시 버튼 또는 디바이스 선택해야 부활).
   const [userTrackPref, setUserTrackPref] = useState(false);
   const seekerPaused = isSeekerVisible(view, filterDeviceId, showSeeker, showMiniSeeker);
-  const trackLive = userTrackPref && !seekerPaused;
+  const trackLive = userTrackPref && !seekerPaused && !fullToolOpen;
   // (F2-a) me / accountType 을 React Query 로 이전. 이전엔 4곳에서 중복 fetch 됐음
   // (Dashboard, ProfilePanel×3). 이제 dedup + StrictMode 안전 + refetchOnWindowFocus.
   const { data: me = null } = useMe();
@@ -420,6 +416,8 @@ export default function Dashboard({ onLogout }) {
   const filterDeviceIdRef  = useRef(filterDeviceId);
   // 시커 활성 여부 — 사용자 팬을 무시할지 결정용. (시커 조작 중 발생한 드래그가 사용자 의도 깨면 안 됨.)
   const seekerActiveRef    = useRef(false);
+  const mapToolActiveRef = useRef(false);
+  useEffect(() => { mapToolActiveRef.current = fullToolOpen; }, [fullToolOpen]);
   useEffect(() => { trackLiveRef.current = trackLive; }, [trackLive]);
   useEffect(() => { filterDeviceIdRef.current = filterDeviceId; }, [filterDeviceId]);
   useEffect(() => {
@@ -570,7 +568,7 @@ export default function Dashboard({ onLogout }) {
   // 단, 시커 활성 중 발생한 드래그는 무시 — 시커 조작이 일으킨 이동까지 사용자 의도로 잡으면
   // 시커 닫고 나서 추적이 의도와 다르게 OFF 인 상태로 유지됨.
   const handleUserPan = useCallback(() => {
-    if (seekerActiveRef.current) return;
+    if (seekerActiveRef.current || mapToolActiveRef.current) return;
     setUserTrackPref(false);
   }, []);
 
@@ -785,7 +783,7 @@ export default function Dashboard({ onLogout }) {
   // ── 렌더 ─────────────────────────
   // 데스크톱은 좌측 SideRail + 중앙 Map + 우측 사이드 패널 (탭 활성 시)
   // 모바일/태블릿은 BottomNav + 풀스크린 오버레이 패널
-  const mapVisible = isDesktop || view === 'home' || view === 'tools';
+  const mapVisible = isDesktop || view === 'home';
 
   // 패널 콘텐츠는 desktop aside 와 mobile overlay 양쪽에서 공유
   const panel = (
@@ -1122,9 +1120,8 @@ export default function Dashboard({ onLogout }) {
         )}
 
         {/* 데스크톱 사이드바 패널 — SideRail 바로 옆에서 확장.
-            home/tools/admin/corporate 제외 탭일 때만 슬라이드 인.
-            tools 는 home 과 동일하게 지도+FAB 만 — sheet 가 좌하단 floating 으로 뜸. */}
-        {view !== 'admin' && view !== 'corporate' && view !== 'rentcar' && view !== 'delivery' && isDesktop && view !== 'home' && view !== 'tools' && (
+            홈/관리/법인 외 탭일 때만 슬라이드 인. */}
+        {view !== 'admin' && view !== 'corporate' && view !== 'rentcar' && view !== 'delivery' && isDesktop && view !== 'home' && (
           <aside style={{
             width: 400, flexShrink: 0,
             background: 'var(--surface)',
@@ -1150,7 +1147,7 @@ export default function Dashboard({ onLogout }) {
               // 데스크톱 + 간이 시커 활성: 마커 click 활성 위해 핸들러 제공 (drawSeekerPath 가
               //   `clickable: !!onPointInfoRef.current` 로 마커를 만들기 때문에).
               //   handler 의 setPointInfo 는 desktop 에선 PointInfoSheet 미렌더라 무해.
-              onPointInfo={(!isDesktop || showMiniSeeker) ? (info) => {
+              onPointInfo={!fullToolOpen && (!isDesktop || showMiniSeeker) ? (info) => {
                 setPointInfo(info);
                 if (showMiniSeeker && info?.meta?.recordedAt) {
                   const dev = devicesRef.current.find(d => d.id === filterDeviceId);
@@ -1161,21 +1158,19 @@ export default function Dashboard({ onLogout }) {
               } : undefined}
               onUserPan={handleUserPan}
               onViewChange={handleMapViewChange} />
-            <MapTopOverlay
+            {!fullToolOpen && <MapTopOverlay
               devices={devices} selected={filterDeviceId} onSelect={persistFilterDevice}
               mapRef={mapRef} onOpenRoadview={openRoadview}
               showSpeed={view === 'home' && trackLive && filterDeviceId !== null}
               liveSpeed={liveSpeed} now={speedNow} cachedSources={cachedMapSources}
-            >
-              {view === 'tools' && <button style={{ pointerEvents: 'auto', padding: 10 }} onClick={() => { setShowRoutePlanner(v => !v); setShowSeeker(false); setShowGeofence(false); }}>경로 계획</button>}
-            </MapTopOverlay>
+            />}
 
             {/* 홈 — 지도 가장자리 활용 지오펜스 레이어.
                   우하단 FAB 칼럼: 펜스 ON/OFF 토글 + 새 펜스 만들기 (토글 ON 일 때만)
                   좌하단: 등록된 펜스 목록 (scrollable, 토글 ON 일 때만)
                   showFences 가 토글의 상태 — 기존 지도 펜스 원 표시 플래그와 공유.
-                  알람 토글 / 이력 탭은 풀 기능 '운행' 탭의 GeofenceSheet 에. */}
-            {view === 'home' && (() => {
+                  알람 토글 / 이력은 홈의 운행 도구 → 지오펜스 관리에서 확인. */}
+            {view === 'home' && !fullToolOpen && (!pointInfo || showMiniSeeker) && (() => {
               const stripLift = showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0;
               // 툴팁: 모바일·PC 모두 좌측 패널 옆에 떠 — 펜스 list 와 같은 좌측 영역 점유.
               // FAB lift 는 모바일만 (PC 는 FAB 가 우측이라 충돌 X).
@@ -1199,175 +1194,46 @@ export default function Dashboard({ onLogout }) {
               );
             })()}
 
-            {/* FAB 위치 보정:
-                - sheet(SeekerSheet/GeofenceSheet) 가 열린 모바일: 슬라이드 아웃 (가림 방지)
-                - 컴팩트 시커 활성: 하단 strip 만큼 위로 (안 가려지게)
-                - 간이 시커 + 툴팁 동시: 툴팁 높이만큼 추가로 위로 (가림 방지)
-                - 홈: 펜스 토글 ON 시 + 펜스 FAB (+60 slot) 가 등장 → 위쪽 시커/라이브 FAB 를 60px 위로 밀어냄.
-                  기본은 시커가 펜스 토글 바로 위 (붙어있음). */}
-            {(() => {
-              const sheetOpen = !isDesktop && (showSeeker || showGeofence);
-              const stripLift = (showMiniSeeker && view === 'home') ? MINI_SEEKER_BOTTOM_HEIGHT : 0;
-              const tooltipLift = (!isDesktop && pointInfo && showMiniSeeker && view === 'home') ? 120 : 0;
-              const baseBottom = (isDesktop ? 24 : 16) + stripLift + tooltipLift;
-              // 홈 펜스 cluster 점유: 펜스 토글(+0) 위에 + 펜스(+60) 가 있으면 그 위 슬롯들 60px 위로.
-              const fenceCreatorLift = (view === 'home' && showFences) ? 60 : 0;
-              const fabTransform = sheetOpen ? 'translateX(80px)' : 'none';
-              const fabOpacity   = sheetOpen ? 0 : 1;
-              const fabPointer   = sheetOpen ? 'none' : 'auto';
-              const fabTransition = 'background .15s, color .15s, bottom .22s ease, transform .22s ease, opacity .18s ease';
-              return (
-                <>
-                  {/* 라이브 추적 FAB — target 아이콘.
-                      색상은 userTrackPref(사용자 의도) 반영 — 시커가 일시 정지 중이라도 ON 으로 보임 (시커 닫히면 즉시 부활).
-                      paused 면 미세하게 작은 구분선 표시. */}
-                  {view === 'home' && filterDeviceId !== null && (
-                    <button onClick={() => {
-                      setUserTrackPref(p => !p);
-                      mapRef.current?.focusDevice?.(filterDeviceId, { level: 3 });
-                    }}
-                      className="btn-bounce"
-                      style={{
-                      position: 'absolute', right: 16,
-                      // 기본 시커(+60) 위 = +120. 펜스 ON 시 +180 으로 위로 밀림.
-                      bottom: baseBottom + 120 + fenceCreatorLift,
-                      width: 48, height: 48, borderRadius: 24,
-                      background: userTrackPref ? 'var(--accent)' : 'var(--surface)',
-                      color:      userTrackPref ? 'white' : 'var(--accent)',
-                      border: userTrackPref ? 'none' : '1px solid var(--border)',
-                      cursor: 'pointer',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 4px 12px rgba(0,0,0,.25)',
-                      zIndex: 12,
-                      transform: fabTransform, opacity: fabOpacity, pointerEvents: fabPointer,
-                      transition: fabTransition,
-                      // 시커로 일시 정지 중일 때만 약간 흐려 보이게 — 사용자 의도는 ON 이지만 잠시 멈춤.
-                      filter: (userTrackPref && seekerPaused) ? 'saturate(0.5)' : 'none',
-                    }} title={
-                      !userTrackPref ? '라이브 추적 켜기'
-                      : seekerPaused ? '추적 ON (시커로 일시 정지)'
-                      : '추적 끄기'}>
-                      <Icon name="target" size={20} />
-                    </button>
-                  )}
+            {view === 'home' && !fullToolOpen && (!pointInfo || showMiniSeeker) && (
+              <MapActions
+                hasDevice={hasSelectedDevice} tracking={userTrackPref} paused={seekerPaused}
+                miniOpen={showMiniSeeker}
+                bottom={(isDesktop ? 24 : 16) + (showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0)
+                  + (!isDesktop && pointInfo && showMiniSeeker ? 120 : 0) + (showFences ? 60 : 0) + 60}
+                onTracking={() => {
+                  setUserTrackPref(p => !p);
+                  if (!seekerPaused) mapRef.current?.focusDevice?.(filterDeviceId, { level: 3 });
+                }}
+                onMini={() => { setPointInfo(null); toggleMini(); }}
+                onTool={tool => { setPointInfo(null); openTool(tool); }}
+              />
+            )}
 
-                  {/* 패널 시커 FAB — '운행' 탭에서만 노출. SeekerSheet (full panel) 띄움.
-                      이전에는 home 에 있었지만 지도를 가린다는 UX 저하로 별도 탭으로 이전. */}
-                  {view === 'tools' && filterDeviceId !== null && (
-                    <button onClick={() => {
-                      if (!isDesktop && !showSeeker) setShowGeofence(false);
-                      if (!showSeeker) setShowMiniSeeker(false);  // mini 와 mutex
-                      setShowSeeker(s => !s);
-                    }}
-                      className="btn-bounce"
-                      style={{
-                      position: 'absolute', right: 16,
-                      bottom: baseBottom + 120,
-                      width: 48, height: 48, borderRadius: 24,
-                      background: showSeeker ? 'var(--primary)' : 'var(--surface)',
-                      color:      showSeeker ? 'var(--primary-fg)' : 'var(--primary)',
-                      border: showSeeker ? 'none' : '1px solid var(--border)',
-                      cursor: 'pointer',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 4px 12px rgba(0,0,0,.25)',
-                      zIndex: 12,
-                      transform: fabTransform, opacity: fabOpacity, pointerEvents: fabPointer,
-                      transition: fabTransition,
-                    }} title="시커 (패널)">
-                      <Icon name="route" size={20} />
-                    </button>
-                  )}
-
-                  {/* 컴팩트 시커 FAB — clock 아이콘. 좌/하단 미니멀 오버레이.
-                      활성 상태에서도 (이전처럼) 사라지지 않음. 지오펜스 열림 시는 슬라이드 아웃.
-                      슬롯 +120: 위로 trackLive(+180), 아래로 fence cluster (+60 creator, +0 toggle)
-                      과 시각적 구분 — fence 가 OFF 면 slot +60 이 비어 자연스럽게 cluster 가 분리됨. */}
-                  {view === 'home' && filterDeviceId !== null && (
-                    <button onClick={() => {
-                      if (!showMiniSeeker) {
-                        // 지오펜스/패널 시커와 mutex
-                        setShowGeofence(false);
-                        setShowSeeker(false);
-                      }
-                      setShowMiniSeeker(s => !s);
-                    }}
-                      className="btn-bounce"
-                      style={{
-                      position: 'absolute', right: 16,
-                      // 기본 +60 (펜스 토글 바로 위, 붙어있음). 펜스 ON → +120 으로 위로 밀림.
-                      bottom: baseBottom + 60 + fenceCreatorLift,
-                      width: 48, height: 48, borderRadius: 24,
-                      background: showMiniSeeker ? 'var(--primary)' : 'var(--surface)',
-                      color:      showMiniSeeker ? 'var(--primary-fg)' : 'var(--primary)',
-                      border: showMiniSeeker ? 'none' : '1px solid var(--border)',
-                      cursor: 'pointer',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 4px 12px rgba(0,0,0,.25)',
-                      zIndex: 12,
-                      // mini 활성 시는 사라지지 X. 다른 sheet (지오펜스 또는 패널 시커) 열린 경우만 슬라이드 아웃.
-                      transform: (!isDesktop && (showGeofence || showSeeker)) ? 'translateX(80px)' : 'none',
-                      opacity:   (!isDesktop && (showGeofence || showSeeker)) ? 0 : 1,
-                      pointerEvents: (!isDesktop && (showGeofence || showSeeker)) ? 'none' : 'auto',
-                      transition: fabTransition,
-                    }} title="컴팩트 시커">
-                      <Icon name="clock" size={20} />
-                    </button>
-                  )}
-
-                  {/* 지오펜스 FAB — '운행' 탭에서만 노출. */}
-                  {view === 'tools' && (
-                    <button onClick={() => {
-                      if (!isDesktop && !showGeofence) setShowSeeker(false);
-                      if (!showGeofence) setShowMiniSeeker(false);  // mini 와 mutex
-                      setShowGeofence(s => !s);
-                    }}
-                      className="btn-bounce"
-                      style={{
-                      position: 'absolute', right: 16,
-                      bottom: baseBottom,
-                      width: 48, height: 48, borderRadius: 24,
-                      background: showGeofence ? 'var(--primary)' : 'var(--surface)',
-                      color:      showGeofence ? 'var(--primary-fg)' : 'var(--primary)',
-                      border: showGeofence ? 'none' : '1px solid var(--border)',
-                      cursor: 'pointer',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 4px 12px rgba(0,0,0,.25)',
-                      zIndex: 12,
-                      transform: fabTransform, opacity: fabOpacity, pointerEvents: fabPointer,
-                      transition: fabTransition,
-                    }} title="지오펜스">
-                      <Icon name="fence" size={20} />
-                    </button>
-                  )}
-                </>
-              );
-            })()}
-
-            {showRoutePlanner && view === 'tools' && <RoutePlannerSheet mapRef={mapRef} onClose={() => setShowRoutePlanner(false)} />}
-            {view === 'home' && !showMiniSeeker && !pointInfo && <PinnedDeviceWidget
+            {showRoutePlanner && view === 'home' && <RoutePlannerSheet mapRef={mapRef} onClose={() => closeTool()} />}
+            {view === 'home' && !showMiniSeeker && !fullToolOpen && !pointInfo && <PinnedDeviceWidget
               device={devices.find(d => d.id === pinnedId)} deviceColor={getDeviceColor(devices.find(d => d.id === pinnedId) || {})}
               deviceMeta={lastMetaRef.current[pinnedId]} deviceStatus={devices.find(d => d.id === pinnedId) ? classifyDevice(devices.find(d => d.id === pinnedId), lastMetaRef.current[pinnedId]) : null}
               onPress={() => { const d = devices.find(d => d.id === pinnedId); if (d?.last_lat != null) mapRef.current?.panToCoord?.(d.last_lat, d.last_lng); }}
               onUnpin={() => togglePin(pinnedId)} />}
-            {/* 지오펜스 윈도우 — '운행' 탭에서만, 데스크톱은 우상단 floating, 모바일은 bottom sheet */}
-            {showGeofence && view === 'tools' && (
+            {/* 홈 운행 도구: 한 번에 한 패널만 열어 지도와 상단 정보의 겹침 방지. */}
+            {showGeofence && view === 'home' && (
               <GeofenceSheet
                 devices={devices} mapRef={mapRef}
                 fences={fences} onChange={loadFences}
                 showFences={showFences} onToggleShow={setShowFences}
                 alertEnabled={geofenceAlert} onToggleAlert={toggleGeofenceAlert}
                 filterDeviceId={filterDeviceId}
-                onClose={() => setShowGeofence(false)} />
+                onClose={() => closeTool()} />
             )}
 
-            {/* 시커 윈도우 — '운행' 탭에서만, 데스크톱은 좌하단 floating */}
-            {showSeeker && view === 'tools' && filterDeviceId !== null && (
+            {/* 상세 시커: 라이브 추적을 일시 정지하고 닫으면 사용자 추적 설정 복원. */}
+            {showSeeker && view === 'home' && filterDeviceId !== null && (
               <SeekerSheet
                 key={filterDeviceId}
                 device={devices.find(d => d.id === filterDeviceId)}
                 mapRef={mapRef}
                 onClose={() => {
-                  setShowSeeker(false);
+                  closeTool();
                   mapRef.current?.clearSeekerPath();
                 }} />
             )}
@@ -1375,7 +1241,7 @@ export default function Dashboard({ onLogout }) {
             {/* 마커 클릭 sheet — home 화면 위에서만 의미.
                 · 모바일: 항상 (compact 는 시커 활성 시)
                 · 데스크톱: 시커 활성 시만 (시커 OFF 일 땐 kakao InfoWindow 가 fallback). */}
-            {(!isDesktop || showMiniSeeker) && pointInfo && view === 'home' && (
+            {!fullToolOpen && (!isDesktop || showMiniSeeker) && pointInfo && view === 'home' && (
               <PointInfoSheet
                 info={pointInfo}
                 onClose={() => setPointInfo(null)}
@@ -1401,9 +1267,8 @@ export default function Dashboard({ onLogout }) {
             )}
           </div>
 
-          {/* 모바일/태블릿: home/tools/admin/corporate 제외 탭은 지도 위에 풀스크린 오버레이로.
-              tools 는 home 처럼 지도 노출 — 시커/지오펜스 sheet 가 지도 위 bottom sheet 로 떠야 함. */}
-          {!isDesktop && view !== 'home' && view !== 'tools' && view !== 'admin' && view !== 'corporate' && (
+          {/* 모바일/태블릿: 홈 지도 외 탭은 전체 화면 패널로 표시. */}
+          {!isDesktop && view !== 'home' && view !== 'admin' && view !== 'corporate' && (
             <div style={{
               position: 'absolute', inset: 0,
               background: 'var(--surface)',

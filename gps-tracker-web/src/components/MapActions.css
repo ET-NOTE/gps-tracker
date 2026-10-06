@@ -1,0 +1,12 @@
+.map-actions { position: absolute; right: 16px; z-index: 14; display: flex; flex-direction: column; gap: 12px; transition: bottom .22s ease; }
+.map-action { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.map-action[data-active="true"] { background: var(--primary); color: var(--primary-fg); border-color: transparent; }
+.map-action-tracking { color: var(--accent); }
+.map-action-tracking[data-active="true"] { background: var(--accent); color: white; }
+.map-action-tracking[data-paused="true"] { filter: saturate(.5); }
+.map-tools-menu { position: absolute; right: 60px; top: 0; width: 230px; max-width: calc(100vw - 100px); max-height: 260px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 6px; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+.map-tools-menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 54px; padding: 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text); text-align: left; font-size: 13px; cursor: pointer; }
+.map-tools-menu button:hover, .map-tools-menu button:focus-visible { background: var(--surface-2); }
+.map-tools-menu button:disabled { opacity: .5; cursor: default; }
+.map-tools-menu small { display: block; margin-top: 3px; font-size: 11px; color: var(--text-3); }
+.map-tools-menu p { padding: 8px 10px; font-size: 11px; color: var(--text-3); line-height: 1.5; }
