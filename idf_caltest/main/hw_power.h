@@ -10,9 +10,9 @@
 namespace hw_power {
   bool holdOffForSleep(); // hold shared rail OFF and PWRKEY/DTR idle through deep sleep
   void releaseSleepHold();
-  void init();          // 핀 모드 + DTR/PWRKEY idle. (레일 상태는 안 바꿈)
+  void init();          // 운영: 레일 OFF + idle 설정 후 hold 해제. KC: 기존 기동 순서 유지.
   void railOn();        // PWR_EN LOW → GPS+LTE 전원 ON. inrush settle 포함.
   void railOff();       // PWR_EN HIGH → 레일 OFF.
-  void railCycle();     // OFF(2s) → ON(2s). 모듈 hard power-cycle 의 GPIO 파트.
+  void railCycle();     // OFF(12s) → ON(2s). 모듈 hard power-cycle 의 GPIO 파트.
   void pulsePwrKey();   // PWRKEY idle→pulse→idle. SIM7080 전원 토글 신호.
 }

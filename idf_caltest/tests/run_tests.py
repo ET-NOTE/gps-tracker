@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parent
-SCENARIOS = ["success", "timeout", "post_fail", "early_bounce", "no_lis", "active",
+SCENARIOS = ["success", "wrap", "timeout", "post_fail", "early_bounce", "no_lis", "active",
              "stuck_low", "i2c_error", "raw_error", "during_flush", "during_event",
              "wake_error", "timer_error", "during_shutdown", "timeout_motion",
              "sensor_shutdown", "after_rail", "sensor_after_rail", "hold_error", "final_interrupt"]
@@ -47,6 +47,11 @@ def main():
                             "-o", lte_exe], check=True)
             for scenario in ("confirmed", "not_started", "silent", "ok_only", "error", "resume", "timeout_resume"):
                 subprocess.run([lte_exe, scenario], check=True, stdout=subprocess.DEVNULL)
+                count += 1
+            power_exe = str(Path(tmp) / f"power-{profile}")
+            subprocess.run([*flags, str(ROOT / "power_test.cpp"), "-o", power_exe], check=True)
+            for scenario in ("success", "fail_rail", "fail_key", "fail_dtr"):
+                subprocess.run([power_exe, scenario], check=True, stdout=subprocess.DEVNULL)
                 count += 1
     print(f"PASS: {count} profile/scenario + JSON contract checks")
 

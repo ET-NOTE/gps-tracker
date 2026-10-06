@@ -76,8 +76,11 @@ def main():
     if args.profile == "operating" and (settings["kc_test"] != 0 or
                                        settings["sleep_disabled"] != 0):
         raise SystemExit("Operating sleep configuration mismatch")
-    files = ["caltest.bin", "caltest.elf", "bootloader/bootloader.bin",
-             "partition_table/partition-table.bin", "flasher_args.json", "sdkconfig"]
+    flash = json.loads((build / "flasher_args.json").read_text())
+    # Include every flash segment, including ota_data_initial.bin. Hashing only
+    # bootloader/partitions/app would leave the transfer package incomplete.
+    files = sorted(set(flash["flash_files"].values()) |
+                   {"caltest.elf", "flasher_args.json", "flash_args", "sdkconfig"})
     manifest.write_text(json.dumps({
         "git_commit": commit, "dirty": dirty, "source_sha256": before,
         "dependency_lock_sha256": lock_before, "idf_version": version,

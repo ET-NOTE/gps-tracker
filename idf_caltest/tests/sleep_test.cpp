@@ -119,6 +119,7 @@ int main(int argc,char** argv) {
   active=scenario=="active";
   pinLow=scenario=="stuck_low";
   invalidRaw=scenario=="raw_error";
+  if(scenario=="wrap") clockMs=0xffffff00U;
 #if KC_TEST_BUILD
   sleep_mgr::begin(0);
   assert(!sleep_mgr::timerWakeMode());
@@ -133,7 +134,7 @@ int main(int argc,char** argv) {
 #if KC_TEST_BUILD
   assert(!result && !slept && posts==0 && shutdowns==0 && !railOff && trace.empty());
 #else
-  const bool success=scenario=="success" || scenario=="timeout" ||
+  const bool success=scenario=="success" || scenario=="wrap" || scenario=="timeout" ||
                      scenario=="post_fail" || scenario=="early_bounce";
   assert(result==success && slept==success);
   if(success) {
