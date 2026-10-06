@@ -1,0 +1,36 @@
+{
+  "release": "gps-web-20261006-221245-3cb7de9",
+  "source_commit": "3cb7de9",
+  "branch": "codex/gps-client-refactor",
+  "scope": "GPS web client refactoring; native Flutter and firmware unchanged",
+  "changes": [
+    "JSON, multipart and binary requests share active login storage, one 401 refresh retry, cancellation and account guards",
+    "Home, fleet and device consumers share a session-scoped device query; only telemetry arriving during a read overrides that snapshot",
+    "Mutation reloads cancel pre-write snapshots; authoritative device removals and telemetry wipes remain effective",
+    "Map loaders ignore superseded requests and preserve newer live trails; refreshes serialize and suspend hidden interval work",
+    "One-second speed clock is local to the visible overlay; WebSocket subscription callback stays stable",
+    "Home day boundaries and cycle delete date use KST; map SDK, geometry, cycle panel and route exports have separate modules"
+  ],
+  "validation": {
+    "automated_tests_passed": 51,
+    "build_runner": "etcom-hub",
+    "build_node": "22.22.2",
+    "artifact_sha256": "82bd47c421f4407d168ae2a7cbcea1adc994db9ab221904ff43e1e1e29270e14",
+    "mobile_visual_width": 390,
+    "visual_fixture": "tests/map-preview.html with mocked API, home/seeker transitions, long device name and cached-history notice",
+    "visual_console_errors": 0,
+    "production_login_page": "rendered without console errors",
+    "physical_android_driving": "not directly verified",
+    "new_authenticated_production_session": "not performed"
+  },
+  "production": {
+    "previous_release": "gps-web-20261006-210059-dede6c6",
+    "api_unchanged": true,
+    "api_sha256": "81214c4f4c49ee361a92271f913271ccc9bc633b7d0e41e51807df945cae79d9",
+    "kc_pages_unchanged": true,
+    "environment_and_nginx_unchanged": true,
+    "services_restarted": false,
+    "assets_verified": true,
+    "verification_file": "/home/mmm/releases/gps-web-20261006-221245-3cb7de9/verification.json"
+  }
+}
