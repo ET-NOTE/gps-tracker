@@ -1,0 +1,18 @@
+{
+  "id": "shield-uno-easy-https",
+  "title": "간편 HTTPS 첫 전송: 인증서 자동 준비",
+  "description": "APN·장치 UID·키만 설정하고, 인증서는 쉴드가 자동으로 준비합니다. 센서 없이 LTE 상태를 Shield 내 장치에서 확인하는 독립 예제입니다.",
+  "category": "시작하기",
+  "level": "기초",
+  "minutes": 20,
+  "variant": "data",
+  "kind": "example",
+  "step_titles": ["쉴드와 계정 준비", "ZIP 열기와 세 가지 설정", "업로드와 인증서 자동 준비", "내 장치에서 수신 확인", "문제 해결과 다음 예제"],
+  "steps": [
+    "전원을 끄고 UNO R3에 SIM7080G 쉴드·LTE 안테나·USIM을 연결합니다. 제품 규격에 맞는 전원을 사용하세요. 이 예제에는 DHT11이나 별도 GPS 센서가 필요하지 않습니다.\n[내 장치](/devices)에서 본인 제품의 일회용 등록 코드로 장치를 등록합니다. 제품과 함께 발급된 장치 UID·장치키를 준비합니다.\n! 장치키는 로그인 비밀번호·ICCID·일회용 등록 코드와 다릅니다. 발급 자료가 없다면 운영자에게 요청하세요.\n(이미지) 실제 UNO와 쉴드·LTE 안테나·USIM 연결 모습.\n! 기존 예제와 별도로 만든 간편 설정 예제입니다. 컴파일·시뮬레이션 검증 후 제공하며, 이 스케치의 실물 LTE 전송은 아직 검증 전입니다.",
+    "전체 ZIP을 내려받아 압축을 풀고 07_easy_https/07_easy_https.ino를 엽니다. src 폴더도 함께 있어야 합니다.\n[Arduino 설치](/examples/arduino-basics-install), [포트 확인](/examples/arduino-basics-com-port), [업로드 방법](/examples/arduino-basics-upload)을 참고하세요. 보드는 Arduino AVR Boards → Arduino Uno입니다.\nconfig.example.h를 config.h로 복사하고 SHIELD_APN·SHIELD_UID·SHIELD_KEY 세 값만 입력합니다. 1NCE APN은 iot.1nce.net이며 다른 USIM은 사업자의 APN을 확인하세요.\n! config.h와 장치키는 게시물·스크린샷·공유 파일에 넣지 마세요. 미설정 상태에서는 [CONFIG] 안내 후 전송이 멈춥니다.\n(이미지) Arduino IDE의 파일 구성과 값을 가린 설정 화면.",
+    "스케치를 업로드하고 시리얼 모니터를 115200 baud로 엽니다. Python 설치나 인증서용 브리지 스케치 업로드는 필요하지 않습니다.\n코드에 포함된 공개 CA를 모뎀에서 확인합니다. 없거나 내용이 다르면 새 예제 전용 파일에 자동 저장합니다. 일치하면 기존 파일을 재사용합니다. 초기 저장 중 전원을 끄지 마세요.\n[CA] 안내 뒤 [READY]를 확인합니다. SIM7080G가 TLS 1.2를 처리하며, 날짜 검사와 서버 인증서 확인 설정을 유지합니다. HTTP로 우회하지 않습니다.\n! 기존 예제의 인증서 파일은 변경하지 않습니다. 내장된 CA는 공개 인증서이며 장치 비밀키가 아닙니다.\n(이미지) 실물 시리얼의 [CA]와 [READY] 출력. 실물 검증 후 추가할 자리입니다.",
+    "[HTTPS] 200은 서버가 실제 LTE 상태를 접수했다는 뜻입니다. [내 장치](/devices)에서 해당 장치를 선택하고 마지막 수신 시각과 LTE 상태를 확인합니다.\n이 예제는 CSQ·망 등록 상태·UNO 가동 시간만 전송합니다. 온습도·GPS 좌표·임의 TEXT는 보내지 않으므로 센서 카드와 지도에 값이 없어도 정상입니다.\n전송 간격은 기본 60초 대기와 망/NTP/HTTPS 처리 시간을 합친 시간입니다. 실패하면 다음 주기에 새 상태를 보냅니다.\n(이미지) 실물의 [HTTPS] 200과 같은 장치의 마지막 수신 화면. 계정·UID·키는 가립니다.",
+    "[SIM]은 USIM 인식, [NET]은 APN·망·잔량, [TIME]은 NTP 시각, [CA]는 인증서 저장/변환, [TLS CONFIG]와 [TLS CONNECT]는 HTTPS 설정/연결 단계를 확인합니다. 자세한 표는 ZIP의 README에 있습니다.\n401/403은 장치 UID·키, 409는 계정 장치 등록, 429는 전송 빈도를 확인합니다. [STOP]이 나오면 원인을 확인한 뒤 UNO를 리셋합니다. 인증서 검사를 끄지 마세요.\n[SIM7080G 첫 연결](/examples/shield-uno-connect), [DHT11 측정](/examples/shield-uno-dht11), [DHT11 HTTPS 전송](/examples/shield-uno-upload)으로 확장할 수 있습니다.\n! 기존 04·06 예제는 기존 인증서 파일과 준비 절차를 사용합니다. 이 예제의 자동 설치 기능이 기존 예제에 소급 적용되지는 않습니다."
+  ]
+}
