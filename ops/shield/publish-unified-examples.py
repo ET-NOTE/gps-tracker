@@ -90,6 +90,7 @@ def main():
             return
         backup = directory / ('posts-before-' + str(int(time.time())) + '.json')
         backup.write_text(json.dumps(rows, ensure_ascii=False, indent=2))
+        (directory / 'protected-before.json').write_text(protected)
         (directory / 'faqs-admin-before.json').write_text(json.dumps(faq_rows, ensure_ascii=False, indent=2))
         attachments = {}
         for item in manifest:
@@ -105,6 +106,7 @@ def main():
         applied = {}
         for item in plan:
             before, after = item['before'], copy.deepcopy(content(item['after']))
+            after.setdefault('images', [])
             slug = after['id']
             source_id = 'shield-uno-first-upload' if slug in ('start', 'upload') else 'shield-uno-upload' if slug == 'dynamic-sensors' else slug
             if source_id in sources:
