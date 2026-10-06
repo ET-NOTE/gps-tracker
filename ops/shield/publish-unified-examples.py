@@ -67,6 +67,17 @@ def main():
         status, rows, _ = admin.call('/api/admin/posts')
         assert status == 200
         existing = {p['content']['id']: p for p in rows}
+        faq_updates = {
+            2: ('초대코드는 계정을 만들 때, 제품의 일회용 등록 코드는 내 장치를 계정에 연결할 때 사용합니다. 이미 사용한 등록 코드는 다시 사용할 수 없습니다.',
+                '초대코드는 회원가입에 사용합니다. 장치 등록 코드는 최신 1NCE HTTPS 예제를 그대로 업로드한 뒤 시리얼 모니터의 [REGISTER]에서 확인합니다. 내 장치 → 장치 등록에 코드와 이름을 입력하세요. 등록 코드는 24시간 동안 한 번 사용할 수 있고, 관리자에게 별도로 연결 정보를 요청할 필요가 없습니다. HTTP 학습용 전송 코드는 장치 등록 후 내 장치에서 별도로 받습니다.'),
+            9: ('Shield는 계정과 데이터를 별도로 관리합니다. Shield 전용 계정으로 로그인하고 전용 장치 ID와 키를 사용하세요.',
+                'Shield는 GPS 서비스와 계정·데이터를 따로 관리합니다. Shield 전용 계정으로 로그인하세요. 최신 1NCE HTTPS 예제는 업로드 후 시리얼 등록 코드로 직접 연결하며, 기기 식별자나 인증키를 사용자가 찾아 입력하지 않습니다. Firebase 예제는 본인의 외부 프로젝트 설정을 사용하는 별도 과정입니다.'),
+        }
+        status, faq_rows, _ = admin.call('/api/admin/faqs')
+        assert status == 200
+        faqs = {f['id']: f for f in faq_rows}
+        for identifier, (old, _) in faq_updates.items():
+            assert faqs[identifier]['answer'] == old and faqs[identifier]['published'] and not faqs[identifier]['archived']
         for item in plan:
             before, after = item['before'], item['after']
             assert after['id'] == before['id']
@@ -79,6 +90,7 @@ def main():
             return
         backup = directory / ('posts-before-' + str(int(time.time())) + '.json')
         backup.write_text(json.dumps(rows, ensure_ascii=False, indent=2))
+        (directory / 'faqs-admin-before.json').write_text(json.dumps(faq_rows, ensure_ascii=False, indent=2))
         attachments = {}
         for item in manifest:
             slug = item['content']['id']
@@ -94,9 +106,9 @@ def main():
         for item in plan:
             before, after = item['before'], copy.deepcopy(content(item['after']))
             slug = after['id']
-            source_id = 'shield-uno-first-upload' if slug in ('start', 'upload') else slug
+            source_id = 'shield-uno-first-upload' if slug in ('start', 'upload') else 'shield-uno-upload' if slug == 'dynamic-sensors' else slug
             if source_id in sources:
-                assert len(before.get('attachments', [])) == (0 if slug == 'upload' else 3), ('Review additional attachments', slug)
+                assert len(before.get('attachments', [])) == (0 if slug in ('upload', 'dynamic-sensors') else 3), ('Review additional attachments', slug)
                 after['code'] = sources[source_id]['code']
                 after['attachments'] = copy.deepcopy(attachments[source_id])
                 if slug == 'start':
@@ -106,6 +118,16 @@ def main():
             assert status == 200, (slug, status, result)
             applied[slug] = after
             (directory / 'applied-posts.json').write_text(json.dumps(applied, ensure_ascii=False, indent=2))
+        for identifier, (_, answer) in faq_updates.items():
+            body = {k: faqs[identifier][k] for k in ('category', 'question', 'published', 'archived', 'position', 'revision')}
+            body['answer'] = answer
+            assert admin.call('/api/admin/faqs/' + str(identifier), body)[0] == 200
+        current_faqs = {f['id']: f for f in admin.call('/api/admin/faqs')[1]}
+        for identifier, row in faqs.items():
+            if identifier in faq_updates:
+                assert current_faqs[identifier]['answer'] == faq_updates[identifier][1] and current_faqs[identifier]['revision'] == row['revision'] + 1
+            else:
+                assert current_faqs[identifier] == row
         after_rows = {p['content']['id']: p for p in admin.call('/api/admin/posts')[1]}
         public = {p['id']: p for p in c.Client().call('/api/posts')[1]}
         for slug, desired in applied.items():
@@ -114,7 +136,7 @@ def main():
         assert all(after_rows[slug] == row for slug, row in existing.items() if slug not in applied)
         assert protected == c.pg(protected_sql), 'Protected settings/ledgers changed'
         report = {'revisions': {slug: public[slug]['revision'] for slug in applied}, 'drive_files': len(assets),
-                  'other_posts_unchanged': len(existing) - len(applied), 'photos': 'all existing retained',
+                  'other_posts_unchanged': len(existing) - len(applied), 'faq_updates': list(faq_updates), 'photos': 'all existing retained',
                   'settings_order_thumbnails_financial': 'unchanged', 'hardware_validation': 'pending'}
         (directory / 'publication-result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
         print(json.dumps(report, ensure_ascii=False))
