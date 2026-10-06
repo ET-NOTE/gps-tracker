@@ -1,0 +1,139 @@
+{
+  "source_commit": "59ae4edf1d0e2a6133be9445b2aab3d56ec86ccc",
+  "branch": "codex/gps-firmware-profiles-sleep",
+  "build_runner": "etcom-hub",
+  "build_image": "espressif/idf@sha256:b9f2d6ea1c19e0c9f7959bdb74a9e3c775642f9d0f3b841937c5fa3363db892b",
+  "unit_scenarios_and_payload_contracts": {
+    "passed": 68,
+    "failed": 0
+  },
+  "build_guards": [
+    {
+      "flags": [],
+      "rejected": true
+    },
+    {
+      "flags": [
+        "-DFIRMWARE_PROFILE=typo"
+      ],
+      "rejected": true
+    },
+    {
+      "flags": [
+        "-DFIRMWARE_PROFILE=operating"
+      ],
+      "rejected": true
+    }
+  ],
+  "profiles": {
+    "operating": {
+      "manifest": {
+        "git_commit": "59ae4edf1d0e2a6133be9445b2aab3d56ec86ccc",
+        "dirty": false,
+        "source_sha256": "d4f19720e21c42579f8538a62329647f0080fb25d8568f846906d1329e79722c",
+        "dependency_lock_sha256": "97fcbbcf9af1f9a3e6842cd852a0021f25f363ee3e3088235f7cee31f58aa486",
+        "idf_version": "ESP-IDF v5.5.4",
+        "firmware": {
+          "build_tag": "idf-caltest/operating-59ae4edf1d",
+          "version": "operating-59ae4edf1d",
+          "profile": "operating",
+          "kc_test": 0,
+          "sleep_disabled": 0,
+          "timer_wake_enabled": 1,
+          "buzzer_enabled": 1,
+          "loop_wdt_enabled": 1,
+          "stationary_ms": "(5UL*60*1000UL)",
+          "timer_wake_us": "(10ULL*60*1000000ULL)",
+          "no_gps_grace_ms": "(10UL*60*1000UL)",
+          "pwrkey_pin": 10,
+          "pwrkey_pulse_ms": 1500
+        },
+        "files_sha256": {
+          "bootloader/bootloader.bin": "5c63e6327e479a48ddec6f9e62fbcdd74b80cbda972421f43376c83bdd953201",
+          "caltest.bin": "91e18744cfe3fa005008d6fa75aba6925e6c01b3429e4a4117a641f663248124",
+          "caltest.elf": "52a7a151c3960581a32dbb4754d5fd2b61c17e8135316290758ea167485f507f",
+          "flash_args": "8296fc1d3e9f0eafa53b351e786f750c68c8eef0e03750a69ef29866b376061f",
+          "flasher_args.json": "ebb701f7e27dc283cf6245254e2f16bbc10cac9aee724088aa82e11f37e3bfeb",
+          "ota_data_initial.bin": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f",
+          "partition_table/partition-table.bin": "53b39ac69f21abb9b90559315ea6cb0ab00216639cdccf2fec5c61d04e0aa970",
+          "sdkconfig": "2f8f9588c412b83f6674770b8af946a3889b970dd5d62e502138b8d085bb481d"
+        },
+        "hardware": "ESP32-C3 new PCB: PWRKEY GPIO10 active HIGH, DTR GPIO7 LOW",
+        "flashed": false
+      },
+      "image_info": "esptool.py v4.12.dev1\nFile size: 410016 (bytes)\nDetected image type: ESP32-C3\n\nESP32-C3 image header\n=====================\nImage version: 1\nEntry point: 0x403802ec\nSegments: 6\nFlash size: 4MB\nFlash freq: 80m\nFlash mode: DIO\n\nESP32-C3 extended image header\n==============================\nWP pin: 0xee (disabled)\nFlash pins drive settings: clk_drv: 0x0, q_drv: 0x0, d_drv: 0x0, cs0_drv: 0x0, hd_drv: 0x0, wp_drv: 0x0\nChip ID: 5 (ESP32-C3)\nMinimal chip revision: v0.3, (legacy min_rev = 3)\nMaximal chip revision: v1.99\n\nSegments information\n====================\nSegment   Length   Load addr   File offs  Memory types\n-------  -------  ----------  ----------  ------------\n      0  0x142b0  0x3c040020  0x00000018  DROM\n      1  0x01df4  0x3fc90200  0x000142d0  DRAM, BYTE_ACCESSIBLE\n      2  0x09f44  0x40380000  0x000160cc  IRAM\n      3  0x3defc  0x42000020  0x00020018  IROM\n      4  0x061c0  0x40389f44  0x0005df1c  IRAM\n      5  0x0008c  0x50000000  0x000640e4  RTC_IRAM, RTC_DRAM\n\nESP32-C3 image footer\n=====================\nChecksum: 0xa4 (valid)\nValidation hash: 7bc2c9777a0b2a709730771efef6648b4a011de99d8f0085bbb774c2f3ebaea4 (valid)\n\nApplication information\n=======================\nProject name: caltest\nApp version: operating-59ae4edf1d\nCompile time: Oct  6 2026 13:37:24\nELF file SHA256: 52a7a151c3960581a32dbb4754d5fd2b61c17e8135316290758ea167485f507f\nESP-IDF: v5.5.4\nMinimal eFuse block revision: 0.0\nMaximal eFuse block revision: 1.99\nMMU page size: 64 KB\nSecure version: 0\n",
+      "bytes": 410016
+    },
+    "kc": {
+      "manifest": {
+        "git_commit": "59ae4edf1d0e2a6133be9445b2aab3d56ec86ccc",
+        "dirty": false,
+        "source_sha256": "d4f19720e21c42579f8538a62329647f0080fb25d8568f846906d1329e79722c",
+        "dependency_lock_sha256": "97fcbbcf9af1f9a3e6842cd852a0021f25f363ee3e3088235f7cee31f58aa486",
+        "idf_version": "ESP-IDF v5.5.4",
+        "firmware": {
+          "build_tag": "idf-caltest/kc-59ae4edf1d",
+          "version": "kc-59ae4edf1d",
+          "profile": "kc",
+          "kc_test": 1,
+          "sleep_disabled": 1,
+          "timer_wake_enabled": 1,
+          "buzzer_enabled": 0,
+          "loop_wdt_enabled": 0,
+          "stationary_ms": "(5UL*60*1000UL)",
+          "timer_wake_us": "(10ULL*60*1000000ULL)",
+          "no_gps_grace_ms": "(10UL*60*1000UL)",
+          "pwrkey_pin": 10,
+          "pwrkey_pulse_ms": 1500,
+          "catm_bands": "5",
+          "nbiot_bands": "5",
+          "catm_only": 1
+        },
+        "files_sha256": {
+          "bootloader/bootloader.bin": "1cfd49ac97ce6b400e04917d23043a916d81a210aa5130f54926689b000e2403",
+          "caltest.bin": "10af5afd900008e63dece3361c21c6bbad16fbcd1223d2097f17c199d006a532",
+          "caltest.elf": "e113d8bcae2aa0f13df9c4a1e42249cfb3ed2deddb44312c7dbad84d1a545b33",
+          "flash_args": "8296fc1d3e9f0eafa53b351e786f750c68c8eef0e03750a69ef29866b376061f",
+          "flasher_args.json": "ebb701f7e27dc283cf6245254e2f16bbc10cac9aee724088aa82e11f37e3bfeb",
+          "ota_data_initial.bin": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f",
+          "partition_table/partition-table.bin": "53b39ac69f21abb9b90559315ea6cb0ab00216639cdccf2fec5c61d04e0aa970",
+          "sdkconfig": "2f8f9588c412b83f6674770b8af946a3889b970dd5d62e502138b8d085bb481d"
+        },
+        "hardware": "ESP32-C3 new PCB: PWRKEY GPIO10 active HIGH, DTR GPIO7 LOW",
+        "flashed": false
+      },
+      "image_info": "esptool.py v4.12.dev1\nFile size: 383568 (bytes)\nDetected image type: ESP32-C3\n\nESP32-C3 image header\n=====================\nImage version: 1\nEntry point: 0x403802ec\nSegments: 6\nFlash size: 4MB\nFlash freq: 80m\nFlash mode: DIO\n\nESP32-C3 extended image header\n==============================\nWP pin: 0xee (disabled)\nFlash pins drive settings: clk_drv: 0x0, q_drv: 0x0, d_drv: 0x0, cs0_drv: 0x0, hd_drv: 0x0, wp_drv: 0x0\nChip ID: 5 (ESP32-C3)\nMinimal chip revision: v0.3, (legacy min_rev = 3)\nMaximal chip revision: v1.99\n\nSegments information\n====================\nSegment   Length   Load addr   File offs  Memory types\n-------  -------  ----------  ----------  ------------\n      0  0x13530  0x3c040020  0x00000018  DROM\n      1  0x01d88  0x3fc8fc00  0x00013550  DRAM, BYTE_ACCESSIBLE\n      2  0x0ad30  0x40380000  0x000152e0  IRAM\n      3  0x38ad4  0x42000020  0x00020018  IROM\n      4  0x04eb0  0x4038ad30  0x00058af4  IRAM\n      5  0x0006c  0x50000000  0x0005d9ac  RTC_IRAM, RTC_DRAM\n\nESP32-C3 image footer\n=====================\nChecksum: 0xae (valid)\nValidation hash: 7e2c30859a9a8f45bbd5166b406c1ad62794e7dfbdc0583048d9dfd4d93d66d6 (valid)\n\nApplication information\n=======================\nProject name: caltest\nApp version: kc-59ae4edf1d\nCompile time: Oct  6 2026 13:37:43\nELF file SHA256: e113d8bcae2aa0f13df9c4a1e42249cfb3ed2deddb44312c7dbad84d1a545b33\nESP-IDF: v5.5.4\nMinimal eFuse block revision: 0.0\nMaximal eFuse block revision: 1.99\nMMU page size: 64 KB\nSecure version: 0\n",
+      "bytes": 383568
+    }
+  },
+  "local_artifact_directory": "C:\\Users\\msb\\AppData\\Local\\GPS-Builds\\gps-firmware-20261006-59ae4ed",
+  "archive_sha256": "7a6c550ba8dfc857354c42c4691c255cdc3b0d2d0d4aedc6ac0ae077a94b0720",
+  "legacy_kc_binary": {
+    "path": "E:\\project\\2025\\esp32c3-mini_gps\\idf_caltest\\build\\caltest.bin",
+    "sha256": "8106748a2807b557b7a0d238c1f16e9b55d1e65b2b856808b263a424866d34ed",
+    "unchanged": true
+  },
+  "ports_seen": [
+    "COM1"
+  ],
+  "flashed": false,
+  "untouched": [
+    "GPS API/server configuration/database",
+    "KC center devices",
+    "Shield firmware/server",
+    "GPS app release gps-web-20261006-221245-3cb7de9"
+  ],
+  "remaining_hardware_checks": [
+    "Confirm target new PCB and serial port",
+    "Flash operating profile to identified field device",
+    "Stationary sleep current and rail voltage",
+    "Motion wake and LTE/GPS recovery",
+    "10 minute timer wake and movement during sleep preparation"
+  ],
+  "notes": [
+    "Build identity is sent in build_tag and stationary.fw_version/build_profile. Existing ingest stores stationary in devices.last_stationary; devices.fw_version column is not updated by this work.",
+    "NORMAL POWER DOWN confirms the UART shutdown response; physical power/current still requires measurement.",
+    "KC RF registration/band/recovery logic preserved; candidate built but not installed.",
+    "SDK/Arduino/TinyGPSPlus warnings and KC disabled-buzzer unused variables remain; no project compile errors."
+  ]
+}
