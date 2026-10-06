@@ -6,7 +6,7 @@ spec=importlib.util.spec_from_file_location('integration',ROOT/'ops/shield/test-
 c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c)
 assert c.BASE=='http://127.0.0.1:3043' and c.sql('select current_database()')=='shield_test'
 source=(Path(__file__).resolve().parents[1]/'07_easy_https.ino').read_text()
-section=re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)SHIELD_UID\s*,\s*millis\(\)',source)[1]
+section=re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)(?:SHIELD_UID|enrollment\.uid)\s*,\s*millis\(\)',source)[1]
 template=''.join(json.loads(s) for s in re.findall(r'"(?:\\.|[^"\\])*"',section)).replace('%lu','%d')
 assert len(template%('a'*64,4294967,99,5))<256
 owner,anon=c.Client(),c.Client();suffix=secrets.token_hex(5)

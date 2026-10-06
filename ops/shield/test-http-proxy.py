@@ -77,9 +77,15 @@ def main():
             else:
                 raise RuntimeError('Loopback nginx did not start')
             c.check('HTTP lesson is POST only', call('/ingest/shield-demo')[0] == 405)
-            for path in ['/ingest/shield', '/api/auth/login', '/api/devices/claim', '/ingest/shield-demo/']:
+            for path in ['/device/bootstrap', '/ingest/shield', '/api/auth/login', '/api/devices/claim', '/ingest/shield-demo/']:
                 status, _, headers = call(path, {})
                 c.check('HTTP redirect retained ' + path, status == 308 and headers['Location'] == 'https://shield.serial.kr' + path)
+            c.check('HTTPS enrollment is POST only', call('/device/bootstrap', secure=True)[0] == 405)
+            status, body, headers = call('/device/bootstrap', {}, secure=True)
+            c.check('HTTPS enrolls and returns bounded credentials without a browser session', status == 200 and len(body) == 126 and headers['Cache-Control'] == 'no-store')
+            c.check('nginx enrollment body limit', call('/device/bootstrap', {'padding':'x'*200}, secure=True)[0] == 413)
+            statuses = [call('/device/bootstrap', {}, secure=True)[0] for _ in range(7)]
+            c.check('nginx enrollment rate limit', 429 in statuses)
             token = owner.call(settings, {'enabled': True})[1]['device_uid']
             payload = {'shield_v': 2, 'device_uid': token, 'build_tag': 'example-http-8', 'ts': 991,
                        'csq': 22, 'reg': 5, 'diag': {'gnss': 0}, 'points': []}

@@ -18,7 +18,7 @@ spec.loader.exec_module(c)
 
 def template(folder, uid, extra=()):
     source = (SOURCE / 'arduino/shield_examples' / folder / (folder + '.ino')).read_text()
-    section = re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)SHIELD_(?:DEMO_)?UID\s*,\s*millis\(\)', source)[1]
+    section = re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)(?:SHIELD_(?:DEMO_)?UID|enrollment\.uid)\s*,\s*millis\(\)', source)[1]
     fmt = ''.join(json.loads(s) for s in re.findall(r'"(?:\\.|[^"\\])*"', section)).replace('%lu', '%d')
     raw = fmt % (uid, 200, 23, 5, *extra)
     assert len(raw) < (448 if extra else 224 if folder.startswith('08') else 256)

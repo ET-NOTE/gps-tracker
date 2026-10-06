@@ -6,7 +6,6 @@
 const char SHIELD_APN[] = "iot.1nce.net";
 EasyHttps shield;
 Enrollment enrollment;
-#define SHIELD_UID enrollment.uid
 char payload[256];
 const unsigned long SEND_INTERVAL_MS = 60000UL;
 bool enrolled = false;
@@ -52,7 +51,7 @@ void pauseWithRecovery(unsigned long ms) {
 void setup() {
   Serial.begin(115200);
   enrolled = enrollment.load();
-  Serial.println(F("[07 v2] 1NCE auto setup. No config.h, UID or KEY entry."));
+  Serial.println(F("[07 v2] 1NCE auto setup. Upload unchanged."));
   if (enrolled) showCode();
   if (!shield.begin() || !shield.prepareCertificate()) {
     shield.printError(); stopHere();
@@ -71,7 +70,8 @@ void loop() {
     if (status != 200 || !enrollment.saveResponse(payload)) {
       memset(payload, 0, sizeof(payload));
       Serial.print(F("[REGISTER HTTPS] ")); Serial.println(status);
-      shield.printError();
+      if (status < 0) shield.printError();
+      else Serial.println(F("Setup not completed. No settings saved. Will retry."));
       if (shield.needsReset()) stopHere();
       pauseWithRecovery(SEND_INTERVAL_MS); return;
     }
@@ -85,7 +85,7 @@ void loop() {
       payload, sizeof(payload),
       PSTR("{\"shield_v\":2,\"device_uid\":\"%s\",\"build_tag\":\"example-https-7\",\"ts\":%lu,"
            "\"csq\":%d,\"reg\":%d,\"diag\":{\"gnss\":0},\"points\":[]}"),
-      SHIELD_UID, millis() / 1000UL, shield.signal, shield.registration);
+      enrollment.uid, millis() / 1000UL, shield.signal, shield.registration);
   if (n < 0 || n >= (int)sizeof(payload)) stopHere();
   int status = shield.post(enrollment.key, payload);
   if (status < 0) shield.printError();
@@ -93,7 +93,7 @@ void loop() {
     Serial.print(F("[HTTPS] ")); Serial.println(status);
     if (status == 200) Serial.println(F("Saved. Open My devices > Last received."));
     else if (status == 409) { showCode(); Serial.println(F("Waiting for web registration. Expired code? Type NEW + Enter.")); }
-    else if (status == 401 || status == 403) Serial.println(F("Credential rejected or code expired. See the recovery guide; do not edit UID/KEY."));
+    else if (status == 401 || status == 403) Serial.println(F("Credential rejected or code expired. See the recovery guide."));
     else if (status == 429) Serial.println(F("Too many requests. Waiting before retry."));
   }
   if (shield.needsReset()) stopHere();

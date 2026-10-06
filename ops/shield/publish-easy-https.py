@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--directory', type=Path, required=True)
     parser.add_argument('--publish', action='store_true')
     parser.add_argument('--lesson', choices=['https', 'http'], default='https')
+    parser.add_argument('--onboarding-update', action='store_true')
     args = parser.parse_args()
     slug = SLUG if args.lesson == 'https' else 'shield-uno-http-pairing'
     assert os.geteuid() == 0 and c.BASE == 'https://shield.serial.kr'
@@ -74,9 +75,21 @@ def main():
         status, rows, _ = admin.call('/api/admin/posts')
         assert status == 200
         existing = {r['content']['id']: r for r in rows}
-        # Never overwrite this or any other post after administrators edit it.
-        assert slug not in existing, 'Post already exists; inspect it instead of overwriting'
-        print(json.dumps({'action': 'create' if args.publish else 'dry run',
+        revision = 0
+        if args.onboarding_update:
+            assert args.lesson == 'https' and slug in existing
+            prior = existing[slug]
+            assert prior['revision'] == 1, 'Post changed since onboarding review'
+            assert len(prior['content']['steps']) == len(content['steps']) == 5
+            assert {a['id'] for a in prior['content']['attachments']} == {
+                '5cdfb2d2002083948d4b07f1273bd08cd8ab8501c7c16eaa006a4b33afe12a10',
+                '366191532e0e3606befb22ba5478bfe705af91b23ba54c11db41ec613829e9e3',
+                '098754b19367f4c565f15fed016045d4f2bb0a1ad1d0195c5c2fd444ab70f30c'}
+            content = {**prior['content'], **content, 'images': prior['content'].get('images', [])}
+            revision = prior['revision']
+        else:
+            assert slug not in existing, 'Post already exists; inspect it instead of overwriting'
+        print(json.dumps({'action': ('update onboarding' if args.onboarding_update else 'create') if args.publish else 'dry run',
                           'slug': slug, 'verified_drive_downloads': len(links)}))
         if not args.publish:
             return
@@ -87,7 +100,7 @@ def main():
             assert file['drive_url'] == links[asset['path']]['url']
             content['attachments'].append({'id': file['id'], 'title': asset['title'], 'after_step': 0})
         status, result, _ = admin.call('/api/admin/posts/' + slug,
-                                     {'content': content, 'published': True, 'revision': 0})
+                                     {'content': content, 'published': True, 'revision': revision})
         assert status == 200, (status, result)
         public = next(p for p in anon.call('/api/posts')[1] if p['id'] == slug)
         assert {k: v for k, v in public.items() if k not in ('revision', 'updated_at')} == content
@@ -97,10 +110,10 @@ def main():
             assert status == 307 and body == '' and headers['cache-control'] == 'no-store'
             assert headers['location'] == links[asset['path']]['url']
         after = {r['content']['id']: r for r in admin.call('/api/admin/posts')[1]}
-        assert all(after[old_slug] == post for old_slug, post in existing.items())
+        assert all(after[old_slug] == post for old_slug, post in existing.items() if old_slug != slug)
         assert protected == c.pg(protected_sql)
         report = {'url': c.BASE + '/examples/' + slug, 'revision': public['revision'],
-                  'drive_files': len(links), 'existing_posts_preserved': len(existing),
+                  'drive_files': len(links), 'existing_posts_preserved': len(existing) - int(slug in existing),
                   'guide_order_thumbnails_financial': 'unchanged',
                   'hardware_validation': 'pending'}
         (directory / 'publication-result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))

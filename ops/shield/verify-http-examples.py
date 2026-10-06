@@ -42,7 +42,7 @@ def main():
 
     def template(folder, uid, extra=()):
         source = (args.examples / folder / (folder + '.ino')).read_text()
-        section = re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)SHIELD_(?:DEMO_)?UID\s*,\s*millis\(\)', source)[1]
+        section = re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)(?:SHIELD_(?:DEMO_)?UID|enrollment\.uid)\s*,\s*millis\(\)', source)[1]
         fmt = ''.join(json.loads(s) for s in re.findall(r'"(?:\\.|[^"\\])*"', section)).replace('%lu', '%d')
         return json.loads(fmt % (uid, 300, 23, 5, *extra))
 
