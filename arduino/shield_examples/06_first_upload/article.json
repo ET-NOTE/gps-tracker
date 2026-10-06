@@ -1,17 +1,27 @@
 {
   "folder": "06_first_upload",
   "content": {
+    "category": "센서·데이터활용",
+    "description": "1NCE 쉴드에 예제를 그대로 업로드하고 시리얼 등록 코드로 내 장치에 연결합니다. 센서 없이 실제 LTE 신호와 마지막 수신을 확인하세요.",
     "id": "shield-uno-first-upload",
-    "title": "센서 없이 첫 서버 전송: LTE 상태 확인",
-    "description": "추가 센서 없이 실제 쉴드의 LTE 신호와 망 등록 상태를 Shield 서버로 보내고, 내 장치에서 마지막 수신을 확인합니다.",
-    "category": "서버 연동", "level": "기초", "minutes": 30, "variant": "data", "kind": "example",
-    "step_titles": ["연결과 장치 등록", "예제와 설정 준비", "HTTPS 인증서 설치", "업로드와 수신 확인", "센서·GPS 예제로 확장"],
+    "kind": "example",
+    "level": "기초",
+    "minutes": 30,
+    "step_titles": [
+      "쉴드와 계정 준비",
+      "전체 ZIP 그대로 업로드",
+      "시리얼 등록 코드로 연결",
+      "수신 확인",
+      "다른 예제로 이어 가기"
+    ],
     "steps": [
-      "전원을 끈 상태에서 UNO R3에 SIM7080G 쉴드와 LTE·GNSS 안테나, 지정 배터리·USIM을 연결합니다. [첫 연결 예제](/examples/shield-uno-connect)에서 전원과 포트를 확인하세요.\n[내 장치](/devices)에서 본인 제품의 일회용 등록 코드로 장치를 먼저 등록합니다. 등록되지 않은 장치의 전송은 409로 거절됩니다.\n본인 장치의 UID와 단말 키를 준비하세요. 단말 키는 소문자 16진수 64자이며 로그인 비밀번호·USIM 번호·일회용 등록 코드와 다릅니다. 발급 자료가 없다면 운영자에게 요청하세요.",
-      "아래 ZIP을 풀고 06_first_upload/06_first_upload.ino를 엽니다. src 폴더를 유지하세요. DHT 센서와 추가 라이브러리는 필요 없습니다.\n[Arduino 설치](/examples/arduino-basics-install), [COM 포트 확인](/examples/arduino-basics-com-port), [업로드 방법](/examples/arduino-basics-upload)을 먼저 확인하세요. 보드는 Arduino AVR Boards의 Arduino Uno입니다.\nconfig.example.h를 같은 폴더의 config.h로 복사하고 SHIELD_APN·SHIELD_UID·SHIELD_KEY의 YOUR_*를 본인 값으로 바꿉니다. 1NCE APN은 iot.1nce.net입니다. HOST=shield.serial.kr, PATH=/ingest/shield를 유지합니다.\nconfig.h와 단말 키는 게시물·스크린샷·공유 ZIP에 넣지 않습니다. placeholder 상태도 컴파일되지만 실행하면 [STOP]으로 전송이 멈춥니다.",
-      "ZIP에 포함된 01_connection/01_connection.ino를 먼저 업로드하여 [READY]를 확인한 뒤 시리얼 모니터를 닫습니다. 전송 스케치와 인증서 설치용 스케치를 구분하세요.\nPC에 Python 3.10 이상과 pyserial을 설치하고 ZIP의 README에 있는 fetch_ca.py와 install_ca.py 순서를 따릅니다. 다운로드한 인증서의 SHA256 확인 후 shield-example-ca.pem 이름으로 모뎀에 설치합니다.\n도구가 Installed를 표시한 뒤 다음 단계로 이동합니다. CA·NTP 시각·TLS 오류를 피하려고 HTTPS 검증을 끄지 않습니다.\n(이미지) 본인 PC의 인증서 검증 및 Installed 출력. 실제 인증서 설치 화면은 추후 캡처 예정입니다.",
-      "06_first_upload.ino로 돌아와 설정을 확인하고 컴파일·업로드합니다. 시리얼 모니터를 115200 baud로 엽니다.\n[HTTP] 200은 서버가 실제 모뎀 상태를 접수했다는 뜻입니다. [내 장치](/devices)에서 마지막 수신 시각, LTE, 최근 데이터를 확인하세요. 기본 주기는 60초 대기에 망 연결·HTTPS 처리 시간이 더해집니다.\n이 코드는 온습도나 위치를 만들지 않습니다. sensors 없이 shield_v=2로 CSQ·망 등록 상태만 전송하므로 센서 그래프와 지도는 비어 있어도 정상입니다.\nHTTP -1은 망·APN·NTP·CA, 401/403은 UID·단말 키, 409는 장치 등록을 확인합니다. 실패하면 즉시 반복하지 않고 다음 주기에 새 상태를 보냅니다.\n(이미지) 실물 모뎀의 HTTP 200 출력. 웹 화면 체험은 [내 장치 데모](/devices?demo=1)로 확인할 수 있습니다.",
-      "온습도는 [DHT11 로컬 측정](/examples/shield-uno-dht11)을 완료한 뒤 [DHT11 → Shield 전송](/examples/shield-uno-upload)으로 이어갑니다.\n위치는 [SIM7080G GNSS 확인](/examples/shield-uno-gnss)에서 실제 좌표를 시리얼로 확인합니다. GNSS 예제 자체는 서버로 좌표를 보내지 않습니다.\n외부 서버는 [Firebase 예제](/examples/shield-uno-firebase)를 참고하세요. 사용자 소유 프로젝트 준비와 웹 콘솔 작업이 필요합니다.\nUSIM 잔량은 내 장치에서 확인하며 충전 진입점은 [내 장치](/devices)와 [요금 안내](/pricing) 양쪽에 있습니다.\n검증 범위는 UNO 컴파일과 격리된 서버의 페이로드 접수 검사입니다. 이번 예제를 실물에 새로 업로드한 검증은 하지 않았습니다."
-    ]
+      "전원을 끄고 UNO R3에 SIM7080G 쉴드·LTE 안테나·개통된 1NCE USIM을 연결합니다. 제품 규격의 전원을 사용하고 [첫 연결 점검](/examples/shield-uno-connect)을 참고하세요.\nShield 계정으로 로그인해 두세요. 장치는 업로드 후 직접 등록합니다. 추가 센서나 별도의 연결 정보 발급은 필요 없습니다.",
+      "아래 v3 전체 ZIP을 새 폴더에 풀고 06_first_upload/06_first_upload.ino를 엽니다. src 폴더를 함께 유지하세요.\n[Arduino 설치](/examples/arduino-basics-install) · [COM 포트 확인](/examples/arduino-basics-com-port) · [업로드 방법](/examples/arduino-basics-upload)을 참고해 Arduino AVR Boards → Arduino Uno와 실제 포트를 선택합니다. 설정 파일 생성이나 값 입력 없이 그대로 업로드하세요. Python·인증서 브리지·추가 라이브러리가 필요 없습니다.\n시리얼 모니터를 115200 baud로 열고 [AUTO v3]를 확인합니다. 예전 ZIP의 config.h를 가져오지 마세요.",
+      "시리얼 모니터를 115200 baud로 열고 [REGISTER] 뒤에 표시된 등록 코드를 복사합니다. [내 장치](/devices) → 장치 등록에 그 코드와 원하는 이름을 입력하세요. 사용자가 옮길 값은 이 등록 코드 하나입니다.\n1NCE APN·서버 주소·HTTPS 인증서 준비가 포함되어 있어 연결 정보를 따로 찾거나 코드에 입력할 필요가 없습니다.\n등록 코드는 24시간 동안 한 번 사용할 수 있습니다. 웹 등록 전 [HTTPS] 409는 등록 대기이며, 등록 후 다음 전송부터 200으로 바뀝니다. 이미 등록한 같은 보드는 다시 등록하지 않습니다.\n(이미지) 등록 코드를 가린 시리얼 출력과 내 장치 등록 창.",
+      "[HTTPS] 200은 서버가 실제 LTE 상태를 접수했다는 뜻입니다. [내 장치](/devices)에서 등록한 이름을 선택하고 마지막 수신 시각·LTE·최근 데이터를 확인합니다.\nCSQ·망 등록 상태·UNO 가동 시간만 보냅니다. 임의의 TEXT·온습도·GPS 좌표를 보내는 예제는 아니므로 센서 카드와 지도에 값이 없어도 정상입니다.\n전송 주기는 60초 대기와 통신 처리 시간입니다. 실제 장치가 없다면 [내 장치 데모](/devices?demo=1)를 체험할 수 있습니다.\n(이미지) 실제 HTTPS 200과 내 장치의 마지막 수신 화면.",
+      "최신 04·06·07 예제는 같은 보드의 연결 정보를 EEPROM에 보관합니다. 재부팅하거나 이 세 예제 사이에서 바꿔 올려도 기존 계정 연결을 재사용합니다.\n아직 등록하지 않은 코드가 만료되었다면 시리얼 모니터에서 줄 끝을 새 줄로 설정하고 NEW를 전송합니다. 다음 대기 구간에서 새 코드를 표시합니다.\n! 이미 등록한 장치에는 NEW를 사용하지 마세요. 기존 기록은 남지만 새 장치로 등록하게 됩니다. 다른 사람에게 보드를 넘기기 전에는 기존 계정 연결과 EEPROM을 확인하세요.\n[SIM]은 USIM, [NET]은 1NCE 개통·안테나·잔량, [TIME]은 시각, [CA]는 인증서, [TLS CONNECT]는 HTTPS 연결을 확인합니다. 401/403은 저장 정보·만료를 점검하고, 429는 15분 대기합니다. [STOP]은 원인을 해결한 뒤 UNO를 리셋하세요.\n[DHT11 로컬 측정](/examples/shield-uno-dht11) 후 [DHT11 서버 전송](/examples/shield-uno-upload)으로 확장하세요. 같은 보드라면 계정 연결은 유지됩니다. [GNSS 확인](/examples/shield-uno-gnss)은 시리얼 출력, [Firebase](/examples/shield-uno-firebase)는 본인 외부 프로젝트를 사용하는 별도 실습입니다.\nUSIM 잔량과 충전은 [내 장치](/devices)와 [요금 안내](/pricing)에서 확인합니다.\n! UNO 컴파일·모뎀 응답 시뮬레이션·격리 서버 검증과 실물 검증은 다릅니다. 이 버전의 실제 LTE 전송은 확인 전입니다."
+    ],
+    "title": "1. 센서 없이 첫 서버 전송: LTE 상태 확인",
+    "variant": "data"
   }
 }

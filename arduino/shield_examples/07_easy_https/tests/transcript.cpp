@@ -1,4 +1,5 @@
 #include "EasyHttps.h"
+#include "ShieldSetup.h"
 #include "ShieldRootCA.h"
 #include <cassert>
 #include <iostream>
@@ -6,6 +7,7 @@
 
 uint32_t fakeMillis = 0;
 Console Serial;
+FakeEEPROM EEPROM;
 Wire wire;
 
 struct Modem {
@@ -18,7 +20,7 @@ struct Modem {
   bool readTruncated = false, readWrongLength = false, readNoHeader = false;
   int status = 200, connected = 0, writes = 0, conversions = 0;
   Modem() {
-    wire = Wire{}; Serial.text.clear(); fakeMillis = 0;
+    wire = Wire{}; Serial.text.clear(); Serial.input.clear(); fakeMillis = 0;
     wire.command = [this](const std::string &cmd) {
       commands.push_back(cmd);
       auto ok = [] { wire.answer("\r\nOK\r\n"); };
@@ -134,5 +136,39 @@ int main() {
     assert(m.saw("AT+SHREQ=\"/device/bootstrap\",3") && !m.saw("AT+SHAHEAD=\"X-Device-Key\""));
     assert(Serial.text.find(key) == std::string::npos);
   }
-  std::cout << "22 modem transcript scenarios passed (simulation, not hardware TLS).\n";
+  {
+    Modem m; EasyHttps c; ready(c); assert(c.connect("iot.1nce.net"));
+    assert(c.utcNow() == 1791253800UL);
+    m.dateFails = true; assert(c.utcNow() == 0);
+    m.dateFails = false;
+    std::string maxBody(447, 'x'), tooLarge(448, 'x');
+    assert(c.post(key, maxBody.c_str()) == 200);
+    size_t calls = m.commands.size();
+    assert(c.post(key, tooLarge.c_str()) == -1 && m.commands.size() == calls);
+  }
+  {
+    EEPROM = FakeEEPROM{};
+    Modem m;
+    m.responseBody = "uno-shield-" + std::string(32, 'a') + "\n" + key + "\n" + std::string(16, 'b') + "\n";
+    ShieldSetup first; first.begin();
+    char buffer[448]; assert(first.connect(buffer, sizeof(buffer)));
+    assert(Serial.text.find("[REGISTER] bbbb-bbbb-bbbb-bbbb") != std::string::npos);
+    assert(Serial.text.find(key) == std::string::npos);
+    for (char byte : buffer) assert(byte == 0); // Bootstrap response wiped.
+    auto saved = EEPROM.bytes;
+    m.commands.clear();
+    ShieldSetup nextSketch; nextSketch.begin(); // Same class in 04, 06, 07.
+    assert(nextSketch.connect(buffer, sizeof(buffer)));
+    assert(!m.saw("AT+SHREQ=\"/device/bootstrap\",3"));
+    assert(EEPROM.bytes == saved);
+    assert(!strcmp(first.device.uid, nextSketch.device.uid));
+    Serial.input = "NEWx\n"; nextSketch.pause(); assert(EEPROM.bytes == saved);
+    Serial.input = "NEW\r\n"; nextSketch.pause();
+    Enrollment erased{}; assert(!erased.load());
+    assert(nextSketch.connect(buffer, sizeof(buffer)));
+    assert(m.saw("AT+SHREQ=\"/device/bootstrap\",3"));
+    m.status = 429; nextSketch.send(body);
+    auto start = fakeMillis; nextSketch.pause(); assert(fakeMillis - start >= 900000UL);
+  }
+  std::cout << "HTTPS: 22 fault/response scenarios + UTC/body bounds + cross-sketch enrollment, wipe, recovery and rate-limit passed.\n";
 }

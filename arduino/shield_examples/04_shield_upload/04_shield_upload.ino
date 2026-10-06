@@ -1,41 +1,28 @@
-#include "src/ShieldModem.h"
+#include "src/ShieldSetup.h"
 #include <DHT.h>
-#if __has_include("config.h")
-#include "config.h"
-#else
-#include "config.example.h"
-#endif
 
-ShieldModem shield;
-DHT sensor(DHT_DATA_PIN, DHT11);
-char body[448]; // Maximum configured UID + two DHT channels fits; keep UNO SRAM for the stack.
+// 1NCE + UNO R3, DHT11 DATA on D2. Upload the complete ZIP unchanged.
+// Install Adafruit DHT sensor library and Adafruit Unified Sensor first.
+ShieldSetup shield;
+DHT sensor(2, DHT11);
+char body[448];
 
 void setup() {
-  Serial.begin(115200);
   sensor.begin();
-  if (!shield_example::safeToken(SHIELD_APN, 63) || !shield_example::safeToken(SHIELD_UID, 64) ||
-      !shield_example::hexKey(SHIELD_KEY)) {
-    Serial.println(F("[STOP] Copy config.example.h to config.h; replace YOUR_* values."));
-    while (true)
-      delay(1000);
-  }
-  if (!shield.begin())
-    while (true)
-      delay(1000);
+  shield.begin();
   delay(2000);
 }
 
 void loop() {
-  if (!shield.connectNetwork(SHIELD_APN)) {
-    Serial.println(F("[NET] Check SIM/APN/antenna/NTP. If modem rebooted, reset UNO."));
-    delay(SEND_INTERVAL_MS);
+  if (!shield.connect(body, sizeof(body))) {
+    shield.pause();
     return;
   }
   float t = sensor.readTemperature(), h = sensor.readHumidity();
-  uint32_t at = shield.utcNow();
+  uint32_t at = shield.modem.utcNow();
   if (!at || isnan(t) || isnan(h) || t < 0 || t > 50 || h < 0 || h > 100) {
     Serial.println(F("[DATA] Missing clock or valid DHT11 reading; nothing sent."));
-    delay(SEND_INTERVAL_MS);
+    shield.pause();
     return;
   }
   char temp[12], hum[12];
@@ -49,18 +36,13 @@ void loop() {
           "\"channels\":[{\"key\":\"temperature\",\"label\":\"Temperature\",\"unit\":\"C\"},"
           "{\"key\":\"humidity\",\"label\":\"Humidity\",\"unit\":\"%%\"}],"
           "\"sensors\":[{\"at\":%lu,\"values\":{\"temperature\":%s,\"humidity\":%s}}]}"),
-      SHIELD_UID, millis() / 1000UL, shield.signal, shield.registration, at, temp, hum);
+      shield.device.uid, millis() / 1000UL, shield.modem.signal, shield.modem.registration, at, temp, hum);
   if (n < 0 || n >= (int)sizeof(body)) {
     Serial.println(F("[STOP] Payload too large."));
     while (true)
       delay(1000);
   }
-  int status = shield.post(SHIELD_HOST, SHIELD_PATH, SHIELD_KEY, SHIELD_CA, body);
-  Serial.print(F("[HTTP] "));
-  Serial.println(status);
-  Serial.println(status == 200
-                     ? F("Saved. Open Shield > My data.")
-                     : F("Not confirmed. Check README status table; no immediate retry."));
-  delay(
-      SEND_INTERVAL_MS); // Learning example: failed sample is not queued; next cycle takes a new sample.
+  shield.send(body);
+  // Failed samples are not queued. The next cycle reads a fresh sensor value.
+  shield.pause();
 }

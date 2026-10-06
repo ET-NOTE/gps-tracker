@@ -11,6 +11,7 @@ export default function DeviceRegistration({ done, close }) {
       <li>시리얼 모니터를 <strong>115200 baud</strong>로 열고 <code>[REGISTER]</code> 뒤의 등록 코드를 복사하세요.</li>
       <li>아래에 코드와 장치 이름을 입력하면 내 계정에 연결됩니다. 다음 전송부터 데이터를 확인할 수 있습니다.</li>
     </ol>
+    <p className="muted">같은 자동 등록 절차를 <Link to="/examples/shield-uno-first-upload">첫 서버 전송</Link>과 <Link to="/examples/shield-uno-upload">DHT11 서버 전송</Link> 예제에서도 사용할 수 있습니다. 1NCE USIM용 최신 ZIP으로 시작하세요.</p>
     <form className="device-setup-fields" onSubmit={async e => {
       e.preventDefault(); setBusy(true); setError("");
       const form = new FormData(e.currentTarget);
@@ -26,6 +27,6 @@ export default function DeviceRegistration({ done, close }) {
       {error && <p className="error" role="alert">{error}</p>}
       <button className="button" disabled={busy}>{busy ? "등록 중…" : "내 계정에 장치 연결"}</button>
     </form>
-    <p className="muted">이미 등록했다면 재부팅·같은 예제 재업로드 후에도 연결이 유지됩니다. 등록 코드가 만료되었다면 예제의 재등록 안내를 확인하세요.</p>
+    <p className="muted">이미 등록했다면 재부팅하거나 최신 첫 전송·간편 HTTPS·DHT11 서버 전송 예제로 바꾸어 올려도 같은 보드의 연결이 유지됩니다. 등록 코드가 만료되었다면 예제의 재등록 안내를 확인하세요.</p>
   </Modal>;
 }

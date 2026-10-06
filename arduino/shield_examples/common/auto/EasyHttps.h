@@ -3,7 +3,7 @@
 #include <SoftwareSerial.h>
 #include "ShieldParsing.h"
 
-// Independent educational driver: changes here do not affect examples 01-06.
+// Shared verified-HTTPS educational driver for examples 04, 06 and 07.
 // UNO R3, SIM7080G, D6 DTR, D7 PWRKEY, D8 RX / D9 TX at 9600 baud.
 class EasyHttps {
 public:
@@ -11,6 +11,7 @@ public:
   bool begin();
   bool prepareCertificate();
   bool connect(const char *apn);
+  uint32_t utcNow();
   int post(const char *key, const char *body);
   int bootstrap(char *response, uint16_t capacity);
   void printError();

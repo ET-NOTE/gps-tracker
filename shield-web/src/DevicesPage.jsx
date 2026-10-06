@@ -134,7 +134,7 @@ export default function DevicesPage() {
                   ? "장치를 불러오는 중입니다"
                   : "첫 번째 쉴드를 등록하세요"}
               </h2>
-              <p>제품과 함께 받은 등록 코드로 내 장치를 연결하세요.</p>
+              <p>예제를 그대로 업로드하고 시리얼 모니터의 등록 코드로 내 장치를 연결하세요.</p>
               <button className="button" onClick={register}>
                 ＋ 내 장치 등록
               </button>
@@ -450,7 +450,7 @@ export default function DevicesPage() {
         <h3>USIM 잔량 예시</h3>
         <p><strong>350 MB / 500 MB</strong> · 예시 USIM ···· 1234</p>
         <ol className="demo-recharge-steps">
-          <li>로그인 후 내 장치에서 제품의 등록 코드로 쉴드를 등록합니다.</li>
+          <li>예제를 그대로 업로드하고 시리얼 등록 코드로 내 장치에 연결합니다.</li>
           <li>장착된 USIM의 실제 잔량과 상태를 확인합니다.</li>
           <li>내 장치 또는 요금 안내의 USIM 충전하기에서 같은 장치를 선택합니다.</li>
           <li>상품이 판매 중일 때 용량·차감 포인트를 확인하고 충전을 요청합니다.</li>

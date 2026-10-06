@@ -19,7 +19,11 @@ inline void delay(uint32_t ms) { fakeMillis += ms; }
 inline void digitalWrite(int, int) {}
 inline void pinMode(int, int) {}
 struct Console {
-  std::string text;
+  std::string text, input;
+  int available() { return !input.empty(); }
+  int read() { char c = input[0]; input.erase(0, 1); return c; }
+  void println() { text += '\n'; }
+  void print(char c) { text += c; }
   void begin(unsigned long) {}
   void print(const __FlashStringHelper *s) { text += reinterpret_cast<const char *>(s); }
   void print(const char *s) { text += s; }

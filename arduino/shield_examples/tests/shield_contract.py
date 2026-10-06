@@ -6,7 +6,7 @@ spec=importlib.util.spec_from_file_location('integration',ROOT/'ops/shield/test-
 c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c)
 assert c.BASE=='http://127.0.0.1:3043' and c.sql('select current_database()')=='shield_test'
 source=(Path(__file__).resolve().parents[1]/'04_shield_upload/04_shield_upload.ino').read_text()
-section=re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)SHIELD_UID\s*,\s*millis\(\)',source)[1]
+section=re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)(?:SHIELD_UID|shield\.device\.uid)\s*,\s*millis\(\)',source)[1]
 template=''.join(json.loads(s) for s in re.findall(r'"(?:\\.|[^"\\])*"',section)).replace('%lu','%d')
 owner,anon=c.Client(),c.Client();suffix=secrets.token_hex(5)
 assert owner.call('/api/auth/register',{'email':f'example-{suffix}@example.test','password':secrets.token_urlsafe(24),

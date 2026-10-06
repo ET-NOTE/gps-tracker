@@ -225,6 +225,11 @@ int EasyHttps::post(const char *key, const char *body) {
   return exchange(key, body, false);
 }
 
+uint32_t EasyHttps::utcNow() {
+  stage = CLOCK; clock = 0;
+  return !needsReset() && command(F("AT+CCLK?")) ? clock : 0;
+}
+
 int EasyHttps::bootstrap(char *response, uint16_t capacity) {
   if (!response || capacity < 127) return -1;
   responseBuffer = response; responseCapacity = capacity;
@@ -239,7 +244,7 @@ int EasyHttps::bootstrap(char *response, uint16_t capacity) {
 
 int EasyHttps::exchange(const char *key, const char *body, bool enrollment) {
   stage = TLS_CONFIG;
-  if (!certificateReady || strlen(body) > 256 || needsReset()) return -1;
+  if (!certificateReady || !body || strlen(body) > 447 || needsReset()) return -1;
   stage = CLOCK; clock = 0;
   if (!command(F("AT+CCLK?")) || !clock) return -1;
   stage = TLS_CONFIG;
@@ -250,7 +255,7 @@ int EasyHttps::exchange(const char *key, const char *body, bool enrollment) {
         !command(F("AT+CSSLCFG=\"SNI\",1,\"shield.serial.kr\"")) ||
         !command(F("AT+SHSSL=1,\"sh07-x1-22b557a2.pem\"")) ||
         !command(F("AT+SHCONF=\"URL\",\"https://shield.serial.kr\"")) ||
-        !command(F("AT+SHCONF=\"BODYLEN\",256")) ||
+        !command(F("AT+SHCONF=\"BODYLEN\",448")) ||
         !command(F("AT+SHCONF=\"HEADERLEN\",350"))) break;
     stage = TLS_CONNECT;
     if (!command(F("AT+SHCONN"), 60000)) break;

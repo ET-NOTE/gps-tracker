@@ -1,23 +1,27 @@
 [
   {
-    "id": "start",
     "category": "시작하기",
+    "description": "쉴드를 연결하고 예제를 그대로 업로드한 뒤, 시리얼 등록 코드로 내 장치에 연결하고 서버 수신·USIM 잔량을 확인하세요.",
+    "id": "start",
+    "kind": "example",
     "level": "입문",
-    "minutes": 10,
-    "title": "쉴드 연결부터 첫 데이터까지",
-    "description": "쉴드를 연결하고, 예제를 업로드한 뒤 서버에서 데이터를 확인하세요.",
-    "variant": "board",
-    "steps": [
-      "UNO의 전원을 끄고 쉴드를 연결합니다.\nLTE·GNSS 안테나와 USIM 연결을 확인합니다.\n초대코드로 가입하고 내 장치에서 제품의 일회용 등록 코드를 입력합니다.",
-      "Arduino IDE에서 Arduino AVR Boards를 설치하고 Arduino Uno와 연결 포트를 선택합니다.\n예제 라이브러리에서 사용할 센서 예제를 고릅니다. DHT11 예제는 데이터선 D2를 사용합니다.\n예제에 필요한 라이브러리를 설치하고 코드를 업로드합니다.\n115200 baud 시리얼 모니터에서 측정값과 오류를 확인합니다.",
-      "Shield 전용 전송 펌웨어에 발급된 장치 ID와 단말 키를 설정합니다. 단말 키는 공개 저장소에 올리지 않습니다.\n전송 주소는 https://shield.serial.kr/ingest/shield 입니다. 센서 측정 예제만 업로드한 경우 서버 전송 코드를 별도로 연결해야 합니다.\n내 데이터에서 장치를 선택하고 센서 값과 마지막 수신 시각을 확인합니다. 위치는 GNSS가 확보된 뒤 표시됩니다.\nUSIM 잔량과 충전은 내 장치에서 확인합니다."
-    ],
-    "code": "",
+    "minutes": 35,
     "step_titles": [
       "쉴드 연결",
-      "예제 업로드",
-      "서버에서 데이터 확인"
-    ]
+      "예제 그대로 업로드",
+      "시리얼 등록 코드로 장치 연결",
+      "서버 데이터 전송 확인",
+      "USIM 데이터 확인"
+    ],
+    "steps": [
+      "시리얼링크 LTE쉴드의 스위치를 사진과 같이 OFF로 되어있는지 확인합니다.\nLTE·GPS안테나, 배터리를 장착합니다\n아두이노 우노에 시리얼링크 LTE쉴드를 장착합니다.\nUNO R3용 예제입니다. 배선과 장착 방향을 확인한 뒤 제품 안내에 따라 전원을 켜고 USB를 PC에 연결합니다. [첫 연결 점검](/examples/shield-uno-connect)을 참고하세요.",
+      "아래 v3 전체 ZIP을 새 폴더에 풀고 06_first_upload/06_first_upload.ino를 엽니다. src 폴더를 함께 유지하세요.\n[Arduino 설치](/examples/arduino-basics-install) · [COM 포트 확인](/examples/arduino-basics-com-port) · [업로드 방법](/examples/arduino-basics-upload)을 참고해 Arduino AVR Boards → Arduino Uno와 실제 포트를 선택합니다. 설정 파일 생성이나 값 입력 없이 그대로 업로드하세요. Python·인증서 브리지·추가 라이브러리가 필요 없습니다.\n시리얼 모니터를 115200 baud로 열고 [AUTO v3]를 확인합니다. 예전 ZIP의 config.h를 가져오지 마세요.\n[첫 서버 전송 상세 안내](/examples/shield-uno-first-upload)에서 전체 과정을 볼 수 있습니다.",
+      "시리얼 모니터를 115200 baud로 열고 [REGISTER] 뒤에 표시된 등록 코드를 복사합니다. [내 장치](/devices) → 장치 등록에 그 코드와 원하는 이름을 입력하세요. 사용자가 옮길 값은 이 등록 코드 하나입니다.\n1NCE APN·서버 주소·HTTPS 인증서 준비가 포함되어 있어 연결 정보를 따로 찾거나 코드에 입력할 필요가 없습니다.\n등록 코드는 24시간 동안 한 번 사용할 수 있습니다. 웹 등록 전 [HTTPS] 409는 등록 대기이며, 등록 후 다음 전송부터 200으로 바뀝니다. 이미 등록한 같은 보드는 다시 등록하지 않습니다.",
+      "서버통신예제에서 데이터 전송 주소는 https://shield.serial.kr/ingest/shield 입니다. \n사용자 서버를 이용하실경우 서버 전송 코드를 직접 수정하셔야 합니다. \n(당사 서버 외의 서버관련 문의는 받지않으며 타사 서버셋팅필요시 별도 비용이 청구됩니다.)\n[내 장치](/devices)에서 해당 장치를 선택하고 마지막 수신 시각·LTE·최근 데이터를 확인합니다.\n첫 전송 코드는 온습도나 GPS 좌표를 보내지 않습니다. 센서 그래프와 지도에 값이 없어도 정상입니다. [DHT11 측정](/examples/shield-uno-dht11) 후 [온습도 서버 전송](/examples/shield-uno-upload)을 진행하면 [내 데이터](/data)에서 실제 센서 값을 볼 수 있습니다.\n[GNSS 확인](/examples/shield-uno-gnss)은 하늘이 보이는 곳에서 좌표를 시리얼로 읽는 별도 예제입니다. 이 예제 자체는 지도용 좌표를 서버에 보내지 않습니다.\n왼쪽 내 데이터 화면은 기능 안내를 위한 데모이며 첫 전송 예제의 실제 수신 결과가 아닙니다.",
+      "USIM 잔량과 충전은 내 장치에서 확인합니다.\nUSIM데이터는 최초 제공 데이터 외 유상으로 충전하셔야합니다.\n시리얼링크 쉴드는 허가받은 당사 제공 USIM 외 타사 통신사 USIM을 장착이 불가합니다.\n[내 장치](/devices)의 USIM 및 사용 정보에서 잔량·상태·마지막 조회 시각을 확인합니다.\nUSIM 충전하기는 [내 장치](/devices)와 [요금 안내](/pricing) 양쪽에서 사용할 수 있습니다. 본인 장치와 판매 중인 상품을 선택하고 차감 포인트를 확인하세요.\n왼쪽 화면과 [내 장치 데모](/devices?demo=1)의 350 / 500 MB는 체험용 예시입니다. 데모에서는 결제나 실제 충전이 실행되지 않습니다."
+    ],
+    "title": "쉴드 연결 및 데이터전송 하기",
+    "variant": "board"
   },
   {
     "id": "dht11",
@@ -53,20 +57,26 @@
     "code": ""
   },
   {
-    "id": "upload",
     "category": "LTE 통신",
+    "description": "예제를 수정 없이 업로드하고 시리얼 등록 코드로 연결해 실제 LTE 수신을 확인합니다.",
+    "id": "upload",
     "level": "기초",
     "minutes": 20,
-    "title": "서버로 데이터 보내기",
-    "description": "수신 형식과 단말 인증을 합성 데이터로 먼저 확인해요.",
-    "variant": "data",
     "steps": [
-      "장치 등록 후 발급된 단말 ID와 단말 키를 준비합니다. 브라우저 로그인 정보와는 별개입니다.",
-      "다운로드한 Python 예제에 환경변수로 주소·단말 ID·단말 키를 전달합니다.",
-      "스크립트는 실제 측정값이 아닌 합성 온습도·좌표를 전송합니다. 전용 시험 장치로만 실행하세요.",
-      "응답의 accepted·duplicate를 확인합니다. 같은 표본의 재전송은 중복 저장되지 않습니다."
+      "전원을 끄고 UNO R3에 SIM7080G 쉴드·LTE 안테나·개통된 1NCE USIM을 연결합니다. 제품 규격의 전원을 사용하고 [첫 연결 점검](/examples/shield-uno-connect)을 참고하세요.\nShield 계정으로 로그인해 두세요. 장치는 업로드 후 직접 등록합니다. 추가 센서나 별도의 연결 정보 발급은 필요 없습니다.",
+      "아래 v3 전체 ZIP을 새 폴더에 풀고 06_first_upload/06_first_upload.ino를 엽니다. src 폴더를 함께 유지하세요.\n[Arduino 설치](/examples/arduino-basics-install) · [COM 포트 확인](/examples/arduino-basics-com-port) · [업로드 방법](/examples/arduino-basics-upload)을 참고해 Arduino AVR Boards → Arduino Uno와 실제 포트를 선택합니다. 설정 파일 생성이나 값 입력 없이 그대로 업로드하세요. Python·인증서 브리지·추가 라이브러리가 필요 없습니다.\n시리얼 모니터를 115200 baud로 열고 [AUTO v3]를 확인합니다. 예전 ZIP의 config.h를 가져오지 마세요.",
+      "시리얼 모니터를 115200 baud로 열고 [REGISTER] 뒤에 표시된 등록 코드를 복사합니다. [내 장치](/devices) → 장치 등록에 그 코드와 원하는 이름을 입력하세요. 사용자가 옮길 값은 이 등록 코드 하나입니다.\n1NCE APN·서버 주소·HTTPS 인증서 준비가 포함되어 있어 연결 정보를 따로 찾거나 코드에 입력할 필요가 없습니다.\n등록 코드는 24시간 동안 한 번 사용할 수 있습니다. 웹 등록 전 [HTTPS] 409는 등록 대기이며, 등록 후 다음 전송부터 200으로 바뀝니다. 이미 등록한 같은 보드는 다시 등록하지 않습니다.\n(이미지) 등록 코드를 가린 시리얼 출력과 내 장치 등록 창.",
+      "[HTTPS] 200은 서버가 실제 LTE 상태를 접수했다는 뜻입니다. [내 장치](/devices)에서 등록한 이름을 선택하고 마지막 수신 시각·LTE·최근 데이터를 확인합니다.\nCSQ·망 등록 상태·UNO 가동 시간만 보냅니다. 임의의 TEXT·온습도·GPS 좌표를 보내는 예제는 아니므로 센서 카드와 지도에 값이 없어도 정상입니다.\n전송 주기는 60초 대기와 통신 처리 시간입니다. 실제 장치가 없다면 [내 장치 데모](/devices?demo=1)를 체험할 수 있습니다.\n(이미지) 실제 HTTPS 200과 내 장치의 마지막 수신 화면."
     ],
-    "code": ""
+    "title": "서버로 데이터 보내기",
+    "variant": "data",
+    "step_titles": [
+      "쉴드 준비",
+      "전체 ZIP 그대로 업로드",
+      "등록 코드로 연결",
+      "수신 확인"
+    ],
+    "kind": "example"
   },
   {
     "id": "status",
@@ -101,20 +111,21 @@
     "code": ""
   },
   {
+    "category": "센서·데이터활용",
+    "description": "온습도·조도·압력 등 센서 종류에 맞는 카드와 표를 자동으로 구성합니다.",
     "id": "dynamic-sensors",
-    "category": "센서",
+    "kind": "example",
     "level": "응용",
     "minutes": 20,
-    "title": "센서를 바꾸고 데이터 이어 보기",
-    "description": "온습도·조도·압력 등 센서 종류에 맞는 카드와 표를 자동으로 구성합니다.",
-    "variant": "data",
+    "step_titles": [],
     "steps": [
-      "단말 ID와 USIM은 그대로 두고, 센서 연결과 펌웨어의 측정 코드를 변경합니다.",
+      "[DHT11 서버 전송](/examples/shield-uno-upload)의 최신 ZIP으로 시작하세요. 한 번 등록한 같은 보드·USIM을 유지한 채 센서 배선과 측정 코드를 바꾸면 기존 계정의 내 데이터로 이어집니다.",
       "shield_v: 3 형식에 sensor_set과 채널의 key·label·unit을 선언합니다. 아래 JSON의 at은 현재 UTC 초로 변경합니다.",
-      "/ingest/shield 주소에 JSON POST로 전송하고 X-Device-Key 헤더에 발급된 단말 키를 넣습니다. 브라우저 로그인과 별개입니다.",
+      "예제의 ShieldSetup이 HTTPS 연결과 인증을 처리합니다. 사용자에게 별도 연결 정보를 발급받아 코드에 입력하도록 요구하지 않습니다. body의 JSON만 센서 구성에 맞게 만들고 shield.send(body)를 호출하세요. 등록 전에는 시리얼 등록 코드로 내 장치에 먼저 연결합니다.",
       "내 데이터에서 수신된 채널별 카드·그래프·표를 확인합니다. 이전 센서 구성도 보기를 켜면 교체 전 이력을 함께 확인할 수 있습니다.",
       "단위나 센서 구성이 바뀌면 sensor_set을 새 이름으로 지정합니다. 같은 구성·key의 단위를 바꾸지 않습니다. 장치당 누적 채널은 64개, 배치당 채널 16개·측정 32개까지입니다."
     ],
-    "code": "{\n  \"shield_v\": 3,\n  \"device_uid\": \"YOUR_DEVICE_UID\",\n  \"build_tag\": \"soil-sensor-v1\",\n  \"ts\": 1000,\n  \"csq\": 20,\n  \"reg\": 5,\n  \"diag\": {},\n  \"points\": [],\n  \"sensor_set\": \"soil-v1\",\n  \"channels\": [\n    {\n      \"key\": \"moisture\",\n      \"label\": \"토양 수분\",\n      \"unit\": \"%\"\n    },\n    {\n      \"key\": \"light\",\n      \"label\": \"조도\",\n      \"unit\": \"lx\"\n    }\n  ],\n  \"sensors\": [\n    {\n      \"at\": 0,\n      \"values\": {\n        \"moisture\": 43.5,\n        \"light\": 720\n      }\n    }\n  ]\n}"
+    "title": "센서를 바꾸고 데이터 이어 보기",
+    "variant": "data"
   }
 ]
