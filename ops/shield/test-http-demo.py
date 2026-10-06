@@ -18,7 +18,7 @@ spec.loader.exec_module(c)
 
 def template(folder, uid, extra=()):
     source = (SOURCE / 'arduino/shield_examples' / folder / (folder + '.ino')).read_text()
-    section = re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)(?:SHIELD_(?:DEMO_)?UID|enrollment\.uid)\s*,\s*millis\(\)', source)[1]
+    section = re.search(r'int\s+n\s*=\s*snprintf_P([\s\S]*?)(?:SHIELD_(?:DEMO_)?UID|enrollment\.uid|shield\.device\.uid|classroomCode)\s*,\s*millis\(\)', source)[1]
     fmt = ''.join(json.loads(s) for s in re.findall(r'"(?:\\.|[^"\\])*"', section)).replace('%lu', '%d')
     raw = fmt % (uid, 200, 23, 5, *extra)
     assert len(raw) < (448 if extra else 224 if folder.startswith('08') else 256)
@@ -33,7 +33,13 @@ def main():
     for client, mail in [(owner, email), (other, f'other-{suffix}@example.test')]:
         assert client.call('/api/auth/register', {'email': mail, 'password': password,
             'display_name': 'HTTP 학습 시험', 'invite_code': c.cli('invite')['invite_code']})[0] == 200
-    device = c.cli('provision', 'Four UNO examples fixture')
+    status, wire, _ = anon.call('/device/bootstrap', {})
+    assert status == 200 and len(wire) == 126
+    device_uid, device_key, claim_code = wire.splitlines()
+    device = {'device_uid': device_uid, 'device_key': device_key, 'claim_code': claim_code}
+    c.check('HTTPS examples enroll without admin provisioning', True)
+    unclaimed = template('06_first_upload', device_uid)
+    c.check('automatic device still needs owner registration', anon.call('/ingest/shield', unclaimed, {'X-Device-Key': device_key})[0] == 409)
     identifier = owner.call('/api/devices/claim', {'claim_code': device['claim_code'], 'display_name': 'HTTP 학습 검증 장치'})[1]['id']
     route = f'/api/devices/{identifier}/http-demo'
     endpoint = '/ingest/shield-demo'
