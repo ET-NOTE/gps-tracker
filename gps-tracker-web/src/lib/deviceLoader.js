@@ -15,17 +15,14 @@ import { getDeviceColor, isStale } from '../colors';
 // (F6-c) calcSpeedKmh / clickableIntervalM 중복 → lib/speed.js 로 통합.
 // Re-export 로 기존 import 경로 유지.
 import { serverSpeed, clickableIntervalM } from './speed';
+import { dayWindow, kstDate } from './seeker';
 export { serverSpeed, clickableIntervalM };
 
 // Home view stop cluster 흡수 반경 — seeker 기본 (35m) 과 통일.
 export const HOME_STOP_MERGE_RADIUS_M = 35;
 // 폴리라인 dashed gap 기준 (KakaoMap.POLYLINE_GAP_THRESHOLD_S 와 동일).
-export const POLYLINE_GAP_THRESHOLD_S = 60;
-
-function localMidnightMs() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-}
+import { POLYLINE_GAP_THRESHOLD_S } from './mapGeometry';
+export { POLYLINE_GAP_THRESHOLD_S };
 
 // (한국 사용자 시간대 기준) 홈 뷰 fetch 창의 since 산출.
 //
@@ -46,25 +43,21 @@ function localMidnightMs() {
 //   - v3.1 (현재): wake_cause = motion|switch 만. spurious cold-boot / brownout wake 제외.
 //                  최근 wake 20건 조회 후 client 필터 — 대부분 첫 몇개 안에서 결정.
 const REAL_WAKE_CAUSES = new Set(['motion', 'switch']);
-export async function computeHomeSinceISO(device) {
-  const midnightMs = localMidnightMs();
-  const midnightISO = new Date(midnightMs).toISOString();
+export async function computeHomeSinceISO(device, now = Date.now()) {
+  const midnightISO = dayWindow(kstDate(now)).since;
+  const midnightMs = Date.parse(midnightISO);
   const lastFixMs = device?.last_fix_at ? new Date(device.last_fix_at).getTime() : 0;
   if (!lastFixMs || lastFixMs >= midnightMs) return midnightISO;
   // 오래된 단말 — 실 wake (motion/switch) event 로 마지막 사이클 시점 조회.
   try {
     const events = await api.getDeviceEvents(device.id, { kinds: ['wake'], limit: 20 });
-    const realWake = (events || []).find(e => REAL_WAKE_CAUSES.has(e.data?.wake_cause));
+    const realWake = (events || []).find(e => REAL_WAKE_CAUSES.has(e.data?.wake_cause) && Number.isFinite(Date.parse(e.occurred_at)));
     if (realWake) {
       return new Date(realWake.occurred_at).toISOString();
     }
   } catch { /* fallthrough */ }
   // Fallback: 실 wake 못 찾으면 마지막 fix 날의 KST 자정 (v2 정책).
-  const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-  const kstDate = new Date(lastFixMs + KST_OFFSET_MS);
-  kstDate.setUTCHours(0, 0, 0, 0);
-  const kstMidnightUtcMs = kstDate.getTime() - KST_OFFSET_MS;
-  return new Date(kstMidnightUtcMs).toISOString();
+  return dayWindow(kstDate(lastFixMs)).since;
 }
 
 export function computeGapMap(ordered) {
@@ -123,8 +116,10 @@ export function computeClickableIndices(enriched, gapMap, intervalM = 30) {
 // force 는 loadDevicesIncremental 전용 (기존 device 도 재렌더 강제).
 export function makeDeviceLoaders({
   mapRef, devRef, lastMetaRef, lastLoadedFixAtRef, wsRef,
-  setDevices, setDevicesLoaded, onLatest, onDataSource,
+  setDevices = () => {}, setDevicesLoaded, onLatest, onDataSource,
+  readDevices = () => api.listDevices(),
 }) {
+  let revision = 0;
   function renderDeviceFixes(d, locs, opts = {}) {
     const { force = false } = opts;
     const label = d.display_name || d.device_uid;
@@ -133,17 +128,21 @@ export function makeDeviceLoaders({
     if (!locs?.length) {
       if (d.last_lat != null && d.last_lng != null) {
         const meta = { recordedAt: d.last_fix_at || d.last_seen_at, stale };
+        if (Date.parse(meta.recordedAt) < Date.parse(lastMetaRef.current[d.id]?.recordedAt)) return false;
         mapRef.current?.updateMarker(d.id, d.last_lat, d.last_lng, label, color, meta);
         lastMetaRef.current[d.id] = meta;
       }
-      return;
+      return true;
     }
     // (F9) 방어적 정렬 — api.flattenGrouped 는 DESC 유지 계약이지만 서버/네트워크
     // 재정렬/누락 가능성 방어. asc 로 명시 정렬해 gap / arrow bearing 계산의 chronological
     // 가정을 강제. 이전엔 reverse() 만 신뢰 → 배열 뒤섞이면 폴리라인 지그재그.
     const ordered = [...locs]
-      .filter(l => l && l.recorded_at)
+      .filter(l => l && Number.isFinite(Date.parse(l.recorded_at)) && Number.isFinite(l.lat) && Number.isFinite(l.lng))
       .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+    // A live fix may arrive while this history request is in flight. Retry next
+    // refresh instead of clearing its trail and repainting an older snapshot.
+    if (!ordered.length || Date.parse(ordered.at(-1).recorded_at) < Date.parse(lastMetaRef.current[d.id]?.recordedAt)) return false;
     const gapMap = computeGapMap(ordered);
     if (force) mapRef.current?.clearLiveTrail?.(d.id);
     // bulk 로드 — polyline setPath 는 마지막에 한 번만.
@@ -202,11 +201,14 @@ export function makeDeviceLoaders({
         ...(g || {}),
       });
     });
+    return true;
   }
 
   async function loadDevicesIncremental(force = false) {
+    const request = ++revision;
     try {
-      const list = await api.listDevices();
+      const list = await readDevices();
+      if (request !== revision) return;
       onDataSource?.('devices', isCachedResponse(list), list.map(d => d.id));
       const oldIds = new Set(devRef.current.map(d => d.id));
       const newIds = new Set(list.map(d => d.id));
@@ -229,51 +231,58 @@ export function makeDeviceLoaders({
           if (prevAt && curAt && prevAt === curAt) return;
         }
         const since = await computeHomeSinceISO(d);
+        if (request !== revision) return;
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
+        if (request !== revision) return;
         const locs = api.flattenGrouped(groups);
-        renderDeviceFixes(d, locs, { force });
+        const rendered = renderDeviceFixes(d, locs, { force });
         const cached = isCachedResponse(groups);
         onDataSource?.(d.id, cached);
         // Retry a saved history even when the device's newest fix has not changed.
         // Otherwise the normal refresh skips it forever after connectivity recovers.
-        lastLoadedFixAtRef.current[d.id] = cached ? null : d.last_fix_at || d.last_seen_at || null;
+        lastLoadedFixAtRef.current[d.id] = cached || !rendered ? null : d.last_fix_at || d.last_seen_at || null;
       }));
-    } catch (e) { console.error('refresh', e); }
+    } catch (e) { if (e.name !== 'AbortError' && e.message !== 'CancelledError') console.error('refresh', e); }
   }
 
   async function loadDevices() {
+    const request = ++revision;
     try {
       const targetIdRaw = new URLSearchParams(window.location.search).get('device');
       const targetId = targetIdRaw ? parseInt(targetIdRaw, 10) : NaN;
 
-      const list = await api.listDevices();
+      const list = await readDevices();
+      if (request !== revision) return;
       onDataSource?.('devices', isCachedResponse(list), list.map(d => d.id));
       setDevices(list);
       devRef.current = list;
       wsRef.current?.subscribe(list.map(d => d.id));
 
       const sinces = await Promise.all(list.map(d => computeHomeSinceISO(d)));
+      if (request !== revision) return;
       await Promise.all(list.map(async (d, li) => {
         const since = sinces[li];
         const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
+        if (request !== revision) return;
         const locs = api.flattenGrouped(groups);
-        renderDeviceFixes(d, locs);
+        const rendered = renderDeviceFixes(d, locs);
         const cached = isCachedResponse(groups);
         onDataSource?.(d.id, cached);
-        lastLoadedFixAtRef.current[d.id] = cached ? null : d.last_fix_at || d.last_seen_at || null;
+        lastLoadedFixAtRef.current[d.id] = cached || !rendered ? null : d.last_fix_at || d.last_seen_at || null;
       }));
       // (F12) setDevicesLoaded 를 Promise.all 이후로 이동 — 이전엔 devices state 만 세팅되고
       // renderDeviceFixes 미완료 상태에서도 true 였음. Dashboard 의 filter-restore useEffect
       // 가 이 시점에 filterToDevice(fit:true) 를 호출하면 pointsRef 비어 있어 bounds = 단일
       // main marker → 이상한 zoom 위치. 실 데이터 렌더링 완료 후 signal.
+      if (request !== revision) return;
       setDevicesLoaded(true);
       if (!isNaN(targetId)) {
         mapRef.current?.focusDevice(targetId);
       } else {
         mapRef.current?.fitToAllMarkers(60);
       }
-    } catch (e) { console.error('loadDevices', e); }
+    } catch (e) { if (e.name !== 'AbortError' && e.message !== 'CancelledError') console.error('loadDevices', e); }
   }
 
-  return { loadDevices, loadDevicesIncremental };
+  return { loadDevices, loadDevicesIncremental, cancel: () => { revision++; } };
 }

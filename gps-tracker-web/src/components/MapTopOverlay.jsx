@@ -1,6 +1,7 @@
 import DeviceFilter from './DeviceFilter';
 import MapControls from './MapControls';
 import { liveMotion } from '../lib/liveMotion';
+import { useVisibleNow } from '../hooks/useVisibleNow';
 import './MapTopOverlay.css';
 
 export function mapCacheNotice(sources, selected) {
@@ -15,6 +16,8 @@ export function mapCacheNotice(sources, selected) {
 
 export default function MapTopOverlay({ devices, selected, onSelect, mapRef, onOpenRoadview,
   showSpeed, liveSpeed, now, historyMode = false, cachedSources = {}, children }) {
+  const clock = useVisibleNow(now == null && showSpeed && selected != null);
+  now = now ?? clock;
   const device = devices.find(d => d.id === selected);
   // A device change must never briefly display the previous device's speed/name.
   const sample = liveSpeed?.deviceId === selected ? liveSpeed : null;

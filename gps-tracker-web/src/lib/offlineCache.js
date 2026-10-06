@@ -5,6 +5,10 @@ const TTL = 24 * 60 * 60 * 1000;
 // read in another panel must not mark the live map as offline.
 const cachedResponses = new WeakSet();
 export const isCachedResponse = data => data != null && typeof data === 'object' && cachedResponses.has(data);
+export function carryCacheProvenance(source, result) {
+  if (isCachedResponse(source) && result && typeof result === 'object') cachedResponses.add(result);
+  return result;
+}
 export async function cachedRead(key, fetcher) {
   const scope = authScope();
   const storageKey = PREFIX + scope + ':' + key;

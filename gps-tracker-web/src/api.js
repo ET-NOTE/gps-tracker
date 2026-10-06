@@ -179,56 +179,57 @@ window.addEventListener('storage', () => {
   notifyAuthChanged();
 });
 
-async function req(method, path, body, retry = true, options = {}) {
-  const scope = authScope();
-  const res = await fetch(BASE + path, {
-    method,
-    signal: options.signal,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-
-  assertSession(scope);
+// JSON, multipart and binary responses share token rotation and account guards.
+// Retry only a rejected 401, never a network failure of a write request.
+async function sessionFetch(url, options = {}, retry = true, scope = authScope()) {
+  const assertActive = () => {
+    assertSession(scope);
+    if (options.signal?.aborted) throw new DOMException('요청이 취소되었습니다.', 'AbortError');
+  };
+  assertActive();
+  const headers = new Headers(options.headers);
+  const token = getToken();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  else headers.delete('Authorization');
+  const res = await fetch(url, { ...options, headers });
+  assertActive();
   if (res.status === 401 && retry) {
     const r = await tryRefresh();
-    assertSession(scope);
+    assertActive();
     if (r === 'stale') throw new DOMException('계정이 변경되었습니다.', 'AbortError');
     if (r === 'unauth') {
       // 진짜 만료/취소 — 로그아웃 후 reload
       clearTokens();
       window.location.reload();
-      return;
+      throw new DOMException('로그인이 만료되었습니다.', 'AbortError');
     }
     if (r === 'transient') {
       // 네트워크 일시 오류 — 토큰 유지, 호출자에게 에러 전달 (사용자가 다시 시도 가능)
       throw Object.assign(new Error('네트워크 연결이 불안정합니다. 잠시 후 다시 시도해주세요.'),
                           { status: 0, transient: true });
     }
-    return req(method, path, body, false, options);
+    return sessionFetch(url, options, false, scope);
   }
+  for (const name of ['json', 'text', 'blob', 'arrayBuffer']) {
+    const read = res[name].bind(res);
+    res[name] = async () => { const data = await read(); assertActive(); return data; };
+  }
+  return res;
+}
 
+async function req(method, path, body, retry = true, options = {}) {
+  const res = await sessionFetch(BASE + path, {
+    method, signal: options.signal,
+    headers: { 'Content-Type': 'application/json' },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  }, retry);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw Object.assign(new Error(err.error || err.message || res.statusText), { status: res.status });
   }
 
   const text = await res.text();
-  assertSession(scope);
   return text ? JSON.parse(text) : null;
-}
-
-async function sessionFetch(url, options) {
-  const scope = authScope();
-  const res = await fetch(url, options);
-  assertSession(scope);
-  for (const name of ['json', 'text', 'blob', 'arrayBuffer']) {
-    const read = res[name].bind(res);
-    res[name] = async () => { const data = await read(); assertSession(scope); return data; };
-  }
-  return res;
 }
 
 export const api = {
@@ -252,13 +253,13 @@ export const api = {
   uploadCarImage: async (id, file) => {
     const scope = authScope();
     const body = new FormData(); body.append('file', file);
-    const res = await sessionFetch(`${BASE}/devices/${id}/car-image`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body });
+    const res = await sessionFetch(`${BASE}/devices/${id}/car-image`, { method: 'POST', body });
     const data = await res.json(); assertSession(scope);
     if (!res.ok) throw new Error(data.error || '사진 업로드 실패');
     return data;
   },
   // devices
-  listDevices:  () => cachedRead('devices', () => req('GET', '/devices')),
+  listDevices:  (options = {}) => cachedRead('devices', () => req('GET', '/devices', undefined, true, options)),
   pairDevice:   (params) => req('POST', '/devices/pair', params),  // { device_uid?, iccid?, display_name? }
   scanDevices:  () => req('GET', '/devices/scan'),                 // [KC] 최근 ingest 중 미페어링 단말 목록
   updateDevice: (id, patch)             => req('PATCH',  `/devices/${id}`, patch),
@@ -566,10 +567,7 @@ export const api = {
     if (params.from) q.set('from', params.from);
     if (params.to)   q.set('to',   params.to);
     const qs = q.toString();
-    const tok = localStorage.getItem('access_token');
-    const res = await sessionFetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || res.statusText);
@@ -592,10 +590,8 @@ export const api = {
     fd.append('file', file);
     fd.append('kind', kind || 'other');
     if (note) fd.append('note', note);
-    const tok = localStorage.getItem('access_token');
     const res = await sessionFetch(`${BASE}/devices/${deviceId}/documents`, {
       method: 'POST', body: fd,
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -605,12 +601,10 @@ export const api = {
   },
   deleteDocument: (id) => req('DELETE', `/documents/${id}`),
   documentDownloadUrl: (id) => {
-    const tok = getToken();
     // 브라우저 <a href> 로 열려면 auth header 못 붙임. blob fetch 후 URL.createObjectURL.
+    const scope = authScope();
     return async () => {
-      const res = await sessionFetch(`${BASE}/documents/${id}/download`, {
-        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-      });
+      const res = await sessionFetch(`${BASE}/documents/${id}/download`, {}, true, scope);
       if (!res.ok) throw new Error(res.statusText);
       const blob = await res.blob();
       const cd = res.headers.get('content-disposition') || '';
@@ -622,10 +616,7 @@ export const api = {
   },
   // (2026-07-28) 문서 인라인 프리뷰 — blob URL 로 <img>/<embed> 렌더.
   fetchDocumentPreview: async (id) => {
-    const tok = getToken();
-    const res = await sessionFetch(`${BASE}/documents/${id}/preview`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/documents/${id}/preview`);
     if (!res.ok) throw new Error(res.statusText);
     const blob = await res.blob();
     return { url: URL.createObjectURL(blob), mime: blob.type };
@@ -668,10 +659,7 @@ export const api = {
   // 사진 URL (owner 인증) — <img src=> 로는 못 씀 (Authorization header 필요),
   // 대신 fetch 로 blob → object URL 만들어 사용.
   fetchRentalPhoto:   async (photoId) => {
-    const tok = getToken();
-    const res = await sessionFetch(`${BASE}/rentcar/photos/${photoId}`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/rentcar/photos/${photoId}`);
     if (!res.ok) throw new Error(res.statusText);
     const blob = await res.blob();
     return URL.createObjectURL(blob);
@@ -696,10 +684,7 @@ export const api = {
 
   // (2026-07-28 Stage-R4) 렌트카 청구서 XLSX.
   rentalInvoiceXlsx: async (id) => {
-    const tok = getToken();
-    const res = await sessionFetch(`${BASE}/rentcar/contracts/${id}/invoice.xlsx`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/rentcar/contracts/${id}/invoice.xlsx`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || res.statusText);
@@ -728,10 +713,7 @@ export const api = {
     if (params.device_ids?.length) q.set('device_ids', params.device_ids.join(','));
     if (params.purposes?.length)   q.set('purposes',   params.purposes.join(','));
     if (params.departments?.length) q.set('departments', params.departments.join(','));
-    const tok = localStorage.getItem('access_token');
-    const res = await sessionFetch(`${BASE}/corporate/report.xlsx?${q.toString()}`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/corporate/report.xlsx?${q.toString()}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || res.statusText);

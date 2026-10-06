@@ -58,6 +58,56 @@ async function fixture(api = {}) {
 }
 
 const networkError = () => { throw new TypeError('network unavailable'); };
+const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
+
+test('home window uses KST midnight and validates wake timestamps', async () => {
+  const f = await fixture({ getDeviceEvents: async () => [{ occurred_at: 'invalid', data: { wake_cause: 'motion' } }] });
+  const { computeHomeSinceISO } = await f.module('lib/deviceLoader.js');
+  const now = Date.parse('2026-10-06T15:01:00Z');
+  assert.equal(await computeHomeSinceISO({ last_fix_at: '2026-10-06T15:00:30Z' }, now), '2026-10-06T15:00:00.000Z');
+  assert.equal(await computeHomeSinceISO({ id: 1, last_fix_at: '2026-10-05T23:00:00Z' }, now), '2026-10-05T15:00:00.000Z');
+});
+
+test('superseded or unmounted history requests never repaint the map', async () => {
+  const reads = [deferred(), deferred(), deferred()]; let calls = 0;
+  const device = { id: 1, last_fix_at: new Date().toISOString() };
+  const f = await fixture({ listDevices: async () => [device],
+    listLocationsGrouped: () => reads[calls++].promise, flattenGrouped: x => x });
+  const updates = [], loaded = [];
+  const loader = (await f.module('lib/deviceLoader.js')).makeDeviceLoaders({
+    mapRef: { current: { updateMarker: (...x) => updates.push(x), clearHistoryPoints() {}, addHistoryPoint() {}, fitToAllMarkers() {} } },
+    devRef: { current: [] }, lastMetaRef: { current: {} }, lastLoadedFixAtRef: { current: {} }, wsRef: { current: null },
+    setDevicesLoaded: v => loaded.push(v),
+  });
+  const first = loader.loadDevices(); await new Promise(r => setImmediate(r));
+  const second = loader.loadDevices(); await new Promise(r => setImmediate(r));
+  reads[1].resolve([{ recorded_at: device.last_fix_at, lat: 37, lng: 127 }]); await second;
+  reads[0].resolve([{ recorded_at: device.last_fix_at, lat: 38, lng: 128 }]); await first;
+  assert.equal(updates.length, 1); assert.equal(updates[0][1], 37); assert.equal(loaded.length, 1);
+  const third = loader.loadDevices(); await new Promise(r => setImmediate(r)); loader.cancel();
+  reads[2].resolve([{ recorded_at: device.last_fix_at, lat: 39, lng: 129 }]); await third;
+  assert.equal(updates.length, 1); assert.equal(loaded.length, 1);
+});
+
+test('slow history cannot clear a newer live trail; next refresh can repair it', async () => {
+  const at = offset => new Date(Date.now() + offset).toISOString();
+  const before = at(-2000), live = at(-1000);
+  const device = { id: 1, last_fix_at: before, last_lat: 37, last_lng: 127 };
+  let rows = [{ recorded_at: before, lat: 37, lng: 127 }];
+  const f = await fixture({ listDevices: async () => [device], listLocationsGrouped: async () => rows, flattenGrouped: x => x });
+  const updates = [], clears = [], lastLoadedFixAtRef = { current: {} };
+  const loader = (await f.module('lib/deviceLoader.js')).makeDeviceLoaders({
+    mapRef: { current: { updateMarker: (...x) => updates.push(x), clearLiveTrail: () => clears.push(true), clearHistoryPoints() {}, addHistoryPoint() {} } },
+    devRef: { current: [device] }, lastMetaRef: { current: { 1: { recordedAt: live } } }, lastLoadedFixAtRef, wsRef: { current: null }, setDevicesLoaded() {},
+  });
+  await loader.loadDevicesIncremental(true);
+  assert.equal(clears.length, 0); assert.equal(updates.length, 0); assert.equal(lastLoadedFixAtRef.current[1], null);
+  rows = []; await loader.loadDevicesIncremental(true);
+  assert.equal(updates.length, 0, 'empty history cannot replace live marker with an old device coordinate');
+  rows = [{ recorded_at: live, lat: 37.1, lng: 127.1 }];
+  await loader.loadDevicesIncremental(true);
+  assert.equal(clears.length, 1); assert.equal(updates.length, 1);
+});
 test('cache provenance belongs to the response; a successful retry recovers without an online event', async () => {
   const f = await fixture(); const { cachedRead, isCachedResponse } = await f.module('lib/offlineCache.js');
   const online = await cachedRead('devices', async () => [{ id: 1 }]);

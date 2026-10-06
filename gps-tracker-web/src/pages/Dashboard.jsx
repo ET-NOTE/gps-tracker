@@ -2,11 +2,12 @@ import RoutePlannerSheet from '../components/RoutePlannerSheet';
 import PinnedDeviceWidget from '../components/PinnedDeviceWidget';
 import OnboardingModal from '../components/OnboardingModal';
 import SwipeableCard from '../components/SwipeableCard';
-import { authScope } from '../authSession';
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import { authScope, assertSession } from '../authSession';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { useMe, useAccountType } from '../state';
+import { useMe, useAccountType, useDevices } from '../state';
+import { EMPTY_DEVICES, loadDeviceSnapshot, cancelDeviceSnapshot, updateDeviceList } from '../state/devices';
 import { useLiveWS } from '../hooks/useLiveWS';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { makeWsEventHandler } from '../lib/wsEventHandler';
@@ -109,7 +110,9 @@ export default function Dashboard({ onLogout }) {
     });
   }, []);
   const togglePin = id => { const next = pinnedId === id ? null : id; setPinnedId(next); if (next) localStorage.setItem(pinKey, String(next)); else localStorage.removeItem(pinKey); };
-  const [devices, setDevices]         = useState([]);
+  const { data: devices = EMPTY_DEVICES } = useDevices();
+  const scope = authScope();
+  const setDevices = useCallback(update => updateDeviceList(update, scope), [scope]);
   const [pairMode, setPairMode]       = useState('iccid');
   const [pairUid, setPairUid]         = useState('');
   const [pairIccid, setPairIccid]     = useState('');
@@ -139,7 +142,7 @@ export default function Dashboard({ onLogout }) {
     try {
       await api.pairDevice({ device_uid: row.device_uid, display_name: name });
       setPairLabel('');
-      await loadDevices();
+      await reloadDevicesAfterMutation();
       await runScan();               // 연결된 행은 목록에서 빠짐
     } catch (e) { setPairError(e.message); }
     finally { setScanBusyUid(null); }
@@ -159,7 +162,7 @@ export default function Dashboard({ onLogout }) {
   }, [location.pathname, location.search, navigate]);
 
   // devices 가 첫 로드된 뒤 — deep link 였고 단말기 0개 또는 ?tutorial=1 이면 튜토리얼 표시.
-  // devices 가 useState([]) 초기값이라, "정말로 fetch 끝났는지" 별도로 tracking.
+  // 장치 조회와 지도 이력 표시가 모두 끝났는지 별도로 tracking.
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   useEffect(() => {
     if (!pairDeepLinkPending) return;
@@ -174,7 +177,6 @@ export default function Dashboard({ onLogout }) {
   const [editLabel, setEditLabel]     = useState('');
   const [colorPickerId, setColorPickerId] = useState(null);
   const [detailId, setDetailId]       = useState(null);
-  const [wsStatus, setWsStatus]       = useState('disconnected');
   const [roadview, setRoadview]       = useState(null);    // {lat, lng, panoId} or null
   const [toast, setToast]             = useState(null);     // 가벼운 중앙 토스트 메시지 (1초)
   const [filterDeviceId, setFilterDeviceId] = useState(null);  // null=전체, 또는 device id
@@ -186,11 +188,6 @@ export default function Dashboard({ onLogout }) {
   // 모바일 친화 마커 클릭 정보 sheet (kakao InfoWindow 대체).
   const [pointInfo, setPointInfo] = useState(null);
   const [liveSpeed, setLiveSpeed] = useState(null);
-  const [speedNow, setSpeedNow] = useState(Date.now);
-  useEffect(() => {
-    const timer = setInterval(() => setSpeedNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
   // 라이브 추적 — 두 상태 분리:
   //   userTrackPref: 사용자가 의도한 ON/OFF (버튼·단말기 선택으로만 변경)
   //   seekerPaused : 시커 활성 동안 일시 정지 — 시커 닫히면 자동 복원
@@ -486,11 +483,9 @@ export default function Dashboard({ onLogout }) {
   }, [filterDeviceId]);
 
   // (F6-a-1) WS lifecycle 은 useLiveWS hook 이 담당. 이 컴포넌트는 handleWsEvent 만 소유.
-  const { status: liveWsStatus, subscribe: wsSubscribe } = useLiveWS({
+  const { status: wsStatus, subscribe: wsSubscribe } = useLiveWS({
     onEvent: (msg) => handleWsEvent(msg),
   });
-  // legacy wsStatus setter 대체 — 뷰가 참조하는 wsStatus 는 hook 이 관리.
-  useEffect(() => { setWsStatus(liveWsStatus); }, [liveWsStatus]);
   // legacy wsRef.current?.subscribe(...) 호출부와 호환을 위해 wsRef 유지
   // (loadDevicesIncremental / loadDevices 에서 계속 사용).
   useEffect(() => {
@@ -498,27 +493,31 @@ export default function Dashboard({ onLogout }) {
     return () => { wsRef.current = null; };
   }, [wsSubscribe]);
 
-  // (F6-a-3) loadDevices / loadDevicesIncremental 은 lib/deviceLoader.js factory 로 이동.
-  // refs identity 는 stable → 매 render 새로 만들어도 부작용 없음 (useCallback / useMemo
-  // 없이 인라인). 반환값 identity 는 매 render 다르지만 handleMapReady/doRefresh 에서
-  // 매번 최신 클로저로 잡음 (아래 두 useCallback 은 hoist 위해 함수 선언 위로 옮겨야 했음).
-  const { loadDevices, loadDevicesIncremental } = makeDeviceLoaders({
+  // One loader owns map snapshots across renders; late refreshes cannot repaint
+  // an older history after a newer request or after this screen unmounts.
+  const deviceLoader = useMemo(() => makeDeviceLoaders({
     mapRef, devRef, lastMetaRef, lastLoadedFixAtRef, wsRef,
-    setDevices, setDevicesLoaded,
+    setDevicesLoaded, readDevices: loadDeviceSnapshot,
     onDataSource: onMapDataSource,
     onLatest: (d, meta) => {
-      if (filterDeviceIdRef.current === d.id) setLiveSpeed({ deviceId:d.id,
-        label:d.display_name || d.device_uid, color:getDeviceColor(d), speedKmh:meta.speedKmh, recordedAt:meta.recordedAt });
+      if (filterDeviceIdRef.current === d.id) setLiveSpeed({ deviceId: d.id,
+        label: d.display_name || d.device_uid, color: getDeviceColor(d), speedKmh: meta.speedKmh, recordedAt: meta.recordedAt });
     },
-  });
+  }), [onMapDataSource]);
+  const { loadDevices, loadDevicesIncremental } = deviceLoader;
+  useEffect(() => () => deviceLoader.cancel(), [deviceLoader]);
+  async function reloadDevicesAfterMutation() {
+    deviceLoader.cancel();
+    await cancelDeviceSnapshot();
+    assertSession(scope);
+    await loadDevices();
+  }
 
   // (F6-a-1) 30s tick + focus/visibility 는 useAutoRefresh hook 이 담당.
-  const doRefresh = useCallback((force = false) => {
+  const doRefresh = useCallback(async (force = false) => {
     setTick(x => x + 1);
-    loadDevicesIncremental(force);
-    loadFences();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    await Promise.all([loadDevicesIncremental(force), loadFences()]);
+  }, [loadDevicesIncremental, loadFences]);
   const refreshFn = useAutoRefresh(doRefresh, { intervalMs: 30_000, minIntervalMs: 8_000 });
   useEffect(() => { refreshFnRef.current = refreshFn; }, [refreshFn]);
   useEffect(() => {
@@ -664,7 +663,7 @@ export default function Dashboard({ onLogout }) {
   // 이 컴포넌트는 refs + setters 를 주입만. refs identity 는 stable 하므로 매 render
   // 새 함수 identity 여도 useLiveWS 가 onEvent 를 ref 로 잡아 재연결 없음.
   const handleWsEvent = makeWsEventHandler({
-    devRef, mapRef, lastMetaRef, wsDotAccRef,
+    devRef: devicesRef, mapRef, lastMetaRef, wsDotAccRef,
     filterDeviceIdRef, trackLiveRef,
     setDevices, setLiveSpeed,
     onResync: () => {
@@ -697,7 +696,7 @@ export default function Dashboard({ onLogout }) {
     try {
       await api.pairDevice(body);
       setPairUid(''); setPairIccid(''); setPairLabel('');
-      await loadDevices();
+      await reloadDevicesAfterMutation();
       return true;
     } catch (e) { setPairError(e.message); return false; }
     finally { setPairLoading(false); }
@@ -707,7 +706,7 @@ export default function Dashboard({ onLogout }) {
     try {
       await api.updateDevice(id, { display_name: editLabel.trim() });
       setEditId(null);
-      await loadDevices();
+      await reloadDevicesAfterMutation();
     } catch (e) { alert(e.message); }
   }
 
@@ -724,7 +723,7 @@ export default function Dashboard({ onLogout }) {
       await api.unpairDevice(id, { purge });
       mapRef.current?.removeMarker(id);
       delete lastMetaRef.current[id];
-      await loadDevices();
+      await reloadDevicesAfterMutation();
       setUnpairTarget(null);
       await alertDialog({
         title: '연결 해제 완료',
@@ -958,7 +957,7 @@ export default function Dashboard({ onLogout }) {
                           mapRef.current?.removeMarker(id);
                           delete lastMetaRef.current[id];
                           setDetailId(null);
-                          await loadDevices();
+                          await reloadDevicesAfterMutation();
                         }} />
                       )}
                     </>
@@ -1087,7 +1086,7 @@ export default function Dashboard({ onLogout }) {
               mapRef={mapRef} onOpenRoadview={openRoadview}
               showSpeed={view === 'home' && trackLive && filterDeviceId !== null}
               historyMode={showMiniSeeker}
-              liveSpeed={liveSpeed} now={speedNow} cachedSources={cachedMapSources}
+              liveSpeed={liveSpeed} cachedSources={cachedMapSources}
             />}
 
             {/* 홈 — 지도 가장자리 활용 지오펜스 레이어.
