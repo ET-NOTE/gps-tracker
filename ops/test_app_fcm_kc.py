@@ -59,6 +59,15 @@ try:
     for name in ('A','B'):
         users.append(sql("INSERT INTO users(email,password_hash,phone,display_name) VALUES(%s,'test-only','01000000000','KC push regression') RETURNING id", (f'app-review-{run}-{name}@example.invalid',)))
     a, b = users
+    prefs = request(api+'/notifications/settings',a)
+    assert prefs['reservation_alert'] and prefs['rental_alert']
+    prefs = request(api+'/notifications/settings',a,{'reservation_alert':False},method='PATCH')
+    assert not prefs['reservation_alert'] and prefs['rental_alert']
+    prefs = request(api+'/notifications/settings',a,{'rental_alert':False},method='PATCH')
+    assert not prefs['reservation_alert'] and not prefs['rental_alert']
+    assert request(api+'/notifications/settings',b)['reservation_alert']
+    request(api+'/notifications/settings',a,{'reservation_alert':True,'rental_alert':True},method='PATCH')
+    print('PASS schedule preferences round-trip independently and isolate accounts')
     first, second = binding(1), binding(2)
     request(api+'/auth/fcm-token',a,first)
     request(api+'/auth/fcm-token',b,second)
