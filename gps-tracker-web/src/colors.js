@@ -72,7 +72,7 @@ export function ageString(lastSeenAt) {
   if (!lastSeenAt) return '—';
   const ms = Date.now() - new Date(lastSeenAt).getTime();
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s 전`;
+  if (s < 60) return `${Math.max(0, s)}초 전`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}분 전`;
   const h = Math.floor(m / 60);
@@ -85,15 +85,15 @@ export function ageString(lastSeenAt) {
 // dev: { last_seen_at, last_fix_at, last_event_kind, last_event_at } + meta(WS): { vbatMv, fix }
 
 export const STATUS = {
-  ACTIVE:      { id: 'active',      label: '활성',       color: 'var(--accent)' },
-  IDLE:        { id: 'idle',        label: '대기',       color: 'var(--text-2)' },
-  SLEEPING:    { id: 'sleeping',    label: '수면 중',    color: 'var(--primary)' },
-  GPS_LOSS:    { id: 'gps_loss',    label: 'GPS 신호↓', color: '#fbbf24'        },
-  SIGNAL_LOSS: { id: 'signal_loss', label: '통신 두절',  color: '#f97316'        },
-  OFFLINE:     { id: 'offline',     label: '오프라인',   color: 'var(--danger)'  },
-  LOST:        { id: 'lost',        label: '꺼진 후 무소식', color: 'var(--danger)' },
-  LOW_BATT:    { id: 'low_batt',    label: '저전압',     color: '#f87171'        },
-  UNKNOWN:     { id: 'unknown',     label: '데이터 없음', color: 'var(--text-3)'  },
+  ACTIVE:      { id: 'active', label: '통신 정상', color: 'var(--status-success-text)', background: 'var(--status-success-bg)' },
+  IDLE:        { id: 'idle', label: '대기', color: 'var(--text-2)' },
+  SLEEPING:    { id: 'sleeping', label: '절전 중', color: 'var(--status-info-text)', background: 'var(--status-info-bg)' },
+  GPS_LOSS:    { id: 'gps_loss', label: '위치 수신 지연', color: 'var(--status-warning-text)', background: 'var(--status-warning-bg)' },
+  SIGNAL_LOSS: { id: 'signal_loss', label: '통신 지연', color: 'var(--status-warning-text)', background: 'var(--status-warning-bg)' },
+  OFFLINE:     { id: 'offline', label: '오프라인', color: 'var(--status-danger-text)', background: 'var(--status-danger-bg)' },
+  LOST:        { id: 'lost', label: '장기 미수신', color: 'var(--status-danger-text)', background: 'var(--status-danger-bg)' },
+  LOW_BATT:    { id: 'low_batt', label: '배터리 전압 낮음', color: 'var(--status-danger-text)', background: 'var(--status-danger-bg)' },
+  UNKNOWN:     { id: 'unknown', label: '수신 전', color: 'var(--text-3)' },
 };
 
 const MIN  = 60 * 1000;

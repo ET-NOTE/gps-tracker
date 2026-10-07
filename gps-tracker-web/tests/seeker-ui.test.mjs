@@ -68,7 +68,7 @@ test('shared time/sampling contract: KST midnight, explicit monthly 1m, visible 
   assert.equal(bucket10min('2026-09-23T15:11:00Z'), '00:10');
   assert.equal(seekerBucket('month', '1m'), '1m');
   assert.equal(seekerBucket('month', 'auto'), '1h');
-  assert.equal(isSeekerVisible('home', 1, true, false), false);
+  assert.equal(isSeekerVisible('home', 1, true, false), true);
   assert.equal(isSeekerVisible('tools', 1, false, true), false);
   assert.equal(isSeekerVisible('home', 1, false, true), true);
   assert.equal(isSeekerVisible('home', null, true, true), false);
@@ -119,6 +119,68 @@ test('compact: marker drill-down changes date and selects a point from that date
   assert.deepEqual(dates, ['2026-09-24', '2026-09-23']);
   assert.equal(selected.at(-1).recorded_at, '2026-09-23T01:00:00Z');
   await act(async () => r.unmount());
+});
+
+test('compact: database failures show a useful date message and retry recovers', async () => {
+  const f = await fixture(); const Mini = (await f.module('components/MiniSeekerOverlay.jsx')).default;
+  let calls = 0, r;
+  const props = { loadDates: async () => {
+    if (++calls === 1) throw Object.assign(Error('database error'), { status: 500 });
+    return ['2026-09-24'];
+  }, loadMonthPoints: async () => [] };
+  await act(async () => { r = create(React.createElement(Mini, props)); });
+  assert.match(text(r), /활동 날짜를 불러오지 못했습니다/);
+  assert.doesNotMatch(text(r), /database error|활동 기록 없음/);
+  await act(async () => button(r, '다시 시도').props.onClick());
+  assert.ok(button(r, '2026-09 월간 경로'));
+  assert.doesNotMatch(text(r), /불러오지 못했습니다/);
+  await act(async () => r.unmount());
+});
+
+test('detailed: partial failure preserves available dates, identifies the failed source and refresh recovers', async () => {
+  for (const failed of ['dates', 'stats', 'both']) {
+    let fail = true;
+    const f = await fixture({ getDeviceLocationsAggregated: async () => [],
+      getDailyStats: async () => {
+        if (fail && failed !== 'dates') throw Error('database error');
+        return [{ date: kstDate(), distance_m: 1000 }];
+      },
+      getActiveDates: async () => {
+        if (fail && failed !== 'stats') throw Error('database error');
+        return [kstDate()];
+      },
+    });
+    const Seeker = (await f.module('components/SeekerSheet.jsx')).default;
+    let r; await act(async () => { r = create(React.createElement(Seeker, { device: { id: 1 }, mapRef: { current: { clearSeekerPath() {} } }, onClose() {} })); });
+    await act(async () => button(r, '월간').props.onClick());
+    assert.match(text(r), failed === 'both' ? /활동 날짜와 일별 통계를 불러오지 못했습니다/
+      : failed === 'stats' ? /일별 통계를 불러오지 못했습니다/ : /활동 날짜를 불러오지 못했습니다/);
+    assert.doesNotMatch(text(r), /database error|이 달에 활동 기록이 없습니다|일별 통계 집계를 기다리는 중/);
+    if (failed !== 'both') assert.equal(button(r, `${kstDate()} 일간 경로`).props.disabled, false);
+    fail = false;
+    await act(async () => button(r, '새로고침').props.onClick());
+    assert.doesNotMatch(text(r), /불러오지 못했습니다/);
+    await act(async () => r.unmount());
+  }
+});
+
+test('summary: device changes clear previous data and abort/ignore stale requests', async () => {
+  const old = deferred(), calls = []; let result;
+  const f = await fixture({ getDailyStats: (id, _, options) => {
+    calls.push(options.signal); return id === 1 ? old.promise : Promise.reject(Error('database error'));
+  }, getActiveDates: async id => id === 1 ? ['2026-09-24'] : ['2026-10-07'] });
+  const useSummary = (await f.module('useSeekerSummary.js')).default;
+  function Probe({ id, refresh = 0 }) { result = useSummary(id, refresh); return null; }
+  let r; await act(async () => { r = create(React.createElement(Probe, { id: 1 })); });
+  await act(async () => r.update(React.createElement(Probe, { id: 2 })));
+  assert.equal(calls[0].aborted, true);
+  assert.deepEqual(Array.from(result.activeDates), ['2026-10-07']);
+  assert.equal(result.dailyStats.length, 0);
+  await act(async () => old.resolve([{ date: '2026-09-24', distance_m: 9999 }]));
+  assert.equal(result.dailyStats.length, 0);
+  assert.deepEqual(Array.from(result.activeDates), ['2026-10-07']);
+  await act(async () => r.unmount());
+  assert.equal(calls[1].aborted, true);
 });
 
 test('detailed: selected empty morning stays selected, failed precision refresh clears path and exports', async () => {
@@ -186,6 +248,10 @@ test('theme: invalid names normalize, storage failure still renders, foregrounds
   const ratio = (a,b) => (Math.max(luminance(a),luminance(b))+.05)/(Math.min(luminance(a),luminance(b))+.05);
   for (const tokens of Object.values(theme.THEMES)) {
     assert.ok(ratio(tokens['--primary'], tokens['--primary-fg']) >= 4.5);
+    for (const state of ['success', 'warning', 'danger', 'info']) {
+      assert.ok(ratio(tokens[`--status-${state}-text`], tokens[`--status-${state}-bg`]) >= 4.5, state);
+    }
+    assert.ok(ratio(tokens['--accent'], tokens['--accent-fg']) >= 4.5);
     assert.ok(ratio(tokens['--text-3'], tokens['--surface']) >= 4.5);
     assert.ok(ratio(tokens['--text-3'], tokens['--surface-2']) >= 4.5);
   }

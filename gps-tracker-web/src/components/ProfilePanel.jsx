@@ -1,3 +1,4 @@
+import Switch from './ui/Switch';
 // 내정보 패널 — 서브탭 구조: 계정 / 포인트 / 채팅 / 알림 / 테마.
 // 채팅 탭은 admin 본인은 노출 안 함 (자기 자신과의 채팅 thread 가 admin inbox 에 잡히지 않게).
 import { useState, useEffect } from 'react';
@@ -50,7 +51,7 @@ export default function ProfilePanel({ onLogout, accountType }) {
   ];
 
   return (
-    <div style={st.wrap}>
+    <div className="gps-user-panel" style={st.wrap}>
       <div style={st.tabBar}>
         {tabs.map(t => {
           const on = tab === t.id;
@@ -122,7 +123,7 @@ function AccountTab({ me, setMe, onLogout }) {
   }
 
   async function deleteAccount() {
-    if (!confirm('정말 회원탈퇴하시겠습니까? 모든 디바이스 데이터가 사라집니다.')) return;
+    if (!confirm('정말 회원탈퇴하시겠습니까? 모든 단말기 데이터가 사라집니다.')) return;
     setDelBusy(true);
     try {
       await api.deleteMe(delPw);
@@ -221,7 +222,7 @@ function CleanupCard() {
       const lines = [];
       if (r.corporate_info_deleted   != null) lines.push(`회사 정보: ${r.corporate_info_deleted}건 삭제`);
       if (r.staff_deleted            != null) lines.push(`직원 명단: ${r.staff_deleted}명 삭제`);
-      if (r.device_overrides_cleared != null) lines.push(`디바이스 계정유형 오버라이드: ${r.device_overrides_cleared}대 정리`);
+      if (r.device_overrides_cleared != null) lines.push(`단말기 계정유형 오버라이드: ${r.device_overrides_cleared}대 정리`);
       alert('정리 완료\n' + lines.join('\n'));
       setOpen(false); setPw('');
       setOpts({ corporate_info: false, staff: false, device_overrides: false });
@@ -234,8 +235,8 @@ function CleanupCard() {
     <Card title="데이터 일괄 정리">
       {!open ? (
         <>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
-            계정 유형을 자주 바꿔서 회사 정보 / 직원 명단 / 디바이스 오버라이드 등이 남았다면 일괄 정리할 수 있습니다.
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
+            계정 유형을 자주 바꿔서 회사 정보 / 직원 명단 / 단말기 오버라이드 등이 남았다면 일괄 정리할 수 있습니다.
           </div>
           <button onClick={() => setOpen(true)} style={st.btnSecondary}>정리 메뉴 열기</button>
         </>
@@ -256,7 +257,7 @@ function CleanupCard() {
           <CheckRow
             checked={opts.device_overrides}
             onChange={v => setOpts(o => ({ ...o, device_overrides: v }))}
-            label="디바이스 계정유형 오버라이드"
+            label="단말기 계정유형 오버라이드"
             desc="device 별 account_type_override 를 NULL 로 — 사용자 기본 유형 따름"
           />
           <input type="password" placeholder="비밀번호 확인" value={pw}
@@ -289,7 +290,7 @@ function CheckRow({ checked, onChange, label, desc }) {
         style={{ marginTop: 2, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>{desc}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>{desc}</div>
       </div>
     </label>
   );
@@ -435,7 +436,7 @@ function AddPhoneModal({ onClose, onAdded, hasAny, prefill }) {
       <div style={phs.modal}>
         <div style={phs.title}>{isReverify ? '번호 재인증 / 변경' : '번호 추가'}</div>
         {isReverify && (
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
             본인 번호로 인증하세요. 다른 번호로 변경 시, 기존 미인증 번호는 부가 번호로 남으며 별도 삭제 가능합니다.
           </div>
         )}
@@ -460,7 +461,7 @@ function AddPhoneModal({ onClose, onAdded, hasAny, prefill }) {
                 onChange={e => setSetPrimary(e.target.checked)} />
               메인 번호로 설정
             </label>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
               남은 시간: {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2,'0')}
             </div>
             <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
@@ -474,7 +475,7 @@ function AddPhoneModal({ onClose, onAdded, hasAny, prefill }) {
             </div>
           </>
         )}
-        {error && <div style={{ marginTop: 8, fontSize: 11, color: 'var(--danger)' }}>{error}</div>}
+        {error && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
         <button onClick={onClose} style={{ ...st.btnSecondary, width: '100%', marginTop: 8 }}>
           취소
         </button>
@@ -490,7 +491,7 @@ const phs = {
     borderBottom: '1px solid var(--border)',
   },
   btnSmall: {
-    padding: '4px 8px', fontSize: 11,
+    padding: '4px 8px', fontSize: 12,
     background: 'transparent', color: 'var(--text-2)',
     border: '1px solid var(--border)', borderRadius: 4,
     cursor: 'pointer',
@@ -529,7 +530,7 @@ function AccountTypeCard() {
 
   return (
     <Card title="계정 유형">
-      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>
+      <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>
         {TYPE_META[cur]?.desc || ''}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
@@ -629,13 +630,13 @@ function CreditTab() {
           display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
           marginBottom: 8,
         }}>
-          <span style={{ fontSize: 11, color: 'var(--text-2)' }}>보유 포인트</span>
+          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>보유 포인트</span>
           <span style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>
             {balance != null ? balance.toLocaleString() : '—'}
             <span style={{ fontSize: 13, color: 'var(--text-3)', marginLeft: 4 }}>원</span>
           </span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10 }}>
           1 credit = 1 KRW · AI 분석 회당 20원, SIM 100MB = 100원
         </div>
 
@@ -654,7 +655,7 @@ function CreditTab() {
                 <button key={v} onClick={() => setAmount(v)}
                   style={{
                     ...st.btnSecondary, flex: 1,
-                    padding: '6px 4px', fontSize: 11,
+                    padding: '6px 4px', fontSize: 12,
                     border: amount === v ? '1px solid var(--primary)' : '1px solid var(--border)',
                     color: amount === v ? 'var(--primary)' : 'var(--text)',
                   }}>
@@ -676,7 +677,7 @@ function CreditTab() {
             <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
               <TossPayButton amount={amount} onPaid={refresh} fullWidth />
             </div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>
               * 요청 = 관리자 승인 후 반영. 직접 결제 = Toss 카드/간편결제 즉시 충전.
             </div>
           </>
@@ -690,7 +691,7 @@ function CreditTab() {
           거래 내역
           {pendingReqs.length > 0 && (
             <span style={{
-              marginLeft: 6, fontSize: 11, color: 'var(--warning, #fbbf24)',
+              marginLeft: 6, fontSize: 12, color: 'var(--warning, #fbbf24)',
               fontWeight: 600,
             }}>· 대기 {pendingReqs.length}</span>
           )}
@@ -741,12 +742,12 @@ function CreditLogRow({ e, REASON }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      fontSize: 11, padding: '8px 0',
+      fontSize: 12, padding: '8px 0',
       borderBottom: '1px solid var(--border)',
     }}>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>{title}</div>
-        <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
           {new Date(e.created_at).toLocaleString('ko-KR')}
         </div>
       </div>
@@ -757,7 +758,7 @@ function CreditLogRow({ e, REASON }) {
         }}>
           {e.delta > 0 ? '+' : ''}{e.delta.toLocaleString()}원
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
           잔액 {e.balance.toLocaleString()}
         </div>
       </div>
@@ -892,7 +893,7 @@ function TossPayButton({ amount: amountProp, onPaid, fullWidth }) {
                 <button key={m.id} onClick={() => payWithMethod(m.id)}
                   style={pst.methodBtn}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{m.label}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{m.desc}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{m.desc}</div>
                 </button>
               ))}
             </div>
@@ -978,19 +979,19 @@ function CreditReqRow({ r, REQ_STATUS, onCancelled }) {
         <div style={{ color: 'var(--text)', fontWeight: 600 }}>
           #{r.id} · {r.amount.toLocaleString()}원
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
           {new Date(r.requested_at).toLocaleString('ko-KR')}
           {r.note ? ` · ${r.note}` : ''}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ color: s.color, fontWeight: 600, fontSize: 11 }}>
+        <span style={{ color: s.color, fontWeight: 600, fontSize: 12 }}>
           {s.label}
         </span>
         {r.status === 'pending' && (
           <button onClick={cancel} disabled={busy}
             style={{
-              padding: '3px 8px', fontSize: 11,
+              padding: '3px 8px', fontSize: 12,
               background: 'transparent', color: 'var(--danger)',
               border: '1px solid var(--danger)', borderRadius: 4,
               cursor: 'pointer', opacity: busy ? 0.5 : 1,
@@ -1016,7 +1017,7 @@ function ChatTab({ onRead }) {
       borderRadius: 10, padding: 12,
     }}>
       <div style={{ ...st.cardTitle, marginBottom: 6, flexShrink: 0 }}>관리자 채팅</div>
-      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, flexShrink: 0 }}>
+      <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, flexShrink: 0 }}>
         SIM 충전, 결제, 기타 문의를 자유롭게 보내주세요. 관리자가 확인 후 답변합니다.
       </div>
       <ChatPanel onRead={onRead} />
@@ -1116,7 +1117,7 @@ function LabTab() {
     <>
       <Card>
         <div style={{ ...st.cardTitle, marginBottom: 8 }}>실험 기능</div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>
           ⚗️ 안정화되지 않은 기능들. 사용해보고 어색하면 끄세요.
         </div>
 
@@ -1124,9 +1125,9 @@ function LabTab() {
           label="오늘 첫 열람 — 어제 운행 요약 팝업"
           desc={
             <>
-              디바이스를 잡으면 어제 운행 요약 (이동거리 · 운행시간 · 정지구간 · 최고속도) 을 띄움.<br />
-              <b>OFF</b>: 디바이스별 최초 1회만 노출 (인트로).&nbsp;
-              <b>ON</b>: 디바이스를 잡을 때마다 매번 노출.
+              단말기를 잡으면 어제 운행 요약 (이동거리 · 운행시간 · 정지구간 · 최고속도) 을 띄움.<br />
+              <b>OFF</b>: 단말기별 최초 1회만 노출 (인트로).&nbsp;
+              <b>ON</b>: 단말기를 잡을 때마다 매번 노출.
             </>
           }
           on={!!prefs.lab_first_view_summary}
@@ -1135,10 +1136,10 @@ function LabTab() {
         />
 
         <LabToggleRow
-          label="사이클 seeker — wake/sleep 단위 탐색 + 삭제"
+          label="운행 주기별 기록 탐색·삭제"
           desc={
             <>
-              seeker 에 사이클 목록 추가. boot/wake → sleep_enter 묶음별로 보기 / 삭제 가능.<br />
+              운행 분석에 주기별 기록을 추가합니다. boot/wake → sleep_enter 묶음별로 보기 / 삭제 가능.<br />
               테스트 사이클 누적 데이터 정리에 유용. <b>주의:</b> 삭제 시 해당 사이클 events + location_records 모두 영구 삭제.
             </>
           }
@@ -1148,12 +1149,12 @@ function LabTab() {
         />
 
         <LabToggleRow
-          label="📱 스마트폰을 tracker 로 사용"
+          label="📱 스마트폰을 위치 단말기로 사용"
           desc={
             <>
               위치 권한을 획득하고 스마트폰을 하나의 단말기로 등록해 지도에 표시.<br />
               <b>ON</b>: 브라우저 탭이 열린 동안 30초 간격으로 위치 전송. Flutter 앱에선 백그라운드에서도 동작.<br />
-              <b>OFF</b>: 위치 전송 중단 (등록된 device 는 유지 — 홈에서 수동 삭제 가능).
+              <b>OFF</b>: 위치 전송 중단 (등록된 단말기는 유지 — 홈에서 수동 삭제 가능).
             </>
           }
           on={!!prefs.lab_phone_tracker}
@@ -1164,7 +1165,7 @@ function LabTab() {
 
       <Card>
         <div style={{ ...st.cardTitle, marginBottom: 8 }}>도구</div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10 }}>
           1회성 인트로 / 튜토리얼을 다시 보거나 reset 합니다.
         </div>
         <button
@@ -1175,7 +1176,7 @@ function LabTab() {
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
           <Icon name="route" size={14} />
-          페어링 튜토리얼 다시 보기
+          연결 튜토리얼 다시 보기
         </button>
       </Card>
     </>
@@ -1191,26 +1192,9 @@ function LabToggleRow({ label, desc, on, onChange, busy }) {
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
-        {desc && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>{desc}</div>}
+        {desc && <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>{desc}</div>}
       </div>
-      <button onClick={() => !busy && onChange(!on)}
-        disabled={busy}
-        style={{
-          position: 'relative', width: 40, height: 22, borderRadius: 11,
-          border: 'none', padding: 0,
-          cursor: busy ? 'wait' : 'pointer',
-          background: on ? 'var(--primary)' : 'var(--surface-2)',
-          transition: 'background .15s',
-          flexShrink: 0,
-        }}>
-        <span style={{
-          position: 'absolute', top: 2, left: 2,
-          width: 18, height: 18, borderRadius: 9,
-          background: 'white',
-          transform: `translateX(${on ? 18 : 0}px)`,
-          transition: 'transform .15s',
-        }} />
-      </button>
+      <Switch label={label} checked={on} disabled={busy} onChange={onChange} />
     </div>
   );
 }
@@ -1257,18 +1241,18 @@ const st = {
   },
   badge: {
     minWidth: 16, height: 16, padding: '0 5px',
-    background: 'var(--danger)', color: 'white',
-    borderRadius: 8, fontSize: 9, fontWeight: 700,
+    background: 'var(--status-danger-bg)', color: 'var(--status-danger-text)',
+    borderRadius: 8, fontSize: 12, fontWeight: 700,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     marginLeft: 2,
   },
   badgeOk: {
-    fontSize: 9, fontWeight: 700,
-    background: 'var(--accent)', color: 'white',
+    fontSize: 12, fontWeight: 700,
+    background: 'var(--status-success-bg)', color: 'var(--status-success-text)',
     borderRadius: 4, padding: '2px 6px',
   },
   badgeWarn: {
-    fontSize: 9, fontWeight: 700,
+    fontSize: 12, fontWeight: 700,
     background: 'var(--warning, #fbbf24)', color: '#1A1A2E',
     borderRadius: 4, padding: '2px 6px',
   },
@@ -1286,7 +1270,7 @@ const st = {
     borderRadius: 10, padding: 12,
   },
   cardTitle: {
-    fontWeight: 700, fontSize: 11, color: 'var(--text-2)',
+    fontWeight: 700, fontSize: 12, color: 'var(--text-2)',
     textTransform: 'uppercase', letterSpacing: '0.04em',
     marginBottom: 8,
   },

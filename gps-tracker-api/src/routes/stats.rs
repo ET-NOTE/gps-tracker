@@ -37,12 +37,16 @@ async fn active_dates(
         return Err(AppError::NotFound);
     }
 
+    // Expand dates in FROM. A target-list SRF under DISTINCT/ORDER BY fails on
+    // the production Timescale hypertable (SQLSTATE 0A000).
     let rows: Vec<(NaiveDate,)> = sqlx::query_as(
-        r#"SELECT DISTINCT unnest(location_fix_dates(recorded_at,fixes_jsonb,fix)) AS d
-             FROM location_records
-            WHERE device_id = $1 AND user_id = $2
+        r#"SELECT DISTINCT dates.d
+             FROM location_records r
+            CROSS JOIN LATERAL
+                  unnest(location_fix_dates(r.recorded_at,r.fixes_jsonb,r.fix)) AS dates(d)
+            WHERE r.device_id = $1 AND r.user_id = $2
               AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
-            ORDER BY d DESC
+            ORDER BY dates.d DESC
             LIMIT 365"#,
     )
     .bind(id)

@@ -21,6 +21,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 
 // Dashboard 는 홈이라 critical — sync import 유지.
 import Dashboard from './pages/Dashboard';
+import LegacyToolsRedirect from './components/LegacyToolsRedirect';
 import DialogHost from './components/Dialog';
 import {
   ToastHost, CommandPaletteHost,
@@ -189,6 +190,8 @@ function Shell() {
         <Route path="/fleet" element={
           authed ? <FleetDashboard /> : <RequireAuthRedirect />
         } />
+
+        <Route path="/tools/*" element={<LegacyToolsRedirect />} />
 
         {/* 보호된 영역 — 미인증이면 로그인으로 (next 보존) */}
         <Route path="/*" element={

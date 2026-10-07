@@ -1,3 +1,5 @@
+import { ensureKakaoMapSdk } from '../lib/kakaoSdk';
+import { POLYLINE_GAP_THRESHOLD_S, distanceM, calcBearing } from '../lib/mapGeometry';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { compactStopMarkerIndexes as compactStopMarkerIndexesLib } from '../lib/stops';
 
@@ -6,7 +8,6 @@ const MAX_HISTORY_POINTS = 500;
 const MIN_TRAIL_POINT_DISTANCE_M = 20;
 // 좌표 사이 timestamp gap 이 이 시간 넘으면 segment 분리 + gap 구간은 점선 polyline.
 // 운영 흐름: 일반 POST 간격 15s. sleep/reset/통신두절 시 갭 수십s~분 → split 정확히 감지.
-const POLYLINE_GAP_THRESHOLD_S = 60;
 
 // 카카오 zoom level 기반 두께 — 숫자가 클수록 더 축소(넓게)된 상태.
 // 축소되면 굵게, 확대되면 얇게.
@@ -28,37 +29,6 @@ function dotSizeForLevel(level) {
   return 12;                    // 최대 축소 — 가장 작게 (다만 12 유지)
 }
 // Seeker 라인 속도 버킷 — 빨강 (정지/매우 느림) / 노랑 / 녹 / 청 / 자 (고속)
-const KAKAO_MAP_SDK_SRC = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=760ec0841163d1ee2cc5fef220a9df0b&libraries=services,clusterer&autoload=false';
-
-function ensureKakaoMapSdk() {
-  if (typeof window === 'undefined') return Promise.reject(new Error('window is unavailable'));
-  if (window.kakao?.maps) return Promise.resolve(window.kakao);
-  const existing = document.querySelector('script[data-kakao-map-sdk="true"], script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
-  if (existing) {
-    return new Promise((resolve, reject) => {
-      const startedAt = Date.now();
-      const timer = setInterval(() => {
-        if (window.kakao?.maps) {
-          clearInterval(timer);
-          resolve(window.kakao);
-        } else if (Date.now() - startedAt > 8000) {
-          clearInterval(timer);
-          reject(new Error('Kakao Maps SDK did not become available'));
-        }
-      }, 100);
-    });
-  }
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.async = true;
-    script.dataset.kakaoMapSdk = 'true';
-    script.src = KAKAO_MAP_SDK_SRC;
-    script.onload = () => (window.kakao?.maps ? resolve(window.kakao) : reject(new Error('Kakao Maps SDK loaded without maps')));
-    script.onerror = () => reject(new Error('Failed to load Kakao Maps SDK'));
-    document.head.appendChild(script);
-  });
-}
 const BUCKET_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
 
 // (2026-07-29) Phase F7-a — Seeker canvas overlay.
@@ -230,17 +200,6 @@ function speedBucket(p) {
   if (p._speed < 100) return 3;                                       // 고속도로
   return 4;                                                            // 초고속
 }
-function distanceM(a, b) {
-  const r = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * r;
-  const dLng = (b.lng - a.lng) * r;
-  const lat1 = a.lat * r;
-  const lat2 = b.lat * r;
-  const h = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 12742000 * Math.asin(Math.sqrt(h));
-}
-
 // Seeker 는 대표 인덱스 Set 만 필요. lib/stops 헬퍼 는 { compacted, clusterMap }
 // 을 반환하므로 얇게 래핑.
 function compactStopMarkerIndexes(pts, indexes, radiusM) {
@@ -252,15 +211,6 @@ function compactStopMarkerIndexes(pts, indexes, radiusM) {
 // 펌웨어 GPS course 의존 없이 client 가 atan2 로 bearing 계산 → 정지 시에도 정확.
 // Canvas PNG 방식 (SVG data URL 은 Kakao MarkerImage 에서 불안정), 5° bucket 캐시.
 const ARROW_INTERVAL_M = 200;
-
-function calcBearing(lat1, lng1, lat2, lng2) {
-  const toRad = d => d * Math.PI / 180;
-  const dLng = toRad(lng2 - lng1);
-  const φ1 = toRad(lat1), φ2 = toRad(lat2);
-  const y = Math.sin(dLng) * Math.cos(φ2);
-  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLng);
-  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-}
 
 // 모듈 레벨 캐시 — 같은 (각도 bucket, 색상) 조합 재사용.
 const _arrowImageCache = {};

@@ -3,6 +3,7 @@ import { api } from './api';
 import { authScope } from './authSession';
 import { dayWindow, monthWindow, normalizeAggregates, seekerBucket } from './lib/seeker';
 import { enrichWithSpeedStops } from './lib/stops';
+import { historyError } from './lib/historyError';
 
 const EMPTY = [];
 // Bind data to the exact selection. Old paths must disappear even before the
@@ -24,7 +25,7 @@ export default function useSeekerPoints(deviceId, mode, date, month, precision, 
           points: enrichWithSpeedStops(normalizeAggregates(rows)), error: null });
       }).catch(e => {
         if (!controller.signal.aborted) setResult({ key, loading: false, points: EMPTY,
-          error: e.message || '경로를 불러오지 못했습니다.' });
+          error: historyError(e, '경로를 불러오지 못했습니다.') });
       });
     return () => controller.abort();
   }, [key, deviceId, mode, period, bucket]);

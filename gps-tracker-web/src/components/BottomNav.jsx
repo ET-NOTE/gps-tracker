@@ -4,8 +4,6 @@ import Icon from './Icon';
 const BASE_TABS = [
   { id: 'home',    label: '홈',     icon: 'home' },
   { id: 'devices', label: '단말기', icon: 'list' },
-  // 운행 — seeker(패널형) / 지오펜스 등 지도-도구 패널 모음. 홈에서 분리 → 지도 가림 방지.
-  { id: 'tools',   label: '운행',   icon: 'mapPin' },
   { id: 'profile', label: '내정보', icon: 'user' },
 ];
 

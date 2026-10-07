@@ -21,6 +21,15 @@ export function makeWsEventHandler({
 }) {
   return function handleWsEvent(msg) {
     if (msg.type === 'resync' || msg.type === 'lagged') { onResync?.(); return; }
+    if (msg.type === 'location' && !(msg.fix && Number.isFinite(msg.lat) && Number.isFinite(msg.lng))) {
+      const meta = lastMetaRef.current[msg.device_id];
+      const device = devRef.current.find(d => d.id === msg.device_id);
+      const newest = Math.max(...[meta?.recordedAt, meta?.receivedAt, device?.last_seen_at]
+        .map(value => Date.parse(value)).filter(Number.isFinite), -Infinity);
+      const incoming = Date.parse(msg.recorded_at);
+      if (!Number.isFinite(incoming)) return;
+      if (incoming < newest) { onResync?.(); return; }
+    }
     // (2026-07-16) fix 없는 POST 도 vbat/cbc/csq/reg/sat/uptime 메타는 최신값이 옴 —
     // 단말기 카드 배터리 realtime 갱신 위해 msg.type==='location' 이면 fix 유무와 무관하게
     // meta 갱신 + setDevices last_seen_at 통과. 마커/polyline 은 fix+lat+lng 조건에서만.
@@ -62,6 +71,7 @@ export function makeWsEventHandler({
         recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv, cbcMv: msg.cbc_mv,
         fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
         lat: msg.lat, lng: msg.lng,
+        receivedAt: Date.parse(prevMeta?.receivedAt) > eventTime ? prevMeta.receivedAt : msg.recorded_at,
       };
       // (2026-07-03) msg.fixes (batch) 가 있으면 각 fix 마다 updateMarker + addPoint 호출.
       // 이전엔 top-level lat/lng 하나만 updateMarker → 폴리라인 30초에 좌표 하나만 append
@@ -123,7 +133,8 @@ export function makeWsEventHandler({
       }
       setDevices(prev => prev.map(d =>
         d.id === msg.device_id
-          ? { ...d, last_seen_at: msg.recorded_at, last_fix_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng }
+          ? { ...d, last_seen_at: Date.parse(d.last_seen_at) > eventTime ? d.last_seen_at : msg.recorded_at,
+              last_fix_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng }
           : d
       ));
 

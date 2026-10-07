@@ -78,6 +78,25 @@ try:
     assert sum(r['fix_count'] for r in buckets)==2
     print('PASS batch boundaries, grouped history, speed and bucket counts')
 
+    dates=request(api+f'/devices/{did}/active-dates',b)
+    assert dates==['2026-09-21','2026-09-20'], dates
+    assert request(api+f'/devices/{did}/stats/daily?limit=365',b)==[]
+    request(api+f'/devices/{did}/active-dates',a,expected=404)
+    request(api+f'/devices/{did}/stats/daily',a,expected=404)
+    # Exercise the real Timescale hypertable, including scalar fixes, empty
+    # batches, previous-owner records, duplicates and the latest-365 cap.
+    calendar_id=query("INSERT INTO devices(device_uid,owner_id,api_key_hash,display_name,paired_at) VALUES(%s,%s,'','Calendar regression',now()) RETURNING id",('calendar-'+run,b)); devices.append(calendar_id)
+    assert request(api+f'/devices/{calendar_id}/active-dates',b)==[]
+    query("INSERT INTO location_records(device_id,user_id,recorded_at,source,fix,lat,lng) VALUES(%s,%s,'2026-09-22T15:00:00Z','l80',true,37,127)",(calendar_id,b))
+    query("INSERT INTO location_records(device_id,user_id,recorded_at,source,fix,lat,lng) VALUES(%s,%s,'2026-09-23T15:00:00Z','l80',false,37,127)",(calendar_id,b))
+    query("INSERT INTO location_records(device_id,user_id,recorded_at,source,fix,fixes_jsonb) VALUES(%s,%s,'2026-09-24T15:00:00Z','l80',true,'[]')",(calendar_id,b))
+    query("INSERT INTO location_records(device_id,user_id,recorded_at,source,fix,lat,lng) VALUES(%s,%s,'2026-09-25T15:00:00Z','l80',true,38,128)",(calendar_id,a))
+    assert request(api+f'/devices/{calendar_id}/active-dates',b)==['2026-09-23']
+    query("INSERT INTO location_records(device_id,user_id,recorded_at,source,fix,lat,lng) SELECT %s,%s,'2026-09-23T00:00:00Z'::timestamptz-i*interval '1 day','l80',true,37,127 FROM generate_series(0,369) i",(calendar_id,b))
+    expected=[(dt.date(2026,9,23)-dt.timedelta(days=i)).isoformat() for i in range(365)]
+    assert request(api+f'/devices/{calendar_id}/active-dates',b)==expected
+    print('PASS active dates: KST batch midnight, owner isolation, scalar/empty fixes, descending distinct 365-day limit')
+
     updated=request(api+f'/devices/{did}',b,'PATCH',{'next_service_date':'2026-12-01','next_service_km':20000,'car_model':'Review'})
     assert updated['next_service_date']=='2026-12-01'
     updated=request(api+f'/devices/{did}',b,'PATCH',{'next_service_date':None})

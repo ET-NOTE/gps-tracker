@@ -9,6 +9,10 @@ export default function SwipeableCard({ onSwipeLeft, onSwipeRight, leftLabel, ri
   const axis = useRef(null); // 'h' | 'v' | null
 
   function onTouchStart(e) {
+    // Scrolling or tapping controls inside the card must not invoke swipe actions.
+    if (e.target.closest?.('button, input, select, textarea, a, summary')) {
+      startX.current = null; axis.current = null; return;
+    }
     startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
     axis.current = null;
