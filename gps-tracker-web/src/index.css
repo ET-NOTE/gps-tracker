@@ -171,3 +171,10 @@ button:disabled { cursor: not-allowed; }
 .gps-user-panel button, .gps-user-panel select, .gps-user-panel input:not([type="checkbox"]):not([type="radio"]) { min-height: var(--touch-target); }
 .gps-map-tool button, .gps-user-panel button { touch-action: manipulation; }
 .gps-map-tool input, .gps-map-tool select, .gps-user-panel input, .gps-user-panel select { max-width: 100%; }
+.gps-user-panel input[type="date"], .gps-user-panel input[type="datetime-local"] { min-width: 0; max-width: 100%; }
+.gps-user-panel button:not([style]):not([class]) { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--primary); font-size: 13px; cursor: pointer; }
+.gps-business-panel textarea { min-height: 88px; }
+@media (max-width: 600px) {
+  .gps-user-panel input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .gps-user-panel select, .gps-user-panel textarea { font-size: 16px !important; }
+}

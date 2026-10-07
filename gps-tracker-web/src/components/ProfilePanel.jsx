@@ -106,29 +106,29 @@ function AccountTab({ me, setMe, onLogout }) {
     try {
       const next = await api.updateMe({ display_name: name || null });
       setMe(next);
-    } catch (e) { alert(e.message); }
+    } catch (e) { await alertDialog({ title: '처리하지 못했습니다', body: e.message, tone: 'danger' }); }
     finally { setSavingProfile(false); }
   }
 
   async function changePassword() {
-    if (pwNew.length < 8) { alert('새 비밀번호는 8자 이상'); return; }
+    if (pwNew.length < 8) { await alertDialog({ title: '비밀번호 확인', body: '새 비밀번호는 8자 이상 입력해 주세요.' }); return; }
     setPwBusy(true);
     try {
       await api.changePassword(pwCur, pwNew);
       setPwOpen(false); setPwCur(''); setPwNew('');
-      alert('비밀번호 변경 완료. 다시 로그인해주세요.');
+      await alertDialog({ title: '비밀번호 변경 완료', body: '변경한 비밀번호로 다시 로그인해 주세요.', tone: 'success' });
       clearTokens(); onLogout();
-    } catch (e) { alert('현재 비밀번호가 올바르지 않습니다.'); }
+    } catch (e) { await alertDialog({ title: '변경하지 못했습니다', body: e.message || '현재 비밀번호와 연결 상태를 확인해 주세요.', tone: 'danger' }); }
     finally { setPwBusy(false); }
   }
 
   async function deleteAccount() {
-    if (!confirm('정말 회원탈퇴하시겠습니까? 모든 단말기 데이터가 사라집니다.')) return;
+    if (!await confirmDialog({ title: '회원 탈퇴', body: '모든 단말기 데이터가 삭제되며 복구할 수 없습니다. 탈퇴하시겠습니까?', danger: true, confirmLabel: '탈퇴하기' })) return;
     setDelBusy(true);
     try {
       await api.deleteMe(delPw);
       clearTokens(); onLogout();
-    } catch (e) { alert('비밀번호가 올바르지 않습니다.'); }
+    } catch (e) { await alertDialog({ title: '탈퇴하지 못했습니다', body: e.message || '비밀번호와 연결 상태를 확인해 주세요.', tone: 'danger' }); }
     finally { setDelBusy(false); }
   }
 
@@ -213,9 +213,9 @@ function CleanupCard() {
   const anySelected = Object.values(opts).some(v => v);
 
   async function run() {
-    if (!anySelected) { alert('정리할 항목을 1개 이상 선택하세요.'); return; }
-    if (!pw)          { alert('비밀번호를 입력하세요.');          return; }
-    if (!confirm('선택한 데이터를 영구히 삭제합니다. 진행할까요?')) return;
+    if (!anySelected) { await alertDialog({ title: '항목 선택', body: '정리할 항목을 1개 이상 선택해 주세요.' }); return; }
+    if (!pw)          { await alertDialog({ title: '비밀번호 확인', body: '현재 비밀번호를 입력해 주세요.' });          return; }
+    if (!await confirmDialog({ title: '선택한 데이터 삭제', body: '선택한 데이터를 영구히 삭제합니다. 삭제 후에는 복구할 수 없습니다.', danger: true, confirmLabel: '삭제하기' })) return;
     setBusy(true);
     try {
       const r = await api.cleanupMe({ password: pw, ...opts });
@@ -223,11 +223,11 @@ function CleanupCard() {
       if (r.corporate_info_deleted   != null) lines.push(`회사 정보: ${r.corporate_info_deleted}건 삭제`);
       if (r.staff_deleted            != null) lines.push(`직원 명단: ${r.staff_deleted}명 삭제`);
       if (r.device_overrides_cleared != null) lines.push(`단말기 계정유형 오버라이드: ${r.device_overrides_cleared}대 정리`);
-      alert('정리 완료\n' + lines.join('\n'));
+      await alertDialog({ title: '정리 완료', body: lines.join('\n'), tone: 'success' });
       setOpen(false); setPw('');
       setOpts({ corporate_info: false, staff: false, device_overrides: false });
     } catch (e) {
-      alert(e.message || '정리 실패');
+      await alertDialog({ title: '정리하지 못했습니다', body: e.message || '잠시 후 다시 시도해 주세요.', tone: 'danger' });
     } finally { setBusy(false); }
   }
 
@@ -328,18 +328,18 @@ function PhonesCard({ me, setMe }) {
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
   async function promote(id) {
-    if (!confirm('이 번호를 메인 번호로 변경하시겠어요?')) return;
+    if (!await confirmDialog({ title: '대표 전화번호 변경', body: '이 번호를 대표 전화번호로 사용하시겠습니까?', confirmLabel: '변경하기' })) return;
     try {
       await api.setPrimaryPhone(id);
       await refresh();
-    } catch (e) { alert(e.message); }
+    } catch (e) { await alertDialog({ title: '처리하지 못했습니다', body: e.message, tone: 'danger' }); }
   }
   async function remove(id) {
-    if (!confirm('이 번호를 삭제하시겠어요?')) return;
+    if (!await confirmDialog({ title: '전화번호 삭제', body: '등록된 이 전화번호를 삭제하시겠습니까?', danger: true, confirmLabel: '삭제하기' })) return;
     try {
       await api.deletePhone(id);
       await refresh();
-    } catch (e) { alert(e.message); }
+    } catch (e) { await alertDialog({ title: '처리하지 못했습니다', body: e.message, tone: 'danger' }); }
   }
 
   return (
@@ -522,7 +522,7 @@ function AccountTypeCard() {
   async function pick(type) {
     if (type === cur || setType.isPending) return;
     try { await setType.mutateAsync(type); }
-    catch (e) { alert(e.message); }
+    catch (e) { await alertDialog({ title: '처리하지 못했습니다', body: e.message, tone: 'danger' }); }
   }
   const busy = setType.isPending;
 

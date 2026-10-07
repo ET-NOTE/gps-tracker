@@ -23,6 +23,8 @@ pub struct NotificationSettings {
     pub geofence_alert: bool,
     pub device_health_alert: bool,
     pub lost_alert: bool,
+    pub reservation_alert: bool,
+    pub rental_alert: bool,
     // STATUS 확장 (0014)
     pub signal_loss_alert: bool,
     pub online_alert: bool,
@@ -44,6 +46,8 @@ pub struct UpdateSettings {
     pub geofence_alert: Option<bool>,
     pub device_health_alert: Option<bool>,
     pub lost_alert: Option<bool>,
+    pub reservation_alert: Option<bool>,
+    pub rental_alert: Option<bool>,
     pub signal_loss_alert: Option<bool>,
     pub online_alert: Option<bool>,
     pub sleep_alert: Option<bool>,
@@ -63,7 +67,7 @@ pub fn router() -> Router<AppState> {
 
 const SELECT_COLS: &str = r#"
     user_id, motion_alert, low_batt_alert, offline_alert, geofence_alert,
-    device_health_alert, lost_alert,
+    device_health_alert, lost_alert, reservation_alert, rental_alert,
     signal_loss_alert, online_alert, sleep_alert, wake_alert, cycle_first_fix_alert,
     low_batt_threshold_mv, offline_minutes, signal_loss_minutes,
     created_at, updated_at
@@ -127,6 +131,8 @@ async fn update_settings(
                   low_batt_threshold_mv = COALESCE($13, low_batt_threshold_mv),
                   offline_minutes       = COALESCE($14, offline_minutes),
                   signal_loss_minutes   = COALESCE($15, signal_loss_minutes),
+                  reservation_alert     = COALESCE($16, reservation_alert),
+                  rental_alert          = COALESCE($17, rental_alert),
                   updated_at            = now()
             WHERE user_id = $1"#,
     )
@@ -145,6 +151,8 @@ async fn update_settings(
     .bind(req.low_batt_threshold_mv)
     .bind(req.offline_minutes)
     .bind(req.signal_loss_minutes)
+    .bind(req.reservation_alert)
+    .bind(req.rental_alert)
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;

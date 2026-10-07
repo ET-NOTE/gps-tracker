@@ -47,7 +47,7 @@ function CorporatePanel({ devices }) {
   ];
 
   return (
-    <div style={st.wrap}>
+    <div className="gps-user-panel gps-business-panel" style={st.wrap}>
       <div style={st.tabBar} className="no-print">
         {tabs.map(t => {
           const on = tab === t.id;

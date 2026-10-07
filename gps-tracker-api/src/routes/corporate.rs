@@ -1672,6 +1672,8 @@ async fn update_reservation(
                 SET device_id = $3, driver_staff_id = $4,
                     starts_at = $5, ends_at = $6,
                     purpose = $7, note = $8, status = $9,
+                    alerted_at = CASE WHEN starts_at IS DISTINCT FROM $5 OR device_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,
+                    ended_alerted_at = CASE WHEN ends_at IS DISTINCT FROM $6 OR device_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,
                     updated_at = NOW()
               WHERE id = $1 AND user_id = $2
               RETURNING *

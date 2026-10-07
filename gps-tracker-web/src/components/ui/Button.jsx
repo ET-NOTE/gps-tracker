@@ -66,6 +66,7 @@ export default function Button({
       {...rest}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        minHeight: size === 'xs' ? 32 : 'var(--touch-target)',
         borderRadius: 'var(--radius-sm)',
         fontWeight: 700,
         cursor: (disabled || busy) ? 'not-allowed' : 'pointer',

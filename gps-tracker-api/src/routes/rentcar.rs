@@ -1164,6 +1164,8 @@ const SQL_UPDATE: &str = r#"WITH upd AS (
         included_km_per_day = $11, over_km_price_krw = $12, deposit_krw = $13,
         pickup_odometer_km = $14, pickup_location = $15, return_location = $16,
         status = $17, note = $18,
+        ending_alerted_at = CASE WHEN ends_at IS DISTINCT FROM $8 OR device_id IS DISTINCT FROM $3 THEN NULL ELSE ending_alerted_at END,
+        overdue_alerted_at = CASE WHEN ends_at IS DISTINCT FROM $8 OR device_id IS DISTINCT FROM $3 THEN NULL ELSE overdue_alerted_at END,
         updated_at = NOW()
     WHERE id = $1 AND user_id = $2
     RETURNING *

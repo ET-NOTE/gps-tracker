@@ -438,6 +438,10 @@ fn title_for_kind(kind: &str) -> &'static str {
         "geofence_armed" => "구역 알림 설정 완료",
         "brownout" => "전원 확인 필요",
         "gps_anomaly" => "위치 확인 지연",
+        "reservation_starting" => "차량 예약 시작 안내",
+        "reservation_ending" => "차량 예약 종료 안내",
+        "rental_ending" => "차량 반납 예정 안내",
+        "rental_overdue" => "차량 반납 확인 필요",
         _ => "장치 상태 안내", // Unknown events are denied by the policy.
     }
 }
@@ -445,6 +449,14 @@ fn title_for_kind(kind: &str) -> &'static str {
 async fn resolve_addr(pool: &PgPool, lat: f64, lng: f64) -> Option<String> {
     let mut r = super::kakao_geo::reverse_many_cached(pool, &[(lat, lng)]).await;
     r.pop().flatten().map(|x| x.short())
+}
+
+fn schedule_time(data: Option<&Value>, field: &str) -> String {
+    data.and_then(|d| d[field].as_str())
+        .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+        .map(|t| t.with_timezone(&chrono::FixedOffset::east_opt(9 * 3600).unwrap())
+            .format("%m월 %d일 %H:%M (한국 시간)").to_string())
+        .unwrap_or_else(|| "앱에 등록된 시간".into())
 }
 
 fn body_for_event(ev: &PendingEvent, address: Option<&str>) -> String {
@@ -462,17 +474,25 @@ fn body_for_event(ev: &PendingEvent, address: Option<&str>) -> String {
         },
         "geofence_in" => format!("‘{area}’ 안에서 위치가 확인되었습니다."),
         "geofence_out" => format!("‘{area}’ 밖에서 위치가 확인되었습니다. 앱에서 위치를 확인해 주세요."),
-        "brownout" => "전압 저하로 장치가 재시작되었습니다. 배터리와 전원 연결을 확인해 주세요.".into(),
-        "gps_anomaly" => "장치의 위치를 확인하는 데 시간이 걸리고 있습니다. 실내나 지하에서는 위치 확인이 늦어질 수 있습니다.".into(),
+        "brownout" => "전압 저하에 따른 재시작 기록이 확인되었습니다. 배터리와 전원 연결을 확인해 주세요.".into(),
+        "gps_anomaly" => "최근 위치 확인이 여러 차례 완료되지 않았습니다. 실내·지하에서는 GPS 수신이 어려울 수 있습니다. 장치와 안테나 상태를 확인해 주세요.".into(),
         "offline" | "signal_loss" => {
             let minutes = d.and_then(|d| d["silence_min"].as_i64()).filter(|m| *m > 0);
             let elapsed = minutes.map(|m| format!("최근 {m}분간")).unwrap_or_else(|| "최근".into());
-            let action = if ev.kind == "offline" { " 장치의 전원과 통신 상태를 확인해 주세요." } else { " 연결이 돌아오면 새 정보가 갱신됩니다." };
+            let action = if ev.kind == "offline" { " 장치의 전원과 통신 상태를 확인해 주세요." } else { " 수신이 재개되면 최신 상태가 표시됩니다." };
             format!("{elapsed} 장치의 새 정보가 도착하지 않았습니다.{action}")
         },
         "online" => "장치에서 정보를 다시 받고 있습니다. 앱에서 최신 상태를 확인할 수 있습니다.".into(),
-        "sleep_enter" => "배터리를 아끼기 위해 장치가 절전 모드로 전환되었습니다.".into(),
-        "wake" => "장치가 절전 모드에서 깨어났거나 다시 켜졌습니다. 최신 정보는 앱에서 확인해 주세요.".into(),
+        "sleep_enter" => "배터리 절약을 위해 절전 모드로 전환했습니다. 절전 중에는 위치 갱신이 잠시 멈춥니다.".into(),
+        "wake" => match d.and_then(|d| d["wake_cause"].as_str()) {
+            Some("timer") => "정기 확인을 위해 장치가 작동을 재개했습니다. 최신 정보는 앱에서 확인해 주세요.",
+            Some("boot") => "장치가 켜졌습니다. 최신 정보는 앱에서 확인해 주세요.",
+            _ => "장치가 작동을 재개했습니다. 최신 정보는 앱에서 확인해 주세요.",
+        }.into(),
+        "reservation_starting" => format!("예약 시작: {}. 앱의 차량 예약에서 이용 일정을 확인해 주세요.", schedule_time(d, "starts_at")),
+        "reservation_ending" => format!("예약 종료: {}. 차량 이용을 마치고 다음 일정을 확인해 주세요.", schedule_time(d, "ends_at")),
+        "rental_ending" => format!("반납 예정: {}. 앱의 임대 계약에서 반납 일정을 확인해 주세요.", schedule_time(d, "ends_at")),
+        "rental_overdue" => format!("반납 예정 시간({})이 지났습니다. 실제 반납 여부를 확인하고 계약 상태를 변경해 주세요.", schedule_time(d, "ends_at")),
         "motion" => "움직임이 감지되어 장치가 깨어났습니다. 실제 이동 여부는 앱에서 위치를 확인해 주세요.".into(),
         "cycle_first_fix" => address.map(|a| format!("새 위치가 확인되었습니다. 위치: {a}")).unwrap_or_else(|| "새 위치가 확인되었습니다. 앱에서 위치를 확인해 주세요.".into()),
         _ => String::new(),
@@ -493,10 +513,16 @@ async fn event_message(pool: &PgPool, ev: &PendingEvent) -> Value {
     } else {
         None
     };
+    let mut data = json!({"kind":kind,"device_id":ev.device_id.to_string(),"event_id":ev.id.to_string()});
+    for field in ["reservation_id", "contract_id"] {
+        if let Some(id) = ev.data.as_ref().and_then(|d| d[field].as_i64()) {
+            data[field] = json!(id.to_string());
+        }
+    }
     policy::message(
         &format!("{} · {}", dev_label(ev), title_for_kind(kind)),
         &body_for_event(ev, address.as_deref()),
-        json!({"kind":kind,"device_id":ev.device_id.to_string(),"event_id":ev.id.to_string()}),
+        data,
         ev.occurred_at,
     )
 }
@@ -578,6 +604,8 @@ mod tests {
               signal_loss_alert bool,online_alert bool,sleep_alert bool,wake_alert bool,cycle_first_fix_alert bool,
               geofence_alert bool,device_health_alert bool,motion_alert bool,low_batt_threshold_mv integer,
               signal_loss_minutes integer,offline_minutes integer);
+          CREATE TABLE vehicle_reservations(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,starts_at timestamptz,ends_at timestamptz);
+          CREATE TABLE rental_contracts(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,ends_at timestamptz);
           INSERT INTO users VALUES (1,'user'),(2,'user');
           INSERT INTO devices VALUES (1,'test device',1,now(),NULL);
         "#).execute(&pool).await.unwrap();
@@ -585,6 +613,8 @@ mod tests {
             .execute(&pool)
             .await
             .unwrap();
+        sqlx::raw_sql(include_str!("../../migrations/0067_schedule_notification_settings.sql"))
+            .execute(&pool).await.unwrap();
         sqlx::raw_sql(r#"
           INSERT INTO fcm_tokens(user_id,token,revocation_hash) VALUES (1,'good','A'),(1,'retry','B');
           INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{"vbat_mv":3200}');
@@ -718,6 +748,36 @@ mod tests {
             .await
             .unwrap();
         assert!(policy::relevant(&pool, 1).await.unwrap());
+        // Schedule reminders must honor current ownership, opt-outs, and changed dates.
+        sqlx::raw_sql("INSERT INTO vehicle_reservations VALUES(10,1,1,'planned',now()+interval '20 minutes',now()+interval '25 minutes'),(11,1,1,'planned',now()+interval '21 minutes',now()+interval '26 minutes'); INSERT INTO rental_contracts VALUES(20,1,1,'active',now()+interval '2 hours'),(21,1,1,'overdue',now()-interval '1 hour');").execute(&pool).await.unwrap();
+        let mut reminders = Vec::new();
+        for (kind, id, table, key, field) in [
+            ("reservation_starting",10,"vehicle_reservations","reservation_id","starts_at"),
+            ("reservation_starting",11,"vehicle_reservations","reservation_id","starts_at"),
+            ("reservation_ending",10,"vehicle_reservations","reservation_id","ends_at"),
+            ("rental_ending",20,"rental_contracts","contract_id","ends_at"),
+            ("rental_overdue",21,"rental_contracts","contract_id","ends_at"),
+        ] {
+            let query = format!("INSERT INTO events(device_id,user_id,kind,data) SELECT device_id,user_id,$1,jsonb_build_object('{key}',id,'{field}',{field}) FROM {table} WHERE id=$2 RETURNING id");
+            let event: i64 = sqlx::query_scalar(&query).bind(kind).bind(id as i64).fetch_one(&pool).await.unwrap();
+            reminders.push(event);
+        }
+        for id in &reminders { assert!(policy::relevant(&pool,*id).await.unwrap()); }
+        sqlx::query("UPDATE notification_settings SET reservation_alert=false,rental_alert=false").execute(&pool).await.unwrap();
+        for id in &reminders { assert!(!policy::relevant(&pool,*id).await.unwrap()); }
+        sqlx::query("UPDATE notification_settings SET reservation_alert=true,rental_alert=true").execute(&pool).await.unwrap();
+        sqlx::query("UPDATE devices SET owner_id=2").execute(&pool).await.unwrap();
+        for id in &reminders { assert!(!policy::relevant(&pool,*id).await.unwrap()); }
+        sqlx::query("UPDATE devices SET owner_id=1").execute(&pool).await.unwrap();
+        sqlx::query("UPDATE vehicle_reservations SET status='cancelled' WHERE id=10").execute(&pool).await.unwrap();
+        assert!(!policy::relevant(&pool,reminders[0]).await.unwrap());
+        assert!(!policy::relevant(&pool,reminders[2]).await.unwrap());
+        sqlx::query("UPDATE vehicle_reservations SET starts_at=starts_at+interval '2 hours' WHERE id=11").execute(&pool).await.unwrap();
+        assert!(!policy::relevant(&pool,reminders[1]).await.unwrap());
+        sqlx::query("UPDATE rental_contracts SET ends_at=ends_at+interval '1 hour' WHERE id=20").execute(&pool).await.unwrap();
+        assert!(!policy::relevant(&pool,reminders[3]).await.unwrap());
+        sqlx::query("UPDATE rental_contracts SET status='returned' WHERE id=21").execute(&pool).await.unwrap();
+        assert!(!policy::relevant(&pool,reminders[4]).await.unwrap());
         // Consume these policy fixtures before testing the failed transaction.
         enqueue_events(&pool).await.unwrap();
         // A database failure during enqueue must leave the event unconsumed.
@@ -794,5 +854,20 @@ mod tests {
         assert!(!body_for_event(&ev, Some("서울 강남구")).contains("출발"));
         ev.kind = "low_batt".into();
         assert!(!body_for_event(&ev, None).contains('%'));
+        ev.kind = "sleep_enter".into();
+        assert!(body_for_event(&ev, None).contains("위치 갱신이 잠시 멈춥니다"));
+        ev.kind = "wake".into();
+        ev.data = Some(json!({"wake_cause":"timer"}));
+        assert!(body_for_event(&ev, None).starts_with("정기 확인"));
+        ev.data = Some(json!({"wake_cause":"boot"}));
+        assert!(body_for_event(&ev, None).starts_with("장치가 켜졌습니다"));
+        ev.data = None;
+        assert!(!body_for_event(&ev, None).contains("거나"));
+        ev.kind = "rental_overdue".into();
+        ev.data = Some(json!({"ends_at":"2026-10-08T01:00:00Z","renter_phone":"private-phone"}));
+        let body = body_for_event(&ev, None);
+        assert!(body.contains("10월 08일 10:00 (한국 시간)"));
+        assert!(body.contains("실제 반납 여부"));
+        assert!(!body.contains("private-phone"));
     }
 }

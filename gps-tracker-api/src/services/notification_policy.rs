@@ -18,14 +18,16 @@ pub fn kind<'a>(kind: &'a str, data: Option<&Value>) -> &'a str {
 pub fn lifetime(kind: &str) -> i64 {
     match kind {
         "chat_user_message" | "chat_admin_message" => 86400,
-        "low_batt" | "brownout" | "gps_anomaly" | "geofence_in" | "geofence_out" => 3600,
+        "low_batt" | "brownout" | "gps_anomaly" | "geofence_in" | "geofence_out"
+        | "rental_ending" | "rental_overdue" => 3600,
         _ => 900,
     }
 }
 
 pub fn channel(kind: &str) -> &'static str {
     match kind {
-        "low_batt" | "offline" | "brownout" | "geofence_out" | "motion" => "gps_alerts_v1",
+        "low_batt" | "offline" | "brownout" | "geofence_out" | "motion"
+        | "reservation_starting" | "reservation_ending" | "rental_ending" | "rental_overdue" => "gps_alerts_v1",
         "chat_user_message" | "chat_admin_message" => "gps_messages_v1",
         _ => "gps_updates_v1",
     }
@@ -51,7 +53,11 @@ pub fn message(title: &str, body: &str, mut data: Value, at: DateTime<Utc>) -> V
         "sleep_enter" | "wake" | "motion" | "cycle_first_fix" => "activity",
         other => other,
     };
-    let tag = if let Some(device) = data["device_id"].as_str() {
+    let tag = if let Some(reservation) = data["reservation_id"].as_str() {
+        format!("reservation-{reservation}-{category}")
+    } else if let Some(contract) = data["contract_id"].as_str() {
+        format!("rental-{contract}")
+    } else if let Some(device) = data["device_id"].as_str() {
         format!("device-{device}-{category}")
     } else if let Some(thread) = data["thread_id"].as_str() {
         format!("chat-{thread}")

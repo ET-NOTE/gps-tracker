@@ -10,7 +10,7 @@ SELECT EXISTS (
  WHERE e.id=$1
  AND e.occurred_at <= now()+interval '5 minutes'
  AND e.occurred_at > now() - CASE
-   WHEN e.kind IN ('low_batt','brownout','gps_anomaly','geofence_in','geofence_out') THEN interval '1 hour'
+   WHEN e.kind IN ('low_batt','brownout','gps_anomaly','geofence_in','geofence_out','rental_ending','rental_overdue') THEN interval '1 hour'
    ELSE interval '15 minutes' END
  AND CASE e.kind
    WHEN 'low_batt' THEN COALESCE(ns.low_batt_alert,true)
@@ -27,8 +27,29 @@ SELECT EXISTS (
    WHEN 'geofence_armed' THEN COALESCE(ns.geofence_alert,true)
    WHEN 'brownout' THEN COALESCE(ns.device_health_alert,true)
    WHEN 'gps_anomaly' THEN COALESCE(ns.device_health_alert,true)
+   WHEN 'reservation_starting' THEN COALESCE(ns.reservation_alert,true)
+   WHEN 'reservation_ending' THEN COALESCE(ns.reservation_alert,true)
+   WHEN 'rental_ending' THEN COALESCE(ns.rental_alert,true)
+   WHEN 'rental_overdue' THEN COALESCE(ns.rental_alert,true)
    ELSE false END
  AND CASE
+   WHEN e.kind IN ('reservation_starting','reservation_ending') THEN EXISTS (
+      SELECT 1 FROM vehicle_reservations r WHERE r.id::text=e.data->>'reservation_id'
+       AND r.user_id=e.user_id AND r.device_id=e.device_id
+       AND CASE WHEN e.kind='reservation_starting' THEN
+         r.status='planned' AND r.starts_at>now() AND r.starts_at<=now()+interval '30 minutes'
+         AND r.starts_at=(e.data->>'starts_at')::timestamptz
+       ELSE r.status IN ('planned','in_progress') AND r.ends_at>now() AND r.ends_at<=now()+interval '30 minutes'
+         AND r.ends_at=(e.data->>'ends_at')::timestamptz END
+   )
+   WHEN e.kind IN ('rental_ending','rental_overdue') THEN EXISTS (
+      SELECT 1 FROM rental_contracts r WHERE r.id::text=e.data->>'contract_id'
+       AND r.user_id=e.user_id AND r.device_id=e.device_id
+       AND r.ends_at=(e.data->>'ends_at')::timestamptz
+       AND CASE WHEN e.kind='rental_ending' THEN
+         r.status IN ('draft','active') AND r.ends_at>now() AND r.ends_at<=now()+interval '24 hours'
+       ELSE r.status='overdue' AND r.ends_at<=now() END
+   )
    WHEN e.kind IN ('offline','signal_loss') THEN
       d.last_seen_at <= e.occurred_at AND COALESCE(life.kind,'') <> 'sleep_enter'
       AND d.last_seen_at < now()-make_interval(mins => CASE WHEN e.kind='offline'
@@ -53,5 +74,9 @@ SELECT EXISTS (
        (e.kind IN ('geofence_in','geofence_out','geofence_armed') AND newer.kind IN ('geofence_in','geofence_out','geofence_armed')))
      AND (e.kind NOT IN ('geofence_in','geofence_out','geofence_armed')
           OR newer.data->>'geofence_id'=e.data->>'geofence_id')
+     AND (e.kind NOT IN ('reservation_starting','reservation_ending')
+          OR newer.data->>'reservation_id'=e.data->>'reservation_id')
+     AND (e.kind NOT IN ('rental_ending','rental_overdue')
+          OR newer.data->>'contract_id'=e.data->>'contract_id')
  )
 )

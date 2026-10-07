@@ -68,6 +68,7 @@ export default function Modal({
       <div
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        className="gps-user-panel"
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}
         style={{

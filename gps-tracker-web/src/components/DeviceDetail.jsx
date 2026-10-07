@@ -92,7 +92,7 @@ export default function DeviceDetail({ device, onWiped, onUpdated }) {
 
         {/* 공유 링크 */}
         <Section eyebrow="공유 링크">
-          <ShareLinkPanel deviceId={device.id} />
+          <ShareLinkPanel key={device.id} deviceId={device.id} />
         </Section>
 
         {/* 고급 진단 링크 — 이관된 항목들 접근 */}

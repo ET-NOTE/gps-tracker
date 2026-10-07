@@ -56,7 +56,7 @@ export default function NotificationSettings() {
           value={s.offline_alert}
           onChange={v => patch({ offline_alert: v })} />
         <Toggle label="연결 복구"
-          sub="끊겼다가 다시 연결됐을 때"
+          sub="수신이 지연된 뒤 장치에서 정보를 다시 받았을 때"
           value={s.online_alert}
           onChange={v => patch({ online_alert: v })} />
         <NumField label="수신 지연 안내까지 (분)"
@@ -70,7 +70,7 @@ export default function NotificationSettings() {
       {/* ─── 절전 / 회복 사이클 ─────────────────── */}
       <Group title="장치 작동 상태" desc="절전 모드 전환과 작동 재개를 안내합니다. 차량의 주행 여부와는 다를 수 있습니다.">
         <Toggle label="절전 모드 전환"
-          sub="배터리를 아끼기 위해 장치가 절전 모드로 전환될 때"
+          sub="절전 모드로 전환될 때. 절전 중에는 위치 갱신이 잠시 멈춥니다."
           value={s.sleep_alert}
           onChange={v => patch({ sleep_alert: v })} />
         <Toggle label="장치 작동 재개"
@@ -90,7 +90,7 @@ export default function NotificationSettings() {
           value={s.low_batt_alert}
           onChange={v => patch({ low_batt_alert: v })} />
         <Toggle label="위치·전원 이상"
-          sub="위치 확인이 반복해서 지연되거나 전압 저하로 장치가 재시작될 때"
+          sub="GPS 위치 확인이 반복해서 지연되거나 전압 저하에 따른 재시작 기록이 확인될 때"
           value={s.device_health_alert ?? true}
           onChange={v => patch({ device_health_alert: v })} />
         <details style={{ color: 'var(--text-2)', fontSize: 12 }}>
@@ -111,6 +111,13 @@ export default function NotificationSettings() {
         <Toggle label="설정한 구역 출입"
           value={s.geofence_alert}
           onChange={v => patch({ geofence_alert: v })} />
+      </Group>
+
+      <Group title="차량 예약·반납 일정" desc="등록한 일정이 있는 차량 소유자에게 안내합니다. 예약 취소·반납 완료 시 발송하지 않습니다.">
+        <Toggle label="차량 예약 알림" sub="예약 시작·종료 30분 전부터 안내"
+          value={s.reservation_alert ?? true} onChange={v => patch({ reservation_alert: v })} />
+        <Toggle label="차량 반납 알림" sub="반납 예정 24시간 전부터 안내하고, 예정 시간이 지난 미완료 계약을 확인"
+          value={s.rental_alert ?? true} onChange={v => patch({ rental_alert: v })} />
       </Group>
 
       <div role="status" aria-live="polite" style={{ fontSize: 12, color: saveMsg?.ok === false ? 'var(--danger)' : 'var(--text-2)' }}>
