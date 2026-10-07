@@ -26,8 +26,15 @@ pub fn lifetime(kind: &str) -> i64 {
 
 pub fn channel(kind: &str) -> &'static str {
     match kind {
-        "low_batt" | "offline" | "brownout" | "geofence_out" | "motion"
-        | "reservation_starting" | "reservation_ending" | "rental_ending" | "rental_overdue" => "gps_alerts_v1",
+        "low_batt"
+        | "offline"
+        | "brownout"
+        | "geofence_out"
+        | "motion"
+        | "reservation_starting"
+        | "reservation_ending"
+        | "rental_ending"
+        | "rental_overdue" => "gps_alerts_v1",
         "chat_user_message" | "chat_admin_message" => "gps_messages_v1",
         _ => "gps_updates_v1",
     }

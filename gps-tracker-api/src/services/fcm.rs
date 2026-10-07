@@ -454,8 +454,11 @@ async fn resolve_addr(pool: &PgPool, lat: f64, lng: f64) -> Option<String> {
 fn schedule_time(data: Option<&Value>, field: &str) -> String {
     data.and_then(|d| d[field].as_str())
         .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-        .map(|t| t.with_timezone(&chrono::FixedOffset::east_opt(9 * 3600).unwrap())
-            .format("%m월 %d일 %H:%M (한국 시간)").to_string())
+        .map(|t| {
+            t.with_timezone(&chrono::FixedOffset::east_opt(9 * 3600).unwrap())
+                .format("%m월 %d일 %H:%M (한국 시간)")
+                .to_string()
+        })
         .unwrap_or_else(|| "앱에 등록된 시간".into())
 }
 
@@ -513,7 +516,8 @@ async fn event_message(pool: &PgPool, ev: &PendingEvent) -> Value {
     } else {
         None
     };
-    let mut data = json!({"kind":kind,"device_id":ev.device_id.to_string(),"event_id":ev.id.to_string()});
+    let mut data =
+        json!({"kind":kind,"device_id":ev.device_id.to_string(),"event_id":ev.id.to_string()});
     for field in ["reservation_id", "contract_id"] {
         if let Some(id) = ev.data.as_ref().and_then(|d| d[field].as_i64()) {
             data[field] = json!(id.to_string());
@@ -613,8 +617,12 @@ mod tests {
             .execute(&pool)
             .await
             .unwrap();
-        sqlx::raw_sql(include_str!("../../migrations/0067_schedule_notification_settings.sql"))
-            .execute(&pool).await.unwrap();
+        sqlx::raw_sql(include_str!(
+            "../../migrations/0067_schedule_notification_settings.sql"
+        ))
+        .execute(&pool)
+        .await
+        .unwrap();
         sqlx::raw_sql(r#"
           INSERT INTO fcm_tokens(user_id,token,revocation_hash) VALUES (1,'good','A'),(1,'retry','B');
           INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{"vbat_mv":3200}');
@@ -752,32 +760,99 @@ mod tests {
         sqlx::raw_sql("INSERT INTO vehicle_reservations VALUES(10,1,1,'planned',now()+interval '20 minutes',now()+interval '25 minutes'),(11,1,1,'planned',now()+interval '21 minutes',now()+interval '26 minutes'); INSERT INTO rental_contracts VALUES(20,1,1,'active',now()+interval '2 hours'),(21,1,1,'overdue',now()-interval '1 hour');").execute(&pool).await.unwrap();
         let mut reminders = Vec::new();
         for (kind, id, table, key, field) in [
-            ("reservation_starting",10,"vehicle_reservations","reservation_id","starts_at"),
-            ("reservation_starting",11,"vehicle_reservations","reservation_id","starts_at"),
-            ("reservation_ending",10,"vehicle_reservations","reservation_id","ends_at"),
-            ("rental_ending",20,"rental_contracts","contract_id","ends_at"),
-            ("rental_overdue",21,"rental_contracts","contract_id","ends_at"),
+            (
+                "reservation_starting",
+                10,
+                "vehicle_reservations",
+                "reservation_id",
+                "starts_at",
+            ),
+            (
+                "reservation_starting",
+                11,
+                "vehicle_reservations",
+                "reservation_id",
+                "starts_at",
+            ),
+            (
+                "reservation_ending",
+                10,
+                "vehicle_reservations",
+                "reservation_id",
+                "ends_at",
+            ),
+            (
+                "rental_ending",
+                20,
+                "rental_contracts",
+                "contract_id",
+                "ends_at",
+            ),
+            (
+                "rental_overdue",
+                21,
+                "rental_contracts",
+                "contract_id",
+                "ends_at",
+            ),
         ] {
             let query = format!("INSERT INTO events(device_id,user_id,kind,data) SELECT device_id,user_id,$1,jsonb_build_object('{key}',id,'{field}',{field}) FROM {table} WHERE id=$2 RETURNING id");
-            let event: i64 = sqlx::query_scalar(&query).bind(kind).bind(id as i64).fetch_one(&pool).await.unwrap();
+            let event: i64 = sqlx::query_scalar(&query)
+                .bind(kind)
+                .bind(id as i64)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
             reminders.push(event);
         }
-        for id in &reminders { assert!(policy::relevant(&pool,*id).await.unwrap()); }
-        sqlx::query("UPDATE notification_settings SET reservation_alert=false,rental_alert=false").execute(&pool).await.unwrap();
-        for id in &reminders { assert!(!policy::relevant(&pool,*id).await.unwrap()); }
-        sqlx::query("UPDATE notification_settings SET reservation_alert=true,rental_alert=true").execute(&pool).await.unwrap();
-        sqlx::query("UPDATE devices SET owner_id=2").execute(&pool).await.unwrap();
-        for id in &reminders { assert!(!policy::relevant(&pool,*id).await.unwrap()); }
-        sqlx::query("UPDATE devices SET owner_id=1").execute(&pool).await.unwrap();
-        sqlx::query("UPDATE vehicle_reservations SET status='cancelled' WHERE id=10").execute(&pool).await.unwrap();
-        assert!(!policy::relevant(&pool,reminders[0]).await.unwrap());
-        assert!(!policy::relevant(&pool,reminders[2]).await.unwrap());
-        sqlx::query("UPDATE vehicle_reservations SET starts_at=starts_at+interval '2 hours' WHERE id=11").execute(&pool).await.unwrap();
-        assert!(!policy::relevant(&pool,reminders[1]).await.unwrap());
-        sqlx::query("UPDATE rental_contracts SET ends_at=ends_at+interval '1 hour' WHERE id=20").execute(&pool).await.unwrap();
-        assert!(!policy::relevant(&pool,reminders[3]).await.unwrap());
-        sqlx::query("UPDATE rental_contracts SET status='returned' WHERE id=21").execute(&pool).await.unwrap();
-        assert!(!policy::relevant(&pool,reminders[4]).await.unwrap());
+        for id in &reminders {
+            assert!(policy::relevant(&pool, *id).await.unwrap());
+        }
+        sqlx::query("UPDATE notification_settings SET reservation_alert=false,rental_alert=false")
+            .execute(&pool)
+            .await
+            .unwrap();
+        for id in &reminders {
+            assert!(!policy::relevant(&pool, *id).await.unwrap());
+        }
+        sqlx::query("UPDATE notification_settings SET reservation_alert=true,rental_alert=true")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query("UPDATE devices SET owner_id=2")
+            .execute(&pool)
+            .await
+            .unwrap();
+        for id in &reminders {
+            assert!(!policy::relevant(&pool, *id).await.unwrap());
+        }
+        sqlx::query("UPDATE devices SET owner_id=1")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query("UPDATE vehicle_reservations SET status='cancelled' WHERE id=10")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(!policy::relevant(&pool, reminders[0]).await.unwrap());
+        assert!(!policy::relevant(&pool, reminders[2]).await.unwrap());
+        sqlx::query(
+            "UPDATE vehicle_reservations SET starts_at=starts_at+interval '2 hours' WHERE id=11",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        assert!(!policy::relevant(&pool, reminders[1]).await.unwrap());
+        sqlx::query("UPDATE rental_contracts SET ends_at=ends_at+interval '1 hour' WHERE id=20")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(!policy::relevant(&pool, reminders[3]).await.unwrap());
+        sqlx::query("UPDATE rental_contracts SET status='returned' WHERE id=21")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(!policy::relevant(&pool, reminders[4]).await.unwrap());
         // Consume these policy fixtures before testing the failed transaction.
         enqueue_events(&pool).await.unwrap();
         // A database failure during enqueue must leave the event unconsumed.
