@@ -20,6 +20,9 @@ export default function RoutePlayback({ devices }) {
   const [aiError, setAiError]   = useState(null);
   const [aiUsage, setAiUsage]   = useState(null);   // { used_today, limit, unlimited }
 
+  const aiViewRef = useRef(null);
+  aiViewRef.current = `${deviceId}:${date}`;
+  useEffect(() => () => { aiViewRef.current = null; }, []);
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
   const polyRef      = useRef(null);
@@ -55,6 +58,7 @@ export default function RoutePlayback({ devices }) {
     // 같은 날짜/디바이스로 다시 불러올 때 이전 분석 비움.
     setAiText(null);
     setAiError(null);
+    setAiBusy(false);
   }, [deviceId, date]);
 
   // AI 사용량 한 번 조회
@@ -64,17 +68,19 @@ export default function RoutePlayback({ devices }) {
 
   async function handleAnalyze() {
     if (!deviceId) return;
+    const view = aiViewRef.current;
     setAiBusy(true);
     setAiError(null);
     setAiText(null);
     try {
       const r = await api.analyzeRoute(deviceId, date);
+      if (aiViewRef.current !== view) return;
       setAiText(r.analysis);
       setAiUsage({ used_today: r.used_today, limit: r.limit, unlimited: r.unlimited });
     } catch (e) {
-      setAiError(e.message || 'AI 분석 실패');
+      if (aiViewRef.current === view) setAiError(e.message || '분석 결과를 확인하지 못했습니다. 다시 시도해 주세요.');
     } finally {
-      setAiBusy(false);
+      if (aiViewRef.current === view) setAiBusy(false);
     }
   }
 

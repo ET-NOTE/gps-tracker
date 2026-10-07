@@ -1,3 +1,4 @@
+pub mod ai_requests;
 pub mod alimtalk;
 pub mod credits;
 pub mod fcm;

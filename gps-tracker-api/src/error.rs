@@ -28,6 +28,9 @@ pub enum AppError {
     #[error("conflict: {0}")]
     Conflict(String),
 
+    #[error("gone: {0}")]
+    Gone(String),
+
     #[error("too many requests: {0}")]
     TooManyRequests(String),
 }
@@ -54,6 +57,7 @@ impl IntoResponse for AppError {
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized".to_string()),
             AppError::Forbidden => (StatusCode::FORBIDDEN, "forbidden".to_string()),
             AppError::Conflict(m) => (StatusCode::CONFLICT, m.clone()),
+            AppError::Gone(m) => (StatusCode::GONE, m.clone()),
             AppError::TooManyRequests(m) => (StatusCode::TOO_MANY_REQUESTS, m.clone()),
         };
         (status, Json(json!({ "error": msg }))).into_response()

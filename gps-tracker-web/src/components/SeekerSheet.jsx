@@ -137,6 +137,10 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   const [aiOpen, setAiOpen]   = useState(false);
   const [aiHistory, setAiHistory] = useState([]);   // [{ id, analysis, model, created_at, cost_credits }]
   const [selectedAiId, setSelectedAiId] = useState(null);
+  const aiView = `${device?.id}:${date}:${mode}`;
+  const aiViewRef = useRef(aiView);
+  aiViewRef.current = aiView;
+  useEffect(() => () => { aiViewRef.current = null; }, []);
 
   const color = device ? getDeviceColor(device) : '#5B7CFF';
 
@@ -170,6 +174,7 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
   // (device, date) 변경 시 영구 이력 로드 — 가장 최신 분석 자동 선택, 재과금 없이 표시.
   useEffect(() => {
     setAiError(null);
+    setAiHistory([]); setSelectedAiId(null); setAiBusy(false);
     if (!device?.id || mode !== 'day') {
       setAiHistory([]);
       setSelectedAiId(null);
@@ -361,13 +366,17 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
       setAiError(`포인트가 부족합니다. 분석 1회 ${aiUsage.cost_per_analysis} 포인트, 보유 ${aiUsage.credit_balance} 포인트. 내정보 → 포인트 충전을 먼저 진행하세요.`);
       return;
     }
+    const view = aiViewRef.current;
     setAiBusy(true); setAiError(null);
     try {
       const r = await api.analyzeRoute(device.id, date);
-      // 새 분석 row 가 서버에 저장됨 — 이력 다시 로드해서 맨 위로
-      const rows = await api.listAiAnalyses(device.id, { date });
-      setAiHistory(rows || []);
-      setSelectedAiId(r.analysis_id ?? (rows || [])[0]?.id ?? null);
+      if (aiViewRef.current !== view) return;
+      // Render the committed result directly; a history refresh must not turn a
+      // successful purchase into an error or invite a second purchase.
+      const row = { id: r.analysis_id, analysis: r.analysis, model: r.model,
+        target_date: r.date, created_at: new Date().toISOString(), cost_credits: r.credit_charged };
+      setAiHistory(previous => [row, ...previous.filter(item => item.id !== row.id)]);
+      setSelectedAiId(row.id);
       setAiUsage(prev => ({
         ...(prev || {}),
         used_today:        r.used_today,
@@ -377,10 +386,10 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
         credit_balance:    r.credit_balance,
       }));
     } catch (e) {
-      setAiError(e.message || 'AI 분석 실패');
-      // 잔액 변동 가능 (실패 시 환불) → 갱신
-      api.aiUsageToday().then(setAiUsage).catch(() => {});
-    } finally { setAiBusy(false); }
+      if (aiViewRef.current !== view) return;
+      setAiError(e.message || '분석 결과를 확인하지 못했습니다. 다시 시도해 주세요.');
+      api.aiUsageToday().then(value => { if (aiViewRef.current === view) setAiUsage(value); }).catch(() => {});
+    } finally { if (aiViewRef.current === view) setAiBusy(false); }
   }
 
   async function handleDeleteAnalysis(id) {

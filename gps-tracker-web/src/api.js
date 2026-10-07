@@ -4,6 +4,12 @@ import { authScope, assertSession, AUTH_CHANGED, notifyAuthChanged } from './aut
 import { hydrateDeviceColors } from './colors';
 import { hydratePairTutorialSeen } from './pairTutorialSeen';
 import { collectHistory, collectAggregates } from './lib/historyPager';
+import { createAnalysisRequester } from './lib/aiRequest';
+
+const requestAnalysis = createAnalysisRequester({
+  storage: sessionStorage, uuid: () => crypto.randomUUID(),
+  send: (deviceId, body) => req('POST', `/devices/${deviceId}/route/analyze`, body),
+});
 
 // 도메인 감지: 주 도메인 gps.serial.kr 은 prefix 없이 /api/v1.
 // legacy /gps-tracker/ 서브패스 (localhost dev, 옛 nginx 서브패스 fallback) 는 /gps-tracker/api/v1.
@@ -459,7 +465,7 @@ export const api = {
 
   // AI 경로 분석 (Round 3)
   aiUsageToday:    () => req('GET',  '/ai/usage'),
-  analyzeRoute:    (deviceId, date) => req('POST', `/devices/${deviceId}/route/analyze`, { date }),
+  analyzeRoute:    (deviceId, date) => requestAnalysis(authScope(), deviceId, date),
   // AI 분석 영구 이력
   listAiAnalyses:  (deviceId, params = {}) => {
     const q = new URLSearchParams();

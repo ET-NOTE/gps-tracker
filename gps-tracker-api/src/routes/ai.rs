@@ -13,17 +13,17 @@ use crate::{
     auth::AuthUser,
     error::{AppError, AppResult},
     services::{
-        credits,
+        ai_requests, credits,
         kakao_geo::{self, Resolved},
         openai::{self, ChatMessage},
     },
     state::AppState,
 };
 
-const ENDPOINT: &str = "route_analyze";
 const ADMIN_EMAIL: &str = "admin@admin.com";
-const COST_PER_ANALYSIS: i64 = 20; // 회당 20 KRW (포인트)
+const COST_PER_ANALYSIS: i64 = ai_requests::COST; // 회당 20 KRW (포인트)
 const MAX_OUT_TOKENS: u32 = 900;
+static ANALYSIS_SLOTS: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(4);
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -69,6 +69,7 @@ async fn usage_today(State(state): State<AppState>, user: AuthUser) -> AppResult
 #[derive(Debug, Deserialize)]
 pub struct AnalyzeRequest {
     pub date: NaiveDate, // KST 기준 yyyy-mm-dd
+    pub request_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Serialize)]
@@ -82,6 +83,8 @@ pub struct AnalyzeResponse {
     pub credit_charged: i64,
     pub credit_balance: i64,
     pub analysis_id: Option<i64>, // 영구 저장된 분석 row id (재조회용)
+    pub request_id: String,
+    pub replayed: bool,
 }
 
 #[derive(Debug, FromRow)]
@@ -89,6 +92,7 @@ struct PointRow {
     recorded_at: DateTime<Utc>,
     lat: Option<f64>,
     lng: Option<f64>,
+    speed_kmh: Option<f64>,
 }
 
 #[derive(Debug, FromRow)]
@@ -127,31 +131,53 @@ async fn analyze(
         return Err(AppError::NotFound);
     }
 
-    // 포인트 차감 (admin email 은 무료). 잔액 부족이면 charge 가 BadRequest.
     let email = user_email(&state, user.user_id).await?;
     let unlimited = email.as_deref() == Some(ADMIN_EMAIL);
     let used = today_count(&state, user.user_id).await?;
-    let charged_txn = if unlimited {
-        None
-    } else {
-        Some(
-            credits::charge(
-                &state.db,
-                user.user_id,
-                COST_PER_ANALYSIS,
-                "ai_analysis",
-                None,
-                Some(&format!("device {} {}", device_id, req.date)),
-            )
-            .await?,
-        )
-    };
+    let supplied_key = req.request_id.map(|id| id.to_string());
+    let request_id = supplied_key
+        .clone()
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+    let _slot = ANALYSIS_SLOTS.try_acquire().map_err(|_| {
+        AppError::TooManyRequests("분석 요청이 많습니다. 잠시 후 다시 시도해 주세요.".into())
+    })?;
+    let mut tx = ai_requests::begin(&state.db, user.user_id).await?;
+    if let Some(saved) = ai_requests::replay(
+        &mut tx,
+        user.user_id,
+        device_id,
+        req.date,
+        supplied_key.as_deref(),
+    )
+    .await?
+    {
+        let balance = credits::balance(&state.db, user.user_id).await?;
+        return Ok(Json(AnalyzeResponse {
+            date: saved.target_date,
+            analysis: saved.analysis,
+            model: saved.model,
+            used_today: used,
+            limit: 0,
+            unlimited,
+            credit_charged: 0,
+            credit_balance: balance,
+            analysis_id: Some(saved.id),
+            request_id,
+            replayed: true,
+        }));
+    }
+    if !unlimited && credits::balance(&state.db, user.user_id).await? < COST_PER_ANALYSIS {
+        return Err(AppError::BadRequest(format!(
+            "포인트가 부족합니다. 분석 1회 {COST_PER_ANALYSIS}포인트가 필요합니다."
+        )));
+    }
 
-    // 차감 이후 실패하면 환불해야 함. 분석 본 로직을 inner 로 묶고 결과 처리.
-    let outcome: AnalysisOutcome = (async {
+    // The request owns an uncharged transaction. Cancellation rolls it back.
+    let result = tokio::time::timeout(std::time::Duration::from_secs(105), async {
         // 데이터 적재 — date 를 KST 자정~다음날 자정 범위로 변환
         let start = format!("{}T00:00:00+09:00", req.date);
-        let end = format!("{}T23:59:59+09:00", req.date);
+        let next_date = req.date.succ_opt().ok_or_else(|| AppError::BadRequest("날짜를 확인해 주세요.".into()))?;
+        let end = format!("{next_date}T00:00:00+09:00");
         let start: DateTime<Utc> = chrono::DateTime::parse_from_rfc3339(&start)
             .map_err(|e| AppError::BadRequest(format!("invalid date: {e}")))?
             .with_timezone(&Utc);
@@ -160,11 +186,12 @@ async fn analyze(
             .with_timezone(&Utc);
 
         let points: Vec<PointRow> = sqlx::query_as(
-            r#"SELECT recorded_at, lat, lng
-                 FROM location_points
-                WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
-                  AND recorded_at >= $2 AND recorded_at <= $3
-                ORDER BY recorded_at ASC"#,
+            r#"SELECT recorded_at, lat, lng, speed_kmh::double precision AS speed_kmh
+                 FROM location_speed_points_between($1,$4,$2,$3)
+                WHERE fix = TRUE AND recorded_at < $3
+                  AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
+                  AND (sat IS NULL OR sat >= 4)
+                ORDER BY recorded_at ASC LIMIT 50001"#,
         )
         .bind(device_id)
         .bind(start)
@@ -173,6 +200,9 @@ async fn analyze(
         .fetch_all(&state.db)
         .await?;
 
+        if points.len() > 50000 {
+            return Err(AppError::BadRequest("하루 분석 가능한 위치 기록 수를 초과했습니다.".into()));
+        }
         if points.len() < 3 {
             return Err(AppError::BadRequest(
                 "이 날짜에 분석할 fix 데이터가 부족합니다.".into(),
@@ -193,7 +223,11 @@ async fn analyze(
 
         let stops = extract_stops(&points, 50.0, 5 * 60);
         let enriched = enrich_speeds(&points);
-        let signals = detect_anomalies(&enriched, &stops);
+        let mut signals = detect_anomalies(&enriched, &stops);
+        let lifecycle: Vec<Lifecycle> = sqlx::query_as(
+            "SELECT occurred_at,kind FROM events WHERE device_id=$1 AND user_id=$2 AND kind IN ('sleep_enter','wake','online') AND occurred_at >= $3-interval '1 day' AND occurred_at < $4 ORDER BY occurred_at,id LIMIT 10001"
+        ).bind(device_id).bind(user.user_id).bind(start).bind(end).fetch_all(&state.db).await?;
+        apply_observation_gaps(&mut signals, &points, &lifecycle);
         let geo = resolve_geography(&state.db, &points, &stops).await;
 
         let prompt = build_prompt(
@@ -215,78 +249,36 @@ async fn analyze(
                 content: &prompt,
             },
         ];
-        let result = openai::chat(&messages, MAX_OUT_TOKENS)
-            .await
-            .map_err(|e| AppError::Internal(anyhow::anyhow!("openai: {e:#}")))?;
+        openai::chat(&messages, MAX_OUT_TOKENS).await.map_err(|e| {
+            tracing::warn!("AI generation failed: {e:#}");
+            AppError::BadRequest("AI 분석을 완료하지 못했습니다. 포인트는 차감되지 않았습니다. 잠시 후 다시 시도해 주세요.".into())
+        })
+    }).await.map_err(|_| AppError::BadRequest("분석 시간이 초과되었습니다. 포인트는 차감되지 않았습니다. 다시 시도해 주세요.".into()))??;
 
-        Ok((
-            result.text,
-            result.model,
-            result.tokens_in,
-            result.tokens_out,
-        ))
-    })
-    .await;
-
-    let (text, model, tokens_in, tokens_out) = match outcome {
-        Ok(v) => v,
-        Err(e) => {
-            // 차감했으면 환불 (best-effort)
-            if charged_txn.is_some() {
-                let _ = credits::refund(
-                    &state.db,
-                    user.user_id,
-                    COST_PER_ANALYSIS,
-                    "ai_refund",
-                    None,
-                    Some("ai_analysis 실패 자동 환불"),
-                )
-                .await;
-            }
-            return Err(e);
-        }
-    };
-
-    // 사용량 audit (best effort)
-    let _ = sqlx::query(
-        r#"INSERT INTO ai_usage_log (user_id, endpoint, tokens_in, tokens_out, model)
-           VALUES ($1, $2, $3, $4, $5)"#,
+    let (analysis_id, balance) = ai_requests::complete(
+        tx,
+        ai_requests::Purchase {
+            user: user.user_id,
+            device: device_id,
+            date: req.date,
+            request: &request_id,
+            free: unlimited,
+        },
+        &result,
     )
-    .bind(user.user_id)
-    .bind(ENDPOINT)
-    .bind(tokens_in)
-    .bind(tokens_out)
-    .bind(model.as_deref())
-    .execute(&state.db)
-    .await;
-
-    // 영구 저장 — 본문 + 메타. 같은 (device,date) 에 여러 번 분석 가능 (이력 누적).
-    let charged = if unlimited { 0 } else { COST_PER_ANALYSIS };
-    let analysis_id: Option<i64> = sqlx::query_scalar(
-        r#"INSERT INTO ai_analyses (user_id, device_id, target_date, analysis, model, tokens_in, tokens_out, cost_credits)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           RETURNING id"#,
-    )
-    .bind(user.user_id).bind(device_id).bind(req.date)
-    .bind(&text).bind(model.as_deref())
-    .bind(tokens_in).bind(tokens_out).bind(charged)
-    .fetch_optional(&state.db).await.unwrap_or(None);
-
-    let used_today = used + 1;
-    let balance = match &charged_txn {
-        Some(t) => t.balance,
-        None => credits::balance(&state.db, user.user_id).await.unwrap_or(0),
-    };
+    .await?;
     Ok(Json(AnalyzeResponse {
         date: req.date,
-        analysis: text,
-        used_today,
+        analysis: result.text,
+        used_today: used + 1,
         limit: 0,
         unlimited,
-        model,
-        credit_charged: charged,
+        model: result.model,
+        credit_charged: if unlimited { 0 } else { COST_PER_ANALYSIS },
         credit_balance: balance,
-        analysis_id,
+        analysis_id: Some(analysis_id),
+        request_id,
+        replayed: false,
     }))
 }
 
@@ -448,7 +440,7 @@ async fn resolve_geography(
     // 좌표 모음 — 동시 호출
     let mut coords: Vec<(f64, f64)> = Vec::new();
     // [0..stops.len()) = stops
-    for (_, _, la, ln) in stops {
+    for (_, _, la, ln) in stops.iter().take(10) {
         coords.push((*la, *ln));
     }
 
@@ -491,7 +483,7 @@ async fn resolve_geography(
 
     let resolved = kakao_geo::reverse_many_cached(db, &coords).await;
 
-    let stop_addrs: Vec<Option<Resolved>> = (0..stops.len())
+    let stop_addrs: Vec<Option<Resolved>> = (0..stops.len().min(10))
         .map(|i| resolved.get(i).cloned().flatten())
         .collect();
     let start_addr = if start_lat_lng.is_some() {
@@ -555,11 +547,15 @@ fn build_prompt(
     }
     if signals.signal_gaps > 0 {
         buf.push_str(&format!(
-            "- 신호 두절 (>10분 갭): {}건\n",
+            "- 원인을 확인할 수 없는 위치 기록 공백 (10분 이상): {}건. 통신 장애로 단정하지 않음.\n",
             signals.signal_gaps
         ));
     }
     buf.push('\n');
+
+    if signals.sleep_gaps > 0 {
+        buf.push_str(&format!("- 절전·기상 기록으로 확인된 정상 절전 공백: {}건. 통신 장애나 차량 운행 정지로 해석하지 마세요.\n", signals.sleep_gaps));
+    }
 
     // ── 자동 감지 이상 신호 ─────────────────────────────
     buf.push_str("## 자동 감지된 이상 신호\n");
@@ -651,6 +647,7 @@ pub struct Signals {
     pub night_dist_km: f64,
     pub night_minutes: i64,
     pub signal_gaps: i32,
+    pub sleep_gaps: i32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -669,10 +666,14 @@ fn enrich_speeds(points: &[PointRow]) -> Vec<Seg> {
         let (speed, dt, dist) = if let Some((pt, pla, pln)) = prev {
             let dt = (p.recorded_at - pt).num_seconds().max(0);
             let d = haversine_m(pla, pln, lat, lng);
-            let s = if dt > 0 { (d / dt as f64) * 3.6 } else { 0.0 };
-            (s, dt, d)
+            let speed = p
+                .speed_kmh
+                .filter(|s| s.is_finite() && (0.0..=250.0).contains(s))
+                .filter(|_| dt > 0 && dt <= 60)
+                .unwrap_or(f64::NAN);
+            (speed, dt, if speed.is_finite() { d } else { 0.0 })
         } else {
-            (0.0, 0, 0.0)
+            (f64::NAN, 0, 0.0)
         };
         out.push(Seg {
             t: p.recorded_at,
@@ -792,31 +793,6 @@ fn detect_anomalies(seg: &[Seg], stops: &[(DateTime<Utc>, DateTime<Utc>, f64, f6
         }
     }
 
-    // ── 신호 두절: 인접 점 사이 dt > 10분
-    {
-        let mut gaps: Vec<String> = vec![];
-        for i in 1..seg.len() {
-            if seg[i].dt_s >= 600 {
-                s.signal_gaps += 1;
-                if gaps.len() < 3 {
-                    gaps.push(format!(
-                        "{} ~ {} ({}분)",
-                        seg[i - 1].t.with_timezone(&kst).format("%H:%M"),
-                        seg[i].t.with_timezone(&kst).format("%H:%M"),
-                        seg[i].dt_s / 60,
-                    ));
-                }
-            }
-        }
-        if s.signal_gaps > 0 {
-            s.alerts.push(format!(
-                "신호 두절 {}건 (>10분 갭) — 예: {}",
-                s.signal_gaps,
-                gaps.join(", "),
-            ));
-        }
-    }
-
     // ── 야간 운행 (22:00~06:00 KST): 거리·시간 누적
     {
         let mut dist_m = 0.0;
@@ -877,6 +853,48 @@ fn detect_anomalies(seg: &[Seg], stops: &[(DateTime<Utc>, DateTime<Utc>, f64, f6
     s
 }
 
+#[derive(FromRow)]
+struct Lifecycle {
+    occurred_at: DateTime<Utc>,
+    kind: String,
+}
+
+fn apply_observation_gaps(signals: &mut Signals, points: &[PointRow], events: &[Lifecycle]) {
+    for pair in points.windows(2) {
+        let (from, until) = (pair[0].recorded_at, pair[1].recorded_at);
+        let elapsed = (until - from).num_seconds();
+        if elapsed < 600 {
+            continue;
+        }
+        let mut sleeping = events
+            .iter()
+            .take_while(|e| e.occurred_at <= from)
+            .last()
+            .is_some_and(|e| e.kind == "sleep_enter");
+        let mut cursor = from;
+        let mut asleep = 0;
+        for event in events
+            .iter()
+            .filter(|e| e.occurred_at > from && e.occurred_at < until)
+        {
+            if sleeping {
+                asleep += (event.occurred_at - cursor).num_seconds();
+            }
+            sleeping = event.kind == "sleep_enter";
+            cursor = event.occurred_at;
+        }
+        if sleeping {
+            asleep += (until - cursor).num_seconds();
+        }
+        // Allow two minutes for the last fix before sleep and first fix after wake.
+        if asleep > 0 && elapsed - asleep <= 120 {
+            signals.sleep_gaps += 1;
+        } else {
+            signals.signal_gaps += 1;
+        }
+    }
+}
+
 use chrono::Timelike;
 
 fn extract_stops(
@@ -897,7 +915,10 @@ fn extract_stops(
                 j += 1;
                 continue;
             };
-            if haversine_m(la, ln, la2, ln2) > radius_m {
+            if (points[j].recorded_at - points[j - 1].recorded_at).num_seconds() > 60
+                || points[j].speed_kmh.is_none()
+                || haversine_m(la, ln, la2, ln2) > radius_m
+            {
                 break;
             }
             j += 1;
@@ -947,4 +968,54 @@ async fn today_count(state: &AppState, uid: i64) -> AppResult<i64> {
     Ok(n.unwrap_or(0))
 }
 
-type AnalysisOutcome = AppResult<(String, Option<String>, Option<i32>, Option<i32>)>;
+#[cfg(test)]
+mod reliability_tests {
+    use super::*;
+    fn point(minute: i64, speed: Option<f64>) -> PointRow {
+        PointRow {
+            recorded_at: DateTime::from_timestamp(1_700_000_000 + minute * 60, 0).unwrap(),
+            lat: Some(37.5),
+            lng: Some(127.0),
+            speed_kmh: speed,
+        }
+    }
+    #[test]
+    fn sleep_is_not_a_connection_fault_and_missing_data_is_not_a_stop() {
+        let points = vec![point(0, None), point(30, None), point(31, Some(0.0))];
+        let events = vec![
+            Lifecycle {
+                occurred_at: point(1, None).recorded_at,
+                kind: "sleep_enter".into(),
+            },
+            Lifecycle {
+                occurred_at: point(29, None).recorded_at,
+                kind: "wake".into(),
+            },
+        ];
+        let mut signals = Signals::default();
+        apply_observation_gaps(&mut signals, &points, &events);
+        assert_eq!((signals.sleep_gaps, signals.signal_gaps), (1, 0));
+        assert!(extract_stops(&points, 50.0, 300).is_empty());
+        let mut unknown = Signals::default();
+        apply_observation_gaps(&mut unknown, &points, &[]);
+        assert_eq!((unknown.sleep_gaps, unknown.signal_gaps), (0, 1));
+        assert!(enrich_speeds(&points)[1].speed.is_nan());
+    }
+    #[test]
+    fn short_sleep_does_not_explain_an_hour_of_missing_data() {
+        let points = vec![point(0, None), point(60, None)];
+        let events = vec![
+            Lifecycle {
+                occurred_at: point(1, None).recorded_at,
+                kind: "sleep_enter".into(),
+            },
+            Lifecycle {
+                occurred_at: point(5, None).recorded_at,
+                kind: "wake".into(),
+            },
+        ];
+        let mut signals = Signals::default();
+        apply_observation_gaps(&mut signals, &points, &events);
+        assert_eq!((signals.sleep_gaps, signals.signal_gaps), (0, 1));
+    }
+}

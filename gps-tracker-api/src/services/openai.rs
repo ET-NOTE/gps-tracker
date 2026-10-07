@@ -22,10 +22,12 @@ struct ChatResp {
 #[derive(Debug, Deserialize)]
 struct Choice {
     message: Msg,
+    finish_reason: String,
 }
 #[derive(Debug, Deserialize)]
 struct Msg {
     content: Option<String>,
+    refusal: Option<String>,
 }
 #[derive(Debug, Deserialize)]
 struct Usage {
@@ -71,16 +73,29 @@ pub async fn chat(messages: &[ChatMessage<'_>], max_tokens: u32) -> anyhow::Resu
 
     let status = res.status();
     if !status.is_success() {
-        let txt = res.text().await.unwrap_or_default();
-        anyhow::bail!("openai {status}: {txt}");
+        anyhow::bail!("openai HTTP {status}");
     }
     let parsed: ChatResp = res.json().await?;
-    let text = parsed
+    checked_result(parsed)
+}
+
+fn checked_result(parsed: ChatResp) -> anyhow::Result<ChatResult> {
+    let choice = parsed
         .choices
         .into_iter()
         .next()
-        .and_then(|c| c.message.content)
-        .unwrap_or_default();
+        .ok_or_else(|| anyhow::anyhow!("openai returned no choice"))?;
+    anyhow::ensure!(
+        choice.finish_reason == "stop",
+        "openai did not complete: {}",
+        choice.finish_reason
+    );
+    anyhow::ensure!(
+        choice.message.refusal.as_deref().unwrap_or("").is_empty(),
+        "openai declined analysis"
+    );
+    let text = choice.message.content.unwrap_or_default().trim().to_owned();
+    anyhow::ensure!(!text.is_empty(), "openai returned empty analysis");
     Ok(ChatResult {
         text,
         tokens_in: parsed.usage.as_ref().map(|u| u.prompt_tokens),
@@ -98,4 +113,31 @@ pub fn raw_url() -> &'static str {
 #[allow(dead_code)]
 pub fn dummy_value() -> Value {
     Value::Null
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn incomplete_or_empty_reports_are_not_billable() {
+        for (finish, content, refusal) in [
+            ("length", "partial", None),
+            ("stop", "  ", None),
+            ("content_filter", "partial", None),
+            ("stop", "text", Some("declined")),
+        ] {
+            let response = serde_json::from_value(json!({"choices":[{"finish_reason":finish,
+                "message":{"content":content,"refusal":refusal}}]}))
+            .unwrap();
+            assert!(checked_result(response).is_err());
+        }
+        assert!(checked_result(serde_json::from_value(json!({"choices":[]})).unwrap()).is_err());
+        let result = checked_result(
+            serde_json::from_value(json!({"choices":[{"finish_reason":"stop",
+            "message":{"content":" 보고서 "}}],"model":"test-model"}))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(result.text, "보고서");
+    }
 }

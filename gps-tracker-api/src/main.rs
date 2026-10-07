@@ -3,11 +3,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
-use axum::extract::DefaultBodyLimit;
+use axum::{
+    extract::{DefaultBodyLimit, MatchedPath, Request},
+    middleware::Next,
+    response::{IntoResponse, Response},
+};
 use tokio::net::TcpListener;
 use tower_http::{
     cors::{Any, CorsLayer},
-    timeout::TimeoutLayer,
     trace::TraceLayer,
 };
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -96,14 +99,10 @@ async fn main() -> anyhow::Result<()> {
     // Body size limit: 1MB — ingest/webhook 페이로드는 수 KB, ai 분석 응답도 작음.
     //   누가 거대 body 보내도 메모리 폭주 방지. 결제 webhook 등 큰 body 가 필요한 핸들러는
     //   별도 `.layer(DefaultBodyLimit::max(N))` 로 라우터별 오버라이드 가능.
-    // Timeout: 30초 — 외부 API (1NCE, Kakao, FCM) 호출까지 여유. 그 이상 걸리면 핸들러 hang
-    //   가정하고 abort. 클라이언트는 408/503 받음.
+    // AI gets a bounded longer budget; all other endpoints retain 30 seconds.
     let app = routes::build_router(state)
         .layer(DefaultBodyLimit::max(1024 * 1024))
-        .layer(TimeoutLayer::with_status_code(
-            axum::http::StatusCode::REQUEST_TIMEOUT,
-            Duration::from_secs(30),
-        ))
+        .layer(axum::middleware::from_fn(request_timeout))
         .layer(TraceLayer::new_for_http())
         .layer(cors);
 
@@ -120,6 +119,20 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("server error")?;
     Ok(())
+}
+
+async fn request_timeout(request: Request, next: Next) -> Response {
+    let is_analysis = request.method() == axum::http::Method::POST
+        && request
+            .extensions()
+            .get::<MatchedPath>()
+            .is_some_and(|path| path.as_str().ends_with("/devices/:id/route/analyze"));
+    let seconds = if is_analysis { 120 } else { 30 };
+    match tokio::time::timeout(Duration::from_secs(seconds), next.run(request)).await {
+        Ok(response) => response,
+        Err(_) => (axum::http::StatusCode::REQUEST_TIMEOUT,
+            axum::Json(serde_json::json!({"error":"응답이 지연되고 있습니다. 잠시 후 같은 요청으로 다시 확인해 주세요."}))).into_response(),
+    }
 }
 
 async fn shutdown_signal() {
