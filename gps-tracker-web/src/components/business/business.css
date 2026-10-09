@@ -120,3 +120,9 @@
 .business-nav::-webkit-scrollbar { display: none; }
 
 .business-fleet-head > :last-child { text-align: right; }
+
+.business-export, .business-export-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.business-export-bar { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.business-export-bar label { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.business-export-bar .business-note { flex-basis: 100%; margin: 0; }
+.business-export-error { flex-basis: 100%; color: var(--danger); font-size: 12px; }

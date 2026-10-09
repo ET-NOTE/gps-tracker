@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Icon from './Icon';
+import ExportButtons from './business/ExportButtons';
+import { rentalReport, invoiceReport, rentalPeriod } from '../lib/businessExport';
 import { BusinessWorkspace, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
 import { useBusinessClock, useRentalOperations, useBusinessSubscription } from './business/useBusinessData';
 import { calendarDate, businessDate, rentalSummary, rentalStatus, filterRentals } from '../lib/business';
@@ -380,13 +382,19 @@ function RentalsTab({ devices, request }) {
   const [returning, setReturning] = useState(null);   // contract to return
   const [handoff, setHandoff] = useState(null);       // contract for handoff link
   const [photosOf, setPhotosOf] = useState(null);     // contract for photo gallery
+  const [rangeMode, setRangeMode] = useState('operations');
+  const [from, setFrom] = useState(() => businessDate().slice(0,7)+'-01');
+  const [to, setTo] = useState(() => businessDate());
+  const rangeValid = rangeMode==='operations' || (!!from && !!to && from<=to);
 
   const now = useBusinessClock();
-  const operations = useRentalOperations(now);
-  const all = operations.data || [];
+  const period = rangeMode==='operations' || !rangeValid ? null : {from:`${from}T00:00:00+09:00`,to:new Date(new Date(`${to}T00:00:00+09:00`).getTime()+86400000).toISOString()};
+  const operations = useRentalOperations(now, period, rangeValid);
+  const all = rangeMode==='operations' ? operations.data || [] : rentalPeriod(operations.data || [],{from,to,kind:rangeMode});
   const summary = rentalSummary(all, devices, now);
   const [query, setQuery] = useState('');
   const [deviceFilter, setDeviceFilter] = useState('');
+  const [exportKind, setExportKind] = useState('contracts');
   useEffect(() => {
     setDeviceFilter(request?.deviceId || '');
     if (request?.new) setEditing('new');
@@ -426,12 +434,24 @@ function RentalsTab({ devices, request }) {
       </div>
 
       <div className="business-filter-bar">
+        <select aria-label="계약 조회 범위" value={rangeMode} onChange={e=>{setRangeMode(e.target.value);setStatusFilter('all');if(e.target.value==='settled')setExportKind('settlements');}} style={st.input}>
+          <option value="operations">운영 범위</option><option value="contracts">계약 기간 지정</option><option value="settled">정산 기간 지정</option>
+        </select>
+        {rangeMode!=='operations' && <><input aria-label="계약 조회 시작일" type="date" value={from} onChange={e=>setFrom(e.target.value)} style={st.input}/><span>~</span><input aria-label="계약 조회 종료일" type="date" value={to} onChange={e=>setTo(e.target.value)} style={st.input}/></>}
         <label className="business-search"><Icon name="filter" size={16}/><input aria-label="계약 검색" placeholder="차량 · 임차인 · 연락처 검색" value={query} onChange={e => setQuery(e.target.value)} /></label>
         <select aria-label="계약 차량 필터" value={deviceFilter} onChange={e => setDeviceFilter(e.target.value)} style={st.input}>
           <option value="">전체 차량</option>{devices.map(d => <option key={d.id} value={d.id}>{d.car_plate || d.license_plate || d.display_name || d.device_uid}</option>)}
         </select>
       </div>
-      <p className="business-note">진행 중인 계약과 이번 달부터 90일 이내 일정 · 이번 달 정산 내역입니다. 요약은 검색·필터와 관계없이 집계합니다.</p>
+      <p className="business-note">{rangeMode==='operations'?'진행 중인 계약과 이번 달부터 90일 이내 일정 · 이번 달 정산 내역입니다.':`${from} ~ ${to}의 ${rangeMode==='settled'?'정산 완료':'계약 기간과 겹치는'} 내역입니다.`} 요약은 검색·상태 필터와 관계없이 조회 범위 기준으로 집계합니다.</p>
+      {!rangeValid && <p role="alert" className="business-export-error">조회 시작일과 종료일을 올바르게 선택해 주세요.</p>}
+      <div className="business-export-bar">
+        <label>내보낼 자료 <select aria-label="내보낼 자료" value={exportKind} onChange={e=>setExportKind(e.target.value)} style={st.input}>
+          <option value="contracts">검색 결과 계약 목록</option><option value="settlements">검색 결과 중 반납 정산</option>
+        </select></label>
+        <ExportButtons report={list ? rentalReport(list,{settlement:exportKind==='settlements',now,filterText:`조회: ${rangeMode==='operations'?'이번 달 이후 90일 일정·진행 계약·이번 달 정산':`${from} ~ ${to} (${rangeMode==='settled'?'정산일':'계약 기간'} 기준)`} / 상태: ${statusFilter==='all'?'전체':RENTAL_STATUS[statusFilter]?.label || '활성'} / 차량: ${deviceFilter || '전체'} / 검색: ${query || '없음'}`}) : null} disabled={loading || !!operations.error || !rangeValid} />
+        <span className="business-note">현재 검색·차량·상태 조건을 적용합니다. 전체 정산은 ‘전체’ 또는 ‘반납완료’를 선택하세요.</span>
+      </div>
       {operations.error && <BusinessError onRetry={operations.refetch}>계약 정보를 불러오지 못했습니다. 표시 중인 정보가 있다면 이전 조회 결과입니다.</BusinessError>}
       {loading && !list && <SkeletonList count={4} itemHeight={80} />}
       {list && !operations.error && list.length === 0 && <BusinessEmpty title="조건에 맞는 계약이 없습니다.">검색 조건을 변경하거나 새 계약을 등록해 주세요.</BusinessEmpty>}
@@ -593,6 +613,7 @@ function SettlementSummary({ c }) {
         <button onClick={() => downloadInvoice(c)} style={{ ...st.btnGhost, fontSize: 10, padding: '4px 8px', flex: 1 }}>
           <Icon name="download" size={10} /> 청구서 XLSX
         </button>
+        <ExportButtons report={invoiceReport(c)} pdfOnly />
       </div>
     </div>
   );

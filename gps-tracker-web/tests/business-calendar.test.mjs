@@ -7,6 +7,7 @@ import * as jsx from 'react/jsx-runtime';
 import {create, act} from 'react-test-renderer';
 import {transform} from 'esbuild';
 import * as business from '../src/lib/business.js';
+import * as businessExport from '../src/lib/businessExport.js';
 
 // Render the actual calendar bodies, not just the date helper. Unrelated panel
 // dependencies are stubbed; no network, storage or customer data is involved.
@@ -23,6 +24,7 @@ async function calendar(file, name) {
     if (specifier==='react') return moduleOf(React);
     if (specifier==='react/jsx-runtime') return moduleOf(jsx);
     if (specifier==='../lib/business') return moduleOf(business);
+    if (specifier==='../lib/businessExport') return moduleOf(businessExport);
     // Only the named exports requested by this module are needed. None of these
     // hooks/components run while rendering a calendar.
     const exports = {default:noop,api:{},qk:{},useQueryClient:noop,

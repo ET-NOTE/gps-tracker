@@ -12,7 +12,7 @@ import { businessDate } from '../src/lib/business';
 const params = new URLSearchParams(location.search);
 const failed = params.has('error'), empty = params.has('empty');
 const now = Date.now(), day = businessDate(now), at = h => `${day}T${h}:00:00+09:00`;
-const devices = empty ? [] : [
+let devices = empty ? [] : [
   { id: 1, display_name: '서울 영업 1호', car_plate: '123가 4567', car_model: '쏘나타', department: '영업팀', enabled: true, last_seen_at: new Date(now).toISOString(), last_fix_at: new Date(now).toISOString(), next_service_date: day },
   { id: 2, display_name: '업무용 차량 2호', license_plate: '234나 8901', car_model: '아반떼', department: '관리팀', enabled: true, last_seen_at: new Date(now - 700_000).toISOString(), insurance_expiry: day },
   { id: 3, display_name: '장기렌트 고객 차량', license_plate: '345다 6789', car_model: '카니발', enabled: true, last_seen_at: new Date(now).toISOString(), last_fix_at: new Date(now).toISOString() },
@@ -32,6 +32,19 @@ Object.assign(api, {
   fleetTripStats: read({per_device: devices.map(d => ({device_id:d.id,total_distance_m:123000,today_distance_m:32000}))}),
   listTrips: read([]), listRenters: read([]), getFuelPrices: read({gasoline:1700,diesel:1600,lpg:1000}), listDocuments: read([]),
 });
+// Optional, ignored local API snapshot. Never bundled into the production app.
+if (params.has('account')) {
+  const response = await fetch('/tests/.local-business-data.json');
+  if (!response.ok) throw Error('로컬 계정 검증 자료가 없습니다.');
+  const snapshot = await response.json();
+  devices = snapshot.devices;
+  Object.assign(api, {
+    listRentals:read(snapshot.rentals),listReservations:async (p={})=>snapshot.reservations.filter(r=>(!p.from || new Date(r.ends_at)>=new Date(p.from)) && (!p.to || new Date(r.starts_at)<=new Date(p.to))),listStaff:read(snapshot.staff),
+    getCorporateInfo:read(snapshot.info),getCorporateSubscription:read(snapshot.corporateSubscription),getRentcarSubscription:read(snapshot.rentalSubscription),
+    listTrips:async id=>snapshot.tripsByDevice[String(id)] || [],
+    fleetTripStats:read(snapshot.fleetStats),
+  });
+}
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');

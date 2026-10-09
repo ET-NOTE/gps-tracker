@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Icon from './Icon';
+import ExportButtons from './business/ExportButtons';
+import { filterTrips, tripReport, monthlyReport, monthDateBounds, purposeLabel } from '../lib/businessExport';
 import { BusinessWorkspace, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
 import { useBusinessClock, useBusinessSubscription } from './business/useBusinessData';
 import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleName } from '../lib/business';
@@ -404,7 +406,6 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);   // 편집 중인 trip {trip, deviceId}
-  const [downloading, setDownloading] = useState(false);
   // 추가 필터 — 운전자별 / 용무별 / 최소 운행 시간(시간). all/'' 이면 미적용. AND.
   const [driverFilter,  setDriverFilter]  = useState('all');
   const [purposeFilter, setPurposeFilter] = useState('all');
@@ -420,6 +421,7 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
   async function load() {
     if (!deviceId) return;
     const id = ++loadId.current;
+    if (!from || !to || from > to) { setTrips(null); setLoading(false); setError('조회 시작일과 종료일을 올바르게 선택해 주세요.'); return; }
     setLoading(true); setError(null); setTrips(null);
     try {
       const t = await api.listTrips(deviceId, { from, to });
@@ -431,26 +433,10 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
   useEffect(() => { load(); return () => { loadId.current++; }; }, [deviceId, from, to]);  // eslint-disable-line
 
   // 추가 필터 적용된 trip 목록 — 운전자/용무/최소시간 AND.
-  const filteredTrips = useMemo(() => {
-    if (!trips) return null;
-    const minH = parseFloat(minHours);
-    const minMin = !isNaN(minH) && minH > 0 ? minH * 60 : 0;
-    return trips.filter(t => {
-      if (driverFilter !== 'all') {
-        if (driverFilter === 'unassigned') {
-          if (t.annotation?.driver_staff_id != null) return false;
-        } else {
-          if (t.annotation?.driver_staff_id !== Number(driverFilter)) return false;
-        }
-      }
-      if (purposeFilter !== 'all') {
-        const p = t.annotation?.purpose || 'unspecified';
-        if (p !== purposeFilter) return false;
-      }
-      if (minMin > 0 && (t.duration_min || 0) < minMin) return false;
-      return true;
-    });
-  }, [trips, driverFilter, purposeFilter, minHours]);
+  const filteredTrips = useMemo(() => trips ? filterTrips(trips, {driver:driverFilter,purpose:purposeFilter,minHours}) : null, [trips, driverFilter, purposeFilter, minHours]);
+  const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
+    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간`,
+  }) : null;
 
   // 일자별 누적거리 — 화면에 보이는(필터된) 운행 기준으로 계산.
   const dailyDistance = useMemo(() => {
@@ -510,7 +496,7 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
 
       {/* 컨트롤 — 인쇄 시 숨김 */}
       <div className="no-print" style={st.controls}>
-        <select value={deviceId || ''} onChange={e => setDeviceId(parseInt(e.target.value, 10) || null)}
+        <select aria-label="운행 차량" value={deviceId || ''} onChange={e => setDeviceId(parseInt(e.target.value, 10) || null)}
           style={st.select}>
           {devices.map(d => (
             <option key={d.id} value={d.id}>
@@ -518,40 +504,28 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
             </option>
           ))}
         </select>
-        <input type="date" value={from} onChange={e => setFrom(e.target.value)} style={st.dateInput} />
+        <input aria-label="운행 조회 시작일" type="date" value={from} onChange={e => setFrom(e.target.value)} style={st.dateInput} />
         <span style={{ color: 'var(--text-3)' }}>~</span>
-        <input type="date" value={to} onChange={e => setTo(e.target.value)} style={st.dateInput} />
+        <input aria-label="운행 조회 종료일" type="date" value={to} onChange={e => setTo(e.target.value)} style={st.dateInput} />
         <button onClick={load} style={st.btnGhost} disabled={loading}>
           <Icon name="refresh" size={12} /> 새로고침
         </button>
-        <button onClick={async () => {
-          setDownloading(true);
-          try {
-            const { blob, filename } = await api.tripsCsv(deviceId, { from, to });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename; a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-          } catch (e) { await alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' }); }
-          finally { setDownloading(false); }
-        }} style={st.btnGhost} disabled={downloading || !deviceId}>
-          <Icon name="share" size={12} /> CSV (엑셀)
-        </button>
-        <button onClick={() => window.print()} style={st.btnPrimary}>
-          <Icon name="share" size={12} /> 인쇄 / PDF
+        <ExportButtons report={exportData} disabled={loading || !!error || !deviceId} />
+        <button onClick={() => window.print()} style={st.btnGhost} disabled={loading || !!error || !trips}>
+          <Icon name="share" size={12} /> 인쇄
         </button>
       </div>
 
       {/* 추가 필터 row — 운전자 / 용무 / 최소시간. AND, 초기화 버튼. */}
       <div className="no-print" style={st.filters}>
-        <select value={driverFilter} onChange={e => setDriverFilter(e.target.value)} style={st.select}>
+        <select aria-label="운전자 필터" value={driverFilter} onChange={e => setDriverFilter(e.target.value)} style={st.select}>
           <option value="all">운전자 전체</option>
           <option value="unassigned">미지정</option>
           {staff.map(s => (
             <option key={s.id} value={String(s.id)}>{s.name}</option>
           ))}
         </select>
-        <select value={purposeFilter} onChange={e => setPurposeFilter(e.target.value)} style={st.select}>
+        <select aria-label="용무 필터" value={purposeFilter} onChange={e => setPurposeFilter(e.target.value)} style={st.select}>
           <option value="all">용무 전체</option>
           <option value="commute">출퇴근</option>
           <option value="business">업무</option>
@@ -617,7 +591,7 @@ function ReportHeader({ info, device, from, to }) {
           </tr>
           <tr>
             <th style={st.th}>단말기</th><td style={st.td}>{dev}</td>
-            <th style={st.th}>차량번호</th><td style={st.td}>{device?.display_name || '—'}</td>
+            <th style={st.th}>차량번호</th><td style={st.td}>{device?.license_plate || device?.car_plate || '—'}</td>
           </tr>
           <tr>
             <th style={st.th}>기간</th>
@@ -1506,12 +1480,7 @@ function ymKST(d = new Date()) {
   return kst.toISOString().slice(0, 7);
 }
 function monthBounds(ym) {
-  const [y, m] = ym.split('-').map(Number);
-  const from = `${ym}-01`;
-  const ny = m === 12 ? y + 1 : y;
-  const nm = m === 12 ? 1 : m + 1;
-  const to = `${ny}-${String(nm).padStart(2, '0')}-01`;
-  return { from, to };
+  return monthDateBounds(ym);
 }
 
 function MonthlyReportTab({ devices, sub }) {
@@ -1644,6 +1613,7 @@ function MonthlyReportTab({ devices, sub }) {
           <Icon name="share" size={13} /> 운행일지 다운로드
         </button>
         <FuelPriceBadge prices={fuelPrices} />
+        <ExportButtons report={filteredRows ? monthlyReport(filteredRows,{month:ym,estimateFuelCost,estimateDepreciation}) : null} disabled={loading || !!error} />
       </div>
 
       <StatCardGrid>
@@ -1787,6 +1757,10 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
   }
 
   async function download() {
+    if (selectedDevs?.size === 0 || selectedPurps?.size === 0 || selectedDeps?.size === 0) {
+      await alertDialog({title:'선택 항목 확인',body:'차량·용무·부서를 각각 하나 이상 선택해 주세요.'});
+      return;
+    }
     setBusy(true);
     try {
       const params = { type: kind, month: ym };
