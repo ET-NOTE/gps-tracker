@@ -37,3 +37,10 @@
 - 배포 후 DB/릴리스 health, 모든 신규 정적 파일 SHA-256, 진단 페이지 동일성, 기존 APK/ZIP HTTP 200 확인.
 
 화면 수정은 서버에서 제공하는 웹에 적용되므로 앱 재설치가 필요 없다. 실제 Android 기기에서 이 운영 화면을 별도로 검증한 것은 아니다. 검증용 스크린샷은 로컬 `C:/Users/msb/AppData/Local/GPS-Builds/business-workspace-preview.png`에 저장했다.
+
+## 전체 너비 적용 (후속 요청)
+
+- `be7211f008637ce775660833c92e6bb64b36120e`: 공통 `.business-layout`의 `max-width:1560px; margin:auto`를 제거하고 `width:100%` 적용.
+- 운영 웹 릴리스 `web-business-width-20261009-be7211f`. API는 `dev-20261009-225207-cdd659d` 그대로 유지.
+- 2530px 화면에서 두 패널 모두 가용 2526px 전체 사용, 390px 모바일에서 가로 넘침 없음. Vite 빌드 및 운영 정적 파일 해시 검증 통과.
+- 직전 웹 `/home/mmm/releases/prod-20261009-225207-cdd659d/web` 보존, 진단 페이지 동일성 확인.
