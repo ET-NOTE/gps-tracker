@@ -26,7 +26,7 @@ def get(uid,expected=200,**params):
     return json.loads(data)
 try:
     for label in ('a','b'):
-        users.append(scalar("INSERT INTO users(email,password_hash,display_name) VALUES(%s,'test-only','Business regression') RETURNING id",(f'business-{run}-{label}@example.invalid',)))
+        users.append(scalar("INSERT INTO users(email,password_hash,display_name,phone) VALUES(%s,'test-only','Business regression','01000000000') RETURNING id",(f'business-{run}-{label}@example.invalid',)))
     a,b=users
     device=scalar("INSERT INTO devices(device_uid,owner_id,api_key_hash) VALUES(%s,%s,'') RETURNING id",('business-'+run,a))
     def contract(owner,status,start,end,settled=None):
