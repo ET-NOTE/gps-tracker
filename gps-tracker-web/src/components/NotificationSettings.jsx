@@ -48,11 +48,11 @@ export default function NotificationSettings() {
       {/* ─── 통신 상태 ─────────────────────────── */}
       <Group title="통신 상태" desc="장치 정보의 수신이 지연되거나 연결이 복구될 때">
         <Toggle label="새 정보 수신 지연"
-          sub={`${s.signal_loss_minutes}분 동안 장치의 새 정보가 도착하지 않을 때`}
+          sub={`${s.signal_loss_minutes}분 미수신 시 한 번 안내`}
           value={s.signal_loss_alert}
           onChange={v => patch({ signal_loss_alert: v })} />
         <Toggle label="연결 확인 필요"
-          sub={`${s.offline_minutes}분 동안 장치의 새 정보가 도착하지 않을 때`}
+          sub={`${formatDelay(s.offline_minutes)} 미수신 시 한 번 안내. 다시 수신될 때까지 반복하지 않습니다.`}
           value={s.offline_alert}
           onChange={v => patch({ offline_alert: v })} />
         <Toggle label="연결 복구"
@@ -62,8 +62,18 @@ export default function NotificationSettings() {
         <NumField label="수신 지연 안내까지 (분)"
           value={s.signal_loss_minutes} min={1} max={Math.min(30, s.offline_minutes - 1)}
           onCommit={v => patch({ signal_loss_minutes: v })} />
-        <NumField label="연결 확인 안내까지 (분)"
-          value={s.offline_minutes} min={Math.max(5, s.signal_loss_minutes + 1)} max={120}
+        <div style={row}>
+          <label htmlFor="connection-alert-delay" style={{ fontSize: 13, color: 'var(--text-2)' }}>연결 확인 안내 시점</label>
+          <select id="connection-alert-delay" aria-label="연결 확인 안내 시점" value={s.offline_minutes}
+            onChange={e => patch({ offline_minutes: Number(e.target.value) })}
+            style={{ ...input, width: 132, minHeight: 44 }}>
+            {Array.from(new Set([30, 60, 360, 720, 1440, 2880, 10080, s.offline_minutes]))
+              .filter(m => m > s.signal_loss_minutes).sort((a, b) => a - b)
+              .map(m => <option key={m} value={m}>{formatDelay(m)} 후{m === 1440 ? ' (기본)' : ''}</option>)}
+          </select>
+        </div>
+        <NumField label="직접 설정 (분, 최대 7일)"
+          value={s.offline_minutes} min={Math.max(5, s.signal_loss_minutes + 1)} max={10080}
           onCommit={v => patch({ offline_minutes: v })} />
       </Group>
 
@@ -125,6 +135,12 @@ export default function NotificationSettings() {
       </div>
     </fieldset>
   );
+}
+
+function formatDelay(minutes) {
+  if (minutes % 1440 === 0 && minutes > 1440) return `${minutes / 1440}일`;
+  if (minutes % 60 === 0) return `${minutes / 60}시간`;
+  return `${minutes}분`;
 }
 
 function Group({ title, desc, children }) {

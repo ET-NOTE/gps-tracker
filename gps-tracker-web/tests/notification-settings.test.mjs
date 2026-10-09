@@ -7,7 +7,7 @@ import * as jsx from 'react/jsx-runtime';
 import { create, act } from 'react-test-renderer';
 import { transform } from 'esbuild';
 
-const settings = { signal_loss_minutes: 5, offline_minutes: 30, low_batt_threshold_mv: 3500, motion_alert: true };
+const settings = { signal_loss_minutes: 5, offline_minutes: 1440, low_batt_threshold_mv: 3500, motion_alert: true };
 async function component(api) {
   const context = vm.createContext({ console });
   const source = await readFile(new URL('../src/components/NotificationSettings.jsx', import.meta.url), 'utf8');
@@ -49,5 +49,21 @@ test('load failure offers retry and copy distinguishes GPS acquisition from driv
   await act(async () => r.root.findByType('button').props.onClick());
   assert.match(JSON.stringify(r.toJSON()),/실제 이동을 뜻하지는 않습니다/);
   assert.doesNotMatch(JSON.stringify(r.toJSON()),/backend|브라운아웃|운행 시작/);
+  await act(async () => r.unmount());
+});
+
+test('connection notice offers a 24-hour default and persists a chosen delay without promising daily repeats', async () => {
+  let update;
+  const C = await component({getNotificationSettings: async () => settings,
+    updateNotificationSettings: async patch => {update=patch; return {...settings,...patch};}});
+  let r; await act(async () => {r=create(React.createElement(C));});
+  assert.match(JSON.stringify(r.toJSON()), /24시간 미수신 시 한 번 안내/);
+  assert.match(JSON.stringify(r.toJSON()), /다시 수신될 때까지 반복하지 않습니다/);
+  const select=()=>r.root.findByType('select');
+  assert.equal(select().props.value,1440);
+  await act(async () => {select().props.onChange({target:{value:'2880'}});});
+  assert.equal(update.offline_minutes,2880);
+  assert.equal(select().props.value,2880);
+  assert.match(JSON.stringify(r.toJSON()), /2일 미수신 시 한 번 안내/);
   await act(async () => r.unmount());
 });

@@ -52,9 +52,12 @@ SELECT EXISTS (
    )
    WHEN e.kind IN ('offline','signal_loss') THEN
       d.last_seen_at <= e.occurred_at AND COALESCE(life.kind,'') <> 'sleep_enter'
+      AND EXISTS (SELECT 1 FROM connection_alert_episodes a
+          WHERE a.device_id=e.device_id AND a.user_id=e.user_id AND a.kind=e.kind
+            AND a.last_seen_at=d.last_seen_at AND a.event_id=e.id)
       AND d.last_seen_at < now()-make_interval(mins => CASE WHEN e.kind='offline'
-           THEN COALESCE(ns.offline_minutes,30) ELSE COALESCE(ns.signal_loss_minutes,5) END)
-      AND (e.kind <> 'signal_loss' OR d.last_seen_at > now()-make_interval(mins=>COALESCE(ns.offline_minutes,30)))
+           THEN COALESCE(ns.offline_minutes,1440) ELSE COALESCE(ns.signal_loss_minutes,5) END)
+      AND (e.kind <> 'signal_loss' OR d.last_seen_at > now()-make_interval(mins=>COALESCE(ns.offline_minutes,1440)))
    WHEN e.kind='online' THEN d.last_seen_at > now()-make_interval(mins=>COALESCE(ns.signal_loss_minutes,5))
    WHEN e.kind IN ('wake','sleep_enter') THEN life.id=e.id
    WHEN e.kind IN ('motion','cycle_first_fix') THEN COALESCE(life.kind,'') <> 'sleep_enter'

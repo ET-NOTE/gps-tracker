@@ -462,6 +462,28 @@ fn schedule_time(data: Option<&Value>, field: &str) -> String {
         .unwrap_or_else(|| "앱에 등록된 시간".into())
 }
 
+fn silence_duration(minutes: i64) -> String {
+    if minutes >= 1440 {
+        let days = minutes / 1440;
+        let hours = (minutes % 1440) / 60;
+        if hours == 0 {
+            format!("{days}일")
+        } else {
+            format!("{days}일 {hours}시간")
+        }
+    } else if minutes >= 60 {
+        let hours = minutes / 60;
+        let rest = minutes % 60;
+        if rest == 0 {
+            format!("{hours}시간")
+        } else {
+            format!("{hours}시간 {rest}분")
+        }
+    } else {
+        format!("{minutes}분")
+    }
+}
+
 fn body_for_event(ev: &PendingEvent, address: Option<&str>) -> String {
     let d = ev.data.as_ref();
     let area = d
@@ -481,8 +503,8 @@ fn body_for_event(ev: &PendingEvent, address: Option<&str>) -> String {
         "gps_anomaly" => "최근 위치 확인이 여러 차례 완료되지 않았습니다. 실내·지하에서는 GPS 수신이 어려울 수 있습니다. 장치와 안테나 상태를 확인해 주세요.".into(),
         "offline" | "signal_loss" => {
             let minutes = d.and_then(|d| d["silence_min"].as_i64()).filter(|m| *m > 0);
-            let elapsed = minutes.map(|m| format!("최근 {m}분간")).unwrap_or_else(|| "최근".into());
-            let action = if ev.kind == "offline" { " 장치의 전원과 통신 상태를 확인해 주세요." } else { " 수신이 재개되면 최신 상태가 표시됩니다." };
+            let elapsed = minutes.map(|m| format!("최근 {} 동안", silence_duration(m))).unwrap_or_else(|| "최근".into());
+            let action = if ev.kind == "offline" { " 전원과 통신 상태를 확인해 주세요. 다시 수신될 때까지 같은 안내를 반복하지 않습니다." } else { " 수신이 재개되면 최신 상태가 표시됩니다." };
             format!("{elapsed} 장치의 새 정보가 도착하지 않았습니다.{action}")
         },
         "online" => "장치에서 정보를 다시 받고 있습니다. 앱에서 최신 상태를 확인할 수 있습니다.".into(),
@@ -584,6 +606,14 @@ pub async fn push_to_admins(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn silence_copy_uses_readable_units() {
+        assert_eq!(silence_duration(5), "5분");
+        assert_eq!(silence_duration(90), "1시간 30분");
+        assert_eq!(silence_duration(1440), "1일");
+        assert_eq!(silence_duration(36035), "25일");
+        assert_eq!(silence_duration(1500), "1일 1시간");
+    }
     /// Run against a disposable PostgreSQL database on the build runner only.
     #[tokio::test]
     #[ignore = "requires GPS_FCM_TEST_DB on the isolated build runner"]
@@ -607,7 +637,7 @@ mod tests {
           CREATE TABLE notification_settings(user_id bigint PRIMARY KEY,low_batt_alert bool,offline_alert bool,
               signal_loss_alert bool,online_alert bool,sleep_alert bool,wake_alert bool,cycle_first_fix_alert bool,
               geofence_alert bool,device_health_alert bool,motion_alert bool,low_batt_threshold_mv integer,
-              signal_loss_minutes integer,offline_minutes integer);
+              signal_loss_minutes integer,offline_minutes integer,updated_at timestamptz DEFAULT now());
           CREATE TABLE vehicle_reservations(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,starts_at timestamptz,ends_at timestamptz);
           CREATE TABLE rental_contracts(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,ends_at timestamptz);
           INSERT INTO users VALUES (1,'user'),(2,'user');
@@ -619,6 +649,12 @@ mod tests {
             .unwrap();
         sqlx::raw_sql(include_str!(
             "../../migrations/0067_schedule_notification_settings.sql"
+        ))
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::raw_sql(include_str!(
+            "../../migrations/0068_connection_alert_episodes.sql"
         ))
         .execute(&pool)
         .await
@@ -703,8 +739,11 @@ mod tests {
                 .unwrap();
         assert_eq!(cancelled, 1);
         // An offline retry must be cancelled once a heartbeat has recovered it.
-        sqlx::raw_sql("UPDATE devices SET last_seen_at=now()-interval '2 hours'; INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'offline','{\"silence_min\":120}')")
-            .execute(&pool).await.unwrap();
+        sqlx::raw_sql("UPDATE devices SET last_seen_at=now()-interval '25 hours'")
+            .execute(&pool)
+            .await
+            .unwrap();
+        super::super::connection_alerts::scan(&pool).await.unwrap();
         enqueue_events(&pool).await.unwrap();
         sqlx::query("UPDATE devices SET last_seen_at=now() WHERE id=1")
             .execute(&pool)
@@ -868,6 +907,7 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(pending, 1);
+        super::super::connection_alerts::check_episode_lifecycle(&pool).await;
         server.abort();
         pool.close().await;
     }
@@ -922,7 +962,7 @@ mod tests {
             user_id: Some(1),
             occurred_at: chrono::Utc::now(),
         };
-        assert!(body_for_event(&ev, None).starts_with("최근 1분간"));
+        assert!(body_for_event(&ev, None).starts_with("최근 1분 동안"));
         assert!(!body_for_event(&ev, None).contains("신호가 약"));
         ev.kind = "cycle_first_fix".into();
         assert!(!title_for_kind(&ev.kind).contains("운행"));

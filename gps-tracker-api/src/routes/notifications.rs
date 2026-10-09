@@ -109,10 +109,10 @@ async fn update_settings(
     let offline = req.offline_minutes.unwrap_or(current.2);
     if !(3000..=4200).contains(&battery)
         || !(1..=30).contains(&signal)
-        || !(5..=120).contains(&offline)
+        || !(5..=10080).contains(&offline)
         || signal >= offline
     {
-        return Err(AppError::BadRequest("배터리 기준은 3000~4200mV, 수신 지연은 1~30분, 연결 확인은 5~120분으로 설정해 주세요. 연결 확인 시간은 수신 지연 시간보다 길어야 합니다.".into()));
+        return Err(AppError::BadRequest("배터리 기준은 3000~4200mV, 수신 지연은 1~30분, 연결 확인은 5분~7일로 설정해 주세요. 연결 확인 시간은 수신 지연 시간보다 길어야 합니다.".into()));
     }
 
     sqlx::query(

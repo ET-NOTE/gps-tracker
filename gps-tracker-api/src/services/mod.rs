@@ -1,5 +1,6 @@
 pub mod ai_requests;
 pub mod alimtalk;
+pub mod connection_alerts;
 pub mod credits;
 pub mod fcm;
 pub mod geofence;
