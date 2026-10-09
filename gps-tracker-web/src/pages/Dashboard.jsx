@@ -21,6 +21,7 @@ import SideRail from '../components/SideRail';
 import MapTopOverlay from '../components/MapTopOverlay';
 import MapActions from '../components/MapActions';
 import { useHomeMapTools } from '../hooks/useHomeMapTools';
+import { useNativeTracking } from '../hooks/useNativeTracking';
 import RoadviewModal, { probeRoadview } from '../components/RoadviewModal';
 import { confirmDialog, alertDialog } from '../components/Dialog';
 import GeofenceSheet from '../components/GeofenceSheet';
@@ -345,6 +346,8 @@ export default function Dashboard({ onLogout }) {
   const wsRef      = useRef(null);
   const devRef     = useRef([]);
   const lastMetaRef = useRef({});
+  const nativeTracking = useNativeTracking({ mapRef, selectedId: filterDeviceId, devices, lastMetaRef,
+    fences: showFences ? fences : [], cached: cachedMapSources, scope });
   // (2026-07-28) 깜빡임 fix — device.id → 마지막 로드 시 device.last_fix_at 저장.
   // 30s force refresh 에서 이 값과 서버 값이 같으면 (=신규 데이터 없음) 재구축 skip.
   const lastLoadedFixAtRef = useRef({});
@@ -1117,6 +1120,10 @@ export default function Dashboard({ onLogout }) {
             {view === 'home' && !fullToolOpen && !pointInfo && (
               <MapActions
                 hasDevice={hasSelectedDevice} tracking={userTrackPref} paused={seekerPaused}
+                onNativeTracking={nativeTracking.available ? async () => {
+                  const error = await nativeTracking.open();
+                  if (error) await alertDialog({ title: '진행 방향 추적', body: error });
+                } : undefined}
                 miniOpen={showMiniSeeker}
                 bottom={(isDesktop ? 24 : 16) + (showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0)
                   + (showFences ? 60 : 0) + 60}

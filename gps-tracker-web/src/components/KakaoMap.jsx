@@ -759,6 +759,17 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const routePlanRef = useRef({ markers: [], polys: [] });
   useEffect(() => () => { routePlanRef.current.markers.forEach(m => m.setMap(null)); routePlanRef.current.polys.forEach(p => p.setMap(null)); }, []);
   useImperativeHandle(ref, () => ({
+    getNativeTrackingData(deviceId) {
+      const xy = position => ({ lat: position.getLat(), lng: position.getLng() });
+      return {
+        markers: Object.fromEntries(Object.entries(markersRef.current).map(([id, entry]) => {
+          const pin = pinStateRef.current[id];
+          return [id, { ...(pin ? { lat: pin.lastLat, lng: pin.lastLng } : xy(entry.marker.getPosition())), heading: pin?.lastAngle, meta: entry.meta }];
+        })),
+        segments: (polyRef.current[deviceId]?.segments || []).map(segment => segment.coords.map(xy)),
+        points: (pointsRef.current[deviceId] || []).map(point => ({ ...xy(point.marker.getPosition()), color: point.color, isStop: point.isStop, meta: point.meta })),
+      };
+    },
     drawRoutePlan(waypoints) {
       // 기존 route 제거
       routePlanRef.current.markers.forEach(m => m.setMap(null));
@@ -1091,7 +1102,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           const old = arr.shift();
           if (old?.marker) old.marker.setMap(null);
         }
-        arr.push({ marker, color: c, isStop, angle });
+        arr.push({ marker, color: c, isStop, angle, meta });
         arrowStateRef.current[deviceId] = { lastPos: { lat, lng } };
       }
     },

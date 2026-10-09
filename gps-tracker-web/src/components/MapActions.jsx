@@ -3,7 +3,7 @@ import Icon from './Icon';
 import './MapActions.css';
 
 export default function MapActions({ hasDevice, tracking, paused, miniOpen, bottom,
-  onTracking, onMini, onTool }) {
+  onTracking, onMini, onTool, onNativeTracking }) {
   const [expanded, setExpanded] = useState(false);
   const root = useRef(null);
   useEffect(() => {
@@ -21,6 +21,9 @@ export default function MapActions({ hasDevice, tracking, paused, miniOpen, bott
   const trackingLabel = !tracking ? '라이브 추적 켜기' : paused ? '추적 ON (경로 탐색 중 일시 정지)' : '추적 끄기';
   return <div ref={root} className="map-actions" style={{ bottom }}>
     {expanded && <div className="map-tools-menu" role="group" aria-label="운행 도구 목록">
+      {onNativeTracking && <button disabled={!hasDevice} onClick={() => { setExpanded(false); onNativeTracking(); }}>
+        <Icon name="target" size={18} /><span>진행 방향 추적<small>Android 회전 지도 · 테스트</small></span>
+      </button>}
       <button onClick={() => open('seeker')} disabled={!hasDevice}>
         <Icon name="route" size={18} /><span>운행 분석<small>운행 분석·경로 재생</small></span>
       </button>
