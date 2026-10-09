@@ -36,14 +36,15 @@ export function useFleetStats(devices) {
 
   return useMemo(() => {
     const totalCount = devices?.length ?? 0;
-    const activeCount = (devices || []).filter(d => ['active', 'gps_loss', 'low_batt'].includes(classifyDevice(d).id)).length;
+    const activeCount = (devices || []).filter(d => d.last_event_kind === 'wake').length;
+    const connectedCount = (devices || []).filter(d => ['active', 'gps_loss', 'low_batt'].includes(classifyDevice(d).id)).length;
     let todayM = 0, monthM = 0;
     for (const s of (data?.per_device || [])) {
       monthM += s.total_distance_m || 0;
       todayM += s.today_distance_m || 0;
     }
     return {
-      totalCount, activeCount, refetch,
+      totalCount, activeCount, connectedCount, refetch,
       todayKm: Math.round(todayM / 100) / 10,
       monthKm: Math.round(monthM / 1000),
       loading: isLoading,

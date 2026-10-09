@@ -13,7 +13,7 @@ export function BusinessWorkspace({ title, description, tabs, tab, onTab, action
     </header>
     <div className="business-layout">
       <nav className="business-nav no-print" aria-label={`${title} 메뉴`}>
-        {tabs.map(item => <button key={item.id} type="button" aria-current={tab === item.id ? 'page' : undefined} onClick={() => onTab(item.id)}>
+        {tabs.map(item => <button className="business-nav-item" key={item.id} type="button" aria-current={tab === item.id ? 'page' : undefined} onClick={() => onTab(item.id)}>
           <Icon name={item.icon} size={18} /><span>{item.label}</span>{tab === item.id && <span className="business-nav-dot" />}
         </button>)}
       </nav>
@@ -46,7 +46,7 @@ export function BusinessTask({ title, description, label, tone = '', action, onC
 }
 export function BusinessSettings({ company, subscription }) {
   const [selected, setSelected] = useState(company ? 'company' : 'subscription');
-  return <div className="business-settings"><div className="business-switch no-print">{company && <button aria-pressed={selected === 'company'} onClick={() => setSelected('company')}>회사 정보</button>}<button aria-pressed={selected === 'subscription'} onClick={() => setSelected('subscription')}>이용권 관리</button></div>{selected === 'company' ? company : subscription}</div>;
+  return <div className="business-settings"><div className="business-switch no-print">{company && <button className="business-switch-item" aria-pressed={selected === 'company'} onClick={() => setSelected('company')}>회사 정보</button>}<button className="business-switch-item" aria-pressed={selected === 'subscription'} onClick={() => setSelected('subscription')}>이용권 관리</button></div>{selected === 'company' ? company : subscription}</div>;
 }
 export function BusinessVehicles({ devices = [], onMap, onDetail, detailLabel = '차량 관리', availability, statusUnknown = false }) {
   const [query, setQuery] = useState('');

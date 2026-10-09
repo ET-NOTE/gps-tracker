@@ -47,7 +47,7 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange }) {
     {tab === 'vehicles' && <VehiclesTab devices={devices} onMap={onMap} onVehiclesChange={onVehiclesChange} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <StaffTab />}
-    {tab === 'report' && <><div className="business-switch no-print"><button aria-pressed={reportMode === 'daily'} onClick={() => setReportMode('daily')}>차량별 운행</button><button aria-pressed={reportMode === 'monthly'} onClick={() => setReportMode('monthly')}>월간 요약</button></div>
+    {tab === 'report' && <><div className="business-switch no-print"><button className="business-switch-item" aria-pressed={reportMode === 'daily'} onClick={() => setReportMode('daily')}>차량별 운행</button><button className="business-switch-item" aria-pressed={reportMode === 'monthly'} onClick={() => setReportMode('monthly')}>월간 요약</button></div>
       {subscription.error && <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 결제 전 다시 조회해 주세요.</BusinessError>}
       {reportMode === 'daily' ? <ReportTab devices={devices} initialDeviceId={reportDevice} sub={subscription.data} onSubChange={updateSub} /> : <MonthlyReportTab devices={devices} sub={subscription.data} />}</>}
     {tab === 'settings' && <BusinessSettings company={<InfoTab />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab sub={subscription.data} onChange={updateSub} />} />}
@@ -2532,7 +2532,7 @@ function FleetSummary({ devices }) {
     <div className="no-print">
       <StatCardGrid>
         <StatCard icon="list"   label="전체 차량"       value={fmt(s.totalCount)} unit="대" tone="default" loading={s.loading} />
-        <StatCard icon="route"  label="최근 통신"       value={fmt(s.activeCount)} unit="대" tone="success" loading={s.loading} />
+        <StatCard icon="route"  label="최근 통신"       value={fmt(s.connectedCount)} unit="대" tone="success" loading={s.loading} />
         <StatCard icon="mapPin" label="오늘 운행거리"   value={s.error ? '—' : fmt(s.todayKm)} unit="km" tone="primary" loading={s.loading} />
         <StatCard icon="bar"    label="이번달 운행거리" value={s.error ? '—' : fmt(s.monthKm)} unit="km" tone="default" loading={s.loading} />
       </StatCardGrid>
