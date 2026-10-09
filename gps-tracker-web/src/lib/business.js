@@ -33,3 +33,6 @@ export function maintenanceTasks(devices, now = Date.now()) {
     .map(([field, label]) => ({ device, field, label, date: device[field], overdue: device[field] < today })))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+
+// Calendar cells are local Date objects representing labels, not UTC instants.
+export const calendarDate = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;

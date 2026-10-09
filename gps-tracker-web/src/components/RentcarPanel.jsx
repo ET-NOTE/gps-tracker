@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Icon from './Icon';
 import { BusinessWorkspace, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
 import { useBusinessClock, useRentalOperations, useBusinessSubscription } from './business/useBusinessData';
-import { businessDate, rentalSummary, rentalStatus, filterRentals } from '../lib/business';
+import { calendarDate, businessDate, rentalSummary, rentalStatus, filterRentals } from '../lib/business';
 import { api } from '../api';
 import { alertDialog, confirmDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
@@ -251,7 +251,7 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
   const monthEnd   = new Date(y, m, 0);
   const startDay   = monthStart.getDay();
   const daysInMonth = monthEnd.getDate();
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = businessDate();
 
   const cells = [];
   for (let i = 0; i < startDay; i++) {
@@ -267,15 +267,15 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
   }
 
   function contractsOn(date) {
-    const dStr = date.toISOString().slice(0, 10);
+    const dStr = calendarDate(date);
     return (list || []).filter(c => {
-      const s = new Date(c.starts_at).toISOString().slice(0, 10);
-      const e = new Date(c.ends_at  ).toISOString().slice(0, 10);
+      const s = businessDate(c.starts_at);
+      const e = businessDate(c.ends_at);
       return dStr >= s && dStr <= e;
     });
   }
   function isReturnDay(date, c) {
-    return date.toISOString().slice(0, 10) === new Date(c.ends_at).toISOString().slice(0, 10);
+    return calendarDate(date) === businessDate(c.ends_at);
   }
 
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
@@ -295,7 +295,7 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
         {cells.map((cell, i) => {
-          const dStr = cell.date.toISOString().slice(0, 10);
+          const dStr = cell.calendarDate(date);
           const dayContracts = contractsOn(cell.date);
           const isToday = dStr === todayStr;
           const dow = cell.date.getDay();

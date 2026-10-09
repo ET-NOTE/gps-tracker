@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {businessDate, businessPeriod, rentalStatus, rentalSummary, filterRentals, maintenanceTasks} from '../src/lib/business.js';
+import {calendarDate, businessDate, businessPeriod, rentalStatus, rentalSummary, filterRentals, maintenanceTasks} from '../src/lib/business.js';
 const now = Date.parse('2026-10-08T15:30:00Z');
 const devices = [{id:1}, {id:2}, {id:3,enabled:false}, {id:4}];
 const c = (id,status,start,end,extra={}) => ({id,device_id:id,status,starts_at:start,ends_at:end,...extra});
@@ -38,4 +38,9 @@ test('search and status filters do not change summary data or mutate source cont
 test('maintenance includes overdue and next 30 days, ordered and separated by type', () => {
   const tasks=maintenanceTasks([{id:1,next_service_date:'2026-10-08',insurance_expiry:'2026-11-08',inspection_expiry:'2026-11-09'},{id:2,insurance_expiry:'2026-10-09'}],now);
   assert.deepEqual(tasks.map(t=>[t.device.id,t.field,t.overdue]),[[1,'next_service_date',true],[2,'insurance_expiry',false],[1,'insurance_expiry',false]]);
+});
+
+test('calendar click preserves the displayed day instead of shifting to previous UTC date', () => {
+  assert.equal(calendarDate(new Date(2026,9,9)), '2026-10-09');
+  assert.equal(calendarDate(new Date(2026,0,1)), '2026-01-01');
 });

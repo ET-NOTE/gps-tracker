@@ -3,7 +3,7 @@ import { api } from '../api';
 import Icon from './Icon';
 import { BusinessWorkspace, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
 import { useBusinessClock, useBusinessSubscription } from './business/useBusinessData';
-import { businessDate, businessPeriod, maintenanceTasks, vehicleName } from '../lib/business';
+import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleName } from '../lib/business';
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
@@ -1177,7 +1177,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
   const monthEnd   = new Date(y, m, 0);   // 마지막날
   const startDay   = monthStart.getDay(); // 0=Sun
   const daysInMonth = monthEnd.getDate();
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = businessDate();
 
   // 셀 구성 — 이전달 잔여 + 이번달 + 다음달 첫주 padding. 7x6 = 42 cells.
   const cells = [];
@@ -1194,10 +1194,10 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
   }
 
   function reservationsOn(date) {
-    const dStr = date.toISOString().slice(0, 10);
+    const dStr = calendarDate(date);
     return (list || []).filter(r => {
-      const s = new Date(r.starts_at).toISOString().slice(0, 10);
-      const e = new Date(r.ends_at  ).toISOString().slice(0, 10);
+      const s = businessDate(r.starts_at);
+      const e = businessDate(r.ends_at);
       return dStr >= s && dStr <= e;
     });
   }
@@ -1221,7 +1221,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
         {cells.map((c, i) => {
-          const dStr = c.date.toISOString().slice(0, 10);
+          const dStr = calendarDate(c.date);
           const dayResv = reservationsOn(c.date);
           const isToday = dStr === todayStr;
           const dow = c.date.getDay();
