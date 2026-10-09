@@ -295,7 +295,7 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
         {cells.map((cell, i) => {
-          const dStr = cell.calendarDate(date);
+          const dStr = calendarDate(cell.date);
           const dayContracts = contractsOn(cell.date);
           const isToday = dStr === todayStr;
           const dow = cell.date.getDay();
