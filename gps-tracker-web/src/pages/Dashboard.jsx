@@ -1022,7 +1022,8 @@ export default function Dashboard({ onLogout }) {
             flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
           }}>
             <Suspense fallback={<LazyPanelFallback />}>
-              <CorporatePanel devices={devices} />
+              <CorporatePanel devices={devices} onMap={id => { setView('home'); persistFilterDevice(id); }}
+                onDevice={id => { setDetailId(id); setView('devices'); }} onVehiclesChange={reloadDevicesAfterMutation} />
             </Suspense>
           </div>
         )}
@@ -1031,7 +1032,7 @@ export default function Dashboard({ onLogout }) {
         {view === 'rentcar' && isRentcar && (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <Suspense fallback={<LazyPanelFallback />}>
-              <RentcarPanel devices={devices} />
+              <RentcarPanel devices={devices} onMap={id => { setView('home'); persistFilterDevice(id); }} />
             </Suspense>
           </div>
         )}

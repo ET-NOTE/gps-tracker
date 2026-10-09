@@ -27,6 +27,8 @@ const keys = {
   trips:         (deviceId, params = {}) => ['trips', deviceId, params],
   fleetTripStats:(params = {}) => ['fleet-trip-stats', params],
 
+  businessSubscription: kind => ['business-subscription', kind],
+
   // ── rentcar ──
   rentals:        (params = {}) => ['rentals', params],
   renters:        () => ['renters'],

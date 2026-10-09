@@ -1,21 +1,11 @@
-// (2026-07-28) 렌트카 계정 전용 대시보드 (Stage-2 shell).
-// CorporatePanel 과 동일 톤 — shared StatCard + fleet 요약 상단 + 아래 임대 관련
-// 목록 자리 (실 데이터는 Stage-3 에서 backend rental_contracts 추가 후 연결).
-//
-// 지금은 device 만 있으니:
-//  · 전체 차량        = devices.length
-//  · 임대 가능        = 유휴 (last_event_kind !== 'wake') 차량 수 (임시)
-//  · 오늘 반납 예정    = 0 (rental_contracts 없음)
-//  · 이번달 임대 매출  = 0 (매출 데이터 없음)
-// 임대 계약 실 도입 시 useFleetStats 확장 or 별도 hook.
-
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Icon from './Icon';
+import { BusinessWorkspace, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
+import { useBusinessClock, useRentalOperations, useBusinessSubscription } from './business/useBusinessData';
+import { businessDate, rentalSummary, rentalStatus, filterRentals } from '../lib/business';
 import { api } from '../api';
 import { alertDialog, confirmDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
-import { useFleetStats } from './shared/useFleetStats';
-import { panelPropsEqual } from './shared/memoPanel';
 import { Modal, FormField, Button, Pill, SkeletonList, toast } from './ui';
 import {
   useRentals, useCreateRental, useUpdateRental, useReturnRental, useDeleteRental,
@@ -25,58 +15,29 @@ import {
 } from '../state';
 import { useQueryClient } from '@tanstack/react-query';
 
-function RentcarPanel({ devices }) {
-  const [tab, setTab] = useState(() => localStorage.getItem('rentcar_tab') || 'fleet');
-  const setTabPersist = (t) => { setTab(t); try { localStorage.setItem('rentcar_tab', t); } catch {} };
-
-  // (R-Sub) 렌트카 별도 구독 상태 — 법인차 sub 와 완전 분리.
-  const [sub, setSub] = useState(null);
-  useEffect(() => {
-    let cancelled = false;
-    api.getRentcarSubscription()
-      .then(r => { if (!cancelled) setSub(r); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
-
+function RentcarPanel({ devices, onMap }) {
+  const [tab, setTab] = useState('fleet');
+  const [request, setRequest] = useState(null);
+  const subscription = useBusinessSubscription('rentcar');
+  const qc = useQueryClient();
+  const openContracts = value => { setRequest(value); setTab('rentals'); };
   const tabs = [
-    { id: 'fleet',    label: '홈',         icon: 'home' },
-    { id: 'rentals',  label: '임대 계약',  icon: 'route' },
-    { id: 'schedule', label: '반납 일정',  icon: 'clock' },
-    { id: 'renters',  label: '임차인',     icon: 'user' },
-    { id: 'sub',      label: '구독',       icon: 'coin' },
+    { id: 'fleet', label: '운영 현황', icon: 'home', description: '오늘 처리할 일과 차량 상태를 한눈에 확인하세요.' },
+    { id: 'rentals', label: '계약 관리', icon: 'route', description: '차량과 임차인을 찾고 인수·반납을 처리하세요.' },
+    { id: 'schedule', label: '반납 일정', icon: 'clock', description: '예정된 반납 일정을 날짜별로 확인하세요.' },
+    { id: 'renters', label: '임차인', icon: 'user', description: '고객의 이용 이력과 유의 사항을 관리하세요.' },
+    { id: 'settings', label: '설정', icon: 'wrench', description: '이용권 상태와 제공 기능을 확인하세요.' },
   ];
-
-  return (
-    <div className="gps-user-panel gps-business-panel" style={st.wrap}>
-      <div style={st.tabBar}>
-        {tabs.map(t => {
-          const on = tab === t.id;
-          return (
-            <button key={t.id} onClick={() => setTabPersist(t.id)}
-              style={{
-                ...st.tabBtn,
-                color: on ? 'var(--primary)' : 'var(--text-2)',
-                background: on ? 'var(--surface-2)' : 'transparent',
-                fontWeight: on ? 700 : 500,
-                borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
-              }}>
-              <Icon name={t.icon} size={14} />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={st.body}>
-        {tab === 'fleet'    && <FleetTab devices={devices} />}
-        {tab === 'rentals'  && <RentalsTab devices={devices} />}
-        {tab === 'schedule' && <ScheduleTab devices={devices} />}
-        {tab === 'renters'  && <RentersTab />}
-        {tab === 'sub'      && <SubTab sub={sub} onChange={setSub} />}
-      </div>
-    </div>
-  );
+  return <BusinessWorkspace title="렌트카 운영" description="출고부터 반납까지, 오늘의 차량 업무를 관리하세요." tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }}
+    action={<BusinessButton primary icon="plus" onClick={() => openContracts({ new: true })}>새 계약</BusinessButton>}>
+    {tab === 'fleet' && <FleetTab devices={devices} onMap={onMap} onContracts={openContracts} />}
+    {tab === 'rentals' && <RentalsTab devices={devices} request={request} />}
+    {tab === 'schedule' && <ScheduleTab devices={devices} />}
+    {tab === 'renters' && <RentersTab />}
+    {tab === 'settings' && <BusinessSettings subscription={subscription.error
+      ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError>
+      : <SubTab sub={subscription.data} onChange={v => qc.setQueryData(qk.businessSubscription('rentcar'), v)} />} />}
+  </BusinessWorkspace>;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -169,10 +130,10 @@ function SubTab({ sub, onChange }) {
         </div>
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            { icon: 'route', title: '임대 계약 관리',       desc: '계약 CRUD · 반납 처리 · 청구서 XLSX · 요금 자동 정산' },
+            { icon: 'route', title: '임대 계약 관리',       desc: '계약 등록·수정, 반납 정산과 청구서 다운로드' },
             { icon: 'clock', title: '반납 일정 캘린더',      desc: '월 그리드 · 오늘 반납 · 연체 표시 · 셀 클릭 신규 계약' },
-            { icon: 'user',  title: '임차인 · 블랙리스트',   desc: '재이용 이력 · 블랙리스트 등록/해제 · 전화번호 대조' },
-            { icon: 'share', title: '인수·반납 QR 토큰',    desc: '임차인 auth-free 링크 · 사진 업로드 · 파손/연료/오도미터' },
+            { icon: 'user',  title: '임차인 · 이용 유의사항',   desc: '재이용 이력 · 블랙리스트 등록/해제 · 전화번호 대조' },
+            { icon: 'share', title: '인수·반납 QR 토큰',    desc: '고객에게 인수·반납 링크 전달, 차량 사진과 연료·주행거리 기록' },
           ].map(f => (
             <div key={f.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
               <div style={{
@@ -202,7 +163,7 @@ function SubTab({ sub, onChange }) {
 }
 
 // (F3) devices lat/lng 만 바뀌면 재렌더 skip — WS location fix 폭주 대응.
-export default React.memo(RentcarPanel, panelPropsEqual);
+export default React.memo(RentcarPanel);
 
 // ═══════════════════════════════════════════════════════
 // (2026-07-28 Stage-R2) 반납 캘린더 — 월 그리드에 계약 표시.
@@ -227,26 +188,26 @@ function ScheduleTab({ devices }) {
       to:   new Date(end.getTime()   + 7 * 86400_000).toISOString(),
     };
   }, [ym]);
-  const { data: list = [], isLoading: loading, error: qError } = useRentals(scheduleParams);
+  const { data: list = [], isLoading: loading, error: qError, refetch } = useRentals(scheduleParams);
   const error = qError?.message || null;
 
   // 오늘 반납 예정 (표시 월 내 active + ends_at 오늘)
   const todayReturns = useMemo(() => {
-    const t = new Date().toISOString().slice(0, 10);
+    const t = businessDate();
     return list.filter(c =>
-      (c.status === 'active' || c.status === 'draft') &&
-      (c.ends_at || '').slice(0, 10) === t);
+      ['active', 'overdue'].includes(c.status) &&
+      businessDate(c.ends_at) === t);
   }, [list]);
   // 표시 월 내 반납 예정 총 건수
   const monthReturns = useMemo(() => {
-    return list.filter(c => (c.ends_at || '').slice(0, 7) === ym).length;
+    return list.filter(c => c.status !== 'cancelled' && businessDate(c.ends_at).slice(0, 7) === ym).length;
   }, [list, ym]);
 
   return (
     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <StatCardGrid>
-        <StatCard icon="clock"  label="오늘 반납"     value={todayReturns.length} unit="건" tone={todayReturns.length > 0 ? 'primary' : 'default'} />
-        <StatCard icon="bar"    label={`${ym} 반납`}  value={monthReturns} unit="건" tone="default" />
+        <StatCard icon="clock"  label="오늘 반납"     value={qError || loading ? '—' : todayReturns.length} unit="건" tone={todayReturns.length > 0 ? 'primary' : 'default'} />
+        <StatCard icon="bar"    label={`${ym} 반납`}  value={qError || loading ? '—' : monthReturns} unit="건" tone="default" />
         <StatCard icon="route"  label="전체 차량"     value={devices?.length ?? 0} unit="대" tone="default" />
       </StatCardGrid>
 
@@ -254,14 +215,14 @@ function ScheduleTab({ devices }) {
         <input type="month" value={ym} onChange={e => setYm(e.target.value || ym)}
           style={{ ...st.input, width: 140 }} />
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          셀 클릭 = 그 날 preset 신규 계약 · 계약 클릭 = 편집
+          날짜를 누르면 새 계약을, 계약을 누르면 상세 정보를 열 수 있습니다.
         </span>
         <button onClick={() => setEditing('new')} style={{ marginLeft: 'auto', ...st.btnPrimary }}>
           <Icon name="plus" size={13} /> 새 계약
         </button>
       </div>
 
-      {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
+      {error && <BusinessError onRetry={refetch}>반납 일정을 불러오지 못했습니다.</BusinessError>}
       {loading && !list && <SkeletonList count={3} itemHeight={80} />}
 
       <RentalCalendar ym={ym} list={list}
@@ -372,7 +333,7 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
                 )}
               </div>
               {dayContracts.slice(0, MAX_BADGES).map(c => {
-                const s = RENTAL_STATUS[c.status] || RENTAL_STATUS.draft;
+                const s = RENTAL_STATUS[rentalStatus(c)] || RENTAL_STATUS.draft;
                 const returnHere = isReturnDay(cell.date, c);
                 return (
                   <div key={c.id} onClick={(e) => { e.stopPropagation(); onEventClick(c); }} style={{
@@ -413,63 +374,50 @@ const RENTAL_STATUS = {
 };
 const RATE_TYPE_LABEL = { hourly: '시간', daily: '일', monthly: '월' };
 
-function RentalsTab({ devices }) {
+function RentalsTab({ devices, request }) {
   const [statusFilter, setStatusFilter] = useState('active');   // active | overdue | returned | all
   const [editing, setEditing] = useState(null);       // null | 'new' | contract
   const [returning, setReturning] = useState(null);   // contract to return
   const [handoff, setHandoff] = useState(null);       // contract for handoff link
   const [photosOf, setPhotosOf] = useState(null);     // contract for photo gallery
 
-  // (F2-b) useRentals hook + useDeleteRental mutation. setTick 제거.
-  // params 는 statusFilter 만 useMemo (from/to 는 tick 마다 변하면 캐시 miss 되니 useMemo).
-  const rentalParams = useMemo(() => {
-    const now = new Date();
-    const params = {
-      from: new Date(now.getTime() - 30 * 86400_000).toISOString(),
-      to:   new Date(now.getTime() + 90 * 86400_000).toISOString(),
-    };
-    if (statusFilter === 'active')   params.status = ['draft', 'active'];
-    else if (statusFilter !== 'all') params.status = [statusFilter];
-    return params;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
-  const { data: list, isLoading: loading, error: qError } = useRentals(rentalParams);
+  const now = useBusinessClock();
+  const operations = useRentalOperations(now);
+  const all = operations.data || [];
+  const summary = rentalSummary(all, devices, now);
+  const [query, setQuery] = useState('');
+  const [deviceFilter, setDeviceFilter] = useState('');
+  useEffect(() => {
+    setDeviceFilter(request?.deviceId || '');
+    if (request?.new) setEditing('new');
+    if (request?.contract) setEditing(request.contract);
+    if (request?.returning) setReturning(request.returning);
+    if (request?.status) setStatusFilter(request.status);
+    else if (request?.deviceId) setStatusFilter('all');
+  }, [request]);
+  const list = operations.data ? filterRentals(all, { status: statusFilter, deviceId: deviceFilter, query }, now) : null;
+  const loading = operations.isLoading;
   const deleteRental = useDeleteRental();
-  const error = qError?.message || null;
-
-  const activeCount   = (list || []).filter(c => c.status === 'active' || c.status === 'draft').length;
-  const overdueCount  = (list || []).filter(c => c.status === 'overdue').length;
-  const returnedCount = (list || []).filter(c => c.status === 'returned').length;
-  const monthRevenue  = useMemo(() => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    return (list || [])
-      .filter(c => c.settled_at && new Date(c.settled_at) >= monthStart)
-      .reduce((sum, c) => sum + (c.settled_amount_krw || 0), 0);
-  }, [list]);
-
-  // 오늘 반납 예정 (active + ends_at 오늘)
-  const returnToday = useMemo(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    return (list || []).filter(c =>
-      (c.status === 'active' || c.status === 'draft') &&
-      (c.ends_at || '').slice(0, 10) === todayStr).length;
-  }, [list]);
+  const activeCount = filterRentals(all, { status: 'active' }, now).length;
+  const overdueCount = summary.overdue.length;
+  const returnedCount = all.filter(c => c.status === 'returned').length;
+  const monthRevenue = summary.revenue;
+  const returnToday = summary.todayReturns.length;
 
   return (
     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <StatCardGrid>
-        <StatCard icon="route"  label="활성 계약"     value={activeCount}   unit="건" tone="success" />
-        <StatCard icon="clock"  label="오늘 반납"     value={returnToday}   unit="건" tone={returnToday > 0 ? 'primary' : 'default'} />
-        <StatCard icon="warn"   label="연체"          value={overdueCount}  unit="건" tone={overdueCount > 0 ? 'danger' : 'default'} />
-        <StatCard icon="coin"   label="이번달 매출"   value={monthRevenue.toLocaleString()} unit="원" tone="primary" />
+        <StatCard icon="route"  label="활성 계약"     value={operations.error || !operations.data ? '—' : activeCount}   unit="건" tone="success" />
+        <StatCard icon="clock"  label="오늘 반납"     value={operations.error || !operations.data ? '—' : returnToday}   unit="건" tone={returnToday > 0 ? 'primary' : 'default'} />
+        <StatCard icon="warn"   label="연체"          value={operations.error || !operations.data ? '—' : overdueCount}  unit="건" tone={overdueCount > 0 ? 'danger' : 'default'} />
+        <StatCard icon="coin"   label="이번달 매출"   value={operations.error || !operations.data ? '—' : monthRevenue.toLocaleString()} unit="원" tone="primary" />
       </StatCardGrid>
 
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
         <FilterChip active={statusFilter==='active'}   onClick={() => setStatusFilter('active')}   label="활성"     count={activeCount} tone="success" />
         <FilterChip active={statusFilter==='overdue'}  onClick={() => setStatusFilter('overdue')}  label="연체"     count={overdueCount} tone="warn" />
         <FilterChip active={statusFilter==='returned'} onClick={() => setStatusFilter('returned')} label="반납완료" count={returnedCount} tone="primary" />
-        <FilterChip active={statusFilter==='all'}      onClick={() => setStatusFilter('all')}      label="전체"     count={(list || []).length} />
+        <FilterChip active={statusFilter==='all'}      onClick={() => setStatusFilter('all')}      label="전체"     count={all.length} />
         <button onClick={() => setEditing('new')} style={{
           marginLeft: 'auto', ...st.btnPrimary,
         }}>
@@ -477,13 +425,20 @@ function RentalsTab({ devices }) {
         </button>
       </div>
 
-      {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
+      <div className="business-filter-bar">
+        <label className="business-search"><Icon name="filter" size={16}/><input aria-label="계약 검색" placeholder="차량 · 임차인 · 연락처 검색" value={query} onChange={e => setQuery(e.target.value)} /></label>
+        <select aria-label="계약 차량 필터" value={deviceFilter} onChange={e => setDeviceFilter(e.target.value)} style={st.input}>
+          <option value="">전체 차량</option>{devices.map(d => <option key={d.id} value={d.id}>{d.car_plate || d.license_plate || d.display_name || d.device_uid}</option>)}
+        </select>
+      </div>
+      <p className="business-note">진행 중인 계약과 이번 달부터 90일 이내 일정 · 이번 달 정산 내역입니다. 요약은 검색·필터와 관계없이 집계합니다.</p>
+      {operations.error && <BusinessError onRetry={operations.refetch}>계약 정보를 불러오지 못했습니다. 표시 중인 정보가 있다면 이전 조회 결과입니다.</BusinessError>}
       {loading && !list && <SkeletonList count={4} itemHeight={80} />}
-      {list && list.length === 0 && <div style={st.muted}>계약이 없습니다.</div>}
+      {list && !operations.error && list.length === 0 && <BusinessEmpty title="조건에 맞는 계약이 없습니다.">검색 조건을 변경하거나 새 계약을 등록해 주세요.</BusinessEmpty>}
 
       {list && list.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 8 }}>
-          {list.map(c => <RentalCard key={c.id} c={c}
+          {list.map(c => <RentalCard key={c.id} c={{ ...c, status: rentalStatus(c, now) }}
             onEdit={() => setEditing(c)}
             onReturn={() => setReturning(c)}
             onHandoff={() => setHandoff(c)}
@@ -520,7 +475,7 @@ function RentalsTab({ devices }) {
 }
 
 function RentalCard({ c, onEdit, onReturn, onDelete, onHandoff, onPhotos }) {
-  const s = RENTAL_STATUS[c.status] || RENTAL_STATUS.draft;
+  const s = RENTAL_STATUS[rentalStatus(c)] || RENTAL_STATUS.draft;
   const start = new Date(c.starts_at);
   const end   = new Date(c.ends_at);
   const isReturned  = c.status === 'returned' || c.status === 'cancelled';
@@ -779,7 +734,7 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
 
         {/* 임차인 */}
         <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          임차인 (PIPA 최소화)
+          임차인 정보
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="이름 *"><input value={renterName} onChange={e => setRenterName(e.target.value)} style={st.input} /></Labeled>
@@ -1056,332 +1011,33 @@ function FilterChip({ active, onClick, label, count, tone = 'default' }) {
 // (2026-07-28 Stage-R8) 렌트카 홈 대시보드 — rental_contracts 통합 뷰.
 // 차량 fleet + 임대 사이드를 한 화면에서. 오늘/이번주 반납 임박, 활성 계약,
 // 이번달 매출·유휴 차량, 최근 반납.
-function FleetTab({ devices }) {
-  const s = useFleetStats(devices);
-  const fmt = (n) => (n == null ? '–' : n.toLocaleString());
-
-  const [rentals, setRentals] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    const now = new Date();
-    // 넓게 잡아 활성 + 최근 반납 + 예정 다 커버.
-    api.listRentals({
-      from: new Date(now.getTime() - 60 * 86400_000).toISOString(),
-      to:   new Date(now.getTime() + 90 * 86400_000).toISOString(),
-    }).then(rs => { if (!cancelled) { setRentals(rs || []); setLoading(false); } })
-      .catch(()  => { if (!cancelled) { setRentals([]);    setLoading(false); } });
-    return () => { cancelled = true; };
-  }, []);
-
-  const now = Date.now();
-  const list = rentals || [];
-  const activeRentals = list.filter(c => c.status === 'active' || c.status === 'draft');
-  const overdue       = list.filter(c => c.status === 'overdue');
-  const returnedList  = list.filter(c => c.status === 'returned' && c.settled_at);
-
-  // 오늘 반납 (active + ends_at 오늘 안)
-  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  const todayEnd   = new Date(); todayEnd.setHours(23,59,59,999);
-  const returnToday = activeRentals.filter(c => {
-    const e = new Date(c.ends_at);
-    return e >= todayStart && e <= todayEnd;
-  });
-  const returnThisWeek = activeRentals.filter(c => {
-    const e = new Date(c.ends_at).getTime();
-    return e >= now && e <= now + 7 * 86400_000;
-  });
-
-  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
-  const monthRevenue = returnedList
-    .filter(c => new Date(c.settled_at) >= monthStart)
-    .reduce((sum, c) => sum + (c.settled_amount_krw || 0), 0);
-
-  // 유휴 = fleet 총차량 - 임대중 차량 수 (device_id 기준 unique)
-  const rentedDeviceIds = new Set(activeRentals.map(c => c.device_id));
-  const rentedCount = rentedDeviceIds.size;
-  const idleCount = Math.max(0, s.totalCount - rentedCount);
-
-  return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <StatCardGrid>
-        <StatCard icon="list"   label="전체 차량"     value={fmt(s.totalCount)}   unit="대" tone="default" loading={s.loading} />
-        <StatCard icon="route"  label="임대 중"       value={fmt(rentedCount)}    unit="대" tone="success" loading={loading || s.loading} />
-        <StatCard icon="mapPin" label="유휴"          value={fmt(idleCount)}      unit="대" tone="primary" loading={loading || s.loading} />
-        <StatCard icon="clock"  label="오늘 반납"     value={fmt(returnToday.length)} unit="건" tone={returnToday.length > 0 ? 'primary' : 'default'} loading={loading} />
-        <StatCard icon="warn"   label="연체"          value={fmt(overdue.length)} unit="건" tone={overdue.length > 0 ? 'danger' : 'default'} loading={loading} />
-        <StatCard icon="bar"    label="이번주 반납"   value={fmt(returnThisWeek.length)} unit="건" tone="default" loading={loading} />
-        <StatCard icon="coin"   label="이번달 매출"   value={fmt(monthRevenue)}   unit="원" tone="primary" loading={loading} />
-        <StatCard icon="check"  label="이번달 주행"   value={fmt(s.monthKm)}      unit="km" tone="default" loading={s.loading} />
-      </StatCardGrid>
-
-      {/* 반납 임박 (오늘·내일 위주) */}
-      {returnThisWeek.length > 0 && (
-        <ReturnsUpcoming rentals={returnThisWeek} now={now} />
-      )}
-
-      {/* 연체 강조 */}
-      {overdue.length > 0 && (
-        <OverdueList rentals={overdue} now={now} />
-      )}
-
-      {/* 활성 계약 요약 */}
-      <ActiveRentalsMini rentals={activeRentals} />
-
-      {/* 차량 목록 (기존 유지) */}
-      <FleetTable devices={devices} />
-
-      {/* 최근 반납 */}
-      {returnedList.length > 0 && (
-        <RecentReturns rentals={returnedList.slice().sort((a,b) => new Date(b.settled_at) - new Date(a.settled_at)).slice(0, 5)} />
-      )}
-    </div>
-  );
-}
-
-// ── R8 홈 서브컴포넌트 ─────────────────────────────
-function ReturnsUpcoming({ rentals, now }) {
-  const sorted = rentals.slice().sort((a, b) => new Date(a.ends_at) - new Date(b.ends_at));
-  return (
-    <div style={st.card}>
-      <div style={{ ...st.cardTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Icon name="clock" size={13} style={{ color: 'var(--primary)' }} />
-        반납 임박 <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>· 7일 이내</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {sorted.map(c => {
-          const endMs = new Date(c.ends_at).getTime();
-          const diff = endMs - now;
-          const hours = Math.round(diff / 3600_000);
-          const days  = Math.round(diff / 86400_000);
-          const urgency = hours <= 24 ? 'danger' : hours <= 72 ? 'warning' : 'text-2';
-          const label = hours <= 0 ? '오늘 반납' : hours <= 24 ? `${hours}시간 후` : `${days}일 후`;
-          return (
-            <div key={c.id} style={{
-              display: 'flex', gap: 10, alignItems: 'center',
-              padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 8,
-              borderLeft: `3px solid var(--${urgency})`,
-            }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>
-                  {c.license_plate || c.device_name || `#${c.device_id}`}
-                  <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginLeft: 6 }}>
-                    · {c.renter_name}
-                  </span>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
-                  {new Date(c.ends_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                  {c.renter_phone && ` · ${c.renter_phone}`}
-                </div>
-              </div>
-              <span style={{
-                fontSize: 11, fontWeight: 800,
-                color: `var(--${urgency})`,
-                padding: '4px 10px', borderRadius: 999,
-                background: `color-mix(in srgb, var(--${urgency}) 15%, transparent)`,
-              }}>{label}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function OverdueList({ rentals, now }) {
-  return (
-    <div style={{ ...st.card, borderLeft: '3px solid var(--danger)' }}>
-      <div style={{ ...st.cardTitle, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--danger)' }}>
-        <Icon name="warn" size={13} style={{ color: 'var(--danger)' }} />
-        연체 계약
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {rentals.map(c => {
-          const days = Math.round((now - new Date(c.ends_at).getTime()) / 86400_000);
-          return (
-            <div key={c.id} style={{
-              display: 'flex', gap: 10, alignItems: 'center',
-              padding: '8px 10px', background: 'color-mix(in srgb, var(--danger) 8%, transparent)', borderRadius: 8,
-            }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>
-                  {c.license_plate || c.device_name || `#${c.device_id}`}
-                  <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginLeft: 6 }}>· {c.renter_name}</span>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
-                  {c.renter_phone || '연락처 없음'} · 계약 종료 {new Date(c.ends_at).toLocaleDateString('ko-KR')}
-                </div>
-              </div>
-              <span style={{
-                fontSize: 11, fontWeight: 800, color: 'var(--danger)',
-                padding: '4px 10px', borderRadius: 999,
-                background: 'color-mix(in srgb, var(--danger) 20%, transparent)',
-              }}>{days}일 경과</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ActiveRentalsMini({ rentals }) {
-  if (!rentals.length) return null;
-  return (
-    <div style={st.card}>
-      <div style={{ ...st.cardTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Icon name="route" size={13} style={{ color: 'var(--accent)' }} />
-        임대 중 <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>· {rentals.length}건</span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6 }}>
-        {rentals.map(c => (
-          <div key={c.id} style={{
-            padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 8,
-            display: 'flex', flexDirection: 'column', gap: 3,
-          }}>
-            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text)' }}>
-              {c.license_plate || c.device_name || `#${c.device_id}`}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)' }}>{c.renter_name}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
-              ~ {new Date(c.ends_at).toLocaleDateString('ko-KR', { month:'2-digit', day:'2-digit' })}
-              {' · '}
-              {(c.rate_amount_krw || 0).toLocaleString()}원/{RATE_TYPE_LABEL[c.rate_type] || c.rate_type}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function RecentReturns({ rentals }) {
-  return (
-    <div style={st.card}>
-      <div style={{ ...st.cardTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Icon name="check" size={13} style={{ color: 'var(--primary)' }} />
-        최근 반납 <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>· {rentals.length}건</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {rentals.map(c => (
-          <div key={c.id} style={{
-            display: 'flex', gap: 10, alignItems: 'center',
-            padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 8,
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text)' }}>
-                {c.license_plate || c.device_name || `#${c.device_id}`}
-                <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginLeft: 6 }}>· {c.renter_name}</span>
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
-                {new Date(c.settled_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                {c.refund_krw != null && c.deposit_krw > 0 && (
-                  <span style={{
-                    marginLeft: 6,
-                    color: c.refund_krw >= 0 ? 'var(--accent)' : 'var(--danger)',
-                    fontWeight: 700,
-                  }}>
-                    · {c.refund_krw >= 0 ? '환급' : '추가청구'} {Math.abs(c.refund_krw).toLocaleString()}원
-                  </span>
-                )}
-              </div>
-            </div>
-            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary)' }}>
-              {(c.settled_amount_krw || 0).toLocaleString()}원
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// 차량 리스트 — 상태 뱃지 (운행중/주차/오프라인) + 마지막 위치 요약.
-// 첨부 이미지 스타일: 아이콘 + 차량명 + 상태 뱃지 + 부가 정보 우측.
-function FleetTable({ devices }) {
-  const rows = useMemo(() => (devices || []).map(d => ({
-    id: d.id,
-    label: d.display_name || d.device_uid,
-    state: rentcarState(d),
-    lastLat: d.last_lat, lastLng: d.last_lng,
-    lastFixAt: d.last_fix_at,
-  })), [devices]);
-
-  if (!rows.length) return <div style={st.muted}>차량이 없습니다.</div>;
-
-  return (
-    <div style={st.card}>
-      <div style={st.cardTitle}>차량 목록</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {rows.map(r => (
-          <div key={r.id} style={st.vehicleRow}>
-            <div style={st.vehicleIcon}><Icon name="mapPin" size={16} /></div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{r.label}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-                {r.lastFixAt ? formatAge(r.lastFixAt) : '위치 미확인'}
-              </div>
-            </div>
-            <StateBadge state={r.state} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function StateBadge({ state }) {
-  const map = {
-    active:  { color: 'var(--accent)',  bg: 'color-mix(in srgb, var(--accent) 15%, transparent)',  label: '운행중' },
-    idle:    { color: 'var(--text-2)',  bg: 'var(--surface-2)',                                    label: '유휴' },
-    offline: { color: 'var(--text-3)',  bg: 'var(--surface-2)',                                    label: '오프라인' },
-  };
-  const m = map[state] || map.offline;
-  return (
-    <span style={{
-      fontSize: 11, fontWeight: 700,
-      padding: '4px 10px', borderRadius: 999,
-      color: m.color, background: m.bg,
-      flexShrink: 0,
-    }}>
-      {m.label}
-    </span>
-  );
-}
-
-// 렌트카 관점 상태 파생 — last_event_kind='wake' 이면 운행중.
-// last_fix_at 기준 30분+ 없으면 offline. 그 외 idle.
-function rentcarState(d) {
-  if (d.last_event_kind === 'wake') return 'active';
-  if (!d.last_fix_at) return 'offline';
-  const age = Date.now() - new Date(d.last_fix_at).getTime();
-  if (age > 30 * 60 * 1000) return 'offline';
-  return 'idle';
-}
-
-function formatAge(iso) {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 60_000) return '방금';
-  const min = Math.floor(ms / 60_000);
-  if (min < 60) return `${min}분 전`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  const d = Math.floor(hr / 24);
-  return `${d}일 전`;
-}
-
-function PlaceholderTab({ title, hint }) {
-  return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', textAlign: 'center' }}>
-      <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface-2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)' }}>
-        <Icon name="clock" size={22} />
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{title}</div>
-      <div style={{ fontSize: 12, color: 'var(--text-2)', maxWidth: 360, lineHeight: 1.6 }}>{hint}</div>
-    </div>
-  );
+function FleetTab({ devices, onMap, onContracts }) {
+  const now = useBusinessClock();
+  const result = useRentalOperations(now);
+  const summary = rentalSummary(result.data || [], devices, now);
+  const ready = !!result.data && !result.error;
+  const tasks = [
+    ...summary.overdue.map(c => ({ c, key: `overdue-${c.id}`, label: '반납 지연', tone: 'urgent', date: c.ends_at, action: '반납 처리', returning: true })),
+    ...summary.todayReturns.filter(c => rentalStatus(c, now) !== 'overdue').map(c => ({ c, key: `return-${c.id}`, label: '오늘 반납', tone: 'info', date: c.ends_at, action: '반납 처리', returning: true })),
+    ...summary.todayPickups.map(c => ({ c, key: `pickup-${c.id}`, label: c.status === 'draft' ? '출고 확인' : '오늘 출고', tone: 'good', date: c.starts_at, action: '계약 확인' })),
+  ];
+  return <div className="business-overview">
+    <BusinessMetrics items={[
+      { label: '오늘 출고', value: ready ? summary.todayPickups.length : null, unit: '건', hint: '오늘 시작하는 계약', icon: 'route' },
+      { label: '오늘 반납', value: ready ? summary.todayReturns.length : null, unit: '건', hint: '예정 시간과 반납 상태 확인', icon: 'clock' },
+      { label: '반납 지연', value: ready ? summary.overdue.length : null, unit: '건', hint: '종료 시간을 지난 미반납 계약', tone: summary.overdue.length ? 'urgent' : '', icon: 'warn' },
+      { label: '미배차 차량', value: ready ? summary.available.length : null, unit: '대', hint: '신규 계약 전 예약·정비 확인', tone: 'good', icon: 'list' },
+    ]}/>
+    {result.error && <BusinessError onRetry={result.refetch}>계약 현황을 불러오지 못했습니다. 배차·반납 상태를 확인한 후 처리해 주세요.</BusinessError>}
+    <BusinessSection title="오늘 처리할 일" description="지연된 반납을 먼저 확인하고 출고·반납을 처리하세요." action={<BusinessButton onClick={() => onContracts({ status: 'all' })}>계약 전체 보기</BusinessButton>}>
+      {result.isLoading ? <SkeletonList count={3} itemHeight={72}/> : tasks.length ? tasks.map(({ c, key, label, tone, date, action, returning }) =>
+        <BusinessTask key={key} title={c.license_plate || c.device_name || `차량 ${c.device_id}`} description={`${c.renter_name} · ${new Date(date).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`} label={label} tone={tone} action={action} onClick={() => onContracts(returning ? { returning: c } : { contract: c })}/>)
+        : !result.error && <BusinessEmpty title="오늘 처리할 출고·반납이 없습니다.">새 계약을 등록하면 이곳에 일정이 표시됩니다.</BusinessEmpty>}
+    </BusinessSection>
+    <BusinessVehicles devices={devices} onMap={onMap} onDetail={d => onContracts({ deviceId: d.id })} detailLabel="계약 보기" statusUnknown={!ready}
+      availability={d => summary.occupied.has(String(d.id)) ? { label: '임대 중', tone: 'info' } : { label: '미배차', tone: 'good' }}/>
+    <p className="business-note">전체 {devices.length}대 · {ready ? `현재 임대 ${summary.occupied.size}대 · 이번 달 정산 ${summary.revenue.toLocaleString()}원` : '임대·정산 정보 확인 필요'}. 차량의 운영 상태와 단말기 통신 상태는 별도로 표시합니다.</p>
+  </div>;
 }
 
 const st = {

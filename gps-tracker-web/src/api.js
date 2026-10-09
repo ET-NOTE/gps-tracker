@@ -645,6 +645,7 @@ export const api = {
   // (2026-07-28) Stage-R1: 렌트카 계약.
   listRentals: (params = {}) => {
     const q = new URLSearchParams();
+    if (params.view) q.set('view', params.view);
     if (params.device_id != null) q.set('device_id', String(params.device_id));
     if (params.from)   q.set('from',   params.from);
     if (params.to)     q.set('to',     params.to);

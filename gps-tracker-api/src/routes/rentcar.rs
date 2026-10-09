@@ -214,6 +214,7 @@ pub struct Contract {
 
 #[derive(Debug, Deserialize)]
 pub struct ContractQuery {
+    pub view: Option<String>,
     pub status: Option<String>,
     pub device_id: Option<i64>,
     pub from: Option<String>,
@@ -372,40 +373,51 @@ async fn list_contracts(
         })
         .filter(|v| !v.is_empty());
 
-    let rows: Vec<Contract> =
-        if let (Some(dev_id), Some(ref sts)) = (q.device_id, statuses.as_ref()) {
-            sqlx::query_as(SQL_LIST_DEV_STATUS)
-                .bind(user.user_id)
-                .bind(dev_id)
-                .bind(from)
-                .bind(to)
-                .bind(sts)
-                .fetch_all(&state.db)
-                .await?
-        } else if let Some(dev_id) = q.device_id {
-            sqlx::query_as(SQL_LIST_DEV)
-                .bind(user.user_id)
-                .bind(dev_id)
-                .bind(from)
-                .bind(to)
-                .fetch_all(&state.db)
-                .await?
-        } else if let Some(ref sts) = statuses {
-            sqlx::query_as(SQL_LIST_STATUS)
-                .bind(user.user_id)
-                .bind(from)
-                .bind(to)
-                .bind(sts)
-                .fetch_all(&state.db)
-                .await?
-        } else {
-            sqlx::query_as(SQL_LIST_ALL)
-                .bind(user.user_id)
-                .bind(from)
-                .bind(to)
-                .fetch_all(&state.db)
-                .await?
-        };
+    if q.view.as_deref().is_some_and(|v| v != "operations") {
+        return Err(AppError::BadRequest("unsupported contract view".into()));
+    }
+    let rows: Vec<Contract> = if q.view.as_deref() == Some("operations") {
+        sqlx::query_as(SQL_LIST_OPERATIONS)
+            .bind(user.user_id)
+            .bind(from)
+            .bind(to)
+            .bind(q.device_id)
+            .bind(statuses.as_ref())
+            .fetch_all(&state.db)
+            .await?
+    } else if let (Some(dev_id), Some(ref sts)) = (q.device_id, statuses.as_ref()) {
+        sqlx::query_as(SQL_LIST_DEV_STATUS)
+            .bind(user.user_id)
+            .bind(dev_id)
+            .bind(from)
+            .bind(to)
+            .bind(sts)
+            .fetch_all(&state.db)
+            .await?
+    } else if let Some(dev_id) = q.device_id {
+        sqlx::query_as(SQL_LIST_DEV)
+            .bind(user.user_id)
+            .bind(dev_id)
+            .bind(from)
+            .bind(to)
+            .fetch_all(&state.db)
+            .await?
+    } else if let Some(ref sts) = statuses {
+        sqlx::query_as(SQL_LIST_STATUS)
+            .bind(user.user_id)
+            .bind(from)
+            .bind(to)
+            .bind(sts)
+            .fetch_all(&state.db)
+            .await?
+    } else {
+        sqlx::query_as(SQL_LIST_ALL)
+            .bind(user.user_id)
+            .bind(from)
+            .bind(to)
+            .fetch_all(&state.db)
+            .await?
+    };
     Ok(Json(rows))
 }
 
@@ -1081,6 +1093,24 @@ const SQL_INVOICE_SELECT: &str =
     c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
     FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
     WHERE c.id = $1 AND c.user_id = $2";
+
+const SQL_LIST_OPERATIONS: &str =
+    "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,
+    c.renter_name, c.renter_phone, c.renter_id_last4, c.starts_at, c.ends_at,
+    c.rate_type, c.rate_amount_krw, c.included_km_per_day, c.over_km_price_krw,
+    c.deposit_krw, c.return_odometer_km, c.pickup_odometer_km,
+    c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
+    c.status, c.note, c.created_at,
+    c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+    FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+    WHERE c.user_id = $1
+      AND ((c.starts_at < $3 AND c.ends_at > $2)
+           OR c.status IN ('active','overdue')
+           OR (c.status = 'returned' AND c.settled_at >= $2 AND c.settled_at < $3))
+      AND ($4::bigint IS NULL OR c.device_id = $4)
+      AND ($5::text[] IS NULL OR c.status = ANY($5))
+    ORDER BY c.starts_at DESC";
 
 const SQL_LIST_ALL: &str =
     "SELECT c.id, c.user_id, c.device_id, d.display_name AS device_name, d.license_plate,

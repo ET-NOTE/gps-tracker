@@ -32,6 +32,7 @@ docker run --rm --name "gps-build-$release" --cpus=4 --memory=6g --memory-swap=6
     npm test
     VITE_BASE=/ npm run build
     cp -R dist /out/web
+    cp /work/ops/test_business_api.py /out/test_business_api.py
     cp /work/ops/test_dev_api.py /out/test_dev_api.py
     cp /work/ops/test_dev_resilience.py /out/test_dev_resilience.py
     cp /work/ops/test_dev_speed.py /out/test_dev_speed.py
