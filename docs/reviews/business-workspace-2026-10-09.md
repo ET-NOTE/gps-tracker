@@ -44,3 +44,12 @@
 - 운영 웹 릴리스 `web-business-width-20261009-be7211f`. API는 `dev-20261009-225207-cdd659d` 그대로 유지.
 - 2530px 화면에서 두 패널 모두 가용 2526px 전체 사용, 390px 모바일에서 가로 넘침 없음. Vite 빌드 및 운영 정적 파일 해시 검증 통과.
 - 직전 웹 `/home/mmm/releases/prod-20261009-225207-cdd659d/web` 보존, 진단 페이지 동일성 확인.
+
+## 렌트카 달력 오류 수정 (2026-10-10)
+
+- 앞선 날짜 처리 수정 중 `cell.calendarDate(date)`라는 잘못된 참조가 들어가 반납 일정 진입 시 `ReferenceError: date is not defined`가 발생했다. `calendarDate(cell.date)`로 바로잡았다.
+- 실제 RentalCalendar/ReservationCalendar를 렌더링하는 회귀 테스트를 추가했다. 수정 전 렌트카에서 보고된 오류를 재현했고, 수정 후 전체 웹 테스트 67개와 Vite 운영 빌드가 통과했다. 빈 달 42개 셀, 날짜 선택, 패딩 날짜 무시, 한국 날짜 기준 일정 표시와 일정 클릭을 검증한다.
+- 격리 브라우저에서 렌트카 반납 달력 및 날짜 클릭에 따른 계약 입력창의 날짜 채움, 법인차 예약 달력과 예약 입력창 열림을 확인했다. 실제 계약/예약을 저장하지 않았다.
+- 소스 `f19becb2d130649294ff9ea24582188b075d4640`, 운영 웹 `web-calendar-fix-20261010-f19becb`. 공개 페이지와 모든 신규 JS/CSS 해시 검증 통과.
+- API `dev-20261009-225207-cdd659d`와 진단 페이지는 그대로이며, 직전 웹 `/home/mmm/releases/web-business-width-20261009-be7211f/web`을 보존했다.
+- 검증 화면: `C:/Users/msb/AppData/Local/GPS-Builds/business-calendar-fixed.png`.
