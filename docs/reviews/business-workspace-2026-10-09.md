@@ -70,3 +70,12 @@
 - 실제 GPS·이벤트는 생성하거나 수정하지 않았다. 계정 기본 유형 `corporate_fleet`, 두 장치의 유형 override `null`은 기존 상태를 유지했다. 렌트카 화면은 내정보 → 계정 → 계정 유형에서 렌트카로 전환하여 확인할 수 있다.
 - 제한된 생성 스크립트는 `ops/seed_business_export_demo.py`. 서버 보존 자료는 권한 700의 `/home/mmm/gps-artifacts/business-export-review/`, 생성 명세는 `seed-manifest.json`(600). 토큰/DB 인증정보는 출력·저장하지 않는다. 계정 스냅샷은 로컬 격리 검증에만 사용했으며 Git과 배포 파일에서 제외했다.
 - 로컬 파일 검증 결과: `C:/Users/msb/AppData/Local/GPS-Builds/business-exports/`. 화면 증거: `C:/Users/msb/AppData/Local/GPS-Builds/business-export-ui.png`(실제 서버 스냅샷을 표시하는 로컬 검증 화면).
+
+## 모달 입력 정렬 수정 (2026-10-11)
+
+- 사용자가 보낸 새 예약 화면에서 메모의 포커스 테두리 좌우가 잘리는 문제를 재현했다. 공통 모달의 스크롤 영역 안쪽으로 입력 포커스 테두리를 배치하고, 제목과 닫기 버튼을 정렬했다. 필드가 세로로 눌리지 않도록 스크롤 본문의 항목 축소를 막았다.
+- 예약 필드를 공통 라벨 컴포넌트로 통일했다. 날짜·시간은 최소 240px가 확보될 때만 나란히 표시하므로 좁은 예약창과 모바일에서는 한 열로, 넓은 렌트카 계약창에서는 두 열로 표시된다. 렌트카 인수 오도미터는 날짜 행에서 분리했다.
+- 예약·계약의 취소/저장 버튼을 스크롤 본문 밖의 공통 footer로 옮기고 높이를 통일했다. 메모 입력 높이를 80px로 조정했다. 저장 API와 데이터는 변경하지 않았다.
+- 격리 브라우저에서 기존 문제 재현 후 320×568, 390×844, 1280×720으로 확인했다. 예약 입력 좌우가 일치하고, 포커스 outline-offset -2px, 가로 넘침 없음, 짧은 화면에서 메모 스크롤 접근과 footer 유지, 렌트카 날짜 두 열/한 열 전환을 검증했다. 모바일 실기기 키보드 검증은 별도로 하지 않았다. 테스트 74개와 Vite 운영 빌드 통과.
+- 소스 `d6f27138f8a111b7498ec07eb29477298b48a643`, 운영 웹 `web-business-modal-20261011-d6f2713`. 공개 페이지와 신규 JS/CSS/글꼴 해시 확인 완료. API와 진단 페이지는 그대로이며 직전 `web-business-export-20261010-4d2ce29`를 보존했다.
+- 검증 화면: `C:/Users/msb/AppData/Local/GPS-Builds/business-reservation-modal-fixed.png`.
