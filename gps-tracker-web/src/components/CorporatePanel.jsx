@@ -9,7 +9,7 @@ import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleNa
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
-import { Modal, Button, SkeletonList, toast } from './ui';
+import { Modal, FormField, Button, SkeletonList, toast } from './ui';
 import {
   useCorporateInfo, useStaff, useReservations, useDocuments,
   useCreateReservation, useUpdateReservation, useDeleteReservation,
@@ -1385,10 +1385,14 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
   }
 
   return (
-    <Modal open onClose={onClose} size="md" title={init?.id ? '예약 편집' : '새 예약'}>
+    <Modal open onClose={onClose} size="md" title={init?.id ? '예약 편집' : '새 예약'} footer={<>
+      <Button onClick={onClose} disabled={busy} variant="ghost" size="lg" style={{ flex: 1 }}>취소</Button>
+      <Button onClick={save} busy={busy} variant="primary" size="lg" style={{ flex: 2 }}>
+        {busy ? '저장 중...' : '저장'}
+      </Button>
+    </>}>
 
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량</div>
+        <FormField label="차량">
           <select value={deviceId} onChange={e => setDeviceId(e.target.value)} style={st.input}>
             {(devices || []).map(d => (
               <option key={d.id} value={d.id}>
@@ -1396,38 +1400,33 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
               </option>
             ))}
           </select>
-        </div>
+        </FormField>
 
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>운전자 (선택)</div>
+        <FormField label="운전자 (선택)">
           <select value={driverId} onChange={e => setDriverId(e.target.value)} style={st.input}>
             <option value="">— 미지정 —</option>
             {staff.map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` (${s.role})` : ''}</option>)}
           </select>
-        </div>
+        </FormField>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>시작</div>
+        <div className="business-datetime-fields">
+          <FormField label="시작">
             <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={st.input} />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>종료</div>
+          </FormField>
+          <FormField label="종료">
             <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} style={st.input} />
-          </div>
+          </FormField>
         </div>
 
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>목적</div>
+        <FormField label="목적">
           <input value={purpose} onChange={e => setPurpose(e.target.value)}
             placeholder="거래처 방문, 외근..." style={st.input} />
-        </div>
+        </FormField>
 
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>메모 (선택)</div>
+        <FormField label="메모 (선택)">
           <textarea value={note} onChange={e => setNote(e.target.value)}
-            placeholder="..." style={{ ...st.input, minHeight: 50, resize: 'vertical', fontFamily: 'inherit' }} />
-        </div>
+            placeholder="예약 관련 내용을 입력하세요." style={{ ...st.input, minHeight: 80, resize: 'vertical', fontFamily: 'inherit' }} />
+        </FormField>
 
         {init?.id && (
           <div>
@@ -1445,12 +1444,6 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
-          <Button onClick={onClose} disabled={busy} variant="ghost" style={{ flex: 1 }}>취소</Button>
-          <Button onClick={save} busy={busy} variant="primary" size="lg" style={{ flex: 2 }}>
-            {busy ? '저장 중...' : '저장'}
-          </Button>
-        </div>
     </Modal>
   );
 }

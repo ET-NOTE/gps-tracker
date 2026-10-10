@@ -68,7 +68,7 @@ export default function Modal({
       <div
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        className="gps-user-panel"
+        className="gps-user-panel gps-modal"
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}
         style={{
@@ -87,7 +87,7 @@ export default function Modal({
         }}
       >
         {(title != null || subtitle != null) && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: 'var(--space-2)' }}>
             <div style={{ minWidth: 0, flex: 1 }}>
               {title != null && (
                 <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{title}</div>
@@ -111,7 +111,7 @@ export default function Modal({
             )}
           </div>
         )}
-        <div style={{
+        <div className="gps-modal-body" style={{
           overflowY: 'auto',
           display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
           minHeight: 0, flex: 1,
@@ -120,7 +120,7 @@ export default function Modal({
           {children}
         </div>
         {footer && (
-          <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+          <div style={{ display: 'flex', flexShrink: 0, gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
             {footer}
           </div>
         )}

@@ -126,3 +126,7 @@
 .business-export-bar label { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .business-export-bar .business-note { flex-basis: 100%; margin: 0; }
 .business-export-error { flex-basis: 100%; color: var(--danger); font-size: 12px; }
+
+/* A complete date/time needs more room than a short text field. */
+.business-datetime-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 12px; }
+.business-datetime-fields > * { min-width: 0; }

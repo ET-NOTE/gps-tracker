@@ -732,7 +732,12 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
   }
 
   return (
-    <Modal open onClose={onClose} size="lg" title={init?.id ? '계약 편집' : '새 임대 계약'}>
+    <Modal open onClose={onClose} size="lg" title={init?.id ? '계약 편집' : '새 임대 계약'} footer={<>
+      <Button onClick={onClose} disabled={busy} variant="ghost" size="lg" style={{ flex: 1 }}>취소</Button>
+      <Button onClick={save} busy={busy} variant="primary" size="lg" style={{ flex: 2 }}>
+        {busy ? '저장 중...' : '저장'}
+      </Button>
+    </>}>
         {/* 차량 + 상태 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
           <Labeled label="차량">
@@ -788,11 +793,11 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
         )}
 
         {/* 기간 + 인수 오도미터 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+        <div className="business-datetime-fields">
           <Labeled label="시작"><input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={st.input} /></Labeled>
           <Labeled label="종료"><input type="datetime-local" value={endsAt}   onChange={e => setEndsAt(e.target.value)}   style={st.input} /></Labeled>
-          <Labeled label="인수 오도미터 (km)"><input type="number" value={pickupOd} onChange={e => setPickupOd(e.target.value)} style={st.input} /></Labeled>
         </div>
+        <Labeled label="인수 오도미터 (km)"><input type="number" value={pickupOd} onChange={e => setPickupOd(e.target.value)} style={st.input} /></Labeled>
 
         {/* 요금 */}
         <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
@@ -825,12 +830,6 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
         </div>
         <Labeled label="메모"><input value={note} onChange={e => setNote(e.target.value)} style={st.input} /></Labeled>
 
-        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
-          <Button onClick={onClose} disabled={busy} variant="ghost" size="md" style={{ flex: 1 }}>취소</Button>
-          <Button onClick={save} busy={busy} variant="primary" size="lg" style={{ flex: 2 }}>
-            {busy ? '저장 중...' : '저장'}
-          </Button>
-        </div>
     </Modal>
   );
 }
