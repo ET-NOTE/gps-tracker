@@ -121,20 +121,20 @@ mod tests {
     fn boundaries_missing_values_and_estimate_are_consistent() {
         assert_eq!(estimate(0), None);
         assert_eq!(estimate(5000), None);
-        assert_eq!(estimate(2690), Some(("전압 매우 부족", 0)));
+        assert_eq!(estimate(2500), Some(("전압 매우 부족", 0)));
         assert_eq!(estimate(2875).unwrap().0, "전압 매우 부족");
         assert_eq!(estimate(2876).unwrap().0, "저전압");
         assert_eq!(estimate(3331).unwrap().0, "저전압");
         assert_eq!(estimate(3332).unwrap().0, "정상");
-        assert_eq!(estimate(3916), Some(("정상", 75)));
+        assert_eq!(estimate(3901), Some(("정상", 75)));
         assert_eq!(estimate(4200), Some(("정상", 100)));
         assert_eq!(estimate(4300).unwrap().1, 100);
         assert!(alert_body(Some(2800)).contains("전압 기반 추정"));
         assert_eq!(alert_title(Some(3898)), "배터리 알림 기준 도달");
-        assert_eq!(calibrated_mv(2689), Some(2779));
+        assert_eq!(calibrated_mv(2689), Some(2761));
         assert_eq!(calibrated_mv(3253), Some(3219));
-        assert_eq!(calibrated_mv(2690), Some(2779));
-        assert!(alert_body(Some(2690)).contains("2.78 V"));
+        assert_eq!(calibrated_mv(2500), Some(2597));
+        assert!(alert_body(Some(2500)).contains("2.60 V"));
         assert_eq!(calibrated_mv(0), None);
         let voltages: Vec<_> = (1000..=4500).map(|v| calibrated_mv(v).unwrap()).collect();
         assert!(voltages.windows(2).all(|w| w[0] <= w[1]));

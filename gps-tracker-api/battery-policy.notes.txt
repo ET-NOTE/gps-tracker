@@ -12,31 +12,35 @@ At approximately 2.77V physical / 2.69V ADC, median successful-reception gap
 was 32s, maximum 68s (formerly median 16.5s). HTTP codes were not captured.
 Battery chemistry/model/capacity and exact USB removal timestamp unverified.
 
-The initial voltage-to-percent curve is a provisional 1S GPS product estimate,
-guided by the observed discharge trajectory. Rounded 5-minute physical-voltage
-medians at relative elapsed positions between 10/12 10:45 and 10/14 12:00:
-95% 4.066V, 90% 4.031V, 80% 3.953V, 75% 3.908V, 60% 3.767V,
-50% 3.666V, 40% 3.514V, 25% 3.395V, 20% 3.400V, 15% 3.289V,
-10% 3.155V, 5% 2.973V, endpoint 2.817V.
-The 20-25% local recovery is merged into a monotonic 23%/3.400V anchor.
-Full display is anchored at 4.200V; empty display at 2.800V. Endpoints are
-display conventions: the cell is not electrochemically empty at displayed 0%.
-The experiment remains ongoing. Relative run time under this load does NOT
-establish true charge capacity or remaining runtime under other conditions.
-Frontend and FCM explicitly call the result a voltage-based estimate.
+Final test checkpoint: analysis_20261014_134946, 36,865 scope snapshots and
+10,643 server records. The logger was subsequently stopped at the user's request.
+The user reported three repetitions of three long beeps around 13:48 KST.
+The running firmware source 98bf4a637c emits three 500ms beeps after crash resets.
+13:47:52 uptime=2566s -> 13:48:35 uptime=23s, reset/wake cause BROWNOUT.
+A separate earlier reset is confirmed at 13:05. Exactly three resets are not
+provable from server records because reboot attempts may fail to transmit.
+13:48 one-minute physical mean=2.60537V, median=2.60336V; minimum snapshot=1.90V.
+
+The user designated this event level as display 0%; rounded physical 2.600V.
+Full display remains 4.200V. ops/refit_battery_percentage.py reproduces the
+relative-time curve between 10/12 10:45 and 10/14 13:48 from 5-minute physical
+voltage medians. It pools local reversals and preserves monotonic percentages.
+Detailed targets are in battery-percentage-evidence.json. This is an estimated
+remaining fraction under the observed test load, not measured charge capacity.
+Zero does not mean safe cutoff, electrochemical empty, or the first failure.
 Do not use this curve for 2S packs, smartphone batteries, or a safety cutoff.
 
 User designated unit 520211 as the product standard on 2026-10-14.
 The product now uses the piecewise ADC-to-physical voltage table in policy JSON.
 Source provenance, bin counts and same-discharge held-out minute residuals are
 in battery-calibration-evidence.json, reproducible with ops/build_battery_calibration.py.
-2,943 paired one-minute means; initial 23 minutes excluded, exact USB removal
-still unknown. Median offsets by ADC range are linearly interpolated and rounded
+2,972 paired one-minute means; initial 23 minutes excluded, exact USB removal
+still unknown. First 120 seconds of each boot and deployment 13:11..13:15 are excluded. Median offsets by ADC range are linearly interpolated and rounded
 to 1mV (calculation resolution, NOT instrument accuracy). Out-of-range values
 use the nearest endpoint offset and are marked as outside-range estimates.
-Measured anchor range is raw ADC 2689..4119mV; no extrapolated slope is used.
-Adjacent held-out even minutes: mean absolute residual 14.84 -> 5.08mV,
-p95 absolute residual 37.97 -> 12.79mV. These are SAME discharge validation,
+Measured anchor range is raw ADC 2538..4119mV; no extrapolated slope is used.
+Adjacent held-out even minutes: mean absolute residual 15.53 -> 5.14mV,
+p95 absolute residual 39.10 -> 13.07mV. These are SAME discharge validation,
 not independent hardware accuracy; the scope sample quantum is approximately
 20mV and scope/ADC acquisition is not synchronized. Charging, USB power,
 temperature/load changes and unit-to-unit tolerances remain unvalidated.
@@ -45,7 +49,7 @@ Raw vbat_mv and modem cbc_mv remain unchanged and separate in storage/API/WS.
 The frontend and backend transform raw ADC exactly once at interpretation time.
 Status, estimated percentage, alert eligibility and push text all use calibrated
 voltage. Technical details retain original ADC and modem rail readings.
-The standard is provisional and versioned while discharge measurement continues.
+The standard is versioned. This discharge session is closed; new independent validation is still needed.
 
 The same battery-policy.json feeds JS and Rust. Existing per-account push
 thresholds and the 24-hour debounce are retained. A custom alert above 3.30V

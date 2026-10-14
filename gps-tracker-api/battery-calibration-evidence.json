@@ -2,21 +2,40 @@
   "standard_device": "520211",
   "battery": "MEGACANON 2 cells parallel",
   "source_sha256": {
-    "scope_snapshot.csv": "09e479a755279a0da0ae14f18d5f4c8e356929e5491f2abda57dcb30562783f3",
-    "server_snapshot.json": "6655142d653dd41d0e6559aebb721bca2270c30feb74cd5dcdfbd145f843b06e"
+    "scope_snapshot.csv": "ce9ae36eeb362e3ba385bdea805cd1cd0457229213e2a368a92fce977bf48f25",
+    "server_snapshot.json": "ddeff8a5e780dd54271d6116854d85252c1a5ac782507a39d9547a4b07fd9b20"
   },
   "cutoff": "2026-10-12T11:00:00+09:00",
-  "paired_minutes": 2943,
+  "paired_minutes": 2972,
   "first": "2026-10-12T11:00:00+09:00",
-  "last": "2026-10-14T12:43:00+09:00",
+  "last": "2026-10-14T13:46:00+09:00",
+  "exclusions": "First 120 seconds of each boot; API deployment window 2026-10-14 13:11..13:15 KST.",
   "method": "Median scope-minus-ADC offset by ADC bin; linear interpolation. Endpoint offset outside measured range.",
   "limitations": "Initial 23 minutes excluded; exact USB removal time unknown. Same-minute matching, not simultaneous ADC samples. Scope 20mV sample quantization. Adjacent minute validation shares the same device and discharge; not independent hardware/charging validation.",
   "bins": [
     {
-      "raw_mv": 2689,
-      "calibrated_mv": 2779,
-      "minutes": 5,
-      "median_offset_mv": 89.78
+      "raw_mv": 2538,
+      "calibrated_mv": 2635,
+      "minutes": 6,
+      "median_offset_mv": 97.31
+    },
+    {
+      "raw_mv": 2582,
+      "calibrated_mv": 2676,
+      "minutes": 7,
+      "median_offset_mv": 93.89
+    },
+    {
+      "raw_mv": 2638,
+      "calibrated_mv": 2720,
+      "minutes": 11,
+      "median_offset_mv": 81.81
+    },
+    {
+      "raw_mv": 2682,
+      "calibrated_mv": 2756,
+      "minutes": 10,
+      "median_offset_mv": 73.89
     },
     {
       "raw_mv": 2733,
@@ -129,8 +148,20 @@
   ],
   "points": [
     [
-      2689,
-      2779
+      2538,
+      2635
+    ],
+    [
+      2582,
+      2676
+    ],
+    [
+      2638,
+      2720
+    ],
+    [
+      2682,
+      2756
     ],
     [
       2733,
@@ -208,16 +239,16 @@
   "validation": {
     "training": "odd clock minutes",
     "held_out": "even clock minutes",
-    "minutes": 1472,
+    "minutes": 1486,
     "raw": {
-      "mean_bias_mv": 9.23,
-      "mean_absolute_error_mv": 14.84,
-      "p95_absolute_error_mv": 37.97
+      "mean_bias_mv": 8.32,
+      "mean_absolute_error_mv": 15.53,
+      "p95_absolute_error_mv": 39.1
     },
     "corrected": {
       "mean_bias_mv": -0.32,
-      "mean_absolute_error_mv": 5.08,
-      "p95_absolute_error_mv": 12.79
+      "mean_absolute_error_mv": 5.14,
+      "p95_absolute_error_mv": 13.07
     }
   }
 }

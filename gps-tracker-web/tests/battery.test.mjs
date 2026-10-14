@@ -15,15 +15,16 @@ test('battery state boundaries and percentage are monotonic; invalid readings st
   assert.equal(battery.batteryReading(2876).label, '저전압');
   assert.equal(battery.batteryReading(3331).label, '저전압');
   assert.equal(battery.batteryReading(3332).label, '정상');
-  assert.equal(battery.batteryReading(2690).percent, 0);
-  assert.equal(battery.batteryReading(3916).percent, 75);
+  assert.equal(battery.batteryReading(2500).percent, 0);
+  assert.equal(battery.batteryReading(3901).percent, 75);
   assert.equal(battery.batteryReading(4200).percent, 100);
-  assert.equal(battery.batteryReading(2689).mv, 2779);
+  assert.equal(battery.batteryReading(2689).mv, 2761);
   assert.equal(battery.batteryReading(3253).mv, 3219);
-  assert.equal(battery.batteryReading(2690).voltage, '2.78 V');
-  assert.equal(battery.batteryReading(2688).outsideCalibration, true);
-  assert.equal(battery.batteryReading(2689).outsideCalibration, false);
+  assert.equal(battery.batteryReading(2500).voltage, '2.60 V');
+  assert.equal(battery.batteryReading(2537).outsideCalibration, true);
+  assert.equal(battery.batteryReading(2538).outsideCalibration, false);
   assert.equal(battery.batteryReading(4200).outsideCalibration, true);
+  assert.equal(battery.batteryReading(2800).percent, 5, 'previous zero range now retains usable estimated percentage');
   let previousVoltage = 0;
   let previous = 0;
   for (let mv = 1000; mv <= 4500; mv++) {

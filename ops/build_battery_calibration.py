@@ -23,11 +23,11 @@ with (source / 'scope_snapshot.csv').open(encoding='utf-8-sig', newline='') as f
     for row in csv.DictReader(f):
         scope[minute(row['read_time'])].append(float(row['mean_V']) * 1000)
 for row in json.loads((source / 'server_snapshot.json').read_text(encoding='utf-8-sig')):
-    if row.get('vbat_mv') is not None:
+    if row.get('vbat_mv') is not None and (row.get('device_uptime_s') or 0) >= 120:
         server[minute(row['recorded_at'])].append(row['vbat_mv'])
 samples = [(t, st.mean(server[t]), st.mean(values)) for t, values in sorted(scope.items())
-           if t >= cutoff and len(values) >= 10 and len(server[t]) >= 2]
-centers = [2675, 2725, 2775, 2825, 2875, 2925, 2975, 3050, 3150, 3250,
+           if t >= cutoff and not dt.datetime.fromisoformat('2026-10-14T13:11:00+09:00') <= t < dt.datetime.fromisoformat('2026-10-14T13:15:00+09:00') and len(values) >= 10 and len(server[t]) >= 2]
+centers = [2475, 2525, 2575, 2625, 2675, 2725, 2775, 2825, 2875, 2925, 2975, 3050, 3150, 3250,
            3350, 3450, 3550, 3650, 3750, 3850, 3950, 4050, 4125]
 
 def fit(rows):
@@ -67,6 +67,7 @@ result = {'standard_device': '520211', 'battery': 'MEGACANON 2 cells parallel',
                             for name in ['scope_snapshot.csv', 'server_snapshot.json']},
           'cutoff': cutoff.isoformat(), 'paired_minutes': len(samples),
           'first': samples[0][0].isoformat(), 'last': samples[-1][0].isoformat(),
+          'exclusions': 'First 120 seconds of each boot; API deployment window 2026-10-14 13:11..13:15 KST.',
           'method': 'Median scope-minus-ADC offset by ADC bin; linear interpolation. Endpoint offset outside measured range.',
           'limitations': 'Initial 23 minutes excluded; exact USB removal time unknown. Same-minute matching, not simultaneous ADC samples. Scope 20mV sample quantization. Adjacent minute validation shares the same device and discharge; not independent hardware/charging validation.',
           'bins': bins,
