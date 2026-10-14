@@ -639,14 +639,18 @@ mod tests {
         // Exercise PostgreSQL's real integer arithmetic over every ADC mV.
         let calibration_sql = format!(
             "SELECT x, {} FROM generate_series(0,5000) x",
-            super::battery::sql_calibrated_mv("x")
+            crate::services::battery::sql_calibrated_mv("x")
         );
         let calibrated: Vec<(i32, Option<i32>)> = sqlx::query_as(&calibration_sql)
             .fetch_all(&pool)
             .await
             .unwrap();
         for (raw, actual) in calibrated {
-            assert_eq!(actual, super::battery::calibrated_mv(raw), "ADC {raw}");
+            assert_eq!(
+                actual,
+                crate::services::battery::calibrated_mv(raw),
+                "ADC {raw}"
+            );
         }
         sqlx::raw_sql(r#"
           CREATE TABLE users(id bigint PRIMARY KEY,role text);
@@ -691,21 +695,21 @@ mod tests {
             .execute(&pool)
             .await
             .unwrap();
-        assert!(super::notification_policy::relevant(&pool, 1)
+        assert!(crate::services::notification_policy::relevant(&pool, 1)
             .await
             .unwrap());
         sqlx::query("INSERT INTO location_records(device_id,user_id,vbat_mv) VALUES(1,1,NULL)")
             .execute(&pool)
             .await
             .unwrap();
-        assert!(!super::notification_policy::relevant(&pool, 1)
+        assert!(!crate::services::notification_policy::relevant(&pool, 1)
             .await
             .unwrap());
         sqlx::query("UPDATE location_records SET vbat_mv=4100")
             .execute(&pool)
             .await
             .unwrap();
-        assert!(!super::notification_policy::relevant(&pool, 1)
+        assert!(!crate::services::notification_policy::relevant(&pool, 1)
             .await
             .unwrap());
         sqlx::query("DELETE FROM location_records")
