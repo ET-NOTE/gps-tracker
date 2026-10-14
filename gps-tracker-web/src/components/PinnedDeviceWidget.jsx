@@ -59,7 +59,7 @@ export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, de
           <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2, display: 'flex', gap: 8 }}>
             <span>{ageString(device.last_seen_at)}</span>
             {battery.percent != null && (
-              <span title="전압 기반 추정 잔량" style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, color: battery.color }}>
+              <span title="배터리 잔량" style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, color: battery.color }}>
                 <Icon name="battery" size={10} /> 약 {battery.percent}% · {battery.voltage} · {battery.label}
               </span>
             )}
