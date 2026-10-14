@@ -34,6 +34,7 @@ async function fixture(api = {}) {
       else if (file.endsWith('/colors.js')) module = synthetic({ getDeviceColor: () => '#2563eb', isStale: () => false, isFixStale: () => false, ageString: () => '방금' });
       else if (file.endsWith('/Icon.jsx')) module = synthetic({ default: () => null });
       else if (file.endsWith('.css')) module = synthetic({});
+      else if (file.endsWith('.json')) module = synthetic({ default: JSON.parse(await readFile(file, 'utf8')) });
       else {
         let code = await readFile(file, 'utf8');
         if (file.endsWith('.jsx')) code = (await transform(code, { loader: 'jsx', jsx: 'automatic', format: 'esm' })).code;
@@ -42,7 +43,7 @@ async function fixture(api = {}) {
       await module.link(async (specifier, parent) => {
         if (!specifier.startsWith('.')) return load(specifier);
         let target = path.resolve(path.dirname(parent.identifier), specifier).replaceAll('\\', '/');
-        if (!/\.(js|jsx|css)$/.test(target)) {
+        if (!/\.(js|jsx|css|json)$/.test(target)) {
           try { await readFile(target + '.js'); target += '.js'; } catch { target += '.jsx'; }
         }
         return load(target);

@@ -625,7 +625,7 @@ pub async fn ingest(
         let threshold: i32 = sqlx::query_scalar("SELECT COALESCE(ns.low_batt_threshold_mv,3500) FROM devices d LEFT JOIN notification_settings ns ON ns.user_id=d.owner_id WHERE d.id=$1")
             .bind(device_id).fetch_one(&state.db).await?;
         // Missing/unusable ADC measurements must not produce a false 0% alarm.
-        if (2500..=5000).contains(&v) && v < threshold {
+        if crate::services::battery::estimate(v).is_some() && v < threshold {
             let recent: Option<bool> = sqlx::query_scalar(
                 r#"SELECT TRUE FROM events
                     WHERE device_id = $1

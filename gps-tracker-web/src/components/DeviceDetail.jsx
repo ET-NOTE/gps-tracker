@@ -1,5 +1,7 @@
 import { todayStats, formatDuration, formatDistance } from '../lib/deviceStats';
 import VehicleCarePanel from './VehicleCarePanel';
+import BatteryStatus from './BatteryStatus';
+import { deviceBattery } from '../lib/battery';
 // (2026-07-29 F8) 트렌디 slim redesign.
 //
 // 이전엔 통계 + 관리 2 탭에 부팅 진단 · 부저 패턴 · lifecycle 이벤트 · 원격 reset 등
@@ -34,7 +36,7 @@ function useSection(loader, deviceId) {
   return state;
 }
 
-export default function DeviceDetail({ device, onWiped, onUpdated }) {
+export default function DeviceDetail({ device, meta, onWiped, onUpdated }) {
   const statsQ = useSection(() => api.getDailyStats(device.id, { limit: 7 }), device.id);
   const simQ   = useSection(() => api.getSimInfo(device.id),                   device.id);
   const [wiping, setWiping] = useState(false);
@@ -70,7 +72,7 @@ export default function DeviceDetail({ device, onWiped, onUpdated }) {
   return (
     <div className="gps-user-panel" style={s.shell}>
       {/* KPI 스트립 — 오늘 하이라이트 */}
-      <TodayStrip stats={today} device={device} loading={statsQ.loading} />
+      <TodayStrip stats={today} device={device} meta={meta} loading={statsQ.loading} />
 
       <div style={s.body}>
         <Section eyebrow="차량 · 정비 · 만료일"><VehicleCarePanel key={device.id} device={device} onUpdated={onUpdated} /></Section>
@@ -122,12 +124,10 @@ export default function DeviceDetail({ device, onWiped, onUpdated }) {
 // ═══════════════════════════════════════════════════════════
 // KPI 스트립 — 3 metric: 오늘 km · 오늘 시간 · 배터리
 // ═══════════════════════════════════════════════════════════
-function TodayStrip({ stats, device, loading }) {
+function TodayStrip({ stats, device, meta, loading }) {
   const km = formatDistance(stats?.distance_m);
   const dur = formatDuration(stats?.moving_s);
-  const vbat = device?.last_vbat_mv;
-  const vbatV = vbat ? (vbat / 1000).toFixed(2) : '—';
-  const vbatWarn = vbat && vbat < 3500;
+  const battery = deviceBattery(device, meta);
 
   return (
     <div style={s.stripe}>
@@ -143,12 +143,10 @@ function TodayStrip({ stats, device, loading }) {
           {loading ? '···' : dur}
         </div>
       </div>
-      <div style={s.stripeCell}>
+      {device?.device_kind !== 'phone' && <div style={s.stripeCell}>
         <div style={s.stripeK}>배터리</div>
-        <div style={{ ...s.stripeV, color: vbatWarn ? 'var(--danger)' : 'var(--text)' }}>
-          {vbatV} <span style={s.stripeUnit}>V</span>
-        </div>
-      </div>
+        <BatteryStatus reading={battery} compact />
+      </div>}
     </div>
   );
 }

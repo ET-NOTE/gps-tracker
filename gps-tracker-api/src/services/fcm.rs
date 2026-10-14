@@ -491,7 +491,7 @@ fn body_for_event(ev: &PendingEvent, address: Option<&str>) -> String {
         .filter(|s| !s.trim().is_empty())
         .unwrap_or("설정한 구역");
     match policy::kind(&ev.kind, d) {
-        "low_batt" => "배터리 잔량이 부족할 수 있습니다. 배터리와 전원 연결을 확인해 주세요.".into(),
+        "low_batt" => super::battery::alert_body(d.and_then(|d| d["vbat_mv"].as_i64()).and_then(|v| i32::try_from(v).ok())),
         "geofence_armed" => match d.and_then(|d| d["inside"].as_bool()) {
             Some(true) => format!("‘{area}’의 출입 알림을 켰습니다. 현재 구역 안에 있습니다."),
             Some(false) => format!("‘{area}’의 출입 알림을 켰습니다. 현재 구역 밖에 있습니다."),
@@ -545,8 +545,18 @@ async fn event_message(pool: &PgPool, ev: &PendingEvent) -> Value {
             data[field] = json!(id.to_string());
         }
     }
+    let title = if kind == "low_batt" {
+        super::battery::alert_title(
+            ev.data
+                .as_ref()
+                .and_then(|d| d["vbat_mv"].as_i64())
+                .and_then(|v| i32::try_from(v).ok()),
+        )
+    } else {
+        title_for_kind(kind)
+    };
     policy::message(
-        &format!("{} · {}", dev_label(ev), title_for_kind(kind)),
+        &format!("{} · {}", dev_label(ev), title),
         &body_for_event(ev, address.as_deref()),
         data,
         ev.occurred_at,

@@ -1,0 +1,45 @@
+GPS battery display policy, 2026-10-14
+
+User-requested labels: 정상 / 저전압 / 전압 매우 부족.
+Normal >=3300mV; low >=2900 and <3300mV; critical <2900mV.
+These are display/communication guidance levels, NOT battery safety cutoffs.
+
+Source: terminal 520211, MEGACANON x2 parallel, GDS-1052-U CH1 x10,
+2026-10-12 10:37 through 2026-10-14 12:44, sleep-disabled battery-98bf4a637c.
+36,084 scope snapshots (160ms every 5s), 10,549 server records.
+At approximately 2.85V physical / 2.81V ADC, >30s reception gaps increased.
+At approximately 2.77V physical / 2.69V ADC, median successful-reception gap
+was 32s, maximum 68s (formerly median 16.5s). HTTP codes were not captured.
+Battery chemistry/model/capacity and exact USB removal timestamp unverified.
+
+The initial voltage-to-percent curve is a provisional 1S GPS product estimate,
+guided by the observed discharge trajectory. Rounded 5-minute physical-voltage
+medians at relative elapsed positions between 10/12 10:45 and 10/14 12:00:
+95% 4.066V, 90% 4.031V, 80% 3.953V, 75% 3.908V, 60% 3.767V,
+50% 3.666V, 40% 3.514V, 25% 3.395V, 20% 3.400V, 15% 3.289V,
+10% 3.155V, 5% 2.973V, endpoint 2.817V.
+The 20-25% local recovery is merged into a monotonic 23%/3.400V anchor.
+Full display is anchored at 4.200V; empty display at 2.800V. Endpoints are
+display conventions: the cell is not electrochemically empty at displayed 0%.
+The experiment remains ongoing. Relative run time under this load does NOT
+establish true charge capacity or remaining runtime under other conditions.
+Frontend and FCM explicitly call the result a voltage-based estimate.
+Do not use this curve for 2S packs, smartphone batteries, or a safety cutoff.
+
+No ADC gain/offset is applied: a single unit, unsynchronized measurements,
+voltage/load-dependent offsets and unknown charging transitions do not justify
+rewriting measured voltages or applying unit 520211's offset to all hardware.
+Raw vbat_mv and cbc_mv remain separate and unchanged. The UI uses ADC for its
+battery percentage, never silently substituting the modem supply reading.
+
+The same battery-policy.json feeds JS and Rust. Existing per-account push
+thresholds and the 24-hour debounce are retained. A custom alert above 3.30V
+uses the neutral title 배터리 알림 기준 도달 instead of falsely claiming low voltage.
+The three status labels share the UI thresholds, independent of user-defined
+early notification thresholds. Missing/invalid samples show 전압 미확인, not 0%.
+
+REST includes last_battery_at and the latest row even when ADC is missing.
+WS updates device detail fields and meta together, including no-GPS reports.
+Battery receipt freshness is independent of the GPS fix watermark; delayed
+GPS fixes may update the map but cannot restore an older battery reading.
+Historical point popups keep historical battery values.

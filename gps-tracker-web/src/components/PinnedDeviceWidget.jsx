@@ -1,13 +1,15 @@
 import { ageString } from '../colors';
 import Icon from './Icon';
 import { liveMotion } from '../lib/liveMotion';
+import { deviceBattery } from '../lib/battery';
 
 export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, deviceStatus, onPress, onUnpin, bottomOffset = 0 }) {
   if (!device) return null;
 
   const speed = liveMotion(deviceMeta?.speedKmh,deviceMeta?.recordedAt).speedKmh;
   const name = device.display_name || device.device_uid;
-  const isOnline = deviceStatus?.label === '활성';
+  const isOnline = deviceStatus?.id === 'active';
+  const battery = deviceBattery(device, deviceMeta);
 
   return (
     <div style={{
@@ -56,9 +58,9 @@ export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, de
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2, display: 'flex', gap: 8 }}>
             <span>{ageString(device.last_seen_at)}</span>
-            {deviceMeta?.vbatMv && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                <Icon name="battery" size={10} /> {deviceMeta.vbatMv}mV
+            {battery.percent != null && (
+              <span title="전압 기반 추정 잔량" style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, color: battery.color }}>
+                <Icon name="battery" size={10} /> 약 {battery.percent}% · {battery.voltage} · {battery.label}
               </span>
             )}
             {speed != null && (

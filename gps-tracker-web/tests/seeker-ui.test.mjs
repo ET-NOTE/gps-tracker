@@ -36,6 +36,7 @@ async function fixture(api = {}) {
     let m;
     if (file === 'react') m = synthetic(React);
     else if (file === 'react/jsx-runtime') m = synthetic(jsx);
+    else if (file.endsWith('.json')) m = synthetic({ default: JSON.parse(await readFile(file, 'utf8')) });
     else if (file.endsWith('/api.js')) m = synthetic({ api: defaults });
     else if (file.endsWith('/authSession.js')) m = synthetic({ authScope: () => 'test-session' });
     else if (file.endsWith('/Icon.jsx')) m = synthetic({ default: () => null });
@@ -50,7 +51,7 @@ async function fixture(api = {}) {
     await m.link(async (specifier, parent) => {
       if (!specifier.startsWith('.')) return load(specifier);
       let target = path.resolve(path.dirname(parent.identifier), specifier).replaceAll('\\', '/');
-      if (!/\.(js|jsx)$/.test(target)) {
+      if (!/\.(js|jsx|json)$/.test(target)) {
         try { await readFile(target + '.js'); target += '.js'; } catch { target += '.jsx'; }
       }
       return load(target);

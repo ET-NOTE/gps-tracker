@@ -9,6 +9,7 @@
 //   글자 ~1pt 작게.
 import Icon from './Icon';
 import './PointInfoSheet.css';
+import { batteryText, batteryPolicy } from '../lib/battery';
 
 export default function PointInfoSheet({ info, onClose, onRoadview, compact = false, bottomOffset = 0, leftOffset = 0 }) {
   if (!info) return null;
@@ -35,11 +36,7 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
     return rm > 0 ? `${h}시간 ${rm}분간 정지` : `${h}시간 정지`;
   })() : null;
   // vbat (ESP ADC, 배터리 실측 근접) + cbc (모듈 AT+CBC, 배선 loss 뒤). cbc 는 있을 때만 부기.
-  const battStr  = meta?.vbatMv != null
-    ? (meta.cbcMv != null
-        ? `${(meta.vbatMv/1000).toFixed(2)}V (모듈 ${(meta.cbcMv/1000).toFixed(2)}V)`
-        : `${(meta.vbatMv/1000).toFixed(2)}V`)
-    : null;
+  const battStr = meta?.vbatMv != null ? batteryText(meta.vbatMv) : null;
   const satStr   = meta?.sat != null ? `위성 ${meta.sat}` : null;
 
   return <section className={`point-info${compact ? ' point-info-compact' : ''}`}
@@ -57,7 +54,8 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
       <dl className="point-info-stats">
         {isCluster && <div><dt>정차</dt><dd>{clusterDur} · {meta.clusterCount}개 지점</dd></div>}
         {speedStr && <div><dt>속도</dt><dd>{speedStr}</dd></div>}
-        {battStr && <div><dt>배터리</dt><dd>{battStr}</dd></div>}
+        {battStr && <div title={batteryPolicy.estimate_note}><dt>배터리 · 추정</dt><dd>{battStr}</dd></div>}
+        {!compact && meta?.cbcMv > 0 && <div><dt>모듈 전압</dt><dd>{(meta.cbcMv / 1000).toFixed(2)} V</dd></div>}
         {!compact && satStr && <div><dt>위성</dt><dd>{meta.sat}개</dd></div>}
         {!compact && Number.isFinite(lat) && Number.isFinite(lng) && <div><dt>좌표</dt><dd>{lat.toFixed(5)}, {lng.toFixed(5)}</dd></div>}
       </dl>

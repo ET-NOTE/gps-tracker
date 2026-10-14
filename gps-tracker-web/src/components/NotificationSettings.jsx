@@ -95,7 +95,7 @@ export default function NotificationSettings() {
 
       {/* ─── 배터리 / 전원 / GPS ────────────────── */}
       <Group title="배터리와 위치 상태">
-        <Toggle label="배터리 확인 필요"
+        <Toggle label="배터리 전압 알림"
           sub={`배터리 전압이 설정한 기준보다 낮을 때`}
           value={s.low_batt_alert}
           onChange={v => patch({ low_batt_alert: v })} />
@@ -105,7 +105,8 @@ export default function NotificationSettings() {
           onChange={v => patch({ device_health_alert: v })} />
         <details style={{ color: 'var(--text-2)', fontSize: 12 }}>
           <summary style={{ cursor: 'pointer', padding: '8px 0' }}>배터리 알림 기준 조정</summary>
-          <p>전압은 배터리 잔량(%)과 다릅니다. 기준을 잘 모르면 기본값 3500mV를 유지해 주세요.</p>
+          <p>잔량은 전압 기반 추정치입니다. 화면 상태는 정상(3.30V 이상), 저전압(2.90~3.30V 미만), 전압 매우 부족(2.90V 미만)으로 표시합니다. 아래 알림 기준을 높이면 정상 범위에서도 미리 안내받을 수 있습니다.</p>
+          <p>현재 알림 기준: {(s.low_batt_threshold_mv / 1000).toFixed(2)} V · 단말기별 최대 24시간에 한 번</p>
           <NumField label="배터리 알림 전압 (mV)"
             value={s.low_batt_threshold_mv} min={3000} max={4200}
             onCommit={v => patch({ low_batt_threshold_mv: v })} />

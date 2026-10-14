@@ -70,11 +70,14 @@ test('live batch paints points chronologically with their individual speeds, inc
   const cache = new Map();
   async function load(file) {
     if (cache.has(file)) return cache.get(file);
-    const module = file.endsWith('colors.js')
+    const jsonValue = file.endsWith('.json') ? JSON.parse(await readFile(file, 'utf8')) : null;
+    const module = file.endsWith('.json')
+      ? new vm.SyntheticModule(['default'], function() { this.setExport('default', jsonValue); }, { context })
+      : file.endsWith('colors.js')
       ? new vm.SyntheticModule(['getDeviceColor'], function() { this.setExport('getDeviceColor', () => '#123456'); }, { context })
       : new vm.SourceTextModule(await readFile(file, 'utf8'), { context, identifier: file });
     cache.set(file, module);
-    await module.link((specifier, referring) => load(path.resolve(path.dirname(referring.identifier), specifier.endsWith('.js') ? specifier : specifier + '.js')));
+    await module.link((specifier, referring) => load(path.resolve(path.dirname(referring.identifier), /\.(js|json)$/.test(specifier) ? specifier : specifier + '.js')));
     return module;
   }
   const module = await load(path.join(base, 'lib/wsEventHandler.js')); await module.evaluate();

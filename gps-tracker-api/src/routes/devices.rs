@@ -58,6 +58,7 @@ pub struct DeviceView {
     // 새로고침 후 device card 배터리 fallback — 실시간 WS 값 없어도 이걸로 최신 표시.
     pub last_vbat_mv: Option<i32>,
     pub last_cbc_mv: Option<i32>,
+    pub last_battery_at: Option<DateTime<Utc>>,
     // (2026-07-28) 월간 리포트 유류비 추정용. migration 0044.
     pub fuel_efficiency_kmpl: Option<f32>,
     pub fuel_type: Option<String>,
@@ -239,7 +240,8 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
                   lv.vbat_mv     AS last_vbat_mv,
-                  lv.cbc_mv      AS last_cbc_mv
+                  lv.cbc_mv      AS last_cbc_mv,
+                  lv.recorded_at AS last_battery_at
              FROM devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
@@ -270,9 +272,9 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
                   -- (2026-07-16) fix 유무 무관 최근 payload 배터리. Fix 안 잡히는 실내 device 도
                   --   새로고침 후 즉시 현재 vbat 표시. WS 실시간 값이 오면 웹에서 그것으로 override.
                   -- [뿌리 B 2026-08-14] user_id 필터 — 이전 owner 의 배터리값 노출 차단
-                  SELECT vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
+                  SELECT recorded_at, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
                     FROM location_records
-                   WHERE device_id = d.id AND user_id = $1 AND vbat_mv IS NOT NULL
+                   WHERE device_id = d.id AND user_id = $1
                 ORDER BY recorded_at DESC
                    LIMIT 1
              ) lv ON TRUE
@@ -1517,7 +1519,8 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   le.occurred_at AS last_event_at,
                   la.antenna     AS last_antenna,
                   lv.vbat_mv     AS last_vbat_mv,
-                  lv.cbc_mv      AS last_cbc_mv
+                  lv.cbc_mv      AS last_cbc_mv,
+                  lv.recorded_at AS last_battery_at
              FROM devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
@@ -1546,9 +1549,9 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
              ) la ON TRUE
         LEFT JOIN LATERAL (
                   -- [뿌리 B 2026-08-14] user_id 필터 — 이전 owner 배터리 노출 차단
-                  SELECT vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
+                  SELECT recorded_at, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
                     FROM location_records
-                   WHERE device_id = d.id AND user_id = $2 AND vbat_mv IS NOT NULL
+                   WHERE device_id = d.id AND user_id = $2
                 ORDER BY recorded_at DESC
                    LIMIT 1
              ) lv ON TRUE

@@ -13,6 +13,7 @@
 import { getDeviceColor } from '../colors';
 import { haversineM } from './stops';
 import { serverSpeed, clickableIntervalM } from './speed';
+import { telemetryBatteryPatch } from './battery';
 
 export function makeWsEventHandler({
   devRef, mapRef, lastMetaRef, wsDotAccRef,
@@ -39,15 +40,17 @@ export function makeWsEventHandler({
         ...prevMetaNoFix,
         receivedAt: msg.recorded_at,
         sat: msg.sat ?? prevMetaNoFix.sat,
-        vbatMv: msg.vbat_mv ?? prevMetaNoFix.vbatMv,
-        cbcMv: msg.cbc_mv ?? prevMetaNoFix.cbcMv,
+        vbatMv: msg.vbat_mv ?? null,
+        cbcMv: msg.cbc_mv ?? null,
+        batteryAt: msg.recorded_at,
         fix: false,
         speedKmh: null,
       };
       if (filterDeviceIdRef.current === msg.device_id) setLiveSpeed(previous => previous ? { ...previous, speedKmh: null } : null);
+      mapRef.current?.updateBatteryMeta?.(msg.device_id, lastMetaRef.current[msg.device_id]);
       setDevices(prev => prev.map(d =>
         d.id === msg.device_id
-          ? { ...d, last_seen_at: msg.recorded_at }
+          ? { ...d, last_seen_at: msg.recorded_at, ...telemetryBatteryPatch(msg) }
           : d
       ));
       return;
@@ -64,11 +67,19 @@ export function makeWsEventHandler({
         if (eventTime < previousTime) onResync?.();
         return;
       }
+      const metaBatteryTime = Date.parse(prevMeta?.batteryAt ?? prevMeta?.receivedAt ?? prevMeta?.recordedAt);
+      const deviceBatteryTime = Date.parse(dev?.last_battery_at ?? dev?.last_seen_at);
+      const freshBattery = eventTime >= Math.max(...[metaBatteryTime, deviceBatteryTime].filter(Number.isFinite), -Infinity);
+      const retainedBattery = metaBatteryTime >= deviceBatteryTime || !Number.isFinite(deviceBatteryTime)
+        ? { vbatMv: prevMeta?.vbatMv, cbcMv: prevMeta?.cbcMv, batteryAt: prevMeta?.batteryAt ?? prevMeta?.receivedAt }
+        : { vbatMv: dev?.last_vbat_mv, cbcMv: dev?.last_cbc_mv, batteryAt: dev?.last_battery_at ?? dev?.last_seen_at };
       const latestFix = Array.isArray(msg.fixes) && msg.fixes.length
         ? msg.fixes.reduce((a,b) => Date.parse(a.recorded_at) >= Date.parse(b.recorded_at) ? a : b) : msg;
       const speedKmh = serverSpeed(latestFix);
       const meta = {
-        recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv, cbcMv: msg.cbc_mv,
+        recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv ?? null, cbcMv: msg.cbc_mv ?? null,
+        batteryAt: msg.recorded_at,
+        ...(!freshBattery ? retainedBattery : {}),
         fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
         lat: msg.lat, lng: msg.lng,
         receivedAt: Date.parse(prevMeta?.receivedAt) > eventTime ? prevMeta.receivedAt : msg.recorded_at,
@@ -134,7 +145,7 @@ export function makeWsEventHandler({
       setDevices(prev => prev.map(d =>
         d.id === msg.device_id
           ? { ...d, last_seen_at: Date.parse(d.last_seen_at) > eventTime ? d.last_seen_at : msg.recorded_at,
-              last_fix_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng }
+              last_fix_at: msg.recorded_at, last_lat: msg.lat, last_lng: msg.lng, ...(freshBattery ? telemetryBatteryPatch(msg) : {}) }
           : d
       ));
 

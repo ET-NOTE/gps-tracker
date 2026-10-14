@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { ageString, isFixStale } from '../colors';
 import './DeviceCardSummary.css';
+import BatteryStatus from './BatteryStatus';
+import { deviceBattery } from '../lib/battery';
 
 export default function DeviceCardSummary({ device, meta, status, color, pinned, detailOpen,
   onView, onDetail, onPin, onReceive, onColor, onRename, onUnpair }) {
@@ -17,8 +19,8 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
     return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); };
   }, [open]);
   function run(action) { setOpen(false); trigger.current?.focus(); action?.(); }
-  const vbat = meta?.vbatMv ?? device.last_vbat_mv;
-  const cbc = meta?.cbcMv ?? device.last_cbc_mv;
+  const battery = deviceBattery(device, meta);
+  const cbc = device.last_cbc_mv;
   return <div ref={root} className="device-summary">
     <div className="device-summary-heading">
       <div className="device-summary-identity">
@@ -42,6 +44,7 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
           <button onClick={() => run(onRename)}><Icon name="edit" />이름 변경</button>
           <button className="device-disconnect" onClick={() => run(onUnpair)}><Icon name="unlink" />연결 해제</button>
         </div>}
+    {device.device_kind !== 'phone' && <BatteryStatus reading={battery} />}
     <dl className="device-reception">
       <div><dt>최근 통신</dt><dd>{device.last_seen_at ? ageString(device.last_seen_at) : '수신 전'}</dd></div>
       <div><dt>최근 위치</dt><dd className={isFixStale(device.last_fix_at) ? 'device-location-stale' : undefined}>{device.last_fix_at ? ageString(device.last_fix_at) : '미수신'}</dd></div>
@@ -54,7 +57,7 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
       <summary>단말기 식별 정보</summary>
       <dl>
         <div><dt>식별번호</dt><dd>{device.device_uid || '—'}</dd></div>
-        {vbat != null && <div><dt>배터리 전압</dt><dd>{(vbat / 1000).toFixed(2)} V</dd></div>}
+        {battery.mv != null && <div><dt>배터리 전압</dt><dd>{battery.voltage}</dd></div>}
         {cbc != null && <div><dt>모듈 전압</dt><dd>{(cbc / 1000).toFixed(2)} V</dd></div>}
         {meta?.sat != null && <div><dt>위성</dt><dd>{meta.sat}개</dd></div>}
       </dl>

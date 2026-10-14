@@ -1,3 +1,4 @@
+import { batteryText } from '../lib/battery';
 import { ensureKakaoMapSdk } from '../lib/kakaoSdk';
 import { POLYLINE_GAP_THRESHOLD_S, distanceM, calcBearing } from '../lib/mapGeometry';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -759,6 +760,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const routePlanRef = useRef({ markers: [], polys: [] });
   useEffect(() => () => { routePlanRef.current.markers.forEach(m => m.setMap(null)); routePlanRef.current.polys.forEach(p => p.setMap(null)); }, []);
   useImperativeHandle(ref, () => ({
+    updateBatteryMeta(deviceId, meta) {
+      const entry = markersRef.current[deviceId];
+      if (entry) entry.meta = { ...entry.meta, vbatMv: meta.vbatMv, cbcMv: meta.cbcMv, batteryAt: meta.batteryAt };
+    },
     getNativeTrackingData(deviceId) {
       const xy = position => ({ lat: position.getLat(), lng: position.getLng() });
       return {
@@ -1873,7 +1878,7 @@ function buildMainInfoHTML(label, color, m, addr, lat, lng) {
   const ageTxt = m.recordedAt ? new Date(m.recordedAt).toLocaleString('ko-KR') : '—';
   const sat    = m.sat ?? '—';
   // vbat_mv (ESP ADC, 배터리 실측 근접) + cbc_mv (모듈 AT+CBC, 배선 loss 뒤). cbc 는 있을 때만 부기.
-  const vbat   = m.vbatMv ? (m.cbcMv ? `${m.vbatMv} mV (모듈 ${m.cbcMv})` : `${m.vbatMv} mV`) : '—';
+  const vbat = batteryText(m.vbatMv);
   const speed  = m.speedKmh != null ? ROW(SVG_RUN, `${m.speedKmh.toFixed(1)} km/h`) : '';
   // 라이브 마커도 gap 양끝점일 수 있음 — gap 정보 노출.
   const gapBlock = (m.gapBefore || m.gapAfter) ? buildGapInPointBlock(m, lat, lng) : '';
@@ -1912,7 +1917,7 @@ function buildPointInfoHTML(m, color, addr, lat, lng) {
   const ageTxt = m.recordedAt ? new Date(m.recordedAt).toLocaleString('ko-KR') : '—';
   const sat    = m.sat ?? '—';
   // vbat_mv (ESP ADC, 배터리 실측 근접) + cbc_mv (모듈 AT+CBC, 배선 loss 뒤). cbc 는 있을 때만 부기.
-  const vbat   = m.vbatMv ? (m.cbcMv ? `${m.vbatMv} mV (모듈 ${m.cbcMv})` : `${m.vbatMv} mV`) : '—';
+  const vbat = batteryText(m.vbatMv);
   const speed  = m.speedKmh != null ? ROW(SVG_RUN, `${m.speedKmh.toFixed(1)} km/h`) : '';
   const stopBadge = m.isStop
     ? `<span style="display:inline-block;background:#1a1a2e;color:#fbbf24;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600;margin-left:6px;letter-spacing:.04em">정지</span>`

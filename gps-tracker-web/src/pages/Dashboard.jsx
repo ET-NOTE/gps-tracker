@@ -956,7 +956,7 @@ export default function Dashboard({ onLogout }) {
                       )}
 
                       {detailId === d.id && (
-                        <DeviceDetail device={d} onUpdated={updated => setDevices(ds => ds.map(x => x.id === updated.id ? updated : x))} onWiped={async (id) => {
+                        <DeviceDetail device={d} meta={meta} onUpdated={updated => setDevices(ds => ds.map(x => x.id === updated.id ? updated : x))} onWiped={async (id) => {
                           mapRef.current?.removeMarker(id);
                           delete lastMetaRef.current[id];
                           setDetailId(null);
