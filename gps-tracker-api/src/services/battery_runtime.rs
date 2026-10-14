@@ -58,6 +58,10 @@ pub fn estimate(
     now: DateTime<Utc>,
 ) -> RuntimeEstimate {
     let p = policy();
+    // PostgreSQL stores microseconds; live events can arrive with nanoseconds.
+    // Use the stored precision so refresh and live predictions have the same date.
+    let measured_at =
+        measured_at.and_then(|at| DateTime::from_timestamp_micros(at.timestamp_micros()));
     let mut result = RuntimeEstimate {
         status: "unavailable",
         remaining_seconds: None,
@@ -137,6 +141,14 @@ mod tests {
         );
         assert_eq!(aged.remaining_seconds, Some(183750));
         assert_eq!(aged.estimated_empty_at, full.estimated_empty_at);
+        let live = estimate(
+            Some(4118),
+            Some(now() + Duration::nanoseconds(999)),
+            false,
+            now(),
+        );
+        assert_eq!(live.measurement_at, full.measurement_at);
+        assert_eq!(live.estimated_empty_at, full.estimated_empty_at);
     }
 
     #[test]

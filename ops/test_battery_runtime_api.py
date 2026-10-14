@@ -145,12 +145,17 @@ try:
     assert full['reference_seconds']==183780
     assert abs((dt.datetime.fromisoformat(full['estimated_empty_at'].replace('Z','+00:00'))-dt.datetime.fromisoformat(full['measurement_at'].replace('Z','+00:00'))).total_seconds()-183780)<1
     ingest(3901)
-    assert 137830<=reading()['battery_runtime']['remaining_seconds']<=137835
+    # 3901 raw calibrates to 3894 mV, just below the 3895 mV anchor.
+    mid=reading()['battery_runtime']
+    assert 137600<=mid['remaining_seconds']<=137605, mid
     request('/gps-tracker/ingest',method='POST',body={'device_uid':name,'ts':150,'vbat_mv':3901,'event':'sleep_enter','sleep_reason':'motion_idle','l80':{'fix':False,'sat':0}})
     assert reading()['battery_runtime']['status']=='sleeping'
     ingest(4118)
+    assert reading()['battery_runtime']['status']=='estimated'
     query("UPDATE location_records SET recorded_at=recorded_at-interval '10 minutes' WHERE device_id=%s",(did,))
-    assert reading()['battery_runtime']['status']=='stale'
+    query("UPDATE events SET occurred_at=occurred_at-interval '10 minutes' WHERE device_id=%s",(did,))
+    aged=reading()['battery_runtime']
+    assert aged['status']=='stale', aged
     ingest(2500)
     assert reading()['battery_runtime']['status']=='depleted'
     assert reading()['battery_runtime']['remaining_seconds']==0
