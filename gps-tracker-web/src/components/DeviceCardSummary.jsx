@@ -57,7 +57,8 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
       <summary>단말기 식별 정보</summary>
       <dl>
         <div><dt>식별번호</dt><dd>{device.device_uid || '—'}</dd></div>
-        {battery.mv != null && <div><dt>배터리 전압</dt><dd>{battery.voltage}</dd></div>}
+        {battery.mv != null && <div><dt>배터리 전압 (보정)</dt><dd>{battery.voltage}</dd></div>}
+        {battery.rawMv != null && <div><dt>원본 ADC 전압</dt><dd>{(battery.rawMv / 1000).toFixed(3)} V</dd></div>}
         {cbc != null && <div><dt>모듈 전압</dt><dd>{(cbc / 1000).toFixed(2)} V</dd></div>}
         {meta?.sat != null && <div><dt>위성</dt><dd>{meta.sat}개</dd></div>}
       </dl>

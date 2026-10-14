@@ -1,0 +1,223 @@
+{
+  "standard_device": "520211",
+  "battery": "MEGACANON 2 cells parallel",
+  "source_sha256": {
+    "scope_snapshot.csv": "09e479a755279a0da0ae14f18d5f4c8e356929e5491f2abda57dcb30562783f3",
+    "server_snapshot.json": "6655142d653dd41d0e6559aebb721bca2270c30feb74cd5dcdfbd145f843b06e"
+  },
+  "cutoff": "2026-10-12T11:00:00+09:00",
+  "paired_minutes": 2943,
+  "first": "2026-10-12T11:00:00+09:00",
+  "last": "2026-10-14T12:43:00+09:00",
+  "method": "Median scope-minus-ADC offset by ADC bin; linear interpolation. Endpoint offset outside measured range.",
+  "limitations": "Initial 23 minutes excluded; exact USB removal time unknown. Same-minute matching, not simultaneous ADC samples. Scope 20mV sample quantization. Adjacent minute validation shares the same device and discharge; not independent hardware/charging validation.",
+  "bins": [
+    {
+      "raw_mv": 2689,
+      "calibrated_mv": 2779,
+      "minutes": 5,
+      "median_offset_mv": 89.78
+    },
+    {
+      "raw_mv": 2733,
+      "calibrated_mv": 2790,
+      "minutes": 15,
+      "median_offset_mv": 57.34
+    },
+    {
+      "raw_mv": 2779,
+      "calibrated_mv": 2833,
+      "minutes": 37,
+      "median_offset_mv": 54.41
+    },
+    {
+      "raw_mv": 2825,
+      "calibrated_mv": 2862,
+      "minutes": 41,
+      "median_offset_mv": 36.83
+    },
+    {
+      "raw_mv": 2879,
+      "calibrated_mv": 2902,
+      "minutes": 46,
+      "median_offset_mv": 23.15
+    },
+    {
+      "raw_mv": 2915,
+      "calibrated_mv": 2929,
+      "minutes": 22,
+      "median_offset_mv": 13.9
+    },
+    {
+      "raw_mv": 2975,
+      "calibrated_mv": 2976,
+      "minutes": 14,
+      "median_offset_mv": 1.15
+    },
+    {
+      "raw_mv": 3060,
+      "calibrated_mv": 3050,
+      "minutes": 55,
+      "median_offset_mv": -10.41
+    },
+    {
+      "raw_mv": 3150,
+      "calibrated_mv": 3122,
+      "minutes": 89,
+      "median_offset_mv": -27.58
+    },
+    {
+      "raw_mv": 3253,
+      "calibrated_mv": 3219,
+      "minutes": 84,
+      "median_offset_mv": -34.04
+    },
+    {
+      "raw_mv": 3350,
+      "calibrated_mv": 3318,
+      "minutes": 176,
+      "median_offset_mv": -32.21
+    },
+    {
+      "raw_mv": 3443,
+      "calibrated_mv": 3426,
+      "minutes": 523,
+      "median_offset_mv": -17.09
+    },
+    {
+      "raw_mv": 3540,
+      "calibrated_mv": 3517,
+      "minutes": 159,
+      "median_offset_mv": -22.83
+    },
+    {
+      "raw_mv": 3668,
+      "calibrated_mv": 3652,
+      "minutes": 220,
+      "median_offset_mv": -15.95
+    },
+    {
+      "raw_mv": 3762,
+      "calibrated_mv": 3753,
+      "minutes": 331,
+      "median_offset_mv": -8.59
+    },
+    {
+      "raw_mv": 3854,
+      "calibrated_mv": 3847,
+      "minutes": 324,
+      "median_offset_mv": -6.76
+    },
+    {
+      "raw_mv": 3950,
+      "calibrated_mv": 3944,
+      "minutes": 327,
+      "median_offset_mv": -5.51
+    },
+    {
+      "raw_mv": 4042,
+      "calibrated_mv": 4044,
+      "minutes": 402,
+      "median_offset_mv": 1.58
+    },
+    {
+      "raw_mv": 4119,
+      "calibrated_mv": 4122,
+      "minutes": 73,
+      "median_offset_mv": 3.47
+    }
+  ],
+  "points": [
+    [
+      2689,
+      2779
+    ],
+    [
+      2733,
+      2790
+    ],
+    [
+      2779,
+      2833
+    ],
+    [
+      2825,
+      2862
+    ],
+    [
+      2879,
+      2902
+    ],
+    [
+      2915,
+      2929
+    ],
+    [
+      2975,
+      2976
+    ],
+    [
+      3060,
+      3050
+    ],
+    [
+      3150,
+      3122
+    ],
+    [
+      3253,
+      3219
+    ],
+    [
+      3350,
+      3318
+    ],
+    [
+      3443,
+      3426
+    ],
+    [
+      3540,
+      3517
+    ],
+    [
+      3668,
+      3652
+    ],
+    [
+      3762,
+      3753
+    ],
+    [
+      3854,
+      3847
+    ],
+    [
+      3950,
+      3944
+    ],
+    [
+      4042,
+      4044
+    ],
+    [
+      4119,
+      4122
+    ]
+  ],
+  "validation": {
+    "training": "odd clock minutes",
+    "held_out": "even clock minutes",
+    "minutes": 1472,
+    "raw": {
+      "mean_bias_mv": 9.23,
+      "mean_absolute_error_mv": 14.84,
+      "p95_absolute_error_mv": 37.97
+    },
+    "corrected": {
+      "mean_bias_mv": -0.32,
+      "mean_absolute_error_mv": 5.08,
+      "p95_absolute_error_mv": 12.79
+    }
+  }
+}

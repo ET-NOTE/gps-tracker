@@ -636,6 +636,18 @@ mod tests {
             .connect(&url)
             .await
             .unwrap();
+        // Exercise PostgreSQL's real integer arithmetic over every ADC mV.
+        let calibration_sql = format!(
+            "SELECT x, {} FROM generate_series(0,5000) x",
+            super::battery::sql_calibrated_mv("x")
+        );
+        let calibrated: Vec<(i32, Option<i32>)> = sqlx::query_as(&calibration_sql)
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+        for (raw, actual) in calibrated {
+            assert_eq!(actual, super::battery::calibrated_mv(raw), "ADC {raw}");
+        }
         sqlx::raw_sql(r#"
           CREATE TABLE users(id bigint PRIMARY KEY,role text);
           CREATE TABLE devices(id bigint PRIMARY KEY,display_name text,owner_id bigint,last_seen_at timestamptz,last_fix_at timestamptz);
@@ -673,6 +685,37 @@ mod tests {
           INSERT INTO fcm_tokens(user_id,token,revocation_hash) VALUES (1,'good','A'),(1,'retry','B');
           INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'low_batt','{"vbat_mv":3200}');
         "#).execute(&pool).await.unwrap();
+        // 3510mV raw is below 3500mV after calibration: eligibility must use
+        // the displayed voltage, including latest no-GPS/missing samples.
+        sqlx::query(r#"UPDATE events SET data='{"vbat_mv":3510}' WHERE id=1"#)
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(super::notification_policy::relevant(&pool, 1)
+            .await
+            .unwrap());
+        sqlx::query("INSERT INTO location_records(device_id,user_id,vbat_mv) VALUES(1,1,NULL)")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(!super::notification_policy::relevant(&pool, 1)
+            .await
+            .unwrap());
+        sqlx::query("UPDATE location_records SET vbat_mv=4100")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(!super::notification_policy::relevant(&pool, 1)
+            .await
+            .unwrap());
+        sqlx::query("DELETE FROM location_records")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query(r#"UPDATE events SET data='{"vbat_mv":3200}' WHERE id=1"#)
+            .execute(&pool)
+            .await
+            .unwrap();
         let counts = Arc::new(Mutex::new(HashMap::<String, usize>::new()));
         let app = Router::new()
             .route(

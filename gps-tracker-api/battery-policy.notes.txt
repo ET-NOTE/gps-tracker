@@ -26,11 +26,26 @@ establish true charge capacity or remaining runtime under other conditions.
 Frontend and FCM explicitly call the result a voltage-based estimate.
 Do not use this curve for 2S packs, smartphone batteries, or a safety cutoff.
 
-No ADC gain/offset is applied: a single unit, unsynchronized measurements,
-voltage/load-dependent offsets and unknown charging transitions do not justify
-rewriting measured voltages or applying unit 520211's offset to all hardware.
-Raw vbat_mv and cbc_mv remain separate and unchanged. The UI uses ADC for its
-battery percentage, never silently substituting the modem supply reading.
+User designated unit 520211 as the product standard on 2026-10-14.
+The product now uses the piecewise ADC-to-physical voltage table in policy JSON.
+Source provenance, bin counts and same-discharge held-out minute residuals are
+in battery-calibration-evidence.json, reproducible with ops/build_battery_calibration.py.
+2,943 paired one-minute means; initial 23 minutes excluded, exact USB removal
+still unknown. Median offsets by ADC range are linearly interpolated and rounded
+to 1mV (calculation resolution, NOT instrument accuracy). Out-of-range values
+use the nearest endpoint offset and are marked as outside-range estimates.
+Measured anchor range is raw ADC 2689..4119mV; no extrapolated slope is used.
+Adjacent held-out even minutes: mean absolute residual 14.84 -> 5.08mV,
+p95 absolute residual 37.97 -> 12.79mV. These are SAME discharge validation,
+not independent hardware accuracy; the scope sample quantum is approximately
+20mV and scope/ADC acquisition is not synchronized. Charging, USB power,
+temperature/load changes and unit-to-unit tolerances remain unvalidated.
+
+Raw vbat_mv and modem cbc_mv remain unchanged and separate in storage/API/WS.
+The frontend and backend transform raw ADC exactly once at interpretation time.
+Status, estimated percentage, alert eligibility and push text all use calibrated
+voltage. Technical details retain original ADC and modem rail readings.
+The standard is provisional and versioned while discharge measurement continues.
 
 The same battery-policy.json feeds JS and Rust. Existing per-account push
 thresholds and the 24-hour debounce are retained. A custom alert above 3.30V

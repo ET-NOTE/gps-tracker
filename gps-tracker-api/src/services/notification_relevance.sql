@@ -7,6 +7,11 @@ SELECT EXISTS (
    WHERE device_id=e.device_id AND user_id=e.user_id AND kind IN ('wake','sleep_enter')
    ORDER BY occurred_at DESC,id DESC LIMIT 1
  ) life ON true
+ LEFT JOIN LATERAL (
+   SELECT r.vbat_mv,r.recorded_at FROM location_records r
+   WHERE e.kind='low_batt' AND r.device_id=e.device_id AND r.user_id=e.user_id
+   ORDER BY r.recorded_at DESC LIMIT 1
+ ) latest_battery ON true
  WHERE e.id=$1
  AND e.occurred_at <= now()+interval '5 minutes'
  AND e.occurred_at > now() - CASE
@@ -62,11 +67,8 @@ SELECT EXISTS (
    WHEN e.kind IN ('wake','sleep_enter') THEN life.id=e.id
    WHEN e.kind IN ('motion','cycle_first_fix') THEN COALESCE(life.kind,'') <> 'sleep_enter'
    WHEN e.kind='low_batt' THEN
-      (e.data->>'vbat_mv')::integer BETWEEN 1000 AND 4500
-      AND (e.data->>'vbat_mv')::integer < COALESCE(ns.low_batt_threshold_mv,3500)
-      AND COALESCE((SELECT r.vbat_mv FROM location_records r WHERE r.device_id=e.device_id
-          AND r.user_id=e.user_id AND r.vbat_mv BETWEEN 1000 AND 4500
-          ORDER BY r.recorded_at DESC LIMIT 1),(e.data->>'vbat_mv')::integer) < COALESCE(ns.low_batt_threshold_mv,3500)
+      (__EVENT_BATTERY_VOLTAGE__) < COALESCE(ns.low_batt_threshold_mv,3500)
+      AND (__LATEST_BATTERY_VOLTAGE__) < COALESCE(ns.low_batt_threshold_mv,3500)
    WHEN e.kind='gps_anomaly' THEN d.last_fix_at IS NULL OR d.last_fix_at <= e.occurred_at
    ELSE true END
  AND NOT EXISTS (

@@ -11,24 +11,33 @@ const battery = await bundled('../src/lib/battery.js');
 
 test('battery state boundaries and percentage are monotonic; invalid readings stay unknown', () => {
   for (const mv of [undefined, null, 0, -1, NaN, Infinity, '3900', 5000]) assert.equal(battery.batteryReading(mv).percent, null);
-  assert.equal(battery.batteryReading(2899).label, '전압 매우 부족');
-  assert.equal(battery.batteryReading(2900).label, '저전압');
-  assert.equal(battery.batteryReading(3299).label, '저전압');
-  assert.equal(battery.batteryReading(3300).label, '정상');
-  assert.equal(battery.batteryReading(2800).percent, 0);
-  assert.equal(battery.batteryReading(3910).percent, 75);
+  assert.equal(battery.batteryReading(2875).label, '전압 매우 부족');
+  assert.equal(battery.batteryReading(2876).label, '저전압');
+  assert.equal(battery.batteryReading(3331).label, '저전압');
+  assert.equal(battery.batteryReading(3332).label, '정상');
+  assert.equal(battery.batteryReading(2690).percent, 0);
+  assert.equal(battery.batteryReading(3916).percent, 75);
   assert.equal(battery.batteryReading(4200).percent, 100);
+  assert.equal(battery.batteryReading(2689).mv, 2779);
+  assert.equal(battery.batteryReading(3253).mv, 3219);
+  assert.equal(battery.batteryReading(2690).voltage, '2.78 V');
+  assert.equal(battery.batteryReading(2688).outsideCalibration, true);
+  assert.equal(battery.batteryReading(2689).outsideCalibration, false);
+  assert.equal(battery.batteryReading(4200).outsideCalibration, true);
+  let previousVoltage = 0;
   let previous = 0;
   for (let mv = 1000; mv <= 4500; mv++) {
-    const current = battery.batteryReading(mv).percent;
+    const reading = battery.batteryReading(mv);
+    assert.ok(reading.mv >= previousVoltage); previousVoltage = reading.mv;
+    const current = reading.percent;
     assert.ok(current >= previous && current <= 100); previous = current;
   }
 });
 
 test('newer API battery wins over old GPS metadata; new missing ADC never falls back to CBC or old voltage', () => {
   const d = { last_seen_at:'2026-10-14T03:00:00Z', last_vbat_mv:2800, last_cbc_mv:4200 };
-  assert.equal(battery.deviceBattery(d, {recordedAt:'2026-10-14T02:00:00Z',vbatMv:4200}).mv,2800);
-  assert.equal(battery.deviceBattery(d, {receivedAt:'2026-10-14T03:00:01Z',vbatMv:3200}).mv,3200);
+  assert.equal(battery.deviceBattery(d, {recordedAt:'2026-10-14T02:00:00Z',vbatMv:4200}).rawMv,2800);
+  assert.equal(battery.deviceBattery(d, {receivedAt:'2026-10-14T03:00:01Z',vbatMv:3200}).rawMv,3200);
   assert.equal(battery.deviceBattery(d, {receivedAt:'2026-10-14T03:00:01Z',vbatMv:null,cbcMv:4000}).percent,null);
   assert.equal(battery.deviceBattery({...d,device_kind:'phone'}).percent,null);
 });

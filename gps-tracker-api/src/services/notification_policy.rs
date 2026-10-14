@@ -89,15 +89,20 @@ pub fn message(title: &str, body: &str, mut data: Value, at: DateTime<Utc>) -> V
                 "default_sound":channel != "gps_updates_v1","default_vibrate_timings":channel != "gps_updates_v1"}}})
 }
 
+fn relevance_sql() -> &'static str {
+    static SQL: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    SQL.get_or_init(|| include_str!("notification_relevance.sql")
+        .replace("__EVENT_BATTERY_VOLTAGE__", &super::battery::sql_calibrated_mv("(e.data->>'vbat_mv')::integer"))
+        .replace("__LATEST_BATTERY_VOLTAGE__", &super::battery::sql_calibrated_mv("CASE WHEN latest_battery.recorded_at IS NULL THEN (e.data->>'vbat_mv')::integer ELSE latest_battery.vbat_mv END")))
+}
+
 /// Re-evaluated at enqueue and immediately before every send, including retries.
 /// Diagnostic events remain in the database but are never a generic push fallback.
 pub async fn relevant(pool: &PgPool, event: i64) -> anyhow::Result<bool> {
-    Ok(
-        sqlx::query_scalar(include_str!("notification_relevance.sql"))
-            .bind(event)
-            .fetch_one(pool)
-            .await?,
-    )
+    Ok(sqlx::query_scalar(relevance_sql())
+        .bind(event)
+        .fetch_one(pool)
+        .await?)
 }
 
 #[cfg(test)]

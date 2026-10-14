@@ -105,7 +105,7 @@ export default function NotificationSettings() {
           onChange={v => patch({ device_health_alert: v })} />
         <details style={{ color: 'var(--text-2)', fontSize: 12 }}>
           <summary style={{ cursor: 'pointer', padding: '8px 0' }}>배터리 알림 기준 조정</summary>
-          <p>잔량은 전압 기반 추정치입니다. 화면 상태는 정상(3.30V 이상), 저전압(2.90~3.30V 미만), 전압 매우 부족(2.90V 미만)으로 표시합니다. 아래 알림 기준을 높이면 정상 범위에서도 미리 안내받을 수 있습니다.</p>
+          <p>전압은 표준 단말기의 방전 실측으로 보정하며, 잔량은 전압 기반 추정치입니다. 알림도 화면과 같은 보정 전압을 기준으로 합니다. 화면 상태는 정상(3.30V 이상), 저전압(2.90~3.30V 미만), 전압 매우 부족(2.90V 미만)으로 표시합니다. 아래 알림 기준을 높이면 정상 범위에서도 미리 안내받을 수 있습니다.</p>
           <p>현재 알림 기준: {(s.low_batt_threshold_mv / 1000).toFixed(2)} V · 단말기별 최대 24시간에 한 번</p>
           <NumField label="배터리 알림 전압 (mV)"
             value={s.low_batt_threshold_mv} min={3000} max={4200}
