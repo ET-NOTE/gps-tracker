@@ -42,7 +42,7 @@ export function makeWsEventHandler({
         sat: msg.sat ?? prevMetaNoFix.sat,
         vbatMv: msg.vbat_mv ?? null,
         cbcMv: msg.cbc_mv ?? null,
-        batteryAt: msg.recorded_at,
+        batteryAt: msg.recorded_at, batteryRuntime: msg.battery_runtime ?? null,
         fix: false,
         speedKmh: null,
       };
@@ -71,14 +71,14 @@ export function makeWsEventHandler({
       const deviceBatteryTime = Date.parse(dev?.last_battery_at ?? dev?.last_seen_at);
       const freshBattery = eventTime >= Math.max(...[metaBatteryTime, deviceBatteryTime].filter(Number.isFinite), -Infinity);
       const retainedBattery = metaBatteryTime >= deviceBatteryTime || !Number.isFinite(deviceBatteryTime)
-        ? { vbatMv: prevMeta?.vbatMv, cbcMv: prevMeta?.cbcMv, batteryAt: prevMeta?.batteryAt ?? prevMeta?.receivedAt }
-        : { vbatMv: dev?.last_vbat_mv, cbcMv: dev?.last_cbc_mv, batteryAt: dev?.last_battery_at ?? dev?.last_seen_at };
+        ? { vbatMv: prevMeta?.vbatMv, cbcMv: prevMeta?.cbcMv, batteryAt: prevMeta?.batteryAt ?? prevMeta?.receivedAt, batteryRuntime: prevMeta?.batteryRuntime ?? null }
+        : { vbatMv: dev?.last_vbat_mv, cbcMv: dev?.last_cbc_mv, batteryAt: dev?.last_battery_at ?? dev?.last_seen_at, batteryRuntime: dev?.battery_runtime ?? null };
       const latestFix = Array.isArray(msg.fixes) && msg.fixes.length
         ? msg.fixes.reduce((a,b) => Date.parse(a.recorded_at) >= Date.parse(b.recorded_at) ? a : b) : msg;
       const speedKmh = serverSpeed(latestFix);
       const meta = {
         recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv ?? null, cbcMv: msg.cbc_mv ?? null,
-        batteryAt: msg.recorded_at,
+        batteryAt: msg.recorded_at, batteryRuntime: msg.battery_runtime ?? null,
         ...(!freshBattery ? retainedBattery : {}),
         fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
         lat: msg.lat, lng: msg.lng,

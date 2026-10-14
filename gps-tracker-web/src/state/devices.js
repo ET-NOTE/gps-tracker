@@ -18,6 +18,9 @@ export function mergeDeviceSnapshot(snapshot, current = EMPTY_DEVICES, baseline 
     const newer = key => live[key] !== started.get(device.id)?.[key] && Number.isFinite(Date.parse(live[key])) &&
       (!Number.isFinite(Date.parse(device[key])) || Date.parse(live[key]) > Date.parse(device[key]));
     if (newer('last_seen_at')) result.last_seen_at = live.last_seen_at;
+    if (newer('last_battery_at')) {
+      for (const key of ['last_battery_at', 'last_vbat_mv', 'last_cbc_mv', 'battery_runtime']) result[key] = live[key];
+    }
     if (newer('last_fix_at')) {
       for (const key of ['last_fix_at', 'last_lat', 'last_lng']) result[key] = live[key];
     }

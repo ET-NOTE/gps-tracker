@@ -2,6 +2,7 @@ import { ageString } from '../colors';
 import Icon from './Icon';
 import { liveMotion } from '../lib/liveMotion';
 import { deviceBattery } from '../lib/battery';
+import BatteryRuntime from './BatteryRuntime';
 
 export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, deviceStatus, onPress, onUnpin, bottomOffset = 0 }) {
   if (!device) return null;
@@ -67,6 +68,7 @@ export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, de
               <span>{speed.toFixed(0)} km/h</span>
             )}
           </div>
+          <BatteryRuntime estimate={battery.runtime} compact />
         </div>
 
         {/* Unpin button */}

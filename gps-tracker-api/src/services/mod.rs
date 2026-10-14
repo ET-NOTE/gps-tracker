@@ -1,6 +1,7 @@
 pub mod ai_requests;
 pub mod alimtalk;
 pub mod battery;
+pub mod battery_runtime;
 pub mod connection_alerts;
 pub mod credits;
 pub mod fcm;

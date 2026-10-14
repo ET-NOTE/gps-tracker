@@ -1,6 +1,7 @@
 import { todayStats, formatDuration, formatDistance } from '../lib/deviceStats';
 import VehicleCarePanel from './VehicleCarePanel';
 import BatteryStatus from './BatteryStatus';
+import BatteryRuntime from './BatteryRuntime';
 import { deviceBattery } from '../lib/battery';
 // (2026-07-29 F8) 트렌디 slim redesign.
 //
@@ -145,7 +146,10 @@ function TodayStrip({ stats, device, meta, loading }) {
       </div>
       {device?.device_kind !== 'phone' && <div style={s.stripeCell}>
         <div style={s.stripeK}>배터리</div>
-        <BatteryStatus reading={battery} compact />
+        <BatteryStatus reading={battery} compact showRuntime={false} />
+      </div>}
+      {device?.device_kind !== 'phone' && battery.runtime && <div style={{ gridColumn: '1 / -1', padding: '0 14px 12px' }}>
+        <BatteryRuntime estimate={battery.runtime} />
       </div>}
     </div>
   );

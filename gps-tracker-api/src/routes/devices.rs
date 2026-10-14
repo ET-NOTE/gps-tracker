@@ -59,6 +59,10 @@ pub struct DeviceView {
     pub last_vbat_mv: Option<i32>,
     pub last_cbc_mv: Option<i32>,
     pub last_battery_at: Option<DateTime<Utc>>,
+    #[serde(skip)]
+    pub last_battery_event: Option<String>,
+    #[sqlx(skip)]
+    pub battery_runtime: Option<crate::services::battery_runtime::RuntimeEstimate>,
     // (2026-07-28) 월간 리포트 유류비 추정용. migration 0044.
     pub fuel_efficiency_kmpl: Option<f32>,
     pub fuel_type: Option<String>,
@@ -76,6 +80,26 @@ pub struct DeviceView {
     // (2026-07-29) 'hardware' | 'phone' — 스마트폰 tracker device 구분.
     // FE 는 phone 이면 배터리 mV / 안테나 / 부저 등 하드웨어 필드 숨김.
     pub device_kind: Option<String>,
+}
+
+impl DeviceView {
+    fn update_battery_runtime(&mut self, now: DateTime<Utc>) {
+        if self.device_kind.as_deref() == Some("phone") {
+            return;
+        }
+        let sleeping = self.last_battery_event.as_deref() == Some("sleep_enter")
+            || (self.last_event_kind.as_deref() == Some("sleep_enter")
+                && self
+                    .last_battery_at
+                    .zip(self.last_event_at)
+                    .is_some_and(|(sample, event)| sample <= event));
+        self.battery_runtime = Some(crate::services::battery_runtime::estimate(
+            self.last_vbat_mv,
+            self.last_battery_at,
+            sleeping,
+            now,
+        ));
+    }
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -224,7 +248,7 @@ async fn reset_device(
 }
 
 async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Vec<DeviceView>>> {
-    let rows = sqlx::query_as::<_, DeviceView>(
+    let mut rows = sqlx::query_as::<_, DeviceView>(
         r#"SELECT d.id, d.device_uid, d.display_name, d.color, d.icon,
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
@@ -241,7 +265,8 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
                   la.antenna     AS last_antenna,
                   lv.vbat_mv     AS last_vbat_mv,
                   lv.cbc_mv      AS last_cbc_mv,
-                  lv.recorded_at AS last_battery_at
+                  lv.recorded_at AS last_battery_at,
+                  lv.battery_event AS last_battery_event
              FROM devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
@@ -272,7 +297,7 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
                   -- (2026-07-16) fix 유무 무관 최근 payload 배터리. Fix 안 잡히는 실내 device 도
                   --   새로고침 후 즉시 현재 vbat 표시. WS 실시간 값이 오면 웹에서 그것으로 override.
                   -- [뿌리 B 2026-08-14] user_id 필터 — 이전 owner 의 배터리값 노출 차단
-                  SELECT recorded_at, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
+                  SELECT recorded_at, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv, raw->>'event' AS battery_event
                     FROM location_records
                    WHERE device_id = d.id AND user_id = $1
                 ORDER BY recorded_at DESC
@@ -284,6 +309,10 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
     .bind(user.user_id)
     .fetch_all(&state.db)
     .await?;
+    let now = Utc::now();
+    for row in &mut rows {
+        row.update_battery_runtime(now);
+    }
     Ok(Json(rows))
 }
 
@@ -1503,7 +1532,7 @@ async fn log_audit(
 }
 
 async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json<DeviceView>> {
-    let row = sqlx::query_as::<_, DeviceView>(
+    let mut row = sqlx::query_as::<_, DeviceView>(
         r#"SELECT d.id, d.device_uid, d.display_name, d.color, d.icon,
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
@@ -1520,7 +1549,8 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   la.antenna     AS last_antenna,
                   lv.vbat_mv     AS last_vbat_mv,
                   lv.cbc_mv      AS last_cbc_mv,
-                  lv.recorded_at AS last_battery_at
+                  lv.recorded_at AS last_battery_at,
+                  lv.battery_event AS last_battery_event
              FROM devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
@@ -1549,7 +1579,7 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
              ) la ON TRUE
         LEFT JOIN LATERAL (
                   -- [뿌리 B 2026-08-14] user_id 필터 — 이전 owner 배터리 노출 차단
-                  SELECT recorded_at, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv
+                  SELECT recorded_at, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv, raw->>'event' AS battery_event
                     FROM location_records
                    WHERE device_id = d.id AND user_id = $2
                 ORDER BY recorded_at DESC
@@ -1562,6 +1592,7 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
+    row.update_battery_runtime(Utc::now());
     Ok(Json(row))
 }
 

@@ -48,7 +48,11 @@ export function deviceBattery(device, meta) {
   const mt = Date.parse(meta?.batteryAt ?? meta?.receivedAt ?? meta?.recordedAt);
   const dt = Date.parse(device?.last_battery_at ?? device?.last_seen_at);
   const fromMeta = Object.hasOwn(meta || {}, 'vbatMv') && (!Number.isFinite(dt) || (Number.isFinite(mt) && mt >= dt));
-  return batteryReading(fromMeta ? meta.vbatMv : device?.last_vbat_mv);
+  const reading = batteryReading(fromMeta ? meta.vbatMv : device?.last_vbat_mv);
+  const runtime = fromMeta
+    ? (Object.hasOwn(meta, 'batteryRuntime') ? meta.batteryRuntime : mt === dt ? device?.battery_runtime : null)
+    : device?.battery_runtime;
+  return { ...reading, runtime: runtime ?? null };
 }
 
 export function batteryText(mv) {
@@ -57,5 +61,5 @@ export function batteryText(mv) {
 }
 
 export function telemetryBatteryPatch(msg) {
-  return { last_vbat_mv: msg.vbat_mv ?? null, last_cbc_mv: msg.cbc_mv ?? null, last_battery_at: msg.recorded_at };
+  return { last_vbat_mv: msg.vbat_mv ?? null, last_cbc_mv: msg.cbc_mv ?? null, last_battery_at: msg.recorded_at, battery_runtime: msg.battery_runtime ?? null };
 }

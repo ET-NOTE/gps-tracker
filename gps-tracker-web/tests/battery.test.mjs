@@ -94,3 +94,52 @@ test('battery indication does not hide a stale/offline connection', async () => 
   assert.equal(classifyDevice({last_seen_at:new Date().toISOString(),last_vbat_mv:5273}).id,'overcharge');
   assert.equal(classifyDevice({last_seen_at:new Date(Date.now()-3600000).toISOString(),last_vbat_mv:6000}).id,'offline');
 });
+
+test('runtime remains paired with the latest voltage, including missing and delayed WS packets', async () => {
+  globalThis.localStorage = {getItem:()=>null};
+  const {makeWsEventHandler} = await bundled('../src/lib/wsEventHandler.js');
+  const old = {status:'estimated', remaining_seconds:5000};
+  const current = {status:'estimated', remaining_seconds:4000};
+  const devRef={current:[{id:1,last_seen_at:'2026-10-14T02:00:00Z',last_vbat_mv:3900,battery_runtime:old}]};
+  const lastMetaRef={current:{}};
+  const h=makeWsEventHandler({devRef,lastMetaRef,mapRef:{current:null},wsDotAccRef:{current:{}},filterDeviceIdRef:{current:null},trackLiveRef:{current:false},setDevices:fn=>{devRef.current=fn(devRef.current);},setLiveSpeed:()=>{}});
+  h({type:'location',device_id:1,recorded_at:'2026-10-14T03:00:00Z',fix:false,vbat_mv:3800,battery_runtime:current});
+  assert.equal(battery.deviceBattery(devRef.current[0],lastMetaRef.current[1]).runtime,current);
+  assert.equal(devRef.current[0].battery_runtime,current);
+  h({type:'location',device_id:1,recorded_at:'2026-10-14T02:59:00Z',fix:true,lat:37.5,lng:127,vbat_mv:3900,battery_runtime:old});
+  assert.equal(battery.deviceBattery(devRef.current[0],lastMetaRef.current[1]).runtime,current);
+  h({type:'location',device_id:1,recorded_at:'2026-10-14T03:00:01Z',fix:false});
+  assert.equal(battery.deviceBattery(devRef.current[0],lastMetaRef.current[1]).runtime,null);
+});
+
+test('runtime formatting uses the server timestamp and hides stale or inapplicable predictions', async () => {
+  const {batteryRuntimeView:view}=await bundled('../src/lib/batteryRuntime.js');
+  const at=Date.parse('2026-10-14T17:00:00+09:00');
+  const estimate={status:'estimated',measurement_at:new Date(at).toISOString(),remaining_seconds:183780,estimated_empty_at:new Date(at+183780000).toISOString()};
+  assert.equal(view(estimate,at).text,'예상 남은 시간 약 51시간');
+  assert.match(view(estimate,at).date,/10\. 16\./);
+  assert.match(view(estimate,at).date,/20:00/);
+  assert.equal(view(estimate,at+301000).date,null);
+  for(const status of ['sleeping','unavailable','external_power_possible','stale']) {
+    const output=view({...estimate,status},at);
+    assert.equal(output.date,null);
+    assert.ok(!output.text.includes('51시간'));
+  }
+  assert.match(view({...estimate,status:'depleted',remaining_seconds:0,estimated_empty_at:new Date(at).toISOString()},at).text,/충전 필요/);
+  assert.equal(view({...estimate,estimated_empty_at:'invalid'},at).date,null);
+  assert.equal(view(null,at),null);
+});
+
+test('an in-flight REST snapshot cannot overwrite newer live battery or runtime', async () => {
+  globalThis.sessionStorage = {getItem:()=>null};
+  globalThis.window = Object.assign(new EventTarget(), {location:{hostname:'localhost'}});
+  const {mergeDeviceSnapshot}=await bundled('../src/state/devices.js');
+  const old={id:1,last_battery_at:'2026-10-14T02:00:00Z',last_vbat_mv:3900,battery_runtime:{remaining_seconds:4000}};
+  const live={...old,last_battery_at:'2026-10-14T02:01:00Z',last_vbat_mv:null,battery_runtime:null};
+  const [merged]=mergeDeviceSnapshot([old],[live],[old]);
+  assert.equal(merged.last_vbat_mv,null);
+  assert.equal(merged.battery_runtime,null);
+  assert.equal(merged.last_battery_at,live.last_battery_at);
+  const refreshed={...old,last_battery_at:'2026-10-14T02:02:00Z',last_vbat_mv:3800,battery_runtime:{remaining_seconds:3000}};
+  assert.equal(mergeDeviceSnapshot([refreshed],[live],[old])[0].battery_runtime,refreshed.battery_runtime);
+});

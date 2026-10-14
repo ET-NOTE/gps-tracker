@@ -972,6 +972,14 @@ async fn broadcast_location(
         sat: fix.sat_count().map(|v| v as i16),
         ttff_s: fix.ttff_s,
         vbat_mv: parsed.vbat_mv,
+        battery_runtime: (source != "phone").then(|| {
+            Box::new(crate::services::battery_runtime::estimate(
+                parsed.vbat_mv,
+                Some(recorded_at),
+                parsed.event.as_deref() == Some("sleep_enter"),
+                Utc::now(),
+            ))
+        }),
         cbc_mv: parsed.cbc_mv,
         heading: fix.heading,
         speed_kmh,
@@ -999,6 +1007,12 @@ fn batch_event(
         sat: last.sat,
         ttff_s: None,
         vbat_mv: parsed.vbat_mv,
+        battery_runtime: Some(Box::new(crate::services::battery_runtime::estimate(
+            parsed.vbat_mv,
+            Some(last.recorded_at),
+            parsed.event.as_deref() == Some("sleep_enter"),
+            Utc::now(),
+        ))),
         cbc_mv: parsed.cbc_mv,
         heading: None,
         speed_kmh: last.speed_kmh,

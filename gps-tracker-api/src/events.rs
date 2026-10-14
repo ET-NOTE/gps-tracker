@@ -51,6 +51,8 @@ pub enum Event {
         sat: Option<i16>,
         ttff_s: Option<i32>,
         vbat_mv: Option<i32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        battery_runtime: Option<Box<crate::services::battery_runtime::RuntimeEstimate>>,
         /// (F11) SIM7080G AT+CBC 로 읽는 모듈 전압 — 실시간 모듈 헬스 관측용.
         /// 이전엔 broadcast 안 실려 wsEventHandler.js 가 msg.cbc_mv 를 undefined 로 읽어 stale 값 유지.
         #[serde(skip_serializing_if = "Option::is_none")]

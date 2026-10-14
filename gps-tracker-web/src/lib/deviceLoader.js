@@ -127,7 +127,7 @@ export function makeDeviceLoaders({
     const stale = isStale(d.last_seen_at);
     if (!locs?.length) {
       if (d.last_lat != null && d.last_lng != null) {
-        const meta = { recordedAt: d.last_fix_at || d.last_seen_at, stale, vbatMv: d.last_vbat_mv, cbcMv: d.last_cbc_mv, batteryAt: d.last_seen_at };
+        const meta = { recordedAt: d.last_fix_at || d.last_seen_at, stale, vbatMv: d.last_vbat_mv, cbcMv: d.last_cbc_mv, batteryAt: d.last_battery_at ?? d.last_seen_at, batteryRuntime: d.battery_runtime ?? null };
         if (Date.parse(meta.recordedAt) < Date.parse(lastMetaRef.current[d.id]?.recordedAt)) return false;
         mapRef.current?.updateMarker(d.id, d.last_lat, d.last_lng, label, color, meta);
         lastMetaRef.current[d.id] = meta;
@@ -152,7 +152,7 @@ export function makeDeviceLoaders({
       const g = gapMap[i];
       const meta = isLast
         ? {
-            recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: d.last_vbat_mv, cbcMv: d.last_cbc_mv, batteryAt: d.last_seen_at,
+            recordedAt: loc.recorded_at, sat: loc.sat, vbatMv: d.last_vbat_mv, cbcMv: d.last_cbc_mv, batteryAt: d.last_battery_at ?? d.last_seen_at, batteryRuntime: d.battery_runtime ?? null,
             fix: loc.fix, stale, heading: loc.heading, lat: loc.lat, lng: loc.lng,
             speedKmh: serverSpeed(loc),
             deviceId: d.id, deviceLabel: label, ...(g || {}),
