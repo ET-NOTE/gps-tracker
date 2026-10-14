@@ -96,6 +96,7 @@ export const STATUS = {
   LOST:        { id: 'lost', label: '장기 미수신', color: 'var(--status-danger-text)', background: 'var(--status-danger-bg)' },
   LOW_BATT:    { id: 'low_batt', label: '저전압', color: 'var(--status-warning-text)', background: 'var(--status-warning-bg)' },
   CRITICAL_BATT: { id: 'critical_batt', label: '전압 매우 부족', color: 'var(--status-danger-text)', background: 'var(--status-danger-bg)' },
+  OVERCHARGE: { id: 'overcharge', label: '과충전', color: 'var(--status-danger-text)', background: 'var(--status-danger-bg)' },
   UNKNOWN:     { id: 'unknown', label: '수신 전', color: 'var(--text-3)' },
 };
 
@@ -121,6 +122,7 @@ export function classifyDevice(dev, meta) {
   if (seenAge > 30 * MIN) return STATUS.OFFLINE;
   if (seenAge >  5 * MIN) return STATUS.SIGNAL_LOSS;
   const battery = deviceBattery(dev, meta);
+  if (battery.state === 'overcharge') return STATUS.OVERCHARGE;
   if (battery.state === 'critical') return STATUS.CRITICAL_BATT;
   if (battery.state === 'low') return STATUS.LOW_BATT;
   // 4) 활성인데 GPS 가 안 잡힘 — 지하/실내 추정

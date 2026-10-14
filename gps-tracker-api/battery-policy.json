@@ -1,9 +1,17 @@
 {
-  "version": "gps-1s-standard-520211-20261014-final",
+  "version": "gps-1s-standard-520211-20261014-charging",
   "normal_min_mv": 3300,
   "critical_below_mv": 2900,
   "valid_min_mv": 1000,
-  "valid_max_mv": 4500,
+  "valid_max_mv": 65535,
+  "normal_max_raw_mv": 5272,
+  "charging_reference": {
+    "device": "520211",
+    "recorded_at": "2026-10-14T16:56:54.975569+09:00",
+    "raw_mv": 4772,
+    "headroom_mv": 500,
+    "note": "정상·과충전은 수신 전압에 적용한 앱 표시 기준입니다. 충전 중 수신 전압이 배터리 셀 전압인지는 확인되지 않았으며, 안전 충전 한계나 실제 과충전 판정을 뜻하지 않습니다."
+  },
   "curve": [
     [
       2600,

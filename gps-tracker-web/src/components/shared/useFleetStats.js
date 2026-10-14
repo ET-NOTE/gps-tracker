@@ -37,7 +37,7 @@ export function useFleetStats(devices) {
   return useMemo(() => {
     const totalCount = devices?.length ?? 0;
     const activeCount = (devices || []).filter(d => d.last_event_kind === 'wake').length;
-    const connectedCount = (devices || []).filter(d => ['active', 'gps_loss', 'low_batt', 'critical_batt'].includes(classifyDevice(d).id)).length;
+    const connectedCount = (devices || []).filter(d => ['active', 'gps_loss', 'low_batt', 'critical_batt', 'overcharge'].includes(classifyDevice(d).id)).length;
     let todayM = 0, monthM = 0;
     for (const s of (data?.per_device || [])) {
       monthM += s.total_distance_m || 0;

@@ -10,7 +10,7 @@ async function bundled(file) {
 const battery = await bundled('../src/lib/battery.js');
 
 test('battery state boundaries and percentage are monotonic; invalid readings stay unknown', () => {
-  for (const mv of [undefined, null, 0, -1, NaN, Infinity, '3900', 5000]) assert.equal(battery.batteryReading(mv).percent, null);
+  for (const mv of [undefined, null, 0, -1, NaN, Infinity, '3900', 65536]) assert.equal(battery.batteryReading(mv).percent, null);
   assert.equal(battery.batteryReading(2875).label, '전압 매우 부족');
   assert.equal(battery.batteryReading(2876).label, '저전압');
   assert.equal(battery.batteryReading(3331).label, '저전압');
@@ -33,6 +33,27 @@ test('battery state boundaries and percentage are monotonic; invalid readings st
     const current = reading.percent;
     assert.ok(current >= previous && current <= 100); previous = current;
   }
+});
+
+test('charging voltage stays visible above the old limit and warns only above the raw ceiling', () => {
+  const policy = battery.batteryPolicy;
+  assert.equal(policy.normal_max_raw_mv, policy.charging_reference.raw_mv + policy.charging_reference.headroom_mv);
+  for (const raw of [4501, 4772, 4858, 5272]) {
+    const b = battery.batteryReading(raw);
+    assert.equal(b.label, '정상');
+    assert.equal(b.percent, 100);
+    assert.equal(b.rawMv, raw);
+    assert.equal(b.mv, raw + 3, 'keep existing endpoint calibration');
+  }
+  for (const raw of [5273, 6000, 65535]) {
+    const b = battery.batteryReading(raw);
+    assert.equal(b.label, '과충전');
+    assert.equal(b.percent, 100);
+    assert.equal(b.rawMv, raw);
+    assert.equal(b.mv, raw + 3, 'do not clip voltage at the warning threshold');
+    assert.ok(battery.batteryText(raw).includes('과충전'));
+  }
+  assert.equal(battery.batteryReading(6000).voltage, '6.00 V');
 });
 
 test('newer API battery wins over old GPS metadata; new missing ADC never falls back to CBC or old voltage', () => {
@@ -70,4 +91,6 @@ test('battery indication does not hide a stale/offline connection', async () => 
   const {classifyDevice} = await bundled('../src/colors.js');
   assert.equal(classifyDevice({last_seen_at:new Date(Date.now()-3600000).toISOString(),last_vbat_mv:2800}).id,'offline');
   assert.equal(classifyDevice({last_seen_at:new Date().toISOString(),last_vbat_mv:2800}).id,'critical_batt');
+  assert.equal(classifyDevice({last_seen_at:new Date().toISOString(),last_vbat_mv:5273}).id,'overcharge');
+  assert.equal(classifyDevice({last_seen_at:new Date(Date.now()-3600000).toISOString(),last_vbat_mv:6000}).id,'offline');
 });

@@ -5,6 +5,7 @@ export const BATTERY_STATES = {
   normal: { label: '정상', color: 'var(--status-success-text)' },
   low: { label: '저전압', color: 'var(--status-warning-text)' },
   critical: { label: '전압 매우 부족', color: 'var(--status-danger-text)' },
+  overcharge: { label: '과충전', color: 'var(--status-danger-text)' },
   unknown: { label: '전압 미확인', color: 'var(--text-3)' },
 };
 
@@ -28,7 +29,9 @@ export function batteryReading(mv) {
   mv = calibratedVoltage(rawMv);
   const points = policy.calibration.points;
   const outsideCalibration = rawMv < points[0][0] || rawMv > points.at(-1)[0];
-  const state = mv < policy.critical_below_mv ? 'critical' : mv < policy.normal_min_mv ? 'low' : 'normal';
+  // The charging ceiling is defined on received ADC mV, before calibration.
+  // Values above it remain visible; this is an app threshold, not a cell diagnosis.
+  const state = rawMv > policy.normal_max_raw_mv ? 'overcharge' : mv < policy.critical_below_mv ? 'critical' : mv < policy.normal_min_mv ? 'low' : 'normal';
   let percent = mv <= policy.curve[0][0] ? 0 : 100;
   for (let i = 1; i < policy.curve.length; i++) {
     const [lo, lp] = policy.curve[i - 1], [hi, hp] = policy.curve[i];

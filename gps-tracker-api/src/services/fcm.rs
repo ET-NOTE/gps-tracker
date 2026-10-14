@@ -638,7 +638,7 @@ mod tests {
             .unwrap();
         // Exercise PostgreSQL's real integer arithmetic over every ADC mV.
         let calibration_sql = format!(
-            "SELECT x, {} FROM generate_series(0,5000) x",
+            "SELECT x, {} FROM generate_series(0,65536) x",
             crate::services::battery::sql_calibrated_mv("x")
         );
         let calibrated: Vec<(i32, Option<i32>)> = sqlx::query_as(&calibration_sql)

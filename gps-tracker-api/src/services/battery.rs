@@ -9,6 +9,7 @@ pub struct Policy {
     pub critical_below_mv: i32,
     pub valid_min_mv: i32,
     pub valid_max_mv: i32,
+    pub normal_max_raw_mv: i32,
     curve: Vec<(i32, i32)>,
     calibration: Calibration,
 }
@@ -76,7 +77,10 @@ pub fn sql_calibrated_mv(expression: &str) -> String {
 pub fn estimate(raw_mv: i32) -> Option<(&'static str, i32)> {
     let mv = calibrated_mv(raw_mv)?;
     let p = policy();
-    let label = if mv < p.critical_below_mv {
+    // The user-selected charging ceiling is in received ADC mV, not calibrated mV.
+    let label = if raw_mv > p.normal_max_raw_mv {
+        "과충전"
+    } else if mv < p.critical_below_mv {
         "전압 매우 부족"
     } else if mv < p.normal_min_mv {
         "저전압"
@@ -100,6 +104,7 @@ pub fn alert_title(mv: Option<i32>) -> &'static str {
     match mv.and_then(estimate) {
         Some(("전압 매우 부족", _)) => "전압 매우 부족",
         Some(("저전압", _)) => "저전압",
+        Some(("과충전", _)) => "과충전",
         _ => "배터리 알림 기준 도달",
     }
 }
@@ -120,7 +125,7 @@ mod tests {
     #[test]
     fn boundaries_missing_values_and_estimate_are_consistent() {
         assert_eq!(estimate(0), None);
-        assert_eq!(estimate(5000), None);
+        assert_eq!(estimate(65536), None);
         assert_eq!(estimate(2500), Some(("전압 매우 부족", 0)));
         assert_eq!(estimate(2875).unwrap().0, "전압 매우 부족");
         assert_eq!(estimate(2876).unwrap().0, "저전압");
@@ -140,5 +145,19 @@ mod tests {
         assert!(voltages.windows(2).all(|w| w[0] <= w[1]));
         let percentages: Vec<_> = (1000..=4500).map(|v| estimate(v).unwrap().1).collect();
         assert!(percentages.windows(2).all(|w| w[0] <= w[1]));
+    }
+
+    #[test]
+    fn charging_telemetry_stays_visible_with_an_inclusive_raw_ceiling() {
+        assert_eq!(calibrated_mv(4772), Some(4775));
+        assert_eq!(estimate(4501), Some(("정상", 100)));
+        assert_eq!(estimate(4772), Some(("정상", 100)));
+        assert_eq!(estimate(5272), Some(("정상", 100)));
+        assert_eq!(estimate(5273), Some(("과충전", 100)));
+        assert_eq!(estimate(6000), Some(("과충전", 100)));
+        assert_eq!(calibrated_mv(6000), Some(6003));
+        assert_eq!(estimate(65535), Some(("과충전", 100)));
+        assert_eq!(estimate(-1), None);
+        assert_eq!(estimate(i32::MAX), None);
     }
 }
