@@ -30,7 +30,10 @@ Object.assign(api, {
   getCorporateSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
   getRentcarSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
   fleetTripStats: read({per_device: devices.map(d => ({device_id:d.id,total_distance_m:123000,today_distance_m:32000}))}),
-  listTrips: read([]), listRenters: read([]), getFuelPrices: read({gasoline:1700,diesel:1600,lpg:1000}), listDocuments: read([]),
+  listTrips: read(empty ? [] : [{ started_at: at('09'), ended_at: at('10'), duration_min:60, distance_m:12000, annotation:{purpose:'business',driver_staff_id:1,driver_name:'미리보기 운전자',fuel_cost:50000} }, {started_at:at('11'),ended_at:at('12'),duration_min:60,distance_m:6000,annotation:null}]),
+  listRentalPhotos: read([{id:1,kind:'pickup_damage',created_at:at('09')},{id:2,kind:'return_damage',created_at:at('18')}]),
+  fetchRentalPhoto: async () => { if (params.has('photo-error')) throw Error('의도한 사진 오류'); return URL.createObjectURL(new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="300" height="200" fill="#dae6f7"/><text x="35" y="100" fill="#2157a6">Test photo (fixture)</text></svg>'],{type:'image/svg+xml'})); },
+  listRenters: read([]), getFuelPrices: read({gasoline:1700,diesel:1600,lpg:1000}), listDocuments: read([]),
 });
 // Optional, ignored local API snapshot. Never bundled into the production app.
 if (params.has('account')) {
@@ -52,7 +55,7 @@ function Preview() {
   return <div style={{height:'100%',display:'flex',flexDirection:'column'}}>
     <div style={{padding:8,display:'flex',gap:12,flexWrap:'wrap',flexShrink:0,fontSize:12}}><button onClick={()=>setKind('rental')}>렌트카 미리보기</button><button onClick={()=>setKind('corporate')}>법인차 미리보기</button><a href="?error=1">오류 상태</a><a href="?empty=1">빈 상태</a><span>{action}</span></div>
     <div style={{flex:1,minHeight:0,width:params.has('mobile')?390:'100%',maxWidth:'100%',margin:'0 auto'}}>
-      {kind==='rental'?<RentcarPanel devices={devices} onMap={id=>setAction(`지도 이동: ${id}`)}/>:<CorporatePanel devices={devices} onMap={id=>setAction(`지도 이동: ${id}`)} onDevice={id=>setAction(`차량 상세: ${id}`)}/>}
+      {kind==='rental'?<RentcarPanel devices={devices} onNavigate={view=>setAction(`메뉴 이동: ${view}`)} onMap={id=>setAction(`지도 이동: ${id}`)}/>:<CorporatePanel devices={devices} onNavigate={view=>setAction(`메뉴 이동: ${view}`)} onMap={id=>setAction(`지도 이동: ${id}`)} onDevice={id=>setAction(`차량 상세: ${id}`)}/>}
     </div>
   </div>;
 }

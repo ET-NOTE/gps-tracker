@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
 import { rentalReport, invoiceReport, rentalPeriod } from '../lib/businessExport';
-import { BusinessWorkspace, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
+import { BusinessWorkspace, BusinessLocation, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
+import RentalBoard from './business/RentalBoard';
 import { useBusinessClock, useRentalOperations, useBusinessSubscription } from './business/useBusinessData';
 import { calendarDate, businessDate, rentalSummary, rentalStatus, filterRentals } from '../lib/business';
 import { api } from '../api';
@@ -17,7 +18,7 @@ import {
 } from '../state';
 import { useQueryClient } from '@tanstack/react-query';
 
-function RentcarPanel({ devices, onMap }) {
+function RentcarPanel({ devices, onMap, onNavigate, meta }) {
   const [tab, setTab] = useState('fleet');
   const [request, setRequest] = useState(null);
   const subscription = useBusinessSubscription('rentcar');
@@ -26,11 +27,11 @@ function RentcarPanel({ devices, onMap }) {
   const tabs = [
     { id: 'fleet', label: '운영 현황', icon: 'home', description: '오늘 처리할 일과 차량 상태를 한눈에 확인하세요.' },
     { id: 'rentals', label: '계약 관리', icon: 'route', description: '차량과 임차인을 찾고 인수·반납을 처리하세요.' },
-    { id: 'schedule', label: '반납 일정', icon: 'clock', description: '예정된 반납 일정을 날짜별로 확인하세요.' },
+    { id: 'schedule', label: '배차·반납 일정', icon: 'clock', description: '차량별 계약 기간과 반납 일정을 확인하세요.' },
     { id: 'renters', label: '임차인', icon: 'user', description: '고객의 이용 이력과 유의 사항을 관리하세요.' },
     { id: 'settings', label: '설정', icon: 'wrench', description: '이용권 상태와 제공 기능을 확인하세요.' },
   ];
-  return <BusinessWorkspace title="렌트카 운영" description="출고부터 반납까지, 오늘의 차량 업무를 관리하세요." tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }}
+  return <BusinessWorkspace title="렌트카 운영" description="출고부터 반납까지, 오늘의 차량 업무를 관리하세요." tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="rentcar" onMap={onMap} onVehicleAction={d => openContracts({ deviceId: d.id })} onNavigate={onNavigate} meta={meta}
     action={<BusinessButton primary icon="plus" onClick={() => openContracts({ new: true })}>새 계약</BusinessButton>}>
     {tab === 'fleet' && <FleetTab devices={devices} onMap={onMap} onContracts={openContracts} />}
     {tab === 'rentals' && <RentalsTab devices={devices} request={request} />}
@@ -173,6 +174,15 @@ export default React.memo(RentcarPanel);
 // 셀 클릭 → 그 날 preset 신규 계약. 계약 pill 클릭 → 편집.
 // ═══════════════════════════════════════════════════════
 function ScheduleTab({ devices }) {
+  const [mode, setMode] = useState('board'), [editing, setEditing] = useState(null);
+  const now = useBusinessClock();
+  return <div className="business-schedule">
+    <div className="business-switch"><button className="business-switch-item" aria-pressed={mode === 'board'} onClick={() => setMode('board')}>차량별 배차표</button><button className="business-switch-item" aria-pressed={mode === 'month'} onClick={() => setMode('month')}>월간 달력</button></div>
+    {mode === 'board' ? <RentalBoard devices={devices} now={now} onNew={(deviceId, day) => setEditing({ new: true, deviceId, day })} onEdit={setEditing} /> : <MonthScheduleTab devices={devices} />}
+    {editing && <RentalDialog init={editing.new ? null : editing} devices={devices} presetDate={editing.day} presetDeviceId={editing.deviceId} onClose={() => setEditing(null)} onSaved={() => setEditing(null)} />}
+  </div>;
+}
+function MonthScheduleTab({ devices }) {
   const [ym, setYm] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -640,7 +650,7 @@ function isoToLocal(iso) {
 }
 function localToIso(v) { return v ? new Date(v).toISOString() : null; }
 
-function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
+function RentalDialog({ init, devices, presetDate, presetDeviceId, onClose, onSaved }) {
   // presetDate 'YYYY-MM-DD' 있으면 그 날 09:00 시작, 다음날 09:00 종료. 없으면 오늘 기준.
   const defaultStart = () => {
     const d = presetDate ? new Date(`${presetDate}T09:00:00`) : new Date();
@@ -650,7 +660,7 @@ function RentalDialog({ init, devices, presetDate, onClose, onSaved }) {
     const d = new Date(defaultStart().getTime() + 86400_000);
     return d;
   };
-  const [deviceId, setDeviceId] = useState(init?.device_id ?? devices?.[0]?.id ?? '');
+  const [deviceId, setDeviceId] = useState(init?.device_id ?? presetDeviceId ?? devices?.[0]?.id ?? '');
   const [renterName,   setRenterName]   = useState(init?.renter_name ?? '');
   const [renterPhone,  setRenterPhone]  = useState(init?.renter_phone ?? '');
   const [idLast4,      setIdLast4]      = useState(init?.renter_id_last4 ?? '');
@@ -1049,11 +1059,13 @@ function FleetTab({ devices, onMap, onContracts }) {
       { label: '미배차 차량', value: ready ? summary.available.length : null, unit: '대', hint: '신규 계약 전 예약·정비 확인', tone: 'good', icon: 'list' },
     ]}/>
     {result.error && <BusinessError onRetry={result.refetch}>계약 현황을 불러오지 못했습니다. 배차·반납 상태를 확인한 후 처리해 주세요.</BusinessError>}
+    <div className="business-overview-grid"><BusinessLocation devices={devices} />
     <BusinessSection title="오늘 처리할 일" description="지연된 반납을 먼저 확인하고 출고·반납을 처리하세요." action={<BusinessButton onClick={() => onContracts({ status: 'all' })}>계약 전체 보기</BusinessButton>}>
       {result.isLoading ? <SkeletonList count={3} itemHeight={72}/> : tasks.length ? tasks.map(({ c, key, label, tone, date, action, returning }) =>
         <BusinessTask key={key} title={c.license_plate || c.device_name || `차량 ${c.device_id}`} description={`${c.renter_name} · ${new Date(date).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`} label={label} tone={tone} action={action} onClick={() => onContracts(returning ? { returning: c } : { contract: c })}/>)
         : !result.error && <BusinessEmpty title="오늘 처리할 출고·반납이 없습니다.">새 계약을 등록하면 이곳에 일정이 표시됩니다.</BusinessEmpty>}
     </BusinessSection>
+    </div>
     <BusinessVehicles devices={devices} onMap={onMap} onDetail={d => onContracts({ deviceId: d.id })} detailLabel="계약 보기" statusUnknown={!ready}
       availability={d => summary.occupied.has(String(d.id)) ? { label: '임대 중', tone: 'info' } : { label: '미배차', tone: 'good' }}/>
     <p className="business-note">전체 {devices.length}대 · {ready ? `현재 임대 ${summary.occupied.size}대 · 이번 달 정산 ${summary.revenue.toLocaleString()}원` : '임대·정산 정보 확인 필요'}. 차량의 운영 상태와 단말기 통신 상태는 별도로 표시합니다.</p>

@@ -1022,7 +1022,7 @@ export default function Dashboard({ onLogout }) {
             flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
           }}>
             <Suspense fallback={<LazyPanelFallback />}>
-              <CorporatePanel devices={devices} onMap={id => { setView('home'); persistFilterDevice(id); }}
+              <CorporatePanel devices={devices} onNavigate={setView} meta={lastMetaRef.current} onMap={id => { setView('home'); persistFilterDevice(id); }}
                 onDevice={id => { setDetailId(id); setView('devices'); }} onVehiclesChange={reloadDevicesAfterMutation} />
             </Suspense>
           </div>
@@ -1032,7 +1032,7 @@ export default function Dashboard({ onLogout }) {
         {view === 'rentcar' && isRentcar && (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <Suspense fallback={<LazyPanelFallback />}>
-              <RentcarPanel devices={devices} onMap={id => { setView('home'); persistFilterDevice(id); }} />
+              <RentcarPanel devices={devices} onNavigate={setView} meta={lastMetaRef.current} onMap={id => { setView('home'); persistFilterDevice(id); }} />
             </Suspense>
           </div>
         )}
@@ -1196,7 +1196,7 @@ export default function Dashboard({ onLogout }) {
           </div>
 
           {/* 모바일/태블릿: 홈 지도 외 탭은 전체 화면 패널로 표시. */}
-          {!isDesktop && view !== 'home' && view !== 'admin' && view !== 'corporate' && (
+          {!isDesktop && !['home', 'admin', 'corporate', 'rentcar', 'delivery'].includes(view) && (
             <div style={{
               position: 'absolute', inset: 0,
               background: 'var(--surface)',
@@ -1211,7 +1211,7 @@ export default function Dashboard({ onLogout }) {
       </main>
 
       {/* 모바일/태블릿 바텀 네비 */}
-      {!isDesktop && <BottomNav active={view} onChange={setView} isAdmin={isAdmin}
+      {!isDesktop && !(view === 'corporate' && isCorporate) && !(view === 'rentcar' && isRentcar) && <BottomNav active={view} onChange={setView} isAdmin={isAdmin}
         isCorporate={isCorporate} isRentcar={isRentcar} isDelivery={isDelivery} />}
 
       {/* 로드뷰 모달 — 호출 측이 probeRoadview() 로 panoId 확보 후에만 마운트 */}

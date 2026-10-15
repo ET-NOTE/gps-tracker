@@ -8,6 +8,7 @@ import {create, act} from 'react-test-renderer';
 import {transform} from 'esbuild';
 import * as business from '../src/lib/business.js';
 import * as businessExport from '../src/lib/businessExport.js';
+import * as businessWorkspace from '../src/lib/businessWorkspace.js';
 
 // Render the actual calendar bodies, not just the date helper. Unrelated panel
 // dependencies are stubbed; no network, storage or customer data is involved.
@@ -25,10 +26,11 @@ async function calendar(file, name) {
     if (specifier==='react/jsx-runtime') return moduleOf(jsx);
     if (specifier==='../lib/business') return moduleOf(business);
     if (specifier==='../lib/businessExport') return moduleOf(businessExport);
+    if (specifier==='../lib/businessWorkspace') return moduleOf(businessWorkspace);
     // Only the named exports requested by this module are needed. None of these
     // hooks/components run while rendering a calendar.
     const exports = {default:noop,api:{},qk:{},useQueryClient:noop,
-      BusinessWorkspace:noop,BusinessButton:noop,BusinessError:noop,BusinessEmpty:noop,BusinessSection:noop,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
+      BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:noop,BusinessError:noop,BusinessEmpty:noop,BusinessSection:noop,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
       useBusinessClock:noop,useRentalOperations:noop,useBusinessSubscription:noop,
       alertDialog:noop,confirmDialog:noop,StatCard:noop,StatCardGrid:noop,useFleetStats:noop,
       Modal:noop,FormField:noop,Button:noop,Pill:noop,SkeletonList:noop,toast:noop};

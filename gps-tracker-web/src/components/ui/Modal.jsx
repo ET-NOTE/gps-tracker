@@ -56,6 +56,7 @@ export default function Modal({
 
   return (
     <div
+      className="gps-modal-backdrop"
       onClick={closeOnBackdrop ? onClose : undefined}
       style={{
         position: 'fixed', inset: 0,

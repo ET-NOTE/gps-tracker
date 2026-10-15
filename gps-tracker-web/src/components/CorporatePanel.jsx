@@ -3,7 +3,8 @@ import { api } from '../api';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
 import { filterTrips, tripReport, monthlyReport, monthDateBounds, purposeLabel } from '../lib/businessExport';
-import { BusinessWorkspace, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
+import { BusinessWorkspace, BusinessLocation, useBusinessVehicle, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
+import { tripCompleteness } from '../lib/businessWorkspace';
 import { useBusinessClock, useBusinessSubscription } from './business/useBusinessData';
 import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleName } from '../lib/business';
 import { confirmDialog, alertDialog } from './Dialog';
@@ -25,7 +26,7 @@ const PURPOSE_LABEL = {
   unspecified: '미지정',
 };
 
-function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange }) {
+function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate, meta }) {
   const [tab, setTab] = useState('overview');
   const [request, setRequest] = useState(null);
   const [reportDevice, setReportDevice] = useState(null);
@@ -43,7 +44,7 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange }) {
     { id: 'staff', label: '운전자', icon: 'user', description: '운행기록에 배정할 직원 정보를 관리하세요.' },
     { id: 'settings', label: '설정', icon: 'wrench', description: '회사 정보와 이용권을 관리하세요.' },
   ];
-  return <BusinessWorkspace title="법인차 운영" description="차량 예약과 운행기록을 한곳에서 관리하세요." tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }}
+  return <BusinessWorkspace title="법인차 운영" description="차량 예약과 운행기록을 한곳에서 관리하세요." tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} meta={meta}
     action={<BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton>}>
     {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} />}
     {tab === 'vehicles' && <VehiclesTab devices={devices} onMap={onMap} onVehiclesChange={onVehiclesChange} />}
@@ -59,6 +60,7 @@ export default React.memo(CorporatePanel);
 
 function CorporateOverview({ devices, onMap, onDevice, onReport, onReserve }) {
   const now = useBusinessClock();
+  const openVehicle = useBusinessVehicle();
   const period = businessPeriod(now);
   const reservations = useReservations({ from: period.todayStart, to: period.todayEnd }, { refetchInterval: 60_000 });
   const stats = useFleetStats(devices);
@@ -73,7 +75,9 @@ function CorporateOverview({ devices, onMap, onDevice, onReport, onReserve }) {
       { label: '점검 예정', value: maintenance.length, unit: '건', hint: '정비·보험·검사 · 30일 이내', tone: maintenance.some(t => t.overdue) ? 'urgent' : '', icon: 'wrench' },
     ]} />
     {stats.error && <BusinessError onRetry={stats.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
-    <BusinessSection title="오늘의 차량 예약" description="예정된 배차와 진행 중인 이용을 확인하세요." action={<BusinessButton onClick={() => onReserve({})}>예약 전체 보기</BusinessButton>}>
+    <div className="business-overview-grid"><BusinessLocation devices={devices} />
+    <BusinessSection title="오늘 확인할 일" description="기한이 지난 점검부터 확인하고 오늘의 차량을 배차하세요." action={<BusinessButton onClick={() => onReserve({})}>예약 전체 보기</BusinessButton>}>
+      {maintenance.filter(t => t.overdue).map(t => <BusinessTask key={`${t.device.id}-${t.field}`} title={vehicleName(t.device)} description={`${t.label} · ${t.date}`} label="기한 경과" tone="urgent" action="점검 확인" onClick={() => openVehicle(t.device)} />)}
       {reservations.error && <BusinessError onRetry={reservations.refetch}>예약을 불러오지 못했습니다. 다시 시도해 최신 예약을 확인해 주세요.</BusinessError>}
       {reservations.isLoading ? <SkeletonList count={3} itemHeight={72} /> : active.length ? active.map(r => <BusinessTask key={r.id}
         title={vehicleName(devices.find(d => d.id === r.device_id) || { id: r.device_id })}
@@ -81,10 +85,10 @@ function CorporateOverview({ devices, onMap, onDevice, onReport, onReserve }) {
         label={r.status === 'in_progress' ? '사용 중' : '예약 예정'} tone={r.status === 'in_progress' ? 'good' : 'info'} action="예약 확인" onClick={() => onReserve({ reservation: r })}/>)
         : !reservations.error && <BusinessEmpty title="오늘 예정된 차량 예약이 없습니다.">차량 예약을 추가하면 운전자와 일정이 표시됩니다.</BusinessEmpty>}
     </BusinessSection>
-    <BusinessSection title="차량 점검 일정" description="등록된 날짜 기준으로 30일 이내 정비·보험·검사를 안내합니다.">
-      {maintenance.length ? maintenance.map(t => <BusinessTask key={`${t.device.id}-${t.field}`} title={vehicleName(t.device)} description={`${t.label} · ${t.date}`} label={t.overdue ? '기한 경과' : '예정'} tone={t.overdue ? 'urgent' : 'info'} action="차량 상세" onClick={() => onDevice?.(t.device.id)} />)
-        : <BusinessEmpty title="등록된 일정 중 30일 이내 점검 항목이 없습니다.">차량 상세에서 정비·보험·검사 날짜를 등록할 수 있습니다.</BusinessEmpty>}
-    </BusinessSection>
+    </div>
+    {maintenance.some(t => !t.overdue) && <BusinessSection title="다가오는 차량 점검" description="등록된 날짜 기준으로 30일 이내 정비·보험·검사를 안내합니다.">
+      {maintenance.filter(t => !t.overdue).map(t => <BusinessTask key={`${t.device.id}-${t.field}`} title={vehicleName(t.device)} description={`${t.label} · ${t.date}`} label="예정" tone="info" action="차량 상세" onClick={() => openVehicle(t.device)} />)}
+    </BusinessSection>}
     <BusinessVehicles devices={devices} onMap={onMap} onDetail={onReport} detailLabel="운행 리포트" />
   </div>;
 }
@@ -392,7 +396,7 @@ function StaffCard({ s, onToggle, onRemove }) {
 // ════════════════════════════════════════════════════════
 function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
   const today = businessDate();
-  const monthAgo = businessDate(Date.now() - 30 * 86400_000);
+  const monthAgo = `${today.slice(0, 7)}-01`;
 
   const [deviceId, setDeviceId] = useState(initialDeviceId || devices[0]?.id || null);
   // hard refresh 시 useState 초기값은 첫 렌더의 devices(=[])를 캡처해서 deviceId=null 로 박힘.
@@ -434,6 +438,7 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
 
   // 추가 필터 적용된 trip 목록 — 운전자/용무/최소시간 AND.
   const filteredTrips = useMemo(() => trips ? filterTrips(trips, {driver:driverFilter,purpose:purposeFilter,minHours}) : null, [trips, driverFilter, purposeFilter, minHours]);
+  const completeness = trips ? tripCompleteness(trips) : null;
   const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
     filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간`,
   }) : null;
@@ -492,7 +497,6 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
       {/* (2026-07-28) Fleet 요약 — 상단 stat card 4개 (첨부 이미지 스타일).
           fleet-wide 지표 (총 차량 / 운행중 / 오늘 km / 이번달 km) 로 device drill-down 위에 배치.
           운행중 판정: devices.last_event_kind === 'wake'. km: 병렬 listTrips 집계. */}
-      <FleetSummary devices={devices} />
 
       {/* 컨트롤 — 인쇄 시 숨김 */}
       <div className="no-print" style={st.controls}>
@@ -516,6 +520,12 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
         </button>
       </div>
 
+      <div className="business-report-progress no-print"><BusinessMetrics items={[
+        { label: '운행일지 작성률', value: completeness?.percent, unit: '%', hint: completeness ? `${completeness.complete} / ${completeness.total}건 · 운전자와 용무 모두 입력` : '선택한 차량·조회 기간 기준', icon: 'check' },
+        { label: '용무 미지정', value: completeness?.missingPurpose, unit: '건', hint: '운행 목적을 기록해 주세요', icon: 'list', tone: completeness?.missingPurpose ? 'urgent' : '' },
+        { label: '운전자 미지정', value: completeness?.missingDriver, unit: '건', hint: '운행 담당자를 기록해 주세요', icon: 'user' },
+        { label: '입력된 주유비', value: completeness?.fuelEntries ? completeness.fuelCost.toLocaleString() : null, unit: '원', hint: completeness ? `${completeness.fuelEntries}건 입력 · 미입력 금액 제외` : '직접 입력한 주유비 합계', icon: 'bar' },
+      ]} /><div className="business-filter-bar"><BusinessButton disabled={!completeness?.missingPurpose} onClick={() => { resetFilters(); setPurposeFilter('unspecified'); }}>용무 미지정만 보기</BusinessButton><BusinessButton disabled={!completeness?.missingDriver} onClick={() => { resetFilters(); setDriverFilter('unassigned'); }}>운전자 미지정만 보기</BusinessButton><span className="business-note">위 지표는 아래 필터 적용 전, 선택 차량의 조회 기간 전체 기준입니다.</span></div></div>
       {/* 추가 필터 row — 운전자 / 용무 / 최소시간. AND, 초기화 버튼. */}
       <div className="no-print" style={st.filters}>
         <select aria-label="운전자 필터" value={driverFilter} onChange={e => setDriverFilter(e.target.value)} style={st.select}>

@@ -300,10 +300,10 @@ function CheckRow({ checked, onChange, label, desc }) {
 // rentcar / corporate_fleet / delivery / unspecified
 // 유형마다 특화 메뉴 (예: corporate_fleet → 법인운행 리포트) 가 활성화됨.
 const TYPE_META = {
-  unspecified:     { label: '미지정',         icon: 'spark', desc: '운영 성격을 정하면 맞춤 메뉴가 활성화됩니다.' },
-  rentcar:         { label: '렌트카 운영',    icon: 'list',  desc: '렌탈 차량 — 차량별 사용자 매칭/대여 이력 관리 (개발 중)' },
-  corporate_fleet: { label: '법인차 운영',    icon: 'list',  desc: '회사 차량 — 운행일지, 운전자/유류 관리, 인쇄 가능한 운행 리포트' },
-  delivery:        { label: '배달 운영',      icon: 'list',  desc: '배달 — 건별 추적, 평균 운행 시간 (개발 중)' },
+  unspecified:     { label: '기본 차량 관리', icon: 'mapPin', desc: '개인 차량의 위치와 단말기 상태를 확인해요.', menus: '홈 지도 · 단말기 · 내정보' },
+  rentcar:         { label: '렌트카 운영', icon: 'route', desc: '대여 계약, 출고·반납, 임차인과 계약 사진을 관리해요.', menus: '운영 현황 · 계약 관리 · 배차표 · 임차인' },
+  corporate_fleet: { label: '법인차 운영', icon: 'list', desc: '회사 차량을 예약하고 운전자·용무·주유비를 기록해요.', menus: '운영 현황 · 차량 예약 · 운행 리포트 · 운전자' },
+  delivery:        { label: '배달 운영', icon: 'mapPin', desc: '차량의 운행 현황을 확인해요. 배차·성과 기능은 준비 중이에요.', menus: '오늘 배송 · 경로·성과(준비 중)' },
 };
 
 // ─── 휴대폰 (다중 번호 + OTP 인증) ─────────────────────
@@ -518,6 +518,8 @@ function AccountTypeCard() {
   const { data: accountTypeRaw } = useAccountType();
   const cur = accountTypeRaw?.account_type ?? null;
   const setType = useSetAccountType();
+  const [selection, setSelection] = useState(null);
+  const selected = selection || cur;
 
   async function pick(type) {
     if (type === cur || setType.isPending) return;
@@ -530,30 +532,33 @@ function AccountTypeCard() {
 
   return (
     <Card title="계정 유형">
-      <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>
-        {TYPE_META[cur]?.desc || ''}
+      <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.6 }}>
+        사용 목적에 맞는 메뉴를 선택하세요. 유형을 변경해도 등록된 단말기와 운행기록은 유지됩니다.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         {Object.entries(TYPE_META).map(([id, meta]) => {
-          const on = cur === id;
+          const on = selected === id;
           return (
-            <button key={id} onClick={() => pick(id)} disabled={busy}
+            <button key={id} onClick={() => setSelection(id)} disabled={busy} aria-pressed={on}
               style={{
-                padding: '10px 8px',
-                background: on ? 'var(--primary)' : 'var(--surface)',
-                color:      on ? 'var(--primary-fg)' : 'var(--text)',
-                border: on ? 'none' : '1px solid var(--border)',
+                padding: '14px 12px',
+                background: on ? 'color-mix(in srgb,var(--primary) 8%,var(--surface))' : 'var(--surface)',
+                color: 'var(--text)',
+                border: on ? '1px solid var(--primary)' : '1px solid var(--border)',
                 borderRadius: 8,
                 cursor: busy ? 'not-allowed' : 'pointer',
                 fontSize: 12, fontWeight: on ? 700 : 500,
                 textAlign: 'left',
                 opacity: busy ? 0.6 : 1,
               }}>
-              {meta.label}
+              <span style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, fontWeight: 700, marginBottom: 8, color: on ? 'var(--primary)' : 'var(--text)' }}><Icon name={meta.icon} size={17} />{meta.label}</span>
+              <span style={{ display: 'block', color: 'var(--text-2)', fontSize: 12, lineHeight: 1.6, fontWeight: 400 }}>{meta.desc}</span>
             </button>
           );
         })}
       </div>
+      <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: 'var(--surface-2)', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7 }}>선택한 메뉴<br /><strong style={{ color: 'var(--text)' }}>{TYPE_META[selected]?.menus}</strong><br />운행 리포트 등 일부 기능은 별도 이용권이 필요합니다.</div>
+      <button onClick={() => pick(selected)} disabled={busy || selected === cur} style={{ ...st.btnPrimary, width: '100%', minHeight: 44, marginTop: 12 }}>{busy ? '변경 중…' : selected === cur ? '현재 사용 중인 유형' : `${TYPE_META[selected]?.label} 적용`}</button>
     </Card>
   );
 }
