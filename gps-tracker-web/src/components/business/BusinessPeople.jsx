@@ -80,13 +80,13 @@ export function BusinessRenters() {
     { label: '재방문', value: ready ? repeat : null, unit: '명', hint: '계약 이력 2회 이상', icon: 'refresh' },
     { label: '경고·차단', value: ready ? flagged : null, unit: '명', hint: '계약 전 확인할 고객', icon: 'warn', tone: flagged ? 'urgent' : '' },
     { label: '누적 매출', value: ready ? list.reduce((sum, r) => sum + (r.total_revenue || 0), 0).toLocaleString() : null, unit: '원', hint: '전체 임차인 합계', icon: 'coin' },
-  ]} /><BusinessSection title="임차인 목록" description="임차인은 계약에 입력한 정보를 기준으로 표시됩니다." action={<PeopleSearch label="임차인 검색" placeholder="이름 · 전화번호 검색" value={query} onChange={setQuery} />}>
+  ]} /><BusinessSection title="임차인 목록" description="계약에 입력한 전화번호를 기준으로 임차인과 이용 이력을 모아 보여줍니다." action={<PeopleSearch label="임차인 검색" placeholder="이름 · 전화번호 검색" value={query} onChange={setQuery} />}>
     {ready && <PeopleFilters label="임차인 필터" value={filter} onChange={setFilter} options={[["all", "전체", list.length], ["repeat", "재방문", repeat], ["flagged", "경고·차단", flagged]]} />}
     {result.error ? <BusinessError onRetry={result.refetch}>임차인 정보를 불러오지 못했습니다.</BusinessError> : !result.data ? <SkeletonList count={3} itemHeight={100} /> : rows.length ? <div className="business-people-grid">{rows.map(r => <article key={r.renter_phone} className="business-person-card">
       <PersonHeading name={r.renter_name} subtitle={r.renter_phone}><RenterBadge renter={r} /></PersonHeading>
       <dl className="business-person-facts"><div><dt>이용 / 반납</dt><dd>{r.contracts_count}회 / {r.returned_count}회</dd></div><div><dt>누적 매출</dt><dd>{(r.total_revenue || 0).toLocaleString()}원</dd></div><div><dt>최근 이용</dt><dd>{dateLabel(r.last_at)}</dd></div><div><dt>연체 / 지연 반납</dt><dd>{r.overdue_count || 0}건 / {r.late_count || 0}건</dd></div></dl>
       <div className="business-person-actions"><BusinessButton onClick={() => setDetail(r)} aria-label={`${r.renter_name || r.renter_phone} 이용 이력`}>이용 이력</BusinessButton><BusinessButton onClick={() => setEditing(r)} aria-label={`${r.renter_name || r.renter_phone} 유의사항 관리`}>유의사항 관리</BusinessButton></div>
-    </article>)}</div> : <BusinessEmpty title={list.length ? '검색 조건에 맞는 임차인이 없습니다.' : '등록된 임차인이 없습니다.'}>{list.length ? '검색어나 필터를 변경해 주세요.' : '계약을 등록하면 임차인과 이용 이력이 표시됩니다.'}</BusinessEmpty>}
+    </article>)}</div> : <BusinessEmpty title={list.length ? '검색 조건에 맞는 임차인이 없습니다.' : '등록된 임차인이 없습니다.'}>{list.length ? '검색어나 필터를 변경해 주세요.' : '계약에 임차인 전화번호를 입력하면 이곳에서 고객별 이용 이력을 확인할 수 있습니다.'}</BusinessEmpty>}
   </BusinessSection>{detail && <RenterDetail renter={detail} onClose={() => setDetail(null)} />}{editing && <RenterNotice renter={editing} onClose={() => setEditing(null)} />}</div>;
 }
 function dateLabel(value) { return value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' }) : '미확인'; }
