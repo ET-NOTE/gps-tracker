@@ -47,7 +47,7 @@ function VehicleRentalHistory({ device }) {
     </>}
   </>;
 }
-function ContractPhotos({ contractId }) {
+export function ContractPhotos({ contractId }) {
   const result = useRentalPhotos(contractId);
   if (result.isLoading) return <p>사진 목록을 불러오는 중…</p>;
   if (result.error) return <ReadError onRetry={result.refetch} />;

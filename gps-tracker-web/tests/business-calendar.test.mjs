@@ -9,6 +9,7 @@ import {transform} from 'esbuild';
 import * as business from '../src/lib/business.js';
 import * as businessExport from '../src/lib/businessExport.js';
 import * as businessWorkspace from '../src/lib/businessWorkspace.js';
+import * as businessAttention from '../src/lib/businessAttention.js';
 
 // Render the actual calendar bodies, not just the date helper. Unrelated panel
 // dependencies are stubbed; no network, storage or customer data is involved.
@@ -27,6 +28,7 @@ async function calendar(file, name) {
     if (specifier==='../lib/business') return moduleOf(business);
     if (specifier==='../lib/businessExport') return moduleOf(businessExport);
     if (specifier==='../lib/businessWorkspace') return moduleOf(businessWorkspace);
+    if (specifier==='../lib/businessAttention') return moduleOf(businessAttention);
     // Only the named exports requested by this module are needed. None of these
     // hooks/components run while rendering a calendar.
     const exports = {default:noop,api:{},qk:{},useQueryClient:noop,

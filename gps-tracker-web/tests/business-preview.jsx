@@ -8,7 +8,7 @@ import CorporatePanel from '../src/components/CorporatePanel';
 import RentcarPanel from '../src/components/RentcarPanel';
 import { businessDate } from '../src/lib/business';
 
-// Isolated visual fixture: all network methods are stubbed and all mutations fail.
+// Isolated visual fixture: all network methods are stubbed; return tests never write to a server.
 const params = new URLSearchParams(location.search);
 const failed = params.has('error'), empty = params.has('empty');
 const now = Date.now(), day = businessDate(now), at = h => `${day}T${h}:00:00+09:00`;
@@ -22,10 +22,14 @@ const rental = (id, device, status, start, end) => ({ id, device_id: device.id, 
 const rentals = empty ? [] : [rental(1, devices[0], 'active', at('08'), at('23')), rental(2, devices[1], 'overdue', new Date(now-200*86400000).toISOString(), new Date(now-190*86400000).toISOString()), rental(3, devices[2], 'draft', at('22'), at('23')),
   {...rental(4, devices[0], 'returned', at('00'), at('01')), settled_at: at('02'), settled_amount_krw: 140000 }];
 const reservations = empty ? [] : [{ id: 1, device_id: 1, driver_name: '미리보기 운전자', driver_staff_id: 1, device_name: '서울 영업 1호', license_plate: '123가 4567', status: 'planned', starts_at: at('09'), ends_at: at('18'), purpose: '고객사 방문' }];
+if (params.has('attention')) devices[1].last_seen_at = new Date(now - 8 * 3600000).toISOString();
+if (params.has('next-reservation')) reservations[0] = { ...reservations[0], starts_at: new Date(now + 2 * 86400000).toISOString(), ends_at: new Date(now + 2 * 86400000 + 3600000).toISOString() };
+window.__returnCalls = [];
 for (const key of Object.keys(api)) api[key] = async () => { throw Error('미리보기에서는 서버 작업을 수행하지 않습니다.'); };
 const read = value => async () => { if (failed) throw Error('의도한 조회 오류'); return value; };
 Object.assign(api, {
-  listRentals: read(rentals), listReservations: read(reservations), listStaff: read(empty ? [] : [{id:1,name:'미리보기 운전자',role:'영업',active:true}]),
+  listRentals: read(rentals), listReservations: async (p = {}) => { if (failed) throw Error('의도한 조회 오류'); return reservations.filter(r => (!p.from || new Date(r.ends_at) >= new Date(p.from)) && (!p.to || new Date(r.starts_at) < new Date(p.to))); }, listStaff: read(empty ? [] : [{id:1,name:'미리보기 운전자',role:'영업',active:true}]),
+  returnRental: async (id, body) => { window.__returnCalls.push({ id, body }); if (!params.has('return-success')) throw Error('미리보기 반납 저장 실패'); const c = rentals.find(r => r.id === id); c.status = 'returned'; return c; },
   getCorporateInfo: read({company_name:'미리보기 회사',business_number:'000-00-00000',representative:'미리보기'}),
   getCorporateSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
   getRentcarSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),

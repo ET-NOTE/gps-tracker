@@ -59,8 +59,8 @@ export function BusinessButton({ children, icon, primary = false, ...props }) {
 export function BusinessError({ children = '정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', onRetry }) {
   return <div className="business-error" role="alert"><Icon name="warn" size={18} /><span>{children}</span>{onRetry && <BusinessButton onClick={onRetry} icon="refresh">다시 시도</BusinessButton>}</div>;
 }
-export function BusinessEmpty({ title = '표시할 항목이 없습니다.', children }) {
-  return <div className="business-empty"><Icon name="check" size={24} /><strong>{title}</strong>{children && <p>{children}</p>}</div>;
+export function BusinessEmpty({ title = '표시할 항목이 없습니다.', children, compact = false }) {
+  return <div className={`business-empty${compact ? ' is-compact' : ''}`}><Icon name="check" size={24} /><strong>{title}</strong>{children && <p>{children}</p>}</div>;
 }
 export function BusinessSection({ title, description, action, children }) {
   return <section className="business-section"><div className="business-section-title"><div><h3>{title}</h3>{description && <p>{description}</p>}</div>{action}</div>{children}</section>;
