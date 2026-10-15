@@ -46,6 +46,33 @@ Object.assign(api, {
   listRenters: read([]), getFuelPrices: read({gasoline:1700,diesel:1600,lpg:1000}), listDocuments: read([]),
 });
 // Optional, ignored local API snapshot. Never bundled into the production app.
+if (params.has('people')) {
+  const staff = empty ? [] : [{id:1,name:'미리보기 운전자',role:'영업',phone:'010-0000-0001',active:true},{id:2,name:'긴 이름 운전자·광역권 차량 운행 지원 담당',role:'장거리 운행 지원 및 배차 관리',phone:'010-0000-0002',active:true},{id:3,name:'비활성 운전자',role:null,phone:null,active:false}];
+  const renters = empty ? [] : [
+    {renter_phone:'010-1111-0001',renter_name:'미리보기 고객',contracts_count:3,returned_count:2,overdue_count:1,late_count:1,total_revenue:140000,last_at:at('09'),first_at:at('01'),blacklisted:false},
+    {renter_phone:'010-1111-0002',renter_name:'장기 임대 이용 고객·이름이 긴 경우',contracts_count:2,returned_count:1,overdue_count:0,late_count:1,total_revenue:70000,last_at:at('09'),first_at:at('01'),blacklisted:true,blacklist_reason:'이전 계약 정산 확인',blacklist_severity:'warn'},
+    {renter_phone:'010-1111-0003',renter_name:'차단된 고객',contracts_count:1,returned_count:1,overdue_count:0,late_count:0,total_revenue:70000,last_at:at('09'),first_at:at('01'),blacklisted:true,blacklist_reason:'기존 계약 확인 필요',blacklist_severity:'block'},
+  ];
+  let company={company_name:'미리보기 회사',business_number:'000-00-00000',representative:'대표자',address:'서울특별시 테스트 주소'};
+  window.__supportCalls=[]; window.__supportFailure=params.has('support-write-error'); window.__supportReadError=params.has('support-error');
+  const supportRead = value => { if (window.__supportReadError) throw Error('미리보기 조회 실패'); return typeof value==='function'?value():value; };
+  const supportWrite = async (action, body) => { window.__supportCalls.push({action,body}); await new Promise(resolve=>setTimeout(resolve,100)); if (!params.has('support-write') || window.__supportFailure) throw Error('미리보기 저장 실패'); };
+  Object.assign(api, {
+    listStaff:async()=>supportRead(()=>staff.map(s=>({...s}))), listRenters:async()=>supportRead(()=>renters.map(r=>({...r}))),
+    createStaff:async body=>{await supportWrite('staff-create',body);const next={...body,id:staff.length+1,active:true};staff.push(next);return next;},
+    updateStaff:async(id,body)=>{await supportWrite('staff-update',{id,...body});Object.assign(staff.find(s=>s.id===id),body);return {...staff.find(s=>s.id===id)};},
+    removeStaff:async id=>{await supportWrite('staff-disable',{id});staff.find(s=>s.id===id).active=false;return {ok:true};},
+    renterDetail:async phone=>supportRead(()=>({summary:{...renters.find(r=>r.renter_phone===phone)},contracts:rentals.map(c=>({...c}))})),
+    listBlacklist:async()=>supportRead(()=>renters.filter(r=>r.blacklisted).map(r=>({id:renters.indexOf(r)+1,renter_phone:r.renter_phone}))),
+    addBlacklist:async body=>{await supportWrite('notice-save',body);Object.assign(renters.find(r=>r.renter_phone===body.renter_phone),{blacklisted:true,blacklist_reason:body.reason,blacklist_severity:body.severity});return {ok:true};},
+    removeBlacklist:async id=>{await supportWrite('notice-remove',{id});renters[id-1].blacklisted=false;return {ok:true};},
+    getCorporateInfo:async()=>supportRead(()=>({...company})),putCorporateInfo:async body=>{await supportWrite('company-save',body);company={...body};return company;},
+    getCorporateSubscription:async()=>supportRead({active:true,price_krw:30000,expires_at:new Date(now+20*86400000).toISOString()}),
+    getRentcarSubscription:async()=>supportRead({active:false,price_krw:30000,expires_at:null}),
+    buyCorporateSubscription:async()=>{await supportWrite('corporate-buy',{});return {active:true,price_krw:30000,expires_at:new Date(now+50*86400000).toISOString()};},
+    buyRentcarSubscription:async()=>{await supportWrite('rentcar-buy',{});return {active:true,price_krw:30000,expires_at:new Date(now+30*86400000).toISOString()};},
+  });
+}
 if (params.has('account')) {
   const response = await fetch('/tests/.local-business-data.json');
   if (!response.ok) throw Error('로컬 계정 검증 자료가 없습니다.');
