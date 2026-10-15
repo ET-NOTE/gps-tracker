@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Modal, FormField, Input, Textarea, Button } from '../ui';
 import { useReturnRental } from '../../state';
-import { ContractPhotos } from './BusinessVehicleDetail';
+import { ContractPhotos } from './RentalPhotos';
 import { computeSettlementPreview, validateReturn, returnPayload } from '../../lib/rentalReturn';
 import { kstDateTime } from '../../lib/businessExport';
 
@@ -13,6 +13,8 @@ export default function ReturnWizard({ contract, onClose, onDone }) {
   const [form, setForm] = useState(() => ({ returnedAt: localNow(), odometer: contract.return_odometer_km ?? '', location: contract.return_location ?? '', extraFee: '', extraLabel: '', note: '' }));
   const title = useRef(null), submitting = useRef(false);
   const mutation = useReturnRental();
+  const [photoBusy, setPhotoBusy] = useState(false), [photoDraft, setPhotoDraft] = useState(false), [photoCloseWarning, setPhotoCloseWarning] = useState(false);
+  const close = () => { if (photoDraft) { setPhotoCloseWarning(true); return; } onClose(); };
   const update = key => e => { setError(''); setForm(v => ({ ...v, [key]: e.target.value })); };
   const preview = computeSettlementPreview(contract, { returnOdometerKm: form.odometer === '' ? null : Number(form.odometer), extraFeeKrw: Number(form.extraFee), extraLabel: form.extraLabel.trim(), returnedAt: new Date(form.returnedAt) });
   const issues = validateReturn(contract, form);
@@ -31,14 +33,16 @@ export default function ReturnWizard({ contract, onClose, onDone }) {
     catch (e) { setError(e.message || '반납 처리에 실패했습니다. 입력한 내용을 유지했습니다. 다시 시도해 주세요.'); }
     finally { submitting.current = false; }
   }
-  const busy = mutation.isPending;
-  return <Modal open onClose={busy ? undefined : onClose} closeOnBackdrop={false} closeOnEsc={!busy} size="lg" title="반납 처리"
+  const busy = mutation.isPending || photoBusy;
+  return <Modal open onClose={busy ? undefined : close} closeOnBackdrop={false} closeOnEsc={!busy} size="lg" title="반납 처리"
     subtitle={`${contract.license_plate || contract.device_name} · ${contract.renter_name}`}
-    footer={<><Button variant="ghost" disabled={busy} onClick={() => { setError(''); step ? setStep(v => v - 1) : onClose(); }} style={{ flex: 1 }}>{step ? '이전' : '취소'}</Button>
-      <Button variant="primary" size="lg" busy={busy} onClick={step === 2 ? submit : next} style={{ flex: 2 }}>{step === 2 ? '확인 후 반납·정산 완료' : '다음 단계'}</Button></>}>
+    footer={<><Button variant="ghost" disabled={busy || photoDraft} onClick={() => { setError(''); step ? setStep(v => v - 1) : close(); }} style={{ flex: 1 }}>{step ? '이전' : '취소'}</Button>
+      <Button variant="primary" size="lg" busy={busy} disabled={photoDraft} onClick={step === 2 ? submit : next} style={{ flex: 2 }}>{step === 2 ? '확인 후 반납·정산 완료' : '다음 단계'}</Button></>}>
     <ol className="business-return-steps" aria-label="반납 진행 단계">{steps.map((label, i) => <li key={label} aria-current={i === step ? 'step' : undefined}><span>{i + 1}</span>{label}</li>)}</ol>
     <h3 className="business-return-title" ref={title} tabIndex={-1}>{step + 1}. {steps[step]}</h3>
     {error && <p className="business-error" role="alert">{error}</p>}
+    {photoCloseWarning && photoDraft && <p className="business-error" role="alert">선택한 사진을 저장하거나 선택 취소한 후 닫아 주세요.</p>}
+    {photoDraft && <p className="business-return-notice" role="status">선택한 사진을 저장하거나 선택 취소하면 다음 단계로 이동할 수 있습니다. ‘인수·반납 사진 확인 및 추가’에서 확인해 주세요.</p>}
     {step === 0 && <>
       <p className="business-note">차량과 계기판을 확인해 실제 반납 정보를 입력하세요. 마지막 단계에서만 반납이 저장됩니다.</p>
       <FormField label="실제 반납 시각" hint="입력 시각은 현재 기기 시간대 기준입니다."><Input type="datetime-local" value={form.returnedAt} onChange={update('returnedAt')} /></FormField>
@@ -53,7 +57,7 @@ export default function ReturnWizard({ contract, onClose, onDone }) {
       <FormField label="기타 요금 사유 (세차·파손·연료 등)"><Input value={form.extraLabel} onChange={update('extraLabel')} placeholder="예: 세차비 / 할인 사유" /></FormField>
       <FormField label="기타 금액 (원)" hint="할인은 음수로 입력하세요. 0원이 아니면 사유를 적어 주세요."><Input type="number" step="1" value={form.extraFee} onChange={update('extraFee')} placeholder="0" /></FormField>
       <Settlement preview={preview} deposit={contract.deposit_krw} />
-      <details className="business-return-photos"><summary>등록된 인수·반납 사진 보기</summary><p className="business-note">계약에 등록된 사진입니다. 사진 추가는 계약 관리의 사진 메뉴에서 할 수 있습니다.</p><ContractPhotos contractId={contract.id} /></details>
+      <details className="business-return-photos"><summary>인수·반납 사진 확인 및 추가</summary><ContractPhotos contractId={contract.id} editable defaultPhase="return" onBusyChange={setPhotoBusy} onDraftChange={setPhotoDraft} /></details>
     </>}
     {step === 2 && <>
       <dl className="business-detail-facts"><div><dt>실제 반납</dt><dd>{kstDateTime(form.returnedAt)} (한국 시간)</dd></div><div><dt>반납 오도미터</dt><dd>{form.odometer === '' ? '미입력' : `${Number(form.odometer).toLocaleString()} km`}</dd></div><div><dt>반납 장소</dt><dd>{form.location || '미입력'}</dd></div><div><dt>메모</dt><dd>{form.note || '없음'}</dd></div></dl>

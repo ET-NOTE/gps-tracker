@@ -25,6 +25,10 @@ const reservations = empty ? [] : [{ id: 1, device_id: 1, driver_name: '미리�
 if (params.has('attention')) devices[1].last_seen_at = new Date(now - 8 * 3600000).toISOString();
 if (params.has('next-reservation')) reservations[0] = { ...reservations[0], starts_at: new Date(now + 2 * 86400000).toISOString(), ends_at: new Date(now + 2 * 86400000 + 3600000).toISOString() };
 window.__returnCalls = [];
+window.__photoCalls = []; window.__photoFailure = params.has('upload-error'); window.__photoReadError = params.has('photo-error'); window.__photoListError = params.has('photo-list-error');
+const photos = new Map(rentals.map(c => [c.id, [{ id:c.id*10+1,contract_id:c.id,kind:'pickup_damage',uploaded_at:new Date(now-7200000).toISOString() },{ id:c.id*10+2,contract_id:c.id,kind:'return_damage',uploaded_at:new Date(now-3600000).toISOString() }]]));
+const photoBytes = new Map();
+let nextPhotoId = 1000;
 for (const key of Object.keys(api)) api[key] = async () => { throw Error('미리보기에서는 서버 작업을 수행하지 않습니다.'); };
 const read = value => async () => { if (failed) throw Error('의도한 조회 오류'); return value; };
 Object.assign(api, {
@@ -35,8 +39,10 @@ Object.assign(api, {
   getRentcarSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
   fleetTripStats: read({per_device: devices.map(d => ({device_id:d.id,total_distance_m:123000,today_distance_m:32000}))}),
   listTrips: read(empty ? [] : [{ started_at: at('09'), ended_at: at('10'), duration_min:60, distance_m:12000, annotation:{purpose:'business',driver_staff_id:1,driver_name:'미리보기 운전자',fuel_cost:50000} }, {started_at:at('11'),ended_at:at('12'),duration_min:60,distance_m:6000,annotation:null}]),
-  listRentalPhotos: read([{id:1,kind:'pickup_damage',created_at:at('09')},{id:2,kind:'return_damage',created_at:at('18')}]),
-  fetchRentalPhoto: async () => { if (params.has('photo-error')) throw Error('의도한 사진 오류'); return URL.createObjectURL(new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="300" height="200" fill="#dae6f7"/><text x="35" y="100" fill="#2157a6">Test photo (fixture)</text></svg>'],{type:'image/svg+xml'})); },
+  listRentalPhotos: async id => { if (window.__photoListError) throw Error('사진 목록 조회 오류'); return [...(photos.get(Number(id)) || [])]; },
+  uploadRentalPhoto: async (id, body) => { window.__photoCalls.push({ action:'upload', id, body }); if (!params.has('photo-write') || window.__photoFailure) throw Error('미리보기 사진 저장 실패'); await new Promise(resolve=>setTimeout(resolve,100)); const photo={id:nextPhotoId++,contract_id:id,kind:body.kind,uploaded_at:new Date().toISOString()}; photos.set(Number(id),[...(photos.get(Number(id))||[]),photo]); photoBytes.set(photo.id,body.data_url); return photo; },
+  deleteRentalPhoto: async id => { window.__photoCalls.push({ action:'delete', id }); if (!params.has('photo-write') || window.__photoFailure) throw Error('미리보기 사진 삭제 실패'); for(const [key,list] of photos)photos.set(key,list.filter(p=>p.id!==id)); photoBytes.delete(id); },
+  fetchRentalPhoto: async id => { if (window.__photoReadError) throw Error('의도한 사진 오류'); if (photoBytes.has(id)) return URL.createObjectURL(new Blob([Uint8Array.from(atob(photoBytes.get(id).split(',')[1]),c=>c.charCodeAt(0))],{type:'image/jpeg'})); return URL.createObjectURL(new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="300" height="200" fill="#dae6f7"/><text x="35" y="100" fill="#2157a6">Test photo (fixture)</text></svg>'],{type:'image/svg+xml'})); },
   listRenters: read([]), getFuelPrices: read({gasoline:1700,diesel:1600,lpg:1000}), listDocuments: read([]),
 });
 // Optional, ignored local API snapshot. Never bundled into the production app.

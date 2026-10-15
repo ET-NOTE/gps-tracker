@@ -28,6 +28,7 @@ try {
     await drawer.waitFor();
     assert.equal(await drawer.evaluate(el => el.contains(document.activeElement)), true);
     await page.getByRole('button', { name: '계약·사진 이력' }).click();
+    await drawer.locator('.business-history-photo').first().scrollIntoViewIfNeeded();
     await drawer.locator('img').first().waitFor();
     assert.equal(await drawer.locator('img').count(), 2);
     await capture(page, `photos-${width}`);
@@ -41,14 +42,14 @@ try {
     await capture(page, `board-${width}`);
     if (width > 700) {
       assert.equal(await page.getByRole('button', { name: /234나 8901 .* 반납 확인 필요/ }).first().isDisabled(), true);
-      await page.locator('.business-board-empty:not(:disabled)').first().click();
+      await page.getByRole('button', { name: /345다 6789 .* 새 계약/ }).first().click();
       await page.getByRole('dialog').waitFor();
-      assert.equal(await page.getByRole('dialog').locator('select').first().inputValue(), '1');
+      assert.equal(await page.getByRole('dialog').locator('select').first().inputValue(), '3');
       await capture(page, `contract-${width}`);
       await page.keyboard.press('Escape');
     } else {
       await page.locator('.business-day-strip button').nth(1).click();
-      assert.equal(await page.getByRole('button', { name: '반납 확인 후 배차 가능', exact: true }).isDisabled(), true);
+      assert.equal(await page.locator('.business-agenda-vehicle').filter({ has: page.getByRole('heading', { name: '234나 8901', exact: true }) }).getByRole('button', { name: '반납 확인 후 배차 가능', exact: true }).isDisabled(), true);
       await page.getByRole('button', { name: '이 날짜에 새 계약', exact: true }).first().click();
       await page.getByRole('dialog').waitFor();
       await capture(page, `contract-${width}`);
@@ -88,6 +89,7 @@ try {
   await page.goto(`${base}/tests/business-preview.html?photo-error=1`);
   await page.getByRole('button', { name: '123가 4567 차량 상세', exact: true }).click();
   await page.getByRole('button', { name: '계약·사진 이력' }).click();
+  await page.getByRole('dialog').locator('.business-history-photo').first().scrollIntoViewIfNeeded();
   await page.getByRole('dialog').getByRole('alert').first().waitFor();
   await capture(page, 'photo-error');
   assert.deepEqual(errors, []);

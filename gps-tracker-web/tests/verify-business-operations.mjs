@@ -49,7 +49,7 @@ try {
     await dialog.getByRole('button',{name:'다음 단계',exact:true}).click();
     await dialog.getByRole('alert').waitFor();
     await dialog.getByLabel('기타 요금 사유 (세차·파손·연료 등)',{exact:true}).fill('세차비');
-    await dialog.getByText('등록된 인수·반납 사진 보기',{exact:true}).click();
+    await dialog.getByText('인수·반납 사진 확인 및 추가',{exact:true}).click();
     await dialog.locator('.business-history-photo').first().scrollIntoViewIfNeeded();
     await dialog.locator('img').first().waitFor();
     assert.equal(await dialog.locator('img').count(),2);
@@ -82,7 +82,7 @@ try {
   await page.getByRole('button',{name:'예약 확인',exact:true}).click();await page.getByRole('dialog').waitFor();checks.push('next-reservation-open');
   await page.goto(`${base}/tests/business-preview.html?photo-error=1`);
   await page.getByRole('button',{name:'반납 처리',exact:true}).first().click();await page.getByRole('button',{name:'다음 단계',exact:true}).click();
-  await page.getByText('등록된 인수·반납 사진 보기',{exact:true}).click();
+  await page.getByText('인수·반납 사진 확인 및 추가',{exact:true}).click();
   await page.getByRole('dialog').locator('.business-history-photo').first().scrollIntoViewIfNeeded();
   await page.getByRole('dialog').getByRole('alert').first().waitFor();await capture(page,'return-photo-error');
   assert.deepEqual(errors,[]);
