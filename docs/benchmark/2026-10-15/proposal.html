@@ -1,0 +1,1588 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>법인차·렌트카 운영 화면 개선안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: sticky chapter rail + reading column. Hero = type switcher driving a desktop + phone composition.
+   Each chapter = problem, references, then product screens drawn at real px (scaled to fit) with redline pins.
+   Product colors mirror src/theme.js; page chrome uses its own neutral tokens. */
+:root {
+  --page: #F2F3F7; --paper: #FFFFFF; --ink: #0E1322; --muted: #596075; --faint: #8A90A2; --line: #E2E4EA;
+  --redline: #F2600C; --redline-ink: #FFFFFF;
+  --bg: #F5F5F7; --surface: #FFFFFF; --surface-2: #EDEDEF; --border: #E0E0E5;
+  --text: #1A1A2E; --text-2: #5F6170; --text-3: #7A7D8A;
+  --primary: #2563EB; --accent: #10B981; --danger: #EF4444; --warning: #F59E0B; --deliv: #7C3AED;
+  --ok-t: #047857; --ok-b: #ECFDF5; --warn-t: #92400E; --warn-b: #FFF6E0; --bad-t: #B91C1C; --bad-b: #FEF2F2; --info-t: #1D4ED8; --info-b: #EFF6FF; --deliv-t: #6D28D9; --deliv-b: #F3EEFF;
+  --tint: #EEF3FE;
+  --map-land: #EEF0EC; --map-block: #E4E7E1; --map-road: #FFFFFF; --map-road-edge: #D9DCD5; --map-water: #C9DDF2; --map-park: #D7EBCF;
+  --shadow: 0 1px 2px rgba(14,19,34,.06), 0 12px 32px -12px rgba(14,19,34,.18);
+  --f-display: 'Manrope', 'Noto Sans KR', system-ui, sans-serif;
+  --f-body: 'Noto Sans KR', 'Manrope', -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0B0D16; --paper: #141726; --ink: #F3F4F8; --muted: #A6ABBD; --faint: #7D8399; --line: #262A3C; --redline: #FF7A33; --redline-ink: #160A02;
+  --bg: #0F0F1A; --surface: #1A1A2E; --surface-2: #12121F; --border: #2A2A3E; --text: #FFFFFF; --text-2: #B4B4C0; --text-3: #8F93A6;
+  --primary: #8CA2FF; --accent: #34D399; --danger: #F87171; --warning: #FBBF24; --deliv: #A78BFA;
+  --ok-t: #6EE7B7; --ok-b: #12352C; --warn-t: #FCD34D; --warn-b: #3C2B12; --bad-t: #FCA5A5; --bad-b: #422126; --info-t: #BFDBFE; --info-b: #1E304B; --deliv-t: #C4B5FD; --deliv-b: #2A2140; --tint: #1E2545;
+  --map-land: #1B1F2E; --map-block: #22273A; --map-road: #2E3450; --map-road-edge: #252A40; --map-water: #1A2D48; --map-park: #1B3027;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 36px -12px rgba(0,0,0,.6); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --page: #0B0D16; --paper: #141726; --ink: #F3F4F8; --muted: #A6ABBD; --faint: #7D8399; --line: #262A3C; --redline: #FF7A33; --redline-ink: #160A02;
+  --bg: #0F0F1A; --surface: #1A1A2E; --surface-2: #12121F; --border: #2A2A3E; --text: #FFFFFF; --text-2: #B4B4C0; --text-3: #8F93A6;
+  --primary: #8CA2FF; --accent: #34D399; --danger: #F87171; --warning: #FBBF24; --deliv: #A78BFA;
+  --ok-t: #6EE7B7; --ok-b: #12352C; --warn-t: #FCD34D; --warn-b: #3C2B12; --bad-t: #FCA5A5; --bad-b: #422126; --info-t: #BFDBFE; --info-b: #1E304B; --deliv-t: #C4B5FD; --deliv-b: #2A2140; --tint: #1E2545;
+  --map-land: #1B1F2E; --map-block: #22273A; --map-road: #2E3450; --map-road-edge: #252A40; --map-water: #1A2D48; --map-park: #1B3027;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 36px -12px rgba(0,0,0,.6); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--page); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: break-word; }
+h1, h2, h3, h4, h5 { margin: 0; text-wrap: balance; }
+p { margin: 0; }
+a { color: var(--primary); }
+button { font-family: inherit; }
+.uz { display: none; }
+:root.lang-uz .ko { display: none; } :root.lang-uz .uz { display: revert; }
+.ic { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* ---------- page shell ---------- */
+.shell { max-width: 1320px; margin: 0 auto; padding-inline: 24px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 44px; }
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; padding-block: 30px; max-height: 100vh; overflow: auto; scrollbar-width: none; }
+.rail::-webkit-scrollbar { display: none; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 14px var(--f-display); margin-bottom: 22px; }
+.brand i { width: 28px; height: 28px; border-radius: 8px; background: var(--primary); display: grid; place-items: center; color: #fff; font-size: 16px; }
+.rail nav { display: grid; gap: 1px; }
+.rail .grp { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--faint); margin: 14px 0 4px 10px; }
+.rail a { display: flex; gap: 10px; align-items: baseline; padding: 6px 10px; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 13.5px; line-height: 1.45; }
+.rail a b { font: 800 12px var(--f-display); color: var(--faint); min-width: 18px; font-variant-numeric: tabular-nums; }
+.rail a:hover { background: var(--paper); color: var(--ink); }
+.rail a.on { background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
+.rail a.on b { color: var(--primary); }
+.rail a .star { color: var(--redline); }
+.lang { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); margin-top: 20px; }
+.lang button { border: 0; background: transparent; color: var(--muted); font: 700 12.5px var(--f-body); padding: 7px 12px; border-radius: 7px; cursor: pointer; min-height: 34px; }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+main { padding-block: 36px 120px; min-width: 0; }
+
+/* hero */
+.kicker { display: inline-flex; align-items: center; gap: 8px; font: 700 12px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--primary); }
+.kicker::before { content: ""; width: 18px; height: 2px; background: currentColor; }
+.hero h1 { font: 800 clamp(29px, 4.2vw, 48px)/1.16 var(--f-body); letter-spacing: -.045em; margin: 14px 0 14px; max-width: 21ch; }
+.hero .sub { font-size: 16.5px; color: var(--muted); max-width: 62ch; }
+.typesw { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); margin-top: 24px; }
+.typesw button { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; padding: 9px 15px; border-radius: 10px; font: 700 13.5px var(--f-body); color: var(--muted); cursor: pointer; min-height: 42px; }
+.typesw button .ic { font-size: 17px; }
+.typesw button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.devices { position: relative; margin-top: 22px; padding-bottom: 7%; }
+.devices .desk { width: 84%; }
+.devices .phone { position: absolute; right: 0; bottom: 0; width: 22.5%; }
+.hero-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+.hs { display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.hs b { font: 800 19px/1 var(--f-display); color: var(--ink); padding: 8px 10px; border-radius: 8px; background: var(--page); font-variant-numeric: tabular-nums; }
+.hs.star b { background: var(--redline); color: var(--redline-ink); }
+.principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.pr { padding: 18px; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); }
+.pr .ic { font-size: 20px; color: var(--primary); }
+.pr h3 { font-size: 15.5px; margin: 10px 0 4px; letter-spacing: -.02em; }
+.pr p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+/* chapters */
+.chapter { margin-top: 100px; scroll-margin-top: 24px; }
+.ch-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 18px; align-items: start; }
+.ch-no { font: 800 56px/0.9 var(--f-display); letter-spacing: -.06em; color: transparent; -webkit-text-stroke: 1.5px var(--faint); grid-row: span 3; }
+.ch-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.ch-head h2 { font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -.035em; line-height: 1.25; }
+.problem { color: var(--muted); max-width: 70ch; }
+.problem b { color: var(--ink); font-weight: 700; }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; line-height: 1.4; }
+.tag .ic { font-size: 13px; }
+.t-common { background: var(--info-b); color: var(--info-t); border-color: transparent; }
+.t-corp { background: var(--warn-b); color: var(--warn-t); border-color: transparent; }
+.t-rent { background: var(--ok-b); color: var(--ok-t); border-color: transparent; }
+.t-deliv { background: var(--deliv-b); color: var(--deliv-t); border-color: transparent; }
+.t-new { background: var(--redline); color: var(--redline-ink); border-color: transparent; }
+.t-fb { background: var(--ink); color: var(--paper); border-color: transparent; }
+.refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; margin-top: 22px; }
+.ref { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); min-width: 0; }
+.ref img { width: 132px; height: 84px; object-fit: cover; object-position: left top; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.ref .ph0 { width: 132px; height: 84px; border-radius: 8px; background: var(--page); display: grid; place-items: center; color: var(--faint); font-size: 26px; }
+.ref small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--faint); }
+.ref strong { display: block; font-size: 14px; margin: 1px 0 3px; line-height: 1.45; }
+.ref p { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.ref a { font-size: 12px; }
+.ref.fb { border: 1.5px dashed var(--redline); }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 16px; align-items: start; }
+.stage.with-phone { grid-template-columns: minmax(0, 1fr) minmax(0, 250px); align-items: center; }
+.frame { border-radius: 16px; overflow: hidden; background: var(--bg); box-shadow: var(--shadow); border: 1px solid var(--line); min-width: 0; }
+.chrome { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.chrome span { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.chrome em { margin-left: 12px; font-style: normal; font-size: 11.5px; color: var(--faint); background: var(--page); padding: 2px 12px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.legend-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: n; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.legend-list li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 12px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+.legend-list li::before { counter-increment: n; content: counter(n); width: 26px; height: 26px; border-radius: 50%; background: var(--redline); color: var(--redline-ink); font: 800 12px/26px var(--f-display); text-align: center; }
+.legend-list b { color: var(--ink); display: block; font-size: 14px; margin-bottom: 1px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.meta .m { flex: 1 1 170px; padding: 10px 12px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); }
+.meta small { display: block; font-size: 11px; color: var(--faint); font-weight: 700; }
+.meta span { font-size: 13px; font-weight: 700; }
+.dots { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: 1px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.dots i.f { background: var(--ink); }
+.fig-cap { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 26px 0 10px; }
+.fig-cap b { color: var(--ink); }
+
+/* split diagram */
+.split { margin-top: 24px; display: grid; gap: 14px; }
+.layer { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: start; }
+.layer > small { font-size: 12px; font-weight: 700; color: var(--faint); padding-top: 12px; }
+.blocks { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.blk { padding: 12px 14px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); font-size: 13.5px; }
+.blk b { display: block; font-size: 14px; }
+.blk span { color: var(--muted); font-size: 12.5px; }
+.blk.c { box-shadow: inset 0 3px 0 var(--primary); }
+.blk.k { box-shadow: inset 0 3px 0 var(--warning); }
+.blk.r { box-shadow: inset 0 3px 0 var(--accent); }
+.blk.d { box-shadow: inset 0 3px 0 var(--deliv); }
+.cols3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 8px; }
+.cols3 .blocks { grid-template-columns: minmax(0, 1fr); }
+
+/* nav dimensions */
+.dims { display: grid; gap: 12px; margin-top: 18px; padding: 18px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); }
+.dimrow { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: center; }
+.dimrow > b { font-size: 12px; color: var(--faint); }
+.scr { display: flex; height: 112px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--page); font-size: 11.5px; font-weight: 700; }
+.scr > div { display: grid; place-items: center; text-align: center; line-height: 1.35; padding: 4px; }
+.scr .s-rail { flex: 0 0 5%; border-right: 1px solid var(--line); color: var(--faint); }
+.scr .s-col { flex: 1; display: flex; flex-direction: column; align-items: stretch; min-width: 0; padding: 0; }
+.scr .s-head { border-bottom: 1px solid var(--line); display: grid; place-items: center; }
+.scr .s-row { flex: 1; display: flex; min-height: 0; }
+.scr .s-nav { flex: 0 0 14.2%; border-right: 1px solid var(--line); display: grid; place-items: center; }
+.scr .s-body { flex: 1; display: grid; place-items: center; color: var(--muted); background: var(--paper); }
+.waste { background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--redline) 15%, transparent) 0 6px, transparent 6px 12px); color: var(--redline); }
+.gain { background: color-mix(in srgb, var(--accent) 12%, var(--paper)) !important; color: var(--ok-t) !important; }
+.deltas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 4px; }
+.delta { padding: 12px 14px; border-radius: 12px; background: var(--page); }
+.delta b { display: block; font: 800 22px/1.2 var(--f-display); letter-spacing: -.03em; }
+.delta span { font-size: 12.5px; color: var(--muted); }
+.ba-cap { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 26px 0 10px; flex-wrap: wrap; }
+.ba-cap .side { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.tag.dark { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.tag.blue { background: var(--primary); color: #fff; border-color: var(--primary); }
+.ba { position: relative; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--line); background: var(--bg); --pos: 50%; }
+.ba .before { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: left top; clip-path: inset(0 calc(100% - var(--pos)) 0 0); z-index: 3; }
+.ba-line { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; background: var(--paper); z-index: 4; transform: translateX(-1px); box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+.ba-handle { position: absolute; top: 50%; left: var(--pos); z-index: 5; width: 44px; height: 44px; border-radius: 50%; background: var(--paper); color: var(--ink); display: grid; place-items: center; transform: translate(-50%, -50%); box-shadow: var(--shadow); font-size: 18px; pointer-events: none; }
+.ba input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; z-index: 6; margin: 0; }
+.ba input:focus-visible ~ .ba-handle { outline: 3px solid var(--primary); outline-offset: 2px; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 250px)); justify-content: center; gap: 40px; padding: 30px 16px; }
+.pair figure, .phone-row figure { margin: 0; }
+.pcap { text-align: center; margin-top: 12px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.pcap b { display: block; color: var(--ink); font-size: 14px; }
+
+/* phones */
+.phone-row { display: grid; grid-template-columns: repeat(3, minmax(0, 250px)); justify-content: center; gap: 30px; padding: 30px 18px; }
+.phonestage { background: radial-gradient(ellipse at 50% 0%, var(--tint), var(--bg) 72%); }
+.phone { border-radius: 42px; padding: 9px; background: #0E1322; box-shadow: var(--shadow); position: relative; }
+.phone .screen { border-radius: 33px; }
+.notch { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 30%; height: 21px; border-radius: 14px; background: #0E1322; z-index: 30; }
+.thumbbtn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 7px 14px; font: 700 12.5px var(--f-body); cursor: pointer; min-height: 36px; }
+.thumbbtn[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* flow (standout) */
+.flow { margin-top: 22px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); overflow: hidden; }
+.flow-h, .lane { display: grid; grid-template-columns: 104px repeat(4, minmax(0, 1fr)); }
+.flow-h span { padding: 12px 14px; font-size: 12px; font-weight: 800; color: var(--faint); }
+.flow-h span b { color: var(--ink); font-family: var(--f-display); margin-right: 4px; }
+.flow-h span.hum b { color: var(--redline); }
+.lane { border-top: 1px solid var(--line); }
+.lane-name { padding: 16px 14px; font-weight: 800; font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
+.lane-name .ic { font-size: 20px; }
+.node { position: relative; padding: 16px 22px 16px 14px; min-width: 0; }
+.node:not(:last-child)::after { content: ""; position: absolute; top: 32px; right: 2px; width: 8px; height: 8px; border-top: 2px solid var(--faint); border-right: 2px solid var(--faint); transform: rotate(45deg); }
+.node .nic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 16px; margin-bottom: 8px; }
+.node.sense .nic { background: var(--info-b); color: var(--info-t); }
+.node.auto .nic { background: var(--page); color: var(--muted); }
+.node.human { background: color-mix(in srgb, var(--redline) 7%, var(--paper)); }
+.node.human .nic { background: var(--redline); color: var(--redline-ink); }
+.node b { display: block; font-size: 13.5px; line-height: 1.45; }
+.node small { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+.have { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; align-items: center; }
+.have > small { font-size: 12px; font-weight: 800; color: var(--faint); margin-right: 4px; }
+.chip-ok, .chip-new { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 5px 10px; border-radius: 999px; font-weight: 700; }
+.chip-ok { background: var(--ok-b); color: var(--ok-t); }
+.chip-new { background: color-mix(in srgb, var(--redline) 14%, var(--paper)); color: var(--redline); }
+
+/* roadmap */
+.road { margin-top: 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.phase { padding: 20px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); }
+.phase small { font: 800 12px var(--f-display); letter-spacing: .08em; color: var(--primary); }
+.phase h3 { font-size: 18px; margin: 4px 0 12px; letter-spacing: -.02em; }
+.phase ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.phase li { display: flex; gap: 8px; font-size: 13.5px; color: var(--muted); }
+.phase li a { color: inherit; text-decoration: none; border-bottom: 1px dashed var(--line); }
+.phase li a:hover { color: var(--ink); }
+.phase li b { font: 800 11px/20px var(--f-display); min-width: 24px; height: 20px; border-radius: 6px; background: var(--page); color: var(--ink); text-align: center; }
+.phase li b.s { background: var(--redline); color: var(--redline-ink); }
+.foot { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--faint); }
+
+/* ---------- product screen kit (fixed px, scaled by JS) ---------- */
+.screen { position: relative; overflow: hidden; width: 100%; aspect-ratio: var(--ar, 16 / 9); }
+.screen > .si { position: absolute; top: 0; left: 0; transform-origin: 0 0; background: var(--bg); color: var(--text); font-family: var(--f-body); font-size: 13px; line-height: 1.5; overflow: hidden; }
+.app { display: grid; grid-template-columns: 64px minmax(0, 1fr); height: 100%; }
+.srail { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; }
+.srail .logo { width: 36px; height: 36px; border-radius: 11px; background: var(--primary); color: #fff; display: grid; place-items: center; font-size: 18px; margin-bottom: 10px; padding: 0; }
+.srail div { width: 52px; padding: 8px 0 6px; border-radius: 12px; display: grid; justify-items: center; gap: 3px; font-size: 10px; color: var(--text-2); }
+.srail div .ic { font-size: 19px; }
+.srail div.on { background: var(--tint); color: var(--primary); font-weight: 700; }
+.srail .bottom { margin-top: auto; }
+.biz { display: flex; flex-direction: column; min-width: 0; position: relative; }
+.hdr { height: 60px; display: flex; align-items: center; gap: 16px; padding: 0 22px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.ws { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 16px; letter-spacing: -.03em; white-space: nowrap; }
+.ws .tile { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 16px; }
+.ws .ic.caret { font-size: 14px; color: var(--text-3); }
+.tabs { display: flex; align-self: stretch; gap: 2px; margin-left: 6px; }
+.tabs span { display: flex; align-items: center; gap: 6px; padding: 0 11px; font-size: 13.5px; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.tabs span.on { color: var(--text); font-weight: 800; border-color: var(--primary); }
+.tabs em { font-style: normal; font: 800 10.5px var(--f-display); background: var(--danger); color: #fff; border-radius: 999px; padding: 1px 6px; }
+.search { margin-left: auto; display: flex; align-items: center; gap: 8px; width: 230px; height: 36px; border: 1px solid var(--border); border-radius: 10px; padding: 0 10px; color: var(--text-3); font-size: 12.5px; background: var(--bg); white-space: nowrap; overflow: hidden; }
+.search kbd { margin-left: auto; font: 700 10.5px var(--f-display); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; background: var(--surface); }
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 700; font-size: 12.5px; white-space: nowrap; position: relative; }
+.btn .ic { font-size: 14px; }
+.btn.p { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn.g { background: var(--ok-b); border-color: transparent; color: var(--ok-t); }
+.btn.r { background: var(--bad-b); border-color: transparent; color: var(--bad-t); }
+.btn.sm { height: 28px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.btn.icon { width: 36px; padding: 0; justify-content: center; }
+.btn.icon .ic { font-size: 17px; }
+.btn .nb { position: absolute; top: 5px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--surface); }
+.btn.lg { height: 52px; border-radius: 14px; justify-content: center; font-size: 15px; }
+.cnt { padding: 16px 22px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; flex: 1; min-height: 0; }
+.statusline { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-2); }
+.statusline .live { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; color: var(--ok-t); background: var(--ok-b); padding: 2px 8px; border-radius: 999px; }
+.statusline .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.statusline .right { margin-left: auto; color: var(--text-3); }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; position: relative; }
+.kpi { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 13px 16px 12px; overflow: hidden; }
+.kpi .t { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-2); }
+.kpi .t .ic { font-size: 15px; color: var(--text-3); }
+.kpi .v { font: 800 28px/1.15 var(--f-display); letter-spacing: -.04em; margin: 7px 0 3px; font-variant-numeric: tabular-nums; }
+.kpi .v small { font: 600 12px var(--f-body); color: var(--text-2); margin-left: 3px; letter-spacing: 0; }
+.kpi .h { font-size: 11.5px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+.kpi .d { font-weight: 800; font-size: 11px; padding: 1px 6px; border-radius: 5px; }
+.d.up { background: var(--ok-b); color: var(--ok-t); } .d.dn { background: var(--bad-b); color: var(--bad-t); }
+.kpi.urgent { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); background: linear-gradient(180deg, var(--bad-b), var(--surface) 75%); }
+.kpi.urgent .v { color: var(--danger); }
+.kpi.warn { border-color: color-mix(in srgb, var(--warning) 50%, var(--border)); background: linear-gradient(180deg, var(--warn-b), var(--surface) 75%); }
+.kpi.warn .v { color: var(--warn-t); }
+.kpi.good .v { color: var(--accent); }
+.kpi .spark { position: absolute; right: 14px; bottom: 14px; width: 72px; height: 26px; }
+.prog { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; margin: 6px 0; }
+.prog i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 55%, var(--accent))); }
+.split2 { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; min-width: 0; position: relative; }
+.card.clip { overflow: hidden; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; }
+.card-h h4 { font-size: 14.5px; letter-spacing: -.02em; display: flex; align-items: center; gap: 7px; }
+.card-h p { font-size: 11.5px; color: var(--text-3); }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.r { background: var(--bad-b); color: var(--bad-t); } .pill.g { background: var(--ok-b); color: var(--ok-t); } .pill.b { background: var(--info-b); color: var(--info-t); } .pill.y { background: var(--warn-b); color: var(--warn-t); } .pill.v { background: var(--deliv-b); color: var(--deliv-t); }
+.pill.n::before { display: none; }
+.count { font: 800 11px var(--f-display); background: var(--danger); color: #fff; border-radius: 999px; padding: 1px 7px; }
+.row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--border); position: relative; background: var(--surface); }
+.row .grow { flex: 1; min-width: 0; }
+.row .grow b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .grow small { color: var(--text-2); font-size: 11.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lead-ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-size: 15px; flex-shrink: 0; }
+.lead-ic.r { background: var(--bad-b); color: var(--bad-t); } .lead-ic.y { background: var(--warn-b); color: var(--warn-t); } .lead-ic.b { background: var(--info-b); color: var(--info-t); } .lead-ic.g { background: var(--ok-b); color: var(--ok-t); } .lead-ic.v { background: var(--deliv-b); color: var(--deliv-t); }
+.av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 11.5px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.vt { display: grid; grid-template-columns: minmax(0, 1.5fr) 110px minmax(0, 1.1fr) 180px; align-items: center; gap: 14px; padding: 10px 16px; border-top: 1px solid var(--border); }
+.vt.h { background: var(--surface-2); font-size: 11px; color: var(--text-2); padding-block: 7px; font-weight: 700; }
+.vt.h span:last-child { text-align: right; }
+.vname { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.vthumb { width: 38px; height: 38px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; color: var(--text-2); font-size: 18px; flex-shrink: 0; }
+.vname b { display: block; font-size: 13.5px; }
+.vname small { font-size: 11.5px; color: var(--text-3); }
+.sig { display: flex; flex-direction: column; font-size: 12px; font-weight: 700; }
+.sig small { font-weight: 400; color: var(--text-3); font-size: 11px; }
+.c-r { color: var(--danger); } .c-y { color: var(--warn-t); } .c-g { color: var(--ok-t); }
+.acts { display: flex; gap: 6px; justify-content: flex-end; }
+.score { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.score b { font: 800 15px var(--f-display); width: 26px; text-align: right; }
+.sbar { width: 96px; height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+.sbar i { display: block; height: 100%; border-radius: inherit; }
+.maplegend { display: flex; flex-wrap: wrap; gap: 12px; padding: 8px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-2); }
+.maplegend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.redpin { position: absolute; z-index: 40; width: 28px; height: 28px; border-radius: 50%; background: var(--redline); color: var(--redline-ink); font: 800 13px/28px var(--f-display); text-align: center; box-shadow: 0 0 0 4px color-mix(in srgb, var(--redline) 25%, transparent), 0 4px 10px rgba(0,0,0,.2); }
+.redbox { position: absolute; z-index: 39; border: 2.5px dashed var(--redline); border-radius: 12px; pointer-events: none; }
+.redbox b { position: absolute; top: -12px; left: 10px; background: var(--redline); color: var(--redline-ink); font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+
+/* gantt */
+.gt { display: grid; grid-template-columns: 170px minmax(0, 1fr); position: relative; }
+.gt .lbl { padding: 9px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.gt .lbl b { display: block; font-size: 13px; } .gt .lbl small { font-size: 11px; color: var(--text-3); }
+.gt .trk { position: relative; border-top: 1px solid var(--border); height: 54px; background-image: linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: calc(100% / 14) 100%; }
+.gt .days { display: grid; grid-template-columns: repeat(14, 1fr); background: var(--surface-2); font: 700 11px var(--f-display); color: var(--text-2); }
+.gt .days span { text-align: center; padding: 5px 0; border-left: 1px solid var(--border); line-height: 1.3; }
+.gt .days span em { display: block; font: 500 10px var(--f-body); color: var(--text-3); font-style: normal; }
+.gt .days span.today { background: var(--primary); color: #fff; } .gt .days span.today em { color: #fff; }
+.gt .days span.we { color: var(--danger); }
+.gbar { position: absolute; top: 10px; height: 34px; border-radius: 9px; padding: 0 10px; display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.gbar .av { width: 20px; height: 20px; font-size: 9px; }
+.gbar.rent { background: var(--primary); color: #fff; }
+.gbar.book { background: var(--info-b); color: var(--info-t); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--primary) 50%, transparent); }
+.gbar.late { background: repeating-linear-gradient(-45deg, var(--danger) 0 7px, color-mix(in srgb, var(--danger) 75%, #000) 7px 14px); color: #fff; border-radius: 0 9px 9px 0; }
+.gbar.shop { background: var(--surface-2); color: var(--text-2); box-shadow: inset 0 0 0 1px var(--border); }
+.gbar.free { background: transparent; color: var(--ok-t); border: 1.5px dashed color-mix(in srgb, var(--accent) 65%, transparent); }
+.todayline { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--primary); z-index: 3; }
+
+/* drawer */
+.dim { position: absolute; left: 0; right: 0; top: 60px; bottom: 0; background: rgba(10,12,24,.36); z-index: 8; }
+.drawer { position: absolute; top: 60px; right: 0; bottom: 0; width: 430px; background: var(--surface); z-index: 9; box-shadow: -18px 0 40px rgba(0,0,0,.18); display: flex; flex-direction: column; }
+.dw-h { padding: 14px 20px 10px; border-bottom: 1px solid var(--border); }
+.dw-h .top { display: flex; justify-content: space-between; align-items: center; }
+.dw-h h4 { font-size: 20px; letter-spacing: -.03em; }
+.dw-tabs { display: flex; gap: 2px; margin-top: 8px; }
+.dw-tabs span { padding: 6px 11px; font-size: 12.5px; color: var(--text-2); border-radius: 8px; }
+.dw-tabs span.on { background: var(--tint); color: var(--primary); font-weight: 700; }
+.dw-b { padding: 14px 20px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
+.stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; position: relative; }
+.stats3 div { padding: 9px 10px; border-radius: 11px; background: var(--surface-2); }
+.stats3 small { display: block; font-size: 10.5px; color: var(--text-3); }
+.stats3 b { font: 800 17px var(--f-display); letter-spacing: -.03em; }
+.ti { display: grid; grid-template-columns: 46px 18px minmax(0,1fr); gap: 8px; font-size: 12px; }
+.ti time { color: var(--text-3); text-align: right; font: 700 11.5px var(--f-display); padding-top: 1px; }
+.ti .dt { position: relative; }
+.ti .dt::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.ti .dt::after { content: ""; position: absolute; left: 4px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--primary); }
+.ti .dt.s::after { border-color: var(--text-3); } .ti .dt.w::after { border-color: var(--warning); }
+.ti .tx { padding-bottom: 10px; }
+.ti .tx b { font-size: 12.5px; } .ti .tx small { display: block; color: var(--text-3); font-size: 11px; }
+
+/* phone screens */
+.ph { height: 100%; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+.sbar { position: absolute; top: 15px; left: 28px; right: 24px; display: flex; justify-content: space-between; align-items: center; font: 800 13px var(--f-display); z-index: 31; color: var(--text); }
+.sbar .bat { display: inline-block; width: 22px; height: 11px; border-radius: 3px; border: 1.5px solid currentColor; position: relative; margin-left: 5px; vertical-align: -1px; }
+.sbar .bat::after { content: ""; position: absolute; inset: 1.5px 4px 1.5px 1.5px; background: currentColor; border-radius: 1px; }
+.sbar.light { color: #fff; }
+.ph-top { padding: 52px 18px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.ph-top .eb { font-size: 11.5px; font-weight: 700; color: var(--primary); }
+.ph-top h3 { font-size: 23px; letter-spacing: -.04em; }
+.ph-top .desc { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.ph-chips { display: flex; gap: 6px; margin-top: 10px; overflow: hidden; }
+.ph-chips span { padding: 7px 12px; border-radius: 999px; font-size: 12.5px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; font-weight: 600; }
+.ph-chips span.on { background: var(--text); color: var(--surface); font-weight: 800; }
+.ph-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow: hidden; }
+.ph-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ph-kpis .kpi { padding: 11px 12px; border-radius: 13px; }
+.ph-kpis .kpi .v { font-size: 24px; margin: 3px 0 0; }
+.ph-kpis .kpi .h { margin-top: 2px; }
+.ph-tab { display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; background: var(--surface); border-top: 1px solid var(--border); padding: 8px 6px 26px; position: relative; z-index: 7; flex-shrink: 0; }
+.ph-tab > div { display: grid; justify-items: center; gap: 3px; font-size: 10.5px; color: var(--text-3); }
+.ph-tab > div .ic { font-size: 21px; }
+.ph-tab > div.on { color: var(--primary); font-weight: 800; }
+.ph-tab .mid span { width: 50px; height: 50px; border-radius: 17px; background: var(--primary); color: #fff; display: grid; place-items: center; margin-top: -24px; box-shadow: 0 8px 18px color-mix(in srgb, var(--primary) 40%, transparent); }
+.ph-tab .mid span .ic { font-size: 23px; }
+.ph-tab.old { grid-template-columns: repeat(4, 1fr); }
+.swipe { display: flex; align-items: stretch; border-top: 1px solid var(--border); overflow: hidden; }
+.swipe .row { border-top: 0; flex: 1; transform: translateX(-12px); }
+.swipe .act { width: 78px; flex-shrink: 0; display: grid; place-items: center; text-align: center; color: #fff; font-size: 12px; font-weight: 800; line-height: 1.3; }
+.card > .row:first-child, .card > .swipe:first-child { border-top: 0; }
+.oldtabs { display: flex; gap: 4px; padding: 10px 12px 0; background: var(--surface); border-bottom: 1px solid var(--border); overflow: hidden; }
+.oldtabs span { padding: 8px 10px; font-size: 12.5px; color: var(--text-2); white-space: nowrap; border-bottom: 2px solid transparent; }
+.oldtabs span.on { color: var(--primary); border-color: var(--primary); font-weight: 700; }
+.ph-map { position: relative; flex: 1; overflow: hidden; }
+.ph-map > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.floatchips { position: absolute; top: 54px; left: 12px; right: 12px; display: flex; gap: 6px; z-index: 3; }
+.floatchips span { padding: 7px 12px; border-radius: 999px; background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,.12); font-size: 12.5px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
+.floatchips span.on { background: var(--text); color: var(--surface); }
+.fab-loc { position: absolute; right: 14px; width: 44px; height: 44px; border-radius: 14px; background: var(--surface); box-shadow: 0 2px 10px rgba(0,0,0,.16); display: grid; place-items: center; color: var(--primary); font-size: 19px; z-index: 3; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface); border-radius: 22px 22px 0 0; box-shadow: 0 -12px 30px rgba(0,0,0,.16); padding: 8px 14px 14px; z-index: 6; display: flex; flex-direction: column; gap: 10px; }
+.handle { width: 40px; height: 5px; border-radius: 3px; background: var(--border); margin: 2px auto 0; flex-shrink: 0; }
+.sheet-h { display: flex; justify-content: space-between; align-items: center; }
+.sheet-h small { display: block; font-size: 11.5px; color: var(--text-3); font-weight: 700; }
+.sheet-h b { font-size: 18px; letter-spacing: -.03em; }
+.sheet-h > span { font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 3px; }
+.sheet .row { padding: 10px 2px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.steps span { font-size: 11px; text-align: center; padding: 7px 0; border-radius: 8px; background: var(--surface-2); color: var(--text-3); font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 3px; }
+.steps .done { background: var(--ok-b); color: var(--ok-t); } .steps .on { background: var(--primary); color: #fff; }
+.field { border: 1px solid var(--border); border-radius: 14px; padding: 11px 13px; }
+.field small { font-size: 11.5px; color: var(--text-3); font-weight: 700; display: flex; align-items: center; gap: 5px; }
+.field .big { font: 800 34px/1.1 var(--f-display); letter-spacing: -.04em; margin-top: 2px; }
+.field .big small { display: inline; font-size: 14px; color: var(--text-2); margin-left: 4px; }
+.field p { font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5; }
+.field p b { color: var(--text); }
+.seg5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px; }
+.seg5 span { text-align: center; padding: 11px 0; border-radius: 10px; background: var(--surface-2); font-size: 12.5px; font-weight: 800; color: var(--text-2); }
+.seg5 .on { background: var(--primary); color: #fff; }
+.okrow { display: flex; align-items: center; gap: 10px; background: var(--ok-b); color: var(--ok-t); border-radius: 14px; padding: 11px 13px; font-size: 18px; }
+.okrow div { flex: 1; } .okrow b { display: block; font-size: 13px; color: var(--text); } .okrow small { font-size: 11.5px; color: var(--text-2); }
+.sheet-acts { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+.ph-dim { position: absolute; inset: 0; background: rgba(10,12,24,.45); z-index: 5; }
+.dayrow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+.dayrow span { display: grid; justify-items: center; padding: 6px 0; border-radius: 12px; font: 800 15px var(--f-display); color: var(--text); }
+.dayrow span em { font: 600 10.5px var(--f-body); font-style: normal; color: var(--text-3); }
+.dayrow span.on { background: var(--primary); color: #fff; } .dayrow span.on em { color: #fff; }
+.dayrow span.we, .dayrow span.we em { color: var(--danger); }
+.ag { display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 10px; align-items: stretch; }
+.ag time { font: 800 12px var(--f-display); color: var(--text-2); padding-top: 12px; text-align: right; }
+.ag .blk2 { border-radius: 14px; padding: 11px 13px; border-left: 4px solid var(--primary); background: var(--surface); box-shadow: 0 1px 0 var(--border) inset, 0 0 0 1px var(--border); }
+.ag .blk2 b { display: block; font-size: 13.5px; } .ag .blk2 small { font-size: 11.5px; color: var(--text-2); display: block; }
+.ag .blk2.late { border-left-color: var(--danger); background: var(--bad-b); }
+.ag .blk2.free { border-left-color: var(--accent); border-style: dashed; background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); }
+.ag .blk2 .btn { margin-top: 8px; }
+.thumbzone { position: absolute; inset: 0; z-index: 35; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(135% 60% at 50% 104%, rgba(16,185,129,.45) 0 50%, rgba(245,158,11,.34) 50% 74%, rgba(239,68,68,.32) 74%); }
+.thumbzone.on { opacity: 1; }
+.thumbzone span { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 800; color: #fff; background: rgba(0,0,0,.55); padding: 4px 11px; border-radius: 999px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .thumbzone { transition: none; } }
+
+/* lock screen (single dark look in both themes) */
+.lock { height: 100%; background: radial-gradient(120% 70% at 10% 0%, #3557D6 0%, transparent 60%), radial-gradient(100% 60% at 100% 100%, #6D3FD8 0%, transparent 58%), #0A0F1F; color: #fff; padding: 58px 12px 18px; display: flex; flex-direction: column; gap: 9px; position: relative; }
+.lk-top { text-align: center; margin-bottom: 14px; }
+.lk-top .ic { font-size: 15px; opacity: .8; }
+.lk-time { font: 700 74px/1 var(--f-display); letter-spacing: -.04em; margin-top: 6px; }
+.lk-date { font-size: 15px; opacity: .85; margin-top: 6px; }
+.notif { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.14); border-radius: 20px; padding: 11px 13px; }
+.notif .nh { display: flex; align-items: center; gap: 8px; font-size: 10.5px; letter-spacing: .06em; opacity: .85; font-weight: 700; }
+.notif .nh span:last-child { margin-left: auto; letter-spacing: 0; font-weight: 500; }
+.appic { width: 20px; height: 20px; border-radius: 6px; background: #2563EB; display: grid; place-items: center; font-size: 12px; color: #fff; }
+.notif b { display: block; font-size: 14.5px; margin-top: 5px; }
+.notif p { font-size: 12.5px; opacity: .9; line-height: 1.45; margin-top: 2px; }
+.notif .na { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 9px; }
+.notif .na span { background: rgba(255,255,255,.2); border-radius: 12px; padding: 9px; text-align: center; font-size: 13px; font-weight: 800; }
+.notif.crit { background: rgba(239,68,68,.32); border-color: rgba(255,255,255,.22); }
+.lk-bottom { margin-top: auto; display: flex; justify-content: space-between; padding: 0 22px; }
+.lk-bottom span { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,.16); display: grid; place-items: center; font-size: 19px; }
+
+/* rules */
+.rule { display: grid; grid-template-columns: 34px minmax(0, 1fr) 92px 40px; gap: 12px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); position: relative; }
+.rule b { font-size: 13.5px; }
+.cond { font-size: 12px; color: var(--text-2); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.ctag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); color: var(--text); font-weight: 700; font-size: 11.5px; }
+.ctag.out { background: var(--tint); color: var(--primary); }
+.runs { font-size: 11.5px; color: var(--text-3); text-align: right; line-height: 1.3; }
+.runs b { display: block; font: 800 17px var(--f-display); color: var(--text); }
+.tg { width: 38px; height: 22px; border-radius: 11px; background: var(--border); position: relative; }
+.tg::after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.tg.on { background: var(--primary); } .tg.on::after { left: 19px; }
+
+/* account types */
+.types { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.type { border: 1.5px solid var(--border); border-radius: 18px; background: var(--surface); padding: 16px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.type.on { border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent); }
+.type .ill { height: 84px; border-radius: 13px; display: grid; place-items: center; }
+.type .ill svg { width: 100%; height: 100%; }
+.type h5 { font-size: 16px; letter-spacing: -.03em; }
+.type .fit { font-size: 12px; color: var(--text-2); }
+.type ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; font-size: 12px; color: var(--text); }
+.type li { display: flex; gap: 6px; align-items: flex-start; }
+.type li .ic { color: var(--accent); font-size: 14px; margin-top: 2px; }
+.type .sel { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); }
+.type.on .sel { background: var(--primary); border-color: var(--primary); display: grid; place-items: center; color: #fff; font-size: 12px; }
+.type .menu { margin-top: auto; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 11px; color: var(--text-3); }
+.type .menu b { color: var(--text-2); }
+
+@media (max-width: 1100px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .rail { position: static; max-height: none; padding-block: 20px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .rail nav { display: none; }
+  .brand, .lang { margin: 0; }
+  .stage.with-phone { grid-template-columns: minmax(0, 1fr); }
+  .stage.with-phone > .phone { width: min(250px, 70%); justify-self: center; }
+}
+@media (max-width: 860px) {
+  .flow-h { display: none; }
+  .lane { grid-template-columns: minmax(0, 1fr); }
+  .lane-name { flex-direction: row; align-items: center; padding-bottom: 4px; }
+  .node { padding: 10px 16px 10px 62px; min-height: 58px; }
+  .node .nic { position: absolute; left: 16px; top: 12px; }
+  .node:not(:last-child)::after { top: auto; bottom: -6px; left: 30px; right: auto; transform: rotate(135deg); }
+  .phone-row { grid-template-columns: repeat(3, 230px); justify-content: start; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .phone-row > * { scroll-snap-align: center; }
+}
+@media (max-width: 720px) {
+  .shell { padding-inline: 16px; }
+  .principles, .road, .deltas { grid-template-columns: minmax(0, 1fr); }
+  .ch-head { grid-template-columns: minmax(0, 1fr); }
+  .ch-no { font-size: 40px; grid-row: auto; }
+  .layer { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .layer > small { padding-top: 0; }
+  .chapter { margin-top: 76px; }
+  .ref { grid-template-columns: 96px minmax(0, 1fr); }
+  .ref img, .ref .ph0 { width: 96px; height: 64px; }
+  .devices { padding-bottom: 0; }
+  .devices .desk { width: 100%; }
+  .devices .phone { position: relative; width: 58%; margin: -22% auto 0; }
+  .pair { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 20px 10px; }
+  .dimrow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .scr { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H17a3.5 3.5 0 0 0 0-7H7a3.5 3.5 0 0 1 0-7h8.5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></symbol>
+    <symbol id="i-bar" viewBox="0 0 24 24"><path d="M3 3v18h18M8 17v-5M13 17V8M18 17v-9"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-fuel" viewBox="0 0 24 24"><path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.8a2 2 0 0 0-.6-1.4L18 5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2a1 1 0 0 0 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3A2.5 2.5 0 0 0 12 7H5a1.6 1.6 0 0 0-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4a1 1 0 0 0 1 1h2M9 17h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></symbol>
+    <symbol id="i-moto" viewBox="0 0 24 24"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="17" r="3"/><path d="M8 17h6l3.2-6.5M14 7h3l1.6 4.4M10.5 11H15"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+    <symbol id="i-off" viewBox="0 0 24 24"><path d="m2 2 20 20M8.5 16.5a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2.3-1.7M12 20h.01"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-arrows" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-chevd" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4M3.3 19a10 10 0 1 1 17.4 0"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 3v4M17 5h4"/></symbol>
+    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5a2 2 0 0 1 4 0v6M13 10V8a2 2 0 0 1 4 0v5M17 11a2 2 0 0 1 4 0v3a8 8 0 0 1-8 8h-1a8 8 0 0 1-6.6-3.5L3 15a2 2 0 0 1 3.3-2.3L9 15"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-call" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9M3 9h18v1.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v8h14v-8"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 24 24"><path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"/></symbol>
+    <symbol id="mapbase" viewBox="0 0 640 320">
+      <rect width="640" height="320" fill="var(--map-land)"/>
+      <g fill="var(--map-block)">
+        <rect x="14" y="14" width="64" height="70" rx="6"/><rect x="100" y="14" width="66" height="70" rx="6"/><rect x="196" y="14" width="74" height="70" rx="6"/><rect x="292" y="14" width="88" height="70" rx="6"/><rect x="408" y="14" width="104" height="70" rx="6"/>
+        <rect x="14" y="118" width="64" height="78" rx="6"/><rect x="100" y="118" width="66" height="78" rx="6"/><rect x="196" y="118" width="74" height="26" rx="6"/><rect x="196" y="160" width="74" height="36" rx="6"/><rect x="292" y="118" width="80" height="78" rx="6"/><rect x="408" y="118" width="80" height="26" rx="6"/><rect x="514" y="160" width="112" height="28" rx="6"/>
+      </g>
+      <rect x="530" y="14" width="96" height="122" rx="10" fill="var(--map-park)"/>
+      <path d="M0 238 C110 214 210 266 330 244 S520 206 640 226 L640 282 C520 264 450 298 330 288 S120 262 0 286Z" fill="var(--map-water)"/>
+      <g fill="none" stroke-linecap="round">
+        <g stroke="var(--map-road-edge)" stroke-width="16"><path d="M0 100 H640"/><path d="M182 0 V320"/><path d="M394 0 L374 320"/><path d="M0 214 C180 202 330 218 640 198"/></g>
+        <g stroke="var(--map-road)" stroke-width="12"><path d="M0 100 H640"/><path d="M182 0 V320"/><path d="M394 0 L374 320"/><path d="M0 214 C180 202 330 218 640 198"/></g>
+        <g stroke="var(--map-road)" stroke-width="5"><path d="M89 0 V205"/><path d="M281 0 V205"/><path d="M500 100 V200"/><path d="M0 152 H182M182 152 H640"/></g>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="brand"><i><svg class="ic"><use href="#i-pin"/></svg></i><span>GPS Tracker</span></div>
+    <nav aria-label="목차" id="toc">
+      <span class="grp"><span class="ko">개요</span><span class="uz">Umumiy</span></span>
+      <a href="#top"><b>·</b><span class="ko">한눈에 보기</span><span class="uz">Qisqacha</span></a>
+      <a href="#c0"><b>00</b><span class="ko">공통 / 유형별 구조</span><span class="uz">Umumiy va alohida</span></a>
+      <span class="grp"><span class="ko">공통</span><span class="uz">Umumiy</span></span>
+      <a href="#c1"><b>01</b><span class="ko">메뉴 한 겹으로</span><span class="uz">Bitta qavat menyu</span></a>
+      <a href="#c2"><b>02</b><span class="ko">모바일 우선</span><span class="uz">Mobil birinchi</span></a>
+      <a href="#c3"><b class="star">03</b><span class="ko">자동 감지 + 원탭</span><span class="uz">Avtomatik aniqlash</span></a>
+      <a href="#c4"><b>04</b><span class="ko">운영 현황</span><span class="uz">Holat sahifasi</span></a>
+      <a href="#c5"><b>05</b><span class="ko">차량 상세 패널</span><span class="uz">Avtomobil paneli</span></a>
+      <a href="#c6"><b>06</b><span class="ko">계정 유형 선택</span><span class="uz">Akkaunt turi</span></a>
+      <span class="grp">법인차</span>
+      <a href="#c7"><b>07</b><span class="ko">운행일지 · 유류비</span><span class="uz">Jurnal, yoqilg'i</span></a>
+      <a href="#c8"><b>08</b><span class="ko">예약 신청 · 승인</span><span class="uz">Bron va tasdiq</span></a>
+      <span class="grp">렌트카</span>
+      <a href="#c9"><b>09</b><span class="ko">배차표</span><span class="uz">Taqsimot jadvali</span></a>
+      <a href="#c10"><b>10</b><span class="ko">손상 이력</span><span class="uz">Shikastlar tarixi</span></a>
+      <span class="grp"><span class="ko">배달 · 오토바이</span><span class="uz">Yetkazish · moto</span></span>
+      <a href="#c11"><b>11</b><span class="ko">라이더 · 오토바이 운영</span><span class="uz">Kuryer va moto</span></a>
+      <span class="grp"><span class="ko">정리</span><span class="uz">Xulosa</span></span>
+      <a href="#road"><b>→</b><span class="ko">작업 순서</span><span class="uz">Ish tartibi</span></a>
+    </nav>
+    <div class="lang" role="group" aria-label="언어 / Til">
+      <button type="button" id="lang-ko" aria-pressed="true">한국어</button>
+      <button type="button" id="lang-uz" aria-pressed="false">O'zbekcha</button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" id="top">
+      <span class="kicker"><span class="ko">운영 화면 개선안 · 2026. 10.</span><span class="uz">Taklif · 2026-yil oktabr</span></span>
+      <h1><span class="ko">책상에서도 주차장에서도, 첫 화면에서 차와 할 일이 바로 보이게</span><span class="uz">Ofisda ham, avtoturargohda ham: avtomobil va vazifalar birinchi ekranda</span></h1>
+      <p class="sub ko">법인차·렌트카·배달 세 유형이 같은 틀을 쓰고, 업무가 다른 곳만 따로 만듭니다. 아래 버튼으로 유형을 바꾸면 데스크톱과 휴대폰 화면이 함께 바뀝니다.</p>
+      <p class="sub uz">Korporativ, rent-a-car va yetkazib berish turlari bitta umumiy tuzilmadan foydalanadi, faqat ish jarayoni farq qiladigan joylar alohida. Pastdagi tugma bilan turni almashtirsangiz, kompyuter va telefon ekranlari birga o'zgaradi.</p>
+      <div class="typesw" role="group" aria-label="유형 / Tur">
+        <button type="button" data-type="corp" aria-pressed="false"><svg class="ic"><use href="#i-car"/></svg><span class="ko">법인차 운영</span><span class="uz">Korporativ</span></button>
+        <button type="button" data-type="rent" aria-pressed="true"><svg class="ic"><use href="#i-route"/></svg><span class="ko">렌트카 운영</span><span class="uz">Rent-a-car</span></button>
+        <button type="button" data-type="deliv" aria-pressed="false"><svg class="ic"><use href="#i-moto"/></svg><span class="ko">배달 운영</span><span class="uz">Yetkazib berish</span></button>
+      </div>
+      <div class="devices">
+        <div class="frame desk"><div class="chrome"><span></span><span></span><span></span><em id="hero-url">gps.serial.kr / 렌트카 · 운영 현황</em></div>
+          <div class="screen" data-w="1280" data-h="720"><div class="si" id="hero-desk"></div></div></div>
+        <div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" id="hero-phone"></div></div></div>
+      </div>
+      <div class="hero-stats">
+        <div class="hs"><b>11</b><span class="ko">개선 제안</span><span class="uz">ta taklif</span></div>
+        <div class="hs"><b>6</b><span class="ko">공통 (세 유형 모두)</span><span class="uz">ta umumiy (uchala tur uchun)</span></div>
+        <div class="hs star"><b>★</b><span class="ko">차별화: 자동 감지 + 원탭 처리</span><span class="uz">Ajralib turish: avtomatik aniqlash + bir bosish</span></div>
+        <div class="hs"><b>2 · 2 · 1</b><span class="ko">법인차 · 렌트카 · 배달</span><span class="uz">korporativ · rent-a-car · yetkazish</span></div>
+      </div>
+      <div class="principles">
+        <div class="pr"><svg class="ic"><use href="#i-eye"/></svg><h3><span class="ko">한눈에</span><span class="uz">Bir qarashda</span></h3><p class="ko">첫 화면 = 지도 + 오늘 할 일. 메뉴는 한 겹, 탭 하나로 이동.</p><p class="uz">Birinchi ekran = xarita + bugungi vazifalar. Menyu bitta qavat, bitta tab bilan o'tiladi.</p></div>
+        <div class="pr"><svg class="ic"><use href="#i-hand"/></svg><h3><span class="ko">한 손으로</span><span class="uz">Bir qo'l bilan</span></h3><p class="ko">휴대폰은 하단 탭·스와이프·시트. 주요 버튼은 엄지가 닿는 아래쪽에.</p><p class="uz">Telefonda pastki tab, surish va pastdan ochiladigan panel. Asosiy tugmalar bosh barmoq yetadigan pastki qismda.</p></div>
+        <div class="pr"><svg class="ic"><use href="#i-zap"/></svg><h3><span class="ko">차가 먼저 알려줌</span><span class="uz">Avtomobil o'zi xabar beradi</span></h3><p class="ko">GPS가 감지하면 할 일과 알림이 자동으로. 사람은 확인 한 번.</p><p class="uz">GPS aniqlaganda vazifa va xabarnoma avtomatik yaratiladi. Odam faqat bir marta tasdiqlaydi.</p></div>
+      </div>
+    </section>
+
+    <!-- 00 STRUCTURE -->
+    <section class="chapter" id="c0">
+      <div class="ch-head">
+        <div class="ch-no">00</div>
+        <div class="ch-tags"><span class="tag"><span class="ko">구조</span><span class="uz">Tuzilma</span></span></div>
+        <h2><span class="ko">공통 틀 하나, 유형별 모듈 몇 개</span><span class="uz">Bitta umumiy tuzilma va har bir tur uchun bir nechta modul</span></h2>
+        <p class="problem ko">세 유형 모두 <b>"차(오토바이)가 어디 있고, 오늘 무엇을 처리해야 하나"</b>를 먼저 봅니다. 이 질문에 답하는 화면은 공통으로, 계약·예약·배달처럼 절차가 다른 부분만 따로 둡니다.</p>
+        <p class="problem uz">Uchala tur ham avval <b>"avtomobil (mototsikl) qayerda va bugun nima qilish kerak"</b> degan savolga javob izlaydi. Shu savolga javob beradigan ekranlar umumiy bo'ladi, shartnoma, bron va yetkazib berish kabi jarayoni farq qiladigan qismlargina alohida qilinadi.</p>
+      </div>
+      <div class="split">
+        <div class="layer"><small><span class="ko">공통 틀</span><span class="uz">Umumiy tuzilma</span></small>
+          <div class="blocks">
+            <div class="blk c"><b><span class="ko">헤더 탭 · 검색</span><span class="uz">Tablar, qidiruv</span></b><span class="ko">탭 항목만 유형별</span><span class="uz">Faqat tab bandlari turga qarab</span></div>
+            <div class="blk c"><b><span class="ko">지표 4칸</span><span class="uz">4 ta ko'rsatkich</span></b><span class="ko">내용만 유형별</span><span class="uz">Faqat mazmuni turga qarab</span></div>
+            <div class="blk c"><b><span class="ko">지도 + 할 일</span><span class="uz">Xarita + vazifalar</span></b><span class="ko">상태 색만 다름</span><span class="uz">Faqat holat rangi farq qiladi</span></div>
+            <div class="blk c"><b><span class="ko">목록 · 상세 패널</span><span class="uz">Ro'yxat, panel</span></b><span class="ko">탭 추가로 확장</span><span class="uz">Tab qo'shib kengaytiriladi</span></div>
+            <div class="blk c"><b><span class="ko">자동 감지 규칙</span><span class="uz">Avtomatik qoidalar</span></b><span class="ko">규칙만 유형별</span><span class="uz">Faqat qoidalar turga qarab</span></div>
+            <div class="blk c"><b><span class="ko">모바일 하단 탭</span><span class="uz">Mobil pastki tab</span></b><span class="ko">가운데 버튼만 유형별</span><span class="uz">Faqat markaziy tugma turga qarab</span></div>
+          </div>
+        </div>
+        <div class="layer"><small><span class="ko">유형별 모듈</span><span class="uz">Tur modullari</span></small>
+          <div class="cols3">
+            <div class="blocks">
+              <div class="blk k"><b>법인차 · <span class="ko">예약 승인</span><span class="uz">bron tasdig'i</span></b><span class="ko">직원 신청 → 관리자</span><span class="uz">Xodim so'raydi → admin</span></div>
+              <div class="blk k"><b>법인차 · <span class="ko">운행일지</span><span class="uz">yurish jurnali</span></b><span class="ko">국세청 양식 · 유류비</span><span class="uz">Soliq shakli, yoqilg'i</span></div>
+            </div>
+            <div class="blocks">
+              <div class="blk r"><b>렌트카 · <span class="ko">배차표</span><span class="uz">taqsimot</span></b><span class="ko">차량 × 날짜</span><span class="uz">Avtomobil × sana</span></div>
+              <div class="blk r"><b>렌트카 · <span class="ko">계약 · 손상</span><span class="uz">shartnoma, shikast</span></b><span class="ko">인수·반납 · 사진</span><span class="uz">Topshirish, qaytarish, rasm</span></div>
+            </div>
+            <div class="blocks">
+              <div class="blk d"><b>배달 · <span class="ko">라이더 · 구역</span><span class="uz">kuryer, hudud</span></b><span class="ko">매장 반경 · 구역 이탈</span><span class="uz">Do'kon radiusi, hududdan chiqish</span></div>
+              <div class="blk d"><b>배달 · <span class="ko">안전 · 도난</span><span class="uz">xavfsizlik, o'g'irlik</span></b><span class="ko">안전 점수 · 주차 모드</span><span class="uz">Xavfsizlik bahosi, to'xtash rejimi</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 01 NAV -->
+    <section class="chapter" id="c1">
+      <div class="ch-head">
+        <div class="ch-no">01</div>
+        <div class="ch-tags"><span class="tag t-common"><span class="ko">공통</span><span class="uz">Umumiy</span></span><span class="tag t-fb"><span class="ko">피드백 반영</span><span class="uz">Fikr asosida</span></span></div>
+        <h2><span class="ko">메뉴는 한 겹으로: 왼쪽 두 줄 메뉴를 위쪽 탭으로</span><span class="uz">Menyu bitta qavat: chapdagi ikki qator menyu o'rniga tepada tablar</span></h2>
+        <p class="problem ko">지금은 전체 메뉴(64px)와 업무 메뉴(172px)가 나란히 있고, 그 위에 제목·설명 헤더(약 93px)가 있습니다. <b>화면 왼쪽 236px과 위쪽 93px가 길 안내에 쓰이고</b>, 사용자는 '렌트카 → 운영 현황'처럼 두 번 골라야 합니다. 휴대폰에서도 하단 탭과 업무 탭이 두 겹입니다.</p>
+        <p class="problem uz">Hozir umumiy menyu (64px) va ish menyusi (172px) yonma-yon turibdi, ularning ustida sarlavha va izoh (taxminan 93px) bor. <b>Ekranning chap 236px va yuqori 93px qismi faqat yo'naltirishga ketadi</b>, foydalanuvchi "렌트카 → 운영 현황" kabi ikki marta tanlashi kerak. Telefonda ham pastki tab va ish tablari ikki qavat.</p>
+      </div>
+      <div class="refs">
+        <div class="ref fb"><img src="00_ours_nav_issue.png" alt="" loading="lazy"><div><small><span class="ko">피드백 · 빨간 부분이 불편</span><span class="uz">Fikr · qizil qism noqulay</span></small><strong><span class="ko">메뉴 두 줄 + 설명 헤더</span><span class="uz">Ikki qator menyu + izohli sarlavha</span></strong><p class="ko">같은 일을 하는 메뉴가 두 군데.</p><p class="uz">Bir xil vazifadagi menyu ikki joyda.</p></div></div>
+        <div class="ref"><div class="ph0"><svg class="ic"><use href="#i-search"/></svg></div><div><small><span class="ko">이미 있는 것</span><span class="uz">Bizda bor</span></small><strong>CommandPalette</strong><p class="ko">검색 팔레트(components/ui)를 헤더 검색으로 재사용.</p><p class="uz">Qidiruv paneli (components/ui) sarlavhadagi qidiruv sifatida qayta ishlatiladi.</p></div></div>
+      </div>
+      <div class="dims">
+        <div class="dimrow"><b><span class="ko">현재</span><span class="uz">Hozir</span></b>
+          <div class="scr"><div class="s-rail">64</div><div class="s-col"><div class="s-head waste" style="height:34%"><span class="ko">제목 · 설명 93px</span><span class="uz">Sarlavha, izoh 93px</span></div><div class="s-row"><div class="s-nav waste"><span class="ko">업무 메뉴 172px</span><span class="uz">Ish menyusi 172px</span></div><div class="s-body"><span class="ko">화면 1,044px</span><span class="uz">Ekran 1 044px</span></div></div></div></div></div>
+        <div class="dimrow"><b><span class="ko">제안</span><span class="uz">Taklif</span></b>
+          <div class="scr"><div class="s-rail">64</div><div class="s-col"><div class="s-head" style="height:22%;background:var(--paper)"><span class="ko">제목 + 탭 + 검색 60px</span><span class="uz">Sarlavha + tab + qidiruv 60px</span></div><div class="s-row"><div class="s-body gain"><span class="ko">화면 1,216px</span><span class="uz">Ekran 1 216px</span></div></div></div></div></div>
+        <div class="deltas">
+          <div class="delta"><b>+172px</b><span class="ko">화면 폭 (+16%)</span><span class="uz">Ekran kengligi (+16%)</span></div>
+          <div class="delta"><b>93 → 60px</b><span class="ko">헤더 높이</span><span class="uz">Sarlavha balandligi</span></div>
+          <div class="delta"><b>2 → 1</b><span class="ko">메뉴 단계 (선택 횟수)</span><span class="uz">Menyu bosqichi (tanlash soni)</span></div>
+        </div>
+      </div>
+      <div class="ba-cap"><span class="side"><span class="tag dark"><span class="ko">← 현재</span><span class="uz">← Hozir</span></span></span><span class="side"><svg class="ic"><use href="#i-arrows"/></svg><span class="ko">가운데를 끌어서 비교</span><span class="uz">O'rtasini surib solishtiring</span></span><span class="side"><span class="tag blue"><span class="ko">제안 →</span><span class="uz">Taklif →</span></span></span></div>
+      <div class="ba" id="ba">
+        <div class="screen" data-w="1280" data-h="622"><div class="si" data-view="deskOverview" data-type="rent"></div></div>
+        <img class="before" src="00_ours_rentcar.webp" alt="현재 렌트카 운영 현황 화면">
+        <div class="ba-line"></div>
+        <input type="range" id="ba-range" min="0" max="100" value="50" aria-label="현재 / 제안 비교 위치">
+        <div class="ba-handle"><svg class="ic"><use href="#i-arrows"/></svg></div>
+      </div>
+      <div class="frame phonestage" style="margin-top:16px"><div class="pair">
+        <figure><div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneNavBefore" data-type="rent"></div></div></div><figcaption class="pcap"><b><span class="ko">현재 모바일</span><span class="uz">Hozirgi mobil</span></b><span class="ko">하단 탭 → '렌트' → 다시 상단 탭 (BottomNav.jsx 기준)</span><span class="uz">Pastki tab → "렌트" → yana tepadagi tab (BottomNav.jsx bo'yicha)</span></figcaption></figure>
+        <figure><div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneHome" data-type="rent"></div></div></div><figcaption class="pcap"><b><span class="ko">제안 모바일</span><span class="uz">Taklif: mobil</span></b><span class="ko">업무 계정은 하단 탭이 곧 업무 메뉴</span><span class="uz">Biznes akkauntda pastki tabning o'zi ish menyusi</span></figcaption></figure>
+      </div></div>
+      <ol class="legend-list" style="margin-top:14px">
+        <li><span><b><span class="ko">업무 메뉴 → 헤더 탭</span><span class="uz">Ish menyusi → sarlavha tabi</span></b><span class="ko">왼쪽 172px를 화면으로 돌려줌. 처리할 건수는 탭 옆 빨간 숫자.</span><span class="uz">Chapdagi 172px ekranga qaytariladi. Bajariladigan ishlar soni tab yonida qizil raqam bilan.</span></span></li>
+        <li><span><b><span class="ko">설명 문구 삭제</span><span class="uz">Izoh matni olib tashlanadi</span></b><span class="ko">"출고부터 반납까지…" 대신 실시간 상태 한 줄 (차량 5대 · 지연 1).</span><span class="uz">"출고부터 반납까지…" o'rniga real vaqt holati bitta qatorda (5 avtomobil · 1 kechikish).</span></span></li>
+        <li><span><b><span class="ko">헤더 검색 (Ctrl K)</span><span class="uz">Sarlavhada qidiruv (Ctrl K)</span></b><span class="ko">차량·임차인·계약을 메뉴 이동 없이 바로 찾기.</span><span class="uz">Avtomobil, ijarachi va shartnomani menyuga o'tmasdan topish.</span></span></li>
+        <li><span><b><span class="ko">모바일 하단 탭 = 업무 메뉴</span><span class="uz">Mobil pastki tab = ish menyusi</span></b><span class="ko">단말기·내정보는 '더보기'로. 가운데 + 버튼은 새 계약/예약.</span><span class="uz">Qurilmalar va profil "더보기" ichida. Markaziy + tugmasi yangi shartnoma yoki bron uchun.</span></span></li>
+      </ol>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">높음 · 모든 화면에 적용</span><span class="uz">Yuqori · barcha ekranlarga ta'sir</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">작음~중간 · BusinessWorkspace, BottomNav</span><span class="uz">Kichik–o'rtacha · BusinessWorkspace, BottomNav</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+      </div>
+    </section>
+
+    <!-- 02 MOBILE -->
+    <section class="chapter" id="c2">
+      <div class="ch-head">
+        <div class="ch-no">02</div>
+        <div class="ch-tags"><span class="tag t-common"><span class="ko">공통</span><span class="uz">Umumiy</span></span><span class="tag t-fb"><span class="ko">피드백 반영</span><span class="uz">Fikr asosida</span></span></div>
+        <h2><span class="ko">모바일 우선: 한 손으로 끝나는 관리</span><span class="uz">Mobil birinchi o'rinda: bir qo'l bilan boshqaruv</span></h2>
+        <p class="problem ko">렌트카 사장님은 <b>주차장에서</b>, 법인차 담당자와 배달 매장 사장님은 <b>이동 중에</b> 확인합니다. 지금 모바일은 데스크톱 표를 접은 형태라 버튼이 작고, 처리하려면 여러 화면을 거칩니다.</p>
+        <p class="problem uz">Rent-a-car egasi <b>avtoturargohda</b>, korporativ mas'ul va yetkazib berish do'koni egasi esa <b>yo'lda</b> tekshiradi. Hozirgi mobil ko'rinish kompyuter jadvalini buklagan holat: tugmalar kichik, bitta ishni bajarish uchun bir nechta ekrandan o'tish kerak.</p>
+      </div>
+      <div class="refs">
+        <div class="ref"><img src="04_rentdesk_mobile.jpg" alt="" loading="lazy"><div><small><span class="ko">참고 · RentDesk 앱</span><span class="uz">Misol · RentDesk ilovasi</span></small><strong><span class="ko">"엑셀 대신 모바일로"</span><span class="uz">"Excel o'rniga telefon"</span></strong><a href="https://rentdesk.co.kr/erp.php" target="_blank" rel="noopener">rentdesk.co.kr ↗</a></div></div>
+        <div class="ref"><img src="06_monimoto.jpg" alt="" loading="lazy"><div><small><span class="ko">참고 · Monimoto</span><span class="uz">Misol · Monimoto</span></small><strong><span class="ko">이상 이동 시 1분 안에 전화</span><span class="uz">Ruxsatsiz harakatda 1 daqiqada qo'ng'iroq</span></strong><a href="https://monimoto.com" target="_blank" rel="noopener">monimoto.com ↗</a></div></div>
+      </div>
+      <div class="fig-cap"><b><span class="ko">렌트카 · 휴대폰 3장면</span><span class="uz">Rent-a-car · telefonda 3 ta ekran</span></b><button type="button" class="thumbbtn" id="thumbbtn" aria-pressed="false"><svg class="ic"><use href="#i-hand"/></svg><span class="ko">엄지 영역 보기</span><span class="uz">Bosh barmoq zonasini ko'rish</span></button></div>
+      <div class="frame phonestage"><div class="phone-row">
+        <figure><div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneHome" data-type="rent" data-thumb="1"></div></div></div><figcaption class="pcap"><b><span class="ko">① 현황</span><span class="uz">① Holat</span></b><span class="ko">스와이프로 반납 처리</span><span class="uz">Surib qaytarishni rasmiylashtirish</span></figcaption></figure>
+        <figure><div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneMap" data-type="rent"></div></div></div><figcaption class="pcap"><b><span class="ko">② 지도 + 끌어올리는 목록</span><span class="uz">② Xarita + yuqoriga tortiladigan ro'yxat</span></b><span class="ko">지도는 전체 화면, 목록은 시트</span><span class="uz">Xarita to'liq ekranda, ro'yxat pastki panelda</span></figcaption></figure>
+        <figure><div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneReturn" data-type="rent"></div></div></div><figcaption class="pcap"><b><span class="ko">③ 반납 처리 시트</span><span class="uz">③ Qaytarish paneli</span></b><span class="ko">4단계 · 주행거리는 GPS 자동</span><span class="uz">4 bosqich · masofa GPS'dan avtomatik</span></figcaption></figure>
+      </div></div>
+      <ol class="legend-list" style="margin-top:14px">
+        <li><span><b><span class="ko">하단 탭 + 가운데 큰 버튼</span><span class="uz">Pastki tab + katta markaziy tugma</span></b><span class="ko">가장 자주 하는 일(새 계약)을 엄지 위치에.</span><span class="uz">Eng ko'p bajariladigan ish (yangi shartnoma) bosh barmoq joyida.</span></span></li>
+        <li><span><b><span class="ko">스와이프로 처리</span><span class="uz">Surib bajarish</span></b><span class="ko">목록에서 밀면 '반납 처리'. 화면 이동 없음.</span><span class="uz">Ro'yxatda surilsa "Qaytarish". Ekran almashmaydi.</span></span></li>
+        <li><span><b><span class="ko">단계는 시트로</span><span class="uz">Bosqichlar panelda</span></b><span class="ko">확인 → 주행·연료 → 사진 → 정산. 큰 버튼(52px).</span><span class="uz">Tekshirish → masofa va yoqilg'i → rasm → hisob-kitob. Katta tugmalar (52px).</span></span></li>
+        <li><span><b><span class="ko">표 대신 카드</span><span class="uz">Jadval o'rniga kartalar</span></b><span class="ko">터치 영역 44px 이상, 글자 13px 이상.</span><span class="uz">Bosish maydoni kamida 44px, matn kamida 13px.</span></span></li>
+      </ol>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">높음 · 현장 업무</span><span class="uz">Yuqori · joyida ishlash</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">중간 · 공통 컴포넌트(시트·스와이프)</span><span class="uz">O'rtacha · umumiy komponentlar (panel, surish)</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+      </div>
+    </section>
+
+    <!-- 03 STANDOUT -->
+    <section class="chapter" id="c3">
+      <div class="ch-head">
+        <div class="ch-no">03</div>
+        <div class="ch-tags"><span class="tag t-common"><span class="ko">공통</span><span class="uz">Umumiy</span></span><span class="tag t-new">★ <span class="ko">차별화 제안</span><span class="uz">Ajralib turadigan taklif</span></span></div>
+        <h2><span class="ko">기록은 차가, 확인은 사람이: GPS 자동 감지 + 원탭 처리</span><span class="uz">Yozuvni avtomobil qiladi, odam faqat tasdiqlaydi: GPS avtomatik aniqlash + bir bosish</span></h2>
+        <p class="problem ko">관리 프로그램 대부분은 사람이 입력해야 기록이 생깁니다. 우리는 GPS가 먼저 압니다. <b>차가 주차장에 들어왔는지, 몇 km 달렸는지, 업무시간 밖인지, 신호가 끊겼는지.</b> 이 사실을 바로 할 일과 알림으로 바꾸면, 사장님은 확인 버튼만 누르면 됩니다.</p>
+        <p class="problem uz">Ko'pchilik boshqaruv dasturlarida yozuv faqat odam kiritganda paydo bo'ladi. Bizda esa GPS birinchi bo'lib biladi: <b>avtomobil turargohga kirdimi, necha km yurdi, ish vaqtidan tashqaridami, signal uzildimi.</b> Shu faktlar darhol vazifa va xabarnomaga aylansa, egasi faqat tasdiqlash tugmasini bosadi.</p>
+      </div>
+      <div class="flow">
+        <div class="flow-h"><span></span><span><b>①</b><span class="ko">GPS가 감지</span><span class="uz">GPS aniqlaydi</span></span><span><b>②</b><span class="ko">자동으로 계산·기록</span><span class="uz">Avtomatik hisob va yozuv</span></span><span><b>③</b><span class="ko">자동으로 알림</span><span class="uz">Avtomatik xabar</span></span><span class="hum"><b>④</b><span class="ko">사람은 한 번 확인</span><span class="uz">Odam bir marta tasdiqlaydi</span></span></div>
+        <div class="lane">
+          <div class="lane-name" style="color:var(--ok-t)"><svg class="ic"><use href="#i-route"/></svg>렌트카</div>
+          <div class="node sense"><div class="nic"><svg class="ic"><use href="#i-pin"/></svg></div><b><span class="ko">본사 주차장 진입</span><span class="uz">Turargohga kirdi</span></b><small><span class="ko">지오펜스 · 계약 종료 무렵</span><span class="uz">Geozona · shartnoma tugashida</span></small></div>
+          <div class="node auto"><div class="nic"><svg class="ic"><use href="#i-route"/></svg></div><b><span class="ko">초과 주행 자동 계산</span><span class="uz">Ortiqcha masofa hisobi</span></b><small>312km − 300km = 12km · 2,400<span class="ko">원</span><span class="uz"> von</span></small></div>
+          <div class="node auto"><div class="nic"><svg class="ic"><use href="#i-send"/></svg></div><b><span class="ko">반납 사진 링크 발송</span><span class="uz">Rasm havolasi yuboriladi</span></b><small><span class="ko">임차인에게 카카오 알림톡</span><span class="uz">Ijarachiga Kakao xabari</span></small></div>
+          <div class="node human"><div class="nic"><svg class="ic"><use href="#i-hand"/></svg></div><b><span class="ko">[정산 확인] 1탭</span><span class="uz">[Hisobni tasdiqlash] 1 bosish</span></b><small><span class="ko">잠금화면 알림에서 바로</span><span class="uz">Bloklangan ekrandagi xabardan</span></small></div>
+        </div>
+        <div class="lane">
+          <div class="lane-name" style="color:var(--warn-t)"><svg class="ic"><use href="#i-car"/></svg>법인차</div>
+          <div class="node sense"><div class="nic"><svg class="ic"><use href="#i-clock"/></svg></div><b><span class="ko">운행 종료</span><span class="uz">Yurish tugadi</span></b><small><span class="ko">10분 이상 정차 · 업무시간 비교</span><span class="uz">10 daqiqadan ortiq to'xtash · ish vaqti bilan solishtirish</span></small></div>
+          <div class="node auto"><div class="nic"><svg class="ic"><use href="#i-file"/></svg></div><b><span class="ko">운행기록 자동 분할</span><span class="uz">Yurish avtomatik bo'linadi</span></b><small><span class="ko">출발·도착·거리 · 운행일지 줄 생성</span><span class="uz">Jo'nash, yetib kelish, masofa · jurnal qatori</span></small></div>
+          <div class="node auto"><div class="nic"><svg class="ic"><use href="#i-send"/></svg></div><b><span class="ko">운전자에게 "용무 선택"</span><span class="uz">Haydovchiga "maqsadni tanlang"</span></b><small><span class="ko">거래처 · 출퇴근 · 기타 버튼</span><span class="uz">Mijoz · ishga borish · boshqa tugmalari</span></small></div>
+          <div class="node human"><div class="nic"><svg class="ic"><use href="#i-hand"/></svg></div><b><span class="ko">월말 [국세청 양식 출력]</span><span class="uz">Oy oxirida [soliq shaklini chop etish]</span></b><small><span class="ko">작성률 100%면 한 번에</span><span class="uz">100% to'ldirilgan bo'lsa bir bosishda</span></small></div>
+        </div>
+        <div class="lane">
+          <div class="lane-name" style="color:var(--deliv-t)"><svg class="ic"><use href="#i-moto"/></svg>배달</div>
+          <div class="node sense"><div class="nic"><svg class="ic"><use href="#i-shield"/></svg></div><b><span class="ko">주차 모드 중 이동</span><span class="uz">To'xtash rejimida harakat</span></b><small><span class="ko">새벽 3:12 · 오토바이 07</span><span class="uz">Tungi 3:12 · mototsikl 07</span></small></div>
+          <div class="node auto"><div class="nic"><svg class="ic"><use href="#i-route"/></svg></div><b><span class="ko">이동 경로 실시간 저장</span><span class="uz">Yo'l real vaqtda saqlanadi</span></b><small><span class="ko">신고용 기록 자동 생성</span><span class="uz">Arizaga yozuv avtomatik</span></small></div>
+          <div class="node auto"><div class="nic"><svg class="ic"><use href="#i-call"/></svg></div><b><span class="ko">사장님 휴대폰 긴급 알림</span><span class="uz">Egasining telefoniga shoshilinch xabar</span></b><small><span class="ko">무음 모드에서도 울리는 알림</span><span class="uz">Ovozsiz rejimda ham jiringlaydi</span></small></div>
+          <div class="node human"><div class="nic"><svg class="ic"><use href="#i-hand"/></svg></div><b><span class="ko">[위치 공유] 1탭</span><span class="uz">[Joylashuvni ulashish] 1 bosish</span></b><small><span class="ko">경찰·보험사에 링크 전달</span><span class="uz">Politsiya, sug'urtaga havola</span></small></div>
+        </div>
+      </div>
+      <div class="have">
+        <small><span class="ko">이미 있는 것</span><span class="uz">Bizda allaqachon bor</span></small>
+        <span class="chip-ok"><svg class="ic"><use href="#i-check"/></svg><span class="ko">지오펜스</span><span class="uz">Geozona</span></span>
+        <span class="chip-ok"><svg class="ic"><use href="#i-check"/></svg><span class="ko">운행 자동 분할</span><span class="uz">Yurishni bo'lish</span></span>
+        <span class="chip-ok"><svg class="ic"><use href="#i-check"/></svg><span class="ko">신호 끊김 알림</span><span class="uz">Signal uzilishi xabari</span></span>
+        <span class="chip-ok"><svg class="ic"><use href="#i-check"/></svg><span class="ko">과속·급가감속·야간 판별 (AI 분석)</span><span class="uz">Tezlik, keskin tezlanish, tun (AI tahlil)</span></span>
+        <span class="chip-ok"><svg class="ic"><use href="#i-check"/></svg><span class="ko">인수·반납 링크</span><span class="uz">Topshirish havolasi</span></span>
+        <span class="chip-ok"><svg class="ic"><use href="#i-check"/></svg><span class="ko">위치 공유 링크</span><span class="uz">Joylashuv havolasi</span></span>
+        <span class="chip-ok"><svg class="ic"><use href="#i-check"/></svg><span class="ko">카카오 알림톡 · 푸시</span><span class="uz">Kakao xabari, push</span></span>
+      </div>
+      <div class="have">
+        <small><span class="ko">새로 만들 것</span><span class="uz">Yangi qilinadigan</span></small>
+        <span class="chip-new"><svg class="ic"><use href="#i-plus"/></svg><span class="ko">규칙 화면</span><span class="uz">Qoidalar ekrani</span></span>
+        <span class="chip-new"><svg class="ic"><use href="#i-plus"/></svg><span class="ko">감지 → 할 일 연결</span><span class="uz">Aniqlash → vazifa ulanishi</span></span>
+        <span class="chip-new"><svg class="ic"><use href="#i-plus"/></svg><span class="ko">알림 속 버튼</span><span class="uz">Xabar ichidagi tugmalar</span></span>
+      </div>
+      <div class="stage with-phone" style="margin-top:20px">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 설정 · 자동 처리 규칙</em></div>
+          <div class="screen" data-w="980" data-h="452"><div class="si" data-view="rules"></div></div></div>
+        <div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneLock"></div></div></div>
+      </div>
+      <ol class="legend-list" style="margin-top:14px">
+        <li><span><b><span class="ko">규칙은 켜고 끄기만</span><span class="uz">Qoidalar faqat yoqiladi yoki o'chiriladi</span></b><span class="ko">유형별 기본 규칙이 미리 켜져 있음. 장소·시간만 고르면 끝.</span><span class="uz">Har bir tur uchun asosiy qoidalar oldindan yoqilgan. Faqat joy va vaqtni tanlash kifoya.</span></span></li>
+        <li><span><b><span class="ko">"이번 달 n회"로 효과가 보임</span><span class="uz">"Bu oy n marta" bilan foyda ko'rinadi</span></b><span class="ko">자동으로 처리한 횟수 = 아낀 시간. 유료 전환 근거.</span><span class="uz">Avtomatik bajarilgan ishlar soni = tejalgan vaqt. Pullik tarifga o'tish uchun asos.</span></span></li>
+        <li><span><b><span class="ko">잠금화면에서 바로 처리</span><span class="uz">Bloklangan ekrandan darhol</span></b><span class="ko">알림 안에 [정산 확인]·[위치 보기] 버튼. 앱을 열지 않아도 됨.</span><span class="uz">Xabar ichida [Hisobni tasdiqlash], [Joylashuvni ko'rish] tugmalari. Ilovani ochish shart emas.</span></span></li>
+        <li><span><b><span class="ko">아침 브리핑</span><span class="uz">Ertalabki brifing</span></b><span class="ko">매일 08:00, 어제 요약과 오늘 할 일. 기존 AI 운행 분석을 활용.</span><span class="uz">Har kuni 08:00 da kechagi xulosa va bugungi vazifalar. Mavjud AI yurish tahlilidan foydalaniladi.</span></span></li>
+      </ol>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">매우 높음 · 경쟁사와 다른 점</span><span class="uz">Juda yuqori · raqobatchilardan farqimiz</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">중간~큼 · 규칙 실행기 (백엔드)</span><span class="uz">O'rtacha–katta · qoidalar ijrochisi (backend)</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">순서</span><span class="uz">Tartib</span></small><span><span class="ko">반납 도착 → 용무 입력 → 업무 외 → 주차 모드</span><span class="uz">Qaytarish → maqsad → ish vaqtidan tashqari → to'xtash rejimi</span></span></div>
+      </div>
+    </section>
+
+    <!-- 04 OVERVIEW -->
+    <section class="chapter" id="c4">
+      <div class="ch-head">
+        <div class="ch-no">04</div>
+        <div class="ch-tags"><span class="tag t-common"><span class="ko">공통</span><span class="uz">Umumiy</span></span></div>
+        <h2><span class="ko">운영 현황: 지도와 오늘 할 일을 나란히</span><span class="uz">"Holat" sahifasi: xarita va bugungi vazifalar yonma-yon</span></h2>
+        <p class="problem ko">GPS 서비스인데 첫 화면에 위치가 없습니다. 'sss' 차량은 <b>임대 중인데 30일째 신호가 없지만</b> 할 일 목록에 나오지 않습니다. 법인차 화면은 예약이 0건이면 빈 칸 두 개가 화면을 차지합니다.</p>
+        <p class="problem uz">Bu GPS xizmati, lekin birinchi ekranda joylashuv yo'q. "sss" avtomobili <b>ijarada bo'lsa ham 30 kundan beri signal bermayapti</b>, lekin vazifalar ro'yxatida ko'rinmaydi. Korporativ sahifada bron 0 ta bo'lsa, ekranni ikkita bo'sh blok egallaydi.</p>
+      </div>
+      <div class="refs">
+        <div class="ref"><img src="00_ours_rentcar.webp" alt="" loading="lazy"><div><small><span class="ko">현재</span><span class="uz">Hozir</span></small><strong><span class="ko">숫자 카드 + 목록</span><span class="uz">Raqamli kartalar + ro'yxat</span></strong><p class="ko">지도는 행마다 '지도' 버튼으로만.</p><p class="uz">Xarita faqat har bir qatordagi "지도" tugmasi orqali.</p></div></div>
+        <div class="ref"><img src="03_rentdesk_main.jpg" alt="" loading="lazy"><div><small><span class="ko">참고 · RentDesk</span><span class="uz">Misol · RentDesk</span></small><strong><span class="ko">지도와 목록을 한 화면에</span><span class="uz">Xarita va ro'yxat bitta ekranda</span></strong><a href="https://rentdesk.co.kr/erp.php" target="_blank" rel="noopener">rentdesk.co.kr ↗</a></div></div>
+        <div class="ref"><img src="05_wunder_operations.jpg" alt="" loading="lazy"><div><small><span class="ko">참고 · Wunder Mobility</span><span class="uz">Misol · Wunder Mobility</span></small><strong><span class="ko">"가동률이 곧 매출": 상태 색 지도</span><span class="uz">"Bandlik = daromad": holat rangidagi xarita</span></strong><a href="https://www.wundermobility.com/en/platform/operations" target="_blank" rel="noopener">wundermobility.com ↗</a></div></div>
+      </div>
+      <div class="stage">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 렌트카 · 운영 현황</em></div>
+          <div class="screen" data-w="1280" data-h="772"><div class="si" data-view="deskOverview" data-type="rent" data-pins="1"></div></div></div>
+        <ol class="legend-list">
+          <li><span><b><span class="ko">상태 색 미니맵 + 주차장 구역</span><span class="uz">Holat rangidagi xarita + turargoh hududi</span></b><span class="ko">임대 중·미배차·지연을 색으로. 점선 = 본사 주차장(자동 감지 기준).</span><span class="uz">Ijarada, bo'sh va kechikkan avtomobillar rang bilan. Punktir = turargoh (avtomatik aniqlash chegarasi).</span></span></li>
+          <li><span><b><span class="ko">할 일 = 급한 순서</span><span class="uz">Vazifalar muhimlik tartibida</span></b><span class="ko">반납 지연 옆에 "임대 중 + 신호 끊김". 오늘 반납은 링크 발송까지.</span><span class="uz">Qaytarish kechikishi yonida "ijarada + signal yo'q". Bugungi qaytarish uchun havola yuborish ham shu yerda.</span></span></li>
+          <li><span><b><span class="ko">지표에 추세</span><span class="uz">Ko'rsatkichda o'zgarish</span></b><span class="ko">지난주 대비와 작은 그래프. '미배차' 대신 '가동률'.</span><span class="uz">O'tgan haftaga nisbatan farq va kichik grafik. "Bo'sh avtomobil" o'rniga "bandlik darajasi".</span></span></li>
+          <li><span><b><span class="ko">행에서 바로 처리</span><span class="uz">Qatordan darhol harakat</span></b><span class="ko">미배차면 '계약 등록'이 기본 버튼.</span><span class="uz">Avtomobil bo'sh bo'lsa, asosiy tugma "Shartnoma tuzish".</span></span></li>
+        </ol>
+      </div>
+      <div class="fig-cap"><b><span class="ko">빈 상태는 한 줄로 (법인차 · 예약 0건)</span><span class="uz">Bo'sh holat bitta qatorda (korporativ · bron 0 ta)</span></b><span class="ko">250px → 56px · 다음 일정과 시작하기 안내</span><span class="uz">250px → 56px · keyingi sana va boshlash yo'riqnomasi</span></div>
+      <div class="frame"><div class="screen" data-w="1100" data-h="236"><div class="si" data-view="empty"></div></div></div>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">높음</span><span class="uz">Yuqori</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">중간</span><span class="uz">O'rtacha</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+        <div class="m"><small><span class="ko">새 데이터</span><span class="uz">Yangi ma'lumot</span></small><span><span class="ko">불필요 · 기존 위치·계약 사용</span><span class="uz">Kerak emas · mavjud joylashuv va shartnomalar</span></span></div>
+      </div>
+    </section>
+
+    <!-- 05 DRAWER -->
+    <section class="chapter" id="c5">
+      <div class="ch-head">
+        <div class="ch-no">05</div>
+        <div class="ch-tags"><span class="tag t-common"><span class="ko">공통</span><span class="uz">Umumiy</span></span></div>
+        <h2><span class="ko">차량을 누르면 상세 패널: 데스크톱은 오른쪽, 휴대폰은 아래에서</span><span class="uz">Avtomobil bosilsa batafsil panel: kompyuterda o'ngdan, telefonda pastdan</span></h2>
+        <p class="problem ko">지금은 '지도' 버튼을 누르면 <b>지도 화면으로 이동</b>하고, 돌아오면 보던 위치를 잃습니다. 차 한 대의 상태를 보려고 화면을 여러 번 오갑니다.</p>
+        <p class="problem uz">Hozir "지도" tugmasi bosilsa <b>xarita sahifasiga o'tib ketiladi</b>, qaytganda ko'rib turgan joy yo'qoladi. Bitta avtomobil holatini ko'rish uchun sahifalar orasida bir necha marta yurish kerak.</p>
+      </div>
+      <div class="stage with-phone">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 렌트카 · 차량 상세</em></div>
+          <div class="screen" data-w="1280" data-h="690"><div class="si" data-view="deskDrawer" data-type="rent"></div></div></div>
+        <div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneDetail" data-type="rent"></div></div></div>
+      </div>
+      <ol class="legend-list" style="margin-top:14px">
+        <li><span><b><span class="ko">페이지 이동 없음</span><span class="uz">Sahifa almashmaydi</span></b><span class="ko">목록 위로 패널이 열리고, 닫으면 그대로.</span><span class="uz">Panel ro'yxat ustida ochiladi, yopilganda hammasi joyida qoladi.</span></span></li>
+        <li><span><b><span class="ko">오늘 이동 경로</span><span class="uz">Bugungi yo'l</span></b><span class="ko">미니맵에 오늘 궤적과 정차 지점.</span><span class="uz">Kichik xaritada bugungi harakat chizig'i va to'xtash joylari.</span></span></li>
+        <li><span><b><span class="ko">단말기 상태 3칸</span><span class="uz">Qurilma holati, 3 katak</span></b><span class="ko">마지막 수신·전압·신호. 끊김 원인을 바로 판단.</span><span class="uz">Oxirgi signal, kuchlanish, aloqa sifati. Uzilish sababi darhol aniqlanadi.</span></span></li>
+        <li><span><b><span class="ko">유형별 탭</span><span class="uz">Turga qarab tablar</span></b><span class="ko">렌트카: 계약·손상 / 법인차: 운행일지·정비 / 배달: 안전·라이더.</span><span class="uz">Rent-a-car: shartnoma, shikast / Korporativ: jurnal, texnik xizmat / Yetkazish: xavfsizlik, kuryer.</span></span></li>
+      </ol>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">높음</span><span class="uz">Yuqori</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">중간 · 기존 경로·단말기 API</span><span class="uz">O'rtacha · mavjud yo'l va qurilma API'lari</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+      </div>
+    </section>
+
+    <!-- 06 ACCOUNT TYPE -->
+    <section class="chapter" id="c6">
+      <div class="ch-head">
+        <div class="ch-no">06</div>
+        <div class="ch-tags"><span class="tag t-common"><span class="ko">공통</span><span class="uz">Umumiy</span></span></div>
+        <h2><span class="ko">계정 유형 선택: 고르면 무엇이 생기는지 보여주기</span><span class="uz">Akkaunt turini tanlash: tanlansa nima paydo bo'lishini ko'rsatish</span></h2>
+        <p class="problem ko">지금은 버튼 4개와 설명 한 줄뿐이라 <b>고르기 전에는 무엇이 달라지는지 알 수 없습니다.</b> 이 화면이 사실상 유료 기능의 입구입니다.</p>
+        <p class="problem uz">Hozir faqat 4 ta tugma va bir qator izoh bor, shuning uchun <b>tanlamaguncha nima o'zgarishini bilib bo'lmaydi.</b> Aslida bu ekran pullik funksiyalarga kirish eshigi.</p>
+      </div>
+      <div class="refs">
+        <div class="ref"><img src="00_ours_account_type.png" alt="" loading="lazy"><div><small><span class="ko">현재</span><span class="uz">Hozir</span></small><strong><span class="ko">텍스트 버튼 4개</span><span class="uz">4 ta matnli tugma</span></strong><p class="ko">선택 결과를 미리 볼 수 없음.</p><p class="uz">Tanlov natijasini oldindan ko'rib bo'lmaydi.</p></div></div>
+      </div>
+      <div class="stage">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 내정보 · 계정 유형</em></div>
+          <div class="screen" data-w="1180" data-h="440"><div class="si" data-view="types"></div></div></div>
+        <ol class="legend-list">
+          <li><span><b><span class="ko">"이런 회사에 맞아요"</span><span class="uz">"Bunday kompaniyaga mos"</span></b><span class="ko">용어 대신 상황으로 설명.</span><span class="uz">Atama o'rniga vaziyat bilan tushuntiriladi.</span></span></li>
+          <li><span><b><span class="ko">생기는 메뉴 미리보기</span><span class="uz">Paydo bo'ladigan menyular</span></b><span class="ko">고르면 추가되는 탭을 카드 하단에.</span><span class="uz">Tanlansa qo'shiladigan tablar kartaning pastida.</span></span></li>
+          <li><span><b><span class="ko">안심 문구 + 시작 버튼</span><span class="uz">Xotirjamlik matni + boshlash tugmasi</span></b><span class="ko">"바꿔도 기록은 그대로". 선택 후 바로 해당 화면으로.</span><span class="uz">"O'zgartirsangiz ham yozuvlar saqlanadi". Tanlangach, darhol o'sha ekranga.</span></span></li>
+        </ol>
+      </div>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">중간 (유료 전환)</span><span class="uz">O'rtacha (pullik tarifga o'tish)</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">작음</span><span class="uz">Kichik</span></span><span class="dots"><i class="f"></i><i></i><i></i></span></div>
+      </div>
+    </section>
+
+    <!-- 07 CORP METRICS -->
+    <section class="chapter" id="c7">
+      <div class="ch-head">
+        <div class="ch-no">07</div>
+        <div class="ch-tags"><span class="tag t-corp">법인차</span></div>
+        <h2><span class="ko">운행일지와 유류비를 첫 화면 지표로</span><span class="uz">Yurish jurnali va yoqilg'i xarajati birinchi ekranda</span></h2>
+        <p class="problem ko">법인 고객이 돈을 내는 이유는 <b>운행일지(국세청 별지 73호) 작성 부담</b>입니다. 기능은 이미 있는데 '운행 리포트' 메뉴 안에 숨어 있습니다.</p>
+        <p class="problem uz">Korporativ mijozlar <b>yurish jurnalini (soliq qo'mitasining 73-shakli) yozish yukidan</b> qutulish uchun pul to'laydi. Funksiya allaqachon bor, lekin "Yurish hisoboti" menyusi ichida yashiringan.</p>
+      </div>
+      <div class="refs">
+        <div class="ref"><div class="ph0"><svg class="ic"><use href="#i-file"/></svg></div><div><small>SK 스마트링크 · 쏘카 FMS · 롯데 오토매니저</small><strong><span class="ko">세 곳 모두 "운행일지 자동"이 1번 기능</span><span class="uz">Uchalasida ham "avtomatik yurish jurnali" 1-funksiya</span></strong><a href="https://apps.apple.com/us/app/%EC%8A%A4%EB%A7%88%ED%8A%B8%EB%A7%81%ED%81%AC-%ED%86%B5%ED%95%A9/id1661603946?l=ko" target="_blank" rel="noopener"><span class="ko">스마트링크 앱</span><span class="uz">스마트링크 ilovasi</span> ↗</a></div></div>
+        <div class="ref"><div class="ph0"><svg class="ic"><use href="#i-bar"/></svg></div><div><small><span class="ko">SK렌터카 조사 · 2026. 9.</span><span class="uz">SK렌터카 so'rovi · 2026-yil sentabr</span></small><strong><span class="ko">465개 기업: 요금보다 "업무 부담 감소"</span><span class="uz">465 kompaniya: narxdan ko'ra "ish yukini kamaytirish"</span></strong><a href="https://www.heraldk.com/article/2026090318410442814" target="_blank" rel="noopener"><span class="ko">기사</span><span class="uz">Maqola</span> ↗</a></div></div>
+      </div>
+      <div class="stage">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 법인차 · 운영 현황</em></div>
+          <div class="screen" data-w="1100" data-h="440"><div class="si" data-view="corpMetrics"></div></div></div>
+        <ol class="legend-list">
+          <li><span><b><span class="ko">작성률 진행 막대</span><span class="uz">To'ldirilish chizig'i</span></b><span class="ko">운행 + 용무 입력 여부로 바로 계산. 누르면 미입력만 필터.</span><span class="uz">Yurishlar va maqsad kiritilganligidan darhol hisoblanadi. Bosilsa, faqat to'ldirilmaganlari qoladi.</span></span></li>
+          <li><span><b><span class="ko">유류비 월 합계</span><span class="uz">Oylik yoqilg'i xarajati</span></b><span class="ko">운행별 입력값 합산. 지난달 대비.</span><span class="uz">Har bir yurishda kiritilgan qiymatlar yig'indisi, o'tgan oyga nisbatan.</span></span></li>
+          <li><span><b><span class="ko">업무시간 외 운행</span><span class="uz">Ish vaqtidan tashqari yurish</span></b><span class="ko">업무시간 설정과 GPS 운행 시각 비교. 쏘카 FMS 부정 사용 감지와 같은 발상.</span><span class="uz">Ish vaqti GPS yurish vaqti bilan solishtiriladi. 쏘카 FMS'dagi g'oya.</span></span></li>
+          <li><span><b><span class="ko">출력은 한 번에</span><span class="uz">Bir bosishda chop etish</span></b><span class="ko">"미입력 채우기 → 국세청 양식 출력"이 한 카드 안에.</span><span class="uz">"To'ldirish → soliq shaklida chop etish" bitta karta ichida.</span></span></li>
+        </ol>
+      </div>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">매우 높음</span><span class="uz">Juda yuqori</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">작음~중간</span><span class="uz">Kichik–o'rtacha</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+      </div>
+    </section>
+
+    <!-- 08 APPROVALS -->
+    <section class="chapter" id="c8">
+      <div class="ch-head">
+        <div class="ch-no">08</div>
+        <div class="ch-tags"><span class="tag t-corp">법인차</span></div>
+        <h2><span class="ko">직원이 신청하고, 관리자는 승인만</span><span class="uz">Xodim so'raydi, admin faqat tasdiqlaydi</span></h2>
+        <p class="problem ko">지금은 관리자가 모든 예약을 직접 입력합니다. 직원이 10명만 넘어도 <b>메신저로 받은 요청을 옮겨 적는 일</b>이 생깁니다.</p>
+        <p class="problem uz">Hozir barcha bronni admin o'zi kiritadi. Xodimlar soni 10 tadan oshishi bilan <b>messenjerda kelgan so'rovlarni qo'lda ko'chirib yozish</b> ishi paydo bo'ladi.</p>
+      </div>
+      <div class="refs">
+        <div class="ref"><img src="01_fleetio_motor_pool.jpg" alt="" loading="lazy"><div><small><span class="ko">참고 · Fleetio Motor Pool</span><span class="uz">Misol · Fleetio Motor Pool</span></small><strong><span class="ko">조건이 맞으면 자동 승인</span><span class="uz">Shartlar mos kelsa, avtomatik tasdiq</span></strong><a href="https://www.fleetio.com/features/motor-pool" target="_blank" rel="noopener">fleetio.com ↗</a></div></div>
+      </div>
+      <div class="stage">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 법인차 · 차량 예약</em></div>
+          <div class="screen" data-w="1280" data-h="470"><div class="si" data-view="deskApprovals" data-type="corp"></div></div></div>
+        <ol class="legend-list">
+          <li><span><b><span class="ko">탭에 대기 건수</span><span class="uz">Tabda kutayotganlar soni</span></b><span class="ko">빨간 숫자로 놓치지 않게.</span><span class="uz">Qizil raqam bilan, o'tkazib yuborilmasin.</span></span></li>
+          <li><span><b><span class="ko">신청 링크</span><span class="uz">So'rov havolasi</span></b><span class="ko">직원은 로그인 없이 신청. 렌트카 인수 링크 방식 재사용.</span><span class="uz">Xodim login qilmasdan so'raydi. Rent-a-car havolasidagi usul qayta ishlatiladi.</span></span></li>
+          <li><span><b><span class="ko">판단 정보는 칩으로</span><span class="uz">Qaror ma'lumoti chip bilan</span></b><span class="ko">장거리·겹침 여부·추천 차량.</span><span class="uz">Uzoq masofa, ustma-ust tushish, tavsiya etilgan avtomobil.</span></span></li>
+          <li><span><b><span class="ko">자동 승인 규칙</span><span class="uz">Avtomatik tasdiq qoidasi</span></b><span class="ko">조건 3개. 관리자 손은 예외 건에만.</span><span class="uz">3 ta shart. Admin faqat istisnolarni ko'radi.</span></span></li>
+        </ol>
+      </div>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">높음 (직원 많은 회사)</span><span class="uz">Yuqori (xodimi ko'p kompaniyalar)</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">큼 · 백엔드 포함</span><span class="uz">Katta · backend bilan</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+      </div>
+    </section>
+
+    <!-- 09 GANTT -->
+    <section class="chapter" id="c9">
+      <div class="ch-head">
+        <div class="ch-no">09</div>
+        <div class="ch-tags"><span class="tag t-rent">렌트카</span></div>
+        <h2><span class="ko">반납 캘린더 대신 배차표, 휴대폰은 날짜별 목록</span><span class="uz">Qaytarish kalendari o'rniga taqsimot jadvali, telefonda kunlik ro'yxat</span></h2>
+        <p class="problem ko">월 캘린더는 "날짜별 반납"은 보이지만 <b>"어느 차가 언제 비는지"</b>는 안 보입니다. 렌트카의 핵심 질문은 후자입니다.</p>
+        <p class="problem uz">Oylik kalendarda "qaysi kuni nima qaytariladi" ko'rinadi, lekin <b>"qaysi avtomobil qachon bo'shaydi"</b> ko'rinmaydi. Rent-a-car uchun asosiy savol aynan ikkinchisi.</p>
+      </div>
+      <div class="refs">
+        <div class="ref"><div class="ph0"><svg class="ic"><use href="#i-cal"/></svg></div><div><small><span class="ko">참고 · RentHub Planning · RENTALL</span><span class="uz">Misol · RentHub Planning · RENTALL</span></small><strong><span class="ko">차량 = 행, 날짜 = 열, 계약 = 막대</span><span class="uz">Avtomobil — qator, sana — ustun, shartnoma — chiziq</span></strong><a href="https://www.renthubsoftware.com/en/car-rental-software-and-cloud-management/vehicle-fleet-management-car-rental-software-features/" target="_blank" rel="noopener">renthubsoftware.com ↗</a></div></div>
+      </div>
+      <div class="stage with-phone">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 렌트카 · 배차표</em></div>
+          <div class="screen" data-w="1180" data-h="430"><div class="si" data-view="gantt"></div></div></div>
+        <div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneAgenda" data-type="rent"></div></div></div>
+      </div>
+      <ol class="legend-list" style="margin-top:14px">
+        <li><span><b><span class="ko">지연은 빗금으로 늘어남</span><span class="uz">Kechikish shtrix bilan uzayadi</span></b><span class="ko">다음 예약과 겹칠 위험이 바로 보임.</span><span class="uz">Keyingi bron bilan to'qnashish xavfi darhol ko'rinadi.</span></span></li>
+        <li><span><b><span class="ko">"지금" 세로선</span><span class="uz">"Hozir" chizig'i</span></b><span class="ko">왼쪽은 지난 일, 오른쪽은 예정.</span><span class="uz">Chapda o'tgan, o'ngda rejalashtirilgan.</span></span></li>
+        <li><span><b><span class="ko">빈 칸 = 계약 가능</span><span class="uz">Bo'sh joy = shartnoma mumkin</span></b><span class="ko">누르면 그 날짜로 새 계약. 휴대폰에서는 '비어 있음' 카드.</span><span class="uz">Bosilsa, o'sha sana bilan yangi shartnoma. Telefonda "bo'sh" kartasi.</span></span></li>
+      </ol>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">높음</span><span class="uz">Yuqori</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">중간 · 프론트만</span><span class="uz">O'rtacha · faqat frontend</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+      </div>
+    </section>
+
+    <!-- 10 DAMAGE -->
+    <section class="chapter" id="c10">
+      <div class="ch-head">
+        <div class="ch-no">10</div>
+        <div class="ch-tags"><span class="tag t-rent">렌트카</span></div>
+        <h2><span class="ko">차량별 손상 이력 한 곳에</span><span class="uz">Har bir avtomobilning shikastlar tarixi bir joyda</span></h2>
+        <p class="problem ko">인수·반납 사진은 이미 받고 있지만 계약마다 흩어져 있습니다. 반납 때 <b>"이 흠집이 원래 있었나"</b>를 확인하려면 이전 계약을 하나씩 열어야 합니다.</p>
+        <p class="problem uz">Topshirish va qaytarish rasmlari allaqachon olinmoqda, lekin ular shartnomalar bo'yicha tarqalib yotibdi. Qaytarishda <b>"bu tirnalish oldin ham bormidi"</b> deb tekshirish uchun oldingi shartnomalarni bittalab ochish kerak.</p>
+      </div>
+      <div class="refs">
+        <div class="ref"><img src="04_rentdesk_mobile.jpg" alt="" loading="lazy"><div><small><span class="ko">참고 · RentDesk · RentHub</span><span class="uz">Misol · RentDesk · RentHub</span></small><strong><span class="ko">도면에 손상 표시 · 시간순 타임라인</span><span class="uz">Sxemada shikast belgisi · vaqt bo'yicha tarix</span></strong><a href="https://rentdesk.co.kr/erp.php" target="_blank" rel="noopener">rentdesk.co.kr ↗</a></div></div>
+      </div>
+      <div class="stage">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 렌트카 · 12가3456 · 손상 이력</em></div>
+          <div class="screen" data-w="1000" data-h="430"><div class="si" data-view="damage"></div></div></div>
+        <ol class="legend-list">
+          <li><span><b><span class="ko">도면 위 표시</span><span class="uz">Sxemadagi belgilar</span></b><span class="ko">빨강 = 이번 반납에서 새로 / 노랑 = 원래 있던 것.</span><span class="uz">Qizil = shu qaytarishda yangi / sariq = oldindan bor.</span></span></li>
+          <li><span><b><span class="ko">인수 ↔ 반납 비교</span><span class="uz">Topshirish ↔ qaytarish</span></b><span class="ko">같은 각도 사진을 나란히. 청구까지 한 카드에서.</span><span class="uz">Bir xil burchakdagi rasmlar yonma-yon. To'lov talabi ham shu kartada.</span></span></li>
+          <li><span><b><span class="ko">새 데이터 없이 시작</span><span class="uz">Yangi ma'lumotsiz boshlanadi</span></b><span class="ko">이미 저장된 사진을 차량 기준으로 모으기부터.</span><span class="uz">Avval saqlangan rasmlarni avtomobil bo'yicha yig'ishdan.</span></span></li>
+        </ol>
+      </div>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">중간~높음 (분쟁 감소)</span><span class="uz">O'rtacha–yuqori (nizolar kamayadi)</span></span><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">1단계 작음 · 도면 표시 중간</span><span class="uz">1-bosqich kichik · sxema o'rtacha</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+      </div>
+    </section>
+
+    <!-- 11 DELIVERY -->
+    <section class="chapter" id="c11">
+      <div class="ch-head">
+        <div class="ch-no">11</div>
+        <div class="ch-tags"><span class="tag t-deliv"><svg class="ic"><use href="#i-moto"/></svg><span class="ko">배달 · 오토바이</span><span class="uz">Yetkazish · mototsikl</span></span><span class="tag t-new"><span class="ko">추가 제안</span><span class="uz">Qo'shimcha taklif</span></span></div>
+        <h2><span class="ko">배달: 라이더와 오토바이를 한 지도에서, 안전과 도난까지</span><span class="uz">Yetkazib berish: kuryer va mototsikllar bitta xaritada, xavfsizlik va o'g'irlikdan himoya bilan</span></h2>
+        <p class="problem ko">지금 배달 화면은 숫자 카드와 차량 목록뿐이고 '경로 이력'·'성과' 탭은 준비 중입니다. 오토바이는 <b>도난이 잦고</b>, 라이더 <b>과속·급제동이 곧 사고·보험료</b>입니다. 이 두 가지를 첫 화면에서 다뤄야 합니다.</p>
+        <p class="problem uz">Hozirgi yetkazib berish sahifasida faqat raqamli kartalar va avtomobillar ro'yxati bor, "yo'l tarixi" va "natijalar" tablari hali tayyor emas. Mototsikllar <b>tez-tez o'g'irlanadi</b>, kuryerlarning <b>tezlikni oshirishi va keskin tormozlashi baxtsiz hodisa va sug'urta narxiga</b> ta'sir qiladi. Bu ikkisini birinchi ekranda ko'rsatish kerak.</p>
+      </div>
+      <div class="refs">
+        <div class="ref"><div class="ph0"><svg class="ic"><use href="#i-moto"/></svg></div><div><small><span class="ko">국내 · SK렌터카 × 에이렌탈</span><span class="uz">Koreya · SK렌터카 × 에이렌탈</span></small><strong><span class="ko">이륜차 전용 관제 '에이링크': 위치·운행기록·이상 감지</span><span class="uz">Mototsikl monitoringi "에이링크": joylashuv, yurish tarixi, anomaliya</span></strong><a href="https://www.sidae.com/article/2025080708515382872" target="_blank" rel="noopener"><span class="ko">기사</span><span class="uz">Maqola</span> ↗</a></div></div>
+        <div class="ref"><img src="05_wunder_operations.jpg" alt="" loading="lazy"><div><small><span class="ko">참고 · Wunder Mobility</span><span class="uz">Misol · Wunder Mobility</span></small><strong><span class="ko">문제 → 우선순위 작업 → 현장 담당자</span><span class="uz">Muammo → ustuvor vazifa → joydagi xodim</span></strong><a href="https://www.wundermobility.com/en/platform/operations" target="_blank" rel="noopener">wundermobility.com ↗</a></div></div>
+        <div class="ref"><div class="ph0"><svg class="ic"><use href="#i-shield"/></svg></div><div><small><span class="ko">참고 · Fleeti (이륜차 배송)</span><span class="uz">Misol · Fleeti (ikki g'ildirakli)</span></small><strong><span class="ko">근무 외 이동 감지 · 거점 안전구역</span><span class="uz">Ish vaqtidan tashqari harakat · xavfsiz hudud</span></strong><a href="https://en.fleeti.co/secteurs/coursiers-2-roues" target="_blank" rel="noopener">fleeti.co ↗</a></div></div>
+        <div class="ref"><img src="06_monimoto.jpg" alt="" loading="lazy"><div><small><span class="ko">참고 · Monimoto</span><span class="uz">Misol · Monimoto</span></small><strong><span class="ko">경보 모드 중 움직이면 전화로 알림</span><span class="uz">Qo'riqlash rejimida harakat bo'lsa qo'ng'iroq</span></strong><a href="https://monimoto.com" target="_blank" rel="noopener">monimoto.com ↗</a></div></div>
+      </div>
+      <div class="stage with-phone">
+        <div class="frame"><div class="chrome"><span></span><span></span><span></span><em>gps.serial.kr / 배달 · 운영 현황</em></div>
+          <div class="screen" data-w="1280" data-h="772"><div class="si" data-view="deskOverview" data-type="deliv" data-pins="1"></div></div></div>
+        <div class="phone"><div class="notch"></div><div class="screen" data-w="390" data-h="800"><div class="si" data-view="phoneHome" data-type="deliv"></div></div></div>
+      </div>
+      <ol class="legend-list" style="margin-top:14px">
+        <li><span><b><span class="ko">배달 구역 지도</span><span class="uz">Yetkazish hududi xaritasi</span></b><span class="ko">매장 반경을 점선으로. 구역 밖으로 나가면 할 일에 바로 표시.</span><span class="uz">Do'kon radiusi punktir bilan. Hududdan chiqilsa, darhol vazifalarda ko'rinadi.</span></span></li>
+        <li><span><b><span class="ko">지금 확인할 일</span><span class="uz">Hozir tekshiriladigan ishlar</span></b><span class="ko">과속 → '경고 보내기', 구역 이탈 → '위치 보기', 폰 신호 없음 → '전화'.</span><span class="uz">Tezlik oshsa → "ogohlantirish", hududdan chiqsa → "joylashuv", telefon signali yo'q → "qo'ng'iroq".</span></span></li>
+        <li><span><b><span class="ko">도난 의심 = 주차 모드</span><span class="uz">O'g'irlik shubhasi = to'xtash rejimi</span></b><span class="ko">퇴근 후 주차 모드를 켜 두면, 움직이는 순간 긴급 알림 (Monimoto 방식).</span><span class="uz">Ishdan keyin to'xtash rejimi yoqilsa, harakat bo'lgan zahoti shoshilinch xabar (Monimoto usuli).</span></span></li>
+        <li><span><b><span class="ko">라이더 안전 점수</span><span class="uz">Kuryer xavfsizlik bahosi</span></b><span class="ko">기존 AI 분석의 과속·급가감속·야간 판별을 점수로. 폰 앱(기존 phone 단말기)으로도 시작 가능.</span><span class="uz">Mavjud AI tahlilidagi tezlik, keskin tezlanish va tungi harakat aniqlash baho shakliga keltiriladi. Telefon ilovasi (mavjud phone qurilma) bilan ham boshlash mumkin.</span></span></li>
+      </ol>
+      <div class="meta">
+        <div class="m"><small><span class="ko">기대 효과</span><span class="uz">Foyda</span></small><span><span class="ko">중간~높음 · 새 시장</span><span class="uz">O'rtacha–yuqori · yangi bozor</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+        <div class="m"><small><span class="ko">작업 규모 (예상)</span><span class="uz">Ish hajmi (taxminiy)</span></small><span><span class="ko">중간 · 지도·규칙은 공통 재사용</span><span class="uz">O'rtacha · xarita va qoidalar umumiy qismdan</span></span><span class="dots"><i class="f"></i><i class="f"></i><i></i></span></div>
+        <div class="m"><small><span class="ko">새 데이터</span><span class="uz">Yangi ma'lumot</span></small><span><span class="ko">매장 위치 · 주차 모드 상태</span><span class="uz">Do'kon joylashuvi · to'xtash rejimi holati</span></span></div>
+      </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section class="chapter" id="road">
+      <div class="ch-head">
+        <div class="ch-no">→</div>
+        <div class="ch-tags"><span class="tag"><span class="ko">정리</span><span class="uz">Xulosa</span></span></div>
+        <h2><span class="ko">작업 순서 제안</span><span class="uz">Ish tartibi bo'yicha taklif</span></h2>
+        <p class="problem ko">틀(메뉴·모바일)을 먼저 고치면 이후 모든 화면이 그 위에 올라갑니다. 그다음 차별화 기능을 작은 규칙부터.</p>
+        <p class="problem uz">Avval tuzilma (menyu va mobil) yaxshilansa, keyingi barcha ekranlar shu asosda quriladi. Keyin ajralib turadigan funksiya kichik qoidalardan boshlab.</p>
+      </div>
+      <div class="road">
+        <div class="phase"><small>PHASE 1</small><h3><span class="ko">틀 정리</span><span class="uz">Tuzilmani tartiblash</span></h3><ul>
+          <li><b>01</b><a href="#c1"><span class="ko">메뉴 한 겹 (헤더 탭)</span><span class="uz">Bitta qavat menyu (tablar)</span></a></li>
+          <li><b>02</b><a href="#c2"><span class="ko">모바일 하단 탭 · 시트</span><span class="uz">Mobil pastki tab va panel</span></a></li>
+          <li><b>04</b><a href="#c4"><span class="ko">운영 현황 + 빈 상태</span><span class="uz">Holat + bo'sh holat</span></a></li>
+          <li><b>05</b><a href="#c5"><span class="ko">차량 상세 패널</span><span class="uz">Avtomobil paneli</span></a></li>
+        </ul></div>
+        <div class="phase"><small>PHASE 2</small><h3><span class="ko">차별화 + 핵심</span><span class="uz">Farq + asosiy</span></h3><ul>
+          <li><b class="s">03</b><a href="#c3"><span class="ko">자동 감지 1차 (반납 도착 · 용무 입력)</span><span class="uz">Avtomatik aniqlash 1-qism (qaytarish, maqsad)</span></a></li>
+          <li><b>07</b><a href="#c7"><span class="ko">운행일지 · 유류비 지표</span><span class="uz">Jurnal va yoqilg'i ko'rsatkichlari</span></a></li>
+          <li><b>09</b><a href="#c9"><span class="ko">배차표</span><span class="uz">Taqsimot jadvali</span></a></li>
+        </ul></div>
+        <div class="phase"><small>PHASE 3</small><h3><span class="ko">확장</span><span class="uz">Kengaytirish</span></h3><ul>
+          <li><b>11</b><a href="#c11"><span class="ko">배달 · 오토바이 (주차 모드 · 안전 점수)</span><span class="uz">Yetkazish va moto (to'xtash rejimi, baho)</span></a></li>
+          <li><b>08</b><a href="#c8"><span class="ko">예약 신청 · 승인</span><span class="uz">Bron so'rovi va tasdiq</span></a></li>
+          <li><b>10</b><a href="#c10"><span class="ko">손상 이력</span><span class="uz">Shikastlar tarixi</span></a></li>
+          <li><b>06</b><a href="#c6"><span class="ko">계정 유형 선택</span><span class="uz">Akkaunt turini tanlash</span></a></li>
+        </ul></div>
+      </div>
+      <p class="foot ko">제안 화면은 실제 디자인 토큰(src/theme.js · business.css)으로 그린 시안이며, 차량·사람·금액은 예시 데이터입니다. '이미 있는 것'은 현재 코드(gps-tracker-api: geofences, corporate trips, connection alerts, ai.rs, rental handoff, shares, alimtalk)를 확인한 결과입니다. 작업 규모는 예상치입니다. 참고 이미지는 각 서비스의 공개 소개 페이지 캡처입니다.</p>
+      <p class="foot uz">Taklif qilingan ekranlar haqiqiy dizayn tokenlari (src/theme.js · business.css) asosida chizilgan maket, avtomobil, odam va summalar namuna ma'lumot. "Bizda bor" ro'yxati hozirgi kodni (gps-tracker-api: geofences, corporate trips, connection alerts, ai.rs, rental handoff, shares, alimtalk) tekshirish natijasi. Ish hajmi taxminiy. Misol rasmlari har bir xizmatning ochiq sahifasidan olingan.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function I(n, st) { return '<svg class="ic"' + (st ? ' style="' + st + '"' : '') + '><use href="#i-' + n + '"/></svg>'; }
+  function pin(n, st) { return '<span class="redpin" style="' + st + '">' + n + '</span>'; }
+  function tw(s, fs) { var w = 0; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); w += (c >= 0x3131 && c <= 0xD7A3) ? fs * 1.0 : (s[i] === ' ' ? fs * .3 : (s[i] === '·' ? fs * .4 : fs * .6)); } return Math.round(w); }
+
+  /* ---------- data ---------- */
+  var T = {
+    rent: {
+      key: 'rent', name: '렌트카 운영', rail: '렌트카', icon: 'route', color: 'var(--ok-t)', tint: 'var(--ok-b)', url: '렌트카 · 운영 현황',
+      tabs: [['운영 현황'], ['계약 관리', '2'], ['배차표'], ['임차인'], ['설정']],
+      cta: '새 계약', search: '차량 · 임차인 · 계약',
+      status: '차량 5대 · 임대 중 2 · 미배차 2 · 지연 1',
+      kpis: [
+        { t: '오늘 출고', ic: 'route', v: '0', u: '건', h: '이번 주 4건', spark: 'M0 19 L12 15 L24 21 L36 11 L48 13 L60 7 L72 17' },
+        { t: '오늘 반납', ic: 'clock', v: '1', u: '건', h: '15:00 · 56다1122', spark: 'M0 17 L12 19 L24 9 L36 15 L48 11 L60 13 L72 8' },
+        { t: '반납 지연', ic: 'alert', v: '2', u: '건', tone: 'urgent', d: ['dn', '+1'], h: '어제보다' },
+        { t: '가동률', ic: 'bar', v: '67', u: '%', tone: 'good', d: ['up', '+12%p'], h: '지난주 대비', spark: 'M0 21 L12 19 L24 17 L36 18 L48 11 L60 9 L72 5', sc: 'var(--accent)' }
+      ],
+      mapSub: '최근 수신 기준 · 5대',
+      legend: [['임대 중', 'var(--primary)'], ['미배차', 'var(--accent)'], ['반납 지연', 'var(--danger)'], ['신호 없음', 'var(--text-3)']],
+      geo: { x: 40, y: 26, w: 150, h: 76, t: '본사 주차장' },
+      trail: 'M262 236 C330 228 440 214 540 186',
+      markers: [
+        { x: 360, y: 146, c: 'var(--danger)', t: 'sss · 반납 지연', tc: 'var(--bad-t)', pulse: 1 },
+        { x: 110, y: 70, c: 'var(--accent)', t: '520211 · 미배차', tc: 'var(--ok-t)' },
+        { x: 540, y: 186, c: 'var(--primary)', t: '12가3456 · 임대 중', tc: 'var(--info-t)', side: 'l' },
+        { x: 470, y: 60, c: 'var(--accent)', t: '34나7890 · 미배차', tc: 'var(--ok-t)', side: 'l' }
+      ],
+      todoTitle: '오늘 할 일',
+      todos: [
+        { ic: 'clock', tone: 'r', t: 'sss · 반납 4일 지연', s: '가상 임차인 3 · 10. 11. 09:00 종료', b: '반납 처리', p: 1 },
+        { ic: 'off', tone: 'y', t: 'sss · 임대 중 신호 30일 없음', s: '단말기 전원 · 탈착 여부 확인', b: '위치 보기', hl: 1 },
+        { ic: 'send', tone: 'b', t: '56다1122 · 오늘 15:00 반납', s: '송유나 · 반납 링크 미발송', b: '링크 보내기' },
+        { ic: 'wrench', tone: 'b', t: '12가3456 · 엔진오일 교체 시기', s: '마지막 교체 후 9,840km', b: '기록' }
+      ],
+      listTitle: '차량 목록', listSearch: '차량번호 · 이름 · 임차인',
+      head: ['차량', '운영 상태', '단말기 통신', '작업'],
+      rows: [
+        { n: '단말-520211', sub: '차량 정보 미등록', pt: 'g', p: '미배차', ct: 'c-y', c: '위치 수신 지연', cs: '11초 전', acts: ['지도', '계약 등록*'] },
+        { n: 'sss', sub: 'K5 · 가상 임차인 4', pt: 'r', p: '반납 지연', ct: 'c-r', c: '신호 없음 30일', cs: '임대 중 끊김', acts: ['지도', '계약'] },
+        { n: '12가3456', sub: '아반떼 · 한도윤', pt: 'b', p: '임대 중', ct: 'c-g', c: '정상 · 42km/h', cs: '8초 전', acts: ['지도', '계약'] }
+      ],
+      p: {
+        eb: '렌트카 운영 · 10. 15.(수)', head: '오늘 할 일 4', chips: ['전체', '지연 2', '오늘 반납 1', '미배차 2'],
+        kpis: [{ t: '반납 지연', ic: 'alert', v: '2', u: '건', tone: 'urgent', h: '어제보다 +1' }, { t: '가동률', ic: 'bar', v: '67', u: '%', tone: 'good', h: '지난주 +12%p' }],
+        markers: [{ x: 216, y: 70, c: 'var(--danger)', pulse: 1 }, { x: 74, y: 44, c: 'var(--accent)' }, { x: 300, y: 112, c: 'var(--primary)' }, { x: 160, y: 120, c: 'var(--accent)' }],
+        listTitle: '', list: [
+          { ic: 'clock', tone: 'r', t: 'sss · 4일 지연', s: '가상 임차인 3 · 왼쪽으로 밀어 처리', a: '반납<br>처리', ac: 'var(--primary)' },
+          { ic: 'off', tone: 'y', t: 'sss · 신호 30일 없음', s: '임대 중 · 위치 확인' },
+          { ic: 'send', tone: 'b', t: '56다1122 · 15:00 반납', s: '송유나 · 링크 미발송', pill: ['b', '오늘'] }
+        ],
+        tabs: [['home', '현황'], ['cal', '배차표'], ['plus', '계약', 'c'], ['map', '지도'], ['more', '더보기']]
+      }
+    },
+    corp: {
+      key: 'corp', name: '법인차 운영', rail: '법인운행', icon: 'car', color: 'var(--warn-t)', tint: 'var(--warn-b)', url: '법인차 · 운영 현황',
+      tabs: [['운영 현황'], ['차량 관리'], ['차량 예약', '2'], ['운행 리포트'], ['운전자'], ['설정']],
+      cta: '차량 예약', search: '차량 · 운전자',
+      status: '차량 2대 · 운행 중 1 · 대기 1',
+      kpis: [
+        { t: '운행 중 / 전체', ic: 'car', v: '1', u: '/ 2대', h: '대기 1 · 예약 0' },
+        { t: '10월 운행일지', ic: 'file', v: '86', u: '%', prog: 86, h: '43건 중 37건 입력' },
+        { t: '이번 달 유류비', ic: 'fuel', v: '41.2', u: '만원', d: ['up', '−8%'], h: '지난달 대비', spark: 'M0 8 L12 10 L24 7 L36 14 L48 12 L60 18 L72 20', sc: 'var(--accent)' },
+        { t: '업무시간 외 운행', ic: 'moon', v: '2', u: '건', tone: 'urgent', h: '이번 주 · 평일 08–19시' }
+      ],
+      mapSub: '최근 수신 기준 · 2대',
+      legend: [['운행 중', 'var(--primary)'], ['대기', 'var(--accent)'], ['예약 있음', 'var(--warning)'], ['신호 없음', 'var(--text-3)']],
+      geo: { x: 40, y: 26, w: 150, h: 76, t: '본사 주차장' },
+      trail: 'M110 70 C170 72 200 130 260 140 S380 150 440 150',
+      markers: [
+        { x: 440, y: 150, c: 'var(--primary)', t: '12가3456 · 김민수 · 42km/h', tc: 'var(--info-t)', side: 'l', pulse: 1 },
+        { x: 110, y: 70, c: 'var(--accent)', t: '34나7890 · 대기', tc: 'var(--ok-t)' }
+      ],
+      todoTitle: '오늘 확인할 일',
+      todos: [
+        { ic: 'file', tone: 'y', t: '용무 미입력 6건', s: '채우면 10월 운행일지 완성', b: '입력하기', p: 1 },
+        { ic: 'clock', tone: 'b', t: '예약 승인 대기 2건', s: '박지영 · 이현우', b: '확인' },
+        { ic: 'moon', tone: 'r', t: '34나7890 · 일요일 21:05 운행', s: '업무시간 외 · 67.8km', b: '사유 확인' },
+        { ic: 'wrench', tone: 'b', t: '12가3456 · 보험 만기 11. 29.', s: '45일 남음', b: '갱신 기록' }
+      ],
+      listTitle: '차량 목록', listSearch: '차량번호 · 부서',
+      head: ['차량', '운영 상태', '단말기 통신', '작업'],
+      rows: [
+        { n: '12가3456', sub: '아반떼 · 영업팀 · 김민수', pt: 'b', p: '운행 중', ct: 'c-g', c: '정상 · 42km/h', cs: '8초 전', acts: ['지도', '운행일지'] },
+        { n: '34나7890', sub: '카니발 · 총무팀', pt: 'g', p: '대기', ct: 'c-g', c: '정상 · 본사', cs: '1분 전', acts: ['지도', '예약*'] }
+      ],
+      p: {
+        eb: '법인차 운영 · 10월', head: '운행일지 86%', prog: 86, chips: ['미입력 6', '승인 대기 2', '업무 외 2'],
+        kpis: [{ t: '운행 중', ic: 'car', v: '1', u: '/ 2대', h: '대기 1' }, { t: '유류비', ic: 'fuel', v: '41.2', u: '만원', h: '지난달 −8%' }],
+        markers: [{ x: 250, y: 90, c: 'var(--primary)', pulse: 1 }, { x: 70, y: 40, c: 'var(--accent)' }],
+        trail: 'M70 40 C120 44 150 86 250 90',
+        listTitle: '용무 입력이 필요해요', list: [
+          { av: '#64748B', avt: '?', t: '12가3456 · 23.4km', s: '오늘 08:12–09:03', a: '용무<br>입력', ac: 'var(--accent)' },
+          { av: '#7C3AED', avt: '김', t: '12가3456 · 41.0km', s: '어제 13:40 · 김민수', pill: ['y', '용무'] },
+          { av: '#0EA5E9', avt: '박', t: '34나7890 · 12.7km', s: '10. 13. · 박지영', pill: ['y', '용무'] }
+        ],
+        tabs: [['home', '현황'], ['cal', '예약'], ['plus', '예약', 'c'], ['file', '운행일지'], ['more', '더보기']]
+      }
+    },
+    deliv: {
+      key: 'deliv', name: '배달 운영', rail: '배달', icon: 'moto', color: 'var(--deliv-t)', tint: 'var(--deliv-b)', url: '배달 · 운영 현황',
+      tabs: [['운영 현황'], ['라이더'], ['구역'], ['안전', '3'], ['설정']],
+      cta: '라이더 초대', search: '라이더 · 오토바이',
+      status: '라이더 9명 · 운행 중 7 · 휴식 1 · 오프라인 1',
+      kpis: [
+        { t: '운행 중 라이더', ic: 'moto', v: '7', u: '/ 9명', h: '배달 중 5 · 대기 2', spark: 'M0 18 L12 14 L24 16 L36 9 L48 11 L60 6 L72 8' },
+        { t: '오늘 주행', ic: 'route', v: '412', u: 'km', d: ['up', '+6%'], h: '어제 대비', spark: 'M0 20 L12 17 L24 18 L36 12 L48 14 L60 9 L72 7' },
+        { t: '과속 · 급제동', ic: 'gauge', v: '3', u: '건', tone: 'warn', h: '오늘 · 라이더 2명' },
+        { t: '도난 의심', ic: 'shield', v: '0', u: '건', tone: 'good', h: '주차 모드 4대 감시 중' }
+      ],
+      mapSub: '매장 반경 3km · 실시간',
+      legend: [['배달 중', 'var(--primary)'], ['대기', 'var(--accent)'], ['경고', 'var(--danger)'], ['구역 밖', 'var(--warning)']],
+      zone: { cx: 330, cy: 128, r: 104 }, store: { x: 330, y: 128 },
+      trail: 'M330 128 C300 150 280 170 252 188',
+      markers: [
+        { x: 252, y: 188, c: 'var(--danger)', t: '김도윤 · 78km/h', tc: 'var(--bad-t)', moto: 1, pulse: 1, side: 'l' },
+        { x: 410, y: 80, c: 'var(--primary)', t: '박서연 · 배달 중', tc: 'var(--info-t)', moto: 1 },
+        { x: 236, y: 92, c: 'var(--primary)', t: '한지우', tc: 'var(--info-t)', moto: 1, side: 'l' },
+        { x: 560, y: 54, c: 'var(--warning)', t: '이서준 · 구역 밖', tc: 'var(--warn-t)', moto: 1, side: 'l' },
+        { x: 352, y: 150, c: 'var(--accent)', moto: 1 }
+      ],
+      todoTitle: '지금 확인할 일',
+      todos: [
+        { ic: 'gauge', tone: 'r', t: '김도윤 · 과속 78km/h', s: '오토바이 03 · 2분 전', b: '경고 보내기', p: 1 },
+        { ic: 'pin', tone: 'y', t: '이서준 · 배달 구역 밖 4.6km', s: '오토바이 05 · 매장 반경 3km 이탈', b: '위치 보기' },
+        { ic: 'phone', tone: 'y', t: '정하늘 · 폰 앱 신호 15분 없음', s: '배터리 부족 가능', b: '전화' },
+        { ic: 'wrench', tone: 'b', t: '오토바이 02 · 엔진오일', s: '마지막 교체 후 2,980km', b: '기록' }
+      ],
+      listTitle: '라이더', listSearch: '이름 · 오토바이',
+      head: ['라이더', '상태', '단말기 · 속도', '안전 점수'],
+      rows: [
+        { n: '김도윤', av: '#0EA5E9', sub: '오토바이 03 · 하드웨어', pt: 'r', p: '경고', ct: 'c-r', c: '78km/h', cs: '과속 · 2분 전', score: 64 },
+        { n: '박서연', av: '#7C3AED', sub: '오토바이 07 · 폰 앱', pt: 'b', p: '배달 중', ct: 'c-g', c: '32km/h', cs: '5초 전', score: 92 },
+        { n: '최민준', av: '#F59E0B', sub: '오토바이 01 · 하드웨어', pt: 'g', p: '대기', ct: 'c-g', c: '정차 · 매장 앞', cs: '12초 전', score: 88 }
+      ],
+      p: {
+        eb: '배달 운영 · 10. 15.(수)', head: '운행 중 7명', chips: ['전체 9', '배달 중 5', '대기 2', '경고 1'],
+        kpis: [{ t: '과속 · 급제동', ic: 'gauge', v: '3', u: '건', tone: 'warn', h: '오늘 2명' }, { t: '오늘 주행', ic: 'route', v: '412', u: 'km', h: '어제 +6%' }],
+        zone: { cx: 180, cy: 76, r: 64 }, store: { x: 180, y: 76 },
+        markers: [{ x: 140, y: 112, c: 'var(--danger)', moto: 1, pulse: 1 }, { x: 228, y: 48, c: 'var(--primary)', moto: 1 }, { x: 120, y: 52, c: 'var(--primary)', moto: 1 }, { x: 318, y: 30, c: 'var(--warning)', moto: 1 }],
+        listTitle: '', list: [
+          { av: '#0EA5E9', avt: '김', t: '김도윤 · 과속 78km/h', s: '오토바이 03 · 2분 전', a: '경고<br>보내기', ac: 'var(--danger)' },
+          { av: '#7C3AED', avt: '박', t: '박서연 · 배달 중', s: '32km/h · 오토바이 07', pill: ['b', '92점'] },
+          { av: '#F59E0B', avt: '최', t: '최민준 · 대기', s: '매장 앞 · 오토바이 01', pill: ['g', '88점'] }
+        ],
+        tabs: [['home', '현황'], ['user', '라이더'], ['map', '지도', 'c'], ['shield', '안전'], ['more', '더보기']]
+      }
+    }
+  };
+
+  /* ---------- pieces ---------- */
+  function map(o) {
+    var vw = o.vw || 640, vh = o.vh || 248, s = '<svg viewBox="0 0 ' + vw + ' ' + vh + '" style="display:block;width:100%;height:auto">';
+    s += '<use href="#mapbase" x="' + (o.bx || 0) + '" y="' + (o.by == null ? -36 : o.by) + '" width="' + (o.bw || 640) + '" height="' + (o.bh || 320) + '"/>';
+    s += '<g font-family="Noto Sans KR, sans-serif" font-weight="700" font-size="' + (o.fs || 12.5) + '">';
+    if (o.geo) s += '<rect x="' + o.geo.x + '" y="' + o.geo.y + '" width="' + o.geo.w + '" height="' + o.geo.h + '" rx="12" fill="var(--primary)" fill-opacity=".07" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="6 5"/><text x="' + (o.geo.x + 10) + '" y="' + (o.geo.y + 17) + '" font-size="11" fill="var(--info-t)">' + o.geo.t + '</text>';
+    if (o.zone) s += '<circle cx="' + o.zone.cx + '" cy="' + o.zone.cy + '" r="' + o.zone.r + '" fill="var(--deliv)" fill-opacity=".08" stroke="var(--deliv)" stroke-width="1.5" stroke-dasharray="6 5"/>';
+    if (o.trail) s += '<path d="' + o.trail + '" fill="none" stroke="var(--primary)" stroke-width="3.5" stroke-linecap="round" stroke-opacity=".75"/>';
+    if (o.store) s += '<g transform="translate(' + o.store.x + ' ' + o.store.y + ')"><rect x="-14" y="-14" width="28" height="28" rx="9" fill="var(--text)"/><g transform="translate(-8 -8)" style="stroke:var(--surface);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><use href="#i-store" width="16" height="16"/></g></g>';
+    (o.markers || []).forEach(function (m) {
+      var g = '<g transform="translate(' + m.x + ' ' + m.y + ')">';
+      if (m.pulse) g += '<circle r="19" fill="' + m.c + '" opacity=".18"/>';
+      if (m.moto) g += '<circle r="12" fill="' + m.c + '" stroke="var(--surface)" stroke-width="3"/><g transform="translate(-7.5 -7.5)" style="stroke:#fff;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><use href="#i-moto" width="15" height="15"/></g>';
+      else g += '<circle r="9" fill="' + m.c + '" stroke="var(--surface)" stroke-width="3"/>';
+      if (m.t) { var w = tw(m.t, o.fs || 12.5) + 22, off = m.moto ? 18 : 15, rx = m.side === 'l' ? -(w + off) : off; g += '<rect x="' + rx + '" y="-15" rx="8" width="' + w + '" height="30" fill="var(--surface)" stroke="var(--border)"/><text x="' + (rx + 11) + '" y="5" fill="' + m.tc + '">' + m.t + '</text>'; }
+      s += g + '</g>';
+    });
+    return s + (o.extra || '') + '</g></svg>';
+  }
+  function kpi(k) {
+    return '<div class="kpi ' + (k.tone || '') + '"><div class="t">' + k.t + I(k.ic) + '</div><div class="v">' + k.v + '<small>' + k.u + '</small></div>' +
+      (k.prog ? '<div class="prog"><i style="width:' + k.prog + '%"></i></div>' : '') +
+      '<div class="h">' + (k.d ? '<span class="d ' + k.d[0] + '">' + k.d[1] + '</span>' : '') + k.h + '</div>' +
+      (k.spark ? '<svg class="spark" viewBox="0 0 72 26"><path d="' + k.spark + '" fill="none" stroke="' + (k.sc || 'var(--primary)') + '" stroke-width="2"/></svg>' : '') + '</div>';
+  }
+  function cardH(title, sub, right) { return '<div class="card-h"><div><h4>' + title + '</h4>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (right || '') + '</div>'; }
+  function legend(l) { return '<div class="maplegend">' + l.map(function (x) { return '<span><i style="background:' + x[1] + '"></i>' + x[0] + '</span>'; }).join('') + '</div>'; }
+  function todoRow(r) { return '<div class="row"' + (r.hl ? ' style="background:color-mix(in srgb,var(--warning) 8%,var(--surface))"' : '') + '><div class="lead-ic ' + r.tone + '">' + I(r.ic) + '</div><div class="grow"><b>' + r.t + '</b><small>' + r.s + '</small></div><span class="btn sm' + (r.p ? ' p' : '') + '">' + r.b + '</span></div>'; }
+  function vtable(t) {
+    var h = '<div class="vt h">' + t.head.map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>';
+    return h + t.rows.map(function (r) {
+      var thumb = r.av ? '<span class="av" style="background:' + r.av + ';width:38px;height:38px;font-size:13px">' + r.n.charAt(0) + '</span>' : '<div class="vthumb">' + I(t.key === 'deliv' ? 'moto' : 'car') + '</div>';
+      var last = r.score != null
+        ? '<div class="score"><span class="sbar"><i style="width:' + r.score + '%;background:' + (r.score >= 85 ? 'var(--accent)' : r.score >= 70 ? 'var(--warning)' : 'var(--danger)') + '"></i></span><b>' + r.score + '</b></div>'
+        : '<div class="acts">' + r.acts.map(function (a) { var p = a.slice(-1) === '*'; return '<span class="btn sm' + (p ? ' p' : '') + '">' + a.replace('*', '') + '</span>'; }).join('') + '</div>';
+      return '<div class="vt"><div class="vname">' + thumb + '<div><b>' + r.n + '</b><small>' + r.sub + '</small></div></div><span><span class="pill ' + r.pt + '">' + r.p + '</span></span><div class="sig ' + r.ct + '">' + r.c + '<small>' + r.cs + '</small></div>' + last + '</div>';
+    }).join('');
+  }
+  function shell(t, content, o) {
+    o = o || {};
+    var tab = o.tab || 0;
+    return '<div class="app"><div class="srail"><div class="logo">' + I('pin') + '</div><div>' + I('map') + '지도</div><div>' + I('list') + '단말기</div><div class="on">' + I(t.icon) + t.rail + '</div><div class="bottom">' + I('user') + '내정보</div></div>' +
+      '<div class="biz"><div class="hdr"><div class="ws"><span class="tile" style="color:' + t.color + ';background:' + t.tint + '">' + I(t.icon) + '</span>' + t.name + '<svg class="ic caret"><use href="#i-chevd"/></svg></div>' +
+      '<div class="tabs">' + t.tabs.map(function (x, i) { return '<span class="' + (i === tab ? 'on' : '') + '">' + x[0] + (x[1] ? '<em>' + x[1] + '</em>' : '') + '</span>'; }).join('') + '</div>' +
+      '<div class="search">' + I('search') + '<span>' + t.search + '</span><kbd>Ctrl K</kbd></div>' +
+      '<span class="btn icon">' + I('bell') + '<i class="nb"></i></span><span class="btn p">' + I('plus') + t.cta + '</span></div>' +
+      '<div class="cnt">' + content + '</div>' + (o.extra || '') + '</div></div>';
+  }
+  function overview(t, pins) {
+    var P = function (n, st) { return pins ? pin(n, st) : ''; };
+    var m = { geo: t.geo, zone: t.zone, store: t.store, trail: t.trail, markers: t.markers };
+    return '<div class="statusline"><span class="live"><i></i>실시간</span>' + t.status + '<span class="right">10. 15.(수) 14:20 · 마지막 갱신 8초 전</span></div>' +
+      '<div class="kpis">' + t.kpis.map(kpi).join('') + P(3, 'right:-8px;top:-12px') + '</div>' +
+      '<div class="split2"><div class="card clip">' + cardH(I('pin') + '위치', t.mapSub, '<span class="btn sm">전체 지도 ' + I('chev') + '</span>') + map(m) + legend(t.legend) + P(1, 'left:10px;top:52px') + '</div>' +
+      '<div class="card">' + cardH(t.todoTitle + ' <span class="count">' + t.todos.length + '</span>', '급한 순서', '<span class="btn sm ghost">전체</span>') + t.todos.map(todoRow).join('') + P(2, 'right:-10px;top:-10px') + '</div></div>' +
+      '<div class="card">' + cardH(t.listTitle, '', '<span class="btn sm">' + I('search') + t.listSearch + '</span>') + vtable(t) + P(4, 'right:150px;top:-12px') + '</div>';
+  }
+
+  /* ---------- phone pieces ---------- */
+  function sbar(light) { return '<div class="sbar' + (light ? ' light' : '') + '"><span>9:41</span><span>' + I('signal', 'font-size:15px') + '<i class="bat"></i></span></div>'; }
+  function lead(r) { return r.av ? '<div class="av" style="background:' + r.av + '">' + (r.avt || r.t.charAt(0)) + '</div>' : '<div class="lead-ic ' + r.tone + '">' + I(r.ic) + '</div>'; }
+  function ptabs(t, active) {
+    return '<div class="ph-tab">' + t.p.tabs.map(function (x, i) {
+      if (x[2] === 'c') return '<div class="mid"><span>' + I(x[0]) + '</span>' + x[1] + '</div>';
+      return '<div class="' + (i === (active || 0) ? 'on' : '') + '">' + I(x[0]) + x[1] + '</div>';
+    }).join('') + '</div>';
+  }
+  function thumbzone() { return '<div class="thumbzone"><span style="top:16%">어려움</span><span style="top:46%">보통</span><span style="bottom:15%">쉬움 · 주요 버튼</span></div>'; }
+  function phoneHome(t, thumb) {
+    var p = t.p;
+    var list = p.list.map(function (r, i) {
+      if (i === 0 && r.a) return '<div class="swipe"><div class="row">' + lead(r) + '<div class="grow"><b>' + r.t + '</b><small>' + r.s + '</small></div></div><div class="act" style="background:' + r.ac + '">' + r.a + '</div></div>';
+      return '<div class="row">' + lead(r) + '<div class="grow"><b>' + r.t + '</b><small>' + r.s + '</small></div>' + (r.pill ? '<span class="pill ' + r.pill[0] + ' n">' + r.pill[1] + '</span>' : '') + '</div>';
+    }).join('');
+    return '<div class="ph">' + sbar() +
+      '<div class="ph-top"><div class="eb">' + p.eb + '</div><h3>' + p.head + '</h3>' + (p.prog ? '<div class="prog" style="margin-top:8px"><i style="width:' + p.prog + '%"></i></div>' : '') +
+      '<div class="ph-chips">' + p.chips.map(function (c, i) { return '<span class="' + (i === 0 ? 'on' : '') + '">' + c + '</span>'; }).join('') + '</div></div>' +
+      '<div class="ph-body"><div class="ph-kpis">' + p.kpis.map(kpi).join('') + '</div>' +
+      '<div class="card clip">' + map({ vw: 360, vh: 150, bx: -140, by: -80, markers: p.markers, zone: p.zone, store: p.store, trail: p.trail }) + '</div>' +
+      '<div class="card clip">' + (p.listTitle ? '<div class="card-h"><h4>' + p.listTitle + '</h4><span class="count">6</span></div>' : '') + list + '</div></div>' +
+      ptabs(t) + (thumb ? thumbzone() : '') + '</div>';
+  }
+  function phoneNavBefore() {
+    return '<div class="ph">' + sbar() +
+      '<div class="ph-top" style="padding-bottom:8px"><div class="eb">차량 운영 관리</div><h3>렌트카 운영</h3><p class="desc">출고부터 반납까지, 오늘의 차량 업무를 관리하세요.</p></div>' +
+      '<div class="oldtabs"><span class="on">운영 현황</span><span>계약 관리</span><span>반납 일정</span><span>임차인</span></div>' +
+      '<div class="ph-body"><div class="ph-kpis">' +
+      kpi({ t: '오늘 출고', ic: 'route', v: '0', u: '건', h: '오늘 시작' }) + kpi({ t: '오늘 반납', ic: 'clock', v: '0', u: '건', h: '예정 시간' }) +
+      kpi({ t: '반납 지연', ic: 'alert', v: '2', u: '건', tone: 'urgent', h: '미반납' }) + kpi({ t: '미배차', ic: 'list', v: '1', u: '대', tone: 'good', h: '계약 전' }) + '</div>' +
+      '<div class="card clip">' + cardH('오늘 처리할 일', '', '') + '<div class="row"><div class="lead-ic r">' + I('clock') + '</div><div class="grow"><b>sss</b><small>가상 임차인 4 · 반납 지연</small></div><span class="btn sm">반납 처리</span></div></div></div>' +
+      '<div class="ph-tab old"><div>' + I('home') + '홈</div><div>' + I('list') + '단말기</div><div>' + I('user') + '내정보</div><div class="on">' + I('route') + '렌트</div></div>' +
+      '<div class="redbox" style="left:6px;right:6px;top:128px;height:54px"><b>② 업무 탭</b></div>' +
+      '<div class="redbox" style="left:6px;right:6px;bottom:4px;height:74px"><b>① 전체 탭</b></div>' +
+      '</div>';
+  }
+  function phoneMap(t) {
+    var mk = [
+      { x: 230, y: 250, c: 'var(--danger)', t: 'sss · 지연', tc: 'var(--bad-t)', pulse: 1 },
+      { x: 90, y: 168, c: 'var(--accent)', t: '520211', tc: 'var(--ok-t)' },
+      { x: 300, y: 330, c: 'var(--primary)', t: '12가3456', tc: 'var(--info-t)', side: 'l' },
+      { x: 280, y: 140, c: 'var(--accent)', t: '34나7890', tc: 'var(--ok-t)', side: 'l' }
+    ];
+    var rows = [['sss', 'K5 · 반납 4일 지연', 'r', '지연', '0.8km'], ['34나7890', '카니발 · 본사 주차장', 'g', '미배차', '1.2km'], ['12가3456', '아반떼 · 한도윤', 'b', '임대 중', '3.4km']];
+    return '<div class="ph">' + sbar() +
+      '<div class="ph-map">' + map({ vw: 390, vh: 640, bx: -330, by: -40, bw: 1280, bh: 640, fs: 13, markers: mk, geo: { x: 40, y: 120, w: 130, h: 80, t: '본사 주차장' } }) +
+      '<div class="floatchips"><span class="on">전체 5</span><span>임대 중 2</span><span>지연 1</span><span>미배차 2</span></div>' +
+      '<div class="fab-loc" style="top:380px">' + I('pin') + '</div>' +
+      '<div class="sheet"><div class="handle"></div><div class="sheet-h"><b>차량 5대</b><span>가까운 순' + I('chevd') + '</span></div>' +
+      rows.map(function (r) { return '<div class="row"><div class="vthumb">' + I('car') + '</div><div class="grow"><b>' + r[0] + '</b><small>' + r[1] + '</small></div><span class="pill ' + r[2] + '">' + r[3] + '</span><span style="font:800 12px var(--f-display);color:var(--text-3);margin-left:6px">' + r[4] + '</span></div>'; }).join('') +
+      '</div></div>' + ptabs(t, 3) + '</div>';
+  }
+  function phoneReturn() {
+    return '<div class="ph">' + sbar(true) +
+      '<div class="ph-map">' + map({ vw: 390, vh: 800, bx: -400, by: 0, bw: 1600, bh: 800, markers: [{ x: 200, y: 160, c: 'var(--danger)', pulse: 1 }], geo: { x: 120, y: 110, w: 170, h: 100, t: '본사 주차장' } }) + '<div class="ph-dim"></div>' +
+      '<div class="sheet" style="gap:11px;padding-bottom:30px">' +
+      '<div class="handle"></div><div class="sheet-h"><div><small>반납 처리 · 2/4</small><b>sss · K5 · 가상 임차인 3</b></div><span class="btn sm ghost">' + I('x') + '</span></div>' +
+      '<div class="steps"><span class="done">' + I('check') + '확인</span><span class="on">주행·연료</span><span>사진</span><span>정산</span></div>' +
+      '<div class="okrow">' + I('pin') + '<div><b>반납 위치 확인됨</b><small>본사 주차장 안 · 14:02 도착 (자동 감지)</small></div>' + I('check') + '</div>' +
+      '<div class="field"><small>' + I('route') + '주행거리 · GPS 자동</small><div class="big">312<small>km</small></div><p>계약 포함 300km · 초과 12km × 200원 = <b>2,400원</b></p></div>' +
+      '<div class="field"><small>' + I('fuel') + '연료</small><div class="seg5"><span>E</span><span>1/4</span><span>1/2</span><span class="on">3/4</span><span>F</span></div></div>' +
+      '<div class="sheet-acts"><span class="btn lg">이전</span><span class="btn lg p">다음 · 사진 4장 ' + I('chev') + '</span></div>' +
+      '</div></div></div>';
+  }
+  function phoneDetail() {
+    return '<div class="ph">' + sbar() +
+      '<div class="ph-map">' + map({ vw: 390, vh: 800, bx: -300, by: -20, bw: 1200, bh: 600, trail: 'M80 120 C140 120 150 200 210 210 S300 260 320 300', markers: [{ x: 80, y: 120, c: 'var(--text-3)' }, { x: 210, y: 210, c: 'var(--warning)' }, { x: 320, y: 300, c: 'var(--primary)', pulse: 1 }] }) +
+      '<div class="floatchips"><span style="display:flex;align-items:center;gap:4px">' + I('chev', 'transform:rotate(180deg)') + '목록</span></div>' +
+      '<div class="sheet" style="gap:10px;padding-bottom:28px"><div class="handle"></div>' +
+      '<div class="sheet-h"><div><small>아반떼 · 2023 · 흰색</small><b>12가3456</b></div><span class="pill b">임대 중</span></div>' +
+      '<div class="stats3"><div><small>마지막 수신</small><b>8초 전</b></div><div><small>전압</small><b>12.6V</b></div><div><small>신호</small><b style="color:var(--ok-t)">좋음</b></div></div>' +
+      '<div style="font-size:12.5px;font-weight:800">오늘 이동 · 3회 · 48.2km</div>' +
+      '<div class="ti"><time>08:12</time><div class="dt s"></div><div class="tx"><b>출발 · 강남구 테헤란로</b><small>임차인 한도윤</small></div></div>' +
+      '<div class="ti"><time>09:03</time><div class="dt w"></div><div class="tx"><b>정차 52분 · 성수동</b><small>23.4km 주행</small></div></div>' +
+      '<div class="ti"><time>10:40</time><div class="dt"></div><div class="tx"><b>주행 중 · 42km/h</b><small>올림픽대로 방면</small></div></div>' +
+      '<div class="sheet-acts" style="grid-template-columns:1fr 1fr"><span class="btn lg">' + I('link') + '위치 공유</span><span class="btn lg p">계약 보기</span></div>' +
+      '</div></div></div>';
+  }
+  function phoneAgenda(t) {
+    var d = [['13', '월'], ['14', '화'], ['15', '수'], ['16', '목'], ['17', '금'], ['18', '토'], ['19', '일']];
+    return '<div class="ph">' + sbar() +
+      '<div class="ph-top"><div class="eb">렌트카 운영 · 배차표</div><h3>10월 15일 수요일</h3><div class="dayrow">' + d.map(function (x, i) { return '<span class="' + (i === 2 ? 'on' : (i > 4 ? 'we' : '')) + '">' + x[0] + '<em>' + x[1] + '</em></span>'; }).join('') + '</div></div>' +
+      '<div class="ph-body" style="gap:9px">' +
+      '<div class="ag"><time>지금</time><div class="blk2 late"><b>sss · 반납 1일 지연</b><small>가상 임차인 4 · 10. 14. 09:00 종료</small><span class="btn sm p">반납 처리</span></div></div>' +
+      '<div class="ag"><time>15:00</time><div class="blk2"><b>56다1122 · 반납 예정</b><small>송유나 · 반납 링크 보내기</small></div></div>' +
+      '<div class="ag"><time>17:30</time><div class="blk2" style="border-left-color:var(--info-t);background:var(--info-b)"><b>12가3456 · 출고 예약</b><small>최지훈 · 10. 15.–10. 19.</small></div></div>' +
+      '<div class="ag"><time>종일</time><div class="blk2 free"><b>단말-520211 · 비어 있음</b><small>15일 ~ 18일 계약 가능</small><span class="btn sm">' + I('plus') + '계약 등록</span></div></div>' +
+      '</div>' + ptabs(t, 1) + '</div>';
+  }
+  function phoneLock() {
+    return '<div class="lock">' + sbar(true) +
+      '<div class="lk-top">' + I('lock') + '<div class="lk-time">9:41</div><div class="lk-date">10월 15일 수요일</div></div>' +
+      '<div class="notif"><div class="nh"><span class="appic">' + I('pin') + '</span>GPS TRACKER<span>지금</span></div><b>반납 도착 · 12가3456</b><p>본사 주차장 도착. GPS 주행 312km, 초과 12km(2,400원) 자동 계산됨.</p><div class="na"><span>정산 확인</span><span>사진 보기</span></div></div>' +
+      '<div class="notif crit"><div class="nh"><span class="appic" style="background:#EF4444">' + I('shield') + '</span>GPS TRACKER · 긴급<span>3분 전</span></div><b>도난 의심 · 오토바이 07</b><p>주차 모드 중 이동 감지 · 성수동 방향 18km/h</p><div class="na"><span>위치 보기</span><span>위치 공유</span></div></div>' +
+      '<div class="notif"><div class="nh"><span class="appic" style="background:#7C3AED">' + I('spark') + '</span>GPS TRACKER<span>08:00</span></div><b>아침 브리핑</b><p>어제 3대 128km · 업무 외 운행 1건 · 오늘 할 일 3건</p></div>' +
+      '<div class="lk-bottom"><span>' + I('zap') + '</span><span>' + I('camera') + '</span></div></div>';
+  }
+
+  /* ---------- content-only screens ---------- */
+  function rulesScreen() {
+    var r = [
+      ['route', 'g', '반납 도착 감지', '<span class="ctag">' + I('pin') + '본사 주차장</span>에 계약 차량이 들어오면 → <span class="ctag out">초과 km 정산</span><span class="ctag out">반납 사진 링크</span>', 14, 1, 'rent'],
+      ['file', 'y', '운행 종료 → 용무 입력 요청', '정차 <span class="ctag">10분</span> 이상이면 → 운전자에게 <span class="ctag out">용무 선택 알림</span>', 37, 1, 'corp'],
+      ['moon', 'r', '업무시간 외 운행', '<span class="ctag">평일 08–19시</span> 밖에서 움직이면 → <span class="ctag out">관리자 알림</span><span class="ctag out">할 일 추가</span>', 2, 1, 'corp'],
+      ['shield', 'v', '주차 모드 도난 감지', '주차 모드 중 <span class="ctag">50m</span> 이상 이동하면 → <span class="ctag out">긴급 알림</span><span class="ctag out">경로 기록</span>', 0, 1, 'deliv'],
+      ['spark', 'b', '아침 브리핑', '매일 <span class="ctag">08:00</span> → <span class="ctag out">어제 요약 · 오늘 할 일</span>', 15, 1, 'all'],
+      ['off', 'y', '임대 중 신호 끊김', '<span class="ctag">6시간</span> 이상 신호 없으면 → <span class="ctag out">할 일 상단 고정</span>', 3, 0, 'rent']
+    ];
+    var tag = { rent: '<span class="pill g n" style="margin-left:6px">렌트카</span>', corp: '<span class="pill y n" style="margin-left:6px">법인차</span>', deliv: '<span class="pill v n" style="margin-left:6px">배달</span>', all: '<span class="pill n" style="margin-left:6px">공통</span>' };
+    return '<div style="padding:22px"><div class="card clip">' + cardH(I('sliders') + '자동 처리 규칙', 'GPS가 감지하면 자동으로 기록하고 알립니다 · 켜고 끄기만 하세요', '<span class="btn sm p">' + I('plus') + '규칙 추가</span>') +
+      '<div class="rule" style="padding-block:7px;background:var(--surface-2);font-size:11px;color:var(--text-2);font-weight:700"><span></span><span>규칙</span><span style="text-align:right">이번 달</span><span></span></div>' +
+      r.map(function (x, i) {
+        return '<div class="rule"><div class="lead-ic ' + x[1] + '">' + I(x[0]) + '</div><div><b>' + x[2] + '</b>' + tag[x[6]] + '<div class="cond">' + x[3] + '</div></div><div class="runs"><b>' + x[4] + '회</b>자동 처리</div><span class="tg' + (x[5] ? ' on' : '') + '"></span>' +
+          (i === 0 ? pin(1, 'right:56px;top:6px') : '') + (i === 0 ? pin(2, 'right:-6px;top:-8px') : '') + '</div>';
+      }).join('') + '</div></div>';
+  }
+  function emptyScreen() {
+    return '<div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start">' +
+      '<div class="card">' + cardH(I('cal') + '오늘의 차량 예약', '예정 · 진행 중', '<span class="btn sm">예약 전체 보기</span>') +
+      '<div class="row" style="border-radius:0 0 14px 14px"><div class="lead-ic g">' + I('check') + '</div><div class="grow"><b>오늘 예정된 예약이 없습니다</b><small>다음 예약 · 10. 17.(금) 14:00 이현우</small></div><span class="btn sm p">' + I('plus') + '예약</span></div></div>' +
+      '<div class="card">' + cardH(I('wrench') + '차량 점검 일정', '30일 이내 정비 · 보험 · 검사', '') +
+      '<div class="row" style="border-radius:0 0 14px 14px"><div class="lead-ic g">' + I('check') + '</div><div class="grow"><b>30일 이내 점검 없음</b><small>가장 가까운 일정 · 12가3456 보험 만기 11. 29.</small></div><span class="btn sm">날짜 등록</span></div></div>' +
+      '<div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;border:1.5px dashed var(--border);color:var(--text-2);font-size:12.5px;background:var(--surface)">' + I('zap', 'font-size:16px;color:var(--primary)') + '<b style="color:var(--text)">시작하기 2/4</b> 차량 등록 ✓ · 운행일지 양식 ✓ · 운전자 0명 · 업무시간 미설정<span style="margin-left:auto;display:flex;gap:6px"><span class="btn sm">운전자 추가</span><span class="btn sm p">업무시간 설정</span></span></div></div>';
+  }
+  function corpMetrics() {
+    var t = T.corp, k = t.kpis;
+    return '<div style="padding:22px;display:flex;flex-direction:column;gap:14px"><div class="kpis">' + kpi(k[0]) +
+      kpi(k[1]).replace('</div></div>', '</div>' + pin(1, 'right:8px;top:30px') + '</div>') +
+      kpi(k[2]).replace(/<\/div>$/, pin(2, 'right:8px;top:30px') + '</div>') +
+      kpi(k[3]).replace(/<\/div>$/, pin(3, 'right:8px;top:30px') + '</div>') + '</div>' +
+      '<div class="card">' + cardH(I('file') + '운행일지 · 2026년 10월', '용무 미입력 6건을 채우면 국세청 양식(별지 73호)으로 바로 출력됩니다.', '<div style="display:flex;gap:8px;position:relative"><span class="btn">미입력 6건 채우기</span><span class="btn p">' + I('down') + '국세청 양식 출력</span>' + pin(4, 'right:-12px;top:-16px') + '</div>') +
+      '<div class="row"><div class="av" style="background:#64748B">?</div><div class="grow"><b>12가3456 · 10. 15. 08:12–09:03 · 23.4km</b><small>운전자 미지정 · 용무 미입력</small></div><span class="pill y">입력 필요</span><span class="btn sm">입력</span></div>' +
+      '<div class="row"><div class="av" style="background:#7C3AED">김</div><div class="grow"><b>12가3456 · 10. 14. 13:40–15:22 · 41.0km</b><small>김민수 · 거래처 방문 · 유류 35L / 58,000원</small></div><span class="pill g">완료</span><span class="btn sm ghost">수정</span></div>' +
+      '<div class="row" style="border-radius:0 0 14px 14px"><div class="av" style="background:#0EA5E9">박</div><div class="grow"><b>34나7890 · 10. 12.(일) 21:05–22:40 · 67.8km</b><small>박지영 · 업무시간 외 운행</small></div><span class="pill r">확인 필요</span><span class="btn sm">사유 입력</span></div></div></div>';
+  }
+  function approvals() {
+    return '<div class="card">' + cardH('승인 대기 <span class="count">2</span>', '직원이 예약 링크로 신청한 내역', '<span class="btn">' + I('link') + '신청 링크 복사' + pin(2, 'right:-12px;top:-16px') + '</span>') +
+      '<div class="row"><div class="av" style="background:#0EA5E9">박</div><div class="grow"><b>박지영 · 영업팀 → 12가3456</b><small>10. 16.(목) 09:00–18:00 · 부산 거래처 방문</small><div style="display:flex;gap:6px;margin-top:6px;position:relative"><span class="pill y n">왕복 약 780km</span><span class="pill g n">겹치는 예약 없음</span>' + pin(3, 'left:236px;top:-4px') + '</div></div><span class="btn sm r">반려</span><span class="btn sm g">' + I('check') + '승인</span></div>' +
+      '<div class="row"><div class="av" style="background:#F59E0B">이</div><div class="grow"><b>이현우 · 총무팀 → 아무 차량</b><small>10. 17.(금) 14:00–16:00 · 시내 물품 구매</small><div style="display:flex;gap:6px;margin-top:6px"><span class="pill b n">추천: 34나7890 · 대기 중 · 가장 가까움</span></div></div><span class="btn sm">다른 차</span><span class="btn sm g">' + I('check') + '34나7890 배정</span></div>' +
+      '<div class="row" style="background:var(--tint);border-radius:0 0 14px 14px"><span class="tg on"></span><div class="grow"><b>자동 승인 켜짐</b><small>평일 업무시간 안 · 4시간 이하 · 겹치는 예약 없음 → 바로 확정 · 이번 달 18건 자동 처리</small></div><span class="btn sm">조건 수정</span>' + pin(4, 'right:-10px;top:-12px') + '</div></div>';
+  }
+  function gantt() {
+    var days = [['13', '월'], ['14', '화'], ['15', '수'], ['16', '목'], ['17', '금'], ['18', '토'], ['19', '일'], ['20', '월'], ['21', '화'], ['22', '수'], ['23', '목'], ['24', '금'], ['25', '토'], ['26', '일']];
+    var head = days.map(function (d, i) { var c = i === 2 ? 'today' : (d[1] === '토' || d[1] === '일') ? 'we' : ''; return '<span class="' + c + '">' + d[0] + '<em>' + d[1] + '</em></span>'; }).join('');
+    function bar(cls, from, len, label, av) { return '<div class="gbar ' + cls + '" style="left:calc(' + from + ' * 100% / 14 + 3px);width:calc(' + len + ' * 100% / 14 - 6px)">' + (av ? '<span class="av" style="background:' + av + '">' + label.charAt(0) + '</span>' : '') + label + '</div>'; }
+    var rows = [
+      ['sss', 'K5', bar('rent', 0, 1, '임차인 4', '#7C3AED') + bar('late', 1, 2.4, '지연 +1일 · 연락 필요')],
+      ['12가3456', '아반떼', bar('rent', 1, 1.6, '한도윤', '#0EA5E9') + bar('book', 2.7, 4.3, '예약 · 최지훈', '#10B981')],
+      ['단말-520211', '미등록', bar('free', 2.4, 3.6, '+ 비어 있음 · 계약 가능') + bar('book', 6, 2, '예약 · 정해린', '#F59E0B')],
+      ['34나7890', '카니발', bar('shop', 0, 3, '정비 · 엔진오일') + bar('rent', 4, 10, '장기 · ㈜한빛물류 · 11. 30.까지', '#EF4444')],
+      ['56다1122', '쏘렌토', bar('rent', 0, 2.6, '송유나 · 15:00 반납', '#22C55E') + bar('book', 9, 3, '예약 · 강태오', '#0EA5E9')]
+    ];
+    var tl = 'calc(170px + (100% - 170px) * 2.4 / 14)';
+    return '<div style="padding:22px"><div class="card clip">' + cardH(I('cal') + '배차표 · 10. 13. – 10. 26.', '막대를 누르면 계약 상세 · 빈 칸을 누르면 그 날짜로 새 계약', '<div style="display:flex;gap:6px"><span class="btn sm">‹</span><span class="btn sm">오늘</span><span class="btn sm">›</span><span class="btn sm ghost">2주 / 월</span></div>') +
+      '<div class="gt"><div class="lbl" style="background:var(--surface-2);font-size:11px;font-weight:700;color:var(--text-2);padding-block:6px">차량</div><div class="days">' + head + '</div>' +
+      rows.map(function (r) { return '<div class="lbl"><div class="vthumb" style="width:30px;height:30px;font-size:15px">' + I('car') + '</div><div><b>' + r[0] + '</b><small>' + r[1] + '</small></div></div><div class="trk">' + r[2] + '</div>'; }).join('') +
+      '<div class="todayline" style="left:' + tl + '"></div>' +
+      pin(1, 'left:calc(170px + (100% - 170px) * 3.2 / 14);top:44px') + pin(2, 'left:calc(' + tl + ' - 13px);top:236px') + pin(3, 'left:calc(170px + (100% - 170px) * 5.5 / 14);top:152px') +
+      '</div><div class="maplegend"><span><i style="background:var(--primary)"></i>임대 중</span><span><i style="background:var(--info-b);box-shadow:inset 0 0 0 1.5px var(--primary)"></i>예약</span><span><i style="background:var(--danger)"></i>반납 지연</span><span><i style="background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--text-3)"></i>정비</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--accent)"></i>계약 가능</span><span style="margin-left:auto"><i style="background:var(--primary);border-radius:1px;width:2px;height:10px"></i>지금</span></div></div></div>';
+  }
+  function damage() {
+    function thumb(hit) { return '<i style="display:block;width:118px;height:76px;border-radius:9px;background:linear-gradient(140deg,var(--surface-2),var(--border));position:relative">' + (hit ? '<b style="position:absolute;right:20px;top:16px;width:26px;height:26px;border:3px solid var(--danger);border-radius:50%"></b>' : '') + I('camera', 'position:absolute;left:8px;bottom:8px;color:var(--text-3)') + '</i>'; }
+    return '<div style="padding:22px"><div class="card">' + cardH('12가3456 · 손상 이력', '인수·반납 링크로 받은 사진이 자동으로 모입니다', '<span class="btn sm">' + I('plus') + '손상 직접 기록</span>') +
+      '<div style="display:grid;grid-template-columns:190px minmax(0,1fr);gap:20px;padding:16px;border-top:1px solid var(--border)">' +
+      '<div style="position:relative"><svg viewBox="0 0 200 330" style="width:100%;height:auto;display:block"><rect x="40" y="20" width="120" height="290" rx="46" fill="var(--surface-2)" stroke="var(--border)" stroke-width="3"/><rect x="55" y="82" width="90" height="56" rx="12" fill="var(--surface)" stroke="var(--border)" stroke-width="2"/><rect x="55" y="214" width="90" height="46" rx="12" fill="var(--surface)" stroke="var(--border)" stroke-width="2"/><rect x="30" y="70" width="12" height="40" rx="5" fill="var(--text-3)"/><rect x="158" y="70" width="12" height="40" rx="5" fill="var(--text-3)"/><rect x="30" y="225" width="12" height="40" rx="5" fill="var(--text-3)"/><rect x="158" y="225" width="12" height="40" rx="5" fill="var(--text-3)"/><text x="100" y="13" text-anchor="middle" font-size="11" fill="var(--text-3)" font-family="Noto Sans KR,sans-serif">앞</text><circle cx="148" cy="44" r="16" fill="var(--danger)" opacity=".2"/><circle cx="148" cy="44" r="11" fill="var(--danger)"/><text x="148" y="48.5" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">A</text><circle cx="58" cy="182" r="11" fill="var(--warning)"/><text x="58" y="186.5" text-anchor="middle" font-size="12" font-weight="800" fill="#1A1A2E">B</text></svg>' + pin(1, 'left:-8px;top:0') + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px">' +
+      '<div style="border:1.5px solid color-mix(in srgb,var(--danger) 40%,var(--border));border-radius:12px;padding:12px;position:relative"><div style="display:flex;align-items:center;gap:8px"><span class="pill r">새 손상</span><b>A · 앞범퍼 우측 긁힘 약 3cm</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">10. 14. 반납 · 가상 임차인 5</span></div>' +
+      '<div style="display:flex;gap:10px;align-items:center;margin-top:10px"><div><div style="font-size:10.5px;color:var(--text-3);margin-bottom:3px">10. 09. 인수</div>' + thumb(false) + '</div>' + I('chev', 'color:var(--text-3)') + '<div><div style="font-size:10.5px;color:var(--bad-t);margin-bottom:3px;font-weight:700">10. 14. 반납</div>' + thumb(true) + '</div><div style="margin-left:auto;display:flex;flex-direction:column;gap:6px"><span class="btn sm p">수리비 청구</span><span class="btn sm">임차인에게 사진 전송</span></div></div>' + pin(2, 'left:262px;top:64px') + '</div>' +
+      '<div style="border:1px solid var(--border);border-radius:12px;padding:12px"><div style="display:flex;align-items:center;gap:8px"><span class="pill y">기존</span><b>B · 좌측 뒷문 찍힘</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">09. 21. 반납 · 수리 안 함 · 인수 시 고객 안내됨</span></div></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);position:relative;padding-left:2px">' + I('check', 'color:var(--accent)') + '지난 계약 6건 · 사진 48장이 차량 기준으로 자동 정리됨' + pin(3, 'left:330px;top:-6px') + '</div>' +
+      '</div></div></div></div>';
+  }
+  function typesScreen() {
+    return '<div style="padding:24px 26px"><div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;position:relative"><div><div style="font-size:11px;font-weight:700;color:var(--primary)">계정 유형</div><h3 style="font-size:22px;letter-spacing:-.04em">어떻게 차량을 운영하시나요?</h3><p style="font-size:12.5px;color:var(--text-2)">언제든 바꿀 수 있어요. 바꿔도 차량과 기록은 그대로입니다.</p></div><span class="btn p">법인차 운영으로 시작 ' + I('chev') + '</span>' + pin(3, 'right:-10px;top:-12px') + '</div>' +
+      '<div class="types">' +
+      '<div class="type"><span class="sel"></span><div class="ill" style="background:var(--surface-2)"><svg viewBox="0 0 200 84"><circle cx="100" cy="42" r="26" fill="var(--surface)"/><g transform="translate(86 28)" style="stroke:var(--text-3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 26s-9-7.9-9-14a9 9 0 0 1 18 0c0 6.1-9 14-9 14z"/><circle cx="14" cy="12" r="3.2"/></g></svg></div><h5>개인 · 미지정</h5><p class="fit">가족 차, 개인 차량 위치만 보면 될 때</p><ul><li>' + I('check') + '실시간 위치 · 경로</li><li>' + I('check') + '지오펜스 알림</li></ul><div class="menu">추가 메뉴 <b>없음</b></div></div>' +
+      '<div class="type"><span class="sel"></span><div class="ill" style="background:var(--ok-b)"><svg viewBox="0 0 200 84"><rect x="36" y="18" width="128" height="48" rx="10" fill="var(--surface)"/><rect x="48" y="28" width="44" height="8" rx="4" fill="var(--primary)"/><rect x="96" y="28" width="22" height="8" rx="4" fill="var(--danger)"/><rect x="60" y="42" width="64" height="8" rx="4" fill="var(--info-b)"/><rect x="128" y="42" width="24" height="8" rx="4" fill="var(--primary)"/><rect x="48" y="54" width="30" height="5" rx="2.5" fill="var(--border)"/></svg></div><h5>렌트카 운영</h5><p class="fit">차를 빌려주고 돌려받는 업체</p><ul><li>' + I('check') + '배차표 · 계약 · 반납</li><li>' + I('check') + '반납 도착 자동 감지</li><li>' + I('check') + '임차인 블랙리스트</li></ul><div class="menu">추가 탭 <b>렌트카</b> · 계약 · 배차표 · 임차인</div></div>' +
+      '<div class="type on" style="position:relative"><span class="sel">' + I('check') + '</span><div class="ill" style="background:var(--tint)"><svg viewBox="0 0 200 84"><rect x="62" y="10" width="76" height="64" rx="6" fill="var(--surface)"/><rect x="72" y="20" width="56" height="5" rx="2.5" fill="var(--primary)"/><rect x="72" y="32" width="44" height="5" rx="2.5" fill="var(--border)"/><rect x="72" y="42" width="50" height="5" rx="2.5" fill="var(--border)"/><rect x="72" y="52" width="30" height="5" rx="2.5" fill="var(--border)"/><circle cx="128" cy="62" r="11" fill="var(--accent)"/><path d="m123 62 3.5 3.5 6-7" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h5>법인차 운영</h5><p class="fit">회사 차를 직원들이 같이 쓰는 곳</p><ul><li>' + I('check') + '국세청 운행일지 자동</li><li>' + I('check') + '직원 예약 신청 · 승인</li><li>' + I('check') + '유류비 · 업무 외 운행</li></ul><div class="menu" style="position:relative">추가 탭 <b>법인운행</b> · 예약 · 운행 리포트 · 운전자' + pin(2, 'right:-24px;top:-6px') + '</div>' + pin(1, 'left:-12px;top:96px') + '</div>' +
+      '<div class="type"><span class="sel"></span><div class="ill" style="background:var(--deliv-b)"><svg viewBox="0 0 200 84"><circle cx="100" cy="42" r="30" fill="var(--surface)" stroke="var(--deliv)" stroke-width="1.5" stroke-dasharray="4 4"/><circle cx="100" cy="42" r="7" fill="var(--text)"/><circle cx="76" cy="30" r="6" fill="var(--deliv)"/><circle cx="122" cy="52" r="6" fill="var(--deliv)"/><circle cx="150" cy="22" r="6" fill="var(--warning)"/></svg></div><h5>배달 운영</h5><p class="fit">오토바이·라이더 위치를 보는 매장·대행사</p><ul><li>' + I('check') + '라이더 실시간 위치 · 구역</li><li>' + I('check') + '안전 점수 · 도난 감지</li></ul><div class="menu">추가 탭 <b>배달</b> · 라이더 · 구역 · 안전</div></div>' +
+      '</div></div>';
+  }
+
+  /* ---------- desktop views ---------- */
+  function deskOverview(type, pins) { return shell(T[type], overview(T[type], pins)); }
+  function deskDrawer() {
+    var t = T.rent;
+    var rows = [['12가3456', '아반떼 · 한도윤', 'b', '임대 중', 'c-g', '정상 · 42km/h', '8초 전'], ['sss', 'K5 · 가상 임차인 4', 'r', '반납 지연', 'c-r', '신호 없음', '30일'], ['단말-520211', '미등록', 'g', '미배차', 'c-y', '수신 지연', '11초 전'], ['34나7890', '카니발', 'g', '미배차', 'c-g', '정상', '1분 전'], ['56다1122', '쏘렌토 · 송유나', 'b', '임대 중', 'c-g', '정상', '25초 전']];
+    var list = '<div class="card">' + cardH('차량 목록', '', '<span class="btn sm">' + I('search') + '차량번호 · 이름</span>') + '<div class="vt h"><span>차량</span><span>운영 상태</span><span>단말기 통신</span><span></span></div>' +
+      rows.map(function (a, i) { return '<div class="vt"' + (i === 0 ? ' style="background:var(--tint)"' : '') + '><div class="vname"><div class="vthumb">' + I('car') + '</div><div><b>' + a[0] + '</b><small>' + a[1] + '</small></div></div><span><span class="pill ' + a[2] + '">' + a[3] + '</span></span><div class="sig ' + a[4] + '">' + a[5] + '<small>' + a[6] + '</small></div><div></div></div>'; }).join('') + '</div>';
+    var drawer = '<div class="dim"></div><aside class="drawer"><div class="dw-h"><div class="top"><div><div style="font-size:11px;color:var(--text-3)">아반떼 · 2023 · 흰색</div><h4>12가3456 <span class="pill b" style="vertical-align:3px">임대 중</span></h4></div><span class="btn sm ghost">' + I('x') + '</span></div>' +
+      '<div class="dw-tabs"><span class="on">개요</span><span>계약</span><span>손상 이력</span><span>정비</span><span>서류</span></div></div>' +
+      '<div class="dw-b"><div class="card clip" style="position:relative">' + map({ vw: 400, vh: 150, bx: -110, by: -60, trail: 'M40 36 C90 36 100 84 150 86 S230 120 290 110', markers: [{ x: 40, y: 36, c: 'var(--text-3)' }, { x: 150, y: 86, c: 'var(--warning)' }, { x: 290, y: 110, c: 'var(--primary)', pulse: 1 }] }) + pin(2, 'left:8px;top:8px') + '</div>' +
+      '<div class="stats3"><div><small>마지막 수신</small><b>8초 전</b></div><div><small>전압</small><b>12.6V</b></div><div><small>신호</small><b style="color:var(--ok-t)">좋음</b></div>' + pin(3, 'right:-8px;top:-12px') + '</div>' +
+      '<div><div style="font-size:12.5px;font-weight:700;margin-bottom:8px">오늘 이동 · 3회 · 48.2km</div>' +
+      '<div class="ti"><time>08:12</time><div class="dt s"></div><div class="tx"><b>출발 · 강남구 테헤란로</b><small>임차인 한도윤</small></div></div>' +
+      '<div class="ti"><time>09:03</time><div class="dt w"></div><div class="tx"><b>정차 52분 · 성수동</b><small>23.4km 주행</small></div></div>' +
+      '<div class="ti"><time>10:40</time><div class="dt"></div><div class="tx"><b>주행 중 · 42km/h</b><small>올림픽대로 방면</small></div></div></div>' +
+      '<div style="display:flex;gap:8px;margin-top:auto"><span class="btn" style="flex:1;justify-content:center">' + I('link') + '위치 공유</span><span class="btn p" style="flex:1;justify-content:center">계약 보기</span></div></div>' +
+      pin(4, 'left:-14px;top:120px') + '</aside>' + pin(1, 'right:446px;top:74px;z-index:41');
+    return shell(t, list, { extra: drawer });
+  }
+  function deskApprovals() { return shell(T.corp, approvals(), { tab: 2, extra: pin(1, 'left:452px;top:2px') }); }
+
+  var VIEWS = {
+    deskOverview: function (el) { return deskOverview(el.dataset.type, el.dataset.pins === '1'); },
+    deskDrawer: deskDrawer,
+    deskApprovals: deskApprovals,
+    phoneHome: function (el) { return phoneHome(T[el.dataset.type], el.dataset.thumb === '1'); },
+    phoneNavBefore: phoneNavBefore,
+    phoneMap: function (el) { return phoneMap(T[el.dataset.type]); },
+    phoneReturn: phoneReturn,
+    phoneDetail: phoneDetail,
+    phoneAgenda: function (el) { return phoneAgenda(T[el.dataset.type]); },
+    phoneLock: phoneLock,
+    rules: rulesScreen, empty: emptyScreen, corpMetrics: corpMetrics, gantt: gantt, damage: damage, types: typesScreen
+  };
+  [].slice.call(document.querySelectorAll('.si[data-view]')).forEach(function (el) {
+    try { el.innerHTML = VIEWS[el.dataset.view](el); } catch (e) { el.innerHTML = '<p style="padding:20px">' + e.message + '</p>'; }
+  });
+
+  /* hero type switch */
+  function hero(type) {
+    $('hero-desk').innerHTML = deskOverview(type, false);
+    $('hero-phone').innerHTML = phoneHome(T[type], false);
+    $('hero-url').textContent = 'gps.serial.kr / ' + T[type].url;
+    [].slice.call(document.querySelectorAll('.typesw button')).forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.type === type)); });
+    try { localStorage.setItem('proposal-type', type); } catch (e) {}
+  }
+  [].slice.call(document.querySelectorAll('.typesw button')).forEach(function (b) { b.addEventListener('click', function () { hero(b.dataset.type); }); });
+  var savedType = null; try { savedType = localStorage.getItem('proposal-type'); } catch (e) {}
+  hero(T[savedType] ? savedType : 'rent');
+
+  /* fit fixed-size screens */
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  screens.forEach(function (s) { s.style.setProperty('--ar', s.dataset.w + ' / ' + s.dataset.h); });
+  function fit(s) {
+    var w = +s.dataset.w, h = +s.dataset.h, inner = s.firstElementChild, k = s.clientWidth / w;
+    if (!k) return;
+    inner.style.width = w + 'px'; inner.style.height = h + 'px'; inner.style.transform = 'scale(' + k + ')';
+  }
+  screens.forEach(fit);
+  if ('ResizeObserver' in window) { var ro = new ResizeObserver(function (es) { es.forEach(function (e) { fit(e.target); }); }); screens.forEach(function (s) { ro.observe(s); }); }
+  window.addEventListener('resize', function () { screens.forEach(fit); });
+
+  /* before / after */
+  var ba = $('ba'), range = $('ba-range');
+  range.addEventListener('input', function () { ba.style.setProperty('--pos', range.value + '%'); });
+
+  /* thumb zone */
+  var tb = $('thumbbtn');
+  tb.addEventListener('click', function () {
+    var on = tb.getAttribute('aria-pressed') !== 'true';
+    tb.setAttribute('aria-pressed', String(on));
+    [].slice.call(document.querySelectorAll('.thumbzone')).forEach(function (z) { z.classList.toggle('on', on); });
+  });
+
+  /* language */
+  var root = document.documentElement, ko = $('lang-ko'), uz = $('lang-uz');
+  function setLang(l) {
+    root.classList.toggle('lang-uz', l === 'uz'); root.lang = l === 'uz' ? 'uz' : 'ko';
+    ko.setAttribute('aria-pressed', String(l !== 'uz')); uz.setAttribute('aria-pressed', String(l === 'uz'));
+    try { localStorage.setItem('proposal-lang', l); } catch (e) {}
+  }
+  ko.addEventListener('click', function () { setLang('ko'); });
+  uz.addEventListener('click', function () { setLang('uz'); });
+  var saved = null; try { saved = localStorage.getItem('proposal-lang'); } catch (e) {}
+  setLang(saved === 'uz' ? 'uz' : 'ko');
+
+  /* active chapter in rail */
+  var links = [].slice.call(document.querySelectorAll('#toc a'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) links.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id); }); });
+    }, { rootMargin: '-35% 0px -60% 0px' });
+    document.querySelectorAll('.hero, .chapter').forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
