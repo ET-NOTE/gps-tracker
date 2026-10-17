@@ -13,6 +13,13 @@ import { useTheme, toggleTheme } from '../theme';
 import { confirmDialog, alertDialog, promptDialog } from './Dialog';
 import { startPhoneTracker, stopPhoneTracker } from '../lib/phoneTracker';
 
+// Match the versioned public files; ZIP is the default distribution format.
+const APP_DOWNLOAD = {
+  version: '1.0.4',
+  zip: 'https://gps.serial.kr/gps-tracker-1.0.4-10.zip',
+  apk: 'https://gps.serial.kr/gps-tracker-1.0.4-10.apk',
+};
+
 function initialProfileTab() {
   if (typeof window === 'undefined') return 'account';
   const v = new URLSearchParams(window.location.search).get('tab') || localStorage.getItem('profile_tab');
@@ -173,6 +180,23 @@ function AccountTab({ me, setMe, onLogout }) {
       </Card>
 
       <CleanupCard />
+
+      <Card title="앱 다운로드">
+        <p style={{ fontSize: 13, color: 'var(--text)', margin: '0 0 6px' }}>
+          GPS Tracker · Android {APP_DOWNLOAD.version}
+        </p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6, margin: '0 0 12px' }}>
+          휴대폰에 앱을 설치하거나 업데이트하세요. ZIP을 압축 해제한 뒤 APK 파일을 열어 설치하면 됩니다.
+        </p>
+        <a href={APP_DOWNLOAD.zip} download target="_blank" rel="noopener noreferrer"
+          style={{ ...st.btn, ...st.downloadLink }}>
+          <Icon name="download" size={16} /> Android 앱 다운로드 (ZIP)
+        </a>
+        <a href={APP_DOWNLOAD.apk} download target="_blank" rel="noopener noreferrer"
+          style={{ ...st.btnSecondary, ...st.downloadLink, marginTop: 8 }}>
+          APK 직접 다운로드
+        </a>
+      </Card>
 
       <Card title="계정">
         <button onClick={() => { clearTokens(); onLogout(); }} style={st.btnSecondary}>로그아웃</button>
@@ -1300,6 +1324,10 @@ const st = {
     background: 'var(--surface)', color: 'var(--text)',
     border: '1px solid var(--border)', borderRadius: 6,
     fontSize: 13, cursor: 'pointer',
+  },
+  downloadLink: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    minHeight: 44, boxSizing: 'border-box', textAlign: 'center', textDecoration: 'none',
   },
   btnDanger: {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
