@@ -1,5 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
+:root { --bottom-nav-content-height: 56px; }
+/* Flutter SafeArea owns the system inset for every tab. */
+.app-bottom-nav { height: calc(var(--bottom-nav-content-height) + 1px); padding-bottom: 0; box-sizing: border-box; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
   /* BottomNav 와 같은 surface 색으로 — 모바일에서 패널 닫힘/스크롤 등으로 body 가

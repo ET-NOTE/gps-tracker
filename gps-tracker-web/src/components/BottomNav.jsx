@@ -15,7 +15,7 @@ export default function BottomNav({ active, onChange, isAdmin, isCorporate, isRe
   if (isAdmin)     tabs.push({ id: 'admin',     label: '관리자', icon: 'wrench' });
 
   return (
-    <nav style={s.wrap}>
+    <nav className="app-bottom-nav" style={s.wrap}>
       <div style={s.inner}>
         {tabs.map(t => {
           const on = t.id === active;
@@ -53,7 +53,7 @@ const s = {
   inner: {
     maxWidth: 540,
     margin: '0 auto',
-    height: BOTTOM_NAV_HEIGHT,
+    height: 'var(--bottom-nav-content-height)',
     display: 'flex',
     alignItems: 'center',
   },

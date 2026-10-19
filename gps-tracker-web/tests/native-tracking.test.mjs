@@ -37,6 +37,24 @@ test('selected tracker survives fleet cap; segments remain separate and bounded'
   assert.ok(snapshot.segments.every(s => s.length <= 40));
 });
 
+test('missing direction stays unknown; displayed point owns its course and timestamp', () => {
+  const input = args();
+  assert.equal(buildNativeTrackingSnapshot(input).devices[0].markerHeading, null);
+  input.metadata[1] = {recordedAt: '2026-10-09T12:00:00Z', heading: 0, speedKmh: 30, fix: true};
+  input.display.markers[1] = {lat: 37, lng: 127, heading: 90, meta: {
+    recordedAt: '2026-10-09T11:59:58Z', heading: null, speedKmh: 30, fix: true,
+  }};
+  let row = buildNativeTrackingSnapshot(input).devices[0];
+  assert.equal(row.heading, null, 'batch anchor cannot manufacture north at its endpoint');
+  assert.equal(row.recordedAt, '2026-10-09T11:59:58Z');
+  assert.equal(row.markerHeading, 90);
+  input.metadata[1].fix = false;
+  row = buildNativeTrackingSnapshot(input).devices[0];
+  assert.equal(row.state, 'stopped', 'newer no-fix telemetry still stops a moving arrow');
+  input.display.markers[1].meta.heading = 0;
+  assert.equal(buildNativeTrackingSnapshot(input).devices[0].heading, 0, 'real north remains valid');
+});
+
 test('native session streams while open and stops on back, logout, account switch and unmount', async () => {
   const window = new EventTarget(), timers = new Map(), calls = [];
   let sequence = 0, hook, renderer;

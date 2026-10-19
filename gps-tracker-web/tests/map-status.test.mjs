@@ -61,6 +61,29 @@ async function fixture(api = {}) {
 const networkError = () => { throw new TypeError('network unavailable'); };
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 
+test('batch markers use each fix course and timestamp, including the last fix', async () => {
+  const f = await fixture();
+  const { makeWsEventHandler } = await f.module('lib/wsEventHandler.js');
+  const updates = [], lastMetaRef = {current: {}};
+  const handler = makeWsEventHandler({
+    devRef: {current: [{id: 1}]}, lastMetaRef, wsDotAccRef: {current: {}},
+    mapRef: {current: {updateMarker: (...args) => updates.push(args), addHistoryPoint() {}}},
+    filterDeviceIdRef: {current: 1}, trackLiveRef: {current: false},
+    setDevices() {}, setLiveSpeed() {},
+  });
+  const at = seconds => new Date(Date.now() + seconds * 1000).toISOString();
+  const first = at(-4), last = at(-2);
+  handler({type: 'location', device_id: 1, fix: true, recorded_at: at(0), heading: 0, lat: 37, lng: 127,
+    fixes: [{recorded_at: last, lat: 37, lng: 127.001, heading: null, speed_kmh: 30},
+      {recorded_at: first, lat: 37, lng: 127, heading: 90, speed_kmh: 30}]});
+  assert.equal(updates.length, 2);
+  assert.equal(updates[0][5].heading, 90);
+  assert.equal(updates[1][5].heading, null);
+  assert.equal(updates[1][5].recordedAt, last);
+  assert.equal(lastMetaRef.current[1].recordedAt, last);
+  assert.equal(lastMetaRef.current[1].heading, null);
+});
+
 test('home window uses KST midnight and validates wake timestamps', async () => {
   const f = await fixture({ getDeviceEvents: async () => [{ occurred_at: 'invalid', data: { wake_cause: 'motion' } }] });
   const { computeHomeSinceISO } = await f.module('lib/deviceLoader.js');

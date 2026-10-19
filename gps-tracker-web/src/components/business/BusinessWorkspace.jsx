@@ -34,12 +34,12 @@ export function BusinessWorkspace({ title, description, tabs, tab, onTab, action
         {children}
       </div>
     </div>
-    {onNavigate && <nav className="business-mobile-nav no-print" aria-label={`${title} 빠른 메뉴`}>
-      <button className="business-mobile-item" aria-current={tab === tabs[0].id ? 'page' : undefined} onClick={() => choose(tabs[0].id)}><Icon name="home" size={21} />현황</button>
-      <button className="business-mobile-item" aria-current={tab === schedule?.id ? 'page' : undefined} onClick={() => choose(schedule.id)}><Icon name="clock" size={21} />{kind === 'rentcar' ? '배차표' : '예약'}</button>
+    {onNavigate && <nav className="app-bottom-nav business-mobile-nav no-print" aria-label={`${title} 빠른 메뉴`}>
+      <button className="business-mobile-item" aria-current={tab === tabs[0].id ? 'page' : undefined} onClick={() => choose(tabs[0].id)}><Icon name="home" size={22} />현황</button>
+      <button className="business-mobile-item" aria-current={tab === schedule?.id ? 'page' : undefined} onClick={() => choose(schedule.id)}><Icon name="clock" size={22} />{kind === 'rentcar' ? '배차표' : '예약'}</button>
       <div className="business-mobile-create">{action}</div>
-      <button className="business-mobile-item" onClick={() => onNavigate('home')}><Icon name="mapPin" size={21} />지도</button>
-      <button className="business-mobile-item" aria-expanded={more} onClick={() => setMore(true)}><Icon name="more" size={21} />더보기</button>
+      <button className="business-mobile-item" onClick={() => onNavigate('home')}><Icon name="mapPin" size={22} />지도</button>
+      <button className="business-mobile-item" aria-expanded={more} onClick={() => setMore(true)}><Icon name="more" size={22} />더보기</button>
     </nav>}
     {more && <BusinessDrawer title={`${title} 메뉴`} onClose={() => setMore(false)}><div className="business-more-menu">{tabs.map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}><Icon name={item.icon} size={18} />{item.label}</button>)}<hr /><button className="business-button" onClick={() => { setMore(false); onNavigate('devices'); }}>단말기 관리</button><button className="business-button" onClick={() => { setMore(false); onNavigate('profile'); }}>내정보·계정 유형</button></div></BusinessDrawer>}
     {selected && <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} />}

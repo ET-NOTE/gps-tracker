@@ -77,11 +77,11 @@ export function makeWsEventHandler({
         ? msg.fixes.reduce((a,b) => Date.parse(a.recorded_at) >= Date.parse(b.recorded_at) ? a : b) : msg;
       const speedKmh = serverSpeed(latestFix);
       const meta = {
-        recordedAt: msg.recorded_at, sat: msg.sat, vbatMv: msg.vbat_mv ?? null, cbcMv: msg.cbc_mv ?? null,
+        recordedAt: latestFix.recorded_at, sat: latestFix.sat, vbatMv: msg.vbat_mv ?? null, cbcMv: msg.cbc_mv ?? null,
         batteryAt: msg.recorded_at, batteryRuntime: msg.battery_runtime ?? null,
         ...(!freshBattery ? retainedBattery : {}),
-        fix: msg.fix, stale: false, heading: msg.heading, speedKmh,
-        lat: msg.lat, lng: msg.lng,
+        fix: latestFix.fix ?? msg.fix, stale: false, heading: latestFix.heading, speedKmh,
+        lat: latestFix.lat, lng: latestFix.lng,
         receivedAt: Date.parse(prevMeta?.receivedAt) > eventTime ? prevMeta.receivedAt : msg.recorded_at,
       };
       // (2026-07-03) msg.fixes (batch) 가 있으면 각 fix 마다 updateMarker + addPoint 호출.
@@ -123,10 +123,10 @@ export function makeWsEventHandler({
         for (let i = 0; i < fixesAsc.length; i++) {
           const f = fixesAsc[i];
           if (Date.parse(f.recorded_at) <= previousTime) continue;
-          const isLast = (i === fixesAsc.length - 1);
           const pointSpeed = serverSpeed(f);
-          const fMeta = isLast ? { ...meta, speedKmh: pointSpeed } : {
-            recordedAt: f.recorded_at, sat: f.sat, fix: true, stale: false,
+          const fMeta = {
+            ...meta, recordedAt: f.recorded_at, sat: f.sat, fix: f.fix ?? true, stale: false,
+            heading: f.heading, lat: f.lat, lng: f.lng,
             deviceId: msg.device_id, deviceLabel: label, speedKmh: pointSpeed,
           };
           mapRef.current?.updateMarker(msg.device_id, f.lat, f.lng, label, color, fMeta);

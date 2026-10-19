@@ -236,10 +236,10 @@
   .business-global-search { display: none; }
   .has-mobile-nav .business-header-action { display: none; }
   .has-mobile-nav .business-nav { display: none; }
-  .has-mobile-nav .business-content { padding-bottom: 94px; }
-  .business-mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; height: 64px; padding-bottom: env(safe-area-inset-bottom,0px); border-top: 1px solid var(--border); background: var(--surface); z-index: 20; box-sizing: content-box; }
+  .has-mobile-nav .business-content { padding-bottom: calc(var(--bottom-nav-content-height) + 25px); }
+  .business-mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; border-top: 1px solid var(--border); background: var(--surface); z-index: 20; }
   .business-mobile-nav > button, .business-mobile-create { flex: 1; min-width: 0; }
-  .business-mobile-nav > button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 52px; padding: 6px 0; font-size: 11px; color: var(--text-2); border: 0; background: transparent; cursor: pointer; }
+  .business-mobile-nav > button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 100%; min-height: 0; padding: 0; font-size: 11px; color: var(--text-2); border: 0; background: transparent; cursor: pointer; }
   .business-mobile-nav > button[aria-current] { color: var(--primary); font-weight: 700; }
   .business-mobile-create { display: flex; justify-content: center; }
   .business-mobile-create .business-button { min-height: 44px; padding: 7px; flex-direction: column; gap: 3px; font-size: 10px; border-radius: 12px; }

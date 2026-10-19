@@ -15,9 +15,9 @@ import { startPhoneTracker, stopPhoneTracker } from '../lib/phoneTracker';
 
 // Match the versioned public files; ZIP is the default distribution format.
 const APP_DOWNLOAD = {
-  version: '1.0.4',
-  zip: 'https://gps.serial.kr/gps-tracker-1.0.4-10.zip',
-  apk: 'https://gps.serial.kr/gps-tracker-1.0.4-10.apk',
+  version: '1.0.5',
+  zip: 'https://gps.serial.kr/gps-tracker-1.0.5-11.zip',
+  apk: 'https://gps.serial.kr/gps-tracker-1.0.5-11.apk',
 };
 
 function initialProfileTab() {

@@ -14,13 +14,17 @@ export function buildNativeTrackingSnapshot({ selectedId, devices, display, meta
   if (selectedId == null || !display) return null;
   const rows = devices.map(device => {
     const marker = display.markers?.[device.id];
+    // Coordinates and metadata must describe the same accepted fix. Global
+    // metadata can be an anchor/heartbeat while the displayed pin is newer.
     const meta = metadata[device.id] || marker?.meta || {};
+    const pointMeta = marker?.meta || meta;
     const row = {
       id: String(device.id), label: String(device.display_name || device.device_uid || '단말기').slice(0, 80),
       lat: marker?.lat ?? device.last_lat, lng: marker?.lng ?? device.last_lng,
       color: safeColor(colors[device.id]), ...pickMeta(meta),
-      recordedAt: meta.recordedAt || device.last_fix_at || null,
-      markerHeading: finite(marker?.heading) ? marker.heading : 0,
+      heading: finite(pointMeta.heading) ? pointMeta.heading : null,
+      recordedAt: pointMeta.recordedAt || device.last_fix_at || null,
+      markerHeading: finite(marker?.heading) ? marker.heading : null,
       statusLabel: statuses[device.id] || '', cached: !!(cached.devices || cached[device.id]),
     };
     const age = now - Date.parse(row.recordedAt);
