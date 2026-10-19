@@ -112,3 +112,12 @@
 - 소스 `2262d0c72ac06c2b0bac13cfe604b090e2413f8f`, 운영 웹 `prod-web-20261017-2262d0c`. 웹 아카이브 SHA256 `ebcf6442d28ee66c6fe364318fb75f75c76d29ac419289fd99d411606c8b89b2`. 직전 `prod-web-20261016-6bc27c2/web`과 기존 정적 청크·업로드 심볼릭 링크를 보존했다.
 - 기존 웹 테스트 95개 및 운영 빌드 통과. 로컬/운영 웹 번들에 읽기 전용 계정 fixture를 주입해 1440/390/320px에서 카드 위치와 가로 넘침 없음을 확인했다. 두 버튼 클릭은 다운로드 응답 fixture로 검증했고, 실제 운영 ZIP/APK는 HEAD 200, 파일 형식·첨부 파일명과 서버 파일 SHA 불변을 확인했다. 실기기 설치는 수행하지 않았다.
 - 웹 링크만 원자적으로 교체했다. API 프로세스·바이너리, nginx·환경 설정, 진단 페이지와 APK/ZIP 파일 불변을 검증했다. API/DB 접근·재시작 및 DEV/Shield 변경은 없다. 로컬 검증 자료는 `GPS-Builds/gps-profile-download-20261017`, 배포 기록은 `/home/mmm/releases/prod-web-20261017-2262d0c/deployment.json`에 보존했다. 로컬 Vite 검증 서버는 종료했다.
+
+## Android 지도 복귀·방향과 하단 바 정합 (2026-10-19)
+
+- 웹 소스 `495e7bb7ecfa43f02bd3bf2d7972be9d6735cf42`, 운영 릴리스 `prod-web-20261019-495e7bb`. 기본·법인·렌트의 하단 바 높이를 테두리 포함 57px로 통일하고 법인·렌트의 중복 safe-area 여백을 제거했다. Flutter SafeArea가 시스템 영역을 담당한다. 개별 배치 fix마다 시각·방향을 전달하고 마지막 fix에 상위 메시지의 기본 방향이 덮어씌워지지 않도록 했다. 네이티브 snapshot의 좌표·시각·방향도 같은 표시 지점에서 가져온다.
+- 앱 소스 `9c5cadd2d5852500060bbca38528fdb55a9f2e71`, Android 1.0.5+11. Kakao GL 화면을 hybrid composition으로 표시하고 Activity Lifecycle에서 SDK pause/resume를 관리한다. 단말기별 계산 방향을 화살표와 카메라에 공통 적용하며 누락·중복·역순·정지 데이터에서는 직전 방향을 유지한다. 실제 0도 방향은 유효하다. 기존 release 인증서로 ARM/ARM64 통합 APK를 서명했다.
+- 기존 1.0.4 smoke 앱에서 화면 꺼짐 후 검은 지도 증상을 에뮬레이터에서 재현했다. 새 smoke 앱은 홈 복귀 2회·화면 꺼짐/복귀 2회에서 프로세스 재시작 없이 지도 복원(지도 영역 검정 픽셀 비율 0%)과 누락된 방향의 동쪽 진행 화살표를 확인했다. Flutter 테스트 13개, analyze 0 issues, 웹 테스트 97개 통과. 로컬 및 운영 번들에서 법인/렌트 각각 320·390·768px 하단 바 위치·높이 일치, 다운로드 카드 320·390·1440px 및 ZIP/APK 링크를 API fixture로 검증했다. 실기기 주행 검증은 후속 확인이 필요하다.
+- 내정보 다운로드 링크를 `https://gps.serial.kr/gps-tracker-1.0.5-11.zip` 및 `.apk`로 갱신했다. ZIP SHA256 `61e0600247808a806b29f92dc0c9ec2b347bef6034b9ec40a0a772c6866abc76`, APK SHA256 `7595a8aca10f7bed3da395b421734de590e93bf749f9482a7d7cb470c20dd42c`. 전체 공개 응답의 해시·MIME·첨부 파일명과 ZIP 내부 APK 일치를 확인했다. 기존 1.0.4 파일/경로는 유지한다.
+- GPS nginx에 두 다운로드 exact 경로만 추가했다. 첫 공개 응답 검증은 reload 직후 이전 worker 응답으로 실패해 설정을 복원했다. 동일 해시 파일을 재사용하고 reload 전파 대기 후 재배포·검증을 완료했다. 설정 백업은 `/etc/nginx/sites-available/gps.serial.kr.backup-20261019-app105`. 웹은 직전 릴리스·정적 청크·uploads 링크를 보존하며 원자적으로 교체했다. API 프로세스/바이너리·DB 구조·환경 설정·진단·다른 nginx vhost 및 DEV/Shield/iOS는 변경하지 않았다. 실제 고객 데이터 쓰기는 없었다.
+- 검증 자료는 `GPS-Builds/gps-map-fixes-20261019`, 서버 배포 기록은 `/home/mmm/releases/prod-web-20261019-495e7bb/deployment.json`과 `/home/mmm/gps-artifacts/prod-web-20261019-495e7bb/app-published.json`에 보존한다.
