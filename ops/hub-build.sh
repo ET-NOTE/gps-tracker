@@ -40,6 +40,7 @@ docker run --rm --name "gps-build-$release" --cpus=4 --memory=6g --memory-swap=6
     cp /work/ops/test_battery_runtime_api.py /out/test_battery_runtime_api.py
     cp /work/ops/test_ingest_fixture.py /out/test_ingest_fixture.py
     cp /work/ops/test_security_boundaries.py /out/test_security_boundaries.py
+    cp /work/ops/test_sim_hardware.py /out/test_sim_hardware.py
     cp /work/ops/provision_gps_credential.py /out/provision_gps_credential.py
     cp /work/ops/deploy-dev-artifact.sh /out/deploy-dev-artifact.sh
     rustc --version > /out/toolchain.txt

@@ -172,14 +172,24 @@ pub async fn ingest(
         .get("x-gps-counter")
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.parse::<i64>().ok());
-    let response = ingest_payload(
-        State(state.clone()),
-        headers,
-        Json(payload.clone()),
-        id,
-        mode,
-    )
-    .await?;
+    let hardware = matches!(mode, IngestMode::Hardware | IngestMode::HardwarePending);
+    let auth_uid = headers
+        .get("x-gps-uid")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("")
+        .to_owned();
+    let response = if mode == IngestMode::HardwarePending {
+        Json(json!({"ok":false,"sim_link_required":true}))
+    } else {
+        ingest_payload(
+            State(state.clone()),
+            headers,
+            Json(payload.clone()),
+            id,
+            mode,
+        )
+        .await?
+    };
     if mode == IngestMode::Signed {
         if let Some(hash) = payload
             .get("pairing_hash")
@@ -193,16 +203,15 @@ pub async fn ingest(
                 .bind(id).bind(hash.to_ascii_lowercase()).execute(&mut *gate).await?;
         }
     }
-    let result = if mode == IngestMode::Signed {
+    let result = if mode == IngestMode::Signed || hardware {
         Json(
             device_auth::signed_response(
                 &mut gate,
                 id,
                 counter.ok_or(AppError::Unauthorized)?,
-                payload["device_uid"]
-                    .as_str()
-                    .ok_or(AppError::Unauthorized)?,
+                &auth_uid,
                 &response.0,
+                hardware,
             )
             .await?,
         )
@@ -245,7 +254,7 @@ async fn ingest_payload(
         .fetch_one(&state.db)
         .await?;
     sqlx::query(
-        "UPDATE devices SET last_seen_at=now(),device_uid=$2,
+        "UPDATE devices SET last_seen_at=now(),device_uid=CASE WHEN $6 THEN device_uid ELSE $2 END,
         iccid=COALESCE(iccid,$3),imei=COALESCE($4,imei),imsi=COALESCE($5,imsi) WHERE id=$1",
     )
     .bind(device_id)
@@ -253,6 +262,7 @@ async fn ingest_payload(
     .bind(&parsed.iccid)
     .bind(&parsed.imei)
     .bind(&parsed.imsi)
+    .bind(mode == crate::services::device_auth::IngestMode::Hardware)
     .execute(&state.db)
     .await?;
     if let (Some(old), Some(new)) = (prev_imei.as_deref(), parsed.imei.as_deref()) {
@@ -880,7 +890,11 @@ async fn ingest_payload(
     }
 
     // Legacy compatibility never consumes private remote commands.
-    if mode != crate::services::device_auth::IngestMode::Signed {
+    if !matches!(
+        mode,
+        crate::services::device_auth::IngestMode::Signed
+            | crate::services::device_auth::IngestMode::Hardware
+    ) {
         return Ok(Json(
             json!({"ok":true,"authentication":"legacy_update_required"}),
         ));

@@ -115,6 +115,7 @@ export default function Dashboard({ onLogout }) {
   const scope = authScope();
   const setDevices = useCallback(update => updateDeviceList(update, scope), [scope]);
   const [pairRegistration, setPairRegistration] = useState('');
+  const [pairSim, setPairSim] = useState('');
   const [pairLabel, setPairLabel] = useState('');
   const [pairError, setPairError] = useState('');
   const [pairLoading, setPairLoading] = useState(false);
@@ -653,15 +654,16 @@ export default function Dashboard({ onLogout }) {
   // ── 단말기 액션 ─────────────────────────
   async function handlePair() {
     setPairError('');
-    if (!pairRegistration.trim()) { setPairError('장치에서 확인한 등록번호를 입력해 주세요.'); return false; }
-    const body = { registration_code: pairRegistration.trim() };
+    if (!/^\d{8,20}$/.test(pairSim.trim())) { setPairError('SIM 번호를 숫자 8~20자리로 입력해 주세요.'); return false; }
+    const body = { iccid: pairSim.trim() };
+    if (pairRegistration.trim()) body.registration_code = pairRegistration.trim();
     const name = pairLabel.trim();
     if (!name) { setPairError('단말기명(별명)을 입력하세요. 알림에 사용됩니다.'); return false; }
     body.display_name = name;
     setPairLoading(true);
     try {
       await api.pairDevice(body);
-      setPairRegistration(''); setPairLabel('');
+      setPairSim(''); setPairRegistration(''); setPairLabel('');
       await reloadDevicesAfterMutation();
       return true;
     } catch (e) { setPairError(e.message); return false; }
@@ -775,11 +777,16 @@ export default function Dashboard({ onLogout }) {
               </div>
 
               {pairOpen && <>
-                <label style={{fontSize:13}}>장치 등록번호
+                <label style={{fontSize:13}}>SIM 번호
+                  <input inputMode="numeric" autoComplete="off" spellCheck={false} maxLength={20} placeholder="SIM 전체 번호 또는 끝 8자리"
+                    value={pairSim} onChange={e => setPairSim(e.target.value)} style={s.input} />
+                </label>
+                <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>SIM에 연결된 기존 기록을 이어서 사용합니다. SIM을 같은 계정에서 인증한 다른 단말기로 옮겨도 다시 등록할 필요가 없습니다. 끝번호가 중복되면 전체 번호를 입력해 주세요.</p>
+                <label style={{fontSize:13}}>연결 확인번호 (처음 연결하는 단말기)
                   <input autoComplete="off" spellCheck={false} maxLength={24} placeholder="예: a1b2-c3d4-e5f6-7890-abcd"
                     value={pairRegistration} onChange={e => setPairRegistration(e.target.value)} style={s.input} />
                 </label>
-                <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>인증 펌웨어로 켠 장치의 시리얼 모니터(115200 baud)에 표시된 등록번호를 붙여 넣으세요. 등록은 한 번만 하면 됩니다. 연결 해제 후 다시 등록하려면 장치 전원을 껐다 켜서 새 번호를 확인하세요.</p>
+                <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>처음 연결하거나 연결 해제 후 재등록할 때는 시리얼 모니터(115200 baud)의 [REGISTER] 확인번호도 입력하세요. 새 번호는 시리얼에 REGISTER를 입력하고 Enter를 누르거나 전원을 다시 켜서 확인합니다. SIM 번호만으로 다른 계정의 단말기를 가져올 수는 없습니다.</p>
                 <label style={{fontSize:13}}>단말기 이름
                   <input placeholder="예: 1호차" value={pairLabel} maxLength={32} required
                     onChange={e=>setPairLabel(e.target.value)} style={{...s.input,marginTop:6}} />

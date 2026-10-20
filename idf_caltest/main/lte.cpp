@@ -577,6 +577,7 @@ bool httpPost(const char *body, int *statusOut) {
   sendAT("AT+SHCHEAD", "OK", 2000);
   sendAT("AT+SHAHEAD=\"Content-Type\",\"application/json\"", "OK", 2000);
   if(device_security::enabled()) {
+    if(!sendAT("AT+SHAHEAD=\"X-GPS-Auth-Version\",\"2\"","OK",2000))return false;
     char header[180];
     snprintf(header,sizeof(header),"AT+SHAHEAD=\"X-GPS-UID\",\"%s\"",device_security::uid());
     if(!sendAT(header,"OK",2000))return false;

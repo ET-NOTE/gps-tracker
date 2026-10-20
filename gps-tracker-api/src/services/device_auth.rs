@@ -13,6 +13,8 @@ use crate::{
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum IngestMode {
     Signed,
+    Hardware,
+    HardwarePending,
     Phone,
     Legacy,
 }
@@ -31,13 +33,21 @@ pub async fn signed_response(
     counter: i64,
     uid: &str,
     value: &Value,
+    hardware: bool,
 ) -> AppResult<Value> {
     use base64::{engine::general_purpose::STANDARD, Engine};
-    let key: Vec<u8> =
-        sqlx::query_scalar("SELECT key_digest FROM device_credentials WHERE device_id=$1")
-            .bind(id)
-            .fetch_one(&mut **gate)
-            .await?;
+    let key: Vec<u8> = sqlx::query_scalar(if hardware {
+        "SELECT key_digest FROM hardware_credentials WHERE auth_uid=$1"
+    } else {
+        "SELECT key_digest FROM device_credentials WHERE device_id=$1::text::bigint"
+    })
+    .bind(if hardware {
+        uid.to_owned()
+    } else {
+        id.to_string()
+    })
+    .fetch_one(&mut **gate)
+    .await?;
     let encoded =
         STANDARD.encode(serde_json::to_vec(value).map_err(|e| AppError::Internal(e.into()))?);
     let mut mac = Hmac::<Sha256>::new_from_slice(&key).map_err(|_| AppError::Unauthorized)?;
@@ -58,14 +68,20 @@ pub fn claim_hash(code: &str) -> AppResult<String> {
     Ok(digest(&clean))
 }
 
-fn header<'a>(headers: &'a HeaderMap, name: &str) -> AppResult<&'a str> {
+pub(super) fn header<'a>(headers: &'a HeaderMap, name: &str) -> AppResult<&'a str> {
     headers
         .get(name)
         .and_then(|v| v.to_str().ok())
         .ok_or(AppError::Unauthorized)
 }
 
-fn verify(key: &[u8], uid: &str, counter: i64, body: &[u8], signature: &str) -> AppResult<()> {
+pub(super) fn verify(
+    key: &[u8],
+    uid: &str,
+    counter: i64,
+    body: &[u8],
+    signature: &str,
+) -> AppResult<()> {
     if counter <= 0 || signature.len() != 64 || !signature.bytes().all(|b| b.is_ascii_hexdigit()) {
         return Err(AppError::Unauthorized);
     }
@@ -88,6 +104,13 @@ pub async fn authorize(
     body: &[u8],
     payload: &Value,
 ) -> AppResult<(i64, IngestMode, Transaction<'static, Postgres>)> {
+    if headers
+        .get("x-gps-auth-version")
+        .and_then(|h| h.to_str().ok())
+        == Some("2")
+    {
+        return super::hardware_auth::authorize(state, headers, body, payload).await;
+    }
     let uid = payload
         .get("device_uid")
         .and_then(Value::as_str)
@@ -102,7 +125,7 @@ pub async fn authorize(
     let mut row: Option<(i64, Option<i64>, Option<String>, bool)> = sqlx::query_as(
         "SELECT id,owner_id,device_kind,ingest_legacy_allowed FROM devices
          WHERE device_uid=$1 OR ($2::text IS NOT NULL AND iccid=$2)
-         ORDER BY (device_uid=$1) DESC LIMIT 1",
+         ORDER BY (iccid=$2) DESC NULLS LAST,(device_uid=$1) DESC LIMIT 1",
     )
     .bind(uid)
     .bind(iccid)
@@ -148,6 +171,11 @@ pub async fn authorize(
             .fetch_optional(&mut *gate)
             .await?;
     if headers.contains_key("x-gps-signature") {
+        let upgraded:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM hardware_credentials WHERE auth_uid=$1 AND activated_at IS NOT NULL)")
+            .bind(uid).fetch_one(&mut *gate).await?;
+        if upgraded {
+            return Err(AppError::Unauthorized);
+        }
         let (key, _) = credential.ok_or(AppError::Unauthorized)?;
         if header(headers, "x-gps-uid")? != uid {
             return Err(AppError::Unauthorized);
@@ -176,7 +204,13 @@ pub async fn authorize(
         }
         return Ok((id, IngestMode::Signed, gate));
     }
+    let sim_signed: bool =
+        sqlx::query_scalar("SELECT active_auth_uid IS NOT NULL FROM devices WHERE id=$1")
+            .bind(id)
+            .fetch_one(&mut *gate)
+            .await?;
     if legacy
+        && !sim_signed
         && (enabled("GPS_LEGACY_INGEST_ENABLED") || enabled("GPS_KC_INGEST_ENABLED"))
         && credential.is_none_or(|(_, at)| at.is_none())
         && payload.get("phone").is_none()

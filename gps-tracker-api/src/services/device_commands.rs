@@ -19,7 +19,7 @@ pub async fn enqueue(
     if owned.is_none() {
         return Err(AppError::NotFound);
     }
-    let signed: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM device_credentials WHERE device_id=$1 AND activated_at IS NOT NULL)")
+    let signed: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM device_credentials WHERE device_id=$1 AND activated_at IS NOT NULL) OR EXISTS(SELECT 1 FROM devices d JOIN hardware_credentials h ON h.auth_uid=d.active_auth_uid WHERE d.id=$1 AND h.activated_at IS NOT NULL AND h.authorized_owner_id=d.owner_id)")
         .bind(device).fetch_one(&mut *tx).await?;
     if !signed {
         return Err(AppError::BadRequest(

@@ -12,6 +12,7 @@ static char identity[65] = "";
 static unsigned char key[32];
 static char pairingHash[65] = "";
 static String ack, input;
+static String lastSim;
 static bool ready = false;
 static uint64_t nextCounter = 0, reservedEnd = 0;
 static constexpr uint64_t BLOCK = 4096, MAX_COUNTER = 9007199254740991ULL;
@@ -92,7 +93,14 @@ bool prepare(const char *body, String &wireBody, uint64_t &counter, char signatu
   if(!ready){wireBody=body;counter=0;signature[0]=0;return KC_TEST_BUILD;}
   if(nextCounter>reservedEnd&&!reserve())return false;
   cJSON *json=cJSON_Parse(body);if(!json)return false;
-  cJSON_DeleteItemFromObject(json,"device_uid");cJSON_AddStringToObject(json,"device_uid",identity);
+  const cJSON *sim=cJSON_GetObjectItemCaseSensitive(json,"iccid");
+  if(!cJSON_IsString(sim)){cJSON_Delete(json);Serial.println("[AUTH] Waiting for SIM identity.");return false;}
+  String currentSim=sim->valuestring;
+  if(currentSim.length()!=19&&currentSim.length()!=20){cJSON_Delete(json);return false;}
+  for(unsigned int i=0;i<currentSim.length();i++)if(!isdigit(static_cast<unsigned char>(currentSim[i]))){cJSON_Delete(json);return false;}
+  if(lastSim.length()&&lastSim!=currentSim){newRegistration();ack="";}
+  lastSim=currentSim;
+  // device_uid and ICCID describe the current SIM; identity is only the hardware signer.
   cJSON_AddStringToObject(json,"pairing_hash",pairingHash);
   if(ack.length())cJSON_AddStringToObject(json,"command_ack",ack.c_str());
   char *encoded=cJSON_PrintUnformatted(json);cJSON_Delete(json);if(!encoded)return false;
@@ -114,7 +122,13 @@ bool response(const String &raw,uint64_t counter,String &decoded) {
   if(valid){unsigned char bytes[2048];size_t length=0;
     valid=mbedtls_base64_decode(bytes,sizeof(bytes)-1,&length,
       reinterpret_cast<const unsigned char *>(payload->valuestring),strlen(payload->valuestring))==0;
-    if(valid){bytes[length]=0;decoded=reinterpret_cast<const char *>(bytes);}}
+    if(valid){bytes[length]=0;decoded=reinterpret_cast<const char *>(bytes);
+      cJSON *inner=cJSON_Parse(decoded.c_str());
+      if(inner&&cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(inner,"sim_link_required"))){
+        Serial.println("[PAIR] Enter this SIM number and the REGISTER confirmation number on the website.");valid=false;
+      }
+      cJSON_Delete(inner);
+    }}
   cJSON_Delete(json);return valid;
 }
 bool acceptCommand(const String &decoded) {

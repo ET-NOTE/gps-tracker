@@ -367,6 +367,35 @@ async fn pair(
             .bind(user.user_id)
             .fetch_one(&state.db)
             .await?;
+    let selected_sim = if let Some(iccid) = req.iccid.as_deref() {
+        Some(
+            crate::services::sim_identity::find(&state.db, iccid)
+                .await?
+                .ok_or_else(|| {
+                    AppError::BadRequest(
+                        "SIM 번호를 확인하고 단말기의 LTE 연결 후 다시 시도해 주세요.".into(),
+                    )
+                })?,
+        )
+    } else {
+        None
+    };
+    if let (Some(sim), Some(hash)) = (selected_sim, proof.as_deref()) {
+        if let Some(id) =
+            crate::services::hardware_auth::pair(&state, user.user_id, sim, hash, &req.display_name)
+                .await?
+        {
+            log_audit(
+                &state,
+                id,
+                "pair",
+                user.user_id,
+                json!({"via":"sim_with_hardware_proof"}),
+            )
+            .await;
+            return fetch_device(&state, id, user.user_id).await;
+        }
+    }
     if proof.is_none() && req.device_uid.is_none() && req.iccid.is_none() {
         return Err(AppError::BadRequest(
             "장치에서 확인한 등록번호를 입력해 주세요.".into(),
@@ -429,6 +458,11 @@ async fn pair(
         None
     };
 
+    if selected_sim.is_some_and(|sim| row.as_ref().is_some_and(|(id, _)| *id != sim)) {
+        return Err(AppError::BadRequest(
+            "SIM 번호와 연결 확인번호가 일치하지 않습니다.".into(),
+        ));
+    }
     let device_id: i64 = match row {
         Some((id, Some(owner))) if owner == user.user_id => {
             // 이미 본인 소유 → 멱등 패치 (display_name 필수라 항상 갱신)
@@ -739,7 +773,7 @@ async fn unpair(
 
     sqlx::query("UPDATE device_commands SET cancelled_at=now() WHERE device_id=$1 AND acknowledged_at IS NULL AND cancelled_at IS NULL")
         .bind(id).execute(&mut *tx).await?;
-    sqlx::query("UPDATE devices SET claim_code_hash=NULL,claim_expires_at=NULL WHERE id=$1")
+    sqlx::query("UPDATE devices SET claim_code_hash=NULL,claim_expires_at=NULL,claim_not_before=now(),active_auth_uid=NULL WHERE id=$1")
         .bind(id)
         .execute(&mut *tx)
         .await?;
