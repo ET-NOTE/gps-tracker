@@ -82,6 +82,7 @@ try:
  retained=count(da)
  request(api+f'/devices/{da}',user=a,method='DELETE')
  assert count(da)==retained and sql('SELECT owner_id FROM devices WHERE id=%s',(da,)) is None
+ request('/gps-tracker/ingest',data={'device_uid':'logical-'+run+'1','iccid':sims[0]},expected=401)
  pair(sims[0],oldcode,b,400)
  newcode=secrets.token_hex(10);assert send(fresh,sims[0],newcode)['sim_link_required']
  assert pair(sims[0],newcode,b)['id']==da

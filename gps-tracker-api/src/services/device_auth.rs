@@ -204,11 +204,12 @@ pub async fn authorize(
         }
         return Ok((id, IngestMode::Signed, gate));
     }
-    let sim_signed: bool =
-        sqlx::query_scalar("SELECT active_auth_uid IS NOT NULL FROM devices WHERE id=$1")
-            .bind(id)
-            .fetch_one(&mut *gate)
-            .await?;
+    let sim_signed: bool = sqlx::query_scalar(
+        "SELECT sim_auth_required OR active_auth_uid IS NOT NULL FROM devices WHERE id=$1",
+    )
+    .bind(id)
+    .fetch_one(&mut *gate)
+    .await?;
     if legacy
         && !sim_signed
         && (enabled("GPS_LEGACY_INGEST_ENABLED") || enabled("GPS_KC_INGEST_ENABLED"))

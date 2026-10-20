@@ -17,5 +17,8 @@ INSERT INTO hardware_credentials(auth_uid,key_digest,last_counter,authorized_own
 SELECT d.device_uid,c.key_digest,c.last_counter,d.owner_id,d.id
 FROM device_credentials c JOIN devices d ON d.id=c.device_id;
 ALTER TABLE devices ADD COLUMN active_auth_uid text;
+ALTER TABLE devices ADD COLUMN sim_auth_required boolean NOT NULL DEFAULT false;
+UPDATE devices SET sim_auth_required=true WHERE id IN (SELECT device_id FROM device_credentials WHERE activated_at IS NOT NULL);
 ALTER TABLE devices ADD COLUMN claim_not_before timestamptz NOT NULL DEFAULT '1970-01-01';
+CREATE UNIQUE INDEX devices_iccid_canonical_unique ON devices(left(iccid,19)) WHERE iccid ~ '^[0-9]{19,20}$';
 CREATE INDEX hardware_pending_claim ON hardware_credentials(claim_code_hash) WHERE claim_code_hash IS NOT NULL;

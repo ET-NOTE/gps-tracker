@@ -92,7 +92,7 @@ pub async fn authorize(
             .bind(id)
             .execute(&mut *tx)
             .await?;
-        sqlx::query("UPDATE devices SET active_auth_uid=$2 WHERE id=$1")
+        sqlx::query("UPDATE devices SET active_auth_uid=$2,sim_auth_required=true WHERE id=$1")
             .bind(id)
             .bind(uid)
             .execute(&state.db)
@@ -148,9 +148,9 @@ pub async fn pair(
     if !valid {
         return Err(AppError::BadRequest("SIM 번호와 단말기의 연결 확인번호가 일치하지 않습니다. 연결 해제 후에는 REGISTER로 새 번호를 확인해 주세요.".into()));
     }
-    sqlx::query("UPDATE hardware_credentials SET authorized_owner_id=$2,current_device_id=$3,last_claim_code_hash=COALESCE(claim_code_hash,last_claim_code_hash),claim_code_hash=NULL,claim_expires_at=NULL,pending_device_id=NULL WHERE auth_uid=$1")
-        .bind(&uid).bind(user).bind(sim).execute(&mut *tx).await?;
-    sqlx::query("UPDATE devices SET owner_id=$2,display_name=$3,paired_at=COALESCE(paired_at,now()),active_auth_uid=$4 WHERE id=$1")
+    sqlx::query("UPDATE hardware_credentials SET authorized_owner_id=$2,current_device_id=$3,last_claim_code_hash=$4,claim_code_hash=NULL,claim_expires_at=NULL,pending_device_id=NULL WHERE auth_uid=$1")
+        .bind(&uid).bind(user).bind(sim).bind(proof).execute(&mut *tx).await?;
+    sqlx::query("UPDATE devices SET owner_id=$2,display_name=$3,paired_at=COALESCE(paired_at,now()),active_auth_uid=$4,sim_auth_required=true WHERE id=$1")
         .bind(sim).bind(user).bind(name).bind(uid).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(Some(sim))
