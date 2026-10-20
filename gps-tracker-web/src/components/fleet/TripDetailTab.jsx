@@ -5,7 +5,6 @@
 // waypoint 클릭 → 지도 cursor 이동 (mapRef.moveSeekerCursor).
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../../api';
 import { haversineM } from '../../lib/stops';
 import { serverSpeed } from '../../lib/speed';
 import Icon from '../Icon';
@@ -17,33 +16,14 @@ const MAX_WAYPOINTS = 120;
 
 const SPEEDS = [1, 2, 4, 8];   // 재생 속도 배율
 
-export default function TripDetailTab({ deviceId, trip, mapRef }) {
-  const [points, setPoints] = useState(null);   // ASC 정렬 fix 배열
-  const [error, setError] = useState(null);
+export default function TripDetailTab({ trip, points, mapRef }) {
   const [activeIdx, setActiveIdx] = useState(null);
   const [playing, setPlaying]     = useState(false);
   const [speedX,  setSpeedX]      = useState(2);   // 기본 2배속
   const rowRefs = useRef({});
   const playTimerRef = useRef(null);
 
-  // trip 변경 시 fixes fetch.
-  useEffect(() => {
-    if (!trip || !deviceId) { setPoints(null); return; }
-    let cancelled = false;
-    setError(null); setPoints(null);
-    const from = trip.started_at;
-    const to   = trip.ended_at || new Date().toISOString();
-    api.listLocationsGrouped(deviceId, { since: from, until: to, fix_only: true, limit: 5000 })
-      .then(groups => {
-        if (cancelled) return;
-        const asc = api.flattenGroupedAsc(groups)
-          .filter(p => p.lat != null && p.lng != null);
-        setPoints(asc);
-      })
-      .catch(e => { if (!cancelled) setError(e.message); });
-    return () => { cancelled = true; };
-  }, [deviceId, trip?.started_at, trip?.ended_at]);
-
+  // Use the exact same accepted points as the map, without a second fetch.
   // 속도 + 누적 거리 계산 (haversine + Δt).
   const enriched = useMemo(() => {
     if (!points || points.length === 0) return [];
@@ -151,7 +131,6 @@ export default function TripDetailTab({ deviceId, trip, mapRef }) {
   }
 
   if (!trip) return null;
-  if (error) return <div style={{ padding: 'var(--space-4)', color: 'var(--danger)', fontSize: 12 }}>{error}</div>;
   if (!points) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>운행 좌표 로딩...</div>;
   if (points.length === 0) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>이 운행에 좌표가 없습니다.</div>;
 

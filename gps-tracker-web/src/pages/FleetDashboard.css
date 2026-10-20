@@ -9,3 +9,8 @@
 .fleet-panel-nav button[aria-pressed="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
 .fleet-detail-actions { display: flex; justify-content: space-between; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
 @media (max-width: 1023px) { .fleet-body { display: flex; flex-direction: column; } .fleet-pane { flex: 1; } }
+
+.fleet-map-messages { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 36; pointer-events: none; display: grid; gap: 8px; }
+.fleet-map-message { padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); font-size: 13px; line-height: 1.6; box-shadow: 0 3px 12px #0001; pointer-events: auto; }
+.fleet-notice button, .fleet-retry { display: inline-flex; align-items: center; justify-content: center; margin: 6px 0 0 8px; padding: 8px 12px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; color: var(--primary); background: var(--surface); font: inherit; font-weight: 600; cursor: pointer; }
+.fleet-notice button:focus-visible, .fleet-retry:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

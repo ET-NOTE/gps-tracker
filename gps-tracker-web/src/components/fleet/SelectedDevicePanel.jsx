@@ -21,7 +21,7 @@ const EVENT_META = {
 };
 
 export default function SelectedDevicePanel({
-  selectedDevice, events, evLoading,
+  selectedDevice, events, evLoading, evError, onEventsRetry, tripPoints,
   onTripSelect,     // (trip) => void — 선택된 trip 을 map 에 그림
   selectedTrip,     // 선택된 trip 객체 (또는 null)
   selectedTripKey,  // string | null — 선택된 trip 강조
@@ -95,28 +95,34 @@ export default function SelectedDevicePanel({
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--space-2)' }}>
         {tab === 'events' && (
-          <EventsTab events={events} loading={evLoading} />
+          <EventsTab events={events} loading={evLoading} error={evError} onRetry={onEventsRetry} />
         )}
         {tab === 'trips' && (
           <TripsTab deviceId={selectedDevice.id} onSelect={onTripSelect} selectedKey={selectedTripKey} />
         )}
         {tab === 'detail' && selectedTrip && (
-          <TripDetailTab deviceId={selectedDevice.id} trip={selectedTrip} mapRef={mapRef} />
+          <TripDetailTab trip={selectedTrip} points={tripPoints} mapRef={mapRef} />
         )}
       </div>
     </div>
   );
 }
 
-function EventsTab({ events, loading }) {
-  if (loading) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>로딩...</div>;
-  if (!events || events.length === 0) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>최근 이벤트 없음</div>;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+function EventsTab({ events, loading, error, onRetry }) {
+  return <div>
+    {loading && <div role="status" style={feedNotice}>이벤트를 불러오는 중…</div>}
+    {error && <div role="alert" style={feedNotice}>이벤트를 불러오지 못했습니다.
+      {events != null && <span> 마지막으로 확인한 기록입니다.</span>}
+      <button type="button" className="fleet-retry" onClick={onRetry}>다시 시도</button>
+    </div>}
+    {!loading && !error && events?.length === 0 && <div style={feedNotice}>최근 이벤트 없음</div>}
+    {!!events?.length && <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {events.map((ev, i) => <EventRow key={ev.id || i} ev={ev} />)}
-    </div>
-  );
+    </div>}
+  </div>;
 }
+
+const feedNotice = { padding: 'var(--space-4)', color: 'var(--text-2)', fontSize: 12, lineHeight: 1.6 };
 
 function EventRow({ ev }) {
   const meta = EVENT_META[ev.kind] || { label: ev.kind, icon: 'info', color: 'var(--text-2)' };
@@ -158,6 +164,7 @@ function EventRow({ ev }) {
 function TripsTab({ deviceId, onSelect, selectedKey }) {
   const [trips, setTrips] = useState(null);
   const [error, setError] = useState(null);
+  const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setTrips(null); setError(null);
@@ -170,11 +177,11 @@ function TripsTab({ deviceId, onSelect, selectedKey }) {
       // 최신 우선.
       setTrips((ts || []).slice().sort((a, b) =>
         new Date(b.started_at) - new Date(a.started_at)));
-    }).catch(e => { if (!cancelled) setError(e.message); });
+    }).catch(() => { if (!cancelled) setError('운행 이력을 불러오지 못했습니다.'); });
     return () => { cancelled = true; };
-  }, [deviceId]);
+  }, [deviceId, refresh]);
 
-  if (error) return <div style={{ padding: 'var(--space-4)', color: 'var(--danger)', fontSize: 12 }}>{error}</div>;
+  if (error) return <div role="alert" style={feedNotice}>{error} <button type="button" className="fleet-retry" onClick={() => setRefresh(value => value + 1)}>다시 시도</button></div>;
   if (!trips) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>로딩...</div>;
   if (trips.length === 0) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>최근 30일 운행 없음</div>;
 
