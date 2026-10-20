@@ -2,6 +2,8 @@
 
 2026-10-20 KST. 대상은 gps.serial.kr 운영 서버와 단말-520211이다. dev-gps에는 배포하지 않았다.
 
+> 후속 변경: 아래 등록번호 중심 절차는 같은 날 [SIM 기준 등록·하드웨어 인증 분리](sim-first-hardware-rollout-20261020.md)로 대체했다. 현행 사용자 등록은 SIM 전체 번호와 이름만 입력한다. 이 문서는 최초 배포의 이력이다.
+
 ## 배포 및 확인 결과
 
 - 서버: `dev-20261020-131847-7bcbff3`, 소스 `7bcbff3346fe8bf51d59a61c1085a631ba49bfdb`. release 문자열과 별개로 environment는 production이다. DB는 추가 마이그레이션 69/70을 적용했다.
