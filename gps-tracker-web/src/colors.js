@@ -103,10 +103,10 @@ export const STATUS = {
 const MIN  = 60 * 1000;
 const HOUR = 60 * MIN;
 
-export function classifyDevice(dev, meta) {
+export function classifyDevice(dev, meta, now = Date.now()) {
   if (!dev?.last_seen_at) return STATUS.UNKNOWN;
-  const now = Date.now();
   const seen = new Date(dev.last_seen_at).getTime();
+  if (!Number.isFinite(seen)) return STATUS.UNKNOWN;
   const seenAge = now - seen;
   const lastEvent = dev.last_event_kind || null;
   const eventAt = dev.last_event_at ? new Date(dev.last_event_at).getTime() : 0;
@@ -128,7 +128,7 @@ export function classifyDevice(dev, meta) {
   // 4) 활성인데 GPS 가 안 잡힘 — 지하/실내 추정
   if (dev.last_fix_at) {
     const fixGap = seen - new Date(dev.last_fix_at).getTime();
-    if (fixGap > 5 * MIN) return STATUS.GPS_LOSS;
+    if (!Number.isFinite(fixGap) || fixGap > 5 * MIN) return STATUS.GPS_LOSS;
   } else {
     return STATUS.GPS_LOSS;
   }

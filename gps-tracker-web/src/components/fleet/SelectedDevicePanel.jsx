@@ -1,3 +1,4 @@
+import { vehicleName } from '../../lib/business';
 // (2026-07-28) Phase F4-b-2 — Fleet dashboard 우측 selected-device panel.
 // EventFeedPanel 대체. tabbed 구조 (이벤트 | 운행 이력).
 // 운행 이력 클릭 시 map 에 seeker path 재생.
@@ -8,8 +9,8 @@ import { api } from '../../api';
 import TripDetailTab from './TripDetailTab';
 
 const EVENT_META = {
-  wake:                    { label: '운행 시작', icon: 'route',  color: 'var(--accent)' },
-  sleep_enter:             { label: '운행 종료', icon: 'moon',   color: 'var(--text-2)' },
+  wake:                    { label: '단말기 깨어남', icon: 'route',  color: 'var(--accent)' },
+  sleep_enter:             { label: '절전 진입', icon: 'moon',   color: 'var(--text-2)' },
   geofence_enter:          { label: '지점 진입', icon: 'mapPin', color: 'var(--primary)' },
   geofence_exit:           { label: '지점 이탈', icon: 'mapPin', color: 'var(--warning)' },
   rental_ending:           { label: '반납 임박', icon: 'clock',  color: 'var(--warning)' },
@@ -60,9 +61,9 @@ export default function SelectedDevicePanel({
     <div style={panelWrap}>
       <div style={panelHead}>
         <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>
-          {selectedDevice.license_plate || selectedDevice.display_name || `#${selectedDevice.id}`}
+          {vehicleName(selectedDevice)}
         </div>
-        {selectedDevice.display_name && selectedDevice.license_plate && (
+        {selectedDevice.display_name && (selectedDevice.car_plate || selectedDevice.license_plate) && (
           <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2 }}>
             {selectedDevice.display_name}
           </div>

@@ -9,18 +9,14 @@
 
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { FixedSizeList } from 'react-window';
-import { classifyDevice } from './SummaryChips';
+import { classifyDevice } from '../../colors';
+import { fleetStatusGroup } from '../../lib/fleetStatus';
+import { vehicleName } from '../../lib/business';
 import Icon from '../Icon';
 
 const ROW_HEIGHT = 72;
 
-const STATE_META = {
-  active:  { label: '운행',    color: 'var(--accent)',  dot: '#10B981' },
-  idle:    { label: '대기',    color: 'var(--primary)', dot: '#3B82F6' },
-  offline: { label: '오프라인', color: 'var(--text-3)',  dot: '#999' },
-};
-
-export default function DeviceListPanel({ devices = [], selectedId, onSelect, query, onQuery }) {
+export default function DeviceListPanel({ devices = [], selectedId, onSelect, query, onQuery, now = Date.now() }) {
   const [containerH, setContainerH] = useState(400);
   const wrapRef = useRef(null);
 
@@ -38,28 +34,27 @@ export default function DeviceListPanel({ devices = [], selectedId, onSelect, qu
 
   const sorted = useMemo(() => {
     // 운행중 → 대기 → 오프라인 순, 각 그룹 안에선 최근 fix 우선.
-    const order = { active: 0, idle: 1, offline: 2 };
+    const order = { active: 0, attention: 1, idle: 2, offline: 3, unknown: 4 };
     return [...devices].sort((a, b) => {
-      const oa = order[classifyDevice(a)] ?? 3;
-      const ob = order[classifyDevice(b)] ?? 3;
+      const oa = order[fleetStatusGroup(a, now)] ?? 3;
+      const ob = order[fleetStatusGroup(b, now)] ?? 3;
       if (oa !== ob) return oa - ob;
       return (new Date(b.last_fix_at || 0) - new Date(a.last_fix_at || 0));
     });
-  }, [devices]);
+  }, [devices, now]);
 
   const filtered = useMemo(() => {
     const q = (query || '').trim().toLowerCase();
     if (!q) return sorted;
     return sorted.filter(d =>
       (d.display_name || '').toLowerCase().includes(q) ||
-      (d.license_plate || '').toLowerCase().includes(q) ||
+      vehicleName(d).toLowerCase().includes(q) ||
       (d.device_uid || '').toLowerCase().includes(q));
   }, [sorted, query]);
 
   const Row = ({ index, style }) => {
     const d = filtered[index];
-    const state = classifyDevice(d);
-    const m = STATE_META[state];
+    const m = classifyDevice(d, undefined, now);
     const selected = selectedId === d.id;
     return (
       <div style={style}>
@@ -73,7 +68,7 @@ export default function DeviceListPanel({ devices = [], selectedId, onSelect, qu
               ? 'color-mix(in srgb, var(--primary) 12%, var(--surface))'
               : 'var(--surface)',
             border: '1px solid ' + (selected ? 'var(--primary)' : 'var(--border)'),
-            borderLeft: '4px solid ' + m.dot,
+            borderLeft: '4px solid ' + m.color,
             borderRadius: 'var(--radius-md)',
             cursor: 'pointer',
             textAlign: 'left',
@@ -84,16 +79,7 @@ export default function DeviceListPanel({ devices = [], selectedId, onSelect, qu
               fontSize: 13, fontWeight: 700, color: 'var(--text)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
-              {d.license_plate ? (
-                <>
-                  <span>{d.license_plate}</span>
-                  {d.display_name && (
-                    <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-2)', marginLeft: 6 }}>
-                      · {d.display_name}
-                    </span>
-                  )}
-                </>
-              ) : (d.display_name || d.device_uid)}
+              {vehicleName(d)}
             </div>
             <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 3 }}>
               {d.last_fix_at ? new Date(d.last_fix_at).toLocaleString('ko-KR', {
@@ -104,7 +90,7 @@ export default function DeviceListPanel({ devices = [], selectedId, onSelect, qu
           <span style={{
             fontSize: 10, fontWeight: 800, color: m.color,
             padding: '2px 8px', borderRadius: 999,
-            background: `color-mix(in srgb, ${m.dot} 14%, transparent)`,
+            background: `color-mix(in srgb, ${m.color} 14%, transparent)`,
           }}>{m.label}</span>
         </button>
       </div>

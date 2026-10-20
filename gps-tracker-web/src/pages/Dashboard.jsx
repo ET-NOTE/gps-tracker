@@ -43,6 +43,8 @@ const LazyPanelFallback = () => (
 import PairTutorial, { shouldShowPairTutorial, hydratePairTutorialSeen } from '../components/PairTutorial';
 import UnpairModal from '../components/UnpairModal';
 import Icon from '../components/Icon';
+import SimRegistrationHelp from '../components/SimRegistrationHelp';
+import { readDeviceLink, useDeviceDeepLink } from '../hooks/useDeviceDeepLink';
 import useBreakpoint from '../useBreakpoint';
 import { PALETTE, getDeviceColor, hydrateDeviceColors, setDeviceColorCache, getDeviceColorsCache, classifyDevice } from '../colors';
 import { applyTheme, currentTheme } from '../theme';
@@ -513,7 +515,7 @@ export default function Dashboard({ onLogout }) {
   // (F12) 이전엔 devices.length>0 로 판정해 renderDeviceFixes 미완료 상태에서도 fit 호출
   // → bounds = main marker 단일 점 → 이상한 zoom. devicesLoaded 는 Promise.all 이후 true.
   useEffect(() => {
-    if (filterAppliedRef.current) return;
+    if (filterAppliedRef.current || readDeviceLink(location.search).present) return;
     if (!mapReady || !userPrefs || !devicesLoaded) return;
     const stored = userPrefs.filter_device_id;
     if (stored != null && devices.some(d => d.id === stored)) {
@@ -522,7 +524,7 @@ export default function Dashboard({ onLogout }) {
       mapRef.current?.filterToDevice(stored, { fit: true });
     }
     filterAppliedRef.current = true;
-  }, [mapReady, userPrefs, devicesLoaded, devices]);
+  }, [mapReady, userPrefs, devicesLoaded, devices, location.search]);
 
   // 사용자 액션으로 필터 변경 시 — 즉시 서버 저장 (race 방지).
   // 새로고침 사이에 PATCH 가 날아가지 않도록 디바운스 X.
@@ -537,6 +539,17 @@ export default function Dashboard({ onLogout }) {
         .catch(() => {});
     }
   }, []);
+
+  const selectLinkedDevice = useCallback(id => {
+    filterAppliedRef.current = true;
+    persistFilterDevice(id);
+    mapRef.current?.filterToDevice(id, { fit: true });
+  }, [persistFilterDevice]);
+  const consumeDeviceLink = useCallback(search => {
+    navigate({ pathname: location.pathname, search, hash: location.hash }, { replace: true });
+  }, [navigate, location.pathname, location.hash]);
+  const deviceLink = useDeviceDeepLink({ search: location.search, devices, loaded: devicesLoaded,
+    ready: mapReady, onSelect: selectLinkedDevice, onConsume: consumeDeviceLink });
 
   // 사용자가 직접 지도를 드래그한 경우 — 추적 의도 자체를 끔. 다시 버튼 또는 단말기 선택해야 부활.
   // 단, 시커 활성 중 발생한 드래그는 무시 — 시커 조작이 일으킨 이동까지 사용자 의도로 잡으면
@@ -775,12 +788,10 @@ export default function Dashboard({ onLogout }) {
               </div>
 
               {pairOpen && <>
-                <label style={{fontSize:13}}>SIM 번호
-                  <input inputMode="numeric" autoComplete="off" spellCheck={false} maxLength={20} placeholder="SIM 끝 8자리 (1NCE 화면 기준)"
-                    value={pairSim} onChange={e => setPairSim(e.target.value)} style={s.input} />
-                </label>
-                <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>단말기를 켜고 LTE 연결 후 SIM 번호와 이름을 입력하세요. 처음 등록할 때도 1NCE 화면에 표시된 ICCID의 끝 8자리를 입력하면 됩니다. SIM 인쇄 번호의 끝 8자리나 전체 번호(19~20자리)도 사용할 수 있습니다. 끝번호가 중복되면 전체 번호를 입력해 주세요. 단말기 인증은 자동으로 별도 확인합니다.</p>
-                <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>같은 계정에서 동일 SIM을 다시 연결하면 보관한 기록이 복원됩니다. 하드웨어가 다른 단말기여도 됩니다. 다른 계정에 연결된 SIM은 기존 계정에서 먼저 연결 해제해야 합니다.</p>
+                <SimRegistrationHelp inputId="pair-sim-number" />
+                <input id="pair-sim-number" inputMode="numeric" autoComplete="off" spellCheck={false} maxLength={20}
+                  placeholder="SIM 끝 8자리 (1NCE 화면 기준)" value={pairSim}
+                  onChange={e => setPairSim(e.target.value)} style={{...s.input, marginBottom: 12}} />
                 <label style={{fontSize:13}}>단말기 이름
                   <input placeholder="예: 1호차" value={pairLabel} maxLength={32} required
                     onChange={e=>setPairLabel(e.target.value)} style={{...s.input,marginTop:6}} />
@@ -889,6 +900,17 @@ export default function Dashboard({ onLogout }) {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: isDesktop ? 'row' : 'column' }}>
+
+      {deviceLink.notice && <div role="alert" style={{ position: 'fixed', zIndex: 45,
+        left: isDesktop ? 84 : 12, right: 12, bottom: isDesktop ? 20 : 'calc(76px + env(safe-area-inset-bottom, 0px))',
+        maxWidth: 420, padding: 16, background: 'var(--surface)', color: 'var(--text)',
+        border: '1px solid var(--border)', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontSize: 13 }}>
+        <div>{deviceLink.notice}</div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <button type="button" style={s.smallBtn} onClick={() => { deviceLink.dismiss(); setView('devices'); }}>단말기 목록</button>
+          <button type="button" style={s.smallBtn} onClick={deviceLink.dismiss}>닫기</button>
+        </div>
+      </div>}
 
       {/* 데스크톱 좌측 사이드 레일 */}
       {isDesktop && <SideRail active={view} onChange={setView} isAdmin={isAdmin}

@@ -13,7 +13,9 @@ import { api } from '../api';
 import { serverSpeed } from '../lib/speed';
 import { TrackerWS } from '../ws';
 import KakaoMap from '../components/KakaoMap';
-import SummaryChips, { classifyDevice } from '../components/fleet/SummaryChips';
+import SummaryChips from '../components/fleet/SummaryChips';
+import { fleetStatusGroup, FLEET_GROUPS } from '../lib/fleetStatus';
+import { vehicleName } from '../lib/business';
 import DeviceListPanel from '../components/fleet/DeviceListPanel';
 import SelectedDevicePanel from '../components/fleet/SelectedDevicePanel';
 import Icon from '../components/Icon';
@@ -23,7 +25,7 @@ export default function FleetDashboard() {
   const loc = useLocation();
   // URL query: ?filter=all|active|idle|offline&device=<id>&q=<search>
   const qs = new URLSearchParams(loc.search);
-  const [filter,     setFilter]     = useState(qs.get('filter') || 'all');
+  const [filter,     setFilter]     = useState(FLEET_GROUPS.some(group => group.id === qs.get('filter')) ? qs.get('filter') : 'all');
   const [selectedId, setSelectedId] = useState(qs.get('device') ? Number(qs.get('device')) : null);
   const [query,      setQuery]      = useState(qs.get('q') || '');
 
@@ -39,13 +41,15 @@ export default function FleetDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, selectedId, query]);
 
-  const { data: devices = [] } = useDevices();
+  const { data: devices = [] } = useDevices({ refetchInterval: 30_000 });
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(timer); }, []);
 
   // 필터 적용된 device 목록.
   const filtered = useMemo(() => {
     if (filter === 'all') return devices;
-    return devices.filter(d => classifyDevice(d) === filter);
-  }, [devices, filter]);
+    return devices.filter(d => fleetStatusGroup(d, now) === filter);
+  }, [devices, filter, now]);
 
   const selectedDevice = useMemo(
     () => devices.find(d => d.id === selectedId) || null,
@@ -86,7 +90,7 @@ export default function FleetDashboard() {
     if (!m || !m.updateMarker) return;
     for (const d of devices) {
       if (d.last_lat == null || d.last_lng == null) continue;
-      const label = d.license_plate || d.display_name || d.device_uid;
+      const label = vehicleName(d);
       const meta = {
         recordedAt: d.last_fix_at || d.last_seen_at,
         lat: d.last_lat, lng: d.last_lng,
@@ -136,7 +140,7 @@ export default function FleetDashboard() {
         return;
       }
       const d = devicesRef.current.find(x => x.id === msg.device_id);
-      const label = d?.license_plate || d?.display_name || d?.device_uid || String(msg.device_id);
+      const label = d ? vehicleName(d) : String(msg.device_id);
       const color = d?.device_color || '#5B7CFF';
       meta.deviceId = msg.device_id;
       meta.deviceLabel = label;
@@ -225,7 +229,7 @@ export default function FleetDashboard() {
           Beta — 홈 버튼으로 기존 Dashboard 이동
         </div>
       </div>
-      <SummaryChips devices={devices} filter={filter} onChange={setFilter} />
+      <SummaryChips devices={devices} filter={filter} onChange={setFilter} now={now} />
 
       {/* 3-panel body */}
       <div style={{
@@ -239,6 +243,7 @@ export default function FleetDashboard() {
           onSelect={d => setSelectedId(d.id)}
           query={query}
           onQuery={setQuery}
+          now={now}
         />
         <div style={{ position: 'relative', minWidth: 0, minHeight: 0 }}>
           <KakaoMap ref={mapRef} onPointInfo={handlePointInfo} />
