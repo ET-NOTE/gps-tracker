@@ -203,6 +203,9 @@ pub async fn ingest(
                 .bind(id).bind(hash.to_ascii_lowercase()).execute(&mut *gate).await?;
         }
     }
+    if hardware {
+        crate::services::hardware_auth::finish(&mut gate, id, &auth_uid, mode, &payload).await?;
+    }
     let result = if mode == IngestMode::Signed || hardware {
         Json(
             device_auth::signed_response(

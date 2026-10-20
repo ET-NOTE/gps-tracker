@@ -72,6 +72,26 @@ pub async fn authorize(
         .bind(id)
         .execute(&mut *tx)
         .await?;
+    let sim_owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1")
+        .bind(id)
+        .fetch_one(&mut *tx)
+        .await?;
+    if owner.is_some() && owner == sim_owner {
+        Ok((id, IngestMode::Hardware, tx))
+    } else {
+        Ok((id, IngestMode::HardwarePending, tx))
+    }
+}
+
+/// Publish foreign-key bindings after ingest releases its device row locks.
+/// Both hardware and SIM advisory locks remain held by the outer transaction.
+pub async fn finish(
+    tx: &mut Transaction<'_, Postgres>,
+    id: i64,
+    uid: &str,
+    mode: IngestMode,
+    payload: &Value,
+) -> AppResult<()> {
     if let Some(hash) = payload["pairing_hash"]
         .as_str()
         .filter(|h| h.len() == 64 && h.bytes().all(|b| b.is_ascii_hexdigit()))
@@ -80,27 +100,22 @@ pub async fn authorize(
            claim_issued_at=CASE WHEN claim_code_hash IS DISTINCT FROM $3 OR pending_device_id IS DISTINCT FROM $2 THEN now() ELSE claim_issued_at END,
            claim_expires_at=CASE WHEN claim_code_hash IS DISTINCT FROM $3 OR pending_device_id IS DISTINCT FROM $2 THEN now()+interval '24 hours' ELSE claim_expires_at END
            WHERE auth_uid=$1 AND last_claim_code_hash IS DISTINCT FROM $3")
-            .bind(uid).bind(id).bind(hash.to_ascii_lowercase()).execute(&mut *tx).await?;
+            .bind(uid).bind(id).bind(hash.to_ascii_lowercase()).execute(&mut **tx).await?;
     }
-    let sim_owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1")
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await?;
-    if owner.is_some() && owner == sim_owner {
+
+    if mode == IngestMode::Hardware {
         sqlx::query("UPDATE hardware_credentials SET current_device_id=$2 WHERE auth_uid=$1")
             .bind(uid)
             .bind(id)
-            .execute(&mut *tx)
+            .execute(&mut **tx)
             .await?;
         sqlx::query("UPDATE devices SET active_auth_uid=$2,sim_auth_required=true WHERE id=$1")
             .bind(id)
             .bind(uid)
-            .execute(&state.db)
+            .execute(&mut **tx)
             .await?;
-        Ok((id, IngestMode::Hardware, tx))
-    } else {
-        Ok((id, IngestMode::HardwarePending, tx))
     }
+    Ok(())
 }
 
 /// SIM selects the records; the private code authorizes the presenting hardware.
