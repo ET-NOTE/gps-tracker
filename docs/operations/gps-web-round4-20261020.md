@@ -22,3 +22,12 @@
 ## 배포 방식
 
 웹 전용 배포 스크립트가 운영 기준 커밋 `f4744b9bb45ef4194e793dbc40232783d1e041c5`와 산출물 SHA를 검증하고 웹 링크만 원자적으로 전환한다. 이전 lazy chunk·uploads 링크를 보존한다. HTML·JS/CSS·진단 페이지·API release를 검사하고 실패하면 웹 링크를 되돌린다. 배포 후 실제 릴리스와 운영 UI 검증 결과를 추가한다.
+
+
+## 운영 배포 결과
+
+웹 `web-remediation-20261020-7e0d21c`, 소스 `7e0d21cc44ca060d3e8a9313ae2eb5ee3ea20ccc`. 이전 웹 `/home/mmm/releases/web-remediation-20261020-f4744b9/web` 보존. API release `dev-20261020-145138-db3163c`와 진단 페이지 해시 유지 확인.
+
+운영 user@user4.com 세션에서 실제 Fleet 차량 조회·지도 초기화·모바일 390px 목록→상세→지도 전환을 확인했다. 문서 너비는 390px으로 가로 넘침이 없었다. 법인 계정의 `/rentcar`는 권한/유형 안내, 없는 주소는 페이지 없음과 홈 링크, `/corporate`는 정상 본문을 표시했다. 새 예약 모달은 390px 안에 표시되며 첫 차량 선택칸에 포커스하고 배경 root는 inert였다. 저장 버튼에서 Tab→닫기, 닫기에서 Shift+Tab→저장, Escape→원래 차량 예약 버튼으로 복귀했다. 예약 저장·데이터 변경은 실행하지 않았다. 검증 후 원래 `/devices`로 돌아왔다.
+
+증거: `C:/Users/msb/AppData/Local/GPS-Builds/gps-remediation-20261020/round4-prod-fleet-mobile.png`, `round4-prod-modal-mobile.png`, `round4-prod-denied.png`, `round4-tests.log`, `round4-deployment.json`.
