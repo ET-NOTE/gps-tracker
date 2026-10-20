@@ -14,6 +14,7 @@ static char pairingHash[65] = "";
 static String ack, input;
 static String lastSim;
 static bool ready = false;
+static bool waitingLink = false;
 static uint64_t nextCounter = 0, reservedEnd = 0;
 static constexpr uint64_t BLOCK = 4096, MAX_COUNTER = 9007199254740991ULL;
 
@@ -88,8 +89,10 @@ void begin() {
   Serial.printf("[AUTH] Signed ingest ready: %s\n",identity);newRegistration();
 }
 bool enabled(){return ready;}
+bool linkRequired(){return waitingLink;}
 const char *uid(){return identity;}
 bool prepare(const char *body, String &wireBody, uint64_t &counter, char signature[65]) {
+  waitingLink=false;
   if(!ready){wireBody=body;counter=0;signature[0]=0;return KC_TEST_BUILD;}
   if(nextCounter>reservedEnd&&!reserve())return false;
   cJSON *json=cJSON_Parse(body);if(!json)return false;
@@ -125,7 +128,7 @@ bool response(const String &raw,uint64_t counter,String &decoded) {
     if(valid){bytes[length]=0;decoded=reinterpret_cast<const char *>(bytes);
       cJSON *inner=cJSON_Parse(decoded.c_str());
       if(inner&&cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(inner,"sim_link_required"))){
-        Serial.println("[PAIR] Enter this SIM number and the REGISTER confirmation number on the website.");valid=false;
+        waitingLink=true;
       }
       cJSON_Delete(inner);
     }}

@@ -1,5 +1,5 @@
 """SIM continuity across independent hardware keys; private clone only."""
-import base64,hashlib,hmac,json,pathlib,secrets,sys,time,urllib.request,urllib.error,urllib.parse,uuid
+import base64,concurrent.futures,hashlib,hmac,json,pathlib,secrets,sys,time,urllib.request,urllib.error,urllib.parse,uuid
 import psycopg2
 envpath,base=sys.argv[1:3]
 assert base=='http://127.0.0.1:3042'
@@ -57,6 +57,10 @@ try:
  request('/gps-tracker/ingest',raw=second['last'][0],headers=second['last'][1],expected=409)
  request('/gps-tracker/ingest',raw=second['last'][0]+b' ',headers=second['last'][1],expected=401)
  request('/gps-tracker/ingest',data={'device_uid':'logical-'+run+'1','iccid':sims[0]},expected=401)
+ concurrent_before=count(da)
+ with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+  assert all(out['ok'] for out in pool.map(lambda hw:send(hw,sims[0]),(first,second)))
+ assert count(da)==concurrent_before+2
  print('PASS two hardware keys append to the same SIM device/history; modem changes audited; signatures, replay and downgrade protection',flush=True)
  old=count(dbid);foreigncode=secrets.token_hex(10)
  assert send(first,sims[1],foreigncode)['sim_link_required'] and count(dbid)==old
@@ -77,6 +81,13 @@ try:
  oldc=count(dc);olda=count(da)
  assert send(fresh,sims[0])['ok'] and count(da)==olda+1 and count(dc)==oldc
  print('PASS one hardware switches SIM without mixing their histories',flush=True)
+ # Full ICCID disambiguates SIMs even when their user-facing final eight digits collide.
+ collision='88'+sims[0][2:]
+ collision_id=sql("INSERT INTO devices(device_uid,iccid,owner_id,api_key_hash) VALUES(%s,%s,%s,'') RETURNING id",('collision-'+run,collision,a));devices.append(collision_id)
+ request(api+'/devices/pair',{'iccid':sims[0][-8:],'display_name':'Ambiguous SIM'},a,expected=400)
+ assert request(api+'/devices/pair',{'iccid':sims[0],'display_name':'Full SIM'},a)['id']==da
+ assert send(first,collision)['ok'] and count(collision_id)==1
+ print('PASS concurrent hardware uploads serialize safely; colliding SIM suffixes require the full number',flush=True)
  # Unpair and re-pair: preserve records and require a fresh proof after unlink.
  oldcode=secrets.token_hex(10);send(fresh,sims[0],oldcode)
  retained=count(da)

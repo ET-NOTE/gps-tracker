@@ -92,6 +92,12 @@ static void doPost() {
   Serial.printf("[POST] elapsed=%lums status=%d ok=%d conn=%d posted=%u\n",
     (unsigned long)(millis() - t0), status, (int)ok, (int)lte::httpConnected(), posted);
 
+  if (device_security::linkRequired()) {
+    // The signed exchange succeeded; registration waiting is not a radio failure.
+    recovery::notifyPostResult(true);
+    return; // Keep the GPS batch/diagnostic until this SIM is linked.
+  }
+
   if (ok200 && posted > 0) gps::batchDrop(posted);
   recovery::notifyPostResult(ok200);
   if (ok200) diagPending = false;   // wake diag 는 첫 성공 POST 1회만

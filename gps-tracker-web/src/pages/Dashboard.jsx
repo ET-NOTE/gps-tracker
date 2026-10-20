@@ -697,7 +697,7 @@ export default function Dashboard({ onLogout }) {
         title: '연결 해제 완료',
         body: purge
           ? '본인 데이터까지 영구 삭제됐습니다. 결제 이력 (포인트, SIM 충전, AI 분석) 은 보존.'
-          : '데이터는 보관됐습니다. 같은 계정으로 다시 연결하면 자동 복구됩니다.',
+          : '데이터는 보관됐습니다. 같은 계정에서 동일 SIM을 다시 연결하면 복원됩니다. 단말기 하드웨어는 달라도 됩니다.',
         tone: 'success',
       });
     } catch (e) {

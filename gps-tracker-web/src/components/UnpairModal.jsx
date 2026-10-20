@@ -44,7 +44,8 @@ export default function UnpairModal({ deviceName, onClose, onKeep, onWipe, busy 
             </div>
             <div style={st.optionBody}>
               <Row tone="ok">위치 / 운행 / 이벤트 / 펜스 / 운행일지 보관</Row>
-              <Row tone="ok">같은 계정으로 다시 연결 시 <b>자동 복구</b></Row>
+              <Row tone="ok">같은 계정에서 동일 SIM을 다시 연결하면 <b>기록 복원</b> · 단말기 하드웨어는 달라도 됩니다.</Row>
+              <Row tone="info">다른 계정으로 연결하면 이전 계정의 기록은 공유되지 않습니다.</Row>
               <Row tone="warn">활성 공유 링크는 즉시 만료</Row>
               <Row tone="info">단말기 자체와 SIM 정보는 그대로 (다른 계정도 연결 가능)</Row>
             </div>
