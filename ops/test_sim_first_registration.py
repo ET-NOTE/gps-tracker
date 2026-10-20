@@ -39,6 +39,7 @@ try:
  pair(sim,b,409)
  print('PASS first device enrolls using SIM and name only; short first claims rejected; existing owner suffix and foreign owner protection retained',flush=True)
  replacement=hw();assert send(replacement,sim)['sim_link_required'];assert pair(sim,a)['id']==did;assert send(replacement,sim)['ok']
+ assert pair(sim,a)['id']==did # Multiple previously approved hardware must not block owner lookup.
  before=sql('SELECT count(*) FROM location_records WHERE device_id=%s AND user_id=%s',(did,a))
  req(api+f'/devices/{did}',user=a,method='DELETE')
  assert send(replacement,sim)['sim_link_required'];assert pair(sim,b)['id']==did;assert send(replacement,sim)['ok']

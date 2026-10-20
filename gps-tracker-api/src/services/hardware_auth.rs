@@ -158,6 +158,9 @@ pub async fn pair_by_sim(
     // Prefer the new, as-yet unassigned hardware over previously linked hardware.
     let unassigned:Vec<String>=sqlx::query_scalar("SELECT auth_uid FROM hardware_credentials WHERE auth_uid=ANY($1) AND authorized_owner_id IS NULL")
         .bind(&candidates).fetch_all(&state.db).await?;
+    if owner == Some(user) && unassigned.is_empty() {
+        return Ok(None); // Existing owner lookup needs no hardware reassignment.
+    }
     let choices = if unassigned.is_empty() {
         &candidates
     } else {
