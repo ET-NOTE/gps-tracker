@@ -42,7 +42,7 @@ pub async fn authorize(
         body,
         device_auth::header(headers, "x-gps-signature")?,
     )?;
-    let changed=sqlx::query("UPDATE hardware_credentials SET last_counter=$2,activated_at=COALESCE(activated_at,now()) WHERE auth_uid=$1 AND last_counter<$2")
+    let changed=sqlx::query("UPDATE hardware_credentials SET last_counter=$2,activated_at=COALESCE(activated_at,now()),last_seen_at=now() WHERE auth_uid=$1 AND last_counter<$2")
         .bind(uid).bind(counter).execute(&mut *tx).await?.rows_affected();
     if changed == 0 {
         return Err(AppError::Conflict("replayed hardware request".into()));
@@ -119,6 +119,88 @@ pub async fn finish(
 }
 
 /// SIM selects the records; the private code authorizes the presenting hardware.
+pub async fn pair_by_sim(
+    state: &AppState,
+    user: i64,
+    sim: i64,
+    input: &str,
+    name: &str,
+) -> AppResult<Option<i64>> {
+    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1")
+        .bind(sim)
+        .fetch_one(&state.db)
+        .await?;
+    if owner.is_some_and(|v| v != user) {
+        return Err(AppError::Conflict(
+            "이미 다른 계정에 연결된 SIM입니다.".into(),
+        ));
+    }
+    // A short suffix is lookup convenience for the existing owner, never first-claim proof.
+    if input.trim().len() < 19 {
+        if owner == Some(user) {
+            return Ok(None);
+        }
+        return Err(AppError::BadRequest(
+            "처음 등록할 때는 SIM 전체 번호 19~20자리를 입력해 주세요.".into(),
+        ));
+    }
+    let candidates:Vec<String>=sqlx::query_scalar("SELECT auth_uid FROM hardware_credentials WHERE pending_device_id=$1 AND last_seen_at>now()-interval '5 minutes' AND last_seen_at>=(SELECT claim_not_before FROM devices WHERE id=$1) AND activated_at IS NOT NULL AND (authorized_owner_id IS NULL OR authorized_owner_id=$2 OR ($3::boolean AND current_device_id=$1)) ORDER BY last_seen_at DESC")
+        .bind(sim).bind(user).bind(owner.is_none()).fetch_all(&state.db).await?;
+    if candidates.is_empty() {
+        if owner == Some(user) {
+            return Ok(None);
+        }
+        return Err(AppError::BadRequest(
+            "인증된 운영 펌웨어로 단말기를 켜고 LTE 연결 후 SIM 전체 번호를 다시 입력해 주세요."
+                .into(),
+        ));
+    }
+    // Prefer the new, as-yet unassigned hardware over previously linked hardware.
+    let unassigned:Vec<String>=sqlx::query_scalar("SELECT auth_uid FROM hardware_credentials WHERE auth_uid=ANY($1) AND authorized_owner_id IS NULL")
+        .bind(&candidates).fetch_all(&state.db).await?;
+    let choices = if unassigned.is_empty() {
+        &candidates
+    } else {
+        &unassigned
+    };
+    if choices.len() != 1 {
+        return Err(AppError::BadRequest("같은 SIM으로 최근 연결된 단말기가 여러 대입니다. 이전 단말기의 전원을 끄고 5분 후 다시 시도해 주세요.".into()));
+    }
+    let uid = &choices[0];
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('gps-hardware:'||$1,0))")
+        .bind(uid)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(sim)
+        .execute(&mut *tx)
+        .await?;
+    let current: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1 FOR UPDATE")
+            .bind(sim)
+            .fetch_one(&mut *tx)
+            .await?;
+    if current.is_some_and(|v| v != user) {
+        return Err(AppError::Conflict(
+            "이미 다른 계정에 연결된 SIM입니다.".into(),
+        ));
+    }
+    let valid:bool=sqlx::query_scalar("SELECT COALESCE(pending_device_id=$2 AND last_seen_at>now()-interval '5 minutes' AND last_seen_at>=(SELECT claim_not_before FROM devices WHERE id=$2) AND activated_at IS NOT NULL AND (authorized_owner_id IS NULL OR authorized_owner_id=$3 OR ($4::boolean AND current_device_id=$2)),false) FROM hardware_credentials WHERE auth_uid=$1")
+        .bind(uid).bind(sim).bind(user).bind(current.is_none()).fetch_one(&mut *tx).await?;
+    if !valid {
+        return Err(AppError::BadRequest(
+            "SIM 연결 상태가 바뀌었습니다. 다시 시도해 주세요.".into(),
+        ));
+    }
+    sqlx::query("UPDATE hardware_credentials SET authorized_owner_id=$2,current_device_id=$3,claim_code_hash=NULL,claim_expires_at=NULL,pending_device_id=NULL WHERE auth_uid=$1")
+        .bind(uid).bind(user).bind(sim).execute(&mut *tx).await?;
+    sqlx::query("UPDATE devices SET owner_id=$2,display_name=$3,paired_at=COALESCE(paired_at,now()),active_auth_uid=$4,sim_auth_required=true WHERE id=$1")
+        .bind(sim).bind(user).bind(name).bind(uid).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(Some(sim))
+}
+
 pub async fn pair(
     state: &AppState,
     user: i64,

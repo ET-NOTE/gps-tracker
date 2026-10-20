@@ -347,7 +347,7 @@ async fn pair(
 ) -> AppResult<Json<DeviceView>> {
     req.validate()
         .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
-    let proof = if let Some(code) = &req.registration_code {
+    if req.registration_code.is_some() || req.iccid.is_some() {
         let count: i32 = sqlx::query_scalar("INSERT INTO device_pair_attempts(user_id) VALUES($1)
             ON CONFLICT(user_id) DO UPDATE SET
                 attempts=CASE WHEN device_pair_attempts.window_at<now()-interval '10 minutes' THEN 1 ELSE device_pair_attempts.attempts+1 END,
@@ -355,13 +355,15 @@ async fn pair(
             RETURNING attempts").bind(user.user_id).fetch_one(&state.db).await?;
         if count > 10 {
             return Err(AppError::TooManyRequests(
-                "등록번호를 여러 번 확인했습니다. 10분 후 다시 시도해 주세요.".into(),
+                "등록을 여러 번 시도했습니다. 10분 후 다시 시도해 주세요.".into(),
             ));
         }
-        Some(crate::services::device_auth::claim_hash(code)?)
-    } else {
-        None
-    };
+    }
+    let proof = req
+        .registration_code
+        .as_deref()
+        .map(crate::services::device_auth::claim_hash)
+        .transpose()?;
     let kc_admin: bool = crate::services::device_auth::enabled("GPS_KC_PAIRING_ENABLED")
         && sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1 AND role='admin')")
             .bind(user.user_id)
@@ -380,6 +382,29 @@ async fn pair(
     } else {
         None
     };
+    if proof.is_none() {
+        if let (Some(sim), Some(input)) = (selected_sim, req.iccid.as_deref()) {
+            if let Some(id) = crate::services::hardware_auth::pair_by_sim(
+                &state,
+                user.user_id,
+                sim,
+                input,
+                &req.display_name,
+            )
+            .await?
+            {
+                log_audit(
+                    &state,
+                    id,
+                    "pair",
+                    user.user_id,
+                    json!({"via":"full_sim_authenticated_hardware"}),
+                )
+                .await;
+                return fetch_device(&state, id, user.user_id).await;
+            }
+        }
+    }
     if let (Some(sim), Some(hash)) = (selected_sim, proof.as_deref()) {
         if let Some(id) =
             crate::services::hardware_auth::pair(&state, user.user_id, sim, hash, &req.display_name)

@@ -38,13 +38,13 @@ static bool reserve() {
   bool ok=previous<=MAX_COUNTER-BLOCK && p.putULong64("counter",previous+BLOCK)==sizeof(uint64_t);
   p.end();if(!ok)return false;nextCounter=previous+1;reservedEnd=previous+BLOCK;return true;
 }
-static void newRegistration() {
+static void newRegistration(bool showCode=false) {
   unsigned char bytes[10], hash[32];char code[21];
   esp_fill_random(bytes,sizeof(bytes));hex(bytes,sizeof(bytes),code);
   if(!sha(code,20,hash))return;
   hex(hash,32,pairingHash);
-  Serial.printf("[REGISTER] %.4s-%.4s-%.4s-%.4s-%.4s\n",code,code+4,code+8,code+12,code+16);
-  Serial.println("[REGISTER] Upload must succeed before this one-time number can be used on the website.");
+  if(showCode)Serial.printf("[REGISTER] %.4s-%.4s-%.4s-%.4s-%.4s\n",code,code+4,code+8,code+12,code+16);
+  Serial.println("[PAIR] Register using the full SIM number and a device name on the website. No registration code is needed.");
 }
 static bool load() {
   Preferences p;if(!p.begin("gps-auth",true))return false;
@@ -61,7 +61,7 @@ void poll() {
     if(ch=='\r')continue;
     if(ch!='\n'){if(input.length()<160)input+=ch;else input="";continue;}
     input.trim();
-    if(input=="REGISTER" && ready)newRegistration();
+    if(input=="REGISTER" && ready)newRegistration(true);
     else if(input.startsWith("AUTH ")) {
       int split=input.indexOf(' ',5);
       String id=split>5?input.substring(5,split):"", secret=split>5?input.substring(split+1):"";

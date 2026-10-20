@@ -68,6 +68,11 @@ try:
  pair(sims[0],foreigncode,a,400)
  assert count(dbid)==old
  print('PASS foreign SIM cannot receive telemetry or transfer ownership; SIM and physical proof must match',flush=True)
+ newunit=credential(None);newunitcode=secrets.token_hex(10);existing=count(da)
+ assert send(newunit,sims[0],newunitcode)['sim_link_required'] and count(da)==existing
+ assert pair(sims[0],newunitcode,a)['id']==da
+ assert send(newunit,sims[0])['ok'] and count(da)==existing+1
+ print('PASS previously unassigned replacement hardware joins an owned SIM with owner confirmation and retains its original device ID',flush=True)
  code=secrets.token_hex(10)
  assert send(fresh,sims[2],code)['sim_link_required']
  dc=sql('SELECT id FROM devices WHERE iccid=%s',(sims[2],));devices.append(dc)

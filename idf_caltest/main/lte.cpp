@@ -631,7 +631,7 @@ bool httpPost(const char *body, int *statusOut) {
           verifiedResponse=true;
           Serial.printf("[AUTH] Signed request and response verified (counter=%" PRIu64 ")\n",requestCounter);
           if(device_security::linkRequired()) {
-            Serial.println("[PAIR] Enter this SIM number and the REGISTER confirmation number on the website. Batch retained.");
+            Serial.println("[PAIR] Enter the full SIM number and a device name on the website. Hardware authenticated; batch retained.");
             return false;
           }
           lastResp=device_security::acceptCommand(decoded)?decoded:"{\"ok\":true}";
