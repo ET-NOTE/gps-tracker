@@ -158,6 +158,13 @@ pub async fn ingest(
     body: axum::body::Bytes,
 ) -> AppResult<Json<Value>> {
     use crate::services::device_auth::{self, IngestMode};
+    let _permit = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        state.ingest_limit.acquire(),
+    )
+    .await
+    .map_err(|_| AppError::TooManyRequests("device ingest busy; retry later".into()))?
+    .map_err(|_| AppError::Internal(anyhow::anyhow!("ingest queue closed")))?;
     let payload: Value =
         serde_json::from_slice(&body).map_err(|_| AppError::BadRequest("invalid JSON".into()))?;
     let (id, mode, mut gate) = device_auth::authorize(&state, &headers, &body, &payload).await?;

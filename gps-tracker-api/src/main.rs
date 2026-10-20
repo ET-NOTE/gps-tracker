@@ -61,6 +61,7 @@ async fn main() -> anyhow::Result<()> {
     opinet.clone().spawn_refresh_worker();
 
     let state = state::AppState {
+        ingest_limit: Arc::new(tokio::sync::Semaphore::new(3)),
         db: pool.clone(),
         config: Arc::new(cfg.clone()),
         events: events::channel(1024), // (F11) 256→1024 — 100대 fleet × chat WS 공유 시 lagged drop 감소.
