@@ -161,7 +161,10 @@ pub async fn ingest(
     let payload: Value =
         serde_json::from_slice(&body).map_err(|_| AppError::BadRequest("invalid JSON".into()))?;
     let (id, mode, mut gate) = device_auth::authorize(&state, &headers, &body, &payload).await?;
-    let counter = headers.get("x-gps-counter").and_then(|h| h.to_str().ok()).and_then(|s| s.parse::<i64>().ok());
+    let counter = headers
+        .get("x-gps-counter")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.parse::<i64>().ok());
     let response = ingest_payload(
         State(state.clone()),
         headers,
@@ -183,10 +186,22 @@ pub async fn ingest(
                 .bind(id).bind(hash.to_ascii_lowercase()).execute(&mut *gate).await?;
         }
     }
-    let result = if mode==IngestMode::Signed {
-        Json(device_auth::signed_response(&mut gate,id,counter.ok_or(AppError::Unauthorized)?,
-            payload["device_uid"].as_str().ok_or(AppError::Unauthorized)?,&response.0).await?)
-    } else { response };
+    let result = if mode == IngestMode::Signed {
+        Json(
+            device_auth::signed_response(
+                &mut gate,
+                id,
+                counter.ok_or(AppError::Unauthorized)?,
+                payload["device_uid"]
+                    .as_str()
+                    .ok_or(AppError::Unauthorized)?,
+                &response.0,
+            )
+            .await?,
+        )
+    } else {
+        response
+    };
     gate.commit().await?;
     Ok(result)
 }
@@ -864,8 +879,14 @@ async fn ingest_payload(
         ));
     }
 
-    Ok(Json(crate::services::device_commands::dispatch(&state.db,device_id,
-        payload.get("command_ack").and_then(Value::as_str)).await?))
+    Ok(Json(
+        crate::services::device_commands::dispatch(
+            &state.db,
+            device_id,
+            payload.get("command_ack").and_then(Value::as_str),
+        )
+        .await?,
+    ))
 }
 
 async fn broadcast_location(

@@ -39,6 +39,9 @@ def jwt(uid):
     return (msg+b'.'+base64.urlsafe_b64encode(hmac.new(env['JWT_SECRET'].encode(),msg,hashlib.sha256).digest()).rstrip(b'=')).decode()
 
 def request(path, uid=None, data=None, expected=200, method=None):
+    if path=='/gps-tracker/ingest' and data is not None:
+        from test_ingest_fixture import allow_legacy_fixture
+        allow_legacy_fixture(cur,data,run)
     headers = {'Content-Type':'application/json'}
     if uid: headers['Authorization'] = 'Bearer '+jwt(uid)
     raw = None if data is None else json.dumps(data).encode()
@@ -92,12 +95,13 @@ try:
         'reg':1,'csq':15,'vbat_mv':4000,'ts':15,'build_tag':'KC_TEST_BUILD-review',
         'l80':{'fix':False},'diag':{'kc_test':True},'event':'wake','wake':'boot'})
     assert response.get('ok') is True and 'cmd' not in response and 'post_interval_s' not in response
-    scanned = request(api+'/devices/scan',a)
-    assert device_uid in json.dumps(scanned)
-    paired = request(api+'/devices/pair',a,{'device_uid':device_uid,'display_name':'KC synthetic review'})
+    request(api+'/devices/scan',a,expected=403)
+    code='0123456789abcdef0123'
+    sql("UPDATE devices SET claim_code_hash=%s,claim_expires_at=now()+interval '1 hour' WHERE device_uid=%s",(hashlib.sha256(code.encode()).hexdigest(),device_uid))
+    paired = request(api+'/devices/pair',a,{'registration_code':code,'display_name':'KC synthetic review'})
     assert paired['device_uid'] == device_uid
-    assert device_uid not in json.dumps(request(api+'/devices/scan',b))
-    print('PASS KC anonymous no-fix ingest, unpaired scan, and UID pairing without commands')
+    request(api+'/devices/scan',b,expected=403)
+    print('PASS legacy fixture continuity, private scan rejection, and registration proof')
     request('/gps-tracker/dht',data={'device_uid':device_uid,'temp_c':24,'hum_pct':45,'up_ms':5000})
     diag = request('/gps-tracker/diagnostic/data?device_uid='+device_uid)
     assert diag['total'] == 1 and diag['items'][0]['temp_c'] == 24

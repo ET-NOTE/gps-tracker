@@ -193,6 +193,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
                             }
                             EventTarget::User(uid) => { if uid != user_id { continue; } }
                         }
+                        if chrono::Utc::now().timestamp() >= expires_at { break; }
                         let payload = match serde_json::to_string(&ev) {
                             Ok(s) => s,
                             Err(_) => continue,

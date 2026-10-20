@@ -55,6 +55,9 @@ def speeds(did, start=None, end=None):
     return sql("SELECT recorded_at,speed_kmh,speed_reason,reported_speed_kmh FROM location_speed_points_between(%s,%s,%s,%s) ORDER BY recorded_at",(did,uid,start,end))
 
 def request(path, body=None):
+    if path=='/gps-tracker/ingest' and body is not None:
+        from test_ingest_fixture import allow_legacy_fixture
+        allow_legacy_fixture(cur,body,run)
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(base+path,data=data,headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
     with urllib.request.urlopen(req,timeout=20) as response:

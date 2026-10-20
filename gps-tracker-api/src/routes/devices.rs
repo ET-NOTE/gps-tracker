@@ -193,7 +193,10 @@ async fn beep_device(
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
-    Ok(Json(crate::services::device_commands::enqueue(&state.db,id,user.user_id,"beep",json!({})).await?))
+    Ok(Json(
+        crate::services::device_commands::enqueue(&state.db, id, user.user_id, "beep", json!({}))
+            .await?,
+    ))
 }
 
 // ─── 원격 reset (hardPowerCycle) ─────────────────────────────
@@ -207,7 +210,10 @@ async fn reset_device(
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
-    Ok(Json(crate::services::device_commands::enqueue(&state.db,id,user.user_id,"reset",json!({})).await?))
+    Ok(Json(
+        crate::services::device_commands::enqueue(&state.db, id, user.user_id, "reset", json!({}))
+            .await?,
+    ))
 }
 
 async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Vec<DeviceView>>> {
@@ -734,7 +740,9 @@ async fn unpair(
     sqlx::query("UPDATE device_commands SET cancelled_at=now() WHERE device_id=$1 AND acknowledged_at IS NULL AND cancelled_at IS NULL")
         .bind(id).execute(&mut *tx).await?;
     sqlx::query("UPDATE devices SET claim_code_hash=NULL,claim_expires_at=NULL WHERE id=$1")
-        .bind(id).execute(&mut *tx).await?;
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
 
     // 3) purge 모드: 본인 user_id tagged row 들 모두 삭제
     let mut purged = 0_u64;
@@ -1209,8 +1217,16 @@ async fn set_post_interval(
     if !(5..=300).contains(&req.seconds) {
         return Err(AppError::BadRequest("seconds must be 5~300".into()));
     }
-    Ok(Json(crate::services::device_commands::enqueue(&state.db,id,user.user_id,
-        "post_interval",json!({"seconds":req.seconds})).await?))
+    Ok(Json(
+        crate::services::device_commands::enqueue(
+            &state.db,
+            id,
+            user.user_id,
+            "post_interval",
+            json!({"seconds":req.seconds}),
+        )
+        .await?,
+    ))
 }
 
 // ===========================================================================

@@ -26,16 +26,26 @@ pub fn digest(value: &str) -> String {
 }
 
 pub async fn signed_response(
-    gate: &mut Transaction<'_, Postgres>, id: i64, counter: i64, uid: &str, value: &Value,
+    gate: &mut Transaction<'_, Postgres>,
+    id: i64,
+    counter: i64,
+    uid: &str,
+    value: &Value,
 ) -> AppResult<Value> {
     use base64::{engine::general_purpose::STANDARD, Engine};
-    let key: Vec<u8> = sqlx::query_scalar("SELECT key_digest FROM device_credentials WHERE device_id=$1")
-        .bind(id).fetch_one(&mut **gate).await?;
-    let encoded = STANDARD.encode(serde_json::to_vec(value).map_err(|e| AppError::Internal(e.into()))?);
+    let key: Vec<u8> =
+        sqlx::query_scalar("SELECT key_digest FROM device_credentials WHERE device_id=$1")
+            .bind(id)
+            .fetch_one(&mut **gate)
+            .await?;
+    let encoded =
+        STANDARD.encode(serde_json::to_vec(value).map_err(|e| AppError::Internal(e.into()))?);
     let mut mac = Hmac::<Sha256>::new_from_slice(&key).map_err(|_| AppError::Unauthorized)?;
     mac.update(format!("response\n{uid}\n{counter}\n{encoded}").as_bytes());
-    Ok(serde_json::json!({"ok":true,"counter":counter,"payload":encoded,
-        "signature":format!("{:x}",mac.finalize().into_bytes())}))
+    Ok(
+        serde_json::json!({"ok":true,"counter":counter,"payload":encoded,
+        "signature":format!("{:x}",mac.finalize().into_bytes())}),
+    )
 }
 
 pub fn claim_hash(code: &str) -> AppResult<String> {

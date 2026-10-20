@@ -28,6 +28,9 @@ uid = None; devices = []; timings = {}
 run = uuid.uuid4().hex
 api = '/gps-tracker/api/v1'
 def request(path, body=None, expected=200):
+    if path=='/gps-tracker/ingest' and body is not None:
+        from test_ingest_fixture import allow_legacy_fixture
+        allow_legacy_fixture(cur,body,run)
     headers = {'Content-Type':'application/json','Authorization':'Bearer '+token}
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(base+path, data=data, headers=headers)

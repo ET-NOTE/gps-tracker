@@ -38,6 +38,9 @@ def jwt(uid):
 
 def request(path,uid=None,method='GET',body=None,raw=None,content_type=None,expected=200):
     headers={}
+    if path=='/gps-tracker/ingest' and body is not None:
+        from test_ingest_fixture import allow_legacy_fixture
+        allow_legacy_fixture(cur,body,run)
     if uid: headers['Authorization']='Bearer '+jwt(uid)
     if body is not None: raw=json.dumps(body).encode(); content_type='application/json'
     if content_type: headers['Content-Type']=content_type
@@ -116,8 +119,10 @@ try:
     image=(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="pixel.png"\r\nContent-Type: image/png\r\n\r\n'.encode()+png+f'\r\n--{boundary}--\r\n'.encode())
     result=request(api+f'/devices/{did}/car-image',b,'POST',raw=image,content_type='multipart/form-data; boundary='+boundary)
     photos.append(result['url'])
-    if base.startswith('https:'): assert request(result['url'])==png
-    print('PASS car photo upload and public asset delivery')
+    assert request(api+f'/devices/{did}/car-image',b)==png
+    request(api+f'/devices/{did}/car-image',a,expected=404)
+    request(api+f'/devices/{did}/car-image',expected=401)
+    print('PASS private car photo upload and owner-only delivery')
 
     delete=urllib.parse.urlencode({'from':'2026-09-20T14:59:54Z','until':'2026-09-20T14:59:56Z'})
     result=request(api+f'/devices/{did}/range?'+delete,b,'DELETE')
@@ -143,8 +148,8 @@ finally:
     for uid in users: query('DELETE FROM users WHERE id=%s',(uid,))
     for url in photos:
         assert url.startswith('/uploads/car-images/dev_')
-        root=pathlib.Path(env['UPLOAD_DIR']).resolve()
-        file=(root/url.removeprefix('/uploads/')).resolve()
+        root=pathlib.Path(env.get('PRIVATE_UPLOAD_DIR',str(pathlib.Path(env['UPLOAD_DIR']).with_name('gps-private-uploads')))).resolve()
+        file=(root/'car-images'/url.rsplit('/',1)[-1]).resolve()
         assert file.is_relative_to(root)
         file.unlink(missing_ok=True)
     db.close()

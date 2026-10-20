@@ -41,6 +41,9 @@ def jwt(uid):
 
 def request(path,uid=None,method='GET',body=None,raw=None,content_type=None,expected=200):
     headers={}
+    if path=='/gps-tracker/ingest' and body is not None:
+        from test_ingest_fixture import allow_legacy_fixture
+        allow_legacy_fixture(cur,body,run)
     if uid: headers['Authorization']='Bearer '+jwt(uid)
     if body is not None: raw=json.dumps(body).encode(); content_type='application/json'
     if content_type: headers['Content-Type']=content_type

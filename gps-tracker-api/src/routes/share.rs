@@ -78,11 +78,12 @@ async fn create_share(
 
     let mut tx = state.db.begin().await?;
     // 본인 소유 확인
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1 FOR SHARE")
-        .bind(device_id)
-        .fetch_optional(&mut *tx)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1 FOR SHARE")
+            .bind(device_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }

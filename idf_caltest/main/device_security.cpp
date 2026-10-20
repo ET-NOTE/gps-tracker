@@ -39,7 +39,8 @@ static bool reserve() {
 static void newRegistration() {
   unsigned char bytes[10], hash[32];char code[21];
   esp_fill_random(bytes,sizeof(bytes));hex(bytes,sizeof(bytes),code);
-  if(!sha(code,20,hash))return;hex(hash,32,pairingHash);
+  if(!sha(code,20,hash))return;
+  hex(hash,32,pairingHash);
   Serial.printf("[REGISTER] %.4s-%.4s-%.4s-%.4s-%.4s\n",code,code+4,code+8,code+12,code+16);
   Serial.println("[REGISTER] Upload must succeed before this one-time number can be used on the website.");
 }
@@ -47,8 +48,8 @@ static bool load() {
   Preferences p;if(!p.begin("gps-auth",true))return false;
   String id=p.getString("uid",""), secret=p.getString("secret","");ack=p.getString("ack","");p.end();
   if(id.length()==0||id.length()>64||secret.length()!=64)return false;
-  for(unsigned int i=0;i<id.length();i++)if(!isalnum(id[i])&&id[i]!='-'&&id[i]!='_')return false;
-  for(unsigned int i=0;i<secret.length();i++)if(!isxdigit(secret[i]))return false;
+  for(unsigned int i=0;i<id.length();i++)if(!isalnum(static_cast<unsigned char>(id[i]))&&id[i]!='-'&&id[i]!='_')return false;
+  for(unsigned int i=0;i<secret.length();i++)if(!isxdigit(static_cast<unsigned char>(secret[i])))return false;
   if(!sha(secret.c_str(),secret.length(),key))return false;
   id.toCharArray(identity,sizeof(identity));return reserve();
 }
@@ -63,8 +64,8 @@ void poll() {
       int split=input.indexOf(' ',5);
       String id=split>5?input.substring(5,split):"", secret=split>5?input.substring(split+1):"";
       bool valid=id.length()>0&&id.length()<=64&&secret.length()==64;
-      for(unsigned int i=0;i<id.length();i++)valid=valid&&(isalnum(id[i])||id[i]=='-'||id[i]=='_');
-      for(unsigned int i=0;i<secret.length();i++)valid=valid&&isxdigit(secret[i]);
+      for(unsigned int i=0;i<id.length();i++)valid=valid&&(isalnum(static_cast<unsigned char>(id[i]))||id[i]=='-'||id[i]=='_');
+      for(unsigned int i=0;i<secret.length();i++)valid=valid&&isxdigit(static_cast<unsigned char>(secret[i]));
       if(valid) {
         Preferences p;valid=p.begin("gps-auth",false);
         if(valid){valid=p.putString("uid",id)==id.length()&&p.putString("secret",secret)==secret.length();
@@ -122,9 +123,10 @@ bool acceptCommand(const String &decoded) {
   if(!cJSON_IsString(id)){cJSON_Delete(json);return true;}
   String current=id->valuestring;cJSON_Delete(json);
   if(current.length()!=36||current==ack)return false;
-  for(unsigned int i=0;i<current.length();i++)if(!isxdigit(current[i])&&current[i]!='-')return false;
+  for(unsigned int i=0;i<current.length();i++)if(!isxdigit(static_cast<unsigned char>(current[i]))&&current[i]!='-')return false;
   Preferences p;if(!p.begin("gps-auth",false))return false;
   bool saved=p.putString("ack",current)==current.length();p.end();
-  if(saved)ack=current;return saved;
+  if(saved)ack=current;
+  return saved;
 }
 }

@@ -8,18 +8,24 @@
 use sqlx::PgPool;
 use std::time::Duration;
 
-const RUN_INTERVAL: Duration = Duration::from_secs(24 * 3600);
 const STARTUP_DELAY: Duration = Duration::from_secs(60); // 부팅 직후 안정화 후 시작
 
 pub fn spawn_worker(pool: PgPool) {
     tokio::spawn(async move {
-        tracing::info!("housekeeping worker: started (every 24h)");
+        let interval = Duration::from_secs(
+            std::env::var("GPS_HOUSEKEEPING_POLL_SECONDS")
+                .ok()
+                .and_then(|v| v.parse::<u64>().ok())
+                .unwrap_or(86400)
+                .clamp(30, 86400),
+        );
+        tracing::info!(seconds = interval.as_secs(), "housekeeping worker started");
         tokio::time::sleep(STARTUP_DELAY).await;
         loop {
             if let Err(e) = run_once(&pool).await {
                 tracing::warn!("housekeeping error: {e:#}");
             }
-            tokio::time::sleep(RUN_INTERVAL).await;
+            tokio::time::sleep(interval).await;
         }
     });
 }
@@ -134,5 +140,6 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
         );
     }
 
+    tracing::info!("housekeeping: retained device history; expiry cleanup complete");
     Ok(())
 }

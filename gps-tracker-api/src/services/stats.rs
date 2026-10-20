@@ -11,7 +11,6 @@ use sqlx::PgPool;
 use std::time::Duration;
 use tokio::time::sleep;
 
-const POLL_INTERVAL: Duration = Duration::from_secs(300); // 5분
 const STOP_THRESHOLD_M: f64 = 50.0;
 const STOP_THRESHOLD_S: i64 = 5 * 60;
 
@@ -27,12 +26,19 @@ fn haversine_m(la1: f64, lo1: f64, la2: f64, lo2: f64) -> f64 {
 
 pub fn spawn_worker(pool: PgPool) {
     tokio::spawn(async move {
-        tracing::info!("daily_stats worker: started (poll every 5min)");
+        let interval = Duration::from_secs(
+            std::env::var("GPS_STATS_POLL_SECONDS")
+                .ok()
+                .and_then(|v| v.parse::<u64>().ok())
+                .unwrap_or(300)
+                .clamp(5, 3600),
+        );
+        tracing::info!(seconds = interval.as_secs(), "daily_stats worker started");
         loop {
             if let Err(e) = run_aggregation(&pool).await {
                 tracing::warn!("daily_stats: {e:#}");
             }
-            sleep(POLL_INTERVAL).await;
+            sleep(interval).await;
         }
     });
 }
