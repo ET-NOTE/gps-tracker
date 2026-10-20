@@ -33,3 +33,10 @@
 Android 운영 APK 1.0.6(12)는 사용자 승인 후 연결된 휴대폰에 `adb install -r`로 설치·실행했고 dumpsys에서 versionCode=12/versionName=1.0.6을 확인했다. 앱 삭제나 로컬 데이터 초기화는 하지 않았다. APK/ZIP은 서버에 공개했고 전체 응답 SHA-256·Content-Disposition·Content-Length·Range 206을 확인했다. 이전 다운로드와 API release는 유지됐다.
 
 최초 Nginx 전환에서는 이전 SPA 응답이 검증에 잡혀 설정이 자동 복구됐다. Nginx reload 직후 새 attachment 경로가 준비될 때까지 제한 시간 안에서 확인하도록 보완했고, 같은 해시의 준비 파일만 재사용하여 재배포에 성공했다. 운영 웹의 다운로드 박스 전환은 별도 웹 릴리스로 마무리한다.
+
+
+## 최종 운영 확인
+
+웹 `web-remediation-20261020-8bc2501`, 소스 `8bc25017feffe5ed7e21fee9ffaac6f7bf7ad6e9`로 전환했다. 이전 웹 `web-remediation-20261020-7e0d21c`를 보존했다. API release `dev-20261020-145138-db3163c`와 진단 페이지 해시는 그대로다. 운영 계정 화면의 앱 다운로드 박스가 Android 1.0.6 및 새 ZIP/APK URL을 표시하는 것을 확인했다. 테스트 예약·단말기 소유권·실사용 데이터는 수정하지 않았다.
+
+증거는 `C:/Users/msb/AppData/Local/GPS-Builds/gps-remediation-20261020/`의 `round5-web-tests.log`, `round5-flutter-tests.log`, `round5-analyze.log`, `round5-device-downloads.log`, `round5-android-deployment.json`, `round5-web-deployment.json`, `round5-app-download-card.png`에 보관했다. 휴대폰 파일 원본 비교와 APK/ZIP manifest는 `C:/Users/msb/AppData/Local/GPS-Builds/android-1.0.6-12/`에 있다.
