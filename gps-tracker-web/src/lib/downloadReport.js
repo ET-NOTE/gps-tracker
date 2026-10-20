@@ -1,14 +1,9 @@
-import { reportCsv, reportPdfDefinition, safeFilename } from './businessExport.js';
+import { saveBlob } from './fileDownload.js';
+export { saveBlob } from './fileDownload.js';
+import { reportCsv, reportPdfDefinition } from './businessExport.js';
 import regularUrl from '../assets/fonts/NanumGothic-Regular.ttf?url';
 import boldUrl from '../assets/fonts/NanumGothic-Bold.ttf?url';
 
-export function saveBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url; link.download = safeFilename(filename);
-  document.body.appendChild(link); link.click(); link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
-}
 let pdfRuntime;
 async function loadPdf() {
   if (!pdfRuntime) pdfRuntime = (async () => {
@@ -29,7 +24,7 @@ async function font(url) {
   return btoa(result);
 }
 export async function downloadReport(report, format) {
-  if (format==='csv') { saveBlob(new Blob([reportCsv(report)],{type:'text/csv;charset=utf-8'}),`${report.filename}.csv`); return; }
+  if (format==='csv') return saveBlob(new Blob([reportCsv(report)],{type:'text/csv;charset=utf-8'}),`${report.filename}.csv`);
   const pdf = await loadPdf();
   const fonts={NanumGothic:{normal:'Regular.ttf',bold:'Bold.ttf',italics:'Regular.ttf',bolditalics:'Bold.ttf'}};
   const blob = await new Promise((resolve,reject)=> {
@@ -37,5 +32,5 @@ export async function downloadReport(report, format) {
     try { pdf.createPdf(reportPdfDefinition(report),null,fonts).getBlob(value=>{clearTimeout(timeout);resolve(value);}); }
     catch(e) {clearTimeout(timeout);reject(e);}
   });
-  saveBlob(blob,`${report.filename}.pdf`);
+  return saveBlob(blob,`${report.filename}.pdf`);
 }
