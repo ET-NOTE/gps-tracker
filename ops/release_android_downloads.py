@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import urllib.request
 import zipfile
 
@@ -39,8 +40,10 @@ blocks = ''
 for ext, mime in [('zip', 'application/zip'), ('apk', 'application/vnd.android.package-archive')]:
     name = f'{stem}.{ext}'
     dest = pathlib.Path('/home/mmm/gps-downloads')/name
-    assert not dest.exists()
-    shutil.copy2(stage/name, dest)
+    if dest.exists():
+        assert sha(dest) == manifest[f'{ext}_sha256'], 'Existing immutable artifact differs.'
+    else:
+        shutil.copy2(stage/name, dest)
     dest.chmod(0o644)
     blocks += f'''    location = /{name} {{
         alias /home/mmm/gps-downloads/{name};
@@ -53,16 +56,27 @@ for ext, mime in [('zip', 'application/zip'), ('apk', 'application/vnd.android.p
 
 '''
 backup = stage/'nginx-before.conf'
-assert not backup.exists()
-backup.write_text(before)
-backup.chmod(0o600)
+if backup.exists():
+    assert backup.read_text() == before, 'Rollback baseline changed; review before retry.'
+else:
+    backup.write_text(before)
+    backup.chmod(0o600)
+assert config.read_text() == before, 'Nginx configuration changed during staging.'
 try:
-    assert config.read_text() == before, 'Nginx configuration changed during staging.'
     config.write_text(before.replace(marker, blocks+marker))
     subprocess.run(['nginx', '-t'], check=True)
     subprocess.run(['systemctl', 'reload', 'nginx'], check=True)
     for ext in ('apk', 'zip'):
         name = f'{stem}.{ext}'
+        # nginx reload returns before every new worker has accepted requests.
+        # Wait for the exact attachment route, not the old SPA fallback.
+        for attempt in range(40):
+            request = urllib.request.Request('https://gps.serial.kr/'+name, method='HEAD')
+            with urllib.request.urlopen(request, timeout=20) as response:
+                ready = response.status == 200 and name in (response.headers.get('Content-Disposition') or '')
+            if ready: break
+            time.sleep(0.25)
+        assert ready, 'New attachment route did not become ready.'
         digest = hashlib.sha256()
         with get('/'+name) as response:
             assert response.status == 200 and name in response.headers['Content-Disposition']

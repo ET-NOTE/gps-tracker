@@ -28,3 +28,8 @@
 배포: ops/release_android_downloads.py가 APK/ZIP 해시·ZIP 내부 APK를 검증하고 새 버전 전용 Nginx 경로를 추가한다. 기존 버전/웹/API를 유지하며 nginx -t와 HTTP 본문 해시·Content-Disposition·Range(206)를 확인하고 실패 시 설정을 복구한다. 웹은 기존 웹 전용 원자적 전환을 사용한다.
 
 근거: [Android 문서 저장](https://developer.android.com/training/data-storage/shared/documents-files), [파일 공유](https://developer.android.com/training/secure-file-sharing/share-file), [다운로드 관리자](https://developer.android.com/reference/android/app/DownloadManager.Request).
+
+
+Android 운영 APK 1.0.6(12)는 사용자 승인 후 연결된 휴대폰에 `adb install -r`로 설치·실행했고 dumpsys에서 versionCode=12/versionName=1.0.6을 확인했다. 앱 삭제나 로컬 데이터 초기화는 하지 않았다. APK/ZIP은 서버에 공개했고 전체 응답 SHA-256·Content-Disposition·Content-Length·Range 206을 확인했다. 이전 다운로드와 API release는 유지됐다.
+
+최초 Nginx 전환에서는 이전 SPA 응답이 검증에 잡혀 설정이 자동 복구됐다. Nginx reload 직후 새 attachment 경로가 준비될 때까지 제한 시간 안에서 확인하도록 보완했고, 같은 해시의 준비 파일만 재사용하여 재배포에 성공했다. 운영 웹의 다운로드 박스 전환은 별도 웹 릴리스로 마무리한다.
