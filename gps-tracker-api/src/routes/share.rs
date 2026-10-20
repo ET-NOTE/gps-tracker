@@ -76,10 +76,11 @@ async fn create_share(
     req.validate()
         .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
 
+    let mut tx = state.db.begin().await?;
     // 본인 소유 확인
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
+    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1 FOR SHARE")
         .bind(device_id)
-        .fetch_optional(&state.db)
+        .fetch_optional(&mut *tx)
         .await?
         .flatten();
     if owner != Some(user.user_id) {
@@ -90,8 +91,8 @@ async fn create_share(
     let cost = ttl * CREDITS_PER_HOUR;
 
     // 포인트 먼저 차감 — 부족하면 BadRequest 로 실패. 토큰 미생성.
-    credits::charge(
-        &state.db,
+    credits::charge_tx(
+        &mut tx,
         user.user_id,
         cost,
         "share_create",
@@ -115,9 +116,10 @@ async fn create_share(
     .bind(expires_at)
     .bind(&req.note)
     .bind(cost as i32)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
+    tx.commit().await?;
     Ok(Json(row))
 }
 
@@ -137,16 +139,17 @@ async fn extend_share(
     req.validate()
         .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
 
+    let mut tx = state.db.begin().await?;
     // 본인 디바이스의 (revoke 안 된) 토큰만
     let cur: Option<(i64, DateTime<Utc>)> = sqlx::query_as(
         r#"SELECT s.id, s.expires_at
              FROM share_tokens s
              JOIN devices d ON d.id = s.device_id
-            WHERE s.id = $1 AND d.owner_id = $2 AND s.created_by = $2 AND s.revoked_at IS NULL"#,
+            WHERE s.id = $1 AND d.owner_id = $2 AND s.created_by = $2 AND s.revoked_at IS NULL FOR UPDATE OF s FOR SHARE OF d"#,
     )
     .bind(share_id)
     .bind(user.user_id)
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await?;
     let (_, cur_expires) = cur.ok_or(AppError::NotFound)?;
 
@@ -166,8 +169,8 @@ async fn extend_share(
     }
 
     let cost = req.extra_hours * CREDITS_PER_HOUR;
-    credits::charge(
-        &state.db,
+    credits::charge_tx(
+        &mut tx,
         user.user_id,
         cost,
         "share_extend",
@@ -187,9 +190,10 @@ async fn extend_share(
     .bind(share_id)
     .bind(new_expires)
     .bind(cost as i32)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
+    tx.commit().await?;
     Ok(Json(row))
 }
 

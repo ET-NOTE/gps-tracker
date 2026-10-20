@@ -155,7 +155,48 @@ fn validate_coordinates(p: &IngestPayload) -> AppResult<()> {
 pub async fn ingest(
     State(state): State<AppState>,
     headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> AppResult<Json<Value>> {
+    use crate::services::device_auth::{self, IngestMode};
+    let payload: Value =
+        serde_json::from_slice(&body).map_err(|_| AppError::BadRequest("invalid JSON".into()))?;
+    let (id, mode, mut gate) = device_auth::authorize(&state, &headers, &body, &payload).await?;
+    let counter = headers.get("x-gps-counter").and_then(|h| h.to_str().ok()).and_then(|s| s.parse::<i64>().ok());
+    let response = ingest_payload(
+        State(state.clone()),
+        headers,
+        Json(payload.clone()),
+        id,
+        mode,
+    )
+    .await?;
+    if mode == IngestMode::Signed {
+        if let Some(hash) = payload
+            .get("pairing_hash")
+            .and_then(Value::as_str)
+            .filter(|h| h.len() == 64 && h.bytes().all(|b| b.is_ascii_hexdigit()))
+        {
+            sqlx::query("UPDATE devices SET claim_code_hash=$2,
+                claim_expires_at=CASE WHEN claim_code_hash IS DISTINCT FROM $2 OR claim_expires_at<=now()
+                    THEN now()+interval '24 hours' ELSE claim_expires_at END
+                WHERE id=$1 AND owner_id IS NULL AND last_claim_code_hash IS DISTINCT FROM $2")
+                .bind(id).bind(hash.to_ascii_lowercase()).execute(&mut *gate).await?;
+        }
+    }
+    let result = if mode==IngestMode::Signed {
+        Json(device_auth::signed_response(&mut gate,id,counter.ok_or(AppError::Unauthorized)?,
+            payload["device_uid"].as_str().ok_or(AppError::Unauthorized)?,&response.0).await?)
+    } else { response };
+    gate.commit().await?;
+    Ok(result)
+}
+
+async fn ingest_payload(
+    State(state): State<AppState>,
+    headers: HeaderMap,
     Json(payload): Json<Value>,
+    device_id: i64,
+    mode: crate::services::device_auth::IngestMode,
 ) -> AppResult<Json<Value>> {
     // 클라이언트 IP (X-Real-IP, X-Forwarded-For, fallback)
     let remote_ip = headers
@@ -176,95 +217,34 @@ pub async fn ingest(
         .clone()
         .unwrap_or_else(|| format!("anon-{remote_ip}"));
 
-    // 식별자 우선순위 (production-ready):
-    //   1) ICCID 일치 (= SIM 정체성. 동일 SIM은 어떤 모뎀에 있든 같은 logical device)
-    //   2) device_uid 일치 (legacy 디바이스 호환)
-    //   3) 새로 INSERT (anon)
-    //
-    // ※ IMEI는 매칭 키로 쓰지 않음. 모뎀이 같아도 SIM이 바뀌면 다른 디바이스로 취급.
-    //   IMEI는 fingerprint로만 저장 (도난 추적, 모뎀 식별 보조).
-    let mut device_id: Option<i64> = None;
-    if let Some(iccid) = parsed.iccid.as_deref() {
-        device_id = sqlx::query_scalar("SELECT id FROM devices WHERE iccid = $1 LIMIT 1")
-            .bind(iccid)
-            .fetch_optional(&state.db)
-            .await?;
-    }
-    if device_id.is_none() {
-        device_id = sqlx::query_scalar("SELECT id FROM devices WHERE device_uid = $1")
-            .bind(&device_uid)
-            .fetch_optional(&state.db)
-            .await?;
-    }
-
-    // 매칭된 행이 있으면 갱신, 없으면 INSERT. IMEI 변경 감지 시 audit 기록.
-    let device_id: i64 =
-        match device_id {
-            Some(id) => {
-                // 갱신 전 기존 IMEI 조회 (변경 여부 비교용)
-                let prev_imei: Option<String> =
-                    sqlx::query_scalar("SELECT imei FROM devices WHERE id = $1")
-                        .bind(id)
-                        .fetch_one(&state.db)
-                        .await?;
-
-                sqlx::query(
-                    r#"UPDATE devices
-                      SET last_seen_at = now(),
-                          device_uid   = $2,
-                          iccid        = COALESCE(devices.iccid, $3),
-                          imei         = COALESCE($4, imei),
-                          imsi         = COALESCE($5, imsi)
-                    WHERE id = $1"#,
-                )
-                .bind(id)
-                .bind(&device_uid)
-                .bind(&parsed.iccid)
-                .bind(&parsed.imei)
-                .bind(&parsed.imsi)
-                .execute(&state.db)
-                .await?;
-
-                // IMEI 가 바뀌었으면 = SIM 카드가 다른 모뎀으로 옮겨감 → swap 기록
-                if let (Some(old), Some(new)) = (prev_imei.as_deref(), parsed.imei.as_deref()) {
-                    if !old.is_empty() && old != new {
-                        let _ = sqlx::query(
-                            r#"INSERT INTO device_audit_log (device_id, event_type, actor, data)
-                           VALUES ($1, 'sim_swap', 'system', $2)"#,
-                        )
-                        .bind(id)
-                        .bind(json!({
-                            "from_imei": old,
-                            "to_imei": new,
-                            "iccid": parsed.iccid,
-                        }))
-                        .execute(&state.db)
-                        .await;
-                        tracing::info!(device_id = id, from = old, to = new, "audit: imei changed");
-                    }
-                }
-
-                id
-            }
-            None => sqlx::query_scalar(
-                // ON CONFLICT 로 동시 ingest race 방어. 동일 device_uid 두 ingest 가
-                // 동시에 INSERT 시도 → 한쪽은 UPDATE 경로로 진입해 id 반환.
-                r#"INSERT INTO devices (device_uid, api_key_hash, last_seen_at, iccid, imei, imsi)
-               VALUES ($1, '', now(), $2, $3, $4)
-               ON CONFLICT (device_uid) DO UPDATE
-                  SET last_seen_at = now(),
-                      iccid = COALESCE(devices.iccid, EXCLUDED.iccid),
-                      imei  = COALESCE(EXCLUDED.imei, devices.imei),
-                      imsi  = COALESCE(EXCLUDED.imsi, devices.imsi)
-               RETURNING id"#,
+    // Identity was authenticated before any device metadata or command mutation.
+    let prev_imei: Option<String> = sqlx::query_scalar("SELECT imei FROM devices WHERE id=$1")
+        .bind(device_id)
+        .fetch_one(&state.db)
+        .await?;
+    sqlx::query(
+        "UPDATE devices SET last_seen_at=now(),device_uid=$2,
+        iccid=COALESCE(iccid,$3),imei=COALESCE($4,imei),imsi=COALESCE($5,imsi) WHERE id=$1",
+    )
+    .bind(device_id)
+    .bind(&device_uid)
+    .bind(&parsed.iccid)
+    .bind(&parsed.imei)
+    .bind(&parsed.imsi)
+    .execute(&state.db)
+    .await?;
+    if let (Some(old), Some(new)) = (prev_imei.as_deref(), parsed.imei.as_deref()) {
+        if !old.is_empty() && old != new {
+            sqlx::query(
+                "INSERT INTO device_audit_log(device_id,event_type,actor,data)
+                VALUES($1,'sim_swap','system',$2)",
             )
-            .bind(&device_uid)
-            .bind(&parsed.iccid)
-            .bind(&parsed.imei)
-            .bind(&parsed.imsi)
-            .fetch_one(&state.db)
-            .await?,
-        };
+            .bind(device_id)
+            .bind(json!({"from_imei":old,"to_imei":new,"iccid":parsed.iccid}))
+            .execute(&state.db)
+            .await?;
+        }
+    }
 
     // l80 / lte 각각 location_records로 INSERT (있는 것만)
     let recorded_at = Utc::now();
@@ -290,10 +270,11 @@ pub async fn ingest(
     if let Some(fixes) = parsed.fixes.as_ref().filter(|f| !f.is_empty()) {
         // Serialize competing retransmissions with pairing/deletion/stat aggregation.
         let mut tx = state.db.begin().await?;
-        sqlx::query("SELECT id FROM devices WHERE id=$1 FOR UPDATE")
-            .bind(device_id)
-            .execute(&mut *tx)
-            .await?;
+        let owner_id: Option<i64> =
+            sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1 FOR UPDATE")
+                .bind(device_id)
+                .fetch_one(&mut *tx)
+                .await?;
         let candidates: Vec<_> = fixes
             .iter()
             .map(|f| {
@@ -466,7 +447,7 @@ pub async fn ingest(
         }
 
         // batch 끝에 1회 broadcast — 마지막 fix metadata 를 top-level 에, 모두를 fixes array 로.
-        if let Some(event) = batch_event(device_id, &parsed, batch_for_ws) {
+        if let Some(event) = batch_event(device_id, owner_id, &parsed, batch_for_ws) {
             let _ = state.events.send(event);
         }
     }
@@ -642,20 +623,23 @@ pub async fn ingest(
 
             if recent.is_none() {
                 let data = json!({ "vbat_mv": v, "calibrated_mv": crate::services::battery::calibrated_mv(v), "battery_policy": crate::services::battery::policy().version, "threshold_mv": threshold });
-                let _ = sqlx::query(
-                    "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM devices WHERE id = $1))",
+                let inserted: Result<Option<i64>, sqlx::Error> = sqlx::query_scalar(
+                    "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM devices WHERE id = $1)) RETURNING user_id",
                 )
                 .bind(device_id)
                 .bind(recorded_at)
                 .bind("low_batt")
                 .bind(&data)
-                .execute(&state.db)
+                .fetch_one(&state.db)
                 .await;
-                let _ = state.events.send(Event::DeviceEvent {
-                    device_id,
-                    kind: "low_batt".into(),
-                    data,
-                });
+                if let Ok(owner_id) = inserted {
+                    let _ = state.events.send(Event::DeviceEvent {
+                        device_id,
+                        owner_id,
+                        kind: "low_batt".into(),
+                        data,
+                    });
+                }
                 tracing::info!(device_id, vbat_mv = v, "low_batt event inserted");
             } else {
                 tracing::debug!(device_id, vbat_mv = v, "low_batt suppressed (24h debounce)");
@@ -873,67 +857,15 @@ pub async fn ingest(
         }
     }
 
-    // ── 부저 원격 트리거 atomic claim ──
-    // UI 가 set 한 beep_pending=true 를 atomic 으로 FALSE 로 클리어하면서 응답에 cmd 실어 보냄.
-    // RETURNING 으로 진짜 한 번만 claim — 동시에 들어온 ingest 두 개가 둘 다 cmd 받는 일 없음.
-    let beep_claimed: Option<(i64,)> = sqlx::query_as(
-        r#"UPDATE devices
-              SET beep_pending = FALSE
-            WHERE id = $1 AND beep_pending = TRUE
-        RETURNING id"#,
-    )
-    .bind(device_id)
-    .fetch_optional(&state.db)
-    .await
-    .ok()
-    .flatten();
-
-    // 원격 reset atomic claim — beep 과 동일 패턴.
-    // reset 이 우선 (둘 다 pending 이면 reset 만 dispatch. reset 후 부저는 다음 사이클에서 다시 트리거 가능).
-    let reset_claimed: Option<(i64,)> = sqlx::query_as(
-        r#"UPDATE devices
-              SET reset_pending = FALSE
-            WHERE id = $1 AND reset_pending = TRUE
-        RETURNING id"#,
-    )
-    .bind(device_id)
-    .fetch_optional(&state.db)
-    .await
-    .ok()
-    .flatten();
-
-    // POST 주기 원격 조정 atomic claim — cmd 와 독립적으로 동봉 가능 (별도 키).
-    // 단일 device 24h 테스트라 SELECT+UPDATE 2-step (race 무시).
-    let interval_seconds: Option<i32> = {
-        let s: Option<i32> =
-            sqlx::query_scalar("SELECT post_interval_pending FROM devices WHERE id = $1")
-                .bind(device_id)
-                .fetch_optional(&state.db)
-                .await
-                .ok()
-                .flatten();
-        if s.is_some() {
-            let _ = sqlx::query("UPDATE devices SET post_interval_pending = NULL WHERE id = $1")
-                .bind(device_id)
-                .execute(&state.db)
-                .await;
-        }
-        s
-    };
-
-    let mut resp = json!({ "ok": true });
-    if reset_claimed.is_some() {
-        resp["cmd"] = json!("reset");
-        tracing::info!(device_id, "ingest: dispatched reset cmd");
-    } else if beep_claimed.is_some() {
-        resp["cmd"] = json!("beep");
-        tracing::info!(device_id, "ingest: dispatched beep cmd");
+    // Legacy compatibility never consumes private remote commands.
+    if mode != crate::services::device_auth::IngestMode::Signed {
+        return Ok(Json(
+            json!({"ok":true,"authentication":"legacy_update_required"}),
+        ));
     }
-    if let Some(s) = interval_seconds {
-        resp["post_interval_s"] = json!(s);
-        tracing::info!(device_id, seconds = s, "ingest: dispatched post_interval");
-    }
-    Ok(Json(resp))
+
+    Ok(Json(crate::services::device_commands::dispatch(&state.db,device_id,
+        payload.get("command_ack").and_then(Value::as_str)).await?))
 }
 
 async fn broadcast_location(
@@ -962,8 +894,18 @@ async fn broadcast_location(
             )
         });
 
+    let owner_id: Option<i64> = sqlx::query_scalar(
+        "SELECT user_id FROM location_records WHERE device_id=$1 AND recorded_at=$2 AND source=$3",
+    )
+    .bind(device_id)
+    .bind(recorded_at)
+    .bind(source)
+    .fetch_optional(&state.db)
+    .await?
+    .flatten();
     let _ = state.events.send(Event::Location {
         device_id,
+        owner_id,
         recorded_at,
         source: source.to_string(),
         fix: fix.fix,
@@ -993,12 +935,14 @@ async fn broadcast_location(
 /// top-level fields 는 마지막 fix (legacy consumer 호환), fixes array 에 전체.
 fn batch_event(
     device_id: i64,
+    owner_id: Option<i64>,
     parsed: &IngestPayload,
     fixes: Vec<crate::events::LocationFix>,
 ) -> Option<Event> {
     let last = fixes.iter().max_by_key(|f| f.recorded_at)?;
     Some(Event::Location {
         device_id,
+        owner_id,
         recorded_at: last.recorded_at,
         source: "l80".to_string(),
         fix: true,
@@ -1123,7 +1067,7 @@ mod batch_tests {
             speed_kmh: Some(0.0),
             speed_details: Default::default(),
         };
-        let event = batch_event(1, &payload, vec![newer.clone(), older]).unwrap();
+        let event = batch_event(1, Some(1), &payload, vec![newer.clone(), older]).unwrap();
         if let Event::Location {
             recorded_at,
             lat,
@@ -1139,6 +1083,6 @@ mod batch_tests {
         } else {
             panic!("expected location event");
         }
-        assert!(batch_event(1, &payload, vec![]).is_none());
+        assert!(batch_event(1, Some(1), &payload, vec![]).is_none());
     }
 }

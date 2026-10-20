@@ -1,13 +1,10 @@
 // 데이터 정합 housekeeping — 24시간 주기.
 // 정리 대상:
-//   1) device-bound 테이블의 고아 row — user_id 가 현재 device.owner_id 와 다름 + 30일 이상 경과
-//      (재페어링·소유권 변경 후 invisible 상태로 디스크만 점유하던 row)
+//   연결 해제 때 보관을 선택한 사용자 기록은 자동 삭제하지 않는다.
 //   2) share_tokens — revoked / expired 30일 이상 지난 것
 //
-// 운영 안전:
-//  - 30일 grace period — 사용자 실수로 unpair 후 며칠 안에 재페어링하면 데이터 자동 복구 가능 보존
-//  - 한 번에 너무 많이 지우면 부하 → DELETE 한 번에 끝나면 OK 이지만 거대 테이블이면 batch 로 끊어주는 것도 고려.
-//    초기엔 한 큐에 처리, 추후 필요 시 batched.
+// 보관 후 연결 해제한 기록은 명시적 삭제 또는 회원탈퇴로만 제거한다.
+// 소유자가 바뀌어 조회할 수 없는 기록도 이전 사용자의 보관 선택을 존중한다.
 use sqlx::PgPool;
 use std::time::Duration;
 
@@ -28,46 +25,6 @@ pub fn spawn_worker(pool: PgPool) {
 }
 
 async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
-    // 1) 고아 row — user_id 가 device.owner_id 와 다른 케이스. NULL-safe 비교.
-    //    각 테이블 시간 컬럼을 30일 grace 로 필터.
-    let queries: &[(&str, &str)] = &[
-        ("location_records", "recorded_at"),
-        ("events", "occurred_at"),
-        ("trip_annotations", "trip_started_at"),
-    ];
-    for (table, time_col) in queries {
-        let q = format!(
-            "DELETE FROM {table} t USING devices d \
-              WHERE t.device_id = d.id \
-                AND t.user_id IS DISTINCT FROM d.owner_id \
-                AND t.{time_col} < now() - interval '30 days'"
-        );
-        let res = sqlx::query(&q).execute(pool).await?;
-        if res.rows_affected() > 0 {
-            tracing::info!(
-                table = *table,
-                deleted = res.rows_affected(),
-                "housekeeping: orphan rows cleaned"
-            );
-        }
-    }
-
-    // daily_stats — date 컬럼 (DATE) 사용
-    let r = sqlx::query(
-        "DELETE FROM daily_stats t USING devices d \
-          WHERE t.device_id = d.id \
-            AND t.user_id IS DISTINCT FROM d.owner_id \
-            AND t.date < (CURRENT_DATE - 30)",
-    )
-    .execute(pool)
-    .await?;
-    if r.rows_affected() > 0 {
-        tracing::info!(
-            deleted = r.rows_affected(),
-            "housekeeping: daily_stats orphan cleaned"
-        );
-    }
-
     // 2) share_tokens — revoke / expire 후 30일 지난 것
     let r = sqlx::query(
         "DELETE FROM share_tokens \

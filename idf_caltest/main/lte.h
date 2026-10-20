@@ -9,6 +9,11 @@
 
 namespace lte {
   void init();          // UART begin + power-on (hw_power::railOn() 선행 가정)
+  // Sleep-only idle observer; must never issue AT commands or recurse into LTE.
+  void setSleepObserver(void (*observer)());
+  enum class ShutdownResult { NotStarted, Confirmed, Unconfirmed };
+  ShutdownResult shutdownForSleep();  // CPOWD=1 + bounded NORMAL POWER DOWN wait, no toggle
+  void resumeAfterSleepAbort(bool railWasCut, ShutdownResult result); // preserve GPS batch
   bool bringUp();       // AT→CPIN→CEREG→CNACT→IP. true=PDP ready. (2026-07-08 non-blocking: 등록대기 중엔 false+bringInProgress())
   bool bringInProgress();  // 등록 대기 중(non-blocking) — recovery 가 빠르게 재호출
   void bringReset();       // 전원사이클/soft 후 bringUp phase 리셋(Phase1부터)

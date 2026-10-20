@@ -43,6 +43,8 @@ pub struct ChatMessagePayload {
 pub enum Event {
     Location {
         device_id: i64,
+        #[serde(skip)]
+        owner_id: Option<i64>,
         recorded_at: DateTime<Utc>,
         source: String,
         fix: bool,
@@ -69,6 +71,8 @@ pub enum Event {
     #[allow(clippy::enum_variant_names)] // Keep the existing event vocabulary and wire contract.
     DeviceEvent {
         device_id: i64,
+        #[serde(skip)]
+        owner_id: Option<i64>,
         kind: String,
         data: serde_json::Value,
     },
@@ -84,7 +88,7 @@ pub enum Event {
 /// broadcast 이벤트 배송 대상 — WS 핸들러가 필터링에 사용.
 pub enum EventTarget {
     /// device 소유자 & subscribe 한 WS 에게만 배송.
-    Device(i64),
+    Device(i64, Option<i64>),
     /// 대상 user_id 의 모든 WS 에게 배송 (subscription 무관).
     User(i64),
 }
@@ -92,8 +96,16 @@ pub enum EventTarget {
 impl Event {
     pub fn target(&self) -> EventTarget {
         match self {
-            Event::Location { device_id, .. } => EventTarget::Device(*device_id),
-            Event::DeviceEvent { device_id, .. } => EventTarget::Device(*device_id),
+            Event::Location {
+                device_id,
+                owner_id,
+                ..
+            } => EventTarget::Device(*device_id, *owner_id),
+            Event::DeviceEvent {
+                device_id,
+                owner_id,
+                ..
+            } => EventTarget::Device(*device_id, *owner_id),
             Event::ChatMessage { target_user_id, .. } => EventTarget::User(*target_user_id),
         }
     }

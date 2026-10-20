@@ -100,15 +100,7 @@ async function ingestPos(pos) {
     //   /ingest (root)         → backend /gps-tracker/ingest  ← firmware · phone 사용
     //   /gps-tracker/ingest    → 미등록 → 405 Method Not Allowed
     // 첫 번째 시도는 /api/v1/ingest (404), 두 번째는 /gps-tracker/ingest (405) 였음.
-    const res = await fetch(new URL('/ingest', window.location.origin), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      console.warn('phone tracker: ingest', res.status, await res.text().catch(() => ''));
-      return;
-    }
+    await api.ingestPhone(payload);
     // 성공 시에만 lastPostedPos 갱신 (실패 시 다음 fix 재시도 대상).
     lastPostedPos = { lat, lng, ts: pos.timestamp };
   } catch (e) {

@@ -186,6 +186,7 @@ pub async fn ingest(
     if let Some(last) = broadcast.last() {
         let _ = state.events.send(Event::Location {
             device_id: id,
+            owner_id: owner,
             recorded_at: last.recorded_at,
             source: "lte_gnss".into(),
             fix: true,
@@ -213,6 +214,7 @@ pub async fn ingest(
     } else if p.points.is_empty() {
         let _ = state.events.send(Event::Location {
             device_id: id,
+            owner_id: owner,
             recorded_at: now,
             source: "lte_gnss".into(),
             fix: false,

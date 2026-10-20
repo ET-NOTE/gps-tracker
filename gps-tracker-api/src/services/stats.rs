@@ -39,12 +39,20 @@ pub fn spawn_worker(pool: PgPool) {
 
 async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
     let queued: Vec<(i64, NaiveDate, i64)> = sqlx::query_as(
-        "SELECT device_id,date,generation FROM stats_rebuild_queue ORDER BY date LIMIT 100",
+        "SELECT device_id,date,generation FROM stats_rebuild_queue WHERE next_attempt_at<=now() ORDER BY date LIMIT 100",
     )
     .fetch_all(pool)
     .await?;
     for (did, date, generation) in queued {
-        aggregate_one(pool, did, date).await?;
+        if let Err(error) = aggregate_one(pool, did, date).await {
+            tracing::warn!(device_id=did, date=%date, "daily_stats queued job: {error:#}");
+            sqlx::query("UPDATE stats_rebuild_queue SET attempts=attempts+1,
+                last_error=left($4,500),next_attempt_at=now()+LEAST(1800,60*(attempts+1))*interval '1 second'
+                WHERE device_id=$1 AND date=$2 AND generation=$3")
+                .bind(did).bind(date).bind(generation).bind(error.to_string())
+                .execute(pool).await?;
+            continue;
+        }
         sqlx::query(
             "DELETE FROM stats_rebuild_queue WHERE device_id=$1 AND date=$2 AND generation=$3",
         )

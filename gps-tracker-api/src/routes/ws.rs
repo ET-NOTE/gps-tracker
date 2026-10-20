@@ -56,10 +56,10 @@ async fn handler(
         Ok(v) => v,
         Err(_) => return (StatusCode::UNAUTHORIZED, "bad sub").into_response(),
     };
-    ws.on_upgrade(move |socket| run(socket, state, user_id))
+    ws.on_upgrade(move |socket| run(socket, state, user_id, claims.exp))
 }
 
-async fn run(socket: WebSocket, state: AppState, user_id: i64) {
+async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) {
     let (mut sender, mut receiver) = socket.split();
     let mut rx = state.events.subscribe();
     let subs: Arc<Mutex<HashSet<i64>>> = Arc::new(Mutex::new(HashSet::new()));
@@ -126,21 +126,32 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64) {
     //   30s 주기로 재조회해 더 이상 소유하지 않는 device 를 프루닝(노출 창 ≤30s, per-message 비용 0).
     let mut revalidate = tokio::time::interval(std::time::Duration::from_secs(30));
     revalidate.tick().await; // 즉시 발화하는 첫 tick 소비
+    let expiry = tokio::time::sleep(std::time::Duration::from_secs(
+        (expires_at - chrono::Utc::now().timestamp()).max(0) as u64,
+    ));
+    tokio::pin!(expiry);
 
     // SEND: broadcast 이벤트 + ack 메시지 + 주기 재검증 멀티플렉싱
     loop {
         tokio::select! {
             biased;
+            _ = &mut expiry => {
+                let _ = sender.send(Message::Close(None)).await;
+                break;
+            }
             _ = revalidate.tick() => {
                 let current: Vec<i64> = { subs.lock().unwrap().iter().copied().collect() };
                 if !current.is_empty() {
                     // 성공했을 때만 프루닝 — 일시 DB 오류에 정상 구독을 전부 날리지 않도록.
-                    if let Ok(still) = sqlx::query_scalar::<_, i64>(
+                    match sqlx::query_scalar::<_, i64>(
                         "SELECT id FROM devices WHERE owner_id = $1 AND id = ANY($2)",
                     ).bind(user_id).bind(&current).fetch_all(&state.db).await {
+                      Ok(still) => {
                         let still_set: HashSet<i64> = still.into_iter().collect();
                         let mut s = subs.lock().unwrap();
                         s.retain(|id| still_set.contains(id));
+                      }
+                      Err(_) => { break; }
                     }
                 }
             }
@@ -162,18 +173,35 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64) {
                         // (F7-b) 배송 대상 판별:
                         // Device(id) → subscribe 된 device 만
                         // User(id)   → 이 WS 의 user_id 와 일치할 때만 (chat 등 user-scoped)
-                        let should_send = match ev.target() {
-                            EventTarget::Device(did) => subs.lock().unwrap().contains(&did),
-                            EventTarget::User(uid)   => uid == user_id,
-                        };
-                        if !should_send { continue; }
+                        // Keep the owner lock until send completes: unpair waits for an
+                        // already-authorized send, and no later send can pass its commit.
+                        // The event's stamped owner also excludes old queued events from
+                        // a new owner's subscription.
+                        let mut authorization = None;
+                        match ev.target() {
+                            EventTarget::Device(did, owner) => {
+                                if owner != Some(user_id) || !subs.lock().unwrap().contains(&did) { continue; }
+                                let Ok(mut tx) = state.db.begin().await else { break; };
+                                let allowed = sqlx::query_scalar::<_, i64>(
+                                    "SELECT id FROM devices WHERE id=$1 AND owner_id=$2 FOR SHARE")
+                                    .bind(did).bind(user_id).fetch_optional(&mut *tx).await;
+                                match allowed {
+                                    Ok(Some(_)) => { authorization = Some(tx); }
+                                    Ok(None) => { subs.lock().unwrap().remove(&did); continue; }
+                                    Err(_) => { break; }
+                                }
+                            }
+                            EventTarget::User(uid) => { if uid != user_id { continue; } }
+                        }
                         let payload = match serde_json::to_string(&ev) {
                             Ok(s) => s,
                             Err(_) => continue,
                         };
-                        if sender.send(Message::Text(payload)).await.is_err() {
+                        if !matches!(tokio::time::timeout(std::time::Duration::from_secs(3),
+                            sender.send(Message::Text(payload))).await, Ok(Ok(()))) {
                             break;
                         }
+                        if let Some(tx) = authorization { if tx.commit().await.is_err() { break; } }
                     }
                     Err(RecvError::Lagged(n)) => {
                         // (F11) 이전엔 조용히 continue → 사용자 gap 인지 불가.

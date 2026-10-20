@@ -104,6 +104,7 @@ impl DeviceView {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct PairRequest {
+    pub registration_code: Option<String>,
     // 둘 중 하나만 있어도 OK. 둘 다 있으면 ICCID 우선.
     #[validate(length(min = 1, max = 128))]
     pub device_uid: Option<String>,
@@ -151,11 +152,14 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/devices", get(list))
         .route("/devices/scan", get(scan_unpaired)) // [2026-09-14 KC] 최근 ingest 중 미페어링 단말 스캔
+        .route("/devices/pairing-options", get(pairing_options))
         .route("/devices/pair", post(pair))
         .route("/devices/pair-phone", post(pair_phone))
         .route(
             "/devices/:id/car-image",
-            post(upload_car_image).layer(axum::extract::DefaultBodyLimit::max(6 * 1024 * 1024)),
+            get(read_car_image)
+                .post(upload_car_image)
+                .layer(axum::extract::DefaultBodyLimit::max(6 * 1024 * 1024)),
         )
         .route("/devices/:id", get(detail).patch(update).delete(unpair))
         .route("/devices/:id/wipe", post(wipe)) // 데이터 완전 삭제
@@ -189,28 +193,7 @@ async fn beep_device(
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
-    // 소유권 확인 + atomic set (한 쿼리)
-    let updated: Option<(i64,)> = sqlx::query_as(
-        r#"UPDATE devices
-              SET beep_pending      = TRUE,
-                  beep_requested_at = NOW()
-            WHERE id = $1 AND owner_id = $2
-        RETURNING id"#,
-    )
-    .bind(id)
-    .bind(user.user_id)
-    .fetch_optional(&state.db)
-    .await?;
-
-    if updated.is_none() {
-        return Err(AppError::NotFound);
-    }
-
-    Ok(Json(json!({
-        "ok": true,
-        "device_id": id,
-        "note": "다음 ingest (보통 15초 이내) 시 디바이스 부저 울림"
-    })))
+    Ok(Json(crate::services::device_commands::enqueue(&state.db,id,user.user_id,"beep",json!({})).await?))
 }
 
 // ─── 원격 reset (hardPowerCycle) ─────────────────────────────
@@ -224,27 +207,7 @@ async fn reset_device(
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
-    let updated: Option<(i64,)> = sqlx::query_as(
-        r#"UPDATE devices
-              SET reset_pending      = TRUE,
-                  reset_requested_at = NOW()
-            WHERE id = $1 AND owner_id = $2
-        RETURNING id"#,
-    )
-    .bind(id)
-    .bind(user.user_id)
-    .fetch_optional(&state.db)
-    .await?;
-
-    if updated.is_none() {
-        return Err(AppError::NotFound);
-    }
-
-    Ok(Json(json!({
-        "ok": true,
-        "device_id": id,
-        "note": "다음 ingest (보통 15초 이내) 시 디바이스 hardPowerCycle. 완전 stuck 상태면 firmware watchdog 가 60s 후 자동 처리."
-    })))
+    Ok(Json(crate::services::device_commands::enqueue(&state.db,id,user.user_id,"reset",json!({})).await?))
 }
 
 async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Vec<DeviceView>>> {
@@ -320,7 +283,24 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
 // 인증센터가 임의 USIM 을 끼우면 uid 가 sim-<새 ICCID 뒤8> 로 갈리며 미페어링 device 가
 // 자동 생성됨 → 검사자가 "스캔" → 원클릭 페어링. 익명 ingest 특성상 uid 를 아는 사용자는
 // 원래도 페어링 가능했으므로 노출 범위 동일 — 목록은 "최근 송신 중 + 미소유" 로 한정.
-async fn scan_unpaired(State(state): State<AppState>, _user: AuthUser) -> AppResult<Json<Value>> {
+async fn pairing_options(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Value>> {
+    let admin: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1 AND role='admin')")
+            .bind(user.user_id)
+            .fetch_one(&state.db)
+            .await?;
+    Ok(Json(
+        json!({"kc_scan":admin && crate::services::device_auth::enabled("GPS_KC_PAIRING_ENABLED")}),
+    ))
+}
+
+async fn scan_unpaired(
+    State(state): State<AppState>,
+    _user: crate::auth::AdminUser,
+) -> AppResult<Json<Value>> {
+    if !crate::services::device_auth::enabled("GPS_KC_PAIRING_ENABLED") {
+        return Err(AppError::Forbidden);
+    }
     let rows: LifecycleRows = sqlx::query_as(
         "SELECT device_uid, iccid, last_seen_at, created_at
            FROM devices
@@ -361,8 +341,30 @@ async fn pair(
 ) -> AppResult<Json<DeviceView>> {
     req.validate()
         .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
-    if req.device_uid.is_none() && req.iccid.is_none() {
-        return Err(AppError::BadRequest("device_uid or iccid required".into()));
+    let proof = if let Some(code) = &req.registration_code {
+        let count: i32 = sqlx::query_scalar("INSERT INTO device_pair_attempts(user_id) VALUES($1)
+            ON CONFLICT(user_id) DO UPDATE SET
+                attempts=CASE WHEN device_pair_attempts.window_at<now()-interval '10 minutes' THEN 1 ELSE device_pair_attempts.attempts+1 END,
+                window_at=CASE WHEN device_pair_attempts.window_at<now()-interval '10 minutes' THEN now() ELSE device_pair_attempts.window_at END
+            RETURNING attempts").bind(user.user_id).fetch_one(&state.db).await?;
+        if count > 10 {
+            return Err(AppError::TooManyRequests(
+                "등록번호를 여러 번 확인했습니다. 10분 후 다시 시도해 주세요.".into(),
+            ));
+        }
+        Some(crate::services::device_auth::claim_hash(code)?)
+    } else {
+        None
+    };
+    let kc_admin: bool = crate::services::device_auth::enabled("GPS_KC_PAIRING_ENABLED")
+        && sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1 AND role='admin')")
+            .bind(user.user_id)
+            .fetch_one(&state.db)
+            .await?;
+    if proof.is_none() && req.device_uid.is_none() && req.iccid.is_none() {
+        return Err(AppError::BadRequest(
+            "장치에서 확인한 등록번호를 입력해 주세요.".into(),
+        ));
     }
 
     // 조회 우선순위: ICCID → device_uid (둘 다 있으면 ICCID 우선).
@@ -371,7 +373,17 @@ async fn pair(
     // 사용자가 OLED 보고 입력한 끝 8자리는 보통 19자리 기준 (1NCE) 이지만 SIM 표면 인쇄
     // 기준일 수도 있어 양쪽 다 매칭. stored iccid 가 20자리면 LEFT(iccid, len-1) 로 19자리화
     // 비교 → 어느 쪽이든 안전하게 잡힘.
-    let row: Option<(i64, Option<i64>)> = if let Some(iccid) = req.iccid.as_deref() {
+    let row: Option<(i64, Option<i64>)> = if let Some(hash) = &proof {
+        sqlx::query_as(
+            "SELECT id,owner_id FROM devices WHERE
+            (claim_code_hash=$1 AND claim_expires_at>now()) OR
+            (last_claim_code_hash=$1 AND owner_id=$2)",
+        )
+        .bind(hash)
+        .bind(user.user_id)
+        .fetch_optional(&state.db)
+        .await?
+    } else if let Some(iccid) = req.iccid.as_deref() {
         if iccid.len() >= 18 {
             // 정확히 일치 (19/20 양쪽 모두) — 입력 길이가 19면 stored 20자리에 prefix 매칭.
             sqlx::query_as(
@@ -427,6 +439,9 @@ async fn pair(
             ));
         }
         Some((id, None)) => {
+            if proof.is_none() && !kc_admin {
+                return Err(AppError::BadRequest("장치 시리얼 모니터의 등록번호가 필요합니다. SIM 번호만으로는 연결할 수 없습니다.".into()));
+            }
             // 익명 행 클레임 — [뿌리 A 2026-08-14] AND owner_id IS NULL 로 원자화.
             //   (기존 SELECT→UPDATE 비원자 → 두 사용자 동시 pair 시 나중 UPDATE 가 먼저 페어링을
             //    조용히 덮어씀. RETURNING 0건이면 그 사이 타인이 클레임 → Conflict.)
@@ -434,13 +449,17 @@ async fn pair(
                 r#"UPDATE devices
                       SET owner_id = $1,
                           display_name = $2,
-                          paired_at = now()
-                    WHERE id = $3 AND owner_id IS NULL
+                          paired_at = now(),
+                          last_claim_code_hash=claim_code_hash, claim_code_hash=NULL, claim_expires_at=NULL
+                    WHERE id = $3 AND owner_id IS NULL AND ($4::boolean OR
+                        (claim_code_hash=$5 AND claim_expires_at>now()))
                 RETURNING id"#,
             )
             .bind(user.user_id)
             .bind(&req.display_name)
             .bind(id)
+            .bind(kc_admin)
+            .bind(&proof)
             .fetch_optional(&state.db)
             .await?;
             match claimed {
@@ -463,29 +482,10 @@ async fn pair(
             }
         }
         None => {
-            // 새로 생성 (device_uid 가 없으면 ICCID 기반으로 sim-<끝8자리> 자동 생성)
-            let uid = req.device_uid.clone().unwrap_or_else(|| {
-                let iccid = req.iccid.as_deref().unwrap_or("");
-                // [뿌리 A 2026-08-14] char-safe 마지막 8자 — 바이트 슬라이싱(&iccid[n-8..])은
-                //   멀티바이트 iccid 입력 시 char boundary 아니면 panic → handler abort.
-                let suffix: String = {
-                    let cc: Vec<char> = iccid.chars().collect();
-                    let start = cc.len().saturating_sub(8);
-                    cc[start..].iter().collect()
-                };
-                format!("sim-{suffix}")
-            });
-            sqlx::query_scalar::<_, i64>(
-                r#"INSERT INTO devices (device_uid, iccid, owner_id, api_key_hash, display_name, paired_at)
-                   VALUES ($1, $2, $3, '', $4, now())
-                   RETURNING id"#,
-            )
-            .bind(&uid)
-            .bind(&req.iccid)
-            .bind(user.user_id)
-            .bind(&req.display_name)
-            .fetch_one(&state.db)
-            .await?
+            return Err(AppError::BadRequest(
+                "등록번호를 확인해 주세요. 장치를 켜서 서버 연결을 확인한 뒤 다시 입력해 주세요."
+                    .into(),
+            ))
         }
     };
 
@@ -657,6 +657,10 @@ async fn unpair(
 ) -> AppResult<Json<serde_json::Value>> {
     // 1) 본인 소유 확인 — race-safe atomic claim 으로 처리
     let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
 
     let claimed: Option<i64> = sqlx::query_scalar(
         r#"UPDATE devices
@@ -681,6 +685,18 @@ async fn unpair(
                   engine_cc             = NULL,
                   note                  = NULL,
                   icon                  = NULL,
+                  car_plate             = NULL,
+                  car_model             = NULL,
+                  car_image_url         = NULL,
+                  next_service_date     = NULL,
+                  next_service_km       = NULL,
+                  insurance_expiry      = NULL,
+                  inspection_expiry     = NULL,
+                  vehicle_type          = NULL,
+                  enabled               = TRUE,
+                  beep_pending          = FALSE,
+                  reset_pending         = FALSE,
+                  post_interval_pending = NULL,
                   last_stationary       = NULL
             WHERE id = $1 AND owner_id = $2
         RETURNING id"#,
@@ -703,6 +719,22 @@ async fn unpair(
     .bind(user.user_id)
     .execute(&mut *tx)
     .await?;
+
+    // A renter's old link must not read metadata from a subsequent owner.
+    sqlx::query(
+        "UPDATE rental_handoff_tokens t SET revoked_at=now()
+        FROM rental_contracts c WHERE t.contract_id=c.id AND c.device_id=$1
+        AND t.user_id=$2 AND t.revoked_at IS NULL",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query("UPDATE device_commands SET cancelled_at=now() WHERE device_id=$1 AND acknowledged_at IS NULL AND cancelled_at IS NULL")
+        .bind(id).execute(&mut *tx).await?;
+    sqlx::query("UPDATE devices SET claim_code_hash=NULL,claim_expires_at=NULL WHERE id=$1")
+        .bind(id).execute(&mut *tx).await?;
 
     // 3) purge 모드: 본인 user_id tagged row 들 모두 삭제
     let mut purged = 0_u64;
@@ -1177,22 +1209,8 @@ async fn set_post_interval(
     if !(5..=300).contains(&req.seconds) {
         return Err(AppError::BadRequest("seconds must be 5~300".into()));
     }
-    let updated: Option<(i64,)> = sqlx::query_as(
-        "UPDATE devices SET post_interval_pending = $3 \
-         WHERE id = $1 AND owner_id = $2 RETURNING id",
-    )
-    .bind(id)
-    .bind(user.user_id)
-    .bind(req.seconds)
-    .fetch_optional(&state.db)
-    .await?;
-    if updated.is_none() {
-        return Err(AppError::NotFound);
-    }
-    Ok(Json(json!({
-        "ok": true, "device_id": id, "seconds": req.seconds,
-        "note": "다음 ingest 시 device 가 받음. reset/wake 시 default 30s 자동 복귀."
-    })))
+    Ok(Json(crate::services::device_commands::enqueue(&state.db,id,user.user_id,
+        "post_interval",json!({"seconds":req.seconds})).await?))
 }
 
 // ===========================================================================
@@ -1677,6 +1695,59 @@ async fn timescaledb_storage_stats(
     })))
 }
 
+fn private_car_images() -> std::path::PathBuf {
+    let uploads = std::path::PathBuf::from(
+        std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/home/mmm/uploads".into()),
+    );
+    std::env::var("PRIVATE_UPLOAD_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| uploads.with_file_name("gps-private-uploads"))
+        .join("car-images")
+}
+
+async fn read_car_image(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+) -> AppResult<axum::response::Response> {
+    use axum::response::IntoResponse;
+    let mut tx = state.db.begin().await?;
+    let url: Option<String> = sqlx::query_scalar(
+        "SELECT car_image_url FROM devices WHERE id=$1 AND owner_id=$2 FOR SHARE",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .flatten();
+    let url = url.ok_or(AppError::NotFound)?;
+    let prefix = format!("/uploads/car-images/dev_{id}_");
+    if !url.starts_with(&prefix) || url.contains("..") || url[prefix.len()..].contains('/') {
+        return Err(AppError::NotFound);
+    }
+    let name = url.rsplit('/').next().ok_or(AppError::NotFound)?;
+    let bytes = tokio::fs::read(private_car_images().join(name))
+        .await
+        .map_err(|_| AppError::NotFound)?;
+    let mime = if name.ends_with(".png") {
+        "image/png"
+    } else if name.ends_with(".webp") {
+        "image/webp"
+    } else {
+        "image/jpeg"
+    };
+    tx.commit().await?;
+    Ok((
+        [
+            ("content-type", mime),
+            ("cache-control", "private, no-store"),
+            ("x-content-type-options", "nosniff"),
+        ],
+        bytes,
+    )
+        .into_response())
+}
+
 async fn upload_car_image(
     State(state): State<AppState>,
     user: AuthUser,
@@ -1716,10 +1787,7 @@ async fn upload_car_image(
         } else {
             return Err(AppError::BadRequest("JPEG, PNG or WebP required".into()));
         };
-        let root = std::path::PathBuf::from(
-            std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/home/mmm/uploads".into()),
-        )
-        .join("car-images");
+        let root = private_car_images();
         tokio::fs::create_dir_all(&root)
             .await
             .map_err(|e| AppError::Internal(e.into()))?;

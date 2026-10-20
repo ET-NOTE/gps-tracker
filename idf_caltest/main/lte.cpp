@@ -4,12 +4,17 @@
 #include "gps.h"        // [2026-08-14] hardCycle 후 GPS 재설정 (공유 레일)
 #include "breadcrumb.h"
 #include "loopwdt.h"
+#include "device_security.h"
+#include <inttypes.h>
 #include <HardwareSerial.h>
 #include <ctype.h>
 
 namespace lte {
 
 static HardwareSerial serial(1);   // UART1 — LTE RX=2/TX=4
+static bool serialStarted_ = false;
+static void (*sleepObserver_)() = nullptr;
+void setSleepObserver(void (*observer)()) { sleepObserver_ = observer; }
 static String   lastResp;
 static bool     ready_        = false;
 static int      csq_          = -1;
@@ -33,6 +38,7 @@ static bool     serverReset_    = false;
 
 // -----------------------------------------------------------------
 static void drain() {
+  if (sleepObserver_) sleepObserver_();
   while (serial.available()) {
     char c = (char)serial.read();
     lastResp += c;
@@ -145,7 +151,56 @@ static void powerOn() {
 void init() {
   serial.setRxBufferSize(LTE_RX_BUF);   // HW팀 기대값(표준): begin 前 호출 필수 — RX 오버플로우 여유
   serial.begin(LTE_BAUD, SERIAL_8N1, PIN_LTE_RX, PIN_LTE_TX);
+  serialStarted_ = true;
   powerOn();
+}
+
+ShutdownResult shutdownForSleep() {
+#if SLEEP_DISABLED
+  return ShutdownResult::NotStarted;
+#else
+  // Bounce re-sleep runs before UART/powerOn. Never pulse an unknown/off modem.
+  if (!serialStarted_) return ShutdownResult::NotStarted;
+  ready_ = false;
+  csq_ = -1; reg_ = -1;
+  snprintf(ip_, sizeof(ip_), "-");
+  bringReset();
+  resetHttpKeepalive();
+  while (serial.available()) serial.read();
+  lastResp = "";
+  serial.print("AT+CPOWD=1\r\n");
+  const uint32_t start = millis();
+  while (millis() - start < LTE_SHUTDOWN_TIMEOUT_MS) {
+    lwdt::feed();
+    drain();
+    // sendAT intentionally rejects POWER DOWN; shutdown has its own collector.
+    if (lastResp.indexOf("NORMAL POWER DOWN") >= 0) {
+      Serial.println(F("[LTE] shutdown confirmed (NORMAL POWER DOWN)"));
+      return ShutdownResult::Confirmed;
+    }
+    delay(10);
+  }
+  Serial.println(F("[LTE] shutdown unconfirmed — bounded rail-off fallback"));
+  return ShutdownResult::Unconfirmed;
+#endif
+}
+
+void resumeAfterSleepAbort(bool railWasCut, ShutdownResult result) {
+  if (!serialStarted_) return; // early bounce path continues regular setup()
+  if (result == ShutdownResult::Unconfirmed) {
+    // CPOWD may still be in flight. Fully discharge before probing/pulsing so a
+    // late shutdown cannot turn off the modem we have just resumed.
+    hw_power::railCycle();
+    railWasCut = true;
+  }
+  if (railWasCut) gps::reconfigure();
+  // Give the single CPOWD attempt time to finish before powerOn probes. Caller
+  // waits for shutdownForSleep's result; it never cancels that command halfway.
+  waitUartIdle(200, 1000); // trailing CPOWD CR/LF must not look like a booting modem
+  powerOn();
+  ready_ = false;
+  bringReset();
+  resetHttpKeepalive();
 }
 
 // (2026-07-08) bringUp non-blocking 리팩터: 90초 블로킹 reg-wait 제거.
@@ -496,6 +551,12 @@ bool httpPost(const char *body, int *statusOut) {
   bc::set("lte_post");
   char cmd[96];
   *statusOut = -1;
+  String wireBody;
+  uint64_t requestCounter=0;
+  char requestSignature[65];
+  if(!device_security::prepare(body,wireBody,requestCounter,requestSignature))return false;
+  body=wireBody.c_str();
+  bool verifiedResponse=!device_security::enabled();
 
   if (!sendAT("AT", "OK", 1500)) { DBGLN(F("[POST] module unresponsive")); return false; }
 
@@ -515,6 +576,15 @@ bool httpPost(const char *body, int *statusOut) {
 
   sendAT("AT+SHCHEAD", "OK", 2000);
   sendAT("AT+SHAHEAD=\"Content-Type\",\"application/json\"", "OK", 2000);
+  if(device_security::enabled()) {
+    char header[180];
+    snprintf(header,sizeof(header),"AT+SHAHEAD=\"X-GPS-UID\",\"%s\"",device_security::uid());
+    if(!sendAT(header,"OK",2000))return false;
+    snprintf(header,sizeof(header),"AT+SHAHEAD=\"X-GPS-Counter\",\"%" PRIu64 "\"",requestCounter);
+    if(!sendAT(header,"OK",2000))return false;
+    snprintf(header,sizeof(header),"AT+SHAHEAD=\"X-GPS-Signature\",\"%s\"",requestSignature);
+    if(!sendAT(header,"OK",2000))return false;
+  }
 
   size_t len = strlen(body);
   snprintf(cmd, sizeof(cmd), "AT+SHBOD=%u,10000", (unsigned)len);
@@ -546,12 +616,21 @@ bool httpPost(const char *body, int *statusOut) {
   // 응답 body → 서버 cmd (beep/reset 은 플래그로, main 이 처리)
   if (c2 > c1) {
     int rlen = lastResp.substring(c2 + 1).toInt();
-    if (rlen > 0 && rlen < 512) {
+    if (rlen > 0 && rlen < 2048) {
       char rc[40];
       snprintf(rc, sizeof(rc), "AT+SHREAD=0,%d", rlen);
       if (sendAT(rc, "+SHREAD:", 5000)) {
         uint32_t t0 = millis();
         while (millis() - t0 < 500) { drain(); delay(10); }
+        if(device_security::enabled()) {
+          String decoded;
+          if(*statusOut!=200 || !device_security::response(lastResp,requestCounter,decoded)) {
+            Serial.println("[AUTH] Server response verification failed; batch retained.");return false;
+          }
+          verifiedResponse=true;
+          Serial.printf("[AUTH] Signed request and response verified (counter=%" PRIu64 ")\n",requestCounter);
+          lastResp=device_security::acceptCommand(decoded)?decoded:"{\"ok\":true}";
+        }
         if (lastResp.indexOf("\"cmd\":\"beep\"")  >= 0 || lastResp.indexOf("\"cmd\": \"beep\"")  >= 0) serverBeep_  = true;
         if (lastResp.indexOf("\"cmd\":\"reset\"") >= 0 || lastResp.indexOf("\"cmd\": \"reset\"") >= 0) serverReset_ = true;
         int pi = lastResp.indexOf("\"post_interval_s\":");
@@ -569,7 +648,7 @@ bool httpPost(const char *body, int *statusOut) {
       }
     }
   }
-  return true;   // SHDISC 안 함 — keepalive (다음 SHREQ 즉시 재사용)
+  return verifiedResponse;   // Only an authenticated response confirms a signed upload.
 }
 
 bool     httpConnected()  { return httpConnected_; }

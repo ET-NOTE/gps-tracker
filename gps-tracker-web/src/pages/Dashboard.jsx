@@ -114,40 +114,11 @@ export default function Dashboard({ onLogout }) {
   const { data: devices = EMPTY_DEVICES } = useDevices();
   const scope = authScope();
   const setDevices = useCallback(update => updateDeviceList(update, scope), [scope]);
-  const [pairMode, setPairMode]       = useState('iccid');
-  const [pairUid, setPairUid]         = useState('');
-  const [pairIccid, setPairIccid]     = useState('');
-  const [pairLabel, setPairLabel]     = useState('');
-  const [pairError, setPairError]     = useState('');
+  const [pairRegistration, setPairRegistration] = useState('');
+  const [pairLabel, setPairLabel] = useState('');
+  const [pairError, setPairError] = useState('');
   const [pairLoading, setPairLoading] = useState(false);
-  const [pairOpen, setPairOpen]       = useState(false);
-  // [2026-09-14 KC] 미연결 단말 스캔 탭 — 최근 ingest 중인 단말을 목록으로 보여주고 원클릭 연결
-  const [scanRows, setScanRows]       = useState(null);   // null=미조회, []=없음
-  const [scanLoading, setScanLoading] = useState(false);
-  const [scanBusyUid, setScanBusyUid] = useState(null);   // 연결 진행 중인 행
-
-  async function runScan() {
-    setScanLoading(true); setPairError('');
-    try {
-      const r = await api.scanDevices();
-      setScanRows(r.items || []);
-    } catch (e) { setPairError(e.message); }
-    finally { setScanLoading(false); }
-  }
-
-  async function pairFromScan(row) {
-    setPairError('');
-    // 별명 입력이 있으면 사용, 없으면 uid 꼬리로 자동 생성 (검사자 원클릭 최적화)
-    const name = pairLabel.trim() || `단말-${row.device_uid.slice(-6)}`;
-    setScanBusyUid(row.device_uid);
-    try {
-      await api.pairDevice({ device_uid: row.device_uid, display_name: name });
-      setPairLabel('');
-      await reloadDevicesAfterMutation();
-      await runScan();               // 연결된 행은 목록에서 빠짐
-    } catch (e) { setPairError(e.message); }
-    finally { setScanBusyUid(null); }
-  }
+  const [pairOpen, setPairOpen] = useState(false);
 
   // /devices/pair deep link — 카카오 알림톡 등 외부에서 진입 + 연구소 탭의 "튜토리얼 다시 보기"
   // 버튼에서 재진입까지 모두 처리. 한 번 처리 후 path 정리 (/devices) — 새로고침 시 중복 트리거 방지.
@@ -682,23 +653,15 @@ export default function Dashboard({ onLogout }) {
   // ── 단말기 액션 ─────────────────────────
   async function handlePair() {
     setPairError('');
-    let body = {};
-    if (pairMode === 'iccid') {
-      const v = pairIccid.trim();
-      if (v.length < 8) { setPairError('SIM 번호는 8자리 이상'); return false; }
-      body.iccid = v;
-    } else {
-      const v = pairUid.trim();
-      if (!v) return false;
-      body.device_uid = v;
-    }
+    if (!pairRegistration.trim()) { setPairError('장치에서 확인한 등록번호를 입력해 주세요.'); return false; }
+    const body = { registration_code: pairRegistration.trim() };
     const name = pairLabel.trim();
     if (!name) { setPairError('단말기명(별명)을 입력하세요. 알림에 사용됩니다.'); return false; }
     body.display_name = name;
     setPairLoading(true);
     try {
       await api.pairDevice(body);
-      setPairUid(''); setPairIccid(''); setPairLabel('');
+      setPairRegistration(''); setPairLabel('');
       await reloadDevicesAfterMutation();
       return true;
     } catch (e) { setPairError(e.message); return false; }
@@ -811,93 +774,20 @@ export default function Dashboard({ onLogout }) {
                 </button>
               </div>
 
-              {pairOpen && (
-                <>
-                  <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-                    {[
-                      { id: 'iccid', label: 'SIM 번호' },
-                      { id: 'uid',   label: 'device_uid' },
-                      { id: 'scan',  label: '스캔' },
-                    ].map(t => {
-                      const on = pairMode === t.id;
-                      return (
-                        <button key={t.id} onClick={() => { setPairMode(t.id); if (t.id === 'scan') runScan(); }} style={{
-                          flex: 1, padding: 6, fontSize: 12, borderRadius: 4, cursor: 'pointer', border: 'none',
-                          background: on ? 'var(--primary)' : 'var(--surface-2)',
-                          color:      on ? 'var(--primary-fg)' : 'var(--text-2)',
-                          fontWeight: on ? 600 : 400,
-                        }}>{t.label}</button>
-                      );
-                    })}
-                  </div>
-
-                  {pairMode === 'iccid' && (
-                    <>
-                      <input placeholder="SIM 끝 8자리 또는 전체 ICCID"
-                        value={pairIccid}
-                        onChange={e => setPairIccid(e.target.value.replace(/[^0-9A-Fa-f]/g, ''))}
-                        style={s.input} />
-                      <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 4 }}>
-                        OLED 첫 줄 「SIM ...12345678」 의 숫자
-                      </div>
-                    </>
-                  )}
-                  {pairMode === 'uid' && (
-                    <input placeholder="device_uid  예) esp-aabbccddeeff"
-                      value={pairUid} onChange={e => setPairUid(e.target.value)}
-                      style={s.input} />
-                  )}
-                  {pairMode === 'scan' && (
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>
-                          최근 10분 내 신호를 보내온 미연결 단말
-                        </div>
-                        <button onClick={runScan} disabled={scanLoading}
-                          style={{ ...s.smallBtn, opacity: scanLoading ? 0.6 : 1 }}>
-                          {scanLoading ? '스캔 중…' : '다시 스캔'}
-                        </button>
-                      </div>
-                      {scanRows !== null && scanRows.length === 0 && !scanLoading && (
-                        <div style={{ fontSize: 12, color: 'var(--text-3)', padding: '10px 0' }}>
-                          감지된 단말이 없습니다. 단말 전원과 통신 상태를 확인한 뒤 다시 스캔하세요.
-                        </div>
-                      )}
-                      {(scanRows || []).map(r => (
-                        <div key={r.device_uid} style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          padding: '8px 10px', marginTop: 6, borderRadius: 6,
-                          background: 'var(--surface-2)',
-                        }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {r.device_uid}
-                            </div>
-                            <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 2 }}>
-                              {r.iccid_tail ? `SIM ${r.iccid_tail} · ` : ''}{r.ago_s}초 전 수신
-                            </div>
-                          </div>
-                          <button onClick={() => pairFromScan(r)} disabled={scanBusyUid !== null}
-                            style={{ ...s.smallBtn, opacity: scanBusyUid === r.device_uid ? 0.6 : 1 }}>
-                            {scanBusyUid === r.device_uid ? '...' : '연결'}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <input placeholder={pairMode === 'scan' ? '단말기 별명 (비우면 자동 생성)' : '단말기 별명 (필수, 예: 1호차)'}
-                    value={pairLabel} required={pairMode !== 'scan'} maxLength={32}
-                    onChange={e => setPairLabel(e.target.value)}
-                    style={{ ...s.input, marginTop: 6 }} />
-                  {pairError && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{pairError}</div>}
-                  {pairMode !== 'scan' && (
-                    <button onClick={async () => { const ok = await handlePair(); if (ok) setPairOpen(false); }} disabled={pairLoading}
-                      style={{ ...s.btn, marginTop: 8, opacity: pairLoading ? 0.6 : 1 }}>
-                      {pairLoading ? '...' : '연결'}
-                    </button>
-                  )}
-                </>
-              )}
+              {pairOpen && <>
+                <label style={{fontSize:13}}>장치 등록번호
+                  <input autoComplete="off" spellCheck={false} maxLength={24} placeholder="예: a1b2-c3d4-e5f6-7890-abcd"
+                    value={pairRegistration} onChange={e => setPairRegistration(e.target.value)} style={s.input} />
+                </label>
+                <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>인증 펌웨어로 켠 장치의 시리얼 모니터(115200 baud)에 표시된 등록번호를 붙여 넣으세요. 등록은 한 번만 하면 됩니다. 연결 해제 후 다시 등록하려면 장치 전원을 껐다 켜서 새 번호를 확인하세요.</p>
+                <label style={{fontSize:13}}>단말기 이름
+                  <input placeholder="예: 1호차" value={pairLabel} maxLength={32} required
+                    onChange={e=>setPairLabel(e.target.value)} style={{...s.input,marginTop:6}} />
+                </label>
+                {pairError && <div role="alert" style={{color:'var(--danger)',fontSize:12,marginTop:4}}>{pairError}</div>}
+                <button onClick={async()=>{if(await handlePair())setPairOpen(false)}} disabled={pairLoading}
+                  style={{...s.btn,marginTop:8}}>{pairLoading?'연결 중…':'내 계정에 연결'}</button>
+              </>}
             </div>
 
             <div style={s.sectionTitle}>내 단말기 ({devices.length})</div>

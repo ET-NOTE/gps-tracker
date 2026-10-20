@@ -3,6 +3,7 @@ import { api } from '../api';
 import Button from './ui/Button';
 import FormField, { Input } from './ui/FormField';
 import Icon from './Icon';
+import CarImage from './CarImage';
 import './VehicleCarePanel.css';
 
 const groups = [
@@ -57,7 +58,7 @@ export default function VehicleCarePanel({ device, onUpdated }) {
     <p className="vehicle-care-hint">필요한 항목만 입력해 주세요. 사진은 선택하면 바로 저장됩니다.</p>
     <div className="vehicle-photo">
       <div className="vehicle-photo-preview">
-        {photo ? <img src={photo} alt="차량 대표 사진" /> : <><Icon name="cam" size={26} /><span>대표 사진</span></>}
+        <CarImage deviceId={device.id} version={photo} alt="차량 대표 사진" fallback={<><Icon name="cam" size={26} /><span>대표 사진</span></>} />
       </div>
       <div className="vehicle-photo-actions">
         <Button variant="ghost" disabled={busy} onClick={() => picker.current?.click()} aria-describedby={helpId}>

@@ -20,6 +20,9 @@ namespace sleep_mgr {
   const char* wakeReason();
   const char* resetCause();          // POWERON/DEEPSLEEP/BROWNOUT/... (payload reset_cause)
   uint32_t lastSleepUptimeS();       // 직전 sleep 시점 uptime (RTC 보존)
+  uint32_t sleepAborts();             // cancelled sleep attempts in this awake session
+  bool resumeReportPending();         // retry wake report after cancelling a sent sleep intent
+  uint32_t shutdownUnconfirmed();     // bounded shutdown timeouts (RTC cumulative)
 
   // 정지 진행상황 (STATUS/telemetry)
   bool     stationaryActive();

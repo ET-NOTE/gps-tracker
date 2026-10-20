@@ -20,6 +20,7 @@
 #include <Preferences.h>    // HW-DIAG: NVS 크래시 카운터 (INT-WDT RTC 소실에도 유지)
 #include <esp_system.h>
 #include "config.h"
+#include "firmware_info.h"
 #include "buzzer.h"
 #include "hw_power.h"
 #include "gps.h"
@@ -30,6 +31,7 @@
 #include "sleep_mgr.h"
 #include "breadcrumb.h"
 #include "loopwdt.h"
+#include "device_security.h"
 
 static uint32_t bootMs = 0;
 static uint32_t nextPostAt = 0;
@@ -116,8 +118,10 @@ void setup() {
   //   대가: 리더 없을 때 로그 drop. 단일 펌웨어 수렴 방향과도 일치.
   Serial.setTxTimeoutMs(0);
   delay(2000);   // USB CDC 안정화 대기
+  device_security::begin();
   Serial.println();
   Serial.println(F("=== 15_a_modular — Block 8: sleep_mgr (non-blocking CDC) ==="));
+  Serial.println(firmware::settings);
 #if KC_TEST_BUILD
   Serial.println(F("*********************************************************"));
   Serial.println(F("*  KC TEST BUILD — 콜박스 시험용 (운영 배포 금지!)          *"));
@@ -224,6 +228,7 @@ void setup() {
 }
 
 void loop() {
+  device_security::poll();
   lwdt::feed();   // loop 진전 신호 (AT 대기루프·sleep 진입서도 별도 feed)
   gps::feed();
   motion::tick();

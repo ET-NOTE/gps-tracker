@@ -256,6 +256,11 @@ export const api = {
                       req('POST', '/auth/password-reset/verify',
                           { email, phone, otp_code, new_password }),
 
+  getCarImage: async (id, options = {}) => {
+    const res = await sessionFetch(`${BASE}/devices/${id}/car-image`, options);
+    if (!res.ok) throw new Error('사진을 불러오지 못했습니다.');
+    return res.blob();
+  },
   uploadCarImage: async (id, file) => {
     const scope = authScope();
     const body = new FormData(); body.append('file', file);
@@ -267,7 +272,13 @@ export const api = {
   // devices
   listDevices:  (options = {}) => cachedRead('devices', () => req('GET', '/devices', undefined, true, options)),
   pairDevice:   (params) => req('POST', '/devices/pair', params),  // { device_uid?, iccid?, display_name? }
-  scanDevices:  () => req('GET', '/devices/scan'),                 // [KC] 최근 ingest 중 미페어링 단말 목록
+  ingestPhone: async payload => {
+    const res = await sessionFetch(new URL('/ingest', window.location.origin), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('휴대폰 위치를 전송하지 못했습니다.');
+    return res.json();
+  },
   updateDevice: (id, patch)             => req('PATCH',  `/devices/${id}`, patch),
   unpairDevice: (id, opts = {}) => {
     const purge = opts.purge ? '?purge=true' : '';

@@ -1621,7 +1621,7 @@ async fn load_handoff_by_token(pool: &sqlx::PgPool, token: &str) -> AppResult<Ha
              FROM rental_handoff_tokens t
              JOIN rental_contracts c ON c.id = t.contract_id
         LEFT JOIN devices d ON d.id = c.device_id
-            WHERE t.token = $1"#,
+            WHERE t.token = $1 AND c.user_id=t.user_id AND d.owner_id=t.user_id"#,
     )
     .bind(token)
     .fetch_optional(pool)
@@ -1637,6 +1637,18 @@ async fn load_handoff_by_token(pool: &sqlx::PgPool, token: &str) -> AppResult<Ha
     } else {
         "ready"
     };
+
+    // A status-only UI cannot protect a detailed public API response.
+    match status {
+        "revoked" => return Err(AppError::Gone("취소된 링크입니다.".into())),
+        "expired" => {
+            return Err(AppError::Gone(
+                "만료된 링크입니다. 새 링크를 요청해 주세요.".into(),
+            ))
+        }
+        "used" => return Err(AppError::Gone("이미 제출된 링크입니다.".into())),
+        _ => {}
+    }
 
     // used 이면 임차인이 제출한 사진 id (동일 purpose)
     let submitted_photo_id: Option<i64> = if status == "used" {
@@ -1931,7 +1943,10 @@ async fn handoff_submit(
     //   먼저 소진한 쪽만 성공, 진 쪽은 0건 → tx 전체 롤백(사진·정산 중복 차단). 기존엔 가드 없어
     //   두 제출이 둘 다 성공해 사진 중복 insert + settlement 2회 계산됐음.
     let consumed = sqlx::query(
-        "UPDATE rental_handoff_tokens SET used_at = NOW() WHERE id = $1 AND used_at IS NULL",
+        "UPDATE rental_handoff_tokens t SET used_at = NOW()
+         WHERE t.id = $1 AND t.used_at IS NULL AND t.revoked_at IS NULL AND t.expires_at>now()
+         AND EXISTS(SELECT 1 FROM rental_contracts c JOIN devices d ON d.id=c.device_id
+             WHERE c.id=t.contract_id AND c.user_id=t.user_id AND d.owner_id=t.user_id)",
     )
     .bind(tk.id)
     .execute(&mut *tx)

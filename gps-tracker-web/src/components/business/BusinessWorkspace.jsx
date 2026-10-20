@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import Icon from '../Icon';
+import CarImage from '../CarImage';
 import { classifyDevice, ageString } from '../../colors';
 import { vehicleName } from '../../lib/business';
 import { validPosition } from '../../lib/businessWorkspace';
@@ -87,7 +88,7 @@ export function BusinessVehicles({ devices = [], onMap, onDetail, detailLabel = 
       const status = classifyDevice(device);
       const available = availability?.(device);
       return <div className="business-vehicle" key={device.id}>
-        <div className="business-vehicle-name"><span className="business-vehicle-icon">{device.car_image_url ? <img src={device.car_image_url} alt="" /> : <Icon name="list" size={22} />}</span><div>{openVehicle ? <button type="button" className="business-vehicle-link" onClick={() => openVehicle(device)} aria-label={`${vehicleName(device)} 차량 상세`}>{vehicleName(device)} <Icon name="chevron-right" size={14} /></button> : <strong>{vehicleName(device)}</strong>}<p>{[device.car_model || device.display_name, device.department].filter(Boolean).join(' · ') || '차량 정보 미등록'}</p></div></div>
+        <div className="business-vehicle-name"><span className="business-vehicle-icon"><CarImage deviceId={device.id} version={device.car_image_url} fallback={<Icon name="list" size={22} />} /></span><div>{openVehicle ? <button type="button" className="business-vehicle-link" onClick={() => openVehicle(device)} aria-label={`${vehicleName(device)} 차량 상세`}>{vehicleName(device)} <Icon name="chevron-right" size={14} /></button> : <strong>{vehicleName(device)}</strong>}<p>{[device.car_model || device.display_name, device.department].filter(Boolean).join(' · ') || '차량 정보 미등록'}</p></div></div>
         <div><span className={`business-badge ${device.enabled === false || statusUnknown ? '' : available?.tone || 'good'}`}>{device.enabled === false ? '사용 중지' : statusUnknown ? '확인 필요' : available?.label || '사용 가능'}</span></div>
         <div className="business-connection"><span style={{ color: status.color }}>{status.label}</span><small>{device.last_seen_at ? `최근 통신 ${ageString(device.last_seen_at)}` : '수신 이력 없음'}</small></div>
         <div className="business-row-actions">{onMap && <BusinessButton icon="mapPin" onClick={() => onMap(device.id)}>지도</BusinessButton>}{onDetail && <BusinessButton onClick={() => onDetail(device)}>{detailLabel}</BusinessButton>}</div>
