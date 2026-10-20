@@ -124,7 +124,7 @@ try:
     if migration:
         cur.execute(pathlib.Path(migration).read_text())
     cur.execute("SET statement_timeout='8s'")
-    run = uuid.uuid4().hex[:10]
+    run = uuid.uuid4().hex
     uid = sql("INSERT INTO users(email,password_hash,phone,display_name,role) VALUES(%s,'no-login','01000000000','Speed regression','admin') RETURNING id",
               ('speed-'+run+'@example.invalid',))[0][0]
     samples = [(s,s*5) for s in range(0,21,2)]
