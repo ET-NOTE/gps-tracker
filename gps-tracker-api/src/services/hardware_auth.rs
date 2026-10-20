@@ -118,12 +118,11 @@ pub async fn finish(
     Ok(())
 }
 
-/// SIM selects the records; the private code authorizes the presenting hardware.
+/// SIM selects the records; a recent authenticated check-in authorizes the presenting hardware.
 pub async fn pair_by_sim(
     state: &AppState,
     user: i64,
     sim: i64,
-    input: &str,
     name: &str,
 ) -> AppResult<Option<i64>> {
     let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1")
@@ -135,15 +134,9 @@ pub async fn pair_by_sim(
             "이미 다른 계정에 연결된 SIM입니다.".into(),
         ));
     }
-    // A short suffix is lookup convenience for the existing owner, never first-claim proof.
-    if input.trim().len() < 19 {
-        if owner == Some(user) {
-            return Ok(None);
-        }
-        return Err(AppError::BadRequest(
-            "처음 등록할 때는 SIM 전체 번호 19~20자리를 입력해 주세요.".into(),
-        ));
-    }
+    // The SIM resolver already rejects ambiguous suffixes. First enrollment also
+    // accepts the 1NCE portal's final eight digits; it still requires a fresh,
+    // independently authenticated hardware sighting and an atomic ownership check.
     let candidates:Vec<String>=sqlx::query_scalar("SELECT auth_uid FROM hardware_credentials WHERE pending_device_id=$1 AND last_seen_at>now()-interval '5 minutes' AND last_seen_at>=(SELECT claim_not_before FROM devices WHERE id=$1) AND activated_at IS NOT NULL AND (authorized_owner_id IS NULL OR authorized_owner_id=$2 OR ($3::boolean AND current_device_id=$1)) ORDER BY last_seen_at DESC")
         .bind(sim).bind(user).bind(owner.is_none()).fetch_all(&state.db).await?;
     if candidates.is_empty() {

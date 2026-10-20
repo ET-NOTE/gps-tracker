@@ -776,10 +776,10 @@ export default function Dashboard({ onLogout }) {
 
               {pairOpen && <>
                 <label style={{fontSize:13}}>SIM 번호
-                  <input inputMode="numeric" autoComplete="off" spellCheck={false} maxLength={20} placeholder="처음 등록: SIM 전체 번호 19~20자리"
+                  <input inputMode="numeric" autoComplete="off" spellCheck={false} maxLength={20} placeholder="SIM 끝 8자리 (1NCE 화면 기준)"
                     value={pairSim} onChange={e => setPairSim(e.target.value)} style={s.input} />
                 </label>
-                <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>단말기를 켜고 LTE 연결 후 SIM 번호와 이름을 입력하세요. 처음 등록할 때는 SIM 전체 번호(19~20자리)가 필요하며, 이미 내 계정에 연결한 SIM은 끝 8자리로도 조회할 수 있습니다. 단말기 인증은 자동으로 별도 확인합니다.</p>
+                <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>단말기를 켜고 LTE 연결 후 SIM 번호와 이름을 입력하세요. 처음 등록할 때도 1NCE 화면에 표시된 ICCID의 끝 8자리를 입력하면 됩니다. SIM 인쇄 번호의 끝 8자리나 전체 번호(19~20자리)도 사용할 수 있습니다. 끝번호가 중복되면 전체 번호를 입력해 주세요. 단말기 인증은 자동으로 별도 확인합니다.</p>
                 <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.6}}>같은 계정에서 동일 SIM을 다시 연결하면 보관한 기록이 복원됩니다. 하드웨어가 다른 단말기여도 됩니다. 다른 계정에 연결된 SIM은 기존 계정에서 먼저 연결 해제해야 합니다.</p>
                 <label style={{fontSize:13}}>단말기 이름
                   <input placeholder="예: 1호차" value={pairLabel} maxLength={32} required

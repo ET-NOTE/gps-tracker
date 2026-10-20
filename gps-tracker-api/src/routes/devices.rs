@@ -388,7 +388,6 @@ async fn pair(
                 &state,
                 user.user_id,
                 sim,
-                input,
                 &req.display_name,
             )
             .await?
@@ -398,7 +397,7 @@ async fn pair(
                     id,
                     "pair",
                     user.user_id,
-                    json!({"via":"full_sim_authenticated_hardware"}),
+                    json!({"via":"sim_authenticated_hardware","sim_input_digits":input.trim().len()}),
                 )
                 .await;
                 return fetch_device(&state, id, user.user_id).await;

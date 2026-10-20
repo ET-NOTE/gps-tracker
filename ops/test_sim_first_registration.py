@@ -1,4 +1,4 @@
-"""SIM-only first enrollment requires full ICCID and a recent authenticated hardware sighting."""
+"""SIM-only first enrollment accepts 1NCE/printed suffixes with a recent authenticated hardware sighting."""
 import base64,hashlib,hmac,json,pathlib,secrets,sys,time,urllib.request,urllib.error,urllib.parse,uuid
 import psycopg2
 envpath,base=sys.argv[1:3];assert base=='http://127.0.0.1:3042'
@@ -32,17 +32,17 @@ def pair(sim,user,expected=200):return req(api+'/devices/pair',{'iccid':sim,'dis
 try:
  for label in ('a','b'):
   users.append(sql("INSERT INTO users(email,password_hash,phone,display_name) VALUES(%s,'test-only','01000000000','First SIM test') RETURNING id",(f'first-sim-{run}-{label}@example.invalid',)))
- a,b=users;sim='89'+str(secrets.randbelow(10**17)).zfill(17);first=hw()
+ a,b=users;sim='89'+str(secrets.randbelow(10**17)).zfill(17)+'1';portal=sim[:19];first=hw()
  assert send(first,sim)['sim_link_required'];did=sql('SELECT id FROM devices WHERE iccid=%s',(sim,));devices.append(did)
- pair(sim[-8:],a,400);assert pair(sim,a)['id']==did
+ pair(sim[-7:],a,400);assert pair(portal[-8:],a)['id']==did
  assert send(first,sim)['ok'] and pair(sim[-8:],a)['id']==did
  pair(sim,b,409)
- print('PASS first device enrolls using SIM and name only; short first claims rejected; existing owner suffix and foreign owner protection retained',flush=True)
- replacement=hw();assert send(replacement,sim)['sim_link_required'];assert pair(sim,a)['id']==did;assert send(replacement,sim)['ok']
+ print('PASS first device enrolls using SIM and name only; 1NCE portal eight-digit first claim and printed suffix accepted; foreign owner protection retained',flush=True)
+ replacement=hw();assert send(replacement,sim)['sim_link_required'];assert pair(portal[-8:],a)['id']==did;assert send(replacement,sim)['ok']
  assert pair(sim,a)['id']==did # Multiple previously approved hardware must not block owner lookup.
  before=sql('SELECT count(*) FROM location_records WHERE device_id=%s AND user_id=%s',(did,a))
  req(api+f'/devices/{did}',user=a,method='DELETE')
- assert send(replacement,sim)['sim_link_required'];assert pair(sim,b)['id']==did;assert send(replacement,sim)['ok']
+ assert send(replacement,sim)['sim_link_required'];assert pair(portal[-8:],b)['id']==did;assert send(replacement,sim)['ok']
  assert sql('SELECT count(*) FROM location_records WHERE device_id=%s AND user_id=%s',(did,a))==before
  assert send(first,sim)['sim_link_required']
  print('PASS SIM-only replacement and released SIM reuse preserve logical ID and prior records while blocking old account hardware',flush=True)
@@ -52,6 +52,14 @@ try:
  send(stale,second_sim);extra=hw();send(extra,second_sim);pair(second_sim,b,400)
  sql("UPDATE hardware_credentials SET last_seen_at=now()-interval '6 minutes' WHERE auth_uid=%s",(extra['uid'],));assert pair(second_sim,b)['id']==ds
  print('PASS stale or ambiguous authenticated sightings cannot be claimed; one current hardware is required',flush=True)
+ # A suffix may match the portal representation of one SIM and printed representation of another.
+ suffix=second_sim[:19][-8:];collision='87'+str(secrets.randbelow(10**10)).zfill(10)+suffix
+ assert len(collision)==20 and collision[:19]!=second_sim[:19]
+ other=hw();send(other,collision);dc=sql('SELECT id FROM devices WHERE iccid=%s',(collision,));devices.append(dc)
+ pair(suffix,b,400);assert sql('SELECT owner_id FROM devices WHERE id=%s',(dc,)) is None
+ assert pair(collision,b)['id']==dc
+ print('PASS cross-representation suffix collisions require the full SIM number and never guess a device',flush=True)
+
  # Independent fixtures verify the account attempt limit without exhausting success cases.
  sql('DELETE FROM device_pair_attempts WHERE user_id=%s',(a,))
  for _ in range(10):req(api+'/devices/pair',{'iccid':'1234567890123456789','display_name':'Attempt limit'},a,expected=400)
