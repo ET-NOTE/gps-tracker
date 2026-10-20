@@ -251,8 +251,8 @@
   .business-drawer { width: 100%; height: auto; max-height: 92dvh; border-radius: 20px 20px 0 0; padding-bottom: env(safe-area-inset-bottom,0px); }
   .business-drawer > header { padding: 16px 18px; }
   .business-drawer-body { padding: 16px 18px 24px; }
-  .business-workspace .gps-modal-backdrop { align-items: flex-end !important; padding: 0 !important; }
-  .business-workspace .gps-modal { border-radius: 18px 18px 0 0 !important; max-height: 93dvh !important; max-width: 100% !important; }
+  .gps-business-modal { align-items: flex-end !important; padding: 0 !important; }
+  .gps-business-modal .gps-modal { border-radius: 18px 18px 0 0 !important; max-height: 93dvh !important; max-width: 100% !important; }
 }
 @media (max-width: 700px) {
   .business-content { padding: 18px 14px 28px; }

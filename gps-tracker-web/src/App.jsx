@@ -1,3 +1,5 @@
+import { dashboardView } from './lib/dashboardRoutes';
+import RouteNotice from './components/RouteNotice';
 import { authScope, AUTH_CHANGED } from './authSession';
 // 라우팅 — react-router 기반 path-routing.
 //
@@ -196,12 +198,18 @@ function Shell() {
         {/* 보호된 영역 — 미인증이면 로그인으로 (next 보존) */}
         <Route path="/*" element={
           authed
-            ? <Dashboard onLogout={() => setAuthed(false)} />
+            ? <DashboardRoute onLogout={() => setAuthed(false)} />
             : <RequireAuthRedirect />
         } />
       </Routes>
     </Suspense>
   );
+}
+
+function DashboardRoute({ onLogout }) {
+  const { pathname } = useLocation();
+  if (!dashboardView(pathname)) return <div style={{ minHeight: '100dvh', display: 'flex' }}><RouteNotice /></div>;
+  return <Dashboard onLogout={onLogout} />;
 }
 
 function HandoffRoute() {

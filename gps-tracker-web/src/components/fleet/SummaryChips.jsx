@@ -28,14 +28,14 @@ export default function SummaryChips({ devices = [], filter, onChange, now = Dat
                           c.tone === 'warning' ? 'var(--status-warning-text)' :
                                                   'var(--text-2)';
         return (
-          <button key={c.id} onClick={() => onChange?.(c.id)}
+          <button key={c.id} aria-pressed={active} onClick={() => onChange?.(c.id)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: 'var(--space-2) var(--space-3)',
               background: active ? toneColor : 'var(--surface-2)',
               color:      active ? '#FFF' : 'var(--text)',
               border: 'none', borderRadius: 'var(--radius-pill)',
-              cursor: 'pointer', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', fontSize: 12, fontWeight: 700, minHeight: 44,
               transition: 'all .15s',
             }}>
             <span style={{ fontWeight: 600, opacity: active ? 0.9 : 0.7 }}>{c.label}</span>

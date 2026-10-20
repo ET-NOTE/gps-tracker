@@ -1,7 +1,7 @@
 import { batteryText } from '../lib/battery';
-import { ensureKakaoMapSdk } from '../lib/kakaoSdk';
+import { loadKakaoMaps } from '../lib/kakaoSdk';
 import { POLYLINE_GAP_THRESHOLD_S, distanceM, calcBearing } from '../lib/mapGeometry';
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { compactStopMarkerIndexes as compactStopMarkerIndexesLib } from '../lib/stops';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
@@ -439,6 +439,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const lastProgrammaticAtRef = useRef(0);
   const viewChangeTimerRef    = useRef(null);
   const containerRef = useRef(null);
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+  const [mapStatus, setMapStatus] = useState('loading');
+  const [attempt, setAttempt] = useState(0);
   const mapRef       = useRef(null);
   const markersRef   = useRef({});   // deviceId → { marker, color, meta }
   // deviceId → { segments: [{ coords: LatLng[], poly: Polyline }], gaps: Polyline[] }
@@ -536,9 +540,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false, observer;
+    setMapStatus('loading');
     const initMap = () => {
-      window.kakao.maps.load(() => {
         if (cancelled || !containerRef.current) return;
         mapRef.current = new window.kakao.maps.Map(containerRef.current, {
           center: new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
@@ -581,14 +585,26 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         });
         // (F7-a) canvas overlay 인스턴스 — 첫 draw 전까지 idle.
         canvasSeekerRef.current = new SeekerCanvasOverlay(mapRef.current);
-        onReady?.();
-      });
+        observer = new ResizeObserver(() => {
+          const node = containerRef.current, map = mapRef.current;
+          if (!map || !node?.clientWidth || !node?.clientHeight) return;
+          const center = map.getCenter();
+          map.relayout(); map.setCenter(center);
+        });
+        observer.observe(containerRef.current);
+        setMapStatus('ready');
+        onReadyRef.current?.();
     };
-    ensureKakaoMapSdk()
+    loadKakaoMaps()
       .then(() => { if (!cancelled) initMap(); })
-      .catch(error => console.error('Kakao Maps SDK load failed', error));
+      .catch(error => { if (!cancelled) { console.error('Kakao Maps SDK load failed', error); setMapStatus('error'); } });
     return () => {
       cancelled = true;
+      observer?.disconnect();
+      sharedIwRef.current?.close();
+      clustererRef.current?.clear();
+      mapRef.current = null;
+      if (containerRef.current) containerRef.current.replaceChildren();
       // (F10) 진행 중 pin tween rAF 전체 취소 — unmount 후 marker 참조로 콘솔 오염 방지.
       Object.keys(pinTweenRef.current).forEach(id => {
         const s = pinTweenRef.current[id];
@@ -603,7 +619,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       canvasCursorRef.current = null;
       canvasPtsRef.current = [];
     };
-  }, []);
+  }, [attempt]);
 
   // (F10-fix) Staleness 재평가 타이머 — WS 가 조용해지면 updateMarker 재호출이 없어
   // pin state 가 'moving'/'stopped' 로 고정됨. 60s 주기로 각 device 의 pinStateRef.lastAt
@@ -1796,7 +1812,19 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     },
   }));
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+  return <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+    {mapStatus !== 'ready' && <div role={mapStatus === 'error' ? 'alert' : 'status'}
+      style={{ position: 'absolute', inset: 0, zIndex: 35, display: 'grid', placeItems: 'center',
+        background: 'var(--bg)', padding: 24, boxSizing: 'border-box', color: 'var(--text)' }}>
+      <div style={{ maxWidth: 300, textAlign: 'center', lineHeight: 1.7 }}>
+        <strong>{mapStatus === 'error' ? '지도를 불러오지 못했습니다' : '지도를 불러오는 중…'}</strong>
+        {mapStatus === 'error' && <><p style={{ fontSize: 13, color: 'var(--text-2)' }}>인터넷 연결 상태를 확인한 뒤 다시 시도해 주세요.</p>
+          <button type="button" onClick={() => setAttempt(value => value + 1)}
+            style={{ padding: '12px 20px', borderRadius: 10, background: 'var(--primary)', color: '#fff', border: 0 }}>지도 다시 시도</button></>}
+      </div>
+    </div>}
+  </div>;
 });
 
 // ── InfoWindow content builders ────────────────────────────────────

@@ -1,0 +1,11 @@
+.fleet-body { flex: 1; min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr) minmax(280px, 320px); }
+.fleet-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.fleet-pane[hidden] { display: none; }
+.fleet-map-pane { position: relative; }
+.fleet-notice { padding: 10px 16px; color: var(--text); background: var(--surface-2); font-size: 13px; }
+.fleet-panel-nav { display: flex; padding: 8px 12px; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.fleet-panel-nav button, .fleet-detail-actions button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font-size: 13px; }
+.fleet-panel-nav button { flex: 1; }
+.fleet-panel-nav button[aria-pressed="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+.fleet-detail-actions { display: flex; justify-content: space-between; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+@media (max-width: 1023px) { .fleet-body { display: flex; flex-direction: column; } .fleet-pane { flex: 1; } }

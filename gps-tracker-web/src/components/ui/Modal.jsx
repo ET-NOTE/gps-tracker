@@ -12,7 +12,9 @@
 // 접근성: Esc 로 닫기, backdrop 클릭 닫기 (opt-out 가능),
 //         내부 스크롤 (긴 폼 대응), scroll lock (body overflow hidden).
 
-import { useEffect } from 'react';
+import { useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { lockModalFocus } from '../../lib/modalFocus';
 
 const SIZE = {
   sm:   360,
@@ -34,28 +36,22 @@ export default function Modal({
   children,
   bodyStyle,
 }) {
-  // Esc 로 닫기
-  useEffect(() => {
-    if (!open || !closeOnEsc) return;
-    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, closeOnEsc, onClose]);
-
-  // scroll lock — 여러 모달 스택 시엔 counter 필요하지만 우리 UI 는 stack 안 함
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+  const dialog = useRef(null), backdrop = useRef(null), anchor = useRef(null);
+  const options = useRef({ onClose, closeOnEsc });
+  options.current = { onClose, closeOnEsc };
+  useLayoutEffect(() => {
+    if (!open || !dialog.current) return;
+    backdrop.current.classList.toggle('gps-business-modal', !!anchor.current?.closest('.business-workspace'));
+    return lockModalFocus(dialog.current, backdrop.current, () => options.current);
   }, [open]);
 
   if (!open) return null;
 
   const maxWidth = SIZE[size] ?? size;
 
-  return (
+  return <><span ref={anchor} hidden />{createPortal(
     <div
+      ref={backdrop}
       className="gps-modal-backdrop"
       onClick={closeOnBackdrop ? onClose : undefined}
       style={{
@@ -68,6 +64,8 @@ export default function Modal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        ref={dialog}
+        tabIndex={-1}
         role="dialog"
         className="gps-user-panel gps-modal"
         aria-modal="true"
@@ -79,7 +77,7 @@ export default function Modal({
           padding: 'var(--space-4)',
           width: '100%',
           maxWidth,
-          maxHeight: '92vh',
+          maxHeight: '92dvh',
           display: 'flex',
           flexDirection: 'column',
           gap: 'var(--space-3)',
@@ -126,6 +124,6 @@ export default function Modal({
           </div>
         )}
       </div>
-    </div>
-  );
+    </div>, document.body
+  )}</>;
 }

@@ -1,3 +1,5 @@
+import { dashboardView, routeAccess } from '../lib/dashboardRoutes';
+import RouteNotice from '../components/RouteNotice';
 import RoutePlannerSheet from '../components/RoutePlannerSheet';
 import PinnedDeviceWidget from '../components/PinnedDeviceWidget';
 import OnboardingModal from '../components/OnboardingModal';
@@ -73,18 +75,7 @@ function isAnyDeviceInsideFence(fence, devices) {
 // pathname → view (route 제외 시 'home')
 //   /devices, /devices/pair → 'devices'
 //   /profile*               → 'profile'
-//   /admin*                 → 'admin'
-//   /corporate*             → 'corporate'
-//   else                    → 'home'
-function pathToView(p) {
-  if (p.startsWith('/devices'))   return 'devices';
-  if (p.startsWith('/profile'))   return 'profile';
-  if (p.startsWith('/admin'))     return 'admin';
-  if (p.startsWith('/corporate')) return 'corporate';
-  if (p.startsWith('/rentcar'))   return 'rentcar';
-  if (p.startsWith('/delivery'))  return 'delivery';
-  return 'home';
-}
+// Supported dashboard paths are resolved exactly by dashboardRoutes.
 function viewToPath(v) {
   return v === 'home' ? '/' : `/${v}`;
 }
@@ -95,7 +86,7 @@ function viewToPath(v) {
 export default function Dashboard({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const view = pathToView(location.pathname);
+  const view = dashboardView(location.pathname);
   const setView = useCallback((v) => {
     navigate(viewToPath(v));
   }, [navigate]);
@@ -171,8 +162,10 @@ export default function Dashboard({ onLogout }) {
   const trackLive = userTrackPref && !seekerPaused && !fullToolOpen;
   // (F2-a) me / accountType 을 React Query 로 이전. 이전엔 4곳에서 중복 fetch 됐음
   // (Dashboard, ProfilePanel×3). 이제 dedup + StrictMode 안전 + refetchOnWindowFocus.
-  const { data: me = null } = useMe();
-  const { data: accountTypeRaw } = useAccountType();
+  const meQuery = useMe();
+  const { data: me = null } = meQuery;
+  const accountQuery = useAccountType();
+  const { data: accountTypeRaw } = accountQuery;
   const accountType = accountTypeRaw?.account_type ?? null;
   const isAdmin     = me?.role === 'admin';
   const isCorporate = accountType === 'corporate_fleet';
@@ -762,7 +755,13 @@ export default function Dashboard({ onLogout }) {
   // ── 렌더 ─────────────────────────
   // 데스크톱은 좌측 SideRail + 중앙 Map + 우측 사이드 패널 (탭 활성 시)
   // 모바일/태블릿은 BottomNav + 풀스크린 오버레이 패널
-  const mapVisible = isDesktop || view === 'home';
+  const specialized = ['admin', 'corporate', 'rentcar', 'delivery'].includes(view);
+  const accessQuery = view === 'admin' ? meQuery : accountQuery;
+  const routeProblem = !view ? 'missing' : specialized
+    ? accessQuery.isPending ? 'loading' : accessQuery.isError ? 'error'
+      : !routeAccess(view, me, accountType) ? 'denied' : null
+    : null;
+  const mapVisible = !routeProblem && (isDesktop || view === 'home');
 
   // 패널 콘텐츠는 desktop aside 와 mobile overlay 양쪽에서 공유
   const panel = (
@@ -918,8 +917,10 @@ export default function Dashboard({ onLogout }) {
 
       <main style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
 
+        {routeProblem && <RouteNotice kind={routeProblem} onRetry={routeProblem === 'error' ? () => accessQuery.refetch() : undefined} />}
+
         {/* 관리자 본문 — admin 일 땐 지도/사이드패널 모두 숨기고 풀-화면 차지 */}
-        {view === 'admin' && isAdmin && (
+        {!routeProblem && view === 'admin' && isAdmin && (
           <div style={{
             flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
           }}>
@@ -930,7 +931,7 @@ export default function Dashboard({ onLogout }) {
         )}
 
         {/* 법인운행 본문 — admin 과 동일한 풀-화면 레이아웃 */}
-        {view === 'corporate' && isCorporate && (
+        {!routeProblem && view === 'corporate' && isCorporate && (
           <div style={{
             flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
           }}>
@@ -942,7 +943,7 @@ export default function Dashboard({ onLogout }) {
         )}
 
         {/* 렌트카 본문 — 풀-화면. corporate 와 같은 shell. */}
-        {view === 'rentcar' && isRentcar && (
+        {!routeProblem && view === 'rentcar' && isRentcar && (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <Suspense fallback={<LazyPanelFallback />}>
               <RentcarPanel devices={devices} onNavigate={setView} meta={lastMetaRef.current} onMap={id => { setView('home'); persistFilterDevice(id); }} />
@@ -951,7 +952,7 @@ export default function Dashboard({ onLogout }) {
         )}
 
         {/* 배송 본문 — 풀-화면. */}
-        {view === 'delivery' && isDelivery && (
+        {!routeProblem && view === 'delivery' && isDelivery && (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <Suspense fallback={<LazyPanelFallback />}>
               <DeliveryPanel devices={devices} />
@@ -961,7 +962,7 @@ export default function Dashboard({ onLogout }) {
 
         {/* 데스크톱 사이드바 패널 — SideRail 바로 옆에서 확장.
             홈/관리/법인 외 탭일 때만 슬라이드 인. */}
-        {view !== 'admin' && view !== 'corporate' && view !== 'rentcar' && view !== 'delivery' && isDesktop && view !== 'home' && (
+        {!routeProblem && view !== 'admin' && view !== 'corporate' && view !== 'rentcar' && view !== 'delivery' && isDesktop && view !== 'home' && (
           <aside style={{
             width: 400, flexShrink: 0,
             background: 'var(--surface)',
@@ -977,7 +978,7 @@ export default function Dashboard({ onLogout }) {
             데스크톱은 항상, 모바일/태블릿은 home 일 때만 시각적 노출 */}
         <div style={{
           flex: 1, position: 'relative', minWidth: 0,
-          display: ((view === 'admin' && isAdmin) || (view === 'corporate' && isCorporate) || (view === 'rentcar' && isRentcar) || (view === 'delivery' && isDelivery)) ? 'none' : 'block',
+          display: (routeProblem || specialized) ? 'none' : 'block',
         }}>
           <div style={{ position: 'absolute', inset: 0, visibility: mapVisible ? 'visible' : 'hidden' }}>
             <KakaoMap ref={mapRef} onReady={handleMapReady}
@@ -1109,7 +1110,7 @@ export default function Dashboard({ onLogout }) {
           </div>
 
           {/* 모바일/태블릿: 홈 지도 외 탭은 전체 화면 패널로 표시. */}
-          {!isDesktop && !['home', 'admin', 'corporate', 'rentcar', 'delivery'].includes(view) && (
+          {!routeProblem && !isDesktop && !['home', 'admin', 'corporate', 'rentcar', 'delivery'].includes(view) && (
             <div style={{
               position: 'absolute', inset: 0,
               background: 'var(--surface)',

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ensureKakaoMapSdk } from '../../lib/kakaoSdk';
+import { loadKakaoMaps } from '../../lib/kakaoSdk';
 import { validPosition } from '../../lib/businessWorkspace';
 import { vehicleName } from '../../lib/business';
 import { classifyDevice } from '../../colors';
@@ -16,14 +16,14 @@ export default function BusinessMap({ devices = [], onSelect }) {
     if (!hasPositions) return;
     let disposed = false, observer;
     setError(false);
-    ensureKakaoMapSdk().then(() => window.kakao.maps.load(() => {
+    loadKakaoMaps().then(() => {
       if (disposed || !container.current) return;
       const sdk = window.kakao.maps;
       map.current = new sdk.Map(container.current, { center: new sdk.LatLng(36.5, 127.5), level: 12 });
       observer = new ResizeObserver(() => { if (map.current) { const center = map.current.getCenter(); map.current.relayout(); map.current.setCenter(center); } });
       observer.observe(container.current);
       setReady(true);
-    })).catch(() => { if (!disposed) setError(true); });
+    }).catch(() => { if (!disposed) setError(true); });
     return () => { disposed = true; observer?.disconnect(); map.current = null; fitted.current = ''; setReady(false); };
   }, [hasPositions, retry]);
   useEffect(() => {

@@ -1,3 +1,5 @@
+import useBreakpoint from '../useBreakpoint';
+import './FleetDashboard.css';
 // (2026-07-28) Phase F4-b — Unified Fleet Dashboard.
 //
 // 참고 이미지 (cartax-style) 대응: 상단 요약 chips + 좌측 device list (react-window virtualize)
@@ -22,26 +24,27 @@ import Icon from '../components/Icon';
 
 export default function FleetDashboard() {
   const nav = useNavigate();
+  const compact = useBreakpoint() !== 'desktop';
+  const [mobilePanel, setMobilePanel] = useState('list');
+  const [selectionNotice, setSelectionNotice] = useState('');
   const loc = useLocation();
-  // URL query: ?filter=all|active|idle|offline&device=<id>&q=<search>
+  // URL is the source of truth, including same-page links and browser Back.
   const qs = new URLSearchParams(loc.search);
-  const [filter,     setFilter]     = useState(FLEET_GROUPS.some(group => group.id === qs.get('filter')) ? qs.get('filter') : 'all');
-  const [selectedId, setSelectedId] = useState(qs.get('device') ? Number(qs.get('device')) : null);
-  const [query,      setQuery]      = useState(qs.get('q') || '');
+  const filter = FLEET_GROUPS.some(group => group.id === qs.get('filter')) ? qs.get('filter') : 'all';
+  const deviceParam = qs.get('device');
+  const parsedId = /^\d+$/.test(deviceParam ?? '') ? Number(deviceParam) : NaN;
+  const selectedId = qs.getAll('device').length === 1 && Number.isSafeInteger(parsedId) && parsedId > 0 ? parsedId : null;
+  const query = qs.get('q') || '';
+  const updateSearch = useCallback((key, value) => {
+    const next = new URLSearchParams(loc.search);
+    if (value == null || value === '') next.delete(key); else next.set(key, String(value));
+    nav({ pathname: loc.pathname, search: next.toString(), hash: loc.hash }, { replace: true });
+  }, [nav, loc.pathname, loc.search, loc.hash]);
+  const setSelectedId = useCallback(id => updateSearch('device', id), [updateSearch]);
+  const setQuery = value => updateSearch('q', value);
+  const setFilter = value => updateSearch('filter', value === 'all' ? null : value);
 
-  // URL sync — 새로고침·공유 시 상태 복원.
-  useEffect(() => {
-    const q = new URLSearchParams();
-    if (filter !== 'all') q.set('filter', filter);
-    if (selectedId != null) q.set('device', String(selectedId));
-    if (query) q.set('q', query);
-    const s = q.toString();
-    const next = s ? `?${s}` : '';
-    if (next !== loc.search) nav({ pathname: loc.pathname, search: next }, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, selectedId, query]);
-
-  const { data: devices = [] } = useDevices({ refetchInterval: 30_000 });
+  const { data: devices = [], isSuccess, isPending, isError, refetch } = useDevices({ refetchInterval: 30_000 });
   const [now, setNow] = useState(Date.now);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(timer); }, []);
 
@@ -56,11 +59,20 @@ export default function FleetDashboard() {
     [devices, selectedId]
   );
 
+  useEffect(() => {
+    if (isSuccess && deviceParam != null && !selectedDevice) {
+      setSelectedId(null);
+      setSelectionNotice('이 계정에서 확인할 수 없는 단말기입니다. 목록에서 다시 선택해 주세요.');
+      setMobilePanel('list');
+    }
+  }, [isSuccess, deviceParam, selectedDevice, setSelectedId]);
+  useEffect(() => { if (selectedDevice) setMobilePanel('detail'); }, [selectedDevice?.id]);
+
   // 선택된 device 의 최근 이벤트 fetch — 60s poll.
   const [events, setEvents]   = useState(null);
   const [evLoading, setEvLoading] = useState(false);
   useEffect(() => {
-    if (!selectedId) { setEvents(null); return; }
+    if (!selectedDevice) { setEvents(null); setEvLoading(false); return; }
     let cancelled = false;
     setEvLoading(true);
     const load = () => api.getDeviceEvents(selectedId, { limit: 20 })
@@ -69,25 +81,30 @@ export default function FleetDashboard() {
     load();
     const iv = setInterval(load, 60_000);
     return () => { cancelled = true; clearInterval(iv); };
-  }, [selectedId]);
+  }, [selectedDevice?.id]);
 
   // KakaoMap 인스턴스 & marker 배치.
   const mapRef = useRef(null);
   const mapReadyRef = useRef(false);
+  const [mapReady, setMapReady] = useState(0);
+  const handleMapReady = useCallback(() => { mapReadyRef.current = false; setMapReady(value => value + 1); }, []);
+  const selectDevice = useCallback(id => {
+    setSelectedId(id); setSelectionNotice(''); setMobilePanel('detail');
+  }, [setSelectedId]);
 
   // (F4-b-2) map marker click → selectedId sync.
   // KakaoMap onPointInfo prop 은 marker/dot click 시 { kind, deviceId, ... } 콜백.
   const handlePointInfo = useCallback((p) => {
     if (p?.kind === 'main' && p?.meta?.deviceId != null) {
-      setSelectedId(p.meta.deviceId);
+      selectDevice(p.meta.deviceId);
     }
-  }, []);
+  }, [selectDevice]);
 
   // last position marker 배치. devices id·last_fix_at 이 실제 변할 때만 재-loop (deps stable).
-  const positionKey = devices.map(d => `${d.id}:${d.last_fix_at || ''}`).join(',');
+  const positionKey = devices.map(d => `${d.id}:${d.last_fix_at || ''}:${d.last_lat}:${d.last_lng}:${vehicleName(d)}:${d.device_color}`).join(',');
   useEffect(() => {
     const m = mapRef.current;
-    if (!m || !m.updateMarker) return;
+    if (!mapReady || !m || !m.updateMarker) return;
     for (const d of devices) {
       if (d.last_lat == null || d.last_lng == null) continue;
       const label = vehicleName(d);
@@ -100,10 +117,10 @@ export default function FleetDashboard() {
     }
     if (!mapReadyRef.current) {
       mapReadyRef.current = true;
-      m.filterToDevice?.(null, { fit: true });
+      m.filterToDevice?.(selectedDevice?.id ?? null, { fit: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [positionKey]);
+  }, [positionKey, mapReady]);
 
   // (F4-b-2) WS live 갱신 — 새 fix 오면 map marker 즉시 이동.
   const wsRef = useRef(null);
@@ -140,7 +157,8 @@ export default function FleetDashboard() {
         return;
       }
       const d = devicesRef.current.find(x => x.id === msg.device_id);
-      const label = d ? vehicleName(d) : String(msg.device_id);
+      if (!d) return;
+      const label = vehicleName(d);
       const color = d?.device_color || '#5B7CFF';
       meta.deviceId = msg.device_id;
       meta.deviceLabel = label;
@@ -155,8 +173,12 @@ export default function FleetDashboard() {
     wsRef.current?.subscribe(devices.map(d => d.id));
   }, [positionKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
+  const tripRevision = useRef(0);
+  useEffect(() => () => { tripRevision.current++; }, []);
+
   // 선택 시 map focus.
   useEffect(() => {
+    tripRevision.current++;
     if (!mapRef.current) return;
     if (selectedId != null) mapRef.current.filterToDevice?.(selectedId, { fit: true });
     else                    mapRef.current.filterToDevice?.(null,       { fit: false });
@@ -164,7 +186,7 @@ export default function FleetDashboard() {
     setSelectedTrip(null);
     mapRef.current.clearSeekerPath?.();
     mapRef.current.setSeekerMode?.(false);
-  }, [selectedId]);
+  }, [selectedId, mapReady]);
 
   // (F4-b-2) 선택된 trip → seeker path.
   // (F7-a) ?canvas=1 URL flag 로 canvas overlay 시험 사용. 안정성 검증 후 default 전환.
@@ -173,7 +195,9 @@ export default function FleetDashboard() {
   const selectedTripKey = selectedTrip?.started_at ?? null;
   const handleTripSelect = useCallback(async (trip) => {
     const m = mapRef.current;
-    if (!m || !selectedId) return;
+    setMobilePanel('map');
+    if (!m || !selectedDevice || !mapReady) return;
+    const revision = ++tripRevision.current;
     const key = trip.started_at;
     if (selectedTripKey === key) {
       // 재클릭 = 취소.
@@ -188,6 +212,7 @@ export default function FleetDashboard() {
       const from = trip.started_at;
       const to   = trip.ended_at || new Date().toISOString();
       const groups = await api.listLocationsGrouped(selectedId, { since: from, until: to, fix_only: true, limit: 5000 });
+      if (revision !== tripRevision.current) return;
       const points = api.flattenGroupedAsc(groups);
       const color = devices.find(d => d.id === selectedId)?.device_color || '#5B7CFF';
       m.setSeekerMode?.(true);
@@ -197,15 +222,16 @@ export default function FleetDashboard() {
         m.drawSeekerPath(points, { color, refit: true, showStops: true, showCursor: true });
       }
     } catch (e) {
+      if (revision !== tripRevision.current) return;
       console.error('trip seeker load', e);
       setSelectedTrip(null);
     }
-  }, [selectedId, selectedTripKey, devices, useCanvasSeeker]);
+  }, [selectedId, selectedDevice, mapReady, selectedTripKey, devices, useCanvasSeeker]);
 
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      height: '100vh', background: 'var(--bg)',
+      height: '100dvh', minWidth: 0, background: 'var(--bg)',
     }}>
       {/* 상단 헤더 + 요약 chips */}
       <div style={{
@@ -218,36 +244,41 @@ export default function FleetDashboard() {
           background: 'transparent', border: 'none', color: 'var(--text-2)',
           cursor: 'pointer', padding: 'var(--space-1) var(--space-2)',
           display: 'inline-flex', alignItems: 'center', gap: 4,
-          borderRadius: 'var(--radius-sm)', fontSize: 12,
+          borderRadius: 'var(--radius-sm)', fontSize: 12, minHeight: 44,
         }}>
           <Icon name="chevron-left" size={14} /> 홈
         </button>
         <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>
           Fleet 대시보드
         </div>
-        <div style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-3)' }}>
-          Beta — 홈 버튼으로 기존 Dashboard 이동
-        </div>
+        {!compact && <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-3)' }}>차량 현황 · 이동 기록</div>}
       </div>
       <SummaryChips devices={devices} filter={filter} onChange={setFilter} now={now} />
 
-      {/* 3-panel body */}
-      <div style={{
-        flex: 1, minHeight: 0,
-        display: 'grid',
-        gridTemplateColumns: 'minmax(280px, 340px) 1fr minmax(300px, 360px)',
-      }}>
+      {selectionNotice && <div role="alert" className="fleet-notice">{selectionNotice}</div>}
+      {isPending && <div role="status" className="fleet-notice">차량 목록을 불러오는 중…</div>}
+      {isError && <div role="alert" className="fleet-notice">차량 목록을 불러오지 못했습니다. <button onClick={() => refetch()}>다시 시도</button></div>}
+      {compact && <nav className="fleet-panel-nav" aria-label="Fleet 화면 선택">
+        {[['list', '차량 목록'], ['map', '지도'], ['detail', '차량 상세']].map(([id, label]) =>
+          <button type="button" key={id} aria-pressed={mobilePanel === id} onClick={() => setMobilePanel(id)}>{label}</button>)}
+      </nav>}
+      <div className="fleet-body">
+        <section className="fleet-pane" aria-label="차량 목록" hidden={compact && mobilePanel !== 'list'}>
         <DeviceListPanel
           devices={filtered}
           selectedId={selectedId}
-          onSelect={d => setSelectedId(d.id)}
+          onSelect={d => selectDevice(d.id)}
           query={query}
           onQuery={setQuery}
           now={now}
         />
-        <div style={{ position: 'relative', minWidth: 0, minHeight: 0 }}>
-          <KakaoMap ref={mapRef} onPointInfo={handlePointInfo} />
-        </div>
+        </section>
+        <section className="fleet-pane fleet-map-pane" aria-label="차량 지도" hidden={compact && mobilePanel !== 'map'}>
+          <KakaoMap ref={mapRef} onReady={handleMapReady} onPointInfo={handlePointInfo} />
+        </section>
+        <section className="fleet-pane" aria-label="차량 상세" hidden={compact && mobilePanel !== 'detail'}>
+        {compact && <div className="fleet-detail-actions"><button type="button" onClick={() => setMobilePanel('list')}>목록 보기</button>
+          <button type="button" onClick={() => setMobilePanel('map')}>지도 보기</button></div>}
         <SelectedDevicePanel
           selectedDevice={selectedDevice}
           events={events}
@@ -257,6 +288,7 @@ export default function FleetDashboard() {
           selectedTripKey={selectedTripKey}
           mapRef={mapRef}
         />
+        </section>
       </div>
     </div>
   );

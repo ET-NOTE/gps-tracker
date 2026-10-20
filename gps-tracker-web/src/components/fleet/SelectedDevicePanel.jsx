@@ -50,7 +50,7 @@ export default function SelectedDevicePanel({
           padding: 'var(--space-6)', textAlign: 'center',
           color: 'var(--text-3)', fontSize: 12, lineHeight: 1.6,
         }}>
-          좌측 목록에서 차량을 선택하면<br/>
+          차량 목록에서 차량을 선택하면<br/>
           이벤트 · 운행 이력이 여기 표시됩니다.
         </div>
       </div>

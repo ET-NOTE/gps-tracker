@@ -113,14 +113,14 @@ export default function DeviceListPanel({ devices = [], selectedId, onSelect, qu
           background: 'var(--surface-2)', borderRadius: 'var(--radius-md)',
         }}>
           <Icon name="search" size={13} style={{ color: 'var(--text-3)' }} />
-          <input value={query || ''} onChange={e => onQuery?.(e.target.value)}
+          <input aria-label="차량 검색" value={query || ''} onChange={e => onQuery?.(e.target.value)}
             placeholder="차량번호 · 이름 · UID"
             style={{
               flex: 1, background: 'transparent', border: 'none', outline: 'none',
               fontSize: 12, color: 'var(--text)',
             }} />
           {query && (
-            <button onClick={() => onQuery?.('')} style={{
+            <button aria-label="검색어 지우기" onClick={() => onQuery?.('')} style={{
               background: 'transparent', border: 'none', cursor: 'pointer',
               color: 'var(--text-3)', padding: 0,
             }}><Icon name="close" size={12} /></button>
@@ -138,7 +138,7 @@ export default function DeviceListPanel({ devices = [], selectedId, onSelect, qu
           }}>{query ? '검색 결과 없음' : '차량이 없습니다.'}</div>
         ) : (
           <FixedSizeList
-            height={containerH - 16}
+            height={Math.max(0, containerH - 16)}
             width="100%"
             itemCount={filtered.length}
             itemSize={ROW_HEIGHT}
