@@ -47,11 +47,11 @@ pub async fn authorize(
     if changed == 0 {
         return Err(AppError::Conflict("replayed hardware request".into()));
     }
-    let iccid = sim_identity::canonical(
-        payload["iccid"]
-            .as_str()
-            .ok_or_else(|| AppError::BadRequest("full SIM number required".into()))?,
-    )?;
+    let wire_iccid = payload["iccid"]
+        .as_str()
+        .ok_or_else(|| AppError::BadRequest("full SIM number required".into()))?
+        .trim();
+    let iccid = sim_identity::canonical(wire_iccid)?;
     // One logical device per SIM, regardless of the modem or the hardware signing key.
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('gps-sim:'||$1,0))")
         .bind(&iccid)
@@ -64,7 +64,7 @@ pub async fn authorize(
                 "INSERT INTO devices(device_uid,iccid,api_key_hash) VALUES($1,$2,'') RETURNING id",
             )
             .bind(format!("sim-{iccid}"))
-            .bind(&iccid)
+            .bind(wire_iccid)
             .fetch_one(&state.db)
             .await?,
         };
@@ -76,6 +76,13 @@ pub async fn authorize(
         .bind(id)
         .fetch_one(&mut *tx)
         .await?;
+    if sim_owner.is_none() {
+        // Preserve the authenticated modem's observed spelling so a new SIM can
+        // be found by either its portal suffix or its printed 20-digit suffix.
+        // This pending-only path performs no nested telemetry transaction.
+        sqlx::query("UPDATE devices SET iccid=$2 WHERE id=$1 AND owner_id IS NULL AND iccid IS DISTINCT FROM $2")
+            .bind(id).bind(wire_iccid).execute(&mut *tx).await?;
+    }
     if owner.is_some() && owner == sim_owner {
         Ok((id, IngestMode::Hardware, tx))
     } else {
