@@ -8,6 +8,8 @@
 
 static std::string scenario;
 static uint32_t clockMs = 10000;
+static uint32_t reportSeconds=86400;
+namespace report_config { uint32_t intervalS() { return reportSeconds; } bool persisted() { return true; } }
 static bool pinLow = false, lisOk = true, active = false, railOff = false;
 static bool held = false, slept = false, armed = false, invalidRaw = false;
 static int posts = 0, shutdowns = 0, resumes = 0, drops = 0;
@@ -34,7 +36,7 @@ esp_err_t esp_deep_sleep_enable_gpio_wakeup(uint64_t pin, int level) {
   return scenario=="wake_error" ? -1 : ESP_OK;
 }
 esp_err_t esp_sleep_enable_timer_wakeup(uint64_t us) {
-  assert(us==86400000000ULL); return scenario=="timer_error" ? -1 : ESP_OK;
+  assert(us==static_cast<uint64_t>(reportSeconds)*1000000ULL); return scenario=="timer_error" ? -1 : ESP_OK;
 }
 esp_err_t esp_sleep_disable_wakeup_source(esp_sleep_wakeup_cause_t) { armed=false; return ESP_OK; }
 void esp_deep_sleep_start() {
@@ -113,6 +115,7 @@ uint32_t postOks() { return 1; } uint32_t postFails() { return 0; }
 
 int main(int argc,char** argv) {
   assert(argc==2); scenario=argv[1];
+  if(scenario=="remote_short") reportSeconds=600;
 #if !SLEEP_DISABLED
   if(scenario=="bounce_abort") {
     sleep_mgr::begin(0);
@@ -150,7 +153,7 @@ int main(int argc,char** argv) {
   assert(!result && !slept && posts==0 && shutdowns==0 && !railOff && trace.empty());
 #else
   const bool success=scenario=="success" || scenario=="wrap" || scenario=="timeout" ||
-                     scenario=="post_fail" || scenario=="early_bounce";
+                     scenario=="post_fail" || scenario=="early_bounce" || scenario=="remote_short";
   assert(result==success && slept==success);
   if(success) {
     auto at=[](const char* s) { return std::find(trace.begin(),trace.end(),s)-trace.begin(); };

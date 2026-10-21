@@ -1,3 +1,4 @@
+#include "report_config.h"
 // =================================================================
 // 15_a_modular — 13_4_aa 구조적 리팩터.
 //   목표: 사고 대응 패치 누적으로 얽힌 복구 경로(7개)/블로킹 구조를 모듈로 분리하고
@@ -212,6 +213,7 @@ void setup() {
 
   bc::set("mot_init");
   Serial.println(F("[MOT] init"));  motion::init();
+  report_config::begin();           // NVS settings must load before bounce re-sleep.
   sleep_mgr::begin(bootMs);          // wake/reset 부기 + bounce 필터 (motion 이후)
 
   // 부저 마일스톤 — 모션 wake 6회. (콜드부팅=길게1/크래시=긴3/전원=길게1 은 위 부팅 블록서 처리 →

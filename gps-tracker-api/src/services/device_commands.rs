@@ -76,7 +76,18 @@ pub async fn dispatch(db: &PgPool, device: i64, ack: Option<&str>) -> AppResult<
     .bind(owner)
     .fetch_optional(&mut *tx)
     .await?;
-    let mut response = json!({"ok":true});
+    let seconds = if let Some(user) = owner {
+        let prefs: Value = sqlx::query_scalar("SELECT prefs FROM users WHERE id=$1")
+            .bind(user)
+            .fetch_one(&mut *tx)
+            .await?;
+        super::device_settings::from_prefs(&prefs, device)
+    } else {
+        super::device_settings::DEFAULT_SLEEP_REPORT_S
+    };
+    // Desired state accompanies every authenticated response, independently of
+    // command retries/expiry. A device asleep for 24h must not miss its setting.
+    let mut response = json!({"ok":true,"device_config":{"sleep_report_interval_s":seconds}});
     if let Some((id, kind, args)) = next {
         sqlx::query("UPDATE device_commands SET delivered_at=now(),attempts=attempts+1 WHERE id=$1::text::uuid")
             .bind(&id).execute(&mut *tx).await?;

@@ -115,6 +115,14 @@ pub async fn patch_prefs(
             "body must be a JSON object".into(),
         ));
     }
+    if patch
+        .get(crate::services::device_settings::PREF_KEY)
+        .is_some()
+    {
+        return Err(AppError::BadRequest(
+            "단말기 주기는 단말기 상세의 정기 보고 설정에서 변경해 주세요.".into(),
+        ));
+    }
     sqlx::query("UPDATE users SET prefs = COALESCE(prefs, '{}'::jsonb) || $2::jsonb WHERE id = $1")
         .bind(user.user_id)
         .bind(&patch)

@@ -1,4 +1,5 @@
 import { todayStats, formatDuration, formatDistance } from '../lib/deviceStats';
+import SleepReportSettings from './SleepReportSettings';
 import VehicleCarePanel from './VehicleCarePanel';
 import BatteryStatus from './BatteryStatus';
 import BatteryRuntime from './BatteryRuntime';
@@ -77,6 +78,7 @@ export default function DeviceDetail({ device, meta, onWiped, onUpdated }) {
 
       <div style={s.body}>
         <Section eyebrow="차량 · 정비 · 만료일"><VehicleCarePanel key={device.id} device={device} onUpdated={onUpdated} /></Section>
+        <Section eyebrow="절전 중 정기 보고"><SleepReportSettings key={device.id} device={device} meta={meta} onUpdated={onUpdated} /></Section>
         {/* 수신 상태 */}
         <Section eyebrow="수신 상태">
           <ReceiveStatusBody device={device} />

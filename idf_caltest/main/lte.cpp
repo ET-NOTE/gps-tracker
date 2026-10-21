@@ -1,3 +1,4 @@
+#include "report_config.h"
 #include "lte.h"
 #include "config.h"
 #include "hw_power.h"
@@ -631,9 +632,11 @@ bool httpPost(const char *body, int *statusOut) {
           verifiedResponse=true;
           Serial.printf("[AUTH] Signed request and response verified (counter=%" PRIu64 ")\n",requestCounter);
           if(device_security::linkRequired()) {
+            report_config::useDefault(); // An unlinked SIM must not inherit another owner's short interval.
             Serial.println("[PAIR] Enter the full SIM number and a device name on the website. Hardware authenticated; batch retained.");
             return false;
           }
+          report_config::applyAuthenticatedResponse(decoded.c_str());
           lastResp=device_security::acceptCommand(decoded)?decoded:"{\"ok\":true}";
         }
         if (lastResp.indexOf("\"cmd\":\"beep\"")  >= 0 || lastResp.indexOf("\"cmd\": \"beep\"")  >= 0) serverBeep_  = true;

@@ -1,3 +1,4 @@
+#include "report_config.h"
 #include "telemetry.h"
 #include "config.h"
 #include "firmware_info.h"
@@ -117,7 +118,7 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
       "\"lis_ok\":%s,\"lis_reinits\":%lu,"
       "\"stay\":\"%s\",\"act_mg\":%lu,\"rst_act\":%u,\"rst_drift\":%u,\"rst_nogps\":%u,"
       "\"fw_version\":\"%s\",\"build_profile\":\"%s\",\"sleep_enabled\":%s,"
-      "\"timer_wake_enabled\":%s,\"timer_wake_s\":%lu,\"no_gps_grace_s\":%lu,"
+      "\"timer_wake_enabled\":%s,\"timer_wake_s\":%lu,\"sleep_report_remote\":%s,\"sleep_report_saved\":%s,\"no_gps_grace_s\":%lu,"
       "\"sleep_aborts\":%lu,\"shutdown_unconfirmed\":%lu},",
       active ? "true" : "false",
       (unsigned long)held_s, (unsigned long)window_s, (unsigned long)sleep_in,
@@ -130,7 +131,8 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
       (unsigned)sleep_mgr::resetsNoGps(), FIRMWARE_VERSION, FIRMWARE_PROFILE,
       SLEEP_DISABLED ? "false" : "true",
       (!SLEEP_DISABLED && TIMER_WAKE_ENABLED) ? "true" : "false",
-      (unsigned long)(TIMER_WAKE_INTERVAL_US / 1000000ULL),
+      (unsigned long)report_config::intervalS(),
+      SLEEP_DISABLED ? "false" : "true", report_config::persisted() ? "true" : "false",
       (unsigned long)(NO_GPS_SLEEP_GRACE_MS / 1000),
       (unsigned long)sleep_mgr::sleepAborts(), (unsigned long)sleep_mgr::shutdownUnconfirmed());
   }

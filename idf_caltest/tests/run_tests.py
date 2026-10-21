@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Host boundary tests for actual sleep_mgr.cpp and telemetry.cpp (g++ required)."""
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parent
-SCENARIOS = ["success", "wrap", "timeout", "post_fail", "early_bounce", "bounce_abort", "no_lis", "active",
+SCENARIOS = ["remote_short", "success", "wrap", "timeout", "post_fail", "early_bounce", "bounce_abort", "no_lis", "active",
              "stuck_low", "i2c_error", "raw_error", "during_flush", "during_event",
              "wake_error", "timer_error", "during_shutdown", "timeout_motion",
              "sensor_shutdown", "after_rail", "sensor_after_rail", "hold_error", "final_interrupt"]
@@ -15,6 +16,13 @@ SCENARIOS = ["success", "wrap", "timeout", "post_fail", "early_bounce", "bounce_
 def main():
     count = 0
     with tempfile.TemporaryDirectory(prefix="gps-sleep-test-") as tmp:
+        cjson = Path(os.environ["IDF_PATH"]) / "components/json/cJSON"
+        cjson_object = str(Path(tmp) / "cjson.o")
+        subprocess.run(["gcc","-I",str(cjson),"-c",str(cjson/"cJSON.c"),"-o",cjson_object],check=True)
+        config_exe=str(Path(tmp)/"report-config")
+        subprocess.run(["g++","-std=c++17","-DKC_TEST_BUILD=0","-DBATTERY_TEST_BUILD=0","-Wall","-Wextra","-Werror","-Wno-unused-parameter","-I",str(ROOT/"stubs"),"-I",str(cjson),str(ROOT/"report_config_test.cpp"),cjson_object,"-o",config_exe],check=True)
+        subprocess.run([config_exe],check=True)
+        count+=1
         for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1)):
             exe = str(Path(tmp) / f"test-{profile}")
             flags = ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
@@ -36,6 +44,8 @@ def main():
             assert normal["stationary"]["build_profile"] == profile
             assert normal["stationary"]["window_s"] == 300
             assert normal["stationary"]["timer_wake_s"] == 86400
+            assert normal["stationary"]["sleep_report_remote"] == (not kc and not battery)
+            assert normal["stationary"]["sleep_report_saved"]
             assert normal["stationary"]["no_gps_grace_s"] == 600
             assert normal["build_tag"] == sleep["build_tag"] == f"idf-caltest/{profile}-test"
             assert sleep["diag"]["sleep_phase"] == "intent"

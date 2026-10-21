@@ -350,6 +350,7 @@ export const api = {
   getDeviceBatchStats: (id, hours = 24) => req('GET', `/devices/${id}/batch-stats?hours=${hours}`),
 
   // 24h: POST 주기 원격 조정 (5~300s, RAM only — reset 시 default 30s 복귀).
+  setDeviceSleepReportInterval: (id, seconds) => req('POST', `/devices/${id}/sleep-report-interval`, {seconds}),
   setDevicePostInterval: (id, seconds) => req('POST', `/devices/${id}/post-interval`, { seconds }),
 
   // TimescaleDB continuous aggregate query (bucket = "1m" | "1h"). historical chart 가속용.

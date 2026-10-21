@@ -51,6 +51,8 @@ pub struct DeviceView {
     pub last_event_at: Option<DateTime<Utc>>,
     // 펌웨어 13_1+ stationary 진단 (deep sleep 카운트다운 + GPS drift + LIS 헬스)
     pub last_stationary: Option<serde_json::Value>,
+    #[sqlx(skip)]
+    pub sleep_report_interval_s: i32,
     // 13_4 LC86G: 마지막 POST 의 안테나 상태 ("OK_EXT"/"OK_INT"/"OPEN"/"SHORT"/"?")
     // GPS fix 없어도 LTE POST 만 되면 갱신 — 안테나 결선 즉시 진단.
     pub last_antenna: Option<String>,
@@ -168,6 +170,10 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/sim/refresh", post(sim_info_refresh)) // 1NCE 강제 즉시 갱신
         .route("/devices/:id/events", get(events_log)) // 최근 lifecycle 이벤트
         .route("/devices/:id/beep", post(beep_device)) // 부저 원격 트리거 (현장 식별)
+        .route(
+            "/devices/:id/sleep-report-interval",
+            post(set_sleep_report_interval),
+        )
         .route("/devices/:id/reset", post(reset_device)) // 원격 hardPowerCycle (LTE stuck 회복)
         .route("/devices/:id/range", delete(delete_range)) // 사이클 단위 range 삭제 (연구소 토글)
         .route("/devices/:id/batch-stats", get(batch_stats)) // sss 24h: fixes array (batch) 통계
@@ -217,6 +223,7 @@ async fn reset_device(
 }
 
 async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Vec<DeviceView>>> {
+    let runtime_prefs = crate::services::device_settings::prefs(&state.db, user.user_id).await?;
     let mut rows = sqlx::query_as::<_, DeviceView>(
         r#"SELECT d.id, d.device_uid, d.display_name, d.color, d.icon,
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
@@ -280,6 +287,8 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
     .await?;
     let now = Utc::now();
     for row in &mut rows {
+        row.sleep_report_interval_s =
+            crate::services::device_settings::from_prefs(&runtime_prefs, row.id);
         row.update_battery_runtime(now);
     }
     Ok(Json(rows))
@@ -1254,6 +1263,28 @@ async fn delete_range(
     ))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct SetSleepReportInterval {
+    pub seconds: i32,
+}
+async fn set_sleep_report_interval(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Json(req): Json<SetSleepReportInterval>,
+) -> AppResult<Json<DeviceView>> {
+    crate::services::device_settings::save(&state.db, id, user.user_id, req.seconds).await?;
+    log_audit(
+        &state,
+        id,
+        "sleep_report_interval",
+        user.user_id,
+        json!({"seconds":req.seconds}),
+    )
+    .await;
+    fetch_device(&state, id, user.user_id).await
+}
+
 // ===========================================================================
 // POST 주기 원격 조정 — 24h 테스트용
 // ===========================================================================
@@ -1684,6 +1715,10 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
+    row.sleep_report_interval_s = crate::services::device_settings::from_prefs(
+        &crate::services::device_settings::prefs(&state.db, user_id).await?,
+        row.id,
+    );
     row.update_battery_runtime(Utc::now());
     Ok(Json(row))
 }

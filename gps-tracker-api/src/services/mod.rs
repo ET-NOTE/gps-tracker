@@ -6,6 +6,7 @@ pub mod connection_alerts;
 pub mod credits;
 pub mod device_auth;
 pub mod device_commands;
+pub mod device_settings;
 pub mod fcm;
 pub mod geofence;
 pub mod hardware_auth;

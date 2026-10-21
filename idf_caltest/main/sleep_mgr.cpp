@@ -1,3 +1,4 @@
+#include "report_config.h"
 #include "sleep_mgr.h"
 #include "config.h"
 #include "buzzer.h"
@@ -170,7 +171,7 @@ bool enterDeepSleep(const char *reason) {
   if (esp_deep_sleep_enable_gpio_wakeup(1ULL << PIN_LIS_INT, ESP_GPIO_WAKEUP_GPIO_LOW) != ESP_OK)
     return abortSleep("wake_gpio_error", true);
 #if TIMER_WAKE_ENABLED
-  if (esp_sleep_enable_timer_wakeup(TIMER_WAKE_INTERVAL_US) != ESP_OK)
+  if (esp_sleep_enable_timer_wakeup(static_cast<uint64_t>(report_config::intervalS()) * 1000000ULL) != ESP_OK)
     return abortSleep("wake_timer_error", true);
 #endif
 
