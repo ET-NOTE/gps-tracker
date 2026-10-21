@@ -1,4 +1,4 @@
-"""SIM-only first enrollment accepts 1NCE/printed suffixes with a recent authenticated hardware sighting."""
+"""Remote sleep report settings: isolated-clone ownership, bounds and signed delivery tests."""
 import base64,hashlib,hmac,json,pathlib,secrets,sys,time,urllib.request,urllib.error,urllib.parse,uuid
 import psycopg2
 envpath,base=sys.argv[1:3];assert base=='http://127.0.0.1:3042'
@@ -18,7 +18,10 @@ def req(path,data=None,user=None,headers=None,raw=None,expected=200,method=None)
  try:
   with urllib.request.urlopen(urllib.request.Request(base+path,data=raw,headers=headers,method=method),timeout=20) as r:status,body=r.status,r.read()
  except urllib.error.HTTPError as e:status,body=e.code,e.read()
- assert status==expected,(path,status,expected,body[:200]);return json.loads(body)
+ assert status==expected,(path,status,expected,body[:200])
+ try:return json.loads(body)
+ except json.JSONDecodeError:
+  assert expected==422;return body.decode()
 def hw():
  uid='first-hw-'+run+'-'+str(len(hardware));key=secrets.token_bytes(32)
  sql('INSERT INTO hardware_credentials(auth_uid,key_digest) VALUES(%s,%s)',(uid,key));hardware.append(uid)
@@ -48,10 +51,17 @@ try:
  req(api+'/auth/me/prefs',{'device_runtime':{}},a,method='PATCH',expected=400)
  assert value()==86400 and req(api+'/auth/me/prefs',user=a)['other_test']==run
  req(endpoint,{'seconds':600},a)
- for _ in range(2):assert send(first,sim)['device_config']['sleep_report_interval_s']==600
+ command=req(api+f'/devices/{did}/beep',{},a)['command_id']
+ for _ in range(2):
+  response=send(first,sim);assert response['device_config']['sleep_report_interval_s']==600 and response['command_id']==command and response['cmd']=='beep'
  sql("UPDATE device_commands SET requested_at=now()-interval '1 day' WHERE device_id=%s",(did,))
- assert send(first,sim)['device_config']['sleep_report_interval_s']==600
- assert req(api+'/devices',user=a)[0]['sleep_report_interval_s']==600
+ response=send(first,sim);assert response['device_config']['sleep_report_interval_s']==600 and 'command_id' not in response
+ phone=sql("INSERT INTO devices(device_uid,owner_id,api_key_hash,device_kind) VALUES(%s,%s,'','phone') RETURNING id",('phone-'+run,a));devices.append(phone)
+ req(api+f'/devices/{phone}/sleep-report-interval',{'seconds':600},a,expected=400)
+ assert req(api+f'/devices/{phone}',user=a)['sleep_report_interval_s']==86400
+ sql("UPDATE devices SET last_stationary='{\"timer_wake_s\":86400,\"sleep_report_remote\":true,\"sleep_report_saved\":true,\"timer_wake_enabled\":true}'::jsonb WHERE id=%s",(did,))
+ current=req(api+f'/devices/{did}',user=a);assert current['last_stationary']['timer_wake_s']==86400 and current['sleep_report_interval_s']==600
+ assert next(d for d in req(api+'/devices',user=a) if d['id']==did)['sleep_report_interval_s']==600
  # A replacement authenticated hardware receives the same SIM-scoped setting.
  replacement=hw();assert send(replacement,sim)['sim_link_required'];assert pair(sim,a)['id']==did
  assert send(replacement,sim)['device_config']['sleep_report_interval_s']==600
