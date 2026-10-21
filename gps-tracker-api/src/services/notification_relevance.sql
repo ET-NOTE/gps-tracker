@@ -3,7 +3,7 @@ SELECT EXISTS (
  JOIN devices d ON d.id=e.device_id AND d.owner_id=e.user_id
  LEFT JOIN notification_settings ns ON ns.user_id=e.user_id
  LEFT JOIN LATERAL (
-   SELECT kind,occurred_at,id FROM events
+   SELECT kind,occurred_at,id,data FROM events
    WHERE device_id=e.device_id AND user_id=e.user_id AND kind IN ('wake','sleep_enter')
    ORDER BY occurred_at DESC,id DESC LIMIT 1
  ) life ON true
@@ -22,7 +22,7 @@ SELECT EXISTS (
    WHEN 'offline' THEN COALESCE(ns.offline_alert,true)
    WHEN 'signal_loss' THEN COALESCE(ns.signal_loss_alert,false)
    WHEN 'online' THEN COALESCE(ns.online_alert,true)
-   WHEN 'sleep_enter' THEN COALESCE(ns.sleep_alert,false)
+   WHEN 'sleep_enter' THEN COALESCE(ns.sleep_alert,false) AND COALESCE(e.data->>'sleep_reason','') NOT IN ('timer_hb','timer_hb_fail')
    WHEN 'wake' THEN CASE WHEN e.data->>'wake_cause'='motion' THEN COALESCE(ns.motion_alert,true)
                         ELSE COALESCE(ns.wake_alert,false) END
    WHEN 'motion' THEN COALESCE(ns.motion_alert,true)
@@ -64,6 +64,10 @@ SELECT EXISTS (
            THEN COALESCE(ns.offline_minutes,1440) ELSE COALESCE(ns.signal_loss_minutes,5) END)
       AND (e.kind <> 'signal_loss' OR d.last_seen_at > now()-make_interval(mins=>COALESCE(ns.offline_minutes,1440)))
    WHEN e.kind='online' THEN d.last_seen_at > now()-make_interval(mins=>COALESCE(ns.signal_loss_minutes,5))
+   WHEN e.kind='wake' AND e.data->>'wake_cause'='timer' THEN
+      life.id=e.id OR (life.kind='sleep_enter' AND life.data->>'sleep_reason' IN ('timer_hb','timer_hb_fail')
+       AND life.data->'diag'->>'boots'=e.data->'diag'->>'boots'
+       AND life.occurred_at>=e.occurred_at AND life.occurred_at<e.occurred_at+interval '5 minutes')
    WHEN e.kind IN ('wake','sleep_enter') THEN life.id=e.id
    WHEN e.kind IN ('motion','cycle_first_fix') THEN COALESCE(life.kind,'') <> 'sleep_enter'
    WHEN e.kind='low_batt' THEN

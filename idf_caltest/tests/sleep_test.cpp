@@ -34,7 +34,7 @@ esp_err_t esp_deep_sleep_enable_gpio_wakeup(uint64_t pin, int level) {
   return scenario=="wake_error" ? -1 : ESP_OK;
 }
 esp_err_t esp_sleep_enable_timer_wakeup(uint64_t us) {
-  assert(us==600000000ULL); return scenario=="timer_error" ? -1 : ESP_OK;
+  assert(us==86400000000ULL); return scenario=="timer_error" ? -1 : ESP_OK;
 }
 esp_err_t esp_sleep_disable_wakeup_source(esp_sleep_wakeup_cause_t) { armed=false; return ESP_OK; }
 void esp_deep_sleep_start() {

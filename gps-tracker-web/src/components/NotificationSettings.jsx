@@ -83,8 +83,8 @@ export default function NotificationSettings() {
           sub="절전 모드로 전환될 때. 절전 중에는 위치 갱신이 잠시 멈춥니다."
           value={s.sleep_alert}
           onChange={v => patch({ sleep_alert: v })} />
-        <Toggle label="장치 작동 재개"
-          sub="장치가 켜지거나 깨어날 때 (움직임 감지는 아래에서 별도 설정)"
+        <Toggle label="전원 켜짐·정기 상태 보고"
+          sub="전원이 켜지거나 정기 확인을 위해 깨어날 때. 움직임 감지는 아래에서 별도로 설정합니다."
           value={s.wake_alert}
           onChange={v => patch({ wake_alert: v })} />
         <Toggle label="기동 후 첫 위치 확인"
@@ -92,6 +92,10 @@ export default function NotificationSettings() {
           value={s.cycle_first_fix_alert ?? false}
           onChange={v => patch({ cycle_first_fix_alert: v })} />
       </Group>
+
+      <p style={{ color: 'var(--text-3)', margin: 0, fontSize: 12, lineHeight: 1.7 }}>
+        새 운영 펌웨어의 절전 중 정기 보고 기본 주기는 24시간입니다. 위 설정은 휴대폰 알림만 켜고 끄며, 장치의 정기 보고는 유지됩니다. 기존 단말기는 펌웨어 갱신 후 새 주기가 적용됩니다.
+      </p>
 
       {/* ─── 배터리 / 전원 / GPS ────────────────── */}
       <Group title="배터리와 위치 상태">

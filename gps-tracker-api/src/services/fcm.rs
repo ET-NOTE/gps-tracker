@@ -552,6 +552,10 @@ async fn event_message(pool: &PgPool, ev: &PendingEvent) -> Value {
                 .and_then(|d| d["vbat_mv"].as_i64())
                 .and_then(|v| i32::try_from(v).ok()),
         )
+    } else if kind == "wake"
+        && ev.data.as_ref().and_then(|d| d["wake_cause"].as_str()) == Some("timer")
+    {
+        "정기 상태 보고"
     } else {
         title_for_kind(kind)
     };
@@ -654,7 +658,7 @@ mod tests {
         }
         sqlx::raw_sql(r#"
           CREATE TABLE users(id bigint PRIMARY KEY,role text);
-          CREATE TABLE devices(id bigint PRIMARY KEY,display_name text,owner_id bigint,last_seen_at timestamptz,last_fix_at timestamptz);
+          CREATE TABLE devices(id bigint PRIMARY KEY,display_name text,owner_id bigint,last_seen_at timestamptz,last_fix_at timestamptz,last_stationary jsonb);
           CREATE TABLE location_records(device_id bigint,user_id bigint,vbat_mv integer,recorded_at timestamptz DEFAULT now());
           CREATE TABLE events(id bigserial PRIMARY KEY,device_id bigint,user_id bigint,kind text,data jsonb,
                               occurred_at timestamptz DEFAULT now(),notified_at timestamptz);
@@ -815,6 +819,35 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(stale, 1);
+        sqlx::query("INSERT INTO notification_settings(user_id,wake_alert,sleep_alert) VALUES(1,false,true)").execute(&pool).await.unwrap();
+        let timer: i64=sqlx::query_scalar(r#"INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'wake','{"wake_cause":"timer","diag":{"boots":99}}') RETURNING id"#).fetch_one(&pool).await.unwrap();
+        assert!(!policy::relevant(&pool, timer).await.unwrap());
+        sqlx::query("UPDATE notification_settings SET wake_alert=true")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(policy::relevant(&pool, timer).await.unwrap());
+        let returned: i64=sqlx::query_scalar(r#"INSERT INTO events(device_id,user_id,kind,data) VALUES(1,1,'sleep_enter','{"sleep_reason":"timer_hb","diag":{"boots":99}}') RETURNING id"#).fetch_one(&pool).await.unwrap();
+        assert!(
+            policy::relevant(&pool, timer).await.unwrap(),
+            "heartbeat remains deliverable after returning to sleep"
+        );
+        assert!(
+            !policy::relevant(&pool, returned).await.unwrap(),
+            "heartbeat re-sleep must not send a second notification"
+        );
+        sqlx::query("UPDATE notification_settings SET wake_alert=false")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(
+            !policy::relevant(&pool, timer).await.unwrap(),
+            "disabling before send cancels queued heartbeat"
+        );
+        sqlx::query("DELETE FROM notification_settings")
+            .execute(&pool)
+            .await
+            .unwrap();
         // Internal diagnostics cannot bypass preferences as generic notifications.
         let stuck: i64 = sqlx::query_scalar(
             "INSERT INTO events(device_id,user_id,kind) VALUES(1,1,'stuck') RETURNING id",
@@ -965,6 +998,7 @@ mod tests {
                 .unwrap();
         assert_eq!(pending, 1);
         super::super::connection_alerts::check_episode_lifecycle(&pool).await;
+        super::super::connection_alerts::check_daily_heartbeat_deadline(&pool).await;
         server.abort();
         pool.close().await;
     }

@@ -35,7 +35,7 @@ def main():
             assert normal["stationary"]["timer_wake_enabled"] == (not kc and not battery)
             assert normal["stationary"]["build_profile"] == profile
             assert normal["stationary"]["window_s"] == 300
-            assert normal["stationary"]["timer_wake_s"] == 600
+            assert normal["stationary"]["timer_wake_s"] == 86400
             assert normal["stationary"]["no_gps_grace_s"] == 600
             assert normal["build_tag"] == sleep["build_tag"] == f"idf-caltest/{profile}-test"
             assert sleep["diag"]["sleep_phase"] == "intent"

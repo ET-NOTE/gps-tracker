@@ -74,7 +74,8 @@ def main():
             settings["buzzer_enabled"] != 0):
         raise SystemExit("KC protection mismatch")
     if args.profile == "operating" and (settings["kc_test"] != 0 or
-                                       settings["sleep_disabled"] != 0):
+                                       settings["sleep_disabled"] != 0 or
+                                       settings["timer_wake_s"] != 86400):
         raise SystemExit("Operating sleep configuration mismatch")
     if args.profile == "battery" and (settings["kc_test"] != 0 or
             settings["sleep_disabled"] != 1 or settings["loop_wdt_enabled"] != 1 or

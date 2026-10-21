@@ -17,6 +17,7 @@ inline constexpr char settings[] =
   "\"kc_test\":" FW_STRING(KC_TEST_BUILD) ","
   "\"sleep_disabled\":" FW_STRING(SLEEP_DISABLED) ","
   "\"timer_wake_enabled\":" FW_STRING(TIMER_WAKE_ENABLED) ","
+  "\"timer_wake_s\":" FW_STRING(TIMER_WAKE_INTERVAL_S) ","
   "\"buzzer_enabled\":" FW_STRING(BUZZER_ENABLED) ","
   "\"loop_wdt_enabled\":" FW_STRING(LOOP_WDT_ENABLED) ","
   "\"stationary_ms\":\"" FW_STRING(STATIONARY_WINDOW_MS) "\","

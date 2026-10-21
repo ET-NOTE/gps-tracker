@@ -90,6 +90,8 @@ test('Fleet shares the Home status: stale wake is offline and a fresh wake never
   [{last_seen_at:iso(0),last_event_kind:'wake'},'gps_loss','attention'],
   [{last_seen_at:iso(0),last_event_at:iso(0),last_event_kind:'sleep_enter'},'sleeping','idle'],
   [{last_seen_at:iso(-90000000),last_event_at:iso(-90000000),last_event_kind:'sleep_enter'},'lost','offline'],
+  [{last_seen_at:iso(-87000000),last_event_at:iso(-87000000),last_event_kind:'sleep_enter',last_stationary:{timer_wake_enabled:true,timer_wake_s:86400}},'sleeping','idle'],
+  [{last_seen_at:iso(-87400000),last_event_at:iso(-87400000),last_event_kind:'sleep_enter',last_stationary:{timer_wake_enabled:true,timer_wake_s:86400}},'lost','offline'],
   [{last_seen_at:'invalid'},'unknown','unknown'],
   [{last_seen_at:iso(0),last_fix_at:'invalid'},'gps_loss','attention'],
  ];

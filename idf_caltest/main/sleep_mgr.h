@@ -1,7 +1,7 @@
 // =================================================================
 // sleep_mgr — 전원 사이클(deep sleep) + wake/reset 부기 + 정지 자동 sleep.
 //   책임: 부팅 시 wake/reset 원인 판정 + RTC 카운터, 모션 wake bounce 필터,
-//         정지(LIS quiet + GPS no-drift) 5분 → deep sleep, 모션/10분-timer wake,
+//         정지(LIS quiet + GPS no-drift) 5분 → deep sleep, 모션/24시간-timer wake,
 //         timer-wake heartbeat(1 POST 후 즉시 re-sleep).
 //   wake 소스 = LIS INT (항시전원). GPS+LTE 는 hw_power::railOff 로 차단.
 //   ⚠️ LIS 미검출 시 sleep 자체 비활성 (wake 불가 deadlock 방지).

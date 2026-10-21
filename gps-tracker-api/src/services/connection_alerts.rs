@@ -1,7 +1,7 @@
 //! One durable receipt per owner, device, stage and last received heartbeat.
 //! A worker restart, elapsed day or event-history deletion cannot re-arm it.
 use chrono::{DateTime, Utc};
-use serde_json::json;
+use serde_json::{json, Value};
 use sqlx::{FromRow, PgPool};
 
 #[derive(FromRow)]
@@ -14,6 +14,47 @@ struct SilentDevice {
     offline_min: i32,
     sleeping: bool,
     sleep_at: Option<DateTime<Utc>>,
+    last_stationary: Option<Value>,
+}
+
+// A 24h heartbeat still needs modem startup and transmission time. Keep the
+// historical 24h minimum for old/unknown firmware; trust only bounded, typed
+// telemetry from the authenticated device for a longer expected interval.
+fn sleep_report_deadline_minutes(stationary: Option<&Value>) -> i64 {
+    let Some(s) = stationary else {
+        return 1440;
+    };
+    if s["timer_wake_enabled"].as_bool() != Some(true) {
+        return 1440;
+    }
+    match s["timer_wake_s"].as_u64() {
+        Some(seconds @ 60..=604800) => 1440.max(seconds.div_ceil(60) as i64 + 15),
+        _ => 1440,
+    }
+}
+
+#[cfg(test)]
+mod heartbeat_tests {
+    use super::*;
+    #[test]
+    fn daily_heartbeat_has_grace_without_changing_legacy_deadlines() {
+        for value in [
+            None,
+            Some(json!({})),
+            Some(json!({"timer_wake_enabled":true,"timer_wake_s":600})),
+            Some(json!({"timer_wake_enabled":false,"timer_wake_s":86400})),
+            Some(json!({"timer_wake_enabled":true,"timer_wake_s":"86400"})),
+            Some(json!({"timer_wake_enabled":true,"timer_wake_s":604801})),
+        ] {
+            assert_eq!(sleep_report_deadline_minutes(value.as_ref()), 1440);
+        }
+        assert_eq!(
+            sleep_report_deadline_minutes(Some(
+                &json!({"timer_wake_enabled":true,"timer_wake_s":86400})
+            )),
+            1455
+        );
+    }
 }
 
 pub async fn scan(pool: &PgPool) -> anyhow::Result<()> {
@@ -26,7 +67,7 @@ pub async fn scan(pool: &PgPool) -> anyhow::Result<()> {
            COALESCE(ns.signal_loss_minutes,5) AS signal_min,
            COALESCE(ns.offline_minutes,1440) AS offline_min,
            COALESCE(life.kind='sleep_enter',false) AS sleeping,
-           life.occurred_at AS sleep_at
+           life.occurred_at AS sleep_at, d.last_stationary
          FROM devices d JOIN users u ON u.id=d.owner_id
          LEFT JOIN notification_settings ns ON ns.user_id=d.owner_id
          LEFT JOIN LATERAL (
@@ -43,10 +84,11 @@ pub async fn scan(pool: &PgPool) -> anyhow::Result<()> {
     for device in candidates {
         let mut stages = Vec::with_capacity(2);
         if device.sleeping {
-            if device.silence_min >= 1440
+            let due = sleep_report_deadline_minutes(device.last_stationary.as_ref());
+            if device.silence_min >= due
                 && device
                     .sleep_at
-                    .is_some_and(|at| (Utc::now() - at).num_hours() >= 24)
+                    .is_some_and(|at| (Utc::now() - at).num_minutes() >= due)
             {
                 stages.push("lost");
             }
@@ -258,4 +300,35 @@ pub async fn check_episode_lifecycle(pool: &PgPool) {
     .unwrap();
     scan(pool).await.unwrap();
     assert_eq!(count(6).await, 1, "custom threshold is honored");
+}
+
+#[cfg(test)]
+pub async fn check_daily_heartbeat_deadline(pool: &PgPool) {
+    sqlx::raw_sql(r#"
+      INSERT INTO devices(id,owner_id,last_seen_at,last_stationary) VALUES
+       (7,1,now()-interval '24 hours 10 minutes','{"timer_wake_enabled":true,"timer_wake_s":86400}');
+      INSERT INTO events(device_id,user_id,kind,occurred_at) VALUES(7,1,'sleep_enter',now()-interval '24 hours 10 minutes');
+    "#).execute(pool).await.unwrap();
+    scan(pool).await.unwrap();
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM events WHERE device_id=7 AND kind='lost'")
+            .fetch_one(pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        count, 0,
+        "daily heartbeat is still within modem startup grace"
+    );
+    sqlx::raw_sql("UPDATE devices SET last_seen_at=now()-interval '24 hours 16 minutes' WHERE id=7; UPDATE events SET occurred_at=now()-interval '24 hours 16 minutes' WHERE device_id=7 AND kind='sleep_enter';").execute(pool).await.unwrap();
+    scan(pool).await.unwrap();
+    scan(pool).await.unwrap();
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM events WHERE device_id=7 AND kind='lost'")
+            .fetch_one(pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        count, 1,
+        "missed daily heartbeat is recorded once after grace"
+    );
 }

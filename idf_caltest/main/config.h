@@ -146,13 +146,15 @@
   #define NO_GPS_SLEEP_GRACE_MS     (10UL*60*1000UL)  // GPS 없을 때 LIS 단독 sleep 유예
 #endif
 // ★[관찰 토글] timer heartbeat wake 활성. 0 = 모션 wake only(주기적 wake 없음, 증상관찰용). SLEEP_DISABLED 과 같은 맥락.
-#define TIMER_WAKE_ENABLED         1                  // [2026-08-14 운영 복원] 10분 timer HB 재활성 — sleep 중
+#define TIMER_WAKE_ENABLED         1                  // 주차 중 정기 상태 보고 활성 — sleep 중
                                                       //   LIS 고장/장기 무모션 시 유일한 안전망 + 주차중 dark 방지.
                                                       //   (0 은 sss 증상관찰 전용이었음 — 운영본에 남아있던 것 정정)
 #if OBSERVE_MODE
-  #define TIMER_WAKE_INTERVAL_US   (5ULL*60*1000000ULL)   // (운행3차 후) sleep 시 5분 fallback wake(dark 방지·로거 재접속). was 8s(thrash 원인).
+  #define TIMER_WAKE_INTERVAL_S    300
+  #define TIMER_WAKE_INTERVAL_US   (TIMER_WAKE_INTERVAL_S*1000000ULL)   // (운행3차 후) sleep 시 5분 fallback wake(dark 방지·로거 재접속). was 8s(thrash 원인).
 #else
-  #define TIMER_WAKE_INTERVAL_US   (10ULL*60*1000000ULL)  // 운영: deep sleep 10분 timer wake
+  #define TIMER_WAKE_INTERVAL_S    86400                // 운영 기본: 24시간
+  #define TIMER_WAKE_INTERVAL_US   (TIMER_WAKE_INTERVAL_S*1000000ULL) // 64-bit: 86,400,000,000us
 #endif
 #define TIMER_WAKE_MAX_MS          120000UL           // timer-wake heartbeat 2분 guard
 // (P0 2026-07-02) LTE 미등록/recovery 중 stationary sleep 보류 상한.

@@ -67,3 +67,16 @@ test('connection notice offers a 24-hour default and persists a chosen delay wit
   assert.match(JSON.stringify(r.toJSON()), /2일 미수신 시 한 번 안내/);
   await act(async () => r.unmount());
 });
+
+
+test('regular status reporting uses the persisted wake preference, independently of motion',async()=>{
+ let stored={...settings,wake_alert:false},sent;
+ const C=await component({getNotificationSettings:async()=>stored,updateNotificationSettings:async update=>{sent=update;stored={...stored,...update};return stored;}});
+ let r;await act(async()=>{r=create(React.createElement(C));});
+ const toggle=()=>r.root.findAllByProps({role:'switch'}).find(x=>x.props['aria-label']==='전원 켜짐·정기 상태 보고');
+ assert.equal(toggle().props['aria-checked'],false);
+ await act(async()=>toggle().props.onClick());assert.equal(sent.wake_alert,true);assert.equal(stored.motion_alert,true);
+ await act(async()=>toggle().props.onClick());assert.equal(sent.wake_alert,false);
+ assert.match(JSON.stringify(r.toJSON()),/24시간/);assert.match(JSON.stringify(r.toJSON()),/펌웨어 갱신/);
+ await act(async()=>r.unmount());
+});

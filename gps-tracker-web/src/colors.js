@@ -1,3 +1,4 @@
+import { sleepReportDeadlineMs } from './lib/sleepSchedule';
 // Per-device color persistence — userPrefs.device_colors (server sync) 우선.
 // 렌더 hot-path 에서 sync 로 호출되기 때문에 module-level 캐시 두고,
 // Dashboard 가 getMyPrefs 응답으로 hydrate. legacy dev_color_* localStorage 는
@@ -101,7 +102,6 @@ export const STATUS = {
 };
 
 const MIN  = 60 * 1000;
-const HOUR = 60 * MIN;
 
 export function classifyDevice(dev, meta, now = Date.now()) {
   if (!dev?.last_seen_at) return STATUS.UNKNOWN;
@@ -115,7 +115,7 @@ export function classifyDevice(dev, meta, now = Date.now()) {
   //    ping 이 들어오면 last_seen_at > last_event_at 이라 이 branch 안 탐.
   //    (이전 버그: ages 끼리 비교했더니 깨어난 후에도 영원히 SLEEPING 으로 분류됨)
   if (lastEvent === 'sleep_enter' && eventAt > 0 && seen <= eventAt + 1000) {
-    if (seenAge > 24 * HOUR) return STATUS.LOST;     // 24h 넘게 안 깨어남
+    if (seenAge >= sleepReportDeadlineMs(meta?.stationary ?? dev.last_stationary)) return STATUS.LOST;
     return STATUS.SLEEPING;
   }
   // 3) 긴 무소식
