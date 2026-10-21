@@ -332,4 +332,3 @@ mod heartbeat_tests {
         );
     }
 }
-
