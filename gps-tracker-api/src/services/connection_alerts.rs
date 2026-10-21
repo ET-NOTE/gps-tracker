@@ -33,30 +33,6 @@ fn sleep_report_deadline_minutes(stationary: Option<&Value>) -> i64 {
     }
 }
 
-#[cfg(test)]
-mod heartbeat_tests {
-    use super::*;
-    #[test]
-    fn daily_heartbeat_has_grace_without_changing_legacy_deadlines() {
-        for value in [
-            None,
-            Some(json!({})),
-            Some(json!({"timer_wake_enabled":true,"timer_wake_s":600})),
-            Some(json!({"timer_wake_enabled":false,"timer_wake_s":86400})),
-            Some(json!({"timer_wake_enabled":true,"timer_wake_s":"86400"})),
-            Some(json!({"timer_wake_enabled":true,"timer_wake_s":604801})),
-        ] {
-            assert_eq!(sleep_report_deadline_minutes(value.as_ref()), 1440);
-        }
-        assert_eq!(
-            sleep_report_deadline_minutes(Some(
-                &json!({"timer_wake_enabled":true,"timer_wake_s":86400})
-            )),
-            1455
-        );
-    }
-}
-
 pub async fn scan(pool: &PgPool) -> anyhow::Result<()> {
     let mut tx = pool.begin().await?;
     // Device locks serialize heartbeat/ownership changes with event creation.
@@ -332,3 +308,28 @@ pub async fn check_daily_heartbeat_deadline(pool: &PgPool) {
         "missed daily heartbeat is recorded once after grace"
     );
 }
+
+#[cfg(test)]
+mod heartbeat_tests {
+    use super::*;
+    #[test]
+    fn daily_heartbeat_has_grace_without_changing_legacy_deadlines() {
+        for value in [
+            None,
+            Some(json!({})),
+            Some(json!({"timer_wake_enabled":true,"timer_wake_s":600})),
+            Some(json!({"timer_wake_enabled":false,"timer_wake_s":86400})),
+            Some(json!({"timer_wake_enabled":true,"timer_wake_s":"86400"})),
+            Some(json!({"timer_wake_enabled":true,"timer_wake_s":604801})),
+        ] {
+            assert_eq!(sleep_report_deadline_minutes(value.as_ref()), 1440);
+        }
+        assert_eq!(
+            sleep_report_deadline_minutes(Some(
+                &json!({"timer_wake_enabled":true,"timer_wake_s":86400})
+            )),
+            1455
+        );
+    }
+}
+
