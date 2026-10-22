@@ -25,6 +25,7 @@ export function buildNativeTrackingSnapshot({ selectedId, devices, display, meta
       heading: finite(pointMeta.heading) ? pointMeta.heading : null,
       recordedAt: pointMeta.recordedAt || device.last_fix_at || null,
       markerHeading: finite(marker?.heading) ? marker.heading : null,
+      previousFix: coordinate(marker?.previousFix) ? {lat:marker.previousFix.lat,lng:marker.previousFix.lng,recordedAt:marker.previousFix.recordedAt} : null,
       statusLabel: statuses[device.id] || '', cached: !!(cached.devices || cached[device.id]),
     };
     const age = now - Date.parse(row.recordedAt);

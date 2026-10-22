@@ -1,4 +1,5 @@
 import { batteryText } from '../lib/battery';
+import { screenBearing, spacedMarkerIndexes } from '../lib/routeMarkers';
 import { loadKakaoMaps } from '../lib/kakaoSdk';
 import { POLYLINE_GAP_THRESHOLD_S, distanceM, calcBearing } from '../lib/mapGeometry';
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
@@ -208,8 +209,8 @@ function compactStopMarkerIndexes(pts, indexes, radiusM) {
 }
 
 // ─── 진행 방향 화살표 (dev-gps 의 usman 작업물 흡수) ────────────────────
-// 두 좌표 사이 누적 거리 ARROW_INTERVAL_M (200m) 마다 진행 방향 화살표 1개 표시.
-// 펌웨어 GPS course 의존 없이 client 가 atan2 로 bearing 계산 → 정지 시에도 정확.
+// History bearings use adjacent original fixes; display density follows screen pixels.
+// Stationary/unknown directions use dots, never a fabricated north arrow.
 // Canvas PNG 방식 (SVG data URL 은 Kakao MarkerImage 에서 불안정), 5° bucket 캐시.
 const ARROW_INTERVAL_M = 200;
 
@@ -249,7 +250,7 @@ function makeClusterImage(count, color) {
 }
 
 function makeArrowImage(angleDeg, arrowColor) {
-  const r = Math.round(angleDeg / 5) * 5;
+  const r = (Math.round(angleDeg) % 360 + 360) % 360;
   const key = `${r}_${arrowColor}`;
   if (_arrowImageCache[key]) return _arrowImageCache[key];
   const c = document.createElement('canvas');
@@ -455,6 +456,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   // live history 의 진행 방향 화살표 — 누적 ARROW_INTERVAL_M (200m) 마다 1개.
   // (2026-07-01) dot + arrow 이중 marker 통일 → arrowsRef 삭제. pointsRef 안 marker 가 화살표 겸용.
   // arrowStateRef 는 직전 fix 좌표 (heading 계산용) 만 유지.
+  const markerRefreshRef = useRef(null);
   const arrowStateRef  = useRef({});  // deviceId → { lastPos:{lat,lng}, distAcc }
   // (F10) Live pin 이동 tween 상태 — 30s WS 간격 사이 부드러운 위치 보간.
   //       Uber/카카오 T 처럼 pin 이 튀지 않고 미끄러지듯 이동.
@@ -579,6 +581,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           fireViewChange();
         });
         // 사용자 직접 드래그 (panTo 같은 프로그램적 이동에는 발생 안 함) → 라이브 추적 종료 신호.
+        window.kakao.maps.event.addListener(mapRef.current, 'idle', scheduleMarkerRefresh);
         window.kakao.maps.event.addListener(mapRef.current, 'dragend', () => {
           onUserPanRef.current?.();
           fireViewChange();
@@ -601,6 +604,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     return () => {
       cancelled = true;
       observer?.disconnect();
+      if (markerRefreshRef.current != null) cancelAnimationFrame(markerRefreshRef.current);
+      markerRefreshRef.current = null;
       sharedIwRef.current?.close();
       clustererRef.current?.clear();
       mapRef.current = null;
@@ -653,6 +658,28 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       entry.segments.forEach(s => s.poly.setOptions({ strokeWeight: sw }));
       entry.gaps.forEach(g => g.setOptions({ strokeWeight: Math.max(1, sw - 1) }));
     });
+    scheduleMarkerRefresh();
+  }
+
+  function scheduleMarkerRefresh() {
+    if (markerRefreshRef.current != null) return;
+    markerRefreshRef.current=requestAnimationFrame(()=>{markerRefreshRef.current=null;refreshHistoryMarkers();refreshMarkerEntries(seekerRef.current.entries||[]);});
+  }
+  function refreshMarkerEntries(entries, visible=true) {
+    const map=mapRef.current;if(!map)return;
+    const projection=map.getProjection?.();
+    if(!projection?.containerPointFromCoords)return; // SDK fixture/initialization.
+    const project=pos=>projection.containerPointFromCoords(pos);
+    const positions=entries.map(e=>{const p=project(e.marker.getPosition());return {x:p.x,y:p.y,priority:e.priority||0};});
+    const selected=spacedMarkerIndexes(positions,48,{width:map.getNode().clientWidth,height:map.getNode().clientHeight});
+    entries.forEach((e,i)=>{
+      if(e.from){const angle=screenBearing(project(new window.kakao.maps.LatLng(e.from.lat,e.from.lng)),positions[i]);if(angle!=null)e.angle=angle;}
+      e.marker.setMap(visible&&selected.has(i)?map:null);
+      e.marker.setImage(e.clusterCount>1?makeClusterImage(e.clusterCount,e.color):e.isStop||e.angle==null?makeDotImage(e.color,e.isStop):makeArrowImage(e.angle,e.color));
+    });
+  }
+  function refreshHistoryMarkers() {
+    Object.entries(pointsRef.current).forEach(([id,entries])=>refreshMarkerEntries(entries,isLiveVisible(+id)));
   }
 
   function makeDotImage(color, isStop = false, isGapEndpoint = false) {
@@ -785,7 +812,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       return {
         markers: Object.fromEntries(Object.entries(markersRef.current).map(([id, entry]) => {
           const pin = pinStateRef.current[id];
-          return [id, { ...(pin ? { lat: pin.lastLat, lng: pin.lastLng } : xy(entry.marker.getPosition())), heading: pin?.lastAngle, meta: entry.meta }];
+          return [id, { ...(pin ? { lat: pin.lastLat, lng: pin.lastLng } : xy(entry.marker.getPosition())), heading: pin?.lastAngle, previousFix: pin?.previousFix, meta: entry.meta }];
         })),
         segments: (polyRef.current[deviceId]?.segments || []).map(segment => segment.coords.map(xy)),
         points: (pointsRef.current[deviceId] || []).map(point => ({ ...xy(point.marker.getPosition()), color: point.color, isStop: point.isStop, meta: point.meta })),
@@ -918,10 +945,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // Motion uses the server speed; browser geometry is only used for direction.
       const pinState = meta.stale ? 'offline'
         : Number.isFinite(meta.speedKmh) && meta.speedKmh >= 3 ? 'moving' : 'stopped';
+      const consecutive = pinPrev && newRecordedAt > pinPrev.lastAt && newRecordedAt-pinPrev.lastAt <= POLYLINE_GAP_THRESHOLD_S*1000;
+      const previousFix=consecutive?{lat:pinPrev.lastLat,lng:pinPrev.lastLng,recordedAt:new Date(pinPrev.lastAt).toISOString()}:null;
       let pinAngle;
-      if (typeof meta.heading === 'number' && Number.isFinite(meta.heading)) {
+      if (typeof meta.heading === 'number' && Number.isFinite(meta.heading) && meta.heading >= 0 && meta.heading < 360) {
         pinAngle = meta.heading;
-      } else if (pinPrev && distM >= 8) {
+      } else if (consecutive && distM >= 8 && distM <= (newRecordedAt-pinPrev.lastAt)/1000*70+20) {
         pinAngle = calcBearing(pinPrev.lastLat, pinPrev.lastLng, lat, lng);
       } else {
         pinAngle = pinPrev?.lastAngle ?? 0;
@@ -929,7 +958,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const pinImg = livePinImage(color, pinAngle, pinState);
       pinStateRef.current[deviceId] = {
         lastLat: lat, lastLng: lng, lastAt: newRecordedAt,
-        lastAngle: pinAngle, lastState: pinState,
+        lastAngle: pinAngle, lastState: pinState, previousFix: newRecordedAt === pinPrev?.lastAt ? pinPrev.previousFix : previousFix,
       };
 
       if (markersRef.current[deviceId]) {
@@ -1084,20 +1113,18 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       const pos = new window.kakao.maps.LatLng(lat, lng);
       const isStop = !!meta.isStop;
       const c = color || '#888';
+      if (isGapBoundary) delete arrowStateRef.current[deviceId];
+      const st=arrowStateRef.current[deviceId];
+      const from=st?.lastPos;
+      const moved=from?distanceM(from,{lat,lng}):0;
+      const angle=from&&moved>=8?calcBearing(from.lat,from.lng,lat,lng):null;
+      arrowStateRef.current[deviceId]={lastPos:{lat,lng}};
       if (!meta.skipMarker) {
-        // (2026-07-01) dot + arrow 이중 marker 통일 — 화살표 marker 하나로 (clickable + tooltip).
-        // 첫 fix 는 heading 미확정 → angle=0 (북쪽 화살표). polyline 시작점 인식.
-        // 정지 클러스터 대표 (clusterCount>1) 는 원형 + 개수 이미지로 교체.
-        const isCluster = meta.clusterCount > 1;
-        // (F9) gap 경계에서 이전 사이클 끝점 → 새 사이클 시작점 bearing 은 무의미 → reset.
-        //      첫 marker 는 angle=0 (북쪽) — "새 사이클 시작" 시각 표시.
-        if (isGapBoundary) delete arrowStateRef.current[deviceId];
-        const st = arrowStateRef.current[deviceId];
-        const angle = st ? calcBearing(st.lastPos.lat, st.lastPos.lng, lat, lng) : 0;
+        const isCluster=meta.clusterCount>1;
         const marker = new window.kakao.maps.Marker({
           map: isLiveVisible(deviceId) ? mapRef.current : null,
           position: pos,
-          image: isCluster ? makeClusterImage(meta.clusterCount, c) : makeArrowImage(angle, c),
+          image: isCluster ? makeClusterImage(meta.clusterCount, c) : angle==null||isStop ? makeDotImage(c,isStop) : makeArrowImage(angle, c),
           clickable: true,
           zIndex: isCluster ? 6 : (meta.isGapEndpoint ? 7 : 5),
         });
@@ -1123,8 +1150,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           const old = arr.shift();
           if (old?.marker) old.marker.setMap(null);
         }
-        arr.push({ marker, color: c, isStop, angle, meta });
-        arrowStateRef.current[deviceId] = { lastPos: { lat, lng } };
+        arr.push({ marker, color: c, isStop, angle, from:angle==null?null:from, meta, clusterCount:meta.clusterCount, priority:isCluster?3:isStop?2:meta.isGapEndpoint?1:0 });
+        scheduleMarkerRefresh();
       }
     },
 
@@ -1223,7 +1250,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       });
       Object.entries(pointsRef.current).forEach(([id, arr]) => {
         const m = applyMain(id);
-        arr.forEach(({ marker }) => marker.setMap(m));
+        refreshMarkerEntries(arr,m!=null);
       });
       Object.entries(polyRef.current).forEach(([id, entry]) => {
         const m = applyMain(id);
@@ -1252,7 +1279,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       if (arr) {
         arr.forEach(o => {
           o.color = color;
-          o.marker.setImage(makeArrowImage(o.angle, color));
+          o.marker.setImage(o.clusterCount>1?makeClusterImage(o.clusterCount,color):o.isStop||o.angle==null?makeDotImage(color,o.isStop):makeArrowImage(o.angle,color));
         });
       }
     },
@@ -1335,7 +1362,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       });
       Object.entries(pointsRef.current).forEach(([id, arr]) => {
         const vis = (targetId === null || +id === targetId);
-        arr.forEach(({ marker }) => marker.setMap(vis ? all : null));
+        refreshMarkerEntries(arr,vis);
       });
 
       // bounds 재조정 — opts.fit=false 면 skip (사용자 저장 view 복원 시 zoom 보존)
@@ -1620,6 +1647,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           });
         }
         seekerRef.current.pts.push(marker);
+        (seekerRef.current.entries ||= []).push({marker,color:dotColor,isStop,angle:null,priority:isStop?2:0});
       });
 
       // ── 진행 방향 화살표 — 누적 ARROW_INTERVAL_M (200m) 마다 1개 ─────────────
@@ -1629,8 +1657,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         for (let i = 1; i < pts.length; i++) {
           const prev = pts[i - 1], cur = pts[i];
           const segDist = distanceM({ lat: prev.lat, lng: prev.lng }, { lat: cur.lat, lng: cur.lng });
+          const gap=(Date.parse(cur.recorded_at)-Date.parse(prev.recorded_at))/1000;
+          if (gap>POLYLINE_GAP_THRESHOLD_S) {distAcc=0;nextArrowAt=ARROW_INTERVAL_M;continue;}
           distAcc += segDist;
-          if (distAcc >= nextArrowAt) {
+          if (segDist>=8 && distAcc >= nextArrowAt) {
             nextArrowAt = distAcc + ARROW_INTERVAL_M;
             const angle = calcBearing(prev.lat, prev.lng, cur.lat, cur.lng);
             const arrowColor = speedColor ? (BUCKET_COLORS[speedBucket(cur)] || color) : color;
@@ -1642,6 +1672,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
               zIndex: 4,
             });
             seekerRef.current.pts.push(am);
+            (seekerRef.current.entries ||= []).push({marker:am,color:arrowColor,angle,from:{lat:prev.lat,lng:prev.lng},priority:1});
           }
         }
       }
@@ -1671,6 +1702,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
       // (F3-a-3) 다음 호출에서 fp/opts 동일 시 skip path 가 쓸 수 있도록 pts 캐시.
       seekerRef.current._pts = pts;
+      scheduleMarkerRefresh();
 
       return {
         setCursor(idx) {

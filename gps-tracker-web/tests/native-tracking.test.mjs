@@ -97,3 +97,10 @@ test('native session streams while open and stops on back, logout, account switc
   await hook.open(); await act(async () => renderer.unmount());
   assert.equal(calls.at(-1)[0], 'close'); assert.equal(timers.size, 0);
 });
+
+test('native predecessor contains original fix coordinates/time only and rejects invalid geometry',()=>{
+ const input=args();input.display.markers[1]={lat:37,lng:127,previousFix:{lat:36.999,lng:127,recordedAt:'2026-10-09T11:59:59Z',secret:'never-transfer'}};
+ let row=buildNativeTrackingSnapshot(input).devices[0];assert.deepEqual(row.previousFix,{lat:36.999,lng:127,recordedAt:'2026-10-09T11:59:59Z'});
+ assert.ok(!JSON.stringify(row).includes('never-transfer'));
+ input.display.markers[1].previousFix.lat=91;assert.equal(buildNativeTrackingSnapshot(input).devices[0].previousFix,null);
+});
