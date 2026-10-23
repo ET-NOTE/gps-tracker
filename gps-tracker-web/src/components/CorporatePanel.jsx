@@ -53,8 +53,10 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <StaffTab />}
     {tab === 'report' && <><div className="business-switch no-print"><button className="business-switch-item" aria-pressed={reportMode === 'daily'} onClick={() => setReportMode('daily')}>차량별 운행</button><button className="business-switch-item" aria-pressed={reportMode === 'monthly'} onClick={() => setReportMode('monthly')}>월간 요약</button></div>
-      {subscription.error && <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 결제 전 다시 조회해 주세요.</BusinessError>}
-      {reportMode === 'daily' ? <ReportTab devices={devices} initialDeviceId={reportDevice} sub={subscription.data} onSubChange={updateSub} /> : <MonthlyReportTab devices={devices} sub={subscription.data} />}</>}
+      {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
+        : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
+        : !subscription.data.active ? <SubTab sub={subscription.data} onChange={updateSub} report />
+        : reportMode === 'daily' ? <ReportTab devices={devices} initialDeviceId={reportDevice} /> : <MonthlyReportTab devices={devices} />}</>}
     {tab === 'settings' && <BusinessSettings company={<InfoTab />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab sub={subscription.data} onChange={updateSub} />} />}
   </BusinessWorkspace>;
 }
@@ -105,7 +107,7 @@ function CorporateOverview({ devices, onMap, onDevice, onReport, onReserve }) {
 // ════════════════════════════════════════════════════════
 // 운행 리포트 — 차량별 운행기록과 내보내기.
 // ════════════════════════════════════════════════════════
-function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
+function ReportTab({ devices, initialDeviceId }) {
   const today = businessDate();
   const monthAgo = `${today.slice(0, 7)}-01`;
 
@@ -170,37 +172,6 @@ function ReportTab({ devices, sub, onSubChange, initialDeviceId }) {
     setDriverFilter('all');
     setPurposeFilter('all');
     setMinHours('');
-  }
-
-  if (!sub) {
-    return <div style={st.muted}>구독 상태 로딩 중...</div>;
-  }
-  if (!sub.active) {
-    return (
-      <Card title="법인운행 리포트 — 구독 필요">
-        <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.6 }}>
-          법인운행 리포트는 월 구독제로 제공됩니다.<br/>
-          포인트 <b>{sub.price_krw.toLocaleString()}원</b> 으로 30일간 이용 가능.<br/>
-          <span style={{ color: 'var(--text-3)', fontSize: 11 }}>
-            * 보유 포인트가 부족하면 내정보 → 포인트 탭에서 충전 요청을 먼저 진행하세요.
-          </span>
-        </div>
-        <button onClick={async () => {
-          const ok = await confirmDialog({
-            title: '법인운행 리포트 구독',
-            body: `30일 구독을 시작합니다. ${sub.price_krw.toLocaleString()}원이 포인트에서 차감됩니다.`,
-            confirmLabel: `${sub.price_krw.toLocaleString()}원 결제`,
-            tone: 'success',
-          });
-          if (!ok) return;
-          try {
-            const r = await api.buyCorporateSubscription();
-            onSubChange(r);
-            await alertDialog({ title: '구독 시작', body: `${new Date(r.expires_at).toLocaleDateString('ko-KR')} 까지 사용 가능합니다.`, tone: 'success' });
-          } catch (e) { await alertDialog({ title: '결제 실패', body: e.message, tone: 'danger' }); }
-        }} style={st.btnPrimary}>구독 시작</button>
-      </Card>
-    );
   }
 
   return (
@@ -1089,7 +1060,7 @@ function monthBounds(ym) {
   return monthDateBounds(ym);
 }
 
-function MonthlyReportTab({ devices, sub }) {
+function MonthlyReportTab({ devices }) {
   const reportKey = JSON.stringify(devices.map(d => [d.id, d.display_name, d.license_plate, d.fuel_efficiency_kmpl, d.fuel_type, d.model_year, d.engine_cc, d.purchase_price_krw, d.acquired_at, d.department, d.vehicle_type]));
   const reportDevices = useMemo(() => devices, [reportKey]);
   const [ym, setYm] = useState(ymKST());
@@ -1193,17 +1164,6 @@ function MonthlyReportTab({ devices, sub }) {
     }
     return { totalKm, businessKm, personalKm, fuelCost, depreciation };
   }, [rows, filteredRows]);
-
-  if (!sub) return <div style={st.muted}>구독 상태 로딩 중...</div>;
-  if (!sub.active) {
-    return (
-      <Card title="월간 리포트 — 구독 필요">
-        <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
-          운행 리포트 구독을 활성화하면 월간 리포트도 함께 이용 가능합니다.
-        </div>
-      </Card>
-    );
-  }
 
   const fmtKm  = (n) => n < 1 ? '0' : n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString();
   const fmtWon = (n) => n.toLocaleString() + '원';

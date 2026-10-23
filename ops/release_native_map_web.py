@@ -18,7 +18,7 @@ previous_commit = sys.argv[2]
 assert stage.parent == pathlib.Path('/home/mmm/gps-artifacts')
 manifest = json.loads((stage/'manifest.json').read_text())
 release = manifest['release']
-assert re.fullmatch(r'web-(?:native-map-20261009|sim-20261020|remediation-20261020|remediation-20261021|directions-20261022)-[a-f0-9]{7}', release)
+assert re.fullmatch(r'web-(?:native-map-20261009|sim-20261020|remediation-20261020|remediation-20261021|directions-20261022|report-design-20261023)-[a-f0-9]{7}', release)
 assert re.fullmatch(r'[a-f0-9]{40}', manifest['git_commit'])
 link = pathlib.Path('/home/mmm/gps-tracker-web/dist-root')
 assert link.is_symlink()
@@ -69,6 +69,7 @@ os.replace(next_link, link)
 try:
     assert hashlib.sha256(get('/')).hexdigest() == sha(web/'index.html')
     assert hashlib.sha256(get('/devices')).hexdigest() == sha(web/'index.html')
+    assert hashlib.sha256(get('/corporate')).hexdigest() == sha(web/'index.html')
     assert json.loads(get('/version.json'))['git_commit'] == manifest['git_commit']
     assert json.loads(get('/health')).get('release') == health.get('release')
     for path, digest in diagnostics.items(): assert hashlib.sha256(get(path)).hexdigest() == digest

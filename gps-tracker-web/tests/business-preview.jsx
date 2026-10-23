@@ -85,6 +85,18 @@ if (params.has('account')) {
     fleetTripStats:read(snapshot.fleetStats),
   });
 }
+if (params.has('subscription')) {
+  const mode = params.get('subscription');
+  api.getCorporateSubscription = async () => {
+    if (mode === 'error') throw Error('미리보기 이용권 조회 실패');
+    if (mode === 'loading') return new Promise(() => {});
+    return {active:mode === 'active',price_krw:mode === 'invalid' ? null : 30000,expires_at:null};
+  };
+  api.buyCorporateSubscription = async () => {
+    if (!params.has('subscription-success')) throw Error('미리보기 결제 실패: 포인트를 확인해 주세요.');
+    return {active:true,price_krw:30000,expires_at:new Date(now + 30 * 86400000).toISOString()};
+  };
+}
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');
