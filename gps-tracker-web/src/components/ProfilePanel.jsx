@@ -246,7 +246,7 @@ function CleanupCard() {
       const lines = [];
       if (r.corporate_info_deleted   != null) lines.push(`회사 정보: ${r.corporate_info_deleted}건 삭제`);
       if (r.staff_deleted            != null) lines.push(`직원 명단: ${r.staff_deleted}명 삭제`);
-      if (r.device_overrides_cleared != null) lines.push(`단말기 계정유형 오버라이드: ${r.device_overrides_cleared}대 정리`);
+      if (r.device_overrides_cleared != null) lines.push(`단말기별 유형 설정: ${r.device_overrides_cleared}대 정리`);
       await alertDialog({ title: '정리 완료', body: lines.join('\n'), tone: 'success' });
       setOpen(false); setPw('');
       setOpts({ corporate_info: false, staff: false, device_overrides: false });
@@ -260,7 +260,7 @@ function CleanupCard() {
       {!open ? (
         <>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
-            계정 유형을 자주 바꿔서 회사 정보 / 직원 명단 / 단말기 오버라이드 등이 남았다면 일괄 정리할 수 있습니다.
+            회사 정보, 운전자 명단, 단말기별 유형 설정을 선택해 정리합니다.
           </div>
           <button onClick={() => setOpen(true)} style={st.btnSecondary}>정리 메뉴 열기</button>
         </>
@@ -270,19 +270,19 @@ function CleanupCard() {
             checked={opts.corporate_info}
             onChange={v => setOpts(o => ({ ...o, corporate_info: v }))}
             label="회사 정보"
-            desc="사업자 등록번호 / 회사명 / 주소 / 대표자 (corporate_fleet 유형에 사용)"
+            desc="사업자번호·회사명·주소·대표자 정보를 삭제합니다."
           />
           <CheckRow
             checked={opts.staff}
             onChange={v => setOpts(o => ({ ...o, staff: v }))}
             label="직원 명단"
-            desc="등록한 직원 모두 삭제. 운행 일지의 운전자 참조는 NULL 처리됨 (이력 보존)"
+            desc="운전자를 모두 삭제하고 운행 기록의 운전자 연결을 해제합니다. 운행 기록은 유지됩니다."
           />
           <CheckRow
             checked={opts.device_overrides}
             onChange={v => setOpts(o => ({ ...o, device_overrides: v }))}
-            label="단말기 계정유형 오버라이드"
-            desc="device 별 account_type_override 를 NULL 로 — 사용자 기본 유형 따름"
+            label="단말기별 유형 설정"
+            desc="단말기별 설정을 해제하고 계정의 기본 유형을 적용합니다."
           />
           <input type="password" placeholder="비밀번호 확인" value={pw}
             onChange={e => setPw(e.target.value)}
@@ -833,7 +833,7 @@ function TossPayButton({ amount: amountProp, onPaid, fullWidth }) {
     if (!cfg.enabled || !cfg.client_key) {
       await alertDialog({
         title: 'Toss 결제 미설정',
-        body: '서버에 TOSS_CLIENT_KEY 가 설정되지 않았습니다.',
+        body: '온라인 결제가 아직 준비되지 않았습니다. 포인트 충전 요청을 이용해 주세요.',
         tone: 'warn',
       });
       return;
@@ -1121,8 +1121,8 @@ function LabTab() {
         await api.patchMyPrefs({ lab_phone_tracker: true });
         setPrefs(p => ({ ...p, lab_phone_tracker: true }));
         await alertDialog({
-          title: '스마트폰 tracker 활성',
-          body: `등록된 device: ${device.display_name || device.device_uid}\n\n홈 탭에서 확인할 수 있습니다. 브라우저 탭이 열려 있는 동안 위치 전송됩니다.`,
+          title: '스마트폰 위치 전송 시작',
+          body: `등록된 단말기: ${device.display_name || device.device_uid}\n\n홈 탭에서 확인할 수 있습니다. 브라우저 탭이 열려 있는 동안 위치 전송됩니다.`,
           tone: 'success',
         });
       } catch (e) {
@@ -1154,9 +1154,9 @@ function LabTab() {
           label="오늘 첫 열람 — 어제 운행 요약 팝업"
           desc={
             <>
-              단말기를 잡으면 어제 운행 요약 (이동거리 · 운행시간 · 정지구간 · 최고속도) 을 띄움.<br />
-              <b>OFF</b>: 단말기별 최초 1회만 노출 (인트로).&nbsp;
-              <b>ON</b>: 단말기를 잡을 때마다 매번 노출.
+              단말기를 선택하면 어제의 이동거리·운행시간·정지구간·최고속도를 표시합니다.<br />
+              <b>OFF</b>: 단말기별 처음 한 번 표시.&nbsp;
+              <b>ON</b>: 선택할 때마다 표시.
             </>
           }
           on={!!prefs.lab_first_view_summary}

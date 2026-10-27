@@ -1,7 +1,7 @@
 .business-workspace { height: 100%; min-height: 0; overflow: auto; background: var(--bg); color: var(--text); }
 .business-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .business-eyebrow { color: var(--primary); font-size: 12px; font-weight: 700; }
-.business-header h1 { font-size: 22px; line-height: 1.3; margin: 0 0 4px; letter-spacing: -.04em; }
+.business-header h1 { font-size: 22px; font-weight: 700; line-height: 1.4; margin: 0; letter-spacing: -.03em; }
 .business-header p, .business-page-heading p, .business-section-title p { margin: 0; color: var(--text-2); font-size: 14px; line-height: 1.6; }
 .business-header-action { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .business-header-action > span { font-size: 12px; color: var(--text-3); }
@@ -12,7 +12,7 @@
 .business-nav-dot { display: none; }
 .business-content { min-width: 0; padding: 24px 24px 36px; }
 .business-page-heading { margin-bottom: 22px; }
-.business-page-heading h2 { margin: 0 0 6px; font-size: 21px; letter-spacing: -.03em; }
+.business-page-heading h2 { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.4; letter-spacing: -.03em; }
 .business-overview { display: flex; flex-direction: column; gap: 22px; }
 .business-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; padding: 9px 14px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .business-button.is-primary { background: var(--primary); border-color: var(--primary); color: white; }
@@ -52,9 +52,11 @@
 .business-fleet-head, .business-vehicle { display: grid; grid-template-columns: minmax(180px,1.5fr) minmax(88px,.7fr) minmax(110px,1fr) 176px; align-items: center; gap: 16px; padding: 16px 20px; border-top: 1px solid var(--border); }
 .business-fleet-head { background: var(--surface-2); font-size: 12px; color: var(--text-2); padding-top: 10px; padding-bottom: 10px; }
 .business-vehicle-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.business-vehicle-name > div { min-width: 0; }
-.business-vehicle-name strong { font-size: 14px; overflow-wrap: anywhere; }
-.business-vehicle-name p { font-size: 12px; color: var(--text-3); margin: 5px 0 0; overflow-wrap: anywhere; }
+.business-vehicle-identity { display: contents; }
+.business-vehicle-name > div { flex: 1; min-width: 0; }
+.business-vehicle-title { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.business-vehicle-name strong { font-size: 14px; }
+.business-vehicle-name p { font-size: 12px; color: var(--text-2); margin: 5px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .business-vehicle-icon { display: grid; place-items: center; width: 46px; height: 46px; flex-shrink: 0; background: var(--surface-2); border-radius: 10px; color: var(--text-2); overflow: hidden; }
 .business-vehicle-icon img { width: 100%; height: 100%; object-fit: cover; }
 .business-connection { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
@@ -101,6 +103,9 @@
   .business-search input { width: 100%; }
   .business-fleet-head { display: none; }
   .business-vehicle { grid-template-columns: minmax(0,1fr) auto; padding: 18px 16px; gap: 14px 10px; }
+  .business-vehicle-identity { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .business-vehicle-identity > .business-vehicle-name { flex: 1; }
+  .business-vehicle-identity > div:last-child { flex-shrink: 0; }
   .business-connection { padding-left: 0; }
   .business-row-actions { justify-content: flex-end; }
   .business-error { flex-wrap: wrap; }
@@ -168,7 +173,8 @@
 .business-map-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; text-align: center; color: var(--text-2); font-size: 13px; background: var(--surface-2); z-index: 1; }
 .business-map-pin { min-height: 32px !important; background: var(--surface); color: var(--text); border: 2px solid var(--primary); border-radius: 9px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px #0002; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
 .business-map-note { margin: 0; padding: 12px 16px; color: var(--text-3); font-size: 12px; line-height: 1.5; }
-.business-vehicle-link { display: inline-flex; align-items: center; gap: 5px; text-align: left; background: transparent; border: 0; padding: 0; color: var(--primary); font-size: 14px; font-weight: 700; cursor: pointer; overflow-wrap: anywhere; }
+.business-vehicle-link { display: flex; align-items: center; gap: 5px; max-width: 100%; min-width: 0; text-align: left; background: transparent; border: 0; padding: 0; color: var(--primary); font-size: 14px; font-weight: 700; cursor: pointer; }
+.business-vehicle-link svg { flex-shrink: 0; }
 .business-mobile-nav { display: none; }
 .business-drawer-backdrop { position: fixed; inset: 0; z-index: var(--z-modal, 1000); background: #10203966; display: flex; justify-content: flex-end; overscroll-behavior: contain; }
 .business-drawer { display: flex; flex-direction: column; width: min(540px,100%); background: var(--surface); color: var(--text); box-shadow: -8px 0 40px #0002; height: 100%; outline: none; box-sizing: border-box; }
@@ -375,6 +381,38 @@
 .business-feature-grid p { color: var(--text-2); font-size: 13px; margin: 7px 0 0; line-height: 1.6; }
 .business-feature-icon { flex-shrink: 0; display: grid; place-items: center; width: 40px; height: 40px; background: var(--status-info-bg); color: var(--status-info-text); border-radius: 10px; }
 .business-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.business-vehicle-form { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.business-form-section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.business-form-section + .business-form-section { border-top: 1px solid var(--border); padding-top: 20px; }
+.business-form-section h3 { margin: 0; color: var(--text); font-size: 15px; font-weight: 700; line-height: 1.5; }
+.business-form-section h3 small { margin-left: 8px; color: var(--text-2); font-size: 12px; font-weight: 400; }
+.business-vehicle-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.business-availability { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; background: var(--surface-2); }
+.business-availability > div { flex: 1; min-width: 0; }
+.business-availability strong { font-size: 14px; font-weight: 600; }
+.business-availability p { margin: 4px 0 0; font-size: 12px; color: var(--text-2); line-height: 1.5; }
+.business-toggle { position: relative; flex-shrink: 0; width: 48px; height: 44px; border: 0; background: transparent; cursor: pointer; padding: 0; }
+.business-toggle::before { content: ''; position: absolute; width: 44px; height: 24px; left: 2px; top: 10px; background: var(--text-3); border-radius: 999px; }
+.business-toggle[aria-checked=true]::before { background: var(--accent); }
+.business-toggle span { position: absolute; top: 12px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: white; }
+.business-toggle[aria-checked=true] span { left: 24px; }
+.business-fuel-options { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; }
+.business-fuel-options button { min-height: 44px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-2); font-size: 13px; cursor: pointer; white-space: nowrap; }
+.business-fuel-options button[aria-pressed=true] { background: var(--status-info-bg); color: var(--primary); border-color: var(--primary); font-weight: 700; }
+.business-vehicle-form :is(input,select,textarea,button):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.business-document-row { flex-wrap: wrap; }
+.business-document-row button { min-width: 40px; min-height: 40px; }
+@media (min-width:701px) and (max-width:900px) {
+  .business-fleet-head { display: none; }
+  .business-vehicle { grid-template-columns: minmax(0,1fr) auto; }
+  .business-vehicle-identity { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .business-vehicle-identity > .business-vehicle-name { flex: 1; }
+  .business-row-actions { justify-content: flex-end; }
+}
+@media (max-width:359px) {
+  .business-vehicle-fields { grid-template-columns: minmax(0,1fr); }
+  .business-row-actions .business-button { padding: 9px 10px; }
+}
 @media (max-width:700px) {
   .business-support > .business-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .business-support-form, .business-feature-grid { grid-template-columns: minmax(0,1fr); }
@@ -387,3 +425,5 @@
   .business-support-actions > button { width: 100%; }
   .business-support-notice { padding: 16px; }
 }
+
+.business-company-missing { margin: 0 20px 20px; color: var(--text-2); font-size: 13px; }

@@ -36,7 +36,7 @@ async function setup(){
  return {api:ref.current,markers,flush,zoom:n=>{scale=n;for(const f of events.get('idle')||[])f();flush();},close:async()=>act(async()=>r.unmount())};
 }
 test('skipped original fixes determine direction; zoom thins without discarding points and seeker does not resurrect them',async()=>{
- const f=await setup(),at=i=>new Date(Date.now()+i*1000).toISOString();
+ const f=await setup(),now=Date.now(),at=i=>new Date(now+i*1000).toISOString();
  f.api.addHistoryPoint(1,37,127,'#2563eb',{recordedAt:at(0)});
  f.api.addHistoryPoint(1,37.001,127,'#2563eb',{recordedAt:at(1),skipMarker:true});
  f.api.addHistoryPoint(1,37.001,127.001,'#2563eb',{recordedAt:at(2)});
@@ -48,7 +48,7 @@ test('skipped original fixes determine direction; zoom thins without discarding 
  f.api.setSeekerMode(false);assert.equal(f.markers.filter(x=>x.map).length,2);await f.close();
 });
 test('new batch starts with unknown direction and original predecessor crosses native bridge with its own time',async()=>{
- const f=await setup(),at=i=>new Date(Date.now()+i*1000).toISOString();
+ const f=await setup(),now=Date.now(),at=i=>new Date(now+i*1000).toISOString();
  f.api.addHistoryPoint(1,37,127,'#2563eb',{recordedAt:at(0)});
  f.api.addHistoryPoint(1,38,128,'#2563eb',{recordedAt:at(100),skipMarker:true});
  f.api.addHistoryPoint(1,38,128,'#2563eb',{recordedAt:at(101)});f.flush();assert.ok(!Number.isFinite(f.markers.at(-1).image.angle));

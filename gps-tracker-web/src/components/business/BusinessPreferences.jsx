@@ -22,11 +22,11 @@ export function BusinessCompanyInfo() {
   if (result.error && !draft) return <BusinessError onRetry={result.refetch}>회사 정보를 불러오지 못했습니다.</BusinessError>;
   if (!info) return <SkeletonList count={3} itemHeight={70} />;
   return <div className="business-support">
-    <div className="business-support-notice"><strong>{missing.length ? '운행기록부에 표시할 정보를 입력하세요.' : '운행기록부 회사 정보가 입력되어 있습니다.'}</strong><p>{missing.length ? `미입력: ${missing.join(' · ')}` : '회사 정보는 운행기록부의 회사명·사업자번호·대표자 표시에 사용됩니다.'}</p><p>주소를 포함해 입력한 내용이 정확한지 확인해 주세요.</p></div>
-    <BusinessSection title="회사 정보" description="보고서에 사용하는 회사 정보를 관리하세요.">
+    <BusinessSection title="회사 정보" description="운행기록부에 표시됩니다.">
+      {missing.length > 0 && <p className="business-company-missing">미입력: {missing.join(' · ')}</p>}
       <div className="business-support-body"><div className="business-support-form">{fields.map(([key, label, placeholder]) => <FormField key={key} label={label}><Input value={info[key] || ''} onChange={e => { setSaved(false); setError(''); setDraft({ ...info, [key]: e.target.value }); }} disabled={busy} placeholder={placeholder} /></FormField>)}</div>
         {error && <BusinessError>{error}</BusinessError>}{saved && <p role="status" className="business-support-success">회사 정보를 저장했습니다.</p>}
-        <div className="business-support-actions"><span className="business-note">변경한 내용을 저장하면 이후 보고서에 반영됩니다.</span><Button busy={busy} onClick={save}>회사 정보 저장</Button></div>
+        <div className="business-support-actions"><span className="business-note">저장 후 보고서에 반영됩니다.</span><Button busy={busy} onClick={save}>회사 정보 저장</Button></div>
       </div>
     </BusinessSection>
   </div>;
@@ -50,14 +50,14 @@ export function BusinessSubscription({ sub, onChange, kind = 'corporate', report
   }
   if (!sub) return <SkeletonList count={2} itemHeight={100} />;
   return <div className={`business-support${report ? ' business-report-access' : ''}`}>
-    <BusinessSection title={title} description={report ? '차량별 운행과 월간 요약을 하나의 이용권으로 확인하세요.' : '이용 상태와 종료 시각을 확인하세요.'} action={<span className={`business-badge ${sub.active ? 'good' : 'info'}`}>{sub.active ? '이용 중' : '이용권 필요'}</span>}>
+    <BusinessSection title={title} description={report ? '차량별 운행과 월간 요약' : undefined} action={<span className={`business-badge ${sub.active ? 'good' : 'info'}`}>{sub.active ? '이용 중' : '이용권 필요'}</span>}>
       <div className="business-support-body"><dl className="business-support-summary">{report ? <div><dt>이용 기간</dt><dd>결제일부터 30일</dd></div> : <><div><dt>이용 종료</dt><dd>{sub.expires_at ? kstDateTime(sub.expires_at) : '이용 내역 없음'}</dd></div><div><dt>남은 기간</dt><dd>{sub.active && days != null ? `${days}일` : '—'}</dd></div></>}<div><dt>30일 이용 금액</dt><dd className="business-subscription-price">{validPrice ? `${sub.price_krw.toLocaleString()}원` : '금액 확인 필요'}</dd></div></dl>
         <p className="business-note">포인트로 결제하며 30일씩 추가됩니다. 법인차와 렌트카 이용권은 각각 관리됩니다.</p>
         {saved && <p className="business-support-success" role="status">이용권 결제가 완료되었습니다. 변경된 이용 종료 시각을 확인해 주세요.</p>}
         <div className="business-support-actions"><span className="business-note">포인트가 부족하면 내정보 → 포인트에서 충전을 요청하세요.</span><BusinessButton primary disabled={!validPrice || busy} onClick={() => { setError(''); setConfirm(true); }}>{sub.active ? '30일 연장' : '30일 이용 시작'}</BusinessButton></div>
       </div>
     </BusinessSection>
-    <BusinessSection title={report ? '리포트에서 할 수 있는 일' : '제공 기능'} description="차량 운영에 필요한 기록과 보고서를 한곳에서 관리하세요."><div className="business-feature-grid">{(report ? features[kind].slice(0, 3) : features[kind]).map(([icon, label, text]) => <div key={label}><span className="business-feature-icon"><Icon name={icon} size={20} /></span><div><strong>{label}</strong><p>{text}</p></div></div>)}</div></BusinessSection>
+    <BusinessSection title={report ? '리포트에서 할 수 있는 일' : '제공 기능'}><div className="business-feature-grid">{(report ? features[kind].slice(0, 3) : features[kind]).map(([icon, label, text]) => <div key={label}><span className="business-feature-icon"><Icon name={icon} size={20} /></span><div><strong>{label}</strong><p>{text}</p></div></div>)}</div></BusinessSection>
     {confirm && <Modal open title="이용권 결제 확인" subtitle={title} onClose={busy ? undefined : () => setConfirm(false)} closeOnBackdrop={false} closeOnEsc={!busy} footer={<><Button className="business-form-cancel" variant="ghost" disabled={busy} onClick={() => setConfirm(false)}>취소</Button><Button className="business-form-submit" busy={busy} onClick={buy}>포인트로 결제</Button></>}>
       <dl className="business-support-summary"><div><dt>이용 기간</dt><dd>30일 추가</dd></div><div><dt>결제 금액</dt><dd>{sub.price_krw.toLocaleString()}원</dd></div></dl><p className="business-support-message">확인하면 보유 포인트에서 차감됩니다.</p>{error && <BusinessError>{error}</BusinessError>}
     </Modal>}

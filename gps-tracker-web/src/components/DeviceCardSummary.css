@@ -1,7 +1,7 @@
 .device-summary { min-width: 0; }
 .device-summary-heading { display: flex; align-items: flex-start; gap: 12px; }
 .device-summary-identity { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.device-summary h3 { width: 100%; font-size: var(--font-title); line-height: 1.5; overflow-wrap: anywhere; }
+.device-summary h3 { width: 100%; font-size: var(--font-title); line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
 .device-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: var(--radius-pill); font-size: var(--font-caption); font-weight: 600; }
 .device-status > span { width: 7px; height: 7px; border-radius: 50%; }
 .device-pinned { font-size: var(--font-caption); color: var(--text-2); }

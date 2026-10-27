@@ -36,7 +36,7 @@ async function calendar(file, name) {
       useBusinessClock:noop,useRentalOperations:noop,useBusinessSubscription:noop,
       BusinessStaff:noop,BusinessRenters:noop,BusinessCompanyInfo:noop,BusinessSubscription:noop,
       alertDialog:noop,confirmDialog:noop,StatCard:noop,StatCardGrid:noop,useFleetStats:noop,
-      Modal:noop,FormField:noop,Button:noop,Pill:noop,SkeletonList:noop,toast:noop};
+      Modal:noop,FormField:noop,Input:noop,Select:noop,Textarea:noop,Button:noop,Pill:noop,SkeletonList:noop,toast:noop};
     for(const name of ['useRentals','useCreateRental','useUpdateRental','useReturnRental','useDeleteRental','useRenters','useRenterDetail','useAddBlacklist','useRemoveBlacklist','useHandoffTokens','useIssueHandoffToken','useRevokeHandoffToken','useRentalPhotos','useUploadRentalPhoto','useDeleteRentalPhoto','useCorporateInfo','useStaff','useReservations','useDocuments','useCreateReservation','useUpdateReservation','useDeleteReservation','useCreateStaff','useUpdateStaff','useRemoveStaff','useUploadDocument','useDeleteDocument']) exports[name]=noop;
     return moduleOf(exports);
   });

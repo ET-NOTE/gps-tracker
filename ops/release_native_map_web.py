@@ -18,7 +18,7 @@ previous_commit = sys.argv[2]
 assert stage.parent == pathlib.Path('/home/mmm/gps-artifacts')
 manifest = json.loads((stage/'manifest.json').read_text())
 release = manifest['release']
-assert re.fullmatch(r'web-(?:native-map-20261009|sim-20261020|remediation-20261020|remediation-20261021|directions-20261022|report-design-20261023)-[a-f0-9]{7}', release)
+assert re.fullmatch(r'web-(?:native-map-20261009|sim-20261020|remediation-20261020|remediation-20261021|directions-20261022|report-design-20261023|design-cleanup-20261027)-[a-f0-9]{7}', release)
 assert re.fullmatch(r'[a-f0-9]{40}', manifest['git_commit'])
 link = pathlib.Path('/home/mmm/gps-tracker-web/dist-root')
 assert link.is_symlink()

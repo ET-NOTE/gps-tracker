@@ -29,13 +29,13 @@ function RentcarPanel({ devices, onMap, onNavigate, meta }) {
   const qc = useQueryClient();
   const openContracts = value => { setRequest(value); setTab('rentals'); };
   const tabs = [
-    { id: 'fleet', label: '운영 현황', icon: 'home', description: '오늘 처리할 일과 차량 상태를 한눈에 확인하세요.' },
-    { id: 'rentals', label: '계약 관리', icon: 'route', description: '차량과 임차인을 찾고 인수·반납을 처리하세요.' },
-    { id: 'schedule', label: '배차·반납 일정', icon: 'clock', description: '차량별 계약 기간과 반납 일정을 확인하세요.' },
-    { id: 'renters', label: '임차인', icon: 'user', description: '고객의 이용 이력과 유의 사항을 관리하세요.' },
-    { id: 'settings', label: '설정', icon: 'wrench', description: '이용권 상태와 제공 기능을 확인하세요.' },
+    { id: 'fleet', label: '운영 현황', icon: 'home' },
+    { id: 'rentals', label: '계약 관리', icon: 'route' },
+    { id: 'schedule', label: '배차·반납 일정', icon: 'clock' },
+    { id: 'renters', label: '임차인', icon: 'user' },
+    { id: 'settings', label: '설정', icon: 'wrench' },
   ];
-  return <BusinessWorkspace title="렌트카 운영" description="출고부터 반납까지, 오늘의 차량 업무를 관리하세요." tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="rentcar" onMap={onMap} onVehicleAction={d => openContracts({ deviceId: d.id })} onNavigate={onNavigate} meta={meta}
+  return <BusinessWorkspace title="렌트카 운영" tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="rentcar" onMap={onMap} onVehicleAction={d => openContracts({ deviceId: d.id })} onNavigate={onNavigate} meta={meta}
     action={<BusinessButton primary icon="plus" onClick={() => openContracts({ new: true })}>새 계약</BusinessButton>}>
     {tab === 'fleet' && <FleetTab devices={devices} onMap={onMap} onContracts={openContracts} />}
     {tab === 'rentals' && <RentalsTab devices={devices} request={request} />}
@@ -778,7 +778,7 @@ function FleetTab({ devices, onMap, onContracts }) {
     ]}/>
     {result.error && <BusinessError onRetry={result.refetch}>계약 현황을 불러오지 못했습니다. 배차·반납 상태를 확인한 후 처리해 주세요.</BusinessError>}
     <div className="business-overview-grid"><BusinessLocation devices={devices} />
-    <BusinessSection title={`오늘 처리할 일${ready ? ` · ${tasks.length}건` : ''}`} description="반납 지연, 임대 중 통신 지연, 점검 기한을 우선 확인하세요." action={<BusinessButton onClick={() => onContracts({ status: 'all' })}>계약 전체 보기</BusinessButton>}>
+    <BusinessSection title={`오늘 처리할 일${ready ? ` · ${tasks.length}건` : ''}`} action={<BusinessButton onClick={() => onContracts({ status: 'all' })}>계약 전체 보기</BusinessButton>}>
       {ready && <div className="business-task-filters" aria-label="할 일 필터">{filters.map(([key, label]) => <button className="business-task-filter" key={key} aria-pressed={taskFilter === key} onClick={() => setTaskFilter(key)}>{label} <span>{key === 'all' ? tasks.length : tasks.filter(t => t.category === key).length}</span></button>)}</div>}
       {result.isLoading ? <SkeletonList count={3} itemHeight={72}/> : visibleTasks.length ? visibleTasks.map(task =>
         <BusinessTask key={task.id} title={task.title} description={`${task.description}${task.date ? ` · ${new Date(task.date).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}`} label={task.label} tone={task.tone} action={task.action} onClick={() => task.device ? openVehicle(task.device) : onContracts(task.category === 'return' ? { returning: task.contract } : { contract: task.contract })}/>)

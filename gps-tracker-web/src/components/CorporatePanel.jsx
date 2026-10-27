@@ -13,7 +13,7 @@ import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleNa
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import { useFleetStats } from './shared/useFleetStats';
-import { Modal, FormField, Button, SkeletonList } from './ui';
+import { Modal, FormField, Input, Select, Textarea, Button, SkeletonList } from './ui';
 import {
   useCorporateInfo, useStaff, useReservations, useDocuments,
   useCreateReservation, useUpdateReservation, useDeleteReservation,
@@ -39,14 +39,14 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate
   const reserve = value => { setRequest(value); setTab('reservations'); };
   const report = device => { setReportDevice(device.id); setReportMode('daily'); setTab('report'); };
   const tabs = [
-    { id: 'overview', label: '운영 현황', icon: 'home', description: '오늘의 예약과 차량 점검 일정을 확인하세요.' },
-    { id: 'vehicles', label: '차량 관리', icon: 'list', description: '차량 정보와 운영 상태를 관리하세요.' },
-    { id: 'reservations', label: '차량 예약', icon: 'clock', description: '운전자와 사용 일정을 확인하고 차량을 배정하세요.' },
-    { id: 'report', label: '운행 리포트', icon: 'bar', description: '차량별 운행 목적과 월간 이용 내역을 정리하세요.' },
-    { id: 'staff', label: '운전자', icon: 'user', description: '운행기록에 배정할 직원 정보를 관리하세요.' },
-    { id: 'settings', label: '설정', icon: 'wrench', description: '회사 정보와 이용권을 관리하세요.' },
+    { id: 'overview', label: '운영 현황', icon: 'home' },
+    { id: 'vehicles', label: '차량 관리', icon: 'list' },
+    { id: 'reservations', label: '차량 예약', icon: 'clock' },
+    { id: 'report', label: '운행 리포트', icon: 'bar' },
+    { id: 'staff', label: '운전자', icon: 'user' },
+    { id: 'settings', label: '설정', icon: 'wrench' },
   ];
-  return <BusinessWorkspace title="법인차 운영" description="차량 예약과 운행기록을 한곳에서 관리하세요." tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} meta={meta}
+  return <BusinessWorkspace title="법인차 운영" tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} meta={meta}
     action={<BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton>}>
     {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} />}
     {tab === 'vehicles' && <VehiclesTab devices={devices} onMap={onMap} onVehiclesChange={onVehiclesChange} />}
@@ -82,7 +82,7 @@ function CorporateOverview({ devices, onMap, onDevice, onReport, onReserve }) {
     ]} />
     {stats.error && <BusinessError onRetry={stats.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
     <div className="business-overview-grid"><BusinessLocation devices={devices} />
-    <BusinessSection title="오늘 확인할 일" description="기한이 지난 점검부터 확인하고 오늘의 차량을 배차하세요." action={<BusinessButton onClick={() => onReserve({})}>예약 전체 보기</BusinessButton>}>
+    <BusinessSection title="오늘 확인할 일" action={<BusinessButton onClick={() => onReserve({})}>예약 전체 보기</BusinessButton>}>
       {maintenance.filter(t => t.overdue).map(t => <BusinessTask key={`${t.device.id}-${t.field}`} title={vehicleName(t.device)} description={`${t.label} · ${t.date}`} label="기한 경과" tone="urgent" action="점검 확인" onClick={() => openVehicle(t.device)} />)}
       {reservations.error && <BusinessError onRetry={reservations.refetch}>예약을 불러오지 못했습니다. 다시 시도해 최신 예약을 확인해 주세요.</BusinessError>}
       {reservations.isLoading ? <SkeletonList count={3} itemHeight={72} /> : active.length ? active.map(r => <BusinessTask key={r.id}
@@ -97,7 +97,7 @@ function CorporateOverview({ devices, onMap, onDevice, onReport, onReserve }) {
         </>}
     </BusinessSection>
     </div>
-    {maintenance.some(t => !t.overdue) && <BusinessSection title="다가오는 차량 점검" description="등록된 날짜 기준으로 30일 이내 정비·보험·검사를 안내합니다.">
+    {maintenance.some(t => !t.overdue) && <BusinessSection title="다가오는 차량 점검" description="30일 이내 정비·보험·검사">
       {maintenance.filter(t => !t.overdue).map(t => <BusinessTask key={`${t.device.id}-${t.field}`} title={vehicleName(t.device)} description={`${t.label} · ${t.date}`} label="예정" tone="info" action="차량 상세" onClick={() => openVehicle(t.device)} />)}
     </BusinessSection>}
     <BusinessVehicles devices={devices} onMap={onMap} onDetail={onReport} detailLabel="운행 리포트" />
@@ -467,7 +467,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
           <Field label="운전자">
             {staff.length === 0 ? (
               <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                직원 탭에서 운전자 후보를 먼저 등록하세요.
+                운전자 메뉴에서 등록할 수 있습니다.
               </div>
             ) : (
               <select value={driverId} onChange={e => setDriverId(e.target.value)}
@@ -530,10 +530,10 @@ function VehiclesTab({ devices, onMap, onVehiclesChange }) {
 
   return (
     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <StatCardGrid>
-        <StatCard icon="list"  label="전체 차량" value={devices?.length ?? 0} unit="대" tone="default" />
-        <StatCard icon="route" label="사용가능"   value={enabledCount}         unit="대" tone="success" />
-        <StatCard icon="warn"  label="사용정지"   value={disabledCount}        unit="대" tone={disabledCount > 0 ? 'warn' : 'default'} />
+      <StatCardGrid columns={3}>
+        <StatCard compact label="전체 차량" value={devices?.length ?? 0} unit="대" />
+        <StatCard compact label="사용 가능" value={enabledCount} unit="대" tone="success" />
+        <StatCard compact label="사용 정지" value={disabledCount} unit="대" tone={disabledCount > 0 ? 'warn' : 'default'} />
       </StatCardGrid>
 
       <BusinessVehicles devices={devices} onMap={onMap} onDetail={setEditing} />
@@ -874,7 +874,7 @@ function ReservationCard({ r, onEdit, onDelete }) {
             background: 'color-mix(in srgb, var(--danger) 20%, transparent)',
             color: 'var(--danger)', fontWeight: 800,
             display: 'inline-flex', alignItems: 'center', gap: 4,
-          }} title={`${minsUntilEnd}분 후 반납 — 30분 전 FCM 알림`}>
+          }} title={`${minsUntilEnd}분 후 반납 — 30분 전 알림`}>
             🔔 {minsUntilEnd === 0 ? '지금 반납' : `${minsUntilEnd}분 후 반납`}
           </span>
         )}
@@ -1258,7 +1258,7 @@ function FuelPriceBadge({ prices }) {
         : 'var(--surface-2)',
       fontSize: 10, color: 'var(--text-2)',
     }}
-    title={isLive ? `오피넷 실시간 (${at})` : '오피넷 KEY 미설정 — 기본값 사용'}>
+    title={isLive ? `오피넷 실시간 (${at})` : '기준 유가 적용'}>
       <span style={{
         width: 6, height: 6, borderRadius: '50%',
         background: isLive ? 'var(--accent)' : 'var(--text-3)',
@@ -1739,144 +1739,45 @@ function FuelInfoDialog({ device, onClose, onSaved }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--surface)', borderRadius: 14, padding: 20,
-        width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 14,
-      }}>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>{device.label} — 차량 정보</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-            국세청 별지 제73호 헤더 + 우리 전용 필드. 미입력 항목은 비어둬도 됩니다.
+    <Modal open onClose={busy ? undefined : onClose} title="차량 정보" size="lg"
+      subtitle={<span className="business-vehicle-title" title={device.label}>{device.label}</span>}
+      closeOnBackdrop={!busy} closeOnEsc={!busy}
+      footer={<><Button variant="ghost" className="business-form-cancel" onClick={onClose} disabled={busy}>취소</Button><Button className="business-form-submit" onClick={save} disabled={busy}>{busy ? '저장 중…' : '저장'}</Button></>}>
+      <div className="business-vehicle-form">
+        <section className="business-form-section">
+          <h3>기본 정보 <small>선택 입력</small></h3>
+          <div className="business-vehicle-fields">
+            <FormField label="차량번호"><Input value={plate} onChange={e => setPlate(e.target.value)} placeholder="12가3456" /></FormField>
+            <FormField label="차량 유형"><Select value={vehicleType} onChange={e => setVehicleType(e.target.value)}>
+              {Object.entries(VEHICLE_TYPE_LABEL).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+            </Select></FormField>
+            <FormField label="연식"><Input type="number" min="1990" max="2100" value={modelYear} onChange={e => setModelYear(e.target.value)} placeholder="예: 2023" /></FormField>
+            <FormField label="배기량 (cc)"><Input type="number" value={engineCc} onChange={e => setEngineCc(e.target.value)} placeholder="예: 1998" /></FormField>
+            <FormField label="취득가액 (원)"><Input type="number" value={purchase} onChange={e => setPurchase(e.target.value)} placeholder="예: 35000000" /></FormField>
+            <FormField label="취득일"><Input type="date" value={acquiredAt || ''} onChange={e => setAcquiredAt(e.target.value)} /></FormField>
           </div>
-        </div>
-
-        {/* ─── 국세청 헤더 ───────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            국세청 별지 제73호 헤더
+        </section>
+        <section className="business-form-section">
+          <h3>운영 정보</h3>
+          <FormField label="부서·그룹"><Input value={department} onChange={e => setDepartment(e.target.value)} placeholder="예: 영업 1팀" /></FormField>
+          <FormField label="메모"><Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="정비 이력, 특이사항" maxLength={500} /></FormField>
+          <div className="business-availability">
+            <div><strong>{enabled ? '사용 가능' : '사용 정지'}</strong>{!enabled && <p>운행 기록은 유지됩니다.</p>}</div>
+            <button type="button" role="switch" aria-checked={enabled} aria-label="차량 사용 가능" className="business-toggle" onClick={() => setEnabled(v => !v)}><span /></button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량번호</div>
-              <input value={plate} onChange={e => setPlate(e.target.value)} placeholder="12가3456" style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연식</div>
-              <input type="number" min="1990" max="2100" value={modelYear}
-                onChange={e => setModelYear(e.target.value)} placeholder="예: 2023" style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>배기량 (cc)</div>
-              <input type="number" value={engineCc}
-                onChange={e => setEngineCc(e.target.value)} placeholder="예: 1998" style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>취득가액 (원)</div>
-              <input type="number" value={purchase}
-                onChange={e => setPurchase(e.target.value)} placeholder="예: 35000000" style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>취득일</div>
-              <input type="date" value={acquiredAt || ''}
-                onChange={e => setAcquiredAt(e.target.value)} style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량 유형</div>
-              <select value={vehicleType} onChange={e => setVehicleType(e.target.value)} style={st.input}>
-                {Object.entries(VEHICLE_TYPE_LABEL).map(([id, label]) => (
-                  <option key={id} value={id}>{label}</option>
-                ))}
-              </select>
-            </div>
+        </section>
+        <section className="business-form-section">
+          <h3>연료·연비</h3>
+          <div className="business-fuel-options" role="group" aria-label="연료">
+            {['gasoline', 'diesel', 'lpg', 'ev'].map(f => <button className="business-fuel-option" type="button" key={f} aria-pressed={type === f} onClick={() => setType(f)}>{FUEL_LABEL[f]}</button>)}
           </div>
-        </div>
-
-        {/* ─── 우리 전용 ─────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            우리 전용
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>부서/그룹</div>
-            <input value={department} onChange={e => setDepartment(e.target.value)}
-              placeholder="영업 1팀, 본사 임원차..." style={st.input} />
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>메모</div>
-            <textarea value={note} onChange={e => setNote(e.target.value)}
-              placeholder="정비 이력·특이사항..." maxLength={500}
-              style={{ ...st.input, minHeight: 60, resize: 'vertical', fontFamily: 'inherit' }} />
-          </div>
-          {/* 사용가능 toggle (2026-07-28 Stage-4C-1) */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 8,
-          }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700 }}>사용가능</div>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
-                사용정지 시 차량 목록에서 흐리게 표시. 리포트에는 계속 반영 (과거 데이터 유지).
-              </div>
-            </div>
-            <button onClick={() => setEnabled(v => !v)} style={{
-              width: 44, height: 24, borderRadius: 999,
-              background: enabled ? 'var(--accent)' : 'var(--text-3)',
-              border: 'none', cursor: 'pointer', position: 'relative',
-              transition: 'background .15s',
-            }}>
-              <div style={{
-                position: 'absolute', top: 2, left: enabled ? 22 : 2,
-                width: 20, height: 20, borderRadius: '50%', background: 'white',
-                transition: 'left .15s',
-              }} />
-            </button>
-          </div>
-        </div>
-
-        {/* ─── 연비 / 연료 ───────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            연비 · 유류비 추정
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연료</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 4 }}>
-              {['gasoline', 'diesel', 'lpg', 'ev'].map(f => (
-                <button key={f} onClick={() => setType(f)} style={{
-                  padding: '8px 4px', fontSize: 12, borderRadius: 8, cursor: 'pointer',
-                  background: type === f ? 'var(--primary)' : 'var(--surface-2)',
-                  color:      type === f ? 'var(--primary-fg)' : 'var(--text)',
-                  border: 'none', fontWeight: type === f ? 700 : 500,
-                }}>{FUEL_LABEL[f]}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연비 (km/L)</div>
-            <input type="number" step="0.1" min="1" max="100"
-              value={eff} onChange={e => setEff(e.target.value)} placeholder="예: 12.5" style={st.input} />
-            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>
-              비워두면 유류비 자동 추정 skip.
-            </div>
-          </div>
-        </div>
-
-        {/* ─── 서류 (2026-07-28 Stage-4C-3) ─────────── */}
+          <FormField label="연비 (km/L)" hint="연비를 입력하면 유류비를 계산합니다.">
+            <Input type="number" step="0.1" min="1" max="100" value={eff} onChange={e => setEff(e.target.value)} placeholder="예: 12.5" />
+          </FormField>
+        </section>
         {device.id && <DocumentsSection deviceId={device.id} />}
-
-        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
-          <button onClick={save} disabled={busy} style={{ ...st.btnPrimary, flex: 1 }}>
-            {busy ? '저장 중...' : '저장'}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1950,27 +1851,22 @@ function DocumentsSection({ deviceId }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        서류 (PDF/이미지 · 10MB · 20개)
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 6 }}>
-        <select value={kind} onChange={e => setKind(e.target.value)} style={st.input}>
-          {Object.entries(DOC_KIND_LABEL).map(([id, label]) => (
-            <option key={id} value={id}>{label}</option>
-          ))}
-        </select>
-        <input value={note} onChange={e => setNote(e.target.value)}
-          placeholder="메모 (선택)" style={st.input} />
+    <section className="business-form-section">
+      <h3>차량 서류</h3>
+      <p className="business-note">PDF·이미지 · 파일당 10MB · 최대 20개</p>
+      <div className="business-vehicle-fields">
+        <FormField label="서류 종류"><Select value={kind} onChange={e => setKind(e.target.value)}>
+          {Object.entries(DOC_KIND_LABEL).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+        </Select></FormField>
+        <FormField label="서류 메모"><Input value={note} onChange={e => setNote(e.target.value)} placeholder="선택 입력" /></FormField>
       </div>
       <div>
         <input ref={fileRef} type="file" accept=".pdf,image/*" onChange={upload} disabled={busy}
           style={{ display: 'none' }} />
         <button onClick={() => fileRef.current?.click()} disabled={busy} style={{
-          ...st.btnGhost, width: '100%', padding: '10px', fontSize: 12,
+          ...st.btnGhost, minHeight: 44, width: '100%', padding: '10px', fontSize: 12,
         }}>
-          <Icon name="plus" size={12} /> {busy ? '업로드 중...' : '파일 선택'}
+          <Icon name="plus" size={16} /> {busy ? '처리 중…' : '서류 첨부'}
         </button>
       </div>
 
@@ -1982,7 +1878,7 @@ function DocumentsSection({ deviceId }) {
       {docs && docs.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {docs.map(d => (
-            <div key={d.id} style={{
+            <div className="business-document-row" key={d.id} style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 6,
               fontSize: 11,
@@ -1994,14 +1890,14 @@ function DocumentsSection({ deviceId }) {
               <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                 title={d.filename}>{d.filename}</span>
               <span style={{ color: 'var(--text-3)', fontSize: 10 }}>{Math.round(d.size_bytes / 1024).toLocaleString()}KB</span>
-              <button onClick={() => openPreview(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="바로보기">
-                <Icon name="eye" size={11} />
+              <button onClick={() => openPreview(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="바로보기" aria-label={`${d.filename} 바로보기`}>
+                <Icon name="eye" size={16} />
               </button>
-              <button onClick={() => download(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="다운로드">
-                <Icon name="download" size={11} />
+              <button onClick={() => download(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="다운로드" aria-label={`${d.filename} 다운로드`}>
+                <Icon name="download" size={16} />
               </button>
-              <button onClick={() => del(d)} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제">
-                <Icon name="trash2" size={11} />
+              <button onClick={() => del(d)} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제" aria-label={`${d.filename} 삭제`}>
+                <Icon name="trash2" size={16} />
               </button>
             </div>
           ))}
@@ -2009,7 +1905,7 @@ function DocumentsSection({ deviceId }) {
       )}
 
       {preview && <DocPreviewModal preview={preview} onClose={closePreview} onDownload={() => download(preview.doc)} />}
-    </div>
+    </section>
   );
 }
 
@@ -2018,47 +1914,12 @@ function DocPreviewModal({ preview, onClose, onDownload }) {
   const isImage = mime?.startsWith('image/');
   const isPdf   = mime === 'application/pdf';
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 950,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--surface)', borderRadius: 12, padding: 12,
-        width: '100%', maxWidth: 900, maxHeight: '95vh',
-        display: 'flex', flexDirection: 'column', gap: 8, boxSizing: 'border-box',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            title={doc.filename}>{doc.filename}</div>
-          <button onClick={onDownload} style={{ ...st.btnGhost, padding: '6px 10px' }} title="다운로드">
-            <Icon name="download" size={12} />
-          </button>
-          <button onClick={onClose} style={{ ...st.btnGhost, padding: '6px 10px' }}>
-            <Icon name="close" size={12} />
-          </button>
-        </div>
-        <div style={{
-          flex: 1, minHeight: 0, background: '#000',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderRadius: 8, overflow: 'hidden',
-        }}>
-          {isImage && (
-            <img src={url} alt={doc.filename}
-              style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
-          )}
-          {isPdf && (
-            <iframe src={url} title={doc.filename}
-              style={{ width: '100%', height: '80vh', border: 'none', background: '#FFF' }} />
-          )}
-          {!isImage && !isPdf && (
-            <div style={{ color: '#AAA', padding: 40, textAlign: 'center' }}>
-              이 형식은 인라인 프리뷰 미지원 — 다운로드 후 확인해주세요.
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    <Modal open title="차량 서류" subtitle={<span className="business-vehicle-title" title={doc.filename}>{doc.filename}</span>} size="xl" onClose={onClose}
+      footer={<Button variant="ghost" onClick={onDownload} icon={<Icon name="download" size={16} />}>다운로드</Button>}>
+      {isImage && <img src={url} alt={doc.filename} style={{ maxWidth: '100%', maxHeight: '70dvh', objectFit: 'contain' }} />}
+      {isPdf && <iframe src={url} title={doc.filename} style={{ width: '100%', height: '70dvh', border: 0, background: '#fff' }} />}
+      {!isImage && !isPdf && <p className="business-note">미리 볼 수 없는 파일입니다. 다운로드 후 확인해 주세요.</p>}
+    </Modal>
   );
 }
 

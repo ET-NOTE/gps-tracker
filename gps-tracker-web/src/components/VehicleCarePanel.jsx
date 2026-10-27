@@ -55,7 +55,7 @@ export default function VehicleCarePanel({ device, onUpdated }) {
     } catch (e) { setStatus({ ok: false, text: e.message }); } finally { setBusy(false); }
   }
   return <form className="vehicle-care" onSubmit={save} aria-busy={busy}>
-    <p className="vehicle-care-hint">필요한 항목만 입력해 주세요. 사진은 선택하면 바로 저장됩니다.</p>
+    <p className="vehicle-care-hint">사진은 선택하면 바로 저장됩니다.</p>
     <div className="vehicle-photo">
       <div className="vehicle-photo-preview">
         <CarImage deviceId={device.id} version={photo} alt="차량 대표 사진" fallback={<><Icon name="cam" size={26} /><span>대표 사진</span></>} />

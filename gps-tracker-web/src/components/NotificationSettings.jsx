@@ -43,7 +43,7 @@ export default function NotificationSettings() {
 
   return (
     <fieldset disabled={busy} aria-busy={busy} style={{ display: 'flex', flexDirection: 'column', gap: 14, border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-      <p style={{ color: 'var(--text-3)', margin: 0, fontSize: 12 }}>변경한 설정은 자동으로 저장됩니다. 휴대폰 알림 설정에서도 소리와 표시 방식을 조절할 수 있습니다.</p>
+      <p style={{ color: 'var(--text-3)', margin: 0, fontSize: 12 }}>변경 사항은 자동 저장됩니다.</p>
 
       {/* ─── 통신 상태 ─────────────────────────── */}
       <Group title="통신 상태" desc="장치 정보의 수신이 지연되거나 연결이 복구될 때">
@@ -94,8 +94,13 @@ export default function NotificationSettings() {
       </Group>
 
       <p style={{ color: 'var(--text-3)', margin: 0, fontSize: 12, lineHeight: 1.7 }}>
-        새 운영 펌웨어의 절전 중 정기 보고 기본 주기는 24시간이며, 단말기 상세에서 최대 24시간까지 변경할 수 있습니다. 위 설정은 휴대폰 알림만 켜고 끄며, 장치의 정기 보고는 유지됩니다. 기존 단말기는 펌웨어 갱신 후 새 주기가 적용됩니다.
+        알림을 꺼도 장치의 정기 보고는 유지됩니다.
       </p>
+
+      <details style={{ color: 'var(--text-2)', fontSize: 12, lineHeight: 1.7 }}>
+        <summary style={{ cursor: 'pointer', padding: '8px 0' }}>정기 보고 주기 안내</summary>
+        <p style={{ margin: '4px 0' }}>기본 24시간이며, 단말기 상세에서 최대 24시간까지 변경할 수 있습니다. 이전 펌웨어는 업데이트가 필요합니다.</p>
+      </details>
 
       {/* ─── 배터리 / 전원 / GPS ────────────────── */}
       <Group title="배터리와 위치 상태">
