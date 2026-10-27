@@ -77,6 +77,6 @@ test('regular status reporting uses the persisted wake preference, independently
  assert.equal(toggle().props['aria-checked'],false);
  await act(async()=>toggle().props.onClick());assert.equal(sent.wake_alert,true);assert.equal(stored.motion_alert,true);
  await act(async()=>toggle().props.onClick());assert.equal(sent.wake_alert,false);
- assert.match(JSON.stringify(r.toJSON()),/24시간/);assert.match(JSON.stringify(r.toJSON()),/펌웨어 갱신/);
+ assert.match(JSON.stringify(r.toJSON()),/24시간/);assert.match(JSON.stringify(r.toJSON()),/펌웨어는 업데이트가 필요/);
  await act(async()=>r.unmount());
 });
