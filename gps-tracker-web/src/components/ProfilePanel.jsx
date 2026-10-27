@@ -143,7 +143,7 @@ function AccountTab({ me, setMe, onLogout }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <Card>
         <Field label="이메일" value={me.email} />
-        <Field label="권한"   value={me.role} />
+        <Field label="권한"   value={{ user: '일반 사용자', admin: '관리자' }[me.role] || me.role} />
       </Card>
 
       <AccountTypeCard />
@@ -666,7 +666,7 @@ function CreditTab() {
           </span>
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10 }}>
-          1 credit = 1 KRW · AI 분석 회당 20원, SIM 100MB = 100원
+          1포인트 = 1원 · AI 분석 회당 20원 · SIM 데이터 100MB당 100원
         </div>
 
         {!open ? (
@@ -1147,16 +1147,16 @@ function LabTab() {
       <Card>
         <div style={{ ...st.cardTitle, marginBottom: 8 }}>실험 기능</div>
         <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>
-          ⚗️ 안정화되지 않은 기능들. 사용해보고 어색하면 끄세요.
+          시험 중인 기능입니다. 필요할 때 켜서 사용할 수 있습니다.
         </div>
 
         <LabToggleRow
-          label="오늘 첫 열람 — 어제 운행 요약 팝업"
+          label="어제 운행 요약"
           desc={
             <>
               단말기를 선택하면 어제의 이동거리·운행시간·정지구간·최고속도를 표시합니다.<br />
-              <b>OFF</b>: 단말기별 처음 한 번 표시.&nbsp;
-              <b>ON</b>: 선택할 때마다 표시.
+              <b>꺼짐</b>: 단말기별 처음 한 번 표시.&nbsp;
+              <b>켜짐</b>: 선택할 때마다 표시.
             </>
           }
           on={!!prefs.lab_first_view_summary}
@@ -1168,8 +1168,8 @@ function LabTab() {
           label="운행 주기별 기록 탐색·삭제"
           desc={
             <>
-              운행 분석에 주기별 기록을 추가합니다. boot/wake → sleep_enter 묶음별로 보기 / 삭제 가능.<br />
-              테스트 사이클 누적 데이터 정리에 유용. <b>주의:</b> 삭제 시 해당 사이클 events + location_records 모두 영구 삭제.
+              기동부터 절전까지의 기록을 묶어 확인합니다.<br />
+              삭제하면 해당 주기의 작동·위치 기록이 영구 삭제됩니다.
             </>
           }
           on={!!prefs.lab_cycle_seeker}
@@ -1178,12 +1178,12 @@ function LabTab() {
         />
 
         <LabToggleRow
-          label="📱 스마트폰을 위치 단말기로 사용"
+          label="스마트폰을 위치 단말기로 사용"
           desc={
             <>
-              위치 권한을 획득하고 스마트폰을 하나의 단말기로 등록해 지도에 표시.<br />
-              <b>ON</b>: 브라우저 탭이 열린 동안 30초 간격으로 위치 전송. Flutter 앱에선 백그라운드에서도 동작.<br />
-              <b>OFF</b>: 위치 전송 중단 (등록된 단말기는 유지 — 홈에서 수동 삭제 가능).
+              위치 권한을 허용하면 이 스마트폰의 위치를 지도에서 볼 수 있습니다.<br />
+              웹에서는 탭이 열린 동안 30초마다 전송하며, 앱에서는 백그라운드에서도 전송합니다.<br />
+              끄면 위치 전송만 중단하고 단말기 등록은 유지합니다.
             </>
           }
           on={!!prefs.lab_phone_tracker}
@@ -1194,9 +1194,6 @@ function LabTab() {
 
       <Card>
         <div style={{ ...st.cardTitle, marginBottom: 8 }}>도구</div>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10 }}>
-          1회성 인트로 / 튜토리얼을 다시 보거나 reset 합니다.
-        </div>
         <button
           onClick={() => navigate('/devices/pair?tutorial=1')}
           className="btn-bounce"
@@ -1205,7 +1202,7 @@ function LabTab() {
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
           <Icon name="route" size={14} />
-          연결 튜토리얼 다시 보기
+          단말기 연결 안내
         </button>
       </Card>
     </>
