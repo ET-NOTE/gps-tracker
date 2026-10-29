@@ -72,6 +72,7 @@ async fn main() -> anyhow::Result<()> {
     services::fcm::spawn(pool.clone(), fcm);
     services::geofence::spawn_offline_worker(pool.clone());
     services::stats::spawn_worker(pool.clone());
+    services::fleet_sites::spawn(pool.clone());
     services::housekeeping::spawn_worker(pool.clone());
     // partition_worker 제거 — TimescaleDB hypertable 이 chunk 자동 관리 (migration 0040).
     services::nce::spawn_cache_worker(pool.clone());

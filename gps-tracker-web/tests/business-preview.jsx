@@ -138,6 +138,17 @@ if(params.has('team'))Object.assign(api,{
  createStaff:async body=>{const s={...body,id:teamStaff.length+1,department:teamOrg.find(i=>i.id===body.department_id)?.name,position:teamOrg.find(i=>i.id===body.position_id)?.name,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};teamStaff.push(s);return s;},
  updateStaff:async(id,body)=>{Object.assign(teamStaff.find(s=>s.id===id),body);return {...teamStaff.find(s=>s.id===id)};},
 });
+const siteGroups=[{id:1,name:'본사',active:true,updated_at:new Date().toISOString()}];
+const siteRows=params.has('empty')?[]:[{id:1,name:'서울 본사',address:'서울특별시 중구 세종대로 110',group_id:1,group_name:'본사',active:true,geometry:{type:'circle',lat:37.5665,lng:126.978,radius_m:200},created_at:new Date().toISOString(),updated_at:new Date().toISOString()}];
+const siteVisits=[{id:1,site_id:1,site_name:'서울 본사',group_name:'본사',vehicle_id:100,vehicle_name:'서울 영업 1호',first_inside_at:at('09'),last_inside_at:at('10'),previous_outside_at:at('08'),outside_at:at('11'),start_kind:'transition',status:'exit',observed_seconds:3600},{id:2,site_id:1,site_name:'서울 본사',vehicle_id:101,vehicle_name:'업무용 차량 2호',first_inside_at:at('12'),last_inside_at:at('12'),start_kind:'observed',status:'stale',observed_seconds:0}];
+Object.assign(api,{
+ listFleetSites:async()=>{if(failed)throw Error('지점 조회 실패');return siteRows.map(s=>({...s}));},listFleetSiteGroups:async()=>siteGroups.map(g=>({...g})),
+ createFleetSite:async body=>{const s={...body,id:siteRows.length+1,group_name:siteGroups.find(g=>g.id===body.group_id)?.name,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};siteRows.push(s);return s;},
+ updateFleetSite:async(id,body)=>{Object.assign(siteRows.find(s=>s.id===id),body,{updated_at:new Date().toISOString()});return {...siteRows.find(s=>s.id===id)};},
+ createFleetSiteGroup:async body=>{const g={...body,id:siteGroups.length+1,updated_at:new Date().toISOString()};siteGroups.push(g);return g;},
+ updateFleetSiteGroup:async(id,body)=>{Object.assign(siteGroups.find(g=>g.id===id),body);return body;},
+ listFleetSiteVisits:async p=>({items:siteVisits.filter(v=>(!p.vehicle_id||String(v.vehicle_id)===p.vehicle_id)&&(!p.site_id||String(v.site_id)===p.site_id)),next_before:null}),
+});
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');

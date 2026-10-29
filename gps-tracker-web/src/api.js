@@ -255,6 +255,13 @@ export const api = {
   joinFleet: body => req('POST','/corporate/join',body),
   fleetTeamAudit: () => req('GET','/corporate/team-audit'),
   fleetTerminals: () => req('GET','/corporate/terminals'),
+  listFleetSites: () => req('GET','/corporate/sites'),
+  createFleetSite: body => req('POST','/corporate/sites',body),
+  updateFleetSite: (id,body) => req('PUT',`/corporate/sites/${id}`,body),
+  listFleetSiteGroups: () => req('GET','/corporate/site-groups'),
+  createFleetSiteGroup: body => req('POST','/corporate/site-groups',body),
+  updateFleetSiteGroup: (id,body) => req('PUT',`/corporate/site-groups/${id}`,body),
+  listFleetSiteVisits: (params={}) => req('GET',`/corporate/site-visits?${new URLSearchParams(params)}`),
   // auth
   register: (body) => req('POST', '/auth/register', body),     // {email,password,phone,otp_code,display_name?}
   login:    (email, password, remember_me = false) =>

@@ -9,6 +9,7 @@ pub mod device_commands;
 pub mod device_settings;
 pub mod fcm;
 pub mod geofence;
+pub mod fleet_sites;
 pub mod hardware_auth;
 pub mod housekeeping;
 pub mod sim_identity;

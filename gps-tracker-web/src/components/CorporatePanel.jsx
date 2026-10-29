@@ -3,6 +3,7 @@ import { api } from '../api';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
 import StaffTab from './business/FleetPeople';
+import FleetSites from './business/FleetSites';
 import {FleetAccountScope,useFleetAccess,staffCanDrive} from './business/FleetAccess';
 import { BusinessCompanyInfo as InfoTab, BusinessSubscription as SubTab } from './business/BusinessPreferences';
 import { filterTrips, tripReport, monthlyReport, monthDateBounds, purposeLabel } from '../lib/businessExport';
@@ -51,7 +52,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const updateSub = value => qc.setQueryData(qk.businessSubscription('corporate'), value);
   const reserve = value => { setRequest(value); setTab('reservations'); };
   const report = device => { setReportDevice(device.id); setTab('report'); };
-  if(assets.isPending)return <SkeletonList count={3} itemHeight={140}/>;
+  if(assets.isPending||terminals.isPending)return <SkeletonList count={3} itemHeight={140}/>;
   if(assets.error)return <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>;
   if(terminals.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={terminals.refetch}>단말기 상태를 불러오지 못했습니다.</BusinessError></div>;
   return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
@@ -63,6 +64,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     {tab === 'vehicles' && <FleetAssets onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={rawOnMap} onChanged={assets.refetch} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <StaffTab />}
+    {tab === 'sites' && <FleetSites />}
     {['report','monthly'].includes(tab) && <>
       {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
         : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
@@ -354,6 +356,7 @@ function TripRow({ t, date, dailyKm, onEdit }) {
         )}
       </td>
       <td style={st.td}>
+        {!!t.start_sites?.length&&<strong>{t.start_sites.map(s=>s.name).join(' · ')}</strong>}
         <div>{t.start_address || '—'}</div>
         {t.start_lat != null && (
           <div style={{ fontSize: 9, color: 'var(--text-3)' }}>
@@ -362,6 +365,7 @@ function TripRow({ t, date, dailyKm, onEdit }) {
         )}
       </td>
       <td style={st.td}>
+        {!!t.end_sites?.length&&<strong>{t.end_sites.map(s=>s.name).join(' · ')}</strong>}
         <div>{t.end_address || '—'}</div>
         {t.end_lat != null && (
           <div style={{ fontSize: 9, color: 'var(--text-3)' }}>
