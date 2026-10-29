@@ -113,13 +113,14 @@ Object.assign(api,{
  updateFleetVehicle:async(id,body)=>{assets=assets.map(v=>v.id===id?{...v,...body,updated_at:new Date().toISOString()}:v);return assets.find(v=>v.id===id);},
  fleetVehicleBindings:async id=>assets.find(v=>v.id===id).bindings,
  connectFleetVehicle:async(id,body)=>{const v=assets.find(v=>v.id===id);v.bindings=body.device_ids.map((d,i)=>({id:i+10,device_id:d,terminal_name:devices.find(x=>x.id===d).display_name,is_primary:d===body.primary_device_id,started_at:new Date().toISOString()}));return {...v};},
- listFleetVehicleTrips:async(id,p)=>api.listTrips(devices[id-100]?.id,p),
+ listFleetVehicleTrips:async(id,p)=>(await api.listTrips(devices[id-100]?.id,p)).map(t=>({...t,source_device_id:devices[id-100]?.id,binding_id:id,vehicle_id:id,source_started_at:t.started_at,allocation_status:'assigned',annotation:assignmentAnnotations.get(`${id}:${t.started_at}`)||t.annotation})),
  fleetVehicleStats:async()=>{const rows=await api.fleetTripStats();return {per_device:rows.per_device.map(r=>({...r,device_id:99+r.device_id,vehicle_id:99+r.device_id}))};},
  listFleetDocuments:read([]),
  listFleetReservations:async p=>fleetBookings.filter(r=>(!p.from||new Date(r.ends_at)>=new Date(p.from))&&(!p.to||new Date(r.starts_at)<new Date(p.to))),
  createFleetReservation:async body=>{const v=assets.find(v=>v.id===body.vehicle_id);const r={...body,id:100+fleetBookings.length,vehicle_name:v.name,license_plate:v.license_plate};fleetBookings.push(r);return r;},
  updateFleetReservation:async(id,body)=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,...body}:r);return fleetBookings.find(r=>r.id===id);},cancelFleetReservation:async id=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,status:'cancelled'}:r);return {ok:true};},
 });
+const assignmentAnnotations=new Map(),tripRules=[],tripAudit=[];
 const teamOrg=[{id:1,kind:'department',name:'영업팀',active:true,updated_at:new Date().toISOString()},{id:2,kind:'position',name:'팀장',active:true,updated_at:new Date().toISOString()}];
 const teamStaff=[{id:1,name:'김영업',role:'영업',department_id:1,department:'영업팀',position_id:2,position:'팀장',phone:'010-0000-0000',active:true,access_role:'member',all_vehicles:false,vehicle_ids:[100],created_at:new Date().toISOString(),updated_at:new Date().toISOString()}];
 const teamRole=params.get('role')||'owner';let teamInvites=[];
@@ -137,6 +138,24 @@ if(params.has('team'))Object.assign(api,{
  listStaff:async()=>teamStaff.map(s=>({...s})),
  createStaff:async body=>{const s={...body,id:teamStaff.length+1,department:teamOrg.find(i=>i.id===body.department_id)?.name,position:teamOrg.find(i=>i.id===body.position_id)?.name,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};teamStaff.push(s);return s;},
  updateStaff:async(id,body)=>{Object.assign(teamStaff.find(s=>s.id===id),body);return {...teamStaff.find(s=>s.id===id)};},
+});
+Object.assign(api,{
+ listTripRules:async id=>tripRules.filter(r=>r.vehicle_id===id).map(r=>({...r})),
+ createTripRule:async(id,p)=>{const r={...p,id:tripRules.length+1,vehicle_id:id,driver_name:teamStaff.find(s=>s.id===p.driver_staff_id)?.name,updated_at:new Date().toISOString()};tripRules.push(r);return r;},
+ updateTripRule:async(id,rid,p)=>{const r=tripRules.find(r=>r.id===rid);Object.assign(r,p,{updated_at:new Date().toISOString()});return {...r};},
+ tripAssignmentHistory:async()=>tripAudit,
+ assignFleetTrips:async(id,p)=>{
+  const trips=await api.listFleetVehicleTrips(id,{});
+  const rows=p.trips.map(k=>{const t=trips.find(t=>t.started_at===k.trip_started_at),before=t?.annotation;
+   const source=p.mode==='suggest'?{kind:'reservation',id:1}:{kind:'manual'};
+   const driver=(p.mode==='suggest'||p.change_driver)&&(!before?.driver_staff_id||p.overwrite)?p.mode==='suggest'?1:p.driver_staff_id:before?.driver_staff_id;
+   const purpose=(p.mode==='suggest'||p.change_purpose)&&(!before?.purpose||before.purpose==='unspecified'||p.overwrite)?p.mode==='suggest'?'business':p.purpose:before?.purpose||'unspecified';
+   const after={driver_staff_id:driver,driver_name:teamStaff.find(s=>s.id===driver)?.name,purpose};
+   return {key:k,started_at:t.started_at,before,after,source,status:driver!==before?.driver_staff_id||purpose!==(before?.purpose||'unspecified')?'ready':'skipped',reason:'이미 입력됨 · 변경 없음'};
+  });
+  if(p.preview_token){for(const r of rows.filter(r=>r.status==='ready')){const a={...r.before,...r.after,updated_at:new Date().toISOString()};assignmentAnnotations.set(`${id}:${r.started_at}`,a);tripAudit.unshift({id:tripAudit.length+1,action:'annotation',actor_name:'검증 관리자',created_at:a.updated_at,before_value:r.before,after_value:{...a,trip_started_at:r.started_at}});}return {applied:rows.filter(r=>r.status==='ready').length,skipped:rows.filter(r=>r.status!=='ready').length};}
+  return {rows,preview_token:'fixture-only',ready:rows.filter(r=>r.status==='ready').length,skipped:rows.filter(r=>r.status!=='ready').length};
+ },
 });
 const siteGroups=[{id:1,name:'본사',active:true,updated_at:new Date().toISOString()}];
 const siteRows=params.has('empty')?[]:[{id:1,name:'서울 본사',address:'서울특별시 중구 세종대로 110',group_id:1,group_name:'본사',active:true,geometry:{type:'circle',lat:37.5665,lng:126.978,radius_m:200},created_at:new Date().toISOString(),updated_at:new Date().toISOString()}];

@@ -160,7 +160,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             0,
             row,
             8,
-            "거리: GPS 계산값 · 사용자 부서/계기판 거리는 미입력 · 필터 적용 시 해당 내역만 포함",
+            "국세청 고시 제2025-8호 항목 기준 · 거리: GPS 계산값 · 계기판 거리: 미입력 · 사용자란은 차량 이용자 기준(운전자와 다르면 보완)",
             &cell_fmt,
         )?;
         row += 1;

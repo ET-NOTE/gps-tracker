@@ -165,6 +165,10 @@ pub(super) struct TripAnnotation {
     fuel_cost: Option<i32>,
     fuel_expense_id: Option<i64>,
     fuel_expense_status: Option<String>,
+    #[serde(default)]
+    updated_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    assignment_source: Option<Value>,
     note: Option<String>,
 }
 
@@ -612,7 +616,7 @@ async fn load_annotations(
                   a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
                   CASE WHEN a.fuel_expense_id IS NULL THEN a.fuel_cost WHEN e.status='approved' THEN e.amount_krw END AS fuel_cost,
-                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note
+                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note,a.updated_at,a.assignment_source
              FROM trip_annotations a
         LEFT JOIN fleet_expenses e ON e.id=a.fuel_expense_id AND e.owner_id=a.user_id
         LEFT JOIN staff s ON s.id = a.driver_staff_id
@@ -631,6 +635,7 @@ async fn load_annotations(
 #[derive(Debug, Deserialize)]
 pub(super) struct AnnotationPayload {
     pub(super) trip_started_at: DateTime<Utc>,
+    expected_version: Option<String>,
     purpose: Option<String>, // commute|business|other|unspecified
     purpose_note: Option<String>,
     pub(super) driver_staff_id: Option<i64>,
@@ -646,7 +651,7 @@ async fn upsert_annotation(
     Json(req): Json<AnnotationPayload>,
 ) -> AppResult<Json<TripAnnotation>> {
     verify_device_owner(&state, user.user_id, device_id).await?;
-    save_annotation(&state, user, device_id, req, None).await
+    save_annotation(&state, user, device_id, req, None, None).await
 }
 pub(super) async fn save_annotation(
     state: &AppState,
@@ -654,6 +659,7 @@ pub(super) async fn save_annotation(
     device_id: i64,
     req: AnnotationPayload,
     self_driver: Option<i64>,
+    actor: Option<i64>,
 ) -> AppResult<Json<TripAnnotation>> {
     if req
         .fuel_liters
@@ -682,6 +688,28 @@ pub(super) async fn save_annotation(
 
     let mut tx = state.db.begin().await?;
     super::fleet_expenses::lock(&mut tx, user.user_id).await?;
+    sqlx::query("SELECT set_config('app.fleet_actor',$1,true)")
+        .bind(actor.unwrap_or(user.user_id).to_string())
+        .execute(&mut *tx)
+        .await?;
+    if let Some(expected) = req.expected_version {
+        let current:Option<DateTime<Utc>>=sqlx::query_scalar("SELECT updated_at FROM trip_annotations WHERE user_id=$1 AND device_id=$2 AND trip_started_at=$3").bind(user.user_id).bind(device_id).bind(req.trip_started_at).fetch_optional(&mut *tx).await?;
+        let matches = if expected == "new" {
+            current.is_none()
+        } else {
+            Some(
+                DateTime::parse_from_rfc3339(&expected)
+                    .map_err(|_| AppError::BadRequest("수정 버전이 올바르지 않습니다.".into()))?
+                    .with_timezone(&Utc),
+            ) == current
+        };
+        if !matches {
+            return Err(AppError::Conflict(
+                "다른 사용자가 이 운행을 수정했습니다. 새로고침 후 다시 확인해 주세요.".into(),
+            ));
+        }
+    }
+
     let linked:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM trip_annotations WHERE user_id=$1 AND device_id=$2 AND trip_started_at=$3 AND fuel_expense_id IS NOT NULL)").bind(user.user_id).bind(device_id).bind(req.trip_started_at).fetch_one(&mut *tx).await?;
     if linked && req.fuel_cost.is_some() {
         return Err(AppError::Conflict(
@@ -693,13 +721,14 @@ pub(super) async fn save_annotation(
               (device_id, user_id, trip_started_at, purpose, purpose_note, driver_staff_id, fuel_liters, fuel_cost, note)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            ON CONFLICT (device_id, user_id, trip_started_at) DO UPDATE SET
+              assignment_source = CASE WHEN trip_annotations.driver_staff_id IS DISTINCT FROM EXCLUDED.driver_staff_id OR trip_annotations.purpose IS DISTINCT FROM EXCLUDED.purpose OR trip_annotations.purpose_note IS DISTINCT FROM EXCLUDED.purpose_note THEN NULL ELSE trip_annotations.assignment_source END,
               purpose         = EXCLUDED.purpose,
               purpose_note    = EXCLUDED.purpose_note,
               driver_staff_id = EXCLUDED.driver_staff_id,
               fuel_liters     = EXCLUDED.fuel_liters,
               fuel_cost       = EXCLUDED.fuel_cost,
               note            = EXCLUDED.note,
-              updated_at      = NOW()
+              updated_at      = clock_timestamp()
            WHERE $10::bigint IS NULL OR trip_annotations.driver_staff_id IS NULL OR trip_annotations.driver_staff_id=$10"#,
     )
     .bind(device_id).bind(user.user_id).bind(req.trip_started_at).bind(purpose).bind(req.purpose_note)
@@ -714,7 +743,7 @@ pub(super) async fn save_annotation(
                   a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
                   CASE WHEN a.fuel_expense_id IS NULL THEN a.fuel_cost WHEN e.status='approved' THEN e.amount_krw END AS fuel_cost,
-                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note
+                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note,a.updated_at,a.assignment_source
              FROM trip_annotations a
         LEFT JOIN fleet_expenses e ON e.id=a.fuel_expense_id AND e.owner_id=a.user_id
         LEFT JOIN staff s ON s.id = a.driver_staff_id

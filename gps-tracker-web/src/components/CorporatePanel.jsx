@@ -5,6 +5,8 @@ import ExportButtons from './business/ExportButtons';
 import StaffTab from './business/FleetPeople';
 import FleetSites from './business/FleetSites';
 import FleetExpenses from './business/FleetExpenses';
+import {TripAssignmentModal,TripRulesModal,TripAssignmentHistory} from './business/FleetTripAssignments';
+import {tripAssignmentKey,canAssignTrip} from '../lib/tripAssignments';
 import {FleetAccountScope,useFleetAccess,staffCanDrive} from './business/FleetAccess';
 import { BusinessCompanyInfo as InfoTab, BusinessSubscription as SubTab } from './business/BusinessPreferences';
 import { filterTrips, tripReport, monthlyReport, monthDateBounds, purposeLabel } from '../lib/businessExport';
@@ -113,6 +115,8 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onVehicles }) 
 // 운행 리포트 — 차량별 운행기록과 내보내기.
 // ════════════════════════════════════════════════════════
 function ReportTab({ devices, initialDeviceId }) {
+  const access=useFleetAccess();
+  const [selected,setSelected]=useState(new Set()),[assignment,setAssignment]=useState(null),[showRules,setShowRules]=useState(false),[showHistory,setShowHistory]=useState(false),[assignmentStatus,setAssignmentStatus]=useState('');
   const today = businessDate();
   const monthAgo = `${today.slice(0, 7)}-01`;
 
@@ -143,6 +147,7 @@ function ReportTab({ devices, initialDeviceId }) {
   async function load() {
     if (!deviceId) return;
     const id = ++loadId.current;
+    setSelected(new Set());setAssignment(null);
     if (!from || !to || from > to) { setTrips(null); setLoading(false); setError('조회 시작일과 종료일을 올바르게 선택해 주세요.'); return; }
     setLoading(true); setError(null); setTrips(null);
     try {
@@ -156,6 +161,10 @@ function ReportTab({ devices, initialDeviceId }) {
 
   // 추가 필터 적용된 trip 목록 — 운전자/용무/최소시간 AND.
   const filteredTrips = useMemo(() => trips ? filterTrips(trips, {driver:driverFilter,purpose:purposeFilter,minHours}) : null, [trips, driverFilter, purposeFilter, minHours]);
+  useEffect(()=>{setSelected(new Set());setAssignment(null);setAssignmentStatus('');},[deviceId,from,to,driverFilter,purposeFilter,minHours]);
+  const eligible=(filteredTrips||[]).filter(t=>canAssignTrip(t,access));
+  const chosen=eligible.filter(t=>selected.has(tripAssignmentKey(t)));
+  const toggleTrip=t=>{setAssignmentStatus('');setSelected(previous=>{const next=new Set(previous),key=tripAssignmentKey(t);if(next.has(key))next.delete(key);else if(next.size<100)next.add(key);return next;});};
   const completeness = trips ? tripCompleteness(trips) : null;
   const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
     filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간`,
@@ -204,7 +213,7 @@ function ReportTab({ devices, initialDeviceId }) {
         <button onClick={load} style={st.btnGhost} disabled={loading}>
           <Icon name="refresh" size={12} /> 새로고침
         </button>
-        <ExportButtons report={exportData} csvReport={csvData} csvLabel="운행기록부 CSV" disabled={loading || !!error || !deviceId} />
+        <ExportButtons report={exportData} csvReport={csvData} pdfReport={csvData} csvLabel="운행기록부 CSV" disabled={loading || !!error || !deviceId} />
         <button onClick={() => window.print()} style={st.btnGhost} disabled={loading || !!error || !trips}>
           <Icon name="share" size={12} /> 인쇄
         </button>
@@ -250,6 +259,16 @@ function ReportTab({ devices, initialDeviceId }) {
         </span>
       </div>
 
+      <div className="fleet-assignment-toolbar no-print">
+        <span role="status">{assignmentStatus || `${chosen.length}건 선택 · 한 번에 100건까지`}</span>
+        <BusinessButton disabled={!chosen.length||loading} onClick={()=>setAssignment('manual')}>일괄 지정</BusinessButton>
+        <BusinessButton disabled={!chosen.length||loading} onClick={()=>setAssignment('suggest')}>예약·규칙 적용</BusinessButton>
+        <BusinessButton disabled={!device} onClick={()=>setShowRules(true)}>기본 운전자·반복 규칙</BusinessButton>
+        {access.manage_reports&&<BusinessButton disabled={!device} onClick={()=>setShowHistory(true)}>변경 이력</BusinessButton>}
+      </div>
+      {assignment&&<TripAssignmentModal mode={assignment} trips={chosen} vehicle={device} from={from} to={to} staff={staffAll||[]} onClose={()=>setAssignment(null)} onSaved={result=>{setAssignment(null);setAssignmentStatus(`${result.applied}건 변경 · ${result.skipped}건 제외`);load();}}/>}
+      {showRules&&device&&<TripRulesModal vehicle={device} staff={staffAll||[]} onClose={()=>setShowRules(false)}/>}
+      {showHistory&&device&&<TripAssignmentHistory vehicle={device} onClose={()=>setShowHistory(false)}/>}
       {/* 리포트 본문 — 인쇄 영역 */}
       <div className="report-area" style={st.reportArea}>
         <ReportHeader info={info} device={device} from={from} to={to} />
@@ -262,7 +281,7 @@ function ReportTab({ devices, initialDeviceId }) {
           <div style={st.muted}>필터 조건에 맞는 운행이 없습니다.</div>
         )}
         {filteredTrips && filteredTrips.length > 0 && (
-          <TripsTable trips={filteredTrips} dailyDistance={dailyDistance}
+          <TripsTable trips={filteredTrips} dailyDistance={dailyDistance} selected={selected} onSelect={toggleTrip} eligible={eligible} onSelectAll={()=>{setAssignmentStatus('');setSelected(chosen.length===Math.min(100,eligible.length)?new Set():new Set(eligible.slice(0,100).map(tripAssignmentKey)));}}
             onEdit={(t) => setEditing(t)} />
         )}
       </div>
@@ -303,7 +322,7 @@ function ReportHeader({ info, device, from, to }) {
   );
 }
 
-function TripsTable({ trips, dailyDistance, onEdit }) {
+function TripsTable({ trips, dailyDistance, onEdit, selected, onSelect, eligible, onSelectAll }) {
   return (
     // 모바일 — 9열 표가 좁은 폭을 넘김. 가로 스크롤 컨테이너로 감쌈.
     // 인쇄 시 @media print 가 nav/sidebar 만 숨기고 reportArea 는 그대로 노출, 인쇄 페이지 폭에 맞춤.
@@ -311,6 +330,7 @@ function TripsTable({ trips, dailyDistance, onEdit }) {
     <table style={st.tripsTable}>
       <thead>
         <tr>
+          <th style={st.th} className="no-print"><input className="fleet-trip-select" type="checkbox" aria-label="현재 운행 최대 100건 선택" checked={eligible.length>0&&selected.size===Math.min(100,eligible.length)} disabled={!eligible.length} onChange={onSelectAll}/></th>
           <th style={st.th}>날짜</th>
           <th style={st.th}>시간</th>
           <th style={st.th}>용무</th>
@@ -329,7 +349,7 @@ function TripsTable({ trips, dailyDistance, onEdit }) {
           const dailyKm = dailyDistance.has(d) ? `${(dailyDistance.get(d) / 1000).toFixed(1)} km` : '—';
           const firstOfDay = !trips.slice(0, i).some(x => kstDate(x.started_at) === d);
           return (
-            <TripRow key={t.started_at} t={t}
+            <TripRow key={tripAssignmentKey(t)} t={t} selected={selected.has(tripAssignmentKey(t))} onSelect={()=>onSelect(t)} selectionFull={selected.size>=100}
               date={d} dailyKm={firstOfDay ? dailyKm : ''}
               onEdit={() => onEdit(t)} />
           );
@@ -340,7 +360,7 @@ function TripsTable({ trips, dailyDistance, onEdit }) {
   );
 }
 
-function TripRow({ t, date, dailyKm, onEdit }) {
+function TripRow({ t, date, dailyKm, onEdit, selected, onSelect, selectionFull }) {
   const access=useFleetAccess();
   const ann = t.annotation || {};
   const purpose = ann.purpose || 'unspecified';
@@ -349,6 +369,7 @@ function TripRow({ t, date, dailyKm, onEdit }) {
 
   return (
     <tr>
+      <td style={st.td} className="no-print"><input className="fleet-trip-select" type="checkbox" aria-label={`${date} ${time} 운행 선택`} checked={selected} disabled={!canAssignTrip(t,access)||(!selected&&selectionFull)} onChange={onSelect}/></td>
       <td style={st.td}>{date}</td>
       <td style={st.td}>{time}</td>
       <td style={st.td}>
@@ -414,6 +435,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
       await api.annotateFleetVehicleTrip(deviceId, {
         binding_id:trip.binding_id, source_device_id:trip.source_device_id,
         trip_started_at: trip.source_started_at || trip.started_at,
+        expected_version: ann.updated_at || "new",
         purpose,
         purpose_note: purpose === 'other' ? (purposeNote.trim() || null) : null,
         driver_staff_id: driverId ? parseInt(driverId, 10) : null,
@@ -909,6 +931,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
   const [startsAt, setStartsAt] = useState(init ? isoToLocal(init.starts_at) : isoToLocal(defaultStart().toISOString()));
   const [endsAt,   setEndsAt]   = useState(init ? isoToLocal(init.ends_at)   : isoToLocal(new Date(defaultStart().getTime() + 3600_000).toISOString()));
   const [purpose,  setPurpose]  = useState(init?.purpose ?? '');
+  const [reportPurpose,setReportPurpose]=useState(init?.report_purpose || '');
   const [note,     setNote]     = useState(init?.note ?? '');
   const [status,   setStatus]   = useState(init?.status ?? 'planned');
   // (F2-c) mutations — 성공 시 자동 invalidate.
@@ -925,6 +948,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
       starts_at:       localToIso(startsAt),
       ends_at:         localToIso(endsAt),
       purpose:         purpose.trim() || null,
+      report_purpose: reportPurpose || null,
       note:            note.trim() || null,
       status,
     };
@@ -971,7 +995,10 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
           </FormField>
         </div>
 
-        <FormField label="목적">
+        <FormField label="운행기록부 용무 (선택)">
+          <Select value={reportPurpose} onChange={e=>setReportPurpose(e.target.value)}><option value="">미지정</option><option value="commute">출퇴근</option><option value="business">업무</option><option value="other">기타</option></Select>
+        </FormField>
+        <FormField label="예약 목적">
           <input value={purpose} onChange={e => setPurpose(e.target.value)}
             placeholder="거래처 방문, 외근..." style={st.input} />
         </FormField>

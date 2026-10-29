@@ -35,6 +35,7 @@ struct Input {
     starts_at: DateTime<Utc>,
     ends_at: DateTime<Utc>,
     purpose: Option<String>,
+    report_purpose: Option<String>,
     note: Option<String>,
     status: Option<String>,
 }
@@ -103,6 +104,13 @@ async fn save(
             .is_some_and(|s| s.chars().count() > 2000)
     {
         return Err(AppError::BadRequest("목적 또는 메모가 너무 깁니다.".into()));
+    }
+    if input
+        .report_purpose
+        .as_deref()
+        .is_some_and(|v| !matches!(v, "commute" | "business" | "other"))
+    {
+        return Err(AppError::BadRequest("운행 용무를 확인해 주세요.".into()));
     }
     let status = input.status.unwrap_or_else(|| "planned".into());
     if !["planned", "in_progress", "completed", "cancelled"].contains(&status.as_str()) {
@@ -175,11 +183,11 @@ async fn save(
         }
     }
     let saved: i64 = if let Some(id) = id {
-        sqlx::query_scalar("UPDATE vehicle_reservations SET fleet_vehicle_id=$3,device_id=NULL,driver_staff_id=$4,starts_at=$5,ends_at=$6,purpose=$7,note=$8,status=$9,alerted_at=CASE WHEN starts_at IS DISTINCT FROM $5 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,ended_alerted_at=CASE WHEN ends_at IS DISTINCT FROM $6 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,updated_at=clock_timestamp() WHERE id=$1 AND user_id=$2 RETURNING id")
-            .bind(id).bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).fetch_one(&mut *tx).await.map_err(booking_error)?
+        sqlx::query_scalar("UPDATE vehicle_reservations SET fleet_vehicle_id=$3,device_id=NULL,driver_staff_id=$4,starts_at=$5,ends_at=$6,purpose=$7,note=$8,status=$9,report_purpose=$10,alerted_at=CASE WHEN starts_at IS DISTINCT FROM $5 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,ended_alerted_at=CASE WHEN ends_at IS DISTINCT FROM $6 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,updated_at=clock_timestamp() WHERE id=$1 AND user_id=$2 RETURNING id")
+            .bind(id).bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).fetch_one(&mut *tx).await.map_err(booking_error)?
     } else {
-        sqlx::query_scalar("INSERT INTO vehicle_reservations(user_id,fleet_vehicle_id,driver_staff_id,starts_at,ends_at,purpose,note,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id")
-            .bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).fetch_one(&mut *tx).await.map_err(booking_error)?
+        sqlx::query_scalar("INSERT INTO vehicle_reservations(user_id,fleet_vehicle_id,driver_staff_id,starts_at,ends_at,purpose,note,status,report_purpose) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id")
+            .bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).fetch_one(&mut *tx).await.map_err(booking_error)?
     };
     let row: Value = sqlx::query_scalar(&format!("{ROW} WHERE r.id=$1 AND r.user_id=$2"))
         .bind(saved)
@@ -198,6 +206,10 @@ async fn cancel(
 ) -> AppResult<Json<Value>> {
     // Retain the old booking and its audit instead of physically deleting it.
     let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
+        .bind(format!("fleet-reservations:{}", user.user_id))
+        .execute(&mut *tx)
+        .await?;
     let before:Value=sqlx::query_scalar("SELECT to_jsonb(r) FROM vehicle_reservations r WHERE id=$1 AND user_id=$2 AND fleet_vehicle_id IS NOT NULL FOR UPDATE").bind(id).bind(user.user_id).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
     if let Some(Extension(scope)) = scope {
         scope.vehicle(

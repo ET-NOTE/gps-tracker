@@ -14,8 +14,9 @@ export function reportVehicleLabel(device) {
 export function ntsTripReport(trips, { device, info, from, to, filtered = false } = {}) {
   const plate = text(device?.car_plate || device?.license_plate), model = text(device?.car_model);
   const warnings = [];
-  const missing = [[info?.company_name,'상호명'],[info?.business_number,'사업자등록번호'],[plate,'자동차등록번호'],[model,'차종']].filter(([v])=>!text(v)).map(([,label])=>label);
+  const missing = [[info?.company_name,'법인명'],[info?.business_number,'사업자등록번호'],[plate,'자동차등록번호'],[model,'차종']].filter(([v])=>!text(v)).map(([,label])=>label);
   if (missing.length) warnings.push(`차량·회사 정보 미입력: ${missing.join(', ')}`);
+  if (trips.length) warnings.push('사용자란은 차량 이용자 기준입니다. 표시된 운전자와 이용자가 다르면 성명·부서를 수정해 주세요.');
   if (trips.length) warnings.push('주행 전·후 계기판 거리는 실제 기록으로 보완해 주세요. 부서는 운전자 배정 시점의 값을 사용합니다.');
   const incomplete = trips.filter(t=>!t.ended_at || !kstDateTime(t.ended_at) || distance(t) === null || !kstDateTime(t.started_at) || new Date(t.ended_at) < new Date(t.started_at));
   const excluded = new Set(incomplete);
@@ -43,14 +44,17 @@ export function ntsTripReport(trips, { device, info, from, to, filtered = false 
     ['date','③사용일자 (요일)'],['department','④사용자 부서'],['driver','④사용자 성명'],
     ['before','⑤주행 전 계기판 거리(㎞)'],['after','⑥주행 후 계기판 거리(㎞)'],['km','⑦주행거리(㎞)'],
     ['commute','⑧출·퇴근용(㎞)'],['business','⑨일반 업무용(㎞)'],['note','⑩비고'],
-  ].map(([key,label])=>({key,label}));
+  ].map(([key,label])=>({key,label,pdfLabel:({date:'3 사용일자 (요일)',department:'4 사용자\n부서',driver:'4 사용자\n성명',before:'5 주행 전\n계기판(km)',after:'6 주행 후\n계기판(km)',km:'7 주행거리\n(km)',commute:'8 출·퇴근용\n(km)',business:'9 일반 업무용\n(km)',note:'10 비고'})[key],numeric:['before','after','km','commute','business'].includes(key),pdfWidth:({date:80,department:48,driver:48,before:62,after:62,km:55,commute:55,business:55,note:'*'})[key]}));
   return {title:'업무용승용차 운행기록부', filename:`업무용승용차_운행기록부_${model || '차종미등록'}_${plate || '차량번호미등록_' + (device?.id ?? '')}_${from}_${to}`,
     columns, rows, warnings,
-    csvPreamble:[['업무용승용차 운행기록부'],['조회기간',from,to],['상호명',text(info?.company_name)],['사업자등록번호',text(info?.business_number)],
+    meta:[`법인명: ${text(info?.company_name)||'미등록'} · 사업자등록번호: ${text(info?.business_number)||'미등록'}`,`차량: ${model||'미등록'} · ${plate||'미등록'} · 기간: ${from} ~ ${to}`, '국세청 고시 제2025-8호 별지 항목 기준 · 거리: GPS 계산값 · 계기판 거리: 미입력',...warnings],
+    footer:`⑪조회 내역 총주행거리: ${total} km · ⑫업무용 사용거리: ${work} km · ⑬업무사용비율: ${ratio||'미계산'}\n조회기간이 전체 사업연도인지 확인하고 계기판 거리·사용자·누락 정보를 보완해 주세요.`,
+    pdfFooter:`11 조회 내역 총주행거리: ${total} km · 12 업무용 사용거리: ${work} km · 13 업무사용비율: ${ratio||'미계산'}\n조회기간이 전체 사업연도인지 확인하고 계기판 거리·사용자·누락 정보를 보완해 주세요.`,
+    csvPreamble:[['업무용승용차 운행기록부'],['조회기간',from,to],['법인명',text(info?.company_name)],['사업자등록번호',text(info?.business_number)],
       ['①차종',model],['②자동차등록번호',plate],['자료 기준','첨부 서식의 항목 순서 · 거리: GPS 계산값 · 계기판 거리: 미입력'],
       ['조회 범위',filtered?'필터 적용 내역':'선택 차량·조회기간 내역'],...warnings.map(w=>['보완 사항',w]),[]],
     csvFooter:[[],['조회 내역 합계','','','','',total,commute,business,'종료·거리·일자가 확인된 운행만 합산'],
       ['⑪조회 내역 총주행거리(㎞)',total],['⑫조회 내역 업무용 사용거리(㎞)',work],['⑬업무사용비율(⑫/⑪)',ratio],
-      ['안내','조회기간이 전체 과세기간인지 확인해 주세요. 계기판 거리와 누락 정보 보완 후 사용하세요.']],
+      ['안내','조회기간이 전체 사업연도인지 확인해 주세요. 계기판 거리와 누락 정보 보완 후 사용하세요.']],
     summary:`${rows.length}건 · 합계 ${total.toFixed(2)} km`};
 }

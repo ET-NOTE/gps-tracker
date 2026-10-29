@@ -553,7 +553,10 @@ async fn annotation(
         user,
         p.source_device_id,
         p.annotation,
-        scope.and_then(|s| if s.manager() { None } else { s.staff }),
+        scope
+            .as_ref()
+            .and_then(|s| if s.manager() { None } else { s.staff }),
+        scope.map(|s| s.actor),
     )
     .await
 }
