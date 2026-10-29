@@ -1,9 +1,8 @@
 // (2026-07-28) Stage-4B-2: 월간 운행기록부 XLSX 생성 (2종).
 //
-// 1) NTS (국세청) — 별지 제73호 (업무용승용차 운행기록부) 서식
-//    법인세법 시행규칙 [별지 제73호서식]. 세무 감사·경비 인정 근거.
-//    필수 열: 사용일자 · 부서 · 사용자 · 사용목적 · 출발지 · 도착지 · 주행거리(km) · 업무용사용거리(km)
-//    총계 + 업무사용비율 요약.
+// 1) NTS — 사용자가 제공한 업무용승용차 운행기록부 항목 (2016.4.1 제정본).
+//    계기판 거리/사용자 부서는 수집하지 않았으므로 공란. GPS 거리로 대체하지 않는다.
+//    최신 법정 서식과의 동일성이나 제출 적합성을 주장하지 않는다.
 //
 // 2) OURS (우리 전용) — 정보량 多 · 조직 실무용
 //    회사 정보 헤더 + 차량별 sheet 분리 + 유류비 상세 + 좌표 + 부서 그룹.
@@ -27,6 +26,7 @@ pub struct DeviceLite {
     pub display_name: Option<String>,
     pub device_uid: String,
     pub license_plate: Option<String>,
+    pub car_model: Option<String>,
     pub model_year: Option<i32>,
     pub engine_cc: Option<i32>,
     pub purchase_price_krw: Option<i64>,
@@ -60,7 +60,7 @@ pub struct ReportContext<'a> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 국세청 별지 제73호서식 — 표준 열 구성.
+// 첨부 운행기록부 B12:Q14 열 구성. 구형 nts 요청 URL 유지.
 // ═══════════════════════════════════════════════════════════════
 pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
     let mut wb = Workbook::new();
@@ -70,7 +70,6 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
     let cell_num = table_cell_num_format();
     let label_fmt = header_label_format();
     let value_fmt = header_value_format();
-    let summary_fmt = summary_format();
 
     // 차량별로 sheet 하나 (국세청 서식은 차량 단위).
     for (i, (device, trips)) in ctx.per_device.iter().enumerate() {
@@ -90,7 +89,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         sheet.set_name(&name)?;
 
         // ── 제목 ─────────────────────────────────────
-        sheet.merge_range(0, 0, 0, 7, "업무용승용차 운행기록부", &title_fmt)?;
+        sheet.merge_range(0, 0, 0, 8, "업무용승용차 운행기록부", &title_fmt)?;
         sheet.set_row_height(0, 26.0)?;
 
         // ── 헤더 표 (2 x 4 그리드) ────────────────────
@@ -98,7 +97,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         let month_no = &ctx.month_ym[5..];
         let header_rows: [[(&str, String); 4]; 3] = [
             [
-                ("과세기간", format!("{year}년 {month_no}월")),
+                ("조회기간", format!("{year}년 {month_no}월")),
                 ("법인명", ctx.corp.company_name.clone().unwrap_or_default()),
                 (
                     "사업자등록번호",
@@ -111,13 +110,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             ],
             [
                 ("차량번호", plate.clone()),
-                (
-                    "차종",
-                    device
-                        .display_name
-                        .clone()
-                        .unwrap_or_else(|| device.device_uid.clone()),
-                ),
+                ("차종", device.car_model.clone().unwrap_or_default()),
                 (
                     "연식",
                     device
@@ -159,97 +152,121 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             row += 1;
         }
 
-        // ── 운행 표 헤더 ─────────────────────────────
+        // The source template's staff department is not the vehicle department.
+        row += 1;
+        sheet.merge_range(
+            row,
+            0,
+            row,
+            8,
+            "거리: GPS 계산값 · 사용자 부서/계기판 거리는 미입력 · 필터 적용 시 해당 내역만 포함",
+            &cell_fmt,
+        )?;
         row += 1;
         let cols = [
-            "사용일자",
-            "운행시각",
-            "주행거리(km)",
-            "업무용거리(km)",
-            "출발지",
-            "도착지",
-            "사용목적",
-            "사용자",
+            "③사용일자 (요일)",
+            "④사용자 부서",
+            "④사용자 성명",
+            "⑤주행 전 계기판 거리(㎞)",
+            "⑥주행 후 계기판 거리(㎞)",
+            "⑦주행거리(㎞)",
+            "⑧출·퇴근용(㎞)",
+            "⑨일반 업무용(㎞)",
+            "⑩비고",
         ];
         for (i, c) in cols.iter().enumerate() {
             sheet.write_string_with_format(row, i as u16, *c, &header_fmt)?;
         }
         row += 1;
-
-        // ── 운행 데이터 ──────────────────────────────
-        let mut total_km = 0f64;
-        let mut business_km = 0f64;
+        let mut totals = [0.0_f64; 3];
+        let mut complete = true;
+        let precise_num = cell_num.clone().set_num_format("#,##0.00");
         for t in trips {
-            let dist_km = t.distance_m / 1000.0;
-            let biz_km = if t.purpose.as_deref() == Some("business") {
-                dist_km
-            } else {
-                0.0
-            };
-            total_km += dist_km;
-            business_km += biz_km;
-
-            sheet.write_string_with_format(row, 0, fmt_date_kst(&t.started_at), &cell_fmt)?;
+            let values = nts_distance(t);
+            let known_purpose =
+                matches!(t.purpose.as_deref(), Some("business" | "commute" | "other"));
+            complete &= values.is_some() && known_purpose;
+            let date = kst(t.started_at);
+            use chrono::Datelike;
+            let day = ["일", "월", "화", "수", "목", "금", "토"]
+                [date.weekday().num_days_from_sunday() as usize];
             sheet.write_string_with_format(
                 row,
-                1,
-                fmt_time_range(t.started_at, t.ended_at),
+                0,
+                format!("{} ({day})", date.format("%Y-%m-%d")),
                 &cell_fmt,
             )?;
-            sheet.write_number_with_format(row, 2, dist_km, &cell_num)?;
-            sheet.write_number_with_format(row, 3, biz_km, &cell_num)?;
+            for col in [1, 3, 4] {
+                sheet.write_string_with_format(row, col, "", &cell_fmt)?;
+            }
             sheet.write_string_with_format(
                 row,
-                4,
-                t.start_address.clone().unwrap_or_default(),
+                2,
+                t.driver_name.as_deref().unwrap_or(""),
                 &cell_fmt,
             )?;
-            sheet.write_string_with_format(
-                row,
-                5,
-                t.end_address.clone().unwrap_or_default(),
-                &cell_fmt,
-            )?;
-            sheet.write_string_with_format(
-                row,
-                6,
-                purpose_ko(t.purpose.as_deref(), t.purpose_note.as_deref()),
-                &cell_fmt,
-            )?;
-            sheet.write_string_with_format(
-                row,
-                7,
-                t.driver_name.clone().unwrap_or_default(),
-                &cell_fmt,
-            )?;
+            if t.distance_m.is_finite() && t.distance_m >= 0.0 {
+                sheet.write_number_with_format(
+                    row,
+                    5,
+                    (t.distance_m / 10.0).round() / 100.0,
+                    &precise_num,
+                )?;
+            }
+            if let Some(values) = values {
+                for (i, value) in values.iter().enumerate() {
+                    totals[i] += value;
+                }
+                if known_purpose {
+                    sheet.write_number_with_format(row, 6, values[1], &precise_num)?;
+                    sheet.write_number_with_format(row, 7, values[2], &precise_num)?;
+                }
+            }
+            let mut notes = vec![purpose_ko(t.purpose.as_deref(), t.purpose_note.as_deref())];
+            if values.is_none() {
+                notes.push("종료·거리 확인 필요 · 합계 제외".into());
+            }
+            if t.driver_name.as_deref().is_none_or(|s| s.trim().is_empty()) {
+                notes.push("성명 미지정".into());
+            }
+            notes.push(format!(
+                "{}~{}",
+                fmt_time_kst(&t.started_at),
+                t.ended_at
+                    .map(|v| fmt_time_kst(&v))
+                    .unwrap_or_else(|| "종료 미수신".into())
+            ));
+            sheet.write_string_with_format(row, 8, notes.join(" / "), &cell_fmt)?;
             row += 1;
         }
-
-        // ── 요약 ─────────────────────────────────────
+        let total = totals[0];
+        let work = totals[1] + totals[2];
         row += 1;
-        let pct = if total_km > 0.001 {
-            (business_km / total_km) * 100.0
-        } else {
-            0.0
-        };
-        sheet.merge_range(row, 0, row, 1, "총 주행거리(km)", &label_fmt)?;
-        sheet.write_number_with_format(row, 2, total_km, &summary_fmt)?;
+        for (label, value) in [
+            ("⑪조회 내역 총주행거리(㎞)", total),
+            ("⑫조회 내역 업무용 사용거리(㎞)", work),
+        ] {
+            sheet.merge_range(row, 0, row, 3, label, &label_fmt)?;
+            sheet.write_number_with_format(row, 4, value, &precise_num)?;
+            row += 1;
+        }
+        sheet.merge_range(row, 0, row, 3, "⑬업무사용비율(⑫/⑪)", &label_fmt)?;
+        if complete && total > 0.0 {
+            sheet.write_number_with_format(
+                row,
+                4,
+                work / total,
+                &precise_num.clone().set_num_format("0.00%"),
+            )?;
+        }
         row += 1;
-        sheet.merge_range(row, 0, row, 1, "업무 사용거리(km)", &label_fmt)?;
-        sheet.write_number_with_format(row, 2, business_km, &summary_fmt)?;
-        row += 1;
-        sheet.merge_range(row, 0, row, 1, "업무 사용비율(%)", &label_fmt)?;
-        sheet.write_number_with_format(row, 2, pct, &summary_fmt)?;
-
-        // 열 폭
-        sheet.set_column_width(0, 12.0)?;
-        sheet.set_column_width(1, 20.0)?;
-        sheet.set_column_width(2, 14.0)?;
-        sheet.set_column_width(3, 14.0)?;
-        sheet.set_column_width(4, 30.0)?;
-        sheet.set_column_width(5, 30.0)?;
-        sheet.set_column_width(6, 16.0)?;
-        sheet.set_column_width(7, 12.0)?;
+        sheet.merge_range(row,0,row,8,"종료·거리 미확인 운행은 합계 제외. 용무 미지정/미확인 기록이 있으면 비율 공란. 과세기간과 누락 정보를 보완해 주세요.",&cell_fmt)?;
+        for (col, width) in [20.0, 14.0, 14.0, 20.0, 20.0, 16.0, 16.0, 18.0, 48.0]
+            .iter()
+            .enumerate()
+        {
+            sheet.set_column_width(col as u16, *width)?;
+        }
     }
 
     wb.save_to_buffer()
@@ -553,12 +570,6 @@ fn fmt_date_kst(t: &DateTime<Utc>) -> String {
 fn fmt_time_kst(t: &DateTime<Utc>) -> String {
     kst(*t).format("%H:%M").to_string()
 }
-fn fmt_time_range(s: DateTime<Utc>, e: Option<DateTime<Utc>>) -> String {
-    match e {
-        Some(e) => format!("{}~{}", fmt_time_kst(&s), fmt_time_kst(&e)),
-        None => format!("{}~진행중", fmt_time_kst(&s)),
-    }
-}
 fn purpose_ko(p: Option<&str>, note: Option<&str>) -> String {
     let base = match p {
         Some("business") => "업무",
@@ -616,5 +627,77 @@ fn short_sheet_name(name: &str, idx: usize) -> String {
         format!("차량{}", idx + 1)
     } else {
         out
+    }
+}
+
+// [total, commute, general business], rounded to the precision written to Excel.
+fn nts_distance(t: &TripLite) -> Option<[f64; 3]> {
+    if t.ended_at.is_none_or(|end| end < t.started_at)
+        || !t.distance_m.is_finite()
+        || t.distance_m < 0.0
+    {
+        return None;
+    }
+    let km = (t.distance_m / 10.0).round() / 100.0;
+    Some([
+        km,
+        if t.purpose.as_deref() == Some("commute") {
+            km
+        } else {
+            0.0
+        },
+        if t.purpose.as_deref() == Some("business") {
+            km
+        } else {
+            0.0
+        },
+    ])
+}
+#[cfg(test)]
+mod nts_tests {
+    use super::*;
+    fn trip() -> TripLite {
+        TripLite {
+            started_at: DateTime::parse_from_rfc3339("2026-10-28T15:01:00Z")
+                .unwrap()
+                .to_utc(),
+            ended_at: Some(
+                DateTime::parse_from_rfc3339("2026-10-28T16:01:00Z")
+                    .unwrap()
+                    .to_utc(),
+            ),
+            distance_m: 10004.0,
+            start_address: None,
+            end_address: None,
+            purpose: Some("commute".into()),
+            purpose_note: None,
+            driver_name: None,
+            fuel_liters: None,
+            fuel_cost_krw: None,
+        }
+    }
+    #[test]
+    fn commute_and_general_business_are_separate_columns() {
+        let mut t = trip();
+        assert_eq!(nts_distance(&t), Some([10.0, 10.0, 0.0]));
+        t.purpose = Some("business".into());
+        assert_eq!(nts_distance(&t), Some([10.0, 0.0, 10.0]));
+        t.purpose = None;
+        assert_eq!(nts_distance(&t), Some([10.0, 0.0, 0.0]));
+    }
+    #[test]
+    fn invalid_and_open_trips_do_not_enter_totals() {
+        let mut t = trip();
+        t.ended_at = None;
+        assert_eq!(nts_distance(&t), None);
+        t = trip();
+        t.distance_m = f64::NAN;
+        assert_eq!(nts_distance(&t), None);
+        t = trip();
+        t.distance_m = -1.0;
+        assert_eq!(nts_distance(&t), None);
+        t = trip();
+        t.distance_m = 0.0;
+        assert_eq!(nts_distance(&t), Some([0.0, 0.0, 0.0]));
     }
 }

@@ -8,6 +8,8 @@ import { filterTrips, tripReport, monthlyReport, monthDateBounds, purposeLabel }
 import { BusinessWorkspace, BusinessLocation, useBusinessVehicle, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
 import { tripCompleteness } from '../lib/businessWorkspace';
 import { corporateAttention, corporateVehicleName, terminalName, missingMaintenance } from '../lib/corporateOverview';
+import { corporateGroups, corporateTabs } from '../lib/corporateNavigation';
+import { ntsTripReport, reportVehicleLabel } from '../lib/ntsReport';
 import { classifyDevice, ageString } from '../colors';
 import { deviceBattery } from '../lib/battery';
 import { kstDateTime } from '../lib/businessExport';
@@ -35,32 +37,23 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate
   const [tab, setTab] = useState('overview');
   const [request, setRequest] = useState(null);
   const [reportDevice, setReportDevice] = useState(null);
-  const [reportMode, setReportMode] = useState('daily');
   const subscription = useBusinessSubscription('corporate');
   const qc = useQueryClient();
   const updateSub = value => qc.setQueryData(qk.businessSubscription('corporate'), value);
   const reserve = value => { setRequest(value); setTab('reservations'); };
-  const report = device => { setReportDevice(device.id); setReportMode('daily'); setTab('report'); };
-  const tabs = [
-    { id: 'overview', label: '운영 현황', icon: 'home' },
-    { id: 'vehicles', label: '차량 관리', icon: 'list' },
-    { id: 'staff', label: '사용자', icon: 'user' },
-    { id: 'reservations', label: '차량 예약', icon: 'clock' },
-    { id: 'report', label: '운행 리포트', icon: 'bar' },
-    { id: 'settings', label: '설정', icon: 'wrench' },
-  ];
-  return <BusinessWorkspace title="법인차 운영" tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
+  const report = device => { setReportDevice(device.id); setTab('report'); };
+  return <BusinessWorkspace title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     mobileAction={<BusinessButton icon="user" onClick={()=>setTab('staff')}>사용자</BusinessButton>}
     action={tab === 'reservations' ? <BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton> : null}>
     {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onVehicles={()=>setTab('vehicles')} />}
     {tab === 'vehicles' && <VehiclesTab devices={devices} onMap={onMap} onVehiclesChange={onVehiclesChange} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <StaffTab />}
-    {tab === 'report' && <><div className="business-switch no-print"><button className="business-switch-item" aria-pressed={reportMode === 'daily'} onClick={() => setReportMode('daily')}>차량별 운행</button><button className="business-switch-item" aria-pressed={reportMode === 'monthly'} onClick={() => setReportMode('monthly')}>월간 요약</button></div>
+    {['report','monthly'].includes(tab) && <>
       {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
         : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
         : !subscription.data.active ? <SubTab sub={subscription.data} onChange={updateSub} report />
-        : reportMode === 'daily' ? <ReportTab devices={devices} initialDeviceId={reportDevice} /> : <MonthlyReportTab devices={devices} />}</>}
+        : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} /> : <MonthlyReportTab devices={devices} />}</>}
     {tab === 'settings' && <BusinessSettings company={<InfoTab />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab sub={subscription.data} onChange={updateSub} />} />}
   </BusinessWorkspace>;
 }
@@ -148,6 +141,9 @@ function ReportTab({ devices, initialDeviceId }) {
   const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
     filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간`,
   }) : null;
+  const csvData = filteredTrips ? ntsTripReport(filteredTrips, {device,info,from,to,
+    filtered: driverFilter !== 'all' || purposeFilter !== 'all' || Number(minHours) > 0,
+  }) : null;
 
   // 일자별 누적거리 — 화면에 보이는(필터된) 운행 기준으로 계산.
   const dailyDistance = useMemo(() => {
@@ -179,7 +175,7 @@ function ReportTab({ devices, initialDeviceId }) {
           style={st.select}>
           {devices.map(d => (
             <option key={d.id} value={d.id}>
-              {d.display_name || d.device_uid}
+              {reportVehicleLabel(d)}
             </option>
           ))}
         </select>
@@ -189,7 +185,7 @@ function ReportTab({ devices, initialDeviceId }) {
         <button onClick={load} style={st.btnGhost} disabled={loading}>
           <Icon name="refresh" size={12} /> 새로고침
         </button>
-        <ExportButtons report={exportData} disabled={loading || !!error || !deviceId} />
+        <ExportButtons report={exportData} csvReport={csvData} csvLabel="운행기록부 CSV" disabled={loading || !!error || !deviceId} />
         <button onClick={() => window.print()} style={st.btnGhost} disabled={loading || !!error || !trips}>
           <Icon name="share" size={12} /> 인쇄
         </button>
@@ -264,7 +260,7 @@ function ReportTab({ devices, initialDeviceId }) {
 function ReportHeader({ info, device, from, to }) {
   const company = info?.company_name || '—';
   const biznum  = info?.business_number || '—';
-  const dev     = device?.display_name || device?.device_uid || '—';
+  const dev     = reportVehicleLabel(device);
   return (
     <div style={st.reportHead}>
       <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>법인 차량 운행 일지</div>
@@ -275,7 +271,7 @@ function ReportHeader({ info, device, from, to }) {
             <th style={st.th}>사업자번호</th><td style={st.td}>{biznum}</td>
           </tr>
           <tr>
-            <th style={st.th}>단말기</th><td style={st.td}>{dev}</td>
+            <th style={st.th}>차량</th><td style={st.td}>{dev}</td>
             <th style={st.th}>차량번호</th><td style={st.td}>{device?.license_plate || device?.car_plate || '—'}</td>
           </tr>
           <tr>
@@ -1342,15 +1338,8 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--surface)', borderRadius: 14, padding: 20,
-        width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 14,
-      }}>
+    <Modal open title="운행기록부 XLSX 다운로드" size="lg" onClose={busy ? () => {} : onClose}>
+      <div style={{display:'flex',flexDirection:'column',gap:14}}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 800 }}>운행일지 다운로드</div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>
@@ -1362,7 +1351,7 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
         <FieldSection label="양식">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
             {[
-              { id: 'nts',  title: '국세청 운행기록부', hint: '별지 제73호 · 세무 신고' },
+              { id: 'nts',  title: '업무용승용차 운행기록부', hint: '첨부 서식 항목 · 계기판 거리 보완 필요' },
               { id: 'ours', title: '우리 양식',         hint: '요약 + 차량별 상세 · 실무용' },
             ].map(o => {
               const on = kind === o.id;
@@ -1408,7 +1397,7 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
                   }}>
                     <input type="checkbox" checked={!!on} onChange={() => toggleDev(d.id)} />
                     <span style={{ fontSize: 12, fontWeight: 600 }}>
-                      {d.license_plate || d.display_name || d.device_uid}
+                      {reportVehicleLabel(d)}
                     </span>
                     {d.department && (
                       <span style={{ fontSize: 10, color: 'var(--text-3)' }}>· {d.department}</span>
@@ -1511,6 +1500,7 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
           )}
         </FieldSection>
 
+        {kind === 'nts' && <p className="business-note">GPS 거리를 사용하며 사용자 부서와 계기판 거리는 비워 둡니다. 회사·차량 정보와 과세기간을 확인하고 누락 항목을 보완해 주세요. 종료 미수신 운행은 합계에서 제외됩니다.</p>}
         {/* 액션 */}
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
@@ -1522,7 +1512,7 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

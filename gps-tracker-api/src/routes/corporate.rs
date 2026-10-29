@@ -1225,6 +1225,7 @@ async fn report_xlsx(
         display_name: Option<String>,
         device_uid: String,
         license_plate: Option<String>,
+        car_model: Option<String>,
         model_year: Option<i32>,
         engine_cc: Option<i32>,
         purchase_price_krw: Option<i64>,
@@ -1237,12 +1238,13 @@ async fn report_xlsx(
     // (Stage-4G) 부서 필터를 SQL WHERE 절로 결합 — SQL 이 복잡해지지만 필터 조합 3개 (id/부서/포함)
     // 각각 optional 이라 conditional 하게 다뤄야 한다.
     // 편의상 owner + department 필터로 먼저 좁힌 뒤, device_id 필터를 in-memory 로 추가 적용.
-    let mut devs: Vec<DevRow> =
-        if department_filter.is_some() && !(dep_include_null && dep_names.is_empty()) {
-            // department 필터 있음
-            if dep_include_null && !dep_names.is_empty() {
-                sqlx::query_as(
-                    r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+    let mut devs: Vec<DevRow> = if department_filter.is_some()
+        && !(dep_include_null && dep_names.is_empty())
+    {
+        // department 필터 있음
+        if dep_include_null && !dep_names.is_empty() {
+            sqlx::query_as(
+                    r#"SELECT id, display_name, device_uid, license_plate, car_model, model_year, engine_cc,
                           purchase_price_krw, acquired_at, department, vehicle_type,
                           fuel_efficiency_kmpl, fuel_type
                      FROM devices
@@ -1253,9 +1255,9 @@ async fn report_xlsx(
                 .bind(&dep_names)
                 .fetch_all(&state.db)
                 .await?
-            } else if !dep_names.is_empty() {
-                sqlx::query_as(
-                    r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+        } else if !dep_names.is_empty() {
+            sqlx::query_as(
+                    r#"SELECT id, display_name, device_uid, license_plate, car_model, model_year, engine_cc,
                           purchase_price_krw, acquired_at, department, vehicle_type,
                           fuel_efficiency_kmpl, fuel_type
                      FROM devices
@@ -1266,9 +1268,9 @@ async fn report_xlsx(
                 .bind(&dep_names)
                 .fetch_all(&state.db)
                 .await?
-            } else {
-                sqlx::query_as(
-                    r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+        } else {
+            sqlx::query_as(
+                    r#"SELECT id, display_name, device_uid, license_plate, car_model, model_year, engine_cc,
                           purchase_price_krw, acquired_at, department, vehicle_type,
                           fuel_efficiency_kmpl, fuel_type
                      FROM devices WHERE owner_id = $1 AND department IS NULL
@@ -1277,19 +1279,19 @@ async fn report_xlsx(
                 .bind(user.user_id)
                 .fetch_all(&state.db)
                 .await?
-            }
-        } else {
-            sqlx::query_as(
-                r#"SELECT id, display_name, device_uid, license_plate, model_year, engine_cc,
+        }
+    } else {
+        sqlx::query_as(
+            r#"SELECT id, display_name, device_uid, license_plate, car_model, model_year, engine_cc,
                       purchase_price_krw, acquired_at, department, vehicle_type,
                       fuel_efficiency_kmpl, fuel_type
                  FROM devices WHERE owner_id = $1
                 ORDER BY id"#,
-            )
-            .bind(user.user_id)
-            .fetch_all(&state.db)
-            .await?
-        };
+        )
+        .bind(user.user_id)
+        .fetch_all(&state.db)
+        .await?
+    };
     // device_id 필터 in-memory 후처리 (부서 필터와 AND 조합)
     if let Some(ref ids) = device_id_filter {
         let set: std::collections::HashSet<i64> = ids.iter().copied().collect();
@@ -1302,6 +1304,7 @@ async fn report_xlsx(
             display_name: d.display_name.clone(),
             device_uid: d.device_uid.clone(),
             license_plate: d.license_plate.clone(),
+            car_model: d.car_model.clone(),
             model_year: d.model_year,
             engine_cc: d.engine_cc,
             purchase_price_krw: d.purchase_price_krw,
@@ -1318,9 +1321,8 @@ async fn report_xlsx(
     let mut per_device: Vec<(&xlsx_report::DeviceLite, Vec<xlsx_report::TripLite>)> =
         Vec::with_capacity(devices_lite.len());
     for (i, d) in devs.iter().enumerate() {
-        let trips = compute_trips_inner(&state, user.user_id, d.id, from, to)
-            .await
-            .unwrap_or_default();
+        // A query failure must not become an apparently valid empty workbook.
+        let trips = compute_trips_inner(&state, user.user_id, d.id, from, to).await?;
         let lite: Vec<xlsx_report::TripLite> = trips
             .into_iter()
             .filter_map(|t| {

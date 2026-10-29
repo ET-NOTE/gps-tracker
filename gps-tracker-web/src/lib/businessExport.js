@@ -90,7 +90,8 @@ export function csvCell(value) {
   return `"${text.replaceAll('"','""')}"`;
 }
 export function reportCsv(report) {
-  return '\uFEFF' + [report.columns.map(c=>csvCell(c.label)).join(','), ...report.rows.map(r=>report.columns.map(c=>csvCell(r[c.key])).join(','))].join('\r\n') + '\r\n';
+  const lines = [...(report.csvPreamble || []), report.columns.map(c=>c.label), ...report.rows.map(r=>report.columns.map(c=>r[c.key])), ...(report.csvFooter || [])];
+  return '\uFEFF' + lines.map(row=>row.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
 export const safeFilename = name => String(name).replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_').slice(0,140);
 

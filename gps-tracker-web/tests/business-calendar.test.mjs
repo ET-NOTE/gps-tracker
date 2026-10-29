@@ -11,6 +11,8 @@ import * as businessExport from '../src/lib/businessExport.js';
 import * as businessWorkspace from '../src/lib/businessWorkspace.js';
 import * as businessAttention from '../src/lib/businessAttention.js';
 import * as corporateOverview from '../src/lib/corporateOverview.js';
+import * as corporateNavigation from '../src/lib/corporateNavigation.js';
+import * as ntsReport from '../src/lib/ntsReport.js';
 
 // Render the actual calendar bodies, not just the date helper. Unrelated panel
 // dependencies are stubbed; no network, storage or customer data is involved.
@@ -31,6 +33,8 @@ async function calendar(file, name) {
     if (specifier==='../lib/businessWorkspace') return moduleOf(businessWorkspace);
     if (specifier==='../lib/businessAttention') return moduleOf(businessAttention);
     if (specifier==='../lib/corporateOverview') return moduleOf(corporateOverview);
+    if (specifier==='../lib/corporateNavigation') return moduleOf(corporateNavigation);
+    if (specifier==='../lib/ntsReport') return moduleOf(ntsReport);
     // Only the named exports requested by this module are needed. None of these
     // hooks/components run while rendering a calendar.
     const exports = {default:noop,api:{},qk:{},useQueryClient:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,
