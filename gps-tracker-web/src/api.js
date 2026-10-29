@@ -374,7 +374,6 @@ export const api = {
     const scope = authScope();
     return collectAggregates((from,to) => {
       assertSession(scope);
-    fleet.assert();
       const q = new URLSearchParams({ bucket, since:from, until:to, until_exclusive:'true' });
       return req('GET', `/devices/${id}/locations/aggregated?${q}`, undefined, true, options);
     }, bucket, since, until, options.signal);
@@ -408,7 +407,6 @@ export const api = {
     const scope = authScope();
     return collectHistory(cursor => {
       assertSession(scope);
-    fleet.assert();
       const q = new URLSearchParams({ since:params.since, until:params.until, limit:'2000' });
       if (params.fix_only !== undefined) q.set('fix_only',String(params.fix_only));
       if (params.source) q.set('source',params.source);
@@ -658,9 +656,9 @@ export const api = {
   deleteDocument: (id) => req('DELETE', `/documents/${id}`),
   documentDownloadUrl: (id) => {
     // 브라우저 <a href> 로 열려면 auth header 못 붙임. blob fetch 후 URL.createObjectURL.
-    const scope = authScope();
+    const scope = authScope(), fleet = fleetRequestScope(`${BASE}/documents/${id}/download`);
     return async () => {
-      const res = await sessionFetch(`${BASE}/documents/${id}/download`, {}, true, scope);
+      const res = await sessionFetch(`${BASE}/documents/${id}/download`, {}, true, scope, fleet);
       if (!res.ok) throw new Error(res.statusText);
       const blob = await res.blob();
       const cd = res.headers.get('content-disposition') || '';

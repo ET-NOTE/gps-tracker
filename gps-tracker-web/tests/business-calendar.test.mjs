@@ -37,7 +37,7 @@ async function calendar(file, name) {
     if (specifier==='../lib/ntsReport') return moduleOf(ntsReport);
     // Only the named exports requested by this module are needed. None of these
     // hooks/components run while rendering a calendar.
-    const exports = {default:noop,api:{},qk:{},useQueryClient:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,
+    const exports = {default:noop,api:{},qk:{},useQuery:noop,useQueryClient:noop,FleetAccountScope:noop,useFleetAccess:noop,staffCanDrive:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,
       BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:noop,BusinessError:noop,BusinessEmpty:noop,BusinessSection:noop,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
       useBusinessClock:noop,useRentalOperations:noop,useBusinessSubscription:noop,
       BusinessStaff:noop,BusinessRenters:noop,BusinessCompanyInfo:noop,BusinessSubscription:noop,

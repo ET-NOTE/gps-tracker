@@ -22,7 +22,7 @@ async function fixture(fetch) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity, staleTime: 30000, retry: false } } });
   const window = new EventTarget(); window.location = { hostname: 'dev-gps.serial.kr', reload() { throw Error('unexpected reload'); } };
   const context = vm.createContext({ localStorage: new Storage(), sessionStorage: new Storage(), window,
-    navigator: {}, crypto: webcrypto, fetch, Event, DOMException, AbortController, FormData, Headers, URLSearchParams,
+    navigator: {}, crypto: webcrypto, fetch, Event, DOMException, AbortController, FormData, Headers, URL, URLSearchParams,
     atob: s => Buffer.from(s, 'base64').toString(), setTimeout: () => 1, clearTimeout() {}, console });
   const cache = new Map();
   async function load(file) {
@@ -34,7 +34,7 @@ async function fixture(fetch) {
       m = new vm.SyntheticModule([name], function() { this.setExport(name, () => {}); }, { context });
     } else m = new vm.SourceTextModule(await readFile(file, 'utf8'), { context, identifier: file });
     cache.set(file, m);
-    await m.link((specifier, referring) => load(path.resolve(path.dirname(referring.identifier), specifier + '.js').replaceAll('\\', '/')));
+    await m.link((specifier, referring) => load(path.resolve(path.dirname(referring.identifier), specifier.endsWith('.js')?specifier:specifier + '.js').replaceAll('\\', '/')));
     return m;
   }
   const api = await load(path.join(src, 'api.js').replaceAll('\\', '/')); await api.evaluate();
@@ -51,6 +51,31 @@ test('new account never reuses previous account query cache', async () => {
   let calls = 0;
   const result = await f.queryClient.fetchQuery({ queryKey: f.qk.me(), queryFn: () => { calls++; return { user: 'B' }; } });
   assert.equal(result.user, 'B'); assert.equal(calls, 1); f.queryClient.clear();
+});
+test('company requests carry explicit scope; personal history remains unscoped', async () => {
+  const calls=[];
+  const f=await fixture(async(url,options)=>{
+    calls.push({url,owner:options.headers.get('X-Fleet-Owner')});
+    if(url.includes('/locations/page'))return Response.json({items:[],has_more:false,next_cursor:null});
+    return Response.json([]);
+  });
+  f.api.setTokens(token('A'),'refresh-A');
+  const fleet=await f.module('lib/fleetSession.js');fleet.setFleetOwner(12);
+  await f.api.api.listFleetVehicles();
+  await f.api.api.listLocationPoints(1,{since:'2026-10-01T00:00:00Z',until:'2026-10-01T01:00:00Z'});
+  await f.api.api.getDeviceLocationsAggregated(1,'1m','2026-10-01T00:00:00Z','2026-10-01T01:00:00Z');
+  assert.equal(calls[0].owner,'12');assert.equal(calls[1].owner,null);assert.equal(calls[2].owner,null);
+  f.queryClient.clear();
+});
+test('company switch cancels late JSON and deferred private download before transmission', async()=>{
+  const pending=deferred();let calls=0;
+  const f=await fixture(()=>{calls++;return pending.promise;});
+  f.api.setTokens(token('A'),'refresh-A');
+  const fleet=await f.module('lib/fleetSession.js');fleet.setFleetOwner(12);
+  const read=f.api.api.listFleetVehicles(),download=f.api.api.documentDownloadUrl(1);
+  fleet.setFleetOwner(13);pending.resolve(Response.json([{id:1}]));
+  await assert.rejects(read,{name:'AbortError'});await assert.rejects(download(),{name:'AbortError'});
+  assert.equal(calls,1);f.queryClient.clear();
 });
 for (const status of [200, 401]) test(`late A refresh (${status}) cannot replace or log out B`, async () => {
   const d = deferred(); const f = await fixture(() => d.promise);
