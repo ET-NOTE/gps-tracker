@@ -465,7 +465,7 @@
   .business-fleet-table .business-vehicle { grid-template-columns:minmax(0,1fr) auto; gap:14px; }
   .business-vehicle-identity { grid-column:1/-1; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; }
   .business-vehicle-name { grid-column:1; }
-  .business-availability { grid-column:2; grid-row:1; }
+  .business-vehicle-availability { grid-column:2; grid-row:1; }
   .business-terminal-name { grid-column:1/-1; display:flex; align-items:baseline; gap:8px; }
   .business-terminal-name small { display:inline; flex-shrink:0; }
 }
