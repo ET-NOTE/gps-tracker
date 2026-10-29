@@ -33,12 +33,6 @@ pub fn router() -> Router<AppState> {
     Router::new()
         // 회사 정보
         .route("/corporate/info", get(get_info).put(put_info))
-        // 직원
-        .route("/corporate/staff", get(list_staff).post(create_staff))
-        .route(
-            "/corporate/staff/:id",
-            patch(update_staff).delete(remove_staff),
-        )
         // 운행
         .route("/corporate/devices/:id/trips", get(list_trips))
         .route(
@@ -126,108 +120,6 @@ async fn put_info(
     get_info(State(state), user).await
 }
 
-// ─── 직원 ────────────────────────────────────────────
-#[derive(Debug, Serialize, FromRow)]
-struct Staff {
-    id: i64,
-    user_id: i64,
-    name: String,
-    role: Option<String>,
-    phone: Option<String>,
-    active: bool,
-    created_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Deserialize)]
-struct StaffPayload {
-    name: String,
-    role: Option<String>,
-    phone: Option<String>,
-    active: Option<bool>,
-}
-
-async fn list_staff(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Vec<Staff>>> {
-    let rows = sqlx::query_as::<_, Staff>(
-        r#"SELECT id, user_id, name, role, phone, active, created_at
-             FROM staff
-            WHERE user_id = $1
-            ORDER BY active DESC, name"#,
-    )
-    .bind(user.user_id)
-    .fetch_all(&state.db)
-    .await?;
-    Ok(Json(rows))
-}
-
-async fn create_staff(
-    State(state): State<AppState>,
-    user: AuthUser,
-    Json(req): Json<StaffPayload>,
-) -> AppResult<Json<Staff>> {
-    let name = req.name.trim().to_string();
-    if name.is_empty() || name.len() > 64 {
-        return Err(AppError::BadRequest("name 1..=64".into()));
-    }
-    let row: Staff = sqlx::query_as(
-        r#"INSERT INTO staff (user_id, name, role, phone, active)
-           VALUES ($1, $2, $3, $4, COALESCE($5, TRUE))
-           RETURNING id, user_id, name, role, phone, active, created_at"#,
-    )
-    .bind(user.user_id)
-    .bind(name)
-    .bind(req.role)
-    .bind(req.phone)
-    .bind(req.active)
-    .fetch_one(&state.db)
-    .await?;
-    Ok(Json(row))
-}
-
-async fn update_staff(
-    State(state): State<AppState>,
-    user: AuthUser,
-    Path(id): Path<i64>,
-    Json(req): Json<StaffPayload>,
-) -> AppResult<Json<Staff>> {
-    let name = req.name.trim().to_string();
-    if name.is_empty() || name.len() > 64 {
-        return Err(AppError::BadRequest("name 1..=64".into()));
-    }
-    let row: Option<Staff> = sqlx::query_as(
-        r#"UPDATE staff SET name = $3, role = $4, phone = $5,
-                            active = COALESCE($6, active)
-            WHERE id = $1 AND user_id = $2
-        RETURNING id, user_id, name, role, phone, active, created_at"#,
-    )
-    .bind(id)
-    .bind(user.user_id)
-    .bind(name)
-    .bind(req.role)
-    .bind(req.phone)
-    .bind(req.active)
-    .fetch_optional(&state.db)
-    .await?;
-    Ok(Json(row.ok_or(AppError::NotFound)?))
-}
-
-async fn remove_staff(
-    State(state): State<AppState>,
-    user: AuthUser,
-    Path(id): Path<i64>,
-) -> AppResult<Json<Value>> {
-    // soft delete (active=FALSE) — 과거 운행 주석에서 driver_staff_id 참조 보존
-    let n = sqlx::query("UPDATE staff SET active = FALSE WHERE id = $1 AND user_id = $2")
-        .bind(id)
-        .bind(user.user_id)
-        .execute(&state.db)
-        .await?
-        .rows_affected();
-    if n == 0 {
-        return Err(AppError::NotFound);
-    }
-    Ok(Json(serde_json::json!({ "ok": true })))
-}
-
 // ─── 운행 (trip 산출 + annotation) ──────────────────
 #[derive(Debug, Deserialize)]
 pub(super) struct TripQuery {
@@ -268,6 +160,7 @@ pub(super) struct TripAnnotation {
     purpose_note: Option<String>,
     driver_staff_id: Option<i64>,
     driver_name: Option<String>,
+    driver_department: Option<String>,
     fuel_liters: Option<f64>,
     fuel_cost: Option<i32>,
     note: Option<String>,
@@ -714,7 +607,7 @@ async fn load_annotations(
 ) -> AppResult<Vec<TripAnnotation>> {
     let rows = sqlx::query_as::<_, TripAnnotation>(
         r#"SELECT a.id, a.trip_started_at, a.purpose, a.purpose_note,
-                  a.driver_staff_id, s.name AS driver_name,
+                  a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
                   a.fuel_cost, a.note
              FROM trip_annotations a
@@ -736,7 +629,7 @@ pub(super) struct AnnotationPayload {
     pub(super) trip_started_at: DateTime<Utc>,
     purpose: Option<String>, // commute|business|other|unspecified
     purpose_note: Option<String>,
-    driver_staff_id: Option<i64>,
+    pub(super) driver_staff_id: Option<i64>,
     fuel_liters: Option<f64>,
     fuel_cost: Option<i32>,
     note: Option<String>,
@@ -749,13 +642,14 @@ async fn upsert_annotation(
     Json(req): Json<AnnotationPayload>,
 ) -> AppResult<Json<TripAnnotation>> {
     verify_device_owner(&state, user.user_id, device_id).await?;
-    save_annotation(&state, user, device_id, req).await
+    save_annotation(&state, user, device_id, req, None).await
 }
 pub(super) async fn save_annotation(
     state: &AppState,
     user: AuthUser,
     device_id: i64,
     req: AnnotationPayload,
+    self_driver: Option<i64>,
 ) -> AppResult<Json<TripAnnotation>> {
     if req
         .fuel_liters
@@ -782,7 +676,7 @@ pub(super) async fn save_annotation(
         }
     }
 
-    sqlx::query(
+    let count=sqlx::query(
         r#"INSERT INTO trip_annotations
               (device_id, user_id, trip_started_at, purpose, purpose_note, driver_staff_id, fuel_liters, fuel_cost, note)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -793,15 +687,19 @@ pub(super) async fn save_annotation(
               fuel_liters     = EXCLUDED.fuel_liters,
               fuel_cost       = EXCLUDED.fuel_cost,
               note            = EXCLUDED.note,
-              updated_at      = NOW()"#,
+              updated_at      = NOW()
+           WHERE $10::bigint IS NULL OR trip_annotations.driver_staff_id IS NULL OR trip_annotations.driver_staff_id=$10"#,
     )
     .bind(device_id).bind(user.user_id).bind(req.trip_started_at).bind(purpose).bind(req.purpose_note)
     .bind(req.driver_staff_id).bind(req.fuel_liters).bind(req.fuel_cost).bind(req.note)
-    .execute(&state.db).await?;
+    .bind(self_driver).execute(&state.db).await?.rows_affected();
+    if count == 0 {
+        return Err(AppError::Forbidden);
+    }
 
     let row: TripAnnotation = sqlx::query_as(
         r#"SELECT a.id, a.trip_started_at, a.purpose, a.purpose_note,
-                  a.driver_staff_id, s.name AS driver_name,
+                  a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
                   a.fuel_cost, a.note
              FROM trip_annotations a
@@ -1410,6 +1308,10 @@ async fn report_xlsx(
                     purpose: Some(purpose),
                     purpose_note: t.annotation.as_ref().and_then(|a| a.purpose_note.clone()),
                     driver_name: t.annotation.as_ref().and_then(|a| a.driver_name.clone()),
+                    driver_department: t
+                        .annotation
+                        .as_ref()
+                        .and_then(|a| a.driver_department.clone()),
                     fuel_liters: t.annotation.as_ref().and_then(|a| a.fuel_liters),
                     fuel_cost_krw: t
                         .annotation
@@ -1538,11 +1440,12 @@ async fn list_reservations(
         })
         .filter(|v| !v.is_empty());
 
-    let rows: Vec<Reservation> =
-        if let (Some(dev_id), Some(ref sts)) = (q.device_id, status_filter.as_ref()) {
-            sqlx::query_as(
+    let rows: Vec<Reservation> = if let (Some(dev_id), Some(ref sts)) =
+        (q.device_id, status_filter.as_ref())
+    {
+        sqlx::query_as(
                 r#"SELECT r.id, r.user_id, r.device_id, r.driver_staff_id,
-                      s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                      COALESCE(r.driver_name_snapshot,s.name) AS driver_name, d.display_name AS device_name, d.license_plate,
                       r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
@@ -1559,10 +1462,10 @@ async fn list_reservations(
             .bind(sts)
             .fetch_all(&state.db)
             .await?
-        } else if let Some(dev_id) = q.device_id {
-            sqlx::query_as(
+    } else if let Some(dev_id) = q.device_id {
+        sqlx::query_as(
                 r#"SELECT r.id, r.user_id, r.device_id, r.driver_staff_id,
-                      s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                      COALESCE(r.driver_name_snapshot,s.name) AS driver_name, d.display_name AS device_name, d.license_plate,
                       r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
@@ -1577,10 +1480,10 @@ async fn list_reservations(
             .bind(to)
             .fetch_all(&state.db)
             .await?
-        } else if let Some(ref sts) = status_filter {
-            sqlx::query_as(
+    } else if let Some(ref sts) = status_filter {
+        sqlx::query_as(
                 r#"SELECT r.id, r.user_id, r.device_id, r.driver_staff_id,
-                      s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                      COALESCE(r.driver_name_snapshot,s.name) AS driver_name, d.display_name AS device_name, d.license_plate,
                       r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
@@ -1596,10 +1499,10 @@ async fn list_reservations(
             .bind(sts)
             .fetch_all(&state.db)
             .await?
-        } else {
-            sqlx::query_as(
+    } else {
+        sqlx::query_as(
                 r#"SELECT r.id, r.user_id, r.device_id, r.driver_staff_id,
-                      s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                      COALESCE(r.driver_name_snapshot,s.name) AS driver_name, d.display_name AS device_name, d.license_plate,
                       r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
@@ -1613,7 +1516,7 @@ async fn list_reservations(
             .bind(to)
             .fetch_all(&state.db)
             .await?
-        };
+    };
     Ok(Json(rows))
 }
 
@@ -1672,7 +1575,7 @@ async fn create_reservation(
              RETURNING *
            )
            SELECT ins.id, ins.user_id, ins.device_id, ins.driver_staff_id,
-                  s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                  COALESCE(ins.driver_name_snapshot,s.name) AS driver_name, d.display_name AS device_name, d.license_plate,
                   ins.starts_at, ins.ends_at, ins.purpose, ins.note, ins.status, ins.created_at
              FROM ins
         LEFT JOIN staff   s ON s.id = ins.driver_staff_id
@@ -1755,7 +1658,7 @@ async fn update_reservation(
               RETURNING *
            )
            SELECT upd.id, upd.user_id, upd.device_id, upd.driver_staff_id,
-                  s.name AS driver_name, d.display_name AS device_name, d.license_plate,
+                  COALESCE(upd.driver_name_snapshot,s.name) AS driver_name, d.display_name AS device_name, d.license_plate,
                   upd.starts_at, upd.ends_at, upd.purpose, upd.note, upd.status, upd.created_at
              FROM upd
         LEFT JOIN staff   s ON s.id = upd.driver_staff_id

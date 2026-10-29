@@ -118,7 +118,7 @@ finally:
   cur.execute("SELECT profile->>'car_image_url' FROM fleet_vehicles WHERE owner_id=ANY(%s)",(users,))
   for (url,) in cur.fetchall():
    if url:
-    f=pathlib.Path('/home/mmm/gps-artifacts/fleet-assets-20261029-r1/private/car-images')/pathlib.Path(url).name
+    f=(pathlib.Path(__file__).resolve().parent/'private/car-images')/pathlib.Path(url).name
     if f.name.startswith('fleet_'):f.unlink(missing_ok=True)
   cur.execute('DELETE FROM vehicle_reservations WHERE user_id=ANY(%s)',(users,))
   cur.execute('DELETE FROM fleet_vehicles WHERE owner_id=ANY(%s)',(users,))

@@ -1,3 +1,4 @@
+import {fleetRequestScope,setFleetOwner} from './lib/fleetSession';
 import { cachedRead } from './lib/offlineCache';
 import { queryClient } from './state/queryClient';
 import { authScope, assertSession, AUTH_CHANGED, notifyAuthChanged } from './authSession';
@@ -62,6 +63,7 @@ export function clearTokens() {
 }
 
 function resetSession() {
+  setFleetOwner(null);
   refreshAbort?.abort();
   refreshing = null;
   void queryClient.cancelQueries();
@@ -187,13 +189,15 @@ window.addEventListener('storage', () => {
 
 // JSON, multipart and binary responses share token rotation and account guards.
 // Retry only a rejected 401, never a network failure of a write request.
-async function sessionFetch(url, options = {}, retry = true, scope = authScope()) {
+async function sessionFetch(url, options = {}, retry = true, scope = authScope(), fleet = fleetRequestScope(url)) {
   const assertActive = () => {
     assertSession(scope);
+    fleet.assert();
     if (options.signal?.aborted) throw new DOMException('요청이 취소되었습니다.', 'AbortError');
   };
   assertActive();
   const headers = new Headers(options.headers);
+  if(fleet.owner != null) headers.set("X-Fleet-Owner",String(fleet.owner));
   const token = getToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
   else headers.delete('Authorization');
@@ -214,7 +218,7 @@ async function sessionFetch(url, options = {}, retry = true, scope = authScope()
       throw Object.assign(new Error('네트워크 연결이 불안정합니다. 잠시 후 다시 시도해주세요.'),
                           { status: 0, transient: true });
     }
-    return sessionFetch(url, options, false, scope);
+    return sessionFetch(url, options, false, scope, fleet);
   }
   for (const name of ['json', 'text', 'blob', 'arrayBuffer']) {
     const read = res[name].bind(res);
@@ -239,6 +243,18 @@ async function req(method, path, body, retry = true, options = {}) {
 }
 
 export const api = {
+  fleetWorkspaces: () => req('GET','/corporate/workspaces'),
+  fleetAccess: () => req('GET','/corporate/access'),
+  fleetOrganization: () => req('GET','/corporate/organization'),
+  createFleetOrgItem: body => req('POST','/corporate/organization/items',body),
+  updateFleetOrgItem: (id,body) => req('PUT',`/corporate/organization/items/${id}`,body),
+  fleetInvites: () => req('GET','/corporate/invites'),
+  inviteFleetStaff: staff_id => req('POST','/corporate/invites',{staff_id}),
+  revokeFleetInvite: id => req('DELETE',`/corporate/invites/${id}`),
+  unlinkFleetStaff: id => req('DELETE',`/corporate/staff/${id}/account`),
+  joinFleet: body => req('POST','/corporate/join',body),
+  fleetTeamAudit: () => req('GET','/corporate/team-audit'),
+  fleetTerminals: () => req('GET','/corporate/terminals'),
   // auth
   register: (body) => req('POST', '/auth/register', body),     // {email,password,phone,otp_code,display_name?}
   login:    (email, password, remember_me = false) =>
@@ -358,6 +374,7 @@ export const api = {
     const scope = authScope();
     return collectAggregates((from,to) => {
       assertSession(scope);
+    fleet.assert();
       const q = new URLSearchParams({ bucket, since:from, until:to, until_exclusive:'true' });
       return req('GET', `/devices/${id}/locations/aggregated?${q}`, undefined, true, options);
     }, bucket, since, until, options.signal);
@@ -391,6 +408,7 @@ export const api = {
     const scope = authScope();
     return collectHistory(cursor => {
       assertSession(scope);
+    fleet.assert();
       const q = new URLSearchParams({ since:params.since, until:params.until, limit:'2000' });
       if (params.fix_only !== undefined) q.set('fix_only',String(params.fix_only));
       if (params.source) q.set('source',params.source);

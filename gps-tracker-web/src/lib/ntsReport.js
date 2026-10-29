@@ -9,14 +9,14 @@ export function reportVehicleLabel(device) {
 }
 
 // Column order follows the supplied "운행기록부 폼" sheet, B12:Q14.
-// No odometer readings or staff departments exist in the current trip API.
+// Staff department is captured when a driver is assigned; odometer readings remain manual.
 // A GPS sum and a vehicle's department are not substitutes for those fields.
 export function ntsTripReport(trips, { device, info, from, to, filtered = false } = {}) {
   const plate = text(device?.car_plate || device?.license_plate), model = text(device?.car_model);
   const warnings = [];
   const missing = [[info?.company_name,'상호명'],[info?.business_number,'사업자등록번호'],[plate,'자동차등록번호'],[model,'차종']].filter(([v])=>!text(v)).map(([,label])=>label);
   if (missing.length) warnings.push(`차량·회사 정보 미입력: ${missing.join(', ')}`);
-  if (trips.length) warnings.push('주행 전·후 계기판 거리와 사용자 부서는 비워 둡니다. 실제 기록으로 보완해 주세요.');
+  if (trips.length) warnings.push('주행 전·후 계기판 거리는 실제 기록으로 보완해 주세요. 부서는 운전자 배정 시점의 값을 사용합니다.');
   const incomplete = trips.filter(t=>!t.ended_at || !kstDateTime(t.ended_at) || distance(t) === null || !kstDateTime(t.started_at) || new Date(t.ended_at) < new Date(t.started_at));
   const excluded = new Set(incomplete);
   const unassigned = trips.filter(t=>!['business','commute','other'].includes(t.annotation?.purpose));
@@ -31,7 +31,7 @@ export function ntsTripReport(trips, { device, info, from, to, filtered = false 
     const classified = valid && ['commute','business','other'].includes(purpose);
     const note = [!valid && '종료·거리·일자 확인 필요 · 합계 제외', !text(t.annotation?.driver_name) && '성명 미지정', !['business','commute','other'].includes(purpose) && '용무 미지정',
       t.allocation_note, t.annotation?.purpose_note, t.annotation?.note, started && `${started.slice(11)}~${kstDateTime(t.ended_at).slice(11) || '종료 미수신'}`].filter(Boolean).join(' / ');
-    return {date: day ? `${day} (${'일월화수목금토'[new Date(`${day}T00:00:00Z`).getUTCDay()]})` : '', department:'', driver:text(t.annotation?.driver_name), before:'', after:'',
+    return {date: day ? `${day} (${'일월화수목금토'[new Date(`${day}T00:00:00Z`).getUTCDay()]})` : '', department:text(t.annotation?.driver_department), driver:text(t.annotation?.driver_name), before:'', after:'',
       km:value ?? '', commute:classified ? (purpose==='commute' ? value : 0) : '',
       business:classified ? (purpose==='business' ? value : 0) : '', note};
   });

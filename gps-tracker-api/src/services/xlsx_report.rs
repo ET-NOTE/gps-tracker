@@ -47,6 +47,7 @@ pub struct TripLite {
     pub purpose: Option<String>, // 'business'|'commute'|'other'|'unspecified'
     pub purpose_note: Option<String>,
     pub driver_name: Option<String>,
+    pub driver_department: Option<String>,
     pub fuel_liters: Option<f64>,
     pub fuel_cost_krw: Option<i64>, // 사용자 수기 입력 (있으면 우선)
 }
@@ -196,7 +197,13 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
                 format!("{} ({day})", date.format("%Y-%m-%d")),
                 &cell_fmt,
             )?;
-            for col in [1, 3, 4] {
+            sheet.write_string_with_format(
+                row,
+                1,
+                t.driver_department.as_deref().unwrap_or(""),
+                &cell_fmt,
+            )?;
+            for col in [3, 4] {
                 sheet.write_string_with_format(row, col, "", &cell_fmt)?;
             }
             sheet.write_string_with_format(
@@ -672,6 +679,7 @@ mod nts_tests {
             purpose: Some("commute".into()),
             purpose_note: None,
             driver_name: None,
+            driver_department: None,
             fuel_liters: None,
             fuel_cost_krw: None,
         }

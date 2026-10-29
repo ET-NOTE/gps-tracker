@@ -10,6 +10,7 @@ pub mod diag;
 pub mod documents;
 pub mod fleet_media;
 pub mod fleet_reservations;
+pub mod fleet_team;
 pub mod fleet_vehicles;
 pub mod geofences;
 pub mod health;
@@ -52,6 +53,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(corporate::router())
         .merge(fleet_vehicles::router())
         .merge(fleet_media::router())
+        .merge(fleet_team::router())
         .merge(fleet_reservations::router())
         .merge(rentcar::router())
         .merge(payments::router())
@@ -60,7 +62,11 @@ pub fn build_router(state: AppState) -> Router {
         .merge(sim_requests::router_admin())
         .merge(chat::router_user())
         .merge(chat::router_admin())
-        .merge(admin::router());
+        .merge(admin::router())
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            crate::auth::fleet::middleware,
+        ));
 
     Router::new()
         .route("/health", get(health::health))

@@ -1,3 +1,5 @@
+import {rememberFleetOwner} from '../lib/fleetSession';
+import {FleetJoin} from './business/FleetAccess';
 import Switch from './ui/Switch';
 // 내정보 패널 — 서브탭 구조: 계정 / 포인트 / 채팅 / 알림 / 테마.
 // 채팅 탭은 admin 본인은 노출 안 함 (자기 자신과의 채팅 thread 가 admin inbox 에 잡히지 않게).
@@ -96,6 +98,8 @@ export default function ProfilePanel({ onLogout, accountType }) {
 // ─── 계정 (이메일/이름/비번/탈퇴) ─────────────────────────
 // (F2-b) accountType prop 제거 — AccountTypeCard 자체 완결.
 function AccountTab({ me, setMe, onLogout }) {
+  const navigate=useNavigate(),qc=useQueryClient();
+  const [joinFleet,setJoinFleet]=useState(false);
   const [name, setName]     = useState(me.display_name || '');
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -146,6 +150,8 @@ function AccountTab({ me, setMe, onLogout }) {
         <Field label="권한"   value={{ user: '일반 사용자', admin: '관리자' }[me.role] || me.role} />
       </Card>
 
+      <Card title="회사 초대 연결"><p style={{fontSize:13,color:'var(--text-2)'}}>관리자에게 받은 초대 코드로 회사에 참여하세요.</p><button style={st.btnSecondary} onClick={()=>setJoinFleet(true)}>초대 코드 입력</button><button style={{...st.btnSecondary,marginLeft:8}} onClick={()=>navigate('/corporate')}>회사 화면 열기</button></Card>
+      {joinFleet&&<FleetJoin onClose={()=>setJoinFleet(false)} onJoined={async id=>{rememberFleetOwner(id);await qc.invalidateQueries({queryKey:['fleet-memberships']});setJoinFleet(false);navigate('/corporate');}}/>}
       <AccountTypeCard />
 
       <PhonesCard me={me} setMe={setMe} />

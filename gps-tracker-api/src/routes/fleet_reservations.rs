@@ -7,7 +7,7 @@ use crate::{
 use axum::{
     extract::{Path, Query, State},
     routing::{get, put},
-    Json, Router,
+    Extension, Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
@@ -38,7 +38,7 @@ struct Input {
     note: Option<String>,
     status: Option<String>,
 }
-const ROW:&str="SELECT to_jsonb(r)||jsonb_build_object('vehicle_name',v.name,'license_plate',v.license_plate,'driver_name',s.name,'vehicle_id',r.fleet_vehicle_id) FROM vehicle_reservations r JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id LEFT JOIN staff s ON s.id=r.driver_staff_id AND s.user_id=r.user_id";
+const ROW:&str="SELECT to_jsonb(r)||jsonb_build_object('vehicle_name',v.name,'license_plate',v.license_plate,'driver_name',COALESCE(r.driver_name_snapshot,s.name),'vehicle_id',r.fleet_vehicle_id) FROM vehicle_reservations r JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id LEFT JOIN staff s ON s.id=r.driver_staff_id AND s.user_id=r.user_id";
 async fn list(
     State(state): State<AppState>,
     user: AuthUser,
@@ -61,19 +61,31 @@ async fn list(
 async fn create(
     State(state): State<AppState>,
     user: AuthUser,
+    scope: Option<Extension<crate::auth::fleet::FleetScope>>,
     Json(input): Json<Input>,
 ) -> AppResult<Json<Value>> {
-    save(&state, user.user_id, None, input).await.map(Json)
+    save(&state, user.user_id, None, input, scope.map(|s| s.0))
+        .await
+        .map(Json)
 }
 async fn update(
     State(state): State<AppState>,
     user: AuthUser,
     Path(id): Path<i64>,
+    scope: Option<Extension<crate::auth::fleet::FleetScope>>,
     Json(input): Json<Input>,
 ) -> AppResult<Json<Value>> {
-    save(&state, user.user_id, Some(id), input).await.map(Json)
+    save(&state, user.user_id, Some(id), input, scope.map(|s| s.0))
+        .await
+        .map(Json)
 }
-async fn save(state: &AppState, owner: i64, id: Option<i64>, input: Input) -> AppResult<Value> {
+async fn save(
+    state: &AppState,
+    owner: i64,
+    id: Option<i64>,
+    input: Input,
+    scope: Option<crate::auth::fleet::FleetScope>,
+) -> AppResult<Value> {
     if input.ends_at <= input.starts_at
         || input.ends_at - input.starts_at > chrono::Duration::days(366)
     {
@@ -108,6 +120,22 @@ async fn save(state: &AppState, owner: i64, id: Option<i64>, input: Input) -> Ap
     } else {
         None
     };
+    if let Some(ref scope) = scope {
+        scope.vehicle(input.vehicle_id)?;
+        if !scope.manager() && input.driver_staff_id != scope.staff {
+            return Err(AppError::Forbidden);
+        }
+        if let Some(ref before) = before {
+            scope.vehicle(
+                before["fleet_vehicle_id"]
+                    .as_i64()
+                    .ok_or(AppError::NotFound)?,
+            )?;
+            if !scope.manager() && before["driver_staff_id"].as_i64() != scope.staff {
+                return Err(AppError::Forbidden);
+            }
+        }
+    }
     let enabled: bool = sqlx::query_scalar(
         "SELECT enabled FROM fleet_vehicles WHERE id=$1 AND owner_id=$2 FOR SHARE",
     )
@@ -121,6 +149,8 @@ async fn save(state: &AppState, owner: i64, id: Option<i64>, input: Input) -> Ap
             "사용 정지 차량은 예약할 수 없습니다.".into(),
         ));
     }
+    super::fleet_team::driver_allowed(&mut tx, owner, input.driver_staff_id, input.vehicle_id)
+        .await?;
     if let Some(staff) = input.driver_staff_id {
         let valid: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM staff WHERE id=$1 AND user_id=$2 AND active)",
@@ -164,10 +194,21 @@ async fn cancel(
     State(state): State<AppState>,
     user: AuthUser,
     Path(id): Path<i64>,
+    scope: Option<Extension<crate::auth::fleet::FleetScope>>,
 ) -> AppResult<Json<Value>> {
     // Retain the old booking and its audit instead of physically deleting it.
     let mut tx = state.db.begin().await?;
     let before:Value=sqlx::query_scalar("SELECT to_jsonb(r) FROM vehicle_reservations r WHERE id=$1 AND user_id=$2 AND fleet_vehicle_id IS NOT NULL FOR UPDATE").bind(id).bind(user.user_id).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
+    if let Some(Extension(scope)) = scope {
+        scope.vehicle(
+            before["fleet_vehicle_id"]
+                .as_i64()
+                .ok_or(AppError::NotFound)?,
+        )?;
+        if !scope.manager() && before["driver_staff_id"].as_i64() != scope.staff {
+            return Err(AppError::Forbidden);
+        }
+    }
     sqlx::query("UPDATE vehicle_reservations SET status='cancelled',updated_at=clock_timestamp() WHERE id=$1").bind(id).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO fleet_vehicle_audit(owner_id,vehicle_id,action,before_value,after_value) VALUES($1,$2,'reservation_cancel',$3,jsonb_build_object('reservation_id',$4::bigint))")
         .bind(user.user_id).bind(before["fleet_vehicle_id"].as_i64().unwrap()).bind(before).bind(id).execute(&mut *tx).await?;

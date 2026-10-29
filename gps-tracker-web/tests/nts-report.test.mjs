@@ -5,6 +5,10 @@ import { reportCsv, filterTrips } from '../src/lib/businessExport.js';
 const context = {device:{id:4,car_model:'아반떼',car_plate:'12가3456',display_name:'단말-520211',department:'차량 소속'},info:{company_name:'회사',business_number:'123-45-67890'},from:'2026-10-01',to:'2026-10-31'};
 const trip = (purpose, distance_m=10000) => ({started_at:'2026-10-28T15:01:00Z',ended_at:'2026-10-28T16:01:00Z',distance_m,annotation:{purpose,driver_name:'김사용',driver_staff_id:1}});
 const footer = (r,label) => r.csvFooter.find(row=>row[0]?.startsWith(label))?.[1];
+test('report uses captured driver department, never current vehicle department',()=>{
+ const t=trip('business');t.annotation.driver_department='과거 영업부';
+ assert.equal(ntsTripReport([t],context).rows[0].department,'과거 영업부');
+});
 test('attached template columns, KST dates and vehicle filename; no invented odometer or staff department',()=>{
   const r=ntsTripReport([trip('business')],context);
   assert.deepEqual(r.columns.map(c=>c.key),['date','department','driver','before','after','km','commute','business','note']);

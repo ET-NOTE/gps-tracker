@@ -1,3 +1,4 @@
+import {useFleetAccess,useFleetOrganization} from './FleetAccess';
 import React,{useState,useMemo} from 'react';
 import {useQuery,useQueryClient,useMutation} from '@tanstack/react-query';
 import {api} from '../../api';
@@ -18,6 +19,7 @@ export const fleetAssetsKey=['business','corporate','vehicles'];
 export function useFleetAssets() {return useQuery({queryKey:fleetAssetsKey,queryFn:()=>api.listFleetVehicles(),staleTime:15000});}
 export {projectFleetAssets} from '../../lib/fleetAssets';
 export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport}) {
+  const access=useFleetAccess();
   const [edit,setEdit]=useState(null),[detail,setDetail]=useState(null),[query,setQuery]=useState(''),[status,setStatus]=useState('all'),[sort,setSort]=useState('name');
   const {data:staff=[]}=useStaff();
   const selected=assets.find(v=>v.id===detail);
@@ -26,7 +28,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport}) {
   const saved=()=>{setEdit(null);onChanged();};
   return <>
     <div className="business-metrics fleet-asset-metrics">{[['등록 차량',assets.length],['사용 가능',assets.filter(v=>v.enabled).length],['사용 정지',assets.filter(v=>!v.enabled).length]].map(([label,n])=><div className="business-metric" key={label}><span>{label}</span><strong>{n}<small>대</small></strong></div>)}</div>
-    <section className="business-section"><div className="business-section-title"><h3>차량 목록</h3><button className="business-button is-primary" onClick={()=>setEdit({})}>+ 차량 등록</button></div>
+    <section className="business-section"><div className="business-section-title"><h3>차량 목록</h3>{access.manage_vehicles&&<button className="business-button is-primary" onClick={()=>setEdit({})}>+ 차량 등록</button>}</div>
       <div className="business-list-filters"><input aria-label="등록 차량 검색" placeholder="차량·단말기 검색" value={query} onChange={e=>setQuery(e.target.value)}/><select aria-label="등록 차량 상태" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">전체 상태</option><option value="enabled">사용 가능</option><option value="disabled">사용 정지</option></select><select aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}><option value="name">차량 이름순</option><option value="created">최근 등록순</option></select></div>
       <div className="fleet-asset-table-wrap"><table className="fleet-asset-table"><thead><tr>{['차량','부서·담당자','연결 단말기','계기판 거리','등록일','상태','작업'].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map(v=><tr key={v.id}>
         <td><button className="business-link" onClick={()=>setDetail(v.id)}>{v.name}</button><small>{v.license_plate||'차량번호 미등록'}</small></td>
@@ -34,7 +36,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport}) {
         <td>{v.bindings.length?v.bindings.map(b=><div key={b.id}>{b.terminal_name}{b.is_primary&&<span className="business-badge">대표</span>}</div>):'미연결'}</td>
         <td className="is-number">{v.profile.odometer_km==null?'미등록':`${Number(v.profile.odometer_km).toLocaleString()} km`}</td><td>{kstDateTime(v.created_at).slice(0,10)}</td>
         <td><span className={`business-badge ${v.enabled?'good':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span></td>
-        <td><button className="business-button" onClick={()=>setDetail(v.id)}>상세·연결</button><button className="business-button" onClick={()=>setEdit(v)}>수정</button></td>
+        <td><button className="business-button" onClick={()=>setDetail(v.id)}>상세·연결</button>{access.manage_vehicles&&<button className="business-button" onClick={()=>setEdit(v)}>수정</button>}</td>
       </tr>)}</tbody></table></div>{!rows.length&&<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>단말기는 나중에 연결할 수 있습니다.</p></div>}
     </section>
     {edit&&<FleetAssetForm asset={edit} staff={staff} onClose={()=>setEdit(null)} onSaved={saved}/>}
@@ -42,16 +44,17 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport}) {
   </>;
 }
 export function FleetAssetForm({asset,staff=[],onClose,onSaved}) {
-  const [form,setForm]=useState({name:asset.name||'',license_plate:asset.license_plate||'',car_model:asset.car_model||'',department:asset.department||'',manager_staff_id:asset.manager_staff_id||'',enabled:asset.enabled!==false,profile:{...asset.profile}}),[saving,setSaving]=useState(false),[error,setError]=useState('');
+  const org=useFleetOrganization();
+  const [form,setForm]=useState({name:asset.name||'',license_plate:asset.license_plate||'',car_model:asset.car_model||'',department:'',department_id:asset.department_id||'',manager_staff_id:asset.manager_staff_id||'',enabled:asset.enabled!==false,profile:{...asset.profile}}),[saving,setSaving]=useState(false),[error,setError]=useState('');
   const field=(key,value)=>setForm(p=>({...p,[key]:value}));
   const profile=(key,value)=>setForm(p=>({...p,profile:{...p.profile,[key]:value}}));
   async function save(e){e.preventDefault();if(saving)return;setSaving(true);setError('');try{
-    const p={...form,profile:{...form.profile},manager_staff_id:form.manager_staff_id?Number(form.manager_staff_id):null,updated_at:asset.updated_at};
+    const p={...form,profile:{...form.profile},department_id:Number(form.department_id)||null,manager_staff_id:form.manager_staff_id?Number(form.manager_staff_id):null,updated_at:asset.updated_at};
     for(const key of ['odometer_km','next_service_km','model_year','engine_cc','purchase_price_krw','fuel_efficiency_kmpl']) if(key in p.profile) p.profile[key]=p.profile[key]===''?null:Number(p.profile[key]);
     if(asset.id)await api.updateFleetVehicle(asset.id,p);else await api.createFleetVehicle(p);onSaved();
   }catch(e){setError(e.message||'차량을 저장하지 못했습니다.');}finally{setSaving(false);}}
   return <Modal open title={asset.id?'차량 정보 수정':'차량 등록'} onClose={onClose}><form onSubmit={save} className="fleet-asset-form">
-    <div className="fleet-asset-fields"><FormField label="차량명" required><Input required maxLength={120} value={form.name} onChange={e=>field('name',e.target.value)}/></FormField><FormField label="차량번호"><Input maxLength={32} value={form.license_plate} onChange={e=>field('license_plate',e.target.value)}/></FormField><FormField label="차종"><Input maxLength={120} value={form.car_model} onChange={e=>field('car_model',e.target.value)}/></FormField><FormField label="부서"><Input maxLength={100} value={form.department} onChange={e=>field('department',e.target.value)}/></FormField><FormField label="담당자"><Select value={form.manager_staff_id} onChange={e=>field('manager_staff_id',e.target.value)}><option value="">미지정</option>{staff.filter(s=>s.active||s.id===asset.manager_staff_id).map(s=><option key={s.id} value={s.id}>{s.name}{!s.active?' (비활성)':''}</option>)}</Select></FormField><FormField label="계기판 누적거리 (km)"><Input type="number" min="0" step="0.1" value={form.profile.odometer_km??''} onChange={e=>profile('odometer_km',e.target.value)}/></FormField></div>
+    <div className="fleet-asset-fields"><FormField label="차량명" required><Input required maxLength={120} value={form.name} onChange={e=>field('name',e.target.value)}/></FormField><FormField label="차량번호"><Input maxLength={32} value={form.license_plate} onChange={e=>field('license_plate',e.target.value)}/></FormField><FormField label="차종"><Input maxLength={120} value={form.car_model} onChange={e=>field('car_model',e.target.value)}/></FormField><FormField label="부서"><Select value={form.department_id} onChange={e=>field('department_id',e.target.value)}><option value="">미지정</option>{(org.data||[]).filter(i=>i.kind==='department'&&(i.active||i.id===asset.department_id)).map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</Select></FormField><FormField label="담당자"><Select value={form.manager_staff_id} onChange={e=>field('manager_staff_id',e.target.value)}><option value="">미지정</option>{staff.filter(s=>s.active||s.id===asset.manager_staff_id).map(s=><option key={s.id} value={s.id}>{s.name}{!s.active?' (비활성)':''}</option>)}</Select></FormField><FormField label="계기판 누적거리 (km)"><Input type="number" min="0" step="0.1" value={form.profile.odometer_km??''} onChange={e=>profile('odometer_km',e.target.value)}/></FormField></div>
     <fieldset><legend>점검 일정</legend><div className="fleet-asset-fields">{[['next_service_date','다음 정비일'],['insurance_expiry','보험 만료일'],['inspection_expiry','검사 만료일']].map(([key,label])=><FormField key={key} label={label}><Input type="date" value={form.profile[key]||''} onChange={e=>profile(key,e.target.value)}/></FormField>)}<FormField label="다음 정비 주행거리 (km)"><Input type="number" min="0" value={form.profile.next_service_km??''} onChange={e=>profile('next_service_km',e.target.value)}/></FormField></div></fieldset>
     <details><summary>연식·취득·연료 정보</summary><div className="fleet-asset-fields">{[['model_year','연식'],['engine_cc','배기량 (cc)'],['purchase_price_krw','취득가액 (원)'],['fuel_efficiency_kmpl','연비 (km/L)']].map(([key,label])=><FormField key={key} label={label}><Input type="number" min="0" step={key==='fuel_efficiency_kmpl'?'0.1':'1'} value={form.profile[key]??''} onChange={e=>profile(key,e.target.value)}/></FormField>)}<FormField label="취득일"><Input type="date" value={form.profile.acquired_at||''} onChange={e=>profile('acquired_at',e.target.value)}/></FormField><FormField label="차량 유형"><Select value={form.profile.vehicle_type||''} onChange={e=>profile('vehicle_type',e.target.value)}><option value="">미지정</option>{[['sedan','승용'],['van','승합'],['truck','화물'],['special','특수'],['ev','전기']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</Select></FormField><FormField label="연료"><Select value={form.profile.fuel_type||''} onChange={e=>profile('fuel_type',e.target.value)}><option value="">미지정</option>{[['gasoline','휘발유'],['diesel','경유'],['lpg','LPG'],['ev','전기']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</Select></FormField></div></details>
     <FormField label="메모"><Textarea maxLength={2000} value={form.profile.note||''} onChange={e=>profile('note',e.target.value)}/></FormField><label className="fleet-asset-toggle"><input type="checkbox" checked={form.enabled} onChange={e=>field('enabled',e.target.checked)}/>사용 가능</label>
@@ -59,6 +62,7 @@ export function FleetAssetForm({asset,staff=[],onClose,onSaved}) {
   </form></Modal>;
 }
 export function FleetAssetDetail({asset,devices,onClose,onChanged,onEdit,onMap,meta,onReport}) {
+  const access=useFleetAccess();
   const qc=useQueryClient();
   const all=useFleetAssets().data||[];
   const assignedElsewhere=id=>all.find(v=>v.id!==asset.id&&v.bindings.some(b=>b.device_id===id));
@@ -79,7 +83,7 @@ export function FleetAssetDetail({asset,devices,onClose,onChanged,onEdit,onMap,m
     finally{setSaving(false);}
   }
   return <BusinessDrawer title={asset.name} subtitle={asset.license_plate||'차량번호 미등록'} onClose={onClose}>
-    <div className="business-switch">{[['status','상태·위치'],['connections','단말기 연결'],['files','사진·서류'],['history','연결 이력']].map(([key,label])=><button key={key} className="business-switch-item" aria-pressed={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div>
+    <div className="business-switch">{[['status','상태·위치'],['connections','단말기 연결'],['files','사진·서류'],['history','연결 이력']].filter(([key])=>key==='status'||(key==='files'?access.manage_reports:access.manage_vehicles)).map(([key,label])=><button key={key} className="business-switch-item" aria-pressed={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div>
     {tab==='status'&&<>
       <BusinessMap devices={[device]}/>
       <dl className="business-detail-facts">
@@ -91,7 +95,7 @@ export function FleetAssetDetail({asset,devices,onClose,onChanged,onEdit,onMap,m
       </dl>
       {device.source_device_id&&<BatteryStatus reading={deviceBattery(device,meta)}/>}
       <dl className="business-detail-facts">{[['next_service_date','다음 정비일'],['insurance_expiry','보험 만료일'],['inspection_expiry','검사 만료일']].map(([key,label])=><div key={key}><dt>{label}</dt><dd>{asset.profile[key]||'미등록'}</dd></div>)}</dl>
-      <button className="business-button" onClick={onEdit}>차량·점검 정보 수정</button>
+      {access.manage_vehicles&&<button className="business-button" onClick={onEdit}>차량·점검 정보 수정</button>}
       {onReport&&<button className="business-button is-primary" onClick={()=>{onClose();onReport(asset);}}>운행기록부 보기</button>}
       {onMap&&device.source_device_id&&<button className="business-button" onClick={()=>{onClose();onMap(device.source_device_id);}}>전체 지도 보기</button>}
     </>}

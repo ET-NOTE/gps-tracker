@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
-import { BusinessStaff as StaffTab } from './business/BusinessPeople';
+import StaffTab from './business/FleetPeople';
+import {FleetAccountScope,useFleetAccess,staffCanDrive} from './business/FleetAccess';
 import { BusinessCompanyInfo as InfoTab, BusinessSubscription as SubTab } from './business/BusinessPreferences';
 import { filterTrips, tripReport, monthlyReport, monthDateBounds, purposeLabel } from '../lib/businessExport';
 import { BusinessWorkspace, BusinessLocation, useBusinessVehicle, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
@@ -23,7 +24,7 @@ import {
   useCorporateInfo, useStaff,
   qk,
 } from '../state';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery,useQueryClient } from '@tanstack/react-query';
 
 const PURPOSE_LABEL = {
   commute:     '출퇴근',
@@ -32,7 +33,10 @@ const PURPOSE_LABEL = {
   unspecified: '미지정',
 };
 
-function CorporatePanel({ devices: rawDevices, onMap: rawOnMap, onDevice, onVehiclesChange, onNavigate, meta: rawMeta }) {
+function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice, onVehiclesChange, onNavigate, meta: personalMeta, toolbar }) {
+  const access=useFleetAccess();
+  const terminals=useQuery({queryKey:['fleet-terminals'],queryFn:()=>api.fleetTerminals(),refetchInterval:30000});
+  const rawDevices=terminals.data||[],rawMeta=access.billing?personalMeta:{},rawOnMap=access.billing?personalMap:undefined;
   const assets=useFleetAssets();
   const devices=useMemo(()=>projectFleetAssets(assets.data||[],rawDevices),[assets.data,rawDevices]);
   const meta=Object.fromEntries(devices.map(d=>[d.id,rawMeta?.[d.source_device_id]]));
@@ -49,9 +53,12 @@ function CorporatePanel({ devices: rawDevices, onMap: rawOnMap, onDevice, onVehi
   const report = device => { setReportDevice(device.id); setTab('report'); };
   if(assets.isPending)return <SkeletonList count={3} itemHeight={140}/>;
   if(assets.error)return <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>;
+  if(terminals.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={terminals.refetch}>단말기 상태를 불러오지 못했습니다.</BusinessError></div>;
   return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     mobileAction={<BusinessButton icon="user" onClick={()=>setTab('staff')}>사용자</BusinessButton>}
     action={tab === 'reservations' ? <BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton> : null}>
+    {toolbar}
+    {tab === 'overview' && access.manage_vehicles && <div className="fleet-onboarding" aria-label="회사 시작하기"><BusinessButton onClick={()=>setTab('settings')}>1 회사 정보</BusinessButton><BusinessButton onClick={()=>setTab('vehicles')}>2 차량 등록</BusinessButton><BusinessButton onClick={()=>setTab('vehicles')}>3 단말기 연결</BusinessButton><BusinessButton onClick={()=>setTab('staff')}>4 사용자 배정</BusinessButton></div>}
     {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onVehicles={()=>setTab('vehicles')} />}
     {tab === 'vehicles' && <FleetAssets onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={rawOnMap} onChanged={assets.refetch} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
@@ -59,13 +66,13 @@ function CorporatePanel({ devices: rawDevices, onMap: rawOnMap, onDevice, onVehi
     {['report','monthly'].includes(tab) && <>
       {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
         : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
-        : !subscription.data.active ? <SubTab sub={subscription.data} onChange={updateSub} report />
+        : !subscription.data.active ? <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} report />
         : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} /> : <MonthlyReportTab devices={devices} />}</>}
-    {tab === 'settings' && <BusinessSettings company={<InfoTab />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab sub={subscription.data} onChange={updateSub} />} />}
+    {tab === 'settings' && <BusinessSettings company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
     {editAsset&&<FleetAssetForm asset={editAsset} staff={staff.data||[]} onClose={()=>setEditAsset(null)} onSaved={()=>{setEditAsset(null);assets.refetch();}}/>}
   </BusinessWorkspace>;
 }
-export default React.memo(CorporatePanel);
+export default function CorporateAccountPanel(props){return <FleetAccountScope>{toolbar=><CorporatePanel {...props} toolbar={toolbar}/>}</FleetAccountScope>;}
 
 function CorporateOverview({ devices, onMap, onReport, onReserve, onVehicles }) {
   const now = useBusinessClock(), openVehicle = useBusinessVehicle(), [showAll, setShowAll] = useState(false);
@@ -257,7 +264,7 @@ function ReportTab({ devices, initialDeviceId }) {
       </div>
 
       {editing && (
-        <TripEditorModal trip={editing} staff={staff} deviceId={deviceId}
+        <TripEditorModal trip={editing} staff={(staffAll||[]).filter(s=>staffCanDrive(s,device)||s.id===editing.annotation?.driver_staff_id)} deviceId={deviceId}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load(); }} />
       )}
@@ -330,6 +337,7 @@ function TripsTable({ trips, dailyDistance, onEdit }) {
 }
 
 function TripRow({ t, date, dailyKm, onEdit }) {
+  const access=useFleetAccess();
   const ann = t.annotation || {};
   const purpose = ann.purpose || 'unspecified';
   const km = t.distance_m == null ? '—' : (t.distance_m / 1000).toFixed(1);
@@ -369,7 +377,7 @@ function TripRow({ t, date, dailyKm, onEdit }) {
       </td>
       <td style={st.td}>{ann.driver_name || '—'}</td>
       <td style={{ ...st.td, padding: 4 }} className="no-print">
-        <button onClick={onEdit} disabled={t.allocation_status==='boundary_review'} style={{
+        <button onClick={onEdit} disabled={t.allocation_status==='boundary_review'||(!access.manage_reports&&t.annotation?.driver_staff_id!=null&&t.annotation.driver_staff_id!==access.staff_id)} style={{
           width: 26, height: 26, borderRadius: 6,
           background: 'var(--surface-2)', color: 'var(--text-2)',
           border: '1px solid var(--border)', cursor: 'pointer',
@@ -387,7 +395,8 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
   const ann = trip.annotation || {};
   const [purpose, setPurpose]      = useState(ann.purpose || 'unspecified');
   const [purposeNote, setPurposeNote] = useState(ann.purpose_note || '');
-  const [driverId, setDriverId]    = useState(ann.driver_staff_id || '');
+  const access=useFleetAccess();
+  const [driverId, setDriverId]    = useState(ann.driver_staff_id || (!access.manage_reports?access.staff_id:''));
   const [fuelLiters, setFuelLiters] = useState(ann.fuel_liters != null ? String(ann.fuel_liters) : '');
   const [fuelCost, setFuelCost]    = useState(ann.fuel_cost != null ? String(ann.fuel_cost) : '');
   const [note, setNote]            = useState(ann.note || '');
@@ -469,7 +478,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
             ) : (
               <select value={driverId} onChange={e => setDriverId(e.target.value)}
                 style={mst.input}>
-                <option value="">— 미지정 —</option>
+                {access.manage_reports&&<option value="">— 미지정 —</option>}
                 {staff.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name}{s.role ? ` (${s.role})` : ''}
@@ -881,6 +890,7 @@ function isoToLocal(iso) {
 }
 
 function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved }) {
+  const access=useFleetAccess();
   // init null = 신규. presetDate 'YYYY-MM-DD' 있으면 그 날 09:00~10:00 기본.
   // 아니면 다음 정시부터 +1h.
   const defaultStart = () => {
@@ -888,7 +898,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
     const d = new Date(); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); return d;
   };
   const [deviceId, setDeviceId] = useState(init?.vehicle_id ?? devices?.[0]?.id ?? '');
-  const [driverId, setDriverId] = useState(init?.driver_staff_id ?? '');
+  const [driverId, setDriverId] = useState(init?.driver_staff_id ?? (!access.manage_reports?access.staff_id:''));
   const [startsAt, setStartsAt] = useState(init ? isoToLocal(init.starts_at) : isoToLocal(defaultStart().toISOString()));
   const [endsAt,   setEndsAt]   = useState(init ? isoToLocal(init.ends_at)   : isoToLocal(new Date(defaultStart().getTime() + 3600_000).toISOString()));
   const [purpose,  setPurpose]  = useState(init?.purpose ?? '');
@@ -929,7 +939,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
     </>}>
 
         <FormField label="차량">
-          <select value={deviceId} onChange={e => setDeviceId(e.target.value)} style={st.input}>
+          <select value={deviceId} onChange={e => {setDeviceId(e.target.value);setDriverId(access.manage_reports?'':access.staff_id);}} style={st.input}>
             {(devices || []).map(d => (
               <option key={d.id} value={d.id}>
                 {reportVehicleLabel(d)}
@@ -940,8 +950,8 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
 
         <FormField label="운전자 (선택)">
           <select value={driverId} onChange={e => setDriverId(e.target.value)} style={st.input}>
-            <option value="">— 미지정 —</option>
-            {staff.map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` (${s.role})` : ''}</option>)}
+            {access.manage_reports&&<option value="">— 미지정 —</option>}
+            {staff.filter(s=>staffCanDrive(s,devices.find(d=>d.id===Number(deviceId)))).map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` (${s.role})` : ''}</option>)}
           </select>
         </FormField>
 
@@ -1523,6 +1533,7 @@ function estimateDepreciation(r) {
 }
 
 function MonthlyDeviceRow({ row, onEdit }) {
+  const access=useFleetAccess();
   const cost = estimateFuelCost(row);
   const dep  = estimateDepreciation(row);
   const total = row.totalKm || 1;   // divide-by-zero 방지
@@ -1573,7 +1584,7 @@ function MonthlyDeviceRow({ row, onEdit }) {
             {cost > 0 ? Math.round(cost).toLocaleString() + '원' : '–'}
           </div>
         </div>
-        <button onClick={onEdit} style={{
+        <button disabled={!access.manage_vehicles} onClick={onEdit} style={{
           fontSize: 11, padding: '6px 10px', borderRadius: 8,
           background: 'var(--surface-2)', border: '1px solid var(--border)',
           color: 'var(--text-2)', cursor: 'pointer', fontWeight: 600,

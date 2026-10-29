@@ -120,6 +120,24 @@ Object.assign(api,{
  createFleetReservation:async body=>{const v=assets.find(v=>v.id===body.vehicle_id);const r={...body,id:100+fleetBookings.length,vehicle_name:v.name,license_plate:v.license_plate};fleetBookings.push(r);return r;},
  updateFleetReservation:async(id,body)=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,...body}:r);return fleetBookings.find(r=>r.id===id);},cancelFleetReservation:async id=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,status:'cancelled'}:r);return {ok:true};},
 });
+const teamOrg=[{id:1,kind:'department',name:'영업팀',active:true,updated_at:new Date().toISOString()},{id:2,kind:'position',name:'팀장',active:true,updated_at:new Date().toISOString()}];
+const teamStaff=[{id:1,name:'김영업',role:'영업',department_id:1,department:'영업팀',position_id:2,position:'팀장',phone:'010-0000-0000',active:true,access_role:'member',all_vehicles:false,vehicle_ids:[100],created_at:new Date().toISOString(),updated_at:new Date().toISOString()}];
+const teamRole=params.get('role')||'owner';let teamInvites=[];
+Object.assign(api,{
+ fleetWorkspaces:read({own_id:1,memberships:[{owner_id:2,company_name:'검증용 회사',role:'member'}]}),
+ fleetAccess:read({role:teamRole,owner_id:1,actor_id:1,staff_id:1,manage_team:['owner','admin'].includes(teamRole),manage_vehicles:['owner','admin'].includes(teamRole),manage_reports:teamRole!=='member',billing:teamRole==='owner'}),
+ fleetOrganization:async()=>teamOrg.map(i=>({...i})),fleetTerminals:async()=>devices,
+ createFleetOrgItem:async body=>{const i={...body,id:teamOrg.length+1,updated_at:new Date().toISOString()};teamOrg.push(i);return i;},updateFleetOrgItem:async(id,body)=>{Object.assign(teamOrg.find(i=>i.id===id),body);return body;},
+ fleetInvites:async()=>teamInvites.map(i=>({...i})),fleetTeamAudit:read([]),
+ inviteFleetStaff:async staff_id=>{const i={id:teamInvites.length+1,staff_id,name:teamStaff.find(s=>s.id===staff_id).name,expires_at:new Date(Date.now()+7*86400000).toISOString()};teamInvites.push(i);return {...i,code:'A'.repeat(43)};},
+ revokeFleetInvite:async id=>{teamInvites=teamInvites.filter(i=>i.id!==id);},
+ joinFleet:async()=>({owner_id:2,company_name:'검증용 회사',staff_name:'검증 직원',role:'member'}),
+});
+if(params.has('team'))Object.assign(api,{
+ listStaff:async()=>teamStaff.map(s=>({...s})),
+ createStaff:async body=>{const s={...body,id:teamStaff.length+1,department:teamOrg.find(i=>i.id===body.department_id)?.name,position:teamOrg.find(i=>i.id===body.position_id)?.name,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};teamStaff.push(s);return s;},
+ updateStaff:async(id,body)=>{Object.assign(teamStaff.find(s=>s.id===id),body);return {...teamStaff.find(s=>s.id===id)};},
+});
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');

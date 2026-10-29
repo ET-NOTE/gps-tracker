@@ -7,7 +7,7 @@ use crate::{
 use axum::{
     extract::{Path, Query, State},
     routing::get,
-    Json, Router,
+    Extension, Json, Router,
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -39,6 +39,7 @@ pub struct Vehicle {
     pub license_plate: Option<String>,
     pub car_model: Option<String>,
     pub department: Option<String>,
+    pub department_id: Option<i64>,
     pub manager_staff_id: Option<i64>,
     pub enabled: bool,
     pub profile: Value,
@@ -67,6 +68,7 @@ struct VehicleInput {
     license_plate: Option<String>,
     car_model: Option<String>,
     department: Option<String>,
+    department_id: Option<i64>,
     manager_staff_id: Option<i64>,
     enabled: bool,
     #[serde(default = "empty_profile")]
@@ -237,16 +239,24 @@ async fn create(
     user: AuthUser,
     Json(input): Json<VehicleInput>,
 ) -> AppResult<Json<Vehicle>> {
-    let p = input.validate()?;
+    let mut p = input.validate()?;
     let mut tx = state.db.begin().await?;
+    (p.department_id, p.department) = super::fleet_team::resolve_department(
+        &mut tx,
+        user.user_id,
+        p.department_id,
+        p.department,
+        None,
+    )
+    .await?;
     check_staff(&mut tx, user.user_id, p.manager_staff_id).await?;
     if p.profile.get("car_image_url").is_some() {
         return Err(AppError::BadRequest(
             "사진은 차량 사진 업로드에서 등록해 주세요.".into(),
         ));
     }
-    let id:i64=sqlx::query_scalar("INSERT INTO fleet_vehicles(owner_id,name,license_plate,car_model,department,manager_staff_id,enabled,profile) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id")
-        .bind(user.user_id).bind(p.name).bind(p.license_plate).bind(p.car_model).bind(p.department).bind(p.manager_staff_id).bind(p.enabled).bind(p.profile).fetch_one(&mut *tx).await.map_err(db_error)?;
+    let id:i64=sqlx::query_scalar("INSERT INTO fleet_vehicles(owner_id,name,license_plate,car_model,department,manager_staff_id,enabled,profile,department_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id")
+        .bind(user.user_id).bind(p.name).bind(p.license_plate).bind(p.car_model).bind(p.department).bind(p.manager_staff_id).bind(p.enabled).bind(p.profile).bind(p.department_id).fetch_one(&mut *tx).await.map_err(db_error)?;
     let after: Value = sqlx::query_scalar("SELECT to_jsonb(v) FROM fleet_vehicles v WHERE id=$1")
         .bind(id)
         .fetch_one(&mut *tx)
@@ -261,7 +271,7 @@ async fn update(
     Path(id): Path<i64>,
     Json(input): Json<VehicleInput>,
 ) -> AppResult<Json<Vehicle>> {
-    let p = input.validate()?;
+    let mut p = input.validate()?;
     let expected = p
         .updated_at
         .ok_or_else(|| AppError::BadRequest("차량 정보를 새로 불러온 뒤 수정해 주세요.".into()))?;
@@ -274,6 +284,14 @@ async fn update(
     .fetch_optional(&mut *tx)
     .await?
     .ok_or(AppError::NotFound)?;
+    (p.department_id, p.department) = super::fleet_team::resolve_department(
+        &mut tx,
+        user.user_id,
+        p.department_id,
+        p.department,
+        before["department_id"].as_i64(),
+    )
+    .await?;
     if p.profile.get("car_image_url") != before.get("profile").and_then(|p| p.get("car_image_url"))
     {
         return Err(AppError::BadRequest(
@@ -283,8 +301,8 @@ async fn update(
     if p.manager_staff_id != before["manager_staff_id"].as_i64() {
         check_staff(&mut tx, user.user_id, p.manager_staff_id).await?;
     }
-    let count=sqlx::query("UPDATE fleet_vehicles SET name=$3,license_plate=$4,car_model=$5,department=$6,manager_staff_id=$7,enabled=$8,profile=$9,updated_at=clock_timestamp() WHERE id=$1 AND owner_id=$2 AND updated_at=$10")
-        .bind(id).bind(user.user_id).bind(p.name).bind(p.license_plate).bind(p.car_model).bind(p.department).bind(p.manager_staff_id).bind(p.enabled).bind(p.profile).bind(expected).execute(&mut *tx).await.map_err(db_error)?.rows_affected();
+    let count=sqlx::query("UPDATE fleet_vehicles SET name=$3,license_plate=$4,car_model=$5,department=$6,manager_staff_id=$7,enabled=$8,profile=$9,department_id=$11,updated_at=clock_timestamp() WHERE id=$1 AND owner_id=$2 AND updated_at=$10")
+        .bind(id).bind(user.user_id).bind(p.name).bind(p.license_plate).bind(p.car_model).bind(p.department).bind(p.manager_staff_id).bind(p.enabled).bind(p.profile).bind(expected).bind(p.department_id).execute(&mut *tx).await.map_err(db_error)?.rows_affected();
     if count == 0 {
         return Err(AppError::Conflict(
             "다른 곳에서 차량 정보가 변경됐습니다. 새로고침 후 다시 저장해 주세요.".into(),
@@ -510,6 +528,7 @@ async fn annotation(
     State(state): State<AppState>,
     user: AuthUser,
     Path(id): Path<i64>,
+    scope: Option<Extension<crate::auth::fleet::FleetScope>>,
     Json(p): Json<VehicleAnnotation>,
 ) -> AppResult<Json<super::corporate::TripAnnotation>> {
     let allowed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_vehicle_bindings WHERE id=$1 AND owner_id=$2 AND vehicle_id=$3 AND device_id=$4 AND is_primary AND started_at<=$5 AND (ended_at IS NULL OR ended_at>$5))")
@@ -517,7 +536,25 @@ async fn annotation(
     if !allowed {
         return Err(AppError::NotFound);
     }
-    super::corporate::save_annotation(&state, user, p.source_device_id, p.annotation).await
+    let mut tx = state.db.begin().await?;
+    // Retaining a historical driver is different from assigning a new one.
+    // Deactivation or vehicle reassignment must not prevent correcting its note.
+    let retained: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM trip_annotations WHERE user_id=$1 AND device_id=$2 AND trip_started_at=$3 AND driver_staff_id=$4)")
+        .bind(user.user_id).bind(p.source_device_id).bind(p.annotation.trip_started_at)
+        .bind(p.annotation.driver_staff_id).fetch_one(&mut *tx).await?;
+    if !retained {
+        super::fleet_team::driver_allowed(&mut tx, user.user_id, p.annotation.driver_staff_id, id)
+            .await?;
+    }
+    tx.commit().await?;
+    super::corporate::save_annotation(
+        &state,
+        user,
+        p.source_device_id,
+        p.annotation,
+        scope.and_then(|s| if s.manager() { None } else { s.staff }),
+    )
+    .await
 }
 async fn stats(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Value>> {
     // Daily aggregates are only attributable when one primary binding covers

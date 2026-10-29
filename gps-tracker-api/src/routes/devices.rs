@@ -222,7 +222,10 @@ async fn reset_device(
     ))
 }
 
-async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Vec<DeviceView>>> {
+pub(super) async fn list(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> AppResult<Json<Vec<DeviceView>>> {
     let runtime_prefs = crate::services::device_settings::prefs(&state.db, user.user_id).await?;
     let mut rows = sqlx::query_as::<_, DeviceView>(
         r#"SELECT d.id, d.device_uid, d.display_name, d.color, d.icon,

@@ -15,6 +15,11 @@ impl FromRequestParts<AppState> for AuthUser {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
+        if let Some(scope) = parts.extensions.get::<super::fleet::FleetScope>() {
+            return Ok(AuthUser {
+                user_id: scope.owner,
+            });
+        }
         let header = parts
             .headers
             .get("authorization")

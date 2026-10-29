@@ -1,3 +1,4 @@
+import {useQuery} from '@tanstack/react-query';
 import { dashboardView, routeAccess } from '../lib/dashboardRoutes';
 import RouteNotice from '../components/RouteNotice';
 import RoutePlannerSheet from '../components/RoutePlannerSheet';
@@ -168,7 +169,8 @@ export default function Dashboard({ onLogout }) {
   const { data: accountTypeRaw } = accountQuery;
   const accountType = accountTypeRaw?.account_type ?? null;
   const isAdmin     = me?.role === 'admin';
-  const isCorporate = accountType === 'corporate_fleet';
+  const memberships=useQuery({queryKey:['fleet-memberships',authScope()],queryFn:()=>api.fleetWorkspaces(),enabled:!!me,refetchInterval:30000});
+  const isCorporate = accountType === 'corporate_fleet'||!!memberships.data?.memberships?.length;
   const isRentcar   = accountType === 'rentcar';
   const isDelivery  = accountType === 'delivery';
 
@@ -756,10 +758,10 @@ export default function Dashboard({ onLogout }) {
   // 데스크톱은 좌측 SideRail + 중앙 Map + 우측 사이드 패널 (탭 활성 시)
   // 모바일/태블릿은 BottomNav + 풀스크린 오버레이 패널
   const specialized = ['admin', 'corporate', 'rentcar', 'delivery'].includes(view);
-  const accessQuery = view === 'admin' ? meQuery : accountQuery;
+  const accessQuery = view === 'admin' ? meQuery : view==='corporate'&&accountType!=='corporate_fleet'?memberships:accountQuery;
   const routeProblem = !view ? 'missing' : specialized
     ? accessQuery.isPending ? 'loading' : accessQuery.isError ? 'error'
-      : !routeAccess(view, me, accountType) ? 'denied' : null
+      : !(view==='corporate'&&isCorporate)&&!routeAccess(view, me, accountType) ? 'denied' : null
     : null;
   const mapVisible = !routeProblem && (isDesktop || view === 'home');
 
