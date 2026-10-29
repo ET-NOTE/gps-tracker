@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { installCorporateMapFixture } from './corporate-map-fixture';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '../src/index.css';
@@ -11,6 +12,7 @@ import { businessDate } from '../src/lib/business';
 // Isolated visual fixture: all network methods are stubbed; return tests never write to a server.
 const params = new URLSearchParams(location.search);
 const failed = params.has('error'), empty = params.has('empty');
+if(params.has('mock-map')) installCorporateMapFixture();
 const now = Date.now(), day = businessDate(now), at = h => `${day}T${h}:00:00+09:00`;
 let devices = empty ? [] : [
   { id: 1, display_name: '서울 영업 1호', car_plate: '123가 4567', car_model: '쏘나타', department: '영업팀', enabled: true, last_seen_at: new Date(now).toISOString(), last_fix_at: new Date(now).toISOString(), next_service_date: day },
@@ -37,7 +39,7 @@ Object.assign(api, {
   getCorporateInfo: read({company_name:'미리보기 회사',business_number:'000-00-00000',representative:'미리보기'}),
   getCorporateSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
   getRentcarSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
-  fleetTripStats: read({per_device: devices.map(d => ({device_id:d.id,total_distance_m:123000,today_distance_m:32000}))}),
+  fleetTripStats: read({per_device: devices.map(d => ({device_id:d.id,total_distance_m:123000,today_distance_m:32000,today_fix_count:30,today_last_fix_at:new Date(now).toISOString()}))}),
   listTrips: read(empty ? [] : [{ started_at: at('09'), ended_at: at('10'), duration_min:60, distance_m:12000, annotation:{purpose:'business',driver_staff_id:1,driver_name:'미리보기 운전자',fuel_cost:50000} }, {started_at:at('11'),ended_at:at('12'),duration_min:60,distance_m:6000,annotation:null}]),
   listRentalPhotos: async id => { if (window.__photoListError) throw Error('사진 목록 조회 오류'); return [...(photos.get(Number(id)) || [])]; },
   uploadRentalPhoto: async (id, body) => { window.__photoCalls.push({ action:'upload', id, body }); if (!params.has('photo-write') || window.__photoFailure) throw Error('미리보기 사진 저장 실패'); await new Promise(resolve=>setTimeout(resolve,100)); const photo={id:nextPhotoId++,contract_id:id,kind:body.kind,uploaded_at:new Date().toISOString()}; photos.set(Number(id),[...(photos.get(Number(id))||[]),photo]); photoBytes.set(photo.id,body.data_url); return photo; },
@@ -96,6 +98,11 @@ if (params.has('subscription')) {
     if (!params.has('subscription-success')) throw Error('미리보기 결제 실패: 포인트를 확인해 주세요.');
     return {active:true,price_krw:30000,expires_at:new Date(now + 30 * 86400000).toISOString()};
   };
+}
+if(params.has('feedback')) {
+  devices.forEach((d,i)=>Object.assign(d,{last_lat:37.5665+i*0.00001,last_lng:126.978,last_fix_at:new Date(now-7*86400000).toISOString(),last_seen_at:new Date(now-7*86400000).toISOString(),last_vbat_mv:2400}));
+  api.fleetTripStats=read({per_device:devices.map(d=>({device_id:d.id,total_distance_m:32000,today_distance_m:0,today_fix_count:params.get('feedback')==='zero'?2:0,today_last_fix_at:params.get('feedback')==='zero'?new Date(now).toISOString():null}))});
+  api.updateDevice=async(id,body)=>{const d=devices.find(d=>d.id===id);Object.assign(d,body);return {...d};};
 }
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {

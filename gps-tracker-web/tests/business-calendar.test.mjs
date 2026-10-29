@@ -10,6 +10,7 @@ import * as business from '../src/lib/business.js';
 import * as businessExport from '../src/lib/businessExport.js';
 import * as businessWorkspace from '../src/lib/businessWorkspace.js';
 import * as businessAttention from '../src/lib/businessAttention.js';
+import * as corporateOverview from '../src/lib/corporateOverview.js';
 
 // Render the actual calendar bodies, not just the date helper. Unrelated panel
 // dependencies are stubbed; no network, storage or customer data is involved.
@@ -29,9 +30,10 @@ async function calendar(file, name) {
     if (specifier==='../lib/businessExport') return moduleOf(businessExport);
     if (specifier==='../lib/businessWorkspace') return moduleOf(businessWorkspace);
     if (specifier==='../lib/businessAttention') return moduleOf(businessAttention);
+    if (specifier==='../lib/corporateOverview') return moduleOf(corporateOverview);
     // Only the named exports requested by this module are needed. None of these
     // hooks/components run while rendering a calendar.
-    const exports = {default:noop,api:{},qk:{},useQueryClient:noop,
+    const exports = {default:noop,api:{},qk:{},useQueryClient:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,
       BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:noop,BusinessError:noop,BusinessEmpty:noop,BusinessSection:noop,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
       useBusinessClock:noop,useRentalOperations:noop,useBusinessSubscription:noop,
       BusinessStaff:noop,BusinessRenters:noop,BusinessCompanyInfo:noop,BusinessSubscription:noop,

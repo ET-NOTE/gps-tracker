@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import { classifyDevice } from '../../colors';
 import { useFleetTripStats } from '../../state';
 import { useBusinessClock } from '../business/useBusinessData';
+import { fleetDistance } from '../../lib/corporateOverview';
 
 function kstDateStr(d = new Date()) {
   const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
@@ -38,15 +39,10 @@ export function useFleetStats(devices) {
     const totalCount = devices?.length ?? 0;
     const activeCount = (devices || []).filter(d => d.last_event_kind === 'wake').length;
     const connectedCount = (devices || []).filter(d => ['active', 'gps_loss', 'low_batt', 'critical_batt', 'overcharge'].includes(classifyDevice(d).id)).length;
-    let todayM = 0, monthM = 0;
-    for (const s of (data?.per_device || [])) {
-      monthM += s.total_distance_m || 0;
-      todayM += s.today_distance_m || 0;
-    }
+    const distance = fleetDistance(devices, data?.per_device, clock);
     return {
       totalCount, activeCount, connectedCount, refetch,
-      todayKm: Math.round(todayM / 100) / 10,
-      monthKm: Math.round(monthM / 1000),
+      ...distance,
       loading: isLoading,
       error: error?.message || null,
     };

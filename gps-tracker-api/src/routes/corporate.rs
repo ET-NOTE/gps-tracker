@@ -990,6 +990,10 @@ struct FleetTripStat {
     personal_m: f64,
     // 오늘 (KST) 안 거리 — todayKm 계산용
     today_distance_m: f64,
+    // Missing daily statistics must not look like a measured stationary day.
+    today_fix_count: i64,
+    today_last_fix_at: Option<DateTime<Utc>>,
+    today_updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -1033,6 +1037,9 @@ async fn list_fleet_trip_stats(
         license_plate: Option<String>,
         total_m: Option<f64>,
         today_m: Option<f64>,
+        today_fix_count: i64,
+        today_last_fix_at: Option<DateTime<Utc>>,
+        today_updated_at: Option<DateTime<Utc>>,
     }
 
     let rows: Vec<AggRow> = sqlx::query_as(
@@ -1043,7 +1050,10 @@ async fn list_fleet_trip_stats(
               COALESCE(SUM(ds.distance_m), 0)::float8 AS total_m,
               COALESCE(SUM(
                 CASE WHEN ds.date = $4 THEN ds.distance_m ELSE 0 END
-              ), 0)::float8            AS today_m
+              ), 0)::float8            AS today_m,
+              COALESCE(SUM(ds.fix_count) FILTER (WHERE ds.date = $4), 0)::bigint AS today_fix_count,
+              MAX(ds.last_fix_at) FILTER (WHERE ds.date = $4) AS today_last_fix_at,
+              MAX(ds.updated_at) FILTER (WHERE ds.date = $4) AS today_updated_at
             FROM devices d
             LEFT JOIN daily_stats ds
               ON ds.device_id = d.id
@@ -1072,6 +1082,9 @@ async fn list_fleet_trip_stats(
             business_m: 0.0, // (F7-c) 정확치는 device drill-down (list_trips) 에서
             personal_m: 0.0,
             today_distance_m: r.today_m.unwrap_or(0.0),
+            today_fix_count: r.today_fix_count,
+            today_last_fix_at: r.today_last_fix_at,
+            today_updated_at: r.today_updated_at,
         });
     }
 

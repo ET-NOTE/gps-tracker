@@ -22,18 +22,18 @@ export function BusinessStaff() {
   const rows = list.filter(s => (filter === 'all' || !!s.active === (filter === 'active')) && [s.name, s.role, s.phone].some(v => String(v || '').toLowerCase().includes(query.trim().toLowerCase())));
   return <div className="business-support">
     <BusinessMetrics items={[
-      { label: '전체 운전자', value: result.error || !result.data ? null : list.length, unit: '명', hint: '등록한 운전자', icon: 'user' },
-      { label: '활성 운전자', value: result.error || !result.data ? null : active, unit: '명', hint: '예약·운행 배정에 사용', icon: 'check', tone: 'good' },
-      { label: '비활성 운전자', value: result.error || !result.data ? null : list.length - active, unit: '명', hint: '과거 운행기록 유지', icon: 'user' },
+      { label: '전체 사용자', value: result.error || !result.data ? null : list.length, unit: '명', hint: '등록한 사용자', icon: 'user' },
+      { label: '활성 사용자', value: result.error || !result.data ? null : active, unit: '명', hint: '예약·운행 배정에 사용', icon: 'check', tone: 'good' },
+      { label: '비활성 사용자', value: result.error || !result.data ? null : list.length - active, unit: '명', hint: '과거 운행기록 유지', icon: 'user' },
     ]} />
-    <BusinessSection title="운전자 목록" action={<BusinessButton primary icon="plus" onClick={() => setAdding(true)}>운전자 추가</BusinessButton>}>
-      <div className="business-support-toolbar"><PeopleSearch label="운전자 검색" placeholder="이름 · 역할 · 연락처 검색" value={query} onChange={setQuery} /></div>
-      {result.data && !result.error && <PeopleFilters label="운전자 상태 필터" value={filter} onChange={setFilter} options={[["all", "전체", list.length], ["active", "활성", active], ["inactive", "비활성", list.length - active]]} />}
-      {result.error ? <BusinessError onRetry={result.refetch}>운전자 정보를 불러오지 못했습니다.</BusinessError> : !result.data ? <SkeletonList count={3} itemHeight={80} /> : rows.length ? <div className="business-people-grid">{rows.map(s => <article className="business-person-card" key={s.id}>
-        <PersonHeading name={s.name} subtitle={s.role || '역할 미등록'}><span className={`business-badge ${s.active ? 'good' : ''}`}>{s.active ? '활성' : '비활성'}</span></PersonHeading>
-        <dl className="business-person-facts"><div><dt>연락처</dt><dd>{s.phone || '미등록'}</dd></div></dl>
-        <div className="business-person-actions"><BusinessButton onClick={() => setChanging(s)} aria-label={`${s.name} ${s.active ? '비활성화' : '활성화'}`}>{s.active ? '비활성화' : '활성화'}</BusinessButton></div>
-      </article>)}</div> : <BusinessEmpty title={list.length ? '검색 조건에 맞는 운전자가 없습니다.' : '등록된 운전자가 없습니다.'}>{list.length ? '검색어나 상태 필터를 변경해 주세요.' : '운전자를 추가하면 예약과 운행기록에 배정할 수 있습니다.'}</BusinessEmpty>}
+    <BusinessSection title="사용자 목록" action={<BusinessButton primary icon="plus" onClick={() => setAdding(true)}>사용자 추가</BusinessButton>}>
+      <div className="business-support-toolbar"><PeopleSearch label="사용자 검색" placeholder="이름 · 업무 · 연락처 검색" value={query} onChange={setQuery} /></div>
+      {result.data && !result.error && <PeopleFilters label="사용자 상태 필터" value={filter} onChange={setFilter} options={[["all", "전체", list.length], ["active", "활성", active], ["inactive", "비활성", list.length - active]]} />}
+      {result.error ? <BusinessError onRetry={result.refetch}>사용자 정보를 불러오지 못했습니다.</BusinessError> : !result.data ? <SkeletonList count={3} itemHeight={80} /> : rows.length ? <div className="business-staff-scroll"><table className="business-staff-table"><thead><tr><th>이름</th><th>업무</th><th>연락처</th><th>등록일</th><th>상태</th><th>관리</th></tr></thead><tbody>{rows.map(s => <tr key={s.id}>
+        <td><strong>{s.name}</strong></td><td>{s.role || '—'}</td><td>{s.phone || '—'}</td><td>{s.created_at ? kstDateTime(s.created_at).split(' ')[0] : '—'}</td>
+        <td><span className={`business-badge ${s.active ? 'good' : ''}`}>{s.active ? '활성' : '비활성'}</span></td>
+        <td><BusinessButton onClick={() => setChanging(s)} aria-label={`${s.name} 상태 변경`}>상태 변경</BusinessButton></td>
+      </tr>)}</tbody></table></div> : <BusinessEmpty title={list.length ? '검색 조건에 맞는 사용자가 없습니다.' : '등록된 사용자가 없습니다.'}>{list.length ? '검색어나 상태 필터를 변경해 주세요.' : '사용자를 추가하면 예약과 운행기록에 배정할 수 있습니다.'}</BusinessEmpty>}
     </BusinessSection>
     {adding && <StaffAddModal onClose={() => setAdding(false)} />}
     {changing && <StaffStatusModal staff={changing} onClose={() => setChanging(null)} />}
@@ -44,16 +44,16 @@ function StaffAddModal({ onClose }) {
   const set = key => e => { setError(''); setForm(v => ({ ...v, [key]: e.target.value })); };
   async function save() {
     if (lock.current) return;
-    if (!form.name.trim()) { setError('운전자 이름을 입력해 주세요.'); return; }
+    if (!form.name.trim()) { setError('사용자 이름을 입력해 주세요.'); return; }
     lock.current = true; setError('');
     try { await mutation.mutateAsync({ name: form.name.trim(), role: form.role.trim() || null, phone: form.phone.trim() || null }); onClose(); }
-    catch { setError('운전자를 저장하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.'); }
+    catch { setError('사용자를 저장하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.'); }
     finally { lock.current = false; }
   }
-  return <Modal open title="운전자 추가" subtitle="예약·운행기록에 배정할 운전자를 등록하세요." onClose={mutation.isPending ? undefined : onClose} closeOnBackdrop={false} closeOnEsc={!mutation.isPending} footer={<><Button className="business-form-cancel" variant="ghost" disabled={mutation.isPending} onClick={onClose}>취소</Button><Button className="business-form-submit" busy={mutation.isPending} onClick={save}>운전자 저장</Button></>}>
+  return <Modal open title="사용자 추가" subtitle="예약·운행기록에 배정할 사용자를 등록하세요." onClose={mutation.isPending ? undefined : onClose} closeOnBackdrop={false} closeOnEsc={!mutation.isPending} footer={<><Button className="business-form-cancel" variant="ghost" disabled={mutation.isPending} onClick={onClose}>취소</Button><Button className="business-form-submit" busy={mutation.isPending} onClick={save}>사용자 저장</Button></>}>
     {error && <BusinessError>{error}</BusinessError>}
     <FormField label="이름 (필수)"><Input autoFocus value={form.name} onChange={set('name')} disabled={mutation.isPending} autoComplete="name" /></FormField>
-    <FormField label="역할 (선택)"><Input value={form.role} onChange={set('role')} disabled={mutation.isPending} placeholder="예: 영업 · 배차" /></FormField>
+    <FormField label="업무 (선택)"><Input value={form.role} onChange={set('role')} disabled={mutation.isPending} placeholder="예: 영업 · 배차" /></FormField>
     <FormField label="연락처 (선택)"><Input type="tel" value={form.phone} onChange={set('phone')} disabled={mutation.isPending} autoComplete="tel" placeholder="010-0000-0000" /></FormField>
   </Modal>;
 }
@@ -63,10 +63,10 @@ function StaffStatusModal({ staff, onClose }) {
   async function save() {
     if (lock.current) return; lock.current = true; setError('');
     try { if (staff.active) await remove.mutateAsync(staff.id); else await update.mutateAsync({ id: staff.id, body: { name: staff.name, role: staff.role, phone: staff.phone, active: true } }); onClose(); }
-    catch { setError('운전자 상태를 변경하지 못했습니다. 다시 시도해 주세요.'); } finally { lock.current = false; }
+    catch { setError('사용자 상태를 변경하지 못했습니다. 다시 시도해 주세요.'); } finally { lock.current = false; }
   }
-  return <Modal open title={`운전자 ${label}`} onClose={busy ? undefined : onClose} closeOnEsc={!busy} closeOnBackdrop={false} footer={<><Button className="business-form-cancel" variant="ghost" disabled={busy} onClick={onClose}>취소</Button><Button className="business-form-submit" busy={busy} onClick={save}>{label} 확인</Button></>}>
-    <p className="business-support-message"><strong>{staff.name}</strong> 운전자를 {label}합니다. 과거 운행기록은 유지됩니다.</p>
+  return <Modal open title={`사용자 ${label}`} onClose={busy ? undefined : onClose} closeOnEsc={!busy} closeOnBackdrop={false} footer={<><Button className="business-form-cancel" variant="ghost" disabled={busy} onClick={onClose}>취소</Button><Button className="business-form-submit" busy={busy} onClick={save}>{label} 확인</Button></>}>
+    <p className="business-support-message"><strong>{staff.name}</strong> 사용자를 {label}합니다. 과거 운행기록은 유지됩니다.</p>
     {error && <BusinessError>{error}</BusinessError>}
   </Modal>;
 }

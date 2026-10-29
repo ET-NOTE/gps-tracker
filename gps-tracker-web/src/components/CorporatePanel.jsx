@@ -7,7 +7,10 @@ import { BusinessCompanyInfo as InfoTab, BusinessSubscription as SubTab } from '
 import { filterTrips, tripReport, monthlyReport, monthDateBounds, purposeLabel } from '../lib/businessExport';
 import { BusinessWorkspace, BusinessLocation, useBusinessVehicle, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
 import { tripCompleteness } from '../lib/businessWorkspace';
-import { upcomingReservation } from '../lib/businessAttention';
+import { corporateAttention, corporateVehicleName, terminalName, missingMaintenance } from '../lib/corporateOverview';
+import { classifyDevice, ageString } from '../colors';
+import { deviceBattery } from '../lib/battery';
+import { kstDateTime } from '../lib/businessExport';
 import { useBusinessClock, useBusinessSubscription } from './business/useBusinessData';
 import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleName } from '../lib/business';
 import { confirmDialog, alertDialog } from './Dialog';
@@ -41,14 +44,15 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate
   const tabs = [
     { id: 'overview', label: '운영 현황', icon: 'home' },
     { id: 'vehicles', label: '차량 관리', icon: 'list' },
+    { id: 'staff', label: '사용자', icon: 'user' },
     { id: 'reservations', label: '차량 예약', icon: 'clock' },
     { id: 'report', label: '운행 리포트', icon: 'bar' },
-    { id: 'staff', label: '운전자', icon: 'user' },
     { id: 'settings', label: '설정', icon: 'wrench' },
   ];
-  return <BusinessWorkspace title="법인차 운영" tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} meta={meta}
-    action={<BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton>}>
-    {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} />}
+  return <BusinessWorkspace title="법인차 운영" tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
+    mobileAction={<BusinessButton icon="user" onClick={()=>setTab('staff')}>사용자</BusinessButton>}
+    action={tab === 'reservations' ? <BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton> : null}>
+    {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onVehicles={()=>setTab('vehicles')} />}
     {tab === 'vehicles' && <VehiclesTab devices={devices} onMap={onMap} onVehiclesChange={onVehiclesChange} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <StaffTab />}
@@ -62,45 +66,34 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate
 }
 export default React.memo(CorporatePanel);
 
-function CorporateOverview({ devices, onMap, onDevice, onReport, onReserve }) {
-  const now = useBusinessClock();
-  const openVehicle = useBusinessVehicle();
-  const period = businessPeriod(now);
-  const reservations = useReservations({ from: period.todayStart, to: period.todayEnd }, { refetchInterval: 60_000 });
+function CorporateOverview({ devices, onMap, onReport, onReserve, onVehicles }) {
+  const now = useBusinessClock(), openVehicle = useBusinessVehicle(), [showAll, setShowAll] = useState(false);
+  const period = businessPeriod(now), reservations = useReservations({ from: period.todayStart, to: period.todayEnd }, { refetchInterval: 60_000 });
   const stats = useFleetStats(devices);
-  const active = (reservations.data || []).filter(r => ['planned', 'in_progress'].includes(r.status)).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
-  const maintenance = maintenanceTasks(devices, now);
-  const ready = !!reservations.data && !reservations.error;
-  const upcoming = useReservations({ from: period.todayEnd, to: period.to }, { enabled: ready && active.length === 0, refetchInterval: 60_000 });
-  const nextReservation = upcomingReservation(upcoming.data || [], now);
+  const active = (reservations.data || []).filter(r => ['planned', 'in_progress'].includes(r.status)).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
+  const maintenance = maintenanceTasks(devices, now), missing = missingMaintenance(devices);
+  const tasks = corporateAttention(devices, now, { classify: classifyDevice, battery: deviceBattery });
+  const shown = showAll ? tasks : tasks.slice(0,6);
+  const distanceHint = stats.loading ? '집계 조회 중' : stats.error ? '집계 조회 실패' : !devices.length ? '등록 차량 없음' : stats.measured ? `${stats.measured}/${devices.length}대 집계${stats.partial ? ' · 일부 집계' : ''}${stats.lastFixAt ? ` · 마지막 위치 ${kstDateTime(stats.lastFixAt)}` : ''}` : stats.pending ? `집계 대기 ${stats.pending}대${stats.noData ? ` · 오늘 위치 없음 ${stats.noData}대` : ''}` : '오늘 수신된 위치 없음';
   return <div className="business-overview">
     <BusinessMetrics items={[
-      { label: '운영 차량', value: devices.filter(d => d.enabled !== false).length, unit: '대', hint: `전체 ${devices.length}대 중 사용 가능한 차량`, icon: 'list' },
-      { label: '오늘 예약', value: ready ? active.length : null, unit: '건', hint: '예정·진행 중인 예약', icon: 'clock' },
-      { label: '오늘 운행거리', value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', hint: '차량 전체 합계 · 집계 지연 가능', icon: 'route' },
-      { label: '점검 예정', value: maintenance.length, unit: '건', hint: '정비·보험·검사 · 30일 이내', tone: maintenance.some(t => t.overdue) ? 'urgent' : '', icon: 'wrench' },
+      { label: '등록 차량', value: devices.length, unit: '대', hint: '차량 목록에 등록된 전체 차량', icon: 'list' },
+      { label: '사용 가능', value: devices.filter(d=>d.enabled !== false).length, unit: '대', hint: '차량 운영 상태 · 통신 상태와 별도', icon: 'check', tone: 'good' },
+      { label: '오늘 운행거리', value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', hint: distanceHint, icon: 'route' },
+      { label: '점검 예정', value: maintenance.length, unit: '건', hint: `30일 이내·기한 경과${missing.length ? ` · 일정 미등록 ${missing.length}대` : ' · 일정 등록 완료'}`, tone: maintenance.some(t=>t.overdue) ? 'urgent' : '', icon: 'wrench' },
     ]} />
     {stats.error && <BusinessError onRetry={stats.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
     <div className="business-overview-grid"><BusinessLocation devices={devices} />
-    <BusinessSection title="오늘 확인할 일" action={<BusinessButton onClick={() => onReserve({})}>예약 전체 보기</BusinessButton>}>
-      {maintenance.filter(t => t.overdue).map(t => <BusinessTask key={`${t.device.id}-${t.field}`} title={vehicleName(t.device)} description={`${t.label} · ${t.date}`} label="기한 경과" tone="urgent" action="점검 확인" onClick={() => openVehicle(t.device)} />)}
-      {reservations.error && <BusinessError onRetry={reservations.refetch}>예약을 불러오지 못했습니다. 다시 시도해 최신 예약을 확인해 주세요.</BusinessError>}
-      {reservations.isLoading ? <SkeletonList count={3} itemHeight={72} /> : active.length ? active.map(r => <BusinessTask key={r.id}
-        title={vehicleName(devices.find(d => d.id === r.device_id) || { id: r.device_id })}
-        description={`${r.staff_name || r.driver_name || '운전자 미지정'} · ${new Date(r.starts_at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' })} ~ ${new Date(r.ends_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`}
-        label={r.status === 'in_progress' ? '사용 중' : '예약 예정'} tone={r.status === 'in_progress' ? 'good' : 'info'} action="예약 확인" onClick={() => onReserve({ reservation: r })}/>)
-        : !reservations.error && <>
-          <BusinessEmpty compact title="오늘 예정된 차량 예약이 없습니다.">{upcoming.isFetching ? '다음 예약을 확인하고 있습니다.' : nextReservation ? '다음 예약을 미리 확인하세요.' : '차량 예약을 추가하면 운전자와 일정이 표시됩니다.'}</BusinessEmpty>
-          {upcoming.error ? <BusinessError onRetry={upcoming.refetch}>다음 예약을 불러오지 못했습니다.</BusinessError> : nextReservation && <BusinessTask title={vehicleName(devices.find(d => String(d.id) === String(nextReservation.device_id)) || { id: nextReservation.device_id })}
-            description={`${nextReservation.staff_name || nextReservation.driver_name || '운전자 미지정'} · ${new Date(nextReservation.starts_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`}
-            label="다음 예약" tone="info" action="예약 확인" onClick={() => onReserve({ reservation: nextReservation })} />}
-        </>}
-    </BusinessSection>
+      <BusinessSection title="오늘 확인할 일" description={`통신·배터리·점검 ${tasks.length}건`}>
+        {shown.map(t=><BusinessTask key={t.id} title={`${corporateVehicleName(t.device)} · ${terminalName(t.device)}`} description={`${t.description}${t.id.startsWith('signal-') && t.device.last_seen_at ? ` · 마지막 통신 ${ageString(t.device.last_seen_at)}` : ''}${t.id.startsWith('battery-') && (t.device.last_battery_at || t.device.last_seen_at) ? ` · ${kstDateTime(t.device.last_battery_at || t.device.last_seen_at)}` : ''}`} label={t.label} tone={t.tone} action="차량 확인" onClick={()=>openVehicle(t.device)} />)}
+        {tasks.length > 6 && <div className="business-section-footer"><BusinessButton onClick={()=>setShowAll(v=>!v)}>{showAll ? '접기' : `나머지 ${tasks.length-6}건 보기`}</BusinessButton></div>}
+        {missing.length > 0 && <BusinessTask title={`점검 일정 미등록 ${missing.length}대`} description="정비·보험·검사 중 등록하지 않은 일정이 있습니다." label="일정 등록" action="차량 관리" onClick={onVehicles} />}
+        {!tasks.length && !missing.length && <BusinessEmpty compact title="현재 확인할 통신·배터리·점검 항목이 없습니다." />}
+      </BusinessSection>
     </div>
-    {maintenance.some(t => !t.overdue) && <BusinessSection title="다가오는 차량 점검" description="30일 이내 정비·보험·검사">
-      {maintenance.filter(t => !t.overdue).map(t => <BusinessTask key={`${t.device.id}-${t.field}`} title={vehicleName(t.device)} description={`${t.label} · ${t.date}`} label="예정" tone="info" action="차량 상세" onClick={() => openVehicle(t.device)} />)}
-    </BusinessSection>}
-    <BusinessVehicles devices={devices} onMap={onMap} onDetail={onReport} detailLabel="운행 리포트" />
+    <div className="business-reservation-summary"><span>오늘 예약 <strong>{reservations.error || !reservations.data ? '—' : active.length}건</strong></span><BusinessButton onClick={()=>onReserve({})}>예약 보기</BusinessButton></div>
+    {reservations.error && <BusinessError onRetry={reservations.refetch}>오늘 예약 수를 불러오지 못했습니다.</BusinessError>}
+    <BusinessVehicles separateTerminal localMap devices={devices} onMap={onMap} onDetail={onReport} detailLabel="운행 리포트" />
   </div>;
 }
 
@@ -531,12 +524,12 @@ function VehiclesTab({ devices, onMap, onVehiclesChange }) {
   return (
     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <StatCardGrid columns={3}>
-        <StatCard compact label="전체 차량" value={devices?.length ?? 0} unit="대" />
+        <StatCard compact label="등록 차량" value={devices?.length ?? 0} unit="대" />
         <StatCard compact label="사용 가능" value={enabledCount} unit="대" tone="success" />
         <StatCard compact label="사용 정지" value={disabledCount} unit="대" tone={disabledCount > 0 ? 'warn' : 'default'} />
       </StatCardGrid>
 
-      <BusinessVehicles devices={devices} onMap={onMap} onDetail={setEditing} />
+      <BusinessVehicles separateTerminal devices={devices} onMap={onMap} onDetail={setEditing} />
 
       {editing && (
         <FuelInfoDialog device={vehicleToRowShape(editing)}

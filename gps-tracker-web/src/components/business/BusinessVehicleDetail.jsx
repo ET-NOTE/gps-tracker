@@ -10,20 +10,22 @@ import BatteryStatus from '../BatteryStatus';
 import BusinessDrawer from './BusinessDrawer';
 import BusinessMap from './BusinessMap';
 import VehiclePhotoHistory from './VehiclePhotoHistory';
+import VehicleCarePanel from '../VehicleCarePanel';
+import { corporateVehicleName, terminalName } from '../../lib/corporateOverview';
 
-export default function BusinessVehicleDetail({ device, meta, kind, onClose, onMap, onAction, onManage }) {
+export default function BusinessVehicleDetail({ device, meta, kind, onClose, onMap, onAction, onManage, onUpdated }) {
   const [tab, setTab] = useState('status');
   const status = classifyDevice(device, meta);
-  return <BusinessDrawer title={vehicleName(device)} subtitle={[device.car_model, device.department].filter(Boolean).join(' · ') || '차량 상세'} onClose={onClose}>
-    <div className="business-switch"><button className="business-switch-item" aria-pressed={tab === 'status'} onClick={() => setTab('status')}>상태·위치</button><button className="business-switch-item" aria-pressed={tab === 'history'} onClick={() => setTab('history')}>{kind === 'rentcar' ? '계약·사진 이력' : '최근 운행'}</button></div>
+  return <BusinessDrawer title={kind === 'corporate' ? corporateVehicleName(device) : vehicleName(device)} subtitle={[terminalName(device), device.department].filter(Boolean).join(' · ')} onClose={onClose}>
+    <div className="business-switch"><button className="business-switch-item" aria-pressed={tab === 'status'} onClick={() => setTab('status')}>상태·위치</button><button className="business-switch-item" aria-pressed={tab === 'history'} onClick={() => setTab('history')}>{kind === 'rentcar' ? '계약·사진 이력' : '최근 운행'}</button>{kind === 'corporate' && <button className="business-switch-item" aria-pressed={tab === 'edit'} onClick={()=>setTab('edit')}>차량·점검</button>}</div>
     {tab === 'status' ? <>
       <BusinessMap devices={[device]} />
       <dl className="business-detail-facts"><div><dt>단말기 상태</dt><dd style={{ color: status.color }}>{status.label}</dd></div><div><dt>최근 통신</dt><dd>{device.last_seen_at ? ageString(device.last_seen_at) : '수신 이력 없음'}</dd></div><div><dt>마지막 위치 수신</dt><dd>{device.last_fix_at ? kstDateTime(device.last_fix_at) : '수신 이력 없음'}</dd></div></dl>
       <BatteryStatus reading={deviceBattery(device, meta)} />
       <p className="business-note">지도는 마지막으로 수신한 위치입니다. 계약·예약 상태와 단말기 통신 상태는 별도로 확인해 주세요.</p>
       <dl className="business-detail-facts">{[['next_service_date', '다음 정비일'], ['insurance_expiry', '보험 만료일'], ['inspection_expiry', '검사 만료일']].map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{device[key] || '미등록'}</dd></div>)}</dl>
-      {onManage && <button className="business-button" onClick={() => { onClose(); onManage(device.id); }}>차량 정보·점검 일정 수정</button>}
-    </> : kind === 'rentcar' ? <VehiclePhotoHistory key={device.id} device={device} /> : <VehicleTripHistory device={device} />}
+      {(kind === 'corporate' || onManage) && <button className="business-button" onClick={() => { if(kind === 'corporate') setTab('edit'); else {onClose(); onManage(device.id);} }}>차량 정보·점검 일정 수정</button>}
+    </> : tab === 'edit' ? <VehicleCarePanel device={device} onUpdated={onUpdated} /> : kind === 'rentcar' ? <VehiclePhotoHistory key={device.id} device={device} /> : <VehicleTripHistory device={device} />}
     <div className="business-detail-actions"><button className="business-button" onClick={() => { onClose(); onMap?.(device.id); }}>전체 지도 보기</button><button className="business-button is-primary" onClick={() => { onClose(); onAction?.(device); }}>{kind === 'rentcar' ? '계약 관리·사진 추가' : '운행일지 작성'}</button></div>
   </BusinessDrawer>;
 }
