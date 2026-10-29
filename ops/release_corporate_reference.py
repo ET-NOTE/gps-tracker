@@ -58,7 +58,7 @@ def neighbors():
          'shield':str(pathlib.Path('/srv/shield/current').resolve()),
          'processes':subprocess.check_output(['systemctl','show','gps-tracker-api-dev','shield-api','-p','MainPID','-p','ActiveEnterTimestamp']).decode()}
 other=neighbors()
-backup=pathlib.Path('/home/mmm/backups/corporate-reference-20261029');backup.mkdir()
+backup=pathlib.Path('/home/mmm/backups/corporate-reference-20261029-r3');backup.mkdir()
 baseline={'api_sha256':sha(api),'web':str(web.resolve()),'env_sha256':sha(env),'nginx_sha256':sha(nginx),'health':health(),'neighbors':other}
 (backup/'baseline.json').write_text(json.dumps(baseline,indent=2));shutil.copy2(api,backup/'api.previous')
 assert sha(backup/'api.previous')==baseline['api_sha256']
@@ -81,7 +81,10 @@ for root,dirs,files in os.walk(target):
   if not p.is_symlink():p.chmod(0o644)
 nextapi=api.with_name('gps-tracker-api.next-corporate');nextweb=web.with_name('dist-root.next-corporate')
 assert not nextapi.exists() and not nextweb.exists() and not nextweb.is_symlink()
-diagnostics={p:hashlib.sha256(get(p)).hexdigest() for p in ('/diagnostic','/diagnostic/device')}
+# Earlier binaries embedded Windows CRLF HTML. Git's canonical LF source is
+# text-identical; ignore only CRLF differences, not any actual page content.
+diagnostic_sha=lambda b:hashlib.sha256(b.replace(b'\r\n',b'\n')).hexdigest()
+diagnostics={p:diagnostic_sha(get(p)) for p in ('/diagnostic','/diagnostic/device')}
 try:
  shutil.copy2(stage/'gps-tracker-api',nextapi);nextapi.chmod(0o755);os.replace(nextapi,api)
  run(['systemctl','restart','gps-tracker-api']);health(expected=m['api_release'])
@@ -89,7 +92,7 @@ try:
  assert json.loads(get('/version.json'))['git_commit']==m['git_commit']
  for name,h in m['web_files'].items():assert hashlib.sha256(get('/'+name)).hexdigest()==h
  for path in ('/','/corporate','/rentcar','/devices','/profile'):assert hashlib.sha256(get(path)).hexdigest()==sha(dest/'index.html')
- for path,h in diagnostics.items():assert hashlib.sha256(get(path)).hexdigest()==h
+ for path,h in diagnostics.items():assert diagnostic_sha(get(path))==h
  assert sha(env)==baseline['env_sha256'] and sha(nginx)==baseline['nginx_sha256']
  assert neighbors()==other
  result={'release':m['release'],'web_commit':m['git_commit'],'api_release':m['api_release'],'schema_unchanged':72,'neighbors_unchanged':True,'backup':str(backup),'api_sha256':sha(api)}
