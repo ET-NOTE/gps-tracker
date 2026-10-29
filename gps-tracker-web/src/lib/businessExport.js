@@ -106,12 +106,12 @@ export function reportPdfDefinition(report) {
       {text:report.title,fontSize:21,bold:true,margin:[0,0,0,10]},
       ...report.meta.map(text=>({text,fontSize:9,color:'#53647b',margin:[0,0,0,4]})),
       {text:report.summary,bold:true,fontSize:11,margin:[0,10,0,16]},
-      ...(report.rows.length ? [{ table:{headerRows:1,widths:columns.map(()=>'*'),
+      ...(report.rows.length ? [{ table:{headerRows:1,widths:columns.map(c=>c.pdfWidth??'*'),
         body:[columns.map(c=>({text:c.label,bold:true,fillColor:'#eaf0fb',margin:[0,5,0,5]})),
           ...report.rows.map(r=>columns.map(c=>({text:c.numeric && typeof r[c.key]==='number' ? r[c.key].toLocaleString('ko-KR',{maximumFractionDigits:2}) : String(r[c.key] ?? ''),alignment:c.numeric?'right':'left',margin:[0,4,0,4]})))]},
         layout:{hLineWidth:()=>0.5,vLineWidth:()=>0,hLineColor:()=>'#dce3ed',fillColor:i=>i>0&&i%2===0?'#f7f9fc':null,paddingLeft:()=>5,paddingRight:()=>5},
       }] : [{text:'조건에 맞는 내역이 없습니다.',margin:[0,20,0,20]}]),
-      {text:'조회 시점의 자료입니다. 진행 중인 운행 및 미정산 계약은 이후 변경될 수 있습니다.',fontSize:8,color:'#64748b',margin:[0,16,0,0]},
+      {text:report.footer || '조회 시점의 자료입니다. 진행 중인 운행 및 미정산 계약은 이후 변경될 수 있습니다.',fontSize:8,color:'#64748b',margin:[0,16,0,0]},
     ],
   };
 }

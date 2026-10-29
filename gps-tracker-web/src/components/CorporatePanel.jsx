@@ -4,6 +4,7 @@ import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
 import StaffTab from './business/FleetPeople';
 import FleetSites from './business/FleetSites';
+import FleetExpenses from './business/FleetExpenses';
 import {FleetAccountScope,useFleetAccess,staffCanDrive} from './business/FleetAccess';
 import { BusinessCompanyInfo as InfoTab, BusinessSubscription as SubTab } from './business/BusinessPreferences';
 import { filterTrips, tripReport, monthlyReport, monthDateBounds, purposeLabel } from '../lib/businessExport';
@@ -65,6 +66,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <StaffTab />}
     {tab === 'sites' && <FleetSites />}
+    {['expenses','expense-categories'].includes(tab) && <FleetExpenses categoriesOnly={tab==='expense-categories'}/>}
     {['report','monthly'].includes(tab) && <>
       {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
         : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
@@ -416,7 +418,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
         purpose_note: purpose === 'other' ? (purposeNote.trim() || null) : null,
         driver_staff_id: driverId ? parseInt(driverId, 10) : null,
         fuel_liters: fuelLiters.trim() ? parseFloat(fuelLiters) : null,
-        fuel_cost:   fuelCost.trim()   ? parseInt(fuelCost, 10) : null,
+        fuel_cost:   ann.fuel_expense_id ? null : fuelCost.trim() ? parseInt(fuelCost, 10) : null,
         note: note.trim() || null,
       });
       onSaved?.();
@@ -502,10 +504,11 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
                 <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>리터</div>
               </div>
               <div>
-                <input type="number" value={fuelCost}
+                <input type="number" value={fuelCost} disabled={!!ann.fuel_expense_id}
                   onChange={e => setFuelCost(e.target.value)}
                   placeholder="비용 (원)" style={mst.input} />
                 <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>원</div>
+                {ann.fuel_expense_id&&<p className="business-note">지출 #{ann.fuel_expense_id}에서 관리 · 승인된 금액만 반영</p>}
               </div>
             </div>
           </Field>

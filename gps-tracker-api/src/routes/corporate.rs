@@ -163,6 +163,8 @@ pub(super) struct TripAnnotation {
     driver_department: Option<String>,
     fuel_liters: Option<f64>,
     fuel_cost: Option<i32>,
+    fuel_expense_id: Option<i64>,
+    fuel_expense_status: Option<String>,
     note: Option<String>,
 }
 
@@ -609,8 +611,10 @@ async fn load_annotations(
         r#"SELECT a.id, a.trip_started_at, a.purpose, a.purpose_note,
                   a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
-                  a.fuel_cost, a.note
+                  CASE WHEN a.fuel_expense_id IS NULL THEN a.fuel_cost WHEN e.status='approved' THEN e.amount_krw END AS fuel_cost,
+                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note
              FROM trip_annotations a
+        LEFT JOIN fleet_expenses e ON e.id=a.fuel_expense_id AND e.owner_id=a.user_id
         LEFT JOIN staff s ON s.id = a.driver_staff_id
             WHERE a.device_id = $1 AND a.user_id = $4
               AND a.trip_started_at >= $2 AND a.trip_started_at <= $3"#,
@@ -676,6 +680,14 @@ pub(super) async fn save_annotation(
         }
     }
 
+    let mut tx = state.db.begin().await?;
+    super::fleet_expenses::lock(&mut tx, user.user_id).await?;
+    let linked:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM trip_annotations WHERE user_id=$1 AND device_id=$2 AND trip_started_at=$3 AND fuel_expense_id IS NOT NULL)").bind(user.user_id).bind(device_id).bind(req.trip_started_at).fetch_one(&mut *tx).await?;
+    if linked && req.fuel_cost.is_some() {
+        return Err(AppError::Conflict(
+            "연결된 주유비는 지출 메뉴에서 수정해 주세요.".into(),
+        ));
+    }
     let count=sqlx::query(
         r#"INSERT INTO trip_annotations
               (device_id, user_id, trip_started_at, purpose, purpose_note, driver_staff_id, fuel_liters, fuel_cost, note)
@@ -692,7 +704,7 @@ pub(super) async fn save_annotation(
     )
     .bind(device_id).bind(user.user_id).bind(req.trip_started_at).bind(purpose).bind(req.purpose_note)
     .bind(req.driver_staff_id).bind(req.fuel_liters).bind(req.fuel_cost).bind(req.note)
-    .bind(self_driver).execute(&state.db).await?.rows_affected();
+    .bind(self_driver).execute(&mut *tx).await?.rows_affected();
     if count == 0 {
         return Err(AppError::Forbidden);
     }
@@ -701,16 +713,19 @@ pub(super) async fn save_annotation(
         r#"SELECT a.id, a.trip_started_at, a.purpose, a.purpose_note,
                   a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
-                  a.fuel_cost, a.note
+                  CASE WHEN a.fuel_expense_id IS NULL THEN a.fuel_cost WHEN e.status='approved' THEN e.amount_krw END AS fuel_cost,
+                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note
              FROM trip_annotations a
+        LEFT JOIN fleet_expenses e ON e.id=a.fuel_expense_id AND e.owner_id=a.user_id
         LEFT JOIN staff s ON s.id = a.driver_staff_id
             WHERE a.device_id = $1 AND a.user_id = $2 AND a.trip_started_at = $3"#,
     )
     .bind(device_id)
     .bind(user.user_id)
     .bind(req.trip_started_at)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
+    tx.commit().await?;
     Ok(Json(row))
 }
 

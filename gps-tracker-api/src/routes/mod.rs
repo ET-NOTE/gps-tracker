@@ -8,6 +8,7 @@ pub mod credits;
 pub mod devices;
 pub mod diag;
 pub mod documents;
+pub mod fleet_expenses;
 pub mod fleet_media;
 pub mod fleet_reservations;
 pub mod fleet_sites;
@@ -56,6 +57,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(fleet_media::router())
         .merge(fleet_team::router())
         .merge(fleet_sites::router())
+        .merge(fleet_expenses::router())
         .merge(fleet_reservations::router())
         .merge(rentcar::router())
         .merge(payments::router())

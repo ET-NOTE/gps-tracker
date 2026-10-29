@@ -149,6 +149,27 @@ Object.assign(api,{
  updateFleetSiteGroup:async(id,body)=>{Object.assign(siteGroups.find(g=>g.id===id),body);return body;},
  listFleetSiteVisits:async p=>({items:siteVisits.filter(v=>(!p.vehicle_id||String(v.vehicle_id)===p.vehicle_id)&&(!p.site_id||String(v.site_id)===p.site_id)),next_before:null}),
 });
+
+// Expense writes below stay in memory and never reach the server.
+const expenseCats=[{id:1,name:'차량유지비',kind:'group',parent_id:null,active:true},{id:2,name:'유류비',kind:'fuel',parent_id:1,active:true},{id:3,name:'정비비',kind:'expense',parent_id:1,active:true},{id:4,name:'여비교통비',kind:'group',parent_id:null,active:true},{id:5,name:'숙박비',kind:'expense',parent_id:4,active:true}].map(c=>({...c,updated_at:new Date().toISOString()}));
+let expenseRows=params.has('empty')?[]:[{id:1,spent_on:at('12').slice(0,10),status:'approved',staff_id:1,staff_name:'김영업',department_id:1,department_name:'영업팀',vehicle_id:100,vehicle_name:'업무 차량 1 · 123가 4567',category_id:2,category_name:'유류비',group_name:'차량유지비',category_kind:'fuel',amount_krw:50000,payment_method:'company_card',note:'모의 데이터 · 고객사 방문',created_at:at('10'),updated_at:at('10')},{id:2,spent_on:at('12').slice(0,10),status:'pending',staff_id:1,staff_name:'김영업',department_id:1,department_name:'영업팀',vehicle_id:null,vehicle_name:'일반 지출',category_id:5,category_name:'숙박비',group_name:'여비교통비',category_kind:'expense',amount_krw:80000,payment_method:'personal_card',note:'모의 데이터 · 출장',created_at:at('11'),updated_at:at('11')}];
+const expenseReceipts=new Map(),expenseHistory=new Map();
+const expenseView=r=>({...r,can_edit:['pending','rejected'].includes(r.status),can_review:teamRole!=='member',can_cancel:r.status!=='cancelled',receipt_count:(expenseReceipts.get(r.id)||[]).length});
+function mockExpense(p,id){const c=expenseCats.find(c=>c.id===p.category_id),v=assets.find(v=>v.id===p.vehicle_id),s=teamStaff.find(s=>s.id===p.staff_id);return {...p,id,status:'pending',staff_name:s?.name||'미지정',department_id:s?.department_id,department_name:s?.department||'',vehicle_name:v?.name||'일반 지출',category_name:c.name,category_kind:c.kind,group_name:expenseCats.find(g=>g.id===c.parent_id).name,updated_at:new Date().toISOString()};}
+Object.assign(api,{
+ expenseCategories:async()=>expenseCats.map(c=>({...c})),
+ createExpenseCategory:async p=>{const c={...p,id:expenseCats.length+1,updated_at:new Date().toISOString()};expenseCats.push(c);return c;},
+ updateExpenseCategory:async(id,p)=>{Object.assign(expenseCats.find(c=>c.id===id),p,{updated_at:new Date().toISOString()});return {...expenseCats.find(c=>c.id===id)};},
+ listExpenses:async p=>{if(failed)throw Error('지출 조회 실패');return {items:expenseRows.filter(r=>(!p.status||r.status===p.status)&&(!p.category_id||r.category_id===Number(p.category_id))&&(!p.vehicle_id||r.vehicle_id===Number(p.vehicle_id))&&(!p.staff_id||r.staff_id===Number(p.staff_id))&&r.spent_on>=p.from&&r.spent_on<=p.to).map(expenseView)};},
+ createExpense:async p=>{const r=mockExpense(p,Math.max(0,...expenseRows.map(r=>r.id))+1);expenseRows.unshift(r);return expenseView(r);},
+ updateExpense:async(id,p)=>{const r=mockExpense(p,id);expenseRows=expenseRows.map(x=>x.id===id?r:x);return expenseView(r);},
+ expenseDetail:async id=>({expense:expenseView(expenseRows.find(r=>r.id===id)),receipts:(expenseReceipts.get(id)||[]).map(({file,...r})=>r),history:expenseHistory.get(id)||[]}),
+ reviewExpense:async(id,p)=>{const r=expenseRows.find(r=>r.id===id);Object.assign(r,{status:p.status,review_note:p.note,updated_at:new Date().toISOString()});expenseHistory.set(id,[{id:Date.now(),actor_id:1,action:p.status,after_value:{...r},created_at:new Date().toISOString()},...(expenseHistory.get(id)||[])]);return expenseView(r);},
+ uploadExpenseReceipt:async(id,file)=>{const r={id:Date.now(),filename:file.name,mime:file.type,size_bytes:file.size,file};expenseReceipts.set(id,[...(expenseReceipts.get(id)||[]),r]);return r;},
+ downloadExpenseReceipt:async(id,fid)=>expenseReceipts.get(id).find(f=>f.id===fid).file,
+ removeExpenseReceipt:async(id,fid)=>expenseReceipts.set(id,expenseReceipts.get(id).filter(f=>f.id!==fid)),
+});
+
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');

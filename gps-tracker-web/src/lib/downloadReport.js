@@ -34,3 +34,29 @@ export async function downloadReport(report, format) {
   });
   return saveBlob(blob,`${report.filename}.pdf`);
 }
+
+// Existing Android builds accept PDF/CSV. Keep receipt originals in storage,
+// and provide an image-to-PDF copy without changing the native bridge.
+export async function downloadReceipt(blob, filename, asPdf = false) {
+  const stem = filename.replace(/\.[^.]+$/, '') || '영수증';
+  const extension = {'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[blob.type];
+  if (!extension) throw new Error('지원하지 않는 영수증 형식입니다.');
+  if (!asPdf || blob.type === 'application/pdf') return saveBlob(blob, `${stem}.${extension}`);
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const ratio = Math.min(1, 3000 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
+    canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const pdf = await loadPdf();
+    const copy = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('영수증 PDF 생성 시간이 초과되었습니다.')), 30000);
+      try { pdf.createPdf({pageSize:'A4',pageMargins:[24,24,24,24],content:[{image:canvas.toDataURL('image/jpeg',0.9),fit:[547,794]}]}).getBlob(value => {clearTimeout(timer);resolve(value);}); }
+      catch(e) {clearTimeout(timer);reject(e);}
+    });
+    return saveBlob(copy, `${stem}.pdf`);
+  } finally { bitmap.close(); }
+}

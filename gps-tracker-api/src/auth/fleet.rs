@@ -113,6 +113,10 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
         ["corporate", "sites"] | ["corporate", "site-groups"] => read || admin,
         ["corporate", "sites", _] | ["corporate", "site-groups", _] => admin,
         ["corporate", "site-visits"] => read,
+        ["corporate", "expense-categories", ..] => read || admin,
+        // Every expense/receipt handler enforces row-level staff, department,
+        // vehicle and review permissions; no generic owner substitution alone.
+        ["corporate", "expenses", ..] => true,
         ["corporate", "staff"] => read || admin,
         ["corporate", "staff", _, ..] => admin,
         ["corporate", "invites", ..] => admin,

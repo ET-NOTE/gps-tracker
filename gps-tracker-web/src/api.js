@@ -243,6 +243,21 @@ async function req(method, path, body, retry = true, options = {}) {
 }
 
 export const api = {
+  expenseCategories: () => req('GET','/corporate/expense-categories'),
+  createExpenseCategory: body => req('POST','/corporate/expense-categories',body),
+  updateExpenseCategory: (id,body) => req('PUT',`/corporate/expense-categories/${id}`,body),
+  listExpenses: (params={}) => req('GET',`/corporate/expenses?${new URLSearchParams(params)}`),
+  createExpense: body => req('POST','/corporate/expenses',body),
+  updateExpense: (id,body) => req('PUT',`/corporate/expenses/${id}`,body),
+  reviewExpense: (id,body) => req('POST',`/corporate/expenses/${id}/review`,body),
+  expenseDetail: id => req('GET',`/corporate/expenses/${id}`),
+  uploadExpenseReceipt: async (id,file) => {
+    const fd=new FormData();fd.append('file',file);
+    const res=await sessionFetch(`${BASE}/corporate/expenses/${id}/receipts`,{method:'POST',body:fd});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw Error(e.error||'영수증을 올리지 못했습니다.');}return res.json();
+  },
+  downloadExpenseReceipt: async (id,rid) => {const res=await sessionFetch(`${BASE}/corporate/expenses/${id}/receipts/${rid}`);if(!res.ok)throw Error('영수증을 내려받지 못했습니다.');return res.blob();},
+  removeExpenseReceipt: (id,rid) => req('DELETE',`/corporate/expenses/${id}/receipts/${rid}`),
   fleetWorkspaces: () => req('GET','/corporate/workspaces'),
   fleetAccess: () => req('GET','/corporate/access'),
   fleetOrganization: () => req('GET','/corporate/organization'),
