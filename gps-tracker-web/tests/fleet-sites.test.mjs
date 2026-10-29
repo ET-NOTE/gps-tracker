@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {searchSiteAddress,usableGeometry,visitDuration,visitStatus} from '../src/lib/fleetSites.js';
+import {searchSiteAddress,usableGeometry,visitDuration,visitStatus,siteVehicleLabel} from '../src/lib/fleetSites.js';
+
+test('visit filter distinguishes unnamed vehicles without replacing vehicle identity',()=>{
+ const car={id:12,name:'차량 정보 미등록',bindings:[{is_primary:true,terminal_name:'단말-520211'}]};
+ assert.equal(siteVehicleLabel(car),'차량 정보 미등록 · 단말: 단말-520211');
+ assert.notEqual(siteVehicleLabel(car),siteVehicleLabel({...car,id:13,bindings:[]}));
+ assert.equal(siteVehicleLabel({...car,name:'업무 차량',license_plate:'12가3456'}),'업무 차량 · 12가3456');
+ assert.equal(siteVehicleLabel({...car,name:'12가3456',license_plate:'12가3456'}),'12가3456');
+});
 
 test('visit copy separates observed presence, gaps and configuration changes',()=>{
  assert.notEqual(visitStatus.inside,visitStatus.stale);
