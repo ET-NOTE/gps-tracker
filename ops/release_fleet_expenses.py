@@ -42,6 +42,12 @@ if mode=='validate':
  finally:subprocess.run(['systemctl','stop',unit],check=False)
  sys.exit(0)
 assert json.loads((stage/'validation.json').read_text())['api_sha256']==m['api_sha256']
+def disk_guard():
+ # disk_usage uses unprivileged available blocks: root-reserved space cannot
+ # support PostgreSQL writes even when deployment itself runs as root.
+ for path in (stage,pathlib.Path('/var/lib/postgresql')):
+  assert shutil.disk_usage(path).free >= 1024**3, 'At least 1 GiB free is required before production changes: '+str(path)
+disk_guard()
 api=pathlib.Path('/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api')
 web=pathlib.Path('/home/mmm/gps-tracker-web/dist-root'); env=pathlib.Path('/home/mmm/projects/gps-tracker-api/.env'); nginx=pathlib.Path('/etc/nginx/sites-available/gps.serial.kr')
 assert sha(api)=='c1fb7ad22015529956b1f0d03531964a4fcf1a4c4d71240c9a1ed49827f148de'
@@ -96,6 +102,7 @@ assert not nextapi.exists() and not nextweb.exists() and not nextweb.is_symlink(
 # text-identical; ignore only CRLF differences, not any actual page content.
 diagnostic_sha=lambda b:hashlib.sha256(b.replace(b'\r\n',b'\n')).hexdigest()
 diagnostics={p:diagnostic_sha(get(p)) for p in ('/diagnostic','/diagnostic/device')}
+disk_guard()
 try:
  shutil.copy2(stage/'gps-tracker-api',nextapi);nextapi.chmod(0o755);os.replace(nextapi,api)
  run(['systemctl','restart','gps-tracker-api']);health(expected=m['api_release'])
