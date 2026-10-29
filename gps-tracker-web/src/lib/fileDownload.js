@@ -12,7 +12,7 @@ async function nativeFiles() {
 
 export async function saveBlob(blob, filename) {
   // Keep the extension and stay below common UTF-8 filesystem name limits.
-  const extension = /\.(csv|pdf)$/i.exec(String(filename))?.[0] || '';
+  const extension = /\.(csv|pdf|jpe?g|png|webp)$/i.exec(String(filename))?.[0] || '';
   const stem = extension ? String(filename).slice(0, -extension.length) : String(filename);
   const name = ([...safeFilename(stem)].slice(0, 60).join('').replace(/^\.+/, '_') || '보고서') + extension;
   const bridge = await nativeFiles();

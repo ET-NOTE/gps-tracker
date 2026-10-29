@@ -164,4 +164,3 @@ finally:
  if devices:sql('DELETE FROM devices WHERE id=ANY(%s)',(devices,))
  if users:sql('DELETE FROM users WHERE id=ANY(%s)',(users,))
  db.close()
-
