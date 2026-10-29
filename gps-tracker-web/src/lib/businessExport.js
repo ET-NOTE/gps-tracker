@@ -38,9 +38,9 @@ export function tripReport(trips, { device, info, from, to, filterText = '' }) {
     origin: t.start_address || coordinates(t.start_lat, t.start_lng),
     destination: t.end_address || coordinates(t.end_lat, t.end_lng),
     originCoord: coordinates(t.start_lat,t.start_lng), destinationCoord: coordinates(t.end_lat,t.end_lng),
-    km: Number((num(t.distance_m) / 1000).toFixed(2)),
+    km: t.distance_m == null ? '' : Number((num(t.distance_m) / 1000).toFixed(2)),
     driver: t.annotation?.driver_name || '미지정', liters: money(t.annotation?.fuel_liters),
-    fuel: money(t.annotation?.fuel_cost), note: [t.annotation?.purpose_note, t.annotation?.note].filter(Boolean).join(' / '),
+    fuel: money(t.annotation?.fuel_cost), note: [t.allocation_note,t.annotation?.purpose_note, t.annotation?.note].filter(Boolean).join(' / '),
   }));
   return { title: '법인 차량 운행일지', filename: `법인차_운행일지_${vehicleName(device || {})}_${from}_${to}`,
     meta: [info?.company_name, `차량: ${vehicleName(device || {})}`, `기간: ${from} ~ ${to} (한국 시간)`, filterText].filter(Boolean),
@@ -79,7 +79,7 @@ export function invoiceReport(c) {
 
 export function monthlyReport(rows, { month, estimateFuelCost, estimateDepreciation }) {
   return { title:'법인차 월간 요약',filename:`법인차_월간요약_${month}`,meta:[`대상 월: ${month} (한국 시간)`, '현재 선택한 부서 기준 · 유류비와 감가상각은 추정값입니다.'],summary:`차량 ${rows.length}대 · 총 ${rows.reduce((s,r)=>s+num(r.totalKm),0).toFixed(2)} km`,
-    columns:[column('vehicle','차량'),column('department','부서'),column('total','전체(km)',true),column('business','업무(km)',true),column('personal','출퇴근·기타·미지정(km)',true),column('fuel','유류비(원)',true),column('depreciation','감가상각(원)',true)],
+    columns:[column('vehicle','차량'),column('department','부서'),column('total','전체(km)',true),column('business','업무(km)',true),column('personal','기타·미지정(km)',true),column('fuel','유류비(원)',true),column('depreciation','감가상각(원)',true)],
     rows:rows.map(r=>({vehicle:r.license_plate || r.label,department:r.department || '부서 없음',total:Number(r.totalKm.toFixed(2)),business:Number(r.businessKm.toFixed(2)),personal:Number(r.personalKm.toFixed(2)),fuel:estimateFuelCost(r),depreciation:estimateDepreciation(r)})) };
 }
 

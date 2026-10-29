@@ -16,7 +16,7 @@ import './business.css';
 const VehicleContext = createContext(null);
 const SelectionContext = createContext(null);
 export const useBusinessVehicle = () => useContext(VehicleContext);
-export function BusinessWorkspace({ title, description, tabs, groups, tab, onTab, action, mobileAction, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
+export function BusinessWorkspace({ renderVehicleDetail, title, description, tabs, groups, tab, onTab, action, mobileAction, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
   const active = tabs.find(item => item.id === tab) || tabs[0];
   const navigation = groups || tabs;
   const activeGroup = active.group || active.id;
@@ -55,7 +55,7 @@ export function BusinessWorkspace({ title, description, tabs, groups, tab, onTab
       <button className="business-mobile-item" aria-expanded={more} onClick={() => setMore(true)}><Icon name="more" size={22} />더보기</button>
     </nav>}
     {more && <BusinessDrawer title={`${title} 메뉴`} onClose={() => setMore(false)}><div className="business-more-menu">{groups ? groups.map(group => <section className="business-menu-group" key={group.id}><h3>{group.label}</h3>{tabs.filter(item => item.group === group.id).map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}>{item.label}</button>)}</section>) : tabs.map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}><Icon name={item.icon} size={18} />{item.label}</button>)}<hr /><button className="business-button" onClick={() => { setMore(false); onNavigate('devices'); }}>단말기 관리</button><button className="business-button" onClick={() => { setMore(false); onNavigate('profile'); }}>내정보·계정 유형</button></div></BusinessDrawer>}
-    {selected && <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} onUpdated={onVehiclesChange} />}
+    {selected && (renderVehicleDetail ? renderVehicleDetail(selected,()=>setSelectedId(null)) : <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} onUpdated={onVehiclesChange} />)}
   </section></VehicleContext.Provider></SelectionContext.Provider>;
 }
 export function BusinessLocation({ devices }) {
@@ -116,7 +116,7 @@ export function BusinessVehicles({ devices = [], onMap, onDetail, detailLabel = 
       const focused = String(selection?.focusedId) === String(device.id);
       return <div className={`business-vehicle${focused ? ' is-selected' : ''}`} key={device.id}>
         <div className="business-vehicle-identity">
-          <div className="business-vehicle-name">{device.car_image_url && <span className="business-vehicle-icon"><CarImage deviceId={device.id} version={device.car_image_url} /></span>}<div>{openVehicle ? <button type="button" className="business-vehicle-link" onClick={() => openVehicle(device)} aria-label={`${name} · ${terminalName(device)} 차량 상세`}><span className="business-vehicle-title" title={name}>{name}</span><Icon name="chevron-right" size={14} /></button> : <strong className="business-vehicle-title" title={name}>{name}</strong>}{detail && <p title={detail}>{detail}</p>}</div></div>
+          <div className="business-vehicle-name">{device.car_image_url && <span className="business-vehicle-icon"><CarImage vehicleId={device.fleet_vehicle_id} deviceId={device.source_device_id || device.id} version={device.car_image_url} /></span>}<div>{openVehicle ? <button type="button" className="business-vehicle-link" onClick={() => openVehicle(device)} aria-label={`${name} · ${terminalName(device)} 차량 상세`}><span className="business-vehicle-title" title={name}>{name}</span><Icon name="chevron-right" size={14} /></button> : <strong className="business-vehicle-title" title={name}>{name}</strong>}{detail && <p title={detail}>{detail}</p>}</div></div>
           {separateTerminal && <div className="business-terminal-name"><small>단말명</small><span title={terminalName(device)}>{terminalName(device)}</span></div>}
           <div className="business-vehicle-availability"><span className={`business-badge ${device.enabled === false || statusUnknown ? '' : available?.tone || 'good'}`}>{device.enabled === false ? '사용 정지' : statusUnknown ? '확인 필요' : available?.label || '사용 가능'}</span></div>
         </div>

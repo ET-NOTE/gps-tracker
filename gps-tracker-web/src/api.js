@@ -552,6 +552,26 @@ export const api = {
   setAccountType:        (account_type) => req('PATCH', '/me/account-type', { account_type }),
   setDeviceAccountType:  (deviceId, account_type) => req('PATCH', `/devices/${deviceId}/account-type`, { account_type }),
 
+  getFleetPhoto: async (id,options={}) => {const r=await sessionFetch(`${BASE}/corporate/vehicles/${id}/photo`,options);if(!r.ok)throw new Error(r.statusText);return r.blob();},
+  uploadFleetPhoto: async (id,file) => {const fd=new FormData();fd.append('file',file);const r=await sessionFetch(`${BASE}/corporate/vehicles/${id}/photo`,{method:'POST',body:fd});if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||r.statusText);}return r.json();},
+  listFleetDocuments: id => req('GET',`/corporate/vehicles/${id}/documents`),
+  uploadFleetDocument: async (id,{file,kind,note}) => {
+    const fd=new FormData();fd.append('file',file);fd.append('kind',kind||'other');if(note)fd.append('note',note);
+    const r=await sessionFetch(`${BASE}/corporate/vehicles/${id}/documents`,{method:'POST',body:fd});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||r.statusText);}return r.json();
+  },
+  listFleetVehicles: () => req('GET','/corporate/vehicles'),
+  createFleetVehicle: body => req('POST','/corporate/vehicles',body),
+  updateFleetVehicle: (id,body) => req('PUT',`/corporate/vehicles/${id}`,body),
+  fleetVehicleBindings: id => req('GET',`/corporate/vehicles/${id}/bindings`),
+  connectFleetVehicle: (id,body) => req('PUT',`/corporate/vehicles/${id}/bindings`,body),
+  listFleetVehicleTrips: (id,params={}) => req('GET',`/corporate/vehicles/${id}/trips?${new URLSearchParams(params)}`),
+  fleetVehicleStats: () => req('GET','/corporate/vehicle-stats'),
+  annotateFleetVehicleTrip: (id,body) => req('PATCH',`/corporate/vehicles/${id}/trips/annotation`,body),
+  listFleetReservations: (params={}) => req('GET',`/corporate/vehicle-reservations?${new URLSearchParams(params)}`),
+  createFleetReservation: body => req('POST','/corporate/vehicle-reservations',body),
+  updateFleetReservation: (id,body) => req('PUT',`/corporate/vehicle-reservations/${id}`,body),
+  cancelFleetReservation: id => req('DELETE',`/corporate/vehicle-reservations/${id}`),
   // 법인운행 — 회사 정보 / 직원
   getCorporateInfo:      () => req('GET',  '/corporate/info'),
   putCorporateInfo:      (body) => req('PUT', '/corporate/info', body),
@@ -727,6 +747,8 @@ export const api = {
   //           device_ids: [1,2,3] (선택 — 전체), purposes: ['business','commute'] (선택 — 전체) }
   reportXlsx: async (params = {}) => {
     const q = new URLSearchParams();
+    if (params.scope) q.set('scope',params.scope);
+    if (params.vehicle_ids) q.set('vehicle_ids',params.vehicle_ids.join(','));
     q.set('type', params.type || 'ours');
     if (params.month) q.set('month', params.month);
     if (params.device_ids?.length) q.set('device_ids', params.device_ids.join(','));

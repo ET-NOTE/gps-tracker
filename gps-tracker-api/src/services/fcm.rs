@@ -668,7 +668,8 @@ mod tests {
               signal_loss_alert bool,online_alert bool,sleep_alert bool,wake_alert bool,cycle_first_fix_alert bool,
               geofence_alert bool,device_health_alert bool,motion_alert bool,low_batt_threshold_mv integer,
               signal_loss_minutes integer,offline_minutes integer,updated_at timestamptz DEFAULT now());
-          CREATE TABLE vehicle_reservations(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,starts_at timestamptz,ends_at timestamptz);
+          CREATE TABLE vehicle_reservations(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,starts_at timestamptz,ends_at timestamptz,fleet_vehicle_id bigint);
+          CREATE TABLE fleet_vehicle_bindings(vehicle_id bigint,owner_id bigint,device_id bigint,is_primary boolean,ended_at timestamptz);
           CREATE TABLE rental_contracts(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,ends_at timestamptz);
           INSERT INTO users VALUES (1,'user'),(2,'user');
           INSERT INTO devices VALUES (1,'test device',1,now(),NULL);
@@ -886,7 +887,7 @@ mod tests {
             .unwrap();
         assert!(policy::relevant(&pool, 1).await.unwrap());
         // Schedule reminders must honor current ownership, opt-outs, and changed dates.
-        sqlx::raw_sql("INSERT INTO vehicle_reservations VALUES(10,1,1,'planned',now()+interval '20 minutes',now()+interval '25 minutes'),(11,1,1,'planned',now()+interval '21 minutes',now()+interval '26 minutes'); INSERT INTO rental_contracts VALUES(20,1,1,'active',now()+interval '2 hours'),(21,1,1,'overdue',now()-interval '1 hour');").execute(&pool).await.unwrap();
+        sqlx::raw_sql("INSERT INTO vehicle_reservations(id,user_id,device_id,status,starts_at,ends_at) VALUES(10,1,1,'planned',now()+interval '20 minutes',now()+interval '25 minutes'),(11,1,1,'planned',now()+interval '21 minutes',now()+interval '26 minutes'); INSERT INTO rental_contracts VALUES(20,1,1,'active',now()+interval '2 hours'),(21,1,1,'overdue',now()-interval '1 hour');").execute(&pool).await.unwrap();
         let mut reminders = Vec::new();
         for (kind, id, table, key, field) in [
             (

@@ -487,3 +487,33 @@
   .business-staff-table { min-width:660px; }
   .business-map-selection { flex-wrap:wrap; }
 }
+
+/* Independent fleet assets: stable table columns, compact forms and mobile overflow. */
+.fleet-asset-table-wrap{width:100%;overflow-x:auto}
+.fleet-asset-table{border-collapse:collapse;width:100%;min-width:820px;font-size:13px}
+.fleet-asset-table th,.fleet-asset-table td{padding:14px 18px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+.fleet-asset-table th{background:var(--surface-2);color:var(--text-2);font-weight:600;white-space:nowrap}
+.fleet-asset-table td:first-child{min-width:150px}.fleet-asset-table small{display:block;margin-top:5px;color:var(--text-3)}
+.fleet-asset-table td:last-child{white-space:nowrap}.fleet-asset-table td:last-child button+button{margin-left:6px}
+.fleet-asset-table .is-number{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.business-link{background:none;border:0;color:var(--primary);padding:0;font:inherit;font-weight:700;text-align:left;cursor:pointer;word-break:keep-all}
+.fleet-asset-form{display:grid;gap:18px}.fleet-asset-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fleet-asset-fields label{display:grid;gap:6px;font-size:12px;color:var(--text-2)}
+.fleet-asset-fields input,.fleet-asset-fields select{min-width:0;width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;color:var(--text);font:inherit}
+.fleet-asset-form fieldset{border:1px solid var(--border);border-radius:12px;padding:14px;min-width:0}.fleet-asset-form legend{font-size:13px;font-weight:700;padding:0 4px}
+.fleet-asset-form summary{cursor:pointer;font-size:13px;font-weight:600;padding-bottom:10px}
+.fleet-asset-toggle{display:flex;align-items:center;gap:8px}.fleet-asset-toggle input{width:18px;height:18px}
+.fleet-connection-list{display:grid;gap:8px;margin:12px 0}.fleet-connection-list label{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:10px;overflow-wrap:anywhere}.fleet-connection-list input{flex:0 0 18px;height:18px}
+.fleet-asset-media{border-top:1px solid var(--border);margin-top:24px;padding-top:12px;display:grid;gap:12px}.fleet-asset-photo img{display:block;width:100%;max-height:180px;object-fit:contain;border-radius:10px}
+.fleet-file-label{display:grid;gap:8px;font-size:12px;color:var(--text-2)}.fleet-file-label input{width:100%;min-width:0;font-size:12px}
+.fleet-document-row{display:flex;align-items:center;gap:8px}.fleet-document-row>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+@media(max-width:420px){.fleet-asset-fields{grid-template-columns:1fr}.fleet-document-row{flex-wrap:wrap}.fleet-document-row>span{flex-basis:100%}.fleet-asset-table th,.fleet-asset-table td{padding:12px}}
+
+.business-metrics.fleet-asset-metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.fleet-asset-metrics .business-metric{min-width:0;padding:16px}
+.fleet-asset-metrics small{margin-left:5px;font-size:12px;font-weight:400;color:var(--text-3)}
+@media(max-width:600px){.business-metrics.fleet-asset-metrics{gap:8px}.fleet-asset-metrics .business-metric{padding:12px 10px}.fleet-asset-metrics .business-metric>span{font-size:12px;white-space:nowrap}.fleet-asset-metrics .business-metric strong{font-size:24px}.fleet-asset-table-wrap{border-top:1px solid var(--border)}.business-list-filters>input[aria-label="등록 차량 검색"]{flex-basis:100%;width:100%}}
+
+.business-list-filters>input[aria-label="등록 차량 검색"]{flex:1 1 240px;max-width:400px;min-width:0;min-height:42px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;color:var(--text);background:var(--surface);font:inherit;font-size:13px;box-sizing:border-box}
+.business-list-filters>input[aria-label="등록 차량 검색"]:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.fleet-asset-table th:nth-child(4){text-align:right}.fleet-asset-table :is(th,td):nth-child(6){text-align:center}.fleet-asset-table :is(th,td):last-child{text-align:right}

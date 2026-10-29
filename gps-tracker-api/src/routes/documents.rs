@@ -17,7 +17,7 @@ use axum::{
     http::header,
     response::IntoResponse,
     routing::{delete, get},
-    Json, Router,
+    Extension, Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::Serialize;
@@ -46,7 +46,15 @@ pub fn router() -> Router<AppState> {
             "/devices/:id/documents",
             get(list_documents)
                 .post(upload_document)
-                .layer(DefaultBodyLimit::max(11 * 1024 * 1024)),
+                .layer::<_, std::convert::Infallible>(DefaultBodyLimit::max(11 * 1024 * 1024))
+                .layer(Extension(false)),
+        )
+        .route(
+            "/corporate/vehicles/:id/documents",
+            get(list_documents)
+                .post(upload_document)
+                .layer::<_, std::convert::Infallible>(DefaultBodyLimit::max(11 * 1024 * 1024))
+                .layer(Extension(true)),
         )
         .route("/documents/:id/download", get(download_document))
         .route("/documents/:id/preview", get(preview_document))
@@ -70,7 +78,7 @@ fn sanitize_filename(s: &str) -> String {
 #[derive(Debug, Serialize, FromRow)]
 pub struct DocumentView {
     pub id: i64,
-    pub device_id: i64,
+    pub device_id: Option<i64>,
     pub kind: String,
     pub filename: String,
     pub mime: String,
@@ -96,15 +104,23 @@ async fn list_documents(
     State(state): State<AppState>,
     user: AuthUser,
     Path(device_id): Path<i64>,
+    Extension(fleet): Extension<bool>,
 ) -> AppResult<Json<Vec<DocumentView>>> {
-    verify_device_owner(&state, user.user_id, device_id).await?;
+    if fleet {
+        super::fleet_vehicles::verify_owner(&state, user.user_id, device_id).await?;
+    } else {
+        verify_device_owner(&state, user.user_id, device_id).await?;
+    }
+    let column = if fleet {
+        "fleet_vehicle_id"
+    } else {
+        "device_id"
+    };
     let rows: Vec<DocumentView> = sqlx::query_as(
-        r#"SELECT id, device_id, kind, filename, mime, size_bytes, note, uploaded_at
-             FROM device_documents
-            WHERE device_id = $1
-            ORDER BY uploaded_at DESC"#,
+        &format!("SELECT id, device_id, kind, filename, mime, size_bytes, note, uploaded_at FROM device_documents WHERE {column}=$1 AND user_id=$2 ORDER BY uploaded_at DESC"),
     )
     .bind(device_id)
+    .bind(user.user_id)
     .fetch_all(&state.db)
     .await?;
     Ok(Json(rows))
@@ -114,15 +130,26 @@ async fn upload_document(
     State(state): State<AppState>,
     user: AuthUser,
     Path(device_id): Path<i64>,
+    Extension(fleet): Extension<bool>,
     mut mp: Multipart,
 ) -> AppResult<Json<DocumentView>> {
-    verify_device_owner(&state, user.user_id, device_id).await?;
+    if fleet {
+        super::fleet_vehicles::verify_owner(&state, user.user_id, device_id).await?;
+    } else {
+        verify_device_owner(&state, user.user_id, device_id).await?;
+    }
+    let column = if fleet {
+        "fleet_vehicle_id"
+    } else {
+        "device_id"
+    };
 
-    let count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM device_documents WHERE device_id = $1")
-            .bind(device_id)
-            .fetch_one(&state.db)
-            .await?;
+    let count: i64 = sqlx::query_scalar(&format!(
+        "SELECT COUNT(*) FROM device_documents WHERE {column}=$1"
+    ))
+    .bind(device_id)
+    .fetch_one(&state.db)
+    .await?;
     if count >= MAX_FILES_PER_DEVICE {
         return Err(AppError::BadRequest(format!(
             "차량당 최대 {MAX_FILES_PER_DEVICE}개 서류. 오래된 것 삭제 후 재업로드."
@@ -187,7 +214,11 @@ async fn upload_document(
     }
 
     let dir = upload_dir()
-        .join("device_documents")
+        .join(if fleet {
+            "fleet_documents"
+        } else {
+            "device_documents"
+        })
         .join(user.user_id.to_string())
         .join(device_id.to_string());
     tokio::fs::create_dir_all(&dir)
@@ -205,10 +236,7 @@ async fn upload_document(
     f.flush().await.ok();
 
     let row: DocumentView = sqlx::query_as(
-        r#"INSERT INTO device_documents
-             (user_id, device_id, kind, filename, stored_path, mime, size_bytes, note)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           RETURNING id, device_id, kind, filename, mime, size_bytes, note, uploaded_at"#,
+        &format!("INSERT INTO device_documents(user_id,{column},kind,filename,stored_path,mime,size_bytes,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,device_id,kind,filename,mime,size_bytes,note,uploaded_at"),
     )
     .bind(user.user_id)
     .bind(device_id)

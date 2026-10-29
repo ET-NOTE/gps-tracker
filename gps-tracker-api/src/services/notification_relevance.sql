@@ -40,7 +40,7 @@ SELECT EXISTS (
  AND CASE
    WHEN e.kind IN ('reservation_starting','reservation_ending') THEN EXISTS (
       SELECT 1 FROM vehicle_reservations r WHERE r.id::text=e.data->>'reservation_id'
-       AND r.user_id=e.user_id AND r.device_id=e.device_id
+       AND r.user_id=e.user_id AND (r.fleet_vehicle_id IS NULL AND r.device_id=e.device_id OR EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.vehicle_id=r.fleet_vehicle_id AND b.owner_id=e.user_id AND b.device_id=e.device_id AND b.is_primary AND b.ended_at IS NULL))
        AND CASE WHEN e.kind='reservation_starting' THEN
          r.status='planned' AND r.starts_at>now() AND r.starts_at<=now()+interval '30 minutes'
          AND r.starts_at=(e.data->>'starts_at')::timestamptz

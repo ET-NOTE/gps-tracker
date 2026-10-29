@@ -5,7 +5,7 @@ export function businessPeriod(now = Date.now()) {
   return { day, from: `${day.slice(0, 7)}-01T00:00:00+09:00`, to: new Date(new Date(`${day}T00:00:00+09:00`).getTime() + 91 * DAY).toISOString(),
     todayStart: `${day}T00:00:00+09:00`, todayEnd: new Date(new Date(`${day}T00:00:00+09:00`).getTime() + DAY).toISOString() };
 }
-export const vehicleName = d => d.car_plate || d.license_plate || d.display_name || d.device_uid || `차량 ${d.id}`;
+export const vehicleName = d => d.vehicle_name || d.car_plate || d.license_plate || d.display_name || d.device_uid || `차량 ${d.id}`;
 export const rentalStatus = (c, now = Date.now()) => c.status === 'active' && new Date(c.ends_at).getTime() < now ? 'overdue' : c.status;
 export function rentalSummary(contracts, devices, now = Date.now()) {
   const period = businessPeriod(now), month = period.day.slice(0, 7);

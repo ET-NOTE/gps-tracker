@@ -17,12 +17,11 @@ import { useBusinessClock, useBusinessSubscription } from './business/useBusines
 import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleName } from '../lib/business';
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
-import { useFleetStats } from './shared/useFleetStats';
+import {FleetAssets,FleetAssetForm,FleetAssetDetail,useFleetAssets,projectFleetAssets,fleetAssetsKey,useAssetStats as useFleetStats,useFleetReservations as useReservations,useCreateFleetReservation as useCreateReservation,useUpdateFleetReservation as useUpdateReservation,useCancelFleetReservation as useDeleteReservation} from './business/FleetAssets';
 import { Modal, FormField, Input, Select, Textarea, Button, SkeletonList } from './ui';
 import {
-  useCorporateInfo, useStaff, useReservations, useDocuments,
-  useCreateReservation, useUpdateReservation, useDeleteReservation,
-  useUploadDocument, useDeleteDocument, qk,
+  useCorporateInfo, useStaff,
+  qk,
 } from '../state';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -33,7 +32,13 @@ const PURPOSE_LABEL = {
   unspecified: '미지정',
 };
 
-function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate, meta }) {
+function CorporatePanel({ devices: rawDevices, onMap: rawOnMap, onDevice, onVehiclesChange, onNavigate, meta: rawMeta }) {
+  const assets=useFleetAssets();
+  const devices=useMemo(()=>projectFleetAssets(assets.data||[],rawDevices),[assets.data,rawDevices]);
+  const meta=Object.fromEntries(devices.map(d=>[d.id,rawMeta?.[d.source_device_id]]));
+  const onMap=id=>{const sim=devices.find(v=>v.id===id)?.source_device_id;if(sim)rawOnMap?.(sim);};
+  const [editAsset,setEditAsset]=useState(null);
+  const staff=useStaff();
   const [tab, setTab] = useState('overview');
   const [request, setRequest] = useState(null);
   const [reportDevice, setReportDevice] = useState(null);
@@ -42,11 +47,13 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate
   const updateSub = value => qc.setQueryData(qk.businessSubscription('corporate'), value);
   const reserve = value => { setRequest(value); setTab('reservations'); };
   const report = device => { setReportDevice(device.id); setTab('report'); };
-  return <BusinessWorkspace title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
+  if(assets.isPending)return <SkeletonList count={3} itemHeight={140}/>;
+  if(assets.error)return <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>;
+  return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     mobileAction={<BusinessButton icon="user" onClick={()=>setTab('staff')}>사용자</BusinessButton>}
     action={tab === 'reservations' ? <BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton> : null}>
     {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onVehicles={()=>setTab('vehicles')} />}
-    {tab === 'vehicles' && <VehiclesTab devices={devices} onMap={onMap} onVehiclesChange={onVehiclesChange} />}
+    {tab === 'vehicles' && <FleetAssets onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={rawOnMap} onChanged={assets.refetch} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <StaffTab />}
     {['report','monthly'].includes(tab) && <>
@@ -55,6 +62,7 @@ function CorporatePanel({ devices, onMap, onDevice, onVehiclesChange, onNavigate
         : !subscription.data.active ? <SubTab sub={subscription.data} onChange={updateSub} report />
         : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} /> : <MonthlyReportTab devices={devices} />}</>}
     {tab === 'settings' && <BusinessSettings company={<InfoTab />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab sub={subscription.data} onChange={updateSub} />} />}
+    {editAsset&&<FleetAssetForm asset={editAsset} staff={staff.data||[]} onClose={()=>setEditAsset(null)} onSaved={()=>{setEditAsset(null);assets.refetch();}}/>}
   </BusinessWorkspace>;
 }
 export default React.memo(CorporatePanel);
@@ -72,7 +80,7 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onVehicles }) 
     <BusinessMetrics items={[
       { label: '등록 차량', value: devices.length, unit: '대', hint: '차량 목록에 등록된 전체 차량', icon: 'list' },
       { label: '사용 가능', value: devices.filter(d=>d.enabled !== false).length, unit: '대', hint: '차량 운영 상태 · 통신 상태와 별도', icon: 'check', tone: 'good' },
-      { label: '오늘 운행거리', value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', hint: distanceHint, icon: 'route' },
+      { label: '오늘 운행거리', value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', hint: distanceHint + ' · 연결 변경일은 합계 제외', icon: 'route' },
       { label: '점검 예정', value: maintenance.length, unit: '건', hint: `30일 이내·기한 경과${missing.length ? ` · 일정 미등록 ${missing.length}대` : ' · 일정 등록 완료'}`, tone: maintenance.some(t=>t.overdue) ? 'urgent' : '', icon: 'wrench' },
     ]} />
     {stats.error && <BusinessError onRetry={stats.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
@@ -127,7 +135,7 @@ function ReportTab({ devices, initialDeviceId }) {
     if (!from || !to || from > to) { setTrips(null); setLoading(false); setError('조회 시작일과 종료일을 올바르게 선택해 주세요.'); return; }
     setLoading(true); setError(null); setTrips(null);
     try {
-      const t = await api.listTrips(deviceId, { from, to });
+      const t = await api.listFleetVehicleTrips(deviceId, { from, to });
       if (id === loadId.current) setTrips(t || []);
     } catch {
       if (id === loadId.current) setError('운행기록을 불러오지 못했습니다. 다시 시도해 주세요.');
@@ -151,7 +159,7 @@ function ReportTab({ devices, initialDeviceId }) {
     const m = new Map();
     for (const t of filteredTrips) {
       const d = kstDate(t.started_at);
-      m.set(d, (m.get(d) || 0) + (t.distance_m || 0));
+      if (t.ended_at && t.distance_m != null) m.set(d, (m.get(d) || 0) + t.distance_m);
     }
     return m;
   }, [filteredTrips]);
@@ -307,11 +315,11 @@ function TripsTable({ trips, dailyDistance, onEdit }) {
       <tbody>
         {trips.map((t, i) => {
           const d = kstDate(t.started_at);
-          const dailyKm = ((dailyDistance.get(d) || 0) / 1000).toFixed(1);
+          const dailyKm = dailyDistance.has(d) ? `${(dailyDistance.get(d) / 1000).toFixed(1)} km` : '—';
           const firstOfDay = !trips.slice(0, i).some(x => kstDate(x.started_at) === d);
           return (
             <TripRow key={t.started_at} t={t}
-              date={d} dailyKm={firstOfDay ? `${dailyKm} km` : ''}
+              date={d} dailyKm={firstOfDay ? dailyKm : ''}
               onEdit={() => onEdit(t)} />
           );
         })}
@@ -324,7 +332,7 @@ function TripsTable({ trips, dailyDistance, onEdit }) {
 function TripRow({ t, date, dailyKm, onEdit }) {
   const ann = t.annotation || {};
   const purpose = ann.purpose || 'unspecified';
-  const km = (t.distance_m / 1000).toFixed(1);
+  const km = t.distance_m == null ? '—' : (t.distance_m / 1000).toFixed(1);
   const time = `${kstTime(t.started_at)}~${t.ended_at ? kstTime(t.ended_at) : '—'}`;
 
   return (
@@ -353,7 +361,7 @@ function TripRow({ t, date, dailyKm, onEdit }) {
           </div>
         )}
       </td>
-      <td style={{ ...st.td, textAlign: 'right' }}>{km} km</td>
+      <td style={{ ...st.td, textAlign: 'right' }}>{km}{t.distance_m != null ? ' km' : ''}{t.allocation_note&&<small>{t.allocation_note}</small>}</td>
       <td style={{ ...st.td, textAlign: 'right' }}>{dailyKm}</td>
       <td style={st.td}>
         {ann.fuel_liters ? `${ann.fuel_liters}L` : '—'}
@@ -361,7 +369,7 @@ function TripRow({ t, date, dailyKm, onEdit }) {
       </td>
       <td style={st.td}>{ann.driver_name || '—'}</td>
       <td style={{ ...st.td, padding: 4 }} className="no-print">
-        <button onClick={onEdit} style={{
+        <button onClick={onEdit} disabled={t.allocation_status==='boundary_review'} style={{
           width: 26, height: 26, borderRadius: 6,
           background: 'var(--surface-2)', color: 'var(--text-2)',
           border: '1px solid var(--border)', cursor: 'pointer',
@@ -388,8 +396,9 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
   async function save() {
     setBusy(true);
     try {
-      await api.upsertTripAnnotation(deviceId, {
-        trip_started_at: trip.started_at,
+      await api.annotateFleetVehicleTrip(deviceId, {
+        binding_id:trip.binding_id, source_device_id:trip.source_device_id,
+        trip_started_at: trip.source_started_at || trip.started_at,
         purpose,
         purpose_note: purpose === 'other' ? (purposeNote.trim() || null) : null,
         driver_staff_id: driverId ? parseInt(driverId, 10) : null,
@@ -407,8 +416,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
 
   return (
     // 외부 클릭으로 닫히지 않음 — 편집 중 데이터 손실 방지. X / 취소 버튼만 닫기.
-    <div style={mst.backdrop}>
-      <div style={mst.modal}>
+    <Modal open title="운행 기록 수정" size="lg" onClose={onClose} closeOnBackdrop={false}>
         {/* 헤더 — 운행 요약 */}
         <div style={mst.header}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -419,7 +427,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
               {trip.start_address || '—'} → {trip.end_address || '—'} · {km} km
             </div>
           </div>
-          <button onClick={onClose} style={mst.closeBtn}><Icon name="close" size={14} /></button>
+
         </div>
 
         <div style={mst.body}>
@@ -456,7 +464,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
           <Field label="운전자">
             {staff.length === 0 ? (
               <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                운전자 메뉴에서 등록할 수 있습니다.
+                사용자 메뉴에서 등록할 수 있습니다.
               </div>
             ) : (
               <select value={driverId} onChange={e => setDriverId(e.target.value)}
@@ -503,58 +511,13 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
             {busy ? '저장 중...' : '저장'}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
 // ════════════════════════════════════════════════════════
 // 차량 관리
 // ════════════════════════════════════════════════════════
-function VehiclesTab({ devices, onMap, onVehiclesChange }) {
-  const [editing, setEditing] = useState(null);
-
-  const enabledCount  = (devices || []).filter(d => d.enabled !== false).length;
-  const disabledCount = (devices || []).length - enabledCount;
-
-  return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <StatCardGrid columns={3}>
-        <StatCard compact label="등록 차량" value={devices?.length ?? 0} unit="대" />
-        <StatCard compact label="사용 가능" value={enabledCount} unit="대" tone="success" />
-        <StatCard compact label="사용 정지" value={disabledCount} unit="대" tone={disabledCount > 0 ? 'warn' : 'default'} />
-      </StatCardGrid>
-
-      <BusinessVehicles separateTerminal devices={devices} onMap={onMap} onDetail={setEditing} />
-
-      {editing && (
-        <FuelInfoDialog device={vehicleToRowShape(editing)}
-          onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); onVehiclesChange?.(); }} />
-      )}
-    </div>
-  );
-}
-
-// FuelInfoDialog 는 MonthlyReport 의 row shape (label 필드) 을 기대. device 를 그 shape 으로 변환.
-function vehicleToRowShape(d) {
-  return {
-    id: d.id,
-    label: d.display_name || d.device_uid,
-    fuel_efficiency_kmpl: d.fuel_efficiency_kmpl,
-    fuel_type: d.fuel_type,
-    license_plate: d.license_plate,
-    model_year: d.model_year,
-    engine_cc: d.engine_cc,
-    purchase_price_krw: d.purchase_price_krw,
-    acquired_at: d.acquired_at,
-    department: d.department,
-    vehicle_type: d.vehicle_type,
-    enabled: d.enabled,
-    note: d.note,
-  };
-}
-
 function FilterChip({ active, onClick, label, count, tone = 'default' }) {
   const c = tone === 'success' ? 'var(--accent)' : tone === 'warn' ? 'var(--warning)' : 'var(--primary)';
   return (
@@ -671,11 +634,11 @@ function ReservationsTab({ devices, request }) {
       {!error && list && list.length === 0 && viewMode === 'list' && <div style={st.muted}>예약이 없습니다.</div>}
 
       {viewMode === 'list' && list && list.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 8 }}>
           {list.map(r => (
             <ReservationCard key={r.id} r={r} onEdit={() => setEditing(r)}
               onDelete={async () => {
-                const ok = await confirmDialog({ title: '예약 삭제', body: '삭제하시겠습니까? (되돌릴 수 없음)', danger: true });
+                const ok = await confirmDialog({ title: '예약 취소', body: '예약을 취소할까요? 기존 내역은 유지됩니다.', danger: true });
                 if (!ok) return;
                 try { await deleteResvMut.mutateAsync(r.id); }
                 catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
@@ -809,7 +772,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
                     cursor: 'pointer',
                     minWidth: 0,
                   }} title={`${r.license_plate || r.device_name || ''} · ${r.purpose || ''} · ${s.label}`}>
-                    {r.license_plate || r.device_name || `#${r.device_id}`}
+                    {[r.vehicle_name,r.license_plate].filter(Boolean).join(' · ') || '차량'}
                   </div>
                 );
               })}
@@ -868,7 +831,7 @@ function ReservationCard({ r, onEdit, onDelete }) {
           </span>
         )}
         <span style={{ fontWeight: 700, fontSize: 14 }}>
-          {r.license_plate || r.device_name || `#${r.device_id}`}
+          {[r.vehicle_name,r.license_plate].filter(Boolean).join(' · ') || '차량'}
         </span>
         {r.driver_name && (
           <span style={{
@@ -880,7 +843,7 @@ function ReservationCard({ r, onEdit, onDelete }) {
           <button onClick={onEdit} style={{ ...st.btnGhost, padding: '4px 8px' }} title="편집">
             <Icon name="edit" size={12} />
           </button>
-          <button onClick={onDelete} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제">
+          <button onClick={onDelete} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="예약 취소">
             <Icon name="trash2" size={12} />
           </button>
         </div>
@@ -924,7 +887,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
     if (presetDate) return new Date(`${presetDate}T09:00:00`);
     const d = new Date(); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); return d;
   };
-  const [deviceId, setDeviceId] = useState(init?.device_id ?? devices?.[0]?.id ?? '');
+  const [deviceId, setDeviceId] = useState(init?.vehicle_id ?? devices?.[0]?.id ?? '');
   const [driverId, setDriverId] = useState(init?.driver_staff_id ?? '');
   const [startsAt, setStartsAt] = useState(init ? isoToLocal(init.starts_at) : isoToLocal(defaultStart().toISOString()));
   const [endsAt,   setEndsAt]   = useState(init ? isoToLocal(init.ends_at)   : isoToLocal(new Date(defaultStart().getTime() + 3600_000).toISOString()));
@@ -940,7 +903,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
     if (!deviceId) { alertDialog({ title: '차량 선택 필요', body: '', tone: 'danger' }); return; }
     if (!startsAt || !endsAt) { alertDialog({ title: '시간 입력 필요', body: '', tone: 'danger' }); return; }
     const body = {
-      device_id:       Number(deviceId),
+      vehicle_id:      Number(deviceId),
       driver_staff_id: driverId ? Number(driverId) : null,
       starts_at:       localToIso(startsAt),
       ends_at:         localToIso(endsAt),
@@ -969,7 +932,7 @@ function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved 
           <select value={deviceId} onChange={e => setDeviceId(e.target.value)} style={st.input}>
             {(devices || []).map(d => (
               <option key={d.id} value={d.id}>
-                {d.license_plate ? `${d.license_plate} · ` : ''}{d.display_name || d.device_uid}
+                {reportVehicleLabel(d)}
               </option>
             ))}
           </select>
@@ -1039,7 +1002,7 @@ let FUEL_PRICE_KRW = { ...DEFAULT_FUEL_PRICE_KRW };
 const FUEL_LABEL = {
   gasoline: '휘발유', diesel: '경유', lpg: 'LPG', ev: '전기',
 };
-const BUSINESS_PURPOSES = new Set(['business']);
+const BUSINESS_PURPOSES = new Set(['business','commute']);
 
 function ymKST(d = new Date()) {
   const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
@@ -1050,7 +1013,8 @@ function monthBounds(ym) {
 }
 
 function MonthlyReportTab({ devices }) {
-  const reportKey = JSON.stringify(devices.map(d => [d.id, d.display_name, d.license_plate, d.fuel_efficiency_kmpl, d.fuel_type, d.model_year, d.engine_cc, d.purchase_price_krw, d.acquired_at, d.department, d.vehicle_type]));
+  const qc=useQueryClient(), {data:staff=[]}=useStaff();
+  const reportKey = JSON.stringify(devices.map(d => [d.id, d.vehicle_name, d.car_model, d.asset?.updated_at, d.display_name, d.license_plate, d.fuel_efficiency_kmpl, d.fuel_type, d.model_year, d.engine_cc, d.purchase_price_krw, d.acquired_at, d.department, d.vehicle_type]));
   const reportDevices = useMemo(() => devices, [reportKey]);
   const [ym, setYm] = useState(ymKST());
   const [rows, setRows] = useState(null);   // per-device aggregate
@@ -1081,7 +1045,7 @@ function MonthlyReportTab({ devices }) {
     setLoading(true); setError(null); setRows(null);
     const { from, to } = monthBounds(ym);
     Promise.all(reportDevices.map(d =>
-      api.listTrips(d.id, { from, to })
+      api.listFleetVehicleTrips(d.id, { from, to })
     )).then(perDevice => {
       if (cancelled) return;
       const out = reportDevices.map((d, i) => {
@@ -1089,6 +1053,7 @@ function MonthlyReportTab({ devices }) {
         let totalM = 0, businessM = 0, personalM = 0;
         let annCostSum = 0, annCostCount = 0;
         for (const t of trips) {
+          if(!t.ended_at || t.distance_m == null)continue;
           const dist = t.distance_m || 0;
           totalM += dist;
           const purpose = t.annotation?.purpose || 'unspecified';
@@ -1101,7 +1066,8 @@ function MonthlyReportTab({ devices }) {
         }
         return {
           id: d.id,
-          label: d.display_name || d.device_uid,
+          label: reportVehicleLabel(d),
+          asset: d.asset,
           fuel_efficiency_kmpl: d.fuel_efficiency_kmpl,
           fuel_type: d.fuel_type,
           // (2026-07-28) Stage-4B-1 국세청 + 우리 전용 필드 (편집 다이얼로그 전달용)
@@ -1219,9 +1185,9 @@ function MonthlyReportTab({ devices }) {
       )}
 
       {editing && (
-        <FuelInfoDialog device={editing}
+        <FleetAssetForm asset={editing.asset} staff={staff}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+          onSaved={() => { setEditing(null); qc.invalidateQueries({queryKey:fleetAssetsKey}); setTick(t => t + 1); }} />
       )}
 
       {dlOpen && (
@@ -1319,7 +1285,8 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
     setBusy(true);
     try {
       const params = { type: kind, month: ym };
-      if (selectedDevs && !isAllDev) params.device_ids = Array.from(selectedDevs);
+      params.scope='vehicles';
+      if (selectedDevs && !isAllDev) params.vehicle_ids = Array.from(selectedDevs);
       if (selectedPurps && selectedPurps.size > 0 && selectedPurps.size < PURPOSE_ALL.length) {
         params.purposes = Array.from(selectedPurps);
       }
@@ -1666,249 +1633,6 @@ function MonthlyDeviceRow({ row, onEdit }) {
 // 를 병렬 호출 (별개 트랜잭션이지만 UX 는 한 번의 저장).
 const VEHICLE_TYPE_LABEL = { sedan: '승용', van: '승합', truck: '화물', special: '특수', ev: '전기' };
 
-function FuelInfoDialog({ device, onClose, onSaved }) {
-  // 연비/연료 (fuel-info)
-  const [eff,  setEff]  = useState(device.fuel_efficiency_kmpl ?? '');
-  const [type, setType] = useState(device.fuel_type ?? 'gasoline');
-  // 국세청 헤더 (vehicle-info)
-  const [plate,       setPlate]       = useState(device.license_plate      ?? '');
-  const [modelYear,   setModelYear]   = useState(device.model_year         ?? '');
-  const [engineCc,    setEngineCc]    = useState(device.engine_cc          ?? '');
-  const [purchase,    setPurchase]    = useState(device.purchase_price_krw ?? '');
-  const [acquiredAt,  setAcquiredAt]  = useState(device.acquired_at        ?? '');
-  const [department,  setDepartment]  = useState(device.department         ?? '');
-  const [vehicleType, setVehicleType] = useState(device.vehicle_type       ?? 'sedan');
-  // (2026-07-28) Stage-4C-1: 사용가능 + 메모
-  const [enabled,     setEnabled]     = useState(device.enabled !== false);
-  const [note,        setNote]        = useState(device.note ?? '');
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    const eN = eff === '' ? null : Number(eff);
-    if (eN !== null && (isNaN(eN) || eN < 1 || eN > 100)) {
-      alertDialog({ title: '연비 범위 오류', body: '1 ~ 100 km/L 범위로 입력하세요.', tone: 'danger' });
-      return;
-    }
-    const myN = modelYear === '' ? null : parseInt(modelYear, 10);
-    if (myN !== null && (isNaN(myN) || myN < 1990 || myN > 2100)) {
-      alertDialog({ title: '연식 범위 오류', body: '1990 ~ 2100 범위로 입력하세요.', tone: 'danger' });
-      return;
-    }
-    const ccN = engineCc === '' ? null : parseInt(engineCc, 10);
-    const pN  = purchase === '' ? null : parseInt(purchase, 10);
-    setBusy(true);
-    try {
-      await Promise.all([
-        api.setFuelInfo(device.id, {
-          fuel_efficiency_kmpl: eN,
-          fuel_type: eN === null ? null : type,
-        }),
-        api.setVehicleInfo(device.id, {
-          license_plate:      plate.trim()      || null,
-          model_year:         myN,
-          engine_cc:          ccN,
-          purchase_price_krw: pN,
-          acquired_at:        acquiredAt || null,
-          department:         department.trim() || null,
-          vehicle_type:       vehicleType || null,
-          enabled:            enabled,
-          note:               note.trim() || null,
-        }),
-      ]);
-      onSaved();
-    } catch (e) {
-      alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
-    } finally { setBusy(false); }
-  }
-
-  return (
-    <Modal open onClose={busy ? undefined : onClose} title="차량 정보" size="lg"
-      subtitle={<span className="business-vehicle-title" title={device.label}>{device.label}</span>}
-      closeOnBackdrop={!busy} closeOnEsc={!busy}
-      footer={<><Button variant="ghost" className="business-form-cancel" onClick={onClose} disabled={busy}>취소</Button><Button className="business-form-submit" onClick={save} disabled={busy}>{busy ? '저장 중…' : '저장'}</Button></>}>
-      <div className="business-vehicle-form">
-        <section className="business-form-section">
-          <h3>기본 정보 <small>선택 입력</small></h3>
-          <div className="business-vehicle-fields">
-            <FormField label="차량번호"><Input value={plate} onChange={e => setPlate(e.target.value)} placeholder="12가3456" /></FormField>
-            <FormField label="차량 유형"><Select value={vehicleType} onChange={e => setVehicleType(e.target.value)}>
-              {Object.entries(VEHICLE_TYPE_LABEL).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-            </Select></FormField>
-            <FormField label="연식"><Input type="number" min="1990" max="2100" value={modelYear} onChange={e => setModelYear(e.target.value)} placeholder="예: 2023" /></FormField>
-            <FormField label="배기량 (cc)"><Input type="number" value={engineCc} onChange={e => setEngineCc(e.target.value)} placeholder="예: 1998" /></FormField>
-            <FormField label="취득가액 (원)"><Input type="number" value={purchase} onChange={e => setPurchase(e.target.value)} placeholder="예: 35000000" /></FormField>
-            <FormField label="취득일"><Input type="date" value={acquiredAt || ''} onChange={e => setAcquiredAt(e.target.value)} /></FormField>
-          </div>
-        </section>
-        <section className="business-form-section">
-          <h3>운영 정보</h3>
-          <FormField label="부서·그룹"><Input value={department} onChange={e => setDepartment(e.target.value)} placeholder="예: 영업 1팀" /></FormField>
-          <FormField label="메모"><Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="정비 이력, 특이사항" maxLength={500} /></FormField>
-          <div className="business-availability">
-            <div><strong>{enabled ? '사용 가능' : '사용 정지'}</strong>{!enabled && <p>운행 기록은 유지됩니다.</p>}</div>
-            <button type="button" role="switch" aria-checked={enabled} aria-label="차량 사용 가능" className="business-toggle" onClick={() => setEnabled(v => !v)}><span /></button>
-          </div>
-        </section>
-        <section className="business-form-section">
-          <h3>연료·연비</h3>
-          <div className="business-fuel-options" role="group" aria-label="연료">
-            {['gasoline', 'diesel', 'lpg', 'ev'].map(f => <button className="business-fuel-option" type="button" key={f} aria-pressed={type === f} onClick={() => setType(f)}>{FUEL_LABEL[f]}</button>)}
-          </div>
-          <FormField label="연비 (km/L)" hint="연비를 입력하면 유류비를 계산합니다.">
-            <Input type="number" step="0.1" min="1" max="100" value={eff} onChange={e => setEff(e.target.value)} placeholder="예: 12.5" />
-          </FormField>
-        </section>
-        {device.id && <DocumentsSection deviceId={device.id} />}
-      </div>
-    </Modal>
-  );
-}
-
-// (2026-07-28) Stage-4C-3: 차량 서류 (등록증/보험/정비영수증) 업로드 섹션.
-// VehicleInfoDialog 내부. 리스트 + 파일 선택 (kind + optional note) + 다운로드/삭제.
-const DOC_KIND_LABEL = {
-  registration: '등록증',
-  insurance:    '보험',
-  inspection:   '검사',
-  receipt:      '영수증',
-  other:        '기타',
-};
-
-function DocumentsSection({ deviceId }) {
-  // (F2-c) useDocuments hook + upload/delete mutations. load() 제거.
-  const { data: docs } = useDocuments(deviceId);
-  const uploadMut = useUploadDocument();
-  const deleteMut = useDeleteDocument();
-  const [kind, setKind] = useState('registration');
-  const [note, setNote] = useState('');
-  const [preview, setPreview] = useState(null);   // { doc, url, mime } | null
-  const fileRef = useRef(null);
-  const busy = uploadMut.isPending || deleteMut.isPending;
-
-  async function upload(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      alertDialog({ title: '파일 크기 초과', body: '최대 10MB', tone: 'danger' });
-      e.target.value = '';
-      return;
-    }
-    try {
-      await uploadMut.mutateAsync({ deviceId, body: { file, kind, note: note.trim() || null } });
-      setNote(''); e.target.value = '';
-    } catch (err) {
-      alertDialog({ title: '업로드 실패', body: err.message, tone: 'danger' });
-    }
-  }
-
-  async function download(d) {
-    try {
-      const { blob, filename } = await api.documentDownloadUrl(d.id)();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (e) {
-      alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' });
-    }
-  }
-
-  async function del(d) {
-    const ok = await confirmDialog({ title: '서류 삭제', body: `${d.filename} 을(를) 삭제하시겠습니까?`, danger: true });
-    if (!ok) return;
-    try { await deleteMut.mutateAsync({ id: d.id, deviceId }); }
-    catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
-  }
-
-  async function openPreview(d) {
-    try {
-      const { url, mime } = await api.fetchDocumentPreview(d.id);
-      setPreview({ doc: d, url, mime });
-    } catch (e) {
-      alertDialog({ title: '프리뷰 실패', body: e.message, tone: 'danger' });
-    }
-  }
-  function closePreview() {
-    if (preview?.url) URL.revokeObjectURL(preview.url);
-    setPreview(null);
-  }
-
-  return (
-    <section className="business-form-section">
-      <h3>차량 서류</h3>
-      <p className="business-note">PDF·이미지 · 파일당 10MB · 최대 20개</p>
-      <div className="business-vehicle-fields">
-        <FormField label="서류 종류"><Select value={kind} onChange={e => setKind(e.target.value)}>
-          {Object.entries(DOC_KIND_LABEL).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-        </Select></FormField>
-        <FormField label="서류 메모"><Input value={note} onChange={e => setNote(e.target.value)} placeholder="선택 입력" /></FormField>
-      </div>
-      <div>
-        <input ref={fileRef} type="file" accept=".pdf,image/*" onChange={upload} disabled={busy}
-          style={{ display: 'none' }} />
-        <button onClick={() => fileRef.current?.click()} disabled={busy} style={{
-          ...st.btnGhost, minHeight: 44, width: '100%', padding: '10px', fontSize: 12,
-        }}>
-          <Icon name="plus" size={16} /> {busy ? '처리 중…' : '서류 첨부'}
-        </button>
-      </div>
-
-      {docs && docs.length === 0 && (
-        <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', padding: 8 }}>
-          등록된 서류 없음
-        </div>
-      )}
-      {docs && docs.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {docs.map(d => (
-            <div className="business-document-row" key={d.id} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 6,
-              fontSize: 11,
-            }}>
-              <span style={{
-                fontSize: 9, padding: '2px 6px', borderRadius: 3,
-                background: 'var(--surface)', color: 'var(--text-2)', fontWeight: 700,
-              }}>{DOC_KIND_LABEL[d.kind] || d.kind}</span>
-              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                title={d.filename}>{d.filename}</span>
-              <span style={{ color: 'var(--text-3)', fontSize: 10 }}>{Math.round(d.size_bytes / 1024).toLocaleString()}KB</span>
-              <button onClick={() => openPreview(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="바로보기" aria-label={`${d.filename} 바로보기`}>
-                <Icon name="eye" size={16} />
-              </button>
-              <button onClick={() => download(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="다운로드" aria-label={`${d.filename} 다운로드`}>
-                <Icon name="download" size={16} />
-              </button>
-              <button onClick={() => del(d)} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제" aria-label={`${d.filename} 삭제`}>
-                <Icon name="trash2" size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {preview && <DocPreviewModal preview={preview} onClose={closePreview} onDownload={() => download(preview.doc)} />}
-    </section>
-  );
-}
-
-function DocPreviewModal({ preview, onClose, onDownload }) {
-  const { doc, url, mime } = preview;
-  const isImage = mime?.startsWith('image/');
-  const isPdf   = mime === 'application/pdf';
-  return (
-    <Modal open title="차량 서류" subtitle={<span className="business-vehicle-title" title={doc.filename}>{doc.filename}</span>} size="xl" onClose={onClose}
-      footer={<Button variant="ghost" onClick={onDownload} icon={<Icon name="download" size={16} />}>다운로드</Button>}>
-      {isImage && <img src={url} alt={doc.filename} style={{ maxWidth: '100%', maxHeight: '70dvh', objectFit: 'contain' }} />}
-      {isPdf && <iframe src={url} title={doc.filename} style={{ width: '100%', height: '70dvh', border: 0, background: '#fff' }} />}
-      {!isImage && !isPdf && <p className="business-note">미리 볼 수 없는 파일입니다. 다운로드 후 확인해 주세요.</p>}
-    </Modal>
-  );
-}
-
-// ─── Fleet 요약 상단 (2026-07-28) ──────────────────────
-// device drill-down 위에 얹는 4-card row. 첨부 이미지 스타일 (아이콘 + 큰 숫자).
-// tone 은 정보 성격별 색 구분: 운행중=success (초록), km=primary (파랑).
 function FleetSummary({ devices }) {
   const s = useFleetStats(devices);
   const fmt = (n) => (n == null ? '–' : n.toLocaleString());

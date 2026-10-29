@@ -75,11 +75,13 @@ async fn run_once(db: &PgPool) -> anyhow::Result<()> {
         driver_name: Option<String>,
     }
     let rows: Vec<Row> = sqlx::query_as(
-        r#"SELECT r.id, r.user_id, r.device_id, r.starts_at, r.purpose,
-                  d.display_name AS device_name, d.license_plate,
+        r#"SELECT r.id, r.user_id, d.id AS device_id, r.starts_at, r.purpose,
+                  COALESCE(v.name,d.display_name) AS device_name, COALESCE(v.license_plate,d.license_plate) AS license_plate,
                   s.name         AS driver_name
              FROM vehicle_reservations r
-        LEFT JOIN devices d ON d.id = r.device_id
+        LEFT JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id
+        LEFT JOIN fleet_vehicle_bindings b ON b.vehicle_id=v.id AND b.owner_id=r.user_id AND b.is_primary AND b.ended_at IS NULL
+        JOIN devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
         LEFT JOIN staff   s ON s.id = r.driver_staff_id
             WHERE r.status = 'planned'
               AND r.alerted_at IS NULL
@@ -149,11 +151,13 @@ async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
         driver_name: Option<String>,
     }
     let rows: Vec<Row> = sqlx::query_as(
-        r#"SELECT r.id, r.user_id, r.device_id, r.ends_at, r.purpose,
-                  d.display_name AS device_name, d.license_plate,
+        r#"SELECT r.id, r.user_id, d.id AS device_id, r.ends_at, r.purpose,
+                  COALESCE(v.name,d.display_name) AS device_name, COALESCE(v.license_plate,d.license_plate) AS license_plate,
                   s.name AS driver_name
              FROM vehicle_reservations r
-        LEFT JOIN devices d ON d.id = r.device_id
+        LEFT JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id
+        LEFT JOIN fleet_vehicle_bindings b ON b.vehicle_id=v.id AND b.owner_id=r.user_id AND b.is_primary AND b.ended_at IS NULL
+        JOIN devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
         LEFT JOIN staff   s ON s.id = r.driver_staff_id
             WHERE r.status IN ('planned','in_progress')
               AND r.ended_alerted_at IS NULL

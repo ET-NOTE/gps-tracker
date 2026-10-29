@@ -41,7 +41,7 @@ async function calendar(file, name) {
       BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:noop,BusinessError:noop,BusinessEmpty:noop,BusinessSection:noop,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
       useBusinessClock:noop,useRentalOperations:noop,useBusinessSubscription:noop,
       BusinessStaff:noop,BusinessRenters:noop,BusinessCompanyInfo:noop,BusinessSubscription:noop,
-      alertDialog:noop,confirmDialog:noop,StatCard:noop,StatCardGrid:noop,useFleetStats:noop,
+      alertDialog:noop,confirmDialog:noop,StatCard:noop,StatCardGrid:noop,useFleetStats:noop,FleetAssets:noop,FleetAssetForm:noop,FleetAssetDetail:noop,useFleetAssets:noop,projectFleetAssets:noop,fleetAssetsKey:[],useAssetStats:noop,useFleetReservations:noop,useCreateFleetReservation:noop,useUpdateFleetReservation:noop,useCancelFleetReservation:noop,
       Modal:noop,FormField:noop,Input:noop,Select:noop,Textarea:noop,Button:noop,Pill:noop,SkeletonList:noop,toast:noop};
     for(const name of ['useRentals','useCreateRental','useUpdateRental','useReturnRental','useDeleteRental','useRenters','useRenterDetail','useAddBlacklist','useRemoveBlacklist','useHandoffTokens','useIssueHandoffToken','useRevokeHandoffToken','useRentalPhotos','useUploadRentalPhoto','useDeleteRentalPhoto','useCorporateInfo','useStaff','useReservations','useDocuments','useCreateReservation','useUpdateReservation','useDeleteReservation','useCreateStaff','useUpdateStaff','useRemoveStaff','useUploadDocument','useDeleteDocument']) exports[name]=noop;
     return moduleOf(exports);

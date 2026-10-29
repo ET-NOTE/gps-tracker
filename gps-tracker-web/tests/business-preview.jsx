@@ -104,6 +104,22 @@ if(params.has('feedback')) {
   api.fleetTripStats=read({per_device:devices.map(d=>({device_id:d.id,total_distance_m:32000,today_distance_m:0,today_fix_count:params.get('feedback')==='zero'?2:0,today_last_fix_at:params.get('feedback')==='zero'?new Date(now).toISOString():null}))});
   api.updateDevice=async(id,body)=>{const d=devices.find(d=>d.id===id);Object.assign(d,body);return {...d};};
 }
+// Independent vehicle IDs deliberately differ from SIM IDs in this fixture.
+let assets=devices.map((d,i)=>({id:100+i,owner_id:1,name:`업무 차량 ${i+1}`,license_plate:d.license_plate||d.car_plate,car_model:d.car_model,department:d.department,enabled:d.enabled,profile:{next_service_date:d.next_service_date,insurance_expiry:d.insurance_expiry},created_at:new Date(now-86400000).toISOString(),updated_at:new Date(now).toISOString(),bindings:[{id:i+1,device_id:d.id,terminal_name:d.display_name,is_primary:true,started_at:'2020-01-01T00:00:00Z'}]}));
+let fleetBookings=reservations.map(r=>({...r,vehicle_id:99+r.device_id,vehicle_name:`업무 차량 ${r.device_id}`}));
+Object.assign(api,{
+ listFleetVehicles:()=>read(assets.map(v=>({...v})))(),
+ createFleetVehicle:async body=>{const v={...body,id:200+assets.length,owner_id:1,bindings:[],created_at:new Date().toISOString(),updated_at:new Date().toISOString()};assets=[...assets,v];return v;},
+ updateFleetVehicle:async(id,body)=>{assets=assets.map(v=>v.id===id?{...v,...body,updated_at:new Date().toISOString()}:v);return assets.find(v=>v.id===id);},
+ fleetVehicleBindings:async id=>assets.find(v=>v.id===id).bindings,
+ connectFleetVehicle:async(id,body)=>{const v=assets.find(v=>v.id===id);v.bindings=body.device_ids.map((d,i)=>({id:i+10,device_id:d,terminal_name:devices.find(x=>x.id===d).display_name,is_primary:d===body.primary_device_id,started_at:new Date().toISOString()}));return {...v};},
+ listFleetVehicleTrips:async(id,p)=>api.listTrips(devices[id-100]?.id,p),
+ fleetVehicleStats:async()=>{const rows=await api.fleetTripStats();return {per_device:rows.per_device.map(r=>({...r,device_id:99+r.device_id,vehicle_id:99+r.device_id}))};},
+ listFleetDocuments:read([]),
+ listFleetReservations:async p=>fleetBookings.filter(r=>(!p.from||new Date(r.ends_at)>=new Date(p.from))&&(!p.to||new Date(r.starts_at)<new Date(p.to))),
+ createFleetReservation:async body=>{const v=assets.find(v=>v.id===body.vehicle_id);const r={...body,id:100+fleetBookings.length,vehicle_name:v.name,license_plate:v.license_plate};fleetBookings.push(r);return r;},
+ updateFleetReservation:async(id,body)=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,...body}:r);return fleetBookings.find(r=>r.id===id);},cancelFleetReservation:async id=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,status:'cancelled'}:r);return {ok:true};},
+});
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');

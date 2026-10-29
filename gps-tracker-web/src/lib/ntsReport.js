@@ -4,7 +4,7 @@ const text = value => typeof value === 'string' ? value.trim() : '';
 const km = value => Math.round(value / 10) / 100;
 const distance = trip => typeof trip.distance_m === 'number' && Number.isFinite(trip.distance_m) && trip.distance_m >= 0 ? km(trip.distance_m) : null;
 export function reportVehicleLabel(device) {
-  const identity = [text(device?.car_model), text(device?.car_plate || device?.license_plate)].filter(Boolean);
+  const identity = [text(device?.vehicle_name || device?.car_model), text(device?.car_plate || device?.license_plate)].filter(Boolean);
   return identity.length ? identity.join(' · ') : `차량 정보 미등록 · ${device?.display_name || '단말기 ' + (device?.id ?? '')}`;
 }
 
@@ -30,7 +30,7 @@ export function ntsTripReport(trips, { device, info, from, to, filtered = false 
     const purpose = t.annotation?.purpose, valid = !excluded.has(t);
     const classified = valid && ['commute','business','other'].includes(purpose);
     const note = [!valid && '종료·거리·일자 확인 필요 · 합계 제외', !text(t.annotation?.driver_name) && '성명 미지정', !['business','commute','other'].includes(purpose) && '용무 미지정',
-      t.annotation?.purpose_note, t.annotation?.note, started && `${started.slice(11)}~${kstDateTime(t.ended_at).slice(11) || '종료 미수신'}`].filter(Boolean).join(' / ');
+      t.allocation_note, t.annotation?.purpose_note, t.annotation?.note, started && `${started.slice(11)}~${kstDateTime(t.ended_at).slice(11) || '종료 미수신'}`].filter(Boolean).join(' / ');
     return {date: day ? `${day} (${'일월화수목금토'[new Date(`${day}T00:00:00Z`).getUTCDay()]})` : '', department:'', driver:text(t.annotation?.driver_name), before:'', after:'',
       km:value ?? '', commute:classified ? (purpose==='commute' ? value : 0) : '',
       business:classified ? (purpose==='business' ? value : 0) : '', note};

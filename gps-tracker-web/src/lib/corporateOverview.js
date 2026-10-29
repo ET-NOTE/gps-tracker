@@ -2,7 +2,7 @@ import { businessDate, maintenanceTasks } from './business.js';
 import { validPosition } from './businessWorkspace.js';
 
 export const LOCATION_FRESH_MS = 5 * 60_000;
-export const corporateVehicleName = d => d.car_model || d.car_plate || d.license_plate || '차량 정보 미등록';
+export const corporateVehicleName = d => d.vehicle_name || d.car_model || d.car_plate || d.license_plate || '차량 정보 미등록';
 export const terminalName = d => d.display_name || d.device_uid || `단말 ${d.id}`;
 
 export function locationState(device, now = Date.now()) {

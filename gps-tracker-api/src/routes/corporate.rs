@@ -230,7 +230,7 @@ async fn remove_staff(
 
 // ─── 운행 (trip 산출 + annotation) ──────────────────
 #[derive(Debug, Deserialize)]
-struct TripQuery {
+pub(super) struct TripQuery {
     from: Option<String>, // ISO date or rfc3339
     to: Option<String>,
     // (2026-07-28) dev only — 좌표 전무 (wake/sleep 페어링 실패 & 거리 0) trip 도 반환.
@@ -245,8 +245,8 @@ struct TripQuery {
 
 const DEFAULT_MERGE_GAP_MIN: i64 = 10;
 
-#[derive(Debug, Serialize)]
-struct Trip {
+#[derive(Debug, Serialize, Deserialize)]
+pub(super) struct Trip {
     started_at: DateTime<Utc>,
     ended_at: Option<DateTime<Utc>>,
     duration_min: Option<i64>,
@@ -260,8 +260,8 @@ struct Trip {
     annotation: Option<TripAnnotation>,
 }
 
-#[derive(Debug, Serialize, FromRow, Clone)]
-struct TripAnnotation {
+#[derive(Debug, Serialize, FromRow, Clone, Deserialize)]
+pub(super) struct TripAnnotation {
     id: i64,
     trip_started_at: DateTime<Utc>,
     purpose: String,
@@ -292,7 +292,7 @@ async fn list_trips(
 
 // (2026-07-28) Stage-4B-2: XLSX 리포트에서 재사용하기 위해 list_trips 의 코어 로직을
 // 순수 함수로 분리. axum 추출자 없이 device 별 trip 을 계산.
-async fn compute_trips_inner(
+pub(super) async fn compute_trips_inner(
     state: &AppState,
     user_id: i64,
     device_id: i64,
@@ -732,8 +732,8 @@ async fn load_annotations(
 }
 
 #[derive(Debug, Deserialize)]
-struct AnnotationPayload {
-    trip_started_at: DateTime<Utc>,
+pub(super) struct AnnotationPayload {
+    pub(super) trip_started_at: DateTime<Utc>,
     purpose: Option<String>, // commute|business|other|unspecified
     purpose_note: Option<String>,
     driver_staff_id: Option<i64>,
@@ -749,6 +749,23 @@ async fn upsert_annotation(
     Json(req): Json<AnnotationPayload>,
 ) -> AppResult<Json<TripAnnotation>> {
     verify_device_owner(&state, user.user_id, device_id).await?;
+    save_annotation(&state, user, device_id, req).await
+}
+pub(super) async fn save_annotation(
+    state: &AppState,
+    user: AuthUser,
+    device_id: i64,
+    req: AnnotationPayload,
+) -> AppResult<Json<TripAnnotation>> {
+    if req
+        .fuel_liters
+        .is_some_and(|v| !v.is_finite() || !(0.0..=100000.0).contains(&v))
+        || req.fuel_cost.is_some_and(|v| v < 0)
+        || req.note.as_ref().is_some_and(|v| v.len() > 8000)
+        || req.purpose_note.as_ref().is_some_and(|v| v.len() > 2000)
+    {
+        return Err(AppError::BadRequest("입력 값을 확인해 주세요.".into()));
+    }
     let purpose = req.purpose.unwrap_or_else(|| "unspecified".into());
     if !["commute", "business", "other", "unspecified"].contains(&purpose.as_str()) {
         return Err(AppError::BadRequest("invalid purpose".into()));
@@ -920,6 +937,8 @@ use crate::services::xlsx_report;
 
 #[derive(Debug, Deserialize)]
 struct XlsxQuery {
+    scope: Option<String>,
+    vehicle_ids: Option<String>,
     /// nts | ours
     #[serde(rename = "type")]
     kind: Option<String>,
@@ -1292,6 +1311,28 @@ async fn report_xlsx(
         .fetch_all(&state.db)
         .await?
     };
+    let fleet_scope = q.scope.as_deref() == Some("vehicles");
+    if fleet_scope {
+        devs=sqlx::query_as("SELECT id,name AS display_name,('vehicle-'||id) AS device_uid,license_plate,car_model,
+          (profile->>'model_year')::integer AS model_year,(profile->>'engine_cc')::integer AS engine_cc,
+          (profile->>'purchase_price_krw')::bigint AS purchase_price_krw,(profile->>'acquired_at')::date AS acquired_at,
+          department,profile->>'vehicle_type' AS vehicle_type,(profile->>'fuel_efficiency_kmpl')::real AS fuel_efficiency_kmpl,profile->>'fuel_type' AS fuel_type
+          FROM fleet_vehicles WHERE owner_id=$1 ORDER BY id").bind(user.user_id).fetch_all(&state.db).await?;
+        if let Some(ref deps) = department_filter {
+            devs.retain(|d| {
+                deps.contains(&d.department.clone().unwrap_or_else(|| "(부서없음)".into()))
+            });
+        }
+    }
+    let device_id_filter = if fleet_scope {
+        q.vehicle_ids.as_ref().map(|ids| {
+            ids.split(',')
+                .filter_map(|s| s.parse::<i64>().ok())
+                .collect::<Vec<_>>()
+        })
+    } else {
+        device_id_filter
+    };
     // device_id 필터 in-memory 후처리 (부서 필터와 AND 조합)
     if let Some(ref ids) = device_id_filter {
         let set: std::collections::HashSet<i64> = ids.iter().copied().collect();
@@ -1322,12 +1363,32 @@ async fn report_xlsx(
         Vec::with_capacity(devices_lite.len());
     for (i, d) in devs.iter().enumerate() {
         // A query failure must not become an apparently valid empty workbook.
-        let trips = compute_trips_inner(&state, user.user_id, d.id, from, to).await?;
+        let trips = if fleet_scope {
+            let values =
+                super::fleet_vehicles::allocated_trips(&state, user.user_id, d.id, from, to)
+                    .await?;
+            values
+                .into_iter()
+                .map(|mut value| {
+                    if value["allocation_status"] == "boundary_review" {
+                        value["distance_m"] = serde_json::json!(0.0);
+                        value["ended_at"] = Value::Null;
+                        if value["annotation"].is_object() {
+                            value["annotation"]["note"] =
+                                serde_json::json!("단말기 연결 변경 구간 · 거리 합계 제외");
+                        }
+                    }
+                    serde_json::from_value::<Trip>(value).map_err(|e| AppError::Internal(e.into()))
+                })
+                .collect::<AppResult<Vec<_>>>()?
+        } else {
+            compute_trips_inner(&state, user.user_id, d.id, from, to).await?
+        };
         let lite: Vec<xlsx_report::TripLite> = trips
             .into_iter()
             .filter_map(|t| {
                 // 좌표 전무 trip 은 리포트에서 제외 (유저급 뷰). 개발자 진단은 /trips?include_no_coord=1
-                if t.start_lat.is_none() && t.end_lat.is_none() {
+                if !fleet_scope && t.start_lat.is_none() && t.end_lat.is_none() {
                     return None;
                 }
                 let purpose = t
@@ -1486,7 +1547,7 @@ async fn list_reservations(
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
             LEFT JOIN devices d ON d.id = r.device_id
-                WHERE r.user_id = $1 AND r.device_id = $2
+                WHERE r.device_id IS NOT NULL AND r.user_id = $1 AND r.device_id = $2
                   AND r.starts_at < $4 AND r.ends_at > $3
                   AND r.status = ANY($5::TEXT[])
                 ORDER BY r.starts_at DESC"#,
@@ -1506,7 +1567,7 @@ async fn list_reservations(
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
             LEFT JOIN devices d ON d.id = r.device_id
-                WHERE r.user_id = $1 AND r.device_id = $2
+                WHERE r.device_id IS NOT NULL AND r.user_id = $1 AND r.device_id = $2
                   AND r.starts_at < $4 AND r.ends_at > $3
                 ORDER BY r.starts_at DESC"#,
             )
@@ -1524,7 +1585,7 @@ async fn list_reservations(
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
             LEFT JOIN devices d ON d.id = r.device_id
-                WHERE r.user_id = $1
+                WHERE r.device_id IS NOT NULL AND r.user_id = $1
                   AND r.starts_at < $3 AND r.ends_at > $2
                   AND r.status = ANY($4::TEXT[])
                 ORDER BY r.starts_at DESC"#,
@@ -1543,7 +1604,7 @@ async fn list_reservations(
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
             LEFT JOIN devices d ON d.id = r.device_id
-                WHERE r.user_id = $1
+                WHERE r.device_id IS NOT NULL AND r.user_id = $1
                   AND r.starts_at < $3 AND r.ends_at > $2
                 ORDER BY r.starts_at DESC"#,
             )
@@ -1690,7 +1751,7 @@ async fn update_reservation(
                     alerted_at = CASE WHEN starts_at IS DISTINCT FROM $5 OR device_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,
                     ended_alerted_at = CASE WHEN ends_at IS DISTINCT FROM $6 OR device_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,
                     updated_at = NOW()
-              WHERE id = $1 AND user_id = $2
+              WHERE id = $1 AND user_id = $2 AND fleet_vehicle_id IS NULL
               RETURNING *
            )
            SELECT upd.id, upd.user_id, upd.device_id, upd.driver_staff_id,
@@ -1721,7 +1782,7 @@ async fn delete_reservation(
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
-    let n = sqlx::query("DELETE FROM vehicle_reservations WHERE id = $1 AND user_id = $2")
+    let n = sqlx::query("DELETE FROM vehicle_reservations WHERE id = $1 AND user_id = $2 AND fleet_vehicle_id IS NULL")
         .bind(id)
         .bind(user.user_id)
         .execute(&state.db)
@@ -1878,7 +1939,7 @@ async fn verify_staff_owner(state: &AppState, uid: i64, staff_id: Option<i64>) -
     Ok(())
 }
 
-fn parse_range(q: &TripQuery) -> AppResult<(DateTime<Utc>, DateTime<Utc>)> {
+pub(super) fn parse_range(q: &TripQuery) -> AppResult<(DateTime<Utc>, DateTime<Utc>)> {
     let now = Utc::now();
     let from = match &q.from {
         Some(s) => parse_date_or_rfc3339(s)?,
