@@ -7,6 +7,9 @@ m=json.loads((stage/'manifest.json').read_text())
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 run=lambda a:subprocess.run(a,check=True)
 assert sha(stage/'gps-tracker-api')==m['api_sha256'] and sha(stage/'web.tar.gz')==m['archive_sha256'] and sha(stage/'source-final.tar.gz')==m['source_sha256']
+with tarfile.open(stage/'web.tar.gz') as archive:
+ index=next(f for f in archive.getmembers() if f.isfile() and f.name.removeprefix('./')=='index.html')
+ assert b'"/assets/' in archive.extractfile(index).read(), 'Production requires VITE_BASE=/'
 os.umask(0o077)
 def cfg(p):
  return {k:v.strip().strip(chr(34)).strip(chr(39)) for k,v in (l.split('=',1) for l in p.read_text().splitlines() if '=' in l and not l.startswith('#'))}
