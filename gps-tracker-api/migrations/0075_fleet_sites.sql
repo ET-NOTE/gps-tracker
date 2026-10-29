@@ -62,7 +62,7 @@ BEGIN
  VALUES(NEW.id,NEW.owner_id,NEW.updated_at,to_jsonb(NEW));
  RETURN NEW;
 END $$;
--- AFTER insert is needed for the version's FK; the update trigger sets its effective timestamp.
+-- AFTER insert is needed for the version's FK; update timestamp is set by API.
 CREATE FUNCTION fleet_site_insert_version() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  INSERT INTO fleet_site_versions(site_id,owner_id,valid_from,snapshot)
