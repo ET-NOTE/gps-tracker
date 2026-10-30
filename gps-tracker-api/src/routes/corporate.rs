@@ -150,6 +150,8 @@ pub(super) struct Trip {
     end_lng: Option<f64>,
     end_address: Option<String>,
     annotation: Option<TripAnnotation>,
+    #[serde(default)]
+    quality: Value,
 }
 
 #[derive(Debug, Serialize, FromRow, Clone, Deserialize)]
@@ -336,6 +338,18 @@ async fn compute_trips_inner_ex(
             end_lng: row.end_lng,
             end_address,
             annotation,
+            quality: super::fleet_trip_quality::quality(
+                *s,
+                *e,
+                &slice,
+                &events
+                    .iter()
+                    .filter(|(_, at, _)| *at >= *s && *at <= end + chrono::Duration::hours(24))
+                    .cloned()
+                    .collect::<Vec<_>>(),
+                distance_m,
+                Utc::now(),
+            ),
         });
     }
     Ok(out)
@@ -418,7 +432,7 @@ fn pair_trips(
 //   1) data.stopped_at (RFC3339) — 펌웨어가 epoch 시각 가지면 직접 표기
 //   2) data.stopped_offset_s (정수, 초) — 펌웨어가 시각 못 가지면 "마지막 모션 후 N초"
 //   3) occurred_at — 위 둘 다 없거나 invalid 면 이벤트 도착 시각으로 fallback
-fn effective_sleep_end(
+pub(super) fn effective_sleep_end(
     wake_at: DateTime<Utc>,
     occurred_at: DateTime<Utc>,
     data: Option<&serde_json::Value>,
@@ -604,7 +618,7 @@ async fn collect_trip_endpoints(
     Ok(out)
 }
 
-async fn load_annotations(
+pub(super) async fn load_annotations(
     state: &AppState,
     device_id: i64,
     user_id: i64,
@@ -1317,7 +1331,7 @@ async fn report_xlsx(
                         value["ended_at"] = Value::Null;
                         if value["annotation"].is_object() {
                             value["annotation"]["note"] =
-                                serde_json::json!("단말기 연결 변경 구간 · 거리 합계 제외");
+                                serde_json::json!("미확정 운행 · 거리 합계 제외");
                         }
                     }
                     serde_json::from_value::<Trip>(value).map_err(|e| AppError::Internal(e.into()))
@@ -1347,6 +1361,8 @@ async fn report_xlsx(
                     started_at: t.started_at,
                     ended_at: t.ended_at,
                     distance_m: t.distance_m,
+                    report_included: t.quality["report_included"] != false,
+                    quality_note: super::fleet_trip_quality::status_label(&t.quality).to_string(),
                     start_address: t.start_address,
                     end_address: t.end_address,
                     purpose: Some(purpose),

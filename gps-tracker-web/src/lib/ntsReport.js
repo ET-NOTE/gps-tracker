@@ -1,3 +1,4 @@
+import {reportIncluded,qualityLabel,tripTimeRange} from './tripQuality.js';
 import { kstDateTime } from './businessExport.js';
 
 const text = value => typeof value === 'string' ? value.trim() : '';
@@ -5,6 +6,7 @@ const km = value => Math.round(value / 10) / 100;
 const distance = trip => typeof trip.distance_m === 'number' && Number.isFinite(trip.distance_m) && trip.distance_m >= 0 ? km(trip.distance_m) : null;
 export function reportVehicleLabel(device) {
   const identity = [text(device?.vehicle_name || device?.car_model), text(device?.car_plate || device?.license_plate)].filter(Boolean);
+  if(identity.every(v=>v==='차량 정보 미등록')) return `차량 정보 미등록 · ${device?.primary_terminal_name || device?.display_name || '차량 #' + device?.id}`;
   return identity.length ? identity.join(' · ') : `차량 정보 미등록 · ${device?.display_name || '단말기 ' + (device?.id ?? '')}`;
 }
 
@@ -18,11 +20,11 @@ export function ntsTripReport(trips, { device, info, from, to, filtered = false 
   if (missing.length) warnings.push(`차량·회사 정보 미입력: ${missing.join(', ')}`);
   if (trips.length) warnings.push('사용자란은 차량 이용자 기준입니다. 표시된 운전자와 이용자가 다르면 성명·부서를 수정해 주세요.');
   if (trips.length) warnings.push('주행 전·후 계기판 거리는 실제 기록으로 보완해 주세요. 부서는 운전자 배정 시점의 값을 사용합니다.');
-  const incomplete = trips.filter(t=>!t.ended_at || !kstDateTime(t.ended_at) || distance(t) === null || !kstDateTime(t.started_at) || new Date(t.ended_at) < new Date(t.started_at));
+  const incomplete = trips.filter(t=>!reportIncluded(t) || !t.ended_at || !kstDateTime(t.ended_at) || distance(t) === null || !kstDateTime(t.started_at) || new Date(t.ended_at) < new Date(t.started_at));
   const excluded = new Set(incomplete);
   const unassigned = trips.filter(t=>!['business','commute','other'].includes(t.annotation?.purpose));
   const missingDriver = trips.filter(t=>!text(t.annotation?.driver_name));
-  if (incomplete.length) warnings.push(`종료·거리·사용일자 확인이 필요한 운행 ${incomplete.length}건은 합계에서 제외합니다.`);
+  if (incomplete.length) warnings.push(`미확정·종료·거리·사용일자 확인이 필요한 운행 ${incomplete.length}건은 합계에서 제외합니다.`);
   if (unassigned.length) warnings.push(`용무 미지정 ${unassigned.length}건이 있어 업무 사용비율을 계산하지 않습니다.`);
   if (missingDriver.length) warnings.push(`사용자 성명 미지정 ${missingDriver.length}건`);
   if (filtered) warnings.push('현재 필터에 해당하는 운행만 포함합니다. 기간 전체 합계가 아닙니다.');
@@ -30,8 +32,8 @@ export function ntsTripReport(trips, { device, info, from, to, filtered = false 
     const started = kstDateTime(t.started_at), day = started.slice(0,10), value = distance(t);
     const purpose = t.annotation?.purpose, valid = !excluded.has(t);
     const classified = valid && ['commute','business','other'].includes(purpose);
-    const note = [!valid && '종료·거리·일자 확인 필요 · 합계 제외', !text(t.annotation?.driver_name) && '성명 미지정', !['business','commute','other'].includes(purpose) && '용무 미지정',
-      t.allocation_note, t.annotation?.purpose_note, t.annotation?.note, started && `${started.slice(11)}~${kstDateTime(t.ended_at).slice(11) || '종료 미수신'}`].filter(Boolean).join(' / ');
+    const note = [!valid && '미확정·종료·거리·일자 확인 필요 · 합계 제외', !text(t.annotation?.driver_name) && '성명 미지정', !['business','commute','other'].includes(purpose) && '용무 미지정',
+      t.allocation_note, t.correction_id && `보정 #${t.correction_id}`, t.quality && qualityLabel(t), t.annotation?.purpose_note, t.annotation?.note, started && tripTimeRange(t)].filter(Boolean).join(' / ');
     return {date: day ? `${day} (${'일월화수목금토'[new Date(`${day}T00:00:00Z`).getUTCDay()]})` : '', department:text(t.annotation?.driver_department), driver:text(t.annotation?.driver_name), before:'', after:'',
       km:value ?? '', commute:classified ? (purpose==='commute' ? value : 0) : '',
       business:classified ? (purpose==='business' ? value : 0) : '', note};

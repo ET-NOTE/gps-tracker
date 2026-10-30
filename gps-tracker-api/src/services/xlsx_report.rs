@@ -42,6 +42,8 @@ pub struct TripLite {
     pub started_at: DateTime<Utc>,
     pub ended_at: Option<DateTime<Utc>>,
     pub distance_m: f64,
+    pub report_included: bool,
+    pub quality_note: String,
     pub start_address: Option<String>,
     pub end_address: Option<String>,
     pub purpose: Option<String>, // 'business'|'commute'|'other'|'unspecified'
@@ -229,9 +231,12 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
                     sheet.write_number_with_format(row, 7, values[2], &precise_num)?;
                 }
             }
-            let mut notes = vec![purpose_ko(t.purpose.as_deref(), t.purpose_note.as_deref())];
+            let mut notes = vec![
+                purpose_ko(t.purpose.as_deref(), t.purpose_note.as_deref()),
+                t.quality_note.clone(),
+            ];
             if values.is_none() {
-                notes.push("종료·거리 확인 필요 · 합계 제외".into());
+                notes.push("미확정·종료·거리 확인 필요 · 합계 제외".into());
             }
             if t.driver_name.as_deref().is_none_or(|s| s.trim().is_empty()) {
                 notes.push("성명 미지정".into());
@@ -240,7 +245,13 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
                 "{}~{}",
                 fmt_time_kst(&t.started_at),
                 t.ended_at
-                    .map(|v| fmt_time_kst(&v))
+                    .map(
+                        |v| if kst(v).date_naive() != kst(t.started_at).date_naive() {
+                            format!("{} {}", fmt_date_kst(&v), fmt_time_kst(&v))
+                        } else {
+                            fmt_time_kst(&v)
+                        }
+                    )
                     .unwrap_or_else(|| "종료 미수신".into())
             ));
             sheet.write_string_with_format(row, 8, notes.join(" / "), &cell_fmt)?;
@@ -344,6 +355,9 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         let mut biz_km = 0f64;
         let mut ann_cost = 0i64;
         for t in trips {
+            if nts_distance(t).is_none() {
+                continue;
+            }
             let dist_km = t.distance_m / 1000.0;
             total_km += dist_km;
             if t.purpose.as_deref() == Some("business") {
@@ -437,7 +451,7 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         let name = short_sheet_name(&plate, i);
         sheet.set_name(&name)?;
 
-        sheet.merge_range(0, 0, 0, 9, &format!("{plate} 상세 운행"), &title_fmt)?;
+        sheet.merge_range(0, 0, 0, 10, &format!("{plate} 상세 운행"), &title_fmt)?;
         sheet.set_row_height(0, 24.0)?;
 
         let cols = [
@@ -451,6 +465,7 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             "사용자",
             "유류(L)",
             "유류비(원)",
+            "기록 상태",
         ];
         for (ci, c) in cols.iter().enumerate() {
             sheet.write_string_with_format(2, ci as u16, *c, &header_fmt)?;
@@ -464,8 +479,14 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
                 row,
                 2,
                 t.ended_at
-                    .map(|e| fmt_time_kst(&e))
-                    .unwrap_or_else(|| "진행중".into()),
+                    .map(|e| {
+                        if fmt_date_kst(&e) == fmt_date_kst(&t.started_at) {
+                            fmt_time_kst(&e)
+                        } else {
+                            format!("{} {}", fmt_date_kst(&e), fmt_time_kst(&e))
+                        }
+                    })
+                    .unwrap_or_else(|| "종료 미수신".into()),
                 &cell_fmt,
             )?;
             sheet.write_number_with_format(row, 3, dist_km, &cell_num)?;
@@ -499,12 +520,15 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             if let Some(c) = t.fuel_cost_krw {
                 sheet.write_number_with_format(row, 9, c as f64, &cell_won)?;
             }
+            sheet.write_string_with_format(row, 10, &t.quality_note, &cell_fmt)?;
             row += 1;
         }
 
-        for (i, w) in [12.0, 10.0, 10.0, 12.0, 28.0, 28.0, 16.0, 12.0, 10.0, 14.0]
-            .iter()
-            .enumerate()
+        for (i, w) in [
+            12.0, 10.0, 20.0, 12.0, 28.0, 28.0, 16.0, 12.0, 10.0, 14.0, 26.0,
+        ]
+        .iter()
+        .enumerate()
         {
             sheet.set_column_width(i as u16, *w)?;
         }
@@ -639,7 +663,8 @@ fn short_sheet_name(name: &str, idx: usize) -> String {
 
 // [total, commute, general business], rounded to the precision written to Excel.
 fn nts_distance(t: &TripLite) -> Option<[f64; 3]> {
-    if t.ended_at.is_none_or(|end| end < t.started_at)
+    if !t.report_included
+        || t.ended_at.is_none_or(|end| end <= t.started_at)
         || !t.distance_m.is_finite()
         || t.distance_m < 0.0
     {
@@ -674,6 +699,8 @@ mod nts_tests {
                     .to_utc(),
             ),
             distance_m: 10004.0,
+            report_included: true,
+            quality_note: "확정".into(),
             start_address: None,
             end_address: None,
             purpose: Some("commute".into()),

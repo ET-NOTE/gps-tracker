@@ -14,6 +14,7 @@ pub mod fleet_reservations;
 pub mod fleet_sites;
 pub mod fleet_team;
 pub mod fleet_trip_assignment;
+pub mod fleet_trip_quality;
 pub mod fleet_vehicles;
 pub mod geofences;
 pub mod health;
@@ -61,6 +62,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(fleet_expenses::router())
         .merge(fleet_reservations::router())
         .merge(fleet_trip_assignment::router())
+        .merge(fleet_trip_quality::router())
         .merge(rentcar::router())
         .merge(payments::router())
         .merge(phones::router())

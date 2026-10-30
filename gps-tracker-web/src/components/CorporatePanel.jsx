@@ -1,3 +1,5 @@
+import {TripEvidence,TripCorrection,TripCorrectionHistory} from './business/FleetTripQuality';
+import {qualityLabel,qualitySummary,reportIncluded,tripTimeRange} from '../lib/tripQuality';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Icon from './Icon';
@@ -131,6 +133,7 @@ function ReportTab({ devices, initialDeviceId }) {
   const [trips, setTrips] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [evidence,setEvidence]=useState(null),[correction,setCorrection]=useState(null),[qualityHistory,setQualityHistory]=useState(false),[onlyReview,setOnlyReview]=useState(false);
   const [editing, setEditing] = useState(null);   // 편집 중인 trip {trip, deviceId}
   // 추가 필터 — 운전자별 / 용무별 / 최소 운행 시간(시간). all/'' 이면 미적용. AND.
   const [driverFilter,  setDriverFilter]  = useState('all');
@@ -147,7 +150,7 @@ function ReportTab({ devices, initialDeviceId }) {
   async function load() {
     if (!deviceId) return;
     const id = ++loadId.current;
-    setSelected(new Set());setAssignment(null);
+    setSelected(new Set());setAssignment(null);setEvidence(null);setCorrection(null);
     if (!from || !to || from > to) { setTrips(null); setLoading(false); setError('조회 시작일과 종료일을 올바르게 선택해 주세요.'); return; }
     setLoading(true); setError(null); setTrips(null);
     try {
@@ -160,17 +163,18 @@ function ReportTab({ devices, initialDeviceId }) {
   useEffect(() => { load(); return () => { loadId.current++; }; }, [deviceId, from, to]);  // eslint-disable-line
 
   // 추가 필터 적용된 trip 목록 — 운전자/용무/최소시간 AND.
-  const filteredTrips = useMemo(() => trips ? filterTrips(trips, {driver:driverFilter,purpose:purposeFilter,minHours}) : null, [trips, driverFilter, purposeFilter, minHours]);
-  useEffect(()=>{setSelected(new Set());setAssignment(null);setAssignmentStatus('');},[deviceId,from,to,driverFilter,purposeFilter,minHours]);
+  const filteredTrips = useMemo(() => trips ? filterTrips(trips, {driver:driverFilter,purpose:purposeFilter,minHours}).filter(t=>!onlyReview||!reportIncluded(t)) : null, [trips, driverFilter, purposeFilter, minHours,onlyReview]);
+  useEffect(()=>{setSelected(new Set());setAssignment(null);setAssignmentStatus('');},[deviceId,from,to,driverFilter,purposeFilter,minHours,onlyReview]);
   const eligible=(filteredTrips||[]).filter(t=>canAssignTrip(t,access));
   const chosen=eligible.filter(t=>selected.has(tripAssignmentKey(t)));
   const toggleTrip=t=>{setAssignmentStatus('');setSelected(previous=>{const next=new Set(previous),key=tripAssignmentKey(t);if(next.has(key))next.delete(key);else if(next.size<100)next.add(key);return next;});};
+  const qualityTotals=qualitySummary(filteredTrips||[]);
   const completeness = trips ? tripCompleteness(trips) : null;
   const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
-    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간`,
+    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}`,
   }) : null;
   const csvData = filteredTrips ? ntsTripReport(filteredTrips, {device,info,from,to,
-    filtered: driverFilter !== 'all' || purposeFilter !== 'all' || Number(minHours) > 0,
+    filtered: onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || Number(minHours) > 0,
   }) : null;
 
   // 일자별 누적거리 — 화면에 보이는(필터된) 운행 기준으로 계산.
@@ -179,13 +183,14 @@ function ReportTab({ devices, initialDeviceId }) {
     const m = new Map();
     for (const t of filteredTrips) {
       const d = kstDate(t.started_at);
-      if (t.ended_at && t.distance_m != null) m.set(d, (m.get(d) || 0) + t.distance_m);
+      if (reportIncluded(t)) m.set(d, (m.get(d) || 0) + t.distance_m);
     }
     return m;
   }, [filteredTrips]);
 
-  const filterActive = driverFilter !== 'all' || purposeFilter !== 'all' || (parseFloat(minHours) > 0);
+  const filterActive = onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || (parseFloat(minHours) > 0);
   function resetFilters() {
+    setOnlyReview(false);
     setDriverFilter('all');
     setPurposeFilter('all');
     setMinHours('');
@@ -259,16 +264,20 @@ function ReportTab({ devices, initialDeviceId }) {
         </span>
       </div>
 
+      <div className="fleet-quality-summary"><strong>확정 {qualityTotals.included}건 · {(qualityTotals.confirmedMeters/1000).toFixed(2)} km</strong><span>합계 제외 {qualityTotals.excluded}건 · 관측 거리 {(qualityTotals.unconfirmedMeters/1000).toFixed(2)} km</span><label className="no-print"><input type="checkbox" checked={onlyReview} onChange={e=>setOnlyReview(e.target.checked)}/>미확정만 보기</label><span className="business-note">미확정 기록은 목록·내보내기에 표시하되 거리 합계에서 제외합니다.</span></div>
       <div className="fleet-assignment-toolbar no-print">
         <span role="status">{assignmentStatus || `${chosen.length}건 선택 · 한 번에 100건까지`}</span>
         <BusinessButton disabled={!chosen.length||loading} onClick={()=>setAssignment('manual')}>일괄 지정</BusinessButton>
         <BusinessButton disabled={!chosen.length||loading} onClick={()=>setAssignment('suggest')}>예약·규칙 적용</BusinessButton>
         <BusinessButton disabled={!device} onClick={()=>setShowRules(true)}>기본 운전자·반복 규칙</BusinessButton>
-        {access.manage_reports&&<BusinessButton disabled={!device} onClick={()=>setShowHistory(true)}>변경 이력</BusinessButton>}
+        {access.manage_reports&&<><BusinessButton disabled={chosen.length!==2||chosen.some(t=>t.correction_id)} onClick={()=>setCorrection(chosen)}>선택한 2건 병합</BusinessButton><BusinessButton disabled={!device} onClick={()=>setQualityHistory(true)}>보정 이력</BusinessButton><BusinessButton disabled={!device} onClick={()=>setShowHistory(true)}>지정 이력</BusinessButton></>}
       </div>
       {assignment&&<TripAssignmentModal mode={assignment} trips={chosen} vehicle={device} from={from} to={to} staff={staffAll||[]} onClose={()=>setAssignment(null)} onSaved={result=>{setAssignment(null);setAssignmentStatus(`${result.applied}건 변경 · ${result.skipped}건 제외`);load();}}/>}
       {showRules&&device&&<TripRulesModal vehicle={device} staff={staffAll||[]} onClose={()=>setShowRules(false)}/>}
       {showHistory&&device&&<TripAssignmentHistory vehicle={device} onClose={()=>setShowHistory(false)}/>}
+      {evidence&&<TripEvidence vehicle={device} trip={evidence} from={from} to={to} canManage={access.manage_reports} onClose={()=>setEvidence(null)} onCorrect={()=>{setCorrection([evidence]);setEvidence(null);}}/>}
+      {correction&&<TripCorrection vehicle={device} trips={correction} from={from} to={to} onClose={()=>setCorrection(null)} onSaved={()=>{setCorrection(null);load();}}/>}
+      {qualityHistory&&device&&<TripCorrectionHistory vehicle={device} onClose={()=>setQualityHistory(false)} onRestored={load}/>}
       {/* 리포트 본문 — 인쇄 영역 */}
       <div className="report-area" style={st.reportArea}>
         <ReportHeader info={info} device={device} from={from} to={to} />
@@ -282,7 +291,7 @@ function ReportTab({ devices, initialDeviceId }) {
         )}
         {filteredTrips && filteredTrips.length > 0 && (
           <TripsTable trips={filteredTrips} dailyDistance={dailyDistance} selected={selected} onSelect={toggleTrip} eligible={eligible} onSelectAll={()=>{setAssignmentStatus('');setSelected(chosen.length===Math.min(100,eligible.length)?new Set():new Set(eligible.slice(0,100).map(tripAssignmentKey)));}}
-            onEdit={(t) => setEditing(t)} />
+            onEvidence={setEvidence} onEdit={(t) => setEditing(t)} />
         )}
       </div>
 
@@ -322,7 +331,7 @@ function ReportHeader({ info, device, from, to }) {
   );
 }
 
-function TripsTable({ trips, dailyDistance, onEdit, selected, onSelect, eligible, onSelectAll }) {
+function TripsTable({ trips, dailyDistance, onEdit, onEvidence, selected, onSelect, eligible, onSelectAll }) {
   return (
     // 모바일 — 9열 표가 좁은 폭을 넘김. 가로 스크롤 컨테이너로 감쌈.
     // 인쇄 시 @media print 가 nav/sidebar 만 숨기고 reportArea 는 그대로 노출, 인쇄 페이지 폭에 맞춤.
@@ -332,7 +341,7 @@ function TripsTable({ trips, dailyDistance, onEdit, selected, onSelect, eligible
         <tr>
           <th style={st.th} className="no-print"><input className="fleet-trip-select" type="checkbox" aria-label="현재 운행 최대 100건 선택" checked={eligible.length>0&&selected.size===Math.min(100,eligible.length)} disabled={!eligible.length} onChange={onSelectAll}/></th>
           <th style={st.th}>날짜</th>
-          <th style={st.th}>시간</th>
+          <th style={st.th}>시간</th><th style={st.th}>기록 상태</th>
           <th style={st.th}>용무</th>
           <th style={st.th}>출발지</th>
           <th style={st.th}>도착지</th>
@@ -351,7 +360,7 @@ function TripsTable({ trips, dailyDistance, onEdit, selected, onSelect, eligible
           return (
             <TripRow key={tripAssignmentKey(t)} t={t} selected={selected.has(tripAssignmentKey(t))} onSelect={()=>onSelect(t)} selectionFull={selected.size>=100}
               date={d} dailyKm={firstOfDay ? dailyKm : ''}
-              onEdit={() => onEdit(t)} />
+              onEvidence={()=>onEvidence(t)} onEdit={() => onEdit(t)} />
           );
         })}
       </tbody>
@@ -360,18 +369,18 @@ function TripsTable({ trips, dailyDistance, onEdit, selected, onSelect, eligible
   );
 }
 
-function TripRow({ t, date, dailyKm, onEdit, selected, onSelect, selectionFull }) {
+function TripRow({ t, date, dailyKm, onEdit, onEvidence, selected, onSelect, selectionFull }) {
   const access=useFleetAccess();
   const ann = t.annotation || {};
   const purpose = ann.purpose || 'unspecified';
   const km = t.distance_m == null ? '—' : (t.distance_m / 1000).toFixed(1);
-  const time = `${kstTime(t.started_at)}~${t.ended_at ? kstTime(t.ended_at) : '—'}`;
+  const time = tripTimeRange(t);
 
   return (
     <tr>
       <td style={st.td} className="no-print"><input className="fleet-trip-select" type="checkbox" aria-label={`${date} ${time} 운행 선택`} checked={selected} disabled={!canAssignTrip(t,access)||(!selected&&selectionFull)} onChange={onSelect}/></td>
       <td style={st.td}>{date}</td>
-      <td style={st.td}>{time}</td>
+      <td style={st.td}>{time}</td><td style={st.td}><span className="fleet-quality-status" data-state={t.quality?.status}>{qualityLabel(t)}{t.correction_id?" · 보정":""}</span>{!reportIncluded(t)&&<small style={{display:"block"}}>합계 제외</small>}</td>
       <td style={st.td}>
         {PURPOSE_LABEL[purpose] || '미지정'}
         {purpose === 'other' && ann.purpose_note && (
@@ -403,15 +412,15 @@ function TripRow({ t, date, dailyKm, onEdit, selected, onSelect, selectionFull }
         {ann.fuel_cost ? ` / ${ann.fuel_cost.toLocaleString()}원` : ''}
       </td>
       <td style={st.td}>{ann.driver_name || '—'}</td>
-      <td style={{ ...st.td, padding: 4 }} className="no-print">
+      <td style={{ ...st.td, padding: 4 }} className="no-print"><div className="fleet-quality-row-actions"><BusinessButton onClick={onEvidence}>근거</BusinessButton>
         <button onClick={onEdit} disabled={t.allocation_status==='boundary_review'||(!access.manage_reports&&t.annotation?.driver_staff_id!=null&&t.annotation.driver_staff_id!==access.staff_id)} style={{
           width: 26, height: 26, borderRadius: 6,
           background: 'var(--surface-2)', color: 'var(--text-2)',
           border: '1px solid var(--border)', cursor: 'pointer',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        }} title="편집">
+        }} title="용무·운전자 수정" aria-label="용무·운전자 수정">
           <Icon name="edit" size={12} />
-        </button>
+        </button></div>
       </td>
     </tr>
   );
@@ -458,7 +467,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
         <div style={mst.header}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>
-              {kstDate(trip.started_at)} · {kstTime(trip.started_at)}~{trip.ended_at ? kstTime(trip.ended_at) : '진행 중'}
+              {kstDate(trip.started_at)} · {tripTimeRange(trip)}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
               {trip.start_address || '—'} → {trip.end_address || '—'} · {km} km
@@ -1097,6 +1106,7 @@ function MonthlyReportTab({ devices }) {
         let totalM = 0, businessM = 0, personalM = 0;
         let annCostSum = 0, annCostCount = 0;
         for (const t of trips) {
+          if(!reportIncluded(t)) continue;
           if(!t.ended_at || t.distance_m == null)continue;
           const dist = t.distance_m || 0;
           totalM += dist;

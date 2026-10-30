@@ -1,3 +1,4 @@
+import {reportIncluded,qualityLabel} from './tripQuality.js';
 import { businessDate, rentalStatus, vehicleName } from './business.js';
 
 export const purposeLabel = { business: '업무', commute: '출퇴근', other: '기타', unspecified: '미지정' };
@@ -33,18 +34,18 @@ export function monthDateBounds(ym) {
 
 export function tripReport(trips, { device, info, from, to, filterText = '' }) {
   const rows = trips.map(t => ({
-    start: kstDateTime(t.started_at), end: kstDateTime(t.ended_at) || '운행 중',
+    start: kstDateTime(t.started_at), end: kstDateTime(t.ended_at) || qualityLabel(t),
     minutes: money(t.duration_min), purpose: purposeLabel[t.annotation?.purpose || 'unspecified'],
     origin: t.start_address || coordinates(t.start_lat, t.start_lng),
     destination: t.end_address || coordinates(t.end_lat, t.end_lng),
     originCoord: coordinates(t.start_lat,t.start_lng), destinationCoord: coordinates(t.end_lat,t.end_lng),
     km: t.distance_m == null ? '' : Number((num(t.distance_m) / 1000).toFixed(2)),
     driver: t.annotation?.driver_name || '미지정', liters: money(t.annotation?.fuel_liters),
-    fuel: money(t.annotation?.fuel_cost), note: [t.allocation_note,t.annotation?.purpose_note, t.annotation?.note].filter(Boolean).join(' / '),
+    fuel: money(t.annotation?.fuel_cost), note: [t.quality && qualityLabel(t),!reportIncluded(t)&&'합계 제외',t.allocation_note,t.annotation?.purpose_note, t.annotation?.note].filter(Boolean).join(' / '),
   }));
   return { title: '법인 차량 운행일지', filename: `법인차_운행일지_${vehicleName(device || {})}_${from}_${to}`,
     meta: [info?.company_name, `차량: ${vehicleName(device || {})}`, `기간: ${from} ~ ${to} (한국 시간)`, filterText].filter(Boolean),
-    summary: `${rows.length}건 · 총 ${(trips.reduce((s,t) => s + num(t.distance_m), 0) / 1000).toFixed(2)} km`,
+    summary: `${rows.length}건 · 총 ${(trips.filter(reportIncluded).reduce((s,t) => s + num(t.distance_m), 0) / 1000).toFixed(2)} km`,
     columns: [column('start','출발 일시'),column('end','도착 일시'),column('minutes','운행(분)',true),column('purpose','용무'),column('origin','출발지'),{...column('originCoord','출발 좌표'),pdf:false},column('destination','도착지'),{...column('destinationCoord','도착 좌표'),pdf:false},column('km','거리(km)',true),column('driver','운전자'),column('liters','유류(L)',true),column('fuel','유류비(원)',true),column('note','메모')], rows };
 }
 function coordinates(lat,lng) { return lat == null || lng == null ? '' : `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`; }

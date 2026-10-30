@@ -15,7 +15,7 @@ const STOP_THRESHOLD_M: f64 = 50.0;
 const STOP_THRESHOLD_S: i64 = 5 * 60;
 
 const EARTH_R_M: f64 = 6_371_000.0;
-fn haversine_m(la1: f64, lo1: f64, la2: f64, lo2: f64) -> f64 {
+pub(crate) fn haversine_m(la1: f64, lo1: f64, la2: f64, lo2: f64) -> f64 {
     let to_rad = std::f64::consts::PI / 180.0;
     let dla = (la2 - la1) * to_rad;
     let dlo = (lo2 - lo1) * to_rad;

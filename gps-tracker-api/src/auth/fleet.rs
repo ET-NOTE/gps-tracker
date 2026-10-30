@@ -134,6 +134,8 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
                 ["trips"] => read,
                 ["trip-rules", ..] => read || admin,
                 ["trips", "assign"] => method == Method::POST,
+                ["trips", "evidence"] => method == Method::POST,
+                ["trips", "corrections", ..] => manager,
                 ["trips", "assignment-history"] => read && manager,
                 ["trips", "annotation"] => method == Method::PATCH,
                 ["photo"] => read || admin,

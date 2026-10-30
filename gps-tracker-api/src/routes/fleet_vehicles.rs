@@ -513,6 +513,7 @@ pub(super) async fn allocated_trips(
             result.push(row);
         }
     }
+    super::fleet_trip_quality::overlay(state, owner, vehicle, from, to, &mut result).await?;
     result.sort_by(|a, b| a["started_at"].as_str().cmp(&b["started_at"].as_str()));
     crate::services::fleet_sites::attach_trip_sites(&state.db, owner, &mut result).await?;
     Ok(result)

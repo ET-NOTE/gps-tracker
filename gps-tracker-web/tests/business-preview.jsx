@@ -189,6 +189,19 @@ Object.assign(api,{
  removeExpenseReceipt:async(id,fid)=>expenseReceipts.set(id,expenseReceipts.get(id).filter(f=>f.id!==fid)),
 });
 
+// Round 7: isolated mutable report projection; no requests leave this fixture.
+if(params.has('quality')){
+ let rows=[{started_at:at('09'),ended_at:at('10'),distance_m:12000,duration_min:60,annotation:{purpose:'business',driver_staff_id:1,driver_name:'김영업',fuel_cost:50000},quality:{status:'confirmed',report_included:true,end_basis:'sleep_signal',fix_count:30,gap_count:0}},
+ {started_at:at('11'),ended_at:at('12'),distance_m:0,duration_min:60,annotation:null,quality:{status:'review',report_included:false,end_basis:'sleep_signal',zero_reason:'excluded_segments',fix_count:2,gap_count:1}},
+ {started_at:at('13'),ended_at:null,distance_m:14000,annotation:null,quality:{status:'end_missing',report_included:false,end_basis:'missing',last_fix_at:at('14'),fix_count:10,gap_count:0}}].map(t=>({...t,source_device_id:1,binding_id:100,vehicle_id:100,source_started_at:t.started_at,allocation_status:'assigned'}));
+ let changes=[];
+ api.listFleetVehicleTrips=async()=>rows.map(r=>({...r}));
+ api.tripEvidence=async(id,p)=>{const t=rows.find(t=>t.source_started_at===p.key.trip_started_at);return {trip:t,points:[[t.started_at,37,127],[t.ended_at||at('14'),37.01,127.01]],point_count:2,sampled:false,events:[['wake',t.started_at,null]],gaps:t.quality.gap_count?[{from:t.started_at,to:t.ended_at,seconds:3600}]:[],calculated_distance_m:t.distance_m,method:'GPS 유효 좌표 간 거리. 10분 초과 수신 공백·비정상 이동은 제외합니다.'};};
+ api.correctTrips=async(id,p)=>{const before=rows.filter(t=>p.trips.some(k=>k.trip_started_at===t.source_started_at));let after=before.map(t=>({...t,ended_at:p.ended_at||t.ended_at,distance_m:p.distance_m??t.distance_m,quality:{status:'confirmed',report_included:true,reviewed:true,end_basis:'reviewed'}}));if(p.action==='split')after=[{...after[0],ended_at:p.split_at,distance_m:4000},{...after[0],started_at:p.split_at,source_started_at:p.split_at,distance_m:8000,annotation:null}];if(!p.preview_token)return {before,after,preview_token:'fixture-only',note:'원본 보존 · 변경 이력에서 복원 가능'};const c={id:changes.length+1,action:p.action,reason:p.reason,sources:before,outputs:after,created_at:new Date().toISOString(),actor_name:'검증 관리자'};changes.unshift(c);rows=[...rows.filter(t=>!before.includes(t)),...after.map(t=>({...t,correction_id:c.id}))].sort((a,b)=>a.started_at.localeCompare(b.started_at));return {id:c.id,applied:true};};
+ api.tripCorrectionHistory=async()=>({rows:changes});
+ api.restoreTripCorrection=async(id,cid,p)=>{const c=changes.find(c=>c.id===cid);rows=[...rows.filter(t=>t.correction_id!==cid),...c.sources].sort((a,b)=>a.started_at.localeCompare(b.started_at));Object.assign(c,{reverted_at:new Date().toISOString(),reverted_by_name:'검증 관리자',revert_reason:p.reason});return {restored:true};};
+}
+
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');
