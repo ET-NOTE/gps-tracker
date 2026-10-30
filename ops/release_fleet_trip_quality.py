@@ -38,7 +38,7 @@ if mode=='validate':
   run(['systemd-run','--collect','--unit='+unit,'-p','User=mmm','-p','Group=mmm','-p','EnvironmentFile='+str(validation_env),'-p','WorkingDirectory='+str(stage),'-p','MemoryMax=500M','--setenv=UPLOAD_DIR='+str(stage/'uploads'),'--setenv=PRIVATE_UPLOAD_DIR='+str(stage/'private'),str(stage/'gps-tracker-api')])
   health(True,m['api_release'])
   for script in ('test_fleet_trip_quality.py','test_fleet_trip_assignment.py','test_fleet_expenses.py','test_fleet_sites.py','test_fleet_team.py','test_fleet_assets.py','test_corporate_template.py','test_corporate_coverage.py','test_business_api.py','test_sim_hardware.py','test_sim_first_registration.py'):run(['python3',str(stage/script),str(validation_env),'http://127.0.0.1:3042'])
-  (stage/'validation.json').write_text(json.dumps({'api_sha256':m['api_sha256'],'quality_checks':26,'assignment_checks':25,'expense_checks':25,'fleet_sites_checks':23,'fleet_team_checks':33,'fleet_asset_checks':25,'coverage_checks':8,'business_read_regression':True,'xlsx_template_and_tenant_filters':True,'sim_identity_regressions':True}))
+  (stage/'validation.json').write_text(json.dumps({'api_sha256':m['api_sha256'],'quality_checks':27,'assignment_checks':25,'expense_checks':25,'fleet_sites_checks':23,'fleet_team_checks':33,'fleet_asset_checks':25,'coverage_checks':8,'business_read_regression':True,'xlsx_template_and_tenant_filters':True,'sim_identity_regressions':True}))
  finally:subprocess.run(['systemctl','stop',unit],check=False)
  sys.exit(0)
 assert json.loads((stage/'validation.json').read_text())['api_sha256']==m['api_sha256']

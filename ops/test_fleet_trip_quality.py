@@ -65,8 +65,8 @@ try:
  for minute in [0,5,10]:sql("INSERT INTO location_records(device_id,user_id,source,fix,lat,lng,recorded_at) VALUES(%s,%s,'l80',true,%s,127,%s)",(device,a,37+minute*.001,t0+datetime.timedelta(hours=10,minutes=minute)))
  root=f"/corporate/vehicles/{va['id']}"
  def trips():return call(a,'GET',root+f'/trips?from={day}&to={day}')
- def export_total():
-  blob=call(a,'GET',f"/corporate/report.xlsx?scope=vehicles&type=nts&month=2026-10&vehicle_ids={va['id']}",binary=True)
+ def export_cells(kind='nts'):
+  blob=call(a,'GET',f"/corporate/report.xlsx?scope=vehicles&type={kind}&month=2026-10&vehicle_ids={va['id']}",binary=True)
   with zipfile.ZipFile(io.BytesIO(blob)) as z:
    ns={'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
    strings=[''.join(si.itertext()) for si in ET.fromstring(z.read('xl/sharedStrings.xml')).findall('s:si',ns)]
@@ -74,9 +74,12 @@ try:
    for cell in ET.fromstring(z.read('xl/worksheets/sheet1.xml')).findall('.//s:sheetData/s:row/s:c',ns):
     val=cell.find('s:v',ns)
     if val is not None:cells[cell.attrib['r']]=strings[int(val.text)] if cell.attrib.get('t')=='s' else float(val.text)
-   key=next(k for k,v in cells.items() if isinstance(v,str) and v.startswith('⑪'))
-   expected=sum(round(t['distance_m']/1000,2) for t in trips() if t['quality']['report_included'])
-   return abs(cells['E'+key[1:]]-expected)<.001
+   return cells
+ def export_total():
+  cells=export_cells()
+  key=next(k for k,v in cells.items() if isinstance(v,str) and v.startswith('⑪'))
+  expected=sum(round(t['distance_m']/1000,2) for t in trips() if t['quality']['report_included'])
+  return abs(cells['E'+key[1:]]-expected)<.001
  def key(t):return dict(source_device_id=device,binding_id=bid,trip_started_at=t['source_started_at'])
  ts=trips();assert len(ts)==6,len(ts)
  original=json.loads(json.dumps(ts));raw_count=sql('SELECT count(*) FROM location_records WHERE device_id=%s',(device,));event_count=sql('SELECT count(*) FROM events WHERE device_id=%s',(device,))
@@ -128,10 +131,12 @@ try:
  correction(body([ts[1]],'adjust',ended_at=(t0+datetime.timedelta(hours=3)).isoformat()),expected=400)
  correction(body([ts[1]],'adjust',ended_at=ts[1]['ended_at'],distance_m=-1),expected=400)
  check('correction cannot extend source interval or accept negative distances')
+ call(a,'PATCH',root+'/trips/annotation',dict(key(trips()[-1]),purpose='business',fuel_cost=100))
  # New measurements inside a corrected interval make it unconfirmed, not silently stale.
  sql("INSERT INTO location_records(device_id,user_id,source,fix,lat,lng,recorded_at) VALUES(%s,%s,'l80',true,37.002,127,%s)",(device,a,t0+datetime.timedelta(hours=10,minutes=2)))
  check('late raw evidence marks correction for review',trips()[-1]['quality']['source_changed'] and not trips()[-1]['quality']['report_included'])
  check('XLSX excludes corrections invalidated by late evidence',export_total())
+ check('monthly XLSX retains entered fuel costs despite unconfirmed distance',export_cells('ours')['I5']==12445)
  call(a,'POST',root+f"/trips/corrections/{adjusted['id']}/restore",{'reason':'신규 위치 반영'})
  # Same preview applies once under concurrent requests.
  p=body([trips()[3]]);pr=correction(p)

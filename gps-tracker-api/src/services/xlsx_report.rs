@@ -355,6 +355,10 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         let mut biz_km = 0f64;
         let mut ann_cost = 0i64;
         for t in trips {
+            // Entered costs remain valid even when GPS distance needs review.
+            if let Some(c) = t.fuel_cost_krw {
+                ann_cost += c;
+            }
             if nts_distance(t).is_none() {
                 continue;
             }
@@ -362,9 +366,6 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             total_km += dist_km;
             if t.purpose.as_deref() == Some("business") {
                 biz_km += dist_km;
-            }
-            if let Some(c) = t.fuel_cost_krw {
-                ann_cost += c;
             }
         }
         // 유류비: 사용자 수기 입력 합계 우선, 없으면 자동 추정.

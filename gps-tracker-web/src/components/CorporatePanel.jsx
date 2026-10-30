@@ -1106,6 +1106,10 @@ function MonthlyReportTab({ devices }) {
         let totalM = 0, businessM = 0, personalM = 0;
         let annCostSum = 0, annCostCount = 0;
         for (const t of trips) {
+          if (typeof t.annotation?.fuel_cost === 'number') {
+            annCostSum += t.annotation.fuel_cost;
+            annCostCount++;
+          }
           if(!reportIncluded(t)) continue;
           if(!t.ended_at || t.distance_m == null)continue;
           const dist = t.distance_m || 0;
@@ -1113,10 +1117,6 @@ function MonthlyReportTab({ devices }) {
           const purpose = t.annotation?.purpose || 'unspecified';
           if (BUSINESS_PURPOSES.has(purpose)) businessM += dist;
           else personalM += dist;
-          if (typeof t.annotation?.fuel_cost === 'number') {
-            annCostSum += t.annotation.fuel_cost;
-            annCostCount++;
-          }
         }
         return {
           id: d.id,
