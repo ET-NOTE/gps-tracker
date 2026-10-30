@@ -14,7 +14,11 @@ export function TripEvidence({vehicle,trip,from,to,onClose,onCorrect,canManage})
  const q=trip.quality||{};
  return <Modal open title="운행 근거" size="xl" onClose={onClose} footer={<><BusinessButton onClick={onClose}>닫기</BusinessButton>{canManage&&!trip.correction_id&&trip.allocation_status==='assigned'&&q.status!=='running'&&<BusinessButton primary onClick={onCorrect}>기록 검토·보정</BusinessButton>}</>}><div className="fleet-quality">
  <p><strong>{qualityLabel(trip)}</strong> · {summary(trip)}</p><p className="business-note">{endBasisLabels[q.end_basis]}{q.source_changed?' · 보정 후 원본이 변경됨 · 복원 후 다시 검토해 주세요.':''}</p>
- {zeroLabels[q.zero_reason]&&<p>{zeroLabels[q.zero_reason]}</p>}{error&&<BusinessError>{error}</BusinessError>}{!data&&!error&&<p>GPS 근거를 불러오는 중…</p>}
+ {zeroLabels[q.zero_reason]&&<p>{zeroLabels[q.zero_reason]}</p>}
+ {q.missing_end_count>0&&<p>종료 신호 없이 다시 깨어난 구간 {q.missing_end_count}개 · 운행 구간을 확인해 주세요.</p>}
+ {q.rejected_jump_count>0&&<p>시속 250km를 넘는 좌표 이동 {q.rejected_jump_count}개를 거리에서 제외했습니다.</p>}
+ {trip.ended_at&&new Date(trip.ended_at)-new Date(trip.started_at)>86400000&&<p>24시간을 넘는 기록입니다. 실제 장시간 운행인지 종료 신호 누락인지 확인해 주세요.</p>}
+ {error&&<BusinessError>{error}</BusinessError>}{!data&&!error&&<p>GPS 근거를 불러오는 중…</p>}
  {data&&<><div className="fleet-quality-metrics"><div>유효 좌표<strong>{data.point_count.toLocaleString()}개</strong></div><div>원본 구간 계산<strong>{(data.calculated_distance_m/1000).toFixed(3)} km</strong></div><div>10분 초과 공백<strong>{q.gap_count??data.gaps.length}개</strong></div></div><p className="business-note">{data.method}</p>
  <details><summary>GPS 좌표 {data.sampled?'(일부 대표점)':''}</summary><div className="fleet-quality-scroll"><table><thead><tr><th>수신 시각 (KST)</th><th>위도</th><th>경도</th></tr></thead><tbody>{data.points.map((p,i)=><tr key={i}><td>{kstDateTime(p[0])}</td><td>{p[1].toFixed(6)}</td><td>{p[2].toFixed(6)}</td></tr>)}</tbody></table></div></details>
  <details><summary>기상·절전 신호 ({data.events.length}개{data.events.length===100?' · 최대 100개':''})</summary>{data.events.map((e,i)=><p key={i}>{kstDateTime(e[1])} · {e[0]==='wake'?'기상':'절전 진입'}</p>)}</details>
