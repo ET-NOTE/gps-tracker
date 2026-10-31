@@ -9,7 +9,9 @@ with tarfile.open(stage/'source-final.tar.gz') as t:
  old=t.extractfile('gps-tracker-api/migrations/0064_server_coordinate_speed.sql').read().decode()
  migration=t.extractfile('gps-tracker-api/migrations/0080_location_query_payloads.sql').read().decode()
  metrics=t.extractfile('gps-tracker-api/migrations/0081_location_speed_metrics.sql').read().decode()
+ history_projection=t.extractfile('gps-tracker-api/migrations/0082_location_history_projection.sql').read().decode()
  api_source=t.extractfile('gps-tracker-api/src/routes/devices.rs').read().decode()
+ history_source=t.extractfile('gps-tracker-api/src/routes/locations.rs').read().decode()
 aggregate=re.search(r'"(WITH speed AS MATERIALIZED \(.*?ORDER BY time_bucket\(\$4::text::interval,recorded_at\))",',api_source,re.S).group(1)
 old_aggregate='SELECT jsonb_build_object'+aggregate.split('SELECT jsonb_build_object',1)[1]
 old_aggregate=old_aggregate.replace('FROM speed','FROM location_speed_points_between($1,$5,$2,$3)')
@@ -17,11 +19,13 @@ points='CREATE OR REPLACE FUNCTION location_points_between'+old.split('CREATE OR
 speed='CREATE FUNCTION location_speed_points_between'+old.split('CREATE FUNCTION location_speed_points_between')[1].split('$$;')[0]+'$$;'
 points=points.replace('FUNCTION location_points_between','FUNCTION pg_temp.before_points')
 speed=speed.replace('FUNCTION location_speed_points_between','FUNCTION pg_temp.before_speeds').replace('FROM location_points_between(', 'FROM pg_temp.before_points(')
-checks=0;metrics_checks=0
+checks=0;metrics_checks=0;history_checks=0;key_checks=0;route_checks=0
 with psycopg2.connect(c['DATABASE_URL']) as db:
  try:
   q=db.cursor();q.execute("SET LOCAL jit=off; SET LOCAL statement_timeout='30s'")
   q.execute(points);q.execute(speed);q.execute(migration);q.execute(metrics)
+  # New functions may already exist when this runs against the migrated clone.
+  q.execute(history_projection.replace('CREATE FUNCTION location_sample_keys_between', 'CREATE OR REPLACE FUNCTION location_sample_keys_between'))
   tag=uuid.uuid4().hex
   q.execute("INSERT INTO users(email,password_hash,phone) VALUES(%s,'','01000000000'),(%s,'','01000000000') RETURNING id",(tag+'@query.invalid',tag+'b@query.invalid'));a,b=[v[0] for v in q.fetchall()]
   q.execute("INSERT INTO devices(device_uid,owner_id,api_key_hash) VALUES(%s,%s,'') RETURNING id",('query-'+tag,a));did=q.fetchone()[0]
@@ -42,6 +46,26 @@ with psycopg2.connect(c['DATABASE_URL']) as db:
   rows.append((did,a,start+dt.timedelta(days=40),'lte_gnss',False,None,None,None,'{}',json.dumps([{'at_ms':-40*86400000+20000,'lat':36,'lng':128}])))
   for i,v in enumerate(('[]','{}','null')):rows.append((did,a,start+dt.timedelta(seconds=30+i),'empty',False,None,None,None,'{}',v))
   execute_values(q,'INSERT INTO location_records(device_id,user_id,recorded_at,source,fix,lat,lng,sat,raw,fixes_jsonb) VALUES %s',rows)
+  route_queries=re.findall(r'"(WITH [\s\S]*?)"\s*,?\s*\)',history_source)
+  assert len(route_queries)==3
+  def route_values(query,args):
+   query=re.sub(r'\$(\d+)',lambda m:q.mogrify('%s',(args[int(m[1])-1],)).decode(),query)
+   q.execute('SELECT to_jsonb(p) FROM ('+query+') p');return [r[0] for r in q.fetchall()]
+  for index,query in enumerate(route_queries):
+   old_query=query.replace('location_sample_keys_between(','location_points_between(').replace('location_history_points_between(','location_speed_points_between(').replace('p.cbc_mv',"(p.raw->>'cbc_mv')::int AS cbc_mv")
+   args_list=[[did,a]] if index==0 else []
+   if index==1:
+    for source_filter in (None,'l80','phone','missing'):
+     for fix_filter in (None,True,False):
+      for before in (None,start+dt.timedelta(seconds=60)):
+       args_list.append([did,a,start,start+dt.timedelta(hours=1),start+dt.timedelta(hours=1),source_filter,fix_filter,before,'phone' if before else None,18])
+   if index==2:
+    for source_filter in (None,'l80','phone','missing'):
+     for fix_filter in (None,True,False):
+      for limit in (1,17):args_list.append([did,a,start,start+dt.timedelta(hours=1),source_filter,fix_filter,limit])
+   for args in args_list:
+    assert route_values(old_query,args)==route_values(query,args),(index,args[2:])
+    route_checks+=1
   windows=[(None,None),(start,start),(start,start+dt.timedelta(hours=1)),(None,start),(start,None),(start-dt.timedelta(seconds=12),start+dt.timedelta(seconds=17)),(start+dt.timedelta(days=2),start+dt.timedelta(days=3)),(start+dt.timedelta(seconds=20),start+dt.timedelta(seconds=15))]
   for owner in (a,b):
    for lo,hi in windows:
@@ -53,6 +77,12 @@ with psycopg2.connect(c['DATABASE_URL']) as db:
     q.execute("SELECT to_jsonb(p)-'raw' FROM location_speed_points_between(%s,%s,%s,%s) p ORDER BY recorded_at,source",(did,owner,lo,hi));full=[r[0] for r in q.fetchall()]
     assert full==values('location_speed_metrics_between')
     metrics_checks+=1
+    q.execute("SELECT (to_jsonb(p)-'raw') || jsonb_build_object('cbc_mv',(raw->>'cbc_mv')::int) FROM location_speed_points_between(%s,%s,%s,%s) p ORDER BY recorded_at,source",(did,owner,lo,hi))
+    assert [r[0] for r in q.fetchall()]==values('location_history_points_between')
+    history_checks+=1
+    q.execute('SELECT recorded_at,source,fix,anchor_at FROM location_points_between(%s,%s,%s,%s) ORDER BY recorded_at,source',(did,owner,lo,hi));expected=q.fetchall()
+    q.execute('SELECT * FROM location_sample_keys_between(%s,%s,%s,%s) ORDER BY recorded_at,source',(did,owner,lo,hi))
+    assert expected==q.fetchall();key_checks+=1
   # Late insertion and deletion must affect subsequent speeds immediately.
   q.execute("INSERT INTO location_records(device_id,user_id,recorded_at,source,fix,lat,lng,sat,raw) VALUES(%s,%s,%s,'l80',true,35.0001,127,12,'{}')",(did,a,start+dt.timedelta(seconds=22)))
   q.execute("DELETE FROM location_records WHERE device_id=%s AND source='l80' AND recorded_at=%s",(did,start+dt.timedelta(seconds=60)))
@@ -83,5 +113,5 @@ with psycopg2.connect(c['DATABASE_URL']) as db:
      # Floating SUM/AVG can differ only in the last binary rounding bit.
      assert (math.isclose(x[key],y[key],rel_tol=1e-12,abs_tol=1e-12) if isinstance(x[key],float) and isinstance(y[key],(int,float)) else x[key]==y[key]),(interval,key,x[key],y[key])
    aggregate_checks+=1
-  print(json.dumps({'query_equivalence_checks':checks,'aggregate_equivalence_checks':aggregate_checks,'metrics_equivalence_checks':metrics_checks,'raw_payloads_and_metadata':True,'owner_and_source_isolation':True,'far_anchor_batches':True,'empty_invalid_batches':True,'null_inclusive_and_reverse_windows':True,'late_insert_delete':True}))
+  print(json.dumps({'query_equivalence_checks':checks,'aggregate_equivalence_checks':aggregate_checks,'metrics_equivalence_checks':metrics_checks,'history_projection_checks':history_checks,'sample_key_checks':key_checks,'history_route_checks':route_checks,'raw_payloads_and_metadata':True,'owner_and_source_isolation':True,'far_anchor_batches':True,'empty_invalid_batches':True,'null_inclusive_and_reverse_windows':True,'late_insert_delete':True}))
  finally:db.rollback()

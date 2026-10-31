@@ -28,6 +28,9 @@ export async function collectAggregates(fetchWindow, bucket, since, until, signa
   if (!interval || !Number.isFinite(start) || !Number.isFinite(end) || end <= start || end-start > 366*86400000) {
     throw new Error('조회 기간을 확인해 주세요.');
   }
+  if (bucket === '1m' && end-start > 31*86400000) {
+    throw new Error('1분 요약은 최대 31일까지 조회할 수 있습니다. 더 긴 기간은 5분 또는 1시간 요약을 선택해 주세요.');
+  }
   const rows = [];
   while (start < end) {
     signal?.throwIfAborted();
@@ -35,6 +38,18 @@ export async function collectAggregates(fetchWindow, bucket, since, until, signa
     const next = Math.min(end, Math.floor(start/interval)*interval + interval*2000);
     const page = await fetchWindow(new Date(start).toISOString(), new Date(next).toISOString());
     signal?.throwIfAborted();
+    // Reject malformed/overlapping responses instead of rendering a plausible
+    // but incomplete route. The first bucket can start before a partial window.
+    const firstBucket = Math.floor(start/interval)*interval;
+    let previous = -Infinity;
+    if (!Array.isArray(page) || page.length > 2000 || rows.length + page.length > 120000 || page.some(row => {
+      const at = Date.parse(row?.bucket);
+      const invalid = !Number.isFinite(at) || at % interval !== 0 || at < firstBucket || at >= next || at <= previous;
+      previous = at;
+      return invalid;
+    })) {
+      throw new Error('요약 이력을 모두 확인하지 못했습니다. 조회 기간을 줄여 다시 시도해 주세요.');
+    }
     rows.push(...page);
     start = next;
   }
