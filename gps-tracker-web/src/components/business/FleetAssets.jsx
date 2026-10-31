@@ -9,7 +9,8 @@ import BusinessDrawer from './BusinessDrawer';
 import {fleetDistance} from '../../lib/corporateOverview';
 import {useBusinessClock} from './useBusinessData';
 import {kstDateTime} from '../../lib/businessExport';
-import {projectFleetAssets} from '../../lib/fleetAssets';
+import {projectFleetAssets,fleetAssetLabel} from '../../lib/fleetAssets';
+import {emptyAssetFilters,filterFleetAssets,assetFilterError,assetOdometer,assetRegistrationDay} from '../../lib/fleetAssetFilters';
 import {classifyDevice,ageString} from '../../colors';
 import {deviceBattery} from '../../lib/battery';
 import BatteryStatus from '../BatteryStatus';
@@ -21,23 +22,34 @@ export {projectFleetAssets} from '../../lib/fleetAssets';
 export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport}) {
   const access=useFleetAccess();
   const [edit,setEdit]=useState(null),[detail,setDetail]=useState(null),[query,setQuery]=useState(''),[status,setStatus]=useState('all'),[sort,setSort]=useState('name');
+  const [filters,setFilters]=useState({...emptyAssetFilters});
+  const filterError=assetFilterError(filters);
+  const advancedActive=Object.keys(emptyAssetFilters).some(key=>filters[key]!==emptyAssetFilters[key]);
+  const filtered=advancedActive||query.trim()||status!=='all';
+  const reset=()=>{setQuery('');setStatus('all');setSort('name');setFilters({...emptyAssetFilters});};
+  const changeFilter=(key,value)=>setFilters(f=>({...f,[key]:value,...(key==='distance'&&value==='missing'?{minKm:'',maxKm:''}:{})}));
   const {data:staff=[]}=useStaff();
   const selected=assets.find(v=>v.id===detail);
-  const rows=useMemo(()=>assets.filter(v=>(status==='all'||v.enabled===(status==='enabled'))&&[v.name,v.license_plate,v.department,staff.find(s=>s.id===v.manager_staff_id)?.name,...v.bindings.map(b=>b.terminal_name)].some(s=>String(s||'').toLowerCase().includes(query.trim().toLowerCase())))
-    .sort((a,b)=>sort==='created'?new Date(b.created_at)-new Date(a.created_at):a.name.localeCompare(b.name,'ko',{numeric:true})),[assets,query,status,sort,staff]);
+  const rows=useMemo(()=>filterFleetAssets(assets,{query,status,sort,...filters},staff),[assets,query,status,sort,filters,staff]);
   const saved=()=>{setEdit(null);onChanged();};
   return <>
     <div className="business-metrics fleet-asset-metrics">{[['등록 차량',assets.length],['사용 가능',assets.filter(v=>v.enabled).length],['사용 정지',assets.filter(v=>!v.enabled).length]].map(([label,n])=><div className="business-metric" key={label}><span>{label}</span><strong>{n}<small>대</small></strong></div>)}</div>
     <section className="business-section"><div className="business-section-title"><h3>차량 목록</h3>{access.manage_vehicles&&<button className="business-button is-primary" onClick={()=>setEdit({})}>+ 차량 등록</button>}</div>
-      <div className="business-list-filters"><input aria-label="등록 차량 검색" placeholder="차량·단말기 검색" value={query} onChange={e=>setQuery(e.target.value)}/><select aria-label="등록 차량 상태" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">전체 상태</option><option value="enabled">사용 가능</option><option value="disabled">사용 정지</option></select><select aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}><option value="name">차량 이름순</option><option value="created">최근 등록순</option></select></div>
+      <div className="business-list-filters"><input aria-label="등록 차량 검색" placeholder="차량·단말기·부서·담당자" value={query} onChange={e=>setQuery(e.target.value)}/><select aria-label="등록 차량 상태" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">전체 상태</option><option value="enabled">사용 가능</option><option value="disabled">사용 정지</option></select><select aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}><option value="name">차량 이름순</option><option value="created">최근 등록순</option><option value="distanceAsc">계기판 거리 낮은순</option><option value="distanceDesc">계기판 거리 높은순</option></select></div>
+      <details className="fleet-asset-filters"><summary>거리·등록일 필터{advancedActive&&<span className="business-badge">적용 중</span>}</summary><div className="fleet-asset-filter-grid">
+        <fieldset><legend>계기판 누적거리 (km)</legend><select aria-label="계기판 거리 등록 여부" value={filters.distance} onChange={e=>changeFilter('distance',e.target.value)}><option value="all">전체</option><option value="recorded">거리 등록</option><option value="missing">거리 미등록</option></select><div className="fleet-asset-range">{[['minKm','최소 거리'],['maxKm','최대 거리']].map(([key,label])=><label key={key}>{label}<input aria-label={label} type="number" min="0" max="10000000" step="any" placeholder="제한 없음" disabled={filters.distance==='missing'} value={filters[key]} onChange={e=>changeFilter(key,e.target.value)}/></label>)}</div><p>직접 입력한 계기판 값 기준입니다. 거리 범위를 지정하면 미등록 차량은 제외됩니다.</p></fieldset>
+        <fieldset><legend>차량 등록일 (한국 시간)</legend><div className="fleet-asset-range">{[['from','등록 시작일'],['to','등록 종료일']].map(([key,label])=><label key={key}>{label}<input aria-label={label} type="date" value={filters[key]} onChange={e=>changeFilter(key,e.target.value)}/></label>)}</div><p>시작일과 종료일을 모두 포함합니다.</p></fieldset>
+      </div></details>
+      <div className="fleet-asset-filter-result"><span role="status">{filterError?'조회 조건을 확인해 주세요.':`${rows.length} / ${assets.length}대${filtered?' · 필터 적용':''}`}</span>{(filtered||sort!=='name')&&<button className="business-button" onClick={reset}>필터 초기화</button>}</div>
+      {filterError&&<p className="fleet-asset-filter-error" role="alert">{filterError}</p>}
       <div className="fleet-asset-table-wrap"><table className="fleet-asset-table"><thead><tr>{['차량','부서·담당자','연결 단말기','계기판 거리','등록일','상태','작업'].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map(v=><tr key={v.id}>
-        <td><button className="business-link" onClick={()=>setDetail(v.id)}>{v.name}</button><small>{v.license_plate||'차량번호 미등록'}</small></td>
+        <td><button className="business-link" aria-label={`${fleetAssetLabel(v)} 상세`} onClick={()=>setDetail(v.id)}>{v.name||'차량 정보 미등록'}</button><small>{v.license_plate||'차량번호 미등록'}</small></td>
         <td>{v.department||'—'}<small>{staff.find(s=>s.id===v.manager_staff_id)?.name||'담당자 미지정'}</small></td>
         <td>{v.bindings.length?v.bindings.map(b=><div key={b.id}>{b.terminal_name}{b.is_primary&&<span className="business-badge">대표</span>}</div>):'미연결'}</td>
-        <td className="is-number">{v.profile.odometer_km==null?'미등록':`${Number(v.profile.odometer_km).toLocaleString()} km`}</td><td>{kstDateTime(v.created_at).slice(0,10)}</td>
+        <td className="is-number">{assetOdometer(v)==null?'미등록':`${assetOdometer(v).toLocaleString()} km`}</td><td>{assetRegistrationDay(v.created_at)||'미등록'}</td>
         <td><span className={`business-badge ${v.enabled?'good':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span></td>
         <td><button className="business-button" onClick={()=>setDetail(v.id)}>상세·연결</button>{access.manage_vehicles&&<button className="business-button" onClick={()=>setEdit(v)}>수정</button>}</td>
-      </tr>)}</tbody></table></div>{!rows.length&&<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>단말기는 나중에 연결할 수 있습니다.</p></div>}
+      </tr>)}</tbody></table></div>{!rows.length&&!filterError&&<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>{assets.length?'검색어나 필터를 변경해 주세요.':'단말기는 나중에 연결할 수 있습니다.'}</p></div>}
     </section>
     {edit&&<FleetAssetForm asset={edit} staff={staff} onClose={()=>setEdit(null)} onSaved={saved}/>}
     {selected&&<FleetAssetDetail meta={meta[selected.id]} asset={selected} devices={devices} onClose={()=>setDetail(null)} onChanged={onChanged} onEdit={()=>{setDetail(null);setEdit(selected);}} onMap={onMap} onReport={onReport}/>}

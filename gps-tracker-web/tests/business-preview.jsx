@@ -106,6 +106,7 @@ if(params.has('feedback')) {
 }
 // Independent vehicle IDs deliberately differ from SIM IDs in this fixture.
 let assets=devices.map((d,i)=>({id:100+i,owner_id:1,name:`업무 차량 ${i+1}`,license_plate:d.license_plate||d.car_plate,car_model:d.car_model,department:d.department,enabled:d.enabled,profile:{next_service_date:d.next_service_date,insurance_expiry:d.insurance_expiry},created_at:new Date(now-86400000).toISOString(),updated_at:new Date(now).toISOString(),bindings:[{id:i+1,device_id:d.id,terminal_name:d.display_name,is_primary:true,started_at:'2020-01-01T00:00:00Z'}]}));
+if(params.has('asset-filters')) assets=assets.map((v,i)=>({...v,profile:{...v.profile,odometer_km:[0,12000.5,null,75000][i]},created_at:['2026-10-01T15:00:00Z','2026-10-15T14:59:59Z','2026-10-15T15:00:00Z','2026-09-30T00:00:00Z'][i],...(i===0?{name:'차량 정보 미등록',license_plate:''}:{})}));
 let fleetBookings=reservations.map(r=>({...r,vehicle_id:99+r.device_id,vehicle_name:`업무 차량 ${r.device_id}`}));
 Object.assign(api,{
  listFleetVehicles:()=>read(assets.map(v=>({...v})))(),

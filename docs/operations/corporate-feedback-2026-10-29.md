@@ -288,6 +288,13 @@ GPS 단계의 남은 작업을 우선 완료한 후 Shield로 이동한다. 이�
 
 배포: `fleet-completion-20261031-r1`, 최종 웹/소스 `ae52e9c2b59a88237da9686f68c47416bd769f93`. API 빌드 `7a84d8ef2a5e1b5ff131d060b3d68f64d01cca69`와 최종 소스의 API 트리 `091d414f9df51905fc9a155468d7d310bcfe30e0`는 동일하다. API SHA256 `4cc5b2b46897dfc1b8bd275344ce97b9a4818b931e0ae2c7bddc041498342986`. 스키마 81로 변경 없음. 전체 DB 백업 `/home/mmm/backups/fleet-completion-20261031-r1/database.dump` (15,189,640바이트, Timescale TABLE DATA 62개). 전체 웹 해시·SPA/진단 페이지·health/DB·마이그레이션 체크섬 확인. 운영 env/nginx와 dev-gps·Shield 배포/프로세스는 동일하다. 운영 일괄 등록 감사/지출/보정 각 0건, 신규 API ERROR/panic 0건, 가용 공간 약 4.54GB. APK 변경 없음. 증빙 `C:/Users/msb/AppData/Local/GPS-Builds/fleet-completion-20261031/`, 운영 화면 `production-csv-preview.png`.
 
+## 11차 — 차량 필터·식별 표시·안내 정리 (진행 중)
+
+- [x] 계기판 누적거리 범위/등록 여부 및 차량 등록 기간(KST 양끝 포함) 필터. 미등록을 0km와 구분하고 잘못된 범위 안내·조건 초기화·거리 정렬 제공.
+- [x] 사용자별 운행 가능 차량의 선택/목록에 차량번호 또는 대표 단말명 표시. 지점 차량 선택과 같은 공통 이름 함수 사용.
+- [x] 내정보의 법인 메뉴/사용자 명칭과 렌터카 일정 명칭을 현재 화면에 맞춤. 지도 이력 모드를 `이동 기록 보기`로 표시하여 로딩과 구분.
+- [ ] 전체 웹 회귀·PC/모바일·운영 검수 후 웹만 배포. API/DB·SIM 원장·인증·APK는 변경하지 않음.
+
 ## GPS 단계의 남은 작업 — 10차 기준
 
 Shield 착수 전에 아래 목록을 다시 대조한다. 과거 라운드의 ‘후속’ 문구만으로 완료를 판정하지 않는다.

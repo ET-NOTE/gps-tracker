@@ -41,7 +41,7 @@ export default function MapTopOverlay({ devices, selected, onSelect, mapRef, onO
             <span className="map-live-state" data-moving={motion.moving}>{motion.label}</span>
             <span className="map-live-age">{ageText ? `위치 ${ageText}` : '위치 수신 전'}</span>
           </div>
-        </div> : device && <div className="map-view-mode">{historyMode ? '이동 기록 조회 중' : '지도 탐색 중 · 자동 추적 꺼짐'}</div>}
+        </div> : device && <div className="map-view-mode">{historyMode ? '이동 기록 보기' : '지도 탐색 중 · 자동 추적 꺼짐'}</div>}
         {device?.license_plate && <div className="map-live-plate">{device.license_plate}</div>}
       </div>}
       {notice && <div className="map-cache-notice" role="status">{notice}</div>}

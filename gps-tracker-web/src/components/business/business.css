@@ -517,3 +517,20 @@
 .business-list-filters>input[aria-label="등록 차량 검색"]{flex:1 1 240px;max-width:400px;min-width:0;min-height:42px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;color:var(--text);background:var(--surface);font:inherit;font-size:13px;box-sizing:border-box}
 .business-list-filters>input[aria-label="등록 차량 검색"]:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .fleet-asset-table th:nth-child(4){text-align:right}.fleet-asset-table :is(th,td):nth-child(6){text-align:center}.fleet-asset-table :is(th,td):last-child{text-align:right}
+
+.fleet-asset-filters{margin:0 20px;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.fleet-asset-filters summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--text)}
+.fleet-asset-filters summary .business-badge{margin-left:8px}
+.fleet-asset-filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:16px}
+.fleet-asset-filter-grid fieldset{border:0;padding:0;margin:0;min-width:0}
+.fleet-asset-filter-grid legend{font-size:13px;font-weight:600;margin-bottom:10px;padding:0}
+.fleet-asset-filter-grid :is(input,select){box-sizing:border-box;min-width:0;width:100%;max-width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.fleet-asset-filter-grid input:disabled{opacity:.55}
+.fleet-asset-filter-grid :is(input,select):focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.fleet-asset-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.fleet-asset-range label{display:grid;gap:6px;min-width:0;font-size:12px;color:var(--text-2)}
+.fleet-asset-filter-grid p{font-size:12px;line-height:1.6;color:var(--text-3);margin:8px 0 0}
+.fleet-asset-filter-result{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 20px;font-size:13px;color:var(--text-2)}
+.fleet-asset-filter-error{margin:0;padding:0 20px 14px;color:var(--danger,#b91c1c);font-size:13px}
+@media(max-width:700px){.fleet-asset-filters{margin:0 12px;padding:12px}.fleet-asset-filter-grid{grid-template-columns:minmax(0,1fr);gap:18px}.fleet-asset-filter-result{padding:12px}.fleet-asset-filter-error{padding:0 12px 12px}}
+@media(max-width:360px){.fleet-asset-range{grid-template-columns:minmax(0,1fr)}}

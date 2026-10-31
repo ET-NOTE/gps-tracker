@@ -251,7 +251,7 @@ function CleanupCard() {
       const r = await api.cleanupMe({ password: pw, ...opts });
       const lines = [];
       if (r.corporate_info_deleted   != null) lines.push(`회사 정보: ${r.corporate_info_deleted}건 삭제`);
-      if (r.staff_deleted            != null) lines.push(`직원 명단: ${r.staff_deleted}명 삭제`);
+      if (r.staff_deleted            != null) lines.push(`사용자 명단: ${r.staff_deleted}명 삭제`);
       if (r.device_overrides_cleared != null) lines.push(`단말기별 유형 설정: ${r.device_overrides_cleared}대 정리`);
       await alertDialog({ title: '정리 완료', body: lines.join('\n'), tone: 'success' });
       setOpen(false); setPw('');
@@ -266,7 +266,7 @@ function CleanupCard() {
       {!open ? (
         <>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
-            회사 정보, 운전자 명단, 단말기별 유형 설정을 선택해 정리합니다.
+            회사 정보, 사용자 명단, 단말기별 유형 설정을 선택해 정리합니다.
           </div>
           <button onClick={() => setOpen(true)} style={st.btnSecondary}>정리 메뉴 열기</button>
         </>
@@ -281,8 +281,8 @@ function CleanupCard() {
           <CheckRow
             checked={opts.staff}
             onChange={v => setOpts(o => ({ ...o, staff: v }))}
-            label="직원 명단"
-            desc="운전자를 모두 삭제하고 운행 기록의 운전자 연결을 해제합니다. 운행 기록은 유지됩니다."
+            label="사용자 명단"
+            desc="사용자 명단을 삭제하고 운행 기록의 운전자 연결을 해제합니다. 운행 기록은 유지됩니다."
           />
           <CheckRow
             checked={opts.device_overrides}
@@ -331,8 +331,8 @@ function CheckRow({ checked, onChange, label, desc }) {
 // 유형마다 특화 메뉴 (예: corporate_fleet → 법인운행 리포트) 가 활성화됨.
 const TYPE_META = {
   unspecified:     { label: '기본 차량 관리', icon: 'mapPin', desc: '개인 차량의 위치와 단말기 상태를 확인해요.', menus: '홈 지도 · 단말기 · 내정보' },
-  rentcar:         { label: '렌트카 운영', icon: 'route', desc: '대여 계약, 출고·반납, 임차인과 계약 사진을 관리해요.', menus: '운영 현황 · 계약 관리 · 배차표 · 임차인' },
-  corporate_fleet: { label: '법인차 운영', icon: 'list', desc: '회사 차량을 예약하고 운전자·용무·주유비를 기록해요.', menus: '운영 현황 · 차량 예약 · 운행 리포트 · 운전자' },
+  rentcar:         { label: '렌트카 운영', icon: 'route', desc: '대여 계약, 출고·반납, 임차인과 계약 사진을 관리해요.', menus: '운영 현황 · 계약 관리 · 배차·반납 일정 · 임차인' },
+  corporate_fleet: { label: '법인차 운영', icon: 'list', desc: '차량·사용자·지점과 운행기록·지출을 관리해요.', menus: '운영 현황 · 차량 · 사용자 · 지점 · 운행 · 지출' },
   delivery:        { label: '배달 운영', icon: 'mapPin', desc: '차량의 운행 현황을 확인해요. 배차·성과 기능은 준비 중이에요.', menus: '오늘 배송 · 경로·성과(준비 중)' },
 };
 

@@ -1,10 +1,5 @@
 import {loadKakaoMaps} from './kakaoSdk.js';
-export function siteVehicleLabel(vehicle){
- const name=vehicle.name?.trim(),plate=vehicle.license_plate?.trim();
- if(plate)return [...new Set([name,plate].filter(Boolean))].join(' · ');
- const terminal=vehicle.bindings?.find(b=>b.is_primary)?.terminal_name;
- return `${name||'차량 정보 미등록'} · ${terminal?`단말: ${terminal}`:`차량 ${vehicle.id}`}`;
-}
+export {fleetAssetLabel as siteVehicleLabel} from './fleetAssets.js';
 export const visitStatus={inside:'구역 내 확인',stale:'이탈 미확인 · 수신 공백',exit:'이탈 확인',gap:'수신 공백으로 구간 종료',binding_end:'단말기 연결 종료',configuration:'구역 설정 변경'};
 export function visitDuration(seconds){const n=Math.max(0,Number(seconds)||0);return n<60?'1분 미만':n<3600?`${Math.floor(n/60)}분`:`${Math.floor(n/3600)}시간 ${Math.floor(n%3600/60)}분`;}
 export function siteShape(g){return g?.type==='circle'?`반경 ${g.radius_m>=1000?`${g.radius_m/1000}km`:`${g.radius_m}m`}`:`영역 · ${g?.points?.length||0}개 꼭짓점`;}

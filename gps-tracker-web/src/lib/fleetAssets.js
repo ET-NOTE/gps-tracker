@@ -1,3 +1,10 @@
+export function fleetAssetLabel(vehicle) {
+  const name = vehicle.name?.trim(), plate = vehicle.license_plate?.trim();
+  if (plate) return [...new Set([name, plate].filter(Boolean))].join(' · ');
+  const terminal = vehicle.bindings?.find(b => b.is_primary)?.terminal_name;
+  return `${name || '차량 정보 미등록'} · ${terminal ? `단말: ${terminal}` : `차량 ${vehicle.id}`}`;
+}
+
 export function projectFleetAssets(assets=[],devices=[]) {
   return assets.map(asset=>{
     const primary=asset.bindings.find(b=>b.is_primary),sim=devices.find(d=>d.id===primary?.device_id);
