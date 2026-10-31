@@ -210,6 +210,13 @@ if(params.has('quality')){
  api.restoreTripCorrection=async(id,cid,p)=>{const c=changes.find(c=>c.id===cid);rows=[...rows.filter(t=>t.correction_id!==cid),...c.sources].sort((a,b)=>a.started_at.localeCompare(b.started_at));Object.assign(c,{reverted_at:new Date().toISOString(),reverted_by_name:'검증 관리자',revert_reason:p.reason});return {restored:true};};
 }
 
+if (params.has('monthly-edge')) {
+  api.listFleetVehicleTrips=async id=>id===101?[]:[{
+    started_at:at('09'),ended_at:at('10'),distance_m:id===100?70:0,
+    annotation:null,quality:{report_included:true},
+  },{started_at:at('11'),ended_at:at('12'),distance_m:9000,quality:{report_included:false}}];
+}
+
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');

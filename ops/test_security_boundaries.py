@@ -23,6 +23,11 @@ env=dict(line.split('=',1) for line in Path(env_path).read_text().splitlines() i
 env={k:v.strip().strip('"').strip("'") for k,v in env.items()}
 assert urllib.parse.urlsplit(env['DATABASE_URL']).path=='/gps_tracker_dev_prodreview_20261020'
 assert not env.get('FCM_SERVICE_ACCOUNT_PATH') and env.get('GPS_KC_INGEST_ENABLED')=='0'
+# This suite waits 25 seconds for failure isolation. Performance clones may
+# retain the production 300-second interval; reject that setup before writes.
+# The clone API must be restarted with this same environment file.
+assert 5 <= int(env.get('GPS_STATS_POLL_SECONDS', '300')) <= 10, \
+ 'Security regression requires clone GPS_STATS_POLL_SECONDS=5..10 and an API restart with that environment'
 db=psycopg2.connect(env['DATABASE_URL']);db.autocommit=True;c=db.cursor()
 run=uuid.uuid4().hex;api='/gps-tracker/api/v1';users=[];devices=[];paths=[];streams=[]
 started=time.monotonic()

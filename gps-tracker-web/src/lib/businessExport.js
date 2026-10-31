@@ -1,3 +1,4 @@
+import {monthlyStatus,monthlyDistance,monthlyExportDistance} from './monthlySummary.js';
 import {reportIncluded,qualityLabel} from './tripQuality.js';
 import { businessDate, rentalStatus, vehicleName } from './business.js';
 import { ntsReportPdfDefinition } from './ntsReportPdf.js';
@@ -80,9 +81,9 @@ export function invoiceReport(c) {
 }
 
 export function monthlyReport(rows, { month, estimateFuelCost, estimateDepreciation }) {
-  return { title:'법인차 월간 요약',filename:`법인차_월간요약_${month}`,meta:[`대상 월: ${month} (한국 시간)`, '현재 선택한 부서 기준 · 유류비와 감가상각은 추정값입니다.'],summary:`차량 ${rows.length}대 · 총 ${rows.reduce((s,r)=>s+num(r.totalKm),0).toFixed(2)} km`,
-    columns:[column('vehicle','차량'),column('department','부서'),column('total','전체(km)',true),column('business','업무(km)',true),column('personal','기타·미지정(km)',true),column('fuel','유류비(원)',true),column('depreciation','감가상각(원)',true)],
-    rows:rows.map(r=>({vehicle:r.license_plate || r.label,department:r.department || '부서 없음',total:Number(r.totalKm.toFixed(2)),business:Number(r.businessKm.toFixed(2)),personal:Number(r.personalKm.toFixed(2)),fuel:estimateFuelCost(r),depreciation:estimateDepreciation(r)})) };
+  return { title:'법인차 월간 요약',filename:`법인차_월간요약_${month}`,meta:[`대상 월: ${month} (한국 시간)`, '현재 선택한 부서 기준 · 유류비와 감가상각은 추정값입니다.', '확정 운행만 거리 합계에 포함합니다. 미확정 거리와 입력 주유비는 별도로 관리합니다.'],summary:`차량 ${rows.length}대 · 총 ${monthlyDistance(rows.reduce((s,r)=>s+num(r.totalKm),0),rows.reduce((s,r)=>s+(r.includedCount??1),0))} km`,
+    columns:[column('vehicle','차량'),column('department','부서'),{...column('status','집계 상태'),pdfWidth:130},column('total','전체(km)',true),column('business','업무(km)',true),column('personal','기타·미지정(km)',true),column('fuel','유류비(원)',true),column('depreciation','감가상각(원)',true)],
+    rows:rows.map(r=>({vehicle:r.license_plate || r.label,department:r.department || '부서 없음',status:monthlyStatus(r),total:monthlyExportDistance(r.totalKm,r.includedCount),business:monthlyExportDistance(r.businessKm,r.includedCount),personal:monthlyExportDistance(r.personalKm,r.includedCount),fuel:estimateFuelCost(r),depreciation:estimateDepreciation(r)})) };
 }
 
 // RFC 4180 quoting + BOM for Excel. Untrusted text must never become a formula.

@@ -1,3 +1,4 @@
+import {summarizeMonthlyTrips,monthlyDistance,monthlyPercentages,monthlyStatus} from '../lib/monthlySummary';
 import FleetIncompleteTrips from './business/FleetIncompleteTrips';
 import {tripNeedsDetails} from '../lib/incompleteTrips';
 import TripQualitySummary from './business/TripQualitySummary';
@@ -1061,7 +1062,6 @@ let FUEL_PRICE_KRW = { ...DEFAULT_FUEL_PRICE_KRW };
 const FUEL_LABEL = {
   gasoline: '휘발유', diesel: '경유', lpg: 'LPG', ev: '전기',
 };
-const BUSINESS_PURPOSES = new Set(['business','commute']);
 
 function ymKST(d = new Date()) {
   const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
@@ -1109,21 +1109,6 @@ function MonthlyReportTab({ devices }) {
       if (cancelled) return;
       const out = reportDevices.map((d, i) => {
         const trips = perDevice[i] || [];
-        let totalM = 0, businessM = 0, personalM = 0;
-        let annCostSum = 0, annCostCount = 0;
-        for (const t of trips) {
-          if (typeof t.annotation?.fuel_cost === 'number') {
-            annCostSum += t.annotation.fuel_cost;
-            annCostCount++;
-          }
-          if(!reportIncluded(t)) continue;
-          if(!t.ended_at || t.distance_m == null)continue;
-          const dist = t.distance_m || 0;
-          totalM += dist;
-          const purpose = t.annotation?.purpose || 'unspecified';
-          if (BUSINESS_PURPOSES.has(purpose)) businessM += dist;
-          else personalM += dist;
-        }
         return {
           id: d.id,
           label: reportVehicleLabel(d),
@@ -1138,11 +1123,7 @@ function MonthlyReportTab({ devices }) {
           acquired_at:        d.acquired_at,
           department:         d.department,
           vehicle_type:       d.vehicle_type,
-          totalKm:    totalM / 1000,
-          businessKm: businessM / 1000,
-          personalKm: personalM / 1000,
-          annotationCost: annCostSum,           // 사용자가 직접 입력한 비용 합계 (있으면 우선)
-          annotationCount: annCostCount,
+          ...summarizeMonthlyTrips(trips),
         };
       });
       setRows(out); setLoading(false);
@@ -1168,19 +1149,20 @@ function MonthlyReportTab({ devices }) {
   // fleet 총계 — stat card 5개. (부서 필터 적용된 filteredRows 사용)
   const totals = useMemo(() => {
     const use = filteredRows || rows;
-    if (!use) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0, depreciation: 0 };
-    let totalKm = 0, businessKm = 0, personalKm = 0, fuelCost = 0, depreciation = 0;
+    if (!use) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0, depreciation: 0, includedCount: 0, excludedCount: 0 };
+    let totalKm = 0, businessKm = 0, personalKm = 0, fuelCost = 0, depreciation = 0, includedCount = 0, excludedCount = 0;
     for (const r of use) {
+      includedCount += r.includedCount; excludedCount += r.excludedCount;
       totalKm    += r.totalKm;
       businessKm += r.businessKm;
       personalKm += r.personalKm;
       fuelCost   += estimateFuelCost(r);
       depreciation += estimateDepreciation(r);
     }
-    return { totalKm, businessKm, personalKm, fuelCost, depreciation };
+    return { totalKm, businessKm, personalKm, fuelCost, depreciation, includedCount, excludedCount };
   }, [rows, filteredRows]);
 
-  const fmtKm  = (n) => n < 1 ? '0' : n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString();
+  const fmtKm = n => monthlyDistance(n, totals.includedCount);
   const fmtWon = (n) => n.toLocaleString() + '원';
 
   return (
@@ -1206,6 +1188,8 @@ function MonthlyReportTab({ devices }) {
         <StatCard icon="bar"    label="감가상각 인정" value={fmtWon(Math.round(totals.depreciation))} tone="primary" loading={loading || !!error}
           hint="5년 정액법 × 업무비율 · 한도 800만/년" />
       </StatCardGrid>
+
+      {!loading && !error && <p style={{margin:0,color:'var(--text-3)',fontSize:12}}>확정 {totals.includedCount}건 · 합계 제외 {totals.excludedCount}건. 미확정 거리는 합계에서 제외하며 입력한 주유비는 유지합니다.</p>}
 
       {/* (Stage-4G) 부서 필터 chips — 부서가 2개 이상일 때만 표시 */}
       {departments.length >= 2 && (
@@ -1586,10 +1570,8 @@ function MonthlyDeviceRow({ row, onEdit }) {
   const access=useFleetAccess();
   const cost = estimateFuelCost(row);
   const dep  = estimateDepreciation(row);
-  const total = row.totalKm || 1;   // divide-by-zero 방지
-  const bizPct = Math.round((row.businessKm / total) * 100);
-  const perPct = 100 - bizPct;
-  const fmtKm = (n) => n < 1 ? '0' : n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString();
+  const {business:bizPct, other:perPct} = monthlyPercentages(row);
+  const fmtKm = n => monthlyDistance(n, row.includedCount);
   // 감가상각 연 800만 한도 초과 여부 힌트 (월 66.7만 초과 = 연 800만 override)
   const overLimit = dep > (YEARLY_BIZ_LIMIT_KRW / 12);
 
@@ -1598,10 +1580,10 @@ function MonthlyDeviceRow({ row, onEdit }) {
       background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>{row.label}</span>
+            <span style={{ fontWeight: 700, fontSize: 14, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{row.label}</span>
             {row.license_plate && (
               <span style={{
                 fontSize: 10, padding: '2px 6px', borderRadius: 4,
@@ -1635,7 +1617,7 @@ function MonthlyDeviceRow({ row, onEdit }) {
           </div>
         </div>
         <button disabled={!access.manage_vehicles} onClick={onEdit} style={{
-          fontSize: 11, padding: '6px 10px', borderRadius: 8,
+          fontSize: 11, padding: '6px 10px', borderRadius: 8, marginLeft: 'auto',
           background: 'var(--surface-2)', border: '1px solid var(--border)',
           color: 'var(--text-2)', cursor: 'pointer', fontWeight: 600,
         }}>
@@ -1643,18 +1625,18 @@ function MonthlyDeviceRow({ row, onEdit }) {
         </button>
       </div>
 
-      {/* stacked bar: business (primary) + personal (accent muted) */}
+      <div style={{fontSize:12,color:'var(--text-3)'}}>{monthlyStatus(row)}</div>
+      {/* Only positive confirmed distances have a usage ratio. */}
       <div style={{ height: 8, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden', display: 'flex' }}>
         {row.businessKm > 0 && (
           <div style={{ width: `${bizPct}%`, background: 'var(--primary)' }} title={`업무 ${fmtKm(row.businessKm)}km`} />
         )}
         {row.personalKm > 0 && (
-          <div style={{ width: `${perPct}%`, background: 'var(--accent)', opacity: 0.6 }} title={`개인 ${fmtKm(row.personalKm)}km`} />
+          <div style={{ width: `${perPct}%`, background: 'var(--accent)', opacity: 0.6 }} title={`기타·미분류 ${fmtKm(row.personalKm)}km`} />
         )}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-3)' }}>
-        <span>업무 {fmtKm(row.businessKm)}km · {bizPct}%</span>
-        <span>개인 {fmtKm(row.personalKm)}km · {perPct}%</span>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'space-between', fontSize: 11, color: 'var(--text-3)' }}>
+        {bizPct == null ? <span>거리 비율을 계산할 확정 거리가 없습니다.</span> : <><span>업무 {fmtKm(row.businessKm)}km · {bizPct}%</span><span>기타·미분류 {fmtKm(row.personalKm)}km · {perPct}%</span></>}
       </div>
 
       {/* (2026-07-28) Stage-4E 감가상각 인정액 (취득가액 입력된 경우만) */}
@@ -1670,7 +1652,7 @@ function MonthlyDeviceRow({ row, onEdit }) {
               {Math.round(dep).toLocaleString()}원
             </span>
             <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 4 }}>
-              (월 {Math.round(row.purchase_price_krw / 60).toLocaleString()} × {bizPct}%)
+              {bizPct == null ? '(확정 거리 없음)' : `(월 ${Math.round(row.purchase_price_krw / 60).toLocaleString()} × ${bizPct}%)`}
             </span>
           </span>
           {overLimit && (
