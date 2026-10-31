@@ -433,6 +433,11 @@ async fn save(
         cat["group_name"].as_str().unwrap()
     };
     let kind = cat["kind"].as_str().unwrap();
+    if id.is_some() && p.trip_started_at.is_some() && before["category_kind"] != kind {
+        return Err(AppError::BadRequest(
+            "운행에 연결한 유류비와 일반 비용은 서로 변경할 수 없습니다. 취소 후 새로 등록해 주세요.".into(),
+        ));
+    }
     if !s.manager() && (p.staff_id.is_none() || p.staff_id != s.staff) {
         return Err(AppError::Forbidden);
     }
@@ -476,12 +481,14 @@ async fn save(
         "일반 지출".into()
     };
     if let Some(start) = p.trip_started_at {
-        if kind != "fuel" {
-            return Err(AppError::BadRequest(
-                "운행 주유비는 유류비 항목으로 연결해 주세요.".into(),
-            ));
-        }
         if id.is_none() {
+            // Use the same lock order as trip corrections and binding changes.
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
+                .bind(format!("fleet-reservations:{}", s.owner))
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("SELECT id FROM fleet_vehicle_bindings WHERE owner_id=$1 AND vehicle_id=$2 FOR SHARE")
+                .bind(s.owner).bind(p.vehicle_id).fetch_all(&mut *tx).await?;
             let trips = super::fleet_vehicles::allocated_trips(
                 state,
                 s.owner,
@@ -515,14 +522,15 @@ async fn save(
                 {
                     return Err(AppError::Forbidden);
                 }
-                if !a["fuel_expense_id"].is_null() {
+                if kind == "fuel" && !a["fuel_expense_id"].is_null() {
                     return Err(AppError::Conflict(
                         "이미 지출에 연결된 주유비입니다.".into(),
                     ));
                 }
-                if a["fuel_cost"]
-                    .as_i64()
-                    .is_some_and(|v| v != i64::from(p.amount_krw))
+                if kind == "fuel"
+                    && a["fuel_cost"]
+                        .as_i64()
+                        .is_some_and(|v| v != i64::from(p.amount_krw))
                 {
                     return Err(AppError::Conflict(
                         "기존 운행 주유비와 같은 금액으로 연결한 뒤 지출에서 수정해 주세요.".into(),
@@ -537,7 +545,7 @@ async fn save(
         sqlx::query_scalar("INSERT INTO fleet_expenses AS e(owner_id,created_by,request_id,request_value,spent_on,category_id,category_name,group_name,category_kind,staff_id,staff_name,department_id,department_name,vehicle_id,vehicle_name,amount_krw,payment_method,note,source_device_id,binding_id,trip_started_at) VALUES($1,$2,$3::text::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING to_jsonb(e)").bind(s.owner).bind(s.actor).bind(&p.request_id).bind(request).bind(p.spent_on).bind(p.category_id).bind(category_name).bind(group_name).bind(kind).bind(p.staff_id).bind(staff_name).bind(department.as_i64()).bind(department_name).bind(p.vehicle_id).bind(vehicle_name).bind(p.amount_krw).bind(p.payment_method).bind(note).bind(p.source_device_id).bind(p.binding_id).bind(p.trip_started_at).fetch_one(&mut *tx).await?
     };
     let eid = after["id"].as_i64().unwrap();
-    if let Some(start) = p.trip_started_at {
+    if let Some(start) = p.trip_started_at.filter(|_| kind == "fuel") {
         sqlx::query("INSERT INTO trip_annotations(device_id,user_id,trip_started_at,purpose,fuel_expense_id) VALUES($1,$2,$3,'unspecified',$4) ON CONFLICT(device_id,user_id,trip_started_at) DO UPDATE SET fuel_cost=NULL,fuel_expense_id=$4,updated_at=clock_timestamp()").bind(p.source_device_id).bind(s.owner).bind(start).bind(eid).execute(&mut *tx).await?;
     }
     audit(

@@ -1,5 +1,6 @@
+import TripQualitySummary from './business/TripQualitySummary';
 import {TripEvidence,TripCorrection,TripCorrectionHistory} from './business/FleetTripQuality';
-import {qualityLabel,qualitySummary,reportIncluded,tripTimeRange} from '../lib/tripQuality';
+import {qualityLabel,reportIncluded,tripTimeRange} from '../lib/tripQuality';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Icon from './Icon';
@@ -168,7 +169,6 @@ function ReportTab({ devices, initialDeviceId }) {
   const eligible=(filteredTrips||[]).filter(t=>canAssignTrip(t,access));
   const chosen=eligible.filter(t=>selected.has(tripAssignmentKey(t)));
   const toggleTrip=t=>{setAssignmentStatus('');setSelected(previous=>{const next=new Set(previous),key=tripAssignmentKey(t);if(next.has(key))next.delete(key);else if(next.size<100)next.add(key);return next;});};
-  const qualityTotals=qualitySummary(filteredTrips||[]);
   const completeness = trips ? tripCompleteness(trips) : null;
   const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
     filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}`,
@@ -264,7 +264,7 @@ function ReportTab({ devices, initialDeviceId }) {
         </span>
       </div>
 
-      <div className="fleet-quality-summary"><strong>확정 {qualityTotals.included}건 · {(qualityTotals.confirmedMeters/1000).toFixed(2)} km</strong><span>합계 제외 {qualityTotals.excluded}건 · 관측 거리 {(qualityTotals.unconfirmedMeters/1000).toFixed(2)} km</span><label className="no-print"><input type="checkbox" checked={onlyReview} onChange={e=>setOnlyReview(e.target.checked)}/>미확정만 보기</label><span className="business-note">미확정 기록은 목록·내보내기에 표시하되 거리 합계에서 제외합니다.</span></div>
+      <TripQualitySummary trips={filteredTrips} loading={loading} error={error} onlyReview={onlyReview} onReviewChange={setOnlyReview}/>
       <div className="fleet-assignment-toolbar no-print">
         <span role="status">{assignmentStatus || `${chosen.length}건 선택 · 한 번에 100건까지`}</span>
         <BusinessButton disabled={!chosen.length||loading} onClick={()=>setAssignment('manual')}>일괄 지정</BusinessButton>

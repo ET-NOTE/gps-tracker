@@ -355,6 +355,12 @@ async fn correct(
     let last = sources.last().unwrap();
     let sim = first["source_device_id"].as_i64().unwrap();
     let binding = first["binding_id"].as_i64().unwrap();
+    let source_starts: Vec<DateTime<Utc>> = sources
+        .iter()
+        .filter_map(|t| date(&t["source_started_at"]))
+        .collect();
+    let linked_expense: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_expenses WHERE owner_id=$1 AND source_device_id=$2 AND binding_id=$3 AND trip_started_at=ANY($4) AND status<>'cancelled')")
+        .bind(s.owner).bind(sim).bind(binding).bind(&source_starts).fetch_one(&mut *tx).await?;
     let original_start = date(&first["started_at"]).unwrap();
     let original_end = date(&last["ended_at"])
         .or_else(|| date(&last["quality"]["last_fix_at"]))
@@ -372,9 +378,9 @@ async fn correct(
     }
     if p.action == "merge" {
         // Do not silently redistribute a driver, fuel receipt or money between trips.
-        if sources.iter().any(|t| !t["annotation"].is_null()) {
+        if linked_expense || sources.iter().any(|t| !t["annotation"].is_null()) {
             return Err(invalid(
-                "용무·운전자·주유비가 입력된 운행은 병합할 수 없습니다. 원본을 유지해 주세요.",
+                "용무·운전자·지출이 연결된 운행은 병합할 수 없습니다. 원본을 유지해 주세요.",
             ));
         }
         let previous_end = date(&sources[0]["ended_at"])
@@ -408,9 +414,9 @@ async fn correct(
     } else {
         original_end
     };
-    if start != original_start && !first["annotation"].is_null() {
+    if start != original_start && (linked_expense || !first["annotation"].is_null()) {
         return Err(invalid(
-            "용무·주유비가 있는 운행은 시작 시각을 유지해 주세요.",
+            "용무·지출이 연결된 운행은 시작 시각을 유지해 주세요.",
         ));
     }
     if start < original_start || end > original_end || end <= start {
@@ -604,6 +610,13 @@ async fn restore(
     }
     let mut tx = state.db.begin().await?;
     locks(&mut tx, s.owner, vehicle).await?;
+    // Restoring a split/adjustment must not strand an active expense on a
+    // report-only trip that will disappear. Original-start links are retained.
+    let stranded: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_trip_corrections c JOIN fleet_expenses e ON e.owner_id=c.owner_id AND e.source_device_id=c.source_device_id AND e.binding_id=c.binding_id WHERE c.id=$1 AND c.owner_id=$2 AND c.vehicle_id=$3 AND c.reverted_at IS NULL AND e.status<>'cancelled' AND EXISTS(SELECT 1 FROM jsonb_array_elements(c.outputs) o WHERE (o->>'source_started_at')::timestamptz=e.trip_started_at) AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(c.sources) o WHERE (o->>'source_started_at')::timestamptz=e.trip_started_at))")
+        .bind(id).bind(s.owner).bind(vehicle).fetch_one(&mut *tx).await?;
+    if stranded {
+        return Err(invalid("보정 후 새 구간에 연결한 지출을 먼저 취소해 주세요. 원본 복원 후 다시 연결할 수 있습니다."));
+    }
     let n=sqlx::query("UPDATE fleet_trip_corrections SET reverted_at=clock_timestamp(),reverted_by=$4,revert_reason=$5 WHERE id=$1 AND owner_id=$2 AND vehicle_id=$3 AND reverted_at IS NULL").bind(id).bind(s.owner).bind(vehicle).bind(s.actor).bind(p.reason.trim()).execute(&mut *tx).await?.rows_affected();
     if n != 1 {
         return Err(stale());

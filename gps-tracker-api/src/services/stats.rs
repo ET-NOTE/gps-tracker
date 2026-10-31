@@ -92,10 +92,13 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
     // import 후 한 번도 워커가 안 돈 디바이스 (id 135 처럼).
     // 발견되면 그 디바이스의 모든 record 날짜에 대해 한 번씩 aggregate_one 호출.
     let legacy: Vec<i64> = sqlx::query_scalar(
-        r#"SELECT DISTINCT lr.device_id
-             FROM location_points lr
-            WHERE NOT EXISTS (
-                  SELECT 1 FROM daily_stats ds WHERE ds.device_id = lr.device_id
+        r#"SELECT d.id FROM devices d
+            WHERE d.owner_id IS NOT NULL AND NOT EXISTS (
+                  SELECT 1 FROM daily_stats ds WHERE ds.device_id=d.id AND ds.user_id=d.owner_id
+            ) AND EXISTS (
+                  SELECT 1 FROM location_records r WHERE r.device_id=d.id AND r.user_id=d.owner_id
+                  AND ((r.fixes_jsonb IS NULL AND r.fix) OR
+                    CASE WHEN jsonb_typeof(r.fixes_jsonb)='array' THEN jsonb_array_length(r.fixes_jsonb)>0 ELSE false END)
             )
             LIMIT 50"#,
     )
@@ -104,9 +107,9 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
 
     for did in legacy {
         let dates: Vec<NaiveDate> = sqlx::query_scalar(
-            r#"SELECT DISTINCT (recorded_at AT TIME ZONE 'Asia/Seoul')::date
-                 FROM location_points
-                WHERE device_id = $1 AND fix = TRUE"#,
+            r#"SELECT DISTINCT dates.d FROM location_records r
+                CROSS JOIN LATERAL unnest(location_fix_dates(r.recorded_at,r.fixes_jsonb,r.fix)) dates(d)
+                WHERE r.device_id=$1 AND r.user_id=(SELECT owner_id FROM devices WHERE id=$1)"#,
         )
         .bind(did)
         .fetch_all(pool)
