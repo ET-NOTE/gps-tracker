@@ -37,7 +37,7 @@ async function calendar(file, name) {
     if (specifier==='../lib/ntsReport') return moduleOf(ntsReport);
     // Only the named exports requested by this module are needed. None of these
     // hooks/components run while rendering a calendar.
-    const exports = {TripEvidence:noop,TripCorrection:noop,TripCorrectionHistory:noop,qualityLabel:noop,qualitySummary:noop,reportIncluded:noop,tripTimeRange:noop,TripAssignmentModal:noop,TripRulesModal:noop,TripAssignmentHistory:noop,tripAssignmentKey:noop,canAssignTrip:noop,default:noop,api:{},qk:{},useQuery:noop,useQueryClient:noop,FleetAccountScope:noop,useFleetAccess:noop,staffCanDrive:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,
+    const exports = {tripNeedsDetails:noop,TripEvidence:noop,TripCorrection:noop,TripCorrectionHistory:noop,qualityLabel:noop,qualitySummary:noop,reportIncluded:noop,tripTimeRange:noop,TripAssignmentModal:noop,TripRulesModal:noop,TripAssignmentHistory:noop,tripAssignmentKey:noop,canAssignTrip:noop,default:noop,api:{},qk:{},useQuery:noop,useQueryClient:noop,FleetAccountScope:noop,useFleetAccess:noop,staffCanDrive:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,
       BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:noop,BusinessError:noop,BusinessEmpty:noop,BusinessSection:noop,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
       useBusinessClock:noop,useRentalOperations:noop,useBusinessSubscription:noop,
       BusinessStaff:noop,BusinessRenters:noop,BusinessCompanyInfo:noop,BusinessSubscription:noop,

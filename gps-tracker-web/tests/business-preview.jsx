@@ -135,6 +135,13 @@ Object.assign(api,{
  joinFleet:async()=>({owner_id:2,company_name:'검증용 회사',staff_name:'검증 직원',role:'member'}),
 });
 if(params.has('team'))Object.assign(api,{
+ importFleetStaff:async p=>{
+  const seen=new Set();const rows=p.rows.map((r,i)=>{const error=r.department&&!teamOrg.some(o=>o.kind==='department'&&o.name===r.department);const key=r.name+':'+r.phone;const skip=seen.has(key)||teamStaff.some(s=>s.name===r.name);seen.add(key);return {...r,row:i+2,status:error?'error':skip?'skip':'ready',errors:error?['부서를 먼저 등록하세요.']:[],message:skip?'기존 등록 유지':''};});
+  const ready=rows.filter(r=>r.status==='ready'),errors=rows.filter(r=>r.status==='error');
+  if(p.confirm&&errors.length)throw Error('오류를 수정하세요.');
+  const created=p.confirm?ready.map(r=>{const id=teamStaff.length+1;teamStaff.push({...r,id,access_role:'member',active:true,all_vehicles:false,vehicle_ids:[],created_at:new Date().toISOString()});return id;}):[];
+  return {rows,ready:ready.length,errors:errors.length,skipped:rows.length-ready.length-errors.length,token:'fixture-only',created};
+ },
  listStaff:async()=>teamStaff.map(s=>({...s})),
  createStaff:async body=>{const s={...body,id:teamStaff.length+1,department:teamOrg.find(i=>i.id===body.department_id)?.name,position:teamOrg.find(i=>i.id===body.position_id)?.name,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};teamStaff.push(s);return s;},
  updateStaff:async(id,body)=>{Object.assign(teamStaff.find(s=>s.id===id),body);return {...teamStaff.find(s=>s.id===id)};},

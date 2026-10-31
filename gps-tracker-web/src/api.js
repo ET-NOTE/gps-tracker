@@ -269,6 +269,7 @@ export const api = {
   unlinkFleetStaff: id => req('DELETE',`/corporate/staff/${id}/account`),
   joinFleet: body => req('POST','/corporate/join',body),
   fleetTeamAudit: () => req('GET','/corporate/team-audit'),
+  importFleetStaff: body => req('POST','/corporate/staff/import',body),
   fleetTerminals: () => req('GET','/corporate/terminals'),
   listFleetSites: () => req('GET','/corporate/sites'),
   createFleetSite: body => req('POST','/corporate/sites',body),

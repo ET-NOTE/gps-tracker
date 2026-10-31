@@ -17,6 +17,8 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
+#[path = "fleet_staff_import.rs"]
+mod staff_import;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -27,6 +29,7 @@ pub fn router() -> Router<AppState> {
         .route("/corporate/organization/items", post(create_item))
         .route("/corporate/organization/items/:id", put(update_item))
         .route("/corporate/staff", get(list_staff).post(create_staff))
+        .route("/corporate/staff/import", post(staff_import::import))
         .route(
             "/corporate/staff/:id",
             axum::routing::patch(update_staff).delete(disable_staff),

@@ -1,3 +1,5 @@
+import FleetIncompleteTrips from './business/FleetIncompleteTrips';
+import {tripNeedsDetails} from '../lib/incompleteTrips';
 import TripQualitySummary from './business/TripQualitySummary';
 import {TripEvidence,TripCorrection,TripCorrectionHistory} from './business/FleetTripQuality';
 import {qualityLabel,reportIncluded,tripTimeRange} from '../lib/tripQuality';
@@ -53,15 +55,16 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const [tab, setTab] = useState('overview');
   const [request, setRequest] = useState(null);
   const [reportDevice, setReportDevice] = useState(null);
+  const [reportFilter,setReportFilter]=useState(null);
   const subscription = useBusinessSubscription('corporate');
   const qc = useQueryClient();
   const updateSub = value => qc.setQueryData(qk.businessSubscription('corporate'), value);
   const reserve = value => { setRequest(value); setTab('reservations'); };
-  const report = device => { setReportDevice(device.id); setTab('report'); };
+  const report = (device,filter=null) => { setReportDevice(device.id); setReportFilter(filter); setTab('report'); };
   if(assets.isPending||terminals.isPending)return <SkeletonList count={3} itemHeight={140}/>;
   if(assets.error)return <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>;
   if(terminals.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={terminals.refetch}>단말기 상태를 불러오지 못했습니다.</BusinessError></div>;
-  return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
+  return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     mobileAction={<BusinessButton icon="user" onClick={()=>setTab('staff')}>사용자</BusinessButton>}
     action={tab === 'reservations' ? <BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton> : null}>
     {toolbar}
@@ -76,7 +79,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
       {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
         : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
         : !subscription.data.active ? <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} report />
-        : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} /> : <MonthlyReportTab devices={devices} />}</>}
+        : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} initialFilter={reportFilter} /> : <MonthlyReportTab devices={devices} />}</>}
     {tab === 'settings' && <BusinessSettings company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
     {editAsset&&<FleetAssetForm asset={editAsset} staff={staff.data||[]} onClose={()=>setEditAsset(null)} onSaved={()=>{setEditAsset(null);assets.refetch();}}/>}
   </BusinessWorkspace>;
@@ -108,6 +111,7 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onVehicles }) 
         {!tasks.length && !missing.length && <BusinessEmpty compact title="현재 확인할 통신·배터리·점검 항목이 없습니다." />}
       </BusinessSection>
     </div>
+    <FleetIncompleteTrips devices={devices} onReport={onReport} now={now}/>
     <div className="business-reservation-summary"><span>오늘 예약 <strong>{reservations.error || !reservations.data ? '—' : active.length}건</strong></span><BusinessButton onClick={()=>onReserve({})}>예약 보기</BusinessButton></div>
     {reservations.error && <BusinessError onRetry={reservations.refetch}>오늘 예약 수를 불러오지 못했습니다.</BusinessError>}
     <BusinessVehicles separateTerminal localMap devices={devices} onMap={onMap} onDetail={onReport} detailLabel="운행 리포트" />
@@ -117,7 +121,7 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onVehicles }) 
 // ════════════════════════════════════════════════════════
 // 운행 리포트 — 차량별 운행기록과 내보내기.
 // ════════════════════════════════════════════════════════
-function ReportTab({ devices, initialDeviceId }) {
+function ReportTab({ devices, initialDeviceId, initialFilter }) {
   const access=useFleetAccess();
   const [selected,setSelected]=useState(new Set()),[assignment,setAssignment]=useState(null),[showRules,setShowRules]=useState(false),[showHistory,setShowHistory]=useState(false),[assignmentStatus,setAssignmentStatus]=useState('');
   const today = businessDate();
@@ -129,8 +133,9 @@ function ReportTab({ devices, initialDeviceId }) {
   useEffect(() => {
     if (deviceId == null && devices.length > 0) setDeviceId(devices[0].id);
   }, [devices, deviceId]);
-  const [from, setFrom] = useState(monthAgo);
-  const [to,   setTo]   = useState(today);
+  const [from, setFrom] = useState(initialFilter?.from||monthAgo);
+  const [to,   setTo]   = useState(initialFilter?.to||today);
+  const [onlyIncomplete,setOnlyIncomplete]=useState(Boolean(initialFilter?.incomplete));
   const [trips, setTrips] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -164,17 +169,17 @@ function ReportTab({ devices, initialDeviceId }) {
   useEffect(() => { load(); return () => { loadId.current++; }; }, [deviceId, from, to]);  // eslint-disable-line
 
   // 추가 필터 적용된 trip 목록 — 운전자/용무/최소시간 AND.
-  const filteredTrips = useMemo(() => trips ? filterTrips(trips, {driver:driverFilter,purpose:purposeFilter,minHours}).filter(t=>!onlyReview||!reportIncluded(t)) : null, [trips, driverFilter, purposeFilter, minHours,onlyReview]);
-  useEffect(()=>{setSelected(new Set());setAssignment(null);setAssignmentStatus('');},[deviceId,from,to,driverFilter,purposeFilter,minHours,onlyReview]);
+  const filteredTrips = useMemo(() => trips ? filterTrips(trips, {driver:driverFilter,purpose:purposeFilter,minHours}).filter(t=>!onlyReview||!reportIncluded(t)).filter(t=>!onlyIncomplete||tripNeedsDetails(t)) : null, [trips, driverFilter, purposeFilter, minHours,onlyReview,onlyIncomplete]);
+  useEffect(()=>{setSelected(new Set());setAssignment(null);setAssignmentStatus('');},[deviceId,from,to,driverFilter,purposeFilter,minHours,onlyReview,onlyIncomplete]);
   const eligible=(filteredTrips||[]).filter(t=>canAssignTrip(t,access));
   const chosen=eligible.filter(t=>selected.has(tripAssignmentKey(t)));
   const toggleTrip=t=>{setAssignmentStatus('');setSelected(previous=>{const next=new Set(previous),key=tripAssignmentKey(t);if(next.has(key))next.delete(key);else if(next.size<100)next.add(key);return next;});};
   const completeness = trips ? tripCompleteness(trips) : null;
   const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
-    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}`,
+    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}${onlyIncomplete?' · 미작성만':''}`,
   }) : null;
   const csvData = filteredTrips ? ntsTripReport(filteredTrips, {device,info,from,to,
-    filtered: onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || Number(minHours) > 0,
+    filtered: onlyIncomplete || onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || Number(minHours) > 0,
   }) : null;
 
   // 일자별 누적거리 — 화면에 보이는(필터된) 운행 기준으로 계산.
@@ -188,9 +193,9 @@ function ReportTab({ devices, initialDeviceId }) {
     return m;
   }, [filteredTrips]);
 
-  const filterActive = onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || (parseFloat(minHours) > 0);
+  const filterActive = onlyIncomplete || onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || (parseFloat(minHours) > 0);
   function resetFilters() {
-    setOnlyReview(false);
+    setOnlyReview(false); setOnlyIncomplete(false);
     setDriverFilter('all');
     setPurposeFilter('all');
     setMinHours('');
@@ -264,6 +269,7 @@ function ReportTab({ devices, initialDeviceId }) {
         </span>
       </div>
 
+      <label className="fleet-asset-toggle no-print"><input type="checkbox" checked={onlyIncomplete} onChange={e=>setOnlyIncomplete(e.target.checked)}/>미작성만 보기 (운전자 또는 용무 미지정)</label>
       <TripQualitySummary trips={filteredTrips} loading={loading} error={error} vehicleSelected={Boolean(device)} onlyReview={onlyReview} onReviewChange={setOnlyReview}/>
       <div className="fleet-assignment-toolbar no-print">
         <span role="status">{assignmentStatus || `${chosen.length}건 선택 · 한 번에 100건까지`}</span>
