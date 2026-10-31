@@ -18,7 +18,7 @@ with psycopg2.connect(c['DATABASE_URL']) as db:
   q=db.cursor();q.execute("SET LOCAL jit=off; SET LOCAL statement_timeout='30s'")
   q.execute(points);q.execute(speed);q.execute(migration)
   tag=uuid.uuid4().hex
-  q.execute("INSERT INTO users(email,password_hash) VALUES(%s,''),(%s,'') RETURNING id",(tag+'@query.invalid',tag+'b@query.invalid'));a,b=[v[0] for v in q.fetchall()]
+  q.execute("INSERT INTO users(email,password_hash,phone) VALUES(%s,'','01000000000'),(%s,'','01000000000') RETURNING id",(tag+'@query.invalid',tag+'b@query.invalid'));a,b=[v[0] for v in q.fetchall()]
   q.execute("INSERT INTO devices(device_uid,owner_id,api_key_hash) VALUES(%s,%s,'') RETURNING id",('query-'+tag,a));did=q.fetchone()[0]
   start=dt.datetime(2026,10,19,15,tzinfo=dt.timezone.utc)
   rows=[]
