@@ -219,7 +219,7 @@ async fn fixes(
     start: DateTime<Utc>,
     end: DateTime<Utc>,
 ) -> AppResult<Vec<Fix>> {
-    let rows=sqlx::query_as("SELECT DISTINCT ON(recorded_at) recorded_at,lat,lng FROM location_points WHERE user_id=$1 AND device_id=$2 AND fix AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180 AND recorded_at>=$3 AND recorded_at<=$4 ORDER BY recorded_at,CASE source WHEN 'phone' THEN 0 WHEN 'l80' THEN 1 ELSE 2 END LIMIT 100001").bind(owner).bind(sim).bind(start).bind(end).fetch_all(&state.db).await?;
+    let rows=sqlx::query_as("SELECT DISTINCT ON(recorded_at) recorded_at,lat,lng FROM location_points_between($2,$1,$3,$4) WHERE user_id=$1 AND device_id=$2 AND fix AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180 AND recorded_at>=$3 AND recorded_at<=$4 ORDER BY recorded_at,CASE source WHEN 'phone' THEN 0 WHEN 'l80' THEN 1 ELSE 2 END LIMIT 100001").bind(owner).bind(sim).bind(start).bind(end).fetch_all(&state.db).await?;
     if rows.len() > 100000 {
         return Err(invalid("GPS 기록이 많습니다. 조회 기간을 줄여 주세요."));
     }

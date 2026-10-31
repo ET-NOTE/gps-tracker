@@ -247,7 +247,7 @@ async fn compute_trips_inner_ex(
 
     // 4) 거리 계산용 fixes
     let all_fixes: Vec<(DateTime<Utc>, f64, f64)> = sqlx::query_as(
-        r#"SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng FROM location_points
+        r#"SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng FROM location_points_between($1,$4,$2,$3)
             WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
               AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
               AND recorded_at >= $2 AND recorded_at <= $3
@@ -511,7 +511,7 @@ async fn motion_based_trips(
     to: DateTime<Utc>,
 ) -> AppResult<Vec<(DateTime<Utc>, Option<DateTime<Utc>>)>> {
     let times: Vec<DateTime<Utc>> = sqlx::query_scalar(
-        r#"SELECT recorded_at FROM location_points
+        r#"SELECT recorded_at FROM location_points_between($1,$4,$2,$3)
             WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
               AND recorded_at >= $2 AND recorded_at <= $3
             ORDER BY recorded_at ASC"#,
@@ -570,27 +570,28 @@ async fn collect_trip_endpoints(
     // 한 쿼리로 모든 trip 의 첫·마지막 fix 좌표 — user_id 격리
     let rows: TripEndpointRows = sqlx::query_as(
         r#"
-        WITH t AS (
+        WITH t AS MATERIALIZED (
             SELECT idx, s_at, e_at FROM
             UNNEST($2::TIMESTAMPTZ[], $3::TIMESTAMPTZ[])
                 WITH ORDINALITY AS u(s_at, e_at, idx)
+        ), bounds AS (SELECT min(s_at) AS first,max(e_at) AS last FROM t),
+        points AS MATERIALIZED (
+            SELECT recorded_at,lat,lng FROM bounds b
+            CROSS JOIN LATERAL location_points_between($1,$4,b.first,b.last) p
+            WHERE p.fix = TRUE
         )
         SELECT t.idx::INT4 AS idx,
-               (SELECT lat FROM location_points lr
-                  WHERE lr.device_id = $1 AND lr.user_id = $4 AND lr.fix = TRUE
-                    AND lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+               (SELECT lat FROM points lr
+                  WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
                   ORDER BY lr.recorded_at ASC LIMIT 1) AS start_lat,
-               (SELECT lng FROM location_points lr
-                  WHERE lr.device_id = $1 AND lr.user_id = $4 AND lr.fix = TRUE
-                    AND lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+               (SELECT lng FROM points lr
+                  WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
                   ORDER BY lr.recorded_at ASC LIMIT 1) AS start_lng,
-               (SELECT lat FROM location_points lr
-                  WHERE lr.device_id = $1 AND lr.user_id = $4 AND lr.fix = TRUE
-                    AND lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+               (SELECT lat FROM points lr
+                  WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
                   ORDER BY lr.recorded_at DESC LIMIT 1) AS end_lat,
-               (SELECT lng FROM location_points lr
-                  WHERE lr.device_id = $1 AND lr.user_id = $4 AND lr.fix = TRUE
-                    AND lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+               (SELECT lng FROM points lr
+                  WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
                   ORDER BY lr.recorded_at DESC LIMIT 1) AS end_lng
           FROM t
           ORDER BY t.idx
