@@ -14,7 +14,10 @@ assert m['api_release']=='location-storage-20261031-r1'
 assert sha(api)==m['api_sha256']=='25d9635292e6c8aab3a686e81a165a9d03e8984f8776234fa531902c9b108997'
 assert sha(stage/'web.tar.gz')==m['archive_sha256']
 assert sha(stage/'source-final.tar.gz')==m['source_sha256']
-assert json.loads((web/'version.json').read_text())['git_commit']=='4b6bbaf958f6d3bdf53a097a6d50eedcdc9e45e5'
+current=json.loads((web/'version.json').read_text())
+assert current['release']=='location-storage-20261031-r1'
+assert current['git_commit']=='d6db2219697912a351af1b4679139bbc8c978362'
+assert current['web_build_commit']=='4b6bbaf958f6d3bdf53a097a6d50eedcdc9e45e5'
 assert json.loads((stage/'validation.json').read_text())['web_tests']==196
 def get(path):
  with urllib.request.urlopen('https://gps.serial.kr'+path,timeout=20) as r:return r.read()
