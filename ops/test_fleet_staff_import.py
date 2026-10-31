@@ -44,7 +44,7 @@ def accept(owner,s,user):
  call(user,'POST','/corporate/join',dict(code=i['code'],confirm=True));return i
 try:
  for label in ['owner','admin','member','outsider']:
-  users.append(sql("INSERT INTO users(email,password_hash,display_name) VALUES(%s,'test-only','CSV regression') RETURNING id",(f'import-{run}-{label}@example.invalid',)))
+  users.append(sql("INSERT INTO users(email,password_hash,display_name,phone) VALUES(%s,'test-only','CSV regression','01000000000') RETURNING id",(f'import-{run}-{label}@example.invalid',)))
  a,admin,member,outsider=users
  dep=item(a,'department','영업부');pos=item(a,'position','팀장')
  sa=staff(a,'관리 담당',access_role='admin');sm=staff(a,'직원');accept(a,sa,admin);accept(a,sm,member)
@@ -59,7 +59,7 @@ try:
  for actor in [member,outsider]:call(actor,'POST',endpoint,dict(rows=rows),403,owner=a)
  check('unauthenticated member and foreign company rejected')
  for bad in [[],[dict(name='a')]*501]:call(a,'POST',endpoint,dict(rows=bad),400)
- call(a,'POST',endpoint,dict(rows=[dict(name='a',access_role='admin')]),422)
+ call(a,'POST',endpoint,dict(rows=[dict(name='a',access_role='admin')]),422,binary=True)
  check('limits and privilege fields rejected')
  bad=rows+[dict(name='오류',phone='not-phone',department='타회사 부서'),dict(name='x'*65)]
  pbad=preview(bad);check('row validation exposes actionable errors',pbad['errors']==2 and len(pbad['rows'][2]['errors'])==2)
