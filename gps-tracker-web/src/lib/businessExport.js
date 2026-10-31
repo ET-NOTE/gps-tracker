@@ -1,5 +1,6 @@
 import {reportIncluded,qualityLabel} from './tripQuality.js';
 import { businessDate, rentalStatus, vehicleName } from './business.js';
+import { ntsReportPdfDefinition } from './ntsReportPdf.js';
 
 export const purposeLabel = { business: '업무', commute: '출퇴근', other: '기타', unspecified: '미지정' };
 const statusLabel = { draft: '초안', active: '임대 중', overdue: '반납 지연', returned: '반납 완료', cancelled: '취소' };
@@ -97,6 +98,7 @@ export function reportCsv(report) {
 export const safeFilename = name => String(name).replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_').slice(0,140);
 
 export function reportPdfDefinition(report) {
+  if (report.printForm?.kind === 'nts-trip-log') return ntsReportPdfDefinition(report);
   const columns = report.columns.filter(c=>c.pdf!==false);
   const count = columns.length;
   return {

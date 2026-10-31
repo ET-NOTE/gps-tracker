@@ -303,6 +303,14 @@ GPS 단계의 남은 작업을 우선 완료한 후 Shield로 이동한다. 이�
 
 배포: `fleet-filters-20261031-r1`, 웹/소스 `1b89228d9d7c315c12004335c4cb7ed0a0d76003`. API는 `fleet-completion-20261031-r1`, SHA256 `4cc5b2b46897dfc1b8bd275344ce97b9a4818b931e0ae2c7bddc041498342986`, 스키마 81 그대로다. 웹 파일 41개 해시·SPA 경로·진단 페이지·health/DB를 확인했고 이전 웹 경로 `/home/mmm/releases/fleet-completion-20261031-r1/web`를 복귀용으로 유지했다. API 프로세스·운영 env/nginx와 dev-gps·Shield 배포/프로세스는 변경하지 않았다. 운영 일괄 등록 감사/지출/보정 각 0건, 신규 API ERROR/panic 0건, 가용 공간 4,467,752,960바이트. 증빙 `C:/Users/msb/AppData/Local/GPS-Builds/fleet-filters-20261031/`, 운영 화면 `production-vehicle-filters.png` 및 `production-mobile-filters.png`.
 
+## 12차 — 운행기록부 인쇄용 PDF (진행 중)
+
+- [x] 첨부 XLSX의 A4 가로·회사/차량 정보·3단 묶음 머리글·하단 합계 구조를 전용 PDF로 반영.
+- [x] CSV와 동일한 조회/필터·포함/제외·합계·비율을 사용. 계기판 누적거리와 누락 정보는 임의 생성하지 않음.
+- [x] 긴 비고는 번호로 연결한 상세란에 원문 보존. 표 머리글/차량·기간/쪽 번호 반복 및 행 분리 방지.
+- [x] 빈 내역·정보 누락·0km·미확정·70행 다중 페이지·긴 한글 비고 검증. PC/390/320px 안내와 실제 브라우저 다운로드 확인.
+- [ ] 전체 웹 회귀/운영 빌드·웹 배포·실제 계정 PDF 다운로드 후 렌더 검수. API/DB·SIM 기록·인증·APK는 변경하지 않음.
+
 ## GPS 단계의 남은 작업 — 11차 기준
 
 Shield 착수 전에 아래 목록을 다시 대조한다. 과거 라운드의 ‘후속’ 문구만으로 완료를 판정하지 않는다.

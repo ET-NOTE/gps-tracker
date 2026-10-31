@@ -17,11 +17,11 @@ test('selection excludes open or ambiguous trips and protects other staff record
 });
 test('NTS PDF uses all nine template fields and the same classified totals as CSV',()=>{
  const report=ntsTripReport([{...trip,annotation:{purpose:'commute',driver_name:'김사용',driver_department:'영업팀'}}],{device:{car_model:'아반떼',car_plate:'12가3456'},info:{company_name:'예시 법인',business_number:'123-45-67890'},from:'2026-10-01',to:'2026-10-31'});
- const pdf=reportPdfDefinition(report),table=pdf.content.find(x=>x.table).table;
+ const pdf=reportPdfDefinition(report),table=pdf.content.find(x=>x.table?.headerRows===3).table;
  assert.equal(pdf.pageOrientation,'landscape');assert.equal(table.body[0].length,9);
- assert.deepEqual(table.body[0].map(c=>c.text),report.columns.map(c=>c.pdfLabel));
- assert.ok(!table.body[0].some(c=>/[①-⑳㎞]/.test(c.text)));
- assert.equal(table.body[1][3].text,'');assert.equal(table.body[1][6].text,'12');assert.equal(table.body[1][7].text,'0');
- assert.match(pdf.content.at(-1).text,/총주행거리: 12 km/);
+ assert.equal(table.body[0][1].text,'4 사용자');assert.equal(table.body[1][6].text,'업무용 사용거리 (km)');
+ assert.ok(!table.body.slice(0,3).flat().some(c=>/[①-⑳㎞]/.test(c.text || '')));
+ assert.equal(table.body[3][3].text,'');assert.equal(table.body[3][6].text,'12');assert.equal(table.body[3][7].text,'0');
+ assert.equal(report.printForm.total,12);assert.equal(report.printForm.work,12);
  assert.ok(report.warnings.some(x=>x.includes('차량 이용자')));
 });

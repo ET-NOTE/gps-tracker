@@ -49,6 +49,8 @@ export function ntsTripReport(trips, { device, info, from, to, filtered = false 
   ].map(([key,label])=>({key,label,pdfLabel:({date:'3 사용일자 (요일)',department:'4 사용자\n부서',driver:'4 사용자\n성명',before:'5 주행 전\n계기판(km)',after:'6 주행 후\n계기판(km)',km:'7 주행거리\n(km)',commute:'8 출·퇴근용\n(km)',business:'9 일반 업무용\n(km)',note:'10 비고'})[key],numeric:['before','after','km','commute','business'].includes(key),pdfWidth:({date:80,department:48,driver:48,before:62,after:62,km:55,commute:55,business:55,note:'*'})[key]}));
   return {title:'업무용승용차 운행기록부', filename:`업무용승용차_운행기록부_${model || '차종미등록'}_${plate || '차량번호미등록_' + (device?.id ?? '')}_${from}_${to}`,
     columns, rows, warnings,
+    printForm:{kind:'nts-trip-log',company:text(info?.company_name),businessNumber:text(info?.business_number),model,plate,from,to,filtered,
+      total,commute,business,work,ratio,includedCount:trips.length-incomplete.length,excludedCount:incomplete.length,excludedRows:trips.map(t=>excluded.has(t))},
     meta:[`법인명: ${text(info?.company_name)||'미등록'} · 사업자등록번호: ${text(info?.business_number)||'미등록'}`,`차량: ${model||'미등록'} · ${plate||'미등록'} · 기간: ${from} ~ ${to}`, '국세청 고시 제2025-8호 별지 항목 기준 · 거리: GPS 계산값 · 계기판 거리: 미입력',...warnings],
     footer:`⑪조회 내역 총주행거리: ${total} km · ⑫업무용 사용거리: ${work} km · ⑬업무사용비율: ${ratio||'미계산'}\n조회기간이 전체 사업연도인지 확인하고 계기판 거리·사용자·누락 정보를 보완해 주세요.`,
     pdfFooter:`11 조회 내역 총주행거리: ${total} km · 12 업무용 사용거리: ${work} km · 13 업무사용비율: ${ratio||'미계산'}\n조회기간이 전체 사업연도인지 확인하고 계기판 거리·사용자·누락 정보를 보완해 주세요.`,

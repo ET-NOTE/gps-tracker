@@ -223,9 +223,9 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
         <button onClick={load} style={st.btnGhost} disabled={loading}>
           <Icon name="refresh" size={12} /> 새로고침
         </button>
-        <ExportButtons report={exportData} csvReport={csvData} pdfReport={csvData} csvLabel="운행기록부 CSV" disabled={loading || !!error || !deviceId} />
+        <ExportButtons report={exportData} csvReport={csvData} pdfReport={csvData} csvLabel="운행기록부 CSV" pdfLabel="인쇄용 PDF" disabled={loading || !!error || !deviceId} />
         <button onClick={() => window.print()} style={st.btnGhost} disabled={loading || !!error || !trips}>
-          <Icon name="share" size={12} /> 인쇄
+          <Icon name="share" size={12} /> 화면 인쇄
         </button>
       </div>
 
