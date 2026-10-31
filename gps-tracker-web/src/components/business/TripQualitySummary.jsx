@@ -1,7 +1,8 @@
 import React from 'react';
 import {qualitySummary} from '../../lib/tripQuality';
 
-export default function TripQualitySummary({trips,loading,error,onlyReview,onReviewChange}){
+export default function TripQualitySummary({trips,loading,error,vehicleSelected=true,onlyReview,onReviewChange}){
+  if(!vehicleSelected)return <div className="fleet-quality-summary" role="status">차량을 선택하면 운행 요약이 표시됩니다.</div>;
   if(loading||!trips&&!error)return <div className="fleet-quality-summary" role="status" aria-busy="true">운행 상태를 불러오는 중…</div>;
   if(error)return <div className="fleet-quality-summary" role="status">조회 후 운행 요약이 표시됩니다.</div>;
   const total=qualitySummary(trips);

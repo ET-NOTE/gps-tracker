@@ -151,7 +151,7 @@ try:
  # General costs share a trip with fuel without adopting or clearing fuel money.
  gp=dict(fp,request_id=str(uuid.uuid4()),category_id=category['id'],amount_krw=12000)
  general=save(a,gp);second=save(a,dict(gp,request_id=str(uuid.uuid4()),amount_krw=3000))
- check('multiple general expenses coexist with one fuel link',general['trip_started_at']==start and second['id']!=general['id'] and trips()[0]['annotation']['fuel_cost']==50000)
+ check('multiple general expenses coexist with one fuel link',datetime.datetime.fromisoformat(general['trip_started_at'].replace('Z','+00:00'))==datetime.datetime.fromisoformat(start.replace('Z','+00:00')) and second['id']!=general['id'] and trips()[0]['annotation']['fuel_cost']==50000)
  with ThreadPoolExecutor(max_workers=2) as pool:general_retries=list(pool.map(lambda _:save(a,gp),range(2)))
  check('linked general cost retry remains exactly once',{r['id'] for r in general_retries}=={general['id']})
  call(member,'POST','/corporate/expenses',dict(gp,request_id=str(uuid.uuid4()),staff_id=sm['id'],vehicle_id=vb['id']),owner=a,expected=404)

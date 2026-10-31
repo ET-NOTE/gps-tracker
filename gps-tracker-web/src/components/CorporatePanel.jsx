@@ -264,7 +264,7 @@ function ReportTab({ devices, initialDeviceId }) {
         </span>
       </div>
 
-      <TripQualitySummary trips={filteredTrips} loading={loading} error={error} onlyReview={onlyReview} onReviewChange={setOnlyReview}/>
+      <TripQualitySummary trips={filteredTrips} loading={loading} error={error} vehicleSelected={Boolean(device)} onlyReview={onlyReview} onReviewChange={setOnlyReview}/>
       <div className="fleet-assignment-toolbar no-print">
         <span role="status">{assignmentStatus || `${chosen.length}건 선택 · 한 번에 100건까지`}</span>
         <BusinessButton disabled={!chosen.length||loading} onClick={()=>setAssignment('manual')}>일괄 지정</BusinessButton>
