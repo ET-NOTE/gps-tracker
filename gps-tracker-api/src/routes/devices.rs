@@ -1476,7 +1476,7 @@ async fn locations_aggregated(
         "WITH speed AS MATERIALIZED (
           SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
             speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
-          FROM location_speed_points_between($1,$5,$2,$3)
+          FROM location_speed_metrics_between($1,$5,$2,$3)
          )
          SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
           'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),

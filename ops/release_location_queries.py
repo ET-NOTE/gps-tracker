@@ -1,4 +1,4 @@
-"""Guarded location/trip query release: schema 80; no production trip annotation is written."""
+"""Guarded location/trip query release: schema 81; no production trip annotation is written."""
 import hashlib,json,os,pathlib,shutil,subprocess,sys,tarfile,time,urllib.parse,urllib.request
 import psycopg2
 mode=sys.argv[1]; assert mode in ('validate','promote')
@@ -39,7 +39,7 @@ if mode=='validate':
   run(['systemd-run','--collect','--unit='+unit,'-p','User=mmm','-p','Group=mmm','-p','EnvironmentFile='+str(validation_env),'-p','WorkingDirectory='+str(stage),'-p','MemoryMax=500M','--setenv=UPLOAD_DIR='+str(stage/'uploads'),'--setenv=PRIVATE_UPLOAD_DIR='+str(stage/'private'),str(stage/'gps-tracker-api')])
   health(True,m['api_release'])
   for script in ('test_dev_speed.py','test_fleet_trip_quality.py','test_fleet_trip_assignment.py','test_fleet_expenses.py','test_fleet_sites.py','test_fleet_team.py','test_fleet_assets.py','test_corporate_template.py','test_corporate_coverage.py','test_business_api.py','test_sim_hardware.py','test_sim_first_registration.py'):run(['python3',str(stage/script),str(validation_env),'http://127.0.0.1:3042'])
-  (stage/'validation.json').write_text(json.dumps({'api_sha256':m['api_sha256'],'query_equivalence_checks':34,'aggregate_equivalence_checks':15,'quality_checks':29,'assignment_checks':25,'expense_checks':31,'fleet_sites_checks':23,'fleet_team_checks':33,'fleet_asset_checks':25,'coverage_checks':8,'business_read_regression':True,'xlsx_template_and_tenant_filters':True,'sim_identity_regressions':True}))
+  (stage/'validation.json').write_text(json.dumps({'api_sha256':m['api_sha256'],'query_equivalence_checks':34,'aggregate_equivalence_checks':15,'metrics_equivalence_checks':17,'quality_checks':29,'assignment_checks':25,'expense_checks':31,'fleet_sites_checks':23,'fleet_team_checks':33,'fleet_asset_checks':25,'coverage_checks':8,'business_read_regression':True,'xlsx_template_and_tenant_filters':True,'sim_identity_regressions':True}))
  finally:subprocess.run(['systemctl','stop',unit],check=False)
  sys.exit(0)
 assert json.loads((stage/'validation.json').read_text())['api_sha256']==m['api_sha256']
@@ -60,7 +60,7 @@ with psycopg2.connect(c['DATABASE_URL']) as db:
   cur.execute("SELECT version,encode(checksum,'hex') FROM _sqlx_migrations WHERE success ORDER BY version"); applied=dict(cur.fetchall())
 with tarfile.open(stage/'source-final.tar.gz') as t:
  embedded={int(pathlib.PurePosixPath(f.name).name.split('_')[0]):hashlib.sha384(t.extractfile(f).read()).hexdigest() for f in t.getmembers() if f.isfile() and f.name.startswith('gps-tracker-api/migrations/') and f.name.endswith('.sql')}
-assert applied==embedded and max(applied)==80
+assert applied=={v:h for v,h in embedded.items() if v<=80} and max(applied)==80 and set(embedded)-set(applied)=={81}
 
 # Explicitly guard the neighboring services and deployments.
 def neighbors():
@@ -120,11 +120,11 @@ try:
    cur.execute("SELECT version,encode(checksum,'hex') FROM _sqlx_migrations WHERE success ORDER BY version");assert dict(cur.fetchall())==embedded
    cur.execute('SELECT count(*) FROM fleet_vehicles');assert cur.fetchone()[0]>=10
    cur.execute("SELECT count(*) FROM users u WHERE NOT EXISTS(SELECT 1 FROM fleet_expense_categories c WHERE c.owner_id=u.id)");assert cur.fetchone()[0]==0
- result={'release':m['release'],'web_commit':m['git_commit'],'api_release':m['api_release'],'schema':80,'neighbors_unchanged':True,'backup':str(backup),'api_sha256':sha(api)}
+ result={'release':m['release'],'web_commit':m['git_commit'],'api_release':m['api_release'],'schema':81,'neighbors_unchanged':True,'backup':str(backup),'api_sha256':sha(api)}
  (target/'deployment.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
 except Exception:
- # This follow-up does not change schema 80; the previous API remains compatible.
- # Preserve all data and restore the previous API/web if any release check fails.
+ # Do not remove the additive metrics function after a migrated failure.
+ # Restore the prior API only if schema 81 has not committed; otherwise forward repair.
  with psycopg2.connect(c['DATABASE_URL']) as db:
   db.set_session(readonly=True,autocommit=True)
   with db.cursor() as cur:
