@@ -2,7 +2,7 @@
 import hashlib,json,os,pathlib,shutil,subprocess,sys,tarfile,time,urllib.parse,urllib.request
 import psycopg2
 mode=sys.argv[1]; assert mode in ('validate','promote')
-stage=pathlib.Path('/home/mmm/gps-artifacts/location-query-20261031-r1')
+stage=pathlib.Path('/home/mmm/gps-artifacts/location-query-20261031-r2')
 m=json.loads((stage/'manifest.json').read_text())
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 run=lambda a:subprocess.run(a,check=True)
@@ -39,7 +39,7 @@ if mode=='validate':
   run(['systemd-run','--collect','--unit='+unit,'-p','User=mmm','-p','Group=mmm','-p','EnvironmentFile='+str(validation_env),'-p','WorkingDirectory='+str(stage),'-p','MemoryMax=500M','--setenv=UPLOAD_DIR='+str(stage/'uploads'),'--setenv=PRIVATE_UPLOAD_DIR='+str(stage/'private'),str(stage/'gps-tracker-api')])
   health(True,m['api_release'])
   for script in ('test_dev_speed.py','test_fleet_trip_quality.py','test_fleet_trip_assignment.py','test_fleet_expenses.py','test_fleet_sites.py','test_fleet_team.py','test_fleet_assets.py','test_corporate_template.py','test_corporate_coverage.py','test_business_api.py','test_sim_hardware.py','test_sim_first_registration.py'):run(['python3',str(stage/script),str(validation_env),'http://127.0.0.1:3042'])
-  (stage/'validation.json').write_text(json.dumps({'api_sha256':m['api_sha256'],'query_equivalence_checks':34,'quality_checks':29,'assignment_checks':25,'expense_checks':31,'fleet_sites_checks':23,'fleet_team_checks':33,'fleet_asset_checks':25,'coverage_checks':8,'business_read_regression':True,'xlsx_template_and_tenant_filters':True,'sim_identity_regressions':True}))
+  (stage/'validation.json').write_text(json.dumps({'api_sha256':m['api_sha256'],'query_equivalence_checks':34,'aggregate_equivalence_checks':15,'quality_checks':29,'assignment_checks':25,'expense_checks':31,'fleet_sites_checks':23,'fleet_team_checks':33,'fleet_asset_checks':25,'coverage_checks':8,'business_read_regression':True,'xlsx_template_and_tenant_filters':True,'sim_identity_regressions':True}))
  finally:subprocess.run(['systemctl','stop',unit],check=False)
  sys.exit(0)
 assert json.loads((stage/'validation.json').read_text())['api_sha256']==m['api_sha256']
@@ -51,8 +51,8 @@ def disk_guard():
 disk_guard()
 api=pathlib.Path('/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api')
 web=pathlib.Path('/home/mmm/gps-tracker-web/dist-root'); env=pathlib.Path('/home/mmm/projects/gps-tracker-api/.env'); nginx=pathlib.Path('/etc/nginx/sites-available/gps.serial.kr')
-assert sha(api)=='829e6d9351aeab2a128cc610a69847aa5ab82d184b8a53310ef7693360f4fae3'
-assert json.loads((web/'version.json').read_text())['git_commit']=='114110bc0e796732f0db3eb6cc75331aee269794'
+assert sha(api)=='35727f8d40f6553d078e02f604677369c4f6a7b5914360b1550a73bdb191367e'
+assert json.loads((web/'version.json').read_text())['git_commit']=='fdc0daa6588b5c3e89d0b69e9fb6369cb14fa47e'
 c=cfg(env)
 with psycopg2.connect(c['DATABASE_URL']) as db:
  db.set_session(readonly=True,autocommit=True)
@@ -60,7 +60,7 @@ with psycopg2.connect(c['DATABASE_URL']) as db:
   cur.execute("SELECT version,encode(checksum,'hex') FROM _sqlx_migrations WHERE success ORDER BY version"); applied=dict(cur.fetchall())
 with tarfile.open(stage/'source-final.tar.gz') as t:
  embedded={int(pathlib.PurePosixPath(f.name).name.split('_')[0]):hashlib.sha384(t.extractfile(f).read()).hexdigest() for f in t.getmembers() if f.isfile() and f.name.startswith('gps-tracker-api/migrations/') and f.name.endswith('.sql')}
-assert applied=={v:h for v,h in embedded.items() if v<=79} and max(applied)==79 and set(embedded)-set(applied)=={80}
+assert applied==embedded and max(applied)==80
 
 # Explicitly guard the neighboring services and deployments.
 def neighbors():
@@ -69,7 +69,7 @@ def neighbors():
          'shield':str(pathlib.Path('/srv/shield/current').resolve()),
          'processes':subprocess.check_output(['systemctl','show','gps-tracker-api-dev','shield-api','-p','MainPID','-p','ActiveEnterTimestamp']).decode()}
 other=neighbors()
-backup=pathlib.Path('/home/mmm/backups/location-query-20261031-r1');backup.mkdir()
+backup=pathlib.Path('/home/mmm/backups/location-query-20261031-r2');backup.mkdir()
 baseline={'api_sha256':sha(api),'web':str(web.resolve()),'env_sha256':sha(env),'nginx_sha256':sha(nginx),'health':health(),'neighbors':other}
 # A complete pg_dump is retained before the function replacement migration.
 u=urllib.parse.urlsplit(c['DATABASE_URL'])
@@ -123,13 +123,13 @@ try:
  result={'release':m['release'],'web_commit':m['git_commit'],'api_release':m['api_release'],'schema':80,'neighbors_unchanged':True,'backup':str(backup),'api_sha256':sha(api)}
  (target/'deployment.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
 except Exception:
- # Never reverse schema 80 or discard correction writes. If migration
- # committed, retain the new API for forward repair and revert only the UI.
+ # This follow-up does not change schema 80; the previous API remains compatible.
+ # Preserve all data and restore the previous API/web if any release check fails.
  with psycopg2.connect(c['DATABASE_URL']) as db:
   db.set_session(readonly=True,autocommit=True)
   with db.cursor() as cur:
    cur.execute('SELECT max(version) FROM _sqlx_migrations WHERE success');version=cur.fetchone()[0]
- if version==79:
+ if version==80:
   shutil.copy2(backup/'api.previous',nextapi);nextapi.chmod(0o755);os.replace(nextapi,api)
  if nextweb.is_symlink():nextweb.unlink()
  nextweb.symlink_to(baseline['web'],target_is_directory=True);os.replace(nextweb,web)

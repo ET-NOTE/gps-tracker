@@ -1,5 +1,5 @@
 """Clone-only query equivalence against migration 64; all fixtures roll back."""
-import datetime as dt,json,pathlib,sys,tarfile,urllib.parse,uuid
+import datetime as dt,json,pathlib,re,sys,tarfile,urllib.parse,uuid
 import psycopg2
 from psycopg2.extras import execute_values
 c={k:v.strip().strip('"').strip("'") for k,v in (s.split('=',1) for s in pathlib.Path(sys.argv[1]).read_text().splitlines() if '=' in s and not s.startswith('#'))}
@@ -8,6 +8,10 @@ stage=pathlib.Path(__file__).parent
 with tarfile.open(stage/'source-final.tar.gz') as t:
  old=t.extractfile('gps-tracker-api/migrations/0064_server_coordinate_speed.sql').read().decode()
  migration=t.extractfile('gps-tracker-api/migrations/0080_location_query_payloads.sql').read().decode()
+ api_source=t.extractfile('gps-tracker-api/src/routes/devices.rs').read().decode()
+aggregate=re.search(r'"(WITH speed AS MATERIALIZED \(.*?ORDER BY time_bucket\(\$4::text::interval,recorded_at\))",',api_source,re.S).group(1)
+old_aggregate='SELECT jsonb_build_object'+aggregate.split('SELECT jsonb_build_object',1)[1]
+old_aggregate=old_aggregate.replace('FROM speed','FROM location_speed_points_between($1,$5,$2,$3)')
 points='CREATE OR REPLACE FUNCTION location_points_between'+old.split('CREATE OR REPLACE FUNCTION location_points_between')[1].split('$$;')[0]+'$$;'
 speed='CREATE FUNCTION location_speed_points_between'+old.split('CREATE FUNCTION location_speed_points_between')[1].split('$$;')[0]+'$$;'
 points=points.replace('FUNCTION location_points_between','FUNCTION pg_temp.before_points')
@@ -51,5 +55,22 @@ with psycopg2.connect(c['DATABASE_URL']) as db:
   for before,after in [('pg_temp.before_points','location_points_between'),('pg_temp.before_speeds','location_speed_points_between')]:
    owner=a;lo=start;hi=start+dt.timedelta(hours=1)
    assert values(before)==values(after);checks+=1
-  print(json.dumps({'query_equivalence_checks':checks,'raw_payloads_and_metadata':True,'owner_and_source_isolation':True,'far_anchor_batches':True,'empty_invalid_batches':True,'null_inclusive_and_reverse_windows':True,'late_insert_delete':True}))
+  aggregate_checks=0
+  def aggregated(query,owner,interval,lo,hi,exclusive):
+   args=[did,lo,hi,interval,owner,exclusive]
+   query=re.sub(r'\$(\d+)',lambda m:q.mogrify('%s',(args[int(m[1])-1],)).decode(),query)
+   q.execute(query);return [r[0] for r in q.fetchall()]
+  for owner in (a,b):
+   for interval in ('1 minute','5 minutes','1 hour'):
+    for exclusive in (False,True):
+     args=(owner,interval,start,start+dt.timedelta(minutes=1),exclusive)
+     assert aggregated(old_aggregate,*args)==aggregated(aggregate,*args),(owner,interval,exclusive)
+     aggregate_checks+=1
+  for minutes,interval in ((1,'1 minute'),(5,'5 minutes'),(60,'1 hour')):
+   middle=start+dt.timedelta(minutes=minutes);end=middle+dt.timedelta(minutes=minutes)
+   whole=aggregated(aggregate,a,interval,start,end,True)
+   parts=aggregated(aggregate,a,interval,start,middle,True)+aggregated(aggregate,a,interval,middle,end,True)
+   assert whole==parts,interval
+   aggregate_checks+=1
+  print(json.dumps({'query_equivalence_checks':checks,'aggregate_equivalence_checks':aggregate_checks,'raw_payloads_and_metadata':True,'owner_and_source_isolation':True,'far_anchor_batches':True,'empty_invalid_batches':True,'null_inclusive_and_reverse_windows':True,'late_insert_delete':True}))
  finally:db.rollback()

@@ -1425,8 +1425,8 @@ async fn batch_stats(
 }
 
 // ===========================================================================
-// Continuous aggregate 쿼리 — TimescaleDB 의 location_1min / location_1hour view.
-// 시간 범위가 큰 historical chart 가속용. 사용자가 bucket 명시 (1m | 1h).
+// Bucketed coordinate/speed history. Materialize the narrow speed result once:
+// otherwise SQL inlining can repeat speed calculations for each aggregate.
 // ===========================================================================
 #[derive(Debug, Deserialize)]
 pub struct AggregatedQuery {
@@ -1473,7 +1473,12 @@ async fn locations_aggregated(
         ));
     }
     let out: Vec<Value> = sqlx::query_scalar(
-        "SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+        "WITH speed AS MATERIALIZED (
+          SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+            speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+          FROM location_speed_points_between($1,$5,$2,$3)
+         )
+         SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
           'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
           'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
           'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
@@ -1482,7 +1487,7 @@ async fn locations_aggregated(
           'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
           'speed_interval_s',last(speed_interval_s,recorded_at),
           'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
-         FROM location_speed_points_between($1,$5,$2,$3)
+         FROM speed
          WHERE device_id=$1 AND user_id=$5 AND fix=true
            AND recorded_at >= $2 AND recorded_at <= $3
            AND (NOT $6 OR recorded_at < $3)
