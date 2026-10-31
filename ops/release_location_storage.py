@@ -1,6 +1,7 @@
 """Guarded history projection release. Additive schema 82; production QA is read-only."""
 import hashlib,json,os,pathlib,shutil,subprocess,sys,tarfile,time,urllib.parse,urllib.request
 import psycopg2
+from release_assets import inherit_immutable_assets
 mode=sys.argv[1]; assert mode in ('validate','promote')
 stage=pathlib.Path('/home/mmm/gps-artifacts/location-storage-20261031-r1')
 m=json.loads((stage/'manifest.json').read_text())
@@ -86,8 +87,7 @@ with tarfile.open(stage/'web.tar.gz') as t:
  t.extractall(dest)
 for name,h in m['web_files'].items():assert (dest/name).resolve().is_relative_to(dest) and sha(dest/name)==h
 assert b'"/assets/' in (dest/'index.html').read_bytes()
-for old in (web/'assets').iterdir():
- if old.is_file() and not (dest/'assets'/old.name).exists():shutil.copy2(old,dest/'assets'/old.name)
+asset_reuse=inherit_immutable_assets(web/'assets',dest/'assets')
 if (web/'uploads').is_symlink():(dest/'uploads').symlink_to((web/'uploads').resolve(),target_is_directory=True)
 (dest/'version.json').write_text(json.dumps(dict(m,target='production'),indent=2))
 for name in ('manifest.json','validation.json'):shutil.copy2(stage/name,target/name)
@@ -120,7 +120,7 @@ try:
    cur.execute("SELECT version,encode(checksum,'hex') FROM _sqlx_migrations WHERE success ORDER BY version");assert dict(cur.fetchall())==embedded
    cur.execute('SELECT count(*) FROM fleet_vehicles');assert cur.fetchone()[0]>=10
    cur.execute("SELECT count(*) FROM users u WHERE NOT EXISTS(SELECT 1 FROM fleet_expense_categories c WHERE c.owner_id=u.id)");assert cur.fetchone()[0]==0
- result={'release':m['release'],'web_commit':m['git_commit'],'api_release':m['api_release'],'schema':82,'neighbors_unchanged':True,'backup':str(backup),'api_sha256':sha(api)}
+ result={'release':m['release'],'web_commit':m['git_commit'],'api_release':m['api_release'],'schema':82,'neighbors_unchanged':True,'backup':str(backup),'api_sha256':sha(api),'asset_reuse':asset_reuse}
  (target/'deployment.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
 except Exception:
  # This migration only adds two query functions. Stop new readers, verify the
