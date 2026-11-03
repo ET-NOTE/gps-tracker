@@ -14,6 +14,7 @@ import NotificationSettings from './NotificationSettings';
 import { useTheme, toggleTheme } from '../theme';
 import { confirmDialog, alertDialog, promptDialog } from './Dialog';
 import { startPhoneTracker, stopPhoneTracker } from '../lib/phoneTracker';
+import './ProfilePanel.css';
 
 // Match the versioned public files; ZIP is the default distribution format.
 const APP_DOWNLOAD = {
@@ -60,28 +61,22 @@ export default function ProfilePanel({ onLogout, accountType }) {
   ];
 
   return (
-    <div className="gps-user-panel" style={st.wrap}>
-      <div style={st.tabBar}>
+    <div className="gps-user-panel profile-panel" style={st.wrap}>
+      <nav className="profile-tabs" aria-label="내 정보 메뉴">
         {tabs.map(t => {
           const on = tab === t.id;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              style={{
-                ...st.tabBtn,
-                color: on ? 'var(--primary)' : 'var(--text-2)',
-                background: on ? 'var(--surface-2)' : 'transparent',
-                fontWeight: on ? 600 : 500,
-                borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
-              }}>
+            <button key={t.id} onClick={() => setTab(t.id)} className="profile-tab"
+              aria-label={t.label} aria-current={on ? 'page' : undefined}>
               <Icon name={t.icon} size={14} />
-              <span>{t.label}</span>
+              <span>{t.id === 'chat' ? '채팅' : t.label}</span>
               {t.badge > 0 && (
                 <span style={st.badge}>{t.badge}</span>
               )}
             </button>
           );
         })}
-      </div>
+      </nav>
 
       <div style={tab === 'chat' ? st.bodyFill : st.body}>
         {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} />}
@@ -150,7 +145,13 @@ function AccountTab({ me, setMe, onLogout }) {
         <Field label="권한"   value={{ user: '일반 사용자', admin: '관리자' }[me.role] || me.role} />
       </Card>
 
-      <Card title="회사 초대 연결"><p style={{fontSize:13,color:'var(--text-2)'}}>관리자에게 받은 초대 코드로 회사에 참여하세요.</p><button style={st.btnSecondary} onClick={()=>setJoinFleet(true)}>초대 코드 입력</button><button style={{...st.btnSecondary,marginLeft:8}} onClick={()=>navigate('/corporate')}>회사 화면 열기</button></Card>
+      <Card title="회사 초대 연결">
+        <p className="profile-help">초대 코드로 회사에 참여하세요.</p>
+        <div className="profile-company-actions">
+          <button style={st.btnSecondary} onClick={()=>setJoinFleet(true)}>초대 코드 입력</button>
+          <button style={st.btnSecondary} onClick={()=>navigate('/corporate')}>회사 화면 열기</button>
+        </div>
+      </Card>
       {joinFleet&&<FleetJoin onClose={()=>setJoinFleet(false)} onJoined={async id=>{rememberFleetOwner(id);await qc.invalidateQueries({queryKey:['fleet-memberships']});setJoinFleet(false);navigate('/corporate');}}/>}
       <AccountTypeCard />
 
@@ -562,33 +563,21 @@ function AccountTypeCard() {
 
   return (
     <Card title="계정 유형">
-      <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.6 }}>
-        사용 목적에 맞는 메뉴를 선택하세요. 유형을 변경해도 등록된 단말기와 운행기록은 유지됩니다.
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+      <p className="profile-help">사용할 메뉴를 선택하세요. 단말기와 운행기록은 유지됩니다.</p>
+      <div className="profile-type-grid">
         {Object.entries(TYPE_META).map(([id, meta]) => {
           const on = selected === id;
           return (
             <button key={id} onClick={() => setSelection(id)} disabled={busy} aria-pressed={on}
-              style={{
-                padding: '14px 12px',
-                background: on ? 'color-mix(in srgb,var(--primary) 8%,var(--surface))' : 'var(--surface)',
-                color: 'var(--text)',
-                border: on ? '1px solid var(--primary)' : '1px solid var(--border)',
-                borderRadius: 8,
-                cursor: busy ? 'not-allowed' : 'pointer',
-                fontSize: 12, fontWeight: on ? 700 : 500,
-                textAlign: 'left',
-                opacity: busy ? 0.6 : 1,
-              }}>
-              <span style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, fontWeight: 700, marginBottom: 8, color: on ? 'var(--primary)' : 'var(--text)' }}><Icon name={meta.icon} size={17} />{meta.label}</span>
-              <span style={{ display: 'block', color: 'var(--text-2)', fontSize: 12, lineHeight: 1.6, fontWeight: 400 }}>{meta.desc}</span>
+              aria-label={meta.label} className="profile-type-option">
+              <span className="profile-type-title"><Icon name={meta.icon} size={17} /><span>{meta.label}</span></span>
+              <span className="profile-type-description">{meta.desc}</span>
             </button>
           );
         })}
       </div>
-      <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: 'var(--surface-2)', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7 }}>선택한 메뉴<br /><strong style={{ color: 'var(--text)' }}>{TYPE_META[selected]?.menus}</strong><br />운행 리포트 등 일부 기능은 별도 이용권이 필요합니다.</div>
-      <button onClick={() => pick(selected)} disabled={busy || selected === cur} style={{ ...st.btnPrimary, width: '100%', minHeight: 44, marginTop: 12 }}>{busy ? '변경 중…' : selected === cur ? '현재 사용 중인 유형' : `${TYPE_META[selected]?.label} 적용`}</button>
+      <div className="profile-type-summary"><span>선택한 메뉴</span><strong>{TYPE_META[selected]?.menus}</strong><span>일부 기능은 별도 이용권이 필요합니다.</span></div>
+      <button onClick={() => pick(selected)} disabled={busy || selected === cur} style={{ ...st.btn, marginTop: 12 }}>{busy ? '변경 중…' : selected === cur ? '현재 사용 중인 유형' : `${TYPE_META[selected]?.label} 적용`}</button>
     </Card>
   );
 }
@@ -1234,16 +1223,16 @@ function LabToggleRow({ label, desc, on, onChange, busy }) {
 // ─── 공용 sub-컴포넌트 ─────────────────────────────────
 function Card({ title, children }) {
   return (
-    <div style={st.card}>
-      {title && <div style={st.cardTitle}>{title}</div>}
+    <section className="profile-card" style={st.card}>
+      {title && <h2 style={st.cardTitle}>{title}</h2>}
       {children}
-    </div>
+    </section>
   );
 }
 
 function Field({ label, value }) {
   return (
-    <div style={st.row}>
+    <div className="profile-field" style={st.row}>
       <span style={{ color: 'var(--text-2)', fontSize: 12 }}>{label}</span>
       <span style={{ color: 'var(--text)', fontSize: 13 }}>{value || '—'}</span>
     </div>
@@ -1253,23 +1242,7 @@ function Field({ label, value }) {
 const st = {
   wrap: {
     display: 'flex', flexDirection: 'column',
-    height: '100%', minHeight: 0,
-  },
-  tabBar: {
-    display: 'flex', overflowX: 'auto',
-    background: 'var(--surface)',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-    scrollbarWidth: 'thin',
-  },
-  tabBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: 5,
-    padding: '10px 12px',
-    background: 'transparent',
-    border: 'none',
-    fontSize: 12, cursor: 'pointer',
-    whiteSpace: 'nowrap', flexShrink: 0,
-    transition: 'background .12s, color .12s',
+    height: '100%', minHeight: 0, minWidth: 0, width: '100%',
   },
   badge: {
     minWidth: 16, height: 16, padding: '0 5px',
@@ -1297,14 +1270,13 @@ const st = {
     display: 'flex', flexDirection: 'column',
   },
   card: {
-    background: 'var(--surface-2)',
+    background: 'var(--surface)', minWidth: 0,
     border: '1px solid var(--border)',
-    borderRadius: 10, padding: 12,
+    borderRadius: 12, padding: 14,
   },
   cardTitle: {
-    fontWeight: 700, fontSize: 12, color: 'var(--text-2)',
-    textTransform: 'uppercase', letterSpacing: '0.04em',
-    marginBottom: 8,
+    fontWeight: 700, fontSize: 14, color: 'var(--text)',
+    lineHeight: 1.5, marginBottom: 10,
   },
   row: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
