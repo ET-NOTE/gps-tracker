@@ -43,6 +43,11 @@
 정차 및 GNSS 미수신 상태에서 계속 깨어 있는 동안 LTE 수신을 먼저 시험한다.
 아래 `7e29fdf` 패키지는 절전이 켜져 있던 1차 빌드 기록이다. 절전 복귀 시험은 절전 기능을 켠 후보로 별도 수행한다.
 
+상시 기동 후보는 펌웨어 커밋 `ae664c1`, 빌드 태그 `idf-caltest/https-pilot-ae664c1a1c`이다.
+ESP-IDF 5.5.4로 빌드한 바이너리에서 `sleep_disabled=1`, `timer_wake_enabled=0`, `loop_wdt_enabled=1`을 확인했다.
+호스트 시험 148개를 통과했다. `gps-https-pilot-awake-ae664c1.zip` SHA-256은
+`d6b83a76f8d1d28f781bbc1b1229f3c005a98e3b7f8dbc1b0a511cec06d850b6`이다. 실물 플래시는 대기 중이다.
+
 파일럿은 고정 주소 `https://gps.serial.kr/ingest`에 TLS 1.2, SNI, RTC 검사, ISRG Root X2 CA를 사용한다. 서명키 발급·NVS 카운터·SIM 소유권 경로는 기존 방식을 사용한다. 빌드 명령은 [펌웨어 README](../../idf_caltest/README.md)에 있다.
 
 2026-11-04 PC에서 루트 X2만으로 호스트명을 검증한 TLS 1.2 연결이 성공했다. HTTPS 수집 경로의 HEAD 응답은 405, 허용 메서드는 POST였다. PC의 이 점검과 모뎀 모의 시험은 실기기 승인과 별도로 기록한다. SNI 설정만으로 모뎀의 호스트명 검증을 입증할 수 없으므로 아래 거부 시험을 필수로 한다.
