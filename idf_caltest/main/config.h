@@ -41,7 +41,15 @@
 #define LTE_BAUD       115200
 #define LTE_RX_BUF     1024         // HW팀 기대값(표준): UART RX 링버퍼 256→1024 (오버플로우 여유)
 #define APN_NAME       "iot.1nce.net"
-#define POST_URL_HOST  "http://gps.serial.kr"
+#ifndef GPS_HTTPS_PILOT
+  #define GPS_HTTPS_PILOT 0
+#endif
+#define INGEST_HOSTNAME "gps.serial.kr"
+#if GPS_HTTPS_PILOT
+  #define POST_URL_HOST "https://" INGEST_HOSTNAME
+#else
+  #define POST_URL_HOST "http://" INGEST_HOSTNAME
+#endif
 #define POST_PATH      "/ingest"
 
 // ── 배터리 ───────────────────────────────────────────────────────
@@ -202,7 +210,7 @@
 // ── 진단 출력 ────────────────────────────────────────────────────
 #define STATUS_PRINT_MS   1000UL
 
-#define DBG  1
+#define DBG  (!GPS_HTTPS_PILOT)   // Pilot: omit verbose UART dumps of coordinates and authentication headers.
 #define DBGLN(...)  do { if (DBG) Serial.println(__VA_ARGS__); } while (0)
 #define DBGP(...)   do { if (DBG) Serial.print(__VA_ARGS__); } while (0)
 

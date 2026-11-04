@@ -9,6 +9,9 @@
 #include <inttypes.h>
 #include <HardwareSerial.h>
 #include <ctype.h>
+#if GPS_HTTPS_PILOT
+#include "ingest_root_ca.h"
+#endif
 
 namespace lte {
 
@@ -69,6 +72,10 @@ static bool sendAT(const char *cmd, const char *expect, uint32_t timeoutMs) {
       if (DBG) { Serial.print(F("<< (UV abort) ")); Serial.println(lastResp); }
       return false;
     }
+#if GPS_HTTPS_PILOT
+    if (lastResp.indexOf("\r\nERROR\r\n") >= 0 || lastResp.indexOf("+CME ERROR:") >= 0 ||
+        lastResp.indexOf("\r\nRDY\r\n") >= 0) return false;
+#endif
     if (expect && lastResp.indexOf(expect) >= 0) {
       if (DBG) { Serial.print(F("<< ")); Serial.println(lastResp); }
       return true;
@@ -492,7 +499,11 @@ void resetHttpKeepalive() {
 //   운행 로그 진단: SHCONN "operation not allowed" 의 주원인 = handover 로 CNACT 베어러가
 //   조용히 죽었는데 CNACT? 확인 없이 SHCONN 을 쏨. 죽은 베어러 위 SHCONN 은 무조건 거부.
 static bool bearerActive() {
+#if GPS_HTTPS_PILOT
+  if (!sendAT("AT+CNACT?", "\r\nOK\r\n", 2000)) return false;
+#else
   if (!sendAT("AT+CNACT?", "+CNACT:", 2000)) return false;
+#endif
   int p = lastResp.indexOf("+CNACT: 0,");
   if (p < 0) return false;
   if (lastResp.substring(p + 10, p + 11).toInt() != 1) return false;   // status 0,<1>
@@ -505,11 +516,92 @@ static bool bearerActive() {
   return false;
 }
 
+#if GPS_HTTPS_PILOT
+static constexpr char okLine[] = "\r\nOK\r\n";
+static bool caPrepared = false;
+
+static bool closePilotSession() {
+  if (!sendAT("AT+SHSTATE?", okLine, 3000)) return false;
+  if (lastResp.indexOf("+SHSTATE: 0\r\n") >= 0 || lastResp.indexOf("+SHSTATE:0\r\n") >= 0) return true;
+  return sendAT("AT+SHDISC", okLine, 10000) &&
+         sendAT("AT+SHSTATE?", okLine, 3000) &&
+         (lastResp.indexOf("+SHSTATE: 0\r\n") >= 0 || lastResp.indexOf("+SHSTATE:0\r\n") >= 0);
+}
+
+// The PEM fits in lastResp (2 KiB). Verify both file length and contents.
+static bool caMatches() {
+  if (!sendAT("AT+CFSGFIS=3,\"" GPS_CA_FILE "\"", okLine, 3000)) return false;
+  char sizeLine[40];
+  snprintf(sizeLine, sizeof(sizeLine), "+CFSGFIS: %u\r\n", (unsigned)(sizeof(gpsRootCa) - 1));
+  if (lastResp.indexOf(sizeLine) < 0) return false;
+  char cmd[96];
+  snprintf(cmd, sizeof(cmd), "AT+CFSRFILE=3,\"%s\",0,%u,0", GPS_CA_FILE, (unsigned)(sizeof(gpsRootCa) - 1));
+  return sendAT(cmd, okLine, 5000) && lastResp.indexOf(gpsRootCa) >= 0;
+}
+
+static bool installCa() {
+  constexpr unsigned size = sizeof(gpsRootCa) - 1;
+  char cmd[96];
+  // Only the pilot's own versioned file is replaced, never the modem's other trust anchors.
+  sendAT("AT+CFSDFILE=3,\"" GPS_CA_FILE "\"", okLine, 3000);
+  snprintf(cmd, sizeof(cmd), "AT+CFSWFILE=3,\"%s\",0,%u,10000", GPS_CA_FILE, size);
+  if (!sendAT(cmd, "\r\nDOWNLOAD\r\n", 3000)) return false;
+  serial.write(reinterpret_cast<const uint8_t*>(gpsRootCa), size);
+  return sendAT(nullptr, okLine, 11000) && caMatches();
+}
+
+static bool prepareCa() {
+  if (caPrepared) return true;
+  if (!sendAT("AT+CFSINIT", okLine, 3000)) return false;
+  bool matches = caMatches();
+  if (!matches) matches = installCa();
+  bool closed = sendAT("AT+CFSTERM", okLine, 3000);
+  caPrepared = matches && closed &&
+               sendAT("AT+CSSLCFG=\"CONVERT\",2,\"" GPS_CA_FILE "\"", okLine, 20000);
+  return caPrepared;
+}
+
+static bool modemClockSet() {
+  if (!sendAT("AT+CCLK?", okLine, 3000)) return false;
+  int start = lastResp.indexOf("+CCLK: \"");
+  int year = 0, month = 0, day = 0;
+  return start >= 0 && sscanf(lastResp.c_str() + start + 8, "%2d/%2d/%2d", &year, &month, &day) == 3 &&
+         year >= 26 && month >= 1 && month <= 12 && day >= 1 && day <= 31;
+}
+
+static bool configureTls() {
+  if (!prepareCa()) { Serial.println("[TLS] CA preparation failed"); return false; }
+  if (!modemClockSet() &&
+      !(sendAT("AT+CNTPCID=0", okLine, 2000) &&
+        sendAT("AT+CNTP=\"time.cloudflare.com\",0", okLine, 3000) &&
+        sendAT("AT+CNTP", "\r\n+CNTP: 1\r\n", 45000) && modemClockSet())) {
+    Serial.println("[TLS] Modem clock unavailable");
+    return false;
+  }
+  if (!sendAT("AT+CSSLCFG=\"SSLVERSION\",1,3", okLine, 2000) ||
+      !sendAT("AT+CSSLCFG=\"IGNORERTCTIME\",1,0", okLine, 2000) ||
+      !sendAT("AT+CSSLCFG=\"SNI\",1,\"" INGEST_HOSTNAME "\"", okLine, 2000) ||
+      !sendAT("AT+SHSSL=1,\"" GPS_CA_FILE "\"", okLine, 3000)) {
+    caPrepared = false;
+    Serial.println("[TLS] Secure context rejected");
+    return false;
+  }
+  return true;
+}
+#endif
+
 // SHCONF/SHSSL — host 고정이라 세션당 1회. 성공 시 httpConfigured_ 는 호출측이 세팅.
 static bool configureHttp() {
   char cmd[96];
   sendAT("AT+CGNSPWR=0", "OK", 1000);
   waitUartIdle(200, 1000);
+#if GPS_HTTPS_PILOT
+  if (!closePilotSession() || !configureTls()) return false;
+  snprintf(cmd, sizeof(cmd), "AT+SHCONF=\"URL\",\"%s\"", POST_URL_HOST);
+  return sendAT(cmd, okLine, 2000) &&
+         sendAT("AT+SHCONF=\"BODYLEN\",4096", okLine, 2000) &&
+         sendAT("AT+SHCONF=\"HEADERLEN\",350", okLine, 2000);
+#else
   sendAT("AT+SHDISC", nullptr, 800);            // 잔류 연결 정리
   waitUartIdle(200, 1000);
   snprintf(cmd, sizeof(cmd), "AT+SHCONF=\"URL\",\"%s\"", POST_URL_HOST);
@@ -518,6 +610,7 @@ static bool configureHttp() {
   sendAT("AT+SHCONF=\"HEADERLEN\",350", "OK", 2000);
   sendAT("AT+SHSSL=0,\"\"", "OK", 2000);
   return true;
+#endif
 }
 
 // (P4) SHCONN 견고화: ①베어러 실활성 확인(죽었으면 재활성) ②SHCONF 보장 ③잔류 SHDISC
@@ -534,10 +627,17 @@ static bool connectHttp() {
       if (!configureHttp()) return false;
       httpConfigured_ = true;
     }
+#if !GPS_HTTPS_PILOT
     sendAT("AT+SHDISC", nullptr, 800);          // 매 연결 전 잔류 세션 정리 (not-allowed 예방)
     waitUartIdle(150, 800);
+#endif
     bc::set("lte_shconn");                      // (crash 위치 특정) SHCONN 진입 — 오전 stuck 지점
-    if (sendAT("AT+SHCONN", "OK", SHCONN_TIMEOUT_MS)) {
+#if GPS_HTTPS_PILOT
+    bool connected = sendAT("AT+SHCONN", okLine, 30000);
+#else
+    bool connected = sendAT("AT+SHCONN", "OK", SHCONN_TIMEOUT_MS);
+#endif
+    if (connected) {
       httpConnected_ = true;
       return true;
     }
@@ -563,11 +663,17 @@ bool httpPost(const char *body, int *statusOut) {
 
   // keepalive 가정 vs 실제 conn sync (SIM7080G 가 매 SHREQ 후 auto-disconnect 하는 경우 대비)
   if (httpConnected_) {
+#if GPS_HTTPS_PILOT
+    bool stillConnected = sendAT("AT+SHSTATE?", okLine, 1500) &&
+                          (lastResp.indexOf("+SHSTATE: 1\r\n") >= 0 || lastResp.indexOf("+SHSTATE:1\r\n") >= 0);
+    if (!stillConnected) resetHttpKeepalive(); // Reapply trust settings after a modem/session reset.
+#else
     sendAT("AT+SHSTATE?", "+SHSTATE:", 1500);
     if (lastResp.indexOf("+SHSTATE: 1") < 0 && lastResp.indexOf("+SHSTATE:1") < 0) {
       DBGLN(F("[POST] SHSTATE 0 — server-side close, reconnect"));
       httpConnected_ = false;
     }
+#endif
   }
   // (P4 2026-07-03) 연결이 없으면 견고 연결 시퀀스로. connectHttp() 가 베어러 확인 +
   //   SHCONF 보장 + 잔류 SHDISC + SHCONN(2회 재시도)를 처리. 실패 시 batch 무손실 후 다음 사이클.

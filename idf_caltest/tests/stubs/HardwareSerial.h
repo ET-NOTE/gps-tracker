@@ -8,5 +8,5 @@ class HardwareSerial {
   int available();
   int read();
   void print(const char*);
-  void write(const uint8_t*,size_t) {}
+  void write(const uint8_t*,size_t);
 };

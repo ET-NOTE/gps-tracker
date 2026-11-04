@@ -23,6 +23,15 @@ def main():
         subprocess.run(["g++","-std=c++17","-DKC_TEST_BUILD=0","-DBATTERY_TEST_BUILD=0","-Wall","-Wextra","-Werror","-Wno-unused-parameter","-I",str(ROOT/"stubs"),"-I",str(cjson),str(ROOT/"report_config_test.cpp"),cjson_object,"-o",config_exe],check=True)
         subprocess.run([config_exe],check=True)
         count+=1
+        pilot = str(Path(tmp) / "https-pilot")
+        subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
+                        "-DKC_TEST_BUILD=0", "-DBATTERY_TEST_BUILD=0", "-DGPS_HTTPS_PILOT=1",
+                        "-ffunction-sections", "-fdata-sections", "-I", str(ROOT/"stubs"),
+                        str(ROOT/"https_pilot_test.cpp"), "-Wl,--gc-sections", "-o", pilot], check=True)
+        for case in ("fresh_ca", "existing_ca", "cold_clock", "clock_failure", "binding_failure",
+                     "corrupt_ca", "handshake_failure"):
+            subprocess.run([pilot, case], check=True)
+            count += 1
         for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1)):
             exe = str(Path(tmp) / f"test-{profile}")
             flags = ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",

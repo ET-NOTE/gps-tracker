@@ -1,0 +1,80 @@
+// Exercise the real LTE connection path with a deterministic SIM7080 transcript.
+#include <cassert>
+#include <deque>
+#include <string>
+#include <vector>
+#include "../main/lte.cpp"
+
+static std::string scenario, file;
+static std::vector<std::string> commands;
+static std::deque<char> rx;
+static uint32_t clockMs;
+static bool awaitingPem, active, ntpDone;
+static int handshakes, caWrites;
+SerialStub Serial;
+uint32_t millis() { return clockMs; }
+void delay(uint32_t ms) { clockMs += ms; }
+namespace bc { void set(const char*) {} }
+
+static void reply(const std::string &s) { rx.insert(rx.end(), s.begin(), s.end()); }
+int HardwareSerial::available() { return int(rx.size()); }
+int HardwareSerial::read() { int c = rx.front(); rx.pop_front(); return c; }
+void HardwareSerial::write(const uint8_t *data, size_t size) {
+  assert(awaitingPem);
+  file.assign(reinterpret_cast<const char*>(data), size);
+  if (scenario == "corrupt_ca") file[50] ^= 1;
+  awaitingPem = false;
+  ++caWrites;
+  reply("\r\nOK\r\n");
+}
+void HardwareSerial::print(const char *s) {
+  std::string cmd(s);
+  if (cmd == "\r\n") return;
+  commands.push_back(cmd);
+  assert(cmd.find("http://") == cmd.npos && cmd.find("AT+SHSSL=0") == cmd.npos);
+  assert(cmd.find("AT+SHSSL=1,\"\"") == cmd.npos);
+  std::string answer = "\r\nOK\r\n";
+  if (cmd == "AT+CNACT?") answer = "\r\n+CNACT: 0,1,\"10.0.0.1\"\r\nOK\r\n";
+  if (cmd == "AT+SHSTATE?") answer = active ? "\r\n+SHSTATE: 1\r\nOK\r\n" : "\r\n+SHSTATE: 0\r\nOK\r\n";
+  if (cmd == "AT+SHDISC") active = false;
+  if (cmd.find("AT+CFSGFIS") == 0)
+    answer = file.empty() ? "\r\nERROR\r\n" : "\r\n+CFSGFIS: " + std::to_string(file.size()) + "\r\nOK\r\n";
+  if (cmd.find("AT+CFSRFILE") == 0) answer = "\r\n" + file + "\r\nOK\r\n";
+  if (cmd.find("AT+CFSDFILE") == 0) file.clear();
+  if (cmd.find("AT+CFSWFILE") == 0) { awaitingPem = true; answer = "\r\nDOWNLOAD\r\n"; }
+  if (cmd == "AT+CCLK?") answer = (scenario == "clock_failure" || scenario == "cold_clock") && !ntpDone
+      ? "\r\n+CCLK: \"00/01/01,00:00:00+00\"\r\nOK\r\n" : "\r\n+CCLK: \"26/11/04,12:00:00+00\"\r\nOK\r\n";
+  if (cmd == "AT+CNTP") {
+    ntpDone = scenario != "clock_failure";
+    answer = ntpDone ? "\r\nOK\r\n+CNTP: 1\r\n" : "\r\nERROR\r\n";
+  }
+  if (cmd == "AT+SHSSL=1,\"" GPS_CA_FILE "\"" && scenario == "binding_failure") answer = "\r\nERROR\r\n";
+  if (cmd == "AT+SHCONN") {
+    ++handshakes;
+    active = scenario != "handshake_failure";
+    if (!active) answer = "\r\nERROR\r\n";
+  }
+  reply(answer);
+}
+
+int main(int argc, char **argv) {
+  assert(argc == 2);
+  scenario = argv[1];
+  active = true; // A session left by another sketch must first be closed.
+  file = scenario == "fresh_ca" ? "" : gpsRootCa;
+  if (scenario == "corrupt_ca") file[50] ^= 1;
+  const bool success = lte::connectHttp();
+  if (scenario == "fresh_ca" || scenario == "existing_ca" || scenario == "cold_clock") {
+    assert(success && active && handshakes == 1);
+    assert(caWrites == int(scenario == "fresh_ca"));
+    assert(ntpDone == (scenario == "cold_clock"));
+    for (const auto *required : {"AT+CSSLCFG=\"SSLVERSION\",1,3", "AT+CSSLCFG=\"IGNORERTCTIME\",1,0",
+                                 "AT+CSSLCFG=\"SNI\",1,\"gps.serial.kr\"", "AT+SHSSL=1,\"" GPS_CA_FILE "\"",
+                                 "AT+SHCONF=\"URL\",\"https://gps.serial.kr\""}) {
+      assert(std::find(commands.begin(), commands.end(), required) != commands.end());
+    }
+  } else {
+    assert(!success && !lte::httpConnected());
+    assert(handshakes == (scenario == "handshake_failure" ? 2 : 0));
+  }
+}

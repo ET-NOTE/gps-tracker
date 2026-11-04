@@ -12,6 +12,7 @@
 namespace firmware {
 inline constexpr char settings[] =
   "FW-CONFIG:{\"build_tag\":\"" FIRMWARE_BUILD_TAG "\","
+  "\"ingest_url\":\"" POST_URL_HOST POST_PATH "\","
   "\"request_auth\":\"hardware_hmac_sim_v2\",\"response_auth\":1,\"credential_store\":\"nvs\","
   "\"version\":\"" FIRMWARE_VERSION "\",\"profile\":\"" FIRMWARE_PROFILE "\","
   "\"kc_test\":" FW_STRING(KC_TEST_BUILD) ","

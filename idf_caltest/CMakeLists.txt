@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 # A profile is mandatory: never reuse the historical build/caltest.bin implicitly.
-if(NOT FIRMWARE_PROFILE MATCHES "^(operating|kc|battery)$")
-  message(FATAL_ERROR "Select -DFIRMWARE_PROFILE=operating, kc or battery (see tools/build_firmware.py)")
+if(NOT FIRMWARE_PROFILE MATCHES "^(operating|https-pilot|kc|battery)$")
+  message(FATAL_ERROR "Select operating, https-pilot, kc or battery (see tools/build_firmware.py)")
+endif()
+if(FIRMWARE_PROFILE STREQUAL "https-pilot")
+  add_compile_definitions(GPS_HTTPS_PILOT=1)
 endif()
 get_filename_component(EXPECTED_BUILD "${CMAKE_CURRENT_SOURCE_DIR}/build/${FIRMWARE_PROFILE}" ABSOLUTE)
 if(NOT CMAKE_BINARY_DIR STREQUAL EXPECTED_BUILD)
