@@ -32,11 +32,13 @@ def main():
                      "corrupt_ca", "handshake_failure"):
             subprocess.run([pilot, case], check=True)
             count += 1
-        for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1)):
+        for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1), ("https-pilot", 0, 0)):
+            is_pilot = profile == "https-pilot"
+            sleep_enabled = profile == "operating"
             exe = str(Path(tmp) / f"test-{profile}")
             flags = ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
                             "-Wno-unused-parameter", f"-DKC_TEST_BUILD={kc}",
-                            f"-DBATTERY_TEST_BUILD={battery}",
+                            f"-DBATTERY_TEST_BUILD={battery}", f"-DGPS_HTTPS_PILOT={int(is_pilot)}",
                             f'-DFIRMWARE_PROFILE="{profile}"',
                             f'-DFIRMWARE_VERSION="{profile}-test"',
                             f'-DFIRMWARE_BUILD_TAG="idf-caltest/{profile}-test"',
@@ -48,12 +50,12 @@ def main():
                 count += 1
             normal, sleep = [json.loads(line) for line in subprocess.check_output(
                 [exe, "payload"], text=True).splitlines()]
-            assert normal["stationary"]["sleep_enabled"] == (not kc and not battery)
-            assert normal["stationary"]["timer_wake_enabled"] == (not kc and not battery)
+            assert normal["stationary"]["sleep_enabled"] == sleep_enabled
+            assert normal["stationary"]["timer_wake_enabled"] == sleep_enabled
             assert normal["stationary"]["build_profile"] == profile
             assert normal["stationary"]["window_s"] == 300
             assert normal["stationary"]["timer_wake_s"] == 86400
-            assert normal["stationary"]["sleep_report_remote"] == (not kc and not battery)
+            assert normal["stationary"]["sleep_report_remote"] == sleep_enabled
             assert normal["stationary"]["sleep_report_saved"]
             assert normal["stationary"]["no_gps_grace_s"] == 600
             assert normal["build_tag"] == sleep["build_tag"] == f"idf-caltest/{profile}-test"

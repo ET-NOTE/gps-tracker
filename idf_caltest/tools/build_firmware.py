@@ -76,10 +76,14 @@ def main():
     expected_url = ("https" if args.profile == "https-pilot" else "http") + "://gps.serial.kr/ingest"
     if settings["ingest_url"] != expected_url:
         raise SystemExit("Compiled ingest URL mismatch")
-    if args.profile in ("operating", "https-pilot") and (settings["kc_test"] != 0 or
+    if args.profile == "operating" and (settings["kc_test"] != 0 or
                                        settings["sleep_disabled"] != 0 or
                                        settings["timer_wake_s"] != 86400):
         raise SystemExit("Operating sleep configuration mismatch")
+    if args.profile == "https-pilot" and (settings["kc_test"] != 0 or
+            settings["sleep_disabled"] != 1 or settings["timer_wake_enabled"] != 0 or
+            settings["loop_wdt_enabled"] != 1):
+        raise SystemExit("HTTPS bench profile must stay awake with the watchdog enabled")
     if args.profile == "battery" and (settings["kc_test"] != 0 or
             settings["sleep_disabled"] != 1 or settings["loop_wdt_enabled"] != 1 or
             settings["buzzer_enabled"] != 1):

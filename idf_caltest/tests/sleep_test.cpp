@@ -143,7 +143,7 @@ int main(int argc,char** argv) {
   sleep_mgr::timerWake_=true;
   sleep_mgr::onPostSuccess();
   sleep_mgr::timerWake_=true;
-  clockMs=200000;
+  clockMs=900000; // Also exceed both production stationary and no-fix sleep thresholds.
   sleep_mgr::timerWakeTick();
   sleep_mgr::checkStationary();
   assert(strcmp(sleep_mgr::stayCause(), "disabled")==0);

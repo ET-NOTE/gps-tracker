@@ -122,12 +122,17 @@
 #define LOOP_WDT_TIMEOUT_MS       60000UL           // 60s 무진전 → panic reset (기존 "수시간 방치" 종결)
 
 // ── sleep_mgr (Block 8) ──────────────────────────────────────────
-// Battery measurements use normal operation with sleep disabled. Production
-// defaults remain unchanged; choose the separate CMake battery profile.
+// Keep the HTTPS bench terminal awake across long stationary and no-fix periods.
 #ifndef BATTERY_TEST_BUILD
   #define BATTERY_TEST_BUILD 0
 #endif
-#define SLEEP_DISABLED             BATTERY_TEST_BUILD
+#if GPS_HTTPS_PILOT
+  #define SLEEP_DISABLED           1
+  #define TIMER_WAKE_ENABLED       0
+#else
+  #define SLEEP_DISABLED           BATTERY_TEST_BUILD
+  #define TIMER_WAKE_ENABLED       1
+#endif
 #define SLEEP_TEST                 0                  // 1=벤치 sleep/wake 검증용 단축값 (운영 전 0 원복!)
 #define OBSERVE_MODE               0                  // 관찰본(sss)=1(3분창/로그유지), 운영본(aa)=0(운영 5분창). [2026-07-08 aa 최종본=0]
 // (2026-07-08) HW-DIAG 크래시 디버그 게이트 — CRASHES 카운터(NVS)+배너+긴삐3회 크래시부저+클린전원부저.
@@ -153,8 +158,6 @@
   #define GPS_DRIFT_THRESHOLD_M     50.0f             // 정지 판정 drift 임계
   #define NO_GPS_SLEEP_GRACE_MS     (10UL*60*1000UL)  // GPS 없을 때 LIS 단독 sleep 유예
 #endif
-// ★[관찰 토글] timer heartbeat wake 활성. 0 = 모션 wake only(주기적 wake 없음, 증상관찰용). SLEEP_DISABLED 과 같은 맥락.
-#define TIMER_WAKE_ENABLED         1                  // 주차 중 정기 상태 보고 활성 — sleep 중
                                                       //   LIS 고장/장기 무모션 시 유일한 안전망 + 주차중 dark 방지.
                                                       //   (0 은 sss 증상관찰 전용이었음 — 운영본에 남아있던 것 정정)
 #if OBSERVE_MODE

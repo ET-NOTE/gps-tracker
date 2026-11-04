@@ -34,7 +34,7 @@ python idf_caltest/tools/build_firmware.py https-pilot
 `config.h`를 수정해 KC 플래그를 켜고 끄지 않습니다. 프로파일 없는 CMake 빌드는 실패합니다.
 각 프로파일은 sdkconfig까지 별도로 사용하며, 기존 `build/caltest.bin`과 시험소 제출본은 덮어쓰지 않습니다.
 
-`https-pilot`은 운영 절전·HMAC·SIM 정책으로 HTTPS 수집을 실증하는 별도 빌드입니다.
+`https-pilot`은 자동 절전 진입과 타이머 기상을 끄고, 운영 HMAC·SIM 정책으로 HTTPS 수집을 시험하는 상시 기동 빌드입니다.
 파일럿에는 TLS 1.2, RTC 인증서 유효기간 검사, `gps.serial.kr` SNI 및 비어 있지 않은 CA 목록이 필요합니다.
 첫 연결 시 펌웨어가 공개 루트 ISRG Root X2를 모뎀에 준비합니다. RTC가 초기 상태이면 PDP를 통해 NTP 동기화를 시도합니다.
 파일럿의 설정·인증서 오류는 연결 실패로 처리합니다. 호스트명 불일치 거부와 모뎀별 인증서 검증은
