@@ -1,3 +1,4 @@
+import {CompanyReviewSummary} from './PrivacyCompanyReview';
 import {useEffect,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Link} from 'react-router-dom';
@@ -76,6 +77,7 @@ export default function PrivacyResult() {
       <p className="rights-text">{result.scope}</p><p>접수 {date(result.created_at)}{result.due_at?` · 처리 기한 ${date(result.due_at)}`:''}</p>
       <p className="rights-text">{result.result_message||'접수되었습니다. 담당자 검토를 기다려 주세요.'}</p>
       <details><summary>처리 안내 이력</summary>{result.history.map((e,i)=><p className="rights-text" key={i}>{date(e.created_at)} · {states[e.status]}<br/>{e.message}</p>)}</details>
+      <CompanyReviewSummary items={result.company_reviews}/>
       <button type="button" onClick={()=>setResult(null)}>결과 닫기</button>
     </section>}
     <p><Link to="/login">로그인 화면</Link> · <Link to="/privacy">개인정보 처리방침</Link></p>

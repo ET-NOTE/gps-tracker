@@ -121,7 +121,7 @@ async fn result(
     }
     // Explicit public projection: no internal evidence, actor IDs, job metadata,
     // tokens, location records, company data or ordinary session restoration.
-    let response:Option<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'kind',kind,'status',status,'scope',scope,'result_message',result_message,'created_at',created_at,'updated_at',updated_at,'due_at',due_at,'account_restricted',EXISTS(SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted),'history',COALESCE((SELECT jsonb_agg(jsonb_build_object('status',e.status,'message',e.message,'created_at',e.created_at) ORDER BY e.revision) FROM privacy_request_events e WHERE e.request_id=r.id),'[]'::jsonb)) FROM privacy_requests r WHERE id=$1 AND user_id=$2")
+    let response:Option<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'kind',kind,'status',status,'scope',scope,'result_message',result_message,'created_at',created_at,'updated_at',updated_at,'due_at',due_at,'account_restricted',EXISTS(SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted),'company_reviews',privacy_company_public(r.id,r.user_id),'history',COALESCE((SELECT jsonb_agg(jsonb_build_object('status',e.status,'message',e.message,'created_at',e.created_at) ORDER BY e.revision) FROM privacy_request_events e WHERE e.request_id=r.id),'[]'::jsonb)) FROM privacy_requests r WHERE id=$1 AND user_id=$2")
         .bind(body.request_id).bind(row.unwrap().0).fetch_optional(&state.db).await?;
     Ok(Json(response.ok_or(AppError::Unauthorized)?))
 }

@@ -258,6 +258,15 @@ async fn review(
         &req.evidence_reference,
         req.due_at,
     )?;
+    if matches!(req.status.as_str(), "fulfilled" | "rejected") {
+        let unresolved:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_company_reviews WHERE request_id=$1 AND status NOT IN ('verified','excluded') AND ($2='fulfilled' OR status<>'restricted'))")
+            .bind(id).bind(&req.status).fetch_one(&mut *tx).await?;
+        if unresolved {
+            return Err(AppError::Conflict(
+                "회사 자료의 미확인·보류 항목을 먼저 검토해 주세요.".into(),
+            ));
+        }
+    }
     if req.due_at.is_some_and(|d| d < old.created_at) {
         return Err(AppError::BadRequest(
             "처리 기한은 접수 시각 이후여야 합니다.".into(),

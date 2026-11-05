@@ -342,6 +342,11 @@ export const api = {
   cleanupMe:       (body) => req('POST', '/auth/me/cleanup', body),
   deleteMe:        (password) => req('DELETE', '/auth/me', { password }),
   privacyRequests: () => req('GET', '/privacy/requests'),
+  privacyCompanyReviews: id => req('GET', `/privacy/requests/${id}/company-reviews`),
+  adminCompanyReviews: id => req('GET', `/admin/privacy/requests/${id}/company-reviews`),
+  adminCompanyCandidates: id => req('GET', `/admin/privacy/requests/${id}/company-candidates`),
+  createCompanyReview: (id,body) => req('POST', `/admin/privacy/requests/${id}/company-reviews`,body),
+  updateCompanyReview: (id,body) => req('PATCH', `/admin/privacy/company-reviews/${id}`,body),
   privacyResult: async body => {
     const r=await fetch(`${BASE}/privacy/result`,{method:'POST',credentials:'omit',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok)throw new Error(r.status===429?'조회가 많습니다. 15분 후 다시 확인해 주세요.':'이메일·비밀번호·요청 번호를 확인해 주세요.');

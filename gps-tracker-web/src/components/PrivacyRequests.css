@@ -13,6 +13,7 @@
 .rights-request{padding:16px 0;border-top:1px solid var(--border)}.rights-text{white-space:pre-wrap}
 .rights-notice{padding:12px;border-radius:8px;background:var(--bg)}.rights-panel .rights-error{color:var(--danger)}
 .rights-impact{margin:16px 0}.rights-counts{font-size:13px}.rights-counts>div{display:flex;gap:12px;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}.rights-counts dd{margin:0;flex-shrink:0;font-variant-numeric:tabular-nums}
+.rights-impact h4{margin:0;font-size:14px}.rights-impact details>form{margin-top:14px}.rights-impact summary{line-height:1.6;cursor:pointer;overflow-wrap:anywhere}.rights-impact details+details{margin-top:14px}
 .rights-admin{max-width:1100px}.rights-admin details{margin-top:14px;font-size:13px}
 .rights-panel .rights-confirm{display:flex;align-items:flex-start;gap:8px;margin:12px 0;line-height:1.5}.rights-panel .rights-confirm input{width:16px;height:16px;flex:0 0 16px;margin-top:2px;padding:0}
 @media(max-width:480px){.rights-card{padding:14px}.rights-heading{align-items:flex-start}.rights-panel input,.rights-panel textarea,.rights-panel select{font-size:16px}}

@@ -13,6 +13,7 @@ async function components(api={},queries={}) {
   const code=(await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code;
   const m=new vm.SourceTextModule(code,{context});
   await m.link(name=>{
+    if(name==='./PrivacyCompanyReview')return moduleOf({CompanyReviewSummary:()=>null,PersonalCompanyReviews:()=>null,AdminCompanyReviews:()=>null});
     if(name==='react')return moduleOf(React);if(name==='react/jsx-runtime')return moduleOf(jsx);
     if(name==='react-router-dom')return moduleOf({Link:({children})=>React.createElement('a',{},children)});
     if(name==='../api')return moduleOf({api});
