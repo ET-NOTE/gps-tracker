@@ -24,6 +24,7 @@ pub mod notifications;
 pub mod payments;
 pub mod phones;
 pub mod privacy;
+pub mod privacy_delivery;
 pub mod profile_type;
 pub mod rentcar;
 pub mod share;
@@ -44,6 +45,7 @@ pub fn build_router(state: AppState) -> Router {
     let api_v1 = Router::new()
         .merge(auth::router())
         .merge(privacy::router())
+        .merge(privacy_delivery::router())
         .merge(devices::router())
         .merge(documents::router())
         .merge(locations::router())

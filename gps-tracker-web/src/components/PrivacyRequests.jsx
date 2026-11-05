@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import './PrivacyRequests.css';
 import CollectionControl from './CollectionControl';
+import {PersonalDeliveries,AdminDeliveries} from './PrivacyDelivery';
 
 export const rightsKinds = {access:'정보 열람',rectification:'정보 정정',erasure:'정보 삭제',account_closure:'회원 탈퇴'};
 export const rightsStatuses = {received:'접수',in_review:'검토 중',needs_information:'추가 확인',fulfilled:'처리 완료',rejected:'처리 제한',cancelled:'요청 취소'};
@@ -77,6 +78,7 @@ export default function PrivacyRequests() {
         <div className="rights-heading"><h3>#{row.id} · {rightsKinds[row.kind]}</h3><span>{rightsStatuses[row.status]}</span></div>
         <p className="rights-text">{row.scope}</p><p>접수 {date(row.created_at)} · 처리 기한 {date(row.due_at)}</p>
         {row.result_message&&<p className="rights-text rights-notice">{row.result_message}</p>}
+        {row.kind==='access'&&<PersonalDeliveries request={row}/>}
         {row.status==='needs_information'&&<p>추가 확인 내용은 관리자 채팅으로 요청 번호와 함께 전달해 주세요.</p>}
         {isOpen(row)&&<button type="button" disabled={busy} onClick={()=>cancel(row)}>이 요청 취소</button>}
       </article>)}
@@ -125,6 +127,7 @@ function ReviewForm({detail,refresh}) {
   }
   return <div>
     <p className="rights-text">{row.scope}</p><Impact requestId={row.id}/>
+    {row.kind==='access'&&<AdminDeliveries request={row} refresh={refresh}/>}
     {destructive&&<p className="rights-notice">계정 이용 종료와 전체 자료 삭제 완료는 별도입니다. 회사·거래 자료, 계정 정보와 백업은 확인 후 처리해야 합니다.</p>}
     {row.kind==='account_closure'&&!detail.closure&&isOpen(row)&&<section className="rights-impact">
       <h3>계정 이용 종료</h3><p>시작하면 로그인·실시간 조회·공유·추가 수집을 차단합니다. 기존 SIM 연결은 검토가 끝날 때까지 유지하며 자동 재등록하지 않습니다.</p>

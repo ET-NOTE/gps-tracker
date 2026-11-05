@@ -1,4 +1,5 @@
 .rights-panel{display:grid;gap:16px;min-width:0;color:var(--text)}
+.rights-result-page{max-width:620px;margin:32px auto;padding:0 16px}.rights-result-page h1{font-size:23px;margin:0 0 16px}.rights-date-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rights-delivery h4{margin:12px 0;font-size:14px}
 .rights-card{padding:18px;border:1px solid var(--border);background:var(--surface);border-radius:14px;min-width:0}
 .rights-panel h2{font-size:17px;margin:0 0 12px}.rights-panel h3{font-size:14px;margin:0}
 .rights-panel p{font-size:13px;line-height:1.65;color:var(--text-2);overflow-wrap:anywhere}

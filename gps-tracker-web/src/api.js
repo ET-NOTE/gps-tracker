@@ -342,6 +342,23 @@ export const api = {
   cleanupMe:       (body) => req('POST', '/auth/me/cleanup', body),
   deleteMe:        (password) => req('DELETE', '/auth/me', { password }),
   privacyRequests: () => req('GET', '/privacy/requests'),
+  privacyResult: async body => {
+    const r=await fetch(`${BASE}/privacy/result`,{method:'POST',credentials:'omit',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok)throw new Error(r.status===429?'조회가 많습니다. 15분 후 다시 확인해 주세요.':'이메일·비밀번호·요청 번호를 확인해 주세요.');
+    return r.json();
+  },
+  privacyDeliveries: id => req('GET', `/privacy/requests/${id}/deliveries`),
+  adminPrivacyDeliveries: id => req('GET', `/admin/privacy/requests/${id}/deliveries`),
+  adminPrivacyDeliveryOptions: id => req('GET', `/admin/privacy/requests/${id}/delivery-options`),
+  issuePrivacyDelivery: (id,body) => req('POST', `/admin/privacy/requests/${id}/deliveries`,body),
+  revokePrivacyDelivery: id => req('POST', `/admin/privacy/deliveries/${id}/revoke`,{}),
+  downloadPrivacyDelivery: async (id,password) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/privacy/deliveries/${id}/download`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})},false,scope);
+    if(!r.ok) {const error=await r.json().catch(()=>({}));throw new Error(r.status===401?'현재 비밀번호를 확인해 주세요.':error.error||'자료를 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);
+    return {blob,filename:`personal-locations-${id}.csv`};
+  },
   collectionControl: () => req('GET', '/privacy/collection'),
   setCollectionControl: (id, body) => req('POST', `/privacy/collection/${id}`, body),
   privacyImpact: () => req('GET', '/privacy/impact'),

@@ -1,5 +1,6 @@
 import { dashboardView } from './lib/dashboardRoutes';
 import RouteNotice from './components/RouteNotice';
+const PrivacyResult = lazy(() => import('./components/PrivacyDelivery'));
 import { authScope, AUTH_CHANGED } from './authSession';
 // 라우팅 — react-router 기반 path-routing.
 //
@@ -174,6 +175,7 @@ function Shell() {
         <Route path="/payments/toss/success" element={<PaymentResult kind="success" />} />
         <Route path="/payments/toss/fail"    element={<PaymentResult kind="fail" />} />
         <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+        <Route path="/privacy/result" element={<PrivacyResult />} />
         <Route path="/terms"   element={<LegalPage kind="terms" />} />
 
         {/* 로그인 */}

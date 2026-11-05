@@ -28,6 +28,7 @@ pub fn router() -> Router<AppState> {
             "/admin/privacy/requests/:id/close-account",
             post(start_closure),
         )
+        .layer(axum::middleware::from_fn(super::privacy_delivery::no_store))
 }
 
 async fn collection_list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Value>> {
