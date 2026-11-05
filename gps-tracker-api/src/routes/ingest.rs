@@ -10,8 +10,8 @@
 //   "lte": { ... }            // optional
 // }
 //
-// 향후 ESP 펌웨어 업데이트 시 device_uid + api_key 필드 추가 → 인증 활성화.
-// 지금은 익명 ingest (서버 측 device row 자동 생성/매칭).
+// 하드웨어 서명 인증과 SIM 기준 식별을 먼저 수행한다.
+// 레거시 수신은 명시적으로 허용된 단말기에만 적용한다.
 
 use axum::{extract::State, http::HeaderMap, Json};
 use chrono::Utc;
@@ -178,7 +178,19 @@ pub async fn ingest(
         .and_then(|h| h.to_str().ok())
         .unwrap_or("")
         .to_owned();
-    let response = if mode == IngestMode::HardwarePending {
+    // authorize holds the SIM/device advisory lock until the signed response is
+    // committed. Erasure uses that same lock, including legacy/phone senders.
+    let privacy_blocked: bool = sqlx::query_scalar(
+        "SELECT COALESCE((SELECT blocked FROM device_data_controls WHERE device_id=$1),false)",
+    )
+    .bind(id)
+    .fetch_one(&mut *gate)
+    .await?;
+    let response = if privacy_blocked {
+        // Acknowledge receipt without retaining any payload or executing commands.
+        // This is server-side rejection; it does not claim the MCU stopped fixing.
+        Json(json!({"ok":true,"stored":false,"privacy_blocked":true}))
+    } else if mode == IngestMode::HardwarePending {
         Json(json!({"ok":false,"sim_link_required":true}))
     } else {
         ingest_payload(
@@ -190,7 +202,7 @@ pub async fn ingest(
         )
         .await?
     };
-    if mode == IngestMode::Signed {
+    if mode == IngestMode::Signed && !privacy_blocked {
         if let Some(hash) = payload
             .get("pairing_hash")
             .and_then(Value::as_str)
@@ -203,7 +215,7 @@ pub async fn ingest(
                 .bind(id).bind(hash.to_ascii_lowercase()).execute(&mut *gate).await?;
         }
     }
-    if hardware {
+    if hardware && !privacy_blocked {
         crate::services::hardware_auth::finish(&mut gate, id, &auth_uid, mode, &payload).await?;
     }
     let result = if mode == IngestMode::Signed || hardware {
