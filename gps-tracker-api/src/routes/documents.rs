@@ -7,7 +7,7 @@
 //   POST   /devices/:id/documents  (multipart: file, kind, note?)
 //   GET    /devices/:id/documents  (list)
 //   GET    /documents/:id/download (owner only, blob)
-//   DELETE /documents/:id          (owner only, DB row + FS 파일 삭제)
+//   DELETE /documents/:id          (owner only, DB row + durable file cleanup)
 
 use std::path::PathBuf;
 
@@ -284,6 +284,7 @@ async fn download_document(
                 header::CONTENT_DISPOSITION,
                 format!("attachment; filename=\"{cd}\"; filename*=UTF-8''{cd}"),
             ),
+            (header::CACHE_CONTROL, "private, no-store".to_string()),
         ],
         Body::from(data),
     )
@@ -325,7 +326,7 @@ async fn preview_document(
                 header::CONTENT_DISPOSITION,
                 format!("inline; filename=\"{cd}\"; filename*=UTF-8''{cd}"),
             ),
-            (header::CACHE_CONTROL, "private, max-age=3600".to_string()),
+            (header::CACHE_CONTROL, "private, no-store".to_string()),
         ],
         Body::from(data),
     )
@@ -337,20 +338,19 @@ async fn delete_document(
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<serde_json::Value>> {
-    #[derive(FromRow)]
-    struct Row {
-        stored_path: String,
-    }
-    let row: Option<Row> = sqlx::query_as(
-        "DELETE FROM device_documents WHERE id = $1 AND user_id = $2 RETURNING stored_path",
+    // Migration 86 queues the old path in the SAME transaction, including FK
+    // cascades. Filesystem failures can be retried after metadata is removed.
+    let deleted: Option<i64> = sqlx::query_scalar(
+        "DELETE FROM device_documents WHERE id = $1 AND user_id = $2 RETURNING id",
     )
     .bind(id)
     .bind(user.user_id)
     .fetch_optional(&state.db)
     .await?;
-    let row = row.ok_or(AppError::NotFound)?;
-    let _ = tokio::fs::remove_file(&row.stored_path).await;
-    Ok(Json(serde_json::json!({ "ok": true })))
+    deleted.ok_or(AppError::NotFound)?;
+    Ok(Json(
+        serde_json::json!({ "ok": true, "file_cleanup": "queued" }),
+    ))
 }
 
 fn percent_encode(s: &str) -> String {
