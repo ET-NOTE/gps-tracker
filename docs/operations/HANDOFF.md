@@ -7,7 +7,7 @@
 - 저장소: https://github.com/ET-NOTE/gps-tracker
 - 작업 브랜치: `codex/location-business-prep`
 - PR 대상: `main`. 이번 인계 전 `main` 대비 199개 커밋이 있으며 앞선 GPS/Fleet 개선과 위치정보사업 준비가 함께 포함된다. 최신 영수증 기능만의 작은 PR로 해석하지 않는다.
-- PR은 검토용 초안으로 유지한다. 운영 배포 완료와 GitHub 병합 완료는 서로 다르다.
+- [PR #248](https://github.com/ET-NOTE/gps-tracker/pull/248)은 검토용 초안으로 유지한다. 운영 배포 완료와 GitHub 병합 완료는 서로 다르다.
 - 이 브랜치의 API·웹·`idf_caltest` 소스가 이어받을 기준이다. Flutter 앱은 별도 저장소이며 이 인계로 APK가 새로 만들어지지 않는다.
 
 새 PC에서는 다음과 같이 시작한다.
