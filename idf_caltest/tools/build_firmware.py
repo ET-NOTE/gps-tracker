@@ -64,6 +64,9 @@ def main():
     manifest.unlink(missing_ok=True)
     sdkconfig = build / "sdkconfig"
     shutil.copyfile(PROJECT / "sdkconfig", sdkconfig)
+    if args.profile in ("https-pilot", "tls-cert-test"):
+        config = sdkconfig.read_text().replace("# CONFIG_MBEDTLS_HAVE_TIME_DATE is not set", "CONFIG_MBEDTLS_HAVE_TIME_DATE=y")
+        sdkconfig.write_text(config)
     subprocess.run([sys.executable, str(idf / "tools/idf.py"), "-B", str(build),
                     "-D", f"SDKCONFIG={sdkconfig.as_posix()}",
                     "-D", f"FIRMWARE_PROFILE={args.profile}",

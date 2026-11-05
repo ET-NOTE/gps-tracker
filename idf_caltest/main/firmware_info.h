@@ -13,6 +13,9 @@ namespace firmware {
 inline constexpr char settings[] =
   "FW-CONFIG:{\"build_tag\":\"" FIRMWARE_BUILD_TAG "\","
   "\"ingest_url\":\"" POST_URL_HOST POST_PATH "\","
+#if GPS_HTTPS_PILOT
+  "\"tls_engine\":\"esp32_mbedtls\",\"tls_hostname_verify\":1,"
+#endif
 #if GPS_TLS_CERT_TEST
   "\"request_auth\":\"none_test_probe\",\"response_auth\":0,\"credential_store\":\"unused\","
 #else

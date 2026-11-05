@@ -71,24 +71,10 @@ void HardwareSerial::print(const char *s) {
 }
 
 int main(int argc, char **argv) {
-  assert(argc == 2);
-  scenario = argv[1];
-  active = true; // A session left by another sketch must first be closed.
-  file = scenario == "fresh_ca" ? "" : gpsRootCa;
-  if (scenario == "corrupt_ca") file[50] ^= 1;
-  const bool success = lte::connectHttp();
-  if (scenario == "fresh_ca" || scenario == "existing_ca" || scenario == "cold_clock" ||
-      scenario == "gps_epoch_clock" || scenario == "invalid_calendar" || scenario == "ntp_time_reply") {
-    assert(success && active && handshakes == 1);
-    assert(caWrites == int(scenario == "fresh_ca"));
-    assert(ntpDone == (scenario == "cold_clock" || scenario == "gps_epoch_clock" || scenario == "invalid_calendar" || scenario == "ntp_time_reply"));
-    for (const auto *required : {"AT+CSSLCFG=\"SSLVERSION\",1,3", "AT+CSSLCFG=\"IGNORERTCTIME\",1,0",
-                                 "AT+CSSLCFG=\"SNI\",1,\"gps.serial.kr\"", "AT+SHSSL=1,\"" GPS_CA_FILE "\"",
-                                 "AT+SHCONF=\"URL\",\"https://gps.serial.kr\""}) {
-      assert(std::find(commands.begin(), commands.end(), required) != commands.end());
-    }
-  } else {
-    assert(!success && !lte::httpConnected());
-    assert(handshakes == (scenario == "handshake_failure" ? 2 : 0));
-  }
+  assert(argc == 2); scenario = argv[1];
+  bool success=lte::modemClockSet() || lte::syncModemClock();
+  bool expected = scenario=="valid_clock" || scenario=="cold_clock" || scenario=="gps_epoch_clock" ||
+                  scenario=="invalid_calendar" || scenario=="ntp_time_reply";
+  assert(success==expected);
+  assert(handshakes==0 && caWrites==0);
 }

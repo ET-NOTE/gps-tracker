@@ -28,11 +28,16 @@ def main():
                         "-DKC_TEST_BUILD=0", "-DBATTERY_TEST_BUILD=0", "-DGPS_HTTPS_PILOT=1",
                         "-ffunction-sections", "-fdata-sections", "-I", str(ROOT/"stubs"),
                         str(ROOT/"https_pilot_test.cpp"), "-Wl,--gc-sections", "-o", pilot], check=True)
-        for case in ("fresh_ca", "existing_ca", "cold_clock", "gps_epoch_clock", "invalid_calendar", "clock_stuck", "clock_failure", "binding_failure",
-                     "corrupt_ca", "handshake_failure", "ntp_time_reply", "ntp_error_code",
-                     "ntp_code_prefix", "ntp_invalid_code", "ntp_incomplete"):
+        for case in ("valid_clock", "cold_clock", "gps_epoch_clock", "invalid_calendar", "clock_stuck", "clock_failure",
+                     "ntp_time_reply", "ntp_error_code", "ntp_code_prefix", "ntp_invalid_code", "ntp_incomplete"):
             subprocess.run([pilot, case], check=True)
             count += 1
+        tcp=str(Path(tmp)/"modem-tcp")
+        subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
+                        "-DKC_TEST_BUILD=0", "-DBATTERY_TEST_BUILD=0", "-DGPS_HTTPS_PILOT=1",
+                        "-I", str(ROOT/"stubs"), str(ROOT/"modem_tcp_test.cpp"), "-o", tcp], check=True)
+        subprocess.run([tcp],check=True)
+        count+=1
         for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1), ("https-pilot", 0, 0)):
             is_pilot = profile == "https-pilot"
             sleep_enabled = profile == "operating"
