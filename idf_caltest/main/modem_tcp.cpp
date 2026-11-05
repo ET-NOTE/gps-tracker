@@ -31,7 +31,9 @@ bool ModemTcp::ok(uint32_t start,uint32_t timeout) {
 }
 bool ModemTcp::command(const char *cmd) {
   serial_.print(cmd); serial_.print("\r\n");
-  return ok(millis(),5000);
+  bool result=ok(millis(),5000);
+  Serial.printf("[TLS-TCP] %s ok=%d\n",cmd,int(result));
+  return result;
 }
 void ModemTcp::close() {
   command("AT+CACLOSE=0"); opened_=false;
@@ -49,6 +51,7 @@ bool ModemTcp::open(const char *host,unsigned port) {
   serial_.print(cmd); serial_.print("\r\n");
   uint32_t start=millis(); bool ack=false, connected=false; char s[160];
   while (line(s,sizeof(s),start,30000)) {
+    if (*s) Serial.printf("[TLS-TCP] open %.150s\n",s);
     if (!strcmp(s,"OK")) ack=true;
     if (!strncmp(s,"+CAOPEN:",8)) {
       int id=-1,result=-1;
