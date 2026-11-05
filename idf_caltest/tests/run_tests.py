@@ -28,7 +28,7 @@ def main():
                         "-DKC_TEST_BUILD=0", "-DBATTERY_TEST_BUILD=0", "-DGPS_HTTPS_PILOT=1",
                         "-ffunction-sections", "-fdata-sections", "-I", str(ROOT/"stubs"),
                         str(ROOT/"https_pilot_test.cpp"), "-Wl,--gc-sections", "-o", pilot], check=True)
-        for case in ("fresh_ca", "existing_ca", "cold_clock", "clock_failure", "binding_failure",
+        for case in ("fresh_ca", "existing_ca", "cold_clock", "gps_epoch_clock", "invalid_calendar", "clock_stuck", "clock_failure", "binding_failure",
                      "corrupt_ca", "handshake_failure"):
             subprocess.run([pilot, case], check=True)
             count += 1

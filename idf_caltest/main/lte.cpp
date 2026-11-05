@@ -597,10 +597,18 @@ static bool prepareCa() {
 static bool modemClockSet() {
   if (!sendAT("AT+CCLK?", okLine, 3000)) return false;
   int start = lastResp.indexOf("+CCLK: \"");
-  int year = 0, month = 0, day = 0;
-  if (start >= 0) Serial.printf("[TLS-CLOCK] %.28s\n", lastResp.c_str() + start + 8);
-  return start >= 0 && sscanf(lastResp.c_str() + start + 8, "%2d/%2d/%2d", &year, &month, &day) == 3 &&
-         year >= 26 && month >= 1 && month <= 12 && day >= 1 && day <= 31;
+  int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, zone = 0;
+  if (start < 0 || sscanf(lastResp.c_str() + start + 8, "%2d/%2d/%2d,%2d:%2d:%2d%3d",
+      &year, &month, &day, &hour, &minute, &second, &zone) != 7) return false;
+  Serial.printf("[TLS-CLOCK] year=%d month=%d day=%d hour=%d minute=%d second=%d zone=%d\n",
+                year, month, day, hour, minute, second, zone);
+  // 1951B12 resets to 80/01/06 (GPS epoch), not 00/01/01. Reject that
+  // sentinel and implausible future dates. This CA/profile needs replacement
+  // before ISRG Root X2 expires in 2040, so don't accept 2040+ as usable time.
+  if (year < 26 || year >= 40 || month < 1 || month > 12 || hour < 0 || hour > 23 ||
+      minute < 0 || minute > 59 || second < 0 || second > 59 || zone < -48 || zone > 56) return false;
+  const int days[] = {31, (year % 4 == 0 ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  return day >= 1 && day <= days[month - 1];
 }
 
 static bool configureTls() {
@@ -613,7 +621,6 @@ static bool configureTls() {
     return false;
   }
   if (!sendAT("AT+CSSLCFG=\"SSLVERSION\",1,3", okLine, 2000) ||
-      !sendAT("AT+CSSLCFG=\"CIPHERSUITE\",1,0,0xC02B", okLine, 2000) ||
       !sendAT("AT+CSSLCFG=\"IGNORERTCTIME\",1,0", okLine, 2000) ||
       !sendAT("AT+CSSLCFG=\"SNI\",1,\"" INGEST_HOSTNAME "\"", okLine, 2000) ||
       !sendAT("AT+SHSSL=1,\"" GPS_CA_FILE "\"", okLine, 3000)) {

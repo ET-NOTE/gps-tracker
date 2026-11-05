@@ -44,6 +44,12 @@ void HardwareSerial::print(const char *s) {
   if (cmd.find("AT+CFSWFILE") == 0) { awaitingPem = true; answer = "\r\nDOWNLOAD\r\n"; }
   if (cmd == "AT+CCLK?") answer = (scenario == "clock_failure" || scenario == "cold_clock") && !ntpDone
       ? "\r\n+CCLK: \"00/01/01,00:00:00+00\"\r\nOK\r\n" : "\r\n+CCLK: \"26/11/04,12:00:00+00\"\r\nOK\r\n";
+  if (cmd == "AT+CCLK?" && !ntpDone && scenario == "gps_epoch_clock")
+    answer = "\r\n+CCLK: \"80/01/06,00:00:07+00\"\r\nOK\r\n";
+  if (cmd == "AT+CCLK?" && scenario == "clock_stuck")
+    answer = "\r\n+CCLK: \"80/01/06,00:00:07+00\"\r\nOK\r\n";
+  if (cmd == "AT+CCLK?" && !ntpDone && scenario == "invalid_calendar")
+    answer = "\r\n+CCLK: \"26/02/30,12:00:00+00\"\r\nOK\r\n";
   if (cmd == "AT+CNTP") {
     ntpDone = scenario != "clock_failure";
     answer = ntpDone ? "\r\nOK\r\n+CNTP: 1\r\n" : "\r\nERROR\r\n";
@@ -64,12 +70,12 @@ int main(int argc, char **argv) {
   file = scenario == "fresh_ca" ? "" : gpsRootCa;
   if (scenario == "corrupt_ca") file[50] ^= 1;
   const bool success = lte::connectHttp();
-  if (scenario == "fresh_ca" || scenario == "existing_ca" || scenario == "cold_clock") {
+  if (scenario == "fresh_ca" || scenario == "existing_ca" || scenario == "cold_clock" ||
+      scenario == "gps_epoch_clock" || scenario == "invalid_calendar") {
     assert(success && active && handshakes == 1);
     assert(caWrites == int(scenario == "fresh_ca"));
-    assert(ntpDone == (scenario == "cold_clock"));
+    assert(ntpDone == (scenario == "cold_clock" || scenario == "gps_epoch_clock" || scenario == "invalid_calendar"));
     for (const auto *required : {"AT+CSSLCFG=\"SSLVERSION\",1,3", "AT+CSSLCFG=\"IGNORERTCTIME\",1,0",
-                                 "AT+CSSLCFG=\"CIPHERSUITE\",1,0,0xC02B",
                                  "AT+CSSLCFG=\"SNI\",1,\"gps.serial.kr\"", "AT+SHSSL=1,\"" GPS_CA_FILE "\"",
                                  "AT+SHCONF=\"URL\",\"https://gps.serial.kr\""}) {
       assert(std::find(commands.begin(), commands.end(), required) != commands.end());
