@@ -181,7 +181,7 @@ pub async fn impact(db: &PgPool, user: i64) -> AppResult<Value> {
     }
     tx.commit().await?;
     Ok(json!({"as_of":Utc::now(),"read_only":true,"items":rows,
-        "manual_review":["회사에 보관된 직원 개인정보·운전자 스냅샷","법적 보존 대상 거래 자료와 보관 기한","서버 첨부파일·백업·배포 사본·외부 전달본","기존 소유자 미상(NULL) 자료와 공용 캐시"],
+        "manual_review":["회사에 보관된 직원 개인정보·운전자 스냅샷", "회사 처리 보고서·증빙과 검토 이력의 보관·삭제","법적 보존 대상 거래 자료와 보관 기한","서버 첨부파일·백업·배포 사본·외부 전달본","기존 소유자 미상(NULL) 자료와 공용 캐시"],
         "deletion_ready":false}))
 }
 

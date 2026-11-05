@@ -1,3 +1,4 @@
+import {CompanyTaskInbox} from './PrivacyCompanyTask';
 import {PersonalCompanyReviews,AdminCompanyReviews} from './PrivacyCompanyReview';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -55,6 +56,7 @@ export default function PrivacyRequests() {
   }
   return <div className="rights-panel">
     <CollectionControl/>
+    <CompanyTaskInbox/>
     <section className="rights-card">
       <h2>개인정보 요청</h2>
       <p>본인 정보의 열람·정정·삭제와 회원 탈퇴를 요청할 수 있습니다.</p>

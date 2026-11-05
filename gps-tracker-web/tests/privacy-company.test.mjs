@@ -12,6 +12,7 @@ async function components(api={},queries={}) {
  const moduleOf=exports=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [k,v] of Object.entries(exports))this.setExport(k,v);},{context});
  const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
  await m.link(name=>{
+  if(name==='./PrivacyCompanyTask')return moduleOf({AdminCompanyTasks:({children})=>children,CompanyTaskInbox:()=>null});
   if(name==='react')return moduleOf(React);if(name==='react/jsx-runtime')return moduleOf(jsx);
   if(name==='../api')return moduleOf({api});
   if(name==='@tanstack/react-query')return moduleOf({useQuery:({queryKey})=>({data:queries[queryKey[0]],refetch:async()=>{}})});

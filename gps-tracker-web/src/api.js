@@ -342,6 +342,19 @@ export const api = {
   cleanupMe:       (body) => req('POST', '/auth/me/cleanup', body),
   deleteMe:        (password) => req('DELETE', '/auth/me', { password }),
   privacyRequests: () => req('GET', '/privacy/requests'),
+  companyTasks: after => req('GET', `/privacy/company-tasks?after=${after||0}`),
+  companyTask: id => req('GET', `/privacy/company-tasks/${id}`),
+  submitCompanyTask: (id,body) => req('POST', `/privacy/company-tasks/${id}`,body),
+  adminCompanyTasks: id => req('GET', `/admin/privacy/company-reviews/${id}/tasks`),
+  publishCompanyTask: (id,body) => req('POST', `/admin/privacy/company-reviews/${id}/tasks`,body),
+  decideCompanyTask: (id,body) => req('POST', `/admin/privacy/company-tasks/${id}/decision`,body),
+  revokeCompanyTask: (id,body) => req('POST', `/admin/privacy/company-tasks/${id}/revoke`,body),
+  companyProof: async (id,sid,admin=false) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/${admin?'admin/':''}privacy/company-tasks/${id}/proof/${sid}`,{method:'POST',cache:'no-store'},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||'증빙을 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return blob;
+  },
   privacyCompanyReviews: id => req('GET', `/privacy/requests/${id}/company-reviews`),
   adminCompanyReviews: id => req('GET', `/admin/privacy/requests/${id}/company-reviews`),
   adminCompanyCandidates: id => req('GET', `/admin/privacy/requests/${id}/company-candidates`),

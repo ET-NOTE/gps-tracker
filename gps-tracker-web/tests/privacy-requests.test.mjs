@@ -17,6 +17,7 @@ async function components(api={}) {
   await m.link(name=>{
     if(name==='./PrivacyAccountPackage')return moduleOf({PersonalAccountPackages:()=>null,AdminAccountPackages:()=>null});
     if(name==='./PrivacyCompanyReview')return moduleOf({CompanyReviewSummary:()=>null,PersonalCompanyReviews:()=>null,AdminCompanyReviews:()=>null});
+    if(name==='./PrivacyCompanyTask')return moduleOf({CompanyTaskInbox:()=>null});
     if(name==='react')return moduleOf(React);
     if(name==='react/jsx-runtime')return moduleOf(jsx);
     if(name==='../api')return moduleOf({api});

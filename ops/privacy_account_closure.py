@@ -52,6 +52,15 @@ def process(db, request_id, execute=False):
                 raise ValueError('restriction_missing')
             review = {t: n for t, c in REVIEW if (n := count(q, t, c, uid))}
             reasons = set(prior_reasons)
+            q.execute('''SELECT count(*) FROM privacy_company_submissions p
+                JOIN privacy_company_tasks t ON t.id=p.task_id
+                JOIN privacy_company_reviews c ON c.id=t.review_id
+                JOIN privacy_requests r ON r.id=c.request_id
+                WHERE t.company_owner_id=%s OR r.user_id=%s''', (uid, uid))
+            proof_count = q.fetchone()[0]
+            if proof_count:
+                review['privacy_company_submissions'] = proof_count
+                reasons.add('company_evidence_retention_review')
             if review:
                 reasons.add('company_or_financial_scope_review')
             reasons.update(('account_profile_and_audit_review', 'backups_and_external_copies_unverified',

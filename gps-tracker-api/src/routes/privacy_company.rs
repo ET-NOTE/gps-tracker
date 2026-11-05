@@ -99,7 +99,7 @@ async fn request(
     }
     Ok(r)
 }
-async fn record(
+pub(super) async fn record(
     tx: &mut Transaction<'_, Postgres>,
     rid: i64,
     actor: i64,
@@ -275,6 +275,12 @@ async fn update(
     if rev != b.revision {
         return Err(AppError::Conflict(
             "검토 내용이 바뀌었습니다. 새로고침해 주세요.".into(),
+        ));
+    }
+    let task_active:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_company_tasks WHERE review_id=$1 AND status<>'revoked')").bind(id).fetch_one(&mut *tx).await?;
+    if task_active {
+        return Err(AppError::Conflict(
+            "회사 제출 요청에서 증빙을 검토하거나 요청을 회수한 뒤 수정해 주세요.".into(),
         ));
     }
     let row:Value=sqlx::query_scalar("UPDATE privacy_company_reviews SET status=$2,identity=$3,identity_evidence=$4,outcome=$5,evidence_reference=$6,internal_reason=$7,public_message=$8,due_at=$9,updated_by=$10,revision=revision+1,updated_at=now() WHERE id=$1 RETURNING to_jsonb(privacy_company_reviews)").bind(id).bind(b.status).bind(b.identity).bind(b.identity_evidence.trim()).bind(b.outcome).bind(b.evidence_reference.trim()).bind(b.internal_reason.trim()).bind(b.public_message.trim()).bind(b.due_at).bind(a.user_id).fetch_one(&mut *tx).await?;
