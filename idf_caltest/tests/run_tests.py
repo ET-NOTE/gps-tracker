@@ -29,7 +29,8 @@ def main():
                         "-ffunction-sections", "-fdata-sections", "-I", str(ROOT/"stubs"),
                         str(ROOT/"https_pilot_test.cpp"), "-Wl,--gc-sections", "-o", pilot], check=True)
         for case in ("fresh_ca", "existing_ca", "cold_clock", "gps_epoch_clock", "invalid_calendar", "clock_stuck", "clock_failure", "binding_failure",
-                     "corrupt_ca", "handshake_failure"):
+                     "corrupt_ca", "handshake_failure", "ntp_time_reply", "ntp_error_code",
+                     "ntp_code_prefix", "ntp_invalid_code", "ntp_incomplete"):
             subprocess.run([pilot, case], check=True)
             count += 1
         for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1), ("https-pilot", 0, 0)):

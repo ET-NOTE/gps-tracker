@@ -14,6 +14,9 @@
 #elif GPS_HTTPS_PILOT
 #include "ingest_root_ca.h"
 #endif
+#if GPS_HTTPS_PILOT
+static_assert(sizeof(GPS_CA_FILE) - 1 <= 20, "SIM7080 SHSSL CA filename exceeds 20 bytes");
+#endif
 
 namespace lte {
 
@@ -619,12 +622,28 @@ static bool modemClockSet() {
   return day >= 1 && day <= days[month - 1];
 }
 
+static bool syncModemClock() {
+  if (!sendAT("AT+CNTPCID=0", okLine, 2000) ||
+      !sendAT("AT+CNTP=\"time.cloudflare.com\",0,0,0", okLine, 3000) ||
+      !sendAT("AT+CNTP", "\r\n+CNTP:", 45000)) return false;
+  int start = lastResp.indexOf("+CNTP:");
+  uint32_t waitStart = millis();
+  while (lastResp.indexOf('\n', start) < 0 && millis() - waitStart < 2000) {
+    lwdt::feed(); drain(); delay(5);
+  }
+  if (lastResp.indexOf('\n', start) < 0) return false;
+  int code = 0, consumed = 0;
+  const char *value = lastResp.c_str() + start + 6;
+  if (sscanf(value, " %d%n", &code, &consumed) != 1 || code != 1) return false;
+  while (value[consumed] == ' ') ++consumed;
+  // Some revisions append ,"YYYY/MM/DD,hh:mm:ss" even after success.
+  if (value[consumed] != ',' && value[consumed] != '\r' && value[consumed] != '\n') return false;
+  return modemClockSet();
+}
+
 static bool configureTls() {
   if (!prepareCa()) { Serial.println("[TLS] CA preparation failed"); return false; }
-  if (!modemClockSet() &&
-      !(sendAT("AT+CNTPCID=0", okLine, 2000) &&
-        sendAT("AT+CNTP=\"time.cloudflare.com\",0", okLine, 3000) &&
-        sendAT("AT+CNTP", "\r\n+CNTP: 1\r\n", 45000) && modemClockSet())) {
+  if (!modemClockSet() && !syncModemClock()) {
     Serial.println("[TLS] Modem clock unavailable");
     return false;
   }

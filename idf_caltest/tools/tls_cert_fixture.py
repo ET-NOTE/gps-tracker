@@ -71,7 +71,7 @@ def generate(folder):
                         "not_after":cert.not_valid_after.isoformat(),"sha256":cert.fingerprint(hashes.SHA256()).hex()}
     root_pem=roots[0][0].public_bytes(pem).decode()
     digest=hashlib.sha256(roots[0][0].public_bytes(serialization.Encoding.DER)).hexdigest()
-    (folder/"test_ca.h").write_text('#pragma once\n#define GPS_CA_FILE "gps-test-'+digest[:12]+'.pem"\n'
+    (folder/"test_ca.h").write_text('#pragma once\n#define GPS_CA_FILE "gt-'+digest[:12]+'.pem"\n'
         'static constexpr char gpsRootCa[] = R"PEM('+root_pem+')PEM";\n')
     (folder/"metadata.json").write_text(json.dumps({"root_sha256":digest,"certificates":metadata},indent=2)+"\n")
     (folder/"active-case.json").write_text(json.dumps({"case":"valid","run":"initial"}))

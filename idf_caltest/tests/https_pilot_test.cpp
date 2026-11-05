@@ -50,9 +50,16 @@ void HardwareSerial::print(const char *s) {
     answer = "\r\n+CCLK: \"80/01/06,00:00:07+00\"\r\nOK\r\n";
   if (cmd == "AT+CCLK?" && !ntpDone && scenario == "invalid_calendar")
     answer = "\r\n+CCLK: \"26/02/30,12:00:00+00\"\r\nOK\r\n";
+  if (cmd == "AT+CCLK?" && !ntpDone && scenario.find("ntp_") == 0)
+    answer = "\r\n+CCLK: \"80/01/06,00:00:07+00\"\r\nOK\r\n";
   if (cmd == "AT+CNTP") {
     ntpDone = scenario != "clock_failure";
     answer = ntpDone ? "\r\nOK\r\n+CNTP: 1\r\n" : "\r\nERROR\r\n";
+    if (scenario == "ntp_time_reply") answer = "\r\nOK\r\n+CNTP: 1,\"2026/11/05,02:32:04\"\r\n";
+    if (scenario == "ntp_error_code") answer = "\r\nOK\r\n+CNTP: 61\r\n";
+    if (scenario == "ntp_code_prefix") answer = "\r\nOK\r\n+CNTP: 10\r\n";
+    if (scenario == "ntp_invalid_code") answer = "\r\nOK\r\n+CNTP: 1bad\r\n";
+    if (scenario == "ntp_incomplete") answer = "\r\nOK\r\n+CNTP: 1";
   }
   if (cmd == "AT+SHSSL=1,\"" GPS_CA_FILE "\"" && scenario == "binding_failure") answer = "\r\nERROR\r\n";
   if (cmd == "AT+SHCONN") {
@@ -71,10 +78,10 @@ int main(int argc, char **argv) {
   if (scenario == "corrupt_ca") file[50] ^= 1;
   const bool success = lte::connectHttp();
   if (scenario == "fresh_ca" || scenario == "existing_ca" || scenario == "cold_clock" ||
-      scenario == "gps_epoch_clock" || scenario == "invalid_calendar") {
+      scenario == "gps_epoch_clock" || scenario == "invalid_calendar" || scenario == "ntp_time_reply") {
     assert(success && active && handshakes == 1);
     assert(caWrites == int(scenario == "fresh_ca"));
-    assert(ntpDone == (scenario == "cold_clock" || scenario == "gps_epoch_clock" || scenario == "invalid_calendar"));
+    assert(ntpDone == (scenario == "cold_clock" || scenario == "gps_epoch_clock" || scenario == "invalid_calendar" || scenario == "ntp_time_reply"));
     for (const auto *required : {"AT+CSSLCFG=\"SSLVERSION\",1,3", "AT+CSSLCFG=\"IGNORERTCTIME\",1,0",
                                  "AT+CSSLCFG=\"SNI\",1,\"gps.serial.kr\"", "AT+SHSSL=1,\"" GPS_CA_FILE "\"",
                                  "AT+SHCONF=\"URL\",\"https://gps.serial.kr\""}) {
