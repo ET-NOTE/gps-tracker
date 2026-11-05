@@ -4,7 +4,7 @@ use super::privacy_delivery::{active, no_store, rate_limit};
 use crate::{
     auth::{password, AdminUser, AuthUser},
     error::{AppError, AppResult},
-    services::privacy::RequestRow,
+    services::{privacy::RequestRow, privacy_account_export},
     state::AppState,
 };
 use axum::{
@@ -50,6 +50,7 @@ struct Package {
     id: i64,
     request_id: i64,
     documents: Value,
+    sections: Vec<String>,
     created_at: DateTime<Utc>,
     expires_at: DateTime<Utc>,
     revoked_at: Option<DateTime<Utc>>,
@@ -64,6 +65,8 @@ struct Issue {
     revision: i32,
     confirmed: bool,
     documents: Vec<Proof>,
+    #[serde(default)]
+    sections: Vec<String>,
 }
 #[derive(Deserialize)]
 struct Download {
@@ -309,6 +312,7 @@ async fn issue(
     Json(body): Json<Issue>,
 ) -> AppResult<Json<Package>> {
     if !body.confirmed
+        || !privacy_account_export::valid_sections(&body.sections)
         || body.documents.len() > 20
         || body
             .documents
@@ -344,9 +348,9 @@ async fn issue(
         documents.push(json!({"id":d.id,"filename":d.filename,"mime":d.mime,"size_bytes":d.size_bytes,"sha256":sha,"kind":d.kind,"uploaded_at":d.uploaded_at}));
     }
     sqlx::query("WITH x AS(UPDATE privacy_account_packages SET revoked_at=now() WHERE request_id=$1 AND revoked_at IS NULL RETURNING id) INSERT INTO privacy_account_package_events(request_id,package_id,actor_id,action) SELECT $1,id,$2,'revoked' FROM x").bind(id).bind(admin.user_id).execute(&mut *tx).await?;
-    let p:Package=sqlx::query_as("INSERT INTO privacy_account_packages(request_id,created_by,documents) VALUES($1,$2,$3) RETURNING *").bind(id).bind(admin.user_id).bind(json!(documents)).fetch_one(&mut *tx).await?;
+    let p:Package=sqlx::query_as("INSERT INTO privacy_account_packages(request_id,created_by,documents,sections) VALUES($1,$2,$3,$4) RETURNING *").bind(id).bind(admin.user_id).bind(json!(documents)).bind(&body.sections).fetch_one(&mut *tx).await?;
     event(&mut tx, id, Some(p.id), admin.user_id, "issued", None, None).await?;
-    let message="검토한 계정 기본정보·요청 처리이력과 선택된 개인 첨부자료를 준비했습니다. 요청 내역에서 24시간 이내 내려받을 수 있습니다. 별도 검토 범위는 포함하지 않습니다.";
+    let message="계정 기본정보·요청 처리이력과 담당자가 선택한 추가 범위·개인 서류를 준비했습니다. 발급 내역의 포함 범위를 확인하고 24시간 이내 내려받으세요. 요청 전체의 제공 완료를 의미하지 않습니다.";
     sqlx::query("UPDATE privacy_requests SET revision=revision+1,assigned_to=$2,result_message=$3,updated_at=now() WHERE id=$1").bind(id).bind(admin.user_id).bind(message).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO privacy_request_events(request_id,actor_id,revision,status,message,due_at) SELECT id,$2,revision,status,$3,due_at FROM privacy_requests WHERE id=$1").bind(id).bind(admin.user_id).bind(message).execute(&mut *tx).await?;
     tx.commit().await?;
@@ -424,7 +428,19 @@ async fn account(
             "처리이력 제공 한도를 초과했습니다. 담당자에게 분할 제공을 요청해 주세요.".into(),
         ));
     }
-    let data=serde_json::to_vec_pretty(&json!({"format":"gps-personal-account-v1","generated_at":Utc::now(),"request_id":p.request_id,"coverage":["current_account_basic_fields","privacy_requests","public_request_status_history","reviewed_document_manifest"],"excluded":["location_records:separate_csv","company_records:separate_review","unselected_attachments_and_vehicle_photos:separate_review","transactions_subscriptions_preferences_phone_list_chat_ai_audit_and_external_copies:separate_review"],"account":profile,"requests":requests,"history":history,"reviewed_documents":p.documents,"notice":"현재 남아 있는 지정 범위 자료입니다. 모든 개인정보의 제공 완료를 의미하지 않습니다. 첨부 원본은 별도로 내려받으세요."})).map_err(|e|AppError::Internal(e.into()))?;
+    let additional = privacy_account_export::export(&mut tx, user.user_id, &p.sections).await?;
+    let mut coverage = vec![
+        "current_account_basic_fields",
+        "privacy_requests",
+        "public_request_status_history",
+        "reviewed_document_manifest",
+    ];
+    coverage.extend(p.sections.iter().map(String::as_str));
+    let unselected: Vec<_> = privacy_account_export::SECTIONS
+        .iter()
+        .filter(|s| !p.sections.iter().any(|p| p == **s))
+        .collect();
+    let data=serde_json::to_vec_pretty(&json!({"format":if p.sections.is_empty(){"gps-personal-account-v1"}else{"gps-personal-account-v2"},"generated_at":Utc::now(),"request_id":p.request_id,"coverage":coverage,"unselected_sections":unselected,"excluded":["location_records:separate_csv","company_records:separate_review","unselected_attachments_and_vehicle_photos:separate_review","chat_ai_contents_device_preferences_security_audit_and_external_copies:separate_review","payment_credentials_raw_responses_internal_notes:excluded"],"account":profile,"requests":requests,"history":history,"reviewed_documents":p.documents,"additional":additional,"notice":"현재 남아 있는 지정 범위 자료입니다. 모든 개인정보의 제공 완료를 의미하지 않습니다. 추가 범위별 안내와 제외 목록을 확인하고 첨부 원본은 별도로 내려받으세요."})).map_err(|e|AppError::Internal(e.into()))?;
     event(
         &mut tx,
         p.request_id,

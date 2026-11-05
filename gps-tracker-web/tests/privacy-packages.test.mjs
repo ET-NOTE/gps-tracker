@@ -29,9 +29,26 @@ test('document selection requires downloaded review and attestation; issue carri
  await act(async()=>r.root.findAllByType('button').find(b=>b.children.join('')==='서류 내려받아 검토').props.onClick());
  await act(async()=>r.root.findAllByProps({type:'checkbox'})[0].props.onChange({target:{checked:true}}));
  assert.equal(r.root.findByProps({type:'submit'}).props.disabled,true);
- await act(async()=>r.root.findAllByProps({type:'checkbox'})[1].props.onChange({target:{checked:true}}));
+ await act(async()=>r.root.findAllByProps({type:'checkbox'}).at(-1).props.onChange({target:{checked:true}}));
  await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
  assert.equal(sent.revision,7);assert.equal(sent.documents[0].sha256,'a'.repeat(64));assert.equal(sent.documents[0].id,10);assert.equal(sent.confirmed,true);
+ await act(async()=>r.unmount());
+});
+test('optional sections start empty, changing scope clears attestation, old grants stay basic',async()=>{
+ let sent;const {AdminAccountPackages,PersonalAccountPackages}=await components({issuePrivacyAccountPackage:async(id,body)=>{sent=body;}},{'admin-personal-documents':{items:[]},'admin-account-packages':{items:[],events:[]},'privacy-account-packages':[{id:8,expires_at:'2099-01-01',documents:[]}]});let r;
+ await act(async()=>{r=create(React.createElement(AdminAccountPackages,{request,refresh:async()=>{}}));});
+ assert.equal(r.root.findByProps({name:'transactions'}).props.checked,false);
+ await act(async()=>r.root.findAllByProps({type:'checkbox'}).at(-1).props.onChange({target:{checked:true}}));
+ await act(async()=>r.root.findByProps({name:'transactions'}).props.onChange({target:{checked:true}}));
+ assert.equal(r.root.findByProps({type:'submit'}).props.disabled,true);
+ await act(async()=>r.root.findAllByProps({type:'checkbox'}).at(-1).props.onChange({target:{checked:true}}));
+ await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
+ assert.equal(JSON.stringify(sent.sections),'["transactions"]');
+ assert.equal(r.root.findByProps({name:'transactions'}).props.checked,false);
+ await act(async()=>r.unmount());
+ await act(async()=>{r=create(React.createElement(PersonalAccountPackages,{request}));});
+ const scope=r.root.findAllByType('p').find(p=>p.children[0]==='포함 범위: ');
+ assert.equal(scope.children.join(''),'포함 범위: 기본정보·요청 처리이력');
  await act(async()=>r.unmount());
 });
 test('download failures clear password and show retryable error without claiming completion',async()=>{
