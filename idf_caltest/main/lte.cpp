@@ -70,6 +70,10 @@ static void tlsDiagnostic(const char *cmd, const char *result) {
   int at = lastResp.indexOf("+CME ERROR:");
   if (at >= 0) error = lastResp.substring(at + 11).toInt();
   Serial.printf("[TLS-AT] %s result=%s cme=%d bytes=%u\n", cmd, result, error, (unsigned)lastResp.length());
+  if (at >= 0) {
+    String reason = lastResp.substring(at, lastResp.indexOf('\r', at));
+    Serial.printf("[TLS-ERROR] %.100s\n", reason.c_str());
+  }
 }
 #endif
 
@@ -594,6 +598,7 @@ static bool modemClockSet() {
   if (!sendAT("AT+CCLK?", okLine, 3000)) return false;
   int start = lastResp.indexOf("+CCLK: \"");
   int year = 0, month = 0, day = 0;
+  if (start >= 0) Serial.printf("[TLS-CLOCK] %.28s\n", lastResp.c_str() + start + 8);
   return start >= 0 && sscanf(lastResp.c_str() + start + 8, "%2d/%2d/%2d", &year, &month, &day) == 3 &&
          year >= 26 && month >= 1 && month <= 12 && day >= 1 && day <= 31;
 }
@@ -614,6 +619,10 @@ static bool configureTls() {
     caPrepared = false;
     Serial.println("[TLS] Secure context rejected");
     return false;
+  }
+  if (sendAT("AT+CSSLCFG=\"CTXINDEX\",1", okLine, 2000)) {
+    String context = lastResp; context.replace("\r", " "); context.replace("\n", " "); context.trim();
+    Serial.printf("[TLS-CONTEXT] %.300s\n", context.c_str());
   }
   return true;
 }
