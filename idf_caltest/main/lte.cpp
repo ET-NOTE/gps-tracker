@@ -56,6 +56,23 @@ static bool healthy() {
   return true;
 }
 
+#if GPS_HTTPS_PILOT
+// Only connection setup is logged. Never print request headers, keys or bodies.
+static bool tlsDiagnosticCommand(const char *cmd) {
+  return cmd && (strncmp(cmd, "AT+CFS", 6) == 0 || strncmp(cmd, "AT+CSSLCFG", 10) == 0 ||
+    strncmp(cmd, "AT+SHCONF", 9) == 0 || strncmp(cmd, "AT+SHSSL", 8) == 0 ||
+    strcmp(cmd, "AT+SHCONN") == 0 || strcmp(cmd, "AT+SHSTATE?") == 0 ||
+    strcmp(cmd, "AT+SHDISC") == 0 || strcmp(cmd, "AT+CCLK?") == 0);
+}
+static void tlsDiagnostic(const char *cmd, const char *result) {
+  if (!tlsDiagnosticCommand(cmd)) return;
+  int error = -1;
+  int at = lastResp.indexOf("+CME ERROR:");
+  if (at >= 0) error = lastResp.substring(at + 11).toInt();
+  Serial.printf("[TLS-AT] %s result=%s cme=%d bytes=%u\n", cmd, result, error, (unsigned)lastResp.length());
+}
+#endif
+
 // AT 트랜잭션. expect=nullptr 면 timeout 까지 대기 후 true.
 // ※ 원본의 esp_task_wdt_reset() feed 없음 — no-op 이라 제거 (2026-07-02).
 static bool sendAT(const char *cmd, const char *expect, uint32_t timeoutMs) {
@@ -74,14 +91,20 @@ static bool sendAT(const char *cmd, const char *expect, uint32_t timeoutMs) {
     }
 #if GPS_HTTPS_PILOT
     if (lastResp.indexOf("\r\nERROR\r\n") >= 0 || lastResp.indexOf("+CME ERROR:") >= 0 ||
-        lastResp.indexOf("\r\nRDY\r\n") >= 0) return false;
+        lastResp.indexOf("\r\nRDY\r\n") >= 0) { tlsDiagnostic(cmd, "error"); return false; }
 #endif
     if (expect && lastResp.indexOf(expect) >= 0) {
+#if GPS_HTTPS_PILOT
+      tlsDiagnostic(cmd, "ok");
+#endif
       if (DBG) { Serial.print(F("<< ")); Serial.println(lastResp); }
       return true;
     }
     delay(5);
   }
+#if GPS_HTTPS_PILOT
+  tlsDiagnostic(cmd, "timeout");
+#endif
   if (DBG && cmd && *cmd) { Serial.print(F("<< (timeout) ")); Serial.println(lastResp); }
   return expect == nullptr;
 }
@@ -448,6 +471,12 @@ void fetchSimInfo() {
 //   ② AT+CPSI?     : 지금 망에 붙어 "실제로 쓰는" serving 밴드 → band_ (telemetry 로 서버 관측).
 //   ONLINE 전환마다 호출 (2 AT tx, 저비용). 밴드가 재등록으로 바뀌면 최신값 반영.
 void fetchBandInfo() {
+#if GPS_HTTPS_PILOT
+  if (sendAT("AT+GMR", "\r\nOK\r\n", 3000)) {
+    String version = lastResp; version.replace("\r", " "); version.replace("\n", " "); version.trim();
+    Serial.printf("[MODEM] %s\n", version.c_str());
+  }
+#endif
   // ① enable 된 밴드셋 — 인증밴드만 lock 됐는지 필드 확인용 (로그만, payload 미포함).
   if (sendAT("AT+CBANDCFG?", "OK", 2000)) {
     String s = lastResp; s.replace("\r", " "); s.replace("\n", " "); s.trim();
