@@ -53,6 +53,7 @@ pub async fn scan(pool: &PgPool) -> anyhow::Result<()> {
          ) life ON true
          WHERE d.last_seen_at <= now()-interval '1 minute'
            AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=d.owner_id AND c.restricted)
+           AND NOT EXISTS (SELECT 1 FROM device_data_controls c WHERE c.device_id=d.id AND c.collection_enforced AND (c.collection_paused OR c.collection_ack_epoch IS DISTINCT FROM c.collection_epoch))
          ORDER BY d.id FOR UPDATE OF d SKIP LOCKED"#,
     )
     .fetch_all(&mut *tx)

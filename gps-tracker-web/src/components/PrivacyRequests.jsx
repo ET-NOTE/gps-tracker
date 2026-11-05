@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import './PrivacyRequests.css';
+import CollectionControl from './CollectionControl';
 
 export const rightsKinds = {access:'정보 열람',rectification:'정보 정정',erasure:'정보 삭제',account_closure:'회원 탈퇴'};
 export const rightsStatuses = {received:'접수',in_review:'검토 중',needs_information:'추가 확인',fulfilled:'처리 완료',rejected:'처리 제한',cancelled:'요청 취소'};
@@ -50,6 +51,7 @@ export default function PrivacyRequests() {
     catch(e) {setError(e);} finally {setBusy(false);}
   }
   return <div className="rights-panel">
+    <CollectionControl/>
     <section className="rights-card">
       <h2>개인정보 요청</h2>
       <p>본인 정보의 열람·정정·삭제와 회원 탈퇴를 요청할 수 있습니다.</p>

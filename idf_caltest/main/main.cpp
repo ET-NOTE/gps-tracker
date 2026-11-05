@@ -1,4 +1,5 @@
 #include "report_config.h"
+#include "collection_control.h"
 // =================================================================
 // 15_a_modular — 13_4_aa 구조적 리팩터.
 //   목표: 사고 대응 패치 누적으로 얽힌 복구 경로(7개)/블로킹 구조를 모듈로 분리하고
@@ -89,6 +90,7 @@ static void doPost() {
   int status = -1;
   uint32_t t0 = millis();
   bool ok = lte::httpPost(body, &status);
+  memset(body,0,sizeof(body)); // Do not retain an already-sent location JSON in static RAM.
   bool ok200 = ok && status == 200;
   Serial.printf("[POST] elapsed=%lums status=%d ok=%d conn=%d posted=%u\n",
     (unsigned long)(millis() - t0), status, (int)ok, (int)lte::httpConnected(), posted);
@@ -126,6 +128,7 @@ void setup() {
   Serial.setTxTimeoutMs(0);
   delay(2000);   // USB CDC 안정화 대기
   device_security::begin();
+  collection_control::begin();
   Serial.println();
   Serial.println(F("=== 15_a_modular — Block 8: sleep_mgr (non-blocking CDC) ==="));
   Serial.println(firmware::settings);
@@ -236,6 +239,7 @@ void setup() {
 }
 
 void loop() {
+  collection_control::syncSim(lte::iccid());
   device_security::poll();
   lwdt::feed();   // loop 진전 신호 (AT 대기루프·sleep 진입서도 별도 feed)
   gps::feed();

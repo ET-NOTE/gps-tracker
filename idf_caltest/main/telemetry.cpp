@@ -1,4 +1,5 @@
 #include "report_config.h"
+#include "collection_control.h"
 #include "telemetry.h"
 #include "config.h"
 #include "firmware_info.h"
@@ -56,7 +57,15 @@ const char* deviceUid() {
   return tmp;
 }
 
+static bool controlOnly(char *out,size_t cap) {
+  collection_control::syncSim(lte::iccid());
+  if(collection_control::allowed()) return false;
+  snprintf(out,cap,"{\"build_tag\":\"%s\",\"device_uid\":\"%s\",\"iccid\":\"%s\",\"imei\":\"%s\",\"imsi\":\"%s\"}",
+    FIRMWARE_BUILD_TAG,deviceUid(),lte::iccid(),lte::imei(),lte::imsi());
+  return true;
+}
 uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
+  if(controlOnly(out,cap)) return 0;
   uint32_t now  = millis();
   uint16_t vbat = readVbatMv();
   gps::Fix f;
@@ -160,8 +169,9 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
   uint8_t written = 0;
   if (avail > 0) {
     p = appendf(out, cap, p, ",\"fixes\":[");
-    // SHCONF BODYLEN 4096 안전 여유(3800). 초과 fix 는 batch 에 남아 다음 cycle 에 전송.
-    for (uint8_t i = 0; i < avail && p < 3800; i++) {
+    // Reserve space for pairing/command ACK and the collection policy envelope.
+    // Excess fixes remain in the batch for the next cycle.
+    for (uint8_t i = 0; i < avail && p < 3400; i++) {
       float lat, lng; int sat; uint32_t atMs;
       if (!gps::batchGet(i, lat, lng, sat, atMs)) break;
       // [2026-08-29 up_ms] 포착 시점 uptime ms — 서버 재전송 dedup 의 정확 키 (age_ms 는 도착시각
@@ -178,6 +188,7 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
 }
 
 void buildSleepPayload(char *out, size_t cap, uint32_t bootMs, const char *reason) {
+  if(controlOnly(out,cap)) return;
   uint16_t vbat = readVbatMv();
   uint32_t now  = millis();
   uint32_t motAge = motion::lastMs() ? (now - motion::lastMs()) / 1000 : 0;

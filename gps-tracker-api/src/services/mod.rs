@@ -2,6 +2,7 @@ pub mod ai_requests;
 pub mod alimtalk;
 pub mod battery;
 pub mod battery_runtime;
+pub mod collection_control;
 pub mod connection_alerts;
 pub mod credits;
 pub mod device_auth;

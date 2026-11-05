@@ -10,6 +10,8 @@ static std::string scenario;
 static uint32_t clockMs = 10000;
 static uint32_t reportSeconds=TIMER_WAKE_INTERVAL_S;
 namespace report_config { uint32_t intervalS() { return reportSeconds; } bool persisted() { return !GPS_HTTPS_SLEEP_TEST; } }
+static bool collecting=true;
+namespace collection_control { bool allowed() {return collecting;} void syncSim(const char*) {} }
 static bool pinLow = false, lisOk = true, active = false, railOff = false;
 static bool held = false, slept = false, armed = false, invalidRaw = false;
 static int posts = 0, shutdowns = 0, resumes = 0, drops = 0;
@@ -142,10 +144,17 @@ int main(int argc,char** argv) {
     puts("PASS"); return 0;
   }
 #endif
+  if(scenario=="collection_paused") {
+    collecting=false;
+    char body[8192],sleep[1024];
+    assert(telemetry::buildPayload(body,sizeof(body),0,true)==0);
+    telemetry::buildSleepPayload(sleep,sizeof(sleep),0,"stationary");
+    puts(body);puts(sleep);return 0;
+  }
   if(scenario=="payload") {
     char body[8192], sleep[1024];
     const auto count=telemetry::buildPayload(body,sizeof(body),0,true);
-    assert(strlen(body)<4096 && count>0 && count<120);
+    assert(strlen(body)+500<4096 && count>0 && count<120);
     telemetry::buildSleepPayload(sleep,sizeof(sleep),0,"stationary_lis_only");
     puts(body); puts(sleep); return 0;
   }

@@ -186,12 +186,23 @@ pub async fn ingest(
     .bind(id)
     .fetch_one(&mut *gate)
     .await?;
-    let response = if privacy_blocked {
+    let (collection_store, collection_policy) = crate::services::collection_control::evaluate(
+        &state.db,
+        id,
+        &auth_uid,
+        hardware || mode == IngestMode::Signed,
+        privacy_blocked || mode == IngestMode::HardwarePending,
+        &payload,
+    )
+    .await?;
+    let mut response = if privacy_blocked {
         // Acknowledge receipt without retaining any payload or executing commands.
         // This is server-side rejection; it does not claim the MCU stopped fixing.
         Json(json!({"ok":true,"stored":false,"privacy_blocked":true}))
     } else if mode == IngestMode::HardwarePending {
         Json(json!({"ok":false,"sim_link_required":true}))
+    } else if !collection_store {
+        Json(json!({"ok":true,"stored":false,"collection_waiting":true}))
     } else {
         ingest_payload(
             State(state.clone()),
@@ -202,6 +213,8 @@ pub async fn ingest(
         )
         .await?
     };
+    response.0["collection"] = collection_policy;
+    response.0["stored"] = json!(collection_store && mode != IngestMode::HardwarePending);
     if mode == IngestMode::Signed && !privacy_blocked {
         if let Some(hash) = payload
             .get("pairing_hash")

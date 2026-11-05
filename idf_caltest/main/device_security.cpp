@@ -1,4 +1,5 @@
 #include "device_security.h"
+#include "collection_control.h"
 #include "config.h"
 #include <Preferences.h>
 #include <esp_system.h>
@@ -103,6 +104,7 @@ bool prepare(const char *body, String &wireBody, uint64_t &counter, char signatu
   for(unsigned int i=0;i<currentSim.length();i++)if(!isdigit(static_cast<unsigned char>(currentSim[i]))){cJSON_Delete(json);return false;}
   if(lastSim.length()&&lastSim!=currentSim){newRegistration();ack="";}
   lastSim=currentSim;
+  collection_control::prepare(json);
   // device_uid and ICCID describe the current SIM; identity is only the hardware signer.
   cJSON_AddStringToObject(json,"pairing_hash",pairingHash);
   if(ack.length())cJSON_AddStringToObject(json,"command_ack",ack.c_str());

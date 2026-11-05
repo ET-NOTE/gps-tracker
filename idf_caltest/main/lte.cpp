@@ -1,4 +1,5 @@
 #include "report_config.h"
+#include "collection_control.h"
 #include "lte.h"
 #include "config.h"
 #include "hw_power.h"
@@ -772,6 +773,7 @@ bool httpPost(const char *body, int *statusOut) {
       Serial.println("[AUTH] Server response verification failed; batch retained.");return false;
     }
     verifiedResponse=true;
+    collection_control::applyAuthenticatedResponse(decoded.c_str());
     Serial.printf("[AUTH] Signed request and response verified (counter=%" PRIu64 ")\n",requestCounter);
     if(device_security::linkRequired()) {
       report_config::useDefault(); // An unlinked SIM must not inherit another owner's short interval.

@@ -16,6 +16,8 @@ use serde_json::{json, Value};
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/privacy/collection", get(collection_list))
+        .route("/privacy/collection/:id", post(collection_set))
         .route("/privacy/requests", get(list).post(create))
         .route("/privacy/impact", get(impact))
         .route("/privacy/requests/:id/cancel", post(cancel))
@@ -26,6 +28,62 @@ pub fn router() -> Router<AppState> {
             "/admin/privacy/requests/:id/close-account",
             post(start_closure),
         )
+}
+
+async fn collection_list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Value>> {
+    let items:Vec<Value>=sqlx::query_scalar(
+        "SELECT jsonb_build_object('device_id',d.id,'name',COALESCE(NULLIF(d.display_name,''),d.device_uid),
+        'paused',c.collection_paused,'enforced',c.collection_enforced,'epoch',c.collection_epoch,
+        'restricted',c.blocked,'changed_at',c.collection_changed_at,'ack_at',c.collection_ack_at,
+        'device_applied',COALESCE(c.collection_ack_epoch=c.collection_epoch AND c.collection_ack_uid=d.active_auth_uid AND c.collection_ack_at>=c.collection_changed_at,false))
+        FROM devices d JOIN device_data_controls c ON c.device_id=d.id
+        WHERE d.owner_id=$1 AND d.device_kind IS DISTINCT FROM 'phone' ORDER BY d.id")
+        .bind(user.user_id).fetch_all(&state.db).await?;
+    Ok(Json(json!({"items":items})))
+}
+
+#[derive(Deserialize)]
+struct CollectionSet {
+    paused: bool,
+    epoch: uuid::Uuid,
+}
+async fn collection_set(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Json(req): Json<CollectionSet>,
+) -> AppResult<Json<Value>> {
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    let owned:Option<i64>=sqlx::query_scalar("SELECT id FROM devices WHERE id=$1 AND owner_id=$2 AND device_kind IS DISTINCT FROM 'phone' FOR UPDATE")
+        .bind(id).bind(user.user_id).fetch_optional(&mut *tx).await?;
+    if owned.is_none() {
+        return Err(AppError::NotFound);
+    }
+    let (blocked,paused,epoch):(bool,bool,String)=sqlx::query_as("SELECT blocked,collection_paused,collection_epoch::text FROM device_data_controls WHERE device_id=$1 FOR UPDATE")
+        .bind(id).fetch_one(&mut *tx).await?;
+    if blocked {
+        return Err(AppError::Conflict(
+            "삭제 처리로 수집이 차단된 장치입니다. 관리자 확인이 필요합니다.".into(),
+        ));
+    }
+    if epoch != req.epoch.to_string() {
+        return Err(AppError::Conflict(
+            "설정이 변경되었습니다. 새로고침 후 다시 시도해 주세요.".into(),
+        ));
+    }
+    if paused != req.paused {
+        let next = uuid::Uuid::new_v4();
+        sqlx::query("UPDATE device_data_controls SET collection_paused=$2,collection_enforced=true,collection_epoch=$3::text::uuid,collection_changed_at=clock_timestamp(),collection_ack_epoch=NULL,collection_ack_at=NULL,collection_ack_uid=NULL WHERE device_id=$1")
+            .bind(id).bind(req.paused).bind(next.to_string()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO collection_control_events(device_id,actor_id,paused,epoch) VALUES($1,$2,$3,$4::text::uuid)")
+            .bind(id).bind(user.user_id).bind(req.paused).bind(next.to_string()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(Json(json!({"ok":true})))
 }
 
 #[derive(Deserialize)]

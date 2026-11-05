@@ -23,6 +23,11 @@ def main():
         subprocess.run(["g++","-std=c++17","-DKC_TEST_BUILD=0","-DBATTERY_TEST_BUILD=0","-Wall","-Wextra","-Werror","-Wno-unused-parameter","-I",str(ROOT/"stubs"),"-I",str(cjson),str(ROOT/"report_config_test.cpp"),cjson_object,"-o",config_exe],check=True)
         subprocess.run([config_exe],check=True)
         count+=1
+        collection_exe=str(Path(tmp)/"collection-control")
+        for kc in (0,1):
+            subprocess.run(["g++","-std=c++17",f"-DKC_TEST_BUILD={kc}","-DBATTERY_TEST_BUILD=0","-Wall","-Wextra","-Werror","-Wno-unused-parameter","-I",str(ROOT/"stubs"),"-I",str(cjson),str(ROOT/"collection_control_test.cpp"),cjson_object,"-o",collection_exe],check=True)
+            subprocess.run([collection_exe],check=True)
+        count+=1
         bench_config = str(Path(tmp)/"bench-config")
         subprocess.run(["g++","-std=c++17","-DKC_TEST_BUILD=0","-DGPS_HTTPS_PILOT=1","-DGPS_HTTPS_SLEEP_TEST=1",
                         "-Wall","-Wextra","-Werror","-Wno-unused-parameter","-I",str(ROOT/"stubs"),"-I",str(cjson),
@@ -79,6 +84,10 @@ def main():
             assert sleep["diag"]["sleep_phase"] == "intent"
             assert len(normal["fixes"]) > 0
             count += 1
+            paused=[json.loads(line) for line in subprocess.check_output([exe,"collection_paused"],text=True).splitlines()]
+            for payload in paused:
+                assert set(payload)=={"build_tag","device_uid","iccid","imei","imsi"}
+            count+=1
             lte_exe = str(Path(tmp) / f"lte-{profile}")
             subprocess.run([*flags, "-ffunction-sections", "-fdata-sections",
                             str(ROOT / "lte_shutdown_test.cpp"), "-Wl,--gc-sections",
