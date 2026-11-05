@@ -613,6 +613,7 @@ static bool configureTls() {
     return false;
   }
   if (!sendAT("AT+CSSLCFG=\"SSLVERSION\",1,3", okLine, 2000) ||
+      !sendAT("AT+CSSLCFG=\"CIPHERSUITE\",1,0,0xC02B", okLine, 2000) ||
       !sendAT("AT+CSSLCFG=\"IGNORERTCTIME\",1,0", okLine, 2000) ||
       !sendAT("AT+CSSLCFG=\"SNI\",1,\"" INGEST_HOSTNAME "\"", okLine, 2000) ||
       !sendAT("AT+SHSSL=1,\"" GPS_CA_FILE "\"", okLine, 3000)) {

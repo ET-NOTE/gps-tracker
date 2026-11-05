@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
     assert(caWrites == int(scenario == "fresh_ca"));
     assert(ntpDone == (scenario == "cold_clock"));
     for (const auto *required : {"AT+CSSLCFG=\"SSLVERSION\",1,3", "AT+CSSLCFG=\"IGNORERTCTIME\",1,0",
+                                 "AT+CSSLCFG=\"CIPHERSUITE\",1,0,0xC02B",
                                  "AT+CSSLCFG=\"SNI\",1,\"gps.serial.kr\"", "AT+SHSSL=1,\"" GPS_CA_FILE "\"",
                                  "AT+SHCONF=\"URL\",\"https://gps.serial.kr\""}) {
       assert(std::find(commands.begin(), commands.end(), required) != commands.end());
