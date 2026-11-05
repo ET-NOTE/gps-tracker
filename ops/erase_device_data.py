@@ -32,32 +32,16 @@ def run(db, device, owner, name, sim, actor, job, execute=False):
                   'external_copies_verified': False, 'executed': execute, 'job': str(job)}
         if not execute:
             return report
+        q.execute("SELECT count(*) FROM location_aggregate_archives WHERE mode='preserved_legacy'")
+        if q.fetchone()[0] != 3:
+            raise RuntimeError('Legacy aggregates must be preserved before erasure (migration 85)')
         q.execute('SELECT privacy_begin_device_erasure(%s,%s,%s,%s,%s)', (str(job), device, owner, name, actor))
-        q.execute('SELECT window_start,window_end FROM device_data_erasure_jobs WHERE id=%s', (str(job),))
-        start, end = q.fetchone()
-        # Refresh affects every device in the time window. Refuse BEFORE primary
-        # deletion if any other SIM aggregate no longer has its complete raw input.
-        # Otherwise retention-expired history could be removed as collateral.
-        if start is not None:
-            for view, bucket in AGGREGATES.items():
-                q.execute(f'''SELECT EXISTS(SELECT 1 FROM {view} a
-                    WHERE a.device_id<>%s AND a.bucket>=%s AND a.bucket<%s
-                    AND a.fix_count<>(SELECT count(*) FROM location_records r
-                      WHERE r.device_id=a.device_id AND r.fix
-                        AND r.recorded_at>=a.bucket AND r.recorded_at<a.bucket+%s::interval))''',
-                          (device, start, end, bucket))
-                if q.fetchone()[0]:
-                    raise RuntimeError('Other SIM aggregate inputs differ; separate retention-safe refresh review required')
         q.execute('SELECT privacy_erase_device_primary(%s)', (str(job),))
         report['deleted_counts'] = q.fetchone()[0]
-        for view in AGGREGATES:
-            q.execute(f'SELECT EXISTS(SELECT 1 FROM {view} WHERE device_id=%s)', (device,))
-            if q.fetchone()[0]:
-                if start is None or end is None:
-                    raise RuntimeError('Missing refresh window')
-                # CALL cannot run inside a transaction. A failed refresh leaves
-                # primary_erased, and verification must not report completion.
-                q.execute('CALL refresh_continuous_aggregate(%s,%s,%s)', (view, start, end))
+        # Ordinary preserved tables allow a targeted DELETE. Never refresh a
+        # time range shared with other SIMs or mutate Timescale internal tables.
+        q.execute('SELECT privacy_erase_device_aggregates(%s)', (str(job),))
+        report['deleted_counts'].update(q.fetchone()[0])
         q.execute('SELECT privacy_verify_device_erasure(%s)', (str(job),))
         q.execute('SELECT state FROM device_data_erasure_jobs WHERE id=%s', (str(job),))
         report['state'] = q.fetchone()[0]

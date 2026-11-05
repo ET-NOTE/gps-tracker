@@ -1776,12 +1776,15 @@ async fn timescaledb_storage_stats(
     .await
     .ok();
 
-    // continuous aggregate view 의 size (참고용)
+    // Historical aggregates were preserved as ordinary tables in migration 85.
+    // They no longer refresh; live graphs use owner-scoped raw projections.
     let cagg_sizes: Vec<(String, Option<i64>)> = sqlx::query_as(
-        r#"SELECT view_name::text, hypertable_size(format('%I.%I', materialization_hypertable_schema, materialization_hypertable_name)::regclass)::bigint
-             FROM timescaledb_information.continuous_aggregates
-            WHERE view_name IN ('location_1min', 'location_5min', 'location_1hour')"#
-    ).fetch_all(&state.db).await.unwrap_or_default();
+        r#"SELECT name, pg_total_relation_size(format('public.%I',name)::regclass)::bigint
+             FROM location_aggregate_archives ORDER BY name"#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
 
     let mut aggregates = serde_json::Map::new();
     for (name, size) in cagg_sizes {
@@ -1808,6 +1811,7 @@ async fn timescaledb_storage_stats(
         "row_count":     row_count,
         "compression":   compression_json,
         "aggregates":    Value::Object(aggregates),
+        "aggregate_mode": "preserved_legacy",
         "retention":     "permanent",  // 2026-06-27 결정 — 1년 retention policy 제거됨
     })))
 }

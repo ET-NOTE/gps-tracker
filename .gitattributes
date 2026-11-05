@@ -4,6 +4,10 @@
 # bash heredoc 안에 임베드되는 SQL 도 LF
 *.sql text eol=lf
 
+# Already deployed with CRLF; preserve exact SQLx checksum in archives/checkouts.
+# Do not edit applied migration bytes. New migrations still use LF above.
+gps-tracker-api/migrations/0085_preserve_legacy_aggregates.sql -text !eol whitespace=trailing-space,space-before-tab,cr-at-eol
+
 # Windows 전용은 CRLF
 *.bat text eol=crlf
 *.ps1 text eol=crlf

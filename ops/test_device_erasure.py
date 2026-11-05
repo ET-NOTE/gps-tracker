@@ -51,6 +51,18 @@ def fails(query, args=(), code=None):
     raise AssertionError('Expected rejection: '+query[:80])
 
 
+def seed_archives(ids):
+    # Test fixture only. Production archives retain their original values and
+    # have no refresh job; never reconstruct historical data from partial raw.
+    for table, interval in zip(AGGREGATES, ('1 minute', '5 minutes', '1 hour')):
+        sql(f"""INSERT INTO {table}
+          SELECT device_id,time_bucket(%s::interval,recorded_at),
+          avg(lat),avg(lng),last(lat,recorded_at),last(lng,recorded_at),
+          avg(sat)::real,avg(vbat_mv)::integer,count(*)
+          FROM location_records WHERE device_id=ANY(%s) AND fix
+          GROUP BY device_id,2""", (interval, ids))
+
+
 tag = uuid.uuid4().hex
 users = [sql("INSERT INTO users(email,password_hash,phone) VALUES(%s,'fixture-only','01000000000') RETURNING id",
              (f'{tag}-{n}@example.invalid',)) for n in range(2)]
@@ -73,8 +85,7 @@ for did in (target, other):
                VALUES(%s,%s+%s*interval '1 minute','l80',true,37.1,127.1,%s,'{"test":"raw"}')""", (did, window, i, uid))
     sql('INSERT INTO daily_stats(device_id,date,user_id,fix_count) VALUES(%s,%s::date,%s,3)', (did, window, owner))
     sql("UPDATE devices SET last_lat=37.1,last_lng=127.1,last_fix_at=%s,last_seen_at=%s WHERE id=%s", (window, window, did))
-for view in AGGREGATES:
-    sql('CALL refresh_continuous_aggregate(%s,%s,%s+interval \'1 day\')', (view, window, window))
+seed_archives([target, other])
 chunks = sql("SELECT array_agg(format('%%I.%%I',chunk_schema,chunk_name)) FROM timescaledb_information.chunks WHERE hypertable_name='location_records' AND range_start<=%s AND range_end>%s", (window, window))
 for chunk in chunks:
     sql('SELECT compress_chunk(%s,if_not_compressed=>true)', (chunk,))
@@ -96,6 +107,7 @@ sql("INSERT INTO ai_analysis_requests(user_id,request_id,device_id,target_date,a
 sql('INSERT INTO share_tokens(token,device_id,created_by,expires_at) VALUES(%s,%s,%s,now()+interval \'1 day\')', (tag, target, owner))
 ev = sql("INSERT INTO events(device_id,occurred_at,kind,user_id,data,notified_at) VALUES(%s,%s,'wake',%s,'{"+'"location":"fixture"'+"}',now()) RETURNING id", (target, window, owner))
 ft = sql("INSERT INTO fcm_tokens(user_id,token,platform,active) VALUES(%s,%s,'android',false) RETURNING id", (owner, tag))
+sql("INSERT INTO connection_alert_episodes(device_id,user_id,kind,last_seen_at,event_id) VALUES(%s,%s,'offline',%s,%s) ON CONFLICT(device_id,user_id,kind) DO UPDATE SET event_id=EXCLUDED.event_id", (target, owner, window, ev))
 outbox = sql("INSERT INTO fcm_outbox(event_id,token_id,user_id,message,lease_until,available_at) VALUES(%s,%s,%s,jsonb_build_object('data',jsonb_build_object('device_id',%s::text)),now()+interval '1 hour',now()+interval '2 hours') RETURNING id", (ev, ft, owner, target))
 job = uuid.uuid4()
 report = run(db, target, owner, 'fixture-1', sim, owner, job)
@@ -133,13 +145,16 @@ print('PASS concurrent writer fence; inflight delivery/file refusal preserves so
 
 counts = sql('SELECT privacy_erase_device_primary(%s)', (str(job),))
 assert counts['location_records'] == 3 and counts['ai_analyses'] == 1 and counts['fleet_site_visits'] == 1
+assert counts['connection_alert_episodes'] >= 1
 assert sql('SELECT analysis_id FROM ai_analysis_requests WHERE user_id=%s AND request_id=\'fixture\'', (owner,)) is None
 fails('SELECT privacy_verify_device_erasure(%s)', (str(job),))
 assert sql('SELECT state FROM device_data_erasure_jobs WHERE id=%s', (str(job),)) == 'primary_erased'
 assert sql('SELECT privacy_erase_device_primary(%s)', (str(job),)) == counts
 report = run(db, target, owner, 'fixture-1', sim, owner, job, True)
 assert report['state'] == 'active_db_verified' and not report['external_copies_verified']
-assert run(db, target, owner, 'fixture-1', sim, owner, job, True)['deleted_counts'] == counts
+assert all(report['deleted_counts'][k] == v for k, v in counts.items())
+assert all(report['deleted_counts'][t] > 0 for t in AGGREGATES)
+assert run(db, target, owner, 'fixture-1', sim, owner, job, True)['deleted_counts'] == report['deleted_counts']
 for table, before in baseline.items():
     assert sql(f"SELECT md5(string_agg(to_jsonb(r)::text,',' ORDER BY to_jsonb(r)::text)) FROM {table} r WHERE device_id=%s", (other,)) == before, table
 assert sql('SELECT device_id FROM fleet_vehicle_bindings WHERE id=%s', (binding,)) == target
@@ -154,6 +169,7 @@ late_queries = [
  ('UPDATE devices SET last_lat=38 WHERE id=%s', (target,)),
  ('UPDATE devices SET owner_id=%s WHERE id=%s', (previous, target)),
  ('INSERT INTO share_tokens(token,device_id,created_by,expires_at) VALUES(%s,%s,%s,now())', (tag+'late', target, owner)),
+ ('INSERT INTO location_1min(device_id,bucket) VALUES(%s,now())', (target,)),
 ]
 for query, args in late_queries:
     fails(query, args, '55000')
@@ -202,20 +218,14 @@ old = sql("SELECT date_trunc('day',now())-interval '90 days'")
 insert_old = "INSERT INTO location_records(device_id,recorded_at,source,fix,lat,lng,user_id) VALUES(%s,%s,'l80',true,37.1,127.1,%s)"
 for did in (stale, neighbor):
     sql(insert_old, (did, old, owner))
-for view in AGGREGATES:
-    sql('CALL refresh_continuous_aggregate(%s,%s,%s+interval \'1 day\')', (view, old, old))
+seed_archives([stale, neighbor])
 sql('DELETE FROM location_records WHERE device_id IN (%s,%s)', (stale, neighbor))
 stale_job = uuid.uuid4()
-try:
-    run(db, stale, owner, 'fixture-3', stale_sim, owner, stale_job, True)
-    raise AssertionError('Retention-expired other SIM history was exposed to refresh')
-except RuntimeError as e:
-    assert 'aggregate inputs differ' in str(e)
-assert sql('SELECT state FROM device_data_erasure_jobs WHERE id=%s', (str(stale_job),)) == 'blocked'
-assert sql('SELECT count(*) FROM location_1min WHERE device_id=%s', (neighbor,)) == 1
-sql(insert_old, (neighbor, old, owner))
+neighbor_before = {t: sql(f"SELECT md5(string_agg(to_jsonb(r)::text,',' ORDER BY bucket)) FROM {t} r WHERE device_id=%s", (neighbor,)) for t in AGGREGATES}
 assert run(db, stale, owner, 'fixture-3', stale_sim, owner, stale_job, True)['state'] == 'active_db_verified'
-assert sql('SELECT count(*) FROM location_1min WHERE device_id=%s', (stale,)) == 0
-assert sql('SELECT count(*) FROM location_1min WHERE device_id=%s', (neighbor,)) == 1
-print('PASS orphan target aggregates removed; other SIM retained-only aggregate blocks refresh', flush=True)
+for t in AGGREGATES:
+    assert sql(f'SELECT count(*) FROM {t} WHERE device_id=%s', (stale,)) == 0
+    assert sql(f"SELECT md5(string_agg(to_jsonb(r)::text,',' ORDER BY bucket)) FROM {t} r WHERE device_id=%s", (neighbor,)) == neighbor_before[t]
+assert sql('SELECT count(*) FROM location_records WHERE device_id=%s', (neighbor,)) == 0
+print('PASS orphan target aggregates removed; other SIM raw-less history preserved exactly', flush=True)
 db.close()

@@ -537,6 +537,8 @@ function TimescaleDbStatsBody({ stats }) {
   const c = stats.compression || {};
   const ratio = c.ratio;
   const aggs = stats.aggregates || {};
+  const aggregateMode = stats.aggregate_mode === 'preserved_legacy'
+    ? '과거 집계 · 자동 갱신 종료' : 'continuous aggregate';
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: 12 }}>
@@ -562,9 +564,9 @@ function TimescaleDbStatsBody({ stats }) {
         />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
-        <BatchStatTile label="1m aggregate"  value={fmtBytes(aggs.location_1min)}  sub="continuous aggregate" />
-        <BatchStatTile label="5m aggregate"  value={fmtBytes(aggs.location_5min)}  sub="continuous aggregate" />
-        <BatchStatTile label="1h aggregate"  value={fmtBytes(aggs.location_1hour)} sub="continuous aggregate" />
+        <BatchStatTile label="1m aggregate"  value={fmtBytes(aggs.location_1min)}  sub={aggregateMode} />
+        <BatchStatTile label="5m aggregate"  value={fmtBytes(aggs.location_5min)}  sub={aggregateMode} />
+        <BatchStatTile label="1h aggregate"  value={fmtBytes(aggs.location_1hour)} sub={aggregateMode} />
         <BatchStatTile label="retention"     value="영구" sub="2026-06-27 결정" />
       </div>
       <div style={{ fontSize: 10, color: '#888', marginTop: 10, lineHeight: 1.5 }}>
