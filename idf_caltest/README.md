@@ -35,11 +35,13 @@ python idf_caltest/tools/build_firmware.py https-pilot
 각 프로파일은 sdkconfig까지 별도로 사용하며, 기존 `build/caltest.bin`과 시험소 제출본은 덮어쓰지 않습니다.
 
 `https-pilot`은 자동 절전 진입과 타이머 기상을 끄고, 운영 HMAC·SIM 정책으로 HTTPS 수집을 시험하는 상시 기동 빌드입니다.
-파일럿에는 TLS 1.2, RTC 인증서 유효기간 검사, `gps.serial.kr` SNI 및 비어 있지 않은 CA 목록이 필요합니다.
-첫 연결 시 펌웨어가 공개 루트 ISRG Root X2를 모뎀에 준비합니다. RTC가 초기 상태이면 PDP를 통해 NTP 동기화를 시도합니다.
-설정 명령 실패는 연결 실패로 처리합니다. **2026-11-05 실물 시험에서 만료·미신뢰 CA는 거부했지만
-다른 호스트명의 인증서를 수락하는 결함을 확인했습니다. 현재 HTTPS 파일럿의 운영 승격은 차단합니다.**
-SNI는 서버 이름 검증의 증거가 아니며, [거부 시험 결과와 후속 작업](../docs/operations/https-certificate-rejection-20261105.md)을 확인합니다.
+파일럿은 ESP32의 Mbed TLS로 TLS 1.2·CA·유효기간·접속 이름을 검증하며, 모뎀은 암호화된 레코드를 TCP로 전달합니다.
+ISRG Root X2는 펌웨어에 포함합니다. 모뎀 시각이 초기 상태이면 NTP 동기화를 시도하고 UTC를 ESP32 시계에 반영합니다.
+날짜 검증 빌드 옵션을 강제하며, 검증 실패 시 HTTP로 우회하지 않습니다.
+2026-11-05 기존 모뎀 SHSSL 경로의 호스트명 결함을 발견해 이 경로로 교체했고,
+**실기기 정상 인증서 3회 성공, 만료·미신뢰 CA·다른 이름 인증서 각각 2회 거부**를 확인했습니다.
+[보완 및 재시험 기록](../docs/operations/https-mcu-verification-20261105.md)을 참조합니다.
+절전·장시간 운행·망 장애·CA 갱신 검증과 전체 운영 승격은 별도 인수 항목으로 남습니다.
 빌드 산출물은 `build/https-pilot/`, 검증 절차와 담당은
 [위치정보사업 준비](../docs/operations/location-business-preparation.md)에 있습니다.
 
