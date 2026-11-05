@@ -8,6 +8,7 @@ import CollectionControl from './CollectionControl';
 import {PersonalDeliveries,AdminDeliveries} from './PrivacyDelivery';
 import {PersonalAccountPackages,AdminAccountPackages} from './PrivacyAccountPackage';
 import {PersonalRedacted,AdminRedacted} from './PrivacyRedacted';
+import {PersonalImages,AdminImages} from './PrivacyImages';
 
 export const rightsKinds = {access:'정보 열람',rectification:'정보 정정',erasure:'정보 삭제',account_closure:'회원 탈퇴'};
 export const rightsStatuses = {received:'접수',in_review:'검토 중',needs_information:'추가 확인',fulfilled:'처리 완료',rejected:'처리 제한',cancelled:'요청 취소'};
@@ -86,6 +87,7 @@ export default function PrivacyRequests() {
         {row.kind==='access'&&<PersonalDeliveries request={row}/>}
         {row.kind==='access'&&<PersonalAccountPackages request={row}/>}
         {row.kind==='access'&&<PersonalRedacted request={row}/>}
+        {row.kind==='access'&&<PersonalImages request={row}/>}
         <PersonalCompanyReviews request={row}/>
         {row.status==='needs_information'&&<p>추가 확인 내용은 관리자 채팅으로 요청 번호와 함께 전달해 주세요.</p>}
         {isOpen(row)&&<button type="button" disabled={busy} onClick={()=>cancel(row)}>이 요청 취소</button>}
@@ -138,6 +140,7 @@ function ReviewForm({detail,refresh}) {
     {row.kind==='access'&&<AdminDeliveries request={row} refresh={refresh}/>}
     {row.kind==='access'&&<AdminAccountPackages request={row} refresh={refresh}/>}
     {row.kind==='access'&&<AdminRedacted request={row} refresh={refresh}/>}
+    {row.kind==='access'&&<AdminImages request={row} refresh={refresh}/>}
     <AdminCompanyReviews request={row} refresh={refresh}/>
     {destructive&&<p className="rights-notice">계정 이용 종료와 전체 자료 삭제 완료는 별도입니다. 회사·거래 자료, 계정 정보와 백업은 확인 후 처리해야 합니다.</p>}
     {row.kind==='account_closure'&&!detail.closure&&isOpen(row)&&<section className="rights-impact">

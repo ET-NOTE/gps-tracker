@@ -74,6 +74,7 @@ async fn main() -> anyhow::Result<()> {
     services::stats::spawn_worker(pool.clone());
     services::fleet_sites::spawn(pool.clone());
     services::housekeeping::spawn_worker(pool.clone());
+    routes::privacy_images::spawn_cleanup(pool.clone());
     // partition_worker 제거 — TimescaleDB hypertable 이 chunk 자동 관리 (migration 0040).
     services::nce::spawn_cache_worker(pool.clone());
     // (2026-07-28) Stage-4H-1: 예약 임박 알림 워커.

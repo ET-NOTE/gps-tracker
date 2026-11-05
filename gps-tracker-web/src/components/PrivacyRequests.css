@@ -25,3 +25,5 @@
 .rights-text-sources button{text-align:left;white-space:normal;overflow-wrap:anywhere}
 .rights-panel .rights-raw-text,.rights-redacted-preview{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font:inherit;max-width:100%;box-sizing:border-box}
 .rights-redacted-preview{padding:1rem;border:1px solid var(--border,#ddd);border-radius:.5rem;background:var(--card,#fff);max-height:24rem;overflow:auto}
+
+.rights-image-canvas,.rights-image-preview{display:block;max-width:100%;height:auto;border:1px solid var(--border);border-radius:6px;margin:12px auto}.rights-image-canvas{touch-action:none;cursor:crosshair}.rights-image-coordinates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.rights-image-coordinates input{width:100%;min-width:0;box-sizing:border-box}@media(max-width:600px){.rights-image-coordinates{grid-template-columns:repeat(2,minmax(0,1fr))}}

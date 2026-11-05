@@ -369,6 +369,17 @@ export const api = {
   privacyAccountPackages: id => req('GET', `/privacy/requests/${id}/account-packages`),
   privacyTextSources: (id,kind,before) => req('GET', `/admin/privacy/requests/${id}/text-sources?kind=${encodeURIComponent(kind)}${before?`&before=${before}`:''}`),
   reviewPrivacyText: (id,kind,source) => req('POST', `/admin/privacy/requests/${id}/text-sources/${kind}/${source}`,{}),
+  previewPrivacyImage: (id,body) => req('POST', `/admin/privacy/requests/${id}/image-preview`,body),
+  issuePrivacyImage: (id,body) => req('POST', `/admin/privacy/requests/${id}/images`,body),
+  adminPrivacyImage: id => req('GET', `/admin/privacy/requests/${id}/images`),
+  personalPrivacyImage: id => req('GET', `/privacy/requests/${id}/images`),
+  revokePrivacyImage: id => req('POST', `/admin/privacy/images/${id}/revoke`,{}),
+  downloadPrivacyImage: async (id,password) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/privacy/images/${id}/download`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(r.status===401?'현재 비밀번호를 확인해 주세요.':e.error||'자료를 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return blob;
+  },
   previewRedacted: (id,body) => req('POST', `/admin/privacy/requests/${id}/redacted-preview`,body),
   issueRedacted: (id,body) => req('POST', `/admin/privacy/requests/${id}/redacted`,body),
   adminRedacted: id => req('GET', `/admin/privacy/requests/${id}/redacted`),

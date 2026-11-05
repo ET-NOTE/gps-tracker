@@ -27,6 +27,7 @@ pub mod privacy;
 pub mod privacy_company;
 pub mod privacy_company_tasks;
 pub mod privacy_delivery;
+pub mod privacy_images;
 pub mod privacy_packages;
 pub mod privacy_redacted;
 pub mod profile_type;
@@ -52,6 +53,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(privacy_delivery::router())
         .merge(privacy_packages::router())
         .merge(privacy_redacted::router())
+        .merge(privacy_images::router())
         .merge(privacy_company::router())
         .merge(privacy_company_tasks::router())
         .merge(devices::router())
