@@ -9,7 +9,9 @@
 #include <inttypes.h>
 #include <HardwareSerial.h>
 #include <ctype.h>
-#if GPS_HTTPS_PILOT
+#if GPS_TLS_CERT_TEST
+#include GPS_TLS_TEST_CA_HEADER
+#elif GPS_HTTPS_PILOT
 #include "ingest_root_ca.h"
 #endif
 
@@ -65,6 +67,12 @@ static bool tlsDiagnosticCommand(const char *cmd) {
     strcmp(cmd, "AT+SHDISC") == 0 || strcmp(cmd, "AT+CCLK?") == 0);
 }
 static void tlsDiagnostic(const char *cmd, const char *result) {
+#if GPS_TLS_CERT_TEST
+  if (cmd && strncmp(cmd, "AT+CNTP", 7) == 0) {
+    String clockReply = lastResp; clockReply.replace("\r", " "); clockReply.replace("\n", " ");
+    Serial.printf("[CERT-CLOCK] %s result=%s response=%.200s\n", cmd, result, clockReply.c_str());
+  }
+#endif
   if (!tlsDiagnosticCommand(cmd)) return;
   int error = -1;
   int at = lastResp.indexOf("+CME ERROR:");
@@ -693,6 +701,26 @@ static bool connectHttp() {
   }
   return false;
 }
+
+#if GPS_TLS_CERT_TEST
+// Deliberately bypass all authentication/telemetry APIs. The harness never reads
+// NVS credentials or sends device identity/coordinates, even if a bad cert passes.
+bool certificateProbe() {
+  resetHttpKeepalive();
+  const bool connected = connectHttp();
+  Serial.printf("[CERT-RESULT] connected=%d\n", (int)connected);
+  if (!connected) return false;
+  if (!sendAT("AT+SHCHEAD", okLine, 2000)) return false;
+  bool requested = sendAT("AT+SHREQ=\"/tls-probe\",1", "+SHREQ:", 15000);
+  // Complete the small, non-sensitive status line before printing.
+  delay(200); drain();
+  String result = lastResp; result.replace("\r", " "); result.replace("\n", " ");
+  Serial.printf("[CERT-HTTP] requested=%d response=%.160s\n", (int)requested, result.c_str());
+  closePilotSession();
+  resetHttpKeepalive();
+  return requested;
+}
+#endif
 
 bool httpPost(const char *body, int *statusOut) {
   bc::set("lte_post");

@@ -35,8 +35,17 @@ def source_digest():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("profile", choices=("operating", "https-pilot", "kc", "battery"))
+    parser.add_argument("profile", choices=("operating", "https-pilot", "tls-cert-test", "kc", "battery"))
+    parser.add_argument("--test-ca-header", type=Path)
     args = parser.parse_args()
+    if (args.profile == "tls-cert-test") != bool(args.test_ca_header):
+        parser.error("Only tls-cert-test requires --test-ca-header")
+    extra = []
+    ca_hash = None
+    if args.test_ca_header:
+        args.test_ca_header = args.test_ca_header.resolve(strict=True)
+        ca_hash = sha(args.test_ca_header)
+        extra = ["-D", f"TLS_TEST_CA_HEADER={args.test_ca_header.as_posix()}"]
     idf = Path(os.environ["IDF_PATH"])
     # The dependency lock is part of the source contract. Don't silently resolve
     # it against the older SDK installed on some developer PCs.
@@ -58,10 +67,12 @@ def main():
     subprocess.run([sys.executable, str(idf / "tools/idf.py"), "-B", str(build),
                     "-D", f"SDKCONFIG={sdkconfig.as_posix()}",
                     "-D", f"FIRMWARE_PROFILE={args.profile}",
-                    "-D", f"FIRMWARE_REVISION={revision}", "build"],
+                    "-D", f"FIRMWARE_REVISION={revision}", *extra, "build"],
                    cwd=PROJECT, check=True)
     if sha(PROJECT / "dependencies.lock") != lock_before or source_digest() != before:
         raise SystemExit("Source/dependency lock changed during build; inspect and rebuild")
+    if args.test_ca_header and sha(args.test_ca_header) != ca_hash:
+        raise SystemExit("Test CA changed during build")
     binary = build / "caltest.bin"
     match = re.search(rb'FW-CONFIG:(\{[^\x00]+\})\x00', binary.read_bytes())
     if not match:
@@ -74,13 +85,17 @@ def main():
             settings["buzzer_enabled"] != 0):
         raise SystemExit("KC protection mismatch")
     expected_url = ("https" if args.profile == "https-pilot" else "http") + "://gps.serial.kr/ingest"
+    if args.profile == "tls-cert-test":
+        expected_url = "https://gps.serial.kr:18443/tls-probe"
+        if settings["request_auth"] != "none_test_probe" or settings["credential_store"] != "unused":
+            raise SystemExit("Certificate test must not use production credentials")
     if settings["ingest_url"] != expected_url:
         raise SystemExit("Compiled ingest URL mismatch")
     if args.profile == "operating" and (settings["kc_test"] != 0 or
                                        settings["sleep_disabled"] != 0 or
                                        settings["timer_wake_s"] != 86400):
         raise SystemExit("Operating sleep configuration mismatch")
-    if args.profile == "https-pilot" and (settings["kc_test"] != 0 or
+    if args.profile in ("https-pilot", "tls-cert-test") and (settings["kc_test"] != 0 or
             settings["sleep_disabled"] != 1 or settings["timer_wake_enabled"] != 0 or
             settings["loop_wdt_enabled"] != 1):
         raise SystemExit("HTTPS bench profile must stay awake with the watchdog enabled")
@@ -96,7 +111,7 @@ def main():
     manifest.write_text(json.dumps({
         "git_commit": commit, "dirty": dirty, "source_sha256": before,
         "dependency_lock_sha256": lock_before, "idf_version": version,
-        "firmware": settings,
+        "firmware": settings, "test_ca_header_sha256": ca_hash,
         "files_sha256": {f: sha(build / f) for f in files},
         "hardware": "ESP32-C3 new PCB: PWRKEY GPIO10 active HIGH, DTR GPIO7 LOW",
         "flashed": False,

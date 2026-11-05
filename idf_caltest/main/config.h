@@ -44,13 +44,24 @@
 #ifndef GPS_HTTPS_PILOT
   #define GPS_HTTPS_PILOT 0
 #endif
+#ifndef GPS_TLS_CERT_TEST
+  #define GPS_TLS_CERT_TEST 0
+#endif
 #define INGEST_HOSTNAME "gps.serial.kr"
-#if GPS_HTTPS_PILOT
+#if GPS_TLS_CERT_TEST
+  #if !GPS_HTTPS_PILOT
+    #error "Certificate tests require the HTTPS path"
+  #endif
+  #define POST_URL_HOST "https://" INGEST_HOSTNAME ":18443"
+  #define POST_PATH "/tls-probe"
+#elif GPS_HTTPS_PILOT
   #define POST_URL_HOST "https://" INGEST_HOSTNAME
 #else
   #define POST_URL_HOST "http://" INGEST_HOSTNAME
 #endif
-#define POST_PATH      "/ingest"
+#ifndef POST_PATH
+  #define POST_PATH      "/ingest"
+#endif
 
 // ── 배터리 ───────────────────────────────────────────────────────
 #define BAT_DIV_RATIO     2.0f

@@ -27,6 +27,9 @@ namespace lte {
   // ── HTTP (Block 6) ──
   //   host/path 는 config 상수(POST_URL_HOST/POST_PATH). SHCONN/SHREQ keepalive 유지.
   bool     httpPost(const char *body, int *statusOut);
+#if defined(GPS_TLS_CERT_TEST) && GPS_TLS_CERT_TEST
+  bool certificateProbe(); // Test-only fixed GET; no NVS credentials or telemetry.
+#endif
   void     resetHttpKeepalive();     // 모듈 reset / CFUN cycle 시 SHCONF/SHCONN 재설정 필요
   bool     httpConnected();
   uint32_t postIntervalMs();         // 서버 cmd 로 조정됨 (RAM, reset 시 default 복귀)
