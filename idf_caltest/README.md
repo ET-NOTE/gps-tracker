@@ -37,9 +37,16 @@ python idf_caltest/tools/build_firmware.py https-pilot
 `https-pilot`은 자동 절전 진입과 타이머 기상을 끄고, 운영 HMAC·SIM 정책으로 HTTPS 수집을 시험하는 상시 기동 빌드입니다.
 파일럿에는 TLS 1.2, RTC 인증서 유효기간 검사, `gps.serial.kr` SNI 및 비어 있지 않은 CA 목록이 필요합니다.
 첫 연결 시 펌웨어가 공개 루트 ISRG Root X2를 모뎀에 준비합니다. RTC가 초기 상태이면 PDP를 통해 NTP 동기화를 시도합니다.
-파일럿의 설정·인증서 오류는 연결 실패로 처리합니다. 호스트명 불일치 거부와 모뎀별 인증서 검증은
-양산 전 실물 합격 조건입니다. 빌드 산출물은 `build/https-pilot/`, 검증 절차와 담당은
+설정 명령 실패는 연결 실패로 처리합니다. **2026-11-05 실물 시험에서 만료·미신뢰 CA는 거부했지만
+다른 호스트명의 인증서를 수락하는 결함을 확인했습니다. 현재 HTTPS 파일럿의 운영 승격은 차단합니다.**
+SNI는 서버 이름 검증의 증거가 아니며, [거부 시험 결과와 후속 작업](../docs/operations/https-certificate-rejection-20261105.md)을 확인합니다.
+빌드 산출물은 `build/https-pilot/`, 검증 절차와 담당은
 [위치정보사업 준비](../docs/operations/location-business-preparation.md)에 있습니다.
+
+`tls-cert-test`는 인증서 시험 전용 프로필입니다. `--test-ca-header <공개 CA 헤더>`를 반드시 제공하며,
+별도 entry point에서 `https://gps.serial.kr:18443/tls-probe`에 고정 GET만 전송합니다.
+장치 인증키·GPS·운영 수집을 사용하지 않습니다. 시험용 CA 개인키를 저장소나 펌웨어에 넣지 않습니다.
+시험은 시리얼 `RUN` 명령으로 시작하고, 종료 후 대상 단말기 복구와 임시 서버·방화벽·개인키 회수를 확인합니다.
 
 | 산출물 | 운영 | KC 시험 후보 |
 |---|---|---|
