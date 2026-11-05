@@ -369,6 +369,8 @@ export const api = {
   privacyAccountPackages: id => req('GET', `/privacy/requests/${id}/account-packages`),
   privacyTextSources: (id,kind,before) => req('GET', `/admin/privacy/requests/${id}/text-sources?kind=${encodeURIComponent(kind)}${before?`&before=${before}`:''}`),
   reviewPrivacyText: (id,kind,source) => req('POST', `/admin/privacy/requests/${id}/text-sources/${kind}/${source}`,{}),
+  privacyReceiptSources: (id,review,revision,after=0) => req('GET', `/admin/privacy/requests/${id}/receipt-sources/${review}?company_revision=${revision}&after=${after}`),
+  readPrivacyReceipt: (id,review,receipt,revision) => req('POST', `/admin/privacy/requests/${id}/receipt-sources/${review}/${receipt}`,{company_revision:revision}),
   previewPrivacyImage: (id,body) => req('POST', `/admin/privacy/requests/${id}/image-preview`,body),
   issuePrivacyImage: (id,body) => req('POST', `/admin/privacy/requests/${id}/images`,body),
   adminPrivacyImage: id => req('GET', `/admin/privacy/requests/${id}/images`),

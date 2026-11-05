@@ -7,7 +7,7 @@ use crate::{
     state::AppState,
 };
 use axum::{
-    extract::{DefaultBodyLimit, Path, State},
+    extract::{DefaultBodyLimit, Path, Query, State},
     http::{header, HeaderMap},
     middleware,
     response::{IntoResponse, Response},
@@ -24,6 +24,14 @@ use std::sync::OnceLock;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route(
+            "/admin/privacy/requests/:id/receipt-sources/:review",
+            get(receipt_options),
+        )
+        .route(
+            "/admin/privacy/requests/:id/receipt-sources/:review/:receipt",
+            post(read_receipt),
+        )
         .route("/admin/privacy/requests/:id/image-preview", post(preview))
         .route(
             "/admin/privacy/requests/:id/images",
@@ -56,8 +64,15 @@ struct Region {
     width: u32,
     height: u32,
 }
+#[derive(Clone, Deserialize, Serialize)]
+struct ReceiptBinding {
+    id: i64,
+    receipt_revision: i64,
+    expense_revision: i64,
+}
 #[derive(Deserialize)]
 struct Selection {
+    receipt: Option<ReceiptBinding>,
     company_review_id: Option<i64>,
     company_revision: Option<i32>,
     category: String,
@@ -118,24 +133,11 @@ impl Selection {
                 output[start..end].copy_from_slice(&rgb[start..end]);
             }
         }
-        let mut png = Vec::new();
-        {
-            let mut encoder = png::Encoder::new(&mut png, self.width, self.height);
-            encoder.set_color(png::ColorType::Rgb);
-            encoder.set_depth(png::BitDepth::Eight);
-            let mut writer = encoder
-                .write_header()
-                .map_err(|e| AppError::Internal(e.into()))?;
-            writer
-                .write_image_data(&output)
-                .map_err(|e| AppError::Internal(e.into()))?;
-        }
-        if png.len() > 3_100_000 {
-            return Err(bad());
-        }
+        let png = encode_png(self.width, self.height, &output)?;
         let output_hash = digest(&png);
         let selection_hash = digest(
             serde_json::to_vec(&json!([
+                self.receipt,
                 self.company_review_id,
                 self.company_revision,
                 self.category,
@@ -157,22 +159,117 @@ impl Selection {
         })
     }
 }
-async fn prepare(s: Selection) -> AppResult<(Selection, Prepared)> {
+fn image_limit() -> &'static tokio::sync::Semaphore {
     static LIMIT: OnceLock<tokio::sync::Semaphore> = OnceLock::new();
-    let permit = LIMIT
-        .get_or_init(|| tokio::sync::Semaphore::new(2))
-        .try_acquire()
-        .map_err(|_| {
-            AppError::TooManyRequests("제공본을 처리 중입니다. 잠시 후 다시 시도해 주세요.".into())
-        })?;
-    let result = tokio::task::spawn_blocking(move || {
+    LIMIT.get_or_init(|| tokio::sync::Semaphore::new(2))
+}
+fn encode_png(w: u32, h: u32, rgb: &[u8]) -> AppResult<Vec<u8>> {
+    let mut out = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(&mut out, w, h);
+        encoder.set_color(png::ColorType::Rgb);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header().map_err(|_| bad())?;
+        writer.write_image_data(rgb).map_err(|_| bad())?;
+    }
+    if out.len() > 3_100_000 {
+        return Err(bad());
+    }
+    Ok(out)
+}
+fn size_ok(w: u32, h: u32) -> AppResult<()> {
+    if w == 0 || h == 0 || w > 2048 || h > 2048 || u64::from(w) * u64::from(h) > 1_000_000 {
+        Err(bad())
+    } else {
+        Ok(())
+    }
+}
+fn receipt_pixels(r: &Receipt) -> AppResult<(u32, u32, Vec<u8>)> {
+    if r.mime == "image/jpeg" {
+        let mut d = jpeg_decoder::Decoder::new(r.content.as_slice());
+        d.set_max_decoding_buffer_size(4_000_000);
+        d.read_info().map_err(|_| bad())?;
+        let i = d.info().ok_or_else(bad)?;
+        let (w, h) = (u32::from(i.width), u32::from(i.height));
+        size_ok(w, h)?;
+        if !matches!(
+            i.pixel_format,
+            jpeg_decoder::PixelFormat::RGB24 | jpeg_decoder::PixelFormat::L8
+        ) {
+            return Err(bad());
+        }
+        let data = d.decode().map_err(|_| bad())?;
+        let rgb = if i.pixel_format == jpeg_decoder::PixelFormat::L8 {
+            data.into_iter().flat_map(|v| [v, v, v]).collect()
+        } else {
+            data
+        };
+        if rgb.len() != (w * h * 3) as usize {
+            return Err(bad());
+        }
+        return Ok((w, h, rgb));
+    }
+    if r.mime != "image/png" {
+        return Err(bad());
+    }
+    let mut d = png::Decoder::new_with_limits(
+        r.content.as_slice(),
+        png::Limits {
+            bytes: 16 * 1024 * 1024,
+        },
+    );
+    d.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
+    let mut reader = d.read_info().map_err(|_| bad())?;
+    let (w, h) = (reader.info().width, reader.info().height);
+    size_ok(w, h)?;
+    if reader.info().animation_control.is_some() || reader.output_buffer_size() > 4_000_000 {
+        return Err(bad());
+    }
+    let mut buf = vec![0; reader.output_buffer_size()];
+    let i = reader.next_frame(&mut buf).map_err(|_| bad())?;
+    let data = &buf[..i.buffer_size()];
+    let channels = match i.color_type {
+        png::ColorType::Rgb => 3,
+        png::ColorType::Rgba => 4,
+        png::ColorType::Grayscale => 1,
+        png::ColorType::GrayscaleAlpha => 2,
+        _ => return Err(bad()),
+    };
+    let mut rgb = Vec::with_capacity((w * h * 3) as usize);
+    for p in data.chunks_exact(channels) {
+        let (c, a) = match channels {
+            4 => ([p[0], p[1], p[2]], p[3]),
+            3 => ([p[0], p[1], p[2]], 255),
+            2 => ([p[0]; 3], p[1]),
+            _ => ([p[0]; 3], 255),
+        };
+        rgb.extend(c.map(|v| {
+            ((u32::from(v) * u32::from(a) + 255 * (255 - u32::from(a)) + 127) / 255) as u8
+        }));
+    }
+    if rgb.len() != (w * h * 3) as usize {
+        return Err(bad());
+    }
+    Ok((w, h, rgb))
+}
+async fn prepare(mut s: Selection, original: Option<Receipt>) -> AppResult<(Selection, Prepared)> {
+    let permit = image_limit().try_acquire().map_err(|_| {
+        AppError::TooManyRequests("제공본을 처리 중입니다. 잠시 후 다시 시도해 주세요.".into())
+    })?;
+    tokio::task::spawn_blocking(move || {
         let _permit = permit;
+        if let Some(r) = original {
+            let (w, h, rgb) = receipt_pixels(&r)?;
+            if (s.width, s.height) != (w, h) {
+                return Err(bad());
+            }
+            s.rgb_base64 = STANDARD.encode(rgb);
+        }
         let p = s.prepare()?;
         Ok((s, p))
     })
     .await
-    .map_err(|e| AppError::Internal(e.into()))?;
-    result
+    .map_err(|e| AppError::Internal(e.into()))?
 }
 async fn begin(s: &AppState) -> AppResult<Transaction<'_, Postgres>> {
     let mut tx = s.db.begin().await?;
@@ -246,16 +343,19 @@ async fn preview(
     )
     .await?;
     // Validate request/scope before processing, then recheck under lock after encoding.
-    {
+    let original = {
         let mut tx = begin(&state).await?;
         request(&mut tx, id).await?;
         company(&mut tx, id, s.company_review_id, s.company_revision).await?;
+        let raw = validate_receipt_selection(&mut tx, id, admin.user_id, &s).await?;
         tx.commit().await?;
-    }
-    let (s, p) = prepare(s).await?;
+        raw
+    };
+    let (s, p) = prepare(s, original).await?;
     let mut tx = begin(&state).await?;
     request(&mut tx, id).await?;
     company(&mut tx, id, s.company_review_id, s.company_revision).await?;
+    validate_receipt_selection(&mut tx, id, admin.user_id, &s).await?;
     event(
         &mut tx,
         id,
@@ -288,10 +388,25 @@ async fn issue(
     if !b.confirmed || !b.source_confirmed {
         return Err(bad());
     }
-    let (s, p) = prepare(b.selection).await?;
+    let original = {
+        let mut tx = begin(&state).await?;
+        request(&mut tx, id).await?;
+        company(
+            &mut tx,
+            id,
+            b.selection.company_review_id,
+            b.selection.company_revision,
+        )
+        .await?;
+        let raw = validate_receipt_selection(&mut tx, id, admin.user_id, &b.selection).await?;
+        tx.commit().await?;
+        raw
+    };
+    let (s, p) = prepare(b.selection, original).await?;
     let mut tx = begin(&state).await?;
     let r = request(&mut tx, id).await?;
     company(&mut tx, id, s.company_review_id, s.company_revision).await?;
+    validate_receipt_selection(&mut tx, id, admin.user_id, &s).await?;
     if r.revision != b.revision || p.selection_hash != b.preview_sha256 {
         return Err(conflict());
     }
@@ -318,7 +433,7 @@ async fn issue(
             "제공본 용량·발급 한도입니다. 담당자에게 분할 처리를 요청해 주세요.".into(),
         ));
     }
-    let did:i64=sqlx::query_scalar("INSERT INTO privacy_image_deliveries(request_id,created_by,company_review_id,company_revision,category,source_reference,source_sha256,selection_sha256,output_sha256,width,height,regions,notice) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id").bind(id).bind(admin.user_id).bind(s.company_review_id).bind(s.company_revision).bind(&s.category).bind(&s.source_reference).bind(&s.source_sha256).bind(&p.selection_hash).bind(&p.output_hash).bind(s.width as i32).bind(s.height as i32).bind(json!(s.regions)).bind(&s.notice).fetch_one(&mut *tx).await?;
+    let did:i64=sqlx::query_scalar("INSERT INTO privacy_image_deliveries(request_id,created_by,company_review_id,company_revision,category,source_reference,source_sha256,selection_sha256,output_sha256,width,height,regions,notice,receipt_id,receipt_revision,expense_revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id").bind(id).bind(admin.user_id).bind(s.company_review_id).bind(s.company_revision).bind(&s.category).bind(&s.source_reference).bind(&s.source_sha256).bind(&p.selection_hash).bind(&p.output_hash).bind(s.width as i32).bind(s.height as i32).bind(json!(s.regions)).bind(&s.notice).bind(s.receipt.as_ref().map(|r|r.id)).bind(s.receipt.as_ref().map(|r|r.receipt_revision)).bind(s.receipt.as_ref().map(|r|r.expense_revision)).fetch_one(&mut *tx).await?;
     sqlx::query("INSERT INTO privacy_image_payloads(delivery_id,png_bytes) VALUES($1,$2)")
         .bind(did)
         .bind(p.png)
@@ -392,6 +507,10 @@ struct Download {
 }
 #[derive(FromRow)]
 struct Delivery {
+    receipt_id: Option<i64>,
+    receipt_revision: Option<i64>,
+    expense_revision: Option<i64>,
+    source_sha256: String,
     company_review_id: Option<i64>,
     company_revision: Option<i32>,
     selection_sha256: String,
@@ -432,6 +551,15 @@ async fn download(
         ));
     }
     company(&mut tx, rid, d.company_review_id, d.company_revision).await?;
+    if let Some(id) = d.receipt_id {
+        let original = receipt(&mut tx, d.company_review_id.ok_or_else(conflict)?, id).await?;
+        if Some(original.receipt_revision) != d.receipt_revision
+            || Some(original.expense_revision) != d.expense_revision
+            || original.sha256 != d.source_sha256
+        {
+            return Err(conflict());
+        }
+    }
     let hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id=$1 FOR SHARE")
         .bind(u.user_id)
         .fetch_one(&mut *tx)
@@ -474,6 +602,132 @@ async fn download(
     )
         .into_response())
 }
+// Direct receipt sources are limited to the confirmed company/staff/date scope.
+#[derive(FromRow)]
+struct Receipt {
+    id: i64,
+    expense_id: i64,
+    receipt_revision: i64,
+    expense_revision: i64,
+    content: Vec<u8>,
+    mime: String,
+    sha256: String,
+}
+async fn receipt(tx: &mut Transaction<'_, Postgres>, review: i64, id: i64) -> AppResult<Receipt> {
+    sqlx::query("LOCK TABLE fleet_expenses,fleet_expense_receipts IN SHARE MODE")
+        .execute(&mut **tx)
+        .await?;
+    let r:Receipt=sqlx::query_as("SELECT f.id,f.expense_id,f.privacy_revision receipt_revision,e.privacy_revision expense_revision,f.content,f.mime,f.digest sha256 FROM fleet_expense_receipts f JOIN fleet_expenses e ON e.id=f.expense_id AND e.owner_id=f.owner_id WHERE f.id=$2 AND privacy_receipt_in_scope($1,f.id)").bind(review).bind(id).fetch_optional(&mut **tx).await?.ok_or_else(conflict)?;
+    let signature = match r.mime.as_str() {
+        "image/png" => r.content.starts_with(b"\x89PNG\r\n\x1a\n"),
+        "image/jpeg" => r.content.starts_with(&[255, 216, 255]),
+        _ => false,
+    };
+    if !signature
+        || r.content.is_empty()
+        || r.content.len() > 5 * 1024 * 1024
+        || digest(&r.content) != r.sha256
+    {
+        return Err(conflict());
+    }
+    Ok(r)
+}
+async fn validate_receipt_selection(
+    tx: &mut Transaction<'_, Postgres>,
+    rid: i64,
+    actor: i64,
+    s: &Selection,
+) -> AppResult<Option<Receipt>> {
+    let Some(b) = &s.receipt else { return Ok(None) };
+    if s.category != "receipt" {
+        return Err(bad());
+    }
+    let review = s.company_review_id.ok_or_else(bad)?;
+    let r = receipt(tx, review, b.id).await?;
+    if b.receipt_revision != r.receipt_revision
+        || b.expense_revision != r.expense_revision
+        || r.sha256 != s.source_sha256
+    {
+        return Err(conflict());
+    }
+    let seen:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_receipt_reads WHERE request_id=$1 AND review_id=$2 AND review_revision=$3 AND actor_id=$4 AND receipt_id=$5 AND receipt_revision=$6 AND expense_revision=$7 AND sha256=$8 AND created_at>now()-interval '1 hour')").bind(rid).bind(review).bind(s.company_revision).bind(actor).bind(b.id).bind(b.receipt_revision).bind(b.expense_revision).bind(&s.source_sha256).fetch_one(&mut **tx).await?;
+    if !seen {
+        return Err(conflict());
+    }
+    Ok(Some(r))
+}
+#[derive(Deserialize)]
+struct ReceiptPage {
+    company_revision: i32,
+    #[serde(default)]
+    after: i64,
+}
+async fn receipt_options(
+    State(s): State<AppState>,
+    a: AdminUser,
+    Path((id, review)): Path<(i64, i64)>,
+    Query(b): Query<ReceiptPage>,
+) -> AppResult<Json<Value>> {
+    let mut tx = begin(&s).await?;
+    request(&mut tx, id).await?;
+    company(&mut tx, id, Some(review), Some(b.company_revision)).await?;
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',f.id,'expense_id',f.expense_id,'spent_on',e.spent_on,'category',e.category_name,'amount_krw',e.amount_krw,'mime',f.mime,'size',octet_length(f.content)) FROM fleet_expense_receipts f JOIN fleet_expenses e ON e.id=f.expense_id AND e.owner_id=f.owner_id WHERE f.id>$2 AND privacy_receipt_in_scope($1,f.id) ORDER BY f.id LIMIT 51").bind(review).bind(b.after.max(0)).fetch_all(&mut *tx).await?;
+    let more = rows.len() > 50;
+    let items: Vec<Value> = rows.into_iter().take(50).collect();
+    let next = if more {
+        items.last().and_then(|v| v["id"].as_i64())
+    } else {
+        None
+    };
+    // Admin extractor enforced above; do not emit requester identifiers or source body in list.
+    let _ = a;
+    tx.commit().await?;
+    Ok(Json(json!({"items":items,"next":next})))
+}
+#[derive(Deserialize)]
+struct ReceiptRead {
+    company_revision: i32,
+}
+async fn read_receipt(
+    State(s): State<AppState>,
+    a: AdminUser,
+    headers: HeaderMap,
+    Path((id, review, rid)): Path<(i64, i64, i64)>,
+    Json(b): Json<ReceiptRead>,
+) -> AppResult<Json<Value>> {
+    rate_limit(&s, &format!("receipt-read:{}", a.user_id), &headers).await?;
+    let mut tx = begin(&s).await?;
+    request(&mut tx, id).await?;
+    company(&mut tx, id, Some(review), Some(b.company_revision)).await?;
+    let r = receipt(&mut tx, review, rid).await?;
+    tx.commit().await?;
+    let permit = image_limit().try_acquire().map_err(|_| {
+        AppError::TooManyRequests("이미지 처리 중입니다. 잠시 후 다시 시도하세요.".into())
+    })?;
+    let (r, png) = tokio::task::spawn_blocking(move || -> AppResult<_> {
+        let _permit = permit;
+        let (w, h, rgb) = receipt_pixels(&r)?;
+        let png = encode_png(w, h, &rgb)?;
+        Ok((r, png))
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.into()))??;
+    let mut tx = begin(&s).await?;
+    request(&mut tx, id).await?;
+    company(&mut tx, id, Some(review), Some(b.company_revision)).await?;
+    let current = receipt(&mut tx, review, rid).await?;
+    if current.receipt_revision != r.receipt_revision
+        || current.expense_revision != r.expense_revision
+        || current.sha256 != r.sha256
+    {
+        return Err(conflict());
+    }
+    sqlx::query("INSERT INTO privacy_receipt_reads(request_id,review_id,review_revision,actor_id,receipt_id,receipt_revision,expense_revision,sha256) VALUES($1,$2,$3,$4,$5,$6,$7,$8)").bind(id).bind(review).bind(b.company_revision).bind(a.user_id).bind(r.id).bind(r.receipt_revision).bind(r.expense_revision).bind(&r.sha256).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(Json(
+        json!({"receipt":{"id":r.id,"receipt_revision":r.receipt_revision,"expense_revision":r.expense_revision},"expense_id":r.expense_id,"mime":"image/png","sha256":r.sha256,"display_sha256":digest(&png),"data_base64":STANDARD.encode(png)}),
+    ))
+}
 // Access expires immediately; physical temporary bytes are removed at startup and each minute.
 // Review/audit metadata and any backup copies are separate retention-review scopes.
 pub fn spawn_cleanup(pool: sqlx::PgPool) {
@@ -497,6 +751,7 @@ mod tests {
     use super::*;
     fn fixture() -> Selection {
         Selection {
+            receipt: None,
             company_review_id: None,
             company_revision: None,
             category: "photo".into(),
