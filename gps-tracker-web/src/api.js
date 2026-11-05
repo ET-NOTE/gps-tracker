@@ -353,6 +353,24 @@ export const api = {
     return r.json();
   },
   privacyDeliveries: id => req('GET', `/privacy/requests/${id}/deliveries`),
+  privacyAccountPackages: id => req('GET', `/privacy/requests/${id}/account-packages`),
+  adminPrivacyAccountPackages: id => req('GET', `/admin/privacy/requests/${id}/account-packages`),
+  privacyPersonalDocuments: id => req('GET', `/admin/privacy/requests/${id}/personal-documents`),
+  issuePrivacyAccountPackage: (id,body) => req('POST', `/admin/privacy/requests/${id}/account-packages`,body),
+  revokePrivacyAccountPackage: id => req('POST', `/admin/privacy/account-packages/${id}/revoke`,{}),
+  reviewPrivacyDocument: async (requestId,id) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/admin/privacy/requests/${requestId}/documents/${id}/review`,{method:'POST',cache:'no-store'},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||'서류를 확인하지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return {blob,sha256:r.headers.get('x-document-sha256')};
+  },
+  privacyPackageFile: async (id,password,documentId) => {
+    const scope=authScope();
+    const path=documentId?`documents/${documentId}`:'account';
+    const r=await sessionFetch(`${BASE}/privacy/account-packages/${id}/${path}`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(r.status===401?'현재 비밀번호를 확인해 주세요.':e.error||'자료를 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return {blob,filename:`personal-account-${id}.json`};
+  },
   adminPrivacyDeliveries: id => req('GET', `/admin/privacy/requests/${id}/deliveries`),
   adminPrivacyDeliveryOptions: id => req('GET', `/admin/privacy/requests/${id}/delivery-options`),
   issuePrivacyDelivery: (id,body) => req('POST', `/admin/privacy/requests/${id}/deliveries`,body),

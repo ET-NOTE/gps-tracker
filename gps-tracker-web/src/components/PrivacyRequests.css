@@ -17,3 +17,6 @@
 .rights-admin{max-width:1100px}.rights-admin details{margin-top:14px;font-size:13px}
 .rights-panel .rights-confirm{display:flex;align-items:flex-start;gap:8px;margin:12px 0;line-height:1.5}.rights-panel .rights-confirm input{width:16px;height:16px;flex:0 0 16px;margin-top:2px;padding:0}
 @media(max-width:480px){.rights-card{padding:14px}.rights-heading{align-items:flex-start}.rights-panel input,.rights-panel textarea,.rights-panel select{font-size:16px}}
+.rights-package-file {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border,#dfe4ec);flex-wrap:wrap;}
+.rights-package-file>span,.rights-package-file label {min-width:0;overflow-wrap:anywhere;flex:1 1 180px;}
+.rights-package-file button {flex:0 0 auto;}

@@ -66,7 +66,11 @@ struct ResultLogin {
 }
 
 // Count successes as well as failures; atomic UPSERT prevents concurrent bypass.
-async fn rate_limit(state: &AppState, email: &str, headers: &HeaderMap) -> AppResult<()> {
+pub(super) async fn rate_limit(
+    state: &AppState,
+    email: &str,
+    headers: &HeaderMap,
+) -> AppResult<()> {
     let ip = headers
         .get("x-real-ip")
         .and_then(|h| h.to_str().ok())
@@ -185,7 +189,7 @@ fn validate_scope(body: &Issue) -> AppResult<()> {
     }
     Ok(())
 }
-async fn active(tx: &mut Transaction<'_, Postgres>, uid: i64) -> AppResult<()> {
+pub(super) async fn active(tx: &mut Transaction<'_, Postgres>, uid: i64) -> AppResult<()> {
     let allowed: Option<bool> = sqlx::query_scalar(
         "SELECT NOT restricted FROM privacy_account_controls WHERE user_id=$1 FOR SHARE",
     )
