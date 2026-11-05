@@ -29,6 +29,7 @@ python idf_caltest/tools/build_firmware.py operating
 python idf_caltest/tools/build_firmware.py kc
 python idf_caltest/tools/build_firmware.py battery
 python idf_caltest/tools/build_firmware.py https-pilot
+python idf_caltest/tools/build_firmware.py https-sleep-test
 ```
 
 `config.h`를 수정해 KC 플래그를 켜고 끄지 않습니다. 프로파일 없는 CMake 빌드는 실패합니다.
@@ -44,6 +45,14 @@ ISRG Root X2는 펌웨어에 포함합니다. 모뎀 시각이 초기 상태이�
 절전·장시간 운행·망 장애·CA 갱신 검증과 전체 운영 승격은 별도 인수 항목으로 남습니다.
 빌드 산출물은 `build/https-pilot/`, 검증 절차와 담당은
 [위치정보사업 준비](../docs/operations/location-business-preparation.md)에 있습니다.
+
+`https-sleep-test`는 같은 HTTPS·HMAC 경로의 **자동 절전 복귀 벤치 전용** 빌드입니다.
+정지 창 30초·부팅 유예 15초·GPS 미수신 유예 20초·RTC 타이머 60초를 사용합니다.
+실제 움직임/센서 검사, 모뎀 CPOWD·공유 레일 OFF·GPIO hold·워치독을 유지합니다.
+RTC에서 절전 진입을 3회로 제한하고 세 번째 복귀 후 깨어 있습니다. 일반 재부팅은 시험 횟수를 초기화합니다.
+서버/NVS의 보고 주기는 변경하지 않으며, 시험 중 수신한 보고 주기 설정도 저장하지 않습니다.
+USB는 deep sleep 중 사라질 수 있으므로 모니터는 DTR/RTS로 리셋하지 않고 같은 장치의 재연결을 기다립니다.
+시험 종료 후 `https-pilot`으로 복구합니다. 이 짧은 주기를 운영 단말기에 배포하지 않습니다.
 
 `tls-cert-test`는 인증서 시험 전용 프로필입니다. `--test-ca-header <공개 CA 헤더>`를 반드시 제공하며,
 별도 entry point에서 `https://gps.serial.kr:18443/tls-probe`에 고정 GET만 전송합니다.
@@ -95,7 +104,7 @@ idf.py -B build/operating -p COMxx flash monitor
 
 - 부팅 로그: `FW-CONFIG:{...}`에 프로파일, 버전, 절전, 타이머, 핀/펄스 설정을 출력합니다.
 - 모든 POST: `build_tag`와 `stationary.fw_version/build_profile/sleep_enabled`를 보냅니다.
-- `stationary`에 정지 창(300초), GPS 없을 때 유예(600초), 타이머(600초), 절전 취소 횟수와
+- `stationary`에 정지 창(운영 300초), GPS 없을 때 유예(운영 600초), 타이머(운영 기본 86,400초), 절전 취소 횟수와
   정상 종료 미확인 누적 횟수도 보냅니다. KC의 유효 절전/타이머 활성값은 false입니다.
 - 기존 서버는 `stationary` 객체 전체를 `devices.last_stationary`에 보존하고,
   wake/sleep 이벤트의 `build_tag`를 저장합니다. API/DB 변경 없이 수신됩니다.
@@ -119,7 +128,7 @@ python3 idf_caltest/tests/run_tests.py  # Linux g++, 실제 sleep_mgr/telemetry/
 
 정상/타임아웃/전송 실패, 각 종료 단계의 움직임, 센서 오류, wake/hold 실패, 취소 후 복구,
 KC의 직접/타이머 절전 차단, 분할 UART 응답 및 payload JSON/4096바이트 제한을 검사합니다.
-실제 장치에서는 추가로 정지 후 소비전류, 모션 wake, 10분 타이머 wake, 이동 재개 후 GPS/LTE 복구를 확인해야 합니다.
+실제 장치에서는 추가로 정지 후 소비전류, 모션 wake, 설정한 주기의 타이머 wake, 이동 재개 후 GPS/LTE 복구를 확인해야 합니다.
 UART 종료 응답만으로 물리적인 전류/레일 전압까지 확인한 것은 아닙니다.
 
 ## 소스 구조
