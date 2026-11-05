@@ -87,6 +87,10 @@ pub async fn create(
         ));
     }
     let mut tx = db.begin().await?;
+    sqlx::query("SELECT privacy_assert_account_active($1)")
+        .bind(user)
+        .execute(&mut *tx)
+        .await?;
     // Serialize same-user requests and password changes; no device ownership changes.
     let hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id=$1 FOR UPDATE")
         .bind(user)

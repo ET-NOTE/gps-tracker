@@ -39,6 +39,8 @@ impl FleetScope {
     }
 }
 pub async fn load(state: &AppState, actor: i64, owner: i64) -> AppResult<FleetScope> {
+    super::extractor::require_existing_account(state, actor).await?;
+    super::extractor::require_existing_account(state, owner).await?;
     let (staff, role, department) = if owner == actor {
         (None, "owner".to_string(), None)
     } else {

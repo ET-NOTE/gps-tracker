@@ -84,6 +84,7 @@ async fn run_once(db: &PgPool) -> anyhow::Result<()> {
         JOIN devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
         LEFT JOIN staff   s ON s.id = r.driver_staff_id
             WHERE r.status = 'planned'
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
               AND r.alerted_at IS NULL
               AND r.starts_at BETWEEN $1 AND $2"#,
     )
@@ -160,6 +161,7 @@ async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
         JOIN devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
         LEFT JOIN staff   s ON s.id = r.driver_staff_id
             WHERE r.status IN ('planned','in_progress')
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
               AND r.ended_alerted_at IS NULL
               AND r.ends_at BETWEEN $1 AND $2"#,
     )
@@ -203,21 +205,24 @@ async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
 async fn auto_transition_status(db: &PgPool) -> anyhow::Result<()> {
     let n1 = sqlx::query(
         r#"UPDATE vehicle_reservations SET status = 'in_progress', updated_at = NOW()
-            WHERE status = 'planned' AND starts_at <= NOW() AND ends_at > NOW()"#,
+            WHERE status = 'planned' AND starts_at <= NOW() AND ends_at > NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=vehicle_reservations.user_id AND c.restricted)"#,
     )
     .execute(db)
     .await?
     .rows_affected();
     let n2 = sqlx::query(
         r#"UPDATE vehicle_reservations SET status = 'completed', updated_at = NOW()
-            WHERE status = 'in_progress' AND ends_at <= NOW()"#,
+            WHERE status = 'in_progress' AND ends_at <= NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=vehicle_reservations.user_id AND c.restricted)"#,
     )
     .execute(db)
     .await?
     .rows_affected();
     let n3 = sqlx::query(
         r#"UPDATE vehicle_reservations SET status = 'completed', updated_at = NOW()
-            WHERE status = 'planned' AND ends_at <= NOW()"#,
+            WHERE status = 'planned' AND ends_at <= NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=vehicle_reservations.user_id AND c.restricted)"#,
     )
     .execute(db)
     .await?
@@ -228,14 +233,16 @@ async fn auto_transition_status(db: &PgPool) -> anyhow::Result<()> {
     //   draft → active: starts_at 이 지났고 아직 draft
     let r1 = sqlx::query(
         r#"UPDATE rental_contracts SET status = 'active', updated_at = NOW()
-            WHERE status = 'draft' AND starts_at <= NOW() AND ends_at > NOW()"#,
+            WHERE status = 'draft' AND starts_at <= NOW() AND ends_at > NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=rental_contracts.user_id AND c.restricted)"#,
     )
     .execute(db)
     .await?
     .rows_affected();
     let r2 = sqlx::query(
         r#"UPDATE rental_contracts SET status = 'overdue', updated_at = NOW()
-            WHERE status IN ('draft','active') AND ends_at <= NOW()"#,
+            WHERE status IN ('draft','active') AND ends_at <= NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=rental_contracts.user_id AND c.restricted)"#,
     )
     .execute(db)
     .await?
@@ -272,6 +279,7 @@ async fn run_rental_ending_alerts(db: &PgPool) -> anyhow::Result<()> {
              FROM rental_contracts r
         LEFT JOIN devices d ON d.id = r.device_id
             WHERE r.status IN ('draft','active')
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
               AND r.ending_alerted_at IS NULL
               AND r.ends_at BETWEEN $1 AND $2"#,
     )
@@ -335,7 +343,8 @@ async fn run_rental_overdue_alerts(db: &PgPool) -> anyhow::Result<()> {
                   d.display_name AS device_name, d.license_plate
              FROM rental_contracts r
         LEFT JOIN devices d ON d.id = r.device_id
-            WHERE r.status = 'overdue' AND r.overdue_alerted_at IS NULL"#,
+            WHERE r.status = 'overdue' AND r.overdue_alerted_at IS NULL
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)"#,
     )
     .fetch_all(db)
     .await?;

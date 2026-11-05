@@ -52,6 +52,7 @@ pub async fn scan(pool: &PgPool) -> anyhow::Result<()> {
            ORDER BY occurred_at DESC,id DESC LIMIT 1
          ) life ON true
          WHERE d.last_seen_at <= now()-interval '1 minute'
+           AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=d.owner_id AND c.restricted)
          ORDER BY d.id FOR UPDATE OF d SKIP LOCKED"#,
     )
     .fetch_all(&mut *tx)

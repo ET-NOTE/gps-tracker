@@ -181,7 +181,7 @@ pub async fn ingest(
     // authorize holds the SIM/device advisory lock until the signed response is
     // committed. Erasure uses that same lock, including legacy/phone senders.
     let privacy_blocked: bool = sqlx::query_scalar(
-        "SELECT COALESCE((SELECT blocked FROM device_data_controls WHERE device_id=$1),false)",
+        "SELECT COALESCE((SELECT c.blocked OR COALESCE(a.restricted,false) FROM device_data_controls c JOIN devices d ON d.id=c.device_id LEFT JOIN privacy_account_controls a ON a.user_id=d.owner_id WHERE c.device_id=$1),false)",
     )
     .bind(id)
     .fetch_one(&mut *gate)

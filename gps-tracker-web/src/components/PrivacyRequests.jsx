@@ -110,6 +110,12 @@ function ReviewForm({detail,refresh}) {
   const [status,setStatus]=useState('in_review'),[due,setDue]=useState(localDate(row.due_at)),[message,setMessage]=useState(''),[evidence,setEvidence]=useState(detail.evidence_reference);
   const [busy,setBusy]=useState(false),[error,setError]=useState(null);
   const destructive=['erasure','account_closure'].includes(row.kind);
+  const [confirmed,setConfirmed]=useState(false);
+  async function closeAccount() {
+    setBusy(true);setError(null);
+    try {await api.startAccountClosure(row.id,row.revision);await refresh();}
+    catch(e) {setError(e);} finally {setBusy(false);}
+  }
   async function save(e) {
     e.preventDefault();setBusy(true);setError(null);
     try {await api.reviewPrivacyRequest(row.id,{revision:row.revision,status,message,evidence_reference:evidence,due_at:due?new Date(due).toISOString():null});await refresh();}
@@ -117,8 +123,19 @@ function ReviewForm({detail,refresh}) {
   }
   return <div>
     <p className="rights-text">{row.scope}</p><Impact requestId={row.id}/>
-    {destructive&&<p className="rights-notice">자동 파기 실행은 아직 연결되지 않았습니다. 거래 보존·회사 기록·백업을 확인하기 전 삭제 완료로 처리할 수 없습니다.</p>}
-    {isOpen(row)&&<form onSubmit={save}><fieldset disabled={busy}>
+    {destructive&&<p className="rights-notice">계정 이용 종료와 전체 자료 삭제 완료는 별도입니다. 회사·거래 자료, 계정 정보와 백업은 확인 후 처리해야 합니다.</p>}
+    {row.kind==='account_closure'&&!detail.closure&&isOpen(row)&&<section className="rights-impact">
+      <h3>계정 이용 종료</h3><p>시작하면 로그인·실시간 조회·공유·추가 수집을 차단합니다. 기존 SIM 연결은 검토가 끝날 때까지 유지하며 자동 재등록하지 않습니다.</p>
+      <label className="rights-confirm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> 본인의 탈퇴 요청과 처리 범위를 확인했습니다.</label>
+      <button type="button" disabled={busy||!confirmed} onClick={closeAccount}>이용 종료 및 자료 처리 시작</button><ErrorMessage error={error}/>
+    </section>}
+    {detail.closure&&<section className="rights-impact"><h3>계정 이용 종료 · 자료 검토 중</h3>
+      <p>자동 처리 범위: {detail.closure.personal_scope_verified?'처리 확인됨':'처리 대기 또는 추가 확인'}. 전체 삭제 완료로 표시하지 않습니다.</p>
+      {detail.closure.state==='retry'&&<p role="alert">일시적인 처리 오류로 재시도 대기 중입니다.</p>}
+      <ul>{detail.closure.review_reasons.map(reason=><li key={reason}>{({company_membership_subject_review:'다른 회사에 남은 직원·운전자 정보',company_or_financial_scope_review:'회사 및 거래 자료의 보관·삭제 범위',account_profile_and_audit_review:'계정 정보와 감사 기록',backups_and_external_copies_unverified:'백업·외부 전달본',SIM_reuse_requires_review:'SIM 재사용 및 연결 해제',unattributed_history_review:'수집 당시 계정이 없는 과거 기록',legacy_aggregate_scope_review:'계정 구분이 없는 과거 집계',private_files_pending_or_shared:'첨부파일 삭제 또는 공동 참조 확인'})[reason]||'추가 범위 확인'}</li>)}</ul>
+      <p>최근 처리: {date(detail.closure.updated_at)}</p>
+    </section>}
+    {isOpen(row)&&!detail.closure&&<form onSubmit={save}><fieldset disabled={busy}>
       <label>처리 상태<select value={status} onChange={e=>setStatus(e.target.value)}>{['in_review','needs_information',...(!destructive?['fulfilled']:[]),'rejected'].map(k=><option key={k} value={k}>{rightsStatuses[k]}</option>)}</select></label>
       <label>처리 기한<input type="datetime-local" required={['in_review','needs_information'].includes(status)} value={due} onChange={e=>setDue(e.target.value)}/></label>
       <label>사용자에게 전달할 안내<textarea required maxLength={2000} rows={3} value={message} onChange={e=>setMessage(e.target.value)}/></label>

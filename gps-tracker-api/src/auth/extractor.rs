@@ -72,7 +72,7 @@ impl FromRequestParts<AppState> for AdminUser {
 
 // A still-valid JWT does not keep a deleted account alive.
 pub async fn require_existing_account(state: &AppState, user_id: i64) -> Result<(), AppError> {
-    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1)")
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users u JOIN privacy_account_controls c ON c.user_id=u.id WHERE u.id=$1 AND NOT c.restricted)")
         .bind(user_id)
         .fetch_one(&state.db)
         .await?;

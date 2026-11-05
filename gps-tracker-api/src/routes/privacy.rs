@@ -22,6 +22,10 @@ pub fn router() -> Router<AppState> {
         .route("/admin/privacy/requests", get(admin_list))
         .route("/admin/privacy/requests/:id", get(detail).patch(review))
         .route("/admin/privacy/requests/:id/impact", get(admin_impact))
+        .route(
+            "/admin/privacy/requests/:id/close-account",
+            post(start_closure),
+        )
 }
 
 #[derive(Deserialize)]
@@ -83,6 +87,7 @@ async fn cancel(
             "요청 상태가 변경됐습니다. 새로고침 후 확인해 주세요.".into(),
         ));
     }
+    reject_started_closure(&mut tx, id).await?;
     let row: RequestRow = sqlx::query_as("UPDATE privacy_requests SET status='cancelled',revision=revision+1,updated_at=now(),result_message='요청자가 취소했습니다.' WHERE id=$1 RETURNING *")
         .bind(id).fetch_one(&mut *tx).await?;
     sqlx::query("INSERT INTO privacy_request_events(request_id,actor_id,revision,status,message) VALUES($1,$2,$3,'cancelled','요청자가 취소했습니다.')")
@@ -131,6 +136,12 @@ async fn detail(
         .ok_or(AppError::NotFound)?;
     let events: Vec<Value> = sqlx::query_scalar("SELECT jsonb_build_object('revision',revision,'actor_id',actor_id,'status',status,'message',message,'evidence_reference',evidence_reference,'due_at',due_at,'created_at',created_at) FROM privacy_request_events WHERE request_id=$1 ORDER BY revision")
         .bind(id).fetch_all(&state.db).await?;
+    let closure: Option<Value> = sqlx::query_scalar(
+        "SELECT to_jsonb(j) FROM privacy_account_closures j WHERE request_id=$1",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?;
     // Evidence reference is internal, never returned through the personal API.
     let evidence: String =
         sqlx::query_scalar("SELECT evidence_reference FROM privacy_requests WHERE id=$1")
@@ -138,7 +149,7 @@ async fn detail(
             .fetch_one(&state.db)
             .await?;
     Ok(Json(
-        json!({"request":row,"events":events,"evidence_reference":evidence}),
+        json!({"request":row,"events":events,"evidence_reference":evidence,"closure":closure}),
     ))
 }
 async fn admin_impact(
@@ -179,6 +190,7 @@ async fn review(
             "다른 담당자가 처리했습니다. 새로고침 후 확인해 주세요.".into(),
         ));
     }
+    reject_started_closure(&mut tx, id).await?;
     privacy::validate_review(
         &old.kind,
         &old.status,
@@ -199,4 +211,71 @@ async fn review(
         .bind(req.evidence_reference.trim()).bind(row.due_at).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(Json(row))
+}
+
+async fn reject_started_closure(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    id: i64,
+) -> AppResult<()> {
+    let started: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM privacy_account_closures WHERE request_id=$1)",
+    )
+    .bind(id)
+    .fetch_one(&mut **tx)
+    .await?;
+    if started {
+        return Err(AppError::Conflict(
+            "계정 종료 처리가 시작됐습니다. 취소·완료 표시는 자료 처리 검증 절차에서 관리합니다."
+                .into(),
+        ));
+    }
+    Ok(())
+}
+
+async fn start_closure(
+    State(state): State<AppState>,
+    admin: AdminUser,
+    Path(id): Path<i64>,
+    Json(req): Json<Revision>,
+) -> AppResult<Json<Value>> {
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SET LOCAL lock_timeout='5s'")
+        .execute(&mut *tx)
+        .await?;
+    let row: RequestRow = sqlx::query_as("SELECT * FROM privacy_requests WHERE id=$1 FOR UPDATE")
+        .bind(id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or(AppError::NotFound)?;
+    let started: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM privacy_account_closures WHERE request_id=$1)",
+    )
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if !started
+        && (row.kind != "account_closure"
+            || row.revision != req.revision
+            || !privacy::open(&row.status)
+            || row.user_id == admin.user_id)
+    {
+        return Err(AppError::Conflict(
+            "요청 종류·상태·버전을 확인해 주세요. 본인 계정은 다른 관리자가 처리해야 합니다."
+                .into(),
+        ));
+    }
+    sqlx::query("SELECT privacy_start_account_closure($1,$2,$3)")
+        .bind(id)
+        .bind(req.revision)
+        .bind(admin.user_id)
+        .execute(&mut *tx)
+        .await?;
+    let result: Value = sqlx::query_scalar(
+        "SELECT to_jsonb(j) FROM privacy_account_closures j WHERE request_id=$1",
+    )
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(Json(result))
 }

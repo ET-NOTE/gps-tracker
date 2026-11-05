@@ -94,7 +94,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
                     }
                     // 소유권 검증
                     let allowed: Vec<i64> = sqlx::query_scalar(
-                        "SELECT id FROM devices WHERE owner_id = $1 AND id = ANY($2)",
+                        "SELECT d.id FROM devices d JOIN privacy_account_controls c ON c.user_id=d.owner_id WHERE owner_id = $1 AND d.id = ANY($2) AND NOT c.restricted",
                     )
                     .bind(user_id)
                     .bind(&cmd.device_ids)
@@ -146,6 +146,10 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
                 break;
             }
             _ = revalidate.tick() => {
+                if crate::auth::extractor::require_existing_account(&state, user_id).await.is_err() {
+                    let _ = sender.send(Message::Close(None)).await;
+                    break;
+                }
                 let current: Vec<i64> = { subs.lock().unwrap().iter().copied().collect() };
                 if !current.is_empty() {
                     // 성공했을 때만 프루닝 — 일시 DB 오류에 정상 구독을 전부 날리지 않도록.
@@ -163,6 +167,10 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
             }
             ack = cmd_rx.recv() => {
                 let Some((accepted, rejected)) = ack else { break };
+                if crate::auth::extractor::require_existing_account(&state, user_id).await.is_err() {
+                    let _ = sender.send(Message::Close(None)).await;
+                    break;
+                }
                 let payload = serde_json::json!({
                     "type":"ack",
                     "action":"subscribe",
@@ -183,16 +191,19 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
                         // already-authorized send, and no later send can pass its commit.
                         // The event's stamped owner also excludes old queued events from
                         // a new owner's subscription.
-                        let mut authorization = None;
+                        let Ok(mut authorization) = state.db.begin().await else { break; };
+                        let active = sqlx::query_scalar::<_, i64>(
+                            "SELECT user_id FROM privacy_account_controls WHERE user_id=$1 AND NOT restricted FOR SHARE")
+                            .bind(user_id).fetch_optional(&mut *authorization).await;
+                        if !matches!(active, Ok(Some(_))) { break; }
                         match ev.target() {
                             EventTarget::Device(did, owner) => {
                                 if owner != Some(user_id) || !subs.lock().unwrap().contains(&did) { continue; }
-                                let Ok(mut tx) = state.db.begin().await else { break; };
                                 let allowed = sqlx::query_scalar::<_, i64>(
                                     "SELECT id FROM devices WHERE id=$1 AND owner_id=$2 FOR SHARE")
-                                    .bind(did).bind(user_id).fetch_optional(&mut *tx).await;
+                                    .bind(did).bind(user_id).fetch_optional(&mut *authorization).await;
                                 match allowed {
-                                    Ok(Some(_)) => { authorization = Some(tx); }
+                                    Ok(Some(_)) => {}
                                     Ok(None) => { subs.lock().unwrap().remove(&did); continue; }
                                     Err(_) => { break; }
                                 }
@@ -208,7 +219,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
                             sender.send(Message::Text(payload))).await, Ok(Ok(()))) {
                             break;
                         }
-                        if let Some(tx) = authorization { if tx.commit().await.is_err() { break; } }
+                        if authorization.commit().await.is_err() { break; }
                     }
                     Err(RecvError::Lagged(n)) => {
                         // (F11) 이전엔 조용히 continue → 사용자 gap 인지 불가.

@@ -257,7 +257,9 @@ async fn enqueue_events(pool: &PgPool) -> anyhow::Result<()> {
     let pending: Vec<PendingEvent> = sqlx::query_as(
         r#"SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id,e.occurred_at
            FROM events e LEFT JOIN devices d ON d.id=e.device_id
-           WHERE e.notified_at IS NULL ORDER BY e.occurred_at LIMIT $1
+           WHERE e.notified_at IS NULL
+             AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.restricted AND (c.user_id=e.user_id OR c.user_id=d.owner_id))
+           ORDER BY e.occurred_at LIMIT $1
            FOR UPDATE OF e SKIP LOCKED"#,
     )
     .bind(BATCH)
@@ -300,7 +302,7 @@ struct QueuedPush {
 
 async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Result<()> {
     let Some(client) = client else {
-        sqlx::query("UPDATE events SET notified_at=now() WHERE id IN (SELECT id FROM events WHERE notified_at IS NULL ORDER BY occurred_at LIMIT $1)")
+        sqlx::query("UPDATE events SET notified_at=now() WHERE id IN (SELECT e.id FROM events e LEFT JOIN devices d ON d.id=e.device_id WHERE e.notified_at IS NULL AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.restricted AND (c.user_id=e.user_id OR c.user_id=d.owner_id)) ORDER BY e.occurred_at LIMIT $1)")
             .bind(BATCH).execute(pool).await?;
         return Ok(());
     };
@@ -362,9 +364,18 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
             continue;
         }
         item.message["android"]["ttl"] = json!(format!("{seconds}s"));
+        // Drain an already-authorized send before closure commits. Queued work
+        // cannot send after the account barrier and token revocation commit.
+        let mut authorization = pool.begin().await?;
+        let active: Option<i64> = sqlx::query_scalar("SELECT c.user_id FROM privacy_account_controls c JOIN fcm_outbox o ON o.user_id=c.user_id JOIN fcm_tokens t ON t.id=o.token_id AND t.active WHERE o.id=$1 AND NOT c.restricted AND t.revocation_hash IS NOT DISTINCT FROM o.binding_hash FOR SHARE OF c")
+            .bind(item.id).fetch_optional(&mut *authorization).await?;
+        if active.is_none() {
+            continue;
+        }
         let outcome = client
             .send_to_token(&access, &item.token, item.message)
             .await;
+        authorization.commit().await?;
         let (status, delay, error) = match outcome {
             Delivery::Sent => {
                 tracing::info!(delivery_id = item.id, token_id = item.token_id, "fcm: sent");
@@ -658,6 +669,7 @@ mod tests {
         }
         sqlx::raw_sql(r#"
           CREATE TABLE users(id bigint PRIMARY KEY,role text);
+          CREATE TABLE privacy_account_controls(user_id bigint PRIMARY KEY, restricted boolean DEFAULT false);
           CREATE TABLE devices(id bigint PRIMARY KEY,display_name text,owner_id bigint,last_seen_at timestamptz,last_fix_at timestamptz,last_stationary jsonb);
           CREATE TABLE location_records(device_id bigint,user_id bigint,vbat_mv integer,recorded_at timestamptz DEFAULT now());
           CREATE TABLE events(id bigserial PRIMARY KEY,device_id bigint,user_id bigint,kind text,data jsonb,
@@ -672,6 +684,7 @@ mod tests {
           CREATE TABLE fleet_vehicle_bindings(vehicle_id bigint,owner_id bigint,device_id bigint,is_primary boolean,ended_at timestamptz);
           CREATE TABLE rental_contracts(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,ends_at timestamptz);
           INSERT INTO users VALUES (1,'user'),(2,'user');
+          INSERT INTO privacy_account_controls(user_id) VALUES(1),(2);
           INSERT INTO devices VALUES (1,'test device',1,now(),NULL);
         "#).execute(&pool).await.unwrap();
         sqlx::raw_sql(include_str!("../../migrations/0065_fcm_delivery_queue.sql"))

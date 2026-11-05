@@ -701,6 +701,18 @@ pub async fn login(
         return Err(AppError::Unauthorized);
     }
     let user_id = row.unwrap().0;
+    let closure: Option<i64> =
+        sqlx::query_scalar("SELECT request_id FROM privacy_account_closures WHERE user_id=$1")
+            .bind(user_id)
+            .fetch_optional(&state.db)
+            .await?;
+    if let Some(request_id) = closure {
+        // Only after the password was verified; issue no session or data access.
+        return Err(AppError::Conflict(format!(
+            "계정 이용이 종료되었습니다. 탈퇴 요청 #{request_id}의 자료 처리는 진행 중입니다."
+        )));
+    }
+    crate::auth::extractor::require_existing_account(&state, user_id).await?;
 
     // 성공 → 이 이메일의 실패 기록 소거(즉시 잠금 해제) + 성공 기록.
     let _ = sqlx::query("DELETE FROM login_attempts WHERE email = $1 AND success = FALSE")
@@ -727,6 +739,8 @@ pub async fn refresh(
     let claims = jwt::verify(&req.refresh_token, &state.config.jwt_secret, "refresh")
         .map_err(|_| AppError::Unauthorized)?;
     let user_id: i64 = claims.sub.parse().map_err(|_| AppError::Unauthorized)?;
+
+    crate::auth::extractor::require_existing_account(&state, user_id).await?;
 
     let token_hash = hash_refresh(&req.refresh_token);
 
