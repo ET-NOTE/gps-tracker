@@ -56,6 +56,12 @@ async fn handler(
         Ok(v) => v,
         Err(_) => return (StatusCode::UNAUTHORIZED, "bad sub").into_response(),
     };
+    if crate::auth::extractor::require_existing_account(&state, user_id)
+        .await
+        .is_err()
+    {
+        return (StatusCode::UNAUTHORIZED, "account unavailable").into_response();
+    }
     ws.on_upgrade(move |socket| run(socket, state, user_id, claims.exp))
 }
 

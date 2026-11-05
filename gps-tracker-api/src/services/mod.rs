@@ -19,6 +19,7 @@ pub mod nce;
 pub mod notification_policy;
 pub mod openai;
 pub mod opinet;
+pub mod privacy;
 pub mod reservation_alerts;
 pub mod sms;
 pub mod stats;

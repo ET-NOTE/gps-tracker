@@ -1,3 +1,4 @@
+import { AdminPrivacyRequests } from './PrivacyRequests';
 // 관리자 대시보드 — role='admin' 전용. 본문 전체 차지 (지도 안 보임).
 // 서브탭: 사용자 / 장치 — 향후 통계·시스템 등 확장 예정.
 import { useEffect, useRef, useState } from 'react';
@@ -22,6 +23,7 @@ const SUBTABS = [
   { id: 'devices',     label: '장치',       icon: 'list' },
   { id: 'credit_reqs', label: '포인트 요청', icon: 'coin' },
   { id: 'sim_reqs',    label: 'SIM 요청',   icon: 'spark' },
+  { id: 'privacy', label: '개인정보 요청', icon: 'user' },
   { id: 'payments',    label: '결제 내역',   icon: 'bar' },
   { id: 'chat',        label: '채팅',       icon: 'message' },
 ];
@@ -94,6 +96,7 @@ export default function AdminDashboard() {
       </div>
 
       <div style={s.body}>
+        {subTab === 'privacy' && <AdminPrivacyRequests />}
         {subTab === 'users'       && <UsersTab />}
         {subTab === 'devices'     && <DevicesTab />}
         {subTab === 'credit_reqs' && <CreditRequestsTab />}

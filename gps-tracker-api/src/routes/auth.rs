@@ -310,41 +310,11 @@ pub async fn delete_me(
         return Err(AppError::Unauthorized);
     }
 
-    let mut tx = state.db.begin().await?;
-
-    // 1) 보유 device 의 user-specific 메타 reset — unpair 와 동일 효과.
-    //    devices.owner_id 는 어차피 FK ON DELETE SET NULL 이지만, 그것만으론 display_name /
-    //    color / paired_at / last_lat 같은 이전 사용자 흔적이 device row 에 남음 → 다른 사용자
-    //    페어링 시 잠시 노출 가능. 명시적으로 NULL 처리.
-    sqlx::query(
-        r#"UPDATE devices
-              SET display_name          = NULL,
-                  color                 = NULL,
-                  paired_at             = NULL,
-                  last_seen_at          = NULL,
-                  last_lat              = NULL,
-                  last_lng              = NULL,
-                  last_fix_at           = NULL,
-                  account_type_override = NULL
-            WHERE owner_id = $1"#,
-    )
-    .bind(user.user_id)
-    .execute(&mut *tx)
-    .await?;
-
-    // 2) users row 삭제 — FK CASCADE/SET NULL 이 부수 처리:
-    //    - CASCADE: refresh_tokens, fcm_tokens, share_tokens, geofences, notification_settings,
-    //      credit_log, payment_orders, ai_analyses, ai_usage_log, sim_topup_requests, chat_threads,
-    //      corporate_info, staff, subscriptions, user_phones — 즉시 row 삭제
-    //    - SET NULL: devices.owner_id, location_records.user_id, events.user_id, daily_stats.user_id,
-    //      trip_annotations.user_id, chat_messages.sender_id, ...processed_by — row 보존, 익명화
-    sqlx::query("DELETE FROM users WHERE id = $1")
-        .bind(user.user_id)
-        .execute(&mut *tx)
-        .await?;
-
-    tx.commit().await?;
-    Ok(Json(serde_json::json!({"ok": true})))
+    // Old clients expect any 2xx to mean all data was erased and log out.
+    // Fail explicitly instead of deleting users and leaving SET NULL telemetry.
+    Err(AppError::Conflict(
+        "내 정보 → 개인정보 요청에서 탈퇴를 요청해 주세요. 접수와 실제 삭제 완료를 구분해 안내합니다.".into(),
+    ))
 }
 
 #[derive(Debug, Deserialize)]

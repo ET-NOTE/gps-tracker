@@ -341,6 +341,14 @@ export const api = {
                       req('POST', '/auth/me/password', { current_password, new_password }),
   cleanupMe:       (body) => req('POST', '/auth/me/cleanup', body),
   deleteMe:        (password) => req('DELETE', '/auth/me', { password }),
+  privacyRequests: () => req('GET', '/privacy/requests'),
+  privacyImpact: () => req('GET', '/privacy/impact'),
+  createPrivacyRequest: body => req('POST', '/privacy/requests', body),
+  cancelPrivacyRequest: (id, revision) => req('POST', `/privacy/requests/${id}/cancel`, {revision}),
+  adminPrivacyRequests: params => req('GET', '/admin/privacy/requests?' + new URLSearchParams(Object.entries(params).filter(([,v])=>v!=null))),
+  adminPrivacyDetail: id => req('GET', `/admin/privacy/requests/${id}`),
+  adminPrivacyImpact: id => req('GET', `/admin/privacy/requests/${id}/impact`),
+  reviewPrivacyRequest: (id, body) => req('PATCH', `/admin/privacy/requests/${id}`, body),
 
   // user prefs (filter_device_id 등 UI 영속) — top-level JSON 병합
   getMyPrefs:      ()       => req('GET',    '/auth/me/prefs'),

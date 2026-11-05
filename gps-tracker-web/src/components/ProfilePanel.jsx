@@ -1,3 +1,4 @@
+import PrivacyRequests from './PrivacyRequests';
 import {rememberFleetOwner} from '../lib/fleetSession';
 import {FleetJoin} from './business/FleetAccess';
 import Switch from './ui/Switch';
@@ -26,7 +27,7 @@ const APP_DOWNLOAD = {
 function initialProfileTab() {
   if (typeof window === 'undefined') return 'account';
   const v = new URLSearchParams(window.location.search).get('tab') || localStorage.getItem('profile_tab');
-  return ['account','credit','chat','notif','theme','lab'].includes(v) ? v : 'account';
+  return ['account','credit','chat','notif','theme','lab','privacy'].includes(v) ? v : 'account';
 }
 
 // (F2-b) accountType 은 backward-compat prop (부모 렌더 hints 용). AccountTypeCard 는
@@ -50,6 +51,7 @@ export default function ProfilePanel({ onLogout, accountType }) {
   const isAdmin = me.role === 'admin';
   const tabs = [
     { id: 'account',  label: '계정',     icon: 'user' },
+    { id: 'privacy', label: '개인정보 요청', icon: 'user' },
     { id: 'credit',   label: '포인트',   icon: 'coin' },
     ...(isAdmin ? [] : [
       { id: 'chat',   label: '관리자 채팅', icon: 'message', badge: chatUnread },
@@ -79,7 +81,8 @@ export default function ProfilePanel({ onLogout, accountType }) {
       </nav>
 
       <div style={tab === 'chat' ? st.bodyFill : st.body}>
-        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} />}
+        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} onPrivacy={()=>setTab('privacy')} />}
+        {tab === 'privacy' && <PrivacyRequests />}
         {tab === 'credit'  && <CreditTab />}
         {tab === 'chat'    && !isAdmin && <ChatTab onRead={() => setChatUnread(0)} />}
         {tab === 'notif'   && <NotifTab />}
@@ -92,7 +95,7 @@ export default function ProfilePanel({ onLogout, accountType }) {
 
 // ─── 계정 (이메일/이름/비번/탈퇴) ─────────────────────────
 // (F2-b) accountType prop 제거 — AccountTypeCard 자체 완결.
-function AccountTab({ me, setMe, onLogout }) {
+function AccountTab({ me, setMe, onLogout, onPrivacy }) {
   const navigate=useNavigate(),qc=useQueryClient();
   const [joinFleet,setJoinFleet]=useState(false);
   const [name, setName]     = useState(me.display_name || '');
@@ -102,10 +105,6 @@ function AccountTab({ me, setMe, onLogout }) {
   const [pwCur, setPwCur]   = useState('');
   const [pwNew, setPwNew]   = useState('');
   const [pwBusy, setPwBusy] = useState(false);
-
-  const [delOpen, setDelOpen] = useState(false);
-  const [delPw, setDelPw]     = useState('');
-  const [delBusy, setDelBusy] = useState(false);
 
   async function saveProfile() {
     setSavingProfile(true);
@@ -128,15 +127,6 @@ function AccountTab({ me, setMe, onLogout }) {
     finally { setPwBusy(false); }
   }
 
-  async function deleteAccount() {
-    if (!await confirmDialog({ title: '회원 탈퇴', body: '모든 단말기 데이터가 삭제되며 복구할 수 없습니다. 탈퇴하시겠습니까?', danger: true, confirmLabel: '탈퇴하기' })) return;
-    setDelBusy(true);
-    try {
-      await api.deleteMe(delPw);
-      clearTokens(); onLogout();
-    } catch (e) { await alertDialog({ title: '탈퇴하지 못했습니다', body: e.message || '비밀번호와 연결 상태를 확인해 주세요.', tone: 'danger' }); }
-    finally { setDelBusy(false); }
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -207,23 +197,9 @@ function AccountTab({ me, setMe, onLogout }) {
 
       <Card title="계정">
         <button onClick={() => { clearTokens(); onLogout(); }} style={st.btnSecondary}>로그아웃</button>
-        {!delOpen ? (
-          <button onClick={() => setDelOpen(true)} style={{ ...st.btnDanger, marginTop: 8 }}>
-            <Icon name="trash2" size={14} /> 회원탈퇴
-          </button>
-        ) : (
-          <>
-            <input type="password" placeholder="비밀번호 확인" value={delPw}
-              onChange={e => setDelPw(e.target.value)} style={{ ...st.input, marginTop: 8 }} />
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              <button onClick={deleteAccount} disabled={delBusy} style={{ ...st.btnDanger, flex: 1 }}>
-                {delBusy ? '...' : '탈퇴 확인'}
-              </button>
-              <button onClick={() => { setDelOpen(false); setDelPw(''); }}
-                style={{ ...st.btnSecondary, flex: 1 }}>취소</button>
-            </div>
-          </>
-        )}
+        <button onClick={onPrivacy} style={{ ...st.btnSecondary, marginTop: 8 }}>
+          개인정보·회원 탈퇴 요청
+        </button>
       </Card>
     </div>
   );

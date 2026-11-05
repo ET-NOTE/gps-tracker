@@ -16,6 +16,8 @@ impl FromRequestParts<AppState> for AuthUser {
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
         if let Some(scope) = parts.extensions.get::<super::fleet::FleetScope>() {
+            require_existing_account(state, scope.actor).await?;
+            require_existing_account(state, scope.owner).await?;
             return Ok(AuthUser {
                 user_id: scope.owner,
             });
@@ -34,6 +36,7 @@ impl FromRequestParts<AppState> for AuthUser {
             .map_err(|_| AppError::Unauthorized)?;
 
         let user_id: i64 = claims.sub.parse().map_err(|_| AppError::Unauthorized)?;
+        require_existing_account(state, user_id).await?;
         Ok(AuthUser { user_id })
     }
 }
@@ -64,5 +67,18 @@ impl FromRequestParts<AppState> for AdminUser {
         Ok(AdminUser {
             user_id: auth.user_id,
         })
+    }
+}
+
+// A still-valid JWT does not keep a deleted account alive.
+pub async fn require_existing_account(state: &AppState, user_id: i64) -> Result<(), AppError> {
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1)")
+        .bind(user_id)
+        .fetch_one(&state.db)
+        .await?;
+    if exists {
+        Ok(())
+    } else {
+        Err(AppError::Unauthorized)
     }
 }

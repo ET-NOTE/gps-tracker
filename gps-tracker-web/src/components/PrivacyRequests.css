@@ -1,0 +1,16 @@
+.rights-panel{display:grid;gap:16px;min-width:0;color:var(--text)}
+.rights-card{padding:18px;border:1px solid var(--border);background:var(--surface);border-radius:14px;min-width:0}
+.rights-panel h2{font-size:17px;margin:0 0 12px}.rights-panel h3{font-size:14px;margin:0}
+.rights-panel p{font-size:13px;line-height:1.65;color:var(--text-2);overflow-wrap:anywhere}
+.rights-panel fieldset{border:0;padding:0;margin:0;display:grid;gap:12px;min-width:0}
+.rights-panel label{display:grid;gap:6px;font-size:13px;font-weight:600;min-width:0}
+.rights-panel input,.rights-panel select,.rights-panel textarea{box-sizing:border-box;width:100%;min-width:0;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px;font:inherit}
+.rights-panel button{border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:10px 14px;font:inherit;font-size:13px;cursor:pointer;overflow-wrap:anywhere}
+.rights-panel button:disabled{opacity:.55;cursor:wait}.rights-panel button:focus-visible,.rights-panel input:focus-visible,.rights-panel select:focus-visible,.rights-panel textarea:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.rights-panel .rights-primary{background:var(--primary);color:white;border-color:var(--primary)}
+.rights-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rights-request{padding:16px 0;border-top:1px solid var(--border)}.rights-text{white-space:pre-wrap}
+.rights-notice{padding:12px;border-radius:8px;background:var(--bg)}.rights-panel .rights-error{color:var(--danger)}
+.rights-impact{margin:16px 0}.rights-counts{font-size:13px}.rights-counts>div{display:flex;gap:12px;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}.rights-counts dd{margin:0;flex-shrink:0;font-variant-numeric:tabular-nums}
+.rights-admin{max-width:1100px}.rights-admin details{margin-top:14px;font-size:13px}
+@media(max-width:480px){.rights-card{padding:14px}.rights-heading{align-items:flex-start}.rights-panel input,.rights-panel textarea,.rights-panel select{font-size:16px}}

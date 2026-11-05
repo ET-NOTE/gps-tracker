@@ -23,6 +23,7 @@ pub mod locations;
 pub mod notifications;
 pub mod payments;
 pub mod phones;
+pub mod privacy;
 pub mod profile_type;
 pub mod rentcar;
 pub mod share;
@@ -42,6 +43,7 @@ pub fn build_router(state: AppState) -> Router {
     // 여기서도 동일 prefix로 라우트.
     let api_v1 = Router::new()
         .merge(auth::router())
+        .merge(privacy::router())
         .merge(devices::router())
         .merge(documents::router())
         .merge(locations::router())
