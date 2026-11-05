@@ -132,7 +132,7 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
       SLEEP_DISABLED ? "false" : "true",
       (!SLEEP_DISABLED && TIMER_WAKE_ENABLED) ? "true" : "false",
       (unsigned long)report_config::intervalS(),
-      SLEEP_DISABLED ? "false" : "true", report_config::persisted() ? "true" : "false",
+      (SLEEP_DISABLED || GPS_HTTPS_SLEEP_TEST) ? "false" : "true", report_config::persisted() ? "true" : "false",
       (unsigned long)(NO_GPS_SLEEP_GRACE_MS / 1000),
       (unsigned long)sleep_mgr::sleepAborts(), (unsigned long)sleep_mgr::shutdownUnconfirmed());
   }

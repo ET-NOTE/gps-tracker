@@ -47,6 +47,12 @@
 #ifndef GPS_TLS_CERT_TEST
   #define GPS_TLS_CERT_TEST 0
 #endif
+#ifndef GPS_HTTPS_SLEEP_TEST
+  #define GPS_HTTPS_SLEEP_TEST 0
+#endif
+#if GPS_HTTPS_SLEEP_TEST && (!GPS_HTTPS_PILOT || GPS_TLS_CERT_TEST)
+  #error "Sleep bench requires production HTTPS and credentials, never the certificate fixture"
+#endif
 #define INGEST_HOSTNAME "gps.serial.kr"
 #if GPS_TLS_CERT_TEST
   #if !GPS_HTTPS_PILOT
@@ -137,14 +143,15 @@
 #ifndef BATTERY_TEST_BUILD
   #define BATTERY_TEST_BUILD 0
 #endif
-#if GPS_HTTPS_PILOT
+#if GPS_HTTPS_PILOT && !GPS_HTTPS_SLEEP_TEST
   #define SLEEP_DISABLED           1
   #define TIMER_WAKE_ENABLED       0
 #else
   #define SLEEP_DISABLED           BATTERY_TEST_BUILD
   #define TIMER_WAKE_ENABLED       1
 #endif
-#define SLEEP_TEST                 0                  // 1=벤치 sleep/wake 검증용 단축값 (운영 전 0 원복!)
+#define SLEEP_TEST                 GPS_HTTPS_SLEEP_TEST // Only the explicit bench profile shortens sleep.
+#define SLEEP_TEST_MAX_CYCLES       3                  // RTC limit; remain awake after three entries.
 #define OBSERVE_MODE               0                  // 관찰본(sss)=1(3분창/로그유지), 운영본(aa)=0(운영 5분창). [2026-07-08 aa 최종본=0]
 // (2026-07-08) HW-DIAG 크래시 디버그 게이트 — CRASHES 카운터(NVS)+배너+긴삐3회 크래시부저+클린전원부저.
 //   관찰/디버그본=1, 최종 운영본=0(제거 → 앱 정상 부저 마일스톤 동작). ★최종본 = HWDIAG_ENABLED 0 + OBSERVE_MODE 0
@@ -154,7 +161,7 @@
 #if SLEEP_TEST
   #define STATIONARY_WINDOW_MS      30000UL           // (벤치 test) 30s
   #define STATIONARY_BOOT_GRACE_MS  15000UL           // (벤치 test) 15s
-  #define GPS_DRIFT_THRESHOLD_M     1000.0f           // (벤치 test) 실내 GPS 노이즈가 window 리셋 안 하게
+  #define GPS_DRIFT_THRESHOLD_M     50.0f             // Keep the operating movement guard.
   #define NO_GPS_SLEEP_GRACE_MS     20000UL           // (벤치 test) GPS 없어도 20s quiet 면 sleep
 #elif OBSERVE_MODE
   // (2026-07-03 운행3차 후) sss 필드-유사 관찰 프로파일 — 주행 중 false-sleep 방지.
@@ -171,7 +178,10 @@
 #endif
                                                       //   LIS 고장/장기 무모션 시 유일한 안전망 + 주차중 dark 방지.
                                                       //   (0 은 sss 증상관찰 전용이었음 — 운영본에 남아있던 것 정정)
-#if OBSERVE_MODE
+#if SLEEP_TEST
+  #define TIMER_WAKE_INTERVAL_S    60
+  #define TIMER_WAKE_INTERVAL_US   (TIMER_WAKE_INTERVAL_S*1000000ULL)
+#elif OBSERVE_MODE
   #define TIMER_WAKE_INTERVAL_S    300
   #define TIMER_WAKE_INTERVAL_US   (TIMER_WAKE_INTERVAL_S*1000000ULL)   // (운행3차 후) sleep 시 5분 fallback wake(dark 방지·로거 재접속). was 8s(thrash 원인).
 #else

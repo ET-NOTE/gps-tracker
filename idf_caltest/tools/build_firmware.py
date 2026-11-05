@@ -35,7 +35,7 @@ def source_digest():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("profile", choices=("operating", "https-pilot", "tls-cert-test", "kc", "battery"))
+    parser.add_argument("profile", choices=("operating", "https-pilot", "https-sleep-test", "tls-cert-test", "kc", "battery"))
     parser.add_argument("--test-ca-header", type=Path)
     args = parser.parse_args()
     if (args.profile == "tls-cert-test") != bool(args.test_ca_header):
@@ -64,7 +64,7 @@ def main():
     manifest.unlink(missing_ok=True)
     sdkconfig = build / "sdkconfig"
     shutil.copyfile(PROJECT / "sdkconfig", sdkconfig)
-    if args.profile in ("https-pilot", "tls-cert-test"):
+    if args.profile in ("https-pilot", "https-sleep-test", "tls-cert-test"):
         config = sdkconfig.read_text().replace("# CONFIG_MBEDTLS_HAVE_TIME_DATE is not set", "CONFIG_MBEDTLS_HAVE_TIME_DATE=y")
         sdkconfig.write_text(config)
     subprocess.run([sys.executable, str(idf / "tools/idf.py"), "-B", str(build),
@@ -87,7 +87,7 @@ def main():
             settings["sleep_disabled"] != 1 or settings["loop_wdt_enabled"] != 0 or
             settings["buzzer_enabled"] != 0):
         raise SystemExit("KC protection mismatch")
-    expected_url = ("https" if args.profile == "https-pilot" else "http") + "://gps.serial.kr/ingest"
+    expected_url = ("https" if args.profile in ("https-pilot", "https-sleep-test") else "http") + "://gps.serial.kr/ingest"
     if args.profile == "tls-cert-test":
         expected_url = "https://gps.serial.kr:18443/tls-probe"
         if settings["request_auth"] != "none_test_probe" or settings["credential_store"] != "unused":
@@ -106,6 +106,15 @@ def main():
             settings["sleep_disabled"] != 1 or settings["loop_wdt_enabled"] != 1 or
             settings["buzzer_enabled"] != 1):
         raise SystemExit("Battery measurement configuration mismatch")
+    if args.profile == "https-sleep-test" and (settings["sleep_bench"] != 1 or
+            settings["sleep_disabled"] != 0 or settings["timer_wake_enabled"] != 1 or
+            settings["timer_wake_s"] != 60 or settings["sleep_bench_max_cycles"] != 3 or
+            settings["loop_wdt_enabled"] != 1 or settings["tls_hostname_verify"] != 1 or
+            settings["request_auth"] != "hardware_hmac_sim_v2" or
+            settings["stationary_ms"] != "30000UL" or settings["no_gps_grace_ms"] != "20000UL"):
+        raise SystemExit("HTTPS sleep bench configuration mismatch")
+    if args.profile != "https-sleep-test" and settings["sleep_bench"] != 0:
+        raise SystemExit("Sleep bench leaked into another profile")
     flash = json.loads((build / "flasher_args.json").read_text())
     # Include every flash segment, including ota_data_initial.bin. Hashing only
     # bootloader/partitions/app would leave the transfer package incomplete.

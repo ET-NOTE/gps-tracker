@@ -3,7 +3,7 @@ if(FIRMWARE_PROFILE STREQUAL "tls-cert-test")
   set(APP_ENTRY "tls_cert_probe.cpp")
 endif()
 set(TLS_SOURCES "")
-if(FIRMWARE_PROFILE STREQUAL "https-pilot" OR FIRMWARE_PROFILE STREQUAL "tls-cert-test")
+if(FIRMWARE_PROFILE STREQUAL "https-pilot" OR FIRMWARE_PROFILE STREQUAL "https-sleep-test" OR FIRMWARE_PROFILE STREQUAL "tls-cert-test")
   set(TLS_SOURCES "secure_http.cpp" "modem_tcp.cpp" "verified_tls.cpp")
 endif()
 idf_component_register(

@@ -8,8 +8,8 @@
 
 static std::string scenario;
 static uint32_t clockMs = 10000;
-static uint32_t reportSeconds=86400;
-namespace report_config { uint32_t intervalS() { return reportSeconds; } bool persisted() { return true; } }
+static uint32_t reportSeconds=TIMER_WAKE_INTERVAL_S;
+namespace report_config { uint32_t intervalS() { return reportSeconds; } bool persisted() { return !GPS_HTTPS_SLEEP_TEST; } }
 static bool pinLow = false, lisOk = true, active = false, railOff = false;
 static bool held = false, slept = false, armed = false, invalidRaw = false;
 static int posts = 0, shutdowns = 0, resumes = 0, drops = 0;
@@ -115,6 +115,24 @@ uint32_t postOks() { return 1; } uint32_t postFails() { return 0; }
 
 int main(int argc,char** argv) {
   assert(argc==2); scenario=argv[1];
+#if GPS_HTTPS_SLEEP_TEST
+  if (scenario=="bench_limit") {
+    for (unsigned i=0; i<SLEEP_TEST_MAX_CYCLES; ++i) {
+      assert(sleep_mgr::enterDeepSleep("bench"));
+      assert(sleep_mgr::rtcBenchEntries_==i+1);
+      // Non-RTC state resets on a real deep-sleep wake.
+      sleep_mgr::inSleep_=false; slept=false; railOff=false;
+      sleep_mgr::begin(0);
+      assert(sleep_mgr::timerWakeMode());
+    }
+    const int before=posts;
+    sleep_mgr::onPostSuccess();
+    assert(!sleep_mgr::timerWakeMode() && !slept && posts==before);
+    assert(std::string(sleep_mgr::stayCause())=="bench_complete");
+    assert(!sleep_mgr::enterDeepSleep("retry") && posts==before);
+    puts("PASS bounded bench entries, real timer wake and awake completion");return 0;
+  }
+#endif
   if(scenario=="remote_short") reportSeconds=600;
 #if !SLEEP_DISABLED
   if(scenario=="bounce_abort") {

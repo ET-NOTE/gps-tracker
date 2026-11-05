@@ -15,10 +15,14 @@ void begin() {
     if (valid(stored)) { seconds_ = stored; persisted_ = true; }
   }
   Serial.printf("[CONFIG] sleep report interval=%lus persisted=%d\n", (unsigned long)seconds_, (int)persisted_);
+#if GPS_HTTPS_SLEEP_TEST
+  Serial.println("[SLEEP-TEST] effective timer=60s; stored/server interval remains unchanged");
+#endif
 }
-uint32_t intervalS() { return seconds_; }
-bool persisted() { return persisted_; }
+uint32_t intervalS() { return GPS_HTTPS_SLEEP_TEST ? TIMER_WAKE_INTERVAL_S : seconds_; }
+bool persisted() { return !GPS_HTTPS_SLEEP_TEST && persisted_; }
 static bool save(uint32_t seconds) {
+  if (GPS_HTTPS_SLEEP_TEST) return false; // Never persist a bench override or alter server settings.
   if (!valid(seconds)) return false;
   if (seconds_ == seconds && persisted_) return true; // No flash wear on every POST.
   Preferences p;

@@ -42,6 +42,9 @@ static bool resumeReportPending_ = false;
 [[maybe_unused]] static bool sleepIntentSent_ = false;
 [[maybe_unused]] static bool movementDuringSleep_ = false;
 RTC_DATA_ATTR static uint32_t rtcShutdownUnconfirmed_ = 0;
+#if GPS_HTTPS_SLEEP_TEST
+RTC_DATA_ATTR static uint32_t rtcBenchEntries_ = 0;
+#endif
 
 #if !SLEEP_DISABLED
 // Read the latched interrupt BEFORE tick() clears it. Retain movement observed
@@ -129,6 +132,12 @@ bool enterDeepSleep(const char *reason) {
   stayCause_ = "disabled";
   return false;
 #else
+#if GPS_HTTPS_SLEEP_TEST
+  if (rtcBenchEntries_ >= SLEEP_TEST_MAX_CYCLES) {
+    stayCause_ = "bench_complete";
+    return false;
+  }
+#endif
   if (inSleep_) return false;
   sleepIntentSent_ = false;
   if (!motion::ok()) return abortSleep("no_lis");
@@ -203,6 +212,12 @@ bool enterDeepSleep(const char *reason) {
   if (digitalRead(PIN_LIS_INT) == LOW)
     return abortSleep("final_interrupt", true, true, true, shutdown);
   rtcLastSleepUpS_ = (millis() - bootMs_) / 1000;
+#if GPS_HTTPS_SLEEP_TEST
+  ++rtcBenchEntries_;
+  Serial.printf("[SLEEP-TEST] entry=%lu/%d timer=%lus\n", (unsigned long)rtcBenchEntries_,
+                SLEEP_TEST_MAX_CYCLES, (unsigned long)report_config::intervalS());
+  Serial.flush();
+#endif
   esp_deep_sleep_start();
   return true;
 #endif
@@ -214,6 +229,11 @@ void begin(uint32_t bootMs) {
   esp_reset_reason_t     rr = esp_reset_reason();
   esp_sleep_wakeup_cause_t wc = esp_sleep_get_wakeup_cause();
   resetCause_ = resetReasonStr(rr);
+#if GPS_HTTPS_SLEEP_TEST
+  if (rr != ESP_RST_DEEPSLEEP) rtcBenchEntries_ = 0;
+  Serial.printf("[SLEEP-TEST] resumed_entries=%lu/%d%s\n", (unsigned long)rtcBenchEntries_,
+                SLEEP_TEST_MAX_CYCLES, rtcBenchEntries_ >= SLEEP_TEST_MAX_CYCLES ? " limit reached; staying awake" : "");
+#endif
 
   if (rr == ESP_RST_POWERON) { rtcBoot_ = 1; rtcWake_ = 0; rtcWakeMotion_ = 0; rtcBrown_ = 0; }
   else { rtcBoot_++; if (rr == ESP_RST_BROWNOUT) rtcBrown_++; }

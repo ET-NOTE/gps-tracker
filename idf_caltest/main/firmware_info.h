@@ -26,6 +26,8 @@ inline constexpr char settings[] =
   "\"sleep_disabled\":" FW_STRING(SLEEP_DISABLED) ","
   "\"timer_wake_enabled\":" FW_STRING(TIMER_WAKE_ENABLED) ","
   "\"timer_wake_s\":" FW_STRING(TIMER_WAKE_INTERVAL_S) ","
+  "\"sleep_bench\":" FW_STRING(GPS_HTTPS_SLEEP_TEST) ","
+  "\"sleep_bench_max_cycles\":" FW_STRING(SLEEP_TEST_MAX_CYCLES) ","
   "\"buzzer_enabled\":" FW_STRING(BUZZER_ENABLED) ","
   "\"loop_wdt_enabled\":" FW_STRING(LOOP_WDT_ENABLED) ","
   "\"stationary_ms\":\"" FW_STRING(STATIONARY_WINDOW_MS) "\","
@@ -42,6 +44,9 @@ static_assert(!KC_TEST_BUILD || (SLEEP_DISABLED && !BUZZER_ENABLED && !LOOP_WDT_
               "KC power/sleep protections must remain enabled");
 static_assert(!BATTERY_TEST_BUILD || (!KC_TEST_BUILD && SLEEP_DISABLED && LOOP_WDT_ENABLED && BUZZER_ENABLED),
               "Battery profile must preserve operating protections and disable sleep");
+static_assert(!GPS_HTTPS_SLEEP_TEST || (!SLEEP_DISABLED && TIMER_WAKE_ENABLED &&
+              LOOP_WDT_ENABLED && !KC_TEST_BUILD && !BATTERY_TEST_BUILD),
+              "Sleep bench must use the real protected sleep/wake path");
 }
 #undef FW_STRING
 #undef FW_STRING_IMPL

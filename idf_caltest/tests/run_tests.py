@@ -23,6 +23,12 @@ def main():
         subprocess.run(["g++","-std=c++17","-DKC_TEST_BUILD=0","-DBATTERY_TEST_BUILD=0","-Wall","-Wextra","-Werror","-Wno-unused-parameter","-I",str(ROOT/"stubs"),"-I",str(cjson),str(ROOT/"report_config_test.cpp"),cjson_object,"-o",config_exe],check=True)
         subprocess.run([config_exe],check=True)
         count+=1
+        bench_config = str(Path(tmp)/"bench-config")
+        subprocess.run(["g++","-std=c++17","-DKC_TEST_BUILD=0","-DGPS_HTTPS_PILOT=1","-DGPS_HTTPS_SLEEP_TEST=1",
+                        "-Wall","-Wextra","-Werror","-Wno-unused-parameter","-I",str(ROOT/"stubs"),"-I",str(cjson),
+                        str(ROOT/"sleep_bench_config_test.cpp"),cjson_object,"-o",bench_config],check=True)
+        subprocess.run([bench_config],check=True)
+        count+=1
         pilot = str(Path(tmp) / "https-pilot")
         subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
                         "-DKC_TEST_BUILD=0", "-DBATTERY_TEST_BUILD=0", "-DGPS_HTTPS_PILOT=1",
@@ -38,13 +44,15 @@ def main():
                         "-I", str(ROOT/"stubs"), str(ROOT/"modem_tcp_test.cpp"), "-o", tcp], check=True)
         subprocess.run([tcp],check=True)
         count+=1
-        for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1), ("https-pilot", 0, 0)):
-            is_pilot = profile == "https-pilot"
-            sleep_enabled = profile == "operating"
+        for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1), ("https-pilot", 0, 0), ("https-sleep-test", 0, 0)):
+            bench = profile == "https-sleep-test"
+            is_pilot = profile in ("https-pilot", "https-sleep-test")
+            sleep_enabled = profile in ("operating", "https-sleep-test")
             exe = str(Path(tmp) / f"test-{profile}")
             flags = ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
                             "-Wno-unused-parameter", f"-DKC_TEST_BUILD={kc}",
                             f"-DBATTERY_TEST_BUILD={battery}", f"-DGPS_HTTPS_PILOT={int(is_pilot)}",
+                            f"-DGPS_HTTPS_SLEEP_TEST={int(bench)}",
                             f'-DFIRMWARE_PROFILE="{profile}"',
                             f'-DFIRMWARE_VERSION="{profile}-test"',
                             f'-DFIRMWARE_BUILD_TAG="idf-caltest/{profile}-test"',
@@ -54,16 +62,19 @@ def main():
             for scenario in SCENARIOS:
                 subprocess.run([exe, scenario], check=True, stdout=subprocess.DEVNULL)
                 count += 1
+            if bench:
+                subprocess.run([exe, "bench_limit"],check=True)
+                count += 1
             normal, sleep = [json.loads(line) for line in subprocess.check_output(
                 [exe, "payload"], text=True).splitlines()]
             assert normal["stationary"]["sleep_enabled"] == sleep_enabled
             assert normal["stationary"]["timer_wake_enabled"] == sleep_enabled
             assert normal["stationary"]["build_profile"] == profile
-            assert normal["stationary"]["window_s"] == 300
-            assert normal["stationary"]["timer_wake_s"] == 86400
-            assert normal["stationary"]["sleep_report_remote"] == sleep_enabled
-            assert normal["stationary"]["sleep_report_saved"]
-            assert normal["stationary"]["no_gps_grace_s"] == 600
+            assert normal["stationary"]["window_s"] == (30 if bench else 300)
+            assert normal["stationary"]["timer_wake_s"] == (60 if bench else 86400)
+            assert normal["stationary"]["sleep_report_remote"] == (sleep_enabled and not bench)
+            assert normal["stationary"]["sleep_report_saved"] == (not bench)
+            assert normal["stationary"]["no_gps_grace_s"] == (20 if bench else 600)
             assert normal["build_tag"] == sleep["build_tag"] == f"idf-caltest/{profile}-test"
             assert sleep["diag"]["sleep_phase"] == "intent"
             assert len(normal["fixes"]) > 0
