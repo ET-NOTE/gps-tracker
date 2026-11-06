@@ -8,7 +8,7 @@
     "test_mail": {
       "at": "2026-11-06 17:22:12 KST",
       "result": "accepted by the server (exit 0)",
-      "inbox_arrival": "to be confirmed by the operator"
+      "inbox_arrival": "confirmed by the operator, 2026-11-06"
     }
   },
   "timer_started": {
