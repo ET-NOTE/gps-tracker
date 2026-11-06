@@ -114,7 +114,7 @@ Git으로 이동하는 것은 소스·라운드 문서·아래 작은 검증 JSO
 
 | 순서 | 작업 | 완료 판단 |
 |---|---|---|
-| 승인 대기 | [16차](location-rights-round16-20261106.md) 운영 배포(스키마 97→98) | 배포 절차와 산출물 스테이징·리허설 완료(`ops/stage_privacy_pdf.py`). 산출물 전송 → `release_privacy_pdf.py check`(읽기 전용, 운영 커널에서 처리기 자체 점검) → `apply` → `smoke_privacy_pdf.py` 순서로 단계마다 승인받아 진행. `release_privacy_raster.py`는 다시 실행하지 않는다 |
+| 승인 대기 | [16차](location-rights-round16-20261106.md) 운영 적용(스키마 97→98) | 산출물은 운영 서버 `/home/mmm/gps-artifacts/privacy-pdf-20261106-r1`에 있고 `release_privacy_pdf.py check`가 2026-11-06 13:38 KST 통과했다(운영 커널에서 처리기 자체 점검 포함, 변경 없음). 남은 순서는 `apply` → `smoke_privacy_pdf.py`이며 단계마다 승인받아 진행한다. 시간이 지났으면 `check`부터 다시 한다. `release_privacy_raster.py`는 다시 실행하지 않는다 |
 | 표본 확보 후 | 실제 한글 영수증 PDF로 렌더링 품질 재확인 | 16차 평가는 합성 표본만 사용. JBIG2·JPEG 2000 스캔과 블렌드 모드는 미검증 |
 | 범위 확정 후 | 회사 공용 차량 문서/사진 연결, 원본 정정·파기 | 정보주체·회사 권한·보관 근거/기간·승인 범위를 먼저 확인 |
 | 담당자 결정 대기 | 감사/처리 증빙·백업·외부 사본 보관과 파기, 로그인 불가/대리인 확인 | 회사 정책을 임의 보관 기간으로 대체하지 않음 |
