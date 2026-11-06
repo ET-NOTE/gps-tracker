@@ -32,6 +32,7 @@ git log -3 --oneline
 | DB | PostgreSQL 14 / TimescaleDB 2.19.3, 마이그레이션 98 |
 | API SHA-256 | `b6ac9edb5bacae749db3c2561f95763860599abc7de7099dcf50bc63a427bba7` |
 | API | `/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api`, systemd `gps-tracker-api` |
+| 실행 계정 | API와 정리 작업 2개는 **`gps-api`**(로그인·sudo·docker 없음, 능력 0, 읽기 전용 파일 시스템 + 업로드 두 곳 쓰기)로 실행. 2026-11-06 15:32 KST [인프라 1차](infra-round1-runtime-account-20261106.md). 배포는 `mmm`+sudo. 환경파일·FCM 키는 `root:gps-api 640`이라 `mmm`은 sudo 없이 읽지 못한다. 적용 전 기록은 `/home/mmm/backups/runtime-account-20261106` |
 | PDF 처리기 | 같은 디렉터리의 `gps-pdf-render`(root 소유 755), SHA-256 `3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb`. API가 PDF 쪽마다 실행한다 |
 | 웹 | `/home/mmm/gps-tracker-web/dist-root` → `/home/mmm/releases/privacy-pdf-20261106-r1/web` |
 | 배포 산출물 | `/home/mmm/gps-artifacts/privacy-pdf-20261106-r1` |
@@ -118,7 +119,7 @@ Git으로 이동하는 것은 소스·라운드 문서·아래 작은 검증 JSO
 | 표본 확보 후 | 실제 한글 영수증 PDF로 렌더링 품질 재확인 | 16차 평가는 합성 표본만 사용. JBIG2·JPEG 2000 스캔과 블렌드 모드는 미검증 |
 | 범위 확정 후 | 회사 공용 차량 문서/사진 연결, 원본 정정·파기 | 정보주체·회사 권한·보관 근거/기간·승인 범위를 먼저 확인 |
 | 담당자 결정 대기 | 감사/처리 증빙·백업·외부 사본 보관과 파기, 로그인 불가/대리인 확인 | 회사 정책을 임의 보관 기간으로 대체하지 않음 |
-| 운영자 실행 대기 | **[인프라 1차](infra-round1-runtime-account-20261106.md): API 실행 계정과 PDF 처리기 권한 분리** — 1단계(실행 계정) 절차 작성·격리 리허설 완료, 운영 서버 준비와 읽기 전용 점검 통과 | 운영자가 `ssh -t seriallog "cd /home/mmm/gps-artifacts/runtime-account-20261106 && sudo python3 runtime_account.py apply"` 실행. 계정·서비스 설정 변경은 에이전트가 직접 실행하지 않는다. 적용 뒤 에이전트가 읽기 전용 확인과 `smoke_runtime_account.py`를 진행. 2단계(처리기의 별도 계정·서비스 분리)는 1단계 반영 뒤 |
+| 진행 중 | **[인프라 1차](infra-round1-runtime-account-20261106.md) 2단계: PDF 처리기의 별도 계정·서비스 분리** | 1단계(실행 계정 분리)는 2026-11-06 15:32 KST 운영 적용·기능 확인 완료. 2단계는 처리기를 API와 다른 계정의 소켓 서비스로 옮기고 API가 소켓으로 요청하도록 바꾼다(API 재배포 필요). 계정·서비스 설정 변경은 운영자가 실행 |
 | 다음 | VPS와 독립된 외부 장애 감시 | [준비 조사](infra-precheck-20261106.md) 완료: 기존 Uptime Kuma는 같은 서버에 있고 알림 수단이 0건이다. 사무실 빌드 호스트에서 1분마다 보는 점검을 제안. **시작 전 운영자 결정 필요**: 알림 수단(메일·메신저 웹훅)과 감시 위치. 비밀값은 운영자가 직접 넣는다 |
 | 그다음 기능 라운드 | 권리 대응 17차: 수집·이용·제공사실 열람 | 기존 권리 요청·결과 제공 기능을 활용 |
 | 별도 항목(섞지 않음) | 방화벽 부팅 순서([별도 구성 위험](incident-20261106-hosting-maintenance.md), `ops/fix_firewall_boot_order.sh`), 디스크 정리, 열린 포트 축소, 관리 접근·DB 경계·백업 | 11월 6일 장애의 원인은 호스팅 업체의 긴급 업데이트 문제로 확인됐다. 방화벽 순서 문제는 그 원인으로 확정하지 않은 별도 위험이다. 방화벽·시스템 설정 변경은 운영자가 실행 |
