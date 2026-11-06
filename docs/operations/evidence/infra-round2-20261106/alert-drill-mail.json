@@ -1,0 +1,55 @@
+{
+  "kind": "alert drill, mail path",
+  "host": "etcom-hub (build host), live user timer gps-watch.timer",
+  "method": "the address of one check (status) pointed at a refusing port on the watch host itself for five minutes; the production host was not touched",
+  "timeline_kst": [
+    {
+      "at": "2026-11-06 23:56:35",
+      "event": "check address changed; before: four checks up, no incident, no mail waiting"
+    },
+    {
+      "at": "2026-11-06 23:57:14",
+      "event": "status failed (connection refused), 1 of 3"
+    },
+    {
+      "at": "2026-11-06 23:58:14",
+      "event": "status failed, 2 of 3; watch log: ok, events=-"
+    },
+    {
+      "at": "2026-11-06 23:59:14",
+      "event": "status failed, 3 of 3 -> incident opened, mail sent (events=opened sent=1)"
+    },
+    {
+      "at": "2026-11-06 23:59:21",
+      "event": "check address restored"
+    },
+    {
+      "at": "2026-11-07 00:00:14",
+      "event": "status ok, 1 of 2; still counted as down"
+    },
+    {
+      "at": "2026-11-07 00:01:14",
+      "event": "status ok, 2 of 2 -> incident closed, mail sent (events=closed sent=1)"
+    }
+  ],
+  "after": {
+    "incident": null,
+    "mail_waiting": 0,
+    "mail_error": null,
+    "checks": {
+      "health": "up",
+      "ingest": "up",
+      "ssh": "up",
+      "status": "up"
+    },
+    "config_mode": "600",
+    "status_address": "https://status.serial.kr/"
+  },
+  "mails_sent": 2,
+  "delivery_to_inbox_confirmed_by_operator": false,
+  "not_covered": [
+    "an outage of the production host itself",
+    "loss of internet at the watch host (gap notice)",
+    "the Uptime Kuma heartbeat path"
+  ]
+}
