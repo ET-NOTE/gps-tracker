@@ -83,10 +83,12 @@
     "firewall_rules_file_changed": false,
     "disk_free": "4.8G"
   },
-  "production_smoke_run": false,
-  "not_yet_verified": "the production API starting the processor inside its service and drawing a PDF page; smoke_privacy_pdf.py verifies it",
+  "production_smoke_run": true,
   "unrelated_observations": [
     "nginx 502 on /notify/ws (another service, notion-notify at 127.0.0.1:8050, nothing listening): every request since at least 2026-11-05, one client retrying; not touched",
     "one transient DNS resolution timeout for gps.serial.kr on the host after the release; 5 ms on the next tries"
-  ]
+  ],
+  "production_smoke": "production-smoke.json (2026-11-06 14:01:24-14:01:41 KST, passed)",
+  "scripted_rollback_available": false,
+  "verified_by_smoke": "the production API started the installed processor inside its service and drew PDF pages 1 and 2"
 }
