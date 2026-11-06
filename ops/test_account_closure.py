@@ -6,6 +6,8 @@ import hmac
 import json
 import pathlib
 import subprocess
+import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -264,5 +266,51 @@ assert sql('SELECT status FROM rental_contracts WHERE id=%s',(batch[0][3],))=='d
 assert sql('SELECT status FROM rental_contracts WHERE id=%s',(batch[1][3],))=='overdue'
 assert sql('SELECT count(*) FROM connection_alert_episodes WHERE device_id=%s',(batch[0][0],))==0
 check('real background workers skip closed account; active notification/reservation/rental batches continue')
+
+# The timer runs the script (`--pending --execute`), an entry point the calls above never take.
+# Five closures held only by undeleted files are older than a new request: it must still start.
+def held_closure(n):
+    a=account(n)
+    d=sql("INSERT INTO devices(device_uid,owner_id,api_key_hash) VALUES(%s,%s,'fixture') RETURNING id",(f'{tag}held{n}',a['user_id']))
+    f=root/'device_documents'/str(a['user_id'])/str(d)/(str(uuid.uuid4())+'_held.pdf')
+    f.parent.mkdir(parents=True,exist_ok=True);f.write_bytes(b'%PDF-1.7 fake')
+    sql("INSERT INTO device_documents(user_id,device_id,kind,filename,stored_path,mime,size_bytes) VALUES(%s,%s,'other','held.pdf',%s,'application/pdf',13)",(a['user_id'],d,str(f)))
+    q=intake(a);assert start(q,admin['access_token'])[0]==200
+    assert 'private_files_pending_or_shared' in execute(worker,q['id'])['review_reasons']
+    return q['id'],f
+closure=lambda rid:sql('SELECT to_jsonb(c) FROM privacy_account_closures c WHERE request_id=%s',(rid,))
+held=[held_closure(n) for n in range(8,13)]
+held_before={rid:closure(rid) for rid,_ in held}
+timer_request=intake(account(13));assert start(timer_request,admin['access_token'])[0]==200
+assert closure(timer_request['id'])['state']=='restricted'
+timer_env=pathlib.Path(tempfile.mkdtemp())/'timer.env'
+timer_env.write_text('DATABASE_URL='+dsn+'\n')
+def timer(*flags):
+    run=subprocess.run([sys.executable,str(pathlib.Path(__file__).with_name('privacy_account_closure.py')),'--env-file',str(timer_env),'--pending',*flags],capture_output=True,text=True,timeout=300)
+    assert run.returncode==0,(run.returncode,run.stderr[-600:])
+    rows=json.loads(run.stdout)
+    assert not [x for x in rows if 'error' in x],rows
+    return rows
+snapshot=lambda:sql("SELECT md5(coalesce(string_agg(to_jsonb(c)::text,',' ORDER BY request_id),'')) FROM privacy_account_closures c")
+before=snapshot();listed=timer()
+assert listed and not any(x['execute'] for x in listed) and snapshot()==before
+check('timer entry point dry run (--pending) lists pending closures and writes nothing')
+for attempt in range(10):
+    timer('--execute')
+    if closure(timer_request['id'])['state']!='restricted':break
+else:raise AssertionError('new closure starved behind file-held closures')
+assert closure(timer_request['id'])['state']=='review_required'
+# A recheck that changes nothing writes nothing, and the held files are untouched.
+assert all(closure(rid)==held_before[rid] and f.exists() for rid,f in held)
+check('timer entry point (--pending --execute) runs; file-held closures do not starve a new request')
+while process_one(worker,cfg) is not None:pass
+assert not any(f.exists() for _,f in held)
+for attempt in range(20):
+    timer('--execute')
+    if all(closure(rid)['personal_scope_verified'] for rid,_ in held):break
+else:raise AssertionError('file-held closures were not rechecked')
+assert not any('private_files_pending_or_shared' in closure(rid)['review_reasons'] for rid,_ in held)
+timer_env.unlink();timer_env.parent.rmdir()
+check('timer rechecks file-held closures once their files are gone')
 
 print(json.dumps({'integration_groups':len(passed),'groups':passed,'schema':sql('SELECT max(version) FROM _sqlx_migrations'),'real_accounts_modified':False,'external_messages_sent':False},ensure_ascii=False))

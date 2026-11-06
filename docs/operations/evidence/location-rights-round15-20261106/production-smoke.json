@@ -1,0 +1,48 @@
+{
+  "started_at": "2026-11-06T12:08:55+09:00",
+  "finished_at": "2026-11-06T12:09:07+09:00",
+  "exit": 0,
+  "result": {
+    "release": "privacy-raster-20261106-r1",
+    "schema": 97,
+    "request_id": 25,
+    "delivery_id": 3,
+    "synthetic_account_ids": [
+      53,
+      54,
+      55
+    ],
+    "large_source_reduced": [
+      4000,
+      3000,
+      865,
+      1154
+    ],
+    "exif_orientation_applied": 6,
+    "read_proof_bound_to_pixels": true,
+    "selection_in_reduced_coordinates": true,
+    "forged_client_rgb_ignored": true,
+    "excluded_pixels_removed_and_metadata_absent": true,
+    "preview_and_download_exact_bytes": true,
+    "password_and_foreign_account_denial": true,
+    "source_changed_delivery_purged": true,
+    "no_automatic_whole_request_completion": true,
+    "synthetic_source_removed": true,
+    "synthetic_accounts_closed": true,
+    "real_accounts_and_sim_ownership_unchanged": true,
+    "external_messages_sent": false,
+    "full_erasure_confirmed": false
+  },
+  "checked_afterwards": {
+    "temporary_image_payloads": 0,
+    "synthetic_receipts_removed": true,
+    "synthetic_accounts_closed": [
+      53,
+      54,
+      55
+    ],
+    "api_errors": 0
+  },
+  "scripted_rollback_available": false,
+  "note": "The read proofs written by this run use the new columns, so release_privacy_raster.py rollback now refuses by design."
+}

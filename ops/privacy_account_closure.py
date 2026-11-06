@@ -27,6 +27,19 @@ REVIEW = (
 )
 
 
+# What one timer run picks up. New and failed closures come first, oldest first: processing
+# moves them on (review_required) or to the back (retry sets updated_at). Closures that only
+# wait for their files are rechecked separately and in random order, because a recheck that
+# changes nothing writes nothing: ordered by updated_at with one shared limit, five long
+# holds would be picked on every run and no later request would ever start.
+PENDING = '''(SELECT request_id FROM privacy_account_closures
+        WHERE state IN ('restricted','retry') ORDER BY updated_at,request_id LIMIT 5)
+    UNION ALL
+    (SELECT request_id FROM privacy_account_closures
+        WHERE state='review_required' AND review_reasons ? 'private_files_pending_or_shared'
+        ORDER BY random() LIMIT 5)'''
+
+
 def count(q, table, col, uid):
     # All identifiers originate in the fixed allowlists above.
     q.execute(f'SELECT count(*) FROM {table} WHERE {col}=%s', (uid,))
@@ -150,12 +163,15 @@ def main():
     group.add_argument('--pending', action='store_true')
     p.add_argument('--execute', action='store_true')
     args = p.parse_args()
-    with psycopg2.connect(config(args.env_file)['DATABASE_URL']) as db:
+    # Not `with psycopg2.connect(...) as db`: process() and execute() open their own transaction
+    # with `with db`, and psycopg2 refuses to enter a connection context that is already open.
+    # Wrapping the loop made every timer run fail as soon as one request was pending.
+    db = psycopg2.connect(config(args.env_file)['DATABASE_URL'])
+    try:
         if args.pending:
-            with db.cursor() as q:
-                q.execute("SELECT request_id FROM privacy_account_closures WHERE state IN ('restricted','retry') OR review_reasons ? 'private_files_pending_or_shared' ORDER BY updated_at LIMIT 5")
+            with db, db.cursor() as q:
+                q.execute(PENDING)
                 ids = [r[0] for r in q.fetchall()]
-            db.commit()
         else:
             ids = [args.request]
         result = []
@@ -164,6 +180,8 @@ def main():
                 result.append(execute(db, rid) if args.execute else process(db, rid))
             except RuntimeError as exc:
                 result.append({'request_id': rid, 'error': str(exc)})
+    finally:
+        db.close()
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

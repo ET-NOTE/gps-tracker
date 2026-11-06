@@ -37,6 +37,8 @@
     "nginx_postgresql_dev_shield_restarted": false,
     "firewall_changed": false
   },
-  "production_smoke_run": false,
-  "note": "The account-closure timer service was already failing before this release (nested connection context in ops/privacy_account_closure.py); the release checks only that the timer is active."
+  "production_smoke_run": true,
+  "note": "The account-closure timer service was already failing before this release (nested connection context in ops/privacy_account_closure.py); the release checks only that the timer is active.",
+  "production_smoke": "production-smoke.json (2026-11-06 12:08:55-12:09:07 KST)",
+  "scripted_rollback_available": false
 }
