@@ -254,5 +254,5 @@ assert sql('SELECT count(*) FROM privacy_image_deliveries WHERE request_id=%s AN
 check('revoking the remaining reduced deliveries removes every temporary PNG; the transform record stays with the delivery metadata')
 
 report={'integration_groups':len(passed),'groups':passed,'api_sha256':digest,'schema':sql('SELECT max(version) FROM _sqlx_migrations'),'concurrent_statuses':statuses,'memory_peak_before':peak_before,'memory_peak_after':peak_after}
-assert report['schema']==97,report['schema']
+assert report['schema']>=97,report['schema']
 (pathlib.Path(__file__).parent/'receipt-scaling-validation.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))

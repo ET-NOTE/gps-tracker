@@ -35,3 +35,17 @@ test('reviewer and delivery history say when a source was reduced or turned upri
  assert.equal(lines.filter(t=>t.includes('원본 4000 × 3000px 축소')).length,1);assert.ok(lines.some(t=>t.startsWith('수동')&&!t.includes('축소')));
  await act(async()=>r.unmount());
 });
+test('PDF sources are labelled by page in the list, the note and the delivery history',async()=>{
+ const pdf={version:3,kind:'pdf',page:2,pages:5,page_width_pt:595.276,page_height_pt:841.89,width:840,height:1189,renderer_sha256:'ab'.repeat(32)};
+ const company={id:9,revision:1,identity:'confirmed',staff_id:24,status:'in_review',category:'expenses',from_at:'2026-11-01',until_at:'2026-11-07'};
+ const queries={'privacy-image-companies':{items:[company]},'privacy-receipt-sources':{items:[{id:61,expense_id:30,spent_on:'2026-11-05',category:'유류비',amount_krw:30000,mime:'image/jpeg'},{id:62,expense_id:31,spent_on:'2026-11-05',category:'보험',amount_krw:120000,mime:'application/pdf'}]},'admin-privacy-images':{items:[{id:7,category:'receipt',notice:'일부',source_reference:'지출 #31 / 영수증 #62 / 2쪽',receipt_id:62,company_review_id:9,source_normalization:pdf,source_page:2,available:true,expires_at:'2099-01-01'}],events:[]}};
+ const {sourceNote,AdminImages}=await components({},queries);
+ assert.equal(sourceNote(pdf),'PDF 2/5쪽 · 서버가 원본에서 그린 쪽');
+ let r;await act(async()=>{r=create(React.createElement(AdminImages,{request:{id:1,revision:1,status:'in_review',due_at:'2099-01-01'}}));});
+ await act(async()=>r.root.findAllByType('select')[0].props.onChange({target:{value:'9'}}));
+ const rows=r.root.findAllByType('span').map(s=>s.children.filter(c=>typeof c==='string').join(''));
+ assert.equal(rows.filter(t=>t.includes('영수증 #62')&&t.endsWith(' · PDF')).length,1);assert.equal(rows.filter(t=>t.includes('영수증 #61')&&t.includes('PDF')).length,0);
+ const lines=r.root.findAllByType('p').map(p=>p.children.filter(c=>typeof c==='string').join(''));
+ assert.equal(lines.filter(t=>t.includes('지출 #31 / 영수증 #62 / 2쪽')&&t.includes('PDF 2/5쪽')).length,1);
+ await act(async()=>r.unmount());
+});

@@ -5,6 +5,7 @@ use crate::{
     error::{AppError, AppResult},
     services::{
         privacy::RequestRow,
+        privacy_pdf::{self as pdf, PdfError},
         privacy_raster::{self as raster, Normalized, RasterError},
     },
     state::AppState,
@@ -72,6 +73,9 @@ struct ReceiptBinding {
     id: i64,
     receipt_revision: i64,
     expense_revision: i64,
+    /// 1-based page of a PDF source; absent for images. Part of the selection hash.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    page: Option<u32>,
 }
 #[derive(Deserialize)]
 struct Selection {
@@ -202,20 +206,56 @@ fn raster_error(e: RasterError) -> AppError {
         ),
     }
 }
-/// Stored original -> bounded, upright RGB. Deterministic, so every step re-derives it.
-fn receipt_pixels(r: &Receipt) -> AppResult<Normalized> {
-    raster::normalize(&r.mime, &r.content).map_err(raster_error)
+fn pdf_error(e: PdfError) -> AppError {
+    let message = match e {
+        PdfError::Busy => {
+            return AppError::TooManyRequests(
+                "다른 PDF 쪽을 처리 중입니다. 잠시 후 다시 시도해 주세요.".into(),
+            )
+        }
+        PdfError::Unavailable => "PDF 처리기를 사용할 수 없습니다. 필요한 쪽을 이미지로 준비해 주세요.",
+        PdfError::Invalid => "PDF를 읽을 수 없습니다. 손상된 파일인지 원본을 확인해 주세요.",
+        PdfError::Encrypted => "암호가 걸린 PDF는 직접 열 수 없습니다. 필요한 쪽을 이미지로 준비해 주세요.",
+        PdfError::TooManyPages => "PDF 쪽수가 한도(200쪽)를 넘습니다. 필요한 쪽을 이미지로 준비해 주세요.",
+        PdfError::NoSuchPage => "PDF에 해당 쪽이 없습니다.",
+        PdfError::PageSize => "PDF 쪽 크기가 처리 한도를 넘습니다.",
+        PdfError::Failed => "PDF 쪽을 처리하지 못했습니다(처리 한도 초과 또는 지원하지 않는 내용). 필요한 쪽을 이미지로 준비해 주세요.",
+    };
+    AppError::BadRequest(message.into())
+}
+/// Stored original -> bounded RGB. Images are decoded here; a PDF page is drawn by the isolated
+/// renderer. Both are deterministic for the same bytes, so every step re-derives the pixels.
+async fn receipt_pixels(r: Receipt, page: Option<u32>) -> AppResult<(Receipt, Normalized)> {
+    if r.mime == "application/pdf" {
+        let n = pdf::render(&r.content, page.ok_or_else(bad)?)
+            .await
+            .map_err(pdf_error)?;
+        return Ok((r, n));
+    }
+    if page.is_some() {
+        return Err(bad());
+    }
+    tokio::task::spawn_blocking(move || {
+        let n = raster::normalize(&r.mime, &r.content).map_err(raster_error)?;
+        Ok((r, n))
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.into()))?
 }
 async fn prepare(s: Selection, original: Option<Receipt>) -> AppResult<(Selection, Prepared)> {
     let permit = image_limit().try_acquire().map_err(|_| {
         AppError::TooManyRequests("제공본을 처리 중입니다. 잠시 후 다시 시도해 주세요.".into())
     })?;
+    let page = s.receipt.as_ref().and_then(|b| b.page);
+    let normalized = match original {
+        Some(r) => Some(receipt_pixels(r, page).await?.1),
+        None => None,
+    };
     tokio::task::spawn_blocking(move || {
         let _permit = permit;
-        let p = match original {
+        let p = match normalized {
             // Pixels sent by the browser are ignored; the stored original is the only source.
-            Some(r) => {
-                let n = receipt_pixels(&r)?;
+            Some(n) => {
                 if (s.width, s.height) != (n.width, n.height) {
                     return Err(bad());
                 }
@@ -395,7 +435,7 @@ async fn issue(
             "제공본 용량·발급 한도입니다. 담당자에게 분할 처리를 요청해 주세요.".into(),
         ));
     }
-    let did:i64=sqlx::query_scalar("INSERT INTO privacy_image_deliveries(request_id,created_by,company_review_id,company_revision,category,source_reference,source_sha256,selection_sha256,output_sha256,width,height,regions,notice,receipt_id,receipt_revision,expense_revision,source_normalization) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id").bind(id).bind(admin.user_id).bind(s.company_review_id).bind(s.company_revision).bind(&s.category).bind(&s.source_reference).bind(&s.source_sha256).bind(&p.selection_hash).bind(&p.output_hash).bind(s.width as i32).bind(s.height as i32).bind(json!(s.regions)).bind(&s.notice).bind(s.receipt.as_ref().map(|r|r.id)).bind(s.receipt.as_ref().map(|r|r.receipt_revision)).bind(s.receipt.as_ref().map(|r|r.expense_revision)).bind(&p.normalization).fetch_one(&mut *tx).await?;
+    let did:i64=sqlx::query_scalar("INSERT INTO privacy_image_deliveries(request_id,created_by,company_review_id,company_revision,category,source_reference,source_sha256,selection_sha256,output_sha256,width,height,regions,notice,receipt_id,receipt_revision,expense_revision,source_normalization,source_page) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id").bind(id).bind(admin.user_id).bind(s.company_review_id).bind(s.company_revision).bind(&s.category).bind(&s.source_reference).bind(&s.source_sha256).bind(&p.selection_hash).bind(&p.output_hash).bind(s.width as i32).bind(s.height as i32).bind(json!(s.regions)).bind(&s.notice).bind(s.receipt.as_ref().map(|r|r.id)).bind(s.receipt.as_ref().map(|r|r.receipt_revision)).bind(s.receipt.as_ref().map(|r|r.expense_revision)).bind(&p.normalization).bind(s.receipt.as_ref().and_then(|r|r.page).map(|p| p as i32)).fetch_one(&mut *tx).await?;
     sqlx::query("INSERT INTO privacy_image_payloads(delivery_id,png_bytes) VALUES($1,$2)")
         .bind(did)
         .bind(p.png)
@@ -583,6 +623,7 @@ async fn receipt(tx: &mut Transaction<'_, Postgres>, review: i64, id: i64) -> Ap
     let signature = match r.mime.as_str() {
         "image/png" => r.content.starts_with(b"\x89PNG\r\n\x1a\n"),
         "image/jpeg" => r.content.starts_with(&[255, 216, 255]),
+        "application/pdf" => r.content.starts_with(b"%PDF-"),
         _ => false,
     };
     if !signature
@@ -613,7 +654,11 @@ async fn validate_receipt_selection(
     {
         return Err(conflict());
     }
-    let seen:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_receipt_reads WHERE request_id=$1 AND review_id=$2 AND review_revision=$3 AND actor_id=$4 AND receipt_id=$5 AND receipt_revision=$6 AND expense_revision=$7 AND sha256=$8 AND created_at>now()-interval '1 hour' AND ($9::text IS NULL OR pixels_sha256=$9))").bind(rid).bind(review).bind(s.company_revision).bind(actor).bind(b.id).bind(b.receipt_revision).bind(b.expense_revision).bind(&s.source_sha256).bind(pixels).fetch_one(&mut **tx).await?;
+    // A PDF selection names its page; an image selection never does.
+    if (r.mime == "application/pdf") != b.page.is_some() {
+        return Err(bad());
+    }
+    let seen:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_receipt_reads WHERE request_id=$1 AND review_id=$2 AND review_revision=$3 AND actor_id=$4 AND receipt_id=$5 AND receipt_revision=$6 AND expense_revision=$7 AND sha256=$8 AND created_at>now()-interval '1 hour' AND ($9::text IS NULL OR pixels_sha256=$9) AND page IS NOT DISTINCT FROM $10)").bind(rid).bind(review).bind(s.company_revision).bind(actor).bind(b.id).bind(b.receipt_revision).bind(b.expense_revision).bind(&s.source_sha256).bind(pixels).bind(b.page.map(|p| p as i32)).fetch_one(&mut **tx).await?;
     if !seen {
         return Err(conflict());
     }
@@ -650,6 +695,9 @@ async fn receipt_options(
 #[derive(Deserialize)]
 struct ReceiptRead {
     company_revision: i32,
+    /// 1-based page of a PDF source. A PDF opens on its first page when this is absent.
+    #[serde(default)]
+    page: Option<u32>,
 }
 async fn read_receipt(
     State(s): State<AppState>,
@@ -667,11 +715,15 @@ async fn read_receipt(
     let permit = image_limit().try_acquire().map_err(|_| {
         AppError::TooManyRequests("이미지 처리 중입니다. 잠시 후 다시 시도하세요.".into())
     })?;
-    let (r, png, pixels, normalization) = tokio::task::spawn_blocking(move || -> AppResult<_> {
+    let page = match (r.mime.as_str(), b.page) {
+        ("application/pdf", page) => Some(page.unwrap_or(1)),
+        (_, page) => page,
+    };
+    let (r, n) = receipt_pixels(r, page).await?;
+    let (png, pixels, normalization) = tokio::task::spawn_blocking(move || -> AppResult<_> {
         let _permit = permit;
-        let n = receipt_pixels(&r)?;
         let png = encode_png(n.width, n.height, &n.rgb)?;
-        Ok((r, png, n.pixels_sha256(), n.describe()))
+        Ok((png, n.pixels_sha256(), n.describe()))
     })
     .await
     .map_err(|e| AppError::Internal(e.into()))??;
@@ -685,10 +737,10 @@ async fn read_receipt(
     {
         return Err(conflict());
     }
-    sqlx::query("INSERT INTO privacy_receipt_reads(request_id,review_id,review_revision,actor_id,receipt_id,receipt_revision,expense_revision,sha256,pixels_sha256,normalization) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)").bind(id).bind(review).bind(b.company_revision).bind(a.user_id).bind(r.id).bind(r.receipt_revision).bind(r.expense_revision).bind(&r.sha256).bind(&pixels).bind(&normalization).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO privacy_receipt_reads(request_id,review_id,review_revision,actor_id,receipt_id,receipt_revision,expense_revision,sha256,pixels_sha256,normalization,page) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)").bind(id).bind(review).bind(b.company_revision).bind(a.user_id).bind(r.id).bind(r.receipt_revision).bind(r.expense_revision).bind(&r.sha256).bind(&pixels).bind(&normalization).bind(page.map(|p| p as i32)).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(Json(
-        json!({"receipt":{"id":r.id,"receipt_revision":r.receipt_revision,"expense_revision":r.expense_revision},"expense_id":r.expense_id,"mime":"image/png","sha256":r.sha256,"display_sha256":digest(&png),"normalization":normalization,"data_base64":STANDARD.encode(png)}),
+        json!({"receipt":ReceiptBinding{id:r.id,receipt_revision:r.receipt_revision,expense_revision:r.expense_revision,page},"expense_id":r.expense_id,"mime":"image/png","sha256":r.sha256,"display_sha256":digest(&png),"normalization":normalization,"data_base64":STANDARD.encode(png)}),
     ))
 }
 // Access expires immediately; physical temporary bytes are removed at startup and each minute.

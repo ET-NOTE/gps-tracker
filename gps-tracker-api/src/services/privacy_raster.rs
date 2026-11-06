@@ -22,6 +22,8 @@ pub const MAX_PROGRESSIVE_PIXELS: u64 = 8_000_000;
 const MAX_DECODE_BYTES: usize = 13_000_000;
 /// Bump when the pixel pipeline changes; older read proofs then stop matching.
 pub const NORMALIZATION_VERSION: u8 = 2;
+/// PDF pages drawn by the isolated renderer.
+pub const PDF_NORMALIZATION_VERSION: u8 = 3;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum RasterError {
@@ -43,22 +45,45 @@ pub struct Normalized {
     pub source_height: u32,
     /// EXIF orientation that was applied (1 = none).
     pub orientation: u8,
+    /// Set when the pixels are one page of a PDF drawn by the isolated renderer.
+    pub pdf: Option<PdfSource>,
+}
+pub struct PdfSource {
+    /// 1-based page and the document's page count.
+    pub page: u32,
+    pub pages: u32,
+    /// Page size as laid out, in thousandths of a point.
+    pub page_width: u32,
+    pub page_height: u32,
+    /// The renderer build that produced the pixels.
+    pub renderer_sha256: String,
 }
 impl Normalized {
     pub fn reduced(&self) -> bool {
-        u64::from(self.source_width) * u64::from(self.source_height)
-            != u64::from(self.width) * u64::from(self.height)
+        self.pdf.is_none()
+            && u64::from(self.source_width) * u64::from(self.source_height)
+                != u64::from(self.width) * u64::from(self.height)
     }
     /// Identifies the exact pixels a reviewer was shown, independent of PNG encoding.
     pub fn pixels_sha256(&self) -> String {
         let mut h = Sha256::new();
-        h.update([NORMALIZATION_VERSION]);
+        match &self.pdf {
+            // A separate domain: the same pixels on another page are another proof.
+            Some(pdf) => {
+                h.update([PDF_NORMALIZATION_VERSION]);
+                h.update(pdf.page.to_be_bytes());
+            }
+            None => h.update([NORMALIZATION_VERSION]),
+        }
         h.update(self.width.to_be_bytes());
         h.update(self.height.to_be_bytes());
         h.update(&self.rgb);
         format!("{:x}", h.finalize())
     }
     pub fn describe(&self) -> Value {
+        if let Some(pdf) = &self.pdf {
+            return json!({"version":PDF_NORMALIZATION_VERSION,"kind":"pdf","page":pdf.page,"pages":pdf.pages,"page_width_pt":f64::from(pdf.page_width)/1000.0,"page_height_pt":f64::from(pdf.page_height)/1000.0,"width":self.width,"height":self.height,"renderer_sha256":pdf.renderer_sha256});
+        }
         json!({"version":NORMALIZATION_VERSION,"source_width":self.source_width,"source_height":self.source_height,"width":self.width,"height":self.height,"orientation":self.orientation,"reduced":self.reduced()})
     }
 }
@@ -365,6 +390,7 @@ fn decode_jpeg(content: &[u8]) -> Result<Normalized, RasterError> {
         source_width: sw,
         source_height: sh,
         orientation,
+        pdf: None,
     })
 }
 
@@ -439,6 +465,7 @@ fn decode_png(content: &[u8]) -> Result<Normalized, RasterError> {
         source_width: sw,
         source_height: sh,
         orientation: 1,
+        pdf: None,
     })
 }
 
@@ -960,6 +987,45 @@ mod tests {
             normalize("application/pdf", b"%PDF-1.7").err(),
             Some(Invalid)
         );
+    }
+
+    #[test]
+    fn pdf_pages_have_their_own_proof_domain_and_description() {
+        let page = |number| Normalized {
+            width: 2,
+            height: 1,
+            rgb: vec![1, 2, 3, 4, 5, 6],
+            source_width: 0,
+            source_height: 0,
+            orientation: 1,
+            pdf: Some(PdfSource {
+                page: number,
+                pages: 5,
+                page_width: 595_276,
+                page_height: 841_890,
+                renderer_sha256: "ab".repeat(32),
+            }),
+        };
+        let image = Normalized {
+            pdf: None,
+            source_width: 2,
+            source_height: 1,
+            ..page(1)
+        };
+        // Same pixels: an image, page 1 and page 2 are three different proofs.
+        assert_ne!(page(1).pixels_sha256(), page(2).pixels_sha256());
+        assert_ne!(page(1).pixels_sha256(), image.pixels_sha256());
+        assert_eq!(page(2).pixels_sha256(), page(2).pixels_sha256());
+        assert!(!page(1).reduced());
+        let described = page(2).describe();
+        assert_eq!(described["kind"], "pdf");
+        assert_eq!(
+            (described["page"].as_u64(), described["pages"].as_u64()),
+            (Some(2), Some(5))
+        );
+        assert_eq!(described["page_width_pt"].as_f64(), Some(595.276));
+        assert_eq!(described["version"], 3);
+        assert!(described.get("orientation").is_none() && image.describe().get("kind").is_none());
     }
 
     #[test]

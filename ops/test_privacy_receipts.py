@@ -81,7 +81,7 @@ def expense(staff_id=staff,day='2026-01-01',status='pending'):
 def attach(e,content=original,mime='image/png'):
  return sql("INSERT INTO fleet_expense_receipts(owner_id,expense_id,filename,mime,content,digest) VALUES(%s,%s,'PRIVATE_FILENAME',%s,%s,%s) RETURNING id",(oid,e,mime,content,hashlib.sha256(content).hexdigest()))
 e=expense();f=attach(e)
-excluded=[attach(expense(staff2)),attach(expense(day='2025-12-31')),attach(expense(day='2026-01-02')),attach(expense(status='cancelled')),attach(expense(),b'%PDF fixture','application/pdf')]
+excluded=[attach(expense(staff2)),attach(expense(day='2025-12-31')),attach(expense(day='2026-01-02')),attach(expense(status='cancelled')),attach(expense(),b'RIFF fixture WEBP','image/webp')]
 removed=attach(expense());sql('UPDATE fleet_expense_receipts SET removed_at=now() WHERE id=%s',(removed,));excluded.append(removed)
 s,c,_=call('POST',path+'/company-reviews',{'revision':revision(),'company_owner_id':oid,'staff_id':staff,'category':'expenses','from_at':'2026-01-01T00:00:00+09:00','until_at':'2026-01-02T00:00:00+09:00','due_at':due},at);assert s==200,(s,c);cr=c['id']
 def company_state():return next(x for x in call('GET',path+'/company-reviews',token=at)[1]['items'] if x['id']==cr)
@@ -95,7 +95,7 @@ rev=confirm();assert listing(token)[0]==403 and read(who=token)[0]==403
 s,items,h=listing();assert s==200 and [v['id'] for v in items['items']]==[f] and h['Cache-Control']=='no-store, private'
 assert not any(x in json.dumps(items) for x in ['PRIVATE_FILENAME','Hidden name','content','digest'])
 for fid in excluded:assert read(fid)[0]==409
-check('admin-only confirmed staff/date scope; wrong staff, outside dates, cancelled, removed, PDF excluded; no raw metadata in listing')
+check('admin-only confirmed staff/date scope; wrong staff, outside dates, cancelled, removed, unsupported type excluded; no raw metadata in listing')
 b={**selection(),'receipt':{'id':f,'receipt_revision':1,'expense_revision':1},'company_review_id':cr,'company_revision':rev,'source_sha256':hashlib.sha256(original).hexdigest()}
 assert preview(b)[0]==409
 s,raw,h=read();assert s==200,(s,raw);display=base64.b64decode(raw['data_base64']);assert raw['display_sha256']==hashlib.sha256(display).hexdigest() and png_pixels(display)==bytes([255,0,0,99,88,77])

@@ -370,7 +370,7 @@ export const api = {
   privacyTextSources: (id,kind,before) => req('GET', `/admin/privacy/requests/${id}/text-sources?kind=${encodeURIComponent(kind)}${before?`&before=${before}`:''}`),
   reviewPrivacyText: (id,kind,source) => req('POST', `/admin/privacy/requests/${id}/text-sources/${kind}/${source}`,{}),
   privacyReceiptSources: (id,review,revision,after=0) => req('GET', `/admin/privacy/requests/${id}/receipt-sources/${review}?company_revision=${revision}&after=${after}`),
-  readPrivacyReceipt: (id,review,receipt,revision) => req('POST', `/admin/privacy/requests/${id}/receipt-sources/${review}/${receipt}`,{company_revision:revision}),
+  readPrivacyReceipt: (id,review,receipt,revision,page) => req('POST', `/admin/privacy/requests/${id}/receipt-sources/${review}/${receipt}`,page?{company_revision:revision,page}:{company_revision:revision}),
   previewPrivacyImage: (id,body) => req('POST', `/admin/privacy/requests/${id}/image-preview`,body),
   issuePrivacyImage: (id,body) => req('POST', `/admin/privacy/requests/${id}/images`,body),
   adminPrivacyImage: id => req('GET', `/admin/privacy/requests/${id}/images`),
