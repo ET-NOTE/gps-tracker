@@ -234,7 +234,7 @@ from = watch@example.invalid
 to = operator@example.invalid
 ca_file = {self.base / 'cert.pem'}
 [heartbeat]
-url = {http_base}/api/push/{TOKEN}
+url = {http_base}/api/push/{TOKEN}?status=up&msg=OK&ping=
 ''')
         self.config.chmod(0o600)
 
@@ -279,7 +279,9 @@ def main():
         lab.tick(3)
         state = lab.saved()
         require(not lab.subjects() and all(check['status'] == 'up' and check['fails'] == 0 for check in state['checks'].values()) and len(state['checks']) == 4, f'healthy host: {state}')
-        require(len(lab.target.pushes) == 3 and all('status=up' in push and 'msg=ok' in push for push in lab.target.pushes) and state['heartbeat_ok'] is True, f'heartbeat: {lab.target.pushes}')
+        # The push address is configured the way the status page shows it, with its own query; that query is replaced.
+        require(len(lab.target.pushes) == 3 and all(push.count('status=') == 1 and 'status=up' in push and 'msg=ok' in push for push in lab.target.pushes)
+                and state['heartbeat_ok'] is True, f'heartbeat: {lab.target.pushes}')
         done('healthy host for three cycles: no mail, the status page is told "alive" every cycle')
 
         # 2. Not an outage: one slow answer, two failures in a row, flapping.

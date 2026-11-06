@@ -305,12 +305,12 @@ def deliver(cfg, state):
 
 
 def heartbeat(cfg, summary, ms):
-    url = cfg['heartbeat']['url']
+    url = cfg['heartbeat']['url'].split('?')[0]  # the address may be pasted with the page's own "?status=up&msg=OK&ping="
     if not url:
         return None
     query = urllib.parse.urlencode({'status': 'up', 'msg': summary, 'ping': ms})
     try:
-        return fetch(url + ('&' if '?' in url else '?') + query, min(10.0, float(cfg['watch']['timeout_seconds'])))[0] == 200
+        return fetch(url + '?' + query, min(10.0, float(cfg['watch']['timeout_seconds'])))[0] == 200
     except Exception:  # the status page lives on the watched host; its silence is not this watch's failure
         return False
 
