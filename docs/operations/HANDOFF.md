@@ -35,7 +35,7 @@ git log -3 --oneline
 | 웹 | `/home/mmm/gps-tracker-web/dist-root` → `/home/mmm/releases/privacy-raster-20261106-r1/web` |
 | 배포 산출물 | `/home/mmm/gps-artifacts/privacy-raster-20261106-r1` |
 | 배포 전 사본 | `/home/mmm/backups/privacy-raster-20261106-r1` (14차 바이너리) |
-| 정리 작업 | `/home/mmm/gps-ops`, `gps-privacy-accounts.timer` 활성. 단 계정 정리 실행은 실패 중(수정본 운영 반영 대기, 아래 표) |
+| 정리 작업 | `/home/mmm/gps-ops`, `gps-privacy-accounts.timer` 활성·실행 성공. `privacy_account_closure.py`는 2026-11-06 12:45 KST 수정본(SHA-256 `1704d2bbbd99…`, 커밋 `d66b2a9`)으로 교체, 이전 파일은 `/home/mmm/backups/privacy-account-closure-fix-20261106` |
 | 다른 서비스 | 15차에서 dev-gps·Shield·환경설정·수집 정책·방화벽은 변경하지 않음 |
 
 위 상태는 15차 배포 검증 기록이다. 다음 변경 전 실제 health·실행 바이너리·스키마·웹 링크를 다시 대조한다. VPS 여유 공간은 당시 약 4.7GiB였으며 빌드는 VPS에서 수행하지 않는다.
@@ -114,7 +114,6 @@ Git으로 이동하는 것은 소스·라운드 문서·아래 작은 검증 JSO
 
 | 순서 | 작업 | 완료 판단 |
 |---|---|---|
-| 승인 대기 | 계정 정리 타이머 작업 수정본의 운영 반영(`/home/mmm/gps-ops/privacy_account_closure.py` 1개 교체) | 운영의 `gps-privacy-accounts.service`는 2026-11-05 20시 반경부터 처리할 건이 있으면 매번 실패한다(DB 연결 컨텍스트 중첩). 파일 대기 건 5개가 새 요청을 막는 잠복 문제도 함께 고쳤다. 수정·격리 검증 완료([15차 문서](location-rights-round15-20261106.md)의 "배포 중 발견"): 타이머 진입점 회귀 3개 묶음, 전체 99개 묶음 통과. 반영 후 서비스 실행 결과와 대기 건 상태를 확인한다. 서비스 재시작은 필요 없다 |
 | 다음 배포 | [16차](location-rights-round16-20261106.md) 운영 배포(스키마 97→98) | 배포 절차 미작성. 처리기 바이너리를 API 옆에 설치하고 운영 커널(5.15)에서 자체 점검 통과를 확인. 15차와 같은 방식으로 리허설 |
 | 표본 확보 후 | 실제 한글 영수증 PDF로 렌더링 품질 재확인 | 16차 평가는 합성 표본만 사용. JBIG2·JPEG 2000 스캔과 블렌드 모드는 미검증 |
 | 범위 확정 후 | 회사 공용 차량 문서/사진 연결, 원본 정정·파기 | 정보주체·회사 권한·보관 근거/기간·승인 범위를 먼저 확인 |

@@ -58,6 +58,87 @@
     "pdf_renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
     "environment": "build host, internal Docker network, throwaway database, APP_ENV=test; removed afterwards"
   },
-  "production_changed": false,
-  "production_reflection": "pending approval: replace /home/mmm/gps-ops/privacy_account_closure.py (no service restart needed)"
+  "production_changed": true,
+  "production_reflection": {
+    "approved_by_user": true,
+    "precheck_at": "2026-11-06T12:43:35+09:00",
+    "precheck": {
+      "installed_sha256": "e84364e7f83b4430f9cc9425c1958f566caa8246ff17e5128168e388f2a68aae",
+      "reentry_errors_last_24h": 274,
+      "closures": 21,
+      "synthetic_closures": 21,
+      "pending": [
+        6,
+        9
+      ],
+      "pending_file_jobs": {
+        "local_absent": 2
+      }
+    },
+    "dry_run_at": "2026-11-06T12:44:11+09:00",
+    "dry_run": {
+      "listed": [
+        9,
+        6
+      ],
+      "personal_scope_counts_all_zero": true,
+      "closure_rows_unchanged": true
+    },
+    "replaced_at": "2026-11-06T12:45:03+09:00",
+    "path": "/home/mmm/gps-ops/privacy_account_closure.py",
+    "installed_sha256": "1704d2bbbd99e3f9c8fa4b8e0dba6d493adcbc7fb6a01db824a34a365d13312f",
+    "owner_mode": "root:root 644 (as before)",
+    "backup": "/home/mmm/backups/privacy-account-closure-fix-20261106/privacy_account_closure.py.previous",
+    "services_restarted": false,
+    "unit_or_timer_changed": false,
+    "timer_runs_after": [
+      {
+        "ended_at": "2026-11-06T12:46:33+09:00",
+        "result": "success",
+        "processed": [
+          6,
+          9
+        ],
+        "personal_scope_verified": true,
+        "rows_deleted": 0,
+        "file_hold_reason_removed": true
+      },
+      {
+        "ended_at": "2026-11-06T12:48:40+09:00",
+        "result": "success",
+        "processed": []
+      }
+    ],
+    "after": {
+      "reentry_errors": 0,
+      "pending": 0,
+      "closures": 21,
+      "synthetic_closures": 21,
+      "review_required": 21,
+      "personal_scope_verified": 15,
+      "closures_updated_since_replacement": [
+        6,
+        9
+      ],
+      "request_events_added": [
+        {
+          "request_id": 6,
+          "revision": 4
+        },
+        {
+          "request_id": 9,
+          "revision": 4
+        }
+      ],
+      "api_health": {
+        "db": true,
+        "environment": "production",
+        "ok": true,
+        "release": "privacy-raster-20261106-r1"
+      },
+      "api_restarts": 0,
+      "api_error_log_entries": 0,
+      "files_timer_result": "success"
+    }
+  }
 }
