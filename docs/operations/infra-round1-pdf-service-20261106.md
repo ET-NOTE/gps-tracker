@@ -2,7 +2,7 @@
 
 2026-11-06 · GPS 운영 서버(`gps.serial.kr`) · `codex/location-business-prep` · [1단계: 실행 계정 분리](infra-round1-runtime-account-20261106.md)
 
-> **상태: 리허설 통과, 운영 서버에 산출물 전송과 읽기 전용 점검 통과(2026-11-06 16:37 KST). 운영에는 아직 아무것도 적용하지 않았다.** 운영 API는 16차 릴리스(`privacy-pdf-20261106-r1`) 그대로이고 처리기는 API가 직접 실행한다. 남은 순서는 아래 "운영 반영 순서"에 있다.
+> **상태: 새 API 릴리스 `pdf-service-20261106-r1` 운영 적용 완료(2026-11-06 16:44 KST), 기능 확인 통과(16:45 KST), 처리기 서비스의 읽기 전용 점검 통과(16:45 KST). 처리기 서비스 자체(계정·유닛)는 아직 적용하지 않았다.** 지금 운영의 처리기는 이전과 같이 API가 직접 실행한다. 남은 것은 운영자가 실행하는 `pdf_service.py apply` 한 줄과 그 뒤 확인이다(아래 "운영 반영 순서").
 
 ## 배경
 
@@ -135,13 +135,29 @@ API (gps-api)  ──요청──▶  /run/gps-pdf-render/render.sock  (root:gps
 - `pdf_service.py check`: 예상대로 거부("그 릴리스를 먼저 배포"). 새 API가 배포되기 전이기 때문이다.
 - 점검 뒤 확인: API 재시작 없음(15:32:43 KST 그대로), 계정·유닛·기록 디렉터리 생기지 않음, 남은 처리기 프로세스 없음, health 정상.
 
-## 운영 반영 순서 (미실행)
+## API 릴리스 적용 (2026-11-06 16:44 KST, 사용자 승인 뒤 에이전트 실행)
+
+- `release_pdf_service.py apply` 통과(16:44:00~16:44:12 KST). API는 **16:44:02 KST에 새 바이너리로 재시작**됐다(정지 시작부터 수신 대기까지 약 0.08초). health는 외부·서버 모두 `pdf-service-20261106-r1`.
+- 스크립트가 확인한 것: 새 API 정상, 처리기 자체 점검 6항목(`gps-api` 계정), API 서비스에 시스템 호출 필터 없음, 스키마·환경파일·웹 링크·처리기 파일 불변, dev-gps·Shield 불변, 기존 수집 정책 불변, 타이머 활성. [기록](evidence/infra-round1-20261106/pdf-service-release-apply.json)
+- 에이전트가 따로 확인한 것(읽기 전용): 실행 중인 바이너리 해시 `0d28667f…`, 계정 `gps-api`·능력 0·권한 상승 금지 그대로, API에 소켓 설정 없음(처리기는 이전처럼 API가 실행), 스키마 98, 웹은 16차 그대로, API 오류 로그 0건, 재시작 뒤 단말기 수집 200. 다른 서비스 7개는 재시작되지 않았다.
+- 재시작 순간의 5xx는 1건이고 배포 스크립트 자신의 `GET /health` 확인 요청이다(16:44:02, 502). 단말기·사용자 요청의 5xx는 없다.
+- 이전 바이너리는 `/home/mmm/backups/pdf-service-20261106-r1/api.previous`에 있다.
+
+### 기능 확인 — API가 직접 실행하는 방식 (16:45:01~16:45:19 KST)
+
+`smoke_pdf_service.py`가 모의 계정 3개(62·63·64)로 통과했다(요청 37, 제공 6). 1쪽(1414×707)·2쪽(1000×1000) 렌더링과 픽셀 대조, 없는 쪽 거부, 읽을 수 없는 PDF와 암호 PDF 거부(읽기 증빙 없음), 영역 선택·미리보기·제공·다운로드, 원본 변경 시 무효화. API에 소켓 설정이 없고 처리기는 API가 실행했음을 확인했다. 실행 뒤: 임시 이미지 0건, 모의 영수증 0건, 모의 계정 3개 이용 제한, 남은 처리기 프로세스 0, API 오류 0건, 실제 계정·SIM 소유 불변, 외부 발송 없음. [기록](evidence/infra-round1-20261106/pdf-service-smoke-child.json)
+
+### 처리기 서비스 읽기 전용 점검 (16:45:30 KST)
+
+`pdf_service.py check`: **통과, 변경 없음.** 만들 것은 계정 `gps-pdf`, 유닛 3개, API drop-in 1개, 소켓 `/run/gps-pdf-render/render.sock`(root:gps-api 660)이고 API 재시작이 한 번 있다. [기록](evidence/infra-round1-20261106/pdf-service-check.json)
+
+## 운영 반영 순서
 
 | 순서 | 실행 | 내용 |
 |---|---|---|
-| 1 | 에이전트(사용자 승인 뒤) | `release_pdf_service.py apply` — API 바이너리 교체, 재시작 1회. 실패하면 이전 바이너리로 자동 복귀 |
-| 2 | 에이전트 | `smoke_pdf_service.py` — 새 API가 이전 방식 그대로 PDF를 처리하는지 확인 |
-| 3 | 에이전트 | `pdf_service.py check` — 읽기 전용 |
+| 1 ✅ | 에이전트(사용자 승인 뒤) | `release_pdf_service.py apply` — API 바이너리 교체, 재시작 1회. 16:44 KST 완료 |
+| 2 ✅ | 에이전트 | `smoke_pdf_service.py` — 새 API가 이전 방식 그대로 PDF를 처리하는지 확인. 16:45 KST 통과 |
+| 3 ✅ | 에이전트 | `pdf_service.py check` — 읽기 전용. 16:45 KST 통과 |
 | 4 | **운영자** | `pdf_service.py apply` — 계정·유닛 생성, API 재시작 1회. 실패하면 스스로 되돌림 |
 | 5 | 에이전트 | 읽기 전용 확인과 `smoke_pdf_service.py service` |
 
@@ -155,7 +171,8 @@ ssh -t seriallog "cd /home/mmm/gps-artifacts/pdf-service-20261106 && sudo python
 
 ## 남은 작업
 
-- [ ] 운영 반영 1~5.
-- [ ] 반영 뒤 문서·인계·PR·증빙 갱신.
+- [x] 운영 반영 1~3: API 릴리스 적용, 기능 확인, 서비스 읽기 전용 점검(2026-11-06 16:44~16:45 KST).
+- [ ] 운영 반영 4: 운영자가 `pdf_service.py apply` 실행.
+- [ ] 운영 반영 5: 확인과 서비스 방식 기능 확인, 문서·인계·PR·증빙 갱신.
 - 다음 라운드: VPS와 독립된 외부 장애 감시. 그다음 기능 라운드: 권리 대응 17차(수집·이용·제공사실 열람).
 - 별도 항목(이 라운드와 섞지 않음): 방화벽 부팅 순서, 디스크 정리, 열린 포트, 회사 데이터 파기 정책.
