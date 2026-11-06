@@ -22,6 +22,7 @@ pub mod openai;
 pub mod opinet;
 pub mod privacy;
 pub mod privacy_account_export;
+pub mod privacy_location_facts;
 pub mod privacy_pdf;
 pub mod privacy_raster;
 pub mod reservation_alerts;

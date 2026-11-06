@@ -1,0 +1,36 @@
+{
+  "harness": "the real PrivacyAccountPackage component bundled with a fixture API; the downloaded file is the real response of the isolated test API for synthetic records (sample-download.json)",
+  "desktop_1280": {
+    "section_checkbox_reveals_period": true,
+    "default_period_days": 180,
+    "invalid_period_blocks_issue": "covered by the web test",
+    "changing_period_clears_attestation": true,
+    "issued_scope_text": "기본정보·요청 처리이력 / 위치정보 수집·이용·제공사실 (좌표 제외) 2026-10-12~2026-10-21",
+    "form_resets_after_issue": true,
+    "horizontal_overflow_px": 0
+  },
+  "mobile_375": {
+    "admin_form": {
+      "date_inputs_side_by_side_px": [
+        155,
+        155
+      ],
+      "date_inputs_aligned": true,
+      "horizontal_overflow_px": 0,
+      "elements_beyond_viewport": 0
+    },
+    "requester_view": {
+      "scope_shows_period": true,
+      "password_cleared_after_download": true,
+      "saved_file_is_json": true,
+      "horizontal_overflow_px": 0
+    }
+  },
+  "found_and_fixed": [
+    "on a narrow screen the long start-date label wrapped and could misalign the two inputs; the label was shortened under a small heading"
+  ],
+  "not_covered": [
+    "the production page shell around the component",
+    "a real mobile browser's native date picker"
+  ]
+}

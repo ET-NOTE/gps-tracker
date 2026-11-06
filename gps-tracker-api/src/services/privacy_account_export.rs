@@ -1,9 +1,16 @@
 //! Explicit account-only projections. Never join present SIM ownership into historical transactions.
+use super::privacy_location_facts;
 use crate::error::{AppError, AppResult};
+use chrono::{DateTime, Utc};
 use serde_json::{json, Map, Value};
 use sqlx::{Postgres, Transaction};
 
-pub const SECTIONS: [&str; 3] = ["contact_settings", "transactions", "activity_metadata"];
+pub const SECTIONS: [&str; 4] = [
+    "contact_settings",
+    "transactions",
+    "activity_metadata",
+    privacy_location_facts::SECTION,
+];
 pub fn valid_sections(sections: &[String]) -> bool {
     sections.len() <= SECTIONS.len()
         && sections.iter().all(|s| SECTIONS.contains(&s.as_str()))
@@ -69,6 +76,7 @@ pub async fn export(
     tx: &mut Transaction<'_, Postgres>,
     uid: i64,
     sections: &[String],
+    facts_period: Option<(DateTime<Utc>, DateTime<Utc>)>,
 ) -> AppResult<Value> {
     if !valid_sections(sections) {
         return Err(AppError::Conflict("발급 범위를 다시 확인해 주세요.".into()));
@@ -102,6 +110,12 @@ pub async fn export(
                 let analyses=rows(tx,uid,"SELECT jsonb_build_object('id',id,'target_date',target_date,'cost_points',cost_credits,'created_at',created_at) FROM ai_analyses WHERE user_id=$1 ORDER BY id LIMIT 1001",1000).await?;
                 let usage=rows(tx,uid,"SELECT jsonb_build_object('id',id,'used_at',used_at,'tokens_in',tokens_in,'tokens_out',tokens_out) FROM ai_usage_log WHERE user_id=$1 ORDER BY id LIMIT 1001",1000).await?;
                 json!({"chat_message_metadata":chat,"ai_analysis_metadata":analyses,"ai_usage_metadata":usage,"notice":"이용 시각·역할·사용량만 포함합니다. 채팅·AI 본문, 첨부, 관리자·장치 식별자, 원시 요청 및 서버 로그는 별도 검토 대상입니다. 사용량과 분석 기록은 서로 중복될 수 있습니다."})
+            }
+            privacy_location_facts::SECTION => {
+                // A stored grant has the period exactly when it has this section.
+                let (from, until) = facts_period
+                    .ok_or_else(|| AppError::Conflict("발급 범위를 다시 확인해 주세요.".into()))?;
+                privacy_location_facts::export(tx, uid, from, until).await?
             }
             _ => unreachable!(),
         };

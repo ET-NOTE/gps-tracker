@@ -4,7 +4,7 @@ use super::privacy_delivery::{active, no_store, rate_limit};
 use crate::{
     auth::{password, AdminUser, AuthUser},
     error::{AppError, AppResult},
-    services::{privacy::RequestRow, privacy_account_export},
+    services::{privacy::RequestRow, privacy_account_export, privacy_location_facts},
     state::AppState,
 };
 use axum::{
@@ -51,6 +51,8 @@ struct Package {
     request_id: i64,
     documents: Value,
     sections: Vec<String>,
+    facts_from: Option<DateTime<Utc>>,
+    facts_until: Option<DateTime<Utc>>,
     created_at: DateTime<Utc>,
     expires_at: DateTime<Utc>,
     revoked_at: Option<DateTime<Utc>>,
@@ -67,6 +69,11 @@ struct Issue {
     documents: Vec<Proof>,
     #[serde(default)]
     sections: Vec<String>,
+    /// The period of the collection, use and provision facts; given with that section only.
+    #[serde(default)]
+    facts_from: Option<DateTime<Utc>>,
+    #[serde(default)]
+    facts_until: Option<DateTime<Utc>>,
 }
 #[derive(Deserialize)]
 struct Download {
@@ -313,6 +320,14 @@ async fn issue(
 ) -> AppResult<Json<Package>> {
     if !body.confirmed
         || !privacy_account_export::valid_sections(&body.sections)
+        || !privacy_location_facts::valid_period(
+            body.sections
+                .iter()
+                .any(|s| s == privacy_location_facts::SECTION),
+            body.facts_from,
+            body.facts_until,
+            Utc::now(),
+        )
         || body.documents.len() > 20
         || body
             .documents
@@ -327,7 +342,7 @@ async fn issue(
             != body.documents.len()
     {
         return Err(AppError::BadRequest(
-            "제공 범위를 확인하고 첨부파일을 최대 20개 선택해 주세요.".into(),
+            "제공 범위를 확인하고 첨부파일을 최대 20개 선택해 주세요. 수집·이용·제공사실은 과거에 시작하는 366일 이내의 기간이 필요합니다.".into(),
         ));
     }
     let mut tx = begin(&state).await?;
@@ -348,7 +363,7 @@ async fn issue(
         documents.push(json!({"id":d.id,"filename":d.filename,"mime":d.mime,"size_bytes":d.size_bytes,"sha256":sha,"kind":d.kind,"uploaded_at":d.uploaded_at}));
     }
     sqlx::query("WITH x AS(UPDATE privacy_account_packages SET revoked_at=now() WHERE request_id=$1 AND revoked_at IS NULL RETURNING id) INSERT INTO privacy_account_package_events(request_id,package_id,actor_id,action) SELECT $1,id,$2,'revoked' FROM x").bind(id).bind(admin.user_id).execute(&mut *tx).await?;
-    let p:Package=sqlx::query_as("INSERT INTO privacy_account_packages(request_id,created_by,documents,sections) VALUES($1,$2,$3,$4) RETURNING *").bind(id).bind(admin.user_id).bind(json!(documents)).bind(&body.sections).fetch_one(&mut *tx).await?;
+    let p:Package=sqlx::query_as("INSERT INTO privacy_account_packages(request_id,created_by,documents,sections,facts_from,facts_until) VALUES($1,$2,$3,$4,$5,CASE WHEN $6::timestamptz IS NULL THEN NULL ELSE LEAST($6::timestamptz,now()) END) RETURNING *").bind(id).bind(admin.user_id).bind(json!(documents)).bind(&body.sections).bind(body.facts_from).bind(body.facts_until).fetch_one(&mut *tx).await?;
     event(&mut tx, id, Some(p.id), admin.user_id, "issued", None, None).await?;
     let message="계정 기본정보·요청 처리이력과 담당자가 선택한 추가 범위·개인 서류를 준비했습니다. 발급 내역의 포함 범위를 확인하고 24시간 이내 내려받으세요. 요청 전체의 제공 완료를 의미하지 않습니다.";
     sqlx::query("UPDATE privacy_requests SET revision=revision+1,assigned_to=$2,result_message=$3,updated_at=now() WHERE id=$1").bind(id).bind(admin.user_id).bind(message).execute(&mut *tx).await?;
@@ -428,7 +443,13 @@ async fn account(
             "처리이력 제공 한도를 초과했습니다. 담당자에게 분할 제공을 요청해 주세요.".into(),
         ));
     }
-    let additional = privacy_account_export::export(&mut tx, user.user_id, &p.sections).await?;
+    let additional = privacy_account_export::export(
+        &mut tx,
+        user.user_id,
+        &p.sections,
+        p.facts_from.zip(p.facts_until),
+    )
+    .await?;
     let mut coverage = vec![
         "current_account_basic_fields",
         "privacy_requests",

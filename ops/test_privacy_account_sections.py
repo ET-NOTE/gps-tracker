@@ -32,7 +32,7 @@ def grant(sections=None,who=at):
 def dl(p,who=token,pw=password):return call('POST',f"/privacy/account-packages/{p['id']}/account",{'password':pw},who)
 s,old,_=grant();assert s==200 and old['sections']==[]
 s,data,_=dl(old);assert s==200 and data['additional']=={} and data['format']=='gps-personal-account-v1'
-assert len(data['unselected_sections'])==3
+assert len(data['unselected_sections'])==4
 for invalid in [['transactions','transactions'],['all'],['contact_settings',None]]:assert grant(invalid)[0] in [400,422]
 assert grant(['transactions'],token)[0]==403
 check('legacy/default scope stays basic; unknown, duplicate and non-admin scope rejected')
@@ -41,7 +41,7 @@ s,p,_=grant(sections);assert s==200 and p['sections']==sections
 assert dl(old)[0]==410
 assert dl(p,other['access_token'])[0]==404 and dl(p,pw='wrong')[0]==401
 s,data,h=dl(p);assert s==200,(s,data)
-assert data['format']=='gps-personal-account-v2' and data['unselected_sections']==[]
+assert data['format']=='gps-personal-account-v2' and data['unselected_sections']==['location_facts']
 assert h['Cache-Control']=='no-store, private'
 for secret in secrets:assert secret.encode() not in last_body,secret
 extra=data['additional'];settings=extra['contact_settings'];tx=extra['transactions'];activity=extra['activity_metadata']
@@ -74,7 +74,7 @@ check('row limits refuse whole selected response without audit-success or silent
 sql("INSERT INTO credit_log(user_id,delta,balance,reason) VALUES(%s,1,1,'private-note')",(uid,))
 s,p,_=grant(['transactions']);assert s==200
 s,data,_=dl(p);assert s==200 and data['additional']['transactions']['point_ledger'][-1]['reason']=='other_review_required'
-assert set(data['additional'])=={'transactions'} and len(data['unselected_sections'])==2
+assert set(data['additional'])=={'transactions'} and len(data['unselected_sections'])==3
 assert call('POST',f"/admin/privacy/account-packages/{p['id']}/revoke",{},at)[0]==200 and dl(p)[0]==410
 check('one selected section stays isolated; unknown classifications flagged without leaking text; revocation remains effective')
 sql('DELETE FROM privacy_result_limits')
