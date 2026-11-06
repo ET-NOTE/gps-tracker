@@ -136,6 +136,12 @@ def probe_ssh(address, timeout):
     with socket.create_connection((host, int(port)), timeout=timeout) as connection:
         connection.settimeout(timeout)
         banner = connection.recv(64)
+        if banner.startswith(b'SSH-'):
+            try:
+                # Say who is leaving, so the server logs an ordinary closed connection, not a protocol error.
+                connection.sendall(b'SSH-2.0-gps-watch\r\n')
+            except OSError:
+                pass
     return (True, 'SSH 응답') if banner.startswith(b'SSH-') else (False, 'SSH 배너 없음')
 
 
