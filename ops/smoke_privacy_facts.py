@@ -9,13 +9,26 @@ facts is issued for a period, refused without one, downloaded by its subject onl
 all through the public endpoints. A grant without the section still works as before. No location
 record, device or share link is created: the synthetic subject has none, so the facts are empty
 except for one synthetic company link, and the file must say so in the released structure.
+A second synthetic account holds a company link of its own, which must not appear in that file.
+
+Expiry is checked on the synthetic grant without the section. The API offers no shorter validity
+to ask for, so that row's two times are moved back past its 24 hours by SQL, the download is
+refused, and the times are put back before the grant is revoked through the API.
+
+The grants issued before this check are read through the administrator's list and must be the
+same stored rows at the end.
 
 It also measures, read-only and without naming anyone, how long the daily collection summary of
 a year takes for the three accounts with the most reports of the last week. Nothing of those
 accounts is shown or changed.
 
-The synthetic company link is removed and the three accounts are closed. No real account, SIM,
+The synthetic company links are removed and the three accounts are closed. No real account, SIM,
 location, payment, email or push is changed.
+
+This revision adds the expiry, no-token, second-account and earlier-grant checks to the script
+staged with the release. It runs from a directory of its own, so the staged files stay as the
+release manifest lists them; it reads the one-time credential from the staged directory and
+writes its report there.
 """
 import base64
 import hashlib
@@ -43,6 +56,10 @@ DAILY = """SELECT count(*),COALESCE(sum(reports),0),COALESCE(sum(points),0) FROM
  GROUP BY l.device_id,(l.recorded_at AT TIME ZONE 'Asia/Seoul')::date,l.source) x"""
 BUSIEST = """SELECT user_id FROM location_records WHERE recorded_at>now()-interval '7 days' AND user_id IS NOT NULL
  GROUP BY user_id ORDER BY count(*) DESC LIMIT 3"""
+# The grants issued before this check, as stored, and how many of them the download would refuse.
+EARLIER = "SELECT md5(COALESCE(jsonb_agg(to_jsonb(p) ORDER BY p.id)::text,'')) FROM privacy_account_packages p WHERE p.id=ANY(%s::bigint[])"
+REFUSED = """SELECT count(*) FROM privacy_account_packages p JOIN privacy_requests r ON r.id=p.request_id
+ WHERE p.id=ANY(%s::bigint[]) AND (p.revoked_at IS NOT NULL OR p.expires_at<=now() OR r.status IN ('cancelled','rejected'))"""
 
 
 class Site:
@@ -113,6 +130,11 @@ def main(site):
             row = cursor.fetchone() if cursor.description else None
             return row[0] if row else None
 
+    def rows(query, args=()):
+        with db.cursor() as cursor:
+            cursor.execute(query, args)
+            return cursor.fetchall()
+
     def call(method, path, body=None, token=None):
         headers = {'Content-Type': 'application/json'}
         if token:
@@ -144,6 +166,9 @@ def main(site):
     assert admin
     at = mint(admin)
     before = sql('SELECT count(*) FROM privacy_account_packages')
+    earlier = rows('SELECT id,request_id FROM privacy_account_packages ORDER BY id')
+    earlier_ids = [grant_id for grant_id, _ in earlier]
+    c['earlier'] = sql(EARLIER, (earlier_ids,))
     c['baseline'] = guard()
     c['users'] = []
     for suffix in ['', '-other', '-company']:
@@ -167,6 +192,10 @@ def main(site):
     staff = c['staff_id'] = sql("INSERT INTO staff(user_id,name,access_role) VALUES(%s,'모의 검증 직원','member') RETURNING id", (owner,))
     checkpoint()
     sql('INSERT INTO fleet_staff_accounts(owner_id,staff_id,account_id) VALUES(%s,%s,%s)', (owner, staff, uid))
+    # The second account has a link of its own: it must not appear in the first account's file.
+    staff_other = c['staff_other_id'] = sql("INSERT INTO staff(user_id,name,access_role) VALUES(%s,'모의 검증 직원 2','member') RETURNING id", (owner,))
+    checkpoint()
+    sql('INSERT INTO fleet_staff_accounts(owner_id,staff_id,account_id) VALUES(%s,%s,%s)', (owner, staff_other, other))
 
     def grant(sections=None, period=None, who=at):
         body = {'revision': call('GET', path, token=at)[1]['request']['revision'], 'confirmed': True, 'documents': []}
@@ -193,10 +222,13 @@ def main(site):
     assert moment(package['facts_from']) == period[0] and now - timedelta(seconds=30) <= moment(package['facts_until']) <= datetime.now(timezone.utc) + timedelta(seconds=30), package
 
     assert download(package, mint(other))[0] == 404
+    assert call('POST', f"/privacy/account-packages/{package['id']}/account", {'password': c['password']})[0] == 401  # no token
     assert download(package, password='wrong')[0] == 401
     status, data, headers, body = download(package)
     assert status == 200 and headers['Cache-Control'] == 'no-store, private', (status, data)
     assert data['format'] == 'gps-personal-account-v2' and data['coverage'][-1] == 'location_facts' and sorted(data['unselected_sections']) == ['activity_metadata', 'contact_settings', 'transactions']
+    # The subject's own account and request, nobody else's.
+    assert data['account']['email'] == c['email'] and data['request_id'] == rid and [r['id'] for r in data['requests']] == [rid], (data['request_id'], rid)
     assert sql("SELECT sha256 FROM privacy_account_package_events WHERE request_id=%s AND action='account_prepared' ORDER BY id DESC LIMIT 1", (rid,)) == hashlib.sha256(body).hexdigest()
     facts = data['additional']['location_facts']
     assert moment(facts['period']['from']) == moment(package['facts_from']) and moment(facts['period']['until']) == moment(package['facts_until']) and facts['period']['date_timezone'] == 'Asia/Seoul'
@@ -217,16 +249,43 @@ def main(site):
     assert download(package)[0] == 410
     status, data, _, _ = download(basic)
     assert status == 200 and data['format'] == 'gps-personal-account-v1' and data['additional'] == {} and len(data['unselected_sections']) == 4
+
+    # Expiry. The row's own times go back past its 24 hours; they are put back whatever happens.
+    aged = "UPDATE privacy_account_packages SET created_at=%s,expires_at=%s WHERE id=%s AND request_id=%s"
+    issued = rows('SELECT created_at,expires_at FROM privacy_account_packages WHERE id=%s AND request_id=%s', (basic['id'], rid))[0]
+    c['aged'] = {'grant': basic['id'], 'created_at': issued[0].isoformat(), 'expires_at': issued[1].isoformat()}
+    checkpoint()
+    try:
+        late = datetime.now(timezone.utc)
+        sql(aged, (late - timedelta(hours=25), late - timedelta(hours=1), basic['id'], rid))
+        expired = download(basic)[0]
+    finally:
+        sql(aged, (*issued, basic['id'], rid))
+    assert expired == 410 and sql('SELECT revoked_at IS NULL FROM privacy_account_packages WHERE id=%s', (basic['id'],))
+    assert rows('SELECT created_at,expires_at FROM privacy_account_packages WHERE id=%s', (basic['id'],))[0] == issued and download(basic)[0] == 200
+
     assert call('POST', f"/admin/privacy/account-packages/{basic['id']}/revoke", {}, at)[0] == 200 and download(basic)[0] == 410
     assert sql('SELECT count(*) FROM privacy_account_packages') == before + 2
 
+    # The grants issued before this check: listed for the administrator as before, their stored rows untouched.
+    for request in sorted({request for _, request in earlier}):
+        status, listed, _, _ = call('GET', f'/admin/privacy/requests/{request}/account-packages', token=at)
+        assert status == 200, (status, request)
+        items = {item['id']: item for item in listed['items']}
+        for grant_id in (g for g, r in earlier if r == request):
+            item = items[grant_id]
+            assert item['facts_from'] is None and item['facts_until'] is None and 'location_facts' not in item['sections'], grant_id
+    assert sql(EARLIER, (earlier_ids,)) == c['earlier']
+
     measured = timing(cfg['DATABASE_URL'])
 
-    # Remove the synthetic company link and close the three accounts; audit rows remain.
-    sql('DELETE FROM fleet_staff_accounts WHERE owner_id=%s AND staff_id=%s AND account_id=%s', (owner, staff, uid))
-    sql('DELETE FROM staff WHERE id=%s AND user_id=%s', (staff, owner))
-    assert sql('SELECT count(*) FROM fleet_staff_accounts WHERE account_id=%s OR owner_id=%s', (uid, owner)) == 0
-    assert sql("SELECT array_agg(action ORDER BY id) FROM privacy_company_link_history WHERE subject_id=%s", (uid,)) == ['linked', 'unlinked']
+    # Remove the synthetic company links and close the three accounts; audit rows remain.
+    for member, account in ((staff, uid), (staff_other, other)):
+        sql('DELETE FROM fleet_staff_accounts WHERE owner_id=%s AND staff_id=%s AND account_id=%s', (owner, member, account))
+        sql('DELETE FROM staff WHERE id=%s AND user_id=%s', (member, owner))
+    assert sql('SELECT count(*) FROM fleet_staff_accounts WHERE account_id IN (%s,%s) OR owner_id=%s', (uid, other, owner)) == 0
+    for subject in (uid, other):
+        assert sql("SELECT array_agg(action ORDER BY id) FROM privacy_company_link_history WHERE subject_id=%s", (subject,)) == ['linked', 'unlinked']
     status, cancel, _, _ = call('POST', f'/privacy/requests/{rid}/cancel', {'revision': call('GET', path, token=at)[1]['request']['revision']}, token)
     assert status == 200, (status, cancel)
     for subject in c['users']:
@@ -235,15 +294,20 @@ def main(site):
         assert call('POST', f"/admin/privacy/requests/{r['id']}/close-account", {'revision': r['revision']}, at)[0] == 200
         assert not execute(worker, r['id'])['request_fulfilled']
     assert all(sql('SELECT restricted FROM privacy_account_controls WHERE user_id=%s', (u,)) for u in c['users'])
-    assert guard() == c['baseline']
+    assert guard() == c['baseline'] and sql(EARLIER, (earlier_ids,)) == c['earlier']
     report = {'release': health['release'], 'schema': sql('SELECT max(version) FROM _sqlx_migrations'), 'request_id': rid,
               'synthetic_account_ids': c['users'], 'grant_ids': [package['id'], basic['id']],
               'section_needs_a_period_and_an_administrator': True, 'future_end_cut_at_issue': True,
-              'subject_only_with_password': True, 'file_structure_as_released': True, 'empty_lists_for_an_account_without_records': True,
+              'subject_only_with_password': True, 'no_token_refused': True, 'other_account_refused': True,
+              'file_holds_only_the_subjects_own_account_request_and_link': True,
+              'expired_grant_refused_then_times_restored': True,
+              'earlier_grants': len(earlier), 'earlier_grants_listed_and_rows_unchanged': True,
+              'earlier_grants_downloadable_now': len(earlier) - sql(REFUSED, (earlier_ids,)),
+              'file_structure_as_released': True, 'empty_lists_for_an_account_without_records': True,
               'company_link_listed_without_naming_the_company': True, 'no_coordinate_or_token_key_in_file': True,
               'prepared_file_hash_recorded': True, 'grant_without_section_unchanged': True, 'revoked_grant_refused': True,
               'daily_summary_seconds_for_busiest_accounts': measured,
-              'synthetic_company_link_removed': True, 'synthetic_accounts_closed': True,
+              'synthetic_company_links_removed': True, 'synthetic_accounts_closed': True,
               'real_accounts_and_sim_ownership_unchanged': True, 'location_records_devices_or_share_links_created': 0,
               'external_messages_sent': False, 'full_erasure_confirmed': False}
     (site.stage / 'production-smoke.json').write_text(json.dumps(report, indent=2))

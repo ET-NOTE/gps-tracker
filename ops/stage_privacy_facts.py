@@ -14,8 +14,13 @@ gps-tracker-web and ops. Steps (default: all, in this order; each stops on the f
   rehearse  a container with a real systemd brought to production's state of today (runtime account,
             previous API release, PDF processor service) and a grant issued by the previous release;
             then check, three forced failures with automatic return, apply, rollback, apply, the
-            production smoke script, and the refusal to go back once the new section is in use
-            -> out/rehearsal.json
+            production smoke script, and the refusal to go back once the new section is in use;
+            then what repairing forward relies on: another build that knows schema 99 replaces
+            the API file and serves, the previous binary does not start, the released binary
+            is put back -> out/rehearsal.json
+
+`rehearse` alone may be run again on a job whose `src` is a later commit than its `out`: a later
+revision of the smoke script is then run from a directory of its own, beside the staged files.
 
 <job-dir>/out is then the complete directory to place on the production host.
 """
@@ -54,6 +59,10 @@ CREDENTIAL = 'smoke-private.json'
 STAGE = f'/home/mmm/gps-artifacts/{RELEASE}'
 HEALTH = 'http://127.0.0.1:3040/gps-tracker/health'
 SOCKET = '/run/gps-pdf-render/render.sock'
+SMOKE = 'smoke_privacy_facts.py'
+SMOKE_STAGE = f'{STAGE}-smoke'  # where a smoke revision later than the staged one is placed and run
+# A different build of this source, standing in for a corrected build: it knows schema 99 and names another release.
+OTHER_BUILD = (pathlib.Path('/home/etcom-hub/build/gps-privacy-facts-20261106/out/gps-tracker-api'), 'privacy-facts-20261106-dev')
 
 PROVISION = r'''#!/bin/bash
 # The staged directory of this release, as the deployment account would create it.
@@ -66,8 +75,8 @@ import base64, hashlib, hmac, importlib.util, json, pathlib, secrets, sys, time,
 from datetime import datetime, timedelta, timezone
 sys.dont_write_bytecode = True
 STAGE, HEALTH, API = '__STAGE__', '__HEALTH__', 'http://127.0.0.1:3040/gps-tracker/api/v1'
-def load(name):
-    spec = importlib.util.spec_from_file_location(name, f'{STAGE}/{name}.py')
+def load(name, directory=STAGE):
+    spec = importlib.util.spec_from_file_location(name, f'{directory}/{name}.py')
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
 def call(method, path, body=None, token=None):
     headers = {'Content-Type': 'application/json', **({'Authorization': 'Bearer ' + token} if token else {})}
@@ -110,7 +119,7 @@ if kind == 'grant':
                           'unselected': data.get('unselected_sections') if isinstance(data, dict) else None}))
     sys.exit(0)
 if kind == 'smoke':
-    smoke = load('smoke_privacy_facts')
+    smoke = load('smoke_privacy_facts', sys.argv[4])
     class Smoke(smoke.Site):
         environment = 'test'
         health_url, api_url, private = HEALTH, API, sys.argv[3]
@@ -153,6 +162,32 @@ try:
 except module.Stop as stop:
     print(json.dumps({'stopped': str(stop)}))
     sys.exit(3)
+'''
+
+REPAIR = r'''"""Replace the API file as the release scripts do (copy beside it, rename over it) and restart.
+Schema, web and everything else stay. Usage: repair.py <binary> <release it must report> <seconds to wait>"""
+import hashlib, json, os, pathlib, shutil, subprocess, sys, time, urllib.request
+API = pathlib.Path('/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api')
+source, release, seconds = sys.argv[1], sys.argv[2], int(sys.argv[3])
+started = time.strftime('%Y-%m-%d %H:%M:%S')
+info, staged = API.stat(), API.with_name(API.name + '.repair')
+shutil.copyfile(source, staged); os.chown(staged, info.st_uid, info.st_gid); staged.chmod(info.st_mode & 0o7777); os.replace(staged, API)
+subprocess.run(['systemctl', 'reset-failed', 'gps-tracker-api'], capture_output=True)
+subprocess.run(['systemctl', 'restart', 'gps-tracker-api'], capture_output=True)
+healthy, last = False, None
+for _ in range(seconds):
+    try:
+        with urllib.request.urlopen('__HEALTH__', timeout=3) as response:
+            last = json.load(response)
+        if last.get('ok') and last.get('db') and last.get('release') == release:
+            healthy = True
+            break
+    except Exception as error:  # not listening
+        last = repr(error)
+    time.sleep(1)
+log = subprocess.run(['journalctl', '-u', 'gps-tracker-api', '--since', started, '--no-pager', '-o', 'cat'], capture_output=True, text=True).stdout
+print(json.dumps({'healthy': healthy, 'last': last, 'api_sha256': hashlib.sha256(API.read_bytes()).hexdigest(),
+                  'migration_lines': [line.strip()[:300] for line in log.splitlines() if 'migration' in line.lower()][-2:]}))
 '''
 
 SNAPSHOT = r'''"""What the release may touch, and what it must leave alone."""
@@ -368,8 +403,14 @@ def rehearse(job, commit):
     require(sha(PREVIOUS_OUT / 'gps-tracker-api') == PREVIOUS['api_sha256'], 'the previous release on this host is not what production runs')
     require(service.PREVIOUS['release'] == PREVIOUS_WEB_RELEASE and service.RELEASE == PREVIOUS['release'], 'the earlier staging script describes another production state')
     shutil.rmtree(box, ignore_errors=True)
+    # The smoke of this source. When it is a later revision than the staged one, it runs from its own directory.
+    smoke, later = job / 'src/ops' / SMOKE, sha(job / 'src/ops' / SMOKE) != sha(out / SMOKE)
+    smoke_dir = SMOKE_STAGE if later else STAGE
+    other, other_release = OTHER_BUILD
+    require(other.is_file() and sha(other) not in (sha(out / 'gps-tracker-api'), PREVIOUS['api_sha256']), 'the stand-in for a corrected build is missing or is one of the two releases')
     record = {'passed': False, 'release': RELEASE, 'commit': commit, 'api_sha256': sha(out / 'gps-tracker-api'), 'web_sha256': sha(out / 'web.tar.gz'),
-              'release_script_sha256': sha(out / 'release_privacy_facts.py'), 'smoke_sha256': sha(out / 'smoke_privacy_facts.py'),
+              'release_script_sha256': sha(out / 'release_privacy_facts.py'), 'smoke_sha256': sha(smoke), 'staged_smoke_sha256': sha(out / SMOKE),
+              'smoke_run_from': smoke_dir, 'other_build': {'sha256': sha(other), 'release': other_release},
               'previous': PREVIOUS, 'host': {'image': 'ubuntu:22.04 with systemd as PID 1', 'kernel': os.uname().release}, 'steps': []}
 
     def done(name, **detail):
@@ -406,7 +447,7 @@ def rehearse(job, commit):
         for name, files in (('stage2', {'provision.sh': service.PROVISION.replace('__STAGE__', service.STAGE).replace('__PREVIOUS__', PREVIOUS_WEB_RELEASE),
                                          'entry.py': service.ENTRY.replace('__STAGE__', service.STAGE).replace('__HEALTH__', HEALTH)}),
                             ('stage3', {'provision.sh': PROVISION.replace('__STAGE__', STAGE), 'entry.py': ENTRY.replace('__STAGE__', STAGE).replace('__HEALTH__', HEALTH),
-                                        'snapshot.py': SNAPSHOT.replace('__HEALTH__', HEALTH)})):
+                                        'snapshot.py': SNAPSHOT.replace('__HEALTH__', HEALTH), 'repair.py': REPAIR.replace('__HEALTH__', HEALTH)})):
             (box / name).mkdir()
             for filename, text in files.items():
                 (box / name / filename).write_text(text)
@@ -418,6 +459,10 @@ def rehearse(job, commit):
                     base.docker('cp', str(path), f'{base.HOST}:{target}/{path.name}')
         base.inside('python3', '/root/in/bootstrap.py', STAGE, '2')
         base.inside('rm', f'{STAGE}/smoke-private.json')
+        if later:
+            base.inside('install', '-d', '-o', 'mmm', '-g', 'mmm', '-m', '755', SMOKE_STAGE)
+            base.docker('cp', str(smoke), f'{base.HOST}:{SMOKE_STAGE}/{SMOKE}')
+        base.docker('cp', str(other), f'{base.HOST}:/root/stage3/api.other-build')
         record['host']['systemd'] = base.docker('exec', base.HOST, 'systemctl', '--version').splitlines()[0]
         host('python3', '/root/in/entry.py', 'apply')
         base.inside('sh', '-c', 'chmod 700 /etc/systemd/system/gps-*.d')
@@ -487,16 +532,41 @@ def rehearse(job, commit):
         done('rollback: previous binary and web, schema 98 with both rules as before; the earlier grant still downloads; check passes again')
 
         applied()
-        result = entry('smoke', 'run', 'smoke-private-1.json')
+        result = entry('smoke', 'run', 'smoke-private-1.json', smoke_dir)
         require(result['release'] == RELEASE and result['schema'] == SCHEMA and result['synthetic_accounts_closed'] and result['file_structure_as_released']
-                and result['daily_summary_seconds_for_busiest_accounts'] == [], f'smoke: {result}')
+                and result['daily_summary_seconds_for_busiest_accounts'] == [] and result['expired_grant_refused_then_times_restored']
+                and result['no_token_refused'] and result['file_holds_only_the_subjects_own_account_request_and_link']
+                and result['earlier_grants'] == 1 and result['earlier_grants_listed_and_rows_unchanged'] and result['earlier_grants_downloadable_now'] == 1, f'smoke: {result}')
         used = snapshot()
         require(used['grants_with_the_section'] == 1 and used['grants'] == 3, f'after the smoke: {used}')
-        done('apply again; the production smoke script completes against the rehearsal host')
+        require(psql("SELECT count(*) FROM privacy_account_packages WHERE expires_at<>created_at+interval '24 hours'") == '0', 'a grant was left with moved times')
+        require(entry('grant', 'download')['status'] == 200, 'the earlier grant no longer downloads after the smoke')
+        done('apply again; the production smoke script completes against the rehearsal host' + (' (later revision, run from its own directory)' if later else ''),
+             smoke={key: result[key] for key in ('no_token_refused', 'other_account_refused', 'file_holds_only_the_subjects_own_account_request_and_link',
+                                                 'expired_grant_refused_then_times_restored', 'earlier_grants', 'earlier_grants_listed_and_rows_unchanged',
+                                                 'earlier_grants_downloadable_now', 'revoked_grant_refused', 'synthetic_accounts_closed')})
 
         stopped = entry('release', 'rollback', expect=3)['stopped']
         require('repair forward' in stopped and snapshot() == used, f'unexpected rollback refusal: {stopped}')
         done('going back is refused once a grant uses the new section')
+
+        # What repairing forward relies on. Schema 99 and the grants stay; only the API file changes.
+        swapped = host('python3', '/root/stage3/repair.py', '/root/stage3/api.other-build', other_release, '45')
+        now = snapshot()
+        require(swapped['healthy'] and swapped['api_sha256'] == record['other_build']['sha256'] and differs(now, used) == {'release', 'api_sha256'}
+                and now['release'] == other_release and now['schema'] == SCHEMA and now['grants'] == 3 and now['grants_with_the_section'] == 1, f'another build on schema 99: {swapped} / {differs(now, used)}')
+        require(entry('grant', 'download')['status'] == 200, 'the earlier grant does not download through the other build')
+        done('repair forward: another build that knows schema 99 replaces the API file and serves; schema, grants, web and the processor service stay')
+
+        refused = host('python3', '/root/stage3/repair.py', f'{service.STAGE}/gps-tracker-api', PREVIOUS['release'], '15')
+        require(not refused['healthy'] and refused['api_sha256'] == PREVIOUS['api_sha256'] and refused['migration_lines'], f'previous binary on schema 99: {refused}')
+        done('the previous binary does not start on schema 99: going back by the binary alone is not an option', log=refused['migration_lines'])
+
+        back = host('python3', '/root/stage3/repair.py', f'{STAGE}/gps-tracker-api', RELEASE, '45')
+        now = snapshot()
+        require(back['healthy'] and back['api_sha256'] == record['api_sha256'] and now == used, f'released binary put back: {back} / {differs(now, used)}')
+        require(entry('grant', 'download')['status'] == 200, 'the earlier grant does not download after the released binary is put back')
+        done('the released binary is put back and serves again; everything else is as it was after the smoke')
         record['passed'] = True
     finally:
         base.down()
