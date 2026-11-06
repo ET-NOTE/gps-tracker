@@ -428,6 +428,33 @@ def main():
         result = command('test-mail')
         require(result.returncode != 0 and 'STOPPED' in result.stderr and len(lab.subjects()) == 1, f'failing test-mail: {result.stdout}{result.stderr}')
         lab.mail.fail = None
+
+        # The operator's values: ordinary ones with `set`, the two secrets through a pipe (or a prompt that shows nothing).
+        def piped(text, *args):
+            result = subprocess.run([sys.executable, str(HERE / 'gps_watch.py'), *args], env=env, input=text, capture_output=True, text=True, timeout=60)
+            lab.lines.append(result.stdout + result.stderr)
+            return result
+
+        original = lab.config.read_text()
+        result = piped('﻿  not-the-password \r\n', 'secret', 'password')
+        require(result.returncode == 0 and 'not-the-password' not in result.stdout + result.stderr and 'password = not-the-password\n' in lab.config.read_text()
+                and lab.config.stat().st_mode & 0o777 == 0o600, f'secret password: {result.stdout}{result.stderr}')
+        require(command('test-mail').returncode != 0 and len(lab.subjects()) == 1, 'a wrong password was accepted')
+        result = piped(PASSWORD + '\n', 'secret', 'password')
+        require(result.returncode == 0 and PASSWORD not in result.stdout + result.stderr and lab.config.read_text() == original, 'the password was not stored exactly')
+        require(command('test-mail').returncode == 0 and len(lab.subjects()) == 2, 'the stored password does not work')
+        result = piped(f'http://127.0.0.1:{lab.target.server_address[1]}/api/push/{TOKEN}?status=up&msg=OK&ping=\n', 'secret', 'heartbeat')
+        require(result.returncode == 0 and TOKEN not in result.stdout + result.stderr and lab.config.read_text() == original, 'the push address was not stored exactly')
+        require(command('set', 'mail.password', 'on-a-command-line').returncode != 0 and command('set', 'heartbeat.url', 'x').returncode != 0
+                and lab.config.read_text() == original, 'a secret was accepted on a command line')
+        require(command('set', 'mail.to', 'second@example.invalid').returncode == 0 and 'to = second@example.invalid\n' in lab.config.read_text()
+                and command('set', 'mail.to', 'operator@example.invalid').returncode == 0 and lab.config.read_text() == original, 'set did not store an ordinary value')
+        require(command('set', 'mail.host', 'smtp.gmail.com').returncode == 0 and piped('abcd efgh ijkl mnop\n', 'secret', 'password').returncode == 0
+                and 'password = abcdefghijklmnop\n' in lab.config.read_text(), 'the spaces of a Google app password were kept')
+        lab.config.write_text(original)
+        lab.config.chmod(0o600)
+        require(piped('\n', 'secret', 'password').returncode != 0 and lab.config.read_text() == original, 'an empty secret was stored')
+
         before = (lab.state / 'state.json').read_text()
         with open(lab.state / 'lock', 'w') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
@@ -437,6 +464,7 @@ def main():
         require(PASSWORD not in everything and TOKEN not in everything, 'a secret appeared in the output, the state or a mail')
         require(lab.state.stat().st_mode & 0o077 == 0, 'the state directory can be read by other accounts')
         done('run, status, check and test-mail work from the command line; check keeps no state and sends nothing; a second run at the same time steps aside; '
+             'the two secrets are stored from a pipe without being shown and are refused on a command line; '
              'the mail password and the push address appear in no output, state file or mail')
 
         # 9. The installer, with a throwaway home and stand-ins for the service manager.

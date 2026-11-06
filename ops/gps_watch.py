@@ -4,6 +4,9 @@
     python3 gps_watch.py check        check once and print; no state is kept and nothing is sent
     python3 gps_watch.py status       what the watch currently believes
     python3 gps_watch.py test-mail    send one test mail with the configured account
+    python3 gps_watch.py set mail.username someone@example.com     store an ordinary value in the configuration
+    python3 gps_watch.py secret password    store the mail password: typed at a prompt that shows nothing, or piped in
+    python3 gps_watch.py secret heartbeat   the same for the status page's push address
 
 It looks at the host from outside and only reads: the API health (including the database), the
 address devices report to (a GET that the API answers with "POST only", so nothing is stored),
@@ -22,6 +25,7 @@ readable by its owner only because it holds the mail password. See ops/gps-watch
 """
 import configparser
 import fcntl
+import getpass
 import json
 import os
 import pathlib
@@ -49,14 +53,50 @@ DEFAULTS = {
 }
 LABELS = {'health': 'API·DB 상태', 'ingest': '단말기 수집 주소', 'ssh': 'SSH 포트', 'status': '상태 페이지'}
 PENDING_LIMIT = 50
+SECRETS = {'password': ('mail', 'password'), 'heartbeat': ('heartbeat', 'url')}  # never given on a command line
 
 
 class Stop(Exception):
     """The configuration cannot be used."""
 
 
+def location(path=None):
+    return pathlib.Path(path or os.environ.get('GPS_WATCH_CONFIG') or '~/.config/gps-watch/config.ini').expanduser()
+
+
+def store(section, key, value):
+    """Replace one value in the configuration file; every other line and the owner-only mode stay."""
+    load()  # the file exists and is the owner's alone
+    path = location()
+    if section not in DEFAULTS or key not in DEFAULTS[section] or '\n' in value or '\r' in value:
+        raise Stop(f'no setting {section}.{key}')
+    lines, current, found = path.read_text(encoding='utf-8').splitlines(), None, False
+    for index, line in enumerate(lines):
+        text = line.strip()
+        if text.startswith('[') and text.endswith(']'):
+            current = text[1:-1].strip()
+        elif current == section and '=' in text and text.lstrip('#; ').split('=', 1)[0].strip() == key and not found:
+            lines[index], found = f'{key} = {value}', True  # a commented default becomes the value
+    if not found:
+        raise Stop(f'no "{key} =" line under [{section}] in {path}')
+    scratch = path.with_suffix('.next')
+    with open(os.open(scratch, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w', encoding='utf-8') as out:
+        out.write('\n'.join(lines) + '\n')
+    os.replace(scratch, path)
+    load()
+
+
+def entered(label):
+    """A secret from the terminal without showing it, or from a pipe."""
+    value = getpass.getpass(f'{label} (입력은 화면에 보이지 않습니다): ') if sys.stdin.isatty() else sys.stdin.readline()
+    value = value.lstrip('\ufeff').strip()
+    if not value:
+        raise Stop('nothing was entered')
+    return value
+
+
 def load(path=None):
-    path = pathlib.Path(path or os.environ.get('GPS_WATCH_CONFIG') or '~/.config/gps-watch/config.ini').expanduser()
+    path = location(path)
     if not path.is_file():
         raise Stop(f'no configuration at {path}')
     if path.stat().st_mode & 0o077:
@@ -347,8 +387,27 @@ def cycle(cfg, now=None):
 
 
 def main():
-    command = sys.argv[1] if len(sys.argv) == 2 else ''
+    command, arguments = (sys.argv[1], sys.argv[2:]) if len(sys.argv) > 1 else ('', [])
+    if (command in ('set', 'secret')) != bool(arguments):
+        sys.exit(__doc__)
     try:
+        if command == 'set' and len(arguments) == 2 and '.' in arguments[0]:
+            section, key = arguments[0].split('.', 1)
+            if (section, key) in SECRETS.values():
+                raise Stop(f'{arguments[0]} is a secret: use `secret` so that it is not left on a command line')
+            store(section, key, arguments[1])
+            print(f'stored {arguments[0]}')
+            return
+        if command == 'secret' and arguments[:1] in ([name] for name in SECRETS) and len(arguments) == 1:
+            section, key = SECRETS[arguments[0]]
+            value = entered('메일 비밀번호' if key == 'password' else 'Push 주소')
+            if key == 'password' and load()['mail']['host'].lower().endswith(('gmail.com', 'google.com')):
+                value = ''.join(value.split())  # Google shows its app passwords in groups of four; the spaces are not part of them
+            store(section, key, value)
+            print(f'stored {section}.{key} ({len(value)} characters; the value is not shown)')
+            return
+        if command in ('set', 'secret'):
+            sys.exit(__doc__)
         if command == 'check':
             # No password is needed to look; a missing configuration means the built-in addresses.
             try:
