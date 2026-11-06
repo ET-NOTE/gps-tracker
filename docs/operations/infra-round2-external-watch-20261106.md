@@ -44,7 +44,7 @@
 - 설정은 `~/.config/gps-watch/config.ini`(빌드 호스트, 본인만 읽기 600)에 있다. 다른 계정이 읽을 수 있으면 감시가 실행을 거부한다.
 - 메일은 STARTTLS(587) 또는 TLS(465)로만 보낸다. 암호화 없는 로그인은 시험용 로컬 서버 외에는 거부한다.
 - 메일 비밀번호와 Push 주소는 출력·상태 파일·메일 어디에도 나타나지 않는다(리허설에서 확인).
-- **에이전트는 비밀값을 받거나 입력하지 않는다.** 운영자가 파일에 직접 넣는다.
+- **에이전트는 비밀값을 받거나 입력하지 않는다.** 운영자가 `gps_watch.py secret …` 한 줄로 직접 넣는다(클립보드에서 곧바로 설정 파일로 가고 화면에 나오지 않는다). 비밀값은 명령줄 인자로 받지 않는다.
 
 ### 운영 서버에 남는 흔적
 
@@ -56,13 +56,13 @@
 
 | 파일 | 실행 위치 | 하는 일 |
 |---|---|---|
-| `ops/gps_watch.py` | 빌드 호스트(일반 계정) | `run`(한 주기) · `check`(한 번 확인만, 상태·메일 없음) · `status` · `test-mail` |
+| `ops/gps_watch.py` | 빌드 호스트(일반 계정) | `run`(한 주기) · `check`(한 번 확인만, 상태·메일 없음) · `status` · `test-mail` · `set`(일반 설정값) · `secret`(비밀번호·Push 주소, 화면에 나오지 않음) |
 | `ops/install_gps_watch.sh` | 빌드 호스트(일반 계정) | `files`(배치만) · `start`(타이머 시작) · `stop` · `remove` · `show` |
 | `ops/gps-watch.service`, `ops/gps-watch.timer` | `~/.config/systemd/user/` | 매분 10초에 한 주기 |
 | `ops/gps-watch.example.ini` | 설정 양식 | |
 | `ops/rehearse_gps_watch.py` | 빌드 호스트 | 격리 리허설. 로컬 대역 서버만 쓰고 실제 메일을 보내지 않는다 |
 
-## 격리 리허설 (2026-11-06, 커밋 `3b991d3`)
+## 격리 리허설 (2026-11-06, 커밋 `7356503`)
 
 `127.0.0.1`에 운영 서버(health·수집 주소·상태 페이지·SSH 포트), 기준 주소, Kuma Push 주소, 메일 서버(STARTTLS·TLS·로그인)의 대역을 세우고 감시의 실제 코드를 돌렸다. 시계만 앞으로 돌려 한 시간을 기다리지 않는다. 9개 묶음 통과.
 
@@ -75,10 +75,10 @@
 | 감시 위치 인터넷 끊김 10분 | 운영 서버 실패로 세지 않음, 돌아온 뒤 "감시 공백" 1통. 2분 끊김은 알리지 않음 |
 | 메일 서버 장애 3종(접속 불가, 로그인 거부, 일시 거부) | 알림을 보관했다가 서버가 돌아오면 순서대로 한 번씩 발송. 중복 없음 |
 | 전송 방식 | STARTTLS와 TLS에서 암호화·로그인 확인. 다른 호스트로의 비암호화 로그인과, 남이 읽을 수 있는 설정 파일은 거부 |
-| 명령줄 | `run`·`status`·`check`·`test-mail` 동작. `check`는 상태를 남기지 않고 메일을 보내지 않음. 동시에 두 번 돌면 하나가 물러남. 비밀값이 출력·상태·메일에 없음 |
+| 명령줄 | `run`·`status`·`check`·`test-mail` 동작. `check`는 상태를 남기지 않고 메일을 보내지 않음. 동시에 두 번 돌면 하나가 물러남. 비밀값 두 개는 파이프로 받아 보여 주지 않고 저장하며 명령줄 인자로는 거부. 비밀값이 출력·상태·메일에 없음 |
 | 설치 스크립트(임시 홈) | 파일과 빈 설정(600)만 두고 아무것도 시작하지 않음. 설정이 비어 있으면 시작 거부. 채운 설정은 덮어쓰지 않음. 제거 시 설정·상태는 남김 |
 
-기록: [rehearsal.json](evidence/infra-round2-20261106/rehearsal.json). 스크립트 SHA-256 `537a8ba2d21435f8d6df349a55fa437e8c7cf8ec0f14ea1b4954ed5ee4de72ec`.
+기록: [rehearsal.json](evidence/infra-round2-20261106/rehearsal.json). 스크립트 SHA-256 `48ef88aa8b8816f2756542c7956cab4f627595b170fdf89d06ac5bd01ea1e3da`.
 
 **리허설이 다루지 못한 것**: 실제 메일 서버(계정·인증 방식·발송 제한), 실제 Uptime Kuma의 Push 응답과 알림, 실제 타이머의 장기 가동, 실제 장애. 실제 메일은 `test-mail`로, 타이머와 주기 신호는 켠 뒤 확인한다. 운영 서버를 일부러 내려서 시험하지는 않는다.
 
@@ -111,14 +111,23 @@
 1. **Uptime Kuma에 알림 수단 등록** (`status.serial.kr` 화면)
    - 설정(Settings) → 알림(Notifications) → 알림 설정(Setup Notification): 종류 **Email (SMTP)**, 아래 2번과 같은 메일 계정, 받는 주소 입력 → 테스트 → 저장. **기본 활성화**와 **기존 모니터 모두에 적용**을 켠다.
    - 새 모니터 추가(Add New Monitor): 종류 **Push**, 이름 예 `GPS 외부 감시(사무실)`, 하트비트 주기 **60초**, 재시도 **3**, 재시도 주기 **60초** → 저장. 화면에 나오는 **Push URL**을 복사한다(그대로 붙여 넣어도 된다. `?` 뒤는 감시가 무시한다).
-2. **빌드 호스트의 설정 파일에 값 넣기**
+2. **빌드 호스트의 설정에 비밀값 두 개 넣기** — 값은 화면에 나오지 않고 에이전트를 거치지 않는다.
+
+   메일 앱 비밀번호를 클립보드에 복사한 상태에서(운영자 PC):
 
    ```bash
-   ssh -t etcom-hub-lan "nano ~/.config/gps-watch/config.ini"
+   powershell -NoProfile -Command "Get-Clipboard" | ssh etcom-hub-lan "python3 ~/gps-watch/gps_watch.py secret password"
    ```
 
-   - `[mail]`: `username`, `password`, `from`, `to`. 네이버는 메일 환경설정에서 SMTP 사용을 켜야 하고, 2단계 인증을 쓰면 애플리케이션 비밀번호를 넣는다.
-   - `[heartbeat]`: `url`에 1번의 Push URL.
+   Kuma의 Push URL을 클립보드에 복사한 상태에서:
+
+   ```bash
+   powershell -NoProfile -Command "Get-Clipboard" | ssh etcom-hub-lan "python3 ~/gps-watch/gps_watch.py secret heartbeat"
+   ```
+
+   - 각각 `stored … (N characters; the value is not shown)`이 나온다. 구글 앱 비밀번호는 16자다(화면의 띄어쓰기는 자동으로 뺀다).
+   - 직접 치려면 `ssh -t etcom-hub-lan "python3 ~/gps-watch/gps_watch.py secret password"` — 입력이 보이지 않는 프롬프트가 뜬다.
+   - 비밀이 아닌 값(메일 서버, 계정 주소, 받는 주소)은 `gps_watch.py set mail.to 주소`처럼 바꾼다. 2026-11-06에 에이전트가 넣어 둔 값: `smtp.gmail.com` / 587 / STARTTLS(`serial.kr` 메일은 Google Workspace), 보내는 주소와 받는 주소는 운영자가 지정한 `serial.kr` 계정.
 3. **시험 메일**
 
    ```bash

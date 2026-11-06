@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "script_sha256": "537a8ba2d21435f8d6df349a55fa437e8c7cf8ec0f14ea1b4954ed5ee4de72ec",
+  "script_sha256": "48ef88aa8b8816f2756542c7956cab4f627595b170fdf89d06ac5bd01ea1e3da",
   "python": "3.12.3",
   "steps": [
     {
@@ -51,11 +51,11 @@
         "starttls": "encrypted and authenticated",
         "ssl": "encrypted and authenticated",
         "unencrypted mail to another host": "refused: mail security \"none\" is accepted for a local test server onl",
-        "configuration readable by others": "refused: /tmp/gps-watch-rehearsal-zdgrn407/config-11.ini can be read "
+        "configuration readable by others": "refused: /tmp/gps-watch-rehearsal-kgmytk0n/config-11.ini can be read "
       }
     },
     {
-      "step": "run, status, check and test-mail work from the command line; check keeps no state and sends nothing; a second run at the same time steps aside; the mail password and the push address appear in no output, state file or mail"
+      "step": "run, status, check and test-mail work from the command line; check keeps no state and sends nothing; a second run at the same time steps aside; the two secrets are stored from a pipe without being shown and are refused on a command line; the mail password and the push address appear in no output, state file or mail"
     },
     {
       "step": "installer: copies the files and an empty configuration (600) without starting anything, refuses to start with an empty configuration, keeps a filled-in one, starts the timer, and removes everything but the configuration and the state"
