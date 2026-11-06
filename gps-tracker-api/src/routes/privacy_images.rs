@@ -3,7 +3,10 @@ use super::privacy_delivery::{active, no_store, rate_limit};
 use crate::{
     auth::{password, AdminUser, AuthUser},
     error::{AppError, AppResult},
-    services::privacy::RequestRow,
+    services::{
+        privacy::RequestRow,
+        privacy_raster::{self as raster, Normalized, RasterError},
+    },
     state::AppState,
 };
 use axum::{
@@ -88,10 +91,13 @@ struct Prepared {
     png: Vec<u8>,
     selection_hash: String,
     output_hash: String,
+    /// Server-derived sources only: the normalized pixels the selection was applied to.
+    pixels: Option<String>,
+    normalization: Option<Value>,
 }
 impl Selection {
-    fn prepare(&self) -> AppResult<Prepared> {
-        if !matches!(self.category.as_str(), "document" | "photo" | "receipt")
+    fn valid(&self) -> bool {
+        !(!matches!(self.category.as_str(), "document" | "photo" | "receipt")
             || !text(&self.source_reference, 160)
             || !text(&self.notice, 1000)
             || self.source_sha256.len() != 64
@@ -107,12 +113,18 @@ impl Selection {
             || u64::from(self.width) * u64::from(self.height) > 1_000_000
             || self.regions.is_empty()
             || self.regions.len() > 30
-            || self.rgb_base64.len() > 4_000_000
-        {
+            || self.rgb_base64.len() > 4_000_000)
+    }
+    /// Manually prepared page: the reviewed pixels come from the administrator's browser.
+    fn prepare(&self) -> AppResult<Prepared> {
+        if !self.valid() {
             return Err(bad());
         }
         let rgb = STANDARD.decode(&self.rgb_base64).map_err(|_| bad())?;
-        if rgb.len() != (self.width * self.height * 3) as usize {
+        self.render(&rgb)
+    }
+    fn render(&self, rgb: &[u8]) -> AppResult<Prepared> {
+        if !self.valid() || rgb.len() != (self.width * self.height * 3) as usize {
             return Err(bad());
         }
         // Start fully opaque black. Never copy unselected pixels, alpha or metadata.
@@ -156,6 +168,8 @@ impl Selection {
             png,
             output_hash,
             selection_hash,
+            pixels: None,
+            normalization: None,
         })
     }
 }
@@ -177,95 +191,41 @@ fn encode_png(w: u32, h: u32, rgb: &[u8]) -> AppResult<Vec<u8>> {
     }
     Ok(out)
 }
-fn size_ok(w: u32, h: u32) -> AppResult<()> {
-    if w == 0 || h == 0 || w > 2048 || h > 2048 || u64::from(w) * u64::from(h) > 1_000_000 {
-        Err(bad())
-    } else {
-        Ok(())
+fn raster_error(e: RasterError) -> AppError {
+    match e {
+        RasterError::Invalid => bad(),
+        RasterError::TooLarge => AppError::BadRequest(
+            "원본이 직접 처리 한도를 넘습니다. 한 변 16,384px 이하의 일반 JPG(6,400만 화소)·PNG(2,400만 화소)만 축소할 수 있습니다. 해당 페이지를 별도로 준비해 주세요.".into(),
+        ),
+        RasterError::Busy => AppError::TooManyRequests(
+            "큰 이미지를 처리 중입니다. 잠시 후 다시 시도해 주세요.".into(),
+        ),
     }
 }
-fn receipt_pixels(r: &Receipt) -> AppResult<(u32, u32, Vec<u8>)> {
-    if r.mime == "image/jpeg" {
-        let mut d = jpeg_decoder::Decoder::new(r.content.as_slice());
-        d.set_max_decoding_buffer_size(4_000_000);
-        d.read_info().map_err(|_| bad())?;
-        let i = d.info().ok_or_else(bad)?;
-        let (w, h) = (u32::from(i.width), u32::from(i.height));
-        size_ok(w, h)?;
-        if !matches!(
-            i.pixel_format,
-            jpeg_decoder::PixelFormat::RGB24 | jpeg_decoder::PixelFormat::L8
-        ) {
-            return Err(bad());
-        }
-        let data = d.decode().map_err(|_| bad())?;
-        let rgb = if i.pixel_format == jpeg_decoder::PixelFormat::L8 {
-            data.into_iter().flat_map(|v| [v, v, v]).collect()
-        } else {
-            data
-        };
-        if rgb.len() != (w * h * 3) as usize {
-            return Err(bad());
-        }
-        return Ok((w, h, rgb));
-    }
-    if r.mime != "image/png" {
-        return Err(bad());
-    }
-    let mut d = png::Decoder::new_with_limits(
-        r.content.as_slice(),
-        png::Limits {
-            bytes: 16 * 1024 * 1024,
-        },
-    );
-    d.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
-    let mut reader = d.read_info().map_err(|_| bad())?;
-    let (w, h) = (reader.info().width, reader.info().height);
-    size_ok(w, h)?;
-    if reader.info().animation_control.is_some() || reader.output_buffer_size() > 4_000_000 {
-        return Err(bad());
-    }
-    let mut buf = vec![0; reader.output_buffer_size()];
-    let i = reader.next_frame(&mut buf).map_err(|_| bad())?;
-    let data = &buf[..i.buffer_size()];
-    let channels = match i.color_type {
-        png::ColorType::Rgb => 3,
-        png::ColorType::Rgba => 4,
-        png::ColorType::Grayscale => 1,
-        png::ColorType::GrayscaleAlpha => 2,
-        _ => return Err(bad()),
-    };
-    let mut rgb = Vec::with_capacity((w * h * 3) as usize);
-    for p in data.chunks_exact(channels) {
-        let (c, a) = match channels {
-            4 => ([p[0], p[1], p[2]], p[3]),
-            3 => ([p[0], p[1], p[2]], 255),
-            2 => ([p[0]; 3], p[1]),
-            _ => ([p[0]; 3], 255),
-        };
-        rgb.extend(c.map(|v| {
-            ((u32::from(v) * u32::from(a) + 255 * (255 - u32::from(a)) + 127) / 255) as u8
-        }));
-    }
-    if rgb.len() != (w * h * 3) as usize {
-        return Err(bad());
-    }
-    Ok((w, h, rgb))
+/// Stored original -> bounded, upright RGB. Deterministic, so every step re-derives it.
+fn receipt_pixels(r: &Receipt) -> AppResult<Normalized> {
+    raster::normalize(&r.mime, &r.content).map_err(raster_error)
 }
-async fn prepare(mut s: Selection, original: Option<Receipt>) -> AppResult<(Selection, Prepared)> {
+async fn prepare(s: Selection, original: Option<Receipt>) -> AppResult<(Selection, Prepared)> {
     let permit = image_limit().try_acquire().map_err(|_| {
         AppError::TooManyRequests("제공본을 처리 중입니다. 잠시 후 다시 시도해 주세요.".into())
     })?;
     tokio::task::spawn_blocking(move || {
         let _permit = permit;
-        if let Some(r) = original {
-            let (w, h, rgb) = receipt_pixels(&r)?;
-            if (s.width, s.height) != (w, h) {
-                return Err(bad());
+        let p = match original {
+            // Pixels sent by the browser are ignored; the stored original is the only source.
+            Some(r) => {
+                let n = receipt_pixels(&r)?;
+                if (s.width, s.height) != (n.width, n.height) {
+                    return Err(bad());
+                }
+                let mut p = s.render(&n.rgb)?;
+                p.pixels = Some(n.pixels_sha256());
+                p.normalization = Some(n.describe());
+                p
             }
-            s.rgb_base64 = STANDARD.encode(rgb);
-        }
-        let p = s.prepare()?;
+            None => s.prepare()?,
+        };
         Ok((s, p))
     })
     .await
@@ -347,7 +307,7 @@ async fn preview(
         let mut tx = begin(&state).await?;
         request(&mut tx, id).await?;
         company(&mut tx, id, s.company_review_id, s.company_revision).await?;
-        let raw = validate_receipt_selection(&mut tx, id, admin.user_id, &s).await?;
+        let raw = validate_receipt_selection(&mut tx, id, admin.user_id, &s, None).await?;
         tx.commit().await?;
         raw
     };
@@ -355,7 +315,8 @@ async fn preview(
     let mut tx = begin(&state).await?;
     request(&mut tx, id).await?;
     company(&mut tx, id, s.company_review_id, s.company_revision).await?;
-    validate_receipt_selection(&mut tx, id, admin.user_id, &s).await?;
+    // The reviewer must have been shown exactly these normalized pixels.
+    validate_receipt_selection(&mut tx, id, admin.user_id, &s, p.pixels.as_deref()).await?;
     event(
         &mut tx,
         id,
@@ -398,7 +359,8 @@ async fn issue(
             b.selection.company_revision,
         )
         .await?;
-        let raw = validate_receipt_selection(&mut tx, id, admin.user_id, &b.selection).await?;
+        let raw =
+            validate_receipt_selection(&mut tx, id, admin.user_id, &b.selection, None).await?;
         tx.commit().await?;
         raw
     };
@@ -406,7 +368,7 @@ async fn issue(
     let mut tx = begin(&state).await?;
     let r = request(&mut tx, id).await?;
     company(&mut tx, id, s.company_review_id, s.company_revision).await?;
-    validate_receipt_selection(&mut tx, id, admin.user_id, &s).await?;
+    validate_receipt_selection(&mut tx, id, admin.user_id, &s, p.pixels.as_deref()).await?;
     if r.revision != b.revision || p.selection_hash != b.preview_sha256 {
         return Err(conflict());
     }
@@ -433,7 +395,7 @@ async fn issue(
             "제공본 용량·발급 한도입니다. 담당자에게 분할 처리를 요청해 주세요.".into(),
         ));
     }
-    let did:i64=sqlx::query_scalar("INSERT INTO privacy_image_deliveries(request_id,created_by,company_review_id,company_revision,category,source_reference,source_sha256,selection_sha256,output_sha256,width,height,regions,notice,receipt_id,receipt_revision,expense_revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id").bind(id).bind(admin.user_id).bind(s.company_review_id).bind(s.company_revision).bind(&s.category).bind(&s.source_reference).bind(&s.source_sha256).bind(&p.selection_hash).bind(&p.output_hash).bind(s.width as i32).bind(s.height as i32).bind(json!(s.regions)).bind(&s.notice).bind(s.receipt.as_ref().map(|r|r.id)).bind(s.receipt.as_ref().map(|r|r.receipt_revision)).bind(s.receipt.as_ref().map(|r|r.expense_revision)).fetch_one(&mut *tx).await?;
+    let did:i64=sqlx::query_scalar("INSERT INTO privacy_image_deliveries(request_id,created_by,company_review_id,company_revision,category,source_reference,source_sha256,selection_sha256,output_sha256,width,height,regions,notice,receipt_id,receipt_revision,expense_revision,source_normalization) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id").bind(id).bind(admin.user_id).bind(s.company_review_id).bind(s.company_revision).bind(&s.category).bind(&s.source_reference).bind(&s.source_sha256).bind(&p.selection_hash).bind(&p.output_hash).bind(s.width as i32).bind(s.height as i32).bind(json!(s.regions)).bind(&s.notice).bind(s.receipt.as_ref().map(|r|r.id)).bind(s.receipt.as_ref().map(|r|r.receipt_revision)).bind(s.receipt.as_ref().map(|r|r.expense_revision)).bind(&p.normalization).fetch_one(&mut *tx).await?;
     sqlx::query("INSERT INTO privacy_image_payloads(delivery_id,png_bytes) VALUES($1,$2)")
         .bind(did)
         .bind(p.png)
@@ -637,6 +599,7 @@ async fn validate_receipt_selection(
     rid: i64,
     actor: i64,
     s: &Selection,
+    pixels: Option<&str>,
 ) -> AppResult<Option<Receipt>> {
     let Some(b) = &s.receipt else { return Ok(None) };
     if s.category != "receipt" {
@@ -650,7 +613,7 @@ async fn validate_receipt_selection(
     {
         return Err(conflict());
     }
-    let seen:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_receipt_reads WHERE request_id=$1 AND review_id=$2 AND review_revision=$3 AND actor_id=$4 AND receipt_id=$5 AND receipt_revision=$6 AND expense_revision=$7 AND sha256=$8 AND created_at>now()-interval '1 hour')").bind(rid).bind(review).bind(s.company_revision).bind(actor).bind(b.id).bind(b.receipt_revision).bind(b.expense_revision).bind(&s.source_sha256).fetch_one(&mut **tx).await?;
+    let seen:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_receipt_reads WHERE request_id=$1 AND review_id=$2 AND review_revision=$3 AND actor_id=$4 AND receipt_id=$5 AND receipt_revision=$6 AND expense_revision=$7 AND sha256=$8 AND created_at>now()-interval '1 hour' AND ($9::text IS NULL OR pixels_sha256=$9))").bind(rid).bind(review).bind(s.company_revision).bind(actor).bind(b.id).bind(b.receipt_revision).bind(b.expense_revision).bind(&s.source_sha256).bind(pixels).fetch_one(&mut **tx).await?;
     if !seen {
         return Err(conflict());
     }
@@ -704,11 +667,11 @@ async fn read_receipt(
     let permit = image_limit().try_acquire().map_err(|_| {
         AppError::TooManyRequests("이미지 처리 중입니다. 잠시 후 다시 시도하세요.".into())
     })?;
-    let (r, png) = tokio::task::spawn_blocking(move || -> AppResult<_> {
+    let (r, png, pixels, normalization) = tokio::task::spawn_blocking(move || -> AppResult<_> {
         let _permit = permit;
-        let (w, h, rgb) = receipt_pixels(&r)?;
-        let png = encode_png(w, h, &rgb)?;
-        Ok((r, png))
+        let n = receipt_pixels(&r)?;
+        let png = encode_png(n.width, n.height, &n.rgb)?;
+        Ok((r, png, n.pixels_sha256(), n.describe()))
     })
     .await
     .map_err(|e| AppError::Internal(e.into()))??;
@@ -722,10 +685,10 @@ async fn read_receipt(
     {
         return Err(conflict());
     }
-    sqlx::query("INSERT INTO privacy_receipt_reads(request_id,review_id,review_revision,actor_id,receipt_id,receipt_revision,expense_revision,sha256) VALUES($1,$2,$3,$4,$5,$6,$7,$8)").bind(id).bind(review).bind(b.company_revision).bind(a.user_id).bind(r.id).bind(r.receipt_revision).bind(r.expense_revision).bind(&r.sha256).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO privacy_receipt_reads(request_id,review_id,review_revision,actor_id,receipt_id,receipt_revision,expense_revision,sha256,pixels_sha256,normalization) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)").bind(id).bind(review).bind(b.company_revision).bind(a.user_id).bind(r.id).bind(r.receipt_revision).bind(r.expense_revision).bind(&r.sha256).bind(&pixels).bind(&normalization).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(Json(
-        json!({"receipt":{"id":r.id,"receipt_revision":r.receipt_revision,"expense_revision":r.expense_revision},"expense_id":r.expense_id,"mime":"image/png","sha256":r.sha256,"display_sha256":digest(&png),"data_base64":STANDARD.encode(png)}),
+        json!({"receipt":{"id":r.id,"receipt_revision":r.receipt_revision,"expense_revision":r.expense_revision},"expense_id":r.expense_id,"mime":"image/png","sha256":r.sha256,"display_sha256":digest(&png),"normalization":normalization,"data_base64":STANDARD.encode(png)}),
     ))
 }
 // Access expires immediately; physical temporary bytes are removed at startup and each minute.

@@ -18,3 +18,20 @@ test('receipt source controls require selected confirmed expense scope and disap
  company.identity='pending';await act(async()=>r.update(React.createElement(AdminImages,{request:{...request,revision:2}})));assert.equal(buttons().length,0);
  await act(async()=>r.root.findAllByType('select')[0].props.onChange({target:{value:'personal'}}));assert.equal(buttons().length,0);await act(async()=>r.unmount());
 });
+test('reduction keeps the aspect ratio inside 2048px and one megapixel like the server',async()=>{
+ const {fitSize}=await components();
+ for(const size of [[1,1],[1000,1000],[2048,488],[640,480]])assert.deepEqual(Array.from(fitSize(...size)),size);
+ assert.deepEqual(Array.from(fitSize(4000,3000)),[1154,865]);assert.deepEqual(Array.from(fitSize(3000,4000)),[865,1154]);
+ assert.deepEqual(Array.from(fitSize(2049,1)),[2048,1]);assert.deepEqual(Array.from(fitSize(1,16384)),[1,2048]);assert.deepEqual(Array.from(fitSize(2048,2048)),[1000,1000]);
+ for(let i=0,seed=7;i<2000;i++){seed=(seed*1103515245+12345)%2147483648;const w=1+seed%16384,h=1+(seed>>>9)%16384,[tw,th]=fitSize(w,h);assert.ok(tw>=1&&th>=1&&tw<=w&&th<=h&&tw<=2048&&th<=2048&&tw*th<=1000000,`${w}x${h}`);}
+});
+test('reviewer and delivery history say when a source was reduced or turned upright',async()=>{
+ const normalization={version:2,reduced:true,source_width:4000,source_height:3000,width:865,height:1154,orientation:6};
+ const {sourceNote,AdminImages}=await components({},{'admin-privacy-images':{items:[{id:5,category:'receipt',notice:'일부',source_reference:'지출 #30 / 영수증 #61',receipt_id:61,company_review_id:9,source_normalization:normalization,available:true,expires_at:'2099-01-01'},{id:4,category:'photo',notice:'일부',source_reference:'수동',company_review_id:null,source_normalization:null,available:true,expires_at:'2099-01-01'}],events:[]},'privacy-image-companies':{items:[]}});
+ assert.equal(sourceNote(normalization),'원본 4000 × 3000px 축소 · 촬영 방향 보정(시계 방향 90° 회전)');
+ assert.equal(sourceNote({reduced:false,orientation:1}),'');assert.equal(sourceNote({reduced:false,orientation:3}),'촬영 방향 보정(180° 회전)');assert.equal(sourceNote(null),'');assert.equal(sourceNote(undefined),'');
+ let r;await act(async()=>{r=create(React.createElement(AdminImages,{request:{id:1,revision:1,status:'in_review',due_at:'2099-01-01'}}));});
+ const lines=r.root.findAllByType('p').map(p=>p.children.filter(c=>typeof c==='string').join(''));
+ assert.equal(lines.filter(t=>t.includes('원본 4000 × 3000px 축소')).length,1);assert.ok(lines.some(t=>t.startsWith('수동')&&!t.includes('축소')));
+ await act(async()=>r.unmount());
+});
