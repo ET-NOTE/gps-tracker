@@ -398,7 +398,11 @@ def apply(site):
         (site.state / 'record.json').write_text(json.dumps(record, indent=1))
         for unit in found['units']:
             path = dropin(site, unit)
-            path.parent.mkdir(mode=0o755, exist_ok=True)
+            path.parent.mkdir(exist_ok=True)
+            if str(path.parent) in record['created_directories']:
+                # The umask above would leave it 0700: systemd reads it, but `systemctl cat` run by
+                # another account would not show the drop-in.
+                path.parent.chmod(0o755)
             path.write_text(dropin_text(site, unit, uploads, private))
             path.chmod(0o644)
         run(['systemctl', 'daemon-reload'])

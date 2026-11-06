@@ -265,7 +265,7 @@ print(json.dumps({
     'account_exists': exists('gps-api'), 'group_exists': any(g.gr_name == 'gps-api' for g in grp.getgrall()),
     'units_run_as': {u: show(u, 'User') for u in units},
     'drop_ins': sorted(str(p) for p in pathlib.Path('/etc/systemd/system').glob('*.d/10-runtime-account.conf')),
-    'drop_in_directories': sorted(str(p) for p in pathlib.Path('/etc/systemd/system').glob('gps-*.d')),
+    'drop_in_directories': {str(p): oct(p.stat().st_mode & 0o7777) for p in sorted(pathlib.Path('/etc/systemd/system').glob('gps-*.d'))},
     'files': {p: owner(p) for p in (f'{api}/.env', '/etc/gps-tracker/fcm-service-account.json', f'{api}/bin/gps-tracker-api', f'{api}/bin/gps-pdf-render')},
     'trees': trees,
     'api_process_user': pwd.getpwuid(int(status['Uid'].split()[0])).pw_name,
@@ -427,6 +427,10 @@ def main():
             require(all(entry_[:2] == [ACCOUNT, ACCOUNT] for t in now['trees'].values() for entry_ in t.values()), 'upload trees not handed over')
             require(all(now['trees'][root][name][2] == value[2] for root, entries in before['trees'].items() for name, value in entries.items()), 'upload modes changed')
             require(now['neighbor_pids'] == before['neighbor_pids'] and now['timers_active'] == ['active', 'active'], 'another service was disturbed')
+            # The drop-ins must be visible to `systemctl cat` run by another account, like every other drop-in.
+            require(len(now['drop_in_directories']) == 3 and set(now['drop_in_directories'].values()) == {'0o755'}, f"drop-in directories: {now['drop_in_directories']}")
+            require('ReadWritePaths=' in docker('exec', HOST, 'runuser', '-u', PREVIOUS, '--', 'systemctl', 'cat', 'gps-tracker-api.service', check=False),
+                    'the deployment account cannot see the drop-in')
             # Independent of the script's own checks: the account has nothing the deployment account had.
             require(inside('runuser', '-u', ACCOUNT, '--', 'sudo', '-n', 'true', check=False)[0] != 0, 'runtime account can sudo')
             require(inside('id', '-Gn', ACCOUNT)[1] == ACCOUNT, 'runtime account has extra groups')
