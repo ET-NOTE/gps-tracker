@@ -1,0 +1,30 @@
+api ready at 172.28.0.3 (ledger off)
+api 3fa6b7ab697ea9f1 schema 100
+ok   test_privacy_receipt_pdf groups=7
+ok   test_privacy_receipt_scaling groups=9
+ok   test_privacy_receipts groups=7
+ok   test_privacy_images groups=8
+ok   test_privacy_redacted groups=8
+ok   test_privacy_company_tasks groups=10
+ok   test_privacy_account_sections groups=5
+ok   test_privacy_packages groups=9
+ok   test_privacy_company groups=10
+ok   test_privacy_delivery groups=11
+ok   test_account_closure groups=15
+ok   test_privacy_location_facts groups=6
+earlier suites with recording off: 105 groups
+ok   ledger suite, recording off: groups=3
+api ready at 172.28.0.3 (ledger on)
+ok   ledger suite, recording on: groups=9
+PASS switching recording on writes the start of the period; no record exists from before the first start
+PASS the owner's reads become one row per hour, device and method with a count, first and last time and the widest period asked for; a refused read and a request that is not location information leave nothing
+PASS a share link is recorded by its id with nobody named; a company member, an administrator and an administrator signed in as the account are each recorded as themselves, never as the account
+PASS opening a live stream is recorded for the devices it was allowed to follow, and not for a device it was refused
+PASS no coordinate, device name, link token or e-mail address is in the table, and a row cannot be re-attributed, reduced, emptied or deleted
+PASS an administrator reads the ledger (and that reading is logged); the subject's file lists who received what and how without naming a member or an administrator, states the start of recording, and never claims a record from before it
+PASS each run of the recorder is a period: a clean stop writes what was gathered and closes the period, a kill leaves it marked as interrupted, and the time between periods is not covered
+PASS without a configured retention nothing is removed; a retention below six months removes nothing and says so; a configured retention removes only rows older than it
+PASS 2,000 concurrent reads are all counted in one row with none dropped; a read takes 12.12 ms (95th percentile 14.33) with recording and 11.55 ms (13.01) without
+api log: 0 error lines in the last run of the container
+done
+exit 0

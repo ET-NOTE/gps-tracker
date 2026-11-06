@@ -156,7 +156,7 @@
 
 성능(격리 환경, 같은 조회 300회 순차): 기록할 때 중앙값 12.12ms·95% 14.33ms, 기록하지 않을 때 11.55ms·13.01ms. 차이는 약 0.6ms다.
 
-기록: [validation.json](evidence/location-rights-round18-20261107/validation.json), [켜짐](evidence/location-rights-round18-20261107/location-access-validation.json), [꺼짐](evidence/location-rights-round18-20261107/location-access-off-validation.json), [회귀 로그](evidence/location-rights-round18-20261107/regression.log), [운영 로그 보관 현황](evidence/location-rights-round18-20261107/production-logs-state.txt). 코드 커밋 `921f445`. 시험에 쓴 API는 고정 도구로 만든 개발 빌드(`3fa6b7ab…`)이며 운영에 올릴 릴리스 산출물이 아니다.
+기록: [validation.json](evidence/location-rights-round18-20261107/validation.json), [켜짐](evidence/location-rights-round18-20261107/location-access-validation.json), [꺼짐](evidence/location-rights-round18-20261107/location-access-off-validation.json), [회귀 로그](evidence/location-rights-round18-20261107/regression.txt), [운영 로그 보관 현황](evidence/location-rights-round18-20261107/production-logs-state.txt). 코드 커밋 `921f445`. 시험에 쓴 API는 고정 도구로 만든 개발 빌드(`3fa6b7ab…`)이며 운영에 올릴 릴리스 산출물이 아니다.
 
 **격리 시험이 다루지 못한 것**
 
