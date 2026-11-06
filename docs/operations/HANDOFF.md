@@ -1,6 +1,6 @@
 # GPS 작업 인계 — 2026-11-06
 
-다른 PC에서 작업을 이어갈 때 먼저 읽는 문서다. 운영에 배포된 기능은 16차까지다(커밋 `9ac4322` 기준 산출물, 2026-11-06 13:54 KST 적용, 14:01 KST 운영 모의 확인 통과). 그 위에 인프라 1차의 API 릴리스 `pdf-service-20261106-r1`(커밋 `4a3814c`, 16:44 KST 적용, 16:45 KST 기능 확인 통과)이 올라가 있다. 기능은 16차와 같고 API 바이너리만 다르다. 라운드별 문서는 해당 시점의 기록이므로 현재 상태는 이 문서와 가장 최근 라운드를 우선 확인한다.
+다른 PC에서 작업을 이어갈 때 먼저 읽는 문서다. 운영에 배포된 기능은 16차까지다(커밋 `9ac4322` 기준 산출물, 2026-11-06 13:54 KST 적용, 14:01 KST 운영 모의 확인 통과). 그 위에 인프라 1차의 API 릴리스 `pdf-service-20261106-r1`(커밋 `4a3814c`, 16:44 KST 적용)이 올라가 있고, PDF 처리기는 16:48 KST부터 별도 계정의 서비스로 실행된다(16:49 KST 기능 확인 통과). 사용자 기능은 16차와 같다. 라운드별 문서는 해당 시점의 기록이므로 현재 상태는 이 문서와 가장 최근 라운드를 우선 확인한다.
 
 ## 저장소와 이어받기
 
@@ -33,7 +33,7 @@ git log -3 --oneline
 | API SHA-256 | `0d28667f3c21af82a43b987a12eec2836547d3717c69ae304688c6e5363ce826` (16차는 `b6ac9edb…`, `/home/mmm/backups/pdf-service-20261106-r1/api.previous`) |
 | API | `/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api`, systemd `gps-tracker-api` |
 | 실행 계정 | API와 정리 작업 2개는 **`gps-api`**(로그인·sudo·docker 없음, 능력 0, 읽기 전용 파일 시스템 + 업로드 두 곳 쓰기)로 실행. 2026-11-06 15:32 KST [인프라 1차](infra-round1-runtime-account-20261106.md). 배포는 `mmm`+sudo. 환경파일·FCM 키는 `root:gps-api 640`이라 `mmm`은 sudo 없이 읽지 못한다. 적용 전 기록은 `/home/mmm/backups/runtime-account-20261106` |
-| PDF 처리기 | 같은 디렉터리의 `gps-pdf-render`(root 소유 755), SHA-256 `3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb`. **지금은 API가 PDF 쪽마다 직접 실행한다.** 별도 계정(`gps-pdf`)의 소켓 서비스로 옮기는 설정은 준비·점검까지 끝났고 운영자 실행 대기([2단계](infra-round1-pdf-service-20261106.md)) |
+| PDF 처리기 | 같은 디렉터리의 `gps-pdf-render`(root 소유 755), SHA-256 `3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb`. **2026-11-06 16:48 KST부터 API가 실행하지 않는다.** API는 쪽 요청을 `/run/gps-pdf-render/render.sock`(root:gps-api 660)으로 보내고, systemd가 요청마다 처리기를 **`gps-pdf`** 계정(로그인·그룹 없음)으로 실행한다: 네트워크 없음, 처리기 파일만 보이는 빈 루트, 메모리 832MiB·스왑 0, 20초([2단계](infra-round1-pdf-service-20261106.md)). 유닛은 `gps-pdf-render.socket`·`gps-pdf-render@.service`·`gps-pdf-render-selftest.service`, API drop-in `20-pdf-socket.conf`. 자체 점검이 실패하면 소켓이 없고 PDF 쪽만 "사용할 수 없음"이 된다. 적용 기록은 `/home/mmm/backups/pdf-service-20261106` |
 | 웹 | `/home/mmm/gps-tracker-web/dist-root` → `/home/mmm/releases/privacy-pdf-20261106-r1/web` |
 | 배포 산출물 | `/home/mmm/gps-artifacts/pdf-service-20261106`(API 릴리스와 처리기 서비스 스크립트), `/home/mmm/gps-artifacts/privacy-pdf-20261106-r1`(16차: 웹·처리기) |
 | 배포 전 사본 | `/home/mmm/backups/privacy-pdf-20261106-r1` (15차 바이너리, 적용 전 범위 함수 정의). 스크립트 되돌림은 모의 확인 이후 쓸 수 없음 |
@@ -119,7 +119,7 @@ Git으로 이동하는 것은 소스·라운드 문서·아래 작은 검증 JSO
 | 표본 확보 후 | 실제 한글 영수증 PDF로 렌더링 품질 재확인 | 16차 평가는 합성 표본만 사용. JBIG2·JPEG 2000 스캔과 블렌드 모드는 미검증 |
 | 범위 확정 후 | 회사 공용 차량 문서/사진 연결, 원본 정정·파기 | 정보주체·회사 권한·보관 근거/기간·승인 범위를 먼저 확인 |
 | 담당자 결정 대기 | 감사/처리 증빙·백업·외부 사본 보관과 파기, 로그인 불가/대리인 확인 | 회사 정책을 임의 보관 기간으로 대체하지 않음 |
-| 진행 중 | **[인프라 1차 2단계: PDF 처리기의 별도 계정·서비스 분리](infra-round1-pdf-service-20261106.md)** | 1단계(실행 계정 분리)는 2026-11-06 15:32 KST 운영 적용·기능 확인 완료. 2단계는 구현·리허설 통과(커밋 `4a3814c`). API 릴리스 `pdf-service-20261106-r1`은 16:44 KST 운영 적용, 16:45 KST 기능 확인과 처리기 서비스 읽기 전용 점검 통과. **처리기 서비스(계정 `gps-pdf`·유닛)는 아직 적용하지 않았다.** 남은 순서: ① 운영자가 `/home/mmm/gps-artifacts/pdf-service-20261106`에서 `sudo python3 pdf_service.py apply` 실행 ② 에이전트가 확인과 `smoke_pdf_service.py service` 실행. 되돌릴 때는 `pdf_service.py rollback`이 먼저, 그다음 `release_pdf_service.py rollback` |
+| 완료 | **인프라 1차: [API 실행 계정 분리](infra-round1-runtime-account-20261106.md)와 [PDF 처리기의 별도 계정·서비스 분리](infra-round1-pdf-service-20261106.md)** | 1단계 2026-11-06 15:32 KST, 2단계 16:44 KST(API 릴리스)·16:48 KST(처리기 서비스) 운영 적용, 기능 확인 통과. 되돌릴 때는 `/home/mmm/gps-artifacts/pdf-service-20261106`에서 `pdf_service.py rollback`이 먼저, 그다음 `release_pdf_service.py rollback`(순서가 어긋나면 스크립트가 거부). 남은 확인: 다음 계획된 재부팅 뒤 `gps-pdf-render.socket`이 스스로 올라오는지(리허설에서만 확인) |
 | 다음 | VPS와 독립된 외부 장애 감시 | [준비 조사](infra-precheck-20261106.md) 완료: 기존 Uptime Kuma는 같은 서버에 있고 알림 수단이 0건이다. 사무실 빌드 호스트에서 1분마다 보는 점검을 제안. **시작 전 운영자 결정 필요**: 알림 수단(메일·메신저 웹훅)과 감시 위치. 비밀값은 운영자가 직접 넣는다 |
 | 그다음 기능 라운드 | 권리 대응 17차: 수집·이용·제공사실 열람 | 기존 권리 요청·결과 제공 기능을 활용 |
 | 별도 항목(섞지 않음) | 방화벽 부팅 순서([별도 구성 위험](incident-20261106-hosting-maintenance.md), `ops/fix_firewall_boot_order.sh`), 디스크 정리, 열린 포트 축소, 관리 접근·DB 경계·백업 | 11월 6일 장애의 원인은 호스팅 업체의 긴급 업데이트 문제로 확인됐다. 방화벽 순서 문제는 그 원인으로 확정하지 않은 별도 위험이다. 방화벽·시스템 설정 변경은 운영자가 실행 |
