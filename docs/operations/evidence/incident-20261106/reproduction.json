@@ -1,5 +1,6 @@
 {
-  "question": "why were ufw's allow rules not linked into INPUT after the 2026-11-06 reboots",
+  "question": "what can happen when ufw and netfilter-persistent start unordered at boot",
+  "relation_to_the_2026_11_06_outage": "not established. The hosting company attributed the outage to its emergency update. This is a separate configuration risk found while investigating; the boot log lines below are observations only.",
   "environment": {
     "where": "build host, one fresh container per case, own network namespace (--network none, NET_ADMIN), no effect on the host filter",
     "image": "ubuntu:22.04 with ufw 0.36.1-4ubuntu0.1, iptables 1.8.7-1ubuntu5.2 (nf_tables), iptables-persistent 1.0.16",
@@ -26,12 +27,12 @@
     {
       "order": "inside ufw start, before restore 3",
       "result": "blocked",
-      "state": "INPUT policy DROP, 0 ufw jumps, ufw-init exit 0 (chains and user rules present: the 11:04 boot)"
+      "state": "INPUT policy DROP, 0 ufw jumps, ufw-init exit 0 (chains and user rules present)"
     },
     {
       "order": "inside ufw start, before restore 4..9",
       "result": "blocked",
-      "state": "INPUT policy DROP, 0 ufw jumps, ufw-init exit 1 (the 00:48 boot: RULE_APPEND failed)"
+      "state": "INPUT policy DROP, 0 ufw jumps, ufw-init exit 1 (RULE_APPEND failed)"
     },
     {
       "order": "inside ufw start, before restore 10",

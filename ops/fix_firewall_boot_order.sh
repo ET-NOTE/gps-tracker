@@ -6,7 +6,8 @@
 # Why: both units rewrite the packet filter early in boot and nothing orders them. When
 # netfilter-persistent restores /etc/iptables/rules.v4 (which flushes the filter table) while ufw
 # is building its chains, the INPUT jumps to ufw are lost: everything inbound is dropped, loopback
-# included (2026-11-06 outage), or, if it runs after ufw, nothing is filtered at all.
+# included, or, if it runs after ufw, nothing is filtered at all. A configuration risk found on
+# 2026-11-06; not established as the cause of that day's outage.
 # See docs/operations/incident-20261106-hosting-maintenance.md.
 #
 # What it changes: one systemd drop-in for ufw.service. The running firewall is not touched, so
