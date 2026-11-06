@@ -36,6 +36,7 @@ DB = 'gps-runtime-rehearsal-db-20261106'
 HOST = 'gps-runtime-rehearsal-host-20261106'
 STAGE = f'/home/mmm/gps-artifacts/{NAME}'
 OPS = ['runtime_account.py', 'smoke_runtime_account.py']
+HOST_OPTIONS = []  # extra `docker run` options for the rehearsal host; a later stage's rehearsal adds its own
 WORKERS = ['privacy_account_closure.py', 'privacy_file_cleanup.py', 'privacy_scope_inventory.py']
 
 PROVISION = r'''#!/bin/bash
@@ -318,7 +319,7 @@ def up(job, box):
     # A real systemd as PID 1 in its own cgroup namespace. /proc/sys stays read-only and no host device is passed in.
     docker('run', '-d', '--name', HOST, '--network', NETWORK, '--cgroupns=private', '--cap-add', 'SYS_ADMIN',
            '--security-opt', 'seccomp=unconfined', '--security-opt', 'apparmor=unconfined', '--tmpfs', '/run', '--tmpfs', '/run/lock',
-           '--tmpfs', '/tmp', '-e', 'container=docker', '--memory=1500m', IMAGE, 'sh', '-c', 'mount -o remount,rw /sys/fs/cgroup; exec /sbin/init')
+           '--tmpfs', '/tmp', '-e', 'container=docker', '--memory=1500m', *HOST_OPTIONS, IMAGE, 'sh', '-c', 'mount -o remount,rw /sys/fs/cgroup; exec /sbin/init')
     ready = 0
     for _ in range(90):
         ok = subprocess.run(['docker', 'exec', DB, 'psql', '-U', 'postgres', '-d', 'gps_rehearsal', '-Atc', 'select 1'], capture_output=True).returncode == 0
