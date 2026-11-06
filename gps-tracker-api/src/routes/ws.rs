@@ -25,7 +25,12 @@ use serde::Deserialize;
 use std::sync::Arc;
 use tokio::sync::broadcast::error::RecvError;
 
-use crate::{auth::jwt, events::EventTarget, state::AppState};
+use crate::{
+    auth::jwt,
+    events::EventTarget,
+    services::access_ledger::{self, Access, Recipient, Target},
+    state::AppState,
+};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -62,10 +67,29 @@ async fn handler(
     {
         return (StatusCode::UNAUTHORIZED, "account unavailable").into_response();
     }
-    ws.on_upgrade(move |socket| run(socket, state, user_id, claims.exp))
+    // An administrator signed in as the account receives the stream, not the account.
+    let reader = match claims.act.as_deref().and_then(|a| a.parse().ok()) {
+        Some(admin) => Recipient::Admin(admin),
+        None => Recipient::Own(user_id),
+    };
+    ws.on_upgrade(move |socket| run(socket, state, user_id, claims.exp, reader))
 }
 
-async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) {
+/// A live stream is recorded when it is opened and again while it stays open.
+fn note_stream(reader: &Recipient, devices: &[i64]) {
+    for id in devices {
+        access_ledger::note(Access {
+            at: chrono::Utc::now(),
+            target: Target::Device(*id),
+            recipient: reader.clone(),
+            path: "realtime",
+            method: "position",
+            range: None,
+        });
+    }
+}
+
+async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, reader: Recipient) {
     let (mut sender, mut receiver) = socket.split();
     let mut rx = state.events.subscribe();
     let subs: Arc<Mutex<HashSet<i64>>> = Arc::new(Mutex::new(HashSet::new()));
@@ -81,6 +105,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
 
     let subs_for_recv = subs.clone();
     let db_for_recv = state.db.clone();
+    let reader_for_recv = reader.clone();
     let recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             match msg {
@@ -102,6 +127,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
                     .await
                     .unwrap_or_default();
 
+                    note_stream(&reader_for_recv, &allowed);
                     let allowed_set: HashSet<i64> = allowed.iter().copied().collect();
                     let rejected: Vec<i64> = cmd
                         .device_ids
@@ -157,6 +183,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64) 
                         "SELECT id FROM devices WHERE owner_id = $1 AND id = ANY($2)",
                     ).bind(user_id).bind(&current).fetch_all(&state.db).await {
                       Ok(still) => {
+                        note_stream(&reader, &still);
                         let still_set: HashSet<i64> = still.into_iter().collect();
                         let mut s = subs.lock().unwrap();
                         s.retain(|id| still_set.contains(id));

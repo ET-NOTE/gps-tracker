@@ -333,6 +333,7 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
             let ev: PendingEvent = sqlx::query_as("SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id,e.occurred_at FROM events e JOIN devices d ON d.id=e.device_id WHERE e.id=$1")
                 .bind(event).fetch_one(pool).await?;
             item.message = event_message(pool, &ev).await;
+            note_push(&ev);
         } else if !matches!(
             item.message["data"]["kind"].as_str(),
             Some("chat_admin_message" | "chat_user_message")
@@ -457,9 +458,30 @@ fn title_for_kind(kind: &str) -> &'static str {
     }
 }
 
-async fn resolve_addr(pool: &PgPool, lat: f64, lng: f64) -> Option<String> {
-    let mut r = super::kakao_geo::reverse_many_cached(pool, &[(lat, lng)]).await;
+async fn resolve_addr(pool: &PgPool, device: i64, lat: f64, lng: f64) -> Option<String> {
+    let mut r = super::access_ledger::about(
+        super::access_ledger::Target::Device(device),
+        super::kakao_geo::reverse_many_cached(pool, &[(lat, lng)]),
+    )
+    .await;
     r.pop().flatten().map(|x| x.short())
+}
+
+/// A push whose text comes from a position (a place name, a zone crossing) is handed to the push service.
+fn note_push(ev: &PendingEvent) {
+    if matches!(
+        policy::kind(&ev.kind, ev.data.as_ref()),
+        "cycle_first_fix" | "geofence_in" | "geofence_out"
+    ) {
+        super::access_ledger::note(super::access_ledger::Access {
+            at: chrono::Utc::now(),
+            target: super::access_ledger::Target::Device(ev.device_id),
+            recipient: super::access_ledger::Recipient::Processor("fcm"),
+            path: "server",
+            method: "push",
+            range: None,
+        });
+    }
 }
 
 fn schedule_time(data: Option<&Value>, field: &str) -> String {
@@ -543,7 +565,7 @@ async fn event_message(pool: &PgPool, ev: &PendingEvent) -> Value {
             .as_ref()
             .and_then(|d| Some((d["lat"].as_f64()?, d["lng"].as_f64()?)))
         {
-            Some((lat, lng)) => resolve_addr(pool, lat, lng).await,
+            Some((lat, lng)) => resolve_addr(pool, ev.device_id, lat, lng).await,
             None => None,
         }
     } else {

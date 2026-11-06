@@ -19,6 +19,7 @@ pub mod fleet_vehicles;
 pub mod geofences;
 pub mod health;
 pub mod ingest;
+pub mod location_access;
 pub mod locations;
 pub mod notifications;
 pub mod payments;
@@ -85,6 +86,12 @@ pub fn build_router(state: AppState) -> Router {
         .merge(chat::router_user())
         .merge(chat::router_admin())
         .merge(admin::router())
+        .merge(location_access::router())
+        // Inside the company scope layer: the ledger sees who really asked.
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            crate::services::access_ledger::middleware,
+        ))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             crate::auth::fleet::middleware,

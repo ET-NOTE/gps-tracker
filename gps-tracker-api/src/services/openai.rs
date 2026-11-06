@@ -48,6 +48,8 @@ pub async fn chat(messages: &[ChatMessage<'_>], max_tokens: u32) -> anyhow::Resu
         .filter(|s| !s.is_empty())
         .ok_or_else(|| anyhow::anyhow!("OPENAI_API_KEY not configured"))?;
     let model = std::env::var("OPENAI_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string());
+    // A day's movement summary leaves for the AI service here.
+    super::access_ledger::sent_to("openai", "analysis");
 
     let body = json!({
         "model": model,

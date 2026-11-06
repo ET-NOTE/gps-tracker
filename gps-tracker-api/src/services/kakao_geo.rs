@@ -218,6 +218,8 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
                 .timeout(Duration::from_secs(6))
                 .build()
             {
+                // Coordinates leave for the map service here (cache misses only).
+                super::access_ledger::sent_to("kakao", "geocode");
                 // 각 miss 셀의 첫 좌표로 한 번만 호출
                 // owned 로 미리 materialize — coords/cell_to_indices(빌림)를 stream await 너머로
                 //   넘기면 handler future non-Send. (cell, lat, lng) 소유 튜플로 복사 후 into_iter.

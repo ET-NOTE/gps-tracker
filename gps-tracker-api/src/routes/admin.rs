@@ -306,14 +306,17 @@ async fn impersonate_user(
         return Err(AppError::NotFound);
     }
 
-    let access = jwt::issue_access(
+    // The tokens name the administrator, so what is read with them is recorded as the administrator's.
+    let access = jwt::issue_access_as(
         id,
+        Some(admin.user_id),
         &state.config.jwt_secret,
         state.config.jwt_access_ttl_min,
     )
     .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt: {e}")))?;
-    let refresh = jwt::issue_refresh(
+    let refresh = jwt::issue_refresh_as(
         id,
+        Some(admin.user_id),
         &state.config.jwt_secret,
         state.config.jwt_refresh_ttl_days,
     )

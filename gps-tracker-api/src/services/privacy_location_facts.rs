@@ -7,8 +7,9 @@
 //! a company vehicle, and erased SIMs, are left out and counted for separate review, exactly as
 //! the location file delivery does.
 //!
-//! The system has no ledger of every read. What is not recorded is listed in the output instead
-//! of being implied complete.
+//! Reads are recorded only from the moment the access ledger was switched on, and only while it
+//! ran. Nothing is made up for the time before. What is not recorded is listed in the output
+//! instead of being implied complete.
 use crate::error::{AppError, AppResult};
 use chrono::{DateTime, Duration, Utc};
 use serde_json::{json, Value};
@@ -79,7 +80,24 @@ fn too_much() -> AppError {
     )
 }
 
-/// Facts the service produces without leaving a record per occurrence.
+/// What is not recorded once the access ledger has started. `since` is its first moment in Korean time.
+fn not_recorded(started: Option<DateTime<Utc>>) -> Vec<String> {
+    let Some(started) = started else {
+        return NOT_RECORDED.iter().map(|s| s.to_string()).collect();
+    };
+    let since = (started + Duration::hours(9)).format("%Y-%m-%d %H:%M");
+    vec![
+        format!("본인 계정·회사 연결 계정·운영자의 조회, 공유 링크 열람, 외부 서비스 전달: 기록을 시작한 {since}(한국 시간) 이전과 access_records.recorded_periods에 없는 시간에는 기록이 없으며, 소급해 만들지 않습니다."),
+        "조회 기록은 1시간 단위로 묶은 횟수와 처음·마지막 시각입니다. 건별 시각, 조회한 내용, 위치는 남기지 않습니다.".into(),
+        "공유 링크를 받은 사람: 누구인지는 기록하지 않으며 링크별 열람 시간대와 횟수만 남습니다. 만료·회수 후 30일이 지난 링크는 목록에서 삭제됩니다.".into(),
+        "실패하거나 거부된 요청, 공유 화면에서 받는 사람의 브라우저가 지도 서비스로 직접 보내는 주소 변환, 서비스 내부의 자동 처리(구역 출입 판정, 통계 집계, 지점 방문 판정): 기록하지 않습니다.".into(),
+        NOT_RECORDED[5].into(),
+        NOT_RECORDED[6].into(),
+        NOT_RECORDED[7].into(),
+    ]
+}
+
+/// Facts the service produces without leaving a record per occurrence, while no access ledger exists.
 const NOT_RECORDED: [&str; 8] = [
     "본인 계정의 지도·이동 이력·통계 조회, 실시간 화면 연결, 파일 내보내기: 조회할 때마다의 기록을 남기지 않습니다.",
     "공유 링크를 받은 사람의 열람: 누가 언제 열었는지는 기록하지 않으며 열람 횟수와 마지막 열람 시각만 남습니다. 만료·회수 후 30일이 지난 링크는 목록에서 삭제됩니다.",
@@ -97,11 +115,12 @@ pub async fn export(
     from: DateTime<Utc>,
     until: DateTime<Utc>,
 ) -> AppResult<Value> {
-    let (l, e, a, s) = (
+    let (l, e, a, s, g) = (
         own_device("l"),
         own_device("e"),
         own_device("a"),
         own_device("s"),
+        own_device("g"),
     );
     // A stored report is a location report when it carries at least one point: its own fix, or
     // the fixes of a batch. Reports without a point carry device status only.
@@ -153,7 +172,29 @@ pub async fn export(
         .fetch_one(&mut **tx)
         .await,
     )?;
-    Ok(json!({
+    // Who was given the location information, from the moment that started to be recorded.
+    let started: Option<DateTime<Utc>> = in_time(
+        sqlx::query_scalar("SELECT min(c.started_at) FROM location_access_coverage c")
+            .fetch_one(&mut **tx)
+            .await,
+    )?;
+    let access = match started {
+        None => None,
+        Some(started) => {
+            let periods = list(tx, uid, from, until,
+                "SELECT jsonb_build_object('from',GREATEST(c.started_at,$2),'until',LEAST(COALESCE(c.stopped_at,c.alive_at),$3),                 'ended',CASE WHEN c.stopped_at IS NOT NULL THEN 'stopped' WHEN c.id=(SELECT max(n.id) FROM location_access_coverage n) THEN 'running' ELSE 'interrupted' END,                 'not_kept',c.dropped) FROM location_access_coverage c                  WHERE $1::bigint IS NOT NULL AND c.started_at<$3 AND COALESCE(c.stopped_at,c.alive_at)>=$2 ORDER BY c.id LIMIT 501", 500).await?;
+            // The account a company member or an administrator used is not named, only that it was one.
+            let records = list(tx, uid, from, until, &format!(
+                "SELECT jsonb_build_object('first_at',g.first_at,'last_at',g.last_at,'count',g.hits,'recipient',g.recipient_kind,'service',g.recipient_name,                 'via',g.path,'kind',g.method,'device_id',g.device_id,'vehicle_id',g.vehicle_id,'share_link_id',g.share_id,'all_accounts',g.all_subjects,                 'requested_from',g.range_from,'requested_until',g.range_until)                  FROM location_access_log g WHERE (g.subject_user_id=$1 OR g.all_subjects) AND g.last_at>=$2 AND g.first_at<$3                  AND (g.device_id IS NULL OR ({g})) ORDER BY g.bucket,g.id LIMIT 2001"), 2000).await?;
+            Some(json!({
+                "recording_started_at": started,
+                "recorded_periods": periods,
+                "records": records,
+                "notice": "기록을 시작한 뒤 본인의 위치정보를 누가(recipient) 어떤 경로(via)와 방법(kind)으로 받았는지를 1시간 단위로 모은 기록입니다.             recipient는 self(본인 계정), company(회사에 연결된 계정), admin(운영자), share_link(공유 링크를 받은 사람), processor(service에 적힌 외부 서비스)입니다.             via는 api(앱·웹 화면), share_link, realtime(실시간 화면 연결), impersonation(운영자의 대리 접속), server(서비스가 외부로 보냄)이고,             kind는 position(현재 위치), track(이동 경로), trips(운행), stats(통계), events(구역·방문 사건), analysis(AI 분석), file(파일), geocode(주소 변환), push(알림)입니다.             recorded_periods는 기록기가 동작한 시간이며 ended가 interrupted인 구간의 끝 몇 초와 not_kept에 적힌 건수는 남지 않았을 수 있습니다.             all_accounts는 운영자가 전체 목록을 조회한 기록입니다. requested_from·requested_until은 요청한 자료의 기간입니다.",
+            }))
+        }
+    };
+    let mut facts = json!({
         "period": {"from": from, "until": until, "date_timezone": "Asia/Seoul"},
         "collection": {
             "by": "본인 계정에 등록된 단말기가 보낸 위치 보고를 서비스가 저장한 사실입니다. 기록은 보고가 저장될 당시의 계정에 귀속됩니다.",
@@ -171,7 +212,7 @@ pub async fn export(
             "company_links": companies,
         },
         "separate_review": {"devices_with_company_vehicle_history_or_erased": separate},
-        "not_recorded": NOT_RECORDED,
+        "not_recorded": not_recorded(started),
         "notice": "지정한 기간에 대해 시스템에 남아 있는 수집·이용·제공사실입니다. 좌표와 주소는 포함하지 않습니다. \
     수집은 날짜(한국 시간)·단말기·수집 방법별 건수와 처음·마지막 시각이며, 건별 시각과 위치는 위치 기록 제공에서 확인합니다. 저장된 보고 기준이라 재전송된 보고가 중복 집계될 수 있습니다. \
     method는 device_gnss(단말기 위성 수신), modem_gnss(통신 모듈 위성 수신), phone(휴대전화)입니다. \
@@ -180,7 +221,11 @@ pub async fn export(
     share_links는 본인이 만든 공유 링크이고 받는 사람은 시스템이 식별하지 않습니다. location_file_deliveries는 열람 요청에 따라 본인에게 제공한 위치 파일입니다. \
     company_links는 회사와의 계정 연결 변동이며, 회사 차량 운행 중 회사 계정으로 수집된 위치와 separate_review의 단말기는 회사 자료 검토 절차에서 따로 다룹니다. \
     not_recorded는 서비스가 수행하지만 건별 기록이 없는 처리입니다. 이 자료는 모든 수집·이용·제공사실의 제공 완료를 뜻하지 않습니다.",
-    }))
+    });
+    if let Some(access) = access {
+        facts["access_records"] = access;
+    }
+    Ok(facts)
 }
 
 #[cfg(test)]
@@ -208,6 +253,24 @@ mod tests {
         assert!(!valid_period(true, None, None, now));
         assert!(!valid_period(true, Some(now - day), None, now));
         assert!(!valid_period(false, Some(now - day), Some(now), now));
+    }
+
+    #[test]
+    fn what_is_not_recorded_depends_on_whether_and_since_when_reads_are_recorded() {
+        // No ledger: the eight statements released with the section, unchanged.
+        assert_eq!(not_recorded(None), NOT_RECORDED.map(String::from).to_vec());
+        // A ledger: nothing claims a record before its start, and the start is given in Korean time.
+        let started = Utc.with_ymd_and_hms(2026, 11, 30, 16, 5, 0).unwrap();
+        let listed = not_recorded(Some(started));
+        assert_eq!(listed.len(), 7);
+        assert!(
+            listed[0].contains("2026-12-01 01:05(한국 시간) 이전")
+                && listed[0].contains("소급해 만들지 않습니다")
+        );
+        assert!(!listed
+            .iter()
+            .any(|s| s.contains("조회할 때마다의 기록을 남기지 않습니다")));
+        assert_eq!(listed[4..], NOT_RECORDED.map(String::from)[5..]);
     }
 
     #[test]

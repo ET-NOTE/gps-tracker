@@ -290,7 +290,11 @@ async fn compute_trips_inner_ex(
     let resolved = if coords_to_resolve.is_empty() {
         vec![]
     } else {
-        kakao_geo::reverse_many_cached(&state.db, &coords_to_resolve).await
+        crate::services::access_ledger::about(
+            crate::services::access_ledger::Target::Device(device_id),
+            kakao_geo::reverse_many_cached(&state.db, &coords_to_resolve),
+        )
+        .await
     };
 
     // 6) annotations

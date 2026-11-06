@@ -13,9 +13,18 @@ pub struct Claims {
     pub typ: String, // "access" | "refresh"
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub jti: Option<String>, // refresh 토큰 유일성 보장용 (access는 비움)
+    /// The administrator who signed in as `sub`. Reads made with such a token are the
+    /// administrator's, not the account's.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub act: Option<String>,
 }
 
-pub fn issue_access(user_id: i64, secret: &str, ttl_min: i64) -> Result<String, Error> {
+pub fn issue_access_as(
+    user_id: i64,
+    acting_admin: Option<i64>,
+    secret: &str,
+    ttl_min: i64,
+) -> Result<String, Error> {
     let now = Utc::now();
     let claims = Claims {
         sub: user_id.to_string(),
@@ -23,6 +32,7 @@ pub fn issue_access(user_id: i64, secret: &str, ttl_min: i64) -> Result<String, 
         iat: now.timestamp(),
         typ: "access".into(),
         jti: None,
+        act: acting_admin.map(|id| id.to_string()),
     };
     encode(
         &Header::new(Algorithm::HS256),
@@ -31,7 +41,12 @@ pub fn issue_access(user_id: i64, secret: &str, ttl_min: i64) -> Result<String, 
     )
 }
 
-pub fn issue_refresh(user_id: i64, secret: &str, ttl_days: i64) -> Result<String, Error> {
+pub fn issue_refresh_as(
+    user_id: i64,
+    acting_admin: Option<i64>,
+    secret: &str,
+    ttl_days: i64,
+) -> Result<String, Error> {
     let now = Utc::now();
     let claims = Claims {
         sub: user_id.to_string(),
@@ -39,6 +54,7 @@ pub fn issue_refresh(user_id: i64, secret: &str, ttl_days: i64) -> Result<String
         iat: now.timestamp(),
         typ: "refresh".into(),
         jti: Some(Uuid::new_v4().to_string()),
+        act: acting_admin.map(|id| id.to_string()),
     };
     encode(
         &Header::new(Algorithm::HS256),

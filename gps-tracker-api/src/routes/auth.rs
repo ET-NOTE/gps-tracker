@@ -453,16 +453,18 @@ fn hash_refresh(token: &str) -> String {
 async fn issue_pair(
     state: &AppState,
     user_id: i64,
+    acting_admin: Option<i64>,
     user_agent: Option<&str>,
     ttl_days: i64,
 ) -> AppResult<TokenPair> {
-    let access = jwt::issue_access(
+    let access = jwt::issue_access_as(
         user_id,
+        acting_admin,
         &state.config.jwt_secret,
         state.config.jwt_access_ttl_min,
     )
     .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt access: {e}")))?;
-    let refresh = jwt::issue_refresh(user_id, &state.config.jwt_secret, ttl_days)
+    let refresh = jwt::issue_refresh_as(user_id, acting_admin, &state.config.jwt_secret, ttl_days)
         .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt refresh: {e}")))?;
 
     let token_hash = hash_refresh(&refresh);
@@ -536,7 +538,7 @@ pub async fn register(
 
     let ua = headers.get("user-agent").and_then(|v| v.to_str().ok());
     // 가입 직후엔 기본 정책 (30일) — 신규 사용자는 보통 계속 로그인 유지 원함.
-    let pair = issue_pair(&state, user_id, ua, state.config.jwt_refresh_ttl_days).await?;
+    let pair = issue_pair(&state, user_id, None, ua, state.config.jwt_refresh_ttl_days).await?;
 
     // 환영 알림톡 발송 (fire-and-forget) — 발송 실패해도 가입 자체는 성공 응답.
     // Bizm 응답 지연 또는 네트워크 이슈가 가입 흐름을 막지 않도록 spawn.
@@ -727,7 +729,7 @@ pub async fn login(
 
     let ua = headers.get("user-agent").and_then(|v| v.to_str().ok());
     let ttl_days = refresh_ttl_for(&state, req.remember_me);
-    let pair = issue_pair(&state, user_id, ua, ttl_days).await?;
+    let pair = issue_pair(&state, user_id, None, ua, ttl_days).await?;
     Ok(Json(pair))
 }
 
@@ -766,7 +768,9 @@ pub async fn refresh(
     };
 
     let ua = headers.get("user-agent").and_then(|v| v.to_str().ok());
-    let pair = issue_pair(&state, user_id, ua, ttl_days).await?;
+    // A session an administrator opened as this account stays the administrator's when renewed.
+    let acting_admin = claims.act.as_deref().and_then(|a| a.parse().ok());
+    let pair = issue_pair(&state, user_id, acting_admin, ua, ttl_days).await?;
     Ok(Json(pair))
 }
 

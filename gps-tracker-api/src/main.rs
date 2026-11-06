@@ -69,6 +69,11 @@ async fn main() -> anyhow::Result<()> {
         opinet,
     };
 
+    // Off unless switched on. When it is on and cannot start, the API does not serve unrecorded reads.
+    services::access_ledger::start(pool.clone())
+        .await
+        .context("location access ledger")?;
+
     services::fcm::spawn(pool.clone(), fcm);
     services::geofence::spawn_offline_worker(pool.clone());
     services::stats::spawn_worker(pool.clone());
@@ -121,6 +126,7 @@ async fn main() -> anyhow::Result<()> {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("server error")?;
+    services::access_ledger::close().await;
     Ok(())
 }
 

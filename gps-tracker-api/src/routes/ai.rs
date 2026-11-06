@@ -107,9 +107,23 @@ struct DailyStatsRow {
 }
 
 async fn analyze(
-    State(state): State<AppState>,
+    state: State<AppState>,
     user: AuthUser,
     Path(device_id): Path<i64>,
+    req: Json<AnalyzeRequest>,
+) -> AppResult<Json<AnalyzeResponse>> {
+    // Whatever this request sends to the map and AI services is recorded for this device.
+    crate::services::access_ledger::about(
+        crate::services::access_ledger::Target::Device(device_id),
+        analyze_for(state, user, device_id, req),
+    )
+    .await
+}
+
+async fn analyze_for(
+    State(state): State<AppState>,
+    user: AuthUser,
+    device_id: i64,
     Json(req): Json<AnalyzeRequest>,
 ) -> AppResult<Json<AnalyzeResponse>> {
     if std::env::var("OPENAI_API_KEY")

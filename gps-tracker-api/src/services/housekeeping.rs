@@ -140,6 +140,16 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
         );
     }
 
+    // 8) 위치정보 이용·제공사실 확인자료 — 보관 기간이 설정됐을 때만, 최소 보관 기간보다 짧게는 지우지 않는다.
+    match super::access_ledger::purge(pool).await {
+        Ok(0) => {}
+        Ok(removed) => tracing::info!(
+            removed,
+            "housekeeping: location access records past their retention removed"
+        ),
+        Err(e) => tracing::error!("housekeeping: location access retention: {e:#}"),
+    }
+
     tracing::info!("housekeeping: retained device history; expiry cleanup complete");
     Ok(())
 }
