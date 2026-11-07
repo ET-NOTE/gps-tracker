@@ -28,6 +28,6 @@ page+=row('Nginx 요청·오류 분류',f'{n["requests"]}개 요청 / {len(n["cl
 page+=row('비밀값 제외 / 로그 회전','통과 / 통과')+row('보관기간 문구','1년 자동 파기 단정 제거 · 실제 제공 응답 확인')+'</table>'
 page+='<p class="note">다음 18B: 조회 시점의 귀속 고정, 건별 기록·내구성, 철회 삭제 경로, 경로 누락 검증. 기존 조회 기록 기능은 운영 미배포·OFF입니다.</p>'
 page+=source('validation.json')+source('nginx-validation.json')+f'<div class="source">API SHA-256: {esc(m["api_sha256"])}</div></section></main></html>'
-(root/'report.html').write_text(page,encoding='utf-8')
-(root/'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in sorted(root.iterdir()) if p.is_file() and p.name!='SHA256SUMS'),encoding='utf-8')
+(root/'report.html').write_text(page,encoding='utf-8',newline='\n')
+(root/'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in sorted(root.iterdir()) if p.is_file() and p.name!='SHA256SUMS'),encoding='utf-8',newline='\n')
 print(root/'report.html')
