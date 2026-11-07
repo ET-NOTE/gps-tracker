@@ -38,12 +38,13 @@
     }
   ],
   "kuma_log_notification_failures": 0,
-  "delivery_to_inbox_confirmed_by_operator": false,
+  "delivery_to_inbox_confirmed_by_operator": true,
   "after": {
     "timer": "active",
     "heartbeat_ok": true,
     "incident": null,
     "mail_waiting": 0
   },
-  "deviation": "the timer stayed stopped about 9.5 minutes instead of 5: the drill script misread Kuma's verdict and waited out its limit; no production outage occurred meanwhile"
+  "deviation": "the timer stayed stopped about 9.5 minutes instead of 5: the drill script misread Kuma's verdict and waited out its limit; no production outage occurred meanwhile",
+  "confirmed_on": "2026-11-07"
 }
