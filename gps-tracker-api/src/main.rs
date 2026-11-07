@@ -111,7 +111,7 @@ async fn main() -> anyhow::Result<()> {
     let app = routes::build_router(state)
         .layer(DefaultBodyLimit::max(1024 * 1024))
         .layer(axum::middleware::from_fn(request_timeout))
-        .layer(TraceLayer::new_for_http())
+        .layer(TraceLayer::new_for_http().make_span_with(services::http_trace::span))
         .layer(cors);
 
     // ── serve ─────────────────────────────────────────────
