@@ -1,0 +1,49 @@
+{
+  "kind": "alert drill, Uptime Kuma heartbeat path",
+  "kuma": "status.serial.kr, 1.23.17, container uptime-kuma on the production host",
+  "push_monitor": {
+    "name": "GPS 외부 감시(사무실)",
+    "interval_s": 60,
+    "retries": 3,
+    "retry_interval_s": 60,
+    "notifications_linked": 1
+  },
+  "notification": {
+    "name": "gps 서버 감시 메일",
+    "default": true,
+    "active": true
+  },
+  "heartbeat_configured_at_kst": "2026-11-07 16:10",
+  "method": "the watch timer on the build host was stopped so the push monitor fell silent; nothing on the production host was changed, Kuma's own database was read only",
+  "timeline_kst": [
+    {
+      "at": "2026-11-07 16:11:14",
+      "event": "last heartbeat sent"
+    },
+    {
+      "at": "2026-11-07 16:11:58",
+      "event": "gps-watch.timer stopped"
+    },
+    {
+      "at": "2026-11-07 16:15:15",
+      "event": "Kuma: DOWN, \"No heartbeat in the time window\", important event -> notification"
+    },
+    {
+      "at": "2026-11-07 16:21:20",
+      "event": "gps-watch.timer started"
+    },
+    {
+      "at": "2026-11-07 16:22:14",
+      "event": "Kuma: UP, important event -> notification"
+    }
+  ],
+  "kuma_log_notification_failures": 0,
+  "delivery_to_inbox_confirmed_by_operator": false,
+  "after": {
+    "timer": "active",
+    "heartbeat_ok": true,
+    "incident": null,
+    "mail_waiting": 0
+  },
+  "deviation": "the timer stayed stopped about 9.5 minutes instead of 5: the drill script misread Kuma's verdict and waited out its limit; no production outage occurred meanwhile"
+}
