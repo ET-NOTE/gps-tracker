@@ -1,0 +1,29 @@
+{
+  "source_commit": "151f5e7cc45d02863ba2da99035253e31f3bb302",
+  "candidate_schema": 105,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "f10f9e532c0a42b1a0e1887dfe36f09e1b4af2ed8a77acf5fd42c02243df0b16",
+  "verified_source_files": 743,
+  "source_manifest_sha256": "d84f1c631c77573d2fa8b496fcb51b5a6151fd7166d2a839a30f06ef7af196a0",
+  "excluded": [
+    "credentials",
+    "keyring",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "cumulative 99 to 105 production-sized protected rehearsal",
+    "reviewed policy and explicit subject consent; no inferred historic consent",
+    "runtime and maintenance role separation; dedicated worker and key custody",
+    "latest external checkpoint custody and offline restore procedure",
+    "company/unattributed records, files, audit and backups remain separate review scopes",
+    "worker health alerts and real-device buffered pause/resume verification",
+    "20B encryption/parameter-log/backup/rollback prerequisites still apply"
+  ],
+  "artifact": "/home/etcom-hub/build/gps-lifecycle21-20261107/candidate-lifecycle21-20261107-r1.tar.gz",
+  "artifact_sha256": "5f9231c717dd6cc491dee19395e2ba5cb2290e1fec838219dfdad2e01b11970c",
+  "file_count": 63
+}

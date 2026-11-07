@@ -70,6 +70,8 @@ API runtime은 중지 상태를 처리할 업무 권한만 추가한다. 보관 
 - 22:43 KST 운영 읽기 전용 확인: 기존API 해시·17:16:49 기동시각·NRestarts0·17차 웹 링크 그대로. DB 스키마는 이번 확인에서 다시 조회하지 않았다.
 - 22:44 KST 시험 컨테이너·네트워크·tmpfs DB·업로드와 시험 키/자격증명·로컬 미리보기 터널을 정리했다. 원본 검증 로그·소스·후보 빌드는 남겼다.
 
+21차 소스 커밋은 `151f5e7cc45d02863ba2da99035253e31f3bb302`이다. 후보63파일은 빌드 호스트 `/home/etcom-hub/build/gps-lifecycle21-20261107/candidate-lifecycle21-20261107-r1.tar.gz`에 있다. SHA-256 `5f9231c717dd6cc491dee19395e2ba5cb2290e1fec838219dfdad2e01b11970c`. 키·자격증명·실제 자료가 없는 **운영 미활성 후보**이며, [manifest](../evidence/lifecycle21-20261107/candidate-manifest.json)의 조건을 먼저 확인한다.
+
 ## 재실행
 
 - 빌드 호스트 `/home/etcom-hub/build/gps-lifecycle21-20261107`. API·웹·ops 소스와 기존8개 회귀 fixture, `crypto20b-fields.json`, Python 의존성 및 PDF 처리기가 필요하다. 과거 SQL은 Git 원본 바이트(0085만 CRLF)를 유지한다.

@@ -91,7 +91,8 @@
       "test-keys.json",
       "regression.env"
     ],
-    "other_services_modified": false
+    "other_services_modified": false,
+    "local_preview_tunnels_removed": true
   },
   "limits": [
     "not deployed; 18B through 21 remain candidates",
@@ -100,5 +101,12 @@
     "checkpoint latestness requires independent trusted custody",
     "global processing lock and 16-connection lease pool require capacity rehearsal",
     "actual driver mapping and provision notifications deferred to round22"
-  ]
+  ],
+  "source_commit": "151f5e7cc45d02863ba2da99035253e31f3bb302",
+  "candidate_artifact": {
+    "artifact": "/home/etcom-hub/build/gps-lifecycle21-20261107/candidate-lifecycle21-20261107-r1.tar.gz",
+    "artifact_sha256": "5f9231c717dd6cc491dee19395e2ba5cb2290e1fec838219dfdad2e01b11970c",
+    "file_count": 63,
+    "activation_ready": false
+  }
 }
