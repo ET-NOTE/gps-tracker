@@ -29,3 +29,4 @@ docs/evidence/admin-security-20261107/*.png -text
 
 # Round 20 evidence must keep identical bytes across Windows/Linux checkouts.
 docs/evidence/crypto20-20261107/* -text
+docs/evidence/crypto20-20261107/*.log whitespace=-blank-at-eof
