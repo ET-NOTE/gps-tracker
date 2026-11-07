@@ -91,5 +91,14 @@
     "sources_logs_candidate_preserved": true,
     "production_changed": false
   },
-  "build_input_integrity": "774 source files verified; text line endings normalized, PNG/ICO/TTF bytes preserved; final web rebuilt as build-host UID1000"
+  "build_input_integrity": "774 source files verified; text line endings normalized, PNG/ICO/TTF bytes preserved; final web rebuilt as build-host UID1000",
+  "package": {
+    "candidate_files_verified": 65,
+    "archive_sha256": "a01c4f14bf4f2540249dee3d3a57abd0f3315d167b930963d4494c6b47d66fa3",
+    "source_commit": "0c3bd6bc42492e402963247191997a3006ac164c",
+    "source_files_verified": 774,
+    "source_archive_sha256": "5fa681f2c935ce12b5aae371cd3e099bd8ab876e3f0db56b54a09790eee72190",
+    "source_archive_replaced_with_verified_inputs": true,
+    "production_modified": false
+  }
 }

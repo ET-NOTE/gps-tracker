@@ -62,6 +62,8 @@
 
 검증 중 소스 archive의 오래된 mtime 때문에 Cargo가 이전 release 실행 파일을 재사용하는 문제가 발견됐다. 앱 패키지의 debug/release 산출물을 각각 정리한 뒤 재컴파일하고 전체 통합 시험을 새 실행 파일로 다시 수행하도록 절차를 고쳤다. 최종 증빙에는 이 재실행 결과만 사용한다. 소스 전송 시 줄바꿈 정규화는 텍스트에만 적용한다. PNG/ICO/TTF 등 바이너리까지 바꾸지 않도록 원본을 재전송하고 웹을 다시 검증했다.
 
+22차 소스 커밋은 `0c3bd6bc42492e402963247191997a3006ac164c`이다. 빌드 호스트 후보65파일: `/home/etcom-hub/build/gps-provision22-20261108/candidate-provision22-20261108-r1.tar.gz`. SHA-256 `a01c4f14bf4f2540249dee3d3a57abd0f3315d167b930963d4494c6b47d66fa3`. 압축파일 내부65파일·검증 입력774개 해시가 모두 일치하며 `activation_ready=false`다. [후보 manifest](../evidence/provision22-20261108/candidate-manifest.json)와 [패키지 대조](../evidence/provision22-20261108/package-verification.json)를 함께 확인한다.
+
 ## 다른 기기에서 재개
 
 1. `codex/location-business-prep` 최신 커밋과 [HANDOFF](HANDOFF.md), 이 문서, 증빙 manifest를 읽는다. 운영은 기존18A/schema99이며 이 후보를 이미 배포한 것으로 취급하지 않는다.
