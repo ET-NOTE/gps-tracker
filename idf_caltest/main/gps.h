@@ -42,4 +42,5 @@ namespace gps {
   uint8_t  batchCount();
   bool     batchGet(uint8_t i, float &lat, float &lng, int &sat, uint32_t &atMs);
   void     batchDrop(uint8_t n);   // 앞에서 n 개 제거 (POST 성공분)
+  void     resetCollection();     // Clear fixes, parser, history and unread NMEA.
 }

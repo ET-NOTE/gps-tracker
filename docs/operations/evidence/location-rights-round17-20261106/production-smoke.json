@@ -1,0 +1,47 @@
+{
+  "release": "privacy-facts-20261106-r1",
+  "schema": 99,
+  "request_id": 45,
+  "synthetic_account_ids": [
+    68,
+    69,
+    70
+  ],
+  "grant_ids": [
+    3,
+    4
+  ],
+  "section_needs_a_period_and_an_administrator": true,
+  "future_end_cut_at_issue": true,
+  "subject_only_with_password": true,
+  "no_token_refused": true,
+  "other_account_refused": true,
+  "file_holds_only_the_subjects_own_account_request_and_link": true,
+  "expired_grant_refused_then_times_restored": true,
+  "earlier_grants": 2,
+  "earlier_grants_listed_and_rows_unchanged": true,
+  "earlier_grants_downloadable_now": 0,
+  "file_structure_as_released": true,
+  "empty_lists_for_an_account_without_records": true,
+  "company_link_listed_without_naming_the_company": true,
+  "no_coordinate_or_token_key_in_file": true,
+  "prepared_file_hash_recorded": true,
+  "grant_without_section_unchanged": true,
+  "revoked_grant_refused": true,
+  "daily_summary_seconds_for_busiest_accounts": [
+    {
+      "rank": 1,
+      "seconds": 0.39,
+      "daily_rows": 0,
+      "stored_reports": 0,
+      "points": 0,
+      "fits_one_download": true
+    }
+  ],
+  "synthetic_company_links_removed": true,
+  "synthetic_accounts_closed": true,
+  "real_accounts_and_sim_ownership_unchanged": true,
+  "location_records_devices_or_share_links_created": 0,
+  "external_messages_sent": false,
+  "full_erasure_confirmed": false
+}

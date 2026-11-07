@@ -1,0 +1,65 @@
+{
+  "note": "Rehearsal of the release scripts from a working-tree snapshot (commit object not on any branch). These artifacts are not deployed; the pushed commit is staged again before production.",
+  "passed": true,
+  "release": "privacy-raster-20261106-r1",
+  "commit": "224fd63746f3f2a3ae65a716adef27f0f541a092",
+  "api_sha256": "9acd61b3e21a6c188fe9140a764d67ea65b9ee83c18edef2404de78387691250",
+  "release_script_sha256": "78e6e3f6007fc41b90cd02fb836b0ad82c62bf6230565811e6c44513336b1971",
+  "previous": {
+    "release": "privacy-receipts-20261106-r1",
+    "api_sha256": "65abe14ca7e8acd246a8aa5447f357da3a5956e99f2be202a4b9861841185b04"
+  },
+  "steps": [
+    {
+      "step": "previous release running on schema 96",
+      "suite_groups": 7
+    },
+    {
+      "step": "check passes and changes nothing",
+      "schema": 96
+    },
+    {
+      "step": "new API fails to start -> automatic return to the previous release",
+      "schema": 96
+    },
+    {
+      "step": "apply: schema 97, new API healthy with the recorded migration, web switched",
+      "health": {
+        "db": true,
+        "environment": "test",
+        "ok": true,
+        "release": "privacy-raster-20261106-r1",
+        "service": "gps-tracker-api"
+      }
+    },
+    {
+      "step": "rollback: schema 96, previous API and web",
+      "suite_groups": 7
+    },
+    {
+      "step": "apply again after rollback",
+      "health": {
+        "db": true,
+        "environment": "test",
+        "ok": true,
+        "release": "privacy-raster-20261106-r1",
+        "service": "gps-tracker-api"
+      }
+    },
+    {
+      "step": "suites pass on the upgraded (not freshly created) schema",
+      "groups": {
+        "test_privacy_receipt_scaling.py": 9,
+        "test_privacy_receipts.py": 7,
+        "test_privacy_images.py": 8
+      }
+    },
+    {
+      "step": "production smoke script completes against the rehearsal copy"
+    },
+    {
+      "step": "rollback is refused once rows use the new columns"
+    }
+  ],
+  "production_gate_self_check": "accepts this record only"
+}

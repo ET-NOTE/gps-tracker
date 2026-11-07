@@ -1,0 +1,64 @@
+{
+  "passed": true,
+  "script_sha256": "48ef88aa8b8816f2756542c7956cab4f627595b170fdf89d06ac5bd01ea1e3da",
+  "python": "3.12.3",
+  "steps": [
+    {
+      "step": "healthy host for three cycles: no mail, the status page is told \"alive\" every cycle"
+    },
+    {
+      "step": "one slow answer, two failures in a row and repeated single failures: no mail"
+    },
+    {
+      "step": "outage: one mail at the third failure, a reminder each hour, a mail when another check fails and when it returns, one mail at recovery after two successes",
+      "subjects": [
+        "[GPS 감시] 장애 발생 — health (11/07 06:37 KST부터)",
+        "[GPS 감시] 장애 지속 — health (1시간 3분째)",
+        "[GPS 감시] 장애 지속 — health (2시간 4분째)",
+        "[GPS 감시] 장애 변화 — 추가: ingest (아직 실패: health, ingest)",
+        "[GPS 감시] 장애 변화 — 회복: ingest (아직 실패: health)",
+        "[GPS 감시] 복구 — 장애 11/07 06:37~08:48 KST (2시간 11분)"
+      ]
+    },
+    {
+      "step": "error status, database down, wrong environment, a web page instead of the API, no answer, slow answer, no SSH banner: each is a failed check",
+      "detail": {
+        "health:500": "HTTP 500",
+        "health:db": "ok=False db=False",
+        "health:env": "environment=test",
+        "health:html": "JSON이 아닌 응답",
+        "health:drop": "연결이 끊김(응답 없음)",
+        "health:slow": "응답 없음(시간 초과)",
+        "ingest:502": "HTTP 502",
+        "ingest:html": "HTTP 200",
+        "ingest:drop": "연결이 끊김(응답 없음)",
+        "ssh:garbage": "SSH 배너 없음",
+        "ssh:drop": "SSH 배너 없음",
+        "ssh:slow": "응답 없음(시간 초과)",
+        "status:502": "HTTP 502",
+        "status:drop": "연결이 끊김(응답 없음)"
+      }
+    },
+    {
+      "step": "the watching machine is offline for ten minutes: nothing is counted against the host, one notice of the gap afterwards; a two-minute gap is not reported"
+    },
+    {
+      "step": "mail server unreachable, login refused, temporary refusal: the mail waits and goes out once, in order, when the server works again"
+    },
+    {
+      "step": "mail goes out over STARTTLS and over implicit TLS with a login; an unencrypted login to another host and a configuration others can read are refused",
+      "detail": {
+        "starttls": "encrypted and authenticated",
+        "ssl": "encrypted and authenticated",
+        "unencrypted mail to another host": "refused: mail security \"none\" is accepted for a local test server onl",
+        "configuration readable by others": "refused: /tmp/gps-watch-rehearsal-kgmytk0n/config-11.ini can be read "
+      }
+    },
+    {
+      "step": "run, status, check and test-mail work from the command line; check keeps no state and sends nothing; a second run at the same time steps aside; the two secrets are stored from a pipe without being shown and are refused on a command line; the mail password and the push address appear in no output, state file or mail"
+    },
+    {
+      "step": "installer: copies the files and an empty configuration (600) without starting anything, refuses to start with an empty configuration, keeps a filled-in one, starts the timer, and removes everything but the configuration and the state"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "at": "2026-11-07T09:51:10.927706+00:00",
+  "environment": "isolated_internal_docker_synthetic_only",
+  "api_sha256": "79e168d3ab81f7ece3a8a15f9d375b1aaa2b1832a75ed14a552d3350ee9b1f57",
+  "schema": 102,
+  "passed": [
+    "offline initial roles require distinct accounts and explicit host IP; dry run writes nothing; repetition blocked",
+    "password-only access denied; personal MFA, officer/operator/assigned-handler scope and delegated/impersonation bypass blocked",
+    "parallel administrator password failures stop at five; a correct password stays locked until the window expires",
+    "OTP replay/5-attempt lockout, session theft across accounts, expiry and 90-day password rotation enforced",
+    "IP allowlist uses connection identity; spoofed forwarding headers cannot bypass it",
+    "two-person role/IP changes; self approval, changed body/target, revoked approver, expiry and reuse rejected",
+    "real privacy review and access-facts erasure require separate officer approval and operator execution",
+    "concurrent approval replay executes once; immutable security evidence excludes password/OTP/token values",
+    "runtime cannot change schema/triggers, assume owner, truncate/delete evidence, edit migrations or create roles",
+    "real approved erasure succeeds under the restricted runtime through the reviewed SECURITY DEFINER executor",
+    "same API restarts with runtime-only DSN; schema verification, ordinary auth, privacy request and admin read succeed",
+    "explicit step-up logout revokes the server session without deleting the ordinary account"
+  ],
+  "production_changed": false,
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 102,
+    "public_objects": 185,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  }
+}

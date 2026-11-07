@@ -1,0 +1,192 @@
+{
+  "geofences": [
+    [
+      "id"
+    ],
+    [
+      "name",
+      "center_lat",
+      "center_lng"
+    ]
+  ],
+  "fleet_sites": [
+    [
+      "id"
+    ],
+    [
+      "name",
+      "address",
+      "geometry",
+      "note"
+    ]
+  ],
+  "fleet_site_versions": [
+    [
+      "id"
+    ],
+    [
+      "snapshot"
+    ]
+  ],
+  "fleet_site_visits": [
+    [
+      "id"
+    ],
+    [
+      "site_name",
+      "group_name"
+    ]
+  ],
+  "fleet_trip_corrections": [
+    [
+      "id"
+    ],
+    [
+      "sources",
+      "outputs",
+      "reason",
+      "revert_reason"
+    ]
+  ],
+  "ai_analyses": [
+    [
+      "id"
+    ],
+    [
+      "analysis"
+    ]
+  ],
+  "device_audit_log": [
+    [
+      "id"
+    ],
+    [
+      "data"
+    ]
+  ],
+  "fleet_trip_assignment_audit": [
+    [
+      "id"
+    ],
+    [
+      "before_value",
+      "after_value"
+    ]
+  ],
+  "fleet_vehicle_audit": [
+    [
+      "id"
+    ],
+    [
+      "before_value",
+      "after_value"
+    ]
+  ],
+  "fleet_expense_audit": [
+    [
+      "id"
+    ],
+    [
+      "before_value",
+      "after_value"
+    ]
+  ],
+  "fcm_outbox": [
+    [
+      "id"
+    ],
+    [
+      "message"
+    ]
+  ],
+  "rental_photos": [
+    [
+      "id"
+    ],
+    [
+      "bytes"
+    ]
+  ],
+  "fleet_expense_receipts": [
+    [
+      "id"
+    ],
+    [
+      "content"
+    ]
+  ],
+  "privacy_company_submissions": [
+    [
+      "id"
+    ],
+    [
+      "file_bytes"
+    ]
+  ],
+  "privacy_image_payloads": [
+    [
+      "delivery_id"
+    ],
+    [
+      "png_bytes"
+    ]
+  ],
+  "location_1min": [
+    [
+      "device_id",
+      "bucket"
+    ],
+    [
+      "lat_avg",
+      "lng_avg",
+      "lat_last",
+      "lng_last"
+    ]
+  ],
+  "location_5min": [
+    [
+      "device_id",
+      "bucket"
+    ],
+    [
+      "lat_avg",
+      "lng_avg",
+      "lat_last",
+      "lng_last"
+    ]
+  ],
+  "location_1hour": [
+    [
+      "device_id",
+      "bucket"
+    ],
+    [
+      "lat_avg",
+      "lng_avg",
+      "lat_last",
+      "lng_last"
+    ]
+  ],
+  "geocode_cache": [
+    [
+      "storage_id"
+    ],
+    [
+      "lat_q",
+      "lng_q",
+      "road",
+      "jibun",
+      "region",
+      "building"
+    ]
+  ],
+  "fleet_team_audit": [
+    [
+      "id"
+    ],
+    [
+      "before_value",
+      "after_value"
+    ]
+  ]
+}

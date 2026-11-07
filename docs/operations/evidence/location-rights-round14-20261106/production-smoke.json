@@ -1,0 +1,24 @@
+{
+  "release": "privacy-receipts-20261106-r1",
+  "schema": 96,
+  "request_id": 21,
+  "delivery_id": 2,
+  "synthetic_account_ids": [
+    50,
+    51,
+    52
+  ],
+  "preview_gate": true,
+  "password_and_foreign_account_denial": true,
+  "excluded_pixels_removed_and_metadata_absent": true,
+  "preview_and_download_exact_bytes": true,
+  "no_automatic_whole_request_completion": true,
+  "synthetic_accounts_closed": true,
+  "real_accounts_and_sim_ownership_unchanged": true,
+  "external_messages_sent": false,
+  "full_erasure_confirmed": false,
+  "company_source_scope_tested_on_production": true,
+  "source_changed_delivery_purged": true,
+  "forged_client_rgb_ignored": true,
+  "synthetic_source_removed": true
+}

@@ -1,0 +1,7 @@
+PASS OFF upload and derived values remain compatible
+stopped (exit 0)
+PASS offline fenced conversion preserves versions, legacy aggregates, AI, cache and file bytes
+api ready at 172.28.0.3 (ledger off)
+PASS encrypted uploads and downloads enforce ownership; swapped ciphertext and plaintext fail closed
+PASS partial geofence update retains unchanged encrypted coordinates
+PASS logical NOT NULL constraints and timezone-stable archive contexts survive encryption

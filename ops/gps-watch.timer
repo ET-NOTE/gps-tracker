@@ -1,0 +1,11 @@
+# User unit: ~/.config/systemd/user/gps-watch.timer. Installed by ops/install_gps_watch.sh.
+# Every minute, a little after the full minute. Runs without a login session when lingering is on.
+[Unit]
+Description=GPS external watch: every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:10
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

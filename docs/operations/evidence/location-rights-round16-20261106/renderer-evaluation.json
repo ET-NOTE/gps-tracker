@@ -1,0 +1,387 @@
+{
+ "renderer": "gps-pdf-render 0.1.0 (hayro 0.9.0, static musl, Rust 1.92.0)",
+ "reference": "poppler pdftoppm (quality comparison only; never used for a delivery)",
+ "environment": "build host container: no network, all capabilities dropped, no-new-privileges",
+ "note": "Synthetic corpus only. peak_rss_mb and seconds are per process; mean_abs_difference compares grey levels with the reference at the same pixel size.",
+ "documents": [
+  {
+   "file": "damaged-garbage.pdf",
+   "bytes": 51209,
+   "page": 1,
+   "seconds": 0.001,
+   "peak_rss_mb": 2.0,
+   "exit": 0,
+   "outcome": "invalid"
+  },
+  {
+   "file": "damaged-header-only.pdf",
+   "bytes": 15,
+   "page": 1,
+   "seconds": 0.001,
+   "peak_rss_mb": 1.8,
+   "exit": 0,
+   "outcome": "invalid"
+  },
+  {
+   "file": "damaged-no-pages.pdf",
+   "bytes": 226,
+   "page": 1,
+   "seconds": 0.001,
+   "peak_rss_mb": 2.0,
+   "exit": 0,
+   "outcome": "invalid"
+  },
+  {
+   "file": "damaged-truncated.pdf",
+   "bytes": 18483,
+   "page": 1,
+   "seconds": 0.01,
+   "peak_rss_mb": 15.0,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.28,
+    841.89
+   ],
+   "reference": "not rendered"
+  },
+  {
+   "file": "damaged-xref-repairable.pdf",
+   "bytes": 36966,
+   "page": 1,
+   "seconds": 0.009,
+   "peak_rss_mb": 12.8,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.28,
+    841.89
+   ],
+   "reference_seconds": 0.059,
+   "reference_peak_rss_mb": 14.5,
+   "mean_abs_difference": 3.32,
+   "pixels_differing_over_64_percent": 2.17,
+   "ink_percent": 3.87,
+   "reference_ink_percent": 3.85
+  },
+  {
+   "file": "encrypted-owner-only-aes256.pdf",
+   "bytes": 38135,
+   "page": 1,
+   "seconds": 0.008,
+   "peak_rss_mb": 2.2,
+   "exit": 0,
+   "outcome": "encrypted"
+  },
+  {
+   "file": "encrypted-user-aes256.pdf",
+   "bytes": 38135,
+   "page": 1,
+   "seconds": 0.008,
+   "peak_rss_mb": 2.2,
+   "exit": 0,
+   "outcome": "encrypted"
+  },
+  {
+   "file": "encrypted-user-rc4.pdf",
+   "bytes": 37238,
+   "page": 1,
+   "seconds": 0.002,
+   "peak_rss_mb": 2.2,
+   "exit": 0,
+   "outcome": "encrypted"
+  },
+  {
+   "file": "hostile-image-bomb.pdf",
+   "bytes": 110012,
+   "page": 1,
+   "seconds": 0.09,
+   "peak_rss_mb": 132.0,
+   "exit": 159,
+   "outcome": "no reply: memory allocation of 900000000 bytes failed; Command terminated by signal 31"
+  },
+  {
+   "file": "hostile-long-content.pdf",
+   "bytes": 26673,
+   "page": 1,
+   "seconds": 0.06,
+   "peak_rss_mb": 26.2,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.0,
+    842.0
+   ],
+   "reference_seconds": 0.197,
+   "reference_peak_rss_mb": 13.5,
+   "mean_abs_difference": 0.13,
+   "pixels_differing_over_64_percent": 0.14,
+   "ink_percent": 12.48,
+   "reference_ink_percent": 12.48
+  },
+  {
+   "file": "hostile-recursive-form.pdf",
+   "bytes": 620,
+   "page": 1,
+   "seconds": 0.004,
+   "peak_rss_mb": 10.5,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.0,
+    842.0
+   ],
+   "reference_seconds": 0.019,
+   "reference_peak_rss_mb": 13.2,
+   "mean_abs_difference": 0.0,
+   "pixels_differing_over_64_percent": 0.0,
+   "ink_percent": 0.02,
+   "reference_ink_percent": 0.02
+  },
+  {
+   "file": "korean-not-embedded.pdf",
+   "bytes": 1302,
+   "page": 1,
+   "seconds": 0.009,
+   "peak_rss_mb": 15.1,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.0,
+    842.0
+   ],
+   "reference_seconds": 0.02,
+   "reference_peak_rss_mb": 13.2,
+   "mean_abs_difference": 2.41,
+   "pixels_differing_over_64_percent": 1.13,
+   "ink_percent": 0.96,
+   "reference_ink_percent": 0.0
+  },
+  {
+   "file": "korean-receipt.pdf",
+   "bytes": 36966,
+   "page": 1,
+   "seconds": 0.009,
+   "peak_rss_mb": 13.0,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.28,
+    841.89
+   ],
+   "reference_seconds": 0.059,
+   "reference_peak_rss_mb": 14.2,
+   "mean_abs_difference": 3.32,
+   "pixels_differing_over_64_percent": 2.17,
+   "ink_percent": 3.87,
+   "reference_ink_percent": 3.85
+  },
+  {
+   "file": "korean-statement.pdf",
+   "bytes": 41566,
+   "page": 1,
+   "seconds": 0.009,
+   "peak_rss_mb": 13.5,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 1189,
+   "height": 840,
+   "pages": 3,
+   "page_points": [
+    841.89,
+    595.28
+   ],
+   "reference_seconds": 0.127,
+   "reference_peak_rss_mb": 14.0,
+   "mean_abs_difference": 8.0,
+   "pixels_differing_over_64_percent": 3.48,
+   "ink_percent": 4.6,
+   "reference_ink_percent": 4.42
+  },
+  {
+   "file": "korean-statement.pdf",
+   "bytes": 41566,
+   "page": 3,
+   "seconds": 0.009,
+   "peak_rss_mb": 13.2,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 1189,
+   "height": 840,
+   "pages": 3,
+   "page_points": [
+    841.89,
+    595.28
+   ],
+   "reference_seconds": 0.112,
+   "reference_peak_rss_mb": 14.0,
+   "mean_abs_difference": 7.07,
+   "pixels_differing_over_64_percent": 3.15,
+   "ink_percent": 3.99,
+   "reference_ink_percent": 3.82
+  },
+  {
+   "file": "latin-standard-fonts.pdf",
+   "bytes": 942,
+   "page": 1,
+   "seconds": 0.006,
+   "peak_rss_mb": 11.5,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.0,
+    842.0
+   ],
+   "reference_seconds": 0.039,
+   "reference_peak_rss_mb": 15.5,
+   "mean_abs_difference": 1.06,
+   "pixels_differing_over_64_percent": 0.59,
+   "ink_percent": 3.95,
+   "reference_ink_percent": 4.07
+  },
+  {
+   "file": "limit-200-pages.pdf",
+   "bytes": 19025,
+   "page": 1,
+   "seconds": 0.004,
+   "peak_rss_mb": 10.2,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 1000,
+   "height": 1000,
+   "pages": 200,
+   "page_points": [
+    200.0,
+    200.0
+   ],
+   "reference_seconds": 0.019,
+   "reference_peak_rss_mb": 13.8,
+   "mean_abs_difference": 0.0,
+   "pixels_differing_over_64_percent": 0.0,
+   "ink_percent": 0.0,
+   "reference_ink_percent": 0.0
+  },
+  {
+   "file": "oversized-201-pages.pdf",
+   "bytes": 19120,
+   "page": 1,
+   "seconds": 0.001,
+   "peak_rss_mb": 2.5,
+   "exit": 0,
+   "outcome": "too_many_pages"
+  },
+  {
+   "file": "oversized-page.pdf",
+   "bytes": 320,
+   "page": 1,
+   "seconds": 0.001,
+   "peak_rss_mb": 2.0,
+   "exit": 0,
+   "outcome": "page_size"
+  },
+  {
+   "file": "rotated-cropped.pdf",
+   "bytes": 976,
+   "page": 1,
+   "seconds": 0.006,
+   "peak_rss_mb": 11.8,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 733,
+   "height": 1362,
+   "pages": 1,
+   "page_points": [
+    280.0,
+    520.0
+   ],
+   "reference": "not rendered"
+  },
+  {
+   "file": "scan-ccitt-g4.pdf",
+   "bytes": 13096,
+   "page": 1,
+   "seconds": 0.008,
+   "peak_rss_mb": 14.4,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 841,
+   "height": 1188,
+   "pages": 1,
+   "page_points": [
+    595.68,
+    841.92
+   ],
+   "reference_seconds": 0.061,
+   "reference_peak_rss_mb": 16.0,
+   "mean_abs_difference": 7.83,
+   "pixels_differing_over_64_percent": 4.82,
+   "ink_percent": 4.17,
+   "reference_ink_percent": 4.97
+  },
+  {
+   "file": "scan-gray-flate.pdf",
+   "bytes": 66731,
+   "page": 1,
+   "seconds": 0.008,
+   "peak_rss_mb": 15.0,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.0,
+    842.0
+   ],
+   "reference_seconds": 0.073,
+   "reference_peak_rss_mb": 16.2,
+   "mean_abs_difference": 5.67,
+   "pixels_differing_over_64_percent": 3.78,
+   "ink_percent": 3.81,
+   "reference_ink_percent": 4.27
+  },
+  {
+   "file": "scan-jpeg.pdf",
+   "bytes": 147477,
+   "page": 1,
+   "seconds": 0.011,
+   "peak_rss_mb": 14.8,
+   "exit": 0,
+   "outcome": "ok",
+   "width": 840,
+   "height": 1189,
+   "pages": 1,
+   "page_points": [
+    595.0,
+    842.0
+   ],
+   "reference_seconds": 0.077,
+   "reference_peak_rss_mb": 16.5,
+   "mean_abs_difference": 5.74,
+   "pixels_differing_over_64_percent": 3.73,
+   "ink_percent": 3.81,
+   "reference_ink_percent": 4.03
+  }
+ ]
+}

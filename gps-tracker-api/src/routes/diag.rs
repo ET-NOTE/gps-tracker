@@ -95,7 +95,9 @@ pub async fn diag_data(
         })
         .collect();
 
-    Ok(Json(json!({ "count": items.len(), "total": total, "offset": offset, "items": items })))
+    Ok(Json(
+        json!({ "count": items.len(), "total": total, "offset": offset, "items": items }),
+    ))
 }
 
 pub async fn diag_page() -> Html<&'static str> {
@@ -125,7 +127,7 @@ async fn device_allowed(db: &sqlx::PgPool, uid: &str) -> bool {
         return true;
     }
     let owner_email: Option<String> = sqlx::query_scalar(
-        "SELECT u.email FROM devices d JOIN users u ON u.id = d.owner_id WHERE d.device_uid = $1",
+        "SELECT u.email FROM gps_read_devices d JOIN users u ON u.id = d.owner_id WHERE d.device_uid = $1",
     )
     .bind(uid)
     .fetch_optional(db)
@@ -147,12 +149,14 @@ pub async fn device_log_data(
     Query(q): Query<DeviceLogQuery>,
 ) -> AppResult<Json<Value>> {
     if !device_allowed(&state.db, &q.uid).await {
-        return Ok(Json(json!({ "error": "not allowed", "items": [], "total": 0 })));
+        return Ok(Json(
+            json!({ "error": "not allowed", "items": [], "total": 0 }),
+        ));
     }
     let limit = q.limit.unwrap_or(240).clamp(1, 2000);
     let offset = q.offset.unwrap_or(0).max(0);
     let total: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM location_records lr JOIN devices d ON d.id = lr.device_id \
+        "SELECT count(*) FROM gps_read_location_records lr JOIN gps_read_devices d ON d.id = lr.device_id \
           WHERE d.device_uid = $1",
     )
     .bind(&q.uid)
@@ -168,8 +172,8 @@ pub async fn device_log_data(
                   lr.raw->>'cbc_mv'  AS cbc_mv,
                   lr.raw->'l80'->>'fix' AS fix,
                   lr.raw->'l80'->>'sat' AS sat
-             FROM location_records lr
-             JOIN devices d ON d.id = lr.device_id
+             FROM gps_read_location_records lr
+             JOIN gps_read_devices d ON d.id = lr.device_id
             WHERE d.device_uid = $1
             ORDER BY lr.recorded_at DESC
             LIMIT $2 OFFSET $3"#,
@@ -197,7 +201,9 @@ pub async fn device_log_data(
             })
         })
         .collect();
-    Ok(Json(json!({ "uid": q.uid, "count": items.len(), "total": total, "offset": offset, "items": items })))
+    Ok(Json(
+        json!({ "uid": q.uid, "count": items.len(), "total": total, "offset": offset, "items": items }),
+    ))
 }
 
 pub async fn device_log_page() -> Html<&'static str> {

@@ -7,8 +7,7 @@
 #include <Arduino.h>
 
 // ── 빌드 플래그 ───────────────────────────────────────────────────
-//  · 모니터링 세션: FQBN esp32:esp32:esp32c3:CDCOnBoot=cdc + BUZZER_ENABLED 1
-//  · 운영(배터리):  FQBN esp32:esp32:esp32c3 (CDCOnBoot=default) + BUZZER_ENABLED 0
+// 운영/KC 선택은 CMake FIRMWARE_PROFILE로만 한다. 소스 토글을 바꾸지 않는다.
 #define BUZZER_ENABLED 1   // (2026-07-02) 능동 부저 활성. LTE POST 무해 재확인(2026-07-03). 운영/필드 ON 유지 결정.
 // ⚠️[2026-08-14] 위 "무해 재확인"은 구보드 기준. 마그네틱 부저(GPIO1 직결)의 LTE 간섭은 진단 이력상
 //   신PCB 에서 deterministic 이었고 firmware 로 차단 불가(플라이백 다이오드 = hardware fix 필수).
@@ -42,8 +41,39 @@
 #define LTE_BAUD       115200
 #define LTE_RX_BUF     1024         // HW팀 기대값(표준): UART RX 링버퍼 256→1024 (오버플로우 여유)
 #define APN_NAME       "iot.1nce.net"
-#define POST_URL_HOST  "http://gps.serial.kr"
-#define POST_PATH      "/ingest"
+#ifndef GPS_HTTPS_PILOT
+  #define GPS_HTTPS_PILOT 0
+#endif
+#ifndef GPS_HTTPS_OPERATING
+  #define GPS_HTTPS_OPERATING 0
+#endif
+#ifndef GPS_TLS_CERT_TEST
+  #define GPS_TLS_CERT_TEST 0
+#endif
+#ifndef GPS_HTTPS_SLEEP_TEST
+  #define GPS_HTTPS_SLEEP_TEST 0
+#endif
+#if GPS_HTTPS_OPERATING && (!GPS_HTTPS_PILOT || GPS_TLS_CERT_TEST || GPS_HTTPS_SLEEP_TEST)
+  #error "HTTPS operating must use verified production TLS without bench overrides"
+#endif
+#if GPS_HTTPS_SLEEP_TEST && (!GPS_HTTPS_PILOT || GPS_TLS_CERT_TEST)
+  #error "Sleep bench requires production HTTPS and credentials, never the certificate fixture"
+#endif
+#define INGEST_HOSTNAME "gps.serial.kr"
+#if GPS_TLS_CERT_TEST
+  #if !GPS_HTTPS_PILOT
+    #error "Certificate tests require the HTTPS path"
+  #endif
+  #define POST_URL_HOST "https://" INGEST_HOSTNAME ":18443"
+  #define POST_PATH "/tls-probe"
+#elif GPS_HTTPS_PILOT
+  #define POST_URL_HOST "https://" INGEST_HOSTNAME
+#else
+  #define POST_URL_HOST "http://" INGEST_HOSTNAME
+#endif
+#ifndef POST_PATH
+  #define POST_PATH      "/ingest"
+#endif
 
 // ── 배터리 ───────────────────────────────────────────────────────
 #define BAT_DIV_RATIO     2.0f
@@ -92,6 +122,7 @@
 //   생명신호(부팅 URC/AT OK/바이트) 있으면 펄스 금지(켜진 SIM7080 PWRKEY 펄스=전원토글=종료 → 부팅↔종료 레이스).
 #define LTE_BOOT_PROBE_MS         3000      // 초기 생명신호 탐지 창 (짧게)
 #define LTE_BOOT_WAIT_MS          12000     // 부팅 완료(AT OK)까지 대기 상한 (SIM7080 cold boot ~5-8s)
+#define LTE_SHUTDOWN_TIMEOUT_MS   12000UL   // CPOWD 정상 종료 URC 대기 상한; 미확인은 레일 차단으로 처리
 
 // ── recovery (복구 state machine, Block 7) ───────────────────────
 //  원본 복구 경로 1·3·4·5·6 을 단일 결정기로 통합 (매 tick 단일 액션).
@@ -114,8 +145,19 @@
 #define LOOP_WDT_TIMEOUT_MS       60000UL           // 60s 무진전 → panic reset (기존 "수시간 방치" 종결)
 
 // ── sleep_mgr (Block 8) ──────────────────────────────────────────
-#define SLEEP_DISABLED             0                  // [sss 안정형 운영본] 절전 ON (모션-aware). 진단본=1(절전OFF).
-#define SLEEP_TEST                 0                  // 1=벤치 sleep/wake 검증용 단축값 (운영 전 0 원복!)
+// Keep the HTTPS bench terminal awake across long stationary and no-fix periods.
+#ifndef BATTERY_TEST_BUILD
+  #define BATTERY_TEST_BUILD 0
+#endif
+#if GPS_HTTPS_PILOT && !GPS_HTTPS_SLEEP_TEST && !GPS_HTTPS_OPERATING
+  #define SLEEP_DISABLED           1
+  #define TIMER_WAKE_ENABLED       0
+#else
+  #define SLEEP_DISABLED           BATTERY_TEST_BUILD
+  #define TIMER_WAKE_ENABLED       1
+#endif
+#define SLEEP_TEST                 GPS_HTTPS_SLEEP_TEST // Only the explicit bench profile shortens sleep.
+#define SLEEP_TEST_MAX_CYCLES       3                  // RTC limit; remain awake after three entries.
 #define OBSERVE_MODE               0                  // 관찰본(sss)=1(3분창/로그유지), 운영본(aa)=0(운영 5분창). [2026-07-08 aa 최종본=0]
 // (2026-07-08) HW-DIAG 크래시 디버그 게이트 — CRASHES 카운터(NVS)+배너+긴삐3회 크래시부저+클린전원부저.
 //   관찰/디버그본=1, 최종 운영본=0(제거 → 앱 정상 부저 마일스톤 동작). ★최종본 = HWDIAG_ENABLED 0 + OBSERVE_MODE 0
@@ -125,7 +167,7 @@
 #if SLEEP_TEST
   #define STATIONARY_WINDOW_MS      30000UL           // (벤치 test) 30s
   #define STATIONARY_BOOT_GRACE_MS  15000UL           // (벤치 test) 15s
-  #define GPS_DRIFT_THRESHOLD_M     1000.0f           // (벤치 test) 실내 GPS 노이즈가 window 리셋 안 하게
+  #define GPS_DRIFT_THRESHOLD_M     50.0f             // Keep the operating movement guard.
   #define NO_GPS_SLEEP_GRACE_MS     20000UL           // (벤치 test) GPS 없어도 20s quiet 면 sleep
 #elif OBSERVE_MODE
   // (2026-07-03 운행3차 후) sss 필드-유사 관찰 프로파일 — 주행 중 false-sleep 방지.
@@ -140,14 +182,17 @@
   #define GPS_DRIFT_THRESHOLD_M     50.0f             // 정지 판정 drift 임계
   #define NO_GPS_SLEEP_GRACE_MS     (10UL*60*1000UL)  // GPS 없을 때 LIS 단독 sleep 유예
 #endif
-// ★[관찰 토글] timer heartbeat wake 활성. 0 = 모션 wake only(주기적 wake 없음, 증상관찰용). SLEEP_DISABLED 과 같은 맥락.
-#define TIMER_WAKE_ENABLED         1                  // [2026-08-14 운영 복원] 10분 timer HB 재활성 — sleep 중
                                                       //   LIS 고장/장기 무모션 시 유일한 안전망 + 주차중 dark 방지.
                                                       //   (0 은 sss 증상관찰 전용이었음 — 운영본에 남아있던 것 정정)
-#if OBSERVE_MODE
-  #define TIMER_WAKE_INTERVAL_US   (5ULL*60*1000000ULL)   // (운행3차 후) sleep 시 5분 fallback wake(dark 방지·로거 재접속). was 8s(thrash 원인).
+#if SLEEP_TEST
+  #define TIMER_WAKE_INTERVAL_S    60
+  #define TIMER_WAKE_INTERVAL_US   (TIMER_WAKE_INTERVAL_S*1000000ULL)
+#elif OBSERVE_MODE
+  #define TIMER_WAKE_INTERVAL_S    300
+  #define TIMER_WAKE_INTERVAL_US   (TIMER_WAKE_INTERVAL_S*1000000ULL)   // (운행3차 후) sleep 시 5분 fallback wake(dark 방지·로거 재접속). was 8s(thrash 원인).
 #else
-  #define TIMER_WAKE_INTERVAL_US   (10ULL*60*1000000ULL)  // 운영: deep sleep 10분 timer wake
+  #define TIMER_WAKE_INTERVAL_S    86400                // 운영 기본: 24시간
+  #define TIMER_WAKE_INTERVAL_US   (TIMER_WAKE_INTERVAL_S*1000000ULL) // 64-bit: 86,400,000,000us
 #endif
 #define TIMER_WAKE_MAX_MS          120000UL           // timer-wake heartbeat 2분 guard
 // (P0 2026-07-02) LTE 미등록/recovery 중 stationary sleep 보류 상한.
@@ -195,7 +240,7 @@
 // ── 진단 출력 ────────────────────────────────────────────────────
 #define STATUS_PRINT_MS   1000UL
 
-#define DBG  1
+#define DBG  (!GPS_HTTPS_PILOT)   // Pilot: omit verbose UART dumps of coordinates and authentication headers.
 #define DBGLN(...)  do { if (DBG) Serial.println(__VA_ARGS__); } while (0)
 #define DBGP(...)   do { if (DBG) Serial.print(__VA_ARGS__); } while (0)
 
@@ -211,11 +256,16 @@
 //     · AT+COPS=0 명시 (수동 PLMN 고정 잔재 차단 — 시험용 PLMN 에 붙어야 함)
 //     · AT+CBANDCFG 밴드 락 + 응답 캡처 출력 (인증범위 증빙: 선언서 + 설정로그 + 캡처)
 //     · sleep/부저 OFF (시험 중 deep sleep 진입·GPIO1 노이즈원 차단)
-//   ⚠️ 운영 배포 전 반드시 0 원복! (TIMER_WAKE_ENABLED 교훈과 동일한 토글 함정 주의)
+//   빌드 프로파일에서 값을 주입한다. 운영/KC 산출물은 별도 디렉터리에 저장한다.
 //   ⚠️ CBANDCFG 는 모듈 NVRAM 저장 — 시험 후 다른 밴드 필요 시 docs/kc_test_build.md 의
 //      복원 커맨드로 해제. (단, 밴드 제한으로 인증받으면 양산 펌웨어도 락 유지가 원칙)
 // =================================================================
-#define KC_TEST_BUILD   0     // ★ 1 = KC 시험 빌드 (운영 배포 전 0 원복 필수!)
+#ifndef KC_TEST_BUILD
+  #error "KC_TEST_BUILD must come from an explicit CMake firmware profile"
+#endif
+#if KC_TEST_BUILD != 0 && KC_TEST_BUILD != 1
+  #error "Invalid KC_TEST_BUILD"
+#endif
 
 #if KC_TEST_BUILD
   // 인증 대상 밴드 락 — 시험소 견적 확정 후 조정. 실측(2026-08-27, device 3005) = Cat-M1 B5.

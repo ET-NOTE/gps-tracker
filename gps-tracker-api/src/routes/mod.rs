@@ -1,5 +1,7 @@
 pub mod admin;
+pub mod admin_security;
 pub mod ai;
+pub mod arduino_shield;
 pub mod auth;
 pub mod chat;
 pub mod corporate;
@@ -7,13 +9,30 @@ pub mod credits;
 pub mod devices;
 pub mod diag;
 pub mod documents;
+pub mod fleet_expenses;
+pub mod fleet_media;
+pub mod fleet_reservations;
+pub mod fleet_sites;
+mod fleet_subject_readers;
+pub mod fleet_team;
+pub mod fleet_trip_assignment;
+pub mod fleet_trip_quality;
+pub mod fleet_vehicles;
 pub mod geofences;
 pub mod health;
 pub mod ingest;
+pub mod location_access;
 pub mod locations;
 pub mod notifications;
 pub mod payments;
 pub mod phones;
+pub mod privacy;
+pub mod privacy_company;
+pub mod privacy_company_tasks;
+pub mod privacy_delivery;
+pub mod privacy_images;
+pub mod privacy_packages;
+pub mod privacy_redacted;
 pub mod profile_type;
 pub mod rentcar;
 pub mod share;
@@ -21,7 +40,10 @@ pub mod sim_requests;
 pub mod stats;
 pub mod ws;
 
-use axum::{routing::{get, post}, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 
 use crate::state::AppState;
 
@@ -30,6 +52,14 @@ pub fn build_router(state: AppState) -> Router {
     // 여기서도 동일 prefix로 라우트.
     let api_v1 = Router::new()
         .merge(auth::router())
+        .merge(privacy::router())
+        .merge(subject_provision::router())
+        .merge(privacy_delivery::router())
+        .merge(privacy_packages::router())
+        .merge(privacy_redacted::router())
+        .merge(privacy_images::router())
+        .merge(privacy_company::router())
+        .merge(privacy_company_tasks::router())
         .merge(devices::router())
         .merge(documents::router())
         .merge(locations::router())
@@ -37,12 +67,20 @@ pub fn build_router(state: AppState) -> Router {
         .merge(geofences::router())
         .merge(stats::router())
         .merge(share::router_authed())
-        .merge(share::router_public())   // 인증 없이 호출 (/share/:token 등)
+        .merge(share::router_public()) // 인증 없이 호출 (/share/:token 등)
         .merge(ai::router())
         .merge(credits::router())
         .merge(credits::router_admin())
         .merge(profile_type::router())
         .merge(corporate::router())
+        .merge(fleet_vehicles::router())
+        .merge(fleet_media::router())
+        .merge(fleet_team::router())
+        .merge(fleet_sites::router())
+        .merge(fleet_expenses::router())
+        .merge(fleet_reservations::router())
+        .merge(fleet_trip_assignment::router())
+        .merge(fleet_trip_quality::router())
         .merge(rentcar::router())
         .merge(payments::router())
         .merge(phones::router())
@@ -51,18 +89,50 @@ pub fn build_router(state: AppState) -> Router {
         .merge(chat::router_user())
         .merge(chat::router_admin())
         .merge(admin::router())
-        ;
+        .merge(admin_security::router())
+        .merge(location_access::router())
+        // Inside the company scope layer: the ledger sees who really asked.
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            crate::services::access_ledger::middleware,
+        ))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            crate::auth::fleet::middleware,
+        ))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            crate::services::admin_security::middleware,
+        ));
 
     Router::new()
         .route("/health", get(health::health))
         .route("/gps-tracker/health", get(health::health))
         .route("/gps-tracker/ingest", post(ingest::ingest))
+        .route(
+            "/gps-tracker/ingest/shield",
+            post(|| async { axum::http::StatusCode::GONE }),
+        )
         .route("/gps-tracker/dht", post(diag::dht_ingest))
+        .route("/gps-tracker/arduino-shield", get(arduino_shield::page))
+        .route(
+            "/gps-tracker/arduino-shield/data",
+            get(arduino_shield::data),
+        )
         .route("/gps-tracker/diagnostic", get(diag::diag_page))
         .route("/gps-tracker/diagnostic/data", get(diag::diag_data))
         .route("/gps-tracker/diagnostic/device", get(diag::device_log_page))
-        .route("/gps-tracker/diagnostic/device/data", get(diag::device_log_data))
+        .route(
+            "/gps-tracker/diagnostic/device/data",
+            get(diag::device_log_data),
+        )
         .nest("/gps-tracker/api/v1", api_v1)
         .nest("/gps-tracker/ws", ws::router())
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            crate::services::access_ledger::outer_middleware,
+        ))
         .with_state(state)
 }
+
+pub mod subject_provision;

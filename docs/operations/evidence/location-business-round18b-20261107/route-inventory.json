@@ -1,0 +1,10 @@
+{
+  "routes": 296,
+  "ledger_routes": 80,
+  "manifest_sha256": "7b1e5890f2b95df7c168fcb8de88cb2687d6017499f906baf136071fa549c1c7",
+  "mutation_checks": [
+    "new nested route rejected",
+    "dynamic registration rejected",
+    "route_service rejected"
+  ]
+}

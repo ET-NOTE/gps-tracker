@@ -1,0 +1,64 @@
+GPS battery display policy, 2026-10-14
+
+User-requested labels: 정상 / 저전압 / 전압 매우 부족.
+Normal >=3300mV; low >=2900 and <3300mV; critical <2900mV.
+These are display/communication guidance levels, NOT battery safety cutoffs.
+
+Source: terminal 520211, MEGACANON x2 parallel, GDS-1052-U CH1 x10,
+2026-10-12 10:37 through 2026-10-14 12:44, sleep-disabled battery-98bf4a637c.
+36,084 scope snapshots (160ms every 5s), 10,549 server records.
+At approximately 2.85V physical / 2.81V ADC, >30s reception gaps increased.
+At approximately 2.77V physical / 2.69V ADC, median successful-reception gap
+was 32s, maximum 68s (formerly median 16.5s). HTTP codes were not captured.
+Battery chemistry/model/capacity and exact USB removal timestamp unverified.
+
+Final test checkpoint: analysis_20261014_134946, 36,865 scope snapshots and
+10,643 server records. The logger was subsequently stopped at the user's request.
+The user reported three repetitions of three long beeps around 13:48 KST.
+The running firmware source 98bf4a637c emits three 500ms beeps after crash resets.
+13:47:52 uptime=2566s -> 13:48:35 uptime=23s, reset/wake cause BROWNOUT.
+A separate earlier reset is confirmed at 13:05. Exactly three resets are not
+provable from server records because reboot attempts may fail to transmit.
+13:48 one-minute physical mean=2.60537V, median=2.60336V; minimum snapshot=1.90V.
+
+The user designated this event level as display 0%; rounded physical 2.600V.
+Full display remains 4.200V. ops/refit_battery_percentage.py reproduces the
+relative-time curve between 10/12 10:45 and 10/14 13:48 from 5-minute physical
+voltage medians. It pools local reversals and preserves monotonic percentages.
+Detailed targets are in battery-percentage-evidence.json. This is an estimated
+remaining fraction under the observed test load, not measured charge capacity.
+Zero does not mean safe cutoff, electrochemical empty, or the first failure.
+Do not use this curve for 2S packs, smartphone batteries, or a safety cutoff.
+
+User designated unit 520211 as the product standard on 2026-10-14.
+The product now uses the piecewise ADC-to-physical voltage table in policy JSON.
+Source provenance, bin counts and same-discharge held-out minute residuals are
+in battery-calibration-evidence.json, reproducible with ops/build_battery_calibration.py.
+2,972 paired one-minute means; initial 23 minutes excluded, exact USB removal
+still unknown. First 120 seconds of each boot and deployment 13:11..13:15 are excluded. Median offsets by ADC range are linearly interpolated and rounded
+to 1mV (calculation resolution, NOT instrument accuracy). Out-of-range values
+use the nearest endpoint offset and are marked as outside-range estimates.
+Measured anchor range is raw ADC 2538..4119mV; no extrapolated slope is used.
+Adjacent held-out even minutes: mean absolute residual 15.53 -> 5.14mV,
+p95 absolute residual 39.10 -> 13.07mV. These are SAME discharge validation,
+not independent hardware accuracy; the scope sample quantum is approximately
+20mV and scope/ADC acquisition is not synchronized. Charging, USB power,
+temperature/load changes and unit-to-unit tolerances remain unvalidated.
+
+Raw vbat_mv and modem cbc_mv remain unchanged and separate in storage/API/WS.
+The frontend and backend transform raw ADC exactly once at interpretation time.
+Status, estimated percentage, alert eligibility and push text all use calibrated
+voltage. Technical details retain original ADC and modem rail readings.
+The standard is versioned. This discharge session is closed; new independent validation is still needed.
+
+The same battery-policy.json feeds JS and Rust. Existing per-account push
+thresholds and the 24-hour debounce are retained. A custom alert above 3.30V
+uses the neutral title 배터리 알림 기준 도달 instead of falsely claiming low voltage.
+The three status labels share the UI thresholds, independent of user-defined
+early notification thresholds. Missing/invalid samples show 전압 미확인, not 0%.
+
+REST includes last_battery_at and the latest row even when ADC is missing.
+WS updates device detail fields and meta together, including no-GPS reports.
+Battery receipt freshness is independent of the GPS fix watermark; delayed
+GPS fixes may update the map but cannot restore an older battery reading.
+Historical point popups keep historical battery values.

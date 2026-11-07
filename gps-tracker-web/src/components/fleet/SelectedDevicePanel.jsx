@@ -1,3 +1,4 @@
+import { vehicleName } from '../../lib/business';
 // (2026-07-28) Phase F4-b-2 — Fleet dashboard 우측 selected-device panel.
 // EventFeedPanel 대체. tabbed 구조 (이벤트 | 운행 이력).
 // 운행 이력 클릭 시 map 에 seeker path 재생.
@@ -8,8 +9,8 @@ import { api } from '../../api';
 import TripDetailTab from './TripDetailTab';
 
 const EVENT_META = {
-  wake:                    { label: '운행 시작', icon: 'route',  color: 'var(--accent)' },
-  sleep_enter:             { label: '운행 종료', icon: 'moon',   color: 'var(--text-2)' },
+  wake:                    { label: '단말기 깨어남', icon: 'route',  color: 'var(--accent)' },
+  sleep_enter:             { label: '절전 진입', icon: 'moon',   color: 'var(--text-2)' },
   geofence_enter:          { label: '지점 진입', icon: 'mapPin', color: 'var(--primary)' },
   geofence_exit:           { label: '지점 이탈', icon: 'mapPin', color: 'var(--warning)' },
   rental_ending:           { label: '반납 임박', icon: 'clock',  color: 'var(--warning)' },
@@ -20,7 +21,7 @@ const EVENT_META = {
 };
 
 export default function SelectedDevicePanel({
-  selectedDevice, events, evLoading,
+  selectedDevice, events, evLoading, evError, onEventsRetry, tripPoints,
   onTripSelect,     // (trip) => void — 선택된 trip 을 map 에 그림
   selectedTrip,     // 선택된 trip 객체 (또는 null)
   selectedTripKey,  // string | null — 선택된 trip 강조
@@ -49,7 +50,7 @@ export default function SelectedDevicePanel({
           padding: 'var(--space-6)', textAlign: 'center',
           color: 'var(--text-3)', fontSize: 12, lineHeight: 1.6,
         }}>
-          좌측 목록에서 차량을 선택하면<br/>
+          차량 목록에서 차량을 선택하면<br/>
           이벤트 · 운행 이력이 여기 표시됩니다.
         </div>
       </div>
@@ -60,9 +61,9 @@ export default function SelectedDevicePanel({
     <div style={panelWrap}>
       <div style={panelHead}>
         <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>
-          {selectedDevice.license_plate || selectedDevice.display_name || `#${selectedDevice.id}`}
+          {vehicleName(selectedDevice)}
         </div>
-        {selectedDevice.display_name && selectedDevice.license_plate && (
+        {selectedDevice.display_name && (selectedDevice.car_plate || selectedDevice.license_plate) && (
           <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2 }}>
             {selectedDevice.display_name}
           </div>
@@ -94,28 +95,34 @@ export default function SelectedDevicePanel({
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--space-2)' }}>
         {tab === 'events' && (
-          <EventsTab events={events} loading={evLoading} />
+          <EventsTab events={events} loading={evLoading} error={evError} onRetry={onEventsRetry} />
         )}
         {tab === 'trips' && (
           <TripsTab deviceId={selectedDevice.id} onSelect={onTripSelect} selectedKey={selectedTripKey} />
         )}
         {tab === 'detail' && selectedTrip && (
-          <TripDetailTab deviceId={selectedDevice.id} trip={selectedTrip} mapRef={mapRef} />
+          <TripDetailTab trip={selectedTrip} points={tripPoints} mapRef={mapRef} />
         )}
       </div>
     </div>
   );
 }
 
-function EventsTab({ events, loading }) {
-  if (loading) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>로딩...</div>;
-  if (!events || events.length === 0) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>최근 이벤트 없음</div>;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+function EventsTab({ events, loading, error, onRetry }) {
+  return <div>
+    {loading && <div role="status" style={feedNotice}>이벤트를 불러오는 중…</div>}
+    {error && <div role="alert" style={feedNotice}>이벤트를 불러오지 못했습니다.
+      {events != null && <span> 마지막으로 확인한 기록입니다.</span>}
+      <button type="button" className="fleet-retry" onClick={onRetry}>다시 시도</button>
+    </div>}
+    {!loading && !error && events?.length === 0 && <div style={feedNotice}>최근 이벤트 없음</div>}
+    {!!events?.length && <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {events.map((ev, i) => <EventRow key={ev.id || i} ev={ev} />)}
-    </div>
-  );
+    </div>}
+  </div>;
 }
+
+const feedNotice = { padding: 'var(--space-4)', color: 'var(--text-2)', fontSize: 12, lineHeight: 1.6 };
 
 function EventRow({ ev }) {
   const meta = EVENT_META[ev.kind] || { label: ev.kind, icon: 'info', color: 'var(--text-2)' };
@@ -157,6 +164,7 @@ function EventRow({ ev }) {
 function TripsTab({ deviceId, onSelect, selectedKey }) {
   const [trips, setTrips] = useState(null);
   const [error, setError] = useState(null);
+  const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setTrips(null); setError(null);
@@ -169,11 +177,11 @@ function TripsTab({ deviceId, onSelect, selectedKey }) {
       // 최신 우선.
       setTrips((ts || []).slice().sort((a, b) =>
         new Date(b.started_at) - new Date(a.started_at)));
-    }).catch(e => { if (!cancelled) setError(e.message); });
+    }).catch(() => { if (!cancelled) setError('운행 이력을 불러오지 못했습니다.'); });
     return () => { cancelled = true; };
-  }, [deviceId]);
+  }, [deviceId, refresh]);
 
-  if (error) return <div style={{ padding: 'var(--space-4)', color: 'var(--danger)', fontSize: 12 }}>{error}</div>;
+  if (error) return <div role="alert" style={feedNotice}>{error} <button type="button" className="fleet-retry" onClick={() => setRefresh(value => value + 1)}>다시 시도</button></div>;
   if (!trips) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>로딩...</div>;
   if (trips.length === 0) return <div style={{ padding: 'var(--space-4)', color: 'var(--text-3)', fontSize: 12 }}>최근 30일 운행 없음</div>;
 

@@ -3,11 +3,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
-use axum::extract::DefaultBodyLimit;
+use axum::{
+    extract::{DefaultBodyLimit, MatchedPath, Request},
+    middleware::Next,
+    response::{IntoResponse, Response},
+};
 use tokio::net::TcpListener;
 use tower_http::{
     cors::{Any, CorsLayer},
-    timeout::TimeoutLayer,
     trace::TraceLayer,
 };
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -30,22 +33,37 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     // ── config & db ───────────────────────────────────────
+    services::admin_security::validate_config()?;
+    services::transport_security::validate_config()?;
     let cfg = config::Config::from_env().context("failed to load config")?;
     tracing::info!(bind = %cfg.bind_addr, "starting gps-tracker-api");
+    let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref())?;
 
     let pool = db::make_pool(&cfg.database_url)
         .await
         .context("failed to connect database")?;
 
-    // 마이그레이션 자동 적용 (sqlx::migrate! macro)
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .context("migration failed")?;
-    tracing::info!("migrations up to date");
+    // Schema credentials never need to be present in the serving process.
+    if std::env::var("GPS_MIGRATE_ONLY").as_deref() == Ok("1")
+        || std::env::var("GPS_DATABASE_MODE").as_deref() != Ok("runtime")
+    {
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .context("migration failed")?;
+        if std::env::var("GPS_MIGRATE_ONLY").as_deref() == Ok("1") {
+            return Ok(());
+        }
+    } else {
+        db::verify_runtime(&pool)
+            .await
+            .context("runtime DB boundary")?;
+    }
+
+    services::location_storage::verify(&pool, services::location_storage::load()?.is_some())
+        .await?;
 
     // FCM 클라이언트 — events 워커와 채팅 푸시가 공유
-    let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref());
 
     // (2026-07-28) Stage-4D: 오피넷 유가 캐시. 부팅 시 첫 fetch 시도 + 6h 주기 refresh.
     // OPINET_API_KEY env 미설정 시 fetch 실패 → 하드코딩 기본값 fallback.
@@ -53,17 +71,27 @@ async fn main() -> anyhow::Result<()> {
     opinet.clone().spawn_refresh_worker();
 
     let state = state::AppState {
+        ingest_limit: Arc::new(tokio::sync::Semaphore::new(3)),
         db: pool.clone(),
         config: Arc::new(cfg.clone()),
-        events: events::channel(1024),   // (F11) 256→1024 — 100대 fleet × chat WS 공유 시 lagged drop 감소.
+        events: events::channel(1024), // (F11) 256→1024 — 100대 fleet × chat WS 공유 시 lagged drop 감소.
         fcm: fcm.clone(),
         opinet,
     };
 
+    // Off unless switched on. When it is on and cannot start, the API does not serve unrecorded reads.
+    services::privacy_lifecycle::start(&cfg.database_url, pool.clone()).await?;
+    services::access_ledger::start(pool.clone())
+        .await
+        .context("location access ledger")?;
+
+    services::subject_provision::start(pool.clone(), fcm.clone()).await?;
     services::fcm::spawn(pool.clone(), fcm);
     services::geofence::spawn_offline_worker(pool.clone());
     services::stats::spawn_worker(pool.clone());
+    services::fleet_sites::spawn(pool.clone());
     services::housekeeping::spawn_worker(pool.clone());
+    routes::privacy_images::spawn_cleanup(pool.clone());
     // partition_worker 제거 — TimescaleDB hypertable 이 chunk 자동 관리 (migration 0040).
     services::nce::spawn_cache_worker(pool.clone());
     // (2026-07-28) Stage-4H-1: 예약 임박 알림 워커.
@@ -71,7 +99,10 @@ async fn main() -> anyhow::Result<()> {
 
     // ── CORS ──────────────────────────────────────────────
     let cors = if cfg.cors_allowed_origins.iter().any(|s| s == "*") {
-        CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any)
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
     } else {
         let origins = cfg
             .cors_allowed_origins
@@ -88,12 +119,14 @@ async fn main() -> anyhow::Result<()> {
     // Body size limit: 1MB — ingest/webhook 페이로드는 수 KB, ai 분석 응답도 작음.
     //   누가 거대 body 보내도 메모리 폭주 방지. 결제 webhook 등 큰 body 가 필요한 핸들러는
     //   별도 `.layer(DefaultBodyLimit::max(N))` 로 라우터별 오버라이드 가능.
-    // Timeout: 30초 — 외부 API (1NCE, Kakao, FCM) 호출까지 여유. 그 이상 걸리면 핸들러 hang
-    //   가정하고 abort. 클라이언트는 408/503 받음.
+    // AI gets a bounded longer budget; all other endpoints retain 30 seconds.
     let app = routes::build_router(state)
         .layer(DefaultBodyLimit::max(1024 * 1024))
-        .layer(TimeoutLayer::new(Duration::from_secs(30)))
-        .layer(TraceLayer::new_for_http())
+        .layer(axum::middleware::from_fn(
+            services::transport_security::middleware,
+        ))
+        .layer(axum::middleware::from_fn(request_timeout))
+        .layer(TraceLayer::new_for_http().make_span_with(services::http_trace::span))
         .layer(cors);
 
     // ── serve ─────────────────────────────────────────────
@@ -104,11 +137,29 @@ async fn main() -> anyhow::Result<()> {
 
     // Graceful shutdown — SIGTERM (systemctl restart / 도커 stop) 받으면 in-flight 요청
     // 끝날 때까지 대기 후 종료. 새 연결은 안 받음. 배포 시 502 발생률 감소.
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .context("server error")?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .context("server error")?;
+    services::access_ledger::close().await;
     Ok(())
+}
+
+async fn request_timeout(request: Request, next: Next) -> Response {
+    let is_analysis = request.method() == axum::http::Method::POST
+        && request
+            .extensions()
+            .get::<MatchedPath>()
+            .is_some_and(|path| path.as_str().ends_with("/devices/:id/route/analyze"));
+    let seconds = if is_analysis { 120 } else { 30 };
+    match tokio::time::timeout(Duration::from_secs(seconds), next.run(request)).await {
+        Ok(response) => response,
+        Err(_) => (axum::http::StatusCode::REQUEST_TIMEOUT,
+            axum::Json(serde_json::json!({"error":"응답이 지연되고 있습니다. 잠시 후 같은 요청으로 다시 확인해 주세요."}))).into_response(),
+    }
 }
 
 async fn shutdown_signal() {
@@ -118,7 +169,9 @@ async fn shutdown_signal() {
     };
     #[cfg(unix)]
     let terminate = async {
-        if let Ok(mut sig) = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+        if let Ok(mut sig) =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        {
             sig.recv().await;
         }
     };

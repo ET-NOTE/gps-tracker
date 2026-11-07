@@ -1,0 +1,54 @@
+{
+  "mode": "apply",
+  "name": "pdf-service-20261106",
+  "account": {
+    "uid": 996,
+    "shell": "/usr/sbin/nologin",
+    "home": "/nonexistent",
+    "groups": []
+  },
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "pdf-service-20261106-r1",
+    "service": "gps-tracker-api"
+  },
+  "self_test_in_service": {
+    "open_file": "signal 31",
+    "open_socket": "signal 31",
+    "start_program": "signal 31",
+    "start_process": "signal 31",
+    "too_much_memory": "refused",
+    "too_much_cpu": "signal 9"
+  },
+  "processor_instance": {
+    "unit": "gps-pdf-render@3-52496-997.service",
+    "user": "gps-pdf",
+    "no_new_privileges": true,
+    "system_call_filter": true,
+    "capabilities": 0,
+    "files_it_can_see": [
+      "/home/mmm/projects/gps-tracker-api/bin/gps-pdf-render"
+    ],
+    "network_interfaces": [
+      "lo"
+    ],
+    "memory_max": 872415232,
+    "swap_max": "0"
+  },
+  "socket": "/run/gps-pdf-render/render.sock root:gps-api 660",
+  "other_account_refused": true,
+  "api_environment": {
+    "GPS_PDF_SOCKET": "/run/gps-pdf-render/render.sock"
+  },
+  "files": [
+    "/etc/systemd/system/gps-pdf-render-selftest.service",
+    "/etc/systemd/system/gps-pdf-render.socket",
+    "/etc/systemd/system/gps-pdf-render@.service",
+    "/etc/systemd/system/gps-tracker-api.service.d/20-pdf-socket.conf"
+  ],
+  "record": "/home/mmm/backups/pdf-service-20261106/record.json",
+  "other_services_unchanged": true,
+  "binaries_unchanged": true
+}

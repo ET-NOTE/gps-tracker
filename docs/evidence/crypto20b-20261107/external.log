@@ -1,0 +1,12 @@
+NOTICE:  database "gps_ai_test" does not exist, skipping
+NOTICE:  database "gps_fcm_test" does not exist, skipping
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running unittests src/main.rs (/cache/target/debug/deps/gps_tracker_api-8f003424c2fedcc2)
+
+running 3 tests
+test services::access_ledger::tests::external_intents_commit_before_mock_network_and_distinguish_outcomes ... ok
+test services::ai_requests::tests::analysis_purchase_is_atomic_and_replayable ... ok
+test services::fcm::tests::durable_queue_recovers_without_cross_account_or_partial_success_replay ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 78 filtered out; finished in 0.67s
+

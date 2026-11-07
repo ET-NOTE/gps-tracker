@@ -1,0 +1,89 @@
+{
+  "started_at": "2026-11-06T14:01:24+09:00",
+  "finished_at": "2026-11-06T14:01:41+09:00",
+  "exit": 0,
+  "result": {
+    "release": "privacy-pdf-20261106-r1",
+    "schema": 98,
+    "request_id": 29,
+    "delivery_id": 4,
+    "synthetic_account_ids": [
+      56,
+      57,
+      58
+    ],
+    "renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+    "pdf_pages_rendered": [
+      [
+        1,
+        1414,
+        707
+      ],
+      [
+        2,
+        1000,
+        1000
+      ]
+    ],
+    "installed_processor_used_inside_the_api_service": true,
+    "read_proof_bound_to_page_and_pixels": true,
+    "missing_page_refused": true,
+    "unreadable_and_encrypted_pdf_refused_without_read_proof": true,
+    "selection_bound_to_page": true,
+    "forged_client_rgb_ignored": true,
+    "excluded_pixels_removed_and_metadata_absent": true,
+    "preview_and_download_exact_bytes": true,
+    "password_and_foreign_account_denial": true,
+    "source_changed_delivery_purged": true,
+    "no_automatic_whole_request_completion": true,
+    "synthetic_source_removed": true,
+    "synthetic_accounts_closed": true,
+    "real_accounts_and_sim_ownership_unchanged": true,
+    "external_messages_sent": false,
+    "full_erasure_confirmed": false
+  },
+  "checked_before": {
+    "credential_unused": true,
+    "smoke_script_sha256": "74ed49dd6e0cd12843c4cfe423e3c0e8e158c7106b17f7c3a4c8370461a0e5e4",
+    "request_limit_rows_in_last_15_minutes": 0,
+    "rows_using_new_columns": 0
+  },
+  "checked_afterwards": {
+    "at": "2026-11-06T14:02:09+09:00",
+    "health_release": "privacy-pdf-20261106-r1",
+    "api_restarts": 0,
+    "api_error_log_entries": 0,
+    "api_processor_self_test_failures": 0,
+    "processor_processes_left": 0,
+    "synthetic_accounts_restricted": [
+      56,
+      57,
+      58
+    ],
+    "synthetic_closures": "all review_required, no error (two verified; the company account keeps staff rows for review, as designed)",
+    "synthetic_receipts_and_expenses_left": 0,
+    "request_29": "cancelled",
+    "read_proofs_of_request_29": {
+      "count": 2,
+      "pages": [
+        1,
+        2
+      ],
+      "distinct_pixels": 2
+    },
+    "delivery_4": {
+      "source_page": 2,
+      "kind": "pdf",
+      "renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+      "unavailable": true
+    },
+    "temporary_image_payloads": 0,
+    "rows_using_new_columns": 3,
+    "pending_account_closures": 0,
+    "devices_owned_by_synthetic_accounts": 0,
+    "gps_path_5xx_since_smoke": 0,
+    "cleanup_timers_last_run": "success"
+  },
+  "scripted_rollback_available": false,
+  "note": "The read proofs and the delivery written by this run use the new columns, so release_privacy_pdf.py rollback now refuses by design."
+}

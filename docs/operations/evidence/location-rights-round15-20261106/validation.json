@@ -1,0 +1,33 @@
+{
+  "scaling_groups": 9,
+  "receipt_groups": 7,
+  "image_groups": 8,
+  "redacted_groups": 8,
+  "company_task_groups": 10,
+  "sections_groups": 5,
+  "package_groups": 9,
+  "company_groups": 10,
+  "delivery_groups": 11,
+  "closure_groups": 12,
+  "integration_groups_total": 89,
+  "schema": 97,
+  "api_sha256": "c8f7c6f4326316082efac9125d88d913c976a7347a9f1b620b53dbf317a25e11",
+  "web_tar_sha256": "fff70fce0cc679128f70a38f63b5e8a1ad81a6063ec82c4984fd80ec51fc1f2f",
+  "built_from": "uncommitted working tree on 9e4e96e",
+  "rust_passed": 58,
+  "rust_ignored": 2,
+  "fmt_clippy_passed": true,
+  "web_tests_passed": 223,
+  "web_build_passed": true,
+  "api_container_memory_limit_bytes": 576716800,
+  "memory_peak_before_bytes": 69148672,
+  "memory_peak_after_bytes": 142172160,
+  "concurrent_large_read_statuses": [200, 429, 429, 429, 429, 429],
+  "pdf_renderer_probe": {
+    "toolchain": "1.88.0",
+    "hayro_0_6_0_builds": false,
+    "hayro_0_9_0_builds": false,
+    "reason": "dependencies require rustc 1.89-1.92"
+  },
+  "production_deployed": false
+}

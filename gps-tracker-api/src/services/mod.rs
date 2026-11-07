@@ -1,15 +1,43 @@
+pub mod access_ledger;
+pub mod admin_security;
+pub mod ai_requests;
 pub mod alimtalk;
+pub mod battery;
+pub mod battery_runtime;
+pub mod collection_control;
+pub mod connection_alerts;
 pub mod credits;
+pub mod device_auth;
+pub mod device_commands;
+pub mod device_settings;
 pub mod fcm;
+pub mod fleet_sites;
 pub mod geofence;
+pub mod hardware_auth;
 pub mod housekeeping;
+pub mod privacy_lifecycle;
+pub mod sim_identity;
 // partition_worker 제거 — TimescaleDB hypertable 도입 후 chunk 자동 관리 (migration 0040).
+pub mod http_trace;
 pub mod kakao_geo;
+pub mod location_storage;
 pub mod nce;
+pub mod notification_policy;
 pub mod openai;
+pub mod opinet;
+pub mod privacy;
+pub mod privacy_account_export;
+pub mod privacy_location_facts;
+pub mod privacy_pdf;
+pub mod privacy_raster;
+pub mod reservation_alerts;
 pub mod sms;
 pub mod stats;
 pub mod toss;
+pub mod transport_security;
 pub mod xlsx_report;
-pub mod opinet;
-pub mod reservation_alerts;
+
+pub mod private_files;
+
+pub mod subject_projection;
+pub mod subject_provision;

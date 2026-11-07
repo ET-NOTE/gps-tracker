@@ -1,0 +1,95 @@
+{
+  "passed": true,
+  "release": "privacy-facts-20261106-r1",
+  "commit": "08beb94869b84d21779ced834d0fc9caa8047f1c",
+  "api_sha256": "1fc16f783259d18898456318ff2ad14eb7caa9278e3739609f077e967f115a4d",
+  "web_sha256": "96fb79aba378da13457252c030f593027bc315927c46b153ec9d1fdae02b9f83",
+  "release_script_sha256": "70f77a59727435bf2f3217ebb6dd8e7ffef0f1179e1569f0d3fd60a51e13ed30",
+  "smoke_sha256": "7405738254e53d9589d6266466dbca1b60dcb7a2ceaee74f859d9bb730d90e2e",
+  "staged_smoke_sha256": "c53e3c353328ac81a01160235cbe2bd83b0a8e680f68c37e659e17d9adf5f94a",
+  "smoke_run_from": "/home/mmm/gps-artifacts/privacy-facts-20261106-r1-smoke",
+  "other_build": {
+    "sha256": "dfae8bcd70f1cdb985e8bde4678888f60b5eea733695f8f267004979161372ca",
+    "release": "privacy-facts-20261106-dev"
+  },
+  "previous": {
+    "release": "pdf-service-20261106-r1",
+    "api_sha256": "0d28667f3c21af82a43b987a12eec2836547d3717c69ae304688c6e5363ce826"
+  },
+  "host": {
+    "image": "ubuntu:22.04 with systemd as PID 1",
+    "kernel": "6.8.0-142-generic",
+    "systemd": "systemd 249 (249.11-0ubuntu3.23)"
+  },
+  "steps": [
+    {
+      "step": "start: production as it is today (previous API release on schema 98, API as gps-api, PDF processor as its own service) with a grant issued by that release"
+    },
+    {
+      "step": "check passes and changes nothing",
+      "found": {
+        "database": "previous",
+        "health_release": "pdf-service-20261106-r1",
+        "api_sha256": "0d28667f3c21af82a43b987a12eec2836547d3717c69ae304688c6e5363ce826",
+        "web": "/home/mmm/releases/privacy-pdf-20261106-r1/web"
+      }
+    },
+    {
+      "step": "the migration cannot take its lock -> nothing is changed, the attempt is set aside"
+    },
+    {
+      "step": "new API does not become healthy -> automatic return: previous binary, schema 98, web link as before"
+    },
+    {
+      "step": "new API healthy but the processor service fails its check -> automatic return"
+    },
+    {
+      "step": "apply: schema 99, new API healthy, web switched; the processor service was not touched or restarted; the earlier grant still downloads",
+      "health": {
+        "db": true,
+        "environment": "test",
+        "ok": true,
+        "release": "privacy-facts-20261106-r1",
+        "service": "gps-tracker-api"
+      },
+      "pdf_processor_service": {
+        "unchanged_and_not_restarted": true,
+        "socket": "active",
+        "proof": "success"
+      }
+    },
+    {
+      "step": "rollback: previous binary and web, schema 98 with both rules as before; the earlier grant still downloads; check passes again"
+    },
+    {
+      "step": "apply again; the production smoke script completes against the rehearsal host (later revision, run from its own directory)",
+      "smoke": {
+        "no_token_refused": true,
+        "other_account_refused": true,
+        "file_holds_only_the_subjects_own_account_request_and_link": true,
+        "expired_grant_refused_then_times_restored": true,
+        "earlier_grants": 1,
+        "earlier_grants_listed_and_rows_unchanged": true,
+        "earlier_grants_downloadable_now": 1,
+        "revoked_grant_refused": true,
+        "synthetic_accounts_closed": true
+      }
+    },
+    {
+      "step": "going back is refused once a grant uses the new section"
+    },
+    {
+      "step": "repair forward: another build that knows schema 99 replaces the API file and serves; schema, grants, web and the processor service stay"
+    },
+    {
+      "step": "the previous binary does not start on schema 99: going back by the binary alone is not an option",
+      "log": [
+        "Error: migration failed",
+        "migration 99 was previously applied but is missing in the resolved migrations"
+      ]
+    },
+    {
+      "step": "the released binary is put back and serves again; everything else is as it was after the smoke"
+    }
+  ]
+}

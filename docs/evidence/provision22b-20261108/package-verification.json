@@ -1,0 +1,9 @@
+{
+  "candidate_files_verified": 65,
+  "archive_sha256": "2263ce4cd5aaba5d0ee38ab405184bb608c7063f0cf5dd6e974a9572a624e8a7",
+  "source_commit": "d4a16f830b3c809a99971d096a98cebb0e21103a",
+  "source_files_verified": 783,
+  "source_archive_sha256": "07f3d26131a2a030c374658a109ab6aed5ff050318dc81d63912c11551fd76f5",
+  "canonical_git_archive": true,
+  "production_modified": false
+}

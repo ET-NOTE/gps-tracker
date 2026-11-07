@@ -26,8 +26,8 @@ use serde_json::json;
 use sqlx::PgPool;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(5 * 60);
-const LEAD_MINUTES: i64 = 30;      // 시작 30분 전 알림
-const END_LEAD_MINUTES: i64 = 30;  // (4H-2) 종료 30분 전 반납 알림
+const LEAD_MINUTES: i64 = 30; // 시작 30분 전 알림
+const END_LEAD_MINUTES: i64 = 30; // (4H-2) 종료 30분 전 반납 알림
 
 pub fn spawn_worker(pool: PgPool) {
     tokio::spawn(async move {
@@ -52,42 +52,55 @@ pub fn spawn_worker(pool: PgPool) {
             }
         }
     });
-    tracing::info!("reservation_alerts worker: started (poll every {}s)", POLL_INTERVAL.as_secs());
+    tracing::info!(
+        "reservation_alerts worker: started (poll every {}s)",
+        POLL_INTERVAL.as_secs()
+    );
 }
 
 async fn run_once(db: &PgPool) -> anyhow::Result<()> {
     let now = Utc::now();
     let lead_until = now + chrono::Duration::minutes(LEAD_MINUTES);
 
-    // 임박 예약 조회 — JOIN devices+staff 로 이벤트 payload 에 이름 포함.
+    // 임박 예약 조회 — JOIN gps_read_devices+staff 로 이벤트 payload 에 이름 포함.
     #[derive(sqlx::FromRow)]
     struct Row {
-        id:            i64,
-        user_id:       i64,
-        device_id:     i64,
-        starts_at:     DateTime<Utc>,
-        purpose:       Option<String>,
-        device_name:   Option<String>,
+        id: i64,
+        user_id: i64,
+        device_id: i64,
+        starts_at: DateTime<Utc>,
+        purpose: Option<String>,
+        device_name: Option<String>,
         license_plate: Option<String>,
-        driver_name:   Option<String>,
+        driver_name: Option<String>,
     }
     let rows: Vec<Row> = sqlx::query_as(
-        r#"SELECT r.id, r.user_id, r.device_id, r.starts_at, r.purpose,
-                  d.display_name AS device_name, d.license_plate,
+        r#"SELECT r.id, r.user_id, d.id AS device_id, r.starts_at, r.purpose,
+                  COALESCE(v.name,d.display_name) AS device_name, COALESCE(v.license_plate,d.license_plate) AS license_plate,
                   s.name         AS driver_name
              FROM vehicle_reservations r
-        LEFT JOIN devices d ON d.id = r.device_id
+        LEFT JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id
+        LEFT JOIN fleet_vehicle_bindings b ON b.vehicle_id=v.id AND b.owner_id=r.user_id AND b.is_primary AND b.ended_at IS NULL
+        JOIN gps_read_devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
         LEFT JOIN staff   s ON s.id = r.driver_staff_id
             WHERE r.status = 'planned'
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
               AND r.alerted_at IS NULL
               AND r.starts_at BETWEEN $1 AND $2"#,
     )
-    .bind(now).bind(lead_until)
-    .fetch_all(db).await?;
+    .bind(now)
+    .bind(lead_until)
+    .fetch_all(db)
+    .await?;
 
-    if rows.is_empty() { return Ok(()); }
+    if rows.is_empty() {
+        return Ok(());
+    }
 
-    tracing::info!("reservation_alerts: {} upcoming reservation(s) to alert", rows.len());
+    tracing::info!(
+        "reservation_alerts: {} upcoming reservation(s) to alert",
+        rows.len()
+    );
 
     for r in rows {
         let mins_until = ((r.starts_at - now).num_seconds() / 60).max(0);
@@ -109,12 +122,15 @@ async fn run_once(db: &PgPool) -> anyhow::Result<()> {
             r#"INSERT INTO events (device_id, user_id, occurred_at, kind, data)
                VALUES ($1, $2, NOW(), 'reservation_starting', $3)"#,
         )
-        .bind(r.device_id).bind(r.user_id).bind(&data)
-        .execute(&mut *tx).await?;
-        sqlx::query(
-            "UPDATE vehicle_reservations SET alerted_at = NOW() WHERE id = $1",
-        )
-        .bind(r.id).execute(&mut *tx).await?;
+        .bind(r.device_id)
+        .bind(r.user_id)
+        .bind(&data)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("UPDATE vehicle_reservations SET alerted_at = NOW() WHERE id = $1")
+            .bind(r.id)
+            .execute(&mut *tx)
+            .await?;
         tx.commit().await?;
     }
     Ok(())
@@ -126,24 +142,36 @@ async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
     let lead_until = now + chrono::Duration::minutes(END_LEAD_MINUTES);
     #[derive(sqlx::FromRow)]
     struct Row {
-        id:            i64, user_id: i64, device_id: i64,
-        ends_at:       DateTime<Utc>, purpose: Option<String>,
-        device_name:   Option<String>, license_plate: Option<String>,
-        driver_name:   Option<String>,
+        id: i64,
+        user_id: i64,
+        device_id: i64,
+        ends_at: DateTime<Utc>,
+        purpose: Option<String>,
+        device_name: Option<String>,
+        license_plate: Option<String>,
+        driver_name: Option<String>,
     }
     let rows: Vec<Row> = sqlx::query_as(
-        r#"SELECT r.id, r.user_id, r.device_id, r.ends_at, r.purpose,
-                  d.display_name AS device_name, d.license_plate,
+        r#"SELECT r.id, r.user_id, d.id AS device_id, r.ends_at, r.purpose,
+                  COALESCE(v.name,d.display_name) AS device_name, COALESCE(v.license_plate,d.license_plate) AS license_plate,
                   s.name AS driver_name
              FROM vehicle_reservations r
-        LEFT JOIN devices d ON d.id = r.device_id
+        LEFT JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id
+        LEFT JOIN fleet_vehicle_bindings b ON b.vehicle_id=v.id AND b.owner_id=r.user_id AND b.is_primary AND b.ended_at IS NULL
+        JOIN gps_read_devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
         LEFT JOIN staff   s ON s.id = r.driver_staff_id
             WHERE r.status IN ('planned','in_progress')
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
               AND r.ended_alerted_at IS NULL
               AND r.ends_at BETWEEN $1 AND $2"#,
     )
-    .bind(now).bind(lead_until).fetch_all(db).await?;
-    if rows.is_empty() { return Ok(()); }
+    .bind(now)
+    .bind(lead_until)
+    .fetch_all(db)
+    .await?;
+    if rows.is_empty() {
+        return Ok(());
+    }
     tracing::info!("reservation_alerts: {} ending reservation(s)", rows.len());
     for r in rows {
         let mins = ((r.ends_at - now).num_seconds() / 60).max(0);
@@ -159,10 +187,15 @@ async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
             r#"INSERT INTO events (device_id, user_id, occurred_at, kind, data)
                VALUES ($1, $2, NOW(), 'reservation_ending', $3)"#,
         )
-        .bind(r.device_id).bind(r.user_id).bind(&data)
-        .execute(&mut *tx).await?;
+        .bind(r.device_id)
+        .bind(r.user_id)
+        .bind(&data)
+        .execute(&mut *tx)
+        .await?;
         sqlx::query("UPDATE vehicle_reservations SET ended_alerted_at = NOW() WHERE id = $1")
-            .bind(r.id).execute(&mut *tx).await?;
+            .bind(r.id)
+            .execute(&mut *tx)
+            .await?;
         tx.commit().await?;
     }
     Ok(())
@@ -172,28 +205,48 @@ async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
 async fn auto_transition_status(db: &PgPool) -> anyhow::Result<()> {
     let n1 = sqlx::query(
         r#"UPDATE vehicle_reservations SET status = 'in_progress', updated_at = NOW()
-            WHERE status = 'planned' AND starts_at <= NOW() AND ends_at > NOW()"#,
-    ).execute(db).await?.rows_affected();
+            WHERE status = 'planned' AND starts_at <= NOW() AND ends_at > NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=vehicle_reservations.user_id AND c.restricted)"#,
+    )
+    .execute(db)
+    .await?
+    .rows_affected();
     let n2 = sqlx::query(
         r#"UPDATE vehicle_reservations SET status = 'completed', updated_at = NOW()
-            WHERE status = 'in_progress' AND ends_at <= NOW()"#,
-    ).execute(db).await?.rows_affected();
+            WHERE status = 'in_progress' AND ends_at <= NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=vehicle_reservations.user_id AND c.restricted)"#,
+    )
+    .execute(db)
+    .await?
+    .rows_affected();
     let n3 = sqlx::query(
         r#"UPDATE vehicle_reservations SET status = 'completed', updated_at = NOW()
-            WHERE status = 'planned' AND ends_at <= NOW()"#,
-    ).execute(db).await?.rows_affected();
+            WHERE status = 'planned' AND ends_at <= NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=vehicle_reservations.user_id AND c.restricted)"#,
+    )
+    .execute(db)
+    .await?
+    .rows_affected();
 
     // (Stage-R1) 렌트카 계약 자동 전환:
     //   draft/active → overdue: ends_at 지났고 아직 returned/cancelled 아님
     //   draft → active: starts_at 이 지났고 아직 draft
     let r1 = sqlx::query(
         r#"UPDATE rental_contracts SET status = 'active', updated_at = NOW()
-            WHERE status = 'draft' AND starts_at <= NOW() AND ends_at > NOW()"#,
-    ).execute(db).await?.rows_affected();
+            WHERE status = 'draft' AND starts_at <= NOW() AND ends_at > NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=rental_contracts.user_id AND c.restricted)"#,
+    )
+    .execute(db)
+    .await?
+    .rows_affected();
     let r2 = sqlx::query(
         r#"UPDATE rental_contracts SET status = 'overdue', updated_at = NOW()
-            WHERE status IN ('draft','active') AND ends_at <= NOW()"#,
-    ).execute(db).await?.rows_affected();
+            WHERE status IN ('draft','active') AND ends_at <= NOW()
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=rental_contracts.user_id AND c.restricted)"#,
+    )
+    .execute(db)
+    .await?
+    .rows_affected();
     if n1 + n2 + n3 + r1 + r2 > 0 {
         tracing::info!("auto-status: reservations {n1}/{n2}/{n3}, rentals {r1}/{r2}");
     }
@@ -224,8 +277,9 @@ async fn run_rental_ending_alerts(db: &PgPool) -> anyhow::Result<()> {
         r#"SELECT r.id, r.user_id, r.device_id, r.ends_at, r.renter_name, r.renter_phone,
                   d.display_name AS device_name, d.license_plate
              FROM rental_contracts r
-        LEFT JOIN devices d ON d.id = r.device_id
+        LEFT JOIN gps_read_devices d ON d.id = r.device_id
             WHERE r.status IN ('draft','active')
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
               AND r.ending_alerted_at IS NULL
               AND r.ends_at BETWEEN $1 AND $2"#,
     )
@@ -236,7 +290,10 @@ async fn run_rental_ending_alerts(db: &PgPool) -> anyhow::Result<()> {
     if rows.is_empty() {
         return Ok(());
     }
-    tracing::info!("rental_ending_alerts: {} contract(s) ending soon", rows.len());
+    tracing::info!(
+        "rental_ending_alerts: {} contract(s) ending soon",
+        rows.len()
+    );
     for r in rows {
         let hours = (r.ends_at - now).num_hours().max(0);
         let data = json!({
@@ -285,8 +342,9 @@ async fn run_rental_overdue_alerts(db: &PgPool) -> anyhow::Result<()> {
         r#"SELECT r.id, r.user_id, r.device_id, r.ends_at, r.renter_name, r.renter_phone,
                   d.display_name AS device_name, d.license_plate
              FROM rental_contracts r
-        LEFT JOIN devices d ON d.id = r.device_id
-            WHERE r.status = 'overdue' AND r.overdue_alerted_at IS NULL"#,
+        LEFT JOIN gps_read_devices d ON d.id = r.device_id
+            WHERE r.status = 'overdue' AND r.overdue_alerted_at IS NULL
+              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)"#,
     )
     .fetch_all(db)
     .await?;

@@ -1,0 +1,28 @@
+{
+  "source_commit": "3e41d866295b9c51ce3d671b1f5dad39f50e4da1",
+  "candidate_schema": 104,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "2651194a349d5f9b9c61eb9c77f87bc2124ee36909d963332574721645b3b766",
+  "verified_web_source_files": 308,
+  "web_source_commit": "a74bcfa44da8d3d493a3f85ff642c2d535017f29",
+  "excluded": [
+    "credentials",
+    "encryption keys",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "private production key custody and restore access",
+    "disable database parameter logging before keys are loaded",
+    "stop all GPS API and cleanup workers; preserve other projects",
+    "protected backup plus current capacity and maintenance-window check",
+    "schema-owner/runtime separation and worker dependency installation",
+    "offline fence/convert/full validation/resume; no plaintext rollback"
+  ],
+  "artifact": "/home/etcom-hub/build/gps-crypto20b-20261107/candidate-crypto20b-20261107-r1.tar.gz",
+  "artifact_sha256": "57202597c5046135d3fb5ed0da2b798a281e73b042797281916c87f8ed4b50cf",
+  "file_count": 58
+}

@@ -1,0 +1,1266 @@
+{
+  "admin.rs GET /admin/devices": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "admin.rs GET /admin/devices/:id": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "admin.rs GET /admin/payments": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "admin.rs GET /admin/users": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "admin.rs GET /admin/users/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "admin.rs GET /admin/users/:id/devices": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "admin.rs POST /admin/devices/:id/recompute-stats": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "admin.rs POST /admin/sims/:iccid/topup": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "admin.rs POST /admin/users/:id/impersonate": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "admin_security.rs GET /admin/security/approvals": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs GET /admin/security/events": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs GET /admin/security/principals": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs GET /admin/security/status": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs PATCH /admin/security/principals/:id": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/approvals": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/approvals/:id/decision": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/enroll": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/logout": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/verify": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "ai.rs DELETE /ai-analyses/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "ai.rs GET /ai-analyses/:id": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "ai.rs GET /ai/usage": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "ai.rs GET /devices/:id/ai-analyses": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "ai.rs POST /devices/:id/route/analyze": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "auth.rs DELETE /auth/me": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs GET /auth/me": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs GET /auth/me/prefs": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs GET /auth/ping": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs PATCH /auth/me": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs PATCH /auth/me/prefs": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/fcm-token": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/fcm-token/revoke": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/fcm-token/revoke-installation": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/find-id/send-otp": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/find-id/verify": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/login": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/me/cleanup": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/me/password": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/password-reset/send-otp": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/password-reset/verify": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/refresh": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/register": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "auth.rs POST /auth/send-otp": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs GET /admin/chat/search": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs GET /admin/chat/threads": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs GET /admin/chat/threads/:thread_id/messages": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs GET /chat/messages": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs GET /chat/thread": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs POST /admin/chat/threads/:thread_id/messages": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs POST /admin/chat/threads/:thread_id/read": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs POST /chat/messages": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "chat.rs POST /chat/read": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs DELETE /corporate/reservations/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs GET /corporate/devices/:id/trips": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "corporate.rs GET /corporate/devices/:id/trips.csv": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "corporate.rs GET /corporate/fleet/trip-stats": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "corporate.rs GET /corporate/fuel-prices": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs GET /corporate/info": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs GET /corporate/report.xlsx": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "corporate.rs GET /corporate/reservations": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs GET /corporate/subscription": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs PATCH /corporate/devices/:id/trips/annotation": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "corporate.rs PATCH /corporate/reservations/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs POST /corporate/reservations": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs POST /corporate/subscription": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "corporate.rs PUT /corporate/info": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs GET /admin/credits/requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs GET /credits/balance": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs GET /credits/log": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs GET /credits/requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs POST /admin/credits/requests/:id/approve": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs POST /admin/credits/requests/:id/reject": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs POST /credits/requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs POST /credits/requests/:id/cancel": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "credits.rs POST /credits/topup": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs DELETE /devices/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs DELETE /devices/:id/range": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs GET /devices": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs GET /devices/:id": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs GET /devices/:id/audit": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "devices.rs GET /devices/:id/batch-stats": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs GET /devices/:id/car-image": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "devices.rs GET /devices/:id/events": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs GET /devices/:id/locations/aggregated": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs GET /devices/:id/sim": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs GET /devices/pairing-options": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "devices.rs GET /devices/scan": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "devices.rs GET /timescaledb/storage-stats": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs PATCH /devices/:id": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs PATCH /devices/:id/fuel-info": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs PATCH /devices/:id/vehicle-info": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs POST /devices/:id/beep": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs POST /devices/:id/car-image": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs POST /devices/:id/post-interval": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs POST /devices/:id/reset": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs POST /devices/:id/sim/refresh": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs POST /devices/:id/sleep-report-interval": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs POST /devices/:id/wipe": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "devices.rs POST /devices/pair": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "devices.rs POST /devices/pair-phone": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "documents.rs DELETE /documents/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "documents.rs GET /corporate/vehicles/:id/documents": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "documents.rs GET /devices/:id/documents": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "documents.rs GET /documents/:id/download": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "documents.rs GET /documents/:id/preview": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "documents.rs POST /corporate/vehicles/:id/documents": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "documents.rs POST /devices/:id/documents": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs DELETE /corporate/expenses/:id/receipts/:receipt": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs GET /corporate/expense-categories": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs GET /corporate/expenses": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs GET /corporate/expenses/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs GET /corporate/expenses/:id/receipts/:receipt": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_expenses.rs POST /corporate/expense-categories": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs POST /corporate/expenses": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs POST /corporate/expenses/:id/receipts": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs POST /corporate/expenses/:id/review": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs PUT /corporate/expense-categories/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_expenses.rs PUT /corporate/expenses/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_media.rs GET /corporate/vehicles/:id/photo": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_media.rs POST /corporate/vehicles/:id/photo": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_reservations.rs DELETE /corporate/vehicle-reservations/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_reservations.rs GET /corporate/vehicle-reservations": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_reservations.rs POST /corporate/vehicle-reservations": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_reservations.rs PUT /corporate/vehicle-reservations/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_sites.rs GET /corporate/site-groups": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_sites.rs GET /corporate/site-visits": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_sites.rs GET /corporate/sites": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_sites.rs POST /corporate/site-groups": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_sites.rs POST /corporate/sites": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_sites.rs PUT /corporate/site-groups/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_sites.rs PUT /corporate/sites/:id": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_team.rs DELETE /corporate/invites/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs DELETE /corporate/staff/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs DELETE /corporate/staff/:id/account": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs GET /corporate/access": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs GET /corporate/invites": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs GET /corporate/organization": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs GET /corporate/staff": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs GET /corporate/team-audit": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs GET /corporate/terminals": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_team.rs GET /corporate/workspaces": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs PATCH /corporate/staff/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs POST /corporate/invites": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs POST /corporate/join": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs POST /corporate/organization/items": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs POST /corporate/staff": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs POST /corporate/staff/import": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_team.rs PUT /corporate/organization/items/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_trip_assignment.rs GET /corporate/vehicles/:id/trip-rules": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_trip_assignment.rs GET /corporate/vehicles/:id/trips/assignment-history": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_trip_assignment.rs POST /corporate/vehicles/:id/trip-rules": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_trip_assignment.rs POST /corporate/vehicles/:id/trips/assign": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_trip_assignment.rs PUT /corporate/vehicles/:id/trip-rules/:rule": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_trip_quality.rs GET /corporate/vehicles/:id/trips/corrections": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_trip_quality.rs POST /corporate/vehicles/:id/trips/corrections": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_trip_quality.rs POST /corporate/vehicles/:id/trips/corrections/:correction/restore": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_trip_quality.rs POST /corporate/vehicles/:id/trips/evidence": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_vehicles.rs GET /corporate/vehicle-stats": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_vehicles.rs GET /corporate/vehicles": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_vehicles.rs GET /corporate/vehicles/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_vehicles.rs GET /corporate/vehicles/:id/audit": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_vehicles.rs GET /corporate/vehicles/:id/bindings": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_vehicles.rs GET /corporate/vehicles/:id/trips": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "fleet_vehicles.rs PATCH /corporate/vehicles/:id/trips/annotation": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "fleet_vehicles.rs POST /corporate/vehicles": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_vehicles.rs PUT /corporate/vehicles/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_vehicles.rs PUT /corporate/vehicles/:id/bindings": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "geofences.rs DELETE /geofences/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "geofences.rs GET /geofences": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "geofences.rs GET /geofences/:id": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "geofences.rs GET /geofences/:id/history": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "geofences.rs GET /geofences/history": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "geofences.rs PATCH /geofences/:id": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "geofences.rs POST /geofences": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "location_access.rs GET /admin/location-access": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "location_access.rs POST /admin/privacy/requests/:id/access-ledger-erasure": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "locations.rs GET /devices/:id/locations": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "locations.rs GET /devices/:id/locations/latest": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "locations.rs GET /devices/:id/locations/page": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "mod.rs GET /gps-tracker/arduino-shield": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs GET /gps-tracker/arduino-shield/data": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs GET /gps-tracker/diagnostic": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs GET /gps-tracker/diagnostic/data": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs GET /gps-tracker/diagnostic/device": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs GET /gps-tracker/diagnostic/device/data": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "mod.rs GET /gps-tracker/health": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs GET /health": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs POST /gps-tracker/dht": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs POST /gps-tracker/ingest": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "mod.rs POST /gps-tracker/ingest/shield": {
+    "class": "outside_api",
+    "reason": "Health, static monitor, sensor-only status, or inbound ingestion; not a stored GPS location response."
+  },
+  "notifications.rs GET /notifications/settings": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "notifications.rs PATCH /notifications/settings": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "payments.rs GET /payments/orders": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "payments.rs GET /payments/orders/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "payments.rs GET /payments/toss/config": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "payments.rs POST /payments/toss/confirm": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "payments.rs POST /payments/toss/fail": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "payments.rs POST /payments/toss/init": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "payments.rs POST /payments/toss/webhook": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "phones.rs DELETE /auth/phones/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "phones.rs GET /auth/phones": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "phones.rs POST /auth/phones": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "phones.rs POST /auth/phones/verify": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "phones.rs PUT /auth/phones/:id/primary": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs GET /admin/privacy/requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs GET /admin/privacy/requests/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs GET /admin/privacy/requests/:id/impact": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs GET /privacy/collection": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs GET /privacy/impact": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs GET /privacy/requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs PATCH /admin/privacy/requests/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs POST /admin/privacy/requests/:id/close-account": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs POST /privacy/collection/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs POST /privacy/requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs POST /privacy/requests/:id/cancel": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company.rs GET /admin/privacy/requests/:id/company-candidates": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company.rs GET /admin/privacy/requests/:id/company-reviews": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company.rs GET /privacy/requests/:id/company-reviews": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company.rs PATCH /admin/privacy/company-reviews/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company.rs POST /admin/privacy/requests/:id/company-reviews": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company_tasks.rs GET /admin/privacy/company-reviews/:id/tasks": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company_tasks.rs GET /privacy/company-tasks": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company_tasks.rs GET /privacy/company-tasks/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company_tasks.rs POST /admin/privacy/company-reviews/:id/tasks": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company_tasks.rs POST /admin/privacy/company-tasks/:id/decision": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company_tasks.rs POST /admin/privacy/company-tasks/:id/proof/:sid": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_company_tasks.rs POST /admin/privacy/company-tasks/:id/revoke": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company_tasks.rs POST /privacy/company-tasks/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_company_tasks.rs POST /privacy/company-tasks/:id/proof/:sid": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_delivery.rs GET /admin/privacy/requests/:id/deliveries": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_delivery.rs GET /admin/privacy/requests/:id/delivery-options": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_delivery.rs GET /privacy/requests/:id/deliveries": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_delivery.rs POST /admin/privacy/deliveries/:id/revoke": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_delivery.rs POST /admin/privacy/requests/:id/deliveries": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_delivery.rs POST /privacy/deliveries/:id/download": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "privacy_delivery.rs POST /privacy/result": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_images.rs GET /admin/privacy/requests/:id/images": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_images.rs GET /admin/privacy/requests/:id/receipt-sources/:review": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_images.rs GET /privacy/requests/:id/images": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_images.rs POST /admin/privacy/images/:id/revoke": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_images.rs POST /admin/privacy/requests/:id/image-preview": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_images.rs POST /admin/privacy/requests/:id/images": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_images.rs POST /admin/privacy/requests/:id/receipt-sources/:review/:receipt": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_images.rs POST /privacy/images/:id/download": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_packages.rs GET /admin/privacy/requests/:id/account-packages": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_packages.rs GET /admin/privacy/requests/:id/personal-documents": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_packages.rs GET /privacy/requests/:id/account-packages": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_packages.rs POST /admin/privacy/account-packages/:id/revoke": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_packages.rs POST /admin/privacy/requests/:id/account-packages": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_packages.rs POST /admin/privacy/requests/:id/documents/:document/review": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_packages.rs POST /privacy/account-packages/:id/account": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_packages.rs POST /privacy/account-packages/:id/documents/:document": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_redacted.rs GET /admin/privacy/requests/:id/redacted": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_redacted.rs GET /admin/privacy/requests/:id/text-sources": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_redacted.rs GET /privacy/requests/:id/redacted": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_redacted.rs POST /admin/privacy/redacted/:id/revoke": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_redacted.rs POST /admin/privacy/requests/:id/redacted": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy_redacted.rs POST /admin/privacy/requests/:id/redacted-preview": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "privacy_redacted.rs POST /admin/privacy/requests/:id/text-sources/:kind/:source": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "privacy_redacted.rs POST /privacy/redacted/:id/download": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "profile_type.rs GET /me/account-type": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "profile_type.rs PATCH /devices/:id/account-type": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "profile_type.rs PATCH /me/account-type": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs DELETE /rentcar/blacklist/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs DELETE /rentcar/contracts/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs DELETE /rentcar/handoff-tokens/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs DELETE /rentcar/photos/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs GET /rentcar/blacklist": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs GET /rentcar/blacklist/check": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs GET /rentcar/contracts": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs GET /rentcar/contracts/:id/handoff-tokens": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs GET /rentcar/contracts/:id/invoice.xlsx": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs GET /rentcar/contracts/:id/photos": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "rentcar.rs GET /rentcar/handoff/:token": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "rentcar.rs GET /rentcar/photos/:id": {
+    "class": "ledger",
+    "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "rentcar.rs GET /rentcar/renters": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs GET /rentcar/renters/:phone": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs GET /rentcar/subscription": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs PATCH /rentcar/contracts/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs POST /rentcar/blacklist": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs POST /rentcar/contracts": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs POST /rentcar/contracts/:id/handoff-tokens": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs POST /rentcar/contracts/:id/photos": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs POST /rentcar/contracts/:id/return": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs POST /rentcar/handoff/:token/submit": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "rentcar.rs POST /rentcar/subscription": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "share.rs DELETE /shares/:share_id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "share.rs GET /devices/:id/shares": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "share.rs GET /share/:token": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "share.rs GET /share/:token/daily_stats": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "share.rs GET /share/:token/locations": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "share.rs POST /devices/:id/shares": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "share.rs POST /shares/:share_id/extend": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs GET /admin/sim-requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs GET /admin/sim-requests/:id/order": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs GET /sim-requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs GET /sim-requests/pricing": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs POST /admin/sim-requests/:id/cancel": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs POST /admin/sim-requests/:id/manual-complete": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs POST /admin/sim-requests/:id/manual-fail": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs POST /admin/sim-requests/:id/process": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs POST /sim-requests": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "sim_requests.rs POST /sim-requests/:id/cancel": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "stats.rs GET /devices/:id/active-dates": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "stats.rs GET /devices/:id/stats/daily": {
+    "class": "ledger",
+    "reason": "Location or derived record response; durable intent before handler."
+  },
+  "ws.rs GET /realtime": {
+    "class": "outside_api",
+    "reason": "WebSocket data sends instrumented per message."
+  },
+  "privacy.rs GET /privacy/processing": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs POST /privacy/processing": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "subject_provision.rs GET /corporate/subject-mappings": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs POST /corporate/subject-mappings": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs GET /privacy/subject-mappings": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs POST /privacy/subject-mappings/:id/decision": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs GET /privacy/provision-notices": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs POST /privacy/provision-notices/:id/read": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs POST /privacy/provision-notices/:id/retry": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs GET /corporate/subject-mappings/:id/locations": {
+    "class": "handler_ledger",
+    "reason": "Handler enforces FleetScope and immutable subject interval before manual durable ledger intent; no caller-controlled range."
+  }
+}

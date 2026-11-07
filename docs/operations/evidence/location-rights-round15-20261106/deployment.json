@@ -1,0 +1,44 @@
+{
+  "release": "privacy-raster-20261106-r1",
+  "commit": "512f1661b6343ae30668ad44ee850d6c75aca87f",
+  "schema": 97,
+  "api_sha256": "9acd61b3e21a6c188fe9140a764d67ea65b9ee83c18edef2404de78387691250",
+  "web": "/home/mmm/releases/privacy-raster-20261106-r1/web",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-raster-20261106-r1",
+    "service": "gps-tracker-api"
+  },
+  "previous_release": "privacy-receipts-20261106-r1",
+  "backup": "/home/mmm/backups/privacy-raster-20261106-r1",
+  "neighbor_releases_unchanged": true,
+  "existing_collection_policies_unchanged": true,
+  "timer_active": true,
+  "check_at": "2026-11-06T11:59+09:00",
+  "apply_started_at": "2026-11-06T12:02:20+09:00",
+  "apply_finished_at": "2026-11-06T12:02:24+09:00",
+  "independent_verification": {
+    "public_health_release": "privacy-raster-20261106-r1",
+    "api_restarts_since_release": 0,
+    "api_log": "migrations up to date",
+    "migration_rows": 97,
+    "migration_97_checksum_matches_source_sha384": true,
+    "new_columns_nullable": [
+      "privacy_receipt_reads.pixels_sha256",
+      "privacy_receipt_reads.normalization",
+      "privacy_image_deliveries.source_normalization"
+    ],
+    "ingest_status_after_restart": {
+      "200": 3,
+      "5xx": 0
+    },
+    "nginx_postgresql_dev_shield_restarted": false,
+    "firewall_changed": false
+  },
+  "production_smoke_run": true,
+  "note": "The account-closure timer service was already failing before this release (nested connection context in ops/privacy_account_closure.py); the release checks only that the timer is active.",
+  "production_smoke": "production-smoke.json (2026-11-06 12:08:55-12:09:07 KST)",
+  "scripted_rollback_available": false
+}

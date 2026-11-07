@@ -1,0 +1,5 @@
+stopped (exit 0)
+PASS encrypted erasure removes raw cells; ambiguous legacy aggregate quarantined from read view without deleting another subject
+PASS company ownership produces review-required hold instead of automatic deletion
+api ready at 172.29.0.3 (ledger on)
+PASS encrypted runtime role can enforce and resume controls with ledger ON; cannot change retention/erasure records or disable guards

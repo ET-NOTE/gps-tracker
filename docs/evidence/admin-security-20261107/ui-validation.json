@@ -1,0 +1,11 @@
+{
+  "environment": "local_actual_components_synthetic_data",
+  "at": "2026-11-07T09:54:34.753Z",
+  "checks": [
+    "desktop permissions and approval details",
+    "approval button updates status",
+    "390px no document overflow",
+    "MFA denial never renders protected content"
+  ],
+  "errors": []
+}

@@ -1,5 +1,16 @@
+import {fleetRequestScope,setFleetOwner} from './lib/fleetSession';
+import { cachedRead, clearLocationCache } from './lib/offlineCache';
+import { queryClient } from './state/queryClient';
+import { authScope, assertSession, AUTH_CHANGED, notifyAuthChanged } from './authSession';
 import { hydrateDeviceColors } from './colors';
 import { hydratePairTutorialSeen } from './pairTutorialSeen';
+import { collectHistory, collectAggregates } from './lib/historyPager';
+import { createAnalysisRequester } from './lib/aiRequest';
+
+const requestAnalysis = createAnalysisRequester({
+  storage: sessionStorage, uuid: () => crypto.randomUUID(),
+  send: (deviceId, body) => req('POST', `/devices/${deviceId}/route/analyze`, body),
+});
 
 // 도메인 감지: 주 도메인 gps.serial.kr 은 prefix 없이 /api/v1.
 // legacy /gps-tracker/ 서브패스 (localhost dev, 옛 nginx 서브패스 fallback) 는 /gps-tracker/api/v1.
@@ -23,17 +34,22 @@ function getToken() {
 
 // remember=true → localStorage, false → sessionStorage. 둘 다 미리 클리어해서 충돌 방지.
 export function setTokens(access, refresh, remember = true) {
+  resetSession();
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   sessionStorage.removeItem('access_token');
   sessionStorage.removeItem('refresh_token');
   const s = remember ? localStorage : sessionStorage;
+  s.setItem('auth_session', crypto.randomUUID());
   s.setItem('access_token', access);
   s.setItem('refresh_token', refresh);
   schedulePreemptiveRefresh(access);
+  notifyAuthChanged();
 }
 
 export function clearTokens() {
+  window.dispatchEvent(new Event('gps-auth-clearing'));
+  resetSession();
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   sessionStorage.removeItem('access_token');
@@ -43,6 +59,23 @@ export function clearTokens() {
   // 사용자 계정에 매인 module cache 무효화 — 다른 계정 재로그인 시 이전 값 노출 방지.
   hydrateDeviceColors(null);
   hydratePairTutorialSeen(null);
+  notifyAuthChanged();
+}
+
+function resetSession() {
+  sessionStorage.removeItem("gps_admin_session");
+  sessionStorage.removeItem("gps_admin_enforced");
+  setFleetOwner(null);
+  refreshAbort?.abort();
+  refreshing = null;
+  void queryClient.cancelQueries();
+  queryClient.clear();
+  localStorage.removeItem('auth_session');
+  sessionStorage.removeItem('auth_session');
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key?.startsWith('gps_cache_')) localStorage.removeItem(key);
+  }
 }
 
 // ── 사전 refresh ─────────────────────────────────────────────────────
@@ -77,6 +110,8 @@ function schedulePreemptiveRefresh(accessToken) {
 }
 
 // 앱 부팅 시 기존 토큰이 있으면 사전 refresh 스케줄.
+const _bootStorage = activeStorage();
+if (_bootStorage && !_bootStorage.getItem('auth_session')) _bootStorage.setItem('auth_session', crypto.randomUUID());
 const _bootToken = getToken();
 if (_bootToken) schedulePreemptiveRefresh(_bootToken);
 
@@ -89,86 +124,195 @@ let refreshing = null;
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+let refreshAbort = null;
 export async function tryRefresh() {
   if (refreshing) return refreshing;
+  const scope = authScope();
   const s = activeStorage();
-  const rt = s ? s.getItem('refresh_token') : null;
-  if (!rt) return 'unauth';
-
-  refreshing = (async () => {
-    // 네트워크 깜빡임 (모바일 셀룰러) 대응: 일시 오류면 한 번 더 시도.
+  const initialRefresh = s?.getItem('refresh_token');
+  if (!initialRefresh) return 'unauth';
+  const controller = new AbortController();
+  refreshAbort = controller;
+  const run = async () => {
+    if (scope !== authScope()) return 'stale';
+    // Another tab may have rotated the token while we waited for its lock.
+    if (s.getItem('refresh_token') !== initialRefresh) return true;
+    const rt = initialRefresh;
+    const current = () => scope === authScope() && s === activeStorage() && s.getItem('refresh_token') === rt;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
+        if (!current()) return 'stale';
         const res = await fetch(`${BASE}/auth/refresh`, {
-          method: 'POST',
+          method: 'POST', signal: controller.signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: rt }),
         });
-        if (res.status === 401 || res.status === 403) {
-          // 진짜 인증 실패 — 더 시도해도 의미 없음
-          return 'unauth';
-        }
+        if (!current()) return scope === authScope() ? true : 'stale';
+        if (res.status === 401 || res.status === 403) return 'unauth';
         if (!res.ok) {
           if (attempt === 0) { await sleep(500); continue; }
           return 'transient';
         }
         const data = await res.json();
-        // 같은 storage 에 새 토큰 쌍 기록 (remember 정책 유지). storage 가 그 사이
-        // 비워졌을 가능성 (다른 탭 logout 등) 도 대비.
-        const cur = activeStorage() || s;
-        cur.setItem('access_token',  data.access_token);
-        cur.setItem('refresh_token', data.refresh_token);
+        if (!current()) return 'stale';
+        s.setItem('access_token', data.access_token);
+        s.setItem('refresh_token', data.refresh_token);
         schedulePreemptiveRefresh(data.access_token);
         return true;
-      } catch {
-        // 네트워크 fetch reject — 일시
+      } catch (e) {
+        if (controller.signal.aborted || !current()) return 'stale';
         if (attempt === 0) { await sleep(500); continue; }
         return 'transient';
       }
     }
     return 'transient';
-  })();
-
-  try { return await refreshing; }
-  finally { refreshing = null; }
+  };
+  const pending = globalThis.navigator?.locks
+    ? navigator.locks.request('gps-auth-refresh', { signal: controller.signal }, run).catch(() => 'stale')
+    : run();
+  refreshing = pending;
+  try { return await pending; }
+  finally { if (refreshing === pending) refreshing = null; }
 }
 
-async function req(method, path, body, retry = true) {
-  const res = await fetch(BASE + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+// Storage events come from other tabs only. Token rotation preserves auth_session.
+let observedScope = authScope();
+window.addEventListener(AUTH_CHANGED, () => { observedScope = authScope(); });
+window.addEventListener('storage', () => {
+  if (observedScope === authScope()) return;
+  refreshAbort?.abort();
+  refreshing = null;
+  void queryClient.cancelQueries();
+  queryClient.clear();
+  hydrateDeviceColors(null);
+  hydratePairTutorialSeen(null);
+  notifyAuthChanged();
+});
 
+// JSON, multipart and binary responses share token rotation and account guards.
+// Retry only a rejected 401, never a network failure of a write request.
+async function sessionFetch(url, options = {}, retry = true, scope = authScope(), fleet = fleetRequestScope(url)) {
+  const assertActive = () => {
+    assertSession(scope);
+    fleet.assert();
+    if (options.signal?.aborted) throw new DOMException('요청이 취소되었습니다.', 'AbortError');
+  };
+  assertActive();
+  const headers = new Headers(options.headers);
+  if(fleet.owner != null) headers.set("X-Fleet-Owner",String(fleet.owner));
+  const token = getToken();
+  if (url.startsWith(BASE + '/admin/')) {
+    const stepUp=sessionStorage.getItem('gps_admin_session');
+    if(stepUp) headers.set('X-Admin-Session',stepUp);
+    headers.delete('X-Fleet-Owner');
+  }
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  else headers.delete('Authorization');
+  const res = await fetch(url, { ...options, headers });
+  assertActive();
   if (res.status === 401 && retry) {
     const r = await tryRefresh();
+    assertActive();
+    if (r === 'stale') throw new DOMException('계정이 변경되었습니다.', 'AbortError');
     if (r === 'unauth') {
       // 진짜 만료/취소 — 로그아웃 후 reload
       clearTokens();
       window.location.reload();
-      return;
+      throw new DOMException('로그인이 만료되었습니다.', 'AbortError');
     }
     if (r === 'transient') {
       // 네트워크 일시 오류 — 토큰 유지, 호출자에게 에러 전달 (사용자가 다시 시도 가능)
       throw Object.assign(new Error('네트워크 연결이 불안정합니다. 잠시 후 다시 시도해주세요.'),
                           { status: 0, transient: true });
     }
-    return req(method, path, body, false);
+    return sessionFetch(url, options, false, scope, fleet);
   }
+  for (const name of ['json', 'text', 'blob', 'arrayBuffer']) {
+    const read = res[name].bind(res);
+    res[name] = async () => { const data = await read(); assertActive(); return data; };
+  }
+  return res;
+}
 
+async function req(method, path, body, retry = true, options = {}) {
+  const reviewRead=path.endsWith('/image-preview')||path.endsWith('/redacted-preview')||path.endsWith('/review')||path.endsWith('/read')||path.includes('/text-sources/')||path.includes('/proof/')||path.includes('/receipt-sources/');
+  if(sessionStorage.getItem('gps_admin_enforced')==='on' && !['GET','HEAD'].includes(method) && !reviewRead && (path.startsWith('/admin/privacy/')||path.startsWith('/admin/security/principals/')) && !options.headers?.['X-Admin-Approval']) {
+    const approval=await req('POST','/admin/security/approvals',{method,path,payload:body??null,reason:body?.evidence_reference||'관리자 화면에서 검토 후 요청한 작업'},retry);
+    window.dispatchEvent(new CustomEvent('gps-admin-approval-created',{detail:approval}));
+    throw Object.assign(new Error(`승인 요청 #${approval.id}를 등록했습니다. 책임자 승인 후 보안 관리에서 실행해 주세요.`),{status:409});
+  }
+  const res = await sessionFetch(BASE + path, {
+    method, signal: options.signal,
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  }, retry);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw Object.assign(new Error(err.error || err.message || res.statusText), { status: res.status });
   }
 
   const text = await res.text();
-  return text ? JSON.parse(text) : null;
+  const data = text ? JSON.parse(text) : null;
+  if (data && res.headers.get("x-location-scope") === "confirmed-subject-intervals") {
+    Object.defineProperty(data,"subjectScope",{value:true,enumerable:false});
+  }
+  return data;
 }
 
 export const api = {
+  adminSecurity: () => req('GET','/admin/security/status'),
+  adminMfaEnroll: (password) => req('POST','/admin/security/enroll',{password},false),
+  adminMfaVerify: (password,code) => req('POST','/admin/security/verify',{password,code},false),
+  adminSecurityLogout: () => req('POST','/admin/security/logout',{}),
+  adminPrincipals: () => req('GET','/admin/security/principals'),
+  adminSecurityEvents: () => req('GET','/admin/security/events'),
+  adminApprovals: () => req('GET','/admin/security/approvals'),
+  adminPropose: (proposal) => req('POST','/admin/security/approvals',proposal),
+  adminDecide: (id,approve) => req('POST',`/admin/security/approvals/${id}/decision`,{approve}),
+  adminExecuteApproval: (a) => req(a.method,a.path,a.payload,true,{headers:a.id?{'X-Admin-Approval':String(a.id)}:{}}),
+  expenseCategories: () => req('GET','/corporate/expense-categories'),
+  createExpenseCategory: body => req('POST','/corporate/expense-categories',body),
+  updateExpenseCategory: (id,body) => req('PUT',`/corporate/expense-categories/${id}`,body),
+  listExpenses: (params={}) => req('GET',`/corporate/expenses?${new URLSearchParams(params)}`),
+  createExpense: body => req('POST','/corporate/expenses',body),
+  updateExpense: (id,body) => req('PUT',`/corporate/expenses/${id}`,body),
+  reviewExpense: (id,body) => req('POST',`/corporate/expenses/${id}/review`,body),
+  expenseDetail: id => req('GET',`/corporate/expenses/${id}`),
+  uploadExpenseReceipt: async (id,file) => {
+    const fd=new FormData();fd.append('file',file);
+    const res=await sessionFetch(`${BASE}/corporate/expenses/${id}/receipts`,{method:'POST',body:fd});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw Error(e.error||'영수증을 올리지 못했습니다.');}return res.json();
+  },
+  downloadExpenseReceipt: async (id,rid) => {const res=await sessionFetch(`${BASE}/corporate/expenses/${id}/receipts/${rid}`);if(!res.ok)throw Error('영수증을 내려받지 못했습니다.');return res.blob();},
+  removeExpenseReceipt: (id,rid) => req('DELETE',`/corporate/expenses/${id}/receipts/${rid}`),
+  fleetWorkspaces: () => req('GET','/corporate/workspaces'),
+  subjectMappings: before => req('GET','/privacy/subject-mappings'+(before?`?before=${before}`:'')),
+  subjectDecision: async (id,body) => {const r=await req('POST',`/privacy/subject-mappings/${id}/decision`,body);clearLocationCache();return r;},
+  provisionNotices: before => req('GET','/privacy/provision-notices'+(before?`?before=${before}`:'')),
+  readProvisionNotice: id => req('POST',`/privacy/provision-notices/${id}/read`,{}),
+  retryProvisionNotice: id => req('POST',`/privacy/provision-notices/${id}/retry`,{}),
+  subjectLocations: id => req('GET',`/corporate/subject-mappings/${id}/locations`),
+  companySubjectMappings: () => req('GET','/corporate/subject-mappings'),
+  proposeSubjectMapping: body => req('POST','/corporate/subject-mappings',body),
+  fleetAccess: () => req('GET','/corporate/access'),
+  fleetOrganization: () => req('GET','/corporate/organization'),
+  createFleetOrgItem: body => req('POST','/corporate/organization/items',body),
+  updateFleetOrgItem: (id,body) => req('PUT',`/corporate/organization/items/${id}`,body),
+  fleetInvites: () => req('GET','/corporate/invites'),
+  inviteFleetStaff: staff_id => req('POST','/corporate/invites',{staff_id}),
+  revokeFleetInvite: id => req('DELETE',`/corporate/invites/${id}`),
+  unlinkFleetStaff: id => req('DELETE',`/corporate/staff/${id}/account`),
+  joinFleet: body => req('POST','/corporate/join',body),
+  fleetTeamAudit: () => req('GET','/corporate/team-audit'),
+  importFleetStaff: body => req('POST','/corporate/staff/import',body),
+  fleetTerminals: () => req('GET','/corporate/terminals'),
+  listFleetSites: () => req('GET','/corporate/sites'),
+  createFleetSite: body => req('POST','/corporate/sites',body),
+  updateFleetSite: (id,body) => req('PUT',`/corporate/sites/${id}`,body),
+  listFleetSiteGroups: () => req('GET','/corporate/site-groups'),
+  createFleetSiteGroup: body => req('POST','/corporate/site-groups',body),
+  updateFleetSiteGroup: (id,body) => req('PUT',`/corporate/site-groups/${id}`,body),
+  listFleetSiteVisits: (params={}) => req('GET',`/corporate/site-visits?${new URLSearchParams(params)}`),
   // auth
   register: (body) => req('POST', '/auth/register', body),     // {email,password,phone,otp_code,display_name?}
   login:    (email, password, remember_me = false) =>
@@ -186,10 +330,29 @@ export const api = {
                       req('POST', '/auth/password-reset/verify',
                           { email, phone, otp_code, new_password }),
 
+  getCarImage: async (id, options = {}) => {
+    const res = await sessionFetch(`${BASE}/devices/${id}/car-image`, options);
+    if (!res.ok) throw new Error('사진을 불러오지 못했습니다.');
+    return res.blob();
+  },
+  uploadCarImage: async (id, file) => {
+    const scope = authScope();
+    const body = new FormData(); body.append('file', file);
+    const res = await sessionFetch(`${BASE}/devices/${id}/car-image`, { method: 'POST', body });
+    const data = await res.json(); assertSession(scope);
+    if (!res.ok) throw new Error(data.error || '사진 업로드 실패');
+    return data;
+  },
   // devices
-  listDevices:  ()                      => req('GET',    '/devices'),
+  listDevices:  (options = {}) => cachedRead('devices', () => req('GET', '/devices', undefined, true, options)),
   pairDevice:   (params) => req('POST', '/devices/pair', params),  // { device_uid?, iccid?, display_name? }
-  scanDevices:  () => req('GET', '/devices/scan'),                 // [KC] 최근 ingest 중 미페어링 단말 목록
+  ingestPhone: async payload => {
+    const res = await sessionFetch(new URL('/ingest', window.location.origin), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('휴대폰 위치를 전송하지 못했습니다.');
+    return res.json();
+  },
   updateDevice: (id, patch)             => req('PATCH',  `/devices/${id}`, patch),
   unpairDevice: (id, opts = {}) => {
     const purge = opts.purge ? '?purge=true' : '';
@@ -213,6 +376,98 @@ export const api = {
                       req('POST', '/auth/me/password', { current_password, new_password }),
   cleanupMe:       (body) => req('POST', '/auth/me/cleanup', body),
   deleteMe:        (password) => req('DELETE', '/auth/me', { password }),
+  privacyRequests: () => req('GET', '/privacy/requests'),
+  companyTasks: after => req('GET', `/privacy/company-tasks?after=${after||0}`),
+  companyTask: id => req('GET', `/privacy/company-tasks/${id}`),
+  submitCompanyTask: (id,body) => req('POST', `/privacy/company-tasks/${id}`,body),
+  adminCompanyTasks: id => req('GET', `/admin/privacy/company-reviews/${id}/tasks`),
+  publishCompanyTask: (id,body) => req('POST', `/admin/privacy/company-reviews/${id}/tasks`,body),
+  decideCompanyTask: (id,body) => req('POST', `/admin/privacy/company-tasks/${id}/decision`,body),
+  revokeCompanyTask: (id,body) => req('POST', `/admin/privacy/company-tasks/${id}/revoke`,body),
+  companyProof: async (id,sid,admin=false) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/${admin?'admin/':''}privacy/company-tasks/${id}/proof/${sid}`,{method:'POST',cache:'no-store'},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||'증빙을 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return blob;
+  },
+  privacyCompanyReviews: id => req('GET', `/privacy/requests/${id}/company-reviews`),
+  adminCompanyReviews: id => req('GET', `/admin/privacy/requests/${id}/company-reviews`),
+  adminCompanyCandidates: id => req('GET', `/admin/privacy/requests/${id}/company-candidates`),
+  createCompanyReview: (id,body) => req('POST', `/admin/privacy/requests/${id}/company-reviews`,body),
+  updateCompanyReview: (id,body) => req('PATCH', `/admin/privacy/company-reviews/${id}`,body),
+  privacyResult: async body => {
+    const r=await fetch(`${BASE}/privacy/result`,{method:'POST',credentials:'omit',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok)throw new Error(r.status===429?'조회가 많습니다. 15분 후 다시 확인해 주세요.':'이메일·비밀번호·요청 번호를 확인해 주세요.');
+    return r.json();
+  },
+  privacyDeliveries: id => req('GET', `/privacy/requests/${id}/deliveries`),
+  privacyAccountPackages: id => req('GET', `/privacy/requests/${id}/account-packages`),
+  privacyTextSources: (id,kind,before) => req('GET', `/admin/privacy/requests/${id}/text-sources?kind=${encodeURIComponent(kind)}${before?`&before=${before}`:''}`),
+  reviewPrivacyText: (id,kind,source) => req('POST', `/admin/privacy/requests/${id}/text-sources/${kind}/${source}`,{}),
+  privacyReceiptSources: (id,review,revision,after=0) => req('GET', `/admin/privacy/requests/${id}/receipt-sources/${review}?company_revision=${revision}&after=${after}`),
+  readPrivacyReceipt: (id,review,receipt,revision,page) => req('POST', `/admin/privacy/requests/${id}/receipt-sources/${review}/${receipt}`,page?{company_revision:revision,page}:{company_revision:revision}),
+  previewPrivacyImage: (id,body) => req('POST', `/admin/privacy/requests/${id}/image-preview`,body),
+  issuePrivacyImage: (id,body) => req('POST', `/admin/privacy/requests/${id}/images`,body),
+  adminPrivacyImage: id => req('GET', `/admin/privacy/requests/${id}/images`),
+  personalPrivacyImage: id => req('GET', `/privacy/requests/${id}/images`),
+  revokePrivacyImage: id => req('POST', `/admin/privacy/images/${id}/revoke`,{}),
+  downloadPrivacyImage: async (id,password) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/privacy/images/${id}/download`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(r.status===401?'현재 비밀번호를 확인해 주세요.':e.error||'자료를 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return blob;
+  },
+  previewRedacted: (id,body) => req('POST', `/admin/privacy/requests/${id}/redacted-preview`,body),
+  issueRedacted: (id,body) => req('POST', `/admin/privacy/requests/${id}/redacted`,body),
+  adminRedacted: id => req('GET', `/admin/privacy/requests/${id}/redacted`),
+  personalRedacted: id => req('GET', `/privacy/requests/${id}/redacted`),
+  revokeRedacted: id => req('POST', `/admin/privacy/redacted/${id}/revoke`,{}),
+  downloadRedacted: async (id,password) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/privacy/redacted/${id}/download`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(r.status===401?'현재 비밀번호를 확인해 주세요.':e.error||'자료를 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return blob;
+  },
+  adminPrivacyAccountPackages: id => req('GET', `/admin/privacy/requests/${id}/account-packages`),
+  privacyPersonalDocuments: id => req('GET', `/admin/privacy/requests/${id}/personal-documents`),
+  issuePrivacyAccountPackage: (id,body) => req('POST', `/admin/privacy/requests/${id}/account-packages`,body),
+  revokePrivacyAccountPackage: id => req('POST', `/admin/privacy/account-packages/${id}/revoke`,{}),
+  reviewPrivacyDocument: async (requestId,id) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/admin/privacy/requests/${requestId}/documents/${id}/review`,{method:'POST',cache:'no-store'},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||'서류를 확인하지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return {blob,sha256:r.headers.get('x-document-sha256')};
+  },
+  privacyPackageFile: async (id,password,documentId) => {
+    const scope=authScope();
+    const path=documentId?`documents/${documentId}`:'account';
+    const r=await sessionFetch(`${BASE}/privacy/account-packages/${id}/${path}`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})},false,scope);
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(r.status===401?'현재 비밀번호를 확인해 주세요.':e.error||'자료를 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);return {blob,filename:`personal-account-${id}.json`};
+  },
+  adminPrivacyDeliveries: id => req('GET', `/admin/privacy/requests/${id}/deliveries`),
+  adminPrivacyDeliveryOptions: id => req('GET', `/admin/privacy/requests/${id}/delivery-options`),
+  issuePrivacyDelivery: (id,body) => req('POST', `/admin/privacy/requests/${id}/deliveries`,body),
+  revokePrivacyDelivery: id => req('POST', `/admin/privacy/deliveries/${id}/revoke`,{}),
+  downloadPrivacyDelivery: async (id,password) => {
+    const scope=authScope();
+    const r=await sessionFetch(`${BASE}/privacy/deliveries/${id}/download`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})},false,scope);
+    if(!r.ok) {const error=await r.json().catch(()=>({}));throw new Error(r.status===401?'현재 비밀번호를 확인해 주세요.':error.error||'자료를 내려받지 못했습니다.');}
+    const blob=await r.blob();assertSession(scope);
+    return {blob,filename:`personal-locations-${id}.csv`};
+  },
+  processingControl: () => req('GET', '/privacy/processing'),
+  setProcessingControl: async body => { const result=await req('POST', '/privacy/processing', body); clearLocationCache(); return result; },
+  collectionControl: () => req('GET', '/privacy/collection'),
+  setCollectionControl: (id, body) => req('POST', `/privacy/collection/${id}`, body),
+  privacyImpact: () => req('GET', '/privacy/impact'),
+  createPrivacyRequest: body => req('POST', '/privacy/requests', body),
+  cancelPrivacyRequest: (id, revision) => req('POST', `/privacy/requests/${id}/cancel`, {revision}),
+  adminPrivacyRequests: params => req('GET', '/admin/privacy/requests?' + new URLSearchParams(Object.entries(params).filter(([,v])=>v!=null))),
+  adminPrivacyDetail: id => req('GET', `/admin/privacy/requests/${id}`),
+  adminPrivacyImpact: id => req('GET', `/admin/privacy/requests/${id}/impact`),
+  reviewPrivacyRequest: (id, body) => req('PATCH', `/admin/privacy/requests/${id}`, body),
+  startAccountClosure: (id, revision) => req('POST', `/admin/privacy/requests/${id}/close-account`, {revision}),
 
   // user prefs (filter_device_id 등 UI 영속) — top-level JSON 병합
   getMyPrefs:      ()       => req('GET',    '/auth/me/prefs'),
@@ -261,26 +516,30 @@ export const api = {
   getDeviceBatchStats: (id, hours = 24) => req('GET', `/devices/${id}/batch-stats?hours=${hours}`),
 
   // 24h: POST 주기 원격 조정 (5~300s, RAM only — reset 시 default 30s 복귀).
+  setDeviceSleepReportInterval: (id, seconds) => req('POST', `/devices/${id}/sleep-report-interval`, {seconds}),
   setDevicePostInterval: (id, seconds) => req('POST', `/devices/${id}/post-interval`, { seconds }),
 
   // TimescaleDB continuous aggregate query (bucket = "1m" | "1h"). historical chart 가속용.
-  getDeviceLocationsAggregated: (id, bucket, since, until) => {
-    const q = new URLSearchParams({ bucket, since });
-    if (until) q.set('until', until);
-    return req('GET', `/devices/${id}/locations/aggregated?${q.toString()}`);
+  getDeviceLocationsAggregated: (id, bucket, since, until = new Date().toISOString(), options = {}) => {
+    const scope = authScope();
+    return collectAggregates((from,to) => {
+      assertSession(scope);
+      const q = new URLSearchParams({ bucket, since:from, until:to, until_exclusive:'true' });
+      return req('GET', `/devices/${id}/locations/aggregated?${q}`, undefined, true, options);
+    }, bucket, since, until, options.signal);
   },
 
   // P2: TimescaleDB 운영 지표 — hypertable size, compression ratio, chunk 수. (장치 무관 global)
   getTimescaleDbStats: () => req('GET', '/timescaledb/storage-stats'),
 
   // 운행 통계 (Phase D)
-  getDailyStats: (id, params = {}) => {
+  getDailyStats: (id, params = {}, options = {}) => {
     const q = new URLSearchParams();
     if (params.from)  q.set('from',  params.from);
     if (params.to)    q.set('to',    params.to);
     if (params.limit) q.set('limit', params.limit);
     const qs = q.toString();
-    return req('GET', `/devices/${id}/stats/daily${qs ? '?' + qs : ''}`);
+    return req('GET', `/devices/${id}/stats/daily${qs ? '?' + qs : ''}`, undefined, true, options);
   },
 
   // geofences
@@ -292,7 +551,19 @@ export const api = {
   geofenceHistoryOne:   (id) => req('GET',  `/geofences/${id}/history`),
 
   // 디바이스가 fix 데이터를 남긴 KST 날짜 목록 (daily_stats catchup 대비 fallback)
-  getActiveDates: (deviceId) => req('GET', `/devices/${deviceId}/active-dates`),
+  getActiveDates: (deviceId, options = {}) => req('GET', `/devices/${deviceId}/active-dates`, undefined, true, options),
+
+  listLocationPoints: (deviceId, params, options = {}) => {
+    const scope = authScope();
+    return collectHistory(cursor => {
+      assertSession(scope);
+      const q = new URLSearchParams({ since:params.since, until:params.until, limit:'2000' });
+      if (params.fix_only !== undefined) q.set('fix_only',String(params.fix_only));
+      if (params.source) q.set('source',params.source);
+      if (cursor) q.set('cursor',cursor);
+      return req('GET',`/devices/${deviceId}/locations/page?${q}`,undefined,true,options);
+    },options);
+  },
 
   // locations (legacy flat schema — 호환용. 점진적으로 listLocationsGrouped 로 전환.)
   listLocations: (deviceId, params = {}) => {
@@ -302,7 +573,8 @@ export const api = {
     if (params.until)    q.set('until',    params.until);
     if (params.fix_only) q.set('fix_only', 'true');
     const qs = q.toString();
-    return req('GET', `/devices/${deviceId}/locations${qs ? '?' + qs : ''}`);
+    const path = `/devices/${deviceId}/locations${qs ? '?' + qs : ''}`;
+    return cachedRead(path, () => req('GET', path));
   },
 
   // Phase 1 schema — POST 단위 grouping. consumer 가 sampling / marker / polyline 로직 짤 때 활용.
@@ -314,7 +586,8 @@ export const api = {
     if (params.since)    q.set('since',    params.since);
     if (params.until)    q.set('until',    params.until);
     if (params.fix_only) q.set('fix_only', 'true');
-    return req('GET', `/devices/${deviceId}/locations?${q.toString()}`);
+    const path = `/devices/${deviceId}/locations?${q.toString()}`;
+    return cachedRead(path, () => req('GET', path));
   },
 
   // helper: grouped 응답을 legacy flat 형태로 unpack. 기존 consumer 코드 최소 변경용.
@@ -370,7 +643,7 @@ export const api = {
 
   // AI 경로 분석 (Round 3)
   aiUsageToday:    () => req('GET',  '/ai/usage'),
-  analyzeRoute:    (deviceId, date) => req('POST', `/devices/${deviceId}/route/analyze`, { date }),
+  analyzeRoute:    (deviceId, date) => requestAnalysis(authScope(), deviceId, date),
   // AI 분석 영구 이력
   listAiAnalyses:  (deviceId, params = {}) => {
     const q = new URLSearchParams();
@@ -445,6 +718,35 @@ export const api = {
   setAccountType:        (account_type) => req('PATCH', '/me/account-type', { account_type }),
   setDeviceAccountType:  (deviceId, account_type) => req('PATCH', `/devices/${deviceId}/account-type`, { account_type }),
 
+  getFleetPhoto: async (id,options={}) => {const r=await sessionFetch(`${BASE}/corporate/vehicles/${id}/photo`,options);if(!r.ok)throw new Error(r.statusText);return r.blob();},
+  uploadFleetPhoto: async (id,file) => {const fd=new FormData();fd.append('file',file);const r=await sessionFetch(`${BASE}/corporate/vehicles/${id}/photo`,{method:'POST',body:fd});if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||r.statusText);}return r.json();},
+  listFleetDocuments: id => req('GET',`/corporate/vehicles/${id}/documents`),
+  uploadFleetDocument: async (id,{file,kind,note}) => {
+    const fd=new FormData();fd.append('file',file);fd.append('kind',kind||'other');if(note)fd.append('note',note);
+    const r=await sessionFetch(`${BASE}/corporate/vehicles/${id}/documents`,{method:'POST',body:fd});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||r.statusText);}return r.json();
+  },
+  listFleetVehicles: () => req('GET','/corporate/vehicles'),
+  createFleetVehicle: body => req('POST','/corporate/vehicles',body),
+  updateFleetVehicle: (id,body) => req('PUT',`/corporate/vehicles/${id}`,body),
+  fleetVehicleBindings: id => req('GET',`/corporate/vehicles/${id}/bindings`),
+  connectFleetVehicle: (id,body) => req('PUT',`/corporate/vehicles/${id}/bindings`,body),
+  tripEvidence:(id,body)=>req('POST',`/corporate/vehicles/${id}/trips/evidence`,body),
+  correctTrips:(id,body)=>req('POST',`/corporate/vehicles/${id}/trips/corrections`,body),
+  tripCorrectionHistory:id=>req('GET',`/corporate/vehicles/${id}/trips/corrections`),
+  restoreTripCorrection:(id,correction,body)=>req('POST',`/corporate/vehicles/${id}/trips/corrections/${correction}/restore`,body),
+  listFleetVehicleTrips: (id,params={}) => req('GET',`/corporate/vehicles/${id}/trips?${new URLSearchParams(params)}`),
+  listTripRules: id => req('GET',`/corporate/vehicles/${id}/trip-rules`),
+  createTripRule: (id,body) => req('POST',`/corporate/vehicles/${id}/trip-rules`,body),
+  updateTripRule: (id,rule,body) => req('PUT',`/corporate/vehicles/${id}/trip-rules/${rule}`,body),
+  assignFleetTrips: (id,body) => req('POST',`/corporate/vehicles/${id}/trips/assign`,body),
+  tripAssignmentHistory: id => req('GET',`/corporate/vehicles/${id}/trips/assignment-history`),
+  fleetVehicleStats: () => req('GET','/corporate/vehicle-stats'),
+  annotateFleetVehicleTrip: (id,body) => req('PATCH',`/corporate/vehicles/${id}/trips/annotation`,body),
+  listFleetReservations: (params={}) => req('GET',`/corporate/vehicle-reservations?${new URLSearchParams(params)}`),
+  createFleetReservation: body => req('POST','/corporate/vehicle-reservations',body),
+  updateFleetReservation: (id,body) => req('PUT',`/corporate/vehicle-reservations/${id}`,body),
+  cancelFleetReservation: id => req('DELETE',`/corporate/vehicle-reservations/${id}`),
   // 법인운행 — 회사 정보 / 직원
   getCorporateInfo:      () => req('GET',  '/corporate/info'),
   putCorporateInfo:      (body) => req('PUT', '/corporate/info', body),
@@ -478,10 +780,7 @@ export const api = {
     if (params.from) q.set('from', params.from);
     if (params.to)   q.set('to',   params.to);
     const qs = q.toString();
-    const tok = localStorage.getItem('access_token');
-    const res = await fetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || res.statusText);
@@ -504,10 +803,8 @@ export const api = {
     fd.append('file', file);
     fd.append('kind', kind || 'other');
     if (note) fd.append('note', note);
-    const tok = localStorage.getItem('access_token');
-    const res = await fetch(`${BASE}/devices/${deviceId}/documents`, {
+    const res = await sessionFetch(`${BASE}/devices/${deviceId}/documents`, {
       method: 'POST', body: fd,
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -517,12 +814,10 @@ export const api = {
   },
   deleteDocument: (id) => req('DELETE', `/documents/${id}`),
   documentDownloadUrl: (id) => {
-    const tok = getToken();
     // 브라우저 <a href> 로 열려면 auth header 못 붙임. blob fetch 후 URL.createObjectURL.
+    const scope = authScope(), fleet = fleetRequestScope(`${BASE}/documents/${id}/download`);
     return async () => {
-      const res = await fetch(`${BASE}/documents/${id}/download`, {
-        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-      });
+      const res = await sessionFetch(`${BASE}/documents/${id}/download`, {}, true, scope, fleet);
       if (!res.ok) throw new Error(res.statusText);
       const blob = await res.blob();
       const cd = res.headers.get('content-disposition') || '';
@@ -534,10 +829,7 @@ export const api = {
   },
   // (2026-07-28) 문서 인라인 프리뷰 — blob URL 로 <img>/<embed> 렌더.
   fetchDocumentPreview: async (id) => {
-    const tok = getToken();
-    const res = await fetch(`${BASE}/documents/${id}/preview`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/documents/${id}/preview`);
     if (!res.ok) throw new Error(res.statusText);
     const blob = await res.blob();
     return { url: URL.createObjectURL(blob), mime: blob.type };
@@ -560,6 +852,7 @@ export const api = {
   // (2026-07-28) Stage-R1: 렌트카 계약.
   listRentals: (params = {}) => {
     const q = new URLSearchParams();
+    if (params.view) q.set('view', params.view);
     if (params.device_id != null) q.set('device_id', String(params.device_id));
     if (params.from)   q.set('from',   params.from);
     if (params.to)     q.set('to',     params.to);
@@ -580,10 +873,7 @@ export const api = {
   // 사진 URL (owner 인증) — <img src=> 로는 못 씀 (Authorization header 필요),
   // 대신 fetch 로 blob → object URL 만들어 사용.
   fetchRentalPhoto:   async (photoId) => {
-    const tok = getToken();
-    const res = await fetch(`${BASE}/rentcar/photos/${photoId}`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/rentcar/photos/${photoId}`);
     if (!res.ok) throw new Error(res.statusText);
     const blob = await res.blob();
     return URL.createObjectURL(blob);
@@ -608,10 +898,7 @@ export const api = {
 
   // (2026-07-28 Stage-R4) 렌트카 청구서 XLSX.
   rentalInvoiceXlsx: async (id) => {
-    const tok = getToken();
-    const res = await fetch(`${BASE}/rentcar/contracts/${id}/invoice.xlsx`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/rentcar/contracts/${id}/invoice.xlsx`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || res.statusText);
@@ -635,15 +922,14 @@ export const api = {
   //           device_ids: [1,2,3] (선택 — 전체), purposes: ['business','commute'] (선택 — 전체) }
   reportXlsx: async (params = {}) => {
     const q = new URLSearchParams();
+    if (params.scope) q.set('scope',params.scope);
+    if (params.vehicle_ids) q.set('vehicle_ids',params.vehicle_ids.join(','));
     q.set('type', params.type || 'ours');
     if (params.month) q.set('month', params.month);
     if (params.device_ids?.length) q.set('device_ids', params.device_ids.join(','));
     if (params.purposes?.length)   q.set('purposes',   params.purposes.join(','));
     if (params.departments?.length) q.set('departments', params.departments.join(','));
-    const tok = localStorage.getItem('access_token');
-    const res = await fetch(`${BASE}/corporate/report.xlsx?${q.toString()}`, {
-      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    });
+    const res = await sessionFetch(`${BASE}/corporate/report.xlsx?${q.toString()}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || res.statusText);

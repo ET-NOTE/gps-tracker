@@ -9,6 +9,11 @@
 
 namespace lte {
   void init();          // UART begin + power-on (hw_power::railOn() 선행 가정)
+  // Sleep-only idle observer; must never issue AT commands or recurse into LTE.
+  void setSleepObserver(void (*observer)());
+  enum class ShutdownResult { NotStarted, Confirmed, Unconfirmed };
+  ShutdownResult shutdownForSleep();  // CPOWD=1 + bounded NORMAL POWER DOWN wait, no toggle
+  void resumeAfterSleepAbort(bool railWasCut, ShutdownResult result); // preserve GPS batch
   bool bringUp();       // AT→CPIN→CEREG→CNACT→IP. true=PDP ready. (2026-07-08 non-blocking: 등록대기 중엔 false+bringInProgress())
   bool bringInProgress();  // 등록 대기 중(non-blocking) — recovery 가 빠르게 재호출
   void bringReset();       // 전원사이클/soft 후 bringUp phase 리셋(Phase1부터)
@@ -22,6 +27,9 @@ namespace lte {
   // ── HTTP (Block 6) ──
   //   host/path 는 config 상수(POST_URL_HOST/POST_PATH). SHCONN/SHREQ keepalive 유지.
   bool     httpPost(const char *body, int *statusOut);
+#if defined(GPS_TLS_CERT_TEST) && GPS_TLS_CERT_TEST
+  bool certificateProbe(); // Test-only fixed GET; no NVS credentials or telemetry.
+#endif
   void     resetHttpKeepalive();     // 모듈 reset / CFUN cycle 시 SHCONF/SHCONN 재설정 필요
   bool     httpConnected();
   uint32_t postIntervalMs();         // 서버 cmd 로 조정됨 (RAM, reset 시 default 복귀)

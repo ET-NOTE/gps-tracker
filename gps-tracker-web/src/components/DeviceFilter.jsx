@@ -1,22 +1,24 @@
-// 지도 우상단의 컴팩트 디바이스 필터.
-// 모든 해상도에서 단일 드롭다운으로 통일 — 좌측 MapControls 와 충돌 없음.
+// MapTopOverlay's first row. Its menu floats over the summary only while open.
 import { useEffect, useRef, useState } from 'react';
 import { getDeviceColor } from '../colors';
 import Icon from './Icon';
 
-export default function DeviceFilter({ devices, selected, onChange }) {
+export default function DeviceFilter({ devices, selected, onChange, integrated = false }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
   // 바깥 클릭으로 닫기
   useEffect(() => {
     if (!open) return;
+    const onKey = e => { if (e.key === 'Escape') { setOpen(false); wrapRef.current?.querySelector('button')?.focus(); } };
     const onDoc = (e) => {
       if (!wrapRef.current?.contains(e.target)) setOpen(false);
     };
+    document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('touchstart', onDoc);
     return () => {
+      document.removeEventListener('keydown', onKey);
       document.removeEventListener('mousedown', onDoc);
       document.removeEventListener('touchstart', onDoc);
     };
@@ -27,17 +29,17 @@ export default function DeviceFilter({ devices, selected, onChange }) {
   const color = sel ? getDeviceColor(sel) : 'var(--text-3)';
 
   return (
-    <div ref={wrapRef} style={s.wrap}>
-      <button onClick={() => setOpen(o => !o)} style={s.trigger}>
+    <div ref={wrapRef} style={{ ...s.wrap, ...(integrated ? { width: '100%' } : {}) }}>
+      <button aria-label="단말기 선택" aria-expanded={open} onClick={() => setOpen(o => !o)} style={{ ...s.trigger, ...(integrated ? { width: '100%', border: 0, boxShadow: 'none', borderRadius: 0, background: 'transparent' } : {}) }}>
         <span style={{ width: 8, height: 8, borderRadius: 4, background: color, flexShrink: 0 }} />
-        <span style={s.triggerLabel}>{label}</span>
-        <Icon name={open ? 'close' : 'filter'} size={12} />
+        <span style={{ ...s.triggerLabel, ...(integrated ? { maxWidth: 'none', flex: 1, textAlign: 'left' } : {}) }}>{label}</span>
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16} />
       </button>
       {open && (
         <div style={s.menu}>
           <Item color="var(--text-3)" on={selected === null}
             onClick={() => { onChange(null); setOpen(false); }}>
-            전체 디바이스
+            전체 단말기
           </Item>
           {devices.map(d => (
             <Item key={d.id} color={getDeviceColor(d)} on={selected === d.id}
@@ -62,9 +64,8 @@ function Item({ color, on, onClick, children }) {
 
 const s = {
   wrap: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
+    position: 'relative',
+    maxWidth: '100%',
     zIndex: 6,
     pointerEvents: 'none',
     display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
@@ -72,11 +73,11 @@ const s = {
   trigger: {
     pointerEvents: 'auto',
     display: 'inline-flex', alignItems: 'center', gap: 8,
-    maxWidth: 220,
+    maxWidth: '100%', minHeight: 44,
     padding: '7px 12px',
     background: 'var(--surface)', color: 'var(--text)',
     border: '1px solid var(--border)', borderRadius: 18,
-    fontSize: 12, fontWeight: 500, cursor: 'pointer',
+    fontSize: 14, fontWeight: 500, cursor: 'pointer',
     boxShadow: '0 1px 4px rgba(0,0,0,.14)',
   },
   triggerLabel: {
@@ -84,9 +85,10 @@ const s = {
     maxWidth: 140,
   },
   menu: {
+    position: 'absolute', top: '100%', left: 0,
     pointerEvents: 'auto',
     marginTop: 6,
-    minWidth: 200, maxWidth: 280,
+    width: 280, maxWidth: 'calc(100vw - 80px)',
     background: 'var(--surface)',
     border: '1px solid var(--border)',
     borderRadius: 10, overflow: 'hidden',
@@ -95,10 +97,10 @@ const s = {
   },
   item: {
     display: 'flex', alignItems: 'center', gap: 8,
-    width: '100%', padding: '10px 12px',
+    width: '100%', minHeight: 44, padding: '10px 12px',
     background: 'transparent', color: 'var(--text)',
     border: 'none', borderBottom: '1px solid var(--border)',
-    fontSize: 12, cursor: 'pointer', textAlign: 'left',
+    fontSize: 14, cursor: 'pointer', textAlign: 'left',
   },
   itemOn: {
     background: 'var(--surface-2)', fontWeight: 600, color: 'var(--primary)',

@@ -13,20 +13,24 @@ use serde_json::json;
 use std::time::Duration;
 
 const API_URL: &str = "https://alimtalk-api.bizmsg.kr/v2/sender/send";
-const DEFAULT_USERID: &str  = "etcom262";
+const DEFAULT_USERID: &str = "etcom262";
 const DEFAULT_PROFILE: &str = "40d675c26afbef411fddcd688c88f575668f8651";
-const DEFAULT_SENDER: &str  = "01022957774";
+const DEFAULT_SENDER: &str = "01022957774";
 
 pub async fn send_otp(phone: &str, code: &str) -> anyhow::Result<()> {
     let dev = std::env::var("SMS_DEV_MODE").ok().as_deref() == Some("1");
-    let userid  = std::env::var("BIZMSG_USERID").unwrap_or_else(|_| DEFAULT_USERID.into());
+    let userid = std::env::var("BIZMSG_USERID").unwrap_or_else(|_| DEFAULT_USERID.into());
     let profile = std::env::var("BIZMSG_PROFILE").unwrap_or_else(|_| DEFAULT_PROFILE.into());
-    let sender  = std::env::var("BIZMSG_SMS_SENDER").unwrap_or_else(|_| DEFAULT_SENDER.into());
+    let sender = std::env::var("BIZMSG_SMS_SENDER").unwrap_or_else(|_| DEFAULT_SENDER.into());
 
-    let message = format!("[Seriallog GPS] 인증번호 {} 을(를) 입력해주세요.", code);
+    let message = format!("[Seriallog GPS] 인증번호 {code} 을(를) 입력해주세요.");
 
     if dev {
-        tracing::warn!(phone, code, "SMS_DEV_MODE=1 — actual SMS skipped, code in log");
+        tracing::warn!(
+            phone,
+            code,
+            "SMS_DEV_MODE=1 — actual SMS skipped, code in log"
+        );
         return Ok(());
     }
 
@@ -44,11 +48,13 @@ pub async fn send_otp(phone: &str, code: &str) -> anyhow::Result<()> {
         .timeout(Duration::from_secs(10))
         .build()?;
 
-    let res = client.post(API_URL)
+    let res = client
+        .post(API_URL)
         .header("Content-Type", "application/json")
         .header("userid", userid)
         .json(&body)
-        .send().await?;
+        .send()
+        .await?;
 
     let status = res.status();
     let text = res.text().await.unwrap_or_default();
@@ -63,7 +69,7 @@ pub async fn send_otp(phone: &str, code: &str) -> anyhow::Result<()> {
     } else {
         tracing::info!(phone, "bizmsg sms ok");
     }
-    let _ = json!(text);   // 미사용 import 회피용
+    let _ = json!(text); // 미사용 import 회피용
     Ok(())
 }
 
@@ -71,12 +77,15 @@ pub async fn send_otp(phone: &str, code: &str) -> anyhow::Result<()> {
 /// 유효하지 않으면 None.
 pub fn normalize_phone(s: &str) -> Option<String> {
     let digits: String = s.chars().filter(|c| c.is_ascii_digit()).collect();
-    if digits.len() == 10 || digits.len() == 11 {
-        if digits.starts_with("010") || digits.starts_with("011")
-        || digits.starts_with("016") || digits.starts_with("017")
-        || digits.starts_with("018") || digits.starts_with("019") {
-            return Some(digits);
-        }
+    if (digits.len() == 10 || digits.len() == 11)
+        && (digits.starts_with("010")
+            || digits.starts_with("011")
+            || digits.starts_with("016")
+            || digits.starts_with("017")
+            || digits.starts_with("018")
+            || digits.starts_with("019"))
+    {
+        return Some(digits);
     }
     None
 }
@@ -85,5 +94,5 @@ pub fn normalize_phone(s: &str) -> Option<String> {
 pub fn generate_code() -> String {
     use rand::Rng;
     let n: u32 = rand::thread_rng().gen_range(1000..=9999);
-    format!("{:04}", n)
+    format!("{n:04}")
 }

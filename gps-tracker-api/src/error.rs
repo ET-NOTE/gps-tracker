@@ -28,6 +28,9 @@ pub enum AppError {
     #[error("conflict: {0}")]
     Conflict(String),
 
+    #[error("gone: {0}")]
+    Gone(String),
+
     #[error("too many requests: {0}")]
     TooManyRequests(String),
 }
@@ -37,17 +40,24 @@ impl IntoResponse for AppError {
         let (status, msg) = match &self {
             AppError::Internal(e) => {
                 tracing::error!("internal: {:#}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, "internal error".to_string())
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal error".to_string(),
+                )
             }
             AppError::Database(e) => {
                 tracing::error!("database: {:#}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, "database error".to_string())
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "database error".to_string(),
+                )
             }
             AppError::NotFound => (StatusCode::NOT_FOUND, "not found".to_string()),
             AppError::BadRequest(m) => (StatusCode::BAD_REQUEST, m.clone()),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized".to_string()),
             AppError::Forbidden => (StatusCode::FORBIDDEN, "forbidden".to_string()),
             AppError::Conflict(m) => (StatusCode::CONFLICT, m.clone()),
+            AppError::Gone(m) => (StatusCode::GONE, m.clone()),
             AppError::TooManyRequests(m) => (StatusCode::TOO_MANY_REQUESTS, m.clone()),
         };
         (status, Json(json!({ "error": msg }))).into_response()

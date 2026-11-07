@@ -1,0 +1,30 @@
+.rights-panel{display:grid;gap:16px;min-width:0;color:var(--text)}
+.rights-result-page{max-width:620px;margin:32px auto;padding:0 16px}.rights-result-page h1{font-size:23px;margin:0 0 16px}.rights-date-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rights-delivery h4{margin:12px 0;font-size:14px}
+.rights-card{padding:18px;border:1px solid var(--border);background:var(--surface);border-radius:14px;min-width:0}
+.rights-panel h2{font-size:17px;margin:0 0 12px}.rights-panel h3{font-size:14px;margin:0}
+.rights-panel p{font-size:13px;line-height:1.65;color:var(--text-2);overflow-wrap:anywhere}
+.rights-panel fieldset{border:0;padding:0;margin:0;display:grid;gap:12px;min-width:0}
+.rights-panel label{display:grid;gap:6px;font-size:13px;font-weight:600;min-width:0}
+.rights-panel input,.rights-panel select,.rights-panel textarea{box-sizing:border-box;width:100%;min-width:0;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px;font:inherit}
+.rights-panel button{border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:10px 14px;font:inherit;font-size:13px;cursor:pointer;overflow-wrap:anywhere}
+.rights-panel button:disabled{opacity:.55;cursor:wait}.rights-panel button:focus-visible,.rights-panel input:focus-visible,.rights-panel select:focus-visible,.rights-panel textarea:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.rights-panel .rights-primary{background:var(--primary);color:white;border-color:var(--primary)}
+.rights-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rights-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rights-request{padding:16px 0;border-top:1px solid var(--border)}.rights-text{white-space:pre-wrap}
+.rights-notice{padding:12px;border-radius:8px;background:var(--bg)}.rights-panel .rights-error{color:var(--danger)}
+.rights-impact{margin:16px 0}.rights-counts{font-size:13px}.rights-counts>div{display:flex;gap:12px;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}.rights-counts dd{margin:0;flex-shrink:0;font-variant-numeric:tabular-nums}
+.rights-impact h4{margin:0;font-size:14px}.rights-impact details>form{margin-top:14px}.rights-impact summary{line-height:1.6;cursor:pointer;overflow-wrap:anywhere}.rights-impact details+details{margin-top:14px}
+.rights-admin{max-width:1100px}.rights-admin details{margin-top:14px;font-size:13px}
+.rights-panel .rights-confirm{display:flex;align-items:flex-start;gap:8px;margin:12px 0;line-height:1.5}.rights-panel .rights-confirm input{width:16px;height:16px;flex:0 0 16px;margin-top:2px;padding:0}
+@media(max-width:480px){.rights-card{padding:14px}.rights-heading{align-items:flex-start}.rights-panel input,.rights-panel textarea,.rights-panel select{font-size:16px}}
+.rights-package-file {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border,#dfe4ec);flex-wrap:wrap;}
+.rights-package-file>span,.rights-package-file label {min-width:0;overflow-wrap:anywhere;flex:1 1 180px;}
+.rights-package-file button {flex:0 0 auto;}
+
+.rights-text-sources{display:grid;gap:.5rem;max-height:16rem;overflow:auto;margin-block:.75rem}
+.rights-text-sources button{text-align:left;white-space:normal;overflow-wrap:anywhere}
+.rights-panel .rights-raw-text,.rights-redacted-preview{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font:inherit;max-width:100%;box-sizing:border-box}
+.rights-redacted-preview{padding:1rem;border:1px solid var(--border,#ddd);border-radius:.5rem;background:var(--card,#fff);max-height:24rem;overflow:auto}
+
+.rights-image-canvas,.rights-image-preview{display:block;max-width:100%;height:auto;border:1px solid var(--border);border-radius:6px;margin:12px auto}.rights-image-canvas{touch-action:none;cursor:crosshair}.rights-image-coordinates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.rights-image-coordinates input{width:100%;min-width:0;box-sizing:border-box}@media(max-width:600px){.rights-image-coordinates{grid-template-columns:repeat(2,minmax(0,1fr))}}

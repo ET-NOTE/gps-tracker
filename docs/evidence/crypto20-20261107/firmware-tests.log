@@ -1,0 +1,42 @@
+Checking "python3" ...
+Python 3.12.3
+"python3" has been detected
+Activating ESP-IDF 5.5
+Setting IDF_PATH to '/opt/esp/idf'.
+* Checking python version ... 3.12.3
+* Checking python dependencies ... OK
+* Deactivating the current ESP-IDF environment (if any) ... OK
+* Establishing a new ESP-IDF environment ... OK
+* Identifying shell ... bash
+* Detecting outdated tools in system ... OK - no outdated tools found
+* Shell completion ... Autocompletion code generated
+
+Done! You can now compile ESP-IDF projects.
+Go to the project directory and run:
+
+  idf.py build
+PASS remote report bounds, NVS persistence, failed save rollback, default and no repeated writes
+collection policy: boot, SIM change, pause, resume, stale response, NVS failure, payload scrub passed
+isolated KC profile retains GNSS without a policy server
+PASS bench override survives restart without changing stored settings
+PASS bounded bench entries, real timer wake and awake completion
+PASS: 232 profile/scenario + JSON contract checks
+/project/idf_caltest/tools/tls_cert_fixture.py:70: CryptographyDeprecationWarning: Properties that return a naïve datetime object have been deprecated. Please switch to not_valid_before_utc.
+  metadata[case]={"dns":dns,"not_before":cert.not_valid_before.isoformat(),
+/project/idf_caltest/tools/tls_cert_fixture.py:71: CryptographyDeprecationWarning: Properties that return a naïve datetime object have been deprecated. Please switch to not_valid_after_utc.
+  "not_after":cert.not_valid_after.isoformat(),"sha256":cert.fingerprint(hashes.SHA256()).hex()}
+verified=1 flags=0
+verified=0 flags=1
+verified=0 flags=8
+verified=0 flags=4
+verified=1 flags=0
+verified=1 flags=0
+verified=1 flags=0
+verified=1 flags=0
+verified=1 flags=0
+verified=1 flags=0
+verified=1 flags=0
+verified=1 flags=0
+verified=1 flags=0
+{"directory": "/tmp/gps-mcu-tls-test-2ys3_hnv/certs", "root_sha256": "0ebbae13acc16c037341e00f815f2c122f87909f4cc15f64806d22eba0d95594", "cases": ["valid", "expired", "untrusted", "wrong-host"]}
+PASS: 13 actual Mbed TLS certificate/HTTP boundary tests

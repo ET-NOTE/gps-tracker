@@ -1,0 +1,39 @@
+{
+  "commit": "921f445",
+  "api_sha256": "3fa6b7ab697ea9f10e3202c1be1cff48c232d573871fb7beb325b7755b2c9a5b",
+  "api_build": "development build on the pinned toolchain (release profile); not a staged release",
+  "schema": 100,
+  "rust_passed": 71,
+  "rust_ignored": 2,
+  "earlier_suites_recording_off_groups": 105,
+  "ledger_suite_recording_off_groups": 3,
+  "ledger_suite_recording_on_groups": 9,
+  "read_ms_median_p95": {
+    "recording": [
+      12.12,
+      14.33
+    ],
+    "not_recording": [
+      11.55,
+      13.01
+    ]
+  },
+  "burst": {
+    "reads": 2000,
+    "threads": 32,
+    "new_rows": 0,
+    "dropped": 0
+  },
+  "answered": {
+    "company_trips": 200,
+    "company_stats": 200
+  },
+  "not_covered": [
+    "transfers to outside services (map, AI, push) end to end: unit test of the attribution only",
+    "real volume and production database latency",
+    "a screen for the ledger"
+  ],
+  "deployed": false,
+  "recording_default": "off",
+  "retention_default": "off"
+}

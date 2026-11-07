@@ -4,6 +4,44 @@
 # bash heredoc 안에 임베드되는 SQL 도 LF
 *.sql text eol=lf
 
+# Already deployed with CRLF; preserve exact SQLx checksum in archives/checkouts.
+# Do not edit applied migration bytes. New migrations still use LF above.
+gps-tracker-api/migrations/0085_preserve_legacy_aggregates.sql -text !eol whitespace=trailing-space,space-before-tab,cr-at-eol
+
 # Windows 전용은 CRLF
 *.bat text eol=crlf
 *.ps1 text eol=crlf
+
+# Preserve reproducible 18A evidence and Linux deployment script hashes on Windows.
+docs/operations/evidence/location-business-round18a-20261107/* text eol=lf
+ops/nginx-privacy/* text eol=lf
+
+# Exact review evidence; screenshots are binary.
+docs/operations/evidence/location-business-round18b-20261107/*.json text eol=lf
+docs/operations/evidence/location-business-round18b-20261107/*.log text eol=lf whitespace=-blank-at-eof
+docs/operations/evidence/location-business-round18b-20261107/*.html text eol=lf
+docs/operations/evidence/location-business-round18b-20261107/*.txt text eol=lf
+
+# Round 19 evidence hashes must survive Windows checkout.
+docs/evidence/admin-security-20261107/*.json text eol=lf
+docs/evidence/admin-security-20261107/*.txt text eol=lf
+docs/evidence/admin-security-20261107/*.png -text
+
+# Round 20 evidence must keep identical bytes across Windows/Linux checkouts.
+docs/evidence/crypto20-20261107/* -text
+docs/evidence/crypto20-20261107/*.log whitespace=-blank-at-eof
+
+# Round 20B source evidence must remain byte-identical across checkouts.
+docs/evidence/crypto20b-20261107/* -text
+docs/evidence/crypto20b-20261107/*.log whitespace=-blank-at-eof
+
+# Round 21 evidence must keep identical bytes across Windows/Linux checkouts.
+docs/evidence/lifecycle21-20261107/* -text
+docs/evidence/lifecycle21-20261107/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Round 22 exact verification evidence.
+docs/evidence/provision22-20261108/* -text
+docs/evidence/provision22-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Round 22B screenshots, generated exports and evidence hashes are exact bytes.
+docs/evidence/provision22b-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol

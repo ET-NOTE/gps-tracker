@@ -1,0 +1,34 @@
+{
+  "environment": "isolated actual CorporatePanel; synthetic API; not production",
+  "viewports": [
+    1280,
+    390
+  ],
+  "overflow": false,
+  "errors": [],
+  "freshDownloadAfterRevocation": true,
+  "csvExcludedOldTrip": true,
+  "pdfGeneratedAfterFreshRead": true,
+  "mapEmptyScope": true,
+  "externalRequestsBlocked": true,
+  "requests": [
+    "/gps-tracker/api/v1/corporate/workspaces",
+    "/gps-tracker/api/v1/corporate/access",
+    "/gps-tracker/api/v1/corporate/terminals",
+    "/gps-tracker/api/v1/corporate/vehicles",
+    "/gps-tracker/api/v1/corporate/staff",
+    "/gps-tracker/api/v1/corporate/subscription",
+    "/gps-tracker/api/v1/corporate/vehicle-reservations?from=2026-11-08T00%3A00%3A00%2B09%3A00&to=2026-11-08T15%3A00%3A00.000Z",
+    "/gps-tracker/api/v1/corporate/vehicle-stats",
+    "/gps-tracker/api/v1/corporate/staff",
+    "/gps-tracker/api/v1/corporate/info",
+    "/gps-tracker/api/v1/corporate/vehicles/21/trips?from=2026-11-01&to=2026-11-08",
+    "/gps-tracker/api/v1/corporate/vehicles/21/trips?from=2026-11-01&to=2026-11-08&download=csv",
+    "/gps-tracker/api/v1/corporate/vehicles/21/trips?from=2026-11-01&to=2026-11-08&download=pdf"
+  ],
+  "pdfExcludedOldTrip": true,
+  "pdfScopeNotePresent": true,
+  "pdfPages": 1,
+  "captured_at": "2026-11-08T01:54:05.059304+09:00",
+  "source_commit": "d4a16f830b3c809a99971d096a98cebb0e21103a"
+}
