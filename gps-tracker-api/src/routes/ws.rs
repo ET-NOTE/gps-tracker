@@ -57,6 +57,9 @@ async fn handler(
         Ok(c) => c,
         Err(_) => return (StatusCode::UNAUTHORIZED, "bad token").into_response(),
     };
+    if crate::services::admin_security::enabled() && claims.act.is_some() {
+        return (StatusCode::FORBIDDEN, "impersonation disabled").into_response();
+    }
     let user_id: i64 = match claims.sub.parse() {
         Ok(v) => v,
         Err(_) => return (StatusCode::UNAUTHORIZED, "bad sub").into_response(),

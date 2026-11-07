@@ -35,6 +35,46 @@
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
+  "admin_security.rs GET /admin/security/approvals": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs GET /admin/security/events": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs GET /admin/security/principals": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs GET /admin/security/status": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs PATCH /admin/security/principals/:id": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/approvals": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/approvals/:id/decision": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/enroll": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/logout": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
+  "admin_security.rs POST /admin/security/verify": {
+    "class": "non_location",
+    "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
+  },
   "ai.rs DELETE /ai-analyses/:id": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."

@@ -650,21 +650,42 @@ fn client_ip(headers: &HeaderMap) -> String {
 pub async fn login(
     State(state): State<AppState>,
     headers: HeaderMap,
+    axum::extract::ConnectInfo(peer): axum::extract::ConnectInfo<std::net::SocketAddr>,
     Json(req): Json<LoginRequest>,
 ) -> AppResult<Json<TokenPair>> {
     req.validate()
         .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
-    let ip = client_ip(&headers);
+    let ip = if crate::services::admin_security::enabled() {
+        crate::services::admin_security::client_ip(peer, &headers)?.to_string()
+    } else {
+        client_ip(&headers)
+    };
+    let mut tx = state.db.begin().await?;
+    let rate_email = req.email.trim().to_lowercase();
+    let is_admin: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM users WHERE lower(email)=lower($1) AND role='admin')",
+    )
+    .bind(req.email.trim())
+    .fetch_one(&mut *tx)
+    .await?;
+
+    if is_admin && crate::services::admin_security::enabled() {
+        // Serialize attempts and their durable evidence for this account, including parallel requests.
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 1919))")
+            .bind(&rate_email)
+            .execute(&mut *tx)
+            .await?;
+    }
 
     // ── rate limit: 최근 15분 실패 횟수로 잠금 (이메일 단위 + IP 단위) ──
     let email_fails: i64 = sqlx::query_scalar(
         r#"SELECT COUNT(*) FROM login_attempts
-            WHERE email = $1 AND success = FALSE
+            WHERE lower(btrim(email)) = $1 AND success = FALSE
               AND created_at > NOW() - ($2 || ' minutes')::interval"#,
     )
-    .bind(&req.email)
+    .bind(&rate_email)
     .bind(LOGIN_WINDOW_MIN.to_string())
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
     let ip_fails: i64 = sqlx::query_scalar(
         r#"SELECT COUNT(*) FROM login_attempts
@@ -673,9 +694,16 @@ pub async fn login(
     )
     .bind(&ip)
     .bind(LOGIN_WINDOW_MIN.to_string())
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
-    if email_fails >= LOGIN_MAX_PER_EMAIL || ip_fails >= LOGIN_MAX_PER_IP {
+    if email_fails
+        >= if is_admin && crate::services::admin_security::enabled() {
+            5
+        } else {
+            LOGIN_MAX_PER_EMAIL
+        }
+        || ip_fails >= LOGIN_MAX_PER_IP
+    {
         tracing::warn!(email = %req.email, %ip, email_fails, ip_fails, "login locked (rate limit)");
         return Err(AppError::TooManyRequests(format!(
             "로그인 시도가 너무 많습니다. {LOGIN_WINDOW_MIN}분 후 다시 시도해주세요."
@@ -685,7 +713,7 @@ pub async fn login(
     let row: Option<(i64, String)> =
         sqlx::query_as(r#"SELECT id, password_hash FROM users WHERE email = $1"#)
             .bind(&req.email)
-            .fetch_optional(&state.db)
+            .fetch_optional(&mut *tx)
             .await?;
 
     // 실패(계정 없음 / 비번 불일치) 는 동일하게 기록 + 동일 에러 → enumeration·잠금 우회 방지.
@@ -694,19 +722,19 @@ pub async fn login(
         None => false,
     };
     if !ok {
-        let _ =
-            sqlx::query("INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, FALSE)")
-                .bind(&req.email)
-                .bind(&ip)
-                .execute(&state.db)
-                .await;
+        sqlx::query("INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, FALSE)")
+            .bind(&rate_email)
+            .bind(&ip)
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
         return Err(AppError::Unauthorized);
     }
     let user_id = row.unwrap().0;
     let closure: Option<i64> =
         sqlx::query_scalar("SELECT request_id FROM privacy_account_closures WHERE user_id=$1")
             .bind(user_id)
-            .fetch_optional(&state.db)
+            .fetch_optional(&mut *tx)
             .await?;
     if let Some(request_id) = closure {
         // Only after the password was verified; issue no session or data access.
@@ -714,18 +742,24 @@ pub async fn login(
             "계정 이용이 종료되었습니다. 탈퇴 요청 #{request_id}의 자료 처리는 진행 중입니다."
         )));
     }
-    crate::auth::extractor::require_existing_account(&state, user_id).await?;
+    let active: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users u JOIN privacy_account_controls c ON c.user_id=u.id WHERE u.id=$1 AND NOT c.restricted)")
+        .bind(user_id).fetch_one(&mut *tx).await?;
+    if !active {
+        return Err(AppError::Unauthorized);
+    }
 
     // 성공 → 이 이메일의 실패 기록 소거(즉시 잠금 해제) + 성공 기록.
-    let _ = sqlx::query("DELETE FROM login_attempts WHERE email = $1 AND success = FALSE")
-        .bind(&req.email)
-        .execute(&state.db)
-        .await;
-    let _ = sqlx::query("INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, TRUE)")
-        .bind(&req.email)
+    sqlx::query("DELETE FROM login_attempts WHERE lower(btrim(email)) = $1 AND success = FALSE")
+        .bind(&rate_email)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO login_attempts (email, ip, success) VALUES ($1, $2, TRUE)")
+        .bind(&rate_email)
         .bind(&ip)
-        .execute(&state.db)
-        .await;
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
 
     let ua = headers.get("user-agent").and_then(|v| v.to_str().ok());
     let ttl_days = refresh_ttl_for(&state, req.remember_me);
@@ -740,6 +774,9 @@ pub async fn refresh(
 ) -> AppResult<Json<TokenPair>> {
     let claims = jwt::verify(&req.refresh_token, &state.config.jwt_secret, "refresh")
         .map_err(|_| AppError::Unauthorized)?;
+    if crate::services::admin_security::enabled() && claims.act.is_some() {
+        return Err(AppError::Forbidden);
+    }
     let user_id: i64 = claims.sub.parse().map_err(|_| AppError::Unauthorized)?;
 
     crate::auth::extractor::require_existing_account(&state, user_id).await?;

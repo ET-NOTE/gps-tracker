@@ -1,5 +1,5 @@
 // /api/v1/admin/* — 관리자 전용 엔드포인트.
-// users.role = 'admin' 만 접근 가능 (AdminUser extractor 가 403 처리).
+// AdminUser plus the enforced administrator gate: MFA, IP, role and approval.
 //
 // 기능:
 //   - 사용자 목록 + 디바이스 카운트

@@ -21,3 +21,8 @@ docs/operations/evidence/location-business-round18b-20261107/*.json text eol=lf
 docs/operations/evidence/location-business-round18b-20261107/*.log text eol=lf whitespace=-blank-at-eof
 docs/operations/evidence/location-business-round18b-20261107/*.html text eol=lf
 docs/operations/evidence/location-business-round18b-20261107/*.txt text eol=lf
+
+# Round 19 evidence hashes must survive Windows checkout.
+docs/evidence/admin-security-20261107/*.json text eol=lf
+docs/evidence/admin-security-20261107/*.txt text eol=lf
+docs/evidence/admin-security-20261107/*.png -text

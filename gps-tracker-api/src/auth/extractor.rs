@@ -35,6 +35,9 @@ impl FromRequestParts<AppState> for AuthUser {
         let claims = jwt::verify(token, &state.config.jwt_secret, "access")
             .map_err(|_| AppError::Unauthorized)?;
 
+        if crate::services::admin_security::enabled() && claims.act.is_some() {
+            return Err(AppError::Forbidden);
+        }
         let user_id: i64 = claims.sub.parse().map_err(|_| AppError::Unauthorized)?;
         require_existing_account(state, user_id).await?;
         Ok(AuthUser { user_id })
@@ -55,6 +58,10 @@ impl FromRequestParts<AppState> for AdminUser {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
+        crate::services::admin_security::require(parts, state).await?;
+        if parts.extensions.get::<super::fleet::FleetScope>().is_some() {
+            return Err(AppError::Forbidden);
+        }
         let auth = AuthUser::from_request_parts(parts, state).await?;
         let role: Option<String> = sqlx::query_scalar("SELECT role FROM users WHERE id = $1")
             .bind(auth.user_id)

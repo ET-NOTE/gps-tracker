@@ -33,6 +33,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     // ── config & db ───────────────────────────────────────
+    services::admin_security::validate_config()?;
     let cfg = config::Config::from_env().context("failed to load config")?;
     tracing::info!(bind = %cfg.bind_addr, "starting gps-tracker-api");
     let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref())?;
@@ -41,16 +42,21 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("failed to connect database")?;
 
-    // 마이그레이션 자동 적용 (sqlx::migrate! macro)
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .context("migration failed")?;
-    tracing::info!("migrations up to date");
-    // Apply an additive release while the current API still accepts KC uploads.
-    // No listeners, external calls or background workers run in this mode.
-    if std::env::var("GPS_MIGRATE_ONLY").as_deref() == Ok("1") {
-        return Ok(());
+    // Schema credentials never need to be present in the serving process.
+    if std::env::var("GPS_MIGRATE_ONLY").as_deref() == Ok("1")
+        || std::env::var("GPS_DATABASE_MODE").as_deref() != Ok("runtime")
+    {
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .context("migration failed")?;
+        if std::env::var("GPS_MIGRATE_ONLY").as_deref() == Ok("1") {
+            return Ok(());
+        }
+    } else {
+        db::verify_runtime(&pool)
+            .await
+            .context("runtime DB boundary")?;
     }
 
     // FCM 클라이언트 — events 워커와 채팅 푸시가 공유
@@ -122,10 +128,13 @@ async fn main() -> anyhow::Result<()> {
 
     // Graceful shutdown — SIGTERM (systemctl restart / 도커 stop) 받으면 in-flight 요청
     // 끝날 때까지 대기 후 종료. 새 연결은 안 받음. 배포 시 502 발생률 감소.
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .context("server error")?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .context("server error")?;
     services::access_ledger::close().await;
     Ok(())
 }

@@ -63,6 +63,8 @@ export function clearTokens() {
 }
 
 function resetSession() {
+  sessionStorage.removeItem("gps_admin_session");
+  sessionStorage.removeItem("gps_admin_enforced");
   setFleetOwner(null);
   refreshAbort?.abort();
   refreshing = null;
@@ -199,6 +201,11 @@ async function sessionFetch(url, options = {}, retry = true, scope = authScope()
   const headers = new Headers(options.headers);
   if(fleet.owner != null) headers.set("X-Fleet-Owner",String(fleet.owner));
   const token = getToken();
+  if (url.startsWith(BASE + '/admin/')) {
+    const stepUp=sessionStorage.getItem('gps_admin_session');
+    if(stepUp) headers.set('X-Admin-Session',stepUp);
+    headers.delete('X-Fleet-Owner');
+  }
   if (token) headers.set('Authorization', `Bearer ${token}`);
   else headers.delete('Authorization');
   const res = await fetch(url, { ...options, headers });
@@ -228,9 +235,15 @@ async function sessionFetch(url, options = {}, retry = true, scope = authScope()
 }
 
 async function req(method, path, body, retry = true, options = {}) {
+  const reviewRead=path.endsWith('/image-preview')||path.endsWith('/redacted-preview')||path.endsWith('/review')||path.endsWith('/read')||path.includes('/text-sources/')||path.includes('/proof/')||path.includes('/receipt-sources/');
+  if(sessionStorage.getItem('gps_admin_enforced')==='on' && !['GET','HEAD'].includes(method) && !reviewRead && (path.startsWith('/admin/privacy/')||path.startsWith('/admin/security/principals/')) && !options.headers?.['X-Admin-Approval']) {
+    const approval=await req('POST','/admin/security/approvals',{method,path,payload:body??null,reason:body?.evidence_reference||'관리자 화면에서 검토 후 요청한 작업'},retry);
+    window.dispatchEvent(new CustomEvent('gps-admin-approval-created',{detail:approval}));
+    throw Object.assign(new Error(`승인 요청 #${approval.id}를 등록했습니다. 책임자 승인 후 보안 관리에서 실행해 주세요.`),{status:409});
+  }
   const res = await sessionFetch(BASE + path, {
     method, signal: options.signal,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   }, retry);
   if (!res.ok) {
@@ -243,6 +256,16 @@ async function req(method, path, body, retry = true, options = {}) {
 }
 
 export const api = {
+  adminSecurity: () => req('GET','/admin/security/status'),
+  adminMfaEnroll: (password) => req('POST','/admin/security/enroll',{password},false),
+  adminMfaVerify: (password,code) => req('POST','/admin/security/verify',{password,code},false),
+  adminSecurityLogout: () => req('POST','/admin/security/logout',{}),
+  adminPrincipals: () => req('GET','/admin/security/principals'),
+  adminSecurityEvents: () => req('GET','/admin/security/events'),
+  adminApprovals: () => req('GET','/admin/security/approvals'),
+  adminPropose: (proposal) => req('POST','/admin/security/approvals',proposal),
+  adminDecide: (id,approve) => req('POST',`/admin/security/approvals/${id}/decision`,{approve}),
+  adminExecuteApproval: (a) => req(a.method,a.path,a.payload,true,{headers:a.id?{'X-Admin-Approval':String(a.id)}:{}}),
   expenseCategories: () => req('GET','/corporate/expense-categories'),
   createExpenseCategory: body => req('POST','/corporate/expense-categories',body),
   updateExpenseCategory: (id,body) => req('PUT',`/corporate/expense-categories/${id}`,body),

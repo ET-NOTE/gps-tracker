@@ -22,7 +22,7 @@ async function fixture(fetch) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity, staleTime: 30000, retry: false } } });
   const window = new EventTarget(); window.location = { hostname: 'dev-gps.serial.kr', reload() { throw Error('unexpected reload'); } };
   const context = vm.createContext({ localStorage: new Storage(), sessionStorage: new Storage(), window,
-    navigator: {}, crypto: webcrypto, fetch, Event, DOMException, AbortController, FormData, Headers, URL, URLSearchParams,
+    navigator: {}, crypto: webcrypto, fetch, Event, CustomEvent, DOMException, AbortController, FormData, Headers, URL, URLSearchParams,
     atob: s => Buffer.from(s, 'base64').toString(), setTimeout: () => 1, clearTimeout() {}, console });
   const cache = new Map();
   async function load(file) {
@@ -207,4 +207,27 @@ test('device mutations cancel pre-write snapshots and offline provenance survive
   store.updateDeviceList(ds => ds.map(d => ({ ...d, display_name: 'live' })));
   assert.equal(cache.isCachedResponse(f.queryClient.getQueryData(f.qk.devices())), true);
   f.queryClient.clear();
+});
+
+
+test('admin step-up never leaks to personal requests; sign-out clears elevated session',async()=>{
+ const seen=[];const f=await fixture(async(url,o)=>{seen.push({url,step:o.headers.get('X-Admin-Session')});return Response.json([]);});
+ f.api.setTokens(token('A'),'refresh-A');f.context.sessionStorage.setItem('gps_admin_session','step-up-only');
+ await f.api.api.adminPrincipals();await f.api.api.listFleetVehicles();
+ assert.equal(seen[0].step,'step-up-only');assert.equal(seen[1].step,null);
+ f.api.clearTokens();assert.equal(f.context.sessionStorage.getItem('gps_admin_session'),null);f.queryClient.clear();
+});
+test('protected writes propose first; only explicit approved execution sends original mutation',async()=>{
+ const seen=[];const f=await fixture(async(url,o)=>{seen.push({url,method:o.method,approval:o.headers.get('X-Admin-Approval'),body:JSON.parse(o.body||'null')});return Response.json({id:17});});
+ f.api.setTokens(token('A'),'refresh-A');f.context.sessionStorage.setItem('gps_admin_enforced','on');
+ const a={id:17,method:'PATCH',path:'/admin/security/principals/12',payload:{role:'handler'}};
+ // UI action without approval cannot submit the mutation at all.
+ await assert.rejects(f.api.api.adminExecuteApproval({...a,id:undefined}),/승인 요청/);
+ assert.equal(seen.length,1);assert.ok(seen[0].url.endsWith('/admin/security/approvals'));
+ await f.api.api.adminExecuteApproval(a);assert.equal(seen[1].approval,'17');assert.equal(seen[1].method,'PATCH');f.queryClient.clear();
+});
+test('wrong MFA credentials are not retried through ordinary refresh',async()=>{
+ let calls=0;const f=await fixture(async()=>{calls++;return Response.json({error:'unauthorized'},{status:401});});
+ f.api.setTokens(token('A'),'refresh-A');await assert.rejects(f.api.api.adminMfaVerify('wrong','000000'));
+ assert.equal(calls,1);f.queryClient.clear();
 });

@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod admin_security;
 pub mod ai;
 pub mod arduino_shield;
 pub mod auth;
@@ -86,6 +87,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(chat::router_user())
         .merge(chat::router_admin())
         .merge(admin::router())
+        .merge(admin_security::router())
         .merge(location_access::router())
         // Inside the company scope layer: the ledger sees who really asked.
         .layer(axum::middleware::from_fn_with_state(
@@ -95,6 +97,10 @@ pub fn build_router(state: AppState) -> Router {
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             crate::auth::fleet::middleware,
+        ))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            crate::services::admin_security::middleware,
         ));
 
     Router::new()
