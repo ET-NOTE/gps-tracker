@@ -8,6 +8,7 @@ import argparse
 import json
 
 from privacy_file_cleanup import config
+from privacy_worker_db import connect, transaction
 
 # Ordered for FK updates (e.g. event_id SET NULL) to occur before blocked parents.
 PERSONAL = (
@@ -47,7 +48,7 @@ def count(q, table, col, uid):
 
 
 def process(db, request_id, execute=False):
-    with db:
+    with transaction(db):
         with db.cursor() as q:
             q.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='60s'")
             # Same order as administrative request transitions.
@@ -147,15 +148,14 @@ def execute(db, request_id):
     except Exception as exc:
         db.rollback()
         # Log a code only; SQL diagnostics may contain identifying values.
-        reason = getattr(exc, 'pgcode', None) or type(exc).__name__
-        with db:
+        reason = getattr(exc, 'sqlstate', None) or getattr(exc, 'pgcode', None) or type(exc).__name__
+        with transaction(db):
             with db.cursor() as q:
                 q.execute("UPDATE privacy_account_closures SET state='retry',personal_scope_verified=false,attempts=attempts+1,last_error=%s,updated_at=now() WHERE request_id=%s", (reason, request_id))
         raise RuntimeError('closure_retry:'+reason) from None
 
 
 def main():
-    import psycopg2
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--env-file', required=True)
     group = p.add_mutually_exclusive_group(required=True)
@@ -163,13 +163,10 @@ def main():
     group.add_argument('--pending', action='store_true')
     p.add_argument('--execute', action='store_true')
     args = p.parse_args()
-    # Not `with psycopg2.connect(...) as db`: process() and execute() open their own transaction
-    # with `with db`, and psycopg2 refuses to enter a connection context that is already open.
-    # Wrapping the loop made every timer run fail as soon as one request was pending.
-    db = psycopg2.connect(config(args.env_file)['DATABASE_URL'])
+    db = connect(config(args.env_file))
     try:
         if args.pending:
-            with db, db.cursor() as q:
+            with transaction(db), db.cursor() as q:
                 q.execute(PENDING)
                 ids = [r[0] for r in q.fetchall()]
         else:

@@ -397,7 +397,7 @@ async fn correct(
             ));
         }
     }
-    let overlap:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_trip_corrections WHERE owner_id=$1 AND source_device_id=$2 AND reverted_at IS NULL AND started_at<$4 AND ended_at>$3)").bind(s.owner).bind(sim).bind(original_start).bind(original_end).fetch_one(&mut *tx).await?;
+    let overlap:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM gps_read_fleet_trip_corrections WHERE owner_id=$1 AND source_device_id=$2 AND reverted_at IS NULL AND started_at<$4 AND ended_at>$3)").bind(s.owner).bind(sim).bind(original_start).bind(original_end).fetch_one(&mut *tx).await?;
     if overlap {
         return Err(stale());
     }
@@ -520,7 +520,7 @@ pub(super) async fn overlay(
     to: DateTime<Utc>,
     rows: &mut Vec<Value>,
 ) -> AppResult<()> {
-    let corrections:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(c) FROM fleet_trip_corrections c WHERE owner_id=$1 AND vehicle_id=$2 AND reverted_at IS NULL AND started_at<=$4 AND ended_at>=$3 ORDER BY id").bind(owner).bind(vehicle).bind(from).bind(to).fetch_all(&state.db).await?;
+    let corrections:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(c) FROM gps_read_fleet_trip_corrections c WHERE owner_id=$1 AND vehicle_id=$2 AND reverted_at IS NULL AND started_at<=$4 AND ended_at>=$3 ORDER BY id").bind(owner).bind(vehicle).bind(from).bind(to).fetch_all(&state.db).await?;
     for c in corrections {
         let sim = c["source_device_id"].as_i64().unwrap();
         let start = date(&c["started_at"]).unwrap();
@@ -587,7 +587,7 @@ async fn history(
     if !s.manager() {
         return Err(AppError::Forbidden);
     }
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(c)||jsonb_build_object('actor_name',u.display_name,'reverted_by_name',r.display_name) FROM fleet_trip_corrections c LEFT JOIN users u ON u.id=c.actor_id LEFT JOIN users r ON r.id=c.reverted_by WHERE c.owner_id=$1 AND c.vehicle_id=$2 ORDER BY c.id DESC LIMIT 100").bind(s.owner).bind(vehicle).fetch_all(&state.db).await?;
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(c)||jsonb_build_object('actor_name',u.display_name,'reverted_by_name',r.display_name) FROM gps_read_fleet_trip_corrections c LEFT JOIN users u ON u.id=c.actor_id LEFT JOIN users r ON r.id=c.reverted_by WHERE c.owner_id=$1 AND c.vehicle_id=$2 ORDER BY c.id DESC LIMIT 100").bind(s.owner).bind(vehicle).fetch_all(&state.db).await?;
     Ok(Json(json!({"rows":rows,"limit":100})))
 }
 #[derive(Deserialize)]
@@ -612,7 +612,7 @@ async fn restore(
     locks(&mut tx, s.owner, vehicle).await?;
     // Restoring a split/adjustment must not strand an active expense on a
     // report-only trip that will disappear. Original-start links are retained.
-    let stranded: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_trip_corrections c JOIN fleet_expenses e ON e.owner_id=c.owner_id AND e.source_device_id=c.source_device_id AND e.binding_id=c.binding_id WHERE c.id=$1 AND c.owner_id=$2 AND c.vehicle_id=$3 AND c.reverted_at IS NULL AND e.status<>'cancelled' AND EXISTS(SELECT 1 FROM jsonb_array_elements(c.outputs) o WHERE (o->>'source_started_at')::timestamptz=e.trip_started_at) AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(c.sources) o WHERE (o->>'source_started_at')::timestamptz=e.trip_started_at))")
+    let stranded: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM gps_read_fleet_trip_corrections c JOIN fleet_expenses e ON e.owner_id=c.owner_id AND e.source_device_id=c.source_device_id AND e.binding_id=c.binding_id WHERE c.id=$1 AND c.owner_id=$2 AND c.vehicle_id=$3 AND c.reverted_at IS NULL AND e.status<>'cancelled' AND EXISTS(SELECT 1 FROM jsonb_array_elements(c.outputs) o WHERE (o->>'source_started_at')::timestamptz=e.trip_started_at) AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(c.sources) o WHERE (o->>'source_started_at')::timestamptz=e.trip_started_at))")
         .bind(id).bind(s.owner).bind(vehicle).fetch_one(&mut *tx).await?;
     if stranded {
         return Err(invalid("보정 후 새 구간에 연결한 지출을 먼저 취소해 주세요. 원본 복원 후 다시 연결할 수 있습니다."));

@@ -5,6 +5,7 @@ No coordinates, names, email addresses, document names or secret values in outpu
 Backup roots are explicitly supplied. No retention period or deletion is inferred.
 """
 import argparse
+from privacy_worker_db import connect, transaction
 import datetime as dt
 import json
 import os
@@ -14,8 +15,13 @@ from privacy_file_cleanup import config
 
 
 def account_scope(db, uid):
-    db.set_session(isolation_level='REPEATABLE READ', readonly=True)
-    with db:
+    if hasattr(db, 'read_only'):
+        from psycopg import IsolationLevel
+        db.isolation_level=IsolationLevel.REPEATABLE_READ
+        db.read_only=True
+    else:
+        db.set_session(isolation_level='REPEATABLE READ', readonly=True)
+    with transaction(db):
         with db.cursor() as q:
             q.execute("SET LOCAL statement_timeout='10s'")
             q.execute('SELECT EXISTS(SELECT 1 FROM users WHERE id=%s)', (uid,))
@@ -119,7 +125,6 @@ def copies_inventory(roots):
 
 
 def main():
-    import psycopg2
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--env-file', required=True)
@@ -127,7 +132,7 @@ def main():
     parser.add_argument('--copy-root', action='append', default=[])
     args = parser.parse_args()
     cfg = config(args.env_file)
-    db = psycopg2.connect(cfg['DATABASE_URL'])
+    db = connect(cfg)
     try:
         report = {'captured_at': dt.datetime.now(dt.timezone.utc).isoformat(),
                   'account': account_scope(db, args.account), 'copies': copies_inventory(args.copy_root)}

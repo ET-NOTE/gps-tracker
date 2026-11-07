@@ -107,7 +107,7 @@ pub async fn export(
             }
             "activity_metadata" => {
                 let chat=rows(tx,uid,"SELECT jsonb_build_object('id',m.id,'sender_role',m.sender_role,'created_at',m.created_at) FROM chat_messages m JOIN chat_threads t ON t.id=m.thread_id WHERE t.user_id=$1 ORDER BY m.id LIMIT 1001",1000).await?;
-                let analyses=rows(tx,uid,"SELECT jsonb_build_object('id',id,'target_date',target_date,'cost_points',cost_credits,'created_at',created_at) FROM ai_analyses WHERE user_id=$1 ORDER BY id LIMIT 1001",1000).await?;
+                let analyses=rows(tx,uid,"SELECT jsonb_build_object('id',id,'target_date',target_date,'cost_points',cost_credits,'created_at',created_at) FROM gps_read_ai_analyses WHERE user_id=$1 ORDER BY id LIMIT 1001",1000).await?;
                 let usage=rows(tx,uid,"SELECT jsonb_build_object('id',id,'used_at',used_at,'tokens_in',tokens_in,'tokens_out',tokens_out) FROM ai_usage_log WHERE user_id=$1 ORDER BY id LIMIT 1001",1000).await?;
                 json!({"chat_message_metadata":chat,"ai_analysis_metadata":analyses,"ai_usage_metadata":usage,"notice":"이용 시각·역할·사용량만 포함합니다. 채팅·AI 본문, 첨부, 관리자·장치 식별자, 원시 요청 및 서버 로그는 별도 검토 대상입니다. 사용량과 분석 기록은 서로 중복될 수 있습니다."})
             }

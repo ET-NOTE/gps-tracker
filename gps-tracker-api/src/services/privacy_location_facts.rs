@@ -142,7 +142,7 @@ pub async fn export(
     let analyses = list(tx, uid, from, until, &format!(
         "SELECT jsonb_build_object('device_id',a.device_id,'target_date',a.target_date,'requested_at',a.created_at) FROM (\
          SELECT device_id,target_date,created_at FROM ai_analysis_requests WHERE user_id=$1 \
-         UNION SELECT device_id,target_date,created_at FROM ai_analyses y WHERE user_id=$1 AND NOT EXISTS(SELECT 1 FROM ai_analysis_requests r WHERE r.analysis_id=y.id)) a \
+         UNION SELECT device_id,target_date,created_at FROM gps_read_ai_analyses y WHERE user_id=$1 AND NOT EXISTS(SELECT 1 FROM ai_analysis_requests r WHERE r.analysis_id=y.id)) a \
          WHERE a.created_at>=$2 AND a.created_at<$3 AND {a} ORDER BY a.created_at,a.device_id LIMIT 1001"), 1000).await?;
     // Never the link token. The note is the subject's own memo about the recipient.
     let links = list(tx, uid, from, until, &format!(

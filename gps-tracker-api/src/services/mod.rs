@@ -35,3 +35,5 @@ pub mod stats;
 pub mod toss;
 pub mod transport_security;
 pub mod xlsx_report;
+
+pub mod private_files;

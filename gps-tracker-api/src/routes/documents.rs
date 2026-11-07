@@ -11,6 +11,7 @@
 
 use std::path::PathBuf;
 
+use crate::services::private_files;
 use axum::{
     body::Body,
     extract::{DefaultBodyLimit, Multipart, Path, State},
@@ -22,7 +23,6 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sqlx::FromRow;
-use tokio::io::AsyncWriteExt;
 
 use crate::{
     auth::AuthUser,
@@ -227,13 +227,7 @@ async fn upload_document(
     let uuid = uuid::Uuid::new_v4();
     let stored_name = format!("{uuid}_{filename}");
     let stored_path = dir.join(&stored_name);
-    let mut f = tokio::fs::File::create(&stored_path)
-        .await
-        .map_err(|e| anyhow::anyhow!("create file: {e}"))?;
-    f.write_all(&bytes)
-        .await
-        .map_err(|e| anyhow::anyhow!("write file: {e}"))?;
-    f.flush().await.ok();
+    private_files::write(&state.db, &stored_path, &bytes).await?;
 
     let row: DocumentView = sqlx::query_as(
         &format!("INSERT INTO device_documents(user_id,{column},kind,filename,stored_path,mime,size_bytes,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,device_id,kind,filename,mime,size_bytes,note,uploaded_at"),
@@ -273,9 +267,7 @@ async fn download_document(
     if row.user_id != user.user_id {
         return Err(AppError::NotFound);
     }
-    let data = tokio::fs::read(&row.stored_path)
-        .await
-        .map_err(|e| anyhow::anyhow!("read file: {e}"))?;
+    let data = private_files::read(&state.db, &row.stored_path).await?;
     let cd = percent_encode(&row.filename);
     Ok((
         [
@@ -315,9 +307,7 @@ async fn preview_document(
     if row.user_id != user.user_id {
         return Err(AppError::NotFound);
     }
-    let data = tokio::fs::read(&row.stored_path)
-        .await
-        .map_err(|e| anyhow::anyhow!("read file: {e}"))?;
+    let data = private_files::read(&state.db, &row.stored_path).await?;
     let cd = percent_encode(&row.filename);
     Ok((
         [

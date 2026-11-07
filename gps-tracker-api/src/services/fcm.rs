@@ -318,13 +318,13 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
     for _ in 0..BATCH {
         let item: Option<QueuedPush> = sqlx::query_as(
             r#"WITH picked AS (
-            SELECT id FROM fcm_outbox WHERE status='pending' AND available_at<=now()
+            SELECT id FROM gps_read_fcm_outbox WHERE status='pending' AND available_at<=now()
               AND (lease_until IS NULL OR lease_until<now()) ORDER BY available_at,id
             LIMIT 1 FOR UPDATE SKIP LOCKED
           ), claimed AS (
             UPDATE fcm_outbox o SET lease_until=now()+interval '90 seconds',attempts=attempts+1
             FROM picked p WHERE o.id=p.id RETURNING o.*)
-          SELECT c.id,c.token_id,t.token,c.message,c.attempts,c.binding_hash,c.event_id,c.created_at FROM claimed c
+          SELECT c.id,c.token_id,t.token,gps_open_row('fcm_outbox',to_jsonb(c))->'message' AS message,c.attempts,c.binding_hash,c.event_id,c.created_at FROM claimed c
           JOIN fcm_tokens t ON t.id=c.token_id AND t.active AND t.user_id=c.user_id
             AND t.revocation_hash IS NOT DISTINCT FROM c.binding_hash"#,
         )
@@ -375,7 +375,7 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
         // Drain an already-authorized send before closure commits. Queued work
         // cannot send after the account barrier and token revocation commit.
         let mut authorization = pool.begin().await?;
-        let active: Option<i64> = sqlx::query_scalar("SELECT c.user_id FROM privacy_account_controls c JOIN fcm_outbox o ON o.user_id=c.user_id JOIN fcm_tokens t ON t.id=o.token_id AND t.active WHERE o.id=$1 AND NOT c.restricted AND t.revocation_hash IS NOT DISTINCT FROM o.binding_hash FOR SHARE OF c")
+        let active: Option<i64> = sqlx::query_scalar("SELECT c.user_id FROM privacy_account_controls c JOIN gps_read_fcm_outbox o ON o.user_id=c.user_id JOIN fcm_tokens t ON t.id=o.token_id AND t.active WHERE o.id=$1 AND NOT c.restricted AND t.revocation_hash IS NOT DISTINCT FROM o.binding_hash FOR SHARE OF c")
             .bind(item.id).fetch_optional(&mut *authorization).await?;
         if active.is_none() {
             continue;
@@ -435,7 +435,7 @@ async fn await_queue_cleanup(pool: &PgPool) -> anyhow::Result<()> {
         .execute(pool).await?;
     sqlx::query("UPDATE fcm_outbox SET status='dead',finished_at=now(),last_error='expired' WHERE status='pending' AND created_at<now()-interval '24 hours'")
         .execute(pool).await?;
-    sqlx::query("DELETE FROM fcm_outbox WHERE id IN (SELECT id FROM fcm_outbox WHERE finished_at<now()-interval '14 days' LIMIT 200)")
+    sqlx::query("DELETE FROM fcm_outbox WHERE id IN (SELECT id FROM gps_read_fcm_outbox WHERE finished_at<now()-interval '14 days' LIMIT 200)")
         .execute(pool).await?;
     sqlx::query("DELETE FROM fcm_revocations WHERE secret_hash IN (SELECT secret_hash FROM fcm_revocations WHERE created_at<now()-interval '30 days' LIMIT 200)")
         .execute(pool).await?;
@@ -737,6 +737,8 @@ mod tests {
             .execute(&pool)
             .await
             .unwrap();
+        // Minimal fixture schema: encrypted persistence is covered by full 20B integration.
+        sqlx::raw_sql("CREATE VIEW gps_read_fcm_outbox AS TABLE fcm_outbox; CREATE FUNCTION gps_open_row(tab text, doc jsonb) RETURNS jsonb LANGUAGE sql AS 'SELECT doc'").execute(&pool).await.unwrap();
         sqlx::raw_sql(include_str!(
             "../../migrations/0067_schedule_notification_settings.sql"
         ))
@@ -826,7 +828,7 @@ mod tests {
         };
         process_batch(&pool, Some(&client)).await.unwrap();
         let states: Vec<String> =
-            sqlx::query_scalar("SELECT status FROM fcm_outbox ORDER BY token_id")
+            sqlx::query_scalar("SELECT status FROM gps_read_fcm_outbox ORDER BY token_id")
                 .fetch_all(&pool)
                 .await
                 .unwrap();
@@ -854,7 +856,7 @@ mod tests {
         assert_eq!(counts.lock().await.get("good"), Some(&1));
         assert_eq!(counts.lock().await.get("retry"), Some(&3));
         let cancelled: i64 =
-            sqlx::query_scalar("SELECT count(*) FROM fcm_outbox WHERE status='cancelled'")
+            sqlx::query_scalar("SELECT count(*) FROM gps_read_fcm_outbox WHERE status='cancelled'")
                 .fetch_one(&pool)
                 .await
                 .unwrap();
@@ -873,7 +875,7 @@ mod tests {
         process_batch(&pool, Some(&client)).await.unwrap();
         assert_eq!(counts.lock().await.get("retry"), Some(&3));
         let stale: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM fcm_outbox WHERE last_error='no_longer_relevant'",
+            "SELECT count(*) FROM gps_read_fcm_outbox WHERE last_error='no_longer_relevant'",
         )
         .fetch_one(&pool)
         .await

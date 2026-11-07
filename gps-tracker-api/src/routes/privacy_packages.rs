@@ -137,7 +137,7 @@ fn extension(mime: &str) -> AppResult<&'static str> {
         _ => Err(conflict()),
     }
 }
-async fn bytes(d: &Doc) -> AppResult<Vec<u8>> {
+async fn bytes(db: &sqlx::PgPool, d: &Doc) -> AppResult<Vec<u8>> {
     extension(&d.mime)?;
     if d.size_bytes <= 0 || d.size_bytes > LIMIT as i64 {
         return Err(conflict());
@@ -162,61 +162,11 @@ async fn bytes(d: &Doc) -> AppResult<Vec<u8>> {
     {
         return Err(conflict());
     }
-    let size = d.size_bytes;
-    tokio::task::spawn_blocking(move || read_safe(root, parts, size))
-        .await
-        .map_err(|e| AppError::Internal(e.into()))?
-}
-#[cfg(unix)]
-fn read_safe(root: std::path::PathBuf, parts: Vec<String>, size: i64) -> AppResult<Vec<u8>> {
-    use std::{
-        fs::{File, OpenOptions},
-        io::Read,
-        os::{
-            fd::{AsRawFd, FromRawFd},
-            unix::fs::{MetadataExt, OpenOptionsExt},
-        },
-    };
-    let mut file = OpenOptions::new()
-        .read(true)
-        .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
-        .open(root)
-        .map_err(|_| conflict())?;
-    for (i, part) in parts.iter().enumerate() {
-        let name = std::ffi::CString::new(part.as_bytes()).map_err(|_| conflict())?;
-        let flags = libc::O_RDONLY
-            | libc::O_NOFOLLOW
-            | libc::O_CLOEXEC
-            | libc::O_NONBLOCK
-            | if i + 1 < parts.len() {
-                libc::O_DIRECTORY
-            } else {
-                0
-            };
-        // SAFETY: valid directory descriptor and NUL-terminated name. The returned
-        // descriptor has unique ownership, transferred immediately to File.
-        let fd = unsafe { libc::openat(file.as_raw_fd(), name.as_ptr(), flags) };
-        if fd < 0 {
-            return Err(conflict());
-        }
-        file = unsafe { File::from_raw_fd(fd) };
-    }
-    let meta = file.metadata().map_err(|_| conflict())?;
-    if !meta.is_file() || meta.nlink() != 1 || meta.len() != size as u64 {
+    let data = crate::services::private_files::read(db, &path).await?;
+    if data.len() != d.size_bytes as usize {
         return Err(conflict());
     }
-    let mut result = Vec::new();
-    file.take(LIMIT + 1)
-        .read_to_end(&mut result)
-        .map_err(|_| conflict())?;
-    if result.len() != size as usize {
-        return Err(conflict());
-    }
-    Ok(result)
-}
-#[cfg(not(unix))]
-fn read_safe(_: std::path::PathBuf, _: Vec<String>, _: i64) -> AppResult<Vec<u8>> {
-    Err(conflict())
+    Ok(data)
 }
 fn digest(data: &[u8]) -> String {
     format!("{:x}", Sha256::digest(data))
@@ -276,7 +226,7 @@ async fn review_document(
     let row = review_request(&mut tx, id).await?;
     scope_lock(&mut tx).await?;
     let d = doc(&mut tx, row.user_id, did).await?;
-    let data = bytes(&d).await?;
+    let data = bytes(&state.db, &d).await?;
     let sha = digest(&data);
     event(
         &mut tx,
@@ -354,7 +304,7 @@ async fn issue(
     let mut documents = vec![];
     for proof in body.documents {
         let d = doc(&mut tx, row.user_id, proof.id).await?;
-        let data = bytes(&d).await?;
+        let data = bytes(&state.db, &d).await?;
         let sha = digest(&data);
         let reviewed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_account_package_events WHERE request_id=$1 AND actor_id=$2 AND document_id=$3 AND sha256=$4 AND action='document_review' AND created_at>now()-interval '24 hours')").bind(id).bind(admin.user_id).bind(d.id).bind(&sha).fetch_one(&mut *tx).await?;
         if sha != proof.sha256 || !reviewed {
@@ -505,7 +455,7 @@ async fn document(
         .ok_or(AppError::NotFound)?;
     scope_lock(&mut tx).await?;
     let d = doc(&mut tx, user.user_id, did).await?;
-    let data = bytes(&d).await?;
+    let data = bytes(&state.db, &d).await?;
     let sha = digest(&data);
     if reviewed["sha256"].as_str() != Some(&sha)
         || reviewed["filename"].as_str() != Some(&d.filename)

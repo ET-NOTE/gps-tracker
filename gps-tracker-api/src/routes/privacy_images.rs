@@ -426,7 +426,7 @@ async fn issue(
             .fetch_one(&mut *tx)
             .await?;
     let used: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(sum(octet_length(png_bytes)),0)::bigint FROM privacy_image_payloads",
+        "SELECT COALESCE(sum(octet_length(png_bytes)),0)::bigint FROM gps_read_privacy_image_payloads",
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -456,7 +456,7 @@ async fn issue(
     tx.commit().await?;
     Ok(Json(json!({"id":did})))
 }
-const PUBLIC:&str="SELECT jsonb_build_object('id',g.id,'category',g.category,'notice',g.notice,'created_at',g.created_at,'expires_at',g.expires_at,'revoked_at',g.revoked_at,'available',NOT privacy_image_unavailable(g) AND EXISTS(SELECT 1 FROM privacy_image_payloads p WHERE p.delivery_id=g.id)) FROM privacy_image_deliveries g JOIN privacy_requests r ON r.id=g.request_id";
+const PUBLIC:&str="SELECT jsonb_build_object('id',g.id,'category',g.category,'notice',g.notice,'created_at',g.created_at,'expires_at',g.expires_at,'revoked_at',g.revoked_at,'available',NOT privacy_image_unavailable(g) AND EXISTS(SELECT 1 FROM gps_read_privacy_image_payloads p WHERE p.delivery_id=g.id)) FROM privacy_image_deliveries g JOIN privacy_requests r ON r.id=g.request_id";
 async fn list(
     State(s): State<AppState>,
     u: AuthUser,
@@ -476,7 +476,7 @@ async fn admin_list(
     _a: AdminUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
-    let items:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(g)||jsonb_build_object('available',NOT privacy_image_unavailable(g) AND EXISTS(SELECT 1 FROM privacy_image_payloads p WHERE p.delivery_id=g.id)) FROM privacy_image_deliveries g WHERE request_id=$1 ORDER BY id DESC LIMIT 10").bind(id).fetch_all(&s.db).await?;
+    let items:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(g)||jsonb_build_object('available',NOT privacy_image_unavailable(g) AND EXISTS(SELECT 1 FROM gps_read_privacy_image_payloads p WHERE p.delivery_id=g.id)) FROM privacy_image_deliveries g WHERE request_id=$1 ORDER BY id DESC LIMIT 10").bind(id).fetch_all(&s.db).await?;
     let events:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(e) FROM privacy_image_events e WHERE request_id=$1 ORDER BY id DESC LIMIT 100").bind(id).fetch_all(&s.db).await?;
     Ok(Json(json!({"items":items,"events":events})))
 }
@@ -573,7 +573,7 @@ async fn download(
         return Err(AppError::Unauthorized);
     }
     let bytes: Vec<u8> = sqlx::query_scalar(
-        "SELECT png_bytes FROM privacy_image_payloads WHERE delivery_id=$1 FOR SHARE",
+        "SELECT png_bytes FROM gps_read_privacy_image_payloads WHERE delivery_id=$1 FOR SHARE",
     )
     .bind(id)
     .fetch_optional(&mut *tx)
@@ -619,7 +619,7 @@ async fn receipt(tx: &mut Transaction<'_, Postgres>, review: i64, id: i64) -> Ap
     sqlx::query("LOCK TABLE fleet_expenses,fleet_expense_receipts IN SHARE MODE")
         .execute(&mut **tx)
         .await?;
-    let r:Receipt=sqlx::query_as("SELECT f.id,f.expense_id,f.privacy_revision receipt_revision,e.privacy_revision expense_revision,f.content,f.mime,f.digest sha256 FROM fleet_expense_receipts f JOIN fleet_expenses e ON e.id=f.expense_id AND e.owner_id=f.owner_id WHERE f.id=$2 AND privacy_receipt_in_scope($1,f.id)").bind(review).bind(id).fetch_optional(&mut **tx).await?.ok_or_else(conflict)?;
+    let r:Receipt=sqlx::query_as("SELECT f.id,f.expense_id,f.privacy_revision receipt_revision,e.privacy_revision expense_revision,f.content,f.mime,f.digest sha256 FROM gps_read_fleet_expense_receipts f JOIN fleet_expenses e ON e.id=f.expense_id AND e.owner_id=f.owner_id WHERE f.id=$2 AND privacy_receipt_in_scope($1,f.id)").bind(review).bind(id).fetch_optional(&mut **tx).await?.ok_or_else(conflict)?;
     let signature = match r.mime.as_str() {
         "image/png" => r.content.starts_with(b"\x89PNG\r\n\x1a\n"),
         "image/jpeg" => r.content.starts_with(&[255, 216, 255]),
@@ -679,7 +679,7 @@ async fn receipt_options(
     let mut tx = begin(&s).await?;
     request(&mut tx, id).await?;
     company(&mut tx, id, Some(review), Some(b.company_revision)).await?;
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',f.id,'expense_id',f.expense_id,'spent_on',e.spent_on,'category',e.category_name,'amount_krw',e.amount_krw,'mime',f.mime,'size',octet_length(f.content)) FROM fleet_expense_receipts f JOIN fleet_expenses e ON e.id=f.expense_id AND e.owner_id=f.owner_id WHERE f.id>$2 AND privacy_receipt_in_scope($1,f.id) ORDER BY f.id LIMIT 51").bind(review).bind(b.after.max(0)).fetch_all(&mut *tx).await?;
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',f.id,'expense_id',f.expense_id,'spent_on',e.spent_on,'category',e.category_name,'amount_krw',e.amount_krw,'mime',f.mime,'size',octet_length(f.content)) FROM gps_read_fleet_expense_receipts f JOIN fleet_expenses e ON e.id=f.expense_id AND e.owner_id=f.owner_id WHERE f.id>$2 AND privacy_receipt_in_scope($1,f.id) ORDER BY f.id LIMIT 51").bind(review).bind(b.after.max(0)).fetch_all(&mut *tx).await?;
     let more = rows.len() > 50;
     let items: Vec<Value> = rows.into_iter().take(50).collect();
     let next = if more {

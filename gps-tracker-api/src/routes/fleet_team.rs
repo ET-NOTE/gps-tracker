@@ -589,7 +589,7 @@ async fn audit(
     scope: Option<Extension<FleetScope>>,
 ) -> AppResult<Json<Vec<Value>>> {
     let s = admin(&state, user, scope).await?;
-    Ok(Json(sqlx::query_scalar("SELECT to_jsonb(a) FROM fleet_team_audit a WHERE owner_id=$1 ORDER BY id DESC LIMIT 100").bind(s.owner).fetch_all(&state.db).await?))
+    Ok(Json(sqlx::query_scalar("SELECT to_jsonb(a) FROM gps_read_fleet_team_audit a WHERE owner_id=$1 ORDER BY id DESC LIMIT 100").bind(s.owner).fetch_all(&state.db).await?))
 }
 
 pub async fn driver_allowed(

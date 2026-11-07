@@ -1658,7 +1658,7 @@ async fn load_handoff_by_token(pool: &sqlx::PgPool, token: &str) -> AppResult<Ha
             "return_odometer"
         };
         sqlx::query_scalar(
-            r#"SELECT id FROM rental_photos
+            r#"SELECT id FROM gps_read_rental_photos
                 WHERE contract_id = $1 AND kind = $2
              ORDER BY uploaded_at DESC LIMIT 1"#,
         )
@@ -2124,7 +2124,7 @@ async fn get_photo(
         user_id: i64,
     }
     let row: Option<Row> =
-        sqlx::query_as("SELECT mime, bytes, user_id FROM rental_photos WHERE id = $1")
+        sqlx::query_as("SELECT mime, bytes, user_id FROM gps_read_rental_photos WHERE id = $1")
             .bind(id)
             .fetch_optional(&state.db)
             .await?;
@@ -2163,7 +2163,7 @@ async fn list_photos(
     let rows: Vec<PhotoMeta> = sqlx::query_as(
         r#"SELECT id, contract_id, kind, mime, uploaded_at,
                   OCTET_LENGTH(bytes)::BIGINT AS size_bytes
-             FROM rental_photos
+             FROM gps_read_rental_photos
             WHERE contract_id = $1 AND user_id = $2
          ORDER BY uploaded_at ASC"#,
     )

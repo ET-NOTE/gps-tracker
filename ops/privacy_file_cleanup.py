@@ -12,6 +12,7 @@ import os
 import pathlib
 import re
 import stat
+from privacy_worker_db import connect, transaction
 
 def config(path):
     return {k.strip(): v.strip().strip('"').strip("'") for k, v in
@@ -82,7 +83,7 @@ def unlink_local(kind, key, cfg):
 
 
 def process_one(db, cfg):
-    with db:
+    with transaction(db):
         with db.cursor() as q:
             q.execute("SET LOCAL lock_timeout='2s'; SET LOCAL statement_timeout='5s'")
             # Match producer lock order: reference writes -> queue. Locks also
@@ -113,7 +114,6 @@ def process_one(db, cfg):
 
 
 def main():
-    import psycopg2
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--env-file', required=True)
@@ -123,10 +123,11 @@ def main():
     if not 1 <= args.limit <= 100:
         parser.error('limit must be 1..100')
     cfg = config(args.env_file)
-    db = psycopg2.connect(cfg['DATABASE_URL'])
+    db = connect(cfg)
     try:
         if not args.execute:
-            db.set_session(readonly=True)
+            if hasattr(db, 'read_only'): db.read_only = True
+            else: db.set_session(readonly=True)
             with db.cursor() as q:
                 q.execute('SELECT state,count(*) FROM privacy_file_cleanup GROUP BY state')
                 print(json.dumps({'read_only': True, 'states': dict(q.fetchall())}))
@@ -138,9 +139,9 @@ def main():
                 break
             processed.append(result)
         print(json.dumps({'processed': processed, 'external_copies_verified': False}))
-    except psycopg2.Error as exc:
+    except Exception as exc:
         # SQL diagnostics can include filenames; log only the safe SQLSTATE.
-        print(json.dumps({'failed': True, 'sqlstate': exc.pgcode}))
+        print(json.dumps({'failed': True, 'sqlstate': getattr(exc, 'sqlstate', None) or getattr(exc, 'pgcode', None) or type(exc).__name__}))
         raise SystemExit(1) from None
     finally:
         db.close()

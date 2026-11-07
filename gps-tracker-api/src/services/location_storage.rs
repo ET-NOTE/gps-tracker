@@ -77,6 +77,14 @@ pub async fn verify(pool: &sqlx::PgPool, configured: bool) -> anyhow::Result<()>
         enabled == configured,
         "location storage policy/key configuration mismatch; never fall back to plaintext"
     );
+    let maintenance: bool =
+        sqlx::query_scalar("SELECT maintenance FROM location_storage_policy WHERE singleton")
+            .fetch_one(pool)
+            .await?;
+    ensure!(
+        !maintenance,
+        "location storage maintenance: refusing API startup"
+    );
     if enabled {
         // An authenticated round-trip at startup also detects a bad active key.
         let good: bool = sqlx::query_scalar("SELECT gps_open_cell(gps_seal_cell('\"startup\"'::jsonb,'startup'),'startup')='\"startup\"'::jsonb").fetch_one(pool).await?;

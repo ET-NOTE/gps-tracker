@@ -275,7 +275,7 @@ async fn list(
     if q.staff_id.is_some_and(|id| !s.staff_ids.contains(&id)) {
         return Err(AppError::NotFound);
     }
-    let rows:Vec<Value>=sqlx::query_scalar(r#"SELECT to_jsonb(e)-'request_value'-'request_id'||jsonb_build_object('receipt_count',(SELECT count(*) FROM fleet_expense_receipts r WHERE r.expense_id=e.id AND r.removed_at IS NULL)) FROM fleet_expenses e
+    let rows:Vec<Value>=sqlx::query_scalar(r#"SELECT to_jsonb(e)-'request_value'-'request_id'||jsonb_build_object('receipt_count',(SELECT count(*) FROM gps_read_fleet_expense_receipts r WHERE r.expense_id=e.id AND r.removed_at IS NULL)) FROM fleet_expenses e
  WHERE e.owner_id=$1 AND ($2 OR ((e.vehicle_id IS NULL OR e.vehicle_id=ANY($6)) AND (($3='department_manager' AND e.department_id=$5) OR e.staff_id=$4)))
  AND e.spent_on BETWEEN $7 AND $8 AND ($9::bigint IS NULL OR e.vehicle_id=$9) AND ($10::bigint IS NULL OR e.staff_id=$10)
  AND ($11::bigint IS NULL OR e.department_id=$11) AND ($12::bigint IS NULL OR e.category_id=$12) AND ($13::text IS NULL OR e.status=$13)
@@ -298,8 +298,8 @@ async fn detail(
     let s = principal(&state, user, scope).await?;
     let mut tx = state.db.begin().await?;
     let r = row(&mut tx, &s, id).await?;
-    let receipts:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'filename',filename,'mime',mime,'size_bytes',octet_length(content),'created_at',created_at) FROM fleet_expense_receipts WHERE owner_id=$1 AND expense_id=$2 AND removed_at IS NULL ORDER BY id").bind(s.owner).bind(id).fetch_all(&mut *tx).await?;
-    let history:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(a) FROM fleet_expense_audit a WHERE owner_id=$1 AND expense_id=$2 ORDER BY id DESC LIMIT 100").bind(s.owner).bind(id).fetch_all(&mut *tx).await?;
+    let receipts:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'filename',filename,'mime',mime,'size_bytes',octet_length(content),'created_at',created_at) FROM gps_read_fleet_expense_receipts WHERE owner_id=$1 AND expense_id=$2 AND removed_at IS NULL ORDER BY id").bind(s.owner).bind(id).fetch_all(&mut *tx).await?;
+    let history:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(a) FROM gps_read_fleet_expense_audit a WHERE owner_id=$1 AND expense_id=$2 ORDER BY id DESC LIMIT 100").bind(s.owner).bind(id).fetch_all(&mut *tx).await?;
     tx.commit().await?;
     Ok(Json(
         json!({"expense":view(&s,r),"receipts":receipts,"history":history}),
@@ -669,11 +669,11 @@ async fn upload(
     let mime = mime(&data)
         .ok_or_else(|| AppError::BadRequest("PDF·JPG·PNG·WebP 파일만 가능합니다.".into()))?;
     let digest = format!("{:x}", Sha256::digest(&data));
-    let duplicate:Option<i64>=sqlx::query_scalar("SELECT id FROM fleet_expense_receipts WHERE expense_id=$1 AND digest=$2 AND removed_at IS NULL").bind(id).bind(&digest).fetch_optional(&mut *tx).await?;
+    let duplicate:Option<i64>=sqlx::query_scalar("SELECT id FROM gps_read_fleet_expense_receipts WHERE expense_id=$1 AND digest=$2 AND removed_at IS NULL").bind(id).bind(&digest).fetch_optional(&mut *tx).await?;
     if let Some(id) = duplicate {
         return Ok(Json(json!({"id":id})));
     }
-    let (active,total):(i64,i64)=sqlx::query_as("SELECT count(*) FILTER(WHERE removed_at IS NULL),count(*) FROM fleet_expense_receipts WHERE expense_id=$1").bind(id).fetch_one(&mut *tx).await?;
+    let (active,total):(i64,i64)=sqlx::query_as("SELECT count(*) FILTER(WHERE removed_at IS NULL),count(*) FROM gps_read_fleet_expense_receipts WHERE expense_id=$1").bind(id).fetch_one(&mut *tx).await?;
     if active >= 5 || total >= 20 {
         return Err(AppError::BadRequest(
             "영수증은 5개까지, 교체 이력은 20개까지 보관합니다.".into(),
@@ -705,7 +705,7 @@ async fn download(
     let s = principal(&state, user, scope).await?;
     let mut tx = state.db.begin().await?;
     row(&mut tx, &s, id).await?;
-    let (data,mime):(Vec<u8>,String)=sqlx::query_as("SELECT content,mime FROM fleet_expense_receipts WHERE owner_id=$1 AND expense_id=$2 AND id=$3 AND removed_at IS NULL").bind(s.owner).bind(id).bind(rid).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
+    let (data,mime):(Vec<u8>,String)=sqlx::query_as("SELECT content,mime FROM gps_read_fleet_expense_receipts WHERE owner_id=$1 AND expense_id=$2 AND id=$3 AND removed_at IS NULL").bind(s.owner).bind(id).bind(rid).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
     tx.commit().await?;
     let ext = match mime.as_str() {
         "application/pdf" => "pdf",

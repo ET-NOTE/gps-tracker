@@ -173,7 +173,7 @@ async fn source(
     // Ownership comes from stored account, never current device/SIM ownership.
     let query=match kind {
   "chat"=>"SELECT m.body,m.created_at FROM chat_messages m JOIN chat_threads t ON t.id=m.thread_id WHERE t.user_id=$1 AND m.id=$2 AND length(m.body)<=20000 FOR SHARE OF m,t",
-  "ai"=>"SELECT analysis AS body,created_at FROM ai_analyses WHERE user_id=$1 AND id=$2 AND length(analysis)<=20000 FOR SHARE",
+  "ai"=>"SELECT analysis AS body,created_at FROM gps_read_ai_analyses WHERE user_id=$1 AND id=$2 AND length(analysis)<=20000 FOR SHARE",
   _=>return Err(bad())};
     sqlx::query_as(query)
         .bind(uid)
@@ -208,7 +208,7 @@ async fn options(
     let r = request(&mut tx, id).await?;
     let query=match q.kind.as_str(){
   "chat"=>"SELECT jsonb_build_object('id',m.id,'created_at',m.created_at,'role',m.sender_role,'characters',length(m.body),'supported',length(m.body)<=20000) FROM chat_messages m JOIN chat_threads t ON t.id=m.thread_id WHERE t.user_id=$1 AND ($2::bigint IS NULL OR m.id<$2) ORDER BY m.id DESC LIMIT 51",
-  "ai"=>"SELECT jsonb_build_object('id',id,'created_at',created_at,'characters',length(analysis),'supported',length(analysis)<=20000) FROM ai_analyses WHERE user_id=$1 AND ($2::bigint IS NULL OR id<$2) ORDER BY id DESC LIMIT 51",
+  "ai"=>"SELECT jsonb_build_object('id',id,'created_at',created_at,'characters',length(analysis),'supported',length(analysis)<=20000) FROM gps_read_ai_analyses WHERE user_id=$1 AND ($2::bigint IS NULL OR id<$2) ORDER BY id DESC LIMIT 51",
   _=>return Err(bad())};
     let mut items: Vec<Value> = sqlx::query_scalar(query)
         .bind(r.user_id)

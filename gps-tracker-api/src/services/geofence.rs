@@ -40,7 +40,7 @@ pub async fn check_after_ingest(
     // owner의 활성 지오펜스 중 device_id 일치하거나 NULL(전체 적용)
     let fences: Vec<(i64, f64, f64, i32, String)> = sqlx::query_as(
         r#"SELECT g.id, g.center_lat, g.center_lng, g.radius_m, g.name
-             FROM geofences g
+             FROM gps_read_geofences g
              JOIN gps_read_devices  d ON d.owner_id = g.owner_id
             WHERE d.id = $1
               AND g.active

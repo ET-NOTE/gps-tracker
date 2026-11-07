@@ -330,7 +330,7 @@ async fn audit(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Vec<Value>>> {
     read(&state, user.user_id, id).await?;
-    Ok(Json(sqlx::query_scalar("SELECT to_jsonb(a) FROM fleet_vehicle_audit a WHERE vehicle_id=$1 AND owner_id=$2 ORDER BY id DESC LIMIT 100").bind(id).bind(user.user_id).fetch_all(&state.db).await?))
+    Ok(Json(sqlx::query_scalar("SELECT to_jsonb(a) FROM gps_read_fleet_vehicle_audit a WHERE vehicle_id=$1 AND owner_id=$2 ORDER BY id DESC LIMIT 100").bind(id).bind(user.user_id).fetch_all(&state.db).await?))
 }
 #[derive(Deserialize)]
 struct ConnectionInput {

@@ -15,7 +15,7 @@ def run(dsn,apply=False,secret_out=None):
   c.execute("SELECT nspname FROM pg_namespace WHERE nspname NOT IN ('public','information_schema','timescaledb_experimental','timescaledb_information') AND nspname NOT LIKE 'pg_%' AND nspname NOT LIKE '_timescaledb_%'")
   if c.fetchall():raise RuntimeError('unreviewed schema: stop rather than changing other projects')
   c.execute("SELECT max(version) FROM _sqlx_migrations WHERE success");version=c.fetchone()[0]
-  if version not in (102,103):raise RuntimeError('reviewed schema 102/103 required')
+  if version not in (102,103,104):raise RuntimeError('reviewed schema 102/103/104 required')
   c.execute("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p','S','v','m')")
   count=c.fetchone()[0]
   report={'database':name,'schema':version,'public_objects':count,'apply':apply,'roles':['gps_schema_owner','gps_runtime']}
@@ -54,7 +54,7 @@ def run(dsn,apply=False,secret_out=None):
    for table in ['admin_security_events','admin_audit_log','location_access_erasure_runs']:
     c.execute(sql.SQL('REVOKE UPDATE,DELETE ON {} FROM gps_runtime').format(sql.Identifier(table)))
    c.execute('REVOKE INSERT ON location_access_erasure_runs FROM gps_runtime')
-   if version == 103:
+   if version >= 103:
     c.execute('REVOKE ALL ON location_storage_policy,location_storage_fields FROM gps_runtime')
     c.execute('GRANT SELECT ON location_storage_policy,location_storage_fields TO gps_runtime')
    for routine in routines:

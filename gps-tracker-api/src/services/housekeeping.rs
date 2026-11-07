@@ -69,7 +69,7 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
     let r = sqlx::query(
         "DELETE FROM geofence_states s \
           WHERE (NOT EXISTS (SELECT 1 FROM gps_read_devices d WHERE d.id = s.device_id) \
-              OR NOT EXISTS (SELECT 1 FROM geofences g WHERE g.id = s.geofence_id)) \
+              OR NOT EXISTS (SELECT 1 FROM gps_read_geofences g WHERE g.id = s.geofence_id)) \
             AND (s.last_transition_at IS NULL OR s.last_transition_at < now() - interval '90 days')"
     ).execute(pool).await?;
     if r.rows_affected() > 0 {

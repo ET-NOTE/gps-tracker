@@ -1052,7 +1052,7 @@ async fn audit_log(
     }
     let rows = sqlx::query_as::<_, AuditEntry>(
         r#"SELECT id, event_type, actor, data, occurred_at
-             FROM device_audit_log
+             FROM gps_read_device_audit_log
             WHERE device_id = $1
             ORDER BY occurred_at DESC LIMIT 100"#,
     )
@@ -1855,7 +1855,7 @@ async fn read_car_image(
         return Err(AppError::NotFound);
     }
     let name = url.rsplit('/').next().ok_or(AppError::NotFound)?;
-    let bytes = tokio::fs::read(private_car_images().join(name))
+    let bytes = crate::services::private_files::read(&state.db, private_car_images().join(name))
         .await
         .map_err(|_| AppError::NotFound)?;
     let mime = if name.ends_with(".png") {
@@ -1923,7 +1923,7 @@ async fn upload_car_image(
             .map_err(|e| AppError::Internal(e.into()))?;
         let name = format!("dev_{id}_{}.{ext}", uuid::Uuid::new_v4());
         let path = root.join(&name);
-        tokio::fs::write(&path, &bytes)
+        crate::services::private_files::write(&state.db, &path, &bytes)
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
         let url = format!("/uploads/car-images/{name}");

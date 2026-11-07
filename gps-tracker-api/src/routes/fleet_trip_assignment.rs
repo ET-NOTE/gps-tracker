@@ -537,7 +537,7 @@ async fn history(
     if !s.manager() {
         return Err(AppError::Forbidden);
     }
-    Ok(Json(sqlx::query_scalar("SELECT to_jsonb(a)||jsonb_build_object('actor_name',u.display_name) FROM fleet_trip_assignment_audit a LEFT JOIN users u ON u.id=a.actor_id WHERE a.owner_id=$1 AND a.vehicle_id=$2 ORDER BY a.id DESC LIMIT 100").bind(s.owner).bind(vehicle).fetch_all(&state.db).await?))
+    Ok(Json(sqlx::query_scalar("SELECT to_jsonb(a)||jsonb_build_object('actor_name',u.display_name) FROM gps_read_fleet_trip_assignment_audit a LEFT JOIN users u ON u.id=a.actor_id WHERE a.owner_id=$1 AND a.vehicle_id=$2 ORDER BY a.id DESC LIMIT 100").bind(s.owner).bind(vehicle).fetch_all(&state.db).await?))
 }
 #[cfg(test)]
 mod tests {

@@ -165,7 +165,7 @@ async fn inbox(
 }
 async fn submissions(tx: &mut Transaction<'_, Postgres>, id: i64) -> AppResult<Vec<Value>> {
     // Never SELECT to_jsonb(row) on a table containing BYTEA.
-    Ok(sqlx::query_scalar("SELECT jsonb_build_object('id',id,'outcome',outcome,'executed_at',executed_at,'affected_count',affected_count,'summary',summary,'evidence_reference',evidence_reference,'filename',filename,'mime',mime,'sha256',sha256,'size',octet_length(file_bytes),'created_at',created_at) FROM privacy_company_submissions WHERE task_id=$1 ORDER BY id DESC").bind(id).fetch_all(&mut **tx).await?)
+    Ok(sqlx::query_scalar("SELECT jsonb_build_object('id',id,'outcome',outcome,'executed_at',executed_at,'affected_count',affected_count,'summary',summary,'evidence_reference',evidence_reference,'filename',filename,'mime',mime,'sha256',sha256,'size',octet_length(file_bytes),'created_at',created_at) FROM gps_read_privacy_company_submissions WHERE task_id=$1 ORDER BY id DESC").bind(id).fetch_all(&mut **tx).await?)
 }
 async fn owner_detail(
     State(s): State<AppState>,
@@ -343,12 +343,13 @@ async fn submit(
         .bind(u.user_id)
         .execute(&mut *tx)
         .await?;
-    let count: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM privacy_company_submissions WHERE task_id=$1")
-            .bind(id)
-            .fetch_one(&mut *tx)
-            .await?;
-    let used:i64=sqlx::query_scalar("SELECT COALESCE(sum(octet_length(p.file_bytes)),0)::bigint FROM privacy_company_submissions p JOIN privacy_company_tasks t ON t.id=p.task_id WHERE t.company_owner_id=$1").bind(u.user_id).fetch_one(&mut *tx).await?;
+    let count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM gps_read_privacy_company_submissions WHERE task_id=$1",
+    )
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
+    let used:i64=sqlx::query_scalar("SELECT COALESCE(sum(octet_length(p.file_bytes)),0)::bigint FROM gps_read_privacy_company_submissions p JOIN privacy_company_tasks t ON t.id=p.task_id WHERE t.company_owner_id=$1").bind(u.user_id).fetch_one(&mut *tx).await?;
     if count >= 5 || used + bytes.len() as i64 > 64 * 1024 * 1024 {
         return Err(AppError::Conflict(
             "제출 한도에 도달했습니다. 담당자에게 문의해 주세요.".into(),
@@ -384,7 +385,7 @@ async fn file(s: AppState, actor: i64, admin: bool, id: i64, sid: i64) -> AppRes
         ));
     }
     let (bytes, sha): (Vec<u8>, String) = sqlx::query_as(
-        "SELECT file_bytes,sha256 FROM privacy_company_submissions WHERE task_id=$1 AND id=$2",
+        "SELECT file_bytes,sha256 FROM gps_read_privacy_company_submissions WHERE task_id=$1 AND id=$2",
     )
     .bind(id)
     .bind(sid)
@@ -458,7 +459,7 @@ async fn decide(
     {
         return Err(conflict());
     }
-    let(sid,sha,outcome):(i64,String,String)=sqlx::query_as("SELECT id,sha256,outcome FROM privacy_company_submissions WHERE task_id=$1 ORDER BY id DESC LIMIT 1").bind(id).fetch_one(&mut *tx).await?;
+    let(sid,sha,outcome):(i64,String,String)=sqlx::query_as("SELECT id,sha256,outcome FROM gps_read_privacy_company_submissions WHERE task_id=$1 ORDER BY id DESC LIMIT 1").bind(id).fetch_one(&mut *tx).await?;
     let downloaded:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_company_task_events WHERE task_id=$1 AND actor_id=$2 AND action='downloaded' AND submission_id=$3 AND detail=$4)").bind(id).bind(a.user_id).bind(sid).bind(&sha).fetch_one(&mut *tx).await?;
     if sid != b.submission_id || sha != b.sha256 || !downloaded {
         return Err(AppError::Conflict(

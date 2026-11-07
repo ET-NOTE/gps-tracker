@@ -338,7 +338,7 @@ async fn list_analyses(
         sqlx::query_as::<_, AnalysisRow>(
             r#"SELECT id, device_id, target_date, analysis, model,
                       tokens_in, tokens_out, cost_credits, created_at
-                 FROM ai_analyses
+                 FROM gps_read_ai_analyses
                 WHERE device_id = $1 AND user_id = $2 AND target_date = $3
                 ORDER BY created_at DESC LIMIT $4"#,
         )
@@ -352,7 +352,7 @@ async fn list_analyses(
         sqlx::query_as::<_, AnalysisRow>(
             r#"SELECT id, device_id, target_date, analysis, model,
                       tokens_in, tokens_out, cost_credits, created_at
-                 FROM ai_analyses
+                 FROM gps_read_ai_analyses
                 WHERE device_id = $1 AND user_id = $2
                 ORDER BY created_at DESC LIMIT $3"#,
         )
@@ -373,7 +373,7 @@ async fn get_analysis(
     let row: Option<AnalysisRow> = sqlx::query_as(
         r#"SELECT id, device_id, target_date, analysis, model,
                   tokens_in, tokens_out, cost_credits, created_at
-             FROM ai_analyses
+             FROM gps_read_ai_analyses
             WHERE id = $1 AND user_id = $2"#,
     )
     .bind(id)

@@ -63,7 +63,7 @@ pub async fn replay(
     })?;
     Ok(Some(
         sqlx::query_as(
-            "SELECT id,target_date,analysis,model FROM ai_analyses WHERE id=$1 AND user_id=$2",
+            "SELECT id,target_date,analysis,model FROM gps_read_ai_analyses WHERE id=$1 AND user_id=$2",
         )
         .bind(id)
         .bind(user)
@@ -146,7 +146,7 @@ mod tests {
           CREATE TABLE credit_log(id bigserial PRIMARY KEY,user_id bigint,delta bigint,balance bigint,reason text,ref_id bigint,note text);
           CREATE TABLE ai_analyses(id bigserial PRIMARY KEY,user_id bigint,device_id bigint,target_date date,analysis text CHECK(analysis <> 'reject'),model text,tokens_in integer,tokens_out integer,cost_credits bigint);
           CREATE TABLE ai_usage_log(user_id bigint,endpoint text,tokens_in integer,tokens_out integer,model text);
-          CREATE VIEW gps_read_devices AS TABLE devices;
+          CREATE VIEW gps_read_devices AS TABLE devices; CREATE VIEW gps_read_ai_analyses AS TABLE ai_analyses;
           INSERT INTO users VALUES(1,100),(2,100);
           INSERT INTO devices VALUES(1,1);
         "#).execute(&pool).await.unwrap();
@@ -244,7 +244,7 @@ mod tests {
         assert!(complete(tx, purchase("spent-elsewhere"), &result)
             .await
             .is_err());
-        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM ai_analyses")
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM gps_read_ai_analyses")
             .fetch_one(&pool)
             .await
             .unwrap();

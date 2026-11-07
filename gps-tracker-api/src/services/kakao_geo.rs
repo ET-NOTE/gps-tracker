@@ -175,23 +175,34 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
     }
     let unique_cells: Vec<(i32, i32)> = cell_to_indices.keys().copied().collect();
 
+    // An encrypted deployment must never retain coordinate keys in an indexed plaintext cache.
+    // Bounded process memory cache survives within this process only; policy failure skips DB cache.
+    let encrypted: bool =
+        sqlx::query_scalar("SELECT enabled FROM location_storage_policy WHERE singleton")
+            .fetch_one(db)
+            .await
+            .unwrap_or(true);
     // 2) 캐시 일괄 조회 (UNNEST)
     let lat_qs: Vec<i32> = unique_cells.iter().map(|c| c.0).collect();
     let lng_qs: Vec<i32> = unique_cells.iter().map(|c| c.1).collect();
-    let cached: GeocodeCacheRows = sqlx::query_as(
-        r#"SELECT lat_q, lng_q, road, jibun, region, building
-                 FROM geocode_cache
+    let cached: GeocodeCacheRows = if encrypted {
+        memory_get(&unique_cells)
+    } else {
+        sqlx::query_as(
+            r#"SELECT lat_q, lng_q, road, jibun, region, building
+                 FROM gps_read_geocode_cache
                 WHERE (lat_q, lng_q) IN (
                   SELECT * FROM UNNEST($1::INT[], $2::INT[])
                 )
                   AND fetched_at > NOW() - ($3 || ' days')::interval"#,
-    )
-    .bind(&lat_qs)
-    .bind(&lng_qs)
-    .bind(CACHE_TTL_DAYS.to_string())
-    .fetch_all(db)
-    .await
-    .unwrap_or_default();
+        )
+        .bind(&lat_qs)
+        .bind(&lng_qs)
+        .bind(CACHE_TTL_DAYS.to_string())
+        .fetch_all(db)
+        .await
+        .unwrap_or_default()
+    };
 
     let mut hit_map: std::collections::HashMap<(i32, i32), Resolved> = Default::default();
     for (lat_q, lng_q, road, jibun, region, building) in cached {
@@ -250,7 +261,10 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
                 for (cell, r) in results {
                     if let Some(resolved) = r {
                         // 캐시 upsert
-                        let _ = sqlx::query(
+                        if encrypted {
+                            memory_put(cell, &resolved);
+                        } else {
+                            let _ = sqlx::query(
                             r#"INSERT INTO geocode_cache (lat_q, lng_q, road, jibun, region, building)
                                VALUES ($1, $2, $3, $4, $5, $6)
                                ON CONFLICT (lat_q, lng_q) DO UPDATE SET
@@ -264,6 +278,7 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
                         .bind(&resolved.road).bind(&resolved.jibun)
                         .bind(&resolved.region).bind(&resolved.building)
                         .execute(db).await;
+                        }
                         hit_map.insert(cell, resolved);
                     }
                 }
@@ -291,3 +306,47 @@ type GeocodeCacheRows = Vec<(
     String,
     Option<String>,
 )>;
+
+// 4,096 cells / one hour; no position keys survive process restart or backups.
+type MemoryGeo = std::collections::HashMap<(i32, i32), (std::time::Instant, CacheRow)>;
+static MEMORY: std::sync::OnceLock<std::sync::Mutex<MemoryGeo>> = std::sync::OnceLock::new();
+fn memory_get(cells: &[(i32, i32)]) -> GeocodeCacheRows {
+    let Ok(mut map) = MEMORY.get_or_init(Default::default).lock() else {
+        return vec![];
+    };
+    map.retain(|_, (at, _)| at.elapsed() < Duration::from_secs(3600));
+    cells
+        .iter()
+        .filter_map(|&(lat, lng)| {
+            map.get(&(lat, lng)).map(|(_, r)| {
+                (
+                    lat,
+                    lng,
+                    r.road.clone(),
+                    r.jibun.clone(),
+                    r.region.clone(),
+                    r.building.clone(),
+                )
+            })
+        })
+        .collect()
+}
+fn memory_put(cell: (i32, i32), r: &Resolved) {
+    if let Ok(mut map) = MEMORY.get_or_init(Default::default).lock() {
+        if map.len() >= 4096 {
+            map.clear();
+        }
+        map.insert(
+            cell,
+            (
+                std::time::Instant::now(),
+                CacheRow {
+                    road: r.road.clone(),
+                    jibun: r.jibun.clone(),
+                    region: r.region.clone(),
+                    building: r.building.clone(),
+                },
+            ),
+        );
+    }
+}

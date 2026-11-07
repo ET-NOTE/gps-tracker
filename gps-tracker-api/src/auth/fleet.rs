@@ -261,7 +261,7 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
     };
     let response = next.run(Request::from_parts(parts, body)).await;
     if let Some(id) = audit {
-        sqlx::query("UPDATE fleet_team_audit SET after_value=after_value||jsonb_build_object('status',$2::integer) WHERE id=$1").bind(id).bind(i32::from(response.status().as_u16())).execute(&state.db).await?;
+        sqlx::query("UPDATE fleet_team_audit a SET after_value=r.after_value||jsonb_build_object('status',$2::integer) FROM gps_read_fleet_team_audit r WHERE a.id=r.id AND a.id=$1").bind(id).bind(i32::from(response.status().as_u16())).execute(&state.db).await?;
     }
     if !response.status().is_success() {
         return Ok(response);

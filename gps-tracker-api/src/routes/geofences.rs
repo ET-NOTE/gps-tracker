@@ -30,7 +30,7 @@ async fn enforce_geofence_cap(
     target_device: Option<i64>,
 ) -> AppResult<()> {
     let owner_wide_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM geofences WHERE owner_id = $1 AND device_id IS NULL",
+        "SELECT COUNT(*) FROM gps_read_geofences WHERE owner_id = $1 AND device_id IS NULL",
     )
     .bind(owner_id)
     .fetch_one(&state.db)
@@ -39,7 +39,7 @@ async fn enforce_geofence_cap(
     match target_device {
         Some(d) => {
             let dev_count: i64 = sqlx::query_scalar(
-                "SELECT COUNT(*) FROM geofences WHERE owner_id = $1 AND device_id = $2",
+                "SELECT COUNT(*) FROM gps_read_geofences WHERE owner_id = $1 AND device_id = $2",
             )
             .bind(owner_id)
             .bind(d)
@@ -70,7 +70,7 @@ async fn enforce_geofence_cap(
             }
             for d in device_ids {
                 let dev_count: i64 = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM geofences WHERE owner_id = $1 AND device_id = $2",
+                    "SELECT COUNT(*) FROM gps_read_geofences WHERE owner_id = $1 AND device_id = $2",
                 )
                 .bind(owner_id)
                 .bind(d)
@@ -137,7 +137,7 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
     let rows = sqlx::query_as::<_, GeofenceView>(
         r#"SELECT id, owner_id, device_id, name, center_lat, center_lng,
                   radius_m, active, created_at, updated_at
-             FROM geofences
+             FROM gps_read_geofences
             WHERE owner_id = $1
             ORDER BY id DESC"#,
     )
@@ -319,15 +319,15 @@ async fn update(
     }
 
     let res = sqlx::query(
-        r#"UPDATE geofences
-              SET name       = COALESCE($1, name),
-                  center_lat = COALESCE($2, center_lat),
-                  center_lng = COALESCE($3, center_lng),
-                  radius_m   = COALESCE($4, radius_m),
-                  active     = COALESCE($5, active),
-                  device_id  = CASE WHEN $7 THEN $6 ELSE device_id END,
+        r#"UPDATE geofences AS g
+              SET name       = COALESCE($1, r.name),
+                  center_lat = COALESCE($2, r.center_lat),
+                  center_lng = COALESCE($3, r.center_lng),
+                  radius_m   = COALESCE($4, g.radius_m),
+                  active     = COALESCE($5, g.active),
+                  device_id  = CASE WHEN $7 THEN $6 ELSE g.device_id END,
                   updated_at = now()
-            WHERE id = $8 AND owner_id = $9"#,
+            FROM gps_read_geofences r WHERE g.id=r.id AND g.id = $8 AND g.owner_id = $9"#,
     )
     .bind(&req.name)
     .bind(req.center_lat)
@@ -407,10 +407,11 @@ async fn history_one(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Vec<GeofenceEvent>>> {
     // 본인 펜스 확인
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM geofences WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await?;
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_geofences WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await?;
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
@@ -470,7 +471,7 @@ async fn fetch(state: &AppState, id: i64, owner_id: i64) -> AppResult<Json<Geofe
     let row = sqlx::query_as::<_, GeofenceView>(
         r#"SELECT id, owner_id, device_id, name, center_lat, center_lng,
                   radius_m, active, created_at, updated_at
-             FROM geofences
+             FROM gps_read_geofences
             WHERE id = $1 AND owner_id = $2"#,
     )
     .bind(id)
