@@ -282,7 +282,7 @@ fn fmt_krw(n: i64) -> String {
 
 async fn verify_device_owner(state: &AppState, uid: i64, device_id: i64) -> AppResult<()> {
     let owner: Option<Option<i64>> =
-        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
             .bind(device_id)
             .fetch_optional(&state.db)
             .await?;
@@ -714,7 +714,7 @@ async fn return_contract(
                upd.base_fee_krw, upd.late_hours, upd.late_fee_krw, upd.over_km, upd.over_km_fee_krw,
                upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json
           FROM upd
-     LEFT JOIN devices d ON d.id = upd.device_id"#,
+     LEFT JOIN gps_read_devices d ON d.id = upd.device_id"#,
     )
     .bind(id)
     .bind(user.user_id)
@@ -1091,7 +1091,7 @@ const SQL_INVOICE_SELECT: &str =
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
     c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
-    FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+    FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.id = $1 AND c.user_id = $2";
 
 const SQL_LIST_OPERATIONS: &str =
@@ -1103,7 +1103,7 @@ const SQL_LIST_OPERATIONS: &str =
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
     c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
-    FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+    FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1
       AND ((c.starts_at < $3 AND c.ends_at > $2)
            OR c.status IN ('active','overdue')
@@ -1121,7 +1121,7 @@ const SQL_LIST_ALL: &str =
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
     c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
-    FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+    FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.starts_at < $3 AND c.ends_at > $2
     ORDER BY c.starts_at DESC";
 const SQL_LIST_DEV: &str =
@@ -1133,7 +1133,7 @@ const SQL_LIST_DEV: &str =
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
     c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
-    FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+    FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.device_id = $2 AND c.starts_at < $4 AND c.ends_at > $3
     ORDER BY c.starts_at DESC";
 const SQL_LIST_STATUS: &str =
@@ -1145,7 +1145,7 @@ const SQL_LIST_STATUS: &str =
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
     c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
-    FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+    FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.starts_at < $3 AND c.ends_at > $2 AND c.status = ANY($4::TEXT[])
     ORDER BY c.starts_at DESC";
 const SQL_LIST_DEV_STATUS: &str =
@@ -1157,7 +1157,7 @@ const SQL_LIST_DEV_STATUS: &str =
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
     c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
-    FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+    FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.device_id = $2 AND c.starts_at < $4 AND c.ends_at > $3
       AND c.status = ANY($5::TEXT[])
     ORDER BY c.starts_at DESC";
@@ -1184,7 +1184,7 @@ SELECT ins.id, ins.user_id, ins.device_id,
        ins.base_fee_krw, ins.late_hours, ins.late_fee_krw, ins.over_km, ins.over_km_fee_krw,
        ins.extra_fee_krw, ins.refund_krw, ins.returned_at, ins.settlement_json
   FROM ins
-LEFT JOIN devices d ON d.id = ins.device_id"#;
+LEFT JOIN gps_read_devices d ON d.id = ins.device_id"#;
 
 const SQL_UPDATE: &str = r#"WITH upd AS (
     UPDATE rental_contracts SET
@@ -1212,7 +1212,7 @@ SELECT upd.id, upd.user_id, upd.device_id,
        upd.base_fee_krw, upd.late_hours, upd.late_fee_krw, upd.over_km, upd.over_km_fee_krw,
        upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json
   FROM upd
-LEFT JOIN devices d ON d.id = upd.device_id"#;
+LEFT JOIN gps_read_devices d ON d.id = upd.device_id"#;
 
 // ═══════════════════════════════════════════════════════════════
 // (2026-07-28) Stage-R6: 임차인 registry (파생) + 블랙리스트.
@@ -1317,7 +1317,7 @@ async fn renter_detail(
                   c.status, c.note, c.created_at,
                   c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
                   c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
-             FROM rental_contracts c LEFT JOIN devices d ON d.id = c.device_id
+             FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
             WHERE c.user_id = $1 AND c.renter_phone = $2
          ORDER BY c.starts_at DESC LIMIT 100"#,
     )
@@ -1620,7 +1620,7 @@ async fn load_handoff_by_token(pool: &sqlx::PgPool, token: &str) -> AppResult<Ha
                   c.deposit_krw, c.pickup_odometer_km
              FROM rental_handoff_tokens t
              JOIN rental_contracts c ON c.id = t.contract_id
-        LEFT JOIN devices d ON d.id = c.device_id
+        LEFT JOIN gps_read_devices d ON d.id = c.device_id
             WHERE t.token = $1 AND c.user_id=t.user_id AND d.owner_id=t.user_id"#,
     )
     .bind(token)
@@ -1945,7 +1945,7 @@ async fn handoff_submit(
     let consumed = sqlx::query(
         "UPDATE rental_handoff_tokens t SET used_at = NOW()
          WHERE t.id = $1 AND t.used_at IS NULL AND t.revoked_at IS NULL AND t.expires_at>now()
-         AND EXISTS(SELECT 1 FROM rental_contracts c JOIN devices d ON d.id=c.device_id
+         AND EXISTS(SELECT 1 FROM rental_contracts c JOIN gps_read_devices d ON d.id=c.device_id
              WHERE c.id=t.contract_id AND c.user_id=t.user_id AND d.owner_id=t.user_id)",
     )
     .bind(tk.id)

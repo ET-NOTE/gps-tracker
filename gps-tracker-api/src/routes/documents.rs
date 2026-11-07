@@ -89,7 +89,7 @@ pub struct DocumentView {
 
 async fn verify_device_owner(state: &AppState, uid: i64, device_id: i64) -> AppResult<()> {
     let owner: Option<Option<i64>> =
-        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
             .bind(device_id)
             .fetch_optional(&state.db)
             .await?;

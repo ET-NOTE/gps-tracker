@@ -13,7 +13,7 @@ def bootstrap(dsn,officer,operator,cidrs,reference,apply=False):
  with psycopg2.connect(dsn) as db:
   with db.cursor() as c:
    c.execute('SELECT current_database(), max(version) FROM _sqlx_migrations');name,version=c.fetchone()
-   if not name.startswith('gps_') or version!=102:raise ValueError('reviewed GPS schema 102 required')
+   if not name.startswith('gps_') or version not in (102,103):raise ValueError('reviewed GPS schema 102 or 103 required')
    c.execute('SELECT pg_advisory_xact_lock(1911,0)')
    c.execute('SELECT count(*) FROM admin_principals')
    if c.fetchone()[0]:raise ValueError('already initialized; use approved UI change or documented offline recovery')
@@ -27,7 +27,7 @@ def bootstrap(dsn,officer,operator,cidrs,reference,apply=False):
      c.execute("INSERT INTO admin_audit_log(admin_id,target_user,action,data) VALUES(%s,%s,'admin_offline_bootstrap',jsonb_build_object('role',%s::text,'reference',%s::text))",(officer,uid,role,reference))
     c.execute("INSERT INTO admin_security_events(actor_id,ip,action,route,outcome) VALUES(%s,'offline-maintenance','bootstrap','offline','configured')",(officer,))
    else:db.rollback()
- return {'schema':102,'apply':apply,'officer_id':officer,'operator_id':operator,'allowed_cidrs':[str(n) for n in nets]}
+ return {'schema':version,'apply':apply,'officer_id':officer,'operator_id':operator,'allowed_cidrs':[str(n) for n in nets]}
 
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--dsn-file',required=True);p.add_argument('--officer',type=int,required=True);p.add_argument('--operator',type=int,required=True);p.add_argument('--ip',action='append',required=True);p.add_argument('--reference',required=True);p.add_argument('--apply',action='store_true');a=p.parse_args()

@@ -277,7 +277,7 @@ pub async fn permission(
             ["admin", "users", id] | ["admin", "users", id, "devices"] => id.parse::<i64>().ok(),
             ["admin", "devices", id] => {
                 let id = id.parse::<i64>().map_err(|_| AppError::Forbidden)?;
-                sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1")
+                sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1")
                     .bind(id)
                     .fetch_optional(&state.db)
                     .await?

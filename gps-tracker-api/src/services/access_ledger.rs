@@ -104,12 +104,13 @@ pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
         }
         Target::Device(id) => {
             device = Some(*id);
-            account =
-                sqlx::query_scalar::<_, Option<i64>>("SELECT owner_id FROM devices WHERE id=$1")
-                    .bind(id)
-                    .fetch_optional(&mut *tx)
-                    .await?
-                    .flatten();
+            account = sqlx::query_scalar::<_, Option<i64>>(
+                "SELECT owner_id FROM gps_read_devices WHERE id=$1",
+            )
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .flatten();
             "owner_snapshot"
         }
         Target::Account(id) => {

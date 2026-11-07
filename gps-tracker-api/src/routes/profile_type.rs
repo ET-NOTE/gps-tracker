@@ -86,11 +86,12 @@ async fn set_device_override(
     Json(req): Json<SetDeviceOverride>,
 ) -> AppResult<Json<DeviceTypeView>> {
     // 본인 디바이스인지 검증
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(device_id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(device_id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
@@ -110,7 +111,7 @@ async fn set_device_override(
 
     let row: (Option<String>, String) = sqlx::query_as(
         r#"SELECT d.account_type_override, u.account_type
-             FROM devices d JOIN users u ON u.id = d.owner_id
+             FROM gps_read_devices d JOIN users u ON u.id = d.owner_id
             WHERE d.id = $1"#,
     )
     .bind(device_id)

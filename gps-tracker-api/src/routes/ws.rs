@@ -107,7 +107,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, 
                     }
                     // 소유권 검증
                     let allowed: Vec<i64> = sqlx::query_scalar(
-                        "SELECT d.id FROM devices d JOIN privacy_account_controls c ON c.user_id=d.owner_id WHERE owner_id = $1 AND d.id = ANY($2) AND NOT c.restricted",
+                        "SELECT d.id FROM gps_read_devices d JOIN privacy_account_controls c ON c.user_id=d.owner_id WHERE owner_id = $1 AND d.id = ANY($2) AND NOT c.restricted",
                     )
                     .bind(user_id)
                     .bind(&cmd.device_ids)
@@ -167,7 +167,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, 
                 if !current.is_empty() {
                     // 성공했을 때만 프루닝 — 일시 DB 오류에 정상 구독을 전부 날리지 않도록.
                     match sqlx::query_scalar::<_, i64>(
-                        "SELECT id FROM devices WHERE owner_id = $1 AND id = ANY($2)",
+                        "SELECT id FROM gps_read_devices WHERE owner_id = $1 AND id = ANY($2)",
                     ).bind(user_id).bind(&current).fetch_all(&state.db).await {
                       Ok(still) => {
                         let still_set: HashSet<i64> = still.into_iter().collect();
@@ -213,7 +213,7 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, 
                             EventTarget::Device(did, owner) => {
                                 if owner != Some(user_id) || !subs.lock().unwrap().contains(&did) { continue; }
                                 let allowed = sqlx::query_scalar::<_, i64>(
-                                    "SELECT id FROM devices WHERE id=$1 AND owner_id=$2 FOR SHARE")
+                                    "SELECT id FROM gps_read_devices WHERE id=$1 AND owner_id=$2 FOR SHARE")
                                     .bind(did).bind(user_id).fetch_optional(&mut *authorization).await;
                                 match allowed {
                                     Ok(Some(_)) => {}

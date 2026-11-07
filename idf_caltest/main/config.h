@@ -44,11 +44,17 @@
 #ifndef GPS_HTTPS_PILOT
   #define GPS_HTTPS_PILOT 0
 #endif
+#ifndef GPS_HTTPS_OPERATING
+  #define GPS_HTTPS_OPERATING 0
+#endif
 #ifndef GPS_TLS_CERT_TEST
   #define GPS_TLS_CERT_TEST 0
 #endif
 #ifndef GPS_HTTPS_SLEEP_TEST
   #define GPS_HTTPS_SLEEP_TEST 0
+#endif
+#if GPS_HTTPS_OPERATING && (!GPS_HTTPS_PILOT || GPS_TLS_CERT_TEST || GPS_HTTPS_SLEEP_TEST)
+  #error "HTTPS operating must use verified production TLS without bench overrides"
 #endif
 #if GPS_HTTPS_SLEEP_TEST && (!GPS_HTTPS_PILOT || GPS_TLS_CERT_TEST)
   #error "Sleep bench requires production HTTPS and credentials, never the certificate fixture"
@@ -143,7 +149,7 @@
 #ifndef BATTERY_TEST_BUILD
   #define BATTERY_TEST_BUILD 0
 #endif
-#if GPS_HTTPS_PILOT && !GPS_HTTPS_SLEEP_TEST
+#if GPS_HTTPS_PILOT && !GPS_HTTPS_SLEEP_TEST && !GPS_HTTPS_OPERATING
   #define SLEEP_DISABLED           1
   #define TIMER_WAKE_ENABLED       0
 #else

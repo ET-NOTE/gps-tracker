@@ -184,7 +184,7 @@ async fn refresh_all(pool: &sqlx::PgPool) -> anyhow::Result<()> {
     }
 
     let targets: Vec<(i64, String)> = sqlx::query_as(
-        r#"SELECT id, iccid FROM devices
+        r#"SELECT id, iccid FROM gps_read_devices
             WHERE iccid IS NOT NULL AND iccid <> ''
               AND owner_id IS NOT NULL
             ORDER BY sim_info_fetched_at NULLS FIRST

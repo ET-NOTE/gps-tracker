@@ -100,7 +100,7 @@ pub async fn ingest(
     if let Some(first) = p.points.first() {
         let existing: Vec<i64> = sqlx::query_scalar(
             "SELECT extract(epoch FROM r.recorded_at + (f.item->>'at_ms')::bigint * interval '1 millisecond')::bigint
-             FROM location_records r CROSS JOIN LATERAL jsonb_array_elements(r.fixes_jsonb) f(item)
+             FROM gps_read_location_records r CROSS JOIN LATERAL jsonb_array_elements(r.fixes_jsonb) f(item)
              WHERE r.device_id=$1 AND r.source='lte_gnss' AND r.raw->>'shield_v'='1'
                AND r.user_id IS NOT DISTINCT FROM $2
                AND r.recorded_at BETWEEN $3 AND $4")
@@ -178,7 +178,7 @@ pub async fn ingest(
     // Serialize with the device lock so a retry cannot emit a second recovery.
     sqlx::query("INSERT INTO events(device_id,kind,occurred_at,data,user_id)
         SELECT $1,'online',$3,jsonb_build_object('recovered_from',previous.kind),$2
-        FROM (SELECT kind FROM events WHERE device_id=$1 AND user_id=$2
+        FROM (SELECT kind FROM gps_read_events WHERE device_id=$1 AND user_id=$2
               AND kind IN ('online','signal_loss','offline') ORDER BY occurred_at DESC LIMIT 1) previous
         WHERE previous.kind IN ('signal_loss','offline')")
         .bind(id).bind(owner).bind(now).execute(&mut *tx).await?;

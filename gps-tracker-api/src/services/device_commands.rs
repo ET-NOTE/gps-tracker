@@ -10,16 +10,17 @@ pub async fn enqueue(
     arguments: Value,
 ) -> AppResult<Value> {
     let mut tx = db.begin().await?;
-    let owned: Option<i64> =
-        sqlx::query_scalar("SELECT id FROM devices WHERE id=$1 AND owner_id=$2 FOR UPDATE")
-            .bind(device)
-            .bind(user)
-            .fetch_optional(&mut *tx)
-            .await?;
+    let owned: Option<i64> = sqlx::query_scalar(
+        "SELECT id FROM gps_read_devices WHERE id=$1 AND owner_id=$2 FOR UPDATE",
+    )
+    .bind(device)
+    .bind(user)
+    .fetch_optional(&mut *tx)
+    .await?;
     if owned.is_none() {
         return Err(AppError::NotFound);
     }
-    let signed: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM device_credentials WHERE device_id=$1 AND activated_at IS NOT NULL) OR EXISTS(SELECT 1 FROM devices d JOIN hardware_credentials h ON h.auth_uid=d.active_auth_uid WHERE d.id=$1 AND h.activated_at IS NOT NULL AND h.authorized_owner_id=d.owner_id)")
+    let signed: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM device_credentials WHERE device_id=$1 AND activated_at IS NOT NULL) OR EXISTS(SELECT 1 FROM gps_read_devices d JOIN hardware_credentials h ON h.auth_uid=d.active_auth_uid WHERE d.id=$1 AND h.activated_at IS NOT NULL AND h.authorized_owner_id=d.owner_id)")
         .bind(device).fetch_one(&mut *tx).await?;
     if !signed {
         return Err(AppError::BadRequest(
@@ -37,7 +38,7 @@ pub async fn enqueue(
 pub async fn dispatch(db: &PgPool, device: i64, ack: Option<&str>) -> AppResult<Value> {
     let mut tx = db.begin().await?;
     let owner: Option<i64> =
-        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1 FOR UPDATE")
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1 FOR UPDATE")
             .bind(device)
             .fetch_one(&mut *tx)
             .await?;

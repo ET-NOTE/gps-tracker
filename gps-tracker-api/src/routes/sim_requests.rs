@@ -109,7 +109,7 @@ async fn create_request(
     }
     // 본인 디바이스인지 + iccid 스냅샷
     let row: Option<(Option<i64>, Option<String>)> =
-        sqlx::query_as("SELECT owner_id, iccid FROM devices WHERE id = $1")
+        sqlx::query_as("SELECT owner_id, iccid FROM gps_read_devices WHERE id = $1")
             .bind(req.device_id)
             .fetch_optional(&state.db)
             .await?;
@@ -254,7 +254,7 @@ async fn list_all_requests(
                        THEN TRUE ELSE FALSE END AS cancelled_by_user
              FROM sim_topup_requests r
         LEFT JOIN users   u  ON u.id  = r.user_id
-        LEFT JOIN devices d  ON d.id  = r.device_id
+        LEFT JOIN gps_read_devices d  ON d.id  = r.device_id
         LEFT JOIN users   pu ON pu.id = r.processed_by
             ORDER BY (r.status = 'pending') DESC, r.requested_at DESC
             LIMIT 200"#,
@@ -363,7 +363,7 @@ async fn admin_order_info(
     if !q.refresh_sim {
         if let Some(did) = device_id {
             let cached: Option<(Option<Value>, Option<DateTime<Utc>>)> = sqlx::query_as(
-                "SELECT sim_info_cache, sim_info_fetched_at FROM devices WHERE id = $1",
+                "SELECT sim_info_cache, sim_info_fetched_at FROM gps_read_devices WHERE id = $1",
             )
             .bind(did)
             .fetch_optional(&state.db)

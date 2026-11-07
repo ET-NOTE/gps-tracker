@@ -1,14 +1,14 @@
 SELECT EXISTS (
- SELECT 1 FROM events e
- JOIN devices d ON d.id=e.device_id AND d.owner_id=e.user_id
+ SELECT 1 FROM gps_read_events e
+ JOIN gps_read_devices d ON d.id=e.device_id AND d.owner_id=e.user_id
  LEFT JOIN notification_settings ns ON ns.user_id=e.user_id
  LEFT JOIN LATERAL (
-   SELECT kind,occurred_at,id,data FROM events
+   SELECT kind,occurred_at,id,data FROM gps_read_events
    WHERE device_id=e.device_id AND user_id=e.user_id AND kind IN ('wake','sleep_enter')
    ORDER BY occurred_at DESC,id DESC LIMIT 1
  ) life ON true
  LEFT JOIN LATERAL (
-   SELECT r.vbat_mv,r.recorded_at FROM location_records r
+   SELECT r.vbat_mv,r.recorded_at FROM gps_read_location_records r
    WHERE e.kind='low_batt' AND r.device_id=e.device_id AND r.user_id=e.user_id
    ORDER BY r.recorded_at DESC LIMIT 1
  ) latest_battery ON true
@@ -76,7 +76,7 @@ SELECT EXISTS (
    WHEN e.kind='gps_anomaly' THEN d.last_fix_at IS NULL OR d.last_fix_at <= e.occurred_at
    ELSE true END
  AND NOT EXISTS (
-   SELECT 1 FROM events newer WHERE newer.device_id=e.device_id AND newer.user_id=e.user_id
+   SELECT 1 FROM gps_read_events newer WHERE newer.device_id=e.device_id AND newer.user_id=e.user_id
      AND (newer.occurred_at,newer.id)>(e.occurred_at,e.id)
      AND (newer.kind=e.kind OR
        (e.kind IN ('signal_loss','offline','online') AND newer.kind IN ('signal_loss','offline','online')) OR

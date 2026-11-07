@@ -246,10 +246,10 @@ pub(super) async fn list(
                   lv.cbc_mv      AS last_cbc_mv,
                   lv.recorded_at AS last_battery_at,
                   lv.battery_event AS last_battery_event
-             FROM devices d
+             FROM gps_read_devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
-                    FROM events
+                    FROM gps_read_events
                    WHERE device_id = d.id AND user_id = $1
                 ORDER BY occurred_at DESC
                    LIMIT 1
@@ -261,11 +261,11 @@ pub(super) async fn list(
                   -- [뿌리 B 2026-08-14] user_id 필터 — 재페어링 시 이전 owner 의 안테나값 노출 차단
                   SELECT antenna FROM (
                     SELECT raw ->>'antenna' AS antenna, recorded_at AS at
-                      FROM location_records
+                      FROM gps_read_location_records
                      WHERE device_id = d.id AND user_id = $1 AND raw ? 'antenna'
                     UNION ALL
                     SELECT data->>'antenna' AS antenna, occurred_at AS at
-                      FROM events
+                      FROM gps_read_events
                      WHERE device_id = d.id AND user_id = $1 AND data ? 'antenna'
                   ) x
                   WHERE x.antenna IS NOT NULL AND x.antenna <> ''
@@ -277,7 +277,7 @@ pub(super) async fn list(
                   --   새로고침 후 즉시 현재 vbat 표시. WS 실시간 값이 오면 웹에서 그것으로 override.
                   -- [뿌리 B 2026-08-14] user_id 필터 — 이전 owner 의 배터리값 노출 차단
                   SELECT recorded_at, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv, raw->>'event' AS battery_event
-                    FROM location_records
+                    FROM gps_read_location_records
                    WHERE device_id = d.id AND user_id = $1
                 ORDER BY recorded_at DESC
                    LIMIT 1
@@ -321,7 +321,7 @@ async fn scan_unpaired(
     }
     let rows: LifecycleRows = sqlx::query_as(
         "SELECT device_uid, iccid, last_seen_at, created_at
-           FROM devices
+           FROM gps_read_devices
           WHERE owner_id IS NULL
             AND last_seen_at >= now() - interval '10 minutes'
             AND COALESCE(device_kind, 'esp') <> 'phone'
@@ -446,7 +446,7 @@ async fn pair(
     // 비교 → 어느 쪽이든 안전하게 잡힘.
     let row: Option<(i64, Option<i64>)> = if let Some(hash) = &proof {
         sqlx::query_as(
-            "SELECT id,owner_id FROM devices WHERE
+            "SELECT id,owner_id FROM gps_read_devices WHERE
             (claim_code_hash=$1 AND claim_expires_at>now()) OR
             (last_claim_code_hash=$1 AND owner_id=$2)",
         )
@@ -458,7 +458,7 @@ async fn pair(
         if iccid.len() >= 18 {
             // 정확히 일치 (19/20 양쪽 모두) — 입력 길이가 19면 stored 20자리에 prefix 매칭.
             sqlx::query_as(
-                "SELECT id, owner_id FROM devices \
+                "SELECT id, owner_id FROM gps_read_devices \
                   WHERE iccid = $1 \
                      OR LEFT(iccid, GREATEST(LENGTH(iccid)-1, 0)) = $1 \
                      OR iccid = LEFT($1, GREATEST(LENGTH($1)-1, 0))",
@@ -470,7 +470,7 @@ async fn pair(
             // suffix 매칭 — 짧은 입력 (보통 끝 8자리)
             let pattern = format!("%{iccid}");
             let rows: Vec<(i64, Option<i64>)> = sqlx::query_as(
-                "SELECT id, owner_id FROM devices \
+                "SELECT id, owner_id FROM gps_read_devices \
                   WHERE iccid LIKE $1 \
                      OR LEFT(iccid, GREATEST(LENGTH(iccid)-1, 0)) LIKE $1",
             )
@@ -486,7 +486,7 @@ async fn pair(
             rows.into_iter().next()
         }
     } else if let Some(uid) = req.device_uid.as_deref() {
-        sqlx::query_as("SELECT id, owner_id FROM devices WHERE device_uid = $1")
+        sqlx::query_as("SELECT id, owner_id FROM gps_read_devices WHERE device_uid = $1")
             .bind(uid)
             .fetch_optional(&state.db)
             .await?
@@ -604,7 +604,7 @@ async fn pair_phone(
 
     // 기존 (user, uid) 있으면 재사용 (idempotent) — 별명·platform 만 갱신.
     let existing: Option<i64> = sqlx::query_scalar(
-        "SELECT id FROM devices WHERE device_uid = $1 AND owner_id = $2 AND device_kind = 'phone'",
+        "SELECT id FROM gps_read_devices WHERE device_uid = $1 AND owner_id = $2 AND device_kind = 'phone'",
     )
     .bind(&uid)
     .bind(user.user_id)
@@ -1041,11 +1041,12 @@ async fn audit_log(
     user: AuthUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Vec<AuditEntry>>> {
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
@@ -1090,11 +1091,12 @@ async fn events_log(
     Path(id): Path<i64>,
     Query(q): Query<EventsQuery>,
 ) -> AppResult<Json<Vec<DeviceEvent>>> {
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
@@ -1130,7 +1132,7 @@ async fn events_log(
     }
     let rows = sqlx::query_as::<_, DeviceEvent>(
         r#"SELECT id, kind, data, occurred_at
-             FROM events
+             FROM gps_read_events
             WHERE device_id = $1 AND user_id = $2
               AND kind = ANY($5)
               AND ($3::timestamptz IS NULL OR occurred_at >= $3)
@@ -1164,11 +1166,12 @@ async fn delete_range(
     Path(id): Path<i64>,
     Query(q): Query<DeleteRangeQuery>,
 ) -> AppResult<Json<Value>> {
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
@@ -1177,28 +1180,33 @@ async fn delete_range(
     }
     let mut tx = state.db.begin().await?;
     // Serialize deletion with ownership changes, and keep the invalidation in this transaction.
-    let owned: Option<i64> =
-        sqlx::query_scalar("SELECT id FROM devices WHERE id=$1 AND owner_id=$2 FOR UPDATE")
-            .bind(id)
-            .bind(user.user_id)
-            .fetch_optional(&mut *tx)
-            .await?;
+    let owned: Option<i64> = sqlx::query_scalar(
+        "SELECT id FROM gps_read_devices WHERE id=$1 AND owner_id=$2 FOR UPDATE",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
     if owned.is_none() {
         return Err(AppError::NotFound);
     }
     let locs: i64 = sqlx::query_scalar("SELECT count(*) FROM location_points WHERE device_id=$1 AND user_id=$2 AND recorded_at BETWEEN $3 AND $4")
         .bind(id).bind(user.user_id).bind(q.from).bind(q.until).fetch_one(&mut *tx).await?;
-    sqlx::query("UPDATE location_records r SET fixes_jsonb=(
+    sqlx::query("UPDATE location_records target SET fixes_jsonb=(
           SELECT COALESCE(jsonb_agg(f ORDER BY (f->>'at_ms')::bigint),'[]'::jsonb)
           FROM jsonb_array_elements(r.fixes_jsonb) f
-          WHERE NOT (r.recorded_at+COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' BETWEEN $3 AND $4))
-        WHERE device_id=$1 AND user_id=$2 AND fixes_jsonb IS NOT NULL
+          WHERE NOT (r.recorded_at+COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' BETWEEN $3 AND $4)),raw=NULL,lat=NULL,lng=NULL
+        FROM gps_read_location_records r
+        WHERE target.device_id=r.device_id AND target.recorded_at=r.recorded_at AND target.source=r.source
+          AND r.device_id=$1 AND r.user_id=$2 AND r.fixes_jsonb IS NOT NULL
           AND EXISTS(SELECT 1 FROM jsonb_array_elements(r.fixes_jsonb) f
             WHERE r.recorded_at+COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' BETWEEN $3 AND $4)")
         .bind(id).bind(user.user_id).bind(q.from).bind(q.until).execute(&mut *tx).await?;
     sqlx::query(
-        "DELETE FROM location_records WHERE device_id=$1 AND user_id=$2
-        AND ((fixes_jsonb IS NULL AND recorded_at BETWEEN $3 AND $4) OR fixes_jsonb='[]'::jsonb)",
+        "DELETE FROM location_records target USING gps_read_location_records r
+        WHERE target.device_id=r.device_id AND target.recorded_at=r.recorded_at AND target.source=r.source
+        AND r.device_id=$1 AND r.user_id=$2
+        AND ((r.fixes_jsonb IS NULL AND r.recorded_at BETWEEN $3 AND $4) OR r.fixes_jsonb='[]'::jsonb)",
     )
     .bind(id)
     .bind(user.user_id)
@@ -1242,7 +1250,7 @@ async fn delete_range(
            SELECT lat, lng, recorded_at FROM location_points \
              WHERE device_id = $1 AND user_id = $2 AND fix=true ORDER BY recorded_at DESC LIMIT 1 \
          ), last_ev AS ( \
-           SELECT occurred_at FROM events \
+           SELECT occurred_at FROM gps_read_events \
              WHERE device_id = $1 AND user_id = $2 ORDER BY occurred_at DESC LIMIT 1 \
          ) \
          UPDATE devices SET \
@@ -1345,7 +1353,7 @@ async fn batch_stats(
 ) -> AppResult<Json<Value>> {
     // 소유 확인
     let owner_ok: Option<i64> =
-        sqlx::query_scalar("SELECT id FROM devices WHERE id = $1 AND owner_id = $2")
+        sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE id = $1 AND owner_id = $2")
             .bind(id)
             .bind(user.user_id)
             .fetch_optional(&state.db)
@@ -1372,7 +1380,7 @@ async fn batch_stats(
               AVG(NULLIF(sat, 0))::float8 AS avg_sat,
               MIN(recorded_at) AS first_at,
               MAX(recorded_at) AS last_at
-            FROM location_records
+            FROM gps_read_location_records
            WHERE device_id = $1
              AND user_id = $3
              AND raw ? 'fixes'
@@ -1443,7 +1451,7 @@ async fn locations_aggregated(
     axum::extract::Query(q): axum::extract::Query<AggregatedQuery>,
 ) -> AppResult<Json<Vec<Value>>> {
     let owner_ok: Option<i64> =
-        sqlx::query_scalar("SELECT id FROM devices WHERE id = $1 AND owner_id = $2")
+        sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE id = $1 AND owner_id = $2")
             .bind(id)
             .bind(user.user_id)
             .fetch_optional(&state.db)
@@ -1491,7 +1499,7 @@ async fn locations_aggregated(
          WHERE device_id=$1 AND user_id=$5 AND fix=true
            AND recorded_at >= $2 AND recorded_at <= $3
            AND (NOT $6 OR recorded_at < $3)
-           AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$5)
+           AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
          GROUP BY time_bucket($4::text::interval,recorded_at)
          ORDER BY time_bucket($4::text::interval,recorded_at)",
     )
@@ -1519,7 +1527,7 @@ async fn sim_info(
 ) -> AppResult<Json<serde_json::Value>> {
     let row: DiagnosticDeviceRow = sqlx::query_as(
         "SELECT owner_id, iccid, sim_info_cache, sim_info_fetched_at, sim_info_error \
-             FROM devices WHERE id = $1",
+             FROM gps_read_devices WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&state.db)
@@ -1581,7 +1589,7 @@ async fn sim_info_refresh(
     Path(id): Path<i64>,
 ) -> AppResult<Json<serde_json::Value>> {
     let row: Option<(Option<i64>, Option<String>)> =
-        sqlx::query_as("SELECT owner_id, iccid FROM devices WHERE id = $1")
+        sqlx::query_as("SELECT owner_id, iccid FROM gps_read_devices WHERE id = $1")
             .bind(id)
             .fetch_optional(&state.db)
             .await?;
@@ -1682,10 +1690,10 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   lv.cbc_mv      AS last_cbc_mv,
                   lv.recorded_at AS last_battery_at,
                   lv.battery_event AS last_battery_event
-             FROM devices d
+             FROM gps_read_devices d
         LEFT JOIN LATERAL (
                   SELECT kind, occurred_at
-                    FROM events
+                    FROM gps_read_events
                    WHERE device_id = d.id AND user_id = $2
                 ORDER BY occurred_at DESC
                    LIMIT 1
@@ -1697,11 +1705,11 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
                   -- [뿌리 B 2026-08-14] user_id 필터 — 재페어링 시 이전 owner 안테나 노출 차단
                   SELECT antenna FROM (
                     SELECT raw ->>'antenna' AS antenna, recorded_at AS at
-                      FROM location_records
+                      FROM gps_read_location_records
                      WHERE device_id = d.id AND user_id = $2 AND raw ? 'antenna'
                     UNION ALL
                     SELECT data->>'antenna' AS antenna, occurred_at AS at
-                      FROM events
+                      FROM gps_read_events
                      WHERE device_id = d.id AND user_id = $2 AND data ? 'antenna'
                   ) x
                   WHERE x.antenna IS NOT NULL AND x.antenna <> ''
@@ -1711,7 +1719,7 @@ async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json
         LEFT JOIN LATERAL (
                   -- [뿌리 B 2026-08-14] user_id 필터 — 이전 owner 배터리 노출 차단
                   SELECT recorded_at, vbat_mv, (raw->>'cbc_mv')::int AS cbc_mv, raw->>'event' AS battery_event
-                    FROM location_records
+                    FROM gps_read_location_records
                    WHERE device_id = d.id AND user_id = $2
                 ORDER BY recorded_at DESC
                    LIMIT 1
@@ -1757,7 +1765,7 @@ async fn timescaledb_storage_stats(
             .ok();
 
     let row_count: Option<i64> =
-        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM location_records")
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM gps_read_location_records")
             .fetch_one(&state.db)
             .await
             .ok();
@@ -1834,7 +1842,7 @@ async fn read_car_image(
     use axum::response::IntoResponse;
     let mut tx = state.db.begin().await?;
     let url: Option<String> = sqlx::query_scalar(
-        "SELECT car_image_url FROM devices WHERE id=$1 AND owner_id=$2 FOR SHARE",
+        "SELECT car_image_url FROM gps_read_devices WHERE id=$1 AND owner_id=$2 FOR SHARE",
     )
     .bind(id)
     .bind(user.user_id)
@@ -1875,12 +1883,13 @@ async fn upload_car_image(
     Path(id): Path<i64>,
     mut multipart: axum::extract::Multipart,
 ) -> AppResult<Json<Value>> {
-    let owned: bool =
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)")
-            .bind(id)
-            .bind(user.user_id)
-            .fetch_one(&state.db)
-            .await?;
+    let owned: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_one(&state.db)
+    .await?;
     if !owned {
         return Err(AppError::NotFound);
     }

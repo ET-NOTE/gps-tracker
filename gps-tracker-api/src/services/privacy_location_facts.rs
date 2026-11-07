@@ -130,14 +130,14 @@ pub async fn export(
          FROM (SELECT l.device_id,l.recorded_at,(l.recorded_at AT TIME ZONE 'Asia/Seoul')::date AS day,\
          CASE l.source WHEN 'l80' THEN 'device_gnss' WHEN 'lte_gnss' THEN 'modem_gnss' WHEN 'phone' THEN 'phone' ELSE 'other_review_required' END AS method,\
          CASE WHEN l.fixes_jsonb IS NULL THEN l.fix::int WHEN jsonb_typeof(l.fixes_jsonb)='array' THEN jsonb_array_length(l.fixes_jsonb) ELSE 0 END AS points \
-         FROM location_records l WHERE l.user_id=$1 AND l.recorded_at>=$2 AND l.recorded_at<$3 AND {l}) x \
+         FROM gps_read_location_records l WHERE l.user_id=$1 AND l.recorded_at>=$2 AND l.recorded_at<$3 AND {l}) x \
          GROUP BY device_id,day,method ORDER BY day,device_id,method LIMIT 4001"), 4000).await?;
     let changes = list(tx, uid, from, until, &format!(
         "SELECT jsonb_build_object('device_id',e.device_id,'action',CASE WHEN e.paused THEN 'paused' ELSE 'resumed' END,'at',e.created_at) \
          FROM collection_control_events e WHERE e.actor_id=$1 AND e.created_at>=$2 AND e.created_at<$3 AND {e} ORDER BY e.id LIMIT 1001"), 1000).await?;
     let events = list(tx, uid, from, until, &format!(
         "SELECT jsonb_build_object('device_id',e.device_id,'kind',e.kind,'at',e.occurred_at,'notification_processed_at',e.notified_at) \
-         FROM events e WHERE e.user_id=$1 AND e.occurred_at>=$2 AND e.occurred_at<$3 AND e.kind IN ('geofence_in','geofence_out','cycle_first_fix') AND {e} \
+         FROM gps_read_events e WHERE e.user_id=$1 AND e.occurred_at>=$2 AND e.occurred_at<$3 AND e.kind IN ('geofence_in','geofence_out','cycle_first_fix') AND {e} \
          ORDER BY e.occurred_at,e.id LIMIT 2001"), 2000).await?;
     let analyses = list(tx, uid, from, until, &format!(
         "SELECT jsonb_build_object('device_id',a.device_id,'target_date',a.target_date,'requested_at',a.created_at) FROM (\
@@ -164,7 +164,7 @@ pub async fn export(
          FROM privacy_company_link_history h WHERE h.subject_id=$1 AND h.effective_at<$3 AND $2::timestamptz IS NOT NULL ORDER BY h.id LIMIT 201", 200).await?;
     let separate: i64 = in_time(
         sqlx::query_scalar(&format!(
-            "SELECT count(DISTINCT l.device_id) FROM location_records l WHERE l.user_id=$1 AND l.recorded_at>=$2 AND l.recorded_at<$3 AND NOT ({l})"
+            "SELECT count(DISTINCT l.device_id) FROM gps_read_location_records l WHERE l.user_id=$1 AND l.recorded_at>=$2 AND l.recorded_at<$3 AND NOT ({l})"
         ))
         .bind(uid)
         .bind(from)

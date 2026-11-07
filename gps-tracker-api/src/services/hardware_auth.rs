@@ -72,10 +72,11 @@ pub async fn authorize(
         .bind(id)
         .execute(&mut *tx)
         .await?;
-    let sim_owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1")
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let sim_owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1")
+            .bind(id)
+            .fetch_one(&mut *tx)
+            .await?;
     if sim_owner.is_none() {
         // Preserve the authenticated modem's observed spelling so a new SIM can
         // be found by either its portal suffix or its printed 20-digit suffix.
@@ -132,10 +133,11 @@ pub async fn pair_by_sim(
     sim: i64,
     name: &str,
 ) -> AppResult<Option<i64>> {
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1")
-        .bind(sim)
-        .fetch_one(&state.db)
-        .await?;
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1")
+            .bind(sim)
+            .fetch_one(&state.db)
+            .await?;
     if owner.is_some_and(|v| v != user) {
         return Err(AppError::Conflict(
             "이미 다른 계정에 연결된 SIM입니다.".into(),
@@ -144,7 +146,7 @@ pub async fn pair_by_sim(
     // The SIM resolver already rejects ambiguous suffixes. First enrollment also
     // accepts the 1NCE portal's final eight digits; it still requires a fresh,
     // independently authenticated hardware sighting and an atomic ownership check.
-    let candidates:Vec<String>=sqlx::query_scalar("SELECT auth_uid FROM hardware_credentials WHERE pending_device_id=$1 AND last_seen_at>now()-interval '5 minutes' AND last_seen_at>=(SELECT claim_not_before FROM devices WHERE id=$1) AND activated_at IS NOT NULL AND (authorized_owner_id IS NULL OR authorized_owner_id=$2 OR ($3::boolean AND current_device_id=$1)) ORDER BY last_seen_at DESC")
+    let candidates:Vec<String>=sqlx::query_scalar("SELECT auth_uid FROM hardware_credentials WHERE pending_device_id=$1 AND last_seen_at>now()-interval '5 minutes' AND last_seen_at>=(SELECT claim_not_before FROM gps_read_devices WHERE id=$1) AND activated_at IS NOT NULL AND (authorized_owner_id IS NULL OR authorized_owner_id=$2 OR ($3::boolean AND current_device_id=$1)) ORDER BY last_seen_at DESC")
         .bind(sim).bind(user).bind(owner.is_none()).fetch_all(&state.db).await?;
     if candidates.is_empty() {
         if owner == Some(user) {
@@ -180,7 +182,7 @@ pub async fn pair_by_sim(
         .execute(&mut *tx)
         .await?;
     let current: Option<i64> =
-        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1 FOR UPDATE")
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1 FOR UPDATE")
             .bind(sim)
             .fetch_one(&mut *tx)
             .await?;
@@ -189,7 +191,7 @@ pub async fn pair_by_sim(
             "이미 다른 계정에 연결된 SIM입니다.".into(),
         ));
     }
-    let valid:bool=sqlx::query_scalar("SELECT COALESCE(pending_device_id=$2 AND last_seen_at>now()-interval '5 minutes' AND last_seen_at>=(SELECT claim_not_before FROM devices WHERE id=$2) AND activated_at IS NOT NULL AND (authorized_owner_id IS NULL OR authorized_owner_id=$3 OR ($4::boolean AND current_device_id=$2)),false) FROM hardware_credentials WHERE auth_uid=$1")
+    let valid:bool=sqlx::query_scalar("SELECT COALESCE(pending_device_id=$2 AND last_seen_at>now()-interval '5 minutes' AND last_seen_at>=(SELECT claim_not_before FROM gps_read_devices WHERE id=$2) AND activated_at IS NOT NULL AND (authorized_owner_id IS NULL OR authorized_owner_id=$3 OR ($4::boolean AND current_device_id=$2)),false) FROM hardware_credentials WHERE auth_uid=$1")
         .bind(uid).bind(sim).bind(user).bind(current.is_none()).fetch_one(&mut *tx).await?;
     if !valid {
         return Err(AppError::BadRequest(
@@ -231,11 +233,12 @@ pub async fn pair(
         .bind(sim)
         .execute(&mut *tx)
         .await?;
-    let (owner, cutoff): (Option<i64>, chrono::DateTime<chrono::Utc>) =
-        sqlx::query_as("SELECT owner_id,claim_not_before FROM devices WHERE id=$1 FOR UPDATE")
-            .bind(sim)
-            .fetch_one(&mut *tx)
-            .await?;
+    let (owner, cutoff): (Option<i64>, chrono::DateTime<chrono::Utc>) = sqlx::query_as(
+        "SELECT owner_id,claim_not_before FROM gps_read_devices WHERE id=$1 FOR UPDATE",
+    )
+    .bind(sim)
+    .fetch_one(&mut *tx)
+    .await?;
     if owner.is_some_and(|v| v != user) {
         return Err(AppError::Conflict(
             "이미 다른 계정에 연결된 SIM입니다.".into(),

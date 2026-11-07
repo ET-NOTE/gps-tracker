@@ -44,10 +44,10 @@ pub async fn scan(pool: &PgPool) -> anyhow::Result<()> {
            COALESCE(ns.offline_minutes,1440) AS offline_min,
            COALESCE(life.kind='sleep_enter',false) AS sleeping,
            life.occurred_at AS sleep_at, d.last_stationary
-         FROM devices d JOIN users u ON u.id=d.owner_id
+         FROM gps_read_devices d JOIN users u ON u.id=d.owner_id
          LEFT JOIN notification_settings ns ON ns.user_id=d.owner_id
          LEFT JOIN LATERAL (
-           SELECT kind,occurred_at FROM events
+           SELECT kind,occurred_at FROM gps_read_events
            WHERE device_id=d.id AND user_id=d.owner_id AND kind IN ('sleep_enter','wake')
            ORDER BY occurred_at DESC,id DESC LIMIT 1
          ) life ON true
@@ -129,7 +129,7 @@ pub async fn check_episode_lifecycle(pool: &PgPool) {
     scan(pool).await.unwrap();
     let count = |device: i64| async move {
         sqlx::query_scalar::<_, i64>(
-            "SELECT count(*) FROM events WHERE device_id=$1 AND kind='offline'",
+            "SELECT count(*) FROM gps_read_events WHERE device_id=$1 AND kind='offline'",
         )
         .bind(device)
         .fetch_one(pool)
@@ -151,7 +151,7 @@ pub async fn check_episode_lifecycle(pool: &PgPool) {
         "concurrent workers claim the same episode once"
     );
     let event: i64 =
-        sqlx::query_scalar("SELECT id FROM events WHERE device_id=2 AND kind='offline'")
+        sqlx::query_scalar("SELECT id FROM gps_read_events WHERE device_id=2 AND kind='offline'")
             .fetch_one(pool)
             .await
             .unwrap();
@@ -260,11 +260,12 @@ pub async fn check_episode_lifecycle(pool: &PgPool) {
         0,
         "unrelated events cannot turn sleeping into offline"
     );
-    let lost: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM events WHERE device_id=5 AND kind='lost'")
-            .fetch_one(pool)
-            .await
-            .unwrap();
+    let lost: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM gps_read_events WHERE device_id=5 AND kind='lost'",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap();
     assert_eq!(lost, 1);
     sqlx::query("UPDATE notification_settings SET offline_minutes=360 WHERE user_id=1")
         .execute(pool)
@@ -288,11 +289,12 @@ pub async fn check_daily_heartbeat_deadline(pool: &PgPool) {
       INSERT INTO events(device_id,user_id,kind,occurred_at) VALUES(7,1,'sleep_enter',now()-interval '24 hours 10 minutes');
     "#).execute(pool).await.unwrap();
     scan(pool).await.unwrap();
-    let count: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM events WHERE device_id=7 AND kind='lost'")
-            .fetch_one(pool)
-            .await
-            .unwrap();
+    let count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM gps_read_events WHERE device_id=7 AND kind='lost'",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap();
     assert_eq!(
         count, 0,
         "daily heartbeat is still within modem startup grace"
@@ -300,11 +302,12 @@ pub async fn check_daily_heartbeat_deadline(pool: &PgPool) {
     sqlx::raw_sql("UPDATE devices SET last_seen_at=now()-interval '24 hours 16 minutes' WHERE id=7; UPDATE events SET occurred_at=now()-interval '24 hours 16 minutes' WHERE device_id=7 AND kind='sleep_enter';").execute(pool).await.unwrap();
     scan(pool).await.unwrap();
     scan(pool).await.unwrap();
-    let count: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM events WHERE device_id=7 AND kind='lost'")
-            .fetch_one(pool)
-            .await
-            .unwrap();
+    let count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM gps_read_events WHERE device_id=7 AND kind='lost'",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap();
     assert_eq!(
         count, 1,
         "missed daily heartbeat is recorded once after grace"

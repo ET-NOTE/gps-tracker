@@ -62,7 +62,7 @@ async fn run_once(db: &PgPool) -> anyhow::Result<()> {
     let now = Utc::now();
     let lead_until = now + chrono::Duration::minutes(LEAD_MINUTES);
 
-    // 임박 예약 조회 — JOIN devices+staff 로 이벤트 payload 에 이름 포함.
+    // 임박 예약 조회 — JOIN gps_read_devices+staff 로 이벤트 payload 에 이름 포함.
     #[derive(sqlx::FromRow)]
     struct Row {
         id: i64,
@@ -81,7 +81,7 @@ async fn run_once(db: &PgPool) -> anyhow::Result<()> {
              FROM vehicle_reservations r
         LEFT JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id
         LEFT JOIN fleet_vehicle_bindings b ON b.vehicle_id=v.id AND b.owner_id=r.user_id AND b.is_primary AND b.ended_at IS NULL
-        JOIN devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
+        JOIN gps_read_devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
         LEFT JOIN staff   s ON s.id = r.driver_staff_id
             WHERE r.status = 'planned'
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
@@ -158,7 +158,7 @@ async fn run_end_alerts(db: &PgPool) -> anyhow::Result<()> {
              FROM vehicle_reservations r
         LEFT JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id
         LEFT JOIN fleet_vehicle_bindings b ON b.vehicle_id=v.id AND b.owner_id=r.user_id AND b.is_primary AND b.ended_at IS NULL
-        JOIN devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
+        JOIN gps_read_devices d ON d.id=CASE WHEN r.fleet_vehicle_id IS NULL THEN r.device_id ELSE b.device_id END AND d.owner_id=r.user_id
         LEFT JOIN staff   s ON s.id = r.driver_staff_id
             WHERE r.status IN ('planned','in_progress')
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
@@ -277,7 +277,7 @@ async fn run_rental_ending_alerts(db: &PgPool) -> anyhow::Result<()> {
         r#"SELECT r.id, r.user_id, r.device_id, r.ends_at, r.renter_name, r.renter_phone,
                   d.display_name AS device_name, d.license_plate
              FROM rental_contracts r
-        LEFT JOIN devices d ON d.id = r.device_id
+        LEFT JOIN gps_read_devices d ON d.id = r.device_id
             WHERE r.status IN ('draft','active')
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
               AND r.ending_alerted_at IS NULL
@@ -342,7 +342,7 @@ async fn run_rental_overdue_alerts(db: &PgPool) -> anyhow::Result<()> {
         r#"SELECT r.id, r.user_id, r.device_id, r.ends_at, r.renter_name, r.renter_phone,
                   d.display_name AS device_name, d.license_plate
              FROM rental_contracts r
-        LEFT JOIN devices d ON d.id = r.device_id
+        LEFT JOIN gps_read_devices d ON d.id = r.device_id
             WHERE r.status = 'overdue' AND r.overdue_alerted_at IS NULL
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)"#,
     )

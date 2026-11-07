@@ -41,7 +41,7 @@ pub async fn check_after_ingest(
     let fences: Vec<(i64, f64, f64, i32, String)> = sqlx::query_as(
         r#"SELECT g.id, g.center_lat, g.center_lng, g.radius_m, g.name
              FROM geofences g
-             JOIN devices  d ON d.owner_id = g.owner_id
+             JOIN gps_read_devices  d ON d.owner_id = g.owner_id
             WHERE d.id = $1
               AND g.active
               AND (g.device_id IS NULL OR g.device_id = $1)"#,
@@ -109,7 +109,7 @@ pub async fn check_after_ingest(
             sqlx::query(
                 r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
                    VALUES ($1, $2, now(), $3,
-                           (SELECT owner_id FROM devices WHERE id = $1))"#,
+                           (SELECT owner_id FROM gps_read_devices WHERE id = $1))"#,
             )
             .bind(device_id)
             .bind(kind)

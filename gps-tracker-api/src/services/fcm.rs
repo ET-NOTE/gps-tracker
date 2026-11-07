@@ -262,7 +262,7 @@ async fn enqueue_events(pool: &PgPool) -> anyhow::Result<()> {
     let mut tx = pool.begin().await?;
     let pending: Vec<PendingEvent> = sqlx::query_as(
         r#"SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id,e.occurred_at
-           FROM events e LEFT JOIN devices d ON d.id=e.device_id
+           FROM gps_read_events e LEFT JOIN gps_read_devices d ON d.id=e.device_id
            WHERE e.notified_at IS NULL
              AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.restricted AND (c.user_id=e.user_id OR c.user_id=d.owner_id))
            ORDER BY e.occurred_at LIMIT $1
@@ -308,7 +308,7 @@ struct QueuedPush {
 
 async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Result<()> {
     let Some(client) = client else {
-        sqlx::query("UPDATE events SET notified_at=now() WHERE id IN (SELECT e.id FROM events e LEFT JOIN devices d ON d.id=e.device_id WHERE e.notified_at IS NULL AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.restricted AND (c.user_id=e.user_id OR c.user_id=d.owner_id)) ORDER BY e.occurred_at LIMIT $1)")
+        sqlx::query("UPDATE events SET notified_at=now() WHERE id IN (SELECT e.id FROM gps_read_events e LEFT JOIN gps_read_devices d ON d.id=e.device_id WHERE e.notified_at IS NULL AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.restricted AND (c.user_id=e.user_id OR c.user_id=d.owner_id)) ORDER BY e.occurred_at LIMIT $1)")
             .bind(BATCH).execute(pool).await?;
         return Ok(());
     };
@@ -337,7 +337,7 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
                 cancel_delivery(pool, item.id, "no_longer_relevant").await?;
                 continue;
             }
-            let ev: PendingEvent = sqlx::query_as("SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id,e.occurred_at FROM events e JOIN devices d ON d.id=e.device_id WHERE e.id=$1")
+            let ev: PendingEvent = sqlx::query_as("SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id,e.occurred_at FROM gps_read_events e JOIN gps_read_devices d ON d.id=e.device_id WHERE e.id=$1")
                 .bind(event).fetch_one(pool).await?;
             item.message = event_message(pool, &ev).await;
             ledger_access = push_access(&ev);
@@ -712,6 +712,7 @@ mod tests {
         sqlx::raw_sql(r#"
           CREATE TABLE users(id bigint PRIMARY KEY,role text);
           CREATE TABLE privacy_account_controls(user_id bigint PRIMARY KEY, restricted boolean DEFAULT false);
+          CREATE TABLE device_data_controls(device_id bigint PRIMARY KEY,collection_enforced boolean DEFAULT false,collection_paused boolean DEFAULT false,collection_ack_epoch bigint,collection_epoch bigint);
           CREATE TABLE devices(id bigint PRIMARY KEY,display_name text,owner_id bigint,last_seen_at timestamptz,last_fix_at timestamptz,last_stationary jsonb);
           CREATE TABLE location_records(device_id bigint,user_id bigint,vbat_mv integer,recorded_at timestamptz DEFAULT now());
           CREATE TABLE events(id bigserial PRIMARY KEY,device_id bigint,user_id bigint,kind text,data jsonb,
@@ -727,6 +728,9 @@ mod tests {
           CREATE TABLE rental_contracts(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,ends_at timestamptz);
           INSERT INTO users VALUES (1,'user'),(2,'user');
           INSERT INTO privacy_account_controls(user_id) VALUES(1),(2);
+          CREATE VIEW gps_read_devices AS TABLE devices;
+          CREATE VIEW gps_read_events AS TABLE events;
+          CREATE VIEW gps_read_location_records AS TABLE location_records;
           INSERT INTO devices VALUES (1,'test device',1,now(),NULL);
         "#).execute(&pool).await.unwrap();
         sqlx::raw_sql(include_str!("../../migrations/0065_fcm_delivery_queue.sql"))
@@ -1048,7 +1052,7 @@ mod tests {
         "#).execute(&pool).await.unwrap();
         assert!(enqueue_events(&pool).await.is_err());
         let pending: i64 =
-            sqlx::query_scalar("SELECT count(*) FROM events WHERE notified_at IS NULL")
+            sqlx::query_scalar("SELECT count(*) FROM gps_read_events WHERE notified_at IS NULL")
                 .fetch_one(&pool)
                 .await
                 .unwrap();

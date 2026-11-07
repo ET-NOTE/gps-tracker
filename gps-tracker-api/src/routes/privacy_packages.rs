@@ -92,7 +92,7 @@ struct Doc {
     uploaded_at: DateTime<Utc>,
 }
 const LIMIT: u64 = 10 * 1024 * 1024;
-const ELIGIBLE:&str="d.user_id=$1 AND d.fleet_vehicle_id IS NULL AND d.device_id IS NOT NULL AND EXISTS(SELECT 1 FROM devices v WHERE v.id=d.device_id AND v.owner_id=d.user_id) AND NOT EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.device_id=d.device_id) AND NOT EXISTS(SELECT 1 FROM device_data_controls c WHERE c.device_id=d.device_id AND c.blocked) AND NOT EXISTS(SELECT 1 FROM device_documents x WHERE x.stored_path=d.stored_path AND x.id<>d.id)";
+const ELIGIBLE:&str="d.user_id=$1 AND d.fleet_vehicle_id IS NULL AND d.device_id IS NOT NULL AND EXISTS(SELECT 1 FROM gps_read_devices v WHERE v.id=d.device_id AND v.owner_id=d.user_id) AND NOT EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.device_id=d.device_id) AND NOT EXISTS(SELECT 1 FROM device_data_controls c WHERE c.device_id=d.device_id AND c.blocked) AND NOT EXISTS(SELECT 1 FROM device_documents x WHERE x.stored_path=d.stored_path AND x.id<>d.id)";
 fn conflict() -> AppError {
     AppError::Conflict("제공 범위 또는 파일이 변경됐습니다. 담당자의 재검토가 필요합니다.".into())
 }

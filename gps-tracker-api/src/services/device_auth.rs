@@ -123,7 +123,7 @@ pub async fn authorize(
         .ok_or_else(|| AppError::BadRequest("device_uid required".into()))?;
     let iccid = payload.get("iccid").and_then(Value::as_str);
     let mut row: Option<(i64, Option<i64>, Option<String>, bool)> = sqlx::query_as(
-        "SELECT id,owner_id,device_kind,ingest_legacy_allowed FROM devices
+        "SELECT id,owner_id,device_kind,ingest_legacy_allowed FROM gps_read_devices
          WHERE device_uid=$1 OR ($2::text IS NOT NULL AND iccid=$2)
          ORDER BY (iccid=$2) DESC NULLS LAST,(device_uid=$1) DESC LIMIT 1",
     )
@@ -205,7 +205,7 @@ pub async fn authorize(
         return Ok((id, IngestMode::Signed, gate));
     }
     let sim_signed: bool = sqlx::query_scalar(
-        "SELECT sim_auth_required OR active_auth_uid IS NOT NULL FROM devices WHERE id=$1",
+        "SELECT sim_auth_required OR active_auth_uid IS NOT NULL FROM gps_read_devices WHERE id=$1",
     )
     .bind(id)
     .fetch_one(&mut *gate)

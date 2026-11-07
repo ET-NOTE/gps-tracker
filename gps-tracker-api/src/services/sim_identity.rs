@@ -20,10 +20,10 @@ pub async fn find(db: &PgPool, input: &str) -> AppResult<Option<i64>> {
         ));
     }
     let rows: Vec<i64> = if value.len() >= 19 {
-        sqlx::query_scalar("SELECT id FROM devices WHERE left(iccid,19)=$1 AND device_kind IS DISTINCT FROM 'phone'")
+        sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE left(iccid,19)=$1 AND device_kind IS DISTINCT FROM 'phone'")
             .bind(canonical(value)?).fetch_all(db).await?
     } else {
-        sqlx::query_scalar("SELECT id FROM devices WHERE (iccid LIKE $1 OR left(iccid,19) LIKE $1) AND device_kind IS DISTINCT FROM 'phone'")
+        sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE (iccid LIKE $1 OR left(iccid,19) LIKE $1) AND device_kind IS DISTINCT FROM 'phone'")
             .bind(format!("%{value}")).fetch_all(db).await?
     };
     match rows.as_slice() {

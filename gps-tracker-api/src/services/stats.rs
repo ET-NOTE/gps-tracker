@@ -75,7 +75,7 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
 
     // 활성 디바이스 (최근 36h 내 ingest 있던 것만) — 평소 worker.
     let active_ids: Vec<i64> = sqlx::query_scalar(
-        "SELECT id FROM devices WHERE last_seen_at > now() - interval '36 hours'",
+        "SELECT id FROM gps_read_devices WHERE last_seen_at > now() - interval '36 hours'",
     )
     .fetch_all(pool)
     .await?;
@@ -92,11 +92,11 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
     // import 후 한 번도 워커가 안 돈 디바이스 (id 135 처럼).
     // 발견되면 그 디바이스의 모든 record 날짜에 대해 한 번씩 aggregate_one 호출.
     let legacy: Vec<i64> = sqlx::query_scalar(
-        r#"SELECT d.id FROM devices d
+        r#"SELECT d.id FROM gps_read_devices d
             WHERE d.owner_id IS NOT NULL AND NOT EXISTS (
                   SELECT 1 FROM daily_stats ds WHERE ds.device_id=d.id AND ds.user_id=d.owner_id
             ) AND EXISTS (
-                  SELECT 1 FROM location_records r WHERE r.device_id=d.id AND r.user_id=d.owner_id
+                  SELECT 1 FROM gps_read_location_records r WHERE r.device_id=d.id AND r.user_id=d.owner_id
                   AND ((r.fixes_jsonb IS NULL AND r.fix) OR
                     CASE WHEN jsonb_typeof(r.fixes_jsonb)='array' THEN jsonb_array_length(r.fixes_jsonb)>0 ELSE false END)
             )
@@ -107,9 +107,9 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
 
     for did in legacy {
         let dates: Vec<NaiveDate> = sqlx::query_scalar(
-            r#"SELECT DISTINCT dates.d FROM location_records r
+            r#"SELECT DISTINCT dates.d FROM gps_read_location_records r
                 CROSS JOIN LATERAL unnest(location_fix_dates(r.recorded_at,r.fixes_jsonb,r.fix)) dates(d)
-                WHERE r.device_id=$1 AND r.user_id=(SELECT owner_id FROM devices WHERE id=$1)"#,
+                WHERE r.device_id=$1 AND r.user_id=(SELECT owner_id FROM gps_read_devices WHERE id=$1)"#,
         )
         .bind(did)
         .fetch_all(pool)
@@ -133,7 +133,7 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
 
 pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> anyhow::Result<()> {
     let mut tx = pool.begin().await?;
-    sqlx::query("SELECT id FROM devices WHERE id=$1 FOR UPDATE")
+    sqlx::query("SELECT id FROM gps_read_devices WHERE id=$1 FOR UPDATE")
         .bind(device_id)
         .execute(&mut *tx)
         .await?;
@@ -151,9 +151,9 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
         // [뿌리 B 2026-08-14] 현재 owner 데이터만 집계 — 재페어링된 device 에서 이전 owner 의
         //   fix 까지 합산해 통계 혼입되던 것 차단 (upsert user_id 도 EXCLUDED 로 현재 owner 반영).
         r#"SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng, speed_kmh
-             FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3)
+             FROM location_speed_points_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$3)
             WHERE device_id = $1
-              AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
+              AND user_id = (SELECT owner_id FROM gps_read_devices WHERE id = $1)
               AND fix = TRUE
               AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
               AND recorded_at >= $2 AND recorded_at < $3
@@ -171,7 +171,7 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
         sqlx::query(
             r#"INSERT INTO daily_stats (device_id, date, fix_count, distance_m, duration_s, moving_s, stop_count, max_speed_kmh, avg_speed_kmh, first_fix_at, last_fix_at, updated_at, user_id)
                VALUES ($1, $2, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, now(),
-                       (SELECT owner_id FROM devices WHERE id = $1))
+                       (SELECT owner_id FROM gps_read_devices WHERE id = $1))
                ON CONFLICT (device_id, date) DO UPDATE
                   SET fix_count=0, distance_m=0, duration_s=0, moving_s=0, stop_count=0,
                       max_speed_kmh=0, avg_speed_kmh=0, first_fix_at=NULL, last_fix_at=NULL, updated_at=now(),
@@ -202,7 +202,7 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
              (device_id, date, fix_count, distance_m, duration_s, moving_s, stop_count,
               max_speed_kmh, avg_speed_kmh, first_fix_at, last_fix_at, updated_at, user_id)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(),
-                   (SELECT owner_id FROM devices WHERE id = $1))
+                   (SELECT owner_id FROM gps_read_devices WHERE id = $1))
            ON CONFLICT (device_id, date) DO UPDATE SET
              fix_count     = EXCLUDED.fix_count,
              distance_m    = EXCLUDED.distance_m,

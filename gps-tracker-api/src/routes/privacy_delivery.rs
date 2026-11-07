@@ -161,7 +161,7 @@ async fn options(
     sqlx::query("SET LOCAL statement_timeout='5s'")
         .execute(&mut *tx)
         .await?;
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',d.id,'name',d.display_name) FROM devices d WHERE EXISTS(SELECT 1 FROM location_records l JOIN privacy_requests r ON r.user_id=l.user_id WHERE r.id=$1 AND l.device_id=d.id) AND NOT EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.device_id=d.id) AND NOT EXISTS(SELECT 1 FROM device_data_controls c WHERE c.device_id=d.id AND c.blocked) ORDER BY d.id LIMIT 101")
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',d.id,'name',d.display_name) FROM gps_read_devices d WHERE EXISTS(SELECT 1 FROM gps_read_location_records l JOIN privacy_requests r ON r.user_id=l.user_id WHERE r.id=$1 AND l.device_id=d.id) AND NOT EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.device_id=d.id) AND NOT EXISTS(SELECT 1 FROM device_data_controls c WHERE c.device_id=d.id AND c.blocked) ORDER BY d.id LIMIT 101")
         .bind(id).fetch_all(&mut *tx).await?;
     tx.commit().await?;
     Ok(Json(
@@ -230,7 +230,7 @@ async fn issue(
         ));
     }
     active(&mut tx, row.user_id).await?;
-    let count:i64=sqlx::query_scalar("SELECT count(*) FROM devices d WHERE d.id=ANY($1) AND EXISTS(SELECT 1 FROM location_sample_keys_between(d.id,$2,$3,$4) p WHERE p.recorded_at < $4) AND NOT EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.device_id=d.id) AND NOT EXISTS(SELECT 1 FROM device_data_controls c WHERE c.device_id=d.id AND c.blocked)")
+    let count:i64=sqlx::query_scalar("SELECT count(*) FROM gps_read_devices d WHERE d.id=ANY($1) AND EXISTS(SELECT 1 FROM location_sample_keys_between(d.id,$2,$3,$4) p WHERE p.recorded_at < $4) AND NOT EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.device_id=d.id) AND NOT EXISTS(SELECT 1 FROM device_data_controls c WHERE c.device_id=d.id AND c.blocked)")
         .bind(&body.device_ids).bind(row.user_id).bind(body.from_at).bind(body.until_at).fetch_one(&mut *tx).await?;
     if count != body.device_ids.len() as i64 {
         return Err(AppError::Conflict(

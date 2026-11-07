@@ -56,7 +56,7 @@ async fn enforce_geofence_cap(
             // owner-wide 펜스를 추가하면 모든 디바이스의 effective count 가 +1.
             // 디바이스가 없으면 owner_wide_count 만 검증.
             let device_ids: Vec<i64> =
-                sqlx::query_scalar("SELECT id FROM devices WHERE owner_id = $1")
+                sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE owner_id = $1")
                     .bind(owner_id)
                     .fetch_all(&state.db)
                     .await?;
@@ -170,11 +170,12 @@ async fn create(
 
     // device_id 지정 시 본인 소유 확인
     if let Some(did) = req.device_id {
-        let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-            .bind(did)
-            .fetch_optional(&state.db)
-            .await?
-            .flatten();
+        let owner: Option<i64> =
+            sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+                .bind(did)
+                .fetch_optional(&state.db)
+                .await?
+                .flatten();
         if owner != Some(user.user_id) {
             return Err(AppError::NotFound);
         }
@@ -213,18 +214,20 @@ async fn arm_geofence_for_devices(
     // device_id 지정시 그 디바이스만, 아니면 owner의 모든 디바이스
     let device_ids: Vec<(i64, Option<f64>, Option<f64>)> = match req.device_id {
         Some(did) => sqlx::query_as(
-            "SELECT id, last_lat, last_lng FROM devices WHERE id = $1 AND owner_id = $2",
+            "SELECT id, last_lat, last_lng FROM gps_read_devices WHERE id = $1 AND owner_id = $2",
         )
         .bind(did)
         .bind(owner_id)
         .fetch_all(&state.db)
         .await
         .unwrap_or_default(),
-        None => sqlx::query_as("SELECT id, last_lat, last_lng FROM devices WHERE owner_id = $1")
-            .bind(owner_id)
-            .fetch_all(&state.db)
-            .await
-            .unwrap_or_default(),
+        None => sqlx::query_as(
+            "SELECT id, last_lat, last_lng FROM gps_read_devices WHERE owner_id = $1",
+        )
+        .bind(owner_id)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default(),
     };
 
     for (did, lat, lng) in device_ids {
@@ -257,7 +260,7 @@ async fn arm_geofence_for_devices(
             let _ = sqlx::query(
                 r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
                    VALUES ($1, 'geofence_armed', now(), $2,
-                           (SELECT owner_id FROM devices WHERE id = $1))"#,
+                           (SELECT owner_id FROM gps_read_devices WHERE id = $1))"#,
             )
             .bind(did)
             .bind(serde_json::json!({
@@ -304,11 +307,12 @@ async fn update(
 
     // device_id 변경 시 권한 확인
     if let Some(Some(did)) = req.device_id {
-        let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-            .bind(did)
-            .fetch_optional(&state.db)
-            .await?
-            .flatten();
+        let owner: Option<i64> =
+            sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+                .bind(did)
+                .fetch_optional(&state.db)
+                .await?
+                .flatten();
         if owner != Some(user.user_id) {
             return Err(AppError::NotFound);
         }
@@ -432,8 +436,8 @@ const HISTORY_SQL_ALL: &str = r#"
            THEN (e.data->>'inside')::boolean
            ELSE NULL END                                      AS inside,
       e.occurred_at
-    FROM events e
-    JOIN devices d ON d.id = e.device_id
+    FROM gps_read_events e
+    JOIN gps_read_devices d ON d.id = e.device_id
     WHERE d.owner_id = $1 AND e.user_id = $1
       AND e.kind IN ('geofence_in','geofence_out','geofence_armed')
     ORDER BY e.occurred_at DESC
@@ -453,8 +457,8 @@ const HISTORY_SQL_ONE: &str = r#"
            THEN (e.data->>'inside')::boolean
            ELSE NULL END                                      AS inside,
       e.occurred_at
-    FROM events e
-    JOIN devices d ON d.id = e.device_id
+    FROM gps_read_events e
+    JOIN gps_read_devices d ON d.id = e.device_id
     WHERE d.owner_id = $1 AND e.user_id = $1
       AND e.kind IN ('geofence_in','geofence_out','geofence_armed')
       AND NULLIF((e.data->>'geofence_id'),'')::bigint = $2

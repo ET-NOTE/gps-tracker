@@ -363,13 +363,14 @@ async fn connect(
     lock_ids.extend(&input.device_ids);
     lock_ids.sort_unstable();
     lock_ids.dedup();
-    let _: Vec<i64> =
-        sqlx::query_scalar("SELECT id FROM devices WHERE id=ANY($1) ORDER BY id FOR UPDATE")
-            .bind(&lock_ids)
-            .fetch_all(&mut *tx)
-            .await?;
+    let _: Vec<i64> = sqlx::query_scalar(
+        "SELECT id FROM gps_read_devices WHERE id=ANY($1) ORDER BY id FOR UPDATE",
+    )
+    .bind(&lock_ids)
+    .fetch_all(&mut *tx)
+    .await?;
     // Lock SIM rows before the vehicle. Owner-release uses the same SIM row lock.
-    let devices:Vec<(i64,String)>=sqlx::query_as("SELECT id,COALESCE(display_name,device_uid) FROM devices WHERE id=ANY($1) AND owner_id=$2 ORDER BY id FOR UPDATE")
+    let devices:Vec<(i64,String)>=sqlx::query_as("SELECT id,COALESCE(display_name,device_uid) FROM gps_read_devices WHERE id=ANY($1) AND owner_id=$2 ORDER BY id FOR UPDATE")
         .bind(&input.device_ids).bind(user.user_id).fetch_all(&mut *tx).await?;
     if devices.len() != input.device_ids.len() {
         return Err(AppError::BadRequest(

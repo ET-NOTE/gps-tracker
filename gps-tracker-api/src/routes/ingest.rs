@@ -181,7 +181,7 @@ pub async fn ingest(
     // authorize holds the SIM/device advisory lock until the signed response is
     // committed. Erasure uses that same lock, including legacy/phone senders.
     let privacy_blocked: bool = sqlx::query_scalar(
-        "SELECT COALESCE((SELECT c.blocked OR COALESCE(a.restricted,false) FROM device_data_controls c JOIN devices d ON d.id=c.device_id LEFT JOIN privacy_account_controls a ON a.user_id=d.owner_id WHERE c.device_id=$1),false)",
+        "SELECT COALESCE((SELECT c.blocked OR COALESCE(a.restricted,false) FROM device_data_controls c JOIN gps_read_devices d ON d.id=c.device_id LEFT JOIN privacy_account_controls a ON a.user_id=d.owner_id WHERE c.device_id=$1),false)",
     )
     .bind(id)
     .fetch_one(&mut *gate)
@@ -277,10 +277,11 @@ async fn ingest_payload(
         .unwrap_or_else(|| format!("anon-{remote_ip}"));
 
     // Identity was authenticated before any device metadata or command mutation.
-    let prev_imei: Option<String> = sqlx::query_scalar("SELECT imei FROM devices WHERE id=$1")
-        .bind(device_id)
-        .fetch_one(&state.db)
-        .await?;
+    let prev_imei: Option<String> =
+        sqlx::query_scalar("SELECT imei FROM gps_read_devices WHERE id=$1")
+            .bind(device_id)
+            .fetch_one(&state.db)
+            .await?;
     sqlx::query(
         "UPDATE devices SET last_seen_at=now(),device_uid=CASE WHEN $6 THEN device_uid ELSE $2 END,
         iccid=COALESCE(iccid,$3),imei=COALESCE($4,imei),imsi=COALESCE($5,imsi) WHERE id=$1",
@@ -331,7 +332,7 @@ async fn ingest_payload(
         // Serialize competing retransmissions with pairing/deletion/stat aggregation.
         let mut tx = state.db.begin().await?;
         let owner_id: Option<i64> =
-            sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1 FOR UPDATE")
+            sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1 FOR UPDATE")
                 .bind(device_id)
                 .fetch_one(&mut *tx)
                 .await?;
@@ -352,9 +353,9 @@ async fn ingest_payload(
                 "SELECT r.recorded_at + COALESCE((f->>'at_ms')::bigint,0)*interval '1 millisecond' AS at,
                  (f->>'up_ms')::bigint AS up_ms,(f->>'lat')::float8 AS lat,(f->>'lng')::float8 AS lng,
                  r.raw->>'boot' AS boot,r.raw->>'boot_id' AS boot_id
-                 FROM location_records r CROSS JOIN LATERAL jsonb_array_elements(r.fixes_jsonb) f
+                 FROM gps_read_location_records r CROSS JOIN LATERAL jsonb_array_elements(r.fixes_jsonb) f
                  WHERE r.device_id=$1 AND r.source='l80'
-                   AND r.user_id IS NOT DISTINCT FROM (SELECT owner_id FROM devices WHERE id=$1)
+                   AND r.user_id IS NOT DISTINCT FROM (SELECT owner_id FROM gps_read_devices WHERE id=$1)
                    AND location_point_bound(r.recorded_at,r.fixes_jsonb,true)>=$2
                    AND location_point_bound(r.recorded_at,r.fixes_jsonb,false)<=$3")
             .bind(device_id).bind(first-chrono::Duration::seconds(30))
@@ -422,7 +423,7 @@ async fn ingest_payload(
                        csq, reg, vbat_mv, raw, heading, user_id, fixes_jsonb
                    )
                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                           (SELECT owner_id FROM devices WHERE id = $1), $15)
+                           (SELECT owner_id FROM gps_read_devices WHERE id = $1), $15)
                    ON CONFLICT (device_id, recorded_at, source) DO NOTHING"#,
             )
             .bind(device_id)
@@ -485,7 +486,7 @@ async fn ingest_payload(
                 fix_records.iter().map(|p| p.0.timestamp_micros()).collect();
             batch_for_ws = sqlx::query_as::<_,crate::events::LocationFix>(
                 "SELECT recorded_at,lat,lng,sat,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source
-                 FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3)
+                 FROM location_speed_points_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$3)
                  WHERE source='l80' ORDER BY recorded_at")
                 .bind(device_id).bind(first).bind(last).fetch_all(&mut *tx).await?
                 .into_iter().filter(|p| accepted.contains(&p.recorded_at.timestamp_micros())).collect();
@@ -494,7 +495,7 @@ async fn ingest_payload(
         // Historical backfill must not replay old geofence crossings as current ones.
         if let Some(&(at, lat, lng, _, _, _)) = fix_records.iter().max_by_key(|f| f.0) {
             let current: bool =
-                sqlx::query_scalar("SELECT last_fix_at=$2 FROM devices WHERE id=$1")
+                sqlx::query_scalar("SELECT last_fix_at=$2 FROM gps_read_devices WHERE id=$1")
                     .bind(device_id)
                     .bind(at)
                     .fetch_one(&state.db)
@@ -619,7 +620,7 @@ async fn ingest_payload(
                 .unwrap_or(-1);
             let data = json!({ "lat": lat, "lng": lng, "sat": sat });
             let _ = sqlx::query(
-                "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'cycle_first_fix', $3, (SELECT owner_id FROM devices WHERE id = $1))"
+                "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'cycle_first_fix', $3, (SELECT owner_id FROM gps_read_devices WHERE id = $1))"
             )
             .bind(device_id)
             .bind(recorded_at)
@@ -634,8 +635,8 @@ async fn ingest_payload(
     // 한 번만 — 이후 ingest 에선 last_event = 'online' 이라 다시 안 탐.
     {
         let last_event_kind: Option<String> = sqlx::query_scalar(
-            "SELECT kind FROM events WHERE device_id = $1 \
-             AND user_id = (SELECT owner_id FROM devices WHERE id = $1) \
+            "SELECT kind FROM gps_read_events WHERE device_id = $1 \
+             AND user_id = (SELECT owner_id FROM gps_read_devices WHERE id = $1) \
              ORDER BY occurred_at DESC LIMIT 1",
         )
         .bind(device_id)
@@ -649,7 +650,7 @@ async fn ingest_payload(
         ) {
             let recovered_from = last_event_kind.unwrap();
             let _ = sqlx::query(
-                "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'online', $3, (SELECT owner_id FROM devices WHERE id = $1))",
+                "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'online', $3, (SELECT owner_id FROM gps_read_devices WHERE id = $1))",
             )
             .bind(device_id)
             .bind(recorded_at)
@@ -663,14 +664,14 @@ async fn ingest_payload(
     // 디바운스 — 24시간 내에 이미 low_batt 이벤트 있으면 스킵 (푸시 스팸 방지).
     // 24h 후에도 여전히 임계 미만이면 다시 한 번 발송 (리마인더).
     if let Some(v) = parsed.vbat_mv {
-        let threshold: i32 = sqlx::query_scalar("SELECT COALESCE(ns.low_batt_threshold_mv,3500) FROM devices d LEFT JOIN notification_settings ns ON ns.user_id=d.owner_id WHERE d.id=$1")
+        let threshold: i32 = sqlx::query_scalar("SELECT COALESCE(ns.low_batt_threshold_mv,3500) FROM gps_read_devices d LEFT JOIN notification_settings ns ON ns.user_id=d.owner_id WHERE d.id=$1")
             .bind(device_id).fetch_one(&state.db).await?;
         // Missing/unusable ADC measurements must not produce a false 0% alarm.
         if crate::services::battery::calibrated_mv(v).is_some_and(|mv| mv < threshold) {
             let recent: Option<bool> = sqlx::query_scalar(
-                r#"SELECT TRUE FROM events
+                r#"SELECT TRUE FROM gps_read_events
                     WHERE device_id = $1
-                      AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
+                      AND user_id = (SELECT owner_id FROM gps_read_devices WHERE id = $1)
                       AND kind = 'low_batt'
                       AND occurred_at > now() - interval '24 hours'
                     ORDER BY occurred_at DESC LIMIT 1"#,
@@ -684,7 +685,7 @@ async fn ingest_payload(
             if recent.is_none() {
                 let data = json!({ "vbat_mv": v, "calibrated_mv": crate::services::battery::calibrated_mv(v), "battery_policy": crate::services::battery::policy().version, "threshold_mv": threshold });
                 let inserted: Result<Option<i64>, sqlx::Error> = sqlx::query_scalar(
-                    "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM devices WHERE id = $1)) RETURNING user_id",
+                    "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM gps_read_devices WHERE id = $1)) RETURNING user_id",
                 )
                 .bind(device_id)
                 .bind(recorded_at)
@@ -786,7 +787,7 @@ async fn ingest_payload(
                 data.insert("antenna".into(), Value::String(ant.clone()));
             }
             let _ = sqlx::query(
-                "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM devices WHERE id = $1))",
+                "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, $3, $4, (SELECT owner_id FROM gps_read_devices WHERE id = $1))",
             )
             .bind(device_id)
             .bind(recorded_at)
@@ -864,7 +865,7 @@ async fn ingest_payload(
         if new_brownouts >= 0 || new_no_fix_cycles >= 0 {
             // 직전 캐시값 조회 (devices 테이블)
             let prev: Option<(i32, i32)> = sqlx::query_as(
-                "SELECT rtc_brownouts, rtc_no_fix_cycles FROM devices WHERE id = $1",
+                "SELECT rtc_brownouts, rtc_no_fix_cycles FROM gps_read_devices WHERE id = $1",
             )
             .bind(device_id)
             .fetch_optional(&state.db)
@@ -875,7 +876,7 @@ async fn ingest_payload(
             if new_brownouts > prev_brown as i64 {
                 let delta = new_brownouts - prev_brown as i64;
                 let _ = sqlx::query(
-                    "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'brownout', $3, (SELECT owner_id FROM devices WHERE id = $1))",
+                    "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'brownout', $3, (SELECT owner_id FROM gps_read_devices WHERE id = $1))",
                 ).bind(device_id).bind(recorded_at).bind(json!({
                     "delta": delta, "total": new_brownouts, "vbat_mv": parsed.vbat_mv,
                 })).execute(&state.db).await;
@@ -886,7 +887,7 @@ async fn ingest_payload(
             if new_no_fix_cycles >= prev_no_fix as i64 + 2 {
                 let delta = new_no_fix_cycles - prev_no_fix as i64;
                 let _ = sqlx::query(
-                    "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'gps_anomaly', $3, (SELECT owner_id FROM devices WHERE id = $1))",
+                    "INSERT INTO events (device_id, occurred_at, kind, data, user_id) VALUES ($1, $2, 'gps_anomaly', $3, (SELECT owner_id FROM gps_read_devices WHERE id = $1))",
                 ).bind(device_id).bind(recorded_at).bind(json!({
                     "delta": delta, "total": new_no_fix_cycles,
                 })).execute(&state.db).await;
@@ -948,7 +949,7 @@ async fn broadcast_location(
 ) -> AppResult<()> {
     let point = sqlx::query_as::<_,crate::events::LocationFix>(
         "SELECT recorded_at,lat,lng,sat,speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason,speed_source
-         FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$2)
+         FROM location_speed_points_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$2)
          WHERE source=$3")
         .bind(device_id).bind(recorded_at).bind(source).fetch_optional(&state.db).await?;
     let (speed_kmh, speed_details) = point
@@ -965,7 +966,7 @@ async fn broadcast_location(
         });
 
     let owner_id: Option<i64> = sqlx::query_scalar(
-        "SELECT user_id FROM location_records WHERE device_id=$1 AND recorded_at=$2 AND source=$3",
+        "SELECT user_id FROM gps_read_location_records WHERE device_id=$1 AND recorded_at=$2 AND source=$3",
     )
     .bind(device_id)
     .bind(recorded_at)
@@ -1052,7 +1053,7 @@ async fn insert_location(
             csq, reg, vbat_mv, raw, heading, user_id, speed_kmh
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                (SELECT owner_id FROM devices WHERE id = $1), $15)
+                (SELECT owner_id FROM gps_read_devices WHERE id = $1), $15)
         ON CONFLICT (device_id, recorded_at, source) DO NOTHING
         "#,
     )

@@ -94,7 +94,7 @@ pub async fn complete(
     } = purchase;
     // Ownership may change while the external model is running.
     let owner: Option<i64> =
-        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id=$1 FOR SHARE")
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1 FOR SHARE")
             .bind(device)
             .fetch_optional(&mut *tx)
             .await?
@@ -146,6 +146,7 @@ mod tests {
           CREATE TABLE credit_log(id bigserial PRIMARY KEY,user_id bigint,delta bigint,balance bigint,reason text,ref_id bigint,note text);
           CREATE TABLE ai_analyses(id bigserial PRIMARY KEY,user_id bigint,device_id bigint,target_date date,analysis text CHECK(analysis <> 'reject'),model text,tokens_in integer,tokens_out integer,cost_credits bigint);
           CREATE TABLE ai_usage_log(user_id bigint,endpoint text,tokens_in integer,tokens_out integer,model text);
+          CREATE VIEW gps_read_devices AS TABLE devices;
           INSERT INTO users VALUES(1,100),(2,100);
           INSERT INTO devices VALUES(1,1);
         "#).execute(&pool).await.unwrap();

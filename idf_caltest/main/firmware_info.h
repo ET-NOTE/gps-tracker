@@ -40,6 +40,8 @@ inline constexpr char settings[] =
   "\"catm_only\":" FW_STRING(KC_CATM_ONLY)
 #endif
   "}";
+static_assert(!GPS_HTTPS_OPERATING || (GPS_HTTPS_PILOT && !SLEEP_DISABLED && TIMER_WAKE_ENABLED && TIMER_WAKE_INTERVAL_S == 86400 && !GPS_HTTPS_SLEEP_TEST && !GPS_TLS_CERT_TEST),
+              "HTTPS operating profile must preserve 24h sleep without test switches");
 static_assert(!KC_TEST_BUILD || (SLEEP_DISABLED && !BUZZER_ENABLED && !LOOP_WDT_ENABLED),
               "KC power/sleep protections must remain enabled");
 static_assert(!BATTERY_TEST_BUILD || (!KC_TEST_BUILD && SLEEP_DISABLED && LOOP_WDT_ENABLED && BUZZER_ENABLED),

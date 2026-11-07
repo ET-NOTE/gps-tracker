@@ -2,6 +2,7 @@ use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::time::Duration;
 
 pub async fn make_pool(database_url: &str) -> anyhow::Result<PgPool> {
+    let keys = crate::services::location_storage::load()?;
     let pool = PgPoolOptions::new()
         .max_connections(10)
         .min_connections(1)
@@ -10,8 +11,22 @@ pub async fn make_pool(database_url: &str) -> anyhow::Result<PgPool> {
         // JSON batch/window queries spend seconds compiling hundreds of JIT
         // functions for millisecond-scale scans. Scope this to our API pool;
         // do not change the PostgreSQL defaults used by neighboring services.
-        .after_connect(|connection, _| {
+        .after_connect(move |connection, _| {
+            let keys = keys.clone();
             Box::pin(async move {
+                sqlx::query("SET timezone='UTC'")
+                    .execute(&mut *connection)
+                    .await?;
+                if let Some(keys) = keys {
+                    let safe: bool = sqlx::query_scalar("SELECT current_setting('log_parameter_max_length')='0' AND current_setting('log_parameter_max_length_on_error')='0' AND coalesce(current_setting('pgaudit.log_parameter',true),'off') IN ('off','false','0')").fetch_one(&mut *connection).await?;
+                    if !safe {
+                        return Err(sqlx::Error::Configuration("location keys require database bind-parameter logging disabled".into()));
+                    }
+                    sqlx::query("SELECT set_config('gps.storage_keys',$1,false)")
+                        .bind(keys.as_str())
+                        .execute(&mut *connection)
+                        .await?;
+                }
                 sqlx::query("SET jit=off").execute(connection).await?;
                 Ok(())
             })

@@ -49,15 +49,16 @@ def main():
                         "-I", str(ROOT/"stubs"), str(ROOT/"modem_tcp_test.cpp"), "-o", tcp], check=True)
         subprocess.run([tcp],check=True)
         count+=1
-        for profile, kc, battery in (("operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1), ("https-pilot", 0, 0), ("https-sleep-test", 0, 0)):
+        for profile, kc, battery in (("operating", 0, 0), ("https-operating", 0, 0), ("kc", 1, 0), ("battery", 0, 1), ("https-pilot", 0, 0), ("https-sleep-test", 0, 0)):
             bench = profile == "https-sleep-test"
-            is_pilot = profile in ("https-pilot", "https-sleep-test")
-            sleep_enabled = profile in ("operating", "https-sleep-test")
+            is_pilot = profile in ("https-operating", "https-pilot", "https-sleep-test")
+            sleep_enabled = profile in ("operating", "https-operating", "https-sleep-test")
             exe = str(Path(tmp) / f"test-{profile}")
             flags = ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
                             "-Wno-unused-parameter", f"-DKC_TEST_BUILD={kc}",
                             f"-DBATTERY_TEST_BUILD={battery}", f"-DGPS_HTTPS_PILOT={int(is_pilot)}",
                             f"-DGPS_HTTPS_SLEEP_TEST={int(bench)}",
+                            f"-DGPS_HTTPS_OPERATING={int(profile == 'https-operating')}",
                             f'-DFIRMWARE_PROFILE="{profile}"',
                             f'-DFIRMWARE_VERSION="{profile}-test"',
                             f'-DFIRMWARE_BUILD_TAG="idf-caltest/{profile}-test"',

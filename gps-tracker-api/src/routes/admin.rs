@@ -116,8 +116,8 @@ async fn list_users(
 ) -> AppResult<Json<Vec<AdminUserRow>>> {
     let rows = sqlx::query_as::<_, AdminUserRow>(
         r#"SELECT u.id, u.email, u.display_name, u.role,
-                  (SELECT count(*) FROM devices  WHERE owner_id = u.id) AS device_count,
-                  (SELECT max(last_seen_at) FROM devices WHERE owner_id = u.id) AS last_seen_at,
+                  (SELECT count(*) FROM gps_read_devices  WHERE owner_id = u.id) AS device_count,
+                  (SELECT max(last_seen_at) FROM gps_read_devices WHERE owner_id = u.id) AS last_seen_at,
                   u.created_at
              FROM users u
             ORDER BY u.created_at DESC"#,
@@ -146,7 +146,7 @@ async fn user_detail(
 ) -> AppResult<Json<AdminUserDetail>> {
     let row: AdminUserDetail = sqlx::query_as(
         r#"SELECT u.id, u.email, u.display_name, u.secondary_phone, u.role,
-                  (SELECT count(*) FROM devices WHERE owner_id = u.id) AS device_count,
+                  (SELECT count(*) FROM gps_read_devices WHERE owner_id = u.id) AS device_count,
                   u.created_at
              FROM users u
             WHERE u.id = $1"#,
@@ -181,7 +181,7 @@ async fn user_devices(
     let rows = sqlx::query_as::<_, AdminDeviceRow>(
         r#"SELECT id, device_uid, display_name, iccid, imei,
                   last_seen_at, last_lat, last_lng, paired_at, created_at
-             FROM devices
+             FROM gps_read_devices
             WHERE owner_id = $1
             ORDER BY COALESCE(last_seen_at, created_at) DESC"#,
     )
@@ -216,7 +216,7 @@ async fn list_all_devices(
         r#"SELECT d.id, d.device_uid, d.display_name, d.iccid, d.imei,
                   d.owner_id, u.email AS owner_email,
                   d.last_seen_at, d.last_lat, d.last_lng, d.paired_at, d.created_at
-             FROM devices d
+             FROM gps_read_devices d
         LEFT JOIN users u ON u.id = d.owner_id
             ORDER BY COALESCE(d.last_seen_at, d.created_at) DESC"#,
     )
@@ -260,7 +260,7 @@ async fn device_detail(
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at,
                   d.rtc_brownouts, d.rtc_no_fix_cycles
-             FROM devices d
+             FROM gps_read_devices d
         LEFT JOIN users u ON u.id = d.owner_id
             WHERE d.id = $1"#,
     )
@@ -273,7 +273,7 @@ async fn device_detail(
     let events: Vec<serde_json::Value> = sqlx::query_scalar(
         r#"SELECT json_build_object(
               'id', id, 'kind', kind, 'data', data, 'occurred_at', occurred_at
-            ) FROM events
+            ) FROM gps_read_events
             WHERE device_id = $1
             ORDER BY occurred_at DESC LIMIT 30"#,
     )
@@ -372,7 +372,7 @@ async fn recompute_stats(
     use chrono::NaiveDate;
 
     // device 존재 확인
-    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM devices WHERE id = $1")
+    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE id = $1")
         .bind(id)
         .fetch_optional(&state.db)
         .await?;
@@ -382,7 +382,7 @@ async fn recompute_stats(
 
     let dates: Vec<NaiveDate> = sqlx::query_scalar(
         r#"SELECT DISTINCT unnest(location_fix_dates(recorded_at,fixes_jsonb,fix)) AS date
-             FROM location_records
+             FROM gps_read_location_records
             WHERE device_id = $1
             ORDER BY 1 DESC"#,
     )
@@ -432,7 +432,7 @@ async fn topup_sim(
 
     // 디바이스 찾기 + audit
     let device_id: Option<i64> =
-        sqlx::query_scalar("SELECT id FROM devices WHERE iccid = $1 LIMIT 1")
+        sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE iccid = $1 LIMIT 1")
             .bind(&iccid)
             .fetch_optional(&state.db)
             .await?;

@@ -232,7 +232,7 @@ async fn events(
     start: DateTime<Utc>,
     end: DateTime<Utc>,
 ) -> AppResult<Vec<Event>> {
-    let rows=sqlx::query_as("SELECT kind,occurred_at,data FROM events WHERE user_id=$1 AND device_id=$2 AND kind IN ('wake','sleep_enter') AND occurred_at>=$3 AND occurred_at<=$4 ORDER BY occurred_at,kind LIMIT 10001").bind(owner).bind(sim).bind(start).bind(end).fetch_all(&state.db).await?;
+    let rows=sqlx::query_as("SELECT kind,occurred_at,data FROM gps_read_events WHERE user_id=$1 AND device_id=$2 AND kind IN ('wake','sleep_enter') AND occurred_at>=$3 AND occurred_at<=$4 ORDER BY occurred_at,kind LIMIT 10001").bind(owner).bind(sim).bind(start).bind(end).fetch_all(&state.db).await?;
     if rows.len() > 10000 {
         return Err(invalid("상태 신호가 많습니다. 조회 기간을 줄여 주세요."));
     }

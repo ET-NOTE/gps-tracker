@@ -37,7 +37,7 @@ async fn collection_list(State(state): State<AppState>, user: AuthUser) -> AppRe
         'paused',c.collection_paused,'enforced',c.collection_enforced,'epoch',c.collection_epoch,
         'restricted',c.blocked,'changed_at',c.collection_changed_at,'ack_at',c.collection_ack_at,
         'device_applied',COALESCE(c.collection_ack_epoch=c.collection_epoch AND c.collection_ack_uid=d.active_auth_uid AND c.collection_ack_at>=c.collection_changed_at,false))
-        FROM devices d JOIN device_data_controls c ON c.device_id=d.id
+        FROM gps_read_devices d JOIN device_data_controls c ON c.device_id=d.id
         WHERE d.owner_id=$1 AND d.device_kind IS DISTINCT FROM 'phone' ORDER BY d.id")
         .bind(user.user_id).fetch_all(&state.db).await?;
     Ok(Json(json!({"items":items})))
@@ -59,7 +59,7 @@ async fn collection_set(
         .bind(id)
         .execute(&mut *tx)
         .await?;
-    let owned:Option<i64>=sqlx::query_scalar("SELECT id FROM devices WHERE id=$1 AND owner_id=$2 AND device_kind IS DISTINCT FROM 'phone' FOR UPDATE")
+    let owned:Option<i64>=sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE id=$1 AND owner_id=$2 AND device_kind IS DISTINCT FROM 'phone' FOR UPDATE")
         .bind(id).bind(user.user_id).fetch_optional(&mut *tx).await?;
     if owned.is_none() {
         return Err(AppError::NotFound);

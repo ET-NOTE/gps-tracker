@@ -55,12 +55,13 @@ pub fn router() -> Router<AppState> {
         .route("/devices/:id/locations", get(history))
 }
 async fn ensure_owner(state: &AppState, device_id: i64, user_id: i64) -> AppResult<()> {
-    let exists: bool =
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)")
-            .bind(device_id)
-            .bind(user_id)
-            .fetch_one(&state.db)
-            .await?;
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)",
+    )
+    .bind(device_id)
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
     if exists {
         Ok(())
     } else {
@@ -76,14 +77,14 @@ async fn latest(
     let row = sqlx::query_as::<_, LocationView>(
         "WITH newest AS MATERIALIZED (
           SELECT location_point_bound(recorded_at,fixes_jsonb,true) AS at
-          FROM location_records WHERE device_id=$1 AND user_id=$2
+          FROM gps_read_location_records WHERE device_id=$1 AND user_id=$2
             AND location_point_bound(recorded_at,fixes_jsonb,true) IS NOT NULL
           ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC LIMIT 1
         ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
           p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
           p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
           FROM newest n CROSS JOIN LATERAL location_history_points_between($1,$2,n.at,n.at) p
-          WHERE EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+          WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
           ORDER BY p.source LIMIT 1",
     )
     .bind(id)
@@ -159,7 +160,7 @@ async fn page(
          WHERE recorded_at < $5 AND ($6::text IS NULL OR source=$6)
            AND ($7::bool IS NULL OR fix=$7)
            AND ($8::timestamptz IS NULL OR (recorded_at,source)<($8,$9))
-           AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+           AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
          ORDER BY recorded_at DESC,source DESC LIMIT $10
         ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
         SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
@@ -222,7 +223,7 @@ async fn history(
         "WITH scoped AS MATERIALIZED (
           SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)
           WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
-            AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+            AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
         ), anchors AS MATERIALIZED (
           SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
         ), bounds AS (

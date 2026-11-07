@@ -79,7 +79,7 @@ async fn create_share(
     let mut tx = state.db.begin().await?;
     // 본인 소유 확인
     let owner: Option<i64> =
-        sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1 FOR SHARE")
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1 FOR SHARE")
             .bind(device_id)
             .fetch_optional(&mut *tx)
             .await?
@@ -145,7 +145,7 @@ async fn extend_share(
     let cur: Option<(i64, DateTime<Utc>)> = sqlx::query_as(
         r#"SELECT s.id, s.expires_at
              FROM share_tokens s
-             JOIN devices d ON d.id = s.device_id
+             JOIN gps_read_devices d ON d.id = s.device_id
             WHERE s.id = $1 AND d.owner_id = $2 AND s.created_by = $2 AND s.revoked_at IS NULL FOR UPDATE OF s FOR SHARE OF d"#,
     )
     .bind(share_id)
@@ -203,11 +203,12 @@ async fn list_shares(
     user: AuthUser,
     Path(device_id): Path<i64>,
 ) -> AppResult<Json<Vec<ShareView>>> {
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(device_id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(device_id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
@@ -238,7 +239,7 @@ async fn revoke_share(
               SET revoked_at = now()
             WHERE id = $1
               AND revoked_at IS NULL
-              AND device_id IN (SELECT id FROM devices WHERE owner_id = $2)"#,
+              AND device_id IN (SELECT id FROM gps_read_devices WHERE owner_id = $2)"#,
     )
     .bind(share_id)
     .bind(user.user_id)
@@ -275,9 +276,9 @@ async fn public_view(
 
     let row: SharedDeviceRow = sqlx::query_as(
         r#"SELECT display_name, color, icon, last_seen_at, last_lat, last_lng
-             FROM devices WHERE id = $1 AND EXISTS (
-               SELECT 1 FROM share_tokens s WHERE s.token=$2 AND s.device_id=devices.id
-                 AND s.created_by=devices.owner_id AND s.revoked_at IS NULL AND s.expires_at>now())"#,
+             FROM gps_read_devices WHERE id = $1 AND EXISTS (
+               SELECT 1 FROM share_tokens s WHERE s.token=$2 AND s.device_id=gps_read_devices.id
+                 AND s.created_by=gps_read_devices.owner_id AND s.revoked_at IS NULL AND s.expires_at>now())"#,
     )
     .bind(device_id).bind(&token)
     .fetch_optional(&state.db)
@@ -335,9 +336,9 @@ async fn public_locations(
 
     let rows = sqlx::query_as::<_, PublicLocationRow>(
         r#"WITH scoped AS MATERIALIZED (SELECT recorded_at, fix, lat, lng, anchor_at, source, speed_kmh, speed_source
-             FROM location_speed_points_between($1,(SELECT owner_id FROM devices WHERE id=$1),$2,$3) p
+             FROM location_speed_points_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$3) p
             WHERE device_id = $1 AND EXISTS (
-              SELECT 1 FROM share_tokens s JOIN devices d ON d.id=s.device_id
+              SELECT 1 FROM share_tokens s JOIN gps_read_devices d ON d.id=s.device_id
               WHERE s.token=$6 AND s.device_id=p.device_id AND s.created_by=p.user_id
                 AND d.owner_id=p.user_id AND s.revoked_at IS NULL AND s.expires_at>now())
               AND ($2::timestamptz IS NULL OR recorded_at >= $2)
@@ -384,7 +385,7 @@ async fn public_daily_stats(
         r#"SELECT date, fix_count
              FROM daily_stats ds
             WHERE device_id = $1 AND fix_count > 0 AND EXISTS (
-              SELECT 1 FROM share_tokens s JOIN devices d ON d.id=s.device_id
+              SELECT 1 FROM share_tokens s JOIN gps_read_devices d ON d.id=s.device_id
               WHERE s.token=$3 AND s.device_id=ds.device_id AND s.created_by=ds.user_id
                 AND d.owner_id=ds.user_id AND s.revoked_at IS NULL AND s.expires_at>now())
             ORDER BY date DESC
@@ -408,7 +409,7 @@ async fn resolve_token(
 ) -> AppResult<(i64, DateTime<Utc>, Option<String>)> {
     let row: SharePolicyRow = sqlx::query_as(
         r#"SELECT s.device_id, s.expires_at, s.revoked_at, s.note
-                 FROM share_tokens s JOIN devices d ON d.id=s.device_id
+                 FROM share_tokens s JOIN gps_read_devices d ON d.id=s.device_id
                 WHERE s.token = $1 AND s.created_by=d.owner_id"#,
     )
     .bind(token)

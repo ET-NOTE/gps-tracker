@@ -136,7 +136,7 @@ async fn analyze_for(
     }
     // 본인 소유 + 표시명
     let dev: Option<(Option<i64>, Option<String>)> =
-        sqlx::query_as("SELECT owner_id, display_name FROM devices WHERE id = $1")
+        sqlx::query_as("SELECT owner_id, display_name FROM gps_read_devices WHERE id = $1")
             .bind(device_id)
             .fetch_optional(&state.db)
             .await?;
@@ -239,7 +239,7 @@ async fn analyze_for(
         let enriched = enrich_speeds(&points);
         let mut signals = detect_anomalies(&enriched, &stops);
         let lifecycle: Vec<Lifecycle> = sqlx::query_as(
-            "SELECT occurred_at,kind FROM events WHERE device_id=$1 AND user_id=$2 AND kind IN ('sleep_enter','wake','online') AND occurred_at >= $3-interval '1 day' AND occurred_at < $4 ORDER BY occurred_at,id LIMIT 10001"
+            "SELECT occurred_at,kind FROM gps_read_events WHERE device_id=$1 AND user_id=$2 AND kind IN ('sleep_enter','wake','online') AND occurred_at >= $3-interval '1 day' AND occurred_at < $4 ORDER BY occurred_at,id LIMIT 10001"
         ).bind(device_id).bind(user.user_id).bind(start).bind(end).fetch_all(&state.db).await?;
         apply_observation_gaps(&mut signals, &points, &lifecycle);
         let geo = resolve_geography(&state.db, &points, &stops).await;
@@ -323,11 +323,12 @@ async fn list_analyses(
     Query(q): Query<AnalysisListQuery>,
 ) -> AppResult<Json<Vec<AnalysisRow>>> {
     // 본인 디바이스 검증
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(device_id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(device_id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }

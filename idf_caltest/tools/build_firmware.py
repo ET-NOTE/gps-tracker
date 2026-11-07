@@ -35,8 +35,10 @@ def source_digest():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("profile", choices=("operating", "https-pilot", "https-sleep-test", "tls-cert-test", "kc", "battery"))
+    parser.add_argument("profile", choices=("operating", "https-operating", "https-pilot", "https-sleep-test", "tls-cert-test", "kc", "battery"))
     parser.add_argument("--test-ca-header", type=Path)
+    parser.add_argument("--source-manifest", type=Path,
+                        help="Hash-verified Git source archive metadata for an isolated build host")
     args = parser.parse_args()
     if (args.profile == "tls-cert-test") != bool(args.test_ca_header):
         parser.error("Only tls-cert-test requires --test-ca-header")
@@ -52,9 +54,19 @@ def main():
     version = output(sys.executable, str(idf / "tools/idf.py"), "--version")
     if not re.search(r"\bv5\.5\.4\b", version):
         raise SystemExit(f"ESP-IDF v5.5.4 required by dependencies.lock; found {version}")
-    commit = output("git", "rev-parse", "HEAD")
-    dirty = bool(output("git", "status", "--porcelain", "--", "idf_caltest"))
-    revision = commit[:10] + ("-dirty" if dirty else "")
+    if args.source_manifest:
+        metadata = json.loads(args.source_manifest.read_text(encoding="utf-8"))
+        commit, dirty = metadata["git_commit"], metadata["dirty"]
+        if not re.fullmatch(r"[0-9a-f]{40}", commit) or not isinstance(dirty, bool):
+            raise SystemExit("Invalid source archive identity")
+        for name, expected in metadata["files_sha256"].items():
+            file = (REPO / name).resolve()
+            if not file.is_relative_to(PROJECT) or sha(file) != expected:
+                raise SystemExit(f"Source archive hash mismatch: {name}")
+    else:
+        commit = output("git", "rev-parse", "HEAD")
+        dirty = bool(output("git", "status", "--porcelain", "--", "idf_caltest"))
+    revision = commit[:8] + ("-dirty" if dirty else "")
     before = source_digest()
     lock_before = sha(PROJECT / "dependencies.lock")
     build = PROJECT / "build" / args.profile
@@ -64,7 +76,7 @@ def main():
     manifest.unlink(missing_ok=True)
     sdkconfig = build / "sdkconfig"
     shutil.copyfile(PROJECT / "sdkconfig", sdkconfig)
-    if args.profile in ("https-pilot", "https-sleep-test", "tls-cert-test"):
+    if args.profile in ("https-operating", "https-pilot", "https-sleep-test", "tls-cert-test"):
         config = sdkconfig.read_text().replace("# CONFIG_MBEDTLS_HAVE_TIME_DATE is not set", "CONFIG_MBEDTLS_HAVE_TIME_DATE=y")
         sdkconfig.write_text(config)
     subprocess.run([sys.executable, str(idf / "tools/idf.py"), "-B", str(build),
@@ -87,14 +99,14 @@ def main():
             settings["sleep_disabled"] != 1 or settings["loop_wdt_enabled"] != 0 or
             settings["buzzer_enabled"] != 0):
         raise SystemExit("KC protection mismatch")
-    expected_url = ("https" if args.profile in ("https-pilot", "https-sleep-test") else "http") + "://gps.serial.kr/ingest"
+    expected_url = ("https" if args.profile in ("https-operating", "https-pilot", "https-sleep-test") else "http") + "://gps.serial.kr/ingest"
     if args.profile == "tls-cert-test":
         expected_url = "https://gps.serial.kr:18443/tls-probe"
         if settings["request_auth"] != "none_test_probe" or settings["credential_store"] != "unused":
             raise SystemExit("Certificate test must not use production credentials")
     if settings["ingest_url"] != expected_url:
         raise SystemExit("Compiled ingest URL mismatch")
-    if args.profile == "operating" and (settings["kc_test"] != 0 or
+    if args.profile in ("operating", "https-operating") and (settings["kc_test"] != 0 or
                                        settings["sleep_disabled"] != 0 or
                                        settings["timer_wake_s"] != 86400):
         raise SystemExit("Operating sleep configuration mismatch")
@@ -122,6 +134,7 @@ def main():
                    {"caltest.elf", "flasher_args.json", "flash_args", "sdkconfig"})
     manifest.write_text(json.dumps({
         "git_commit": commit, "dirty": dirty, "source_sha256": before,
+        "source_archive_manifest_sha256": sha(args.source_manifest) if args.source_manifest else None,
         "dependency_lock_sha256": lock_before, "idf_version": version,
         "firmware": settings, "test_ca_header_sha256": ca_hash,
         "files_sha256": {f: sha(build / f) for f in files},

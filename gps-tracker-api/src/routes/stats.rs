@@ -28,11 +28,12 @@ async fn active_dates(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Vec<NaiveDate>>> {
     // owner 검증
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
@@ -41,11 +42,11 @@ async fn active_dates(
     // the production Timescale hypertable (SQLSTATE 0A000).
     let rows: Vec<(NaiveDate,)> = sqlx::query_as(
         r#"SELECT DISTINCT dates.d
-             FROM location_records r
+             FROM gps_read_location_records r
             CROSS JOIN LATERAL
                   unnest(location_fix_dates(r.recorded_at,r.fixes_jsonb,r.fix)) AS dates(d)
             WHERE r.device_id = $1 AND r.user_id = $2
-              AND EXISTS(SELECT 1 FROM devices WHERE id=$1 AND owner_id=$2)
+              AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
             ORDER BY dates.d DESC
             LIMIT 365"#,
     )
@@ -85,11 +86,12 @@ async fn daily(
     Query(q): Query<DailyQuery>,
 ) -> AppResult<Json<Vec<DailyRow>>> {
     // 본인 소유 검증
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }

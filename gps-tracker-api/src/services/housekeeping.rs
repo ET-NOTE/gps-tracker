@@ -68,7 +68,7 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
     // 90일 안에 transition 없고 펜스/디바이스 한쪽이 사라졌으면 정리.
     let r = sqlx::query(
         "DELETE FROM geofence_states s \
-          WHERE (NOT EXISTS (SELECT 1 FROM devices d WHERE d.id = s.device_id) \
+          WHERE (NOT EXISTS (SELECT 1 FROM gps_read_devices d WHERE d.id = s.device_id) \
               OR NOT EXISTS (SELECT 1 FROM geofences g WHERE g.id = s.geofence_id)) \
             AND (s.last_transition_at IS NULL OR s.last_transition_at < now() - interval '90 days')"
     ).execute(pool).await?;

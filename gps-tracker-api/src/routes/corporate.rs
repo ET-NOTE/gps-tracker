@@ -214,7 +214,7 @@ async fn compute_trips_inner_ex(
     // 1) wake/sleep_enter 페어링으로 trip 경계 산출 — user_id 격리
     let events: Vec<(String, DateTime<Utc>, Option<serde_json::Value>)> = sqlx::query_as(
         r#"SELECT kind, occurred_at, data
-             FROM events
+             FROM gps_read_events
             WHERE device_id = $1 AND user_id = $4
               AND kind IN ('wake','sleep_enter')
               AND occurred_at >= $2 AND occurred_at <= $3
@@ -799,12 +799,13 @@ async fn trips_csv(
             .fetch_optional(&state.db)
             .await?
             .flatten();
-    let device_name: Option<String> =
-        sqlx::query_scalar("SELECT COALESCE(display_name, device_uid) FROM devices WHERE id = $1")
-            .bind(device_id)
-            .fetch_optional(&state.db)
-            .await?
-            .flatten();
+    let device_name: Option<String> = sqlx::query_scalar(
+        "SELECT COALESCE(display_name, device_uid) FROM gps_read_devices WHERE id = $1",
+    )
+    .bind(device_id)
+    .fetch_optional(&state.db)
+    .await?
+    .flatten();
 
     // \u{FEFF} BOM + CRLF (엑셀 친화)
     let mut s = String::new();
@@ -1034,7 +1035,7 @@ async fn list_fleet_trip_stats(
               COALESCE(SUM(ds.fix_count) FILTER (WHERE ds.date = $4), 0)::bigint AS today_fix_count,
               MAX(ds.last_fix_at) FILTER (WHERE ds.date = $4) AS today_last_fix_at,
               MAX(ds.updated_at) FILTER (WHERE ds.date = $4) AS today_updated_at
-            FROM devices d
+            FROM gps_read_devices d
             LEFT JOIN daily_stats ds
               ON ds.device_id = d.id
              AND ds.user_id   = $1
@@ -1227,7 +1228,7 @@ async fn report_xlsx(
                     r#"SELECT id, display_name, device_uid, license_plate, car_model, model_year, engine_cc,
                           purchase_price_krw, acquired_at, department, vehicle_type,
                           fuel_efficiency_kmpl, fuel_type
-                     FROM devices
+                     FROM gps_read_devices
                     WHERE owner_id = $1 AND (department IS NULL OR department = ANY($2::TEXT[]))
                     ORDER BY id"#,
                 )
@@ -1240,7 +1241,7 @@ async fn report_xlsx(
                     r#"SELECT id, display_name, device_uid, license_plate, car_model, model_year, engine_cc,
                           purchase_price_krw, acquired_at, department, vehicle_type,
                           fuel_efficiency_kmpl, fuel_type
-                     FROM devices
+                     FROM gps_read_devices
                     WHERE owner_id = $1 AND department = ANY($2::TEXT[])
                     ORDER BY id"#,
                 )
@@ -1253,7 +1254,7 @@ async fn report_xlsx(
                     r#"SELECT id, display_name, device_uid, license_plate, car_model, model_year, engine_cc,
                           purchase_price_krw, acquired_at, department, vehicle_type,
                           fuel_efficiency_kmpl, fuel_type
-                     FROM devices WHERE owner_id = $1 AND department IS NULL
+                     FROM gps_read_devices WHERE owner_id = $1 AND department IS NULL
                     ORDER BY id"#,
                 )
                 .bind(user.user_id)
@@ -1265,7 +1266,7 @@ async fn report_xlsx(
             r#"SELECT id, display_name, device_uid, license_plate, car_model, model_year, engine_cc,
                       purchase_price_krw, acquired_at, department, vehicle_type,
                       fuel_efficiency_kmpl, fuel_type
-                 FROM devices WHERE owner_id = $1
+                 FROM gps_read_devices WHERE owner_id = $1
                 ORDER BY id"#,
         )
         .bind(user.user_id)
@@ -1439,8 +1440,8 @@ struct Reservation {
     device_id: i64,
     driver_staff_id: Option<i64>,
     driver_name: Option<String>,   // JOIN staff
-    device_name: Option<String>,   // JOIN devices
-    license_plate: Option<String>, // JOIN devices
+    device_name: Option<String>,   // JOIN gps_read_devices
+    license_plate: Option<String>, // JOIN gps_read_devices
     starts_at: DateTime<Utc>,
     ends_at: DateTime<Utc>,
     purpose: Option<String>,
@@ -1514,7 +1515,7 @@ async fn list_reservations(
                       r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
-            LEFT JOIN devices d ON d.id = r.device_id
+            LEFT JOIN gps_read_devices d ON d.id = r.device_id
                 WHERE r.device_id IS NOT NULL AND r.user_id = $1 AND r.device_id = $2
                   AND r.starts_at < $4 AND r.ends_at > $3
                   AND r.status = ANY($5::TEXT[])
@@ -1534,7 +1535,7 @@ async fn list_reservations(
                       r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
-            LEFT JOIN devices d ON d.id = r.device_id
+            LEFT JOIN gps_read_devices d ON d.id = r.device_id
                 WHERE r.device_id IS NOT NULL AND r.user_id = $1 AND r.device_id = $2
                   AND r.starts_at < $4 AND r.ends_at > $3
                 ORDER BY r.starts_at DESC"#,
@@ -1552,7 +1553,7 @@ async fn list_reservations(
                       r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
-            LEFT JOIN devices d ON d.id = r.device_id
+            LEFT JOIN gps_read_devices d ON d.id = r.device_id
                 WHERE r.device_id IS NOT NULL AND r.user_id = $1
                   AND r.starts_at < $3 AND r.ends_at > $2
                   AND r.status = ANY($4::TEXT[])
@@ -1571,7 +1572,7 @@ async fn list_reservations(
                       r.starts_at, r.ends_at, r.purpose, r.note, r.status, r.created_at
                  FROM vehicle_reservations r
             LEFT JOIN staff   s ON s.id = r.driver_staff_id
-            LEFT JOIN devices d ON d.id = r.device_id
+            LEFT JOIN gps_read_devices d ON d.id = r.device_id
                 WHERE r.device_id IS NOT NULL AND r.user_id = $1
                   AND r.starts_at < $3 AND r.ends_at > $2
                 ORDER BY r.starts_at DESC"#,
@@ -1644,7 +1645,7 @@ async fn create_reservation(
                   ins.starts_at, ins.ends_at, ins.purpose, ins.note, ins.status, ins.created_at
              FROM ins
         LEFT JOIN staff   s ON s.id = ins.driver_staff_id
-        LEFT JOIN devices d ON d.id = ins.device_id"#,
+        LEFT JOIN gps_read_devices d ON d.id = ins.device_id"#,
     )
     .bind(user.user_id)
     .bind(req.device_id)
@@ -1672,7 +1673,7 @@ async fn update_reservation(
         ));
     }
     // [보안] device_id / driver_staff_id 를 타인 소유로 바꾸는 IDOR 차단 — create 와 동일 검증.
-    //   (미검증 시 응답의 LEFT JOIN devices/staff 가 남의 번호판·직원명을 유출)
+    //   (미검증 시 응답의 LEFT JOIN gps_read_devices/staff 가 남의 번호판·직원명을 유출)
     verify_device_owner(&state, user.user_id, req.device_id).await?;
     verify_staff_owner(&state, user.user_id, req.driver_staff_id).await?;
     let status = req.status.unwrap_or_else(|| "planned".into());
@@ -1727,7 +1728,7 @@ async fn update_reservation(
                   upd.starts_at, upd.ends_at, upd.purpose, upd.note, upd.status, upd.created_at
              FROM upd
         LEFT JOIN staff   s ON s.id = upd.driver_staff_id
-        LEFT JOIN devices d ON d.id = upd.device_id"#,
+        LEFT JOIN gps_read_devices d ON d.id = upd.device_id"#,
     )
     .bind(id)
     .bind(user.user_id)
@@ -1880,11 +1881,12 @@ async fn buy_subscription(
 
 // ─── 헬퍼 ────────────────────────────────────────────
 async fn verify_device_owner(state: &AppState, uid: i64, device_id: i64) -> AppResult<()> {
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(device_id)
-        .fetch_optional(&state.db)
-        .await?
-        .flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(device_id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(uid) {
         return Err(AppError::NotFound);
     }

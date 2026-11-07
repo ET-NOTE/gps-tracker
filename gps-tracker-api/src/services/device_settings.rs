@@ -28,7 +28,7 @@ pub async fn save(db: &PgPool, device: i64, user: i64, seconds: i32) -> AppResul
     }
     let mut tx = db.begin().await?;
     let kind: Option<Option<String>> = sqlx::query_scalar(
-        "SELECT device_kind FROM devices WHERE id=$1 AND owner_id=$2 FOR UPDATE",
+        "SELECT device_kind FROM gps_read_devices WHERE id=$1 AND owner_id=$2 FOR UPDATE",
     )
     .bind(device)
     .bind(user)

@@ -34,6 +34,7 @@ async fn main() -> anyhow::Result<()> {
 
     // ── config & db ───────────────────────────────────────
     services::admin_security::validate_config()?;
+    services::transport_security::validate_config()?;
     let cfg = config::Config::from_env().context("failed to load config")?;
     tracing::info!(bind = %cfg.bind_addr, "starting gps-tracker-api");
     let fcm = services::fcm::make_client(cfg.fcm_service_account_path.as_deref())?;
@@ -58,6 +59,9 @@ async fn main() -> anyhow::Result<()> {
             .await
             .context("runtime DB boundary")?;
     }
+
+    services::location_storage::verify(&pool, services::location_storage::load()?.is_some())
+        .await?;
 
     // FCM 클라이언트 — events 워커와 채팅 푸시가 공유
 
@@ -116,6 +120,9 @@ async fn main() -> anyhow::Result<()> {
     // AI gets a bounded longer budget; all other endpoints retain 30 seconds.
     let app = routes::build_router(state)
         .layer(DefaultBodyLimit::max(1024 * 1024))
+        .layer(axum::middleware::from_fn(
+            services::transport_security::middleware,
+        ))
         .layer(axum::middleware::from_fn(request_timeout))
         .layer(TraceLayer::new_for_http().make_span_with(services::http_trace::span))
         .layer(cors);
