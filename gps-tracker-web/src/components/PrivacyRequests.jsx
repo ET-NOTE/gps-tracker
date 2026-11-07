@@ -6,6 +6,7 @@ import { api } from '../api';
 import './PrivacyRequests.css';
 import CollectionControl from './CollectionControl';
 import ProcessingControl from './ProcessingControl';
+import {SubjectMappings,ProvisionNotices} from './SubjectProvision';
 import {PersonalDeliveries,AdminDeliveries} from './PrivacyDelivery';
 import {PersonalAccountPackages,AdminAccountPackages} from './PrivacyAccountPackage';
 import {PersonalRedacted,AdminRedacted} from './PrivacyRedacted';
@@ -60,6 +61,8 @@ export default function PrivacyRequests() {
   return <div className="rights-panel">
     <CollectionControl/>
     <ProcessingControl/>
+    <SubjectMappings/>
+    <ProvisionNotices/>
     <CompanyTaskInbox/>
     <section className="rights-card">
       <h2>개인정보 요청</h2>

@@ -85,6 +85,7 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("location access ledger")?;
 
+    services::subject_provision::start(pool.clone(), fcm.clone()).await?;
     services::fcm::spawn(pool.clone(), fcm);
     services::geofence::spawn_offline_worker(pool.clone());
     services::stats::spawn_worker(pool.clone());

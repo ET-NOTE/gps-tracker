@@ -47,7 +47,10 @@ def check(root=ROOT):
     for key, entry in entries.items():
         file,method,route=key.split(' ',2)
         assert entry['reason'].strip(), key
-        assert entry['class'] in ('ledger','non_location','outside_api'),key
+        assert entry['class'] in ('ledger','handler_ledger','non_location','outside_api'),key
+        if entry['class']=='handler_ledger':
+            assert key=='subject_provision.rs GET /corporate/subject-mappings/:id/locations',key
+            assert 'access_ledger::begin(Access' in (root/'gps-tracker-api/src/routes/subject_provision.rs').read_text(encoding='utf-8'), 'manual ledger missing'
         if entry['class']=='ledger': assert (method,route) in rules, f'missing ledger rule {key}'
     for method,route in rules:
         assert any(k.endswith(f' {method} {route}') and v['class']=='ledger' for k,v in entries.items()),(method,route)

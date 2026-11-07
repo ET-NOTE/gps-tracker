@@ -9,6 +9,7 @@ import { api } from '../api';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
 import StaffTab from './business/FleetPeople';
+import {CompanySubjectMappings} from './SubjectProvision';
 import FleetSites from './business/FleetSites';
 import FleetExpenses from './business/FleetExpenses';
 import {TripAssignmentModal,TripRulesModal,TripAssignmentHistory} from './business/FleetTripAssignments';
@@ -64,7 +65,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const report = (device,filter=null) => { setReportDevice(device.id); setReportFilter(filter); setTab('report'); };
   if(assets.isPending||terminals.isPending)return <SkeletonList count={3} itemHeight={140}/>;
   if(assets.error)return <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>;
-  if(terminals.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={terminals.refetch}>단말기 상태를 불러오지 못했습니다.</BusinessError></div>;
+  if(terminals.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={terminals.refetch}>단말기 상태를 불러오지 못했습니다.</BusinessError>{access.manage_team&&<CompanySubjectMappings/>}</div>;
   return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     mobileAction={<BusinessButton icon="user" onClick={()=>setTab('staff')}>사용자</BusinessButton>}
     action={tab === 'reservations' ? <BusinessButton primary icon="plus" onClick={() => reserve({ new: true })}>차량 예약</BusinessButton> : null}>
@@ -73,7 +74,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onVehicles={()=>setTab('vehicles')} />}
     {tab === 'vehicles' && <FleetAssets onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={rawOnMap} onChanged={assets.refetch} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
-    {tab === 'staff' && <StaffTab />}
+    {tab === 'staff' && <><StaffTab />{access.manage_team&&<CompanySubjectMappings/>}</>}
     {tab === 'sites' && <FleetSites />}
     {['expenses','expense-categories'].includes(tab) && <FleetExpenses categoriesOnly={tab==='expense-categories'}/>}
     {['report','monthly'].includes(tab) && <>

@@ -13,7 +13,7 @@ def bootstrap(dsn,officer,operator,cidrs,reference,apply=False):
  with psycopg2.connect(dsn) as db:
   with db.cursor() as c:
    c.execute('SELECT current_database(), max(version) FROM _sqlx_migrations');name,version=c.fetchone()
-   if not name.startswith('gps_') or version not in (102,103,104,105):raise ValueError('reviewed GPS schema 102 or 103 required')
+   if not name.startswith('gps_') or version not in (102,103,104,105,106):raise ValueError('reviewed GPS schema 102 or 103 required')
    c.execute('SELECT pg_advisory_xact_lock(1911,0)')
    c.execute('SELECT count(*) FROM admin_principals')
    if c.fetchone()[0]:raise ValueError('already initialized; use approved UI change or documented offline recovery')

@@ -27,6 +27,7 @@ async function calendar(file, name) {
   const code = (await transform(source + `\nexport { ${name} };`, {loader:'jsx', jsx:'automatic', format:'esm'})).code;
   const mod = new vm.SourceTextModule(code, {context});
   await mod.link(specifier => {
+    if(specifier==='./SubjectProvision')return moduleOf({CompanySubjectMappings:noop});
     if (specifier==='react') return moduleOf(React);
     if (specifier==='react/jsx-runtime') return moduleOf(jsx);
     if (specifier==='../lib/business') return moduleOf(business);

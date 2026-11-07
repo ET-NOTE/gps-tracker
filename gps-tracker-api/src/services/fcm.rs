@@ -74,6 +74,23 @@ pub struct FcmClient {
 }
 
 impl FcmClient {
+    #[cfg(test)]
+    pub(super) fn subject_test_client(url: String) -> Self {
+        Self {
+            sa: ServiceAccount {
+                project_id: "synthetic".into(),
+                private_key: String::new(),
+                client_email: String::new(),
+                token_uri: String::new(),
+            },
+            http: reqwest::Client::new(),
+            cached_token: Mutex::new(Some((
+                "synthetic-only".into(),
+                Instant::now() + Duration::from_secs(3600),
+            ))),
+            send_url: url,
+        }
+    }
     pub fn try_load(path: &str) -> anyhow::Result<Self> {
         let raw = std::fs::read_to_string(path)?;
         let sa: ServiceAccount = serde_json::from_str(&raw)?;
@@ -133,7 +150,7 @@ impl FcmClient {
         Ok(res.access_token)
     }
 
-    async fn send_to_token(
+    pub(super) async fn send_to_token(
         &self,
         access: &str,
         token: &str,
@@ -189,7 +206,7 @@ fn stringify_data(v: &Value) -> Value {
 }
 
 #[derive(Debug, PartialEq)]
-enum Delivery {
+pub(super) enum Delivery {
     Sent,
     Unregistered,
     Retry(u64, String),

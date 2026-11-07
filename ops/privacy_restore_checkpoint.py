@@ -12,10 +12,15 @@ def export(cfg, path):
     try:
         with transaction(db), db.cursor() as c:
             c.execute('SELECT pg_advisory_xact_lock(%s)', (LOCK,))
-            result = {'version': 1, 'tables': {}}
+            c.execute("SELECT to_regclass('location_subject_mappings') IS NOT NULL")
+            subjects=c.fetchone()[0]
+            result = {'version': 2 if subjects else 1, 'tables': {}}
             for name in ('privacy_processing_controls', 'privacy_retention_consents', 'privacy_retention_runs', 'device_data_controls', 'privacy_account_controls'):
                 c.execute(f"SELECT coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) FROM {name} t")
                 result['tables'][name] = c.fetchone()[0]
+            if subjects:
+                from privacy_subject_checkpoint import snapshot
+                result['tables'].update(snapshot(c))
             c.execute("SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'created_at',created_at,'iccid',iccid,'owner_id',owner_id)),'[]'::jsonb) FROM devices")
             result['sim_identities']=c.fetchone()[0]
             c.execute("SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'created_at',created_at)), '[]'::jsonb) FROM users WHERE id IN (SELECT user_id FROM privacy_processing_controls UNION SELECT user_id FROM privacy_retention_consents UNION SELECT user_id FROM privacy_retention_runs UNION SELECT user_id FROM privacy_account_controls)")
@@ -31,7 +36,7 @@ def restore(cfg, path, expected_sha256):
     body = pathlib.Path(path).read_bytes()
     if hashlib.sha256(body).hexdigest() != expected_sha256: raise ValueError('checkpoint hash mismatch')
     data = json.loads(body)
-    if data.get('version') != 1: raise ValueError('unsupported checkpoint')
+    if data.get('version') not in (1,2): raise ValueError('unsupported checkpoint')
     db = connect(cfg)
     try:
         with transaction(db), db.cursor() as c:
@@ -46,6 +51,12 @@ def restore(cfg, path, expected_sha256):
             for identity in data['sim_identities']:
                 c.execute('SELECT created_at=%s::timestamptz AND iccid IS NOT DISTINCT FROM %s AND owner_id IS NOT DISTINCT FROM %s FROM devices WHERE id=%s', (identity['created_at'],identity['iccid'],identity['owner_id'],identity['id']))
                 if c.fetchone() != (True,): raise ValueError('checkpoint SIM identity mismatch')
+            c.execute("SELECT to_regclass('location_subject_mappings') IS NOT NULL")
+            subjects=c.fetchone()[0]
+            if subjects != (data['version']==2): raise ValueError('subject-aware checkpoint required for schema106')
+            if subjects:
+                from privacy_subject_checkpoint import replay
+                replay(c,data['tables'])
             for row in data['tables']['device_data_controls']:
                 c.execute('''UPDATE device_data_controls SET blocked=blocked OR %s,
                     collection_paused=%s,collection_enforced=true,collection_epoch=gen_random_uuid(),

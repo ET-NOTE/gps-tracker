@@ -38,3 +38,5 @@ pub mod transport_security;
 pub mod xlsx_report;
 
 pub mod private_files;
+
+pub mod subject_provision;

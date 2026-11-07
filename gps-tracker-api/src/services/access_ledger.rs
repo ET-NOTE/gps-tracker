@@ -14,7 +14,7 @@ use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use sqlx::PgPool;
 use std::{future::Future, sync::OnceLock};
 
-pub const SCOPE_VERSION: i32 = 2;
+pub const SCOPE_VERSION: i32 = 3;
 pub const MIN_KEEP_DAYS: i64 = 185;
 const PREFIX: &str = "/gps-tracker/api/v1";
 
@@ -76,9 +76,12 @@ impl Ticket {
     }
     pub async fn finish(self, outcome: &'static str) -> anyhow::Result<()> {
         if let (Some(id), Some(h)) = (self.0, HANDLE.get()) {
+            let mut tx = h.pool.begin().await?;
             let changed = sqlx::query("UPDATE location_access_events SET outcome=$2,completed_at=clock_timestamp() WHERE id=$1 AND outcome='prepared'")
-                .bind(id).bind(outcome).execute(&h.pool).await?.rows_affected();
+                .bind(id).bind(outcome).execute(&mut *tx).await?.rows_affected();
             anyhow::ensure!(changed == 1, "access intent unavailable; response blocked");
+            super::subject_provision::complete(&mut tx, id, outcome).await?;
+            tx.commit().await?;
         }
         drop(self.1);
         Ok(())
@@ -166,7 +169,7 @@ pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
             anyhow::ensure!(!erased, "access intent precedes reviewed erasure boundary");
         }
     }
-    let (kind, user, name) = match access.recipient {
+    let (kind, user, name) = match access.recipient.clone() {
         Recipient::Own(id) => ("self", Some(id), None),
         Recipient::Company(id) => ("company", Some(id), None),
         Recipient::Admin(id) => ("admin", Some(id), None),
@@ -183,6 +186,7 @@ pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
         .bind(access.at).bind(h.coverage).bind(account).bind(attribution).bind(matches!(access.target,Target::Everyone))
         .bind(device).bind(vehicle).bind(share).bind(kind).bind(user).bind(name).bind(access.path).bind(access.method).bind(access.route)
         .bind(access.range.map(|r|r.0)).bind(access.range.map(|r|r.1)).bind(bindings).fetch_one(&mut *tx).await?;
+    super::subject_provision::prepare(&mut tx, &access, id, account, device, vehicle).await?;
     sqlx::query("UPDATE location_access_coverage SET alive_at=GREATEST(alive_at,clock_timestamp()) WHERE id=$1")
         .bind(h.coverage).execute(&mut *tx).await?;
     tx.commit().await?;

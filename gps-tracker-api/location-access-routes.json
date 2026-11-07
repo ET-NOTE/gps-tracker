@@ -1230,5 +1230,37 @@
   "privacy.rs POST /privacy/processing": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "subject_provision.rs GET /corporate/subject-mappings": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs POST /corporate/subject-mappings": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs GET /privacy/subject-mappings": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs POST /privacy/subject-mappings/:id/decision": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs GET /privacy/provision-notices": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs POST /privacy/provision-notices/:id/read": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs POST /privacy/provision-notices/:id/retry": {
+    "class": "non_location",
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "subject_provision.rs GET /corporate/subject-mappings/:id/locations": {
+    "class": "handler_ledger",
+    "reason": "Handler enforces FleetScope and immutable subject interval before manual durable ledger intent; no caller-controlled range."
   }
 }

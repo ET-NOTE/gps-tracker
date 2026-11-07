@@ -38,3 +38,7 @@ docs/evidence/crypto20b-20261107/*.log whitespace=-blank-at-eof
 # Round 21 evidence must keep identical bytes across Windows/Linux checkouts.
 docs/evidence/lifecycle21-20261107/* -text
 docs/evidence/lifecycle21-20261107/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Round 22 exact verification evidence.
+docs/evidence/provision22-20261108/* -text
+docs/evidence/provision22-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol

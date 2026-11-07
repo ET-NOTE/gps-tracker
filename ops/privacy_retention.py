@@ -48,6 +48,11 @@ def run(cfg, execute=False):
                 c.execute('''SELECT EXISTS(SELECT 1 FROM fleet_vehicles WHERE owner_id=%s)
                     OR EXISTS(SELECT 1 FROM fleet_staff_accounts WHERE account_id=%s)''', (uid, uid))
                 company = c.fetchone()[0]
+                c.execute("SELECT to_regclass('location_subject_mappings') IS NOT NULL")
+                if c.fetchone()[0]:
+                    c.execute("SELECT EXISTS(SELECT 1 FROM location_subject_mappings WHERE owner_id=%s OR subject_id=%s)",(uid,uid))
+                    mapped = c.fetchone()[0]
+                    company = company or mapped
                 if company:
                     reasons.append('company_subject_and_retention_review')
                 c.execute('''SELECT EXISTS(SELECT 1 FROM location_records r JOIN devices d ON d.id=r.device_id

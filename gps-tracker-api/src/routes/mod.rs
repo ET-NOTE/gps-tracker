@@ -52,6 +52,7 @@ pub fn build_router(state: AppState) -> Router {
     let api_v1 = Router::new()
         .merge(auth::router())
         .merge(privacy::router())
+        .merge(subject_provision::router())
         .merge(privacy_delivery::router())
         .merge(privacy_packages::router())
         .merge(privacy_redacted::router())
@@ -132,3 +133,5 @@ pub fn build_router(state: AppState) -> Router {
         ))
         .with_state(state)
 }
+
+pub mod subject_provision;

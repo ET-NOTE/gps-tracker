@@ -15,6 +15,7 @@ async function components(api={}) {
   const code=(await transform(source+'\nexport {ReviewForm};',{loader:'jsx',jsx:'automatic',format:'esm'})).code;
   const m=new vm.SourceTextModule(code,{context});
   await m.link(name=>{
+    if(name==='./SubjectProvision')return moduleOf({SubjectMappings:()=>null,ProvisionNotices:()=>null});
     if(name==='./PrivacyImages')return moduleOf({PersonalImages:()=>null,AdminImages:()=>null});
     if(name==='./PrivacyRedacted')return moduleOf({PersonalRedacted:()=>null,AdminRedacted:()=>null});
     if(name==='./PrivacyAccountPackage')return moduleOf({PersonalAccountPackages:()=>null,AdminAccountPackages:()=>null});

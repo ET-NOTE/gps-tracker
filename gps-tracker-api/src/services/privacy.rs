@@ -159,6 +159,16 @@ pub async fn impact(db: &PgPool, user: i64) -> AppResult<Value> {
         ("ai_analyses", "user_id", "AI 분석 결과"),
         ("device_documents", "user_id", "차량 첨부파일"),
         ("rental_photos", "user_id", "렌터카 사진"),
+        (
+            "location_subject_mappings",
+            "subject_id",
+            "본인 운전자 연결·동의 이력",
+        ),
+        (
+            "location_provision_notices",
+            "subject_id",
+            "본인 위치정보 제공 통보",
+        ),
         ("fleet_vehicles", "owner_id", "회사 차량"),
         ("staff", "user_id", "회사 사용자 명단"),
         ("fleet_staff_accounts", "account_id", "직원으로 연결한 회사"),
@@ -181,7 +191,7 @@ pub async fn impact(db: &PgPool, user: i64) -> AppResult<Value> {
     }
     tx.commit().await?;
     Ok(json!({"as_of":Utc::now(),"read_only":true,"items":rows,
-        "manual_review":["회사에 보관된 직원 개인정보·운전자 스냅샷", "회사 처리 보고서·증빙과 검토 이력의 보관·삭제","법적 보존 대상 거래 자료와 보관 기한","서버 첨부파일·백업·배포 사본·외부 전달본","기존 소유자 미상(NULL) 자료와 공용 캐시"],
+        "manual_review":["회사에 보관된 직원 개인정보·운전자 스냅샷", "운전자 연결 동의·제공 통보·발송 증빙의 별도 보존 및 파기", "회사 처리 보고서·증빙과 검토 이력의 보관·삭제","법적 보존 대상 거래 자료와 보관 기한","서버 첨부파일·백업·배포 사본·외부 전달본","기존 소유자 미상(NULL) 자료와 공용 캐시"],
         "deletion_ready":false}))
 }
 

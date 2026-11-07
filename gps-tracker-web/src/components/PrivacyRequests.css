@@ -10,6 +10,7 @@
 .rights-panel button:disabled{opacity:.55;cursor:wait}.rights-panel button:focus-visible,.rights-panel input:focus-visible,.rights-panel select:focus-visible,.rights-panel textarea:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .rights-panel .rights-primary{background:var(--primary);color:white;border-color:var(--primary)}
 .rights-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rights-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .rights-request{padding:16px 0;border-top:1px solid var(--border)}.rights-text{white-space:pre-wrap}
 .rights-notice{padding:12px;border-radius:8px;background:var(--bg)}.rights-panel .rights-error{color:var(--danger)}
 .rights-impact{margin:16px 0}.rights-counts{font-size:13px}.rights-counts>div{display:flex;gap:12px;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}.rights-counts dd{margin:0;flex-shrink:0;font-variant-numeric:tabular-nums}
