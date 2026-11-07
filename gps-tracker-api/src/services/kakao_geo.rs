@@ -81,14 +81,19 @@ pub async fn reverse_with(
     lng: f64,
 ) -> anyhow::Result<Resolved> {
     let url = format!("{URL}?x={lng}&y={lat}");
-    let resp: Resp = client
+    let ticket = super::access_ledger::sent_to("kakao", "geocode").await?;
+    let response = client
         .get(&url)
         .header("Authorization", format!("KakaoAK {key}"))
         .send()
+        .await;
+    let resp: Resp = super::access_ledger::external_response(ticket, response)
         .await?
-        .error_for_status()?
+        .error_for_status()
+        .map_err(|_| anyhow::anyhow!("map service rejected request"))?
         .json()
-        .await?;
+        .await
+        .map_err(|_| anyhow::anyhow!("map response decoding failed"))?;
     let doc = resp
         .documents
         .into_iter()
@@ -218,8 +223,7 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
                 .timeout(Duration::from_secs(6))
                 .build()
             {
-                // Coordinates leave for the map service here (cache misses only).
-                super::access_ledger::sent_to("kakao", "geocode");
+                // Each cache miss is recorded inside reverse_with before HTTP.
                 // 각 miss 셀의 첫 좌표로 한 번만 호출
                 // owned 로 미리 materialize — coords/cell_to_indices(빌림)를 stream await 너머로
                 //   넘기면 handler future non-Send. (cell, lat, lng) 소유 튜플로 복사 후 into_iter.

@@ -1,0 +1,9 @@
+name: Location access route inventory
+on: [pull_request, push]
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 ops/check_location_access_routes.py
+      - run: python3 ops/test_location_access_routes.py

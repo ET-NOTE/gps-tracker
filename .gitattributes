@@ -15,3 +15,9 @@ gps-tracker-api/migrations/0085_preserve_legacy_aggregates.sql -text !eol whites
 # Preserve reproducible 18A evidence and Linux deployment script hashes on Windows.
 docs/operations/evidence/location-business-round18a-20261107/* text eol=lf
 ops/nginx-privacy/* text eol=lf
+
+# Exact review evidence; screenshots are binary.
+docs/operations/evidence/location-business-round18b-20261107/*.json text eol=lf
+docs/operations/evidence/location-business-round18b-20261107/*.log text eol=lf whitespace=-blank-at-eof
+docs/operations/evidence/location-business-round18b-20261107/*.html text eol=lf
+docs/operations/evidence/location-business-round18b-20261107/*.txt text eol=lf

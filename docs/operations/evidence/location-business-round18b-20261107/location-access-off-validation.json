@@ -1,0 +1,11 @@
+{
+  "mode": "off",
+  "integration_groups": 3,
+  "groups": [
+    "with recording off, reads by the owner, an administrator and a share link leave no record and no period of recording exists",
+    "with no period of recording, the facts file is what round 17 released: no access records and the eight statements",
+    "the ledger endpoint is for administrators only and says that nothing is being recorded"
+  ],
+  "api_sha256": "36522dd395e2d0c024198ad00ec12147c291bf2373ba64ae8607846e4b349712",
+  "schema": 101
+}

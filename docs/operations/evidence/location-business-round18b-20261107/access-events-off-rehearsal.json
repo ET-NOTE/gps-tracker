@@ -1,0 +1,18 @@
+{
+  "environment": "disposable-internal-docker",
+  "baseline_api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "candidate_api_sha256": "36522dd395e2d0c024198ad00ec12147c291bf2373ba64ae8607846e4b349712",
+  "schema_path": [
+    99,
+    101,
+    99,
+    101
+  ],
+  "groups": [
+    "99 -> 101 OFF migration: real baseline 18A binary, same database, account/SIM/request fingerprint preserved, no events or coverage created",
+    "empty-ledger-only rollback restores baseline API and schema 99; unrelated account/SIM/request data identical",
+    "second OFF upgrade succeeds; no ledger enablement or destructive data migration"
+  ],
+  "identity_fingerprint_unchanged": true,
+  "production_changed": false
+}

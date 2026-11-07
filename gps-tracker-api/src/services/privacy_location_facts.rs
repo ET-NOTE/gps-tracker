@@ -88,9 +88,9 @@ fn not_recorded(started: Option<DateTime<Utc>>) -> Vec<String> {
     let since = (started + Duration::hours(9)).format("%Y-%m-%d %H:%M");
     vec![
         format!("본인 계정·회사 연결 계정·운영자의 조회, 공유 링크 열람, 외부 서비스 전달: 기록을 시작한 {since}(한국 시간) 이전과 access_records.recorded_periods에 없는 시간에는 기록이 없으며, 소급해 만들지 않습니다."),
-        "조회 기록은 1시간 단위로 묶은 횟수와 처음·마지막 시각입니다. 건별 시각, 조회한 내용, 위치는 남기지 않습니다.".into(),
-        "공유 링크를 받은 사람: 누구인지는 기록하지 않으며 링크별 열람 시간대와 횟수만 남습니다. 만료·회수 후 30일이 지난 링크는 목록에서 삭제됩니다.".into(),
-        "실패하거나 거부된 요청, 공유 화면에서 받는 사람의 브라우저가 지도 서비스로 직접 보내는 주소 변환, 서비스 내부의 자동 처리(구역 출입 판정, 통계 집계, 지점 방문 판정): 기록하지 않습니다.".into(),
+        "새 조회 기록은 건별 시각과 처리 상태를 남깁니다. 이전 집계는 legacy_hourly로 구분합니다. 조회 내용과 위치는 저장하지 않습니다.".into(),
+        "공유 링크를 받은 사람의 신원은 확인하지 않으며, 링크별 요청 시각과 처리 상태만 남습니다. 만료·회수 후 30일이 지난 링크는 목록에서 삭제됩니다.".into(),
+        "인증 전 거부, 공유 화면에서 받는 사람의 브라우저가 지도 서비스로 직접 보내는 주소 변환, 서비스 내부의 자동 처리(구역 출입 판정, 통계 집계, 지점 방문 판정): 기록하지 않습니다.".into(),
         NOT_RECORDED[5].into(),
         NOT_RECORDED[6].into(),
         NOT_RECORDED[7].into(),
@@ -182,15 +182,15 @@ pub async fn export(
         None => None,
         Some(started) => {
             let periods = list(tx, uid, from, until,
-                "SELECT jsonb_build_object('from',GREATEST(c.started_at,$2),'until',LEAST(COALESCE(c.stopped_at,c.alive_at),$3),                 'ended',CASE WHEN c.stopped_at IS NOT NULL THEN 'stopped' WHEN c.id=(SELECT max(n.id) FROM location_access_coverage n) THEN 'running' ELSE 'interrupted' END,                 'not_kept',c.dropped) FROM location_access_coverage c                  WHERE $1::bigint IS NOT NULL AND c.started_at<$3 AND COALESCE(c.stopped_at,c.alive_at)>=$2 ORDER BY c.id LIMIT 501", 500).await?;
+                "SELECT jsonb_build_object('from',GREATEST(c.started_at,$2),'until',LEAST(COALESCE(c.stopped_at,c.alive_at),$3),                 'ended',CASE WHEN c.stopped_at IS NOT NULL THEN 'stopped' ELSE 'unconfirmed' END,                 'not_kept',c.dropped) FROM location_access_coverage c                  WHERE $1::bigint IS NOT NULL AND c.started_at<$3 AND COALESCE(c.stopped_at,c.alive_at)>=$2 ORDER BY c.id LIMIT 501", 500).await?;
             // The account a company member or an administrator used is not named, only that it was one.
             let records = list(tx, uid, from, until, &format!(
-                "SELECT jsonb_build_object('first_at',g.first_at,'last_at',g.last_at,'count',g.hits,'recipient',g.recipient_kind,'service',g.recipient_name,                 'via',g.path,'kind',g.method,'device_id',g.device_id,'vehicle_id',g.vehicle_id,'share_link_id',g.share_id,'all_accounts',g.all_subjects,                 'requested_from',g.range_from,'requested_until',g.range_until)                  FROM location_access_log g WHERE (g.subject_user_id=$1 OR g.all_subjects) AND g.last_at>=$2 AND g.first_at<$3                  AND (g.device_id IS NULL OR ({g})) ORDER BY g.bucket,g.id LIMIT 2001"), 2000).await?;
+                "SELECT jsonb_build_object('first_at',g.first_at,'last_at',g.last_at,'count',g.hits,'recipient',g.recipient_kind,'service',g.recipient_name,                 'via',g.path,'kind',g.method,'device_id',g.device_id,'vehicle_id',g.vehicle_id,'share_link_id',g.share_id,'all_accounts',g.all_subjects,                 'requested_from',g.range_from,'requested_until',g.range_until,'attribution',g.attribution,'outcome',g.outcome,'route',g.route,'record_type',g.record_type,'actual_subject_user_id',g.actual_subject_user_id)                  FROM location_access_records g WHERE g.subject_user_id=$1 AND g.attribution NOT IN ('company_scope','all_accounts','unresolved','legacy_unverified') AND g.last_at>=$2 AND g.first_at<$3                  AND (g.device_id IS NULL OR ({g})) ORDER BY g.bucket,g.id LIMIT 2001"), 2000).await?;
             Some(json!({
                 "recording_started_at": started,
                 "recorded_periods": periods,
                 "records": records,
-                "notice": "기록을 시작한 뒤 본인의 위치정보를 누가(recipient) 어떤 경로(via)와 방법(kind)으로 받았는지를 1시간 단위로 모은 기록입니다.             recipient는 self(본인 계정), company(회사에 연결된 계정), admin(운영자), share_link(공유 링크를 받은 사람), processor(service에 적힌 외부 서비스)입니다.             via는 api(앱·웹 화면), share_link, realtime(실시간 화면 연결), impersonation(운영자의 대리 접속), server(서비스가 외부로 보냄)이고,             kind는 position(현재 위치), track(이동 경로), trips(운행), stats(통계), events(구역·방문 사건), analysis(AI 분석), file(파일), geocode(주소 변환), push(알림)입니다.             recorded_periods는 기록기가 동작한 시간이며 ended가 interrupted인 구간의 끝 몇 초와 not_kept에 적힌 건수는 남지 않았을 수 있습니다.             all_accounts는 운영자가 전체 목록을 조회한 기록입니다. requested_from·requested_until은 요청한 자료의 기간입니다.",
+                "notice": "기록 시작 후 계정 범위의 건별 조회·전달 처리 기록입니다. 계정은 실제 운전자와 동일하다고 확정하지 않습니다. attribution은 귀속 근거, actual_subject_user_id는 확정된 정보주체(현재 미확정)입니다. response_ready는 HTTP 응답 준비, socket_sent는 소켓 쓰기 완료, http_accepted/http_rejected는 외부 서버 응답입니다. 최종 사용자의 수신·열람은 증명하지 않습니다. prepared는 중단 등으로 결과 미확정, transport_unknown은 통신 결과 미확정, denied는 거부된 요청입니다. legacy_hourly는 이전 방식의 시간별 집계이며 귀속을 소급 확정하지 않습니다. requested_from/until이 없으면 자료 기간을 특정하지 못한 요청입니다. 회사·공유·귀속 미상 자료는 별도 검토가 필요합니다.",
             }))
         }
     };

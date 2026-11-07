@@ -120,5 +120,9 @@ pub fn build_router(state: AppState) -> Router {
         )
         .nest("/gps-tracker/api/v1", api_v1)
         .nest("/gps-tracker/ws", ws::router())
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            crate::services::access_ledger::outer_middleware,
+        ))
         .with_state(state)
 }

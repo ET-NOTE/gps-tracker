@@ -133,17 +133,23 @@ impl FcmClient {
         Ok(res.access_token)
     }
 
-    async fn send_to_token(&self, access: &str, token: &str, message: Value) -> Delivery {
+    async fn send_to_token(
+        &self,
+        access: &str,
+        token: &str,
+        message: Value,
+        ticket: super::access_ledger::Ticket,
+    ) -> Delivery {
         let body = json!({"message": {"token":token, "notification":message["notification"],
             "data":stringify_data(&message["data"]), "android":message["android"]}});
-        let response = match self
+        let result = self
             .http
             .post(&self.send_url)
             .bearer_auth(access)
             .json(&body)
             .send()
-            .await
-        {
+            .await;
+        let response = match super::access_ledger::external_response(ticket, result).await {
             Ok(res) => res,
             Err(_) => return Delivery::Retry(60, "transport".into()),
         };
@@ -325,6 +331,7 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
         .fetch_optional(pool)
         .await?;
         let Some(mut item) = item else { break };
+        let mut ledger_access = None;
         if let Some(event) = item.event_id {
             if !policy::relevant(pool, event).await? {
                 cancel_delivery(pool, item.id, "no_longer_relevant").await?;
@@ -333,7 +340,7 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
             let ev: PendingEvent = sqlx::query_as("SELECT e.id,e.device_id,d.display_name AS device_name,e.kind,e.data,e.user_id,e.occurred_at FROM events e JOIN devices d ON d.id=e.device_id WHERE e.id=$1")
                 .bind(event).fetch_one(pool).await?;
             item.message = event_message(pool, &ev).await;
-            note_push(&ev);
+            ledger_access = push_access(&ev);
         } else if !matches!(
             item.message["data"]["kind"].as_str(),
             Some("chat_admin_message" | "chat_user_message")
@@ -373,8 +380,12 @@ async fn process_batch(pool: &PgPool, client: Option<&FcmClient>) -> anyhow::Res
         if active.is_none() {
             continue;
         }
+        let ticket = match ledger_access {
+            Some(access) => super::access_ledger::begin(access).await?,
+            None => super::access_ledger::Ticket::off(),
+        };
         let outcome = client
-            .send_to_token(&access, &item.token, item.message)
+            .send_to_token(&access, &item.token, item.message, ticket)
             .await;
         authorization.commit().await?;
         let (status, delay, error) = match outcome {
@@ -468,19 +479,28 @@ async fn resolve_addr(pool: &PgPool, device: i64, lat: f64, lng: f64) -> Option<
 }
 
 /// A push whose text comes from a position (a place name, a zone crossing) is handed to the push service.
-fn note_push(ev: &PendingEvent) {
+fn push_access(ev: &PendingEvent) -> Option<super::access_ledger::Access> {
     if matches!(
         policy::kind(&ev.kind, ev.data.as_ref()),
         "cycle_first_fix" | "geofence_in" | "geofence_out"
     ) {
-        super::access_ledger::note(super::access_ledger::Access {
+        Some(super::access_ledger::Access {
             at: chrono::Utc::now(),
-            target: super::access_ledger::Target::Device(ev.device_id),
+            target: match ev.user_id {
+                Some(account) => super::access_ledger::Target::ScopedDevice {
+                    account,
+                    device: ev.device_id,
+                },
+                None => super::access_ledger::Target::Unattributed,
+            },
             recipient: super::access_ledger::Recipient::Processor("fcm"),
             path: "server",
             method: "push",
+            route: "fcm",
             range: None,
-        });
+        })
+    } else {
+        None
     }
 }
 

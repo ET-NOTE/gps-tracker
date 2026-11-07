@@ -75,20 +75,6 @@ async fn handler(
     ws.on_upgrade(move |socket| run(socket, state, user_id, claims.exp, reader))
 }
 
-/// A live stream is recorded when it is opened and again while it stays open.
-fn note_stream(reader: &Recipient, devices: &[i64]) {
-    for id in devices {
-        access_ledger::note(Access {
-            at: chrono::Utc::now(),
-            target: Target::Device(*id),
-            recipient: reader.clone(),
-            path: "realtime",
-            method: "position",
-            range: None,
-        });
-    }
-}
-
 async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, reader: Recipient) {
     let (mut sender, mut receiver) = socket.split();
     let mut rx = state.events.subscribe();
@@ -105,7 +91,6 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, 
 
     let subs_for_recv = subs.clone();
     let db_for_recv = state.db.clone();
-    let reader_for_recv = reader.clone();
     let recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             match msg {
@@ -127,7 +112,6 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, 
                     .await
                     .unwrap_or_default();
 
-                    note_stream(&reader_for_recv, &allowed);
                     let allowed_set: HashSet<i64> = allowed.iter().copied().collect();
                     let rejected: Vec<i64> = cmd
                         .device_ids
@@ -183,7 +167,6 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, 
                         "SELECT id FROM devices WHERE owner_id = $1 AND id = ANY($2)",
                     ).bind(user_id).bind(&current).fetch_all(&state.db).await {
                       Ok(still) => {
-                        note_stream(&reader, &still);
                         let still_set: HashSet<i64> = still.into_iter().collect();
                         let mut s = subs.lock().unwrap();
                         s.retain(|id| still_set.contains(id));
@@ -242,10 +225,16 @@ async fn run(socket: WebSocket, state: AppState, user_id: i64, expires_at: i64, 
                             Ok(s) => s,
                             Err(_) => continue,
                         };
-                        if !matches!(tokio::time::timeout(std::time::Duration::from_secs(3),
-                            sender.send(Message::Text(payload))).await, Ok(Ok(()))) {
-                            break;
-                        }
+                        let ticket = match ev.target() {
+                            EventTarget::Device(device, _) => match access_ledger::begin(Access {
+                                at:chrono::Utc::now(),target:Target::ScopedDevice{account:user_id,device},
+                                recipient:reader.clone(),path:"realtime",method:"position",route:"/realtime",range:None,
+                            }).await {Ok(ticket)=>ticket, Err(_)=>break},
+                            EventTarget::User(_)=>access_ledger::Ticket::off(),
+                        };
+                        let sent=matches!(tokio::time::timeout(std::time::Duration::from_secs(3),
+                            sender.send(Message::Text(payload))).await, Ok(Ok(())));
+                        if ticket.finish(if sent {"socket_sent"} else {"transport_unknown"}).await.is_err() || !sent {break;}
                         if authorization.commit().await.is_err() { break; }
                     }
                     Err(RecvError::Lagged(n)) => {

@@ -18,6 +18,7 @@ here=pathlib.Path(__file__).parent
 helpers=(here/'test_privacy_packages.py').read_text()
 exec(compile(helpers.split('owner,other,admin=')[0],__file__,'exec'))
 ON=cfg.get('GPS_LOCATION_ACCESS_LOG')=='on'
+assert not (ON and sql('SELECT max(version) FROM _sqlx_migrations')>=101), '18B ON validation uses test_location_access_events.py; legacy hourly assertions are historical only'
 owner,other,admin,member=[account(n) for n in [81,82,83,84]]
 uid,oid,aid,mid=owner['user_id'],other['user_id'],admin['user_id'],member['user_id'];token=owner['access_token'];at=admin['access_token']
 sql("UPDATE users SET role='admin' WHERE id=%s",(aid,))

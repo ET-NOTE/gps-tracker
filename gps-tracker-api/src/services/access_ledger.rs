@@ -1,15 +1,6 @@
-//! The record of who was given a person's location information: who received it, through what,
-//! how and when (위치정보 이용·제공사실 확인자료, the handling ledger). Never the location itself:
-//! no coordinate, address, response body or link token is kept.
-//!
-//! Recording is off unless `GPS_LOCATION_ACCESS_LOG=on`. Nothing is made up for the past: the
-//! periods in which the recorder ran are in `location_access_coverage`, and a read outside them
-//! has no record.
-//!
-//! A request never waits for the ledger. A fact goes to a bounded queue; a background task gathers
-//! equal facts of the same hour into one row (first time, last time, count) and writes every few
-//! seconds. A fact that cannot be queued is counted in the coverage row instead of being lost
-//! silently. An unclean stop loses at most the facts gathered since the last write.
+//! Durable, per-operation access intents. Account scope is NOT the actual driver.
+//! OFF by default. When ON, an intent commits before data can leave; recording failure
+//! blocks that operation. A prepared intent after a crash has an UNKNOWN outcome.
 use crate::{
     auth::{fleet::FleetScope, jwt},
     state::AppState,
@@ -17,52 +8,34 @@ use crate::{
 use axum::{
     extract::{MatchedPath, Request, State},
     middleware::Next,
-    response::Response,
+    response::{IntoResponse, Response},
 };
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use sqlx::PgPool;
-use std::{
-    collections::HashMap,
-    future::Future,
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        OnceLock,
-    },
-    time::Duration,
-};
-use tokio::sync::{mpsc, oneshot};
+use std::{future::Future, sync::OnceLock};
 
-/// Raised whenever the set of recorded reads changes, so a period can be read with the list that applied.
-pub const SCOPE_VERSION: i32 = 1;
-/// The shortest retention that can be configured. The table itself refuses to delete a row
-/// younger than six months (위치정보의 관리적·기술적 보호조치 기준 제6조); six calendar months are
-/// at most 184 days, so a purge at this setting never meets that refusal.
+pub const SCOPE_VERSION: i32 = 2;
 pub const MIN_KEEP_DAYS: i64 = 185;
-const QUEUE: usize = 8192;
-const MAX_PENDING: usize = 50_000;
 const PREFIX: &str = "/gps-tracker/api/v1";
 
-/// Whose location information it was.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Target {
-    /// One device; the account is the device's owner when the row is written.
+    /// Owner snapshot is context, never proof of historical subject identity.
     Device(i64),
-    /// Everything of one account.
+    ScopedDevice {
+        account: i64,
+        device: i64,
+    },
     Account(i64),
     Vehicle {
         owner: i64,
         vehicle: i64,
     },
-    /// A share link by its token. Resolved to the link's id; the token is never stored.
     Share(String),
-    /// The account a privacy request is about.
     Request(i64),
     Everyone,
-    /// An outside transfer whose call site named no subject. It is recorded so that it is noticed.
     Unattributed,
 }
-
-/// Who received it.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Recipient {
     Own(i64),
@@ -71,7 +44,6 @@ pub enum Recipient {
     ShareLink,
     Processor(&'static str),
 }
-
 #[derive(Clone, Debug)]
 pub struct Access {
     pub at: DateTime<Utc>,
@@ -79,62 +51,173 @@ pub struct Access {
     pub recipient: Recipient,
     pub path: &'static str,
     pub method: &'static str,
+    pub route: &'static str,
     pub range: Option<(DateTime<Utc>, DateTime<Utc>)>,
 }
-
-enum Message {
-    Fact(Access),
-    Close(oneshot::Sender<()>),
-}
 struct Handle {
-    queue: mpsc::Sender<Message>,
-    dropped: AtomicU64,
+    pool: PgPool,
+    coverage: i64,
 }
 static HANDLE: OnceLock<Handle> = OnceLock::new();
 tokio::task_local! { static ABOUT: Target; }
-
 pub fn enabled() -> bool {
     HANDLE.get().is_some()
 }
-
-/// Never blocks and never fails the caller.
-pub fn note(access: Access) {
-    if let Some(handle) = HANDLE.get() {
-        if handle.queue.try_send(Message::Fact(access)).is_err() {
-            handle.dropped.fetch_add(1, Ordering::Relaxed);
-        }
-    }
-}
-
-/// Names the subject for whatever `work` sends to an outside service.
 pub async fn about<F: Future>(target: Target, work: F) -> F::Output {
     ABOUT.scope(target, work).await
 }
 
-/// Called at the point where location-derived data actually leaves for an outside service.
-pub fn sent_to(processor: &'static str, method: &'static str) {
-    if enabled() {
-        note(Access {
-            at: Utc::now(),
-            target: ABOUT.try_with(Clone::clone).unwrap_or(Target::Unattributed),
-            recipient: Recipient::Processor(processor),
-            path: "server",
-            method,
-            range: None,
-        });
+/// Non-cloneable capability to complete exactly one committed intent.
+#[derive(Debug)]
+pub struct Ticket(Option<i64>);
+impl Ticket {
+    pub fn off() -> Self {
+        Self(None)
+    }
+    pub async fn finish(self, outcome: &'static str) -> anyhow::Result<()> {
+        if let (Some(id), Some(h)) = (self.0, HANDLE.get()) {
+            let changed = sqlx::query("UPDATE location_access_events SET outcome=$2,completed_at=clock_timestamp() WHERE id=$1 AND outcome='prepared'")
+                .bind(id).bind(outcome).execute(&h.pool).await?.rows_affected();
+            anyhow::ensure!(changed == 1, "access intent unavailable; response blocked");
+        }
+        Ok(())
     }
 }
 
-/// Starts recording when it is switched on. A coverage row marks the start of this run.
+pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
+    let Some(h) = HANDLE.get() else {
+        return Ok(Ticket::off());
+    };
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL statement_timeout='5s'")
+        .execute(&mut *tx)
+        .await?;
+    let (mut account, mut device, mut vehicle, mut share) = (None, None, None, None);
+    let attribution = match &access.target {
+        Target::ScopedDevice {
+            account: owner,
+            device: id,
+        } => {
+            account = Some(*owner);
+            device = Some(*id);
+            "request_account"
+        }
+        Target::Device(id) => {
+            device = Some(*id);
+            account =
+                sqlx::query_scalar::<_, Option<i64>>("SELECT owner_id FROM devices WHERE id=$1")
+                    .bind(id)
+                    .fetch_optional(&mut *tx)
+                    .await?
+                    .flatten();
+            "owner_snapshot"
+        }
+        Target::Account(id) => {
+            account = Some(*id);
+            "request_account"
+        }
+        Target::Vehicle { owner, vehicle: id } => {
+            account = Some(*owner);
+            vehicle = Some(*id);
+            "company_scope"
+        }
+        Target::Share(token) => {
+            let row: Option<(i64, Option<i64>, Option<i64>)> =
+                sqlx::query_as("SELECT id,device_id,created_by FROM share_tokens WHERE token=$1")
+                    .bind(token)
+                    .fetch_optional(&mut *tx)
+                    .await?;
+            if let Some((id, d, u)) = row {
+                share = Some(id);
+                device = d;
+                account = u;
+            }
+            "share_creator"
+        }
+        Target::Request(id) => {
+            account = sqlx::query_scalar("SELECT user_id FROM privacy_requests WHERE id=$1")
+                .bind(id)
+                .fetch_optional(&mut *tx)
+                .await?;
+            "privacy_request"
+        }
+        Target::Everyone => "all_accounts",
+        Target::Unattributed => "unresolved",
+    };
+    // Corporate routes, even when called by the owner, do not establish a personal subject.
+    let attribution = if access.route.starts_with("/corporate/")
+        || matches!(access.recipient, Recipient::Company(_))
+    {
+        "company_scope"
+    } else {
+        attribution
+    };
+    if let Some(account) = account {
+        sqlx::query("SELECT pg_advisory_xact_lock(1830,$1::int)")
+            .bind(account as i32)
+            .execute(&mut *tx)
+            .await?;
+        if matches!(attribution, "request_account" | "privacy_request") {
+            let erased:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM location_access_erasure_runs WHERE account_scope_id=$1 AND period_from<=$2 AND period_until>$2)")
+                .bind(account).bind(access.at).fetch_one(&mut *tx).await?;
+            anyhow::ensure!(!erased, "access intent precedes reviewed erasure boundary");
+        }
+    }
+    let (kind, user, name) = match access.recipient {
+        Recipient::Own(id) => ("self", Some(id), None),
+        Recipient::Company(id) => ("company", Some(id), None),
+        Recipient::Admin(id) => ("admin", Some(id), None),
+        Recipient::ShareLink => ("share_link", None, None),
+        Recipient::Processor(name) => ("processor", None, Some(name)),
+    };
+    let bindings: serde_json::Value = if let Some(vehicle) = vehicle {
+        sqlx::query_scalar("SELECT COALESCE(jsonb_agg(jsonb_build_object('id',id,'device_id',device_id,'started_at',started_at,'ended_at',ended_at,'is_primary',is_primary) ORDER BY id),'[]'::jsonb) FROM fleet_vehicle_bindings WHERE vehicle_id=$1 AND owner_id=$2")
+            .bind(vehicle).bind(account).fetch_one(&mut *tx).await?
+    } else {
+        serde_json::json!([])
+    };
+    let id:i64=sqlx::query_scalar("INSERT INTO location_access_events(started_at,coverage_id,account_scope_id,attribution,all_subjects,device_id,vehicle_id,share_id,recipient_kind,recipient_user_id,recipient_name,path,method,route,range_from,range_until,binding_snapshot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id")
+        .bind(access.at).bind(h.coverage).bind(account).bind(attribution).bind(matches!(access.target,Target::Everyone))
+        .bind(device).bind(vehicle).bind(share).bind(kind).bind(user).bind(name).bind(access.path).bind(access.method).bind(access.route)
+        .bind(access.range.map(|r|r.0)).bind(access.range.map(|r|r.1)).bind(bindings).fetch_one(&mut *tx).await?;
+    sqlx::query("UPDATE location_access_coverage SET alive_at=GREATEST(alive_at,clock_timestamp()) WHERE id=$1")
+        .bind(h.coverage).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(Ticket(Some(id)))
+}
+
+pub async fn sent_to(processor: &'static str, method: &'static str) -> anyhow::Result<Ticket> {
+    begin(Access {
+        at: Utc::now(),
+        target: ABOUT.try_with(Clone::clone).unwrap_or(Target::Unattributed),
+        recipient: Recipient::Processor(processor),
+        path: "server",
+        method,
+        route: processor,
+        range: None,
+    })
+    .await
+}
+
+/// Wrap the actual network operation, not cache hits or queue insertion.
+pub async fn external_response(
+    ticket: Ticket,
+    result: Result<reqwest::Response, reqwest::Error>,
+) -> anyhow::Result<reqwest::Response> {
+    let outcome = match &result {
+        Ok(r) if r.status().is_success() => "http_accepted",
+        Ok(_) => "http_rejected",
+        Err(_) => "transport_unknown",
+    };
+    ticket.finish(outcome).await?;
+    // Do not propagate reqwest's URL (which can contain coordinates) to logs.
+    result.map_err(|_| anyhow::anyhow!("external transport failed; delivery unknown"))
+}
+
 pub async fn start(pool: PgPool) -> anyhow::Result<bool> {
     if std::env::var("GPS_LOCATION_ACCESS_LOG").as_deref() != Ok("on") {
         return Ok(false);
     }
-    let seconds = std::env::var("GPS_LOCATION_ACCESS_FLUSH_SECONDS")
-        .ok()
-        .and_then(|v| v.parse::<u64>().ok())
-        .unwrap_or(30)
-        .clamp(1, 300);
     let coverage: i64 = sqlx::query_scalar(
         "INSERT INTO location_access_coverage(release,scope_version) VALUES($1,$2) RETURNING id",
     )
@@ -142,329 +225,25 @@ pub async fn start(pool: PgPool) -> anyhow::Result<bool> {
     .bind(SCOPE_VERSION)
     .fetch_one(&pool)
     .await?;
-    let (queue, facts) = mpsc::channel(QUEUE);
     HANDLE
-        .set(Handle {
-            queue,
-            dropped: AtomicU64::new(0),
-        })
-        .map_err(|_| anyhow::anyhow!("the location access ledger was started twice"))?;
-    tokio::spawn(run(pool, facts, coverage, Duration::from_secs(seconds)));
-    tracing::info!(coverage, seconds, "location access ledger: recording");
+        .set(Handle { pool, coverage })
+        .map_err(|_| anyhow::anyhow!("ledger already started"))?;
     Ok(true)
 }
-
-/// Writes what is gathered and marks the run as stopped. Called once the server no longer serves.
 pub async fn close() {
-    if let Some(handle) = HANDLE.get() {
-        let (done, finished) = oneshot::channel();
-        if handle.queue.send(Message::Close(done)).await.is_ok() {
-            let _ = tokio::time::timeout(Duration::from_secs(10), finished).await;
-        }
-    }
-}
-
-#[derive(PartialEq, Eq, Hash)]
-struct Key {
-    bucket: i64,
-    target: Target,
-    recipient: Recipient,
-    path: &'static str,
-    method: &'static str,
-}
-struct Seen {
-    first: DateTime<Utc>,
-    last: DateTime<Utc>,
-    hits: i32,
-    range: Option<(DateTime<Utc>, DateTime<Utc>)>,
-}
-
-fn hour(at: DateTime<Utc>) -> i64 {
-    at.timestamp() - at.timestamp().rem_euclid(3600)
-}
-
-fn widen(
-    a: Option<(DateTime<Utc>, DateTime<Utc>)>,
-    b: Option<(DateTime<Utc>, DateTime<Utc>)>,
-) -> Option<(DateTime<Utc>, DateTime<Utc>)> {
-    match (a, b) {
-        (Some(a), Some(b)) => Some((a.0.min(b.0), a.1.max(b.1))),
-        (a, b) => a.or(b),
-    }
-}
-
-/// Returns false when the fact could not be kept.
-fn gather(pending: &mut HashMap<Key, Seen>, access: Access) -> bool {
-    let key = Key {
-        bucket: hour(access.at),
-        target: access.target,
-        recipient: access.recipient,
-        path: access.path,
-        method: access.method,
-    };
-    if pending.len() >= MAX_PENDING && !pending.contains_key(&key) {
-        return false;
-    }
-    let seen = pending.entry(key).or_insert(Seen {
-        first: access.at,
-        last: access.at,
-        hits: 0,
-        range: None,
-    });
-    seen.hits = seen.hits.saturating_add(1);
-    seen.first = seen.first.min(access.at);
-    seen.last = seen.last.max(access.at);
-    seen.range = widen(seen.range, access.range);
-    true
-}
-
-async fn run(pool: PgPool, mut facts: mpsc::Receiver<Message>, coverage: i64, every: Duration) {
-    let mut pending: HashMap<Key, Seen> = HashMap::new();
-    let mut unkept: u64 = 0;
-    let mut tick = tokio::time::interval(every);
-    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-    loop {
-        tokio::select! {
-            message = facts.recv() => match message {
-                Some(Message::Fact(access)) => {
-                    if !gather(&mut pending, access) {
-                        unkept += 1;
-                    }
-                }
-                Some(Message::Close(done)) => {
-                    flush(&pool, &mut pending, coverage, &mut unkept, true).await;
-                    let _ = done.send(());
-                    return;
-                }
-                None => return,
-            },
-            _ = tick.tick() => flush(&pool, &mut pending, coverage, &mut unkept, false).await,
-        }
-    }
-}
-
-async fn flush(
-    pool: &PgPool,
-    pending: &mut HashMap<Key, Seen>,
-    coverage: i64,
-    unkept: &mut u64,
-    stopping: bool,
-) {
-    let dropped = HANDLE
-        .get()
-        .map_or(0, |h| h.dropped.swap(0, Ordering::Relaxed))
-        + std::mem::take(unkept);
-    match write(pool, pending, coverage, dropped, stopping).await {
-        Ok(()) => pending.clear(),
-        Err(error) => {
-            // Kept for the next attempt; the count of what could not be kept is not forgotten either.
-            *unkept += dropped;
-            tracing::warn!("location access ledger: write failed, will retry: {error:#}");
-        }
-    }
-}
-
-struct Line {
-    bucket: DateTime<Utc>,
-    first: DateTime<Utc>,
-    last: DateTime<Utc>,
-    hits: i32,
-    subject: Option<i64>,
-    everyone: bool,
-    device: Option<i64>,
-    vehicle: Option<i64>,
-    share: Option<i64>,
-    kind: &'static str,
-    user: Option<i64>,
-    name: Option<&'static str>,
-    path: &'static str,
-    method: &'static str,
-    range: Option<(DateTime<Utc>, DateTime<Utc>)>,
-}
-
-fn part(value: Option<i64>) -> String {
-    value.map(|v| v.to_string()).unwrap_or_default()
-}
-
-/// One row per hour for one subject, one recipient, one path and one method.
-fn identity(line: &Line) -> String {
-    format!(
-        "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
-        line.bucket.timestamp(),
-        part(line.subject),
-        line.everyone,
-        part(line.device),
-        part(line.vehicle),
-        part(line.share),
-        line.kind,
-        part(line.user),
-        line.name.unwrap_or_default(),
-        line.path,
-        line.method
-    )
-}
-
-async fn write(
-    pool: &PgPool,
-    pending: &HashMap<Key, Seen>,
-    coverage: i64,
-    dropped: u64,
-    stopping: bool,
-) -> anyhow::Result<()> {
-    let mut tx = pool.begin().await?;
-    if !pending.is_empty() {
-        let mut devices = vec![];
-        let mut tokens = vec![];
-        let mut requests = vec![];
-        for key in pending.keys() {
-            match &key.target {
-                Target::Device(id) => devices.push(*id),
-                Target::Share(token) => tokens.push(token.clone()),
-                Target::Request(id) => requests.push(*id),
-                _ => {}
-            }
-        }
-        let owners: HashMap<i64, Option<i64>> = sqlx::query_as::<_, (i64, Option<i64>)>(
-            "SELECT id,owner_id FROM devices WHERE id=ANY($1)",
+    if let Some(h) = HANDLE.get() {
+        if sqlx::query(
+            "UPDATE location_access_coverage SET stopped_at=clock_timestamp() WHERE id=$1",
         )
-        .bind(&devices)
-        .fetch_all(&mut *tx)
-        .await?
-        .into_iter()
-        .collect();
-        let links: HashMap<String, (i64, Option<i64>, Option<i64>)> = sqlx::query_as::<
-            _,
-            (String, i64, Option<i64>, Option<i64>),
-        >(
-            "SELECT s.token,s.id,s.device_id,s.created_by FROM share_tokens s WHERE s.token=ANY($1)",
-        )
-        .bind(&tokens)
-        .fetch_all(&mut *tx)
-        .await?
-        .into_iter()
-        .map(|(token, id, device, owner)| (token, (id, device, owner)))
-        .collect();
-        let subjects: HashMap<i64, i64> = sqlx::query_as::<_, (i64, i64)>(
-            "SELECT id,user_id FROM privacy_requests WHERE id=ANY($1)",
-        )
-        .bind(&requests)
-        .fetch_all(&mut *tx)
-        .await?
-        .into_iter()
-        .collect();
-
-        // Different facts can come to the same row once they are resolved; they are added up here.
-        let mut lines: HashMap<String, Line> = HashMap::new();
-        for (key, seen) in pending {
-            let (mut subject, mut everyone, mut device, mut vehicle, mut share) =
-                (None, false, None, None, None);
-            match &key.target {
-                Target::Device(id) => {
-                    device = Some(*id);
-                    subject = owners.get(id).copied().flatten();
-                }
-                Target::Account(id) => subject = Some(*id),
-                Target::Vehicle { owner, vehicle: id } => {
-                    subject = Some(*owner);
-                    vehicle = Some(*id);
-                }
-                Target::Share(token) => {
-                    if let Some((id, of, owner)) = links.get(token) {
-                        share = Some(*id);
-                        device = *of;
-                        subject = *owner;
-                    }
-                }
-                Target::Request(id) => subject = subjects.get(id).copied(),
-                Target::Everyone => everyone = true,
-                Target::Unattributed => {}
-            }
-            let (kind, user, name) = match key.recipient {
-                Recipient::Own(id) => ("self", Some(id), None),
-                Recipient::Company(id) => ("company", Some(id), None),
-                Recipient::Admin(id) => ("admin", Some(id), None),
-                Recipient::ShareLink => ("share_link", None, None),
-                Recipient::Processor(name) => ("processor", None, Some(name)),
-            };
-            let line = Line {
-                bucket: Utc
-                    .timestamp_opt(key.bucket, 0)
-                    .single()
-                    .unwrap_or(seen.first),
-                first: seen.first,
-                last: seen.last,
-                hits: seen.hits,
-                subject,
-                everyone,
-                device,
-                vehicle,
-                share,
-                kind,
-                user,
-                name,
-                path: key.path,
-                method: key.method,
-                range: seen.range,
-            };
-            match lines.entry(identity(&line)) {
-                std::collections::hash_map::Entry::Occupied(mut same) => {
-                    let same = same.get_mut();
-                    same.hits = same.hits.saturating_add(line.hits);
-                    same.first = same.first.min(line.first);
-                    same.last = same.last.max(line.last);
-                    same.range = widen(same.range, line.range);
-                }
-                std::collections::hash_map::Entry::Vacant(new) => {
-                    new.insert(line);
-                }
-            }
+        .bind(h.coverage)
+        .execute(&h.pool)
+        .await
+        .is_err()
+        {
+            tracing::error!("ledger shutdown marker unavailable; intents remain durable");
         }
-        let keys: Vec<&String> = lines.keys().collect();
-        let rows: Vec<&Line> = keys.iter().map(|key| &lines[*key]).collect();
-        sqlx::query(
-            "INSERT INTO location_access_log(bucket,first_at,last_at,hits,subject_user_id,all_subjects,device_id,vehicle_id,share_id,\
-             recipient_kind,recipient_user_id,recipient_name,path,method,range_from,range_until,bucket_key) \
-             SELECT * FROM UNNEST($1::timestamptz[],$2::timestamptz[],$3::timestamptz[],$4::int[],$5::bigint[],$6::bool[],$7::bigint[],$8::bigint[],$9::bigint[],\
-             $10::text[],$11::bigint[],$12::text[],$13::text[],$14::text[],$15::timestamptz[],$16::timestamptz[],$17::text[]) \
-             ON CONFLICT (bucket_key) DO UPDATE SET hits=location_access_log.hits+EXCLUDED.hits,\
-             last_at=GREATEST(location_access_log.last_at,EXCLUDED.last_at),\
-             range_from=LEAST(location_access_log.range_from,EXCLUDED.range_from),\
-             range_until=GREATEST(location_access_log.range_until,EXCLUDED.range_until)",
-        )
-        .bind(rows.iter().map(|r| r.bucket).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.first).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.last).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.hits).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.subject).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.everyone).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.device).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.vehicle).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.share).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.kind).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.user).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.name).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.path).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.method).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.range.map(|x| x.0)).collect::<Vec<_>>())
-        .bind(rows.iter().map(|r| r.range.map(|x| x.1)).collect::<Vec<_>>())
-        .bind(keys)
-        .execute(&mut *tx)
-        .await?;
     }
-    sqlx::query(
-        "UPDATE location_access_coverage SET alive_at=now(),dropped=dropped+$2,stopped_at=CASE WHEN $3 THEN now() END WHERE id=$1",
-    )
-    .bind(coverage)
-    .bind(i64::try_from(dropped).unwrap_or(i64::MAX))
-    .bind(stopping)
-    .execute(&mut *tx)
-    .await?;
-    tx.commit().await?;
-    Ok(())
 }
-
-/// Removes records older than the stated retention. Runs only when the retention is configured,
-/// and never below the legal floor.
 pub async fn purge(pool: &PgPool) -> anyhow::Result<u64> {
     let Some(days) = std::env::var("GPS_LOCATION_ACCESS_KEEP_DAYS")
         .ok()
@@ -473,21 +252,27 @@ pub async fn purge(pool: &PgPool) -> anyhow::Result<u64> {
         return Ok(0);
     };
     anyhow::ensure!(
-        days >= MIN_KEEP_DAYS,
-        "GPS_LOCATION_ACCESS_KEEP_DAYS={days} is below the minimum of {MIN_KEEP_DAYS} days; nothing was removed"
+        (MIN_KEEP_DAYS..=36500).contains(&days),
+        "invalid ledger retention; nothing removed"
     );
-    let removed = sqlx::query(
-        "DELETE FROM location_access_log WHERE bucket < now() - make_interval(days => $1::int)",
+    let mut tx = pool.begin().await?;
+    let n = sqlx::query(
+        "DELETE FROM location_access_events WHERE started_at<now()-make_interval(days=>$1::int)",
     )
-    .bind(days)
-    .execute(pool)
+    .bind(days as i32)
+    .execute(&mut *tx)
     .await?
     .rows_affected();
-    sqlx::query("DELETE FROM location_access_coverage WHERE COALESCE(stopped_at,alive_at) < now() - make_interval(days => $1::int) AND id<>(SELECT max(id) FROM location_access_coverage)")
-        .bind(days)
-        .execute(pool)
-        .await?;
-    Ok(removed)
+    let old = sqlx::query(
+        "DELETE FROM location_access_log WHERE bucket<now()-make_interval(days=>$1::int)",
+    )
+    .bind(days as i32)
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    // Coverage is non-subject metadata and referenced by events; keep it until its policy is settled.
+    tx.commit().await?;
+    Ok(n + old)
 }
 
 // ── which requests are reads of location information ─────────────────────────────────────────
@@ -503,6 +288,8 @@ enum Of {
     AdminDevice,
     AdminEveryone,
     AdminRequest,
+    Public,
+    AdminUnattributed,
 }
 /// (verb, route as registered, method recorded, whose it is)
 struct Rule(&'static str, &'static str, &'static str, Of);
@@ -510,6 +297,127 @@ struct Rule(&'static str, &'static str, &'static str, Of);
 /// Every route that hands out stored location or something derived from it. A route that is not
 /// here is not recorded: adding a reader means adding its line and raising `SCOPE_VERSION`.
 const RULES: &[Rule] = &[
+    Rule(
+        "PATCH",
+        "/corporate/devices/:id/trips/annotation",
+        "trips",
+        Of::Device,
+    ),
+    Rule("GET", "/devices/:id/audit", "file", Of::Device),
+    Rule("GET", "/devices/:id/car-image", "file", Of::Device),
+    Rule("GET", "/devices/pairing-options", "position", Of::Account),
+    Rule("GET", "/devices/scan", "position", Of::Account),
+    Rule(
+        "GET",
+        "/corporate/vehicles/:id/documents",
+        "file",
+        Of::Company,
+    ),
+    Rule("GET", "/devices/:id/documents", "file", Of::Account),
+    Rule("GET", "/documents/:id/download", "file", Of::Account),
+    Rule("GET", "/documents/:id/preview", "file", Of::Account),
+    Rule(
+        "GET",
+        "/corporate/expenses/:id/receipts/:receipt",
+        "file",
+        Of::Company,
+    ),
+    Rule("GET", "/corporate/vehicles/:id/photo", "file", Of::Company),
+    Rule("POST", "/corporate/sites", "events", Of::Company),
+    Rule("PUT", "/corporate/sites/:id", "events", Of::Company),
+    Rule(
+        "GET",
+        "/corporate/vehicles/:id/trip-rules",
+        "trips",
+        Of::Vehicle,
+    ),
+    Rule(
+        "GET",
+        "/corporate/vehicles/:id/trips/assignment-history",
+        "trips",
+        Of::Vehicle,
+    ),
+    Rule(
+        "POST",
+        "/corporate/vehicles/:id/trip-rules",
+        "trips",
+        Of::Vehicle,
+    ),
+    Rule(
+        "PUT",
+        "/corporate/vehicles/:id/trip-rules/:rule",
+        "trips",
+        Of::Vehicle,
+    ),
+    Rule(
+        "POST",
+        "/corporate/vehicles/:id/trips/corrections/:correction/restore",
+        "trips",
+        Of::Vehicle,
+    ),
+    Rule(
+        "PATCH",
+        "/corporate/vehicles/:id/trips/annotation",
+        "trips",
+        Of::Vehicle,
+    ),
+    Rule("GET", "/geofences", "events", Of::Account),
+    Rule("GET", "/geofences/:id", "events", Of::Account),
+    Rule("PATCH", "/geofences/:id", "events", Of::Account),
+    Rule("POST", "/geofences", "events", Of::Account),
+    Rule(
+        "GET",
+        "/gps-tracker/diagnostic/device/data",
+        "track",
+        Of::Public,
+    ),
+    Rule(
+        "POST",
+        "/admin/privacy/company-tasks/:id/proof/:sid",
+        "file",
+        Of::AdminUnattributed,
+    ),
+    Rule(
+        "POST",
+        "/privacy/company-tasks/:id/proof/:sid",
+        "file",
+        Of::Account,
+    ),
+    Rule("POST", "/privacy/result", "file", Of::Account),
+    Rule(
+        "POST",
+        "/admin/privacy/requests/:id/image-preview",
+        "file",
+        Of::AdminRequest,
+    ),
+    Rule(
+        "POST",
+        "/admin/privacy/requests/:id/receipt-sources/:review/:receipt",
+        "file",
+        Of::AdminRequest,
+    ),
+    Rule("POST", "/privacy/images/:id/download", "file", Of::Account),
+    Rule(
+        "POST",
+        "/admin/privacy/requests/:id/documents/:document/review",
+        "file",
+        Of::AdminRequest,
+    ),
+    Rule(
+        "POST",
+        "/privacy/account-packages/:id/account",
+        "file",
+        Of::Account,
+    ),
+    Rule(
+        "POST",
+        "/privacy/account-packages/:id/documents/:document",
+        "file",
+        Of::Account,
+    ),
+    Rule("GET", "/rentcar/contracts/:id/photos", "file", Of::Account),
+    Rule("GET", "/rentcar/handoff/:token", "file", Of::Public),
+    Rule("GET", "/rentcar/photos/:id", "file", Of::Account),
     Rule("GET", "/devices", "position", Of::Account),
     Rule("GET", "/devices/:id", "position", Of::Device),
     Rule("PATCH", "/devices/:id", "position", Of::Device),
@@ -675,6 +583,8 @@ fn plan(
     let owner = scope.map(|s| s.0).or(caller);
     let mut via = "api";
     let (target, recipient) = match rule.3 {
+        Of::Public => (Target::Unattributed, Recipient::ShareLink),
+        Of::AdminUnattributed => (Target::Unattributed, Recipient::Admin(caller?)),
         Of::Share => {
             via = "share_link";
             (
@@ -697,7 +607,10 @@ fn plan(
                 _ => Recipient::Own(caller?),
             };
             let target = match whose {
-                Of::Device => Target::Device(id?),
+                Of::Device => Target::ScopedDevice {
+                    account: owner?,
+                    device: id?,
+                },
                 Of::Vehicle => Target::Vehicle {
                     owner: owner?,
                     vehicle: id?,
@@ -713,6 +626,7 @@ fn plan(
         recipient,
         path: via,
         method: rule.2,
+        route: rule.1,
         range: asked(query),
     })
 }
@@ -731,6 +645,21 @@ pub async fn middleware(State(state): State<AppState>, request: Request, next: N
     if !enabled() {
         return next.run(request).await;
     }
+    // Fail closed for a newly registered but unclassified route, even before release CI runs.
+    let route = request
+        .extensions()
+        .get::<MatchedPath>()
+        .map(|p| p.as_str())
+        .unwrap_or("");
+    let route = route.strip_prefix(PREFIX).unwrap_or(route);
+    let verb = if request.method() == axum::http::Method::HEAD {
+        "GET"
+    } else {
+        request.method().as_str()
+    };
+    if !classified(verb, route) {
+        return unavailable();
+    }
     let planned = request
         .extensions()
         .get::<MatchedPath>()
@@ -742,7 +671,7 @@ pub async fn middleware(State(state): State<AppState>, request: Request, next: N
                 .and_then(|v| v.strip_prefix("Bearer "))
                 .and_then(|token| reader(token, &state.config.jwt_secret));
             plan(
-                request.method().as_str(),
+                verb,
                 matched.as_str(),
                 request.uri().path(),
                 request.uri().query(),
@@ -754,19 +683,145 @@ pub async fn middleware(State(state): State<AppState>, request: Request, next: N
                     .map(|s| (s.owner, s.actor)),
             )
         });
+    let ticket = match planned {
+        Some(access) => match begin(access).await {
+            Ok(ticket) => Some(ticket),
+            Err(_) => return unavailable(),
+        },
+        None => None,
+    };
     let response = next.run(request).await;
-    if let Some(mut access) = planned {
-        if response.status().is_success() {
-            access.at = Utc::now();
-            note(access);
+    if let Some(ticket) = ticket {
+        let outcome = if response.status().is_success() {
+            "response_ready"
+        } else {
+            "denied"
+        };
+        if ticket.finish(outcome).await.is_err() {
+            return unavailable();
         }
     }
     response
 }
 
+fn classified(verb: &str, route: &str) -> bool {
+    static MANIFEST: OnceLock<serde_json::Value> = OnceLock::new();
+    let manifest = MANIFEST.get_or_init(|| {
+        serde_json::from_str(include_str!("../../location-access-routes.json"))
+            .expect("reviewed route manifest")
+    });
+    let suffix = format!(" {verb} {route}");
+    manifest
+        .as_object()
+        .is_some_and(|m| m.keys().any(|k| k.ends_with(&suffix)))
+}
+
+pub async fn outer_middleware(
+    State(state): State<AppState>,
+    request: Request,
+    next: Next,
+) -> Response {
+    if request.uri().path().starts_with(PREFIX)
+        || request.uri().path().starts_with("/gps-tracker/ws/")
+    {
+        next.run(request).await
+    } else {
+        middleware(State(state), request, next).await
+    }
+}
+
+fn unavailable() -> Response {
+    (axum::http::StatusCode::SERVICE_UNAVAILABLE, axum::Json(serde_json::json!({"error":"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요."}))).into_response()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_unreviewed_route_is_denied() {
+        assert!(classified("GET", "/devices/:id/locations"));
+        assert!(!classified("GET", "/devices/:id/new-location-export"));
+        assert!(!classified("POST", "/devices/:id/locations"));
+    }
+
+    #[tokio::test]
+    #[ignore = "requires disposable internal Docker DB; run via ops/18B verification"]
+    async fn external_intents_commit_before_mock_network_and_distinguish_outcomes() {
+        let url = std::env::var("LEDGER_TEST_DATABASE_URL").expect("isolated DB required");
+        assert!(url.contains("closure-test-only@") && url.ends_with("/gps_closure_test"));
+        let pool = PgPool::connect(&url).await.unwrap();
+        assert_eq!(
+            sqlx::query_scalar::<_, String>("SELECT current_database()")
+                .fetch_one(&pool)
+                .await
+                .unwrap(),
+            "gps_closure_test"
+        );
+        std::env::set_var("GPS_LOCATION_ACCESS_LOG", "on");
+        start(pool.clone()).await.unwrap();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let observed = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let seen = observed.clone();
+        let db = pool.clone();
+        let app=axum::Router::new().route("/",axum::routing::post(move || {
+            let db=db.clone();let seen=seen.clone();
+            async move {
+                let count:i64=sqlx::query_scalar("SELECT count(*) FROM location_access_events WHERE recipient_name='mock18b' AND coverage_id=$1 AND outcome='prepared'")
+                    .bind(HANDLE.get().unwrap().coverage).fetch_one(&db).await.unwrap();
+                assert!(count>0,"network reached without committed intent");
+                seen.fetch_add(1,std::sync::atomic::Ordering::SeqCst);
+                axum::http::StatusCode::NO_CONTENT
+            }
+        }));
+        let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        let client = reqwest::Client::builder()
+            .pool_max_idle_per_host(0)
+            .build()
+            .unwrap();
+        let ticket = about(Target::Account(-1801), sent_to("mock18b", "geocode"))
+            .await
+            .unwrap();
+        external_response(
+            ticket,
+            client.post(format!("http://{address}/")).send().await,
+        )
+        .await
+        .unwrap();
+        let ticket = sent_to("mock18b", "geocode").await.unwrap();
+        external_response(
+            ticket,
+            client
+                .post(format!("http://{address}/missing"))
+                .send()
+                .await,
+        )
+        .await
+        .unwrap();
+        server.abort();
+        let _ = server.await;
+        let ticket = sent_to("mock18b", "geocode").await.unwrap();
+        assert!(external_response(
+            ticket,
+            client.post(format!("http://{address}/")).send().await
+        )
+        .await
+        .is_err());
+        let states: Vec<String> = sqlx::query_scalar(
+            "SELECT outcome FROM location_access_events WHERE recipient_name='mock18b' AND coverage_id=$1 ORDER BY id",
+        )
+        .bind(HANDLE.get().unwrap().coverage)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            states,
+            vec!["http_accepted", "http_rejected", "transport_unknown"]
+        );
+        assert_eq!(observed.load(std::sync::atomic::Ordering::SeqCst), 1);
+        close().await;
+    }
 
     fn at(text: &str) -> DateTime<Utc> {
         DateTime::parse_from_rfc3339(text)
@@ -777,28 +832,11 @@ mod tests {
     #[test]
     fn every_recorded_route_is_registered_and_uses_a_stored_value() {
         // A renamed or removed route must not silently stop being recorded.
-        let routes = [
-            include_str!("../routes/devices.rs"),
-            include_str!("../routes/locations.rs"),
-            include_str!("../routes/stats.rs"),
-            include_str!("../routes/geofences.rs"),
-            include_str!("../routes/ai.rs"),
-            include_str!("../routes/share.rs"),
-            include_str!("../routes/corporate.rs"),
-            include_str!("../routes/fleet_team.rs"),
-            include_str!("../routes/fleet_vehicles.rs"),
-            include_str!("../routes/fleet_trip_quality.rs"),
-            include_str!("../routes/fleet_trip_assignment.rs"),
-            include_str!("../routes/fleet_sites.rs"),
-            include_str!("../routes/admin.rs"),
-            include_str!("../routes/privacy_delivery.rs"),
-            include_str!("../routes/privacy_redacted.rs"),
-        ]
-        .concat();
+        let routes = include_str!("../../location-access-routes.json");
         let table = include_str!("../../migrations/0100_location_access_log.sql");
         for (index, rule) in RULES.iter().enumerate() {
             assert!(
-                routes.contains(&format!("\"{}\"", rule.1)),
+                routes.contains(&format!(" {}\"", rule.1)),
                 "{} is not a registered route",
                 rule.1
             );
@@ -847,7 +885,15 @@ mod tests {
         .unwrap();
         assert_eq!(
             (own.target, own.recipient, own.path, own.method),
-            (Target::Device(7), Recipient::Own(3), "api", "track")
+            (
+                Target::ScopedDevice {
+                    account: 3,
+                    device: 7
+                },
+                Recipient::Own(3),
+                "api",
+                "track"
+            )
         );
         assert_eq!(
             own.range,
@@ -967,48 +1013,6 @@ mod tests {
     }
 
     #[test]
-    fn equal_facts_of_one_hour_become_one_row_and_the_range_only_widens() {
-        let mut pending = HashMap::new();
-        let fact = |time: &str, range| Access {
-            at: at(time),
-            target: Target::Device(7),
-            recipient: Recipient::Own(3),
-            path: "api",
-            method: "track",
-            range,
-        };
-        assert!(gather(
-            &mut pending,
-            fact(
-                "2026-11-07T01:10:00Z",
-                Some((at("2026-11-01T00:00:00Z"), at("2026-11-02T00:00:00Z")))
-            )
-        ));
-        assert!(gather(
-            &mut pending,
-            fact(
-                "2026-11-07T01:50:00Z",
-                Some((at("2026-10-30T00:00:00Z"), at("2026-11-01T12:00:00Z")))
-            )
-        ));
-        assert!(gather(&mut pending, fact("2026-11-07T02:00:00Z", None)));
-        assert_eq!(pending.len(), 2);
-        let first = pending.values().find(|seen| seen.hits == 2).unwrap();
-        assert_eq!(
-            (first.first, first.last),
-            (at("2026-11-07T01:10:00Z"), at("2026-11-07T01:50:00Z"))
-        );
-        assert_eq!(
-            first.range,
-            Some((at("2026-10-30T00:00:00Z"), at("2026-11-02T00:00:00Z")))
-        );
-        assert_eq!(
-            hour(at("2026-11-07T01:59:59Z")),
-            at("2026-11-07T01:00:00Z").timestamp()
-        );
-    }
-
-    #[test]
     fn a_requested_day_is_a_day_in_korean_time() {
         assert_eq!(
             asked(Some("date=2026-11-07")),
@@ -1040,45 +1044,5 @@ mod tests {
         ] {
             assert!(!columns.contains(&forbidden), "{forbidden} is a column");
         }
-    }
-
-    #[tokio::test]
-    async fn what_is_sent_outside_is_recorded_for_the_named_subject() {
-        let (queue, mut facts) = mpsc::channel(8);
-        assert!(HANDLE
-            .set(Handle {
-                queue,
-                dropped: AtomicU64::new(0),
-            })
-            .is_ok());
-        about(Target::Device(5), async { sent_to("kakao", "geocode") }).await;
-        // A call site that names nobody is still recorded, so that it is noticed.
-        sent_to("openai", "analysis");
-        let mut seen = vec![];
-        for _ in 0..2 {
-            match facts.recv().await {
-                Some(Message::Fact(fact)) => {
-                    seen.push((fact.target, fact.recipient, fact.path, fact.method))
-                }
-                _ => panic!("a fact was expected"),
-            }
-        }
-        assert_eq!(
-            seen,
-            vec![
-                (
-                    Target::Device(5),
-                    Recipient::Processor("kakao"),
-                    "server",
-                    "geocode"
-                ),
-                (
-                    Target::Unattributed,
-                    Recipient::Processor("openai"),
-                    "server",
-                    "analysis"
-                ),
-            ]
-        );
     }
 }
