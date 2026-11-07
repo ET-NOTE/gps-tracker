@@ -11,3 +11,7 @@ gps-tracker-api/migrations/0085_preserve_legacy_aggregates.sql -text !eol whites
 # Windows 전용은 CRLF
 *.bat text eol=crlf
 *.ps1 text eol=crlf
+
+# Preserve reproducible 18A evidence and Linux deployment script hashes on Windows.
+docs/operations/evidence/location-business-round18a-20261107/* text eol=lf
+ops/nginx-privacy/* text eol=lf

@@ -136,6 +136,8 @@ assert [c['action'] for c in facts['provision']['share_link_charges']]==['create
 assert given['delivery_id']==delivery and given['device_ids']==[d1] and [(d['record_count']) for d in given['downloads']]==[12] and same(given['records_from'],A)
 assert [(c['company_link'],c['action']) for c in facts['provision']['company_links']]==[(1,'linked'),(1,'unlinked')] and set(facts['provision']['company_links'][0])=={'company_link','action','effective_at'}
 assert len(facts['not_recorded'])==8 and all(isinstance(n,str) and len(n)>20 for n in facts['not_recorded']) and '좌표' in facts['notice'] and '제공 완료를 뜻하지 않습니다' in facts['notice']
+assert '조회 기간은 원본 위치정보의 보관 기간을 뜻하지 않습니다' in facts['not_recorded'][7]
+assert '1년' not in facts['not_recorded'][7]
 check('provision: the subject\'s own share links that were open in the period with view count and last view but no token, the charges that outlive deleted links, location files given to the subject with their downloads, and company link changes without naming the company; what the system does not record is listed')
 
 # ---- 5. the other account, and stability ---------------------------------------------------------------------

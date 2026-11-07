@@ -1,0 +1,36 @@
+{
+  "checked_at": "2026-11-07T08:17:08.350886+00:00",
+  "environment": "production gps.serial.kr",
+  "probes": "synthetic invalid credentials; error socket injection",
+  "http_statuses": [
+    200,
+    404,
+    200,
+    400,
+    200
+  ],
+  "access_secret_absent": true,
+  "error_secret_absent": true,
+  "global_log_copy_absent": true,
+  "api_journal_probe_secret_absent": true,
+  "safe_route_labels": [
+    "/api/v1/share/:redacted",
+    "/health",
+    "/other",
+    "/ws/:stream"
+  ],
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-log-20261107-r1",
+    "service": "gps-tracker-api"
+  },
+  "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "api_process": [
+    "MainPID=218705",
+    "ExecMainStartTimestamp=Sat 2026-11-07 17:16:49 KST"
+  ],
+  "logger": "active",
+  "scope": "Production synthetic probes: NGINX access/error and API journal. Rust trace fields and disclosure text are additionally checked in isolated tests. HTTP 200 frontend responses are SPA pages, not successful authentication."
+}

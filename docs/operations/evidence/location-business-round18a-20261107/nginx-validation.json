@@ -1,0 +1,1 @@
+{"environment": "isolated Ubuntu 22.04; network none; synthetic requests only", "requests": 11, "classified_error_categories": ["filesystem", "other", "rate_limit", "timeout", "tls", "upstream_connect"], "secret_absent": true, "rotation_passed": true, "error_file_mode": "0640", "nginx": "nginx version: nginx/1.18.0 (Ubuntu)"}
