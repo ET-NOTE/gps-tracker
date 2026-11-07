@@ -46,10 +46,11 @@
     "status_address": "https://status.serial.kr/"
   },
   "mails_sent": 2,
-  "delivery_to_inbox_confirmed_by_operator": false,
+  "delivery_to_inbox_confirmed_by_operator": true,
   "not_covered": [
     "an outage of the production host itself",
     "loss of internet at the watch host (gap notice)",
     "the Uptime Kuma heartbeat path"
-  ]
+  ],
+  "confirmed_on": "2026-11-07"
 }
