@@ -14,7 +14,7 @@ use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use sqlx::PgPool;
 use std::{future::Future, sync::OnceLock};
 
-pub const SCOPE_VERSION: i32 = 3;
+pub const SCOPE_VERSION: i32 = 4;
 pub const MIN_KEEP_DAYS: i64 = 185;
 const PREFIX: &str = "/gps-tracker/api/v1";
 
@@ -69,10 +69,14 @@ pub async fn about<F: Future>(target: Target, work: F) -> F::Output {
 
 /// Non-cloneable capability to complete exactly one committed intent.
 #[derive(Debug)]
-pub struct Ticket(Option<i64>, Option<super::privacy_lifecycle::Lease>);
+pub struct Ticket(
+    Option<i64>,
+    Option<super::privacy_lifecycle::Lease>,
+    Option<std::sync::Arc<super::subject_projection::Projection>>,
+);
 impl Ticket {
     pub fn off() -> Self {
-        Self(None, None)
+        Self(None, None, None)
     }
     pub async fn finish(self, outcome: &'static str) -> anyhow::Result<()> {
         if let (Some(id), Some(h)) = (self.0, HANDLE.get()) {
@@ -80,6 +84,11 @@ impl Ticket {
             let changed = sqlx::query("UPDATE location_access_events SET outcome=$2,completed_at=clock_timestamp() WHERE id=$1 AND outcome='prepared'")
                 .bind(id).bind(outcome).execute(&mut *tx).await?.rows_affected();
             anyhow::ensure!(changed == 1, "access intent unavailable; response blocked");
+            if outcome == "response_ready" {
+                if let Some(p) = &self.2 {
+                    super::subject_projection::complete(&mut tx, p, id).await?;
+                }
+            }
             super::subject_provision::complete(&mut tx, id, outcome).await?;
             tx.commit().await?;
         }
@@ -91,7 +100,7 @@ impl Ticket {
 pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
     let lease = super::privacy_lifecycle::guard(&access).await?;
     let Some(h) = HANDLE.get() else {
-        return Ok(Ticket(None, Some(lease)));
+        return Ok(Ticket(None, Some(lease), None));
     };
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL statement_timeout='5s'")
@@ -186,11 +195,15 @@ pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
         .bind(access.at).bind(h.coverage).bind(account).bind(attribution).bind(matches!(access.target,Target::Everyone))
         .bind(device).bind(vehicle).bind(share).bind(kind).bind(user).bind(name).bind(access.path).bind(access.method).bind(access.route)
         .bind(access.range.map(|r|r.0)).bind(access.range.map(|r|r.1)).bind(bindings).fetch_one(&mut *tx).await?;
-    super::subject_provision::prepare(&mut tx, &access, id, account, device, vehicle).await?;
+    let projection =
+        super::subject_projection::prepare(&mut tx, &access, account, device, vehicle).await?;
+    if projection.is_none() {
+        super::subject_provision::prepare(&mut tx, &access, id, account, device, vehicle).await?;
+    }
     sqlx::query("UPDATE location_access_coverage SET alive_at=GREATEST(alive_at,clock_timestamp()) WHERE id=$1")
         .bind(h.coverage).execute(&mut *tx).await?;
     tx.commit().await?;
-    Ok(Ticket(Some(id), Some(lease)))
+    Ok(Ticket(Some(id), Some(lease), projection))
 }
 
 pub async fn sent_to(processor: &'static str, method: &'static str) -> anyhow::Result<Ticket> {
@@ -627,14 +640,28 @@ fn plan(
             (target, recipient)
         }
     };
+    let at = Utc::now();
+    let projected = super::subject_projection::supported(rule.1);
+    let download = query.is_some_and(|q| {
+        q.split('&')
+            .any(|p| matches!(p, "download=csv" | "download=pdf" | "download=print"))
+    });
     Some(Access {
-        at: Utc::now(),
+        at,
         target,
         recipient,
         path: via,
-        method: rule.2,
+        method: if projected && download {
+            "file"
+        } else {
+            rule.2
+        },
         route: rule.1,
-        range: asked(query),
+        range: if projected {
+            super::subject_projection::period(rule.1, query, at, asked(query))
+        } else {
+            asked(query)
+        },
     })
 }
 
@@ -659,6 +686,11 @@ pub async fn middleware(State(state): State<AppState>, request: Request, next: N
         .map(|p| p.as_str())
         .unwrap_or("");
     let route = route.strip_prefix(PREFIX).unwrap_or(route);
+    // HEAD executes GET handlers in Axum but does not provide their body.
+    // Do not create a location-provision notice for that metadata-only request.
+    if request.method() == axum::http::Method::HEAD && super::subject_projection::supported(route) {
+        return axum::http::StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
     let verb = if request.method() == axum::http::Method::HEAD {
         "GET"
     } else {
@@ -698,11 +730,25 @@ pub async fn middleware(State(state): State<AppState>, request: Request, next: N
         },
         None => None,
     };
-    let response = if ticket.is_some() {
-        super::privacy_lifecycle::inside(next.run(request)).await
+    let projection = ticket.as_ref().and_then(|t| t.2.clone());
+    let mut response = if ticket.is_some() {
+        super::privacy_lifecycle::inside(super::subject_projection::inside(
+            projection.clone(),
+            next.run(request),
+        ))
+        .await
     } else {
         next.run(request).await
     };
+    if projection.is_some() {
+        response
+            .headers_mut()
+            .insert("cache-control", "no-store".parse().unwrap());
+        response.headers_mut().insert(
+            "x-location-scope",
+            "confirmed-subject-intervals".parse().unwrap(),
+        );
+    }
     if let Some(ticket) = ticket {
         let outcome = if response.status().is_success() {
             "response_ready"

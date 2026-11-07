@@ -14,6 +14,7 @@ import * as corporateOverview from '../src/lib/corporateOverview.js';
 import * as corporateNavigation from '../src/lib/corporateNavigation.js';
 import * as ntsReport from '../src/lib/ntsReport.js';
 import * as monthlySummary from '../src/lib/monthlySummary.js';
+import * as subjectReport from '../src/lib/subjectReport.js';
 
 // Render the actual calendar bodies, not just the date helper. Unrelated panel
 // dependencies are stubbed; no network, storage or customer data is involved.
@@ -38,6 +39,7 @@ async function calendar(file, name) {
     if (specifier==='../lib/corporateNavigation') return moduleOf(corporateNavigation);
     if (specifier==='../lib/ntsReport') return moduleOf(ntsReport);
     if (specifier==='../lib/monthlySummary') return moduleOf(monthlySummary);
+    if (specifier==='../lib/subjectReport') return moduleOf(subjectReport);
     // Only the named exports requested by this module are needed. None of these
     // hooks/components run while rendering a calendar.
     const exports = {tripNeedsDetails:noop,TripEvidence:noop,TripCorrection:noop,TripCorrectionHistory:noop,qualityLabel:noop,qualitySummary:noop,reportIncluded:noop,tripTimeRange:noop,TripAssignmentModal:noop,TripRulesModal:noop,TripAssignmentHistory:noop,tripAssignmentKey:noop,canAssignTrip:noop,default:noop,api:{},qk:{},useQuery:noop,useQueryClient:noop,FleetAccountScope:noop,useFleetAccess:noop,staffCanDrive:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,

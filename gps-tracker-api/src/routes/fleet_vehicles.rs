@@ -442,9 +442,9 @@ async fn trips(
             "최대 1년까지 조회할 수 있습니다.".into(),
         ));
     }
-    Ok(Json(
-        allocated_trips(&state, user.user_id, id, from, to).await?,
-    ))
+    let rows = allocated_trips(&state, user.user_id, id, from, to).await?;
+    crate::services::subject_projection::mark_values(&rows);
+    Ok(Json(rows))
 }
 
 pub(super) async fn allocated_trips(
@@ -472,6 +472,11 @@ pub(super) async fn allocated_trips(
     for b in periods {
         let sim = b.device_id.unwrap();
         for original in &per_sim[&sim] {
+            if crate::services::subject_projection::current().is_some()
+                && original["quality"]["subject_vehicle_id"].as_i64() != Some(vehicle)
+            {
+                continue;
+            }
             let start = DateTime::parse_from_rfc3339(original["started_at"].as_str().unwrap())
                 .unwrap()
                 .with_timezone(&Utc);
@@ -563,6 +568,11 @@ async fn annotation(
     .await
 }
 async fn stats(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Value>> {
+    if crate::services::subject_projection::current().is_some() {
+        return super::fleet_subject_readers::stats(&state, user.user_id, true)
+            .await
+            .map(Json);
+    }
     // Daily aggregates are only attributable when one primary binding covers
     // the entire day. A reassignment day stays unaggregated, never copied twice.
     let rows:Vec<Value>=sqlx::query_scalar(r#"WITH assigned AS (

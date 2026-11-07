@@ -38,7 +38,10 @@ pub fn router() -> Router<AppState> {
         .route("/corporate/invites", get(invites).post(invite))
         .route("/corporate/invites/:id", delete(revoke))
         .route("/corporate/team-audit", get(audit))
-        .route("/corporate/terminals", get(super::devices::list))
+        .route(
+            "/corporate/terminals",
+            get(super::fleet_subject_readers::terminals),
+        )
 }
 
 async fn principal(

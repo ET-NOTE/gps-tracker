@@ -85,8 +85,9 @@ pub async fn guard(a: &Access) -> anyhow::Result<Lease> {
         .bind(uid)
         .fetch_one(&mut *tx)
         .await?;
+    let projected = super::subject_projection::supported(a.route);
     let denied: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_processing_controls WHERE (user_id=$1 OR $1::bigint IS NULL OR ($3 AND user_id IN (SELECT account_id FROM fleet_staff_accounts WHERE owner_id=$1))) AND (use_paused OR ($2 AND provision_paused)))")
-        .bind(uid).bind(providing || mixed).bind(mixed).fetch_one(&mut *tx).await?;
+        .bind(uid).bind(providing || mixed).bind(mixed && !projected).fetch_one(&mut *tx).await?;
     anyhow::ensure!(!denied, "location processing paused");
     let device = match a.target {
         Target::Device(d) | Target::ScopedDevice { device: d, .. } => Some(d),
@@ -98,7 +99,7 @@ pub async fn guard(a: &Access) -> anyhow::Result<Lease> {
     };
     let historical:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM location_subject_mappings m LEFT JOIN privacy_processing_controls c ON c.user_id=m.subject_id LEFT JOIN privacy_account_controls p ON p.user_id=m.subject_id WHERE ($1::bigint IS NULL OR m.owner_id=$1) AND ($2::bigint IS NULL OR m.device_id=$2) AND ($3::bigint IS NULL OR m.vehicle_id=$3) AND ($4::timestamptz IS NULL OR m.ends_at>$4) AND ($5::timestamptz IS NULL OR m.starts_at<$5) AND m.status IN ('confirmed','revoked') AND (m.status='revoked' OR COALESCE(c.use_paused,false) OR COALESCE(c.provision_paused,false) OR COALESCE(p.restricted,true)))")
         .bind(uid).bind(device).bind(vehicle).bind(a.range.map(|r|r.0)).bind(a.range.map(|r|r.1)).fetch_one(&mut *tx).await?;
-    anyhow::ensure!(!historical, "location processing paused");
+    anyhow::ensure!(projected || !historical, "location processing paused");
     if inherited {
         tx.rollback().await?;
         Ok(Lease(None))

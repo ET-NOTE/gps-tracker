@@ -252,7 +252,11 @@ async function req(method, path, body, retry = true, options = {}) {
   }
 
   const text = await res.text();
-  return text ? JSON.parse(text) : null;
+  const data = text ? JSON.parse(text) : null;
+  if (data && res.headers.get("x-location-scope") === "confirmed-subject-intervals") {
+    Object.defineProperty(data,"subjectScope",{value:true,enumerable:false});
+  }
+  return data;
 }
 
 export const api = {

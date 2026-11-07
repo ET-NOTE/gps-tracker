@@ -525,6 +525,13 @@ pub(super) async fn overlay(
         let sim = c["source_device_id"].as_i64().unwrap();
         let start = date(&c["started_at"]).unwrap();
         let end = date(&c["ended_at"]).unwrap();
+        let projection = crate::services::subject_projection::current();
+        if projection
+            .as_ref()
+            .is_some_and(|p| !p.contains(sim, vehicle, start, end))
+        {
+            continue;
+        }
         let valid_binding:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_vehicle_bindings WHERE id=$1 AND owner_id=$2 AND vehicle_id=$3 AND device_id=$4 AND is_primary AND started_at<=$5 AND (ended_at IS NULL OR ended_at>=$6))").bind(c["binding_id"].as_i64()).bind(owner).bind(vehicle).bind(sim).bind(start).bind(end).fetch_one(&state.db).await?;
         let extended = rows.iter().any(|r| {
             r["source_device_id"] == sim
@@ -551,6 +558,23 @@ pub(super) async fn overlay(
         let annotations = super::corporate::load_annotations(state, sim, owner, start, end).await?;
         for original in c["outputs"].as_array().unwrap() {
             let mut row = original.clone();
+            if let Some(p) = &projection {
+                let a = date(&row["started_at"]).unwrap();
+                let b = date(&row["ended_at"]).unwrap();
+                let Some(s) = p.spans.iter().find(|s| {
+                    s.device == sim
+                        && s.vehicle == vehicle
+                        && s.start <= a
+                        && b < s.end
+                        && start <= a
+                        && b <= end
+                }) else {
+                    continue;
+                };
+                row["quality"]["subject_mapping_id"] = json!(s.id);
+                row["quality"]["subject_vehicle_id"] = json!(vehicle);
+                row["quality"]["scope_note"] = json!(crate::services::subject_projection::NOTE);
+            }
             if date(&row["started_at"]).unwrap() > to || date(&row["ended_at"]).unwrap() < from {
                 continue;
             }

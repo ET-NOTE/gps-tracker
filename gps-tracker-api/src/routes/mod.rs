@@ -13,6 +13,7 @@ pub mod fleet_expenses;
 pub mod fleet_media;
 pub mod fleet_reservations;
 pub mod fleet_sites;
+mod fleet_subject_readers;
 pub mod fleet_team;
 pub mod fleet_trip_assignment;
 pub mod fleet_trip_quality;

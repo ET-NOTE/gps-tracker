@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BusinessButton } from './BusinessWorkspace';
 import { downloadReport } from '../../lib/downloadReport';
 import { Modal } from '../ui';
 
-export default function ExportButtons({ report, csvReport, pdfReport, csvLabel = 'CSV 다운로드', pdfLabel = 'PDF 다운로드', disabled = false, pdfOnly = false }) {
+export default function ExportButtons({ report, csvReport, pdfReport, csvLabel = 'CSV 다운로드', pdfLabel = 'PDF 다운로드', disabled = false, pdfOnly = false, prepareExport }) {
+  const mounted=useRef(true);
+  useEffect(()=>{mounted.current=true;return ()=>{mounted.current=false;};},[]);
   const [busy,setBusy] = useState(null), [error,setError] = useState(''), [status,setStatus] = useState('');
   const [review,setReview] = useState(null);
   async function run(format, selected = format === 'csv' ? csvReport || report : pdfReport || report) {
     setReview(null);
     setBusy(format); setError(''); setStatus('');
     try {
-      const result = await downloadReport(selected,format);
+      const fresh = prepareExport ? await prepareExport(format) : selected;
+      if (!mounted.current) return;
+      const result = await downloadReport(fresh,format);
       setStatus(({saved:'파일을 저장했습니다.',share_opened:'공유할 앱을 선택해 주세요.',cancelled:'내보내기를 취소했습니다.',browser_started:'다운로드를 시작했습니다.'})[result?.status] || '');
     }
     catch(e) { setError(e.message || '파일을 생성하지 못했습니다. 다시 시도해 주세요.'); }

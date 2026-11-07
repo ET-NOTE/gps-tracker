@@ -287,6 +287,12 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         }
     }
 
+    if super::subject_projection::current().is_some() {
+        let sheet = wb.add_worksheet();
+        sheet.set_name("조회 범위")?;
+        sheet.set_column_width(0, 100)?;
+        sheet.write_string(0, 0, super::subject_projection::NOTE)?;
+    }
     wb.save_to_buffer()
 }
 
@@ -535,6 +541,12 @@ pub fn build_ours(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         }
     }
 
+    if super::subject_projection::current().is_some() {
+        let sheet = wb.add_worksheet();
+        sheet.set_name("조회 범위")?;
+        sheet.set_column_width(0, 100)?;
+        sheet.write_string(0, 0, super::subject_projection::NOTE)?;
+    }
     wb.save_to_buffer()
 }
 

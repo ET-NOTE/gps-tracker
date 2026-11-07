@@ -68,7 +68,7 @@ export default function BusinessMap({ devices = [], onSelect, selectedId }) {
   return <div className="business-map-wrap">
     <div className="business-map-canvas" ref={container} aria-label="차량의 마지막 수신 위치 지도" />
     {(!hasPositions || !ready || error) && <div className="business-map-placeholder" role="status">
-      {!hasPositions ? '아직 위치가 수신된 차량이 없습니다.' : error ? <>지도를 불러오지 못했습니다.<button className="business-button" onClick={() => setRetry(v => v + 1)}>지도 다시 시도</button></> : '차량 지도를 불러오는 중…'}
+      {!hasPositions ? (devices.some(d=>d.subject_scope==='confirmed-subject-intervals')?'확인된 구간에 표시할 위치가 없습니다.':'아직 위치가 수신된 차량이 없습니다.') : error ? <>지도를 불러오지 못했습니다.<button className="business-button" onClick={() => setRetry(v => v + 1)}>지도 다시 시도</button></> : '차량 지도를 불러오는 중…'}
     </div>}
     {choices.length > 0 && <div className="business-map-choices" role="group" aria-label="주변 차량 선택"><div><strong>주변 차량 {choices.length}대</strong><button className="business-button" onClick={()=>setGroupIds([])} aria-label="주변 차량 목록 닫기">닫기</button></div>{choices.map(d=><button className="business-button" key={d.id} onClick={()=>{setGroupIds([]);select.current?.(d);}}>{vehicleName(d)}<small>{terminalName(d)}</small></button>)}</div>}
   </div>;

@@ -188,7 +188,16 @@ async fn list_trips(
     if !q.include_no_coord.unwrap_or(false) {
         trips.retain(|t| t.start_lat.is_some() || t.end_lat.is_some());
     }
+    for t in &trips {
+        mark_subject_trip(t);
+    }
     Ok(Json(trips))
+}
+
+fn mark_subject_trip(t: &Trip) {
+    if let Some(id) = t.quality["subject_mapping_id"].as_i64() {
+        crate::services::subject_projection::mark(id);
+    }
 }
 
 // (2026-07-28) Stage-4B-2: XLSX 리포트에서 재사용하기 위해 list_trips 의 코어 로직을
@@ -204,6 +213,45 @@ pub(super) async fn compute_trips_inner(
 }
 
 async fn compute_trips_inner_ex(
+    state: &AppState,
+    user_id: i64,
+    device_id: i64,
+    from: DateTime<Utc>,
+    to: DateTime<Utc>,
+    merge_gap_min: i64,
+) -> AppResult<Vec<Trip>> {
+    if let Some(p) = crate::services::subject_projection::current() {
+        let mut out = Vec::new();
+        for s in p.for_device(device_id) {
+            let start = from.max(s.start);
+            let end = to.min(s.end - chrono::Duration::microseconds(1));
+            if start >= end {
+                continue;
+            }
+            let mut rows =
+                compute_trips_unprojected(state, user_id, device_id, start, end, merge_gap_min)
+                    .await?;
+            for t in &mut rows {
+                t.quality["subject_mapping_id"] = serde_json::json!(s.id);
+                t.quality["subject_vehicle_id"] = serde_json::json!(s.vehicle);
+                t.quality["scope_note"] =
+                    serde_json::json!(crate::services::subject_projection::NOTE);
+                // A clipped observation is not evidence of a complete original trip.
+                if t.ended_at.is_none() || t.started_at <= start {
+                    t.quality["report_included"] = serde_json::json!(false);
+                    t.quality["status"] = serde_json::json!("review");
+                    t.annotation = None;
+                }
+            }
+            out.extend(rows);
+        }
+        out.sort_by_key(|t| t.started_at);
+        return Ok(out);
+    }
+    compute_trips_unprojected(state, user_id, device_id, from, to, merge_gap_min).await
+}
+
+async fn compute_trips_unprojected(
     state: &AppState,
     user_id: i64,
     device_id: i64,
@@ -287,7 +335,9 @@ async fn compute_trips_inner_ex(
         };
         idx_map.push((s_idx.unwrap_or(usize::MAX), e_idx.unwrap_or(usize::MAX)));
     }
-    let resolved = if coords_to_resolve.is_empty() {
+    let resolved = if coords_to_resolve.is_empty()
+        || crate::services::subject_projection::current().is_some()
+    {
         vec![]
     } else {
         crate::services::access_ledger::about(
@@ -810,6 +860,10 @@ async fn trips_csv(
     // \u{FEFF} BOM + CRLF (엑셀 친화)
     let mut s = String::new();
     s.push('\u{FEFF}');
+    if crate::services::subject_projection::current().is_some() {
+        s.push_str(&csv_escape(crate::services::subject_projection::NOTE));
+        s.push_str("\r\n");
+    }
     s.push_str("날짜,시작시각,종료시각,운행시간(분),용무,용무메모,출발지,출발좌표,도착지,도착좌표,주행거리(km),운전자,유류(리터),유류비(원),비고\r\n");
 
     for t in &trips {
@@ -988,7 +1042,12 @@ async fn list_fleet_trip_stats(
     State(state): State<AppState>,
     user: AuthUser,
     Query(q): Query<TripQuery>,
-) -> AppResult<Json<FleetTripStatsResponse>> {
+) -> AppResult<Json<Value>> {
+    if crate::services::subject_projection::current().is_some() {
+        return super::fleet_subject_readers::stats(&state, user.user_id, false)
+            .await
+            .map(Json);
+    }
     let (from, to) = parse_range(&q)?;
 
     // (2026-07-29 F7-c) daily_stats 로 SQL 단일 aggregate.
@@ -1069,11 +1128,14 @@ async fn list_fleet_trip_stats(
         });
     }
 
-    Ok(Json(FleetTripStatsResponse {
-        from,
-        to,
-        per_device: out,
-    }))
+    Ok(Json(
+        serde_json::to_value(FleetTripStatsResponse {
+            from,
+            to,
+            per_device: out,
+        })
+        .map_err(|e| AppError::Internal(e.into()))?,
+    ))
 }
 
 async fn report_xlsx(
@@ -1273,7 +1335,8 @@ async fn report_xlsx(
         .fetch_all(&state.db)
         .await?
     };
-    let fleet_scope = q.scope.as_deref() == Some("vehicles");
+    let projection = crate::services::subject_projection::current();
+    let fleet_scope = q.scope.as_deref() == Some("vehicles") || projection.is_some();
     if fleet_scope {
         devs=sqlx::query_as("SELECT id,name AS display_name,('vehicle-'||id) AS device_uid,license_plate,car_model,
           (profile->>'model_year')::integer AS model_year,(profile->>'engine_cc')::integer AS engine_cc,
@@ -1301,6 +1364,9 @@ async fn report_xlsx(
         devs.retain(|d| set.contains(&d.id));
     }
 
+    if let Some(p) = &projection {
+        devs.retain(|d| p.vehicle_allowed(d.id));
+    }
     let devices_lite: Vec<xlsx_report::DeviceLite> = devs
         .iter()
         .map(|d| xlsx_report::DeviceLite {
@@ -1363,6 +1429,7 @@ async fn report_xlsx(
                         return None;
                     }
                 }
+                mark_subject_trip(&t);
                 Some(xlsx_report::TripLite {
                     started_at: t.started_at,
                     ended_at: t.ended_at,
