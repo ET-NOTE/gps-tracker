@@ -6,7 +6,7 @@
 
 후속 18B: [건별 사전 기록·귀속·철회 경합·경로 분류 보완](../operations/location-business-round18b-20261107.md)의 격리 검증과 OFF 복구 리허설이 완료됐다. 운영은 여전히 18A/schema99, 조회 기록 OFF이며 다음은 19차 관리자 보안·DB DDL 권한 분리다. 아래 독립 검토의 당시 판정은 역사적 기록으로 보존한다.
 
-후속 19·20A: [19차 관리자 보안](../operations/location-business-round19-20261107.md)과 [20A 핵심 필드·TLS 후보](../operations/location-business-round20-20261107.md)는 구현·격리 검증 완료, 운영 미배포다. 20A는 원본·최근 위치·이벤트의 8필드만 다루며 파생 저장소/파일/구 백업 전체 암호화 완료가 아니다. `https-operating`은 빌드만 완료했고 전체 실물 TLS 승격은 남아 있다. 다음 개발은 20B다. 아래 표의 **운영 미달 판정은 그대로 유효**하다.
+후속 19·20A: [19차 관리자 보안](../operations/location-business-round19-20261107.md)과 [20A 핵심 필드·TLS 후보](../operations/location-business-round20-20261107.md)는 구현·격리 검증 완료, 운영 미배포다. 20A는 원본·최근 위치·이벤트의 8필드만 다루며 파생 저장소/파일/구 백업 전체 암호화 완료가 아니다. `https-operating`은 빌드만 완료했고 전체 실물 TLS 승격은 남아 있다. 후속 [20B](../operations/location-business-round20b-20261107.md)에서 총23테이블55필드·GPS 파일 본문 암호화와 합성99→104 전환/복구를 검증하고 후보를 준비했다. 운영 전체 규모 리허설·키 보관·활성화는 남으며 다음 기능 개발은 21차다. 아래 표의 **운영 미달 판정은 그대로 유효**하다.
 
 ## 결론
 

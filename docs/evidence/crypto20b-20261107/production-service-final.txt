@@ -1,0 +1,4 @@
+NRestarts=0
+ActiveState=active
+ActiveEnterTimestamp=Sat 2026-11-07 17:16:49 KST
+/home/mmm/releases/privacy-facts-20261106-r1/web
