@@ -13,10 +13,10 @@ import { transform } from 'esbuild';
 const src = fileURLToPath(new URL('../src/', import.meta.url));
 async function fixture(api = {}) {
   const values = new Map();
-  const storage = { getItem: k => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) };
+  const storage = { getItem: k => values.get(k) ?? null, setItem: (k, v) => { values.set(k, v); storage[k]=v; }, removeItem: k => {values.delete(k);delete storage[k];} };
   let scope = 'account-A';
   const context = vm.createContext({ console, window: { location: { search: '' } },
-    localStorage: storage, DOMException, URLSearchParams, document: new EventTarget() });
+    localStorage: storage, crypto: {randomUUID:()=>String(Math.random())}, DOMException, URLSearchParams, document: new EventTarget() });
   const modules = new Map();
   const synthetic = exports => new vm.SyntheticModule(Object.keys(exports), function() {
     for (const [k, v] of Object.entries(exports)) this.setExport(k, v);
@@ -339,4 +339,17 @@ test('map options support native click activation and propagate the chosen map l
   await act(async () => toggle().props.onClick({ stopPropagation() {} }));
   assert.equal(toggle().props['aria-expanded'], false);
   await act(async () => r.unmount());
+});
+
+// A setting change must invalidate a successful read that was already in flight.
+test('processing pause clears location cache and prevents an in-flight read from restoring it', async () => {
+  const f = await fixture();
+  const {cachedRead, clearLocationCache} = await f.module('lib/offlineCache.js');
+  await cachedRead('devices', async()=>[{id:1}]);
+  let resolve;
+  const pending = cachedRead('devices', ()=>new Promise(r=>{resolve=r;}));
+  clearLocationCache();
+  resolve([{id:2}]);
+  await assert.rejects(pending, e=>e.status===423);
+  await assert.rejects(cachedRead('devices', networkError), TypeError);
 });

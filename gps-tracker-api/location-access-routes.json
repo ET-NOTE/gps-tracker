@@ -1222,5 +1222,13 @@
   "ws.rs GET /realtime": {
     "class": "outside_api",
     "reason": "WebSocket data sends instrumented per message."
+  },
+  "privacy.rs GET /privacy/processing": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs POST /privacy/processing": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   }
 }

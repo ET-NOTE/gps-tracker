@@ -25,7 +25,7 @@ async function components(api={}) {
     if(name==='../api')return moduleOf({api});
     if(name==='@tanstack/react-query')return moduleOf({useQuery:()=>({data:[],isPending:false}),useQueryClient:()=>({invalidateQueries:async()=>{}})});
     if(name.endsWith('.css'))return moduleOf({});
-    if(name==='./CollectionControl')return moduleOf({default:()=>null});
+    if((name==='./CollectionControl'||name==='./ProcessingControl'))return moduleOf({default:()=>null});
     if(name==='./PrivacyDelivery')return moduleOf({PersonalDeliveries:()=>null,AdminDeliveries:()=>null});
     throw Error(name);
   });await m.evaluate();return m.namespace;

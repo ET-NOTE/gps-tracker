@@ -1,5 +1,5 @@
 import {fleetRequestScope,setFleetOwner} from './lib/fleetSession';
-import { cachedRead } from './lib/offlineCache';
+import { cachedRead, clearLocationCache } from './lib/offlineCache';
 import { queryClient } from './state/queryClient';
 import { authScope, assertSession, AUTH_CHANGED, notifyAuthChanged } from './authSession';
 import { hydrateDeviceColors } from './colors';
@@ -444,6 +444,8 @@ export const api = {
     const blob=await r.blob();assertSession(scope);
     return {blob,filename:`personal-locations-${id}.csv`};
   },
+  processingControl: () => req('GET', '/privacy/processing'),
+  setProcessingControl: async body => { const result=await req('POST', '/privacy/processing', body); clearLocationCache(); return result; },
   collectionControl: () => req('GET', '/privacy/collection'),
   setCollectionControl: (id, body) => req('POST', `/privacy/collection/${id}`, body),
   privacyImpact: () => req('GET', '/privacy/impact'),

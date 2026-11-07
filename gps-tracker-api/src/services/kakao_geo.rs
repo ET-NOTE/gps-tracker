@@ -176,9 +176,10 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
     let unique_cells: Vec<(i32, i32)> = cell_to_indices.keys().copied().collect();
 
     // An encrypted deployment must never retain coordinate keys in an indexed plaintext cache.
-    // Bounded process memory cache survives within this process only; policy failure skips DB cache.
+    // No process cache: an erased location must not remain in an untracked RAM cache.
+    // Retention-enabled deployments also skip the un-attributed plaintext DB cache.
     let encrypted: bool =
-        sqlx::query_scalar("SELECT enabled FROM location_storage_policy WHERE singleton")
+        sqlx::query_scalar("SELECT (SELECT enabled FROM location_storage_policy WHERE singleton) OR (SELECT enabled FROM privacy_retention_policy WHERE singleton)")
             .fetch_one(db)
             .await
             .unwrap_or(true);
@@ -186,7 +187,7 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
     let lat_qs: Vec<i32> = unique_cells.iter().map(|c| c.0).collect();
     let lng_qs: Vec<i32> = unique_cells.iter().map(|c| c.1).collect();
     let cached: GeocodeCacheRows = if encrypted {
-        memory_get(&unique_cells)
+        vec![]
     } else {
         sqlx::query_as(
             r#"SELECT lat_q, lng_q, road, jibun, region, building
@@ -261,9 +262,7 @@ pub async fn reverse_many_cached(db: &PgPool, coords: &[(f64, f64)]) -> Vec<Opti
                 for (cell, r) in results {
                     if let Some(resolved) = r {
                         // 캐시 upsert
-                        if encrypted {
-                            memory_put(cell, &resolved);
-                        } else {
+                        if !encrypted {
                             let _ = sqlx::query(
                             r#"INSERT INTO geocode_cache (lat_q, lng_q, road, jibun, region, building)
                                VALUES ($1, $2, $3, $4, $5, $6)
@@ -306,47 +305,3 @@ type GeocodeCacheRows = Vec<(
     String,
     Option<String>,
 )>;
-
-// 4,096 cells / one hour; no position keys survive process restart or backups.
-type MemoryGeo = std::collections::HashMap<(i32, i32), (std::time::Instant, CacheRow)>;
-static MEMORY: std::sync::OnceLock<std::sync::Mutex<MemoryGeo>> = std::sync::OnceLock::new();
-fn memory_get(cells: &[(i32, i32)]) -> GeocodeCacheRows {
-    let Ok(mut map) = MEMORY.get_or_init(Default::default).lock() else {
-        return vec![];
-    };
-    map.retain(|_, (at, _)| at.elapsed() < Duration::from_secs(3600));
-    cells
-        .iter()
-        .filter_map(|&(lat, lng)| {
-            map.get(&(lat, lng)).map(|(_, r)| {
-                (
-                    lat,
-                    lng,
-                    r.road.clone(),
-                    r.jibun.clone(),
-                    r.region.clone(),
-                    r.building.clone(),
-                )
-            })
-        })
-        .collect()
-}
-fn memory_put(cell: (i32, i32), r: &Resolved) {
-    if let Ok(mut map) = MEMORY.get_or_init(Default::default).lock() {
-        if map.len() >= 4096 {
-            map.clear();
-        }
-        map.insert(
-            cell,
-            (
-                std::time::Instant::now(),
-                CacheRow {
-                    road: r.road.clone(),
-                    jibun: r.jibun.clone(),
-                    region: r.region.clone(),
-                    building: r.building.clone(),
-                },
-            ),
-        );
-    }
-}

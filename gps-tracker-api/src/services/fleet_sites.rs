@@ -163,6 +163,14 @@ async fn scan_inner(pool: &PgPool) -> anyhow::Result<()> {
     for id in ids {
         let mut tx = pool.begin().await?;
         let Some(b)=sqlx::query_as::<_,Binding>("SELECT b.id,b.owner_id,b.vehicle_id,b.device_id,b.started_at,b.ended_at,COALESCE(NULLIF(v.name,''),NULLIF(v.license_plate,''),'차량 정보 미등록') AS name FROM fleet_vehicle_bindings b JOIN fleet_vehicles v ON v.id=b.vehicle_id WHERE b.id=$1 AND b.device_id IS NOT NULL FOR SHARE OF b").bind(id).fetch_optional(&mut *tx).await? else {continue};
+        let Ok(_privacy) = super::privacy_lifecycle::background(
+            super::access_ledger::Target::Account(b.owner_id),
+            true,
+        )
+        .await
+        else {
+            continue;
+        };
         let sites=sqlx::query_as::<_,Site>("SELECT s.id,s.name,g.name AS group_name,s.geometry,s.detection_from FROM gps_read_fleet_sites s LEFT JOIN fleet_site_groups g ON g.id=s.group_id WHERE s.owner_id=$1 AND s.active ORDER BY s.id FOR SHARE OF s").bind(b.owner_id).fetch_all(&mut *tx).await?;
         let Some(first) = sites.iter().map(|s| s.detection_from).min() else {
             continue;

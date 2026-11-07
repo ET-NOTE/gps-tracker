@@ -1,6 +1,6 @@
 """Core-field encryption conversion/check, using a separate maintenance credential.
 
-Default is read-only. Only dedicated gps_ databases at schema 103/104 are accepted.
+Default is read-only. Only dedicated gps_ databases at schema 103/104/105 are accepted.
 Activation is one-way: there is deliberately no plaintext rollback switch.
 Stop all API/worker writers before --activate/--convert; retain keyring separately
 from DB dumps. Old WAL, snapshots, derived fields and files are NOT erased here.
@@ -43,7 +43,7 @@ def run(dsn, keyring, activate=False, convert=False, batch=500):
         with db.cursor() as c:
             c.execute("SELECT current_database(),(SELECT max(version) FROM _sqlx_migrations WHERE success)")
             name, version = c.fetchone()
-            if not name.startswith('gps_') or version not in (103,104): raise ValueError('dedicated GPS schema 103/104 required')
+            if not name.startswith('gps_') or version not in (103,104,105): raise ValueError('dedicated GPS schema 103/104/105 required')
             if not 1 <= batch <= 1000: raise ValueError('batch must be 1..1000')
             c.execute("SELECT current_setting('log_parameter_max_length')='0' AND current_setting('log_parameter_max_length_on_error')='0' AND coalesce(current_setting('pgaudit.log_parameter',true),'off') IN ('off','false','0')")
             if not c.fetchone()[0]: raise ValueError('disable database bind-parameter logging before loading keys')

@@ -15,6 +15,7 @@ pub mod fleet_sites;
 pub mod geofence;
 pub mod hardware_auth;
 pub mod housekeeping;
+pub mod privacy_lifecycle;
 pub mod sim_identity;
 // partition_worker 제거 — TimescaleDB hypertable 도입 후 chunk 자동 관리 (migration 0040).
 pub mod http_trace;

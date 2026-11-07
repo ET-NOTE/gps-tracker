@@ -16,6 +16,10 @@ use serde_json::{json, Value};
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route(
+            "/privacy/processing",
+            get(processing_get).post(processing_set),
+        )
         .route("/privacy/collection", get(collection_list))
         .route("/privacy/collection/:id", post(collection_set))
         .route("/privacy/requests", get(list).post(create))
@@ -346,4 +350,65 @@ async fn start_closure(
     .await?;
     tx.commit().await?;
     Ok(Json(result))
+}
+
+async fn processing_get(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Value>> {
+    let row: Option<Value> = sqlx::query_scalar(
+        "SELECT to_jsonb(c) FROM privacy_processing_controls c WHERE user_id=$1",
+    )
+    .bind(user.user_id)
+    .fetch_optional(&state.db)
+    .await?;
+    let retention: Option<Value> = sqlx::query_scalar("SELECT jsonb_build_object('months',months,'contract_until',contract_until,'consent_at',consent_at) FROM privacy_retention_consents WHERE user_id=$1").bind(user.user_id).fetch_optional(&state.db).await?;
+    let enabled: bool =
+        sqlx::query_scalar("SELECT enabled FROM privacy_retention_policy WHERE singleton")
+            .fetch_one(&state.db)
+            .await?;
+    Ok(Json(
+        json!({"control":row.unwrap_or(json!({"use_paused":false,"provision_paused":false,"revision":0})),"retention":retention,"retention_enabled":enabled}),
+    ))
+}
+#[derive(Deserialize)]
+struct ProcessingSet {
+    revision: i64,
+    use_paused: bool,
+    provision_paused: bool,
+}
+async fn processing_set(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(req): Json<ProcessingSet>,
+) -> AppResult<Json<Value>> {
+    let mut tx = state.db.begin().await?;
+    let ready: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock($1)")
+        .bind(crate::services::privacy_lifecycle::LOCK)
+        .fetch_one(&mut *tx)
+        .await?;
+    if !ready {
+        return Err(AppError::Conflict("진행 중인 위치 처리가 있습니다. 잠시 후 다시 시도해 주세요. 아직 설정은 변경되지 않았습니다.".into()));
+    }
+    sqlx::query(
+        "INSERT INTO privacy_processing_controls(user_id) VALUES($1) ON CONFLICT DO NOTHING",
+    )
+    .bind(user.user_id)
+    .execute(&mut *tx)
+    .await?;
+    let revision: i64 = sqlx::query_scalar(
+        "SELECT revision FROM privacy_processing_controls WHERE user_id=$1 FOR UPDATE",
+    )
+    .bind(user.user_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if revision != req.revision {
+        return Err(AppError::Conflict(
+            "설정이 변경되었습니다. 새로고침 후 다시 시도해 주세요.".into(),
+        ));
+    }
+    if req.use_paused || req.provision_paused {
+        sqlx::query("UPDATE fcm_outbox SET status='cancelled',finished_at=clock_timestamp(),lease_until=NULL WHERE user_id=$1 AND event_id IS NOT NULL AND status='pending'").bind(user.user_id).execute(&mut *tx).await?;
+    }
+    sqlx::query("UPDATE privacy_processing_controls SET use_paused=$2,provision_paused=$3,revision=revision+1,changed_at=clock_timestamp() WHERE user_id=$1").bind(user.user_id).bind(req.use_paused).bind(req.provision_paused).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO privacy_processing_events(user_id,actor_id,use_paused,provision_paused,revision) VALUES($1,$1,$2,$3,$4)").bind(user.user_id).bind(req.use_paused).bind(req.provision_paused).bind(revision+1).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(Json(json!({"ok":true,"revision":revision+1})))
 }

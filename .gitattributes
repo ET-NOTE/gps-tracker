@@ -34,3 +34,7 @@ docs/evidence/crypto20-20261107/*.log whitespace=-blank-at-eof
 # Round 20B source evidence must remain byte-identical across checkouts.
 docs/evidence/crypto20b-20261107/* -text
 docs/evidence/crypto20b-20261107/*.log whitespace=-blank-at-eof
+
+# Round 21 evidence must keep identical bytes across Windows/Linux checkouts.
+docs/evidence/lifecycle21-20261107/* -text
+docs/evidence/lifecycle21-20261107/*.log whitespace=-blank-at-eof,-blank-at-eol

@@ -80,6 +80,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // Off unless switched on. When it is on and cannot start, the API does not serve unrecorded reads.
+    services::privacy_lifecycle::start(&cfg.database_url, pool.clone()).await?;
     services::access_ledger::start(pool.clone())
         .await
         .context("location access ledger")?;

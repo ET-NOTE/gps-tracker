@@ -69,10 +69,10 @@ pub async fn about<F: Future>(target: Target, work: F) -> F::Output {
 
 /// Non-cloneable capability to complete exactly one committed intent.
 #[derive(Debug)]
-pub struct Ticket(Option<i64>);
+pub struct Ticket(Option<i64>, Option<super::privacy_lifecycle::Lease>);
 impl Ticket {
     pub fn off() -> Self {
-        Self(None)
+        Self(None, None)
     }
     pub async fn finish(self, outcome: &'static str) -> anyhow::Result<()> {
         if let (Some(id), Some(h)) = (self.0, HANDLE.get()) {
@@ -80,13 +80,15 @@ impl Ticket {
                 .bind(id).bind(outcome).execute(&h.pool).await?.rows_affected();
             anyhow::ensure!(changed == 1, "access intent unavailable; response blocked");
         }
+        drop(self.1);
         Ok(())
     }
 }
 
 pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
+    let lease = super::privacy_lifecycle::guard(&access).await?;
     let Some(h) = HANDLE.get() else {
-        return Ok(Ticket::off());
+        return Ok(Ticket(None, Some(lease)));
     };
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL statement_timeout='5s'")
@@ -184,7 +186,7 @@ pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
     sqlx::query("UPDATE location_access_coverage SET alive_at=GREATEST(alive_at,clock_timestamp()) WHERE id=$1")
         .bind(h.coverage).execute(&mut *tx).await?;
     tx.commit().await?;
-    Ok(Ticket(Some(id)))
+    Ok(Ticket(Some(id), Some(lease)))
 }
 
 pub async fn sent_to(processor: &'static str, method: &'static str) -> anyhow::Result<Ticket> {
@@ -643,7 +645,7 @@ pub fn reader(token: &str, secret: &str) -> Option<(i64, Option<i64>)> {
 
 /// Records an answered read. Sits inside the company scope layer, so it sees who really asked.
 pub async fn middleware(State(state): State<AppState>, request: Request, next: Next) -> Response {
-    if !enabled() {
+    if !enabled() && !super::privacy_lifecycle::active() {
         return next.run(request).await;
     }
     // Fail closed for a newly registered but unclassified route, even before release CI runs.
@@ -687,11 +689,16 @@ pub async fn middleware(State(state): State<AppState>, request: Request, next: N
     let ticket = match planned {
         Some(access) => match begin(access).await {
             Ok(ticket) => Some(ticket),
+            Err(e) if e.to_string() == "location processing paused" => return (axum::http::StatusCode::LOCKED, axum::Json(serde_json::json!({"error":"위치정보 이용 또는 제공이 중지되어 있습니다. 내 정보에서 설정을 확인하세요."}))).into_response(),
             Err(_) => return unavailable(),
         },
         None => None,
     };
-    let response = next.run(request).await;
+    let response = if ticket.is_some() {
+        super::privacy_lifecycle::inside(next.run(request)).await
+    } else {
+        next.run(request).await
+    };
     if let Some(ticket) = ticket {
         let outcome = if response.status().is_success() {
             "response_ready"

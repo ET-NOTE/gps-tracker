@@ -1,0 +1,104 @@
+{
+  "round": "21",
+  "date": "2026-11-07",
+  "environment": "isolated internal Docker network; tmpfs DB; synthetic accounts",
+  "production_applied": false,
+  "automatic_retention_activated_in_production": false,
+  "candidate_schema": 105,
+  "api_sha256": "f10f9e532c0a42b1a0e1887dfe36f09e1b4af2ed8a77acf5fd42c02243df0b16",
+  "web_root_index_sha256": "10d168e05048734db28330d61a80270516077a6dd790bfd10832d22bca7cc15e",
+  "rust": {
+    "unit_passed": 78,
+    "ignored_tests_run_separately": 4,
+    "fmt": true,
+    "clippy_deny_warnings": true,
+    "release_build": true
+  },
+  "web": {
+    "passed": 230,
+    "failed": 0,
+    "builds": [
+      "default base",
+      "root base"
+    ],
+    "existing_warning": "chunks over 500 kB"
+  },
+  "new_integration_groups": 11,
+  "business_suites": [
+    {
+      "suite": "test_fleet_sites.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_fleet_trip_quality.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_fleet_expenses.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_fleet_assets.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_privacy_receipt_pdf.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_privacy_company_tasks.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_privacy_images.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_privacy_redacted.py",
+      "exit": 0
+    }
+  ],
+  "upgrade": {
+    "schema_path": [
+      104,
+      105
+    ],
+    "identity_sim_records_unchanged": true,
+    "failed_105_transaction_atomic": true,
+    "retention_default_off": true,
+    "no_inferred_consent": true,
+    "migration_checksums_match": true,
+    "api_sha256": "f10f9e532c0a42b1a0e1887dfe36f09e1b4af2ed8a77acf5fd42c02243df0b16"
+  },
+  "source_manifest_files": 743,
+  "source_comparison": "Git text line endings normalized; migration bytes exact",
+  "ui": {
+    "environment": "isolated actual React components with synthetic API",
+    "desktop": 1280,
+    "mobile": 390,
+    "overflow": false,
+    "errors": [],
+    "provisionToggle": true
+  },
+  "cleanup": {
+    "at_utc": "2026-11-07T13:44:34.010305+00:00",
+    "test_containers_remaining": 0,
+    "test_networks_remaining": 0,
+    "tmpfs_database_removed": true,
+    "test_storage_removed": true,
+    "private_fixture_files_removed": [
+      "test-runtime.json",
+      "test-keys.json",
+      "regression.env"
+    ],
+    "other_services_modified": false
+  },
+  "limits": [
+    "not deployed; 18B through 21 remain candidates",
+    "no real-device or production-volume traffic rehearsal this round",
+    "no inferred retention consent; company/unattributed/files/audit/backups remain separate scopes",
+    "checkpoint latestness requires independent trusted custody",
+    "global processing lock and 16-connection lease pool require capacity rehearsal",
+    "actual driver mapping and provision notifications deferred to round22"
+  ]
+}

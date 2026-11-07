@@ -132,6 +132,11 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
 }
 
 pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> anyhow::Result<()> {
+    let _privacy = super::privacy_lifecycle::background(
+        super::access_ledger::Target::Device(device_id),
+        false,
+    )
+    .await?;
     let mut tx = pool.begin().await?;
     sqlx::query("SELECT id FROM gps_read_devices WHERE id=$1 FOR UPDATE")
         .bind(device_id)
