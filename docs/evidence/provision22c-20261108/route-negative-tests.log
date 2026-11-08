@@ -1,0 +1,3 @@
+PASS rejected: new location route
+PASS rejected: dynamic registration
+PASS rejected: service registration

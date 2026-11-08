@@ -1,0 +1,11 @@
+{
+  "source_commit": "02df67904949aa34d525734928750a6b7d4702e5",
+  "source_files": 797,
+  "source_mismatches": [],
+  "candidate_files": 70,
+  "all_archive_hashes_match": true,
+  "source_archive_sha256": "ccd57a8c2a5aff4931407dc462b6231e0320c3ea0e73e8bcd9c8c4694b587b77",
+  "archive_sha256": "37fcd1172f17eb52860434af02aee3388a555652ea8023d4821c6711b69e7b31",
+  "production_applied": false,
+  "activation_ready": false
+}

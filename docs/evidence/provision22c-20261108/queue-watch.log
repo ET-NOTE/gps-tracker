@@ -1,0 +1,1 @@
+{"mock_ssh_only": true, "no_mail_or_external_send": true, "critical_after_three_checks": true, "repeat_after_one_hour": true, "recover_after_two_checks": true, "invalid_stale_or_secret_output_redacted": true, "default_disabled": true}

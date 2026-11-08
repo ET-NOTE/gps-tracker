@@ -1,0 +1,13 @@
+{
+  "actualComponent": "NoticeQueuePanel",
+  "syntheticOnly": true,
+  "productionEvidence": false,
+  "viewports": [
+    1280,
+    390
+  ],
+  "overflow": false,
+  "errors": [],
+  "criticalRecoveryAndFailure": true,
+  "externalRequestsBlocked": true
+}

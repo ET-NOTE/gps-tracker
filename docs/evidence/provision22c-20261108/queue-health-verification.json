@@ -1,0 +1,10 @@
+{
+  "schema": 107,
+  "api_sha256": "43b80c5e73668d3d16c2f7e50cdae0e5f5924e0bcc36c1a52cd230145b27775c",
+  "passed": [
+    "anonymous/user/password-only/handler/wrong-IP denied; officer/operator MFA accepted on encrypted runtime",
+    "read-only independent probe detects stopped worker/missing provider/query failure; private output and runtime grants checked"
+  ],
+  "no_external_send": true,
+  "production_modified": false
+}
