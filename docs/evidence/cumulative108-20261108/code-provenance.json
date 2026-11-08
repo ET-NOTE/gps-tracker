@@ -1,0 +1,16 @@
+{
+  "source_commit": "14078606670820c2582e34938ea22cf19da8552c",
+  "canonical_git_blob_sha256": {
+    "crypto20b_preflight.py": "ed57afe14bcff98948bbf34278a83c4fa256489dc38360000088972538b5bd79",
+    "crypto20b_transition.py": "476a2e3d0af206acf1d7b62ad00fdbbe8a885eb87db651c892631528b45f2b9e",
+    "prepare_cumulative108.py": "518d096911e851f5653a1f3c280d6d044aee45694244f6f3ed725f1716a1e3c4",
+    "rehearse_cumulative108.py": "082c419d75279b0f722527b7f38e44b45f1b952971a1d0a4d08bcb96edf347d3",
+    "check_cumulative108.py": "66c4d4022d7e43f6de28c70fcc29425ecfa96810e7728d0a2afe982ad6676c8d",
+    "test_transition_file_owner.py": "111c3bce450a82ce07d43d8864eaf8cf0b67da42de6669a043f8a955e6b190bb",
+    "stage_cumulative108.py": "a63280b422394824422172cc5fa9b6593af9c5632638c6c5da046ebc94088ce9",
+    "probe_subject_ancestry108.py": "9752b8de1cb81caaede9c3a47706e2a06ddb3c872c839cde02a4f821b6bf03d6"
+  },
+  "build_host_matches_all": true,
+  "normalization": "CRLF to LF only",
+  "production_api_unchanged": true
+}

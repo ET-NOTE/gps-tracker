@@ -1,0 +1,8 @@
+[2m2026-11-08T05:39:02.800755Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-08T05:39:02.804888Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_sqlx_migrations" already exists, skipping
+Error: migration failed
+
+Caused by:
+    0: while executing migration 103: error returned from database: permission denied to create extension "pgcrypto"
+    1: error returned from database: permission denied to create extension "pgcrypto"
+    2: permission denied to create extension "pgcrypto"
