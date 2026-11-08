@@ -1,0 +1,1604 @@
+
+> gps-tracker-web@0.1.0 test
+> node --experimental-vm-modules --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: lost response and reload reuse ID; intentional new analysis uses a new ID
+ok 1 - lost response and reload reuse ID; intentional new analysis uses a new ID
+  ---
+  duration_ms: 0.619908
+  type: 'test'
+  ...
+# Subtest: accounts/dates are isolated; malformed success retains the request ID
+ok 2 - accounts/dates are isolated; malformed success retains the request ID
+  ---
+  duration_ms: 0.213943
+  type: 'test'
+  ...
+# Subtest: new account never reuses previous account query cache
+ok 3 - new account never reuses previous account query cache
+  ---
+  duration_ms: 23.782432
+  type: 'test'
+  ...
+# (node:27) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company requests carry explicit scope; personal history remains unscoped
+ok 4 - company requests carry explicit scope; personal history remains unscoped
+  ---
+  duration_ms: 9.582837
+  type: 'test'
+  ...
+# Subtest: company switch cancels late JSON and deferred private download before transmission
+ok 5 - company switch cancels late JSON and deferred private download before transmission
+  ---
+  duration_ms: 7.406375
+  type: 'test'
+  ...
+# Subtest: late A refresh (200) cannot replace or log out B
+ok 6 - late A refresh (200) cannot replace or log out B
+  ---
+  duration_ms: 9.616369
+  type: 'test'
+  ...
+# Subtest: late A refresh (401) cannot replace or log out B
+ok 7 - late A refresh (401) cannot replace or log out B
+  ---
+  duration_ms: 6.757423
+  type: 'test'
+  ...
+# Subtest: late account data cannot complete after login changes
+ok 8 - late account data cannot complete after login changes
+  ---
+  duration_ms: 8.063825
+  type: 'test'
+  ...
+# Subtest: logout prevents a pending refresh from resurrecting a session
+ok 9 - logout prevents a pending refresh from resurrecting a session
+  ---
+  duration_ms: 26.420042
+  type: 'test'
+  ...
+# Subtest: CSV, XLSX and multipart use session login, and only retry rejected authentication
+ok 10 - CSV, XLSX and multipart use session login, and only retry rejected authentication
+  ---
+  duration_ms: 11.928256
+  type: 'test'
+  ...
+# Subtest: deferred document download reads rotated token but rejects a different account
+ok 11 - deferred document download reads rotated token but rejects a different account
+  ---
+  duration_ms: 13.176748
+  type: 'test'
+  ...
+# Subtest: a late file body is blocked after account switch; failed writes are not retried
+ok 12 - a late file body is blocked after account switch; failed writes are not retried
+  ---
+  duration_ms: 13.268842
+  type: 'test'
+  ...
+# Subtest: shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+ok 13 - shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+  ---
+  duration_ms: 6.645291
+  type: 'test'
+  ...
+# Subtest: device mutations cancel pre-write snapshots and offline provenance survives shared state
+ok 14 - device mutations cancel pre-write snapshots and offline provenance survives shared state
+  ---
+  duration_ms: 5.34957
+  type: 'test'
+  ...
+# Subtest: admin step-up never leaks to personal requests; sign-out clears elevated session
+ok 15 - admin step-up never leaks to personal requests; sign-out clears elevated session
+  ---
+  duration_ms: 3.284599
+  type: 'test'
+  ...
+# Subtest: protected writes propose first; only explicit approved execution sends original mutation
+ok 16 - protected writes propose first; only explicit approved execution sends original mutation
+  ---
+  duration_ms: 4.047817
+  type: 'test'
+  ...
+# Subtest: wrong MFA credentials are not retried through ordinary refresh
+ok 17 - wrong MFA credentials are not retried through ordinary refresh
+  ---
+  duration_ms: 3.27468
+  type: 'test'
+  ...
+# Subtest: battery state boundaries and percentage are monotonic; invalid readings stay unknown
+ok 18 - battery state boundaries and percentage are monotonic; invalid readings stay unknown
+  ---
+  duration_ms: 9.920774
+  type: 'test'
+  ...
+# Subtest: charging voltage stays visible above the old limit and warns only above the raw ceiling
+ok 19 - charging voltage stays visible above the old limit and warns only above the raw ceiling
+  ---
+  duration_ms: 0.203694
+  type: 'test'
+  ...
+# Subtest: newer API battery wins over old GPS metadata; new missing ADC never falls back to CBC or old voltage
+ok 20 - newer API battery wins over old GPS metadata; new missing ADC never falls back to CBC or old voltage
+  ---
+  duration_ms: 0.182944
+  type: 'test'
+  ...
+# Subtest: live no-fix and fix telemetry update detail fields together and reject old packets
+ok 21 - live no-fix and fix telemetry update detail fields together and reject old packets
+  ---
+  duration_ms: 5.337668
+  type: 'test'
+  ...
+# Subtest: battery indication does not hide a stale/offline connection
+ok 22 - battery indication does not hide a stale/offline connection
+  ---
+  duration_ms: 4.609706
+  type: 'test'
+  ...
+# Subtest: runtime remains paired with the latest voltage, including missing and delayed WS packets
+ok 23 - runtime remains paired with the latest voltage, including missing and delayed WS packets
+  ---
+  duration_ms: 4.900384
+  type: 'test'
+  ...
+# Subtest: runtime formatting uses the server timestamp and hides stale or inapplicable predictions
+ok 24 - runtime formatting uses the server timestamp and hides stale or inapplicable predictions
+  ---
+  duration_ms: 17.189018
+  type: 'test'
+  ...
+# Subtest: an in-flight REST snapshot cannot overwrite newer live battery or runtime
+ok 25 - an in-flight REST snapshot cannot overwrite newer live battery or runtime
+  ---
+  duration_ms: 88.205299
+  type: 'test'
+  ...
+# Subtest: rental attention prioritizes overdue returns, deduplicates signal alerts, ignores fresh GPS failures
+ok 26 - rental attention prioritizes overdue returns, deduplicates signal alerts, ignores fresh GPS failures
+  ---
+  duration_ms: 5.530751
+  type: 'test'
+  ...
+# Subtest: missing signal only becomes a task while actually rented; reconnect clears it
+ok 27 - missing signal only becomes a task while actually rented; reconnect clears it
+  ---
+  duration_ms: 0.250663
+  type: 'test'
+  ...
+# Subtest: next reservation is the earliest planned future booking, excluding cancellations and past bookings
+ok 28 - next reservation is the earliest planned future booking, excluding cancellations and past bookings
+  ---
+  duration_ms: 0.090912
+  type: 'test'
+  ...
+# Subtest: settlement preview mirrors server rounding at partial hour/day/month boundaries
+ok 29 - settlement preview mirrors server rounding at partial hour/day/month boundaries
+  ---
+  duration_ms: 3.84246
+  type: 'test'
+  ...
+# Subtest: return preview distinguishes extra mileage, manual fees, refund and additional charge
+ok 30 - return preview distinguishes extra mileage, manual fees, refund and additional charge
+  ---
+  duration_ms: 0.158008
+  type: 'test'
+  ...
+# Subtest: return validation rejects invalid times, decreasing/decimal odometer and unexplained charges
+ok 31 - return validation rejects invalid times, decreasing/decimal odometer and unexplained charges
+  ---
+  duration_ms: 0.230805
+  type: 'test'
+  ...
+# (node:35) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: RentalCalendar: empty month renders 42 cells; day selection and KST event opening work
+ok 32 - RentalCalendar: empty month renders 42 cells; day selection and KST event opening work
+  ---
+  duration_ms: 70.579209
+  type: 'test'
+  ...
+# Subtest: ReservationCalendar: empty month renders 42 cells; day selection and KST event opening work
+ok 33 - ReservationCalendar: empty month renders 42 cells; day selection and KST event opening work
+  ---
+  duration_ms: 49.721047
+  type: 'test'
+  ...
+# Subtest: trip exports use the same AND filters, including unassigned and minimum duration
+ok 34 - trip exports use the same AND filters, including unassigned and minimum duration
+  ---
+  duration_ms: 1.346427
+  type: 'test'
+  ...
+# Subtest: CSV escapes formula-like text while preserving negative numeric settlements
+ok 35 - CSV escapes formula-like text while preserving negative numeric settlements
+  ---
+  duration_ms: 0.144172
+  type: 'test'
+  ...
+# Subtest: settlement selection uses payment date and does not omit old contracts settled this month
+ok 36 - settlement selection uses payment date and does not omit old contracts settled this month
+  ---
+  duration_ms: 10.620231
+  type: 'test'
+  ...
+# Subtest: contract-period end is exclusive, includes last KST day, and intersects contract range
+ok 37 - contract-period end is exclusive, includes last KST day, and intersects contract range
+  ---
+  duration_ms: 0.160893
+  type: 'test'
+  ...
+# Subtest: monthly reports stop at the last day instead of leaking the next month
+ok 38 - monthly reports stop at the last day instead of leaking the next month
+  ---
+  duration_ms: 0.155052
+  type: 'test'
+  ...
+# Subtest: invoice retains signed refund and actual line details
+ok 39 - invoice retains signed refund and actual line details
+  ---
+  duration_ms: 0.213562
+  type: 'test'
+  ...
+# Subtest: PDF uses text tables with repeated headers and explicit empty state
+ok 40 - PDF uses text tables with repeated headers and explicit empty state
+  ---
+  duration_ms: 0.486366
+  type: 'test'
+  ...
+# Subtest: dispatch board rolls over year/month in KST without host timezone drift
+ok 41 - dispatch board rolls over year/month in KST without host timezone drift
+  ---
+  duration_ms: 0.788616
+  type: 'test'
+  ...
+# Subtest: midnight return, cancelled contract and overdue occupancy have distinct semantics
+ok 42 - midnight return, cancelled contract and overdue occupancy have distinct semantics
+  ---
+  duration_ms: 0.106341
+  type: 'test'
+  ...
+# Subtest: location preview never coerces unknown coordinates to the ocean
+ok 43 - location preview never coerces unknown coordinates to the ocean
+  ---
+  duration_ms: 0.166834
+  type: 'test'
+  ...
+# Subtest: log completeness requires both purpose and driver; fuel excludes missing values
+ok 44 - log completeness requires both purpose and driver; fuel excludes missing values
+  ---
+  duration_ms: 0.566688
+  type: 'test'
+  ...
+# Subtest: business periods use Korean midnight and month, including UTC day boundary
+ok 45 - business periods use Korean midnight and month, including UTC day boundary
+  ---
+  duration_ms: 0.566657
+  type: 'test'
+  ...
+# Subtest: old open contracts stay overdue; future active and draft do not occupy vehicles
+ok 46 - old open contracts stay overdue; future active and draft do not occupy vehicles
+  ---
+  duration_ms: 0.478381
+  type: 'test'
+  ...
+# Subtest: search and status filters do not change summary data or mutate source contracts
+ok 47 - search and status filters do not change summary data or mutate source contracts
+  ---
+  duration_ms: 0.297461
+  type: 'test'
+  ...
+# Subtest: maintenance includes overdue and next 30 days, ordered and separated by type
+ok 48 - maintenance includes overdue and next 30 days, ordered and separated by type
+  ---
+  duration_ms: 5.458194
+  type: 'test'
+  ...
+# Subtest: calendar click preserves the displayed day instead of shifting to previous UTC date
+ok 49 - calendar click preserves the displayed day instead of shifting to previous UTC date
+  ---
+  duration_ms: 0.156254
+  type: 'test'
+  ...
+# Subtest: pause requires confirmation, preserves epoch, and never presents server acceptance as device acknowledgement
+ok 50 - pause requires confirmation, preserves epoch, and never presents server acceptance as device acknowledgement
+  ---
+  duration_ms: 37.613202
+  type: 'test'
+  ...
+# (node:64) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: fresh GPS is not inferred from current telemetry or stale coordinates
+ok 51 - fresh GPS is not inferred from current telemetry or stale coordinates
+  ---
+  duration_ms: 1.240287
+  type: 'test'
+  ...
+# Subtest: unreceived, pending and measured zero distance stay distinct
+ok 52 - unreceived, pending and measured zero distance stay distinct
+  ---
+  duration_ms: 0.253527
+  type: 'test'
+  ...
+# Subtest: partial totals exclude other workspaces and never fabricate missing vehicles
+ok 53 - partial totals exclude other workspaces and never fabricate missing vehicles
+  ---
+  duration_ms: 0.086183
+  type: 'test'
+  ...
+# Subtest: today coverage respects KST midnight and excludes future fixes
+ok 54 - today coverage respects KST midnight and excludes future fixes
+  ---
+  duration_ms: 0.063219
+  type: 'test'
+  ...
+# Subtest: coincident map positions are selectable as one group, distant points stay separate
+ok 55 - coincident map positions are selectable as one group, distant points stay separate
+  ---
+  duration_ms: 4.321803
+  type: 'test'
+  ...
+# Subtest: unregistered schedules and vehicle names cannot masquerade as healthy or terminal names
+ok 56 - unregistered schedules and vehicle names cannot masquerade as healthy or terminal names
+  ---
+  duration_ms: 0.119526
+  type: 'test'
+  ...
+# Subtest: sleeping within its reporting window is not a long communication warning
+ok 57 - sleeping within its reporting window is not a long communication warning
+  ---
+  duration_ms: 0.258077
+  type: 'test'
+  ...
+# Subtest: today uses the KST date rather than the newest available historic row
+ok 58 - today uses the KST date rather than the newest available historic row
+  ---
+  duration_ms: 0.707033
+  type: 'test'
+  ...
+# Subtest: zero movement is a valid reading, missing metrics stay unknown
+ok 59 - zero movement is a valid reading, missing metrics stay unknown
+  ---
+  duration_ms: 0.143771
+  type: 'test'
+  ...
+# Subtest: native export preserves Korean CSV and only supplies filename, MIME and bytes
+ok 60 - native export preserves Korean CSV and only supplies filename, MIME and bytes
+  ---
+  duration_ms: 3.646501
+  type: 'test'
+  ...
+# Subtest: cancel/share-opening are honest outcomes; failures and oversized files never fall back silently
+ok 61 - cancel/share-opening are honest outcomes; failures and oversized files never fall back silently
+  ---
+  duration_ms: 8.848653
+  type: 'test'
+  ...
+# Subtest: browser fallback starts a named download and later revokes its object URL
+ok 62 - browser fallback starts a named download and later revokes its object URL
+  ---
+  duration_ms: 1.913125
+  type: 'test'
+  ...
+# Subtest: old app gets update guidance rather than an unsupported blob navigation
+ok 63 - old app gets update guidance rather than an unsupported blob navigation
+  ---
+  duration_ms: 1.578083
+  type: 'test'
+  ...
+# Subtest: long Korean/emoji filenames retain report extension within filesystem limits
+ok 64 - long Korean/emoji filenames retain report extension within filesystem limits
+  ---
+  duration_ms: 3.052462
+  type: 'test'
+  ...
+# (node:82) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: odometer ranges include exact decimal boundaries and never treat missing as zero
+ok 65 - odometer ranges include exact decimal boundaries and never treat missing as zero
+  ---
+  duration_ms: 8.621285
+  type: 'test'
+  ...
+# Subtest: registration range includes both Korean days independent of host timezone
+ok 66 - registration range includes both Korean days independent of host timezone
+  ---
+  duration_ms: 0.593048
+  type: 'test'
+  ...
+# Subtest: invalid or reversed ranges are reported rather than silently applied
+ok 67 - invalid or reversed ranges are reported rather than silently applied
+  ---
+  duration_ms: 0.221538
+  type: 'test'
+  ...
+# Subtest: distance sorts keep unregistered last without mutating source or SIM bindings
+ok 68 - distance sorts keep unregistered last without mutating source or SIM bindings
+  ---
+  duration_ms: 0.301438
+  type: 'test'
+  ...
+# Subtest: distance, date, status and manager/terminal search compose without adding other vehicles
+ok 69 - distance, date, status and manager/terminal search compose without adding other vehicles
+  ---
+  duration_ms: 0.225555
+  type: 'test'
+  ...
+# Subtest: vehicle choices distinguish unnamed assets by primary terminal or vehicle ID
+ok 70 - vehicle choices distinguish unnamed assets by primary terminal or vehicle ID
+  ---
+  duration_ms: 0.157226
+  type: 'test'
+  ...
+# Subtest: fleet asset id never replaces the source SIM id
+ok 71 - fleet asset id never replaces the source SIM id
+  ---
+  duration_ms: 0.493981
+  type: 'test'
+  ...
+# Subtest: SIM position before connection or without timestamp is not assigned to the vehicle
+ok 72 - SIM position before connection or without timestamp is not assigned to the vehicle
+  ---
+  duration_ms: 0.142799
+  type: 'test'
+  ...
+# Subtest: unconnected asset has no device or another vehicles telemetry
+ok 73 - unconnected asset has no device or another vehicles telemetry
+  ---
+  duration_ms: 0.089639
+  type: 'test'
+  ...
+# Subtest: general expenses use closed assigned trips without inheriting fuel amounts
+ok 74 - general expenses use closed assigned trips without inheriting fuel amounts
+  ---
+  duration_ms: 13.492363
+  type: 'test'
+  ...
+# Subtest: expenses total only approved ledger rows, never add linked trip fuel again
+ok 75 - expenses total only approved ledger rows, never add linked trip fuel again
+  ---
+  duration_ms: 1.074955
+  type: 'test'
+  ...
+# Subtest: CSV and PDF share filtered snapshots, status and approved-only summary
+ok 76 - CSV and PDF share filtered snapshots, status and approved-only summary
+  ---
+  duration_ms: 0.957353
+  type: 'test'
+  ...
+# (node:130) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Fleet events UI distinguishes first-load failure, stale success and a real empty response
+ok 77 - Fleet events UI distinguishes first-load failure, stale success and a real empty response
+  ---
+  duration_ms: 44.271609
+  type: 'test'
+  ...
+# Subtest: Fleet trip-list failure offers retry and recovers without switching vehicles
+ok 78 - Fleet trip-list failure offers retry and recovers without switching vehicles
+  ---
+  duration_ms: 17.678611
+  type: 'test'
+  ...
+# Subtest: Fleet trip detail renders accepted map points without fetching them again
+ok 79 - Fleet trip detail renders accepted map points without fetching them again
+  ---
+  duration_ms: 9.340449
+  type: 'test'
+  ...
+# Subtest: company header is limited to corporate and private asset documents
+ok 80 - company header is limited to corporate and private asset documents
+  ---
+  duration_ms: 0.688587
+  type: 'test'
+  ...
+# Subtest: company switch and exit reject late reads, while personal requests survive
+ok 81 - company switch and exit reject late reads, while personal requests survive
+  ---
+  duration_ms: 0.405314
+  type: 'test'
+  ...
+# Subtest: preferred company belongs to the login session
+ok 82 - preferred company belongs to the login session
+  ---
+  duration_ms: 0.148981
+  type: 'test'
+  ...
+# Subtest: visit filter distinguishes unnamed vehicles without replacing vehicle identity
+ok 83 - visit filter distinguishes unnamed vehicles without replacing vehicle identity
+  ---
+  duration_ms: 0.639715
+  type: 'test'
+  ...
+# Subtest: visit copy separates observed presence, gaps and configuration changes
+ok 84 - visit copy separates observed presence, gaps and configuration changes
+  ---
+  duration_ms: 0.210276
+  type: 'test'
+  ...
+# Subtest: address search resolves road address and coordinates, falls back only for zero results
+ok 85 - address search resolves road address and coordinates, falls back only for zero results
+  ---
+  duration_ms: 2.278834
+  type: 'test'
+  ...
+# Subtest: live GPS status distinguishes movement, low speed, unknown and stale fixes
+ok 86 - live GPS status distinguishes movement, low speed, unknown and stale fixes
+  ---
+  duration_ms: 1.720342
+  type: 'test'
+  ...
+# Subtest: dense slow travel is moving, independently of GPS sample count
+ok 87 - dense slow travel is moving, independently of GPS sample count
+  ---
+  duration_ms: 1.07198
+  type: 'test'
+  ...
+# Subtest: stationary jitter requires five minutes, and does not inflate distance
+ok 88 - stationary jitter requires five minutes, and does not inflate distance
+  ---
+  duration_ms: 1.122766
+  type: 'test'
+  ...
+# Subtest: separate stop episodes exclude an unobserved gap and respect the selected range
+ok 89 - separate stop episodes exclude an unobserved gap and respect the selected range
+  ---
+  duration_ms: 0.226677
+  type: 'test'
+  ...
+# Subtest: outages, nonincreasing timestamps and impossible jumps are not travelled distance
+ok 90 - outages, nonincreasing timestamps and impossible jumps are not travelled distance
+  ---
+  duration_ms: 0.175892
+  type: 'test'
+  ...
+# Subtest: server speed is preserved, including zero; invalid or missing speed stays unknown
+ok 91 - server speed is preserved, including zero; invalid or missing speed stays unknown
+  ---
+  duration_ms: 0.096021
+  type: 'test'
+  ...
+# Subtest: live batch paints points chronologically with their individual speeds, including the equator
+ok 92 - live batch paints points chronologically with their individual speeds, including the equator
+  ---
+  duration_ms: 9.587825
+  type: 'test'
+  ...
+# Subtest: stop classification never overwrites a server speed
+ok 93 - stop classification never overwrites a server speed
+  ---
+  duration_ms: 0.544746
+  type: 'test'
+  ...
+# Subtest: stale live speed expires without pretending the vehicle stopped
+ok 94 - stale live speed expires without pretending the vehicle stopped
+  ---
+  duration_ms: 0.269277
+  type: 'test'
+  ...
+# (node:143) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:164) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: skipped original fixes determine direction; zoom thins without discarding points and seeker does not resurrect them
+ok 95 - skipped original fixes determine direction; zoom thins without discarding points and seeker does not resurrect them
+  ---
+  duration_ms: 67.298386
+  type: 'test'
+  ...
+# Subtest: new batch starts with unknown direction and original predecessor crosses native bridge with its own time
+ok 96 - new batch starts with unknown direction and original predecessor crosses native bridge with its own time
+  ---
+  duration_ms: 19.354037
+  type: 'test'
+  ...
+# Subtest: history follows all cursors beyond 10,000 transmissions without losing same-time sources
+ok 97 - history follows all cursors beyond 10,000 transmissions without losing same-time sources
+  ---
+  duration_ms: 34.251287
+  type: 'test'
+  ...
+# Subtest: cancellation and an intermediate failure never return a partial day
+ok 98 - cancellation and an intermediate failure never return a partial day
+  ---
+  duration_ms: 4.098372
+  type: 'test'
+  ...
+# Subtest: a repeated cursor fails explicitly rather than looping or claiming completion
+ok 99 - a repeated cursor fails explicitly rather than looping or claiming completion
+  ---
+  duration_ms: 0.197622
+  type: 'test'
+  ...
+# Subtest: 31-day five-minute aggregation includes all 8,928 buckets with disjoint windows
+ok 100 - 31-day five-minute aggregation includes all 8,928 buckets with disjoint windows
+  ---
+  duration_ms: 27.753775
+  type: 'test'
+  ...
+# Subtest: one-minute history rejects over 31 days before any request; 31 days remains complete
+ok 101 - one-minute history rejects over 31 days before any request; 31 days remains complete
+  ---
+  duration_ms: 57.408542
+  type: 'test'
+  ...
+# Subtest: aggregation rejects malformed, oversized, duplicated, unordered or outside-window rows
+ok 102 - aggregation rejects malformed, oversized, duplicated, unordered or outside-window rows
+  ---
+  duration_ms: 1.944293
+  type: 'test'
+  ...
+# Subtest: partial first buckets and leap-year coarse histories remain supported without overlap
+ok 103 - partial first buckets and leap-year coarse histories remain supported without overlap
+  ---
+  duration_ms: 91.658667
+  type: 'test'
+  ...
+# Subtest: aggregate failure or cancellation on later windows never returns partial history
+ok 104 - aggregate failure or cancellation on later windows never returns partial history
+  ---
+  duration_ms: 0.325143
+  type: 'test'
+  ...
+# Subtest: SDK: maps share load; network failure permits fresh script injection
+ok 105 - SDK: maps share load; network failure permits fresh script injection
+  ---
+  duration_ms: 4.04388
+  type: 'test'
+  ...
+# Subtest: SDK: script and initialization have bounded timeouts and recover
+ok 106 - SDK: script and initialization have bounded timeouts and recover
+  ---
+  duration_ms: 2.104656
+  type: 'test'
+  ...
+# (node:166) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:168) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: batch markers use each fix course and timestamp, including the last fix
+ok 107 - batch markers use each fix course and timestamp, including the last fix
+  ---
+  duration_ms: 15.17851
+  type: 'test'
+  ...
+# Subtest: home window uses KST midnight and validates wake timestamps
+ok 108 - home window uses KST midnight and validates wake timestamps
+  ---
+  duration_ms: 7.119976
+  type: 'test'
+  ...
+# Subtest: superseded or unmounted history requests never repaint the map
+ok 109 - superseded or unmounted history requests never repaint the map
+  ---
+  duration_ms: 7.424429
+  type: 'test'
+  ...
+# Subtest: slow history cannot clear a newer live trail; next refresh can repair it
+ok 110 - slow history cannot clear a newer live trail; next refresh can repair it
+  ---
+  duration_ms: 7.765412
+  type: 'test'
+  ...
+# Subtest: cache provenance belongs to the response; a successful retry recovers without an online event
+ok 111 - cache provenance belongs to the response; a successful retry recovers without an online event
+  ---
+  duration_ms: 3.991862
+  type: 'test'
+  ...
+# Subtest: authorization failures and account changes cannot restore or leak saved data
+ok 112 - authorization failures and account changes cannot restore or leak saved data
+  ---
+  duration_ms: 6.80945
+  type: 'test'
+  ...
+# Subtest: home refresh retries cached history even when latest fix is unchanged; unrelated reads do not affect home
+ok 113 - home refresh retries cached history even when latest fix is unchanged; unrelated reads do not affect home
+  ---
+  duration_ms: 9.028713
+  type: 'test'
+  ...
+# Subtest: map notices follow selected device; changing selection cannot show previous speed
+ok 114 - map notices follow selected device; changing selection cannot show previous speed
+  ---
+  duration_ms: 22.522868
+  type: 'test'
+  ...
+# Subtest: both navigation surfaces remove Driving while keeping role-specific destinations
+ok 115 - both navigation surfaces remove Driving while keeping role-specific destinations
+  ---
+  duration_ms: 6.303518
+  type: 'test'
+  ...
+# Subtest: home tool menu exposes all former Driving actions and requires a device only for the seeker
+ok 116 - home tool menu exposes all former Driving actions and requires a device only for the seeker
+  ---
+  duration_ms: 5.588781
+  type: 'test'
+  ...
+# Subtest: mini/detail/management/planner are exclusive; leaving Home or losing the device releases the map
+ok 117 - mini/detail/management/planner are exclusive; leaving Home or losing the device releases the map
+  ---
+  duration_ms: 1.806223
+  type: 'test'
+  ...
+# ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future\#v7_starttransition.
+# ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future\#v7_relativesplatpath.
+# Subtest: old /tools links redirect Home with parameters intact and replace their history entry
+ok 118 - old /tools links redirect Home with parameters intact and replace their history entry
+  ---
+  duration_ms: 5.560217
+  type: 'test'
+  ...
+# Subtest: device card preserves all actions without executing them on expand, and closes after selection
+ok 119 - device card preserves all actions without executing them on expand, and closes after selection
+  ---
+  duration_ms: 10.664003
+  type: 'test'
+  ...
+# Subtest: map options support native click activation and propagate the chosen map layer
+ok 120 - map options support native click activation and propagate the chosen map layer
+  ---
+  duration_ms: 2.591633
+  type: 'test'
+  ...
+# Subtest: processing pause clears location cache and prevents an in-flight read from restoring it
+ok 121 - processing pause clears location cache and prevents an in-flight read from restoring it
+  ---
+  duration_ms: 1.96892
+  type: 'test'
+  ...
+# Subtest: modal: initial field, forward/backward boundaries, outside focus and opener restoration
+ok 122 - modal: initial field, forward/backward boundaries, outside focus and opener restoration
+  ---
+  duration_ms: 5.983605
+  type: 'test'
+  ...
+# Subtest: modal: nested dialogs only close the top and retain background/scroll lock
+ok 123 - modal: nested dialogs only close the top and retain background/scroll lock
+  ---
+  duration_ms: 1.955344
+  type: 'test'
+  ...
+# Subtest: modal: latest close policy is used without refocusing an edited field
+ok 124 - modal: latest close policy is used without refocusing an edited field
+  ---
+  duration_ms: 2.163256
+  type: 'test'
+  ...
+# (node:174) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: monthly distinguishes no records, unconfirmed records and confirmed zero distance
+ok 125 - monthly distinguishes no records, unconfirmed records and confirmed zero distance
+  ---
+  duration_ms: 12.103346
+  type: 'test'
+  ...
+# Subtest: monthly short distances remain visible and unspecified trips are not called personal
+ok 126 - monthly short distances remain visible and unspecified trips are not called personal
+  ---
+  duration_ms: 0.3397
+  type: 'test'
+  ...
+# Subtest: monthly uses the same trip quality boundary and retains separately recorded expenses
+ok 127 - monthly uses the same trip quality boundary and retains separately recorded expenses
+  ---
+  duration_ms: 0.263767
+  type: 'test'
+  ...
+# Subtest: monthly CSV and PDF preserve blank versus zero and short-distance meaning
+ok 128 - monthly CSV and PDF preserve blank versus zero and short-distance meaning
+  ---
+  duration_ms: 1.138886
+  type: 'test'
+  ...
+# Subtest: native display copies no credentials, keeps zero coordinates, and marks cache/fix loss
+ok 129 - native display copies no credentials, keeps zero coordinates, and marks cache/fix loss
+  ---
+  duration_ms: 1.139176
+  type: 'test'
+  ...
+# Subtest: selected tracker survives fleet cap; segments remain separate and bounded
+ok 130 - selected tracker survives fleet cap; segments remain separate and bounded
+  ---
+  duration_ms: 2.937004
+  type: 'test'
+  ...
+# Subtest: missing direction stays unknown; displayed point owns its course and timestamp
+ok 131 - missing direction stays unknown; displayed point owns its course and timestamp
+  ---
+  duration_ms: 0.220365
+  type: 'test'
+  ...
+# Subtest: native session streams while open and stops on back, logout, account switch and unmount
+ok 132 - native session streams while open and stops on back, logout, account switch and unmount
+  ---
+  duration_ms: 11.623061
+  type: 'test'
+  ...
+# Subtest: native predecessor contains original fix coordinates/time only and rejects invalid geometry
+ok 133 - native predecessor contains original fix coordinates/time only and rejects invalid geometry
+  ---
+  duration_ms: 0.330814
+  type: 'test'
+  ...
+# (node:186) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:192) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: queue panel clears stale success on failure, recovers and distinguishes disabled delivery
+ok 134 - queue panel clears stale success on failure, recovers and distinguishes disabled delivery
+  ---
+  duration_ms: 66.602244
+  type: 'test'
+  ...
+# (node:202) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: failed save restores the stored preference and prevents overlapping edits
+ok 135 - failed save restores the stored preference and prevents overlapping edits
+  ---
+  duration_ms: 34.229085
+  type: 'test'
+  ...
+# Subtest: load failure offers retry and copy distinguishes GPS acquisition from driving
+ok 136 - load failure offers retry and copy distinguishes GPS acquisition from driving
+  ---
+  duration_ms: 8.275974
+  type: 'test'
+  ...
+# Subtest: connection notice offers a 24-hour default and persists a chosen delay without promising daily repeats
+ok 137 - connection notice offers a 24-hour default and persists a chosen delay without promising daily repeats
+  ---
+  duration_ms: 15.686487
+  type: 'test'
+  ...
+# Subtest: regular status reporting uses the persisted wake preference, independently of motion
+ok 138 - regular status reporting uses the persisted wake preference, independently of motion
+  ---
+  duration_ms: 14.693806
+  type: 'test'
+  ...
+# Subtest: print form retains filtered CSV totals, excluded rows and actual zero without invented odometers
+ok 139 - print form retains filtered CSV totals, excluded rows and actual zero without invented odometers
+  ---
+  duration_ms: 16.175699
+  type: 'test'
+  ...
+# Subtest: long and multiline notes have stable row references and all original text in the appendix
+ok 140 - long and multiline notes have stable row references and all original text in the appendix
+  ---
+  duration_ms: 0.737649
+  type: 'test'
+  ...
+# Subtest: empty and missing metadata print honestly with repeatable grouped headers and no ratio
+ok 141 - empty and missing metadata print honestly with repeatable grouped headers and no ratio
+  ---
+  duration_ms: 0.469004
+  type: 'test'
+  ...
+# Subtest: generic rental and expense PDF layout remains separate from the driving form
+ok 142 - generic rental and expense PDF layout remains separate from the driving form
+  ---
+  duration_ms: 0.408219
+  type: 'test'
+  ...
+# Subtest: report uses captured driver department, never current vehicle department
+ok 143 - report uses captured driver department, never current vehicle department
+  ---
+  duration_ms: 1.499766
+  type: 'test'
+  ...
+# Subtest: attached template columns, KST dates and vehicle filename; no invented odometer or staff department
+ok 144 - attached template columns, KST dates and vehicle filename; no invented odometer or staff department
+  ---
+  duration_ms: 0.878595
+  type: 'test'
+  ...
+# Subtest: commute and business stay separate and both feed the template business-distance total
+ok 145 - commute and business stay separate and both feed the template business-distance total
+  ---
+  duration_ms: 0.366551
+  type: 'test'
+  ...
+# Subtest: open/invalid trips remain marked in rows but do not inflate totals or produce a percentage
+ok 146 - open/invalid trips remain marked in rows but do not inflate totals or produce a percentage
+  ---
+  duration_ms: 0.299054
+  type: 'test'
+  ...
+# Subtest: unknown purpose is not classified as personal or business, and zero/empty have no percentage
+ok 147 - unknown purpose is not classified as personal or business, and zero/empty have no percentage
+  ---
+  duration_ms: 0.252717
+  type: 'test'
+  ...
+# Subtest: visible precision matches totals; filter scope cannot silently become full period
+ok 148 - visible precision matches totals; filter scope cannot silently become full period
+  ---
+  duration_ms: 0.288493
+  type: 'test'
+  ...
+# Subtest: metadata and free text are escaped, missing company and registration are shown before download
+ok 149 - metadata and free text are escaped, missing company and registration are shown before download
+  ---
+  duration_ms: 0.412617
+  type: 'test'
+  ...
+# (node:218) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company publication requires disclosure confirmation, resets on changes and sends both revisions
+ok 150 - company publication requires disclosure confirmation, resets on changes and sends both revisions
+  ---
+  duration_ms: 69.144294
+  type: 'test'
+  ...
+# Subtest: decision requires latest downloaded proof and renewed attestation after feedback changes
+ok 151 - decision requires latest downloaded proof and renewed attestation after feedback changes
+  ---
+  duration_ms: 34.718227
+  type: 'test'
+  ...
+# Subtest: submission requires explicit file confirmation and shows server failure without success refresh
+ok 152 - submission requires explicit file confirmation and shows server failure without success refresh
+  ---
+  duration_ms: 6.367768
+  type: 'test'
+  ...
+# (node:255) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company completion requires explicit attestation; changing evidence resets it and sends both revisions
+ok 153 - company completion requires explicit attestation; changing evidence resets it and sends both revisions
+  ---
+  duration_ms: 21.306466
+  type: 'test'
+  ...
+# Subtest: public summary cannot render internal evidence or counts; result does not claim total deletion
+ok 154 - public summary cannot render internal evidence or counts; result does not claim total deletion
+  ---
+  duration_ms: 24.430884
+  type: 'test'
+  ...
+# Subtest: scope dates use Korean inclusive days; historical links stay candidates, not identity proof
+ok 155 - scope dates use Korean inclusive days; historical links stay candidates, not identity proof
+  ---
+  duration_ms: 5.497188
+  type: 'test'
+  ...
+# Subtest: server revision conflict stays visible without reporting success
+ok 156 - server revision conflict stays visible without reporting success
+  ---
+  duration_ms: 6.038488
+  type: 'test'
+  ...
+# (node:258) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: result-only form clears password after response and retains closure warning
+ok 157 - result-only form clears password after response and retains closure warning
+  ---
+  duration_ms: 46.773512
+  type: 'test'
+  ...
+# Subtest: expired and revoked grants have no download button; active requires password and clears it on failure
+ok 158 - expired and revoked grants have no download button; active requires password and clears it on failure
+  ---
+  duration_ms: 15.536504
+  type: 'test'
+  ...
+# Subtest: administrator must select device and confirm scope; dates include Korean end day
+ok 159 - administrator must select device and confirm scope; dates include Korean end day
+  ---
+  duration_ms: 6.823077
+  type: 'test'
+  ...
+# (node:259) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only selected RGB pixels leave browser, transparent pixels flatten and invalid bounds fail
+ok 160 - only selected RGB pixels leave browser, transparent pixels flatten and invalid bounds fail
+  ---
+  duration_ms: 12.826618
+  type: 'test'
+  ...
+# Subtest: admin has no default scope or source and excludes unconfirmed company scopes
+ok 161 - admin has no default scope or source and excludes unconfirmed company scopes
+  ---
+  duration_ms: 11.404299
+  type: 'test'
+  ...
+# Subtest: image downloads require available grant and clear password on failure and request switch
+ok 162 - image downloads require available grant and clear password on failure and request switch
+  ---
+  duration_ms: 15.592079
+  type: 'test'
+  ...
+# Subtest: receipt source controls require selected confirmed expense scope and disappear on personal scope or review invalidation
+ok 163 - receipt source controls require selected confirmed expense scope and disappear on personal scope or review invalidation
+  ---
+  duration_ms: 7.090159
+  type: 'test'
+  ...
+# Subtest: reduction keeps the aspect ratio inside 2048px and one megapixel like the server
+ok 164 - reduction keeps the aspect ratio inside 2048px and one megapixel like the server
+  ---
+  duration_ms: 11.741624
+  type: 'test'
+  ...
+# Subtest: reviewer and delivery history say when a source was reduced or turned upright
+ok 165 - reviewer and delivery history say when a source was reduced or turned upright
+  ---
+  duration_ms: 4.982809
+  type: 'test'
+  ...
+# Subtest: PDF sources are labelled by page in the list, the note and the delivery history
+ok 166 - PDF sources are labelled by page in the list, the note and the delivery history
+  ---
+  duration_ms: 4.78706
+  type: 'test'
+  ...
+# (node:260) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: document selection requires downloaded review and attestation; issue carries digest and revision
+ok 167 - document selection requires downloaded review and attestation; issue carries digest and revision
+  ---
+  duration_ms: 24.35509
+  type: 'test'
+  ...
+# Subtest: optional sections start empty, changing scope clears attestation, old grants stay basic
+ok 168 - optional sections start empty, changing scope clears attestation, old grants stay basic
+  ---
+  duration_ms: 32.50101
+  type: 'test'
+  ...
+# Subtest: download failures clear password and show retryable error without claiming completion
+ok 169 - download failures clear password and show retryable error without claiming completion
+  ---
+  duration_ms: 6.856961
+  type: 'test'
+  ...
+# Subtest: cancelled requests keep inventory but never offer account/document download controls
+ok 170 - cancelled requests keep inventory but never offer account/document download controls
+  ---
+  duration_ms: 7.626701
+  type: 'test'
+  ...
+# Subtest: collection/use/provision facts need a past period of at most 366 Korean days; it is sent with the section and shown in the scope
+ok 171 - collection/use/provision facts need a past period of at most 366 Korean days; it is sent with the section and shown in the scope
+  ---
+  duration_ms: 10.655317
+  type: 'test'
+  ...
+# (node:275) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Unicode selection uses scalar offsets rather than UTF16
+ok 172 - Unicode selection uses scalar offsets rather than UTF16
+  ---
+  duration_ms: 14.434367
+  type: 'test'
+  ...
+# Subtest: no text selected by default; preview and confirmation invalidate on scope changes
+ok 173 - no text selected by default; preview and confirmation invalidate on scope changes
+  ---
+  duration_ms: 45.32319
+  type: 'test'
+  ...
+# Subtest: cancelled requests offer no downloads and errors never claim saved
+ok 174 - cancelled requests offer no downloads and errors never claim saved
+  ---
+  duration_ms: 5.904455
+  type: 'test'
+  ...
+# (node:285) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: request retries preserve idempotency key and never describe acceptance as deletion
+ok 175 - request retries preserve idempotency key and never describe acceptance as deletion
+  ---
+  duration_ms: 26.118224
+  type: 'test'
+  ...
+# Subtest: administrator cannot select completion for erasure or closure; normal access can complete
+ok 176 - administrator cannot select completion for erasure or closure; normal access can complete
+  ---
+  duration_ms: 7.121498
+  type: 'test'
+  ...
+# Subtest: closed requests keep their event history without an edit form
+ok 177 - closed requests keep their event history without an edit form
+  ---
+  duration_ms: 13.441727
+  type: 'test'
+  ...
+# (node:290) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent use/provision controls preserve revision, clear fetched locations, and show unactivated retention honestly
+ok 178 - independent use/provision controls preserve revision, clear fetched locations, and show unactivated retention honestly
+  ---
+  duration_ms: 17.543557
+  type: 'test'
+  ...
+# (node:307) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: speed clock only rerenders its consumer, suspends when hidden, and cleans up
+ok 179 - speed clock only rerenders its consumer, suspends when hidden, and cleans up
+  ---
+  duration_ms: 9.495902
+  type: 'test'
+  ...
+# Subtest: refresh coalesces forced retries without overlapping; hidden intervals and unmounted queues stop
+ok 180 - refresh coalesces forced retries without overlapping; hidden intervals and unmounted queues stop
+  ---
+  duration_ms: 2.831105
+  type: 'test'
+  ...
+# Subtest: photo times use the actual server uploaded_at and retain legacy fallback
+ok 181 - photo times use the actual server uploaded_at and retain legacy fallback
+  ---
+  duration_ms: 0.585082
+  type: 'test'
+  ...
+# Subtest: photo comparisons separate evidence type and phase without inferring matching angles
+ok 182 - photo comparisons separate evidence type and phase without inferring matching angles
+  ---
+  duration_ms: 0.894005
+  type: 'test'
+  ...
+# Subtest: empty, unsupported and oversized photos cannot be sent to compression/upload
+ok 183 - empty, unsupported and oversized photos cannot be sent to compression/upload
+  ---
+  duration_ms: 0.188194
+  type: 'test'
+  ...
+# (node:322) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SIM explanation is hidden until hover, focus or tap; Escape and outside interaction close it
+ok 184 - SIM explanation is hidden until hover, focus or tap; Escape and outside interaction close it
+  ---
+  duration_ms: 16.121227
+  type: 'test'
+  ...
+# Subtest: notification target parsing rejects invalid and duplicate identifiers and retains other query parameters
+ok 185 - notification target parsing rejects invalid and duplicate identifiers and retains other query parameters
+  ---
+  duration_ms: 1.349473
+  type: 'test'
+  ...
+# Subtest: notification waits for membership and map, overrides saved selection, and handles another notification in the same session
+ok 186 - notification waits for membership and map, overrides saved selection, and handles another notification in the same session
+  ---
+  duration_ms: 2.227707
+  type: 'test'
+  ...
+# Subtest: Fleet shares the Home status: stale wake is offline and a fresh wake never proves driving
+ok 187 - Fleet shares the Home status: stale wake is offline and a fresh wake never proves driving
+  ---
+  duration_ms: 3.456753
+  type: 'test'
+  ...
+# Subtest: routing: exact supported routes include pairing and trailing slash
+ok 188 - routing: exact supported routes include pairing and trailing slash
+  ---
+  duration_ms: 0.590502
+  type: 'test'
+  ...
+# Subtest: routing: unknown descendants and prefix lookalikes never become Home or privileged pages
+ok 189 - routing: unknown descendants and prefix lookalikes never become Home or privileged pages
+  ---
+  duration_ms: 0.0796
+  type: 'test'
+  ...
+# Subtest: routing: specialized access uses matching account type; admin checked independently
+ok 190 - routing: specialized access uses matching account type; admin checked independently
+  ---
+  duration_ms: 0.064492
+  type: 'test'
+  ...
+# ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future\#v7_starttransition.
+# ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future\#v7_relativesplatpath.
+# (node:327) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Fleet mobile: map stays mounted, late SDK populates markers, selection switches panel
+ok 191 - Fleet mobile: map stays mounted, late SDK populates markers, selection switches panel
+  ---
+  duration_ms: 26.967594
+  type: 'test'
+  ...
+# Subtest: Fleet: SDK before devices waits for coordinates, fits once, then removes unlinked markers
+ok 192 - Fleet: SDK before devices waits for coordinates, fits once, then removes unlinked markers
+  ---
+  duration_ms: 9.278684
+  type: 'test'
+  ...
+# Subtest: Fleet: first live fix is retained before SDK readiness and snapshots cannot rewind it
+ok 193 - Fleet: first live fix is retained before SDK readiness and snapshots cannot rewind it
+  ---
+  duration_ms: 8.367357
+  type: 'test'
+  ...
+# Subtest: Fleet: reconnection refreshes snapshots and selected events; disconnect is visible
+ok 194 - Fleet: reconnection refreshes snapshots and selected events; disconnect is visible
+  ---
+  duration_ms: 7.161794
+  type: 'test'
+  ...
+# Subtest: Fleet events: refresh failure retains accepted data and retry restores it
+ok 195 - Fleet events: refresh failure retains accepted data and retry restores it
+  ---
+  duration_ms: 5.116571
+  type: 'test'
+  ...
+# Subtest: Fleet events: old device response cannot contaminate the new selection
+ok 196 - Fleet events: old device response cannot contaminate the new selection
+  ---
+  duration_ms: 4.894612
+  type: 'test'
+  ...
+# Subtest: Fleet trips: clear previous route on load; failure and empty data are retryable without duplicate detail fetch
+ok 197 - Fleet trips: clear previous route on load; failure and empty data are retryable without duplicate detail fetch
+  ---
+  duration_ms: 8.432599
+  type: 'test'
+  ...
+# Subtest: Fleet trips: late route after changing vehicles cannot draw or reopen selection
+ok 198 - Fleet trips: late route after changing vehicles cannot draw or reopen selection
+  ---
+  duration_ms: 5.633765
+  type: 'test'
+  ...
+# Subtest: Fleet position merge rejects malformed coordinates and unknown-time rewinds
+ok 199 - Fleet position merge rejects malformed coordinates and unknown-time rewinds
+  ---
+  duration_ms: 0.135045
+  type: 'test'
+  ...
+# Subtest: Fleet: coordinates without a fix timestamp cannot consume initial fit or block the first dated fix
+ok 200 - Fleet: coordinates without a fix timestamp cannot consume initial fit or block the first dated fix
+  ---
+  duration_ms: 5.584734
+  type: 'test'
+  ...
+# Subtest: projected cardinal and diagonal directions follow the drawn line
+ok 201 - projected cardinal and diagonal directions follow the drawn line
+  ---
+  duration_ms: 0.752989
+  type: 'test'
+  ...
+# Subtest: screen spacing stays readable on a long dense route and never changes source data
+ok 202 - screen spacing stays readable on a long dense route and never changes source data
+  ---
+  duration_ms: 15.4861
+  type: 'test'
+  ...
+# Subtest: priority stops win collisions, offscreen points do not suppress visible ones
+ok 203 - priority stops win collisions, offscreen points do not suppress visible ones
+  ---
+  duration_ms: 0.681885
+  type: 'test'
+  ...
+# Subtest: shared time/sampling contract: KST midnight, explicit monthly 1m, visible seeker only
+ok 204 - shared time/sampling contract: KST midnight, explicit monthly 1m, visible seeker only
+  ---
+  duration_ms: 0.868887
+  type: 'test'
+  ...
+# (node:361) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: compact: loading/error/empty are distinct, retry works, late month cannot replace day
+ok 205 - compact: loading/error/empty are distinct, retry works, late month cannot replace day
+  ---
+  duration_ms: 18.460775
+  type: 'test'
+  ...
+# Subtest: compact: failed date index exposes retry without claiming no records
+ok 206 - compact: failed date index exposes retry without claiming no records
+  ---
+  duration_ms: 7.101371
+  type: 'test'
+  ...
+# Subtest: compact: marker drill-down changes date and selects a point from that date
+ok 207 - compact: marker drill-down changes date and selects a point from that date
+  ---
+  duration_ms: 7.012053
+  type: 'test'
+  ...
+# Subtest: compact: database failures show a useful date message and retry recovers
+ok 208 - compact: database failures show a useful date message and retry recovers
+  ---
+  duration_ms: 4.736936
+  type: 'test'
+  ...
+# Subtest: detailed: partial failure preserves available dates, identifies the failed source and refresh recovers
+ok 209 - detailed: partial failure preserves available dates, identifies the failed source and refresh recovers
+  ---
+  duration_ms: 53.731262
+  type: 'test'
+  ...
+# Subtest: summary: device changes clear previous data and abort/ignore stale requests
+ok 210 - summary: device changes clear previous data and abort/ignore stale requests
+  ---
+  duration_ms: 2.056234
+  type: 'test'
+  ...
+# Subtest: detailed: selected empty morning stays selected, failed precision refresh clears path and exports
+ok 211 - detailed: selected empty morning stays selected, failed precision refresh clears path and exports
+  ---
+  duration_ms: 27.035812
+  type: 'test'
+  ...
+# Subtest: detailed: late result is ignored after mode change; monthly 1m really requests 1m
+ok 212 - detailed: late result is ignored after mode change; monthly 1m really requests 1m
+  ---
+  duration_ms: 15.105392
+  type: 'test'
+  ...
+# Subtest: monthly calendar keeps raw activity selectable while daily statistics catch up
+ok 213 - monthly calendar keeps raw activity selectable while daily statistics catch up
+  ---
+  duration_ms: 15.19977
+  type: 'test'
+  ...
+# Subtest: theme: invalid names normalize, storage failure still renders, foregrounds have readable contrast
+ok 214 - theme: invalid names normalize, storage failure still renders, foregrounds have readable contrast
+  ---
+  duration_ms: 4.363311
+  type: 'test'
+  ...
+# (node:374) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: old firmware and unpersisted or mismatched telemetry never acknowledge remote settings
+ok 215 - old firmware and unpersisted or mismatched telemetry never acknowledge remote settings
+  ---
+  duration_ms: 12.105119
+  type: 'test'
+  ...
+# Subtest: minute bounds prevent submission; save waits for actual device acknowledgement and protects an edited draft during refresh
+ok 216 - minute bounds prevent submission; save waits for actual device acknowledgement and protects an edited draft during refresh
+  ---
+  duration_ms: 14.912198
+  type: 'test'
+  ...
+# Subtest: failed save retains previous setting and editable draft; phone devices hide hardware settings
+ok 217 - failed save retains previous setting and editable draft; phone devices hide hardware settings
+  ---
+  duration_ms: 6.882227
+  type: 'test'
+  ...
+# Subtest: daily sleep reporting has modem grace and legacy firmware keeps its existing deadline
+ok 218 - daily sleep reporting has modem grace and legacy firmware keeps its existing deadline
+  ---
+  duration_ms: 0.50375
+  type: 'test'
+  ...
+# Subtest: CSV keeps phone zeroes, quoted commas, doubled quotes and Korean text
+ok 219 - CSV keeps phone zeroes, quoted commas, doubled quotes and Korean text
+  ---
+  duration_ms: 1.383126
+  type: 'test'
+  ...
+# Subtest: CSV rejects wrong headers, column mismatch, malformed quotes, empty and excessive files
+ok 220 - CSV rejects wrong headers, column mismatch, malformed quotes, empty and excessive files
+  ---
+  duration_ms: 2.983682
+  type: 'test'
+  ...
+# Subtest: Incomplete criteria match the report even with historical driver name only
+ok 221 - Incomplete criteria match the report even with historical driver name only
+  ---
+  duration_ms: 0.289645
+  type: 'test'
+  ...
+# Subtest: Overview limits requests to two and retains failures distinct from zero
+ok 222 - Overview limits requests to two and retains failures distinct from zero
+  ---
+  duration_ms: 15.050479
+  type: 'test'
+  ...
+# Subtest: Closing overview stops queued reads and late result updates
+ok 223 - Closing overview stops queued reads and late result updates
+  ---
+  duration_ms: 7.197812
+  type: 'test'
+  ...
+# (node:408) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: CSV and PDF save only the newly authorized response, including a now-empty scope
+ok 224 - CSV and PDF save only the newly authorized response, including a now-empty scope
+  ---
+  duration_ms: 21.025287
+  type: 'test'
+  ...
+# Subtest: failed reauthorization cannot fall back to the cached report
+ok 225 - failed reauthorization cannot fall back to the cached report
+  ---
+  duration_ms: 3.454409
+  type: 'test'
+  ...
+# Subtest: leaving the company screen while authorization is pending cancels export
+ok 226 - leaving the company screen while authorization is pending cancels export
+  ---
+  duration_ms: 3.622075
+  type: 'test'
+  ...
+# Subtest: partial scope warning survives CSV and PDF serialization even for no visible trips
+ok 227 - partial scope warning survives CSV and PDF serialization even for no visible trips
+  ---
+  duration_ms: 0.410744
+  type: 'test'
+  ...
+# (node:410) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: subject confirms exact revision and consent version; conflict remains unconfirmed and visible
+ok 228 - subject confirms exact revision and consent version; conflict remains unconfirmed and visible
+  ---
+  duration_ms: 22.206532
+  type: 'test'
+  ...
+# Subtest: feature OFF cannot disable existing consent revocation
+ok 229 - feature OFF cannot disable existing consent revocation
+  ---
+  duration_ms: 4.879524
+  type: 'test'
+  ...
+# Subtest: provider acceptance does not auto-acknowledge inbox; retry errors stay visible
+ok 230 - provider acceptance does not auto-acknowledge inbox; retry errors stay visible
+  ---
+  duration_ms: 3.601957
+  type: 'test'
+  ...
+# Subtest: company correction posts lineage revision and clears displayed location on submit
+ok 231 - company correction posts lineage revision and clears displayed location on submit
+  ---
+  duration_ms: 4.774296
+  type: 'test'
+  ...
+# Subtest: reconsent locks identity and exact interval, ineffective mapping cannot show locations
+ok 232 - reconsent locks identity and exact interval, ineffective mapping cannot show locations
+  ---
+  duration_ms: 4.589267
+  type: 'test'
+  ...
+# Subtest: subject sees replacement and external scope limits before confirming
+ok 233 - subject sees replacement and external scope limits before confirming
+  ---
+  duration_ms: 3.026874
+  type: 'test'
+  ...
+# Subtest: assignment identifies original SIM and binding, not presentation time or vehicle ID
+ok 234 - assignment identifies original SIM and binding, not presentation time or vehicle ID
+  ---
+  duration_ms: 1.220469
+  type: 'test'
+  ...
+# Subtest: selection excludes open or ambiguous trips and protects other staff records
+ok 235 - selection excludes open or ambiguous trips and protects other staff records
+  ---
+  duration_ms: 0.229753
+  type: 'test'
+  ...
+# Subtest: NTS PDF uses all nine template fields and the same classified totals as CSV
+ok 236 - NTS PDF uses all nine template fields and the same classified totals as CSV
+  ---
+  duration_ms: 19.602396
+  type: 'test'
+  ...
+# (node:428) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: trip summary distinguishes loading, failed and truly empty results
+ok 237 - trip summary distinguishes loading, failed and truly empty results
+  ---
+  duration_ms: 14.058961
+  type: 'test'
+  ...
+# Subtest: reviewed, open and boundary trips stay outside totals
+ok 238 - reviewed, open and boundary trips stay outside totals
+  ---
+  duration_ms: 0.6581
+  type: 'test'
+  ...
+# Subtest: cross-day trips show the end date and missing ends do not claim motion
+ok 239 - cross-day trips show the end date and missing ends do not claim motion
+  ---
+  duration_ms: 0.42992
+  type: 'test'
+  ...
+# Subtest: CSV/PDF share excluded-trip policy without hiding measured distances
+ok 240 - CSV/PDF share excluded-trip policy without hiding measured distances
+  ---
+  duration_ms: 0.667227
+  type: 'test'
+  ...
+# (node:504) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: reconnect resubscribes, requests history repair and drops queued data after logout
+ok 241 - reconnect resubscribes, requests history repair and drops queued data after logout
+  ---
+  duration_ms: 4.679126
+  type: 'test'
+  ...
+1..241
+# tests 241
+# suites 0
+# pass 241
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 422.534676
+
+> gps-tracker-web@0.1.0 build
+> vite build --outDir dist-root
+
+vite v5.4.21 building for production...
+transforming...
+✓ 288 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /work/gps-tracker-web/src/components/PrivacyDelivery.jsx is dynamically imported by /work/gps-tracker-web/src/App.jsx but also statically imported by /work/gps-tracker-web/src/components/PrivacyAccountPackage.jsx, /work/gps-tracker-web/src/components/PrivacyRequests.jsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist-root/index.html                                   5.25 kB │ gzip:   2.59 kB
+dist-root/assets/NanumGothic-Regular-xHXjSUfO.ttf  2,054.74 kB
+dist-root/assets/NanumGothic-Bold-DvrrFc7E.ttf     2,073.87 kB
+dist-root/assets/FleetDashboard-Cq4MBq6b.css           1.81 kB │ gzip:   0.65 kB
+dist-root/assets/CorporatePanel-DqcK_dsY.css          11.19 kB │ gzip:   2.45 kB
+dist-root/assets/index-D1lYxhGs.css                   74.14 kB │ gzip:  12.81 kB
+dist-root/assets/StatCard-ByvGc5vW.js                  2.06 kB │ gzip:   0.87 kB
+dist-root/assets/LegalPage-BH1RJFPO.js                 3.88 kB │ gzip:   2.82 kB
+dist-root/assets/PaymentResult-YjFvZntU.js             4.42 kB │ gzip:   1.83 kB
+dist-root/assets/DeliveryPanel-DYVfCi18.js             6.00 kB │ gzip:   2.49 kB
+dist-root/assets/BusinessPreferences-XIo5wWeE.js      10.32 kB │ gzip:   5.03 kB
+dist-root/assets/SharePage-B-vZnLTg.js                12.13 kB │ gzip:   4.57 kB
+dist-root/assets/HandoffPage-bXwooK6H.js              13.91 kB │ gzip:   5.22 kB
+dist-root/assets/Auth-CTtu9ulB.js                     16.08 kB │ gzip:   4.78 kB
+dist-root/assets/FleetDashboard-Cn19GaLD.js           29.64 kB │ gzip:   9.57 kB
+dist-root/assets/DiagnosticPage-70Q4qepN.js           31.25 kB │ gzip:  10.78 kB
+dist-root/assets/RentcarPanel-CdClLaRb.js             54.41 kB │ gzip:  18.03 kB
+dist-root/assets/AdminDashboard-Bhblg0nL.js           62.74 kB │ gzip:  16.41 kB
+dist-root/assets/CorporatePanel-BRHGmBrZ.js          161.75 kB │ gzip:  49.75 kB
+dist-root/assets/vendor-DRBT1dSS.js                  214.54 kB │ gzip:  68.27 kB
+dist-root/assets/index-CcEL3ef6.js                   516.68 kB │ gzip: 163.78 kB
+dist-root/assets/pdf-engine-DjOoUrRi.js            1,221.27 kB │ gzip: 584.79 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.91s
+
+> gps-tracker-web@0.1.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 288 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /work/gps-tracker-web/src/components/PrivacyDelivery.jsx is dynamically imported by /work/gps-tracker-web/src/App.jsx but also statically imported by /work/gps-tracker-web/src/components/PrivacyAccountPackage.jsx, /work/gps-tracker-web/src/components/PrivacyRequests.jsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                   5.38 kB │ gzip:   2.61 kB
+dist/assets/NanumGothic-Regular-xHXjSUfO.ttf  2,054.74 kB
+dist/assets/NanumGothic-Bold-DvrrFc7E.ttf     2,073.87 kB
+dist/assets/FleetDashboard-Cq4MBq6b.css           1.81 kB │ gzip:   0.65 kB
+dist/assets/CorporatePanel-DqcK_dsY.css          11.19 kB │ gzip:   2.45 kB
+dist/assets/index-D1lYxhGs.css                   74.14 kB │ gzip:  12.81 kB
+dist/assets/StatCard-B5oUU4Ov.js                  2.06 kB │ gzip:   0.87 kB
+dist/assets/LegalPage-BQ_Xb0kt.js                 3.93 kB │ gzip:   2.83 kB
+dist/assets/PaymentResult-C3amkSus.js             4.42 kB │ gzip:   1.83 kB
+dist/assets/DeliveryPanel-C2PqEl5t.js             6.00 kB │ gzip:   2.49 kB
+dist/assets/BusinessPreferences-Dcvzy42n.js      10.35 kB │ gzip:   5.04 kB
+dist/assets/SharePage-CZ3Eolqc.js                12.13 kB │ gzip:   4.57 kB
+dist/assets/HandoffPage-CPCPRsRp.js              13.91 kB │ gzip:   5.22 kB
+dist/assets/Auth-D60N2XzL.js                     16.12 kB │ gzip:   4.79 kB
+dist/assets/FleetDashboard-D2FfFWt3.js           29.64 kB │ gzip:   9.57 kB
+dist/assets/DiagnosticPage-BAzQwQya.js           31.25 kB │ gzip:  10.78 kB
+dist/assets/RentcarPanel-CH--oODP.js             54.41 kB │ gzip:  18.03 kB
+dist/assets/AdminDashboard-CFVsTpm6.js           62.74 kB │ gzip:  16.41 kB
+dist/assets/CorporatePanel-f31sqTiO.js          161.75 kB │ gzip:  49.75 kB
+dist/assets/vendor-DRBT1dSS.js                  214.54 kB │ gzip:  68.27 kB
+dist/assets/index-KKb9_lfk.js                   516.72 kB │ gzip: 163.79 kB
+dist/assets/pdf-engine-DjOoUrRi.js            1,221.27 kB │ gzip: 584.79 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.94s

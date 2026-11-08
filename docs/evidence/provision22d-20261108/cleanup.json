@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-11-08T04:29:55.975784+00:00",
+  "test_containers_removed": [
+    "gps-provision22-api-20261108d",
+    "gps-provision22-db-20261108d"
+  ],
+  "internal_network_removed": "gps-provision22-test-20261108d",
+  "test_storage_removed": true,
+  "private_fixture_files_removed": [
+    "test-keys.json",
+    "test-runtime.json",
+    "regression.env"
+  ],
+  "candidate_preserved": true,
+  "production_modified": false
+}

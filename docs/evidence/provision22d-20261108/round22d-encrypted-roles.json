@@ -1,0 +1,8 @@
+{
+  "encryption_enabled": true,
+  "raw_coordinates_null": true,
+  "decrypted_read_passed": true,
+  "nonowner_api_integration_passed": true,
+  "five_privilege_denials": true,
+  "no_external_send": true
+}
