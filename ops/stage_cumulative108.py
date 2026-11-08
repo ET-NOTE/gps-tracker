@@ -51,7 +51,7 @@ def stage(commit, helper_hash, preflight_hash):
     assert sha(helper) == helper_hash
     preflight = JOB / 'src/ops/crypto20b_preflight.py'
     assert sha(preflight) == preflight_hash
-    dest = JOB / 'candidate-cumulative108-20261108-r1'
+    dest = JOB / 'candidate-cumulative108-20261108-r2'
     shutil.copytree(BASE, dest)  # Existing candidates are never overwritten.
     shutil.copy2(helper, dest / 'ops/crypto20b_transition.py')
     shutil.copy2(preflight, dest / 'ops/crypto20b_preflight.py')
@@ -61,12 +61,15 @@ def stage(commit, helper_hash, preflight_hash):
     assert set(file_hashes) == set(base['files'])
     assert changed == ['ops/crypto20b_preflight.py', 'ops/crypto20b_transition.py']
     result = dict(base)
+    result['base_source_manifest_sha256'] = result.pop('source_manifest_sha256')
+    result['base_verified_source_files'] = result.pop('verified_source_files')
     result.update(source_commit=commit, binary_source_commit=base['source_commit'],
         base_artifact_sha256=BASE_HASH, production_applied=False, activation_ready=False,
         verification_status='functional_pass' if performance_passed else 'functional_pass_performance_blocked',
         mapping_performance_gate_passed=performance_passed,
         mapping_owner_count_seconds=load['owner_count_seconds'],
         changed_files=changed, files=file_hashes,
+        patched_operations_sha256={p: file_hashes[p] for p in changed},
         rehearsal='actual99 to108; larger synthetic row/sample counts, not a production clone',
         activation_gates=[
             'mapping effective-view history load must meet the 5-second owner-query budget; do not rewrite migration108',
