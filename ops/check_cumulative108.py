@@ -143,9 +143,11 @@ print('PASS stale full encrypted restore plus latest checkpoint before any API i
 # Synthetic future history: 1,000 independent 32-deep chains. No inference of consent.
 # All rows are synthetic; production mapping table does not exist at schema99.
 with con() as db:
-    owner = db.execute("INSERT INTO users(phone,email,password_hash) VALUES('mapping-load108','mapping-load108@example.invalid','no-login') RETURNING id").fetchone()[0]
+    tag = 'mapping-load108-' + uuid.uuid4().hex[:8]
+    owner = db.execute("INSERT INTO users(phone,email,password_hash) VALUES(%s,%s,'no-login') RETURNING id", (tag, tag + '@example.invalid')).fetchone()[0]
+    subject = db.execute("INSERT INTO users(phone,email,password_hash) VALUES(%s,%s,'no-login') RETURNING id", (tag + '-staff', tag + '-staff@example.invalid')).fetchone()[0]
     staff = db.execute("INSERT INTO staff(user_id,name,active,access_role) VALUES(%s,'Synthetic history',true,'member') RETURNING id", (owner,)).fetchone()[0]
-    db.execute('INSERT INTO fleet_staff_accounts(owner_id,staff_id,account_id) VALUES(%s,%s,%s)', (owner, staff, owner))
+    db.execute('INSERT INTO fleet_staff_accounts(owner_id,staff_id,account_id) VALUES(%s,%s,%s)', (owner, staff, subject))
     first = db.execute('SELECT coalesce(max(id),0)+1 FROM location_subject_mappings').fetchone()[0]
     started = time.monotonic()
     # Reserve explicit IDs in a test with every writer stopped.
@@ -154,7 +156,7 @@ with con() as db:
       SELECT %s+i,gen_random_uuid(),%s,%s,%s,%s,900000+i/32,900000+i/32,900000+i/32,
        '2026-11-01','2026-11-02',CASE WHEN i%%32=31 THEN 'confirmed' WHEN i%%32=0 THEN 'revoked' ELSE 'superseded' END,CASE WHEN i%%32=0 THEN 2 ELSE 1 END,
        CASE WHEN i%%32>0 THEN %s+i-1 END,CASE WHEN i%%32=1 THEN 2 WHEN i%%32>0 THEN 1 END,CASE WHEN i%%32=1 THEN 'reconsent' WHEN i%%32>0 THEN 'correction' END
-      FROM generate_series(0,31999) i ORDER BY i""", (first, owner, owner, owner, staff, first))
+      FROM generate_series(0,31999) i ORDER BY i""", (first, owner, subject, owner, staff, first))
     db.execute("SELECT setval(pg_get_serial_sequence('location_subject_mappings','id'),(SELECT max(id) FROM location_subject_mappings))")
     db.execute('ANALYZE location_subject_mappings')
     samples = []

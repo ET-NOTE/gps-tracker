@@ -45,8 +45,8 @@ def stage(commit, helper_hash, preflight_hash):
     owner = read('file-owner108.json')
     assert owner['owner_group_preserved'] and owner['api_identity_can_read']
     load = read('mapping-history108.json')
-    assert load['synthetic_rows'] == 32000 and max(load['owner_count_seconds']) < 5
-    assert load['point_query_execution_ms'] < 2000
+    assert load['synthetic_rows'] == 32000 and len(load['owner_count_seconds']) == 3
+    performance_passed = max(load['owner_count_seconds']) < 5 and load['point_query_execution_ms'] < 2000
     helper = JOB / 'src/ops/crypto20b_transition.py'
     assert sha(helper) == helper_hash
     preflight = JOB / 'src/ops/crypto20b_preflight.py'
@@ -63,9 +63,13 @@ def stage(commit, helper_hash, preflight_hash):
     result = dict(base)
     result.update(source_commit=commit, binary_source_commit=base['source_commit'],
         base_artifact_sha256=BASE_HASH, production_applied=False, activation_ready=False,
+        verification_status='functional_pass' if performance_passed else 'functional_pass_performance_blocked',
+        mapping_performance_gate_passed=performance_passed,
+        mapping_owner_count_seconds=load['owner_count_seconds'],
         changed_files=changed, files=file_hashes,
         rehearsal='actual99 to108; larger synthetic row/sample counts, not a production clone',
         activation_gates=[
+            'mapping effective-view history load must meet the 5-second owner-query budget; do not rewrite migration108',
             'production maintenance window, live I/O/headroom and all GPS writers inventory',
             'bind logging disabled before keys; pgcrypto provisioned for restricted migration owner',
             'legacy Timescale retention jobs reviewed, paused and drained before conversion/restore',
