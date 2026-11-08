@@ -1,0 +1,24 @@
+NOTICE:  database "gps_ai_test" does not exist, skipping
+NOTICE:  database "gps_fcm_test" does not exist, skipping
+   Compiling gps-tracker-api v0.1.0 (/work/gps-tracker-api)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.32s
+     Running unittests src/main.rs (/cache/target/debug/deps/gps_tracker_api-8f003424c2fedcc2)
+
+running 5 tests
+test services::access_ledger::tests::external_intents_commit_before_mock_network_and_distinguish_outcomes ... ok
+test services::ai_requests::tests::analysis_purchase_is_atomic_and_replayable ... ok
+test services::fcm::tests::durable_queue_recovers_without_cross_account_or_partial_success_replay ... ok
+test services::subject_provision::integration::subject_notice_retry_identity_and_lease_fences ... ok
+test services::subject_queue_load::notice_queue_capacity_and_failure_recovery ... QUEUE_LOAD_REPORT={"accepted_per_second":9.176992279366019,"cooldown_429_503_shared":true,"crash_replay_at_least_once":true,"database_pools":2,"full_50s_deadline":true,"max_http_starts_in_one_second":10,"mock_latency_ms":200,"no_external_send":true,"notice_count":1200,"parallel_worker_loops":8,"peak_http_inflight":3,"policy_off_and_revoked_token_blocked":true,"seconds":130.761796836,"stale_settlement_cannot_change_cooldown":true,"synthetic_only":true,"unique_settlements":1200,"worker_backlog_review_alarms":true}
+ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 83 filtered out; finished in 182.44s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src/main.rs (/cache/target/debug/deps/gps_tracker_api-8f003424c2fedcc2)
+
+running 1 test
+test services::privacy_lifecycle::tests::lifecycle_external_and_realtime_fences_without_ledger ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 87 filtered out; finished in 0.10s
+

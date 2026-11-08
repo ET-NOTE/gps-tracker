@@ -1,0 +1,299 @@
+{
+  "status": "functional_and_mapping_performance_pass",
+  "environment": "isolated synthetic tmpfs; not production evidence",
+  "production_applied": false,
+  "activation_ready": false,
+  "production_schema": 99,
+  "production_read_only_check_at": "2026-11-08T08:26:29.111552+00:00",
+  "production_api_web_service_unchanged": true,
+  "source_commit": "ebc01b5892bc75664ff189c449b9501ebe70e3bc",
+  "baseline_api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "candidate_api_sha256": "b20be1f8b71c05e5658b78d439934b772641c54617f2044f269830f3634a653c",
+  "actual_baseline_schema_path": [
+    99,
+    109
+  ],
+  "migration_transaction_failures_recovered": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+  ],
+  "functional_checks": [
+    {
+      "check": "actual schema99 binary and historical migration checksums; synthetic workload seeded"
+    },
+    {
+      "check": "all ten migration transactions roll back on injected failure; committed prefixes resume with real candidate",
+      "versions": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109
+      ]
+    },
+    {
+      "check": "missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes"
+    },
+    {
+      "check": "prepared restricted owner completes real single-pass99 to109 with original data preserved and defaults OFF"
+    },
+    {
+      "check": "99 to109 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred"
+    },
+    {
+      "check": "other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected"
+    },
+    {
+      "check": "conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes"
+    },
+    {
+      "check": "restricted API and both cleanup worker paths use same key/mode; policy, DDL and maintenance bypass rejected"
+    },
+    {
+      "check": "all original location values survive encryption; physical columns NULL; 623000 raw samples yield283001 deduplicated in-range history points"
+    },
+    {
+      "check": "full Timescale DB plus encrypted files restore while fenced; separately held key required; all location/file hashes equal"
+    },
+    {
+      "check": "cumulative rehearsal complete; isolated encrypted API ready for business/privacy regression"
+    }
+  ],
+  "synthetic_workload": {
+    "rows": 130000,
+    "batched_rows": 17000,
+    "expanded_points": 623000,
+    "deduplicated_history_points": 283001
+  },
+  "timings": {
+    "resume-after-per-migration-interruptions": 0.314,
+    "resume102-to109-nonsuperuser": 0.488,
+    "direct99-to109-nonsuperuser": 0.482,
+    "initial_db_conversion_seconds": 208.937,
+    "history_points_count_seconds": 13.997,
+    "full_dump_seconds": 3.97,
+    "full_restore_seconds": 2.793
+  },
+  "mapping_load": {
+    "synthetic_rows": 32000,
+    "independent_chains": 1000,
+    "max_depth": 32,
+    "confirmed_leaves": 1000,
+    "owner_count_seconds": [
+      0.8913,
+      0.8836,
+      0.8831
+    ],
+    "point_query_execution_ms": 17.212,
+    "db_cpu_limit": 2,
+    "production_distribution_reproduced": false
+  },
+  "mapping_screen_queries": {
+    "environment": "isolated synthetic; DB 2 CPU tmpfs",
+    "schema": 109,
+    "production_modified": false,
+    "external_messages": 0,
+    "synthetic_mapping_rows": 32000,
+    "queries": [
+      {
+        "name": "subject_list_200",
+        "rows": 200,
+        "source_sql_sha256": "fda53db1dbd045fd72458559e67411848528203e1fd42e3094d8cfb22bcb5591",
+        "seconds": [
+          0.8889,
+          0.9161,
+          0.9052
+        ],
+        "budget_seconds": 5
+      },
+      {
+        "name": "company_list_200",
+        "rows": 200,
+        "source_sql_sha256": "4b124f2818583d6a772b94649f74b3a91e05f7c43e139388c6e84914cc03ea0b",
+        "seconds": [
+          0.8925,
+          0.8925,
+          0.8985
+        ],
+        "budget_seconds": 5
+      },
+      {
+        "name": "company_projection_1000",
+        "rows": 1000,
+        "source_sql_sha256": "f6200c32f1b3925bd485eb604b8bcba72bd74fd22130bcd3d2fb63924dfaa038",
+        "seconds": [
+          0.8983,
+          0.8983,
+          0.895
+        ],
+        "budget_seconds": 5
+      },
+      {
+        "name": "company_projection_one",
+        "rows": 1,
+        "source_sql_sha256": "f6200c32f1b3925bd485eb604b8bcba72bd74fd22130bcd3d2fb63924dfaa038",
+        "seconds": [
+          0.015,
+          0.0139,
+          0.0152
+        ],
+        "budget_seconds": 2
+      }
+    ],
+    "all_passed": true
+  },
+  "ancestry": {
+    "environment": "isolated synthetic",
+    "production_modified": false,
+    "external_messages": 0,
+    "cases": [
+      {
+        "case": "before migration: explicit consent/withdrawal/interval/tenant matrix",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 7
+      },
+      {
+        "case": "before migration: deterministic mixed histories",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 23
+      },
+      {
+        "case": "populated108->109: identity, view owner/grants, all rows and effective decisions preserved",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 23
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 6",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 22
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 10",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 21
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 12",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 21
+      },
+      {
+        "case": "inactive staff removes all affected mappings",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 14
+      },
+      {
+        "case": "unlinked staff removes all affected mappings",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 14
+      }
+    ],
+    "schema_path": [
+      108,
+      109
+    ],
+    "synthetic_mapping_rows": 941,
+    "failed109_transaction_atomic": true,
+    "view_identity_owner_grants_preserved": true,
+    "no_identity_or_consent_rewrite": true,
+    "runtime_select_preserved": true,
+    "api_sha256": "b20be1f8b71c05e5658b78d439934b772641c54617f2044f269830f3634a653c"
+  },
+  "encrypted_regression_groups": {
+    "round22-encrypted-integration.json": 7,
+    "round22b-encrypted.json": 7,
+    "round22d-encrypted.json": 6
+  },
+  "business_suites_passed": 8,
+  "rust_tests": {
+    "unit_passed": 81,
+    "separate_external_passed": 7,
+    "rerun": true
+  },
+  "web_tests": "unchanged22D web241 reused; no frontend edits",
+  "file_owner": {
+    "maintenance_uid": 0,
+    "api_uid": 65534,
+    "owner_group_preserved": true,
+    "mode": "0600",
+    "api_identity_can_read": true,
+    "plaintext_roundtrip_preserved": true,
+    "external_files_modified": false
+  },
+  "stale_backup_checkpoint": {
+    "stale_full_backup_bytes": 128365386,
+    "checkpoint_hash_checked": true,
+    "old_erased_rows_removed": true,
+    "old_consent_not_revived": true,
+    "pause_reapplied": true,
+    "accepted_notice_not_resent": true,
+    "sim_identity_preserved": true,
+    "old_resend_denied": true,
+    "replay": {
+      "replayed_accounts": 1,
+      "paused_controls_replayed": true,
+      "external_copies_verified": false
+    },
+    "external_checkpoint_custody_verified": false
+  },
+  "package": {
+    "archive_sha256": "19b20e2670b281576a0170f1a94a383d7600a4fe0bd277c119b56bb4f2c12f1a",
+    "file_count": 72,
+    "all_archive_bytes_match": true,
+    "changed_from108": [
+      "gps-tracker-api",
+      "migrations/0109_subject_effective_ancestry.sql",
+      "ops/admin_db_roles.py",
+      "ops/crypto20b_transition.py",
+      "ops/location_storage.py"
+    ],
+    "historic_migrations_and_web_unchanged": true,
+    "activation_ready": false
+  },
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261108cumulative109/candidate-cumulative109-20261108-r1.tar.gz",
+  "cleanup": {
+    "at": "2026-11-08T08:25:29.627876+00:00",
+    "removed_resources": [
+      "gps-provision22-db-20261108cumulative109",
+      "gps-provision22-test-20261108cumulative109"
+    ],
+    "private_fixture_paths_absent": true,
+    "other_projects_modified": false,
+    "production_modified": false
+  },
+  "external_messages": 0,
+  "limitations": [
+    "full-period location decryption and concurrent VPS I/O remain separate performance acceptance",
+    "production maintenance window, live I/O/headroom and all GPS writers inventory",
+    "bind logging disabled before keys; pgcrypto provisioned for restricted migration owner",
+    "legacy Timescale retention jobs reviewed, paused and drained before conversion/restore",
+    "separate runtime/maintenance identity, real key custody and protected backup restore",
+    "latest external privacy checkpoint custody and offline replay before reopening",
+    "reviewed retention/notice policy, explicit subject consent and administrator PC/IP/MFA",
+    "real FCM handset arrival, notification entry and dedicated queue alarm acceptance",
+    "physical TLS promotion, buffered pause/resume and 24-hour sleep acceptance",
+    "legacy WAL, snapshots, backups and unclassified/company files separately governed"
+  ],
+  "evidence_capture": "verification-report.png"
+}

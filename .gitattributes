@@ -57,3 +57,7 @@ docs/evidence/provision22d-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
 # Cumulative 99-to-108 rehearsal evidence is byte-identical on every checkout.
 docs/evidence/cumulative108-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
 docs/evidence/cumulative108-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Cumulative109 evidence preserves captured bytes on all hosts.
+docs/evidence/cumulative109-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/cumulative109-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol

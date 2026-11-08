@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261108cumulative109/rehearse_cumulative109.py", line 18, in <module>
+    from crypto20b_transition import run as transition, convert_files, connect
+  File "/home/etcom-hub/build/gps-provision22-20261108cumulative109/src/ops/crypto20b_transition.py", line 21
+    if normal != '0' or error != '0' or audit not in ('off','false','0'): raise ValueError('bind logging must be disabled')
+IndentationError: unexpected indent
