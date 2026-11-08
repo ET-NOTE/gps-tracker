@@ -177,8 +177,9 @@ db.execute("SET statement_timeout='60s'; SET jit=off")
 assert one('SELECT max(version) FROM _sqlx_migrations')==109
 assert metadata()==prior_metadata and data_hash()==prior_rows
 equivalent('populated108->109: identity, view owner/grants, all rows and effective decisions preserved',expected)
+expected_runtime_count=len(oracle())
 db.execute('SET ROLE gps_runtime')
-assert one('SELECT count(*) FROM location_subject_effective')==len(oracle())
+assert one('SELECT count(*) FROM location_subject_effective')==expected_runtime_count
 db.execute('RESET ROLE')
 for parent,child in [(good[0],good[1]),(deep[0],deep[2]),(deep[1],deep[2])]:
     db.execute('UPDATE location_subject_mappings SET revision=revision+1 WHERE id=%s',(parent,))

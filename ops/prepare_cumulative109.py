@@ -43,6 +43,7 @@ def prepare(source):
         (JOB/name).symlink_to((PRIOR/name).resolve(),target_is_directory=True)
     shutil.copy2(PRIOR/'crypto20b-fields.json',JOB/'crypto20b-fields.json')
     dev=(JOB/'src/ops/dev_provision22d.sh').read_text().replace('20261108d',TAG)
+    dev=dev.replace('GPS_RELEASE=provision22d-20261108-dev','GPS_RELEASE=cumulative109-20261108-dev')
     (JOB/'dev22.sh').write_text(dev)
     for name in ('prepare_cumulative109.py','test_subject_ancestry109.py'):
         shutil.copy2(JOB/'src/ops'/name,JOB/name)
