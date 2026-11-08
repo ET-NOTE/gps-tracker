@@ -28,6 +28,12 @@ def offline(c):
     if not c.fetchone()[0]: raise ValueError('maintenance must own the GPS schema')
     c.execute("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND backend_type='client backend'")
     if c.fetchone()[0]: raise ValueError('stop ALL API/worker/other GPS database sessions first')
+    c.execute("""SELECT j.job_id FROM timescaledb_information.jobs j
+      LEFT JOIN timescaledb_information.job_stats s USING(job_id)
+      WHERE j.proc_name='policy_retention' AND j.hypertable_schema='public'
+      AND j.hypertable_name IN ('location_records','location_1min','location_5min','location_1hour')
+      AND (j.scheduled OR s.job_status='Running')""")
+    if c.fetchall(): raise ValueError('pause legacy Timescale retention jobs and wait for running jobs before transition')
 
 def files(uploads, private):
     roots=[('uploads',pathlib.Path(uploads),['device_documents','fleet_documents']),('private',pathlib.Path(private),['car-images'])]
@@ -66,6 +72,7 @@ def convert_files(db,uploads,private,ring,apply=False):
             c.execute('SELECT maintenance AND enabled FROM location_storage_policy WHERE singleton')
             if not c.fetchone()[0]: raise ValueError('enabled encryption and maintenance fence required')
         for path,ctx in files(uploads,private):
+            owner=path.stat()
             stored=path.read_bytes();raw=open_bytes(c,ctx,stored)
             sealed=stored.startswith(MAGIC)
             if apply and (not sealed or json.loads(stored[len(MAGIC):])['kid']!=ring['active']):
@@ -75,7 +82,13 @@ def convert_files(db,uploads,private,ring,apply=False):
                 stage=path.with_name('.crypto20b-'+os.urandom(12).hex())
                 fd=os.open(stage,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
                 try:
-                    with os.fdopen(fd,'wb') as f:f.write(encoded);f.flush();os.fsync(f.fileno())
+                    with os.fdopen(fd,'wb') as f:
+                        # Maintenance can run as root while files belong to the
+                        # API account. Atomic replacement must preserve access.
+                        current=os.fstat(f.fileno())
+                        if (current.st_uid,current.st_gid)!=(owner.st_uid,owner.st_gid):
+                            os.fchown(f.fileno(),owner.st_uid,owner.st_gid)
+                        f.write(encoded);f.flush();os.fsync(f.fileno())
                     os.replace(stage,path)
                     parent=os.open(path.parent,os.O_RDONLY|os.O_DIRECTORY)
                     try:os.fsync(parent)

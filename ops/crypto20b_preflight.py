@@ -30,6 +30,10 @@ def run(env_file, binary):
             result['bind_logging']=list(c.fetchone())
             c.execute("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND backend_type='client backend'")
             result['other_gps_connections']=c.fetchone()[0]
+            c.execute("""SELECT j.job_id,j.hypertable_name,j.scheduled,j.config,s.job_status
+              FROM timescaledb_information.jobs j LEFT JOIN timescaledb_information.job_stats s USING(job_id)
+              WHERE j.proc_name='policy_retention' AND j.hypertable_schema='public'""")
+            result['legacy_retention_jobs']=[dict(zip(['job_id','table','scheduled','config','status'],r)) for r in c.fetchall()]
     finally:db.close()
     uploads=pathlib.Path(cfg.get('UPLOAD_DIR','/home/mmm/uploads'))
     private=pathlib.Path(cfg.get('PRIVATE_UPLOAD_DIR',str(uploads.with_name('gps-private-uploads'))))
