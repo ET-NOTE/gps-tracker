@@ -260,6 +260,7 @@ async function req(method, path, body, retry = true, options = {}) {
 }
 
 export const api = {
+  adminNoticeQueue: () => req('GET','/admin/security/notice-queue'),
   adminSecurity: () => req('GET','/admin/security/status'),
   adminMfaEnroll: (password) => req('POST','/admin/security/enroll',{password},false),
   adminMfaVerify: (password,code) => req('POST','/admin/security/verify',{password,code},false),

@@ -45,3 +45,6 @@ docs/evidence/provision22-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
 
 # Round 22B screenshots, generated exports and evidence hashes are exact bytes.
 docs/evidence/provision22b-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+
+# Round 22C captures and verification evidence retain exact bytes.
+docs/evidence/provision22c-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol

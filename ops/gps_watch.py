@@ -29,6 +29,8 @@ import getpass
 import json
 import os
 import pathlib
+import re
+import subprocess
 import smtplib
 import socket
 import ssl
@@ -47,11 +49,11 @@ DEFAULTS = {
     'watch': {'name': 'gps.serial.kr', 'environment': 'production', 'fail_after': '3', 'recover_after': '2',
               'remind_minutes': '60', 'gap_minutes': '5', 'timeout_seconds': '10', 'state_dir': '~/.local/state/gps-watch'},
     'checks': {'health': 'https://gps.serial.kr/health', 'ingest': 'http://gps.serial.kr/ingest', 'ssh': 'gps.serial.kr:22',
-               'status': 'https://status.serial.kr/', 'references': 'https://www.gstatic.com/generate_204, https://www.naver.com/'},
+               'status': 'https://status.serial.kr/', 'notice_queue_ssh': '', 'references': 'https://www.gstatic.com/generate_204, https://www.naver.com/'},
     'mail': {'host': '', 'port': '587', 'security': 'starttls', 'username': '', 'password': '', 'from': '', 'to': '', 'ca_file': ''},
     'heartbeat': {'url': ''},
 }
-LABELS = {'health': 'API·DB 상태', 'ingest': '단말기 수집 주소', 'ssh': 'SSH 포트', 'status': '상태 페이지'}
+LABELS = {'health': 'API·DB 상태', 'ingest': '단말기 수집 주소', 'ssh': 'SSH 포트', 'status': '상태 페이지', 'notice_queue': '위치정보 제공 통보 대기열'}
 PENDING_LIMIT = 50
 SECRETS = {'password': ('mail', 'password'), 'heartbeat': ('heartbeat', 'url')}  # never given on a command line
 
@@ -185,6 +187,36 @@ def probe_ssh(address, timeout):
     return (True, 'SSH 응답') if banner.startswith(b'SSH-') else (False, 'SSH 배너 없음')
 
 
+def probe_notice_queue(alias, timeout):
+    # Dedicated SSH alias/key MUST use a server-side forced command for the
+    # SELECT-only probe, not the application's runtime/admin identity.
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,80}', alias):
+        return False, 'invalid queue monitor alias'
+    try:
+        response = subprocess.run(['ssh', '-T', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes',
+                                   '-o', 'ConnectTimeout=5', alias], capture_output=True, text=True, timeout=timeout)
+        if len(response.stdout) > 16384:
+            raise ValueError('oversized result')
+        data = json.loads(response.stdout)
+        at = datetime.fromisoformat(data['checked_at'].replace('Z','+00:00')).timestamp()
+        if not -30 <= time.time()-at <= 120:
+            raise ValueError('stale snapshot')
+        severity = data['severity']
+        if severity not in ('ok','warning','critical') or response.returncode != {'ok':0,'warning':1,'critical':2}[severity]:
+            raise ValueError('invalid result')
+        known = {'delivery_paused','provider_unconfigured','worker_stale','backlog_critical','backlog_warning',
+                 'manual_review','lease_expired','intent_unresolved','provider_cooldown','failure_ratio'}
+        codes = data.get('alerts')
+        if not isinstance(codes,list) or any(not isinstance(c,str) or c not in known for c in codes):
+            raise ValueError('unknown alarm')
+        if (severity=='ok') != (not codes):
+            raise ValueError('inconsistent result')
+        return severity=='ok', ', '.join(codes) if codes else 'queue healthy'
+    except Exception:
+        # Never include SSH/DB output: it may contain credentials or host details.
+        return False, 'queue probe unavailable or stale'
+
+
 def timed(probe, *args):
     start = time.monotonic()
     try:
@@ -199,7 +231,8 @@ def measure(cfg):
     watch, checks = cfg['watch'], cfg['checks']
     timeout = float(watch['timeout_seconds'])
     probes = {'health': (probe_health, checks['health'], timeout, watch['environment']), 'ingest': (probe_ingest, checks['ingest'], timeout),
-              'ssh': (probe_ssh, checks['ssh'], timeout), 'status': (probe_status, checks['status'], timeout)}
+              'ssh': (probe_ssh, checks['ssh'], timeout), 'status': (probe_status, checks['status'], timeout),
+              'notice_queue': (probe_notice_queue, checks.get('notice_queue_ssh',''), timeout)}
     probes = {name: call for name, call in probes.items() if call[1]}  # an empty address turns a check off
     with ThreadPoolExecutor(len(probes)) as pool:
         running = {name: pool.submit(timed, *call) for name, call in probes.items()}

@@ -15,7 +15,7 @@ def run(dsn,apply=False,secret_out=None):
   c.execute("SELECT nspname FROM pg_namespace WHERE nspname NOT IN ('public','information_schema','timescaledb_experimental','timescaledb_information') AND nspname NOT LIKE 'pg_%' AND nspname NOT LIKE '_timescaledb_%'")
   if c.fetchall():raise RuntimeError('unreviewed schema: stop rather than changing other projects')
   c.execute("SELECT max(version) FROM _sqlx_migrations WHERE success");version=c.fetchone()[0]
-  if version not in (102,103,104,105,106):raise RuntimeError('reviewed schema 102/103/104/105/106 required')
+  if version not in (102,103,104,105,106,107):raise RuntimeError('reviewed schema 102/103/104/105/106/107 required')
   c.execute("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p','S','v','m')")
   count=c.fetchone()[0]
   report={'database':name,'schema':version,'public_objects':count,'apply':apply,'roles':['gps_schema_owner','gps_runtime']}
@@ -66,6 +66,8 @@ def run(dsn,apply=False,secret_out=None):
     c.execute('GRANT SELECT ON location_subject_policy TO gps_runtime')
     c.execute('REVOKE UPDATE,DELETE ON location_subject_actions,location_notice_attempts FROM gps_runtime')
     c.execute('REVOKE DELETE ON location_subject_mappings,location_provision_notices FROM gps_runtime')
+   if version >= 107:
+    c.execute('REVOKE INSERT,DELETE ON location_notice_worker FROM gps_runtime')
    for routine in routines:
     c.execute(sql.SQL('REVOKE ALL ON FUNCTION {} FROM PUBLIC').format(sql.SQL(routine)))
     c.execute(sql.SQL('GRANT EXECUTE ON FUNCTION {} TO gps_runtime').format(sql.SQL(routine)))

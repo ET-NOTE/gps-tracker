@@ -19,6 +19,7 @@ use uuid::Uuid;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/admin/security/status", get(status))
+        .route("/admin/security/notice-queue", get(notice_queue))
         .route("/admin/security/enroll", post(enroll))
         .route("/admin/security/verify", post(verify))
         .route("/admin/security/logout", post(logout))
@@ -444,4 +445,20 @@ async fn decide(
     )
     .await?;
     Ok(Json(json!({"ok":true})))
+}
+
+async fn notice_queue(
+    State(s): State<AppState>,
+    _: AdminUser,
+) -> AppResult<impl axum::response::IntoResponse> {
+    let health = crate::services::subject_queue::health(
+        &s.db,
+        crate::services::subject_provision::enabled(),
+    )
+    .await
+    .map_err(|_| AppError::Internal(anyhow::anyhow!("통보 대기열을 확인할 수 없습니다.")))?;
+    Ok((
+        [(axum::http::header::CACHE_CONTROL, "no-store")],
+        Json(health),
+    ))
 }

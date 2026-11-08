@@ -1262,5 +1262,9 @@
   "subject_provision.rs GET /corporate/subject-mappings/:id/locations": {
     "class": "handler_ledger",
     "reason": "Handler enforces FleetScope and immutable subject interval before manual durable ledger intent; no caller-controlled range."
+  },
+  "admin_security.rs GET /admin/security/notice-queue": {
+    "class": "non_location",
+    "reason": "Aggregate notice queue health only; no identities, tokens or position payload. Admin authentication and security audit apply."
   }
 }

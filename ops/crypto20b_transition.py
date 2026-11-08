@@ -17,7 +17,7 @@ def connect(dsn, ring):
     with db.cursor() as c:
         c.execute("SELECT current_database(),(SELECT max(version) FROM _sqlx_migrations WHERE success),current_setting('log_parameter_max_length'),current_setting('log_parameter_max_length_on_error'),coalesce(current_setting('pgaudit.log_parameter',true),'off')")
         name, version, normal, error, audit = c.fetchone()
-        if not name.startswith('gps_') or version not in (104,105,106): raise ValueError('GPS schema 104/105/106 required')
+        if not name.startswith('gps_') or version not in (104,105,106,107): raise ValueError('GPS schema 104/105/106/107 required')
         if normal != '0' or error != '0' or audit not in ('off','false','0'): raise ValueError('bind logging must be disabled')
         c.execute("SELECT set_config('gps.storage_keys',%s,false)", (json.dumps(ring),))
         c.execute("SET lock_timeout='5s'; SET statement_timeout='60s'")
