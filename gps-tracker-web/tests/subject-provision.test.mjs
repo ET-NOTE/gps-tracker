@@ -48,3 +48,32 @@ test('provider acceptance does not auto-acknowledge inbox; retry errors stay vis
  await act(async()=>ui.button('푸시 다시 요청').props.onClick());assert.equal(retry,1);assert.match(JSON.stringify(ui.r.toJSON()),/재시도 실패/);
  await act(async()=>ui.r.unmount());
 });
+
+test('company correction posts lineage revision and clears displayed location on submit',async()=>{
+ let sent;const r={...row,status:'confirmed',effective:true,staff_id:10,binding_id:20};
+ const q={data:{enabled:true,items:[r],people:[{staff_id:10,subject_id:4,name:'검증 운전자'}],bindings:[{id:20,vehicle_id:2,device_id:3}]},refetch:async()=>{}};
+ const ui=await mount('CompanySubjectMappings',q,{proposeSubjectMapping:async b=>{sent=b;}});
+ await act(async()=>ui.button('연결 정정').props.onClick());
+ assert.match(JSON.stringify(ui.r.toJSON()),/기존 연결의 제공은 중지/);
+ await act(async()=>ui.r.root.findByType('form').props.onSubmit({preventDefault(){}}));
+ assert.equal(sent.replaces_id,17);assert.equal(sent.replaces_revision,3);assert.equal(sent.change_kind,'correction');
+ assert.equal(sent.staff_id,10);assert.equal(ui.button('기존 연결 중지 및 정정 요청'),undefined);
+ await act(async()=>ui.r.unmount());
+});
+test('reconsent locks identity and exact interval, ineffective mapping cannot show locations',async()=>{
+ let sent;const r={...row,status:'revoked',effective:false,staff_id:10,binding_id:20,starts_at:'2026-11-08T00:00:12.123Z'};
+ const q={data:{enabled:true,items:[r],people:[{staff_id:10}],bindings:[{id:20}]},refetch:async()=>{}};
+ const ui=await mount('CompanySubjectMappings',q,{proposeSubjectMapping:async b=>{sent=b;}});
+ await act(async()=>ui.button('재동의 요청').props.onClick());
+ assert.equal(ui.r.root.findAllByType('select').every(x=>x.props.disabled),true);
+ assert.equal(ui.r.root.findAllByType('input').every(x=>x.props.disabled),true);
+ assert.equal(ui.button('확인된 기간 위치 조회'),undefined);
+ await act(async()=>ui.r.root.findByType('form').props.onSubmit({preventDefault(){}}));
+ assert.equal(sent.change_kind,'reconsent');assert.equal(sent.starts_at,r.starts_at);
+ await act(async()=>ui.r.unmount());
+});
+test('subject sees replacement and external scope limits before confirming',async()=>{
+ const ui=await mount('SubjectMappings',{data:{enabled:true,items:[{...row,replaces_id:8,change_kind:'reconsent'}],consent_text:'동의 내용'},refetch:async()=>{}},{});
+ const text=JSON.stringify(ui.r.toJSON());assert.match(text,/철회 후 재동의/);assert.match(text,/외부 AI/);
+ await act(async()=>ui.r.unmount());
+});

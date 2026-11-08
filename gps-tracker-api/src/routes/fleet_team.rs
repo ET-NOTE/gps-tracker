@@ -80,6 +80,16 @@ async fn log(
     Ok(())
 }
 async fn lock(tx: &mut Transaction<'_, Postgres>, owner: i64) -> AppResult<()> {
+    let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock($1)")
+        .bind(crate::services::privacy_lifecycle::LOCK)
+        .fetch_one(&mut **tx)
+        .await?;
+    if !locked {
+        return Err(AppError::Conflict(
+            "위치 조회 처리 중입니다. 잠시 후 다시 시도해 주세요.".into(),
+        ));
+    }
+
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
         .bind(format!("fleet-team:{owner}"))
         .execute(&mut **tx)
@@ -572,6 +582,9 @@ async fn unlink(
         return Err(AppError::Forbidden);
     }
     let before:Value=sqlx::query_scalar("DELETE FROM fleet_staff_accounts WHERE owner_id=$1 AND staff_id=$2 RETURNING to_jsonb(fleet_staff_accounts)").bind(s.owner).bind(id).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
+    // Unlinking does not transfer historic consent when an account is attached again.
+    sqlx::query("WITH changed AS (UPDATE location_subject_mappings SET status='superseded',revision=revision+1,decided_at=clock_timestamp() WHERE owner_id=$1 AND staff_id=$2 AND status IN ('pending','confirmed') RETURNING id,revision) INSERT INTO location_subject_actions(mapping_id,actor_id,action,revision) SELECT id,$3,'superseded',revision FROM changed")
+        .bind(s.owner).bind(id).bind(s.actor).execute(&mut *tx).await?;
     sqlx::query("UPDATE fleet_invites SET revoked_at=now() WHERE owner_id=$1 AND staff_id=$2 AND revoked_at IS NULL AND accepted_at IS NULL").bind(s.owner).bind(id).execute(&mut *tx).await?;
     log(
         &mut tx,

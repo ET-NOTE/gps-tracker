@@ -6,7 +6,7 @@ Identity collisions fail the whole replay; older consent cannot undo revocation.
 import json
 
 TABLES = {
-    'location_subject_mappings': ('request_key','owner_id','subject_id','proposed_by','staff_id','vehicle_id','binding_id','device_id','starts_at','ends_at','purpose','consent_version'),
+    'location_subject_mappings': ('request_key','owner_id','subject_id','proposed_by','staff_id','vehicle_id','binding_id','device_id','starts_at','ends_at','purpose','consent_version','replaces_id','replaces_revision','change_kind'),
     'location_subject_actions': ('mapping_id','actor_id','action','revision','at'),
     'location_provision_notices': ('event_id','mapping_id','subject_id','owner_id','actor_id','device_id','vehicle_id','purpose','consent_version','policy_reference','range_from','range_until','started_at'),
     'location_notice_attempts': ('notice_id','lease_id','attempt','result','at'),
@@ -29,7 +29,7 @@ def replay(c, tables):
             found = c.fetchone()
             if found:
                 old = found[0]
-                if any(old[k] != row[k] for k in immutable):
+                if any(old.get(k) != row.get(k) for k in immutable):
                     raise ValueError('subject checkpoint identity mismatch')
                 if table == 'location_subject_mappings':
                     if old['revision'] > row['revision']: continue

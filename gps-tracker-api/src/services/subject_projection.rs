@@ -124,7 +124,7 @@ async fn spans(tx: &mut Transaction<'_, Postgres>, p: &Projection) -> anyhow::Re
     let rows = sqlx::query_as::<_, Span>(r#"
       SELECT m.id,m.subject_id AS subject,m.device_id AS device,m.vehicle_id AS vehicle,m.binding_id AS binding,
         GREATEST(m.starts_at,b.started_at,$3) AS start, LEAST(m.ends_at,COALESCE(b.ended_at,m.ends_at),$4) AS "end"
-      FROM location_subject_mappings m
+      FROM location_subject_effective m
       JOIN fleet_vehicle_bindings b ON b.id=m.binding_id AND b.owner_id=m.owner_id AND b.vehicle_id=m.vehicle_id AND b.device_id=m.device_id AND b.is_primary
       JOIN fleet_vehicles v ON v.id=m.vehicle_id AND v.owner_id=m.owner_id
       JOIN privacy_account_controls subject ON subject.user_id=m.subject_id AND NOT subject.restricted
@@ -137,8 +137,6 @@ async fn spans(tx: &mut Transaction<'_, Postgres>, p: &Projection) -> anyhow::Re
           WHERE a.owner_id=$1 AND a.account_id=$2 AND s.active AND (s.access_role='admin'
            OR (s.access_role='department_manager' AND s.department_id=v.department_id)
            OR (s.access_role='member' AND (s.all_vehicles OR v.manager_staff_id=s.id OR EXISTS(SELECT 1 FROM fleet_staff_vehicles x WHERE x.owner_id=$1 AND x.staff_id=s.id AND x.vehicle_id=v.id))))))
-        AND NOT EXISTS(SELECT 1 FROM location_subject_mappings old WHERE old.owner_id=m.owner_id AND old.device_id=m.device_id AND old.status='revoked'
-          AND old.starts_at<LEAST(m.ends_at,COALESCE(b.ended_at,m.ends_at),$4) AND old.ends_at>GREATEST(m.starts_at,b.started_at,$3))
       ORDER BY m.starts_at,m.id
     "#).bind(p.owner).bind(p.actor).bind(p.from).bind(p.until).bind(p.device).bind(p.vehicle)
         .fetch_all(&mut **tx).await?;

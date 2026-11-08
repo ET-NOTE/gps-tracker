@@ -74,7 +74,7 @@ async fn personal_list(
     Query(page): Query<Page>,
 ) -> AppResult<Json<Value>> {
     self_session(&headers, &state, user.user_id)?;
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(m)||jsonb_build_object('owner_name',COALESCE(NULLIF(c.company_name,''),u.display_name),'vehicle_name',v.name) FROM location_subject_mappings m LEFT JOIN corporate_info c ON c.user_id=m.owner_id LEFT JOIN users u ON u.id=m.owner_id LEFT JOIN fleet_vehicles v ON v.id=m.vehicle_id AND v.owner_id=m.owner_id WHERE m.subject_id=$1 AND ($2::bigint IS NULL OR m.id<$2) ORDER BY m.id DESC LIMIT 200").bind(user.user_id).bind(page.before).fetch_all(&state.db).await?;
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(m)||jsonb_build_object('effective',EXISTS(SELECT 1 FROM location_subject_effective e WHERE e.id=m.id),'has_successor',EXISTS(SELECT 1 FROM location_subject_mappings n WHERE n.replaces_id=m.id),'owner_name',COALESCE(NULLIF(c.company_name,''),u.display_name),'vehicle_name',v.name) FROM location_subject_mappings m LEFT JOIN corporate_info c ON c.user_id=m.owner_id LEFT JOIN users u ON u.id=m.owner_id LEFT JOIN fleet_vehicles v ON v.id=m.vehicle_id AND v.owner_id=m.owner_id WHERE m.subject_id=$1 AND ($2::bigint IS NULL OR m.id<$2) ORDER BY m.id DESC LIMIT 200").bind(user.user_id).bind(page.before).fetch_all(&state.db).await?;
     Ok(Json(
         json!({"enabled":crate::services::subject_provision::enabled(),"items":rows,"next_before":if rows.len()==200{rows.last().map(|v|v["id"].clone())}else{None},"consent_text":"지정된 차량·SIM의 해당 기간 운전자임을 확인하고, 차량 운영 목적으로 이 회사의 권한 있는 사용자에게 위치·운행 기록을 제공하는 데 동의합니다. 예약·SIM 소유만으로 운전자로 확정하지 않습니다. 철회하면 이후 제공을 중지하며 이미 제공된 자료는 회수되지 않습니다.","consent_version":"fleet-subject-v1"}),
     ))
@@ -88,7 +88,7 @@ async fn company_list(
     if !scope.admin() {
         return Err(AppError::Forbidden);
     }
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(m) FROM location_subject_mappings m WHERE owner_id=$1 ORDER BY id DESC LIMIT 200").bind(scope.owner).fetch_all(&state.db).await?;
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(m)||jsonb_build_object('effective',EXISTS(SELECT 1 FROM location_subject_effective e WHERE e.id=m.id),'has_successor',EXISTS(SELECT 1 FROM location_subject_mappings n WHERE n.replaces_id=m.id)) FROM location_subject_mappings m WHERE owner_id=$1 ORDER BY id DESC LIMIT 200").bind(scope.owner).fetch_all(&state.db).await?;
     let people:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('staff_id',s.id,'subject_id',a.account_id,'name',s.name) FROM staff s JOIN fleet_staff_accounts a ON a.staff_id=s.id AND a.owner_id=s.user_id WHERE s.user_id=$1 AND s.active ORDER BY s.id").bind(scope.owner).fetch_all(&state.db).await?;
     let bindings:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',b.id,'vehicle_id',b.vehicle_id,'device_id',b.device_id,'starts_at',b.started_at,'ends_at',b.ended_at) FROM fleet_vehicle_bindings b WHERE b.owner_id=$1 AND b.device_id IS NOT NULL ORDER BY b.id DESC LIMIT 200").bind(scope.owner).fetch_all(&state.db).await?;
     Ok(Json(
@@ -102,6 +102,9 @@ struct Proposal {
     binding_id: i64,
     starts_at: DateTime<Utc>,
     ends_at: DateTime<Utc>,
+    replaces_id: Option<i64>,
+    replaces_revision: Option<i64>,
+    change_kind: Option<String>,
 }
 async fn propose(
     State(state): State<AppState>,
@@ -124,10 +127,29 @@ async fn propose(
     }
     let mut tx = state.db.begin().await?;
     fence(&mut tx).await?;
-    type ExistingProposal = (i64, i64, i64, DateTime<Utc>, DateTime<Utc>);
-    let old:Option<ExistingProposal>=sqlx::query_as("SELECT id,staff_id,binding_id,starts_at,ends_at FROM location_subject_mappings WHERE owner_id=$1 AND request_key=$2::text::uuid").bind(scope.owner).bind(req.request_key.to_string()).fetch_optional(&mut *tx).await?;
-    if let Some((id, s, b, f, t)) = old {
-        if (s, b, f, t) != (req.staff_id, req.binding_id, req.starts_at, req.ends_at) {
+    type ExistingProposal = (
+        i64,
+        i64,
+        i64,
+        DateTime<Utc>,
+        DateTime<Utc>,
+        Option<i64>,
+        Option<i64>,
+        Option<String>,
+    );
+    let old:Option<ExistingProposal>=sqlx::query_as("SELECT id,staff_id,binding_id,starts_at,ends_at,replaces_id,replaces_revision,change_kind FROM location_subject_mappings WHERE owner_id=$1 AND request_key=$2::text::uuid").bind(scope.owner).bind(req.request_key.to_string()).fetch_optional(&mut *tx).await?;
+    if let Some((id, s, b, f, t, parent, rev, kind)) = old {
+        if (s, b, f, t, parent, rev, kind.as_deref())
+            != (
+                req.staff_id,
+                req.binding_id,
+                req.starts_at,
+                req.ends_at,
+                req.replaces_id,
+                req.replaces_revision,
+                req.change_kind.as_deref(),
+            )
+        {
             return Err(AppError::Conflict(
                 "같은 요청 번호의 내용이 변경됐습니다.".into(),
             ));
@@ -139,8 +161,58 @@ async fn propose(
     scope.vehicle(vehicle)?;
     let subject:Option<i64>=sqlx::query_scalar("SELECT a.account_id FROM fleet_staff_accounts a JOIN staff s ON s.id=a.staff_id AND s.user_id=a.owner_id JOIN privacy_account_controls c ON c.user_id=a.account_id WHERE a.owner_id=$1 AND a.staff_id=$2 AND s.active AND NOT c.restricted").bind(scope.owner).bind(req.staff_id).fetch_optional(&mut *tx).await?;
     let subject = subject.ok_or(AppError::NotFound)?;
-    let id:i64=sqlx::query_scalar("INSERT INTO location_subject_mappings(request_key,owner_id,subject_id,proposed_by,staff_id,vehicle_id,binding_id,device_id,starts_at,ends_at) VALUES($1::text::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id")
-        .bind(req.request_key.to_string()).bind(scope.owner).bind(subject).bind(scope.actor).bind(req.staff_id).bind(vehicle).bind(req.binding_id).bind(device).bind(req.starts_at).bind(req.ends_at).fetch_one(&mut *tx).await?;
+    match (
+        req.replaces_id,
+        req.replaces_revision,
+        req.change_kind.as_deref(),
+    ) {
+        (None, None, None) => {}
+        (Some(parent), Some(expected), Some(kind @ ("correction" | "reconsent"))) => {
+            type Prior = (i64, i64, i64, DateTime<Utc>, DateTime<Utc>, String, i64);
+            let prior:Option<Prior>=sqlx::query_as("SELECT subject_id,device_id,binding_id,starts_at,ends_at,status,revision FROM location_subject_mappings WHERE id=$1 AND owner_id=$2 FOR UPDATE")
+                .bind(parent).bind(scope.owner).fetch_optional(&mut *tx).await?;
+            let (who, did, bid, from, until, status, revision) = prior.ok_or(AppError::NotFound)?;
+            let has_child: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM location_subject_mappings WHERE replaces_id=$1)",
+            )
+            .bind(parent)
+            .fetch_one(&mut *tx)
+            .await?;
+            if expected != revision || did != device || has_child {
+                return Err(AppError::Conflict(
+                    "원래 연결이 변경됐거나 이미 정정 요청이 있습니다. 새로고침해 주세요.".into(),
+                ));
+            }
+            if kind == "reconsent" {
+                if status != "revoked"
+                    || (who, bid, from, until)
+                        != (subject, req.binding_id, req.starts_at, req.ends_at)
+                {
+                    return Err(AppError::BadRequest(
+                        "재동의는 철회한 본인·차량·기간 그대로 요청해야 합니다.".into(),
+                    ));
+                }
+            } else {
+                if !matches!(
+                    status.as_str(),
+                    "pending" | "confirmed" | "rejected" | "superseded"
+                ) {
+                    return Err(AppError::Conflict(
+                        "철회된 연결은 정정으로 되살릴 수 없습니다. 재동의를 요청하세요.".into(),
+                    ));
+                }
+                sqlx::query("UPDATE location_subject_mappings SET status='superseded',revision=revision+1,decided_at=clock_timestamp() WHERE id=$1").bind(parent).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO location_subject_actions(mapping_id,actor_id,action,revision) VALUES($1,$2,'superseded',$3)").bind(parent).bind(scope.actor).bind(revision+1).execute(&mut *tx).await?;
+            }
+        }
+        _ => {
+            return Err(AppError::BadRequest(
+                "정정할 연결과 변경 종류를 함께 지정하세요.".into(),
+            ))
+        }
+    }
+    let id:i64=sqlx::query_scalar("INSERT INTO location_subject_mappings(request_key,owner_id,subject_id,proposed_by,staff_id,vehicle_id,binding_id,device_id,starts_at,ends_at,replaces_id,replaces_revision,change_kind) VALUES($1::text::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id")
+        .bind(req.request_key.to_string()).bind(scope.owner).bind(subject).bind(scope.actor).bind(req.staff_id).bind(vehicle).bind(req.binding_id).bind(device).bind(req.starts_at).bind(req.ends_at).bind(req.replaces_id).bind(req.replaces_revision).bind(&req.change_kind).fetch_one(&mut *tx).await?;
     sqlx::query("INSERT INTO location_subject_actions(mapping_id,actor_id,action,revision) VALUES($1,$2,'proposed',0)").bind(id).bind(scope.actor).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(Json(json!({"id":id})))
@@ -198,6 +270,17 @@ async fn decide(
             ));
         }
         return Err(e.into());
+    }
+    if req.action == "confirmed" {
+        let effective: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM location_subject_effective WHERE id=$1)",
+        )
+        .bind(id)
+        .fetch_one(&mut *tx)
+        .await?;
+        if !effective {
+            return Err(AppError::Conflict("철회된 기간과 겹치거나 회사 연결이 변경됐습니다. 기존 철회 건의 재동의 요청이 필요합니다.".into()));
+        }
     }
     sqlx::query("INSERT INTO location_subject_actions(mapping_id,actor_id,action,revision) VALUES($1,$2,$3,$4)").bind(id).bind(user.user_id).bind(&req.action).bind(revision+1).execute(&mut *tx).await?;
     tx.commit().await?;
@@ -270,7 +353,7 @@ async fn locations(
 ) -> AppResult<Response> {
     pilot()?;
     let scope = company_scope(&state, user, scope).await?;
-    let row:Option<(i64,i64,DateTime<Utc>,DateTime<Utc>)>=sqlx::query_as("SELECT device_id,vehicle_id,starts_at,ends_at FROM location_subject_mappings WHERE id=$1 AND owner_id=$2 AND status='confirmed'").bind(id).bind(scope.owner).fetch_optional(&state.db).await?;
+    let row:Option<(i64,i64,DateTime<Utc>,DateTime<Utc>)>=sqlx::query_as("SELECT device_id,vehicle_id,starts_at,ends_at FROM location_subject_effective WHERE id=$1 AND owner_id=$2").bind(id).bind(scope.owner).fetch_optional(&state.db).await?;
     let (device, vehicle, from, until) = row.ok_or(AppError::NotFound)?;
     scope.vehicle(vehicle)?;
     use crate::services::access_ledger::{self, Access, Recipient, Target};

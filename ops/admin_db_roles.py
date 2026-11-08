@@ -15,7 +15,7 @@ def run(dsn,apply=False,secret_out=None):
   c.execute("SELECT nspname FROM pg_namespace WHERE nspname NOT IN ('public','information_schema','timescaledb_experimental','timescaledb_information') AND nspname NOT LIKE 'pg_%' AND nspname NOT LIKE '_timescaledb_%'")
   if c.fetchall():raise RuntimeError('unreviewed schema: stop rather than changing other projects')
   c.execute("SELECT max(version) FROM _sqlx_migrations WHERE success");version=c.fetchone()[0]
-  if version not in (102,103,104,105,106,107):raise RuntimeError('reviewed schema 102/103/104/105/106/107 required')
+  if version not in (102,103,104,105,106,107,108):raise RuntimeError('reviewed schema 102/103/104/105/106/107/108 required')
   c.execute("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p','S','v','m')")
   count=c.fetchone()[0]
   report={'database':name,'schema':version,'public_objects':count,'apply':apply,'roles':['gps_schema_owner','gps_runtime']}

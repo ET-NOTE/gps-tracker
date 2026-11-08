@@ -56,8 +56,24 @@ pub async fn prepare(
     }
     let company =
         a.route.starts_with("/corporate/") || matches!(a.recipient, Recipient::Company(_));
-    let known: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM location_subject_mappings WHERE ($1::bigint IS NULL OR owner_id=$1) AND ($2::bigint IS NULL OR device_id=$2) AND ($3::bigint IS NULL OR vehicle_id=$3) AND status IN ('confirmed','revoked'))")
+    let known: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM location_subject_mappings WHERE ($1::bigint IS NULL OR owner_id=$1) AND ($2::bigint IS NULL OR device_id=$2) AND ($3::bigint IS NULL OR vehicle_id=$3))")
         .bind(owner).bind(device).bind(vehicle).fetch_one(&mut **tx).await?;
+    if matches!(a.recipient, Recipient::ShareLink | Recipient::Processor(_)) {
+        // Company consent names the company, not a public-link visitor or processor.
+        // Even an unmapped company SIM must not fall back to personal sharing.
+        let fleet:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_vehicle_bindings WHERE ($1::bigint IS NULL OR owner_id=$1) AND ($2::bigint IS NULL OR device_id=$2) AND ($3::bigint IS NULL OR vehicle_id=$3))")
+            .bind(owner).bind(device).bind(vehicle).fetch_one(&mut **tx).await?;
+        let device_known: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM location_subject_mappings WHERE device_id=$1)",
+        )
+        .bind(device)
+        .fetch_one(&mut **tx)
+        .await?;
+        anyhow::ensure!(
+            owner.is_some() && !known && !device_known && !fleet,
+            "company subject consent does not authorize external provision"
+        );
+    }
     if !company && !known {
         return Ok(());
     }
@@ -94,7 +110,7 @@ pub async fn prepare(
         .bind(owner).bind(device).bind(vehicle).bind(from).bind(until).fetch_all(&mut **tx).await?;
     anyhow::ensure!(!devices.is_empty(), "subject binding unresolved");
     for did in devices {
-        let rows: Vec<Mapping> = sqlx::query_as("SELECT m.id,m.subject_id,m.vehicle_id,m.starts_at,m.ends_at,COALESCE(c.use_paused,false) OR (m.subject_id<>$5 AND COALESCE(c.provision_paused,false)) OR COALESCE(p.restricted,true) AS blocked FROM location_subject_mappings m LEFT JOIN privacy_processing_controls c ON c.user_id=m.subject_id LEFT JOIN privacy_account_controls p ON p.user_id=m.subject_id WHERE m.owner_id=$1 AND m.device_id=$2 AND m.status='confirmed' AND m.starts_at<$4 AND m.ends_at>$3 AND ($6::bigint IS NULL OR m.vehicle_id=$6) AND EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.id=m.binding_id AND b.owner_id=m.owner_id AND b.vehicle_id=m.vehicle_id AND b.device_id=m.device_id AND b.started_at<=GREATEST(m.starts_at,$3) AND (b.ended_at IS NULL OR b.ended_at>=LEAST(m.ends_at,$4))) ORDER BY m.starts_at")
+        let rows: Vec<Mapping> = sqlx::query_as("SELECT m.id,m.subject_id,m.vehicle_id,m.starts_at,m.ends_at,COALESCE(c.use_paused,false) OR (m.subject_id<>$5 AND COALESCE(c.provision_paused,false)) OR COALESCE(p.restricted,true) AS blocked FROM location_subject_effective m LEFT JOIN privacy_processing_controls c ON c.user_id=m.subject_id LEFT JOIN privacy_account_controls p ON p.user_id=m.subject_id WHERE m.owner_id=$1 AND m.device_id=$2 AND m.status='confirmed' AND m.starts_at<$4 AND m.ends_at>$3 AND ($6::bigint IS NULL OR m.vehicle_id=$6) AND EXISTS(SELECT 1 FROM fleet_vehicle_bindings b WHERE b.id=m.binding_id AND b.owner_id=m.owner_id AND b.vehicle_id=m.vehicle_id AND b.device_id=m.device_id AND b.started_at<=GREATEST(m.starts_at,$3) AND (b.ended_at IS NULL OR b.ended_at>=LEAST(m.ends_at,$4))) ORDER BY m.starts_at")
             .bind(owner).bind(did).bind(from).bind(until).bind(actor).bind(vehicle).fetch_all(&mut **tx).await?;
         let spans: Vec<_> = rows.iter().map(|m| (m.starts_at, m.ends_at)).collect();
         anyhow::ensure!(
@@ -350,5 +366,73 @@ mod integration {
             .await
             .unwrap();
         server.abort();
+    }
+}
+
+#[cfg(test)]
+mod boundary22d {
+    use super::*;
+    #[tokio::test]
+    #[ignore = "requires disposable internal Docker DB; run in its own process"]
+    async fn external_company_boundary22d() {
+        let url = std::env::var("LEDGER_TEST_DATABASE_URL").unwrap();
+        assert!(url.contains("closure-test-only@") && url.ends_with("/gps_closure_test"));
+        let pool = PgPool::connect(&url).await.unwrap();
+        ENABLED.set(true).unwrap();
+        let mut tx = pool.begin().await.unwrap();
+        let owner:i64=sqlx::query_scalar("INSERT INTO users(email,password_hash,phone) VALUES(gen_random_uuid()::text||'@example.invalid','test',gen_random_uuid()::text) RETURNING id").fetch_one(&mut *tx).await.unwrap();
+        let did:i64=sqlx::query_scalar("INSERT INTO devices(owner_id,device_uid,api_key_hash) VALUES($1,gen_random_uuid()::text,'') RETURNING id").bind(owner).fetch_one(&mut *tx).await.unwrap();
+        let vehicle: i64 = sqlx::query_scalar(
+            "INSERT INTO fleet_vehicles(owner_id,name) VALUES($1,'isolated boundary') RETURNING id",
+        )
+        .bind(owner)
+        .fetch_one(&mut *tx)
+        .await
+        .unwrap();
+        sqlx::query("INSERT INTO fleet_vehicle_bindings(owner_id,vehicle_id,device_id,terminal_name,started_at,is_primary) VALUES($1,$2,$3,'synthetic',now()-interval '1 day',true)").bind(owner).bind(vehicle).bind(did).execute(&mut *tx).await.unwrap();
+        let mut outgoing = 0;
+        for recipient in [
+            Recipient::Processor("openai"),
+            Recipient::Processor("geocode"),
+            Recipient::ShareLink,
+        ] {
+            let a = Access {
+                at: Utc::now(),
+                target: super::super::access_ledger::Target::Account(owner),
+                recipient,
+                path: "server",
+                method: "send",
+                route: "external",
+                range: None,
+            };
+            for (o, d, v) in [
+                (Some(owner), Some(did), None),
+                (Some(owner), None, None),
+                (None, None, None),
+            ] {
+                if prepare(&mut tx, &a, -1, o, d, v).await.is_ok() {
+                    outgoing += 1;
+                }
+            }
+        }
+        assert_eq!(
+            outgoing, 0,
+            "no outgoing transport without subject authorization"
+        );
+        // A separate personal account still uses the existing external policy.
+        let other:i64=sqlx::query_scalar("INSERT INTO users(email,password_hash,phone) VALUES(gen_random_uuid()::text||'@example.invalid','test',gen_random_uuid()::text) RETURNING id").fetch_one(&mut *tx).await.unwrap();
+        let a = Access {
+            at: Utc::now(),
+            target: super::super::access_ledger::Target::Account(other),
+            recipient: Recipient::Processor("geocode"),
+            path: "server",
+            method: "send",
+            route: "external",
+            range: None,
+        };
+        assert!(prepare(&mut tx, &a, -1, Some(other), None, None)
+            .await
+            .is_ok());
+        tx.rollback().await.unwrap();
     }
 }

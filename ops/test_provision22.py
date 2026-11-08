@@ -98,7 +98,7 @@ lease.rollback();lease.close()
 # Historical subject protection survives staff unlink and recorder OFF.
 assert request('POST','/privacy/processing',{'use_paused':False,'provision_paused':True,'revision':0},dtoken)[0]==200
 sql('DELETE FROM fleet_staff_accounts WHERE account_id=%s',(s,))
-assert request('GET',path,token=token)[0]==423
+assert request('GET',path,token=token)[0]==404  # 22D: unlinked mapping is not an effective resource
 assert request('GET','/privacy/provision-notices',token=dtoken)[0]==200
 assert decision(mid,dtoken,'revoked',1)[0]==200
 subprocess.run(['bash',str(HERE/'dev22.sh'),'api'],env=dict(os.environ,LEDGER='off',SUBJECTS='off'),check=True)

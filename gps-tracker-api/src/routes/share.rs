@@ -67,6 +67,21 @@ pub struct ShareView {
     pub credits_spent: i32,
 }
 
+async fn allow_personal_share(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    device: i64,
+) -> AppResult<()> {
+    if !crate::services::subject_provision::enabled() {
+        return Ok(());
+    }
+    let company:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_vehicle_bindings WHERE device_id=$1) OR EXISTS(SELECT 1 FROM location_subject_mappings WHERE device_id=$1)")
+        .bind(device).fetch_one(&mut **tx).await?;
+    if company {
+        return Err(AppError::Conflict("회사 위치정보의 공개 공유는 별도 제공 동의가 필요하여 현재 지원하지 않습니다. 포인트는 차감되지 않습니다.".into()));
+    }
+    Ok(())
+}
+
 async fn create_share(
     State(state): State<AppState>,
     user: AuthUser,
@@ -88,6 +103,7 @@ async fn create_share(
         return Err(AppError::NotFound);
     }
 
+    allow_personal_share(&mut tx, device_id).await?;
     let ttl = req.ttl_hours.unwrap_or(24);
     let cost = ttl * CREDITS_PER_HOUR;
 
@@ -142,8 +158,8 @@ async fn extend_share(
 
     let mut tx = state.db.begin().await?;
     // 본인 디바이스의 (revoke 안 된) 토큰만
-    let cur: Option<(i64, DateTime<Utc>)> = sqlx::query_as(
-        r#"SELECT s.id, s.expires_at
+    let cur: Option<(i64, DateTime<Utc>, i64)> = sqlx::query_as(
+        r#"SELECT s.id, s.expires_at, s.device_id
              FROM share_tokens s
              JOIN gps_read_devices d ON d.id = s.device_id
             WHERE s.id = $1 AND d.owner_id = $2 AND s.created_by = $2 AND s.revoked_at IS NULL FOR UPDATE OF s FOR SHARE OF d"#,
@@ -152,7 +168,8 @@ async fn extend_share(
     .bind(user.user_id)
     .fetch_optional(&mut *tx)
     .await?;
-    let (_, cur_expires) = cur.ok_or(AppError::NotFound)?;
+    let (_, cur_expires, device_id) = cur.ok_or(AppError::NotFound)?;
+    allow_personal_share(&mut tx, device_id).await?;
 
     // 만료된 링크는 연장 불가 (revoke 와 사실상 동일 처리; 새로 만드세요).
     if cur_expires < Utc::now() {
