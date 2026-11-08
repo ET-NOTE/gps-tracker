@@ -45,7 +45,8 @@ def prepare(source):
     dev=(JOB/'src/ops/dev_provision22d.sh').read_text().replace('20261108d',TAG)
     dev=dev.replace('GPS_RELEASE=provision22d-20261108-dev','GPS_RELEASE=cumulative109-20261108-dev')
     (JOB/'dev22.sh').write_text(dev)
-    for name in ('prepare_cumulative109.py','test_subject_ancestry109.py'):
+    for name in ('prepare_cumulative109.py','test_subject_ancestry109.py','benchmark_subject_queries109.py',
+                 'run_extra_cumulative109.py','stage_cumulative109.py'):
         shutil.copy2(JOB/'src/ops'/name,JOB/name)
     print(json.dumps({'prepared':str(JOB),'source_commit':manifest['commit'],'production_modified':False}))
 
