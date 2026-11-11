@@ -1,0 +1,65 @@
+{
+  "environment": "isolated synthetic",
+  "production_modified": false,
+  "external_messages": 0,
+  "cases": [
+    {
+      "case": "before migration: explicit consent/withdrawal/interval/tenant matrix",
+      "same_effective_ids": true,
+      "oracle_equal": true,
+      "effective_count": 7
+    },
+    {
+      "case": "before migration: deterministic mixed histories",
+      "same_effective_ids": true,
+      "oracle_equal": true,
+      "effective_count": 23
+    },
+    {
+      "case": "populated108->110: identity, view owner/grants, all rows and effective decisions preserved",
+      "same_effective_ids": true,
+      "oracle_equal": true,
+      "effective_count": 23
+    },
+    {
+      "case": "later withdrawal revision invalidates descendant 6",
+      "same_effective_ids": true,
+      "oracle_equal": true,
+      "effective_count": 22
+    },
+    {
+      "case": "later withdrawal revision invalidates descendant 10",
+      "same_effective_ids": true,
+      "oracle_equal": true,
+      "effective_count": 21
+    },
+    {
+      "case": "later withdrawal revision invalidates descendant 12",
+      "same_effective_ids": true,
+      "oracle_equal": true,
+      "effective_count": 21
+    },
+    {
+      "case": "inactive staff removes all affected mappings",
+      "same_effective_ids": true,
+      "oracle_equal": true,
+      "effective_count": 14
+    },
+    {
+      "case": "unlinked staff removes all affected mappings",
+      "same_effective_ids": true,
+      "oracle_equal": true,
+      "effective_count": 14
+    }
+  ],
+  "schema_path": [
+    108,
+    110
+  ],
+  "synthetic_mapping_rows": 941,
+  "failed109_transaction_atomic": true,
+  "view_identity_owner_grants_preserved": true,
+  "no_identity_or_consent_rewrite": true,
+  "runtime_select_preserved": true,
+  "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d"
+}

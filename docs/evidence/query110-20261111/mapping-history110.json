@@ -1,0 +1,14 @@
+{
+  "synthetic_rows": 32000,
+  "independent_chains": 1000,
+  "max_depth": 32,
+  "confirmed_leaves": 1000,
+  "owner_count_seconds": [
+    0.8997,
+    0.8944,
+    0.9084
+  ],
+  "point_query_execution_ms": 16.759,
+  "db_cpu_limit": 2,
+  "production_distribution_reproduced": false
+}

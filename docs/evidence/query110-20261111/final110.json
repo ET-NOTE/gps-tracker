@@ -1,0 +1,22 @@
+{
+  "label": "final110",
+  "production_modified": false,
+  "queries": {
+    "month_history": {
+      "seconds": 8.99642278905958,
+      "count": 283001
+    },
+    "day_history": {
+      "seconds": 0.4061596426181495,
+      "count": 8641
+    },
+    "month_keys": {
+      "seconds": 1.8378993826918304,
+      "count": 283001
+    },
+    "small_history": {
+      "seconds": 0.04172862507402897,
+      "count": 61
+    }
+  }
+}

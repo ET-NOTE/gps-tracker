@@ -1,0 +1,54 @@
+{
+  "source_commit": "020844bfce8ecb26adc67a9188cd29e18c76f929",
+  "candidate_schema": 110,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d",
+  "excluded": [
+    "credentials",
+    "keyring",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "actual VPS I/O/distribution and monthly query concurrency acceptance; synthetic 8-worker monthly page p95 about9s",
+    "keyed resumable query-bound backfill and pending=0 verification before enabling the fast-path acceptance",
+    "production maintenance window, live I/O/headroom and all GPS writers inventory",
+    "bind logging disabled before keys; pgcrypto provisioned for restricted migration owner",
+    "legacy Timescale retention jobs reviewed, paused and drained before conversion/restore",
+    "separate runtime/maintenance identity, real key custody and protected backup restore",
+    "latest external privacy checkpoint custody and offline replay before reopening",
+    "reviewed retention/notice policy, explicit subject consent and administrator PC/IP/MFA",
+    "real FCM handset arrival, notification entry and dedicated queue alarm acceptance",
+    "physical TLS promotion, buffered pause/resume and 24-hour sleep acceptance",
+    "legacy WAL, snapshots, backups and unclassified/company files separately governed"
+  ],
+  "binary_source_commit": "020844bfce8ecb26adc67a9188cd29e18c76f929",
+  "base_artifact_sha256": "19b20e2670b281576a0170f1a94a383d7600a4fe0bd277c119b56bb4f2c12f1a",
+  "verification_status": "encrypted_query_and_isolated_concurrency_pass",
+  "mapping_performance_gate_passed": true,
+  "mapping_owner_count_seconds": [
+    0.8913,
+    0.8836,
+    0.8831
+  ],
+  "changed_files": [
+    "gps-tracker-api",
+    "migrations/0110_location_query_decryption.sql",
+    "ops/admin_db_roles.py",
+    "ops/crypto20b_transition.py",
+    "ops/location_query_bounds.py",
+    "ops/location_storage.py"
+  ],
+  "rehearsal": "actual99 to110; disk query benchmark and HTTP4/8; tmpfs cumulative recovery/consent",
+  "source_manifest_sha256": "74531ce85e65eec46d21be2f498145da020f7b436e58b06253f52823ac116307",
+  "verified_source_files": 512,
+  "web_source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+  "web_unchanged": true,
+  "source_working_changes": [],
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261111cumulative110/candidate-cumulative110-20261111-r1.tar.gz",
+  "artifact_sha256": "02df050a4f624ec47943bdfd414328083bc191afc5a726ee54e437fed5441fc7",
+  "file_count": 74
+}
