@@ -33,6 +33,7 @@ def prepare():
     dev = (JOB / 'src/ops/dev_provision22d.sh').read_text().replace('20261108d', TAG)
     dev = dev.replace('GPS_RELEASE=provision22d-20261108-dev', 'GPS_RELEASE=query111-20261111-dev')
     dev = dev.replace('--cpus=12', '--cpus=6').replace('CARGO_BUILD_JOBS=12', 'CARGO_BUILD_JOBS=6')
+    dev = dev.replace('-e CARGO_BUILD_JOBS=6', '-e CARGO_BUILD_JOBS=6 -e CARGO_INCREMENTAL=0')
     (JOB / 'dev22.sh').write_text(dev)
     for name in ('rehearse_cumulative108.py', 'check_cumulative108.py', 'test_transition_file_owner.py'):
         code = (JOB / 'src/ops' / name).read_text().replace('20261108cumulative', TAG)
@@ -69,7 +70,7 @@ def cleanup():
     previous.NET = 'gps-provision22-test-' + TAG
     previous.NAMES = ['gps-provision22-api-' + TAG, 'gps-provision22-db-' + TAG]
     previous.cleanup()
-    (JOB / 'out/cleanup108.json').rename(JOB / 'out/cleanup110.json')
+    (JOB / 'out/cleanup108.json').rename(JOB / 'out/cleanup111.json')
 
 
 if __name__ == '__main__':
