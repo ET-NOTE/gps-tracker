@@ -76,15 +76,12 @@ async fn latest(
     ensure_owner(&state, id, user.user_id).await?;
     let row = sqlx::query_as::<_, LocationView>(
         "WITH newest AS MATERIALIZED (
-          SELECT location_point_bound(recorded_at,fixes_jsonb,true) AS at
-          FROM gps_read_location_records WHERE device_id=$1 AND user_id=$2
-            AND location_point_bound(recorded_at,fixes_jsonb,true) IS NOT NULL
-          ORDER BY location_point_bound(recorded_at,fixes_jsonb,true) DESC LIMIT 1
+          SELECT location_latest_sample_at($1,$2) AS at
         ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
           p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
           p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
           FROM newest n CROSS JOIN LATERAL location_history_points_between($1,$2,n.at,n.at) p
-          WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+          WHERE n.at IS NOT NULL AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
           ORDER BY p.source LIMIT 1",
     )
     .bind(id)
