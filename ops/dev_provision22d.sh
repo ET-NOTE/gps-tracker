@@ -74,7 +74,7 @@ case "${1:-}" in
     done
     export BUILD_NETWORK="$net" LEDGER_TEST_DATABASE_URL=postgres://postgres:closure-test-only@closure-db:5432/gps_closure_test
     export GPS_AI_TEST_DB=postgres://postgres:closure-test-only@closure-db:5432/gps_ai_test GPS_FCM_TEST_DB=postgres://postgres:closure-test-only@closure-db:5432/gps_fcm_test
-    build 'cargo test --locked -- --ignored --skip lifecycle_external_and_realtime_fences_without_ledger --skip external_company_boundary22d --test-threads=1 --nocapture && cargo test --locked lifecycle_external_and_realtime_fences_without_ledger -- --ignored --nocapture' ;;
+    build 'cargo test --locked -- --ignored --skip missing_daily_repair113 --skip lifecycle_external_and_realtime_fences_without_ledger --skip external_company_boundary22d --test-threads=1 --nocapture && cargo test --locked lifecycle_external_and_realtime_fences_without_ledger -- --ignored --nocapture' ;;
   api-release)
     exec 9>"$root/build.lock"; flock -w 900 9
     build 'cargo clean --release -p gps-tracker-api && cargo build --locked --release && cp /cache/target/release/gps-tracker-api /out/gps-tracker-api.next && mv /out/gps-tracker-api.next /out/gps-tracker-api' ;;

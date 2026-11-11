@@ -1,6 +1,6 @@
 // 일별 운행 통계 집계 워커.
-// 매 5분마다 "오늘 + 어제" 두 날짜만 다시 계산 → daily_stats UPSERT.
-// 과거 데이터는 변경 없으니 오늘/어제만 집계해도 충분.
+// 현재 날짜와 수신 시 무효화된 날짜를 다시 계산한다.
+// 과거 집계 누락은 소유자별 원본을 조금씩 살펴 durable queue에 먼저 기록한다.
 //
 // 거리 계산: 인접 fix 점 간 haversine.
 // 정지 구간 식별: 5분 이상 같은 위치(반경 50m) 머무름.
@@ -8,11 +8,29 @@
 
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::PgPool;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use tokio::time::sleep;
 
 const STOP_THRESHOLD_M: f64 = 50.0;
 const STOP_THRESHOLD_S: i64 = 5 * 60;
+const REPAIR_DEVICES_PER_POLL: i64 = 10;
+const REPAIR_RECORDS_PER_DEVICE: i64 = 1000;
+
+#[cfg(test)]
+#[path = "stats_repair_tests.rs"]
+mod repair_tests;
+
+#[derive(Default)]
+struct RepairScan {
+    after_device: i64,
+    pages: HashMap<i64, RepairCursor>,
+}
+
+struct RepairCursor {
+    owner_id: i64,
+    after: (DateTime<Utc>, String),
+}
 
 const EARTH_R_M: f64 = 6_371_000.0;
 pub(crate) fn haversine_m(la1: f64, lo1: f64, la2: f64, lo2: f64) -> f64 {
@@ -34,8 +52,9 @@ pub fn spawn_worker(pool: PgPool) {
                 .clamp(5, 3600),
         );
         tracing::info!(seconds = interval.as_secs(), "daily_stats worker started");
+        let mut repair = RepairScan::default();
         loop {
-            if let Err(e) = run_aggregation(&pool).await {
+            if let Err(e) = run_aggregation(&pool, &mut repair).await {
                 tracing::warn!("daily_stats: {e:#}");
             }
             sleep(interval).await;
@@ -43,9 +62,35 @@ pub fn spawn_worker(pool: PgPool) {
     });
 }
 
-async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
+async fn run_aggregation(pool: &PgPool, repair: &mut RepairScan) -> anyhow::Result<()> {
+    // Discovery failure must not stop existing durable jobs or current-day updates.
+    if let Err(error) = discover_missing(pool, repair).await {
+        tracing::warn!("daily_stats repair discovery: {error:#}");
+    }
+    process_queue(pool).await?;
+    // 오늘 / 어제 (KST 기준)
+    let now_kst = Utc::now() + chrono::Duration::hours(9);
+    let today = now_kst.date_naive();
+    let yest = today - chrono::Duration::days(1);
+
+    let active_ids: Vec<i64> = sqlx::query_scalar(
+        "SELECT id FROM gps_read_devices WHERE owner_id IS NOT NULL AND last_seen_at > now() - interval '36 hours'",
+    )
+    .fetch_all(pool)
+    .await?;
+    for did in active_ids {
+        for date in [yest, today] {
+            if let Err(e) = aggregate_one(pool, did, date).await {
+                tracing::warn!(device_id = did, date = %date, "daily_stats: {e:#}");
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn process_queue(pool: &PgPool) -> anyhow::Result<()> {
     let queued: Vec<(i64, NaiveDate, i64)> = sqlx::query_as(
-        "SELECT device_id,date,generation FROM stats_rebuild_queue WHERE next_attempt_at<=now() ORDER BY date LIMIT 100",
+        "SELECT device_id,date,generation FROM stats_rebuild_queue WHERE next_attempt_at<=now() ORDER BY date,device_id LIMIT 100",
     )
     .fetch_all(pool)
     .await?;
@@ -68,67 +113,119 @@ async fn run_aggregation(pool: &PgPool) -> anyhow::Result<()> {
         .execute(pool)
         .await?;
     }
-    // 오늘 / 어제 (KST 기준)
-    let now_kst = Utc::now() + chrono::Duration::hours(9);
-    let today = now_kst.date_naive();
-    let yest = today - chrono::Duration::days(1);
-
-    // 활성 디바이스 (최근 36h 내 ingest 있던 것만) — 평소 worker.
-    let active_ids: Vec<i64> = sqlx::query_scalar(
-        "SELECT id FROM gps_read_devices WHERE last_seen_at > now() - interval '36 hours'",
-    )
-    .fetch_all(pool)
-    .await?;
-
-    for did in active_ids {
-        for date in [yest, today] {
-            if let Err(e) = aggregate_one(pool, did, date).await {
-                tracing::warn!(device_id = did, date = %date, "daily_stats: {e:#}");
-            }
-        }
-    }
-
-    // 레거시 catch-up — location_records 가 있지만 daily_stats 가 한 행도 없는 디바이스.
-    // import 후 한 번도 워커가 안 돈 디바이스 (id 135 처럼).
-    // 발견되면 그 디바이스의 모든 record 날짜에 대해 한 번씩 aggregate_one 호출.
-    let legacy: Vec<i64> = sqlx::query_scalar(
-        r#"SELECT d.id FROM gps_read_devices d
-            WHERE d.owner_id IS NOT NULL AND NOT EXISTS (
-                  SELECT 1 FROM daily_stats ds WHERE ds.device_id=d.id AND ds.user_id=d.owner_id
-            ) AND EXISTS (
-                  SELECT 1 FROM gps_read_location_records r WHERE r.device_id=d.id AND r.user_id=d.owner_id
-                  AND ((r.fixes_jsonb IS NULL AND r.fix) OR
-                    CASE WHEN jsonb_typeof(r.fixes_jsonb)='array' THEN jsonb_array_length(r.fixes_jsonb)>0 ELSE false END)
-            )
-            LIMIT 50"#,
-    )
-    .fetch_all(pool)
-    .await?;
-
-    for did in legacy {
-        let dates: Vec<NaiveDate> = sqlx::query_scalar(
-            r#"SELECT DISTINCT dates.d FROM gps_read_location_records r
-                CROSS JOIN LATERAL unnest(location_fix_dates(r.recorded_at,r.fixes_jsonb,r.fix)) dates(d)
-                WHERE r.device_id=$1 AND r.user_id=(SELECT owner_id FROM gps_read_devices WHERE id=$1)"#,
-        )
-        .bind(did)
-        .fetch_all(pool)
-        .await
-        .unwrap_or_default();
-
-        tracing::info!(
-            device_id = did,
-            dates = dates.len(),
-            "daily_stats legacy catchup"
-        );
-        for date in dates {
-            if let Err(e) = aggregate_one(pool, did, date).await {
-                tracing::warn!(device_id = did, date = %date, "daily_stats catchup: {e:#}");
-            }
-        }
-    }
-
     Ok(())
+}
+
+async fn discover_missing(pool: &PgPool, scan: &mut RepairScan) -> anyhow::Result<()> {
+    let select =
+        "SELECT id FROM gps_read_devices WHERE owner_id IS NOT NULL AND id>$1 ORDER BY id LIMIT $2";
+    let mut ids: Vec<i64> = sqlx::query_scalar(select)
+        .bind(scan.after_device)
+        .bind(REPAIR_DEVICES_PER_POLL)
+        .fetch_all(pool)
+        .await?;
+    if ids.is_empty() {
+        scan.after_device = 0;
+        // Drop cursors for removed/unlinked devices; cursor storage is bounded by owned devices.
+        let retained: Vec<i64> = sqlx::query_scalar(
+            "SELECT id FROM gps_read_devices WHERE owner_id IS NOT NULL AND id=ANY($1)",
+        )
+        .bind(scan.pages.keys().copied().collect::<Vec<_>>())
+        .fetch_all(pool)
+        .await?;
+        let retained: HashSet<_> = retained.into_iter().collect();
+        scan.pages.retain(|id, _| retained.contains(id));
+        ids = sqlx::query_scalar(select)
+            .bind(0_i64)
+            .bind(REPAIR_DEVICES_PER_POLL)
+            .fetch_all(pool)
+            .await?;
+    }
+    for did in ids {
+        // Rotate even on failure so one paused/locked/bad device cannot starve later devices.
+        scan.after_device = did;
+        match discover_page(pool, did, scan.pages.get(&did)).await {
+            Ok(Some(cursor)) => {
+                scan.pages.insert(did, cursor);
+            }
+            Ok(None) => {
+                scan.pages.remove(&did);
+            }
+            Err(error) => tracing::warn!(device_id = did, "daily_stats repair page: {error:#}"),
+        }
+    }
+    Ok(())
+}
+
+async fn discover_page(
+    pool: &PgPool,
+    device_id: i64,
+    cursor: Option<&RepairCursor>,
+) -> anyhow::Result<Option<RepairCursor>> {
+    let _privacy = super::privacy_lifecycle::background(
+        super::access_ledger::Target::Device(device_id),
+        false,
+    )
+    .await?;
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL lock_timeout='1s'")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("SET LOCAL statement_timeout='10s'")
+        .execute(&mut *tx)
+        .await?;
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1 FOR UPDATE")
+            .bind(device_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .flatten();
+    let Some(owner_id) = owner else {
+        return Ok(None);
+    };
+    let after = cursor.filter(|c| c.owner_id == owner_id).map(|c| &c.after);
+    // Materialize only a bounded source page BEFORE decrypting its batch dates.
+    // The two-column cursor preserves sources sharing an anchor timestamp.
+    let rows: Vec<(DateTime<Utc>, String, Vec<NaiveDate>)> = sqlx::query_as(
+        r#"WITH page AS MATERIALIZED (
+            SELECT recorded_at,source,fix,fixes_jsonb FROM gps_read_location_records
+            WHERE device_id=$1 AND user_id=$2
+              AND ($3::timestamptz IS NULL OR (recorded_at,source)>($3,$4::text))
+            ORDER BY recorded_at,source LIMIT $5
+        ) SELECT recorded_at,source,location_fix_dates(recorded_at,fixes_jsonb,fix)
+          FROM page ORDER BY recorded_at,source"#,
+    )
+    .bind(device_id)
+    .bind(owner_id)
+    .bind(after.map(|a| a.0))
+    .bind(after.map(|a| a.1.as_str()))
+    .bind(REPAIR_RECORDS_PER_DEVICE)
+    .fetch_all(&mut *tx)
+    .await?;
+    let dates: HashSet<NaiveDate> = rows.iter().flat_map(|r| r.2.iter().copied()).collect();
+    let added = sqlx::query(
+        r#"INSERT INTO stats_rebuild_queue(device_id,date)
+        SELECT $1,d FROM unnest($3::date[]) dates(d)
+        WHERE NOT EXISTS(SELECT 1 FROM daily_stats s WHERE s.device_id=$1 AND s.user_id=$2 AND s.date=d)
+        ON CONFLICT(device_id,date) DO NOTHING"#)
+        .bind(device_id).bind(owner_id).bind(dates.into_iter().collect::<Vec<_>>())
+        .execute(&mut *tx).await?.rows_affected();
+    // Queue commit precedes the in-memory cursor. Restart re-scans safely, never loses jobs.
+    tx.commit().await?;
+    tracing::debug!(
+        device_id,
+        records = rows.len(),
+        queued = added,
+        "daily_stats repair page committed"
+    );
+    Ok(if rows.len() == REPAIR_RECORDS_PER_DEVICE as usize {
+        rows.last().map(|r| RepairCursor {
+            owner_id,
+            after: (r.0, r.1.clone()),
+        })
+    } else {
+        None
+    })
 }
 
 pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> anyhow::Result<()> {
@@ -138,10 +235,15 @@ pub async fn aggregate_one(pool: &PgPool, device_id: i64, date: NaiveDate) -> an
     )
     .await?;
     let mut tx = pool.begin().await?;
-    sqlx::query("SELECT id FROM gps_read_devices WHERE id=$1 FOR UPDATE")
-        .bind(device_id)
-        .execute(&mut *tx)
-        .await?;
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1 FOR UPDATE")
+            .bind(device_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .flatten();
+    if owner.is_none() {
+        return Ok(());
+    }
     // KST 날짜 → UTC 범위 (KST = UTC+9)
     let start_kst = date.and_hms_opt(0, 0, 0).unwrap();
     let end_kst = (date + chrono::Duration::days(1))
