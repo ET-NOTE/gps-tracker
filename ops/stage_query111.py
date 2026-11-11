@@ -46,6 +46,8 @@ def stage():
     for workers, requests in [(8, 200), (16, 800)]:
         load = perf(f'load111-{workers}.json')
         assert load['api_sha256'] == binary and load['requests'] == requests and not load['errors']
+        assert load['db_connection_settings']['max_connections'] == '50'
+        assert load['api_pool_limits'] == {'queries': 10, 'privacy_leases': 16}
         assert load['health']['p95_s'] < 2 and load['encrypted_writes']['p95_s'] < 2
         assert load['http']['month_page']['p95_s'] < 5
     assert perf('load111-8.json')['http']['month_page']['p95_s'] < .5 * perf('baseline110-http8.json')['http']['month_page']['p95_s']
@@ -71,6 +73,7 @@ def stage():
     result['activation_gates'] = [g for g in base['activation_gates'] if not g.startswith(('full-period location decryption', 'actual VPS I/O/distribution', 'keyed resumable query-bound backfill'))]
     result['activation_gates'].insert(0, 'actual VPS I/O/distribution and long-duration production-sized query acceptance; synthetic page budget passed')
     result['activation_gates'].insert(1, 'keyed resumable query-bound backfill and pending=0 verification before enabling the fast-path acceptance')
+    result['activation_gates'].insert(2, 'DB connection budget: queries10 plus privacy leases16 per API, workers, reserved slots and other projects; isolated DB50 only was tested')
     (dest / 'manifest.json').write_text(json.dumps(result, indent=2) + '\n')
     archive = dest.with_suffix('.tar.gz')
     with tarfile.open(archive, 'w:gz') as tar:
