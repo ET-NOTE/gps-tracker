@@ -1480,6 +1480,7 @@ async fn locations_aggregated(
             "aggregate range too large; request smaller time windows".into(),
         ));
     }
+    let _read_budget = crate::services::location_read_budget::acquire().await?;
     let out: Vec<Value> = sqlx::query_scalar(
         "WITH speed AS MATERIALIZED (
           SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,

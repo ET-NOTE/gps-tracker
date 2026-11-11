@@ -25,8 +25,8 @@ def backfill(db, apply=False, batch_size=2000, max_batches=0):
     if not 1 <= batch_size <= 5000 or max_batches < 0:
         raise ValueError('invalid batch limit')
     name, version = db.execute('SELECT current_database(),max(version) FROM _sqlx_migrations WHERE success').fetchone()
-    if not name.startswith('gps_') or version not in (110, 111):
-        raise ValueError('reviewed GPS schema110/111 required')
+    if not name.startswith('gps_') or version not in (110, 111, 112):
+        raise ValueError('reviewed GPS schema110/111/112 required')
     enabled, maintenance = db.execute('SELECT enabled,maintenance FROM location_storage_policy WHERE singleton').fetchone()
     report = {'schema': version, 'apply': apply, 'encrypted': enabled, 'updated': 0, 'batches': 0}
     report['pending_before'] = db.execute('SELECT count(*) FROM location_records WHERE NOT query_bounds_ready').fetchone()[0]
