@@ -1,0 +1,162 @@
+{
+  "checked_at": "2026-11-11T15:10:24.779951+09:00",
+  "scope": "live host read-only; no account, password, token or location values",
+  "commands": {
+    "os": {
+      "command": "lsb_release -ds",
+      "exit_code": 0,
+      "stdout": "Ubuntu 22.04.5 LTS\n",
+      "stderr": ""
+    },
+    "cpu": {
+      "command": "nproc",
+      "exit_code": 0,
+      "stdout": "6\n",
+      "stderr": ""
+    },
+    "memory": {
+      "command": "free -m",
+      "exit_code": 0,
+      "stdout": "               total        used        free      shared  buff/cache   available\nMem:            2967        1006         123         737        1837        1036\nSwap:           3811         139        3672\n",
+      "stderr": ""
+    },
+    "disk": {
+      "command": "df -h /",
+      "exit_code": 0,
+      "stdout": "Filesystem                   Size  Used Avail Use% Mounted on\n/dev/mapper/ubuntu--vg-root   45G   34G  8.9G  80% /\n",
+      "stderr": ""
+    },
+    "ufw": {
+      "command": "ufw status verbose",
+      "exit_code": 0,
+      "stdout": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n8080/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n22/tcp                     ALLOW IN    221.159.164.177           \n80/tcp                     ALLOW IN    Anywhere                   # listening-inventory-20261007\n443/tcp                    ALLOW IN    Anywhere                   # listening-inventory-20261007\n1883/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n1884/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n1935/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n3010/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5175/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5177/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5180/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8001/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8070/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8081/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8443/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8554/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8883/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8889/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n9996/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n18080/tcp                  ALLOW IN    Anywhere                   # listening-inventory-20261007\n8000/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n8001/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n8189/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n5432/tcp                   ALLOW IN    221.159.164.177           \n8080/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1883/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1884/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1935/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n3010/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5175/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5177/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5180/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8001/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8070/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8081/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8443/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8554/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8883/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8889/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n9996/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n18080/tcp (v6)             ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8000/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007\n8001/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007\n8189/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007\n\n",
+      "stderr": ""
+    },
+    "ufw_order": {
+      "command": "systemctl show ufw -p After -p Result",
+      "exit_code": 0,
+      "stdout": "Result=success\nAfter=local-fs.target system.slice netfilter-persistent.service systemd-journald.socket\n",
+      "stderr": ""
+    },
+    "firewall_services": {
+      "command": "systemctl show ufw netfilter-persistent fail2ban clamav-daemon clamav-freshclam -p Id -p LoadState -p ActiveState -p UnitFileState -p ActiveEnterTimestamp",
+      "exit_code": 0,
+      "stdout": "Id=ufw.service\nLoadState=loaded\nActiveState=active\nUnitFileState=enabled\nActiveEnterTimestamp=Fri 2026-11-06 11:04:46 KST\n\nId=netfilter-persistent.service\nLoadState=loaded\nActiveState=active\nUnitFileState=enabled\nActiveEnterTimestamp=Fri 2026-11-06 11:04:46 KST\n\nId=fail2ban.service\nLoadState=loaded\nActiveState=active\nUnitFileState=enabled\nActiveEnterTimestamp=Wed 2026-11-11 14:59:47 KST\n\nId=clamav-daemon.service\nLoadState=not-found\nActiveState=inactive\nUnitFileState=\nActiveEnterTimestamp=n/a\n\nId=clamav-freshclam.service\nLoadState=not-found\nActiveState=inactive\nUnitFileState=\nActiveEnterTimestamp=n/a\n",
+      "stderr": ""
+    },
+    "app_services": {
+      "command": "systemctl show gps-tracker-api shield-api nginx postgresql docker mosquitto -p Id -p ActiveState -p ExecMainPID -p ActiveEnterTimestamp -p NRestarts",
+      "exit_code": 0,
+      "stdout": "NRestarts=0\nExecMainPID=218705\nId=gps-tracker-api.service\nActiveState=active\nActiveEnterTimestamp=Sat 2026-11-07 17:16:49 KST\n\nNRestarts=237\nExecMainPID=15160\nId=shield-api.service\nActiveState=active\nActiveEnterTimestamp=Fri 2026-11-06 11:45:30 KST\n\nNRestarts=0\nExecMainPID=893\nId=nginx.service\nActiveState=active\nActiveEnterTimestamp=Fri 2026-11-06 11:04:47 KST\n\nNRestarts=0\nExecMainPID=1089\nId=postgresql.service\nActiveState=active\nActiveEnterTimestamp=Fri 2026-11-06 11:04:54 KST\n\nNRestarts=0\nExecMainPID=919\nId=docker.service\nActiveState=active\nActiveEnterTimestamp=Fri 2026-11-06 11:05:05 KST\n\nNRestarts=0\nExecMainPID=855\nId=mosquitto.service\nActiveState=active\nActiveEnterTimestamp=Fri 2026-11-06 11:04:47 KST\n",
+      "stderr": ""
+    },
+    "listeners": {
+      "command": "ss -lntup",
+      "exit_code": 0,
+      "stdout": "Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                                                                                                                                                                           \nudp   UNCONN 0      0      127.0.0.53%lo:53         0.0.0.0:*    users:((\"systemd-resolve\",pid=537,fd=13))                                                                                                                                                        \ntcp   LISTEN 0      511          0.0.0.0:8070       0.0.0.0:*    users:((\"nginx\",pid=217450,fd=15),(\"nginx\",pid=217449,fd=15),(\"nginx\",pid=217448,fd=15),(\"nginx\",pid=217447,fd=15),(\"nginx\",pid=217446,fd=15),(\"nginx\",pid=217445,fd=15),(\"nginx\",pid=893,fd=15))\ntcp   LISTEN 0      4096         0.0.0.0:1935       0.0.0.0:*    users:((\"docker-proxy\",pid=1924,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      100          0.0.0.0:1883       0.0.0.0:*    users:((\"mosquitto\",pid=855,fd=5))                                                                                                                                                               \ntcp   LISTEN 0      4096   127.0.0.53%lo:53         0.0.0.0:*    users:((\"systemd-resolve\",pid=537,fd=14))                                                                                                                                                        \ntcp   LISTEN 0      511          0.0.0.0:1884       0.0.0.0:*    users:((\"nginx\",pid=217450,fd=10),(\"nginx\",pid=217449,fd=10),(\"nginx\",pid=217448,fd=10),(\"nginx\",pid=217447,fd=10),(\"nginx\",pid=217446,fd=10),(\"nginx\",pid=217445,fd=10),(\"nginx\",pid=893,fd=10))\ntcp   LISTEN 0      4096         0.0.0.0:8001       0.0.0.0:*    users:((\"docker-proxy\",pid=1939,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      4096         0.0.0.0:18080      0.0.0.0:*    users:((\"docker-proxy\",pid=1954,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      4096       127.0.0.1:3001       0.0.0.0:*    users:((\"docker-proxy\",pid=1890,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      5          127.0.0.1:3030       0.0.0.0:*    users:((\"python3\",pid=839,fd=3))                                                                                                                                                                 \ntcp   LISTEN 0      128        127.0.0.1:3043       0.0.0.0:*    users:((\"shield-api\",pid=15160,fd=11))                                                                                                                                                           \ntcp   LISTEN 0      128        127.0.0.1:3041       0.0.0.0:*    users:((\"gps-tracker-api\",pid=13071,fd=13))                                                                                                                                                      \ntcp   LISTEN 0      128        127.0.0.1:3040       0.0.0.0:*    users:((\"gps-tracker-api\",pid=218705,fd=17))                                                                                                                                                     \ntcp   LISTEN 0      192          0.0.0.0:5432       0.0.0.0:*    users:((\"postgres\",pid=885,fd=5))                                                                                                                                                                \ntcp   LISTEN 0      511        127.0.0.1:6379       0.0.0.0:*    users:((\"redis-server\",pid=844,fd=6))                                                                                                                                                            \ntcp   LISTEN 0      511          0.0.0.0:5175       0.0.0.0:*    users:((\"nginx\",pid=217450,fd=17),(\"nginx\",pid=217449,fd=17),(\"nginx\",pid=217448,fd=17),(\"nginx\",pid=217447,fd=17),(\"nginx\",pid=217446,fd=17),(\"nginx\",pid=217445,fd=17),(\"nginx\",pid=893,fd=17))\ntcp   LISTEN 0      511          0.0.0.0:5177       0.0.0.0:*    users:((\"nginx\",pid=217450,fd=18),(\"nginx\",pid=217449,fd=18),(\"nginx\",pid=217448,fd=18),(\"nginx\",pid=217447,fd=18),(\"nginx\",pid=217446,fd=18),(\"nginx\",pid=217445,fd=18),(\"nginx\",pid=893,fd=18))\ntcp   LISTEN 0      511          0.0.0.0:5180       0.0.0.0:*    users:((\"nginx\",pid=217450,fd=19),(\"nginx\",pid=217449,fd=19),(\"nginx\",pid=217448,fd=19),(\"nginx\",pid=217447,fd=19),(\"nginx\",pid=217446,fd=19),(\"nginx\",pid=217445,fd=19),(\"nginx\",pid=893,fd=19))\ntcp   LISTEN 0      4096       127.0.0.1:18884      0.0.0.0:*    users:((\"docker-proxy\",pid=1837,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      4096       127.0.0.1:18187      0.0.0.0:*    users:((\"docker-proxy\",pid=1831,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      511          0.0.0.0:8883       0.0.0.0:*    users:((\"nginx\",pid=217450,fd=11),(\"nginx\",pid=217449,fd=11),(\"nginx\",pid=217448,fd=11),(\"nginx\",pid=217447,fd=11),(\"nginx\",pid=217446,fd=11),(\"nginx\",pid=217445,fd=11),(\"nginx\",pid=893,fd=11))\ntcp   LISTEN 0      128        127.0.0.1:8000       0.0.0.0:*    users:((\"backend\",pid=15243,fd=22))                                                                                                                                                              \ntcp   LISTEN 0      511          0.0.0.0:443        0.0.0.0:*    users:((\"nginx\",pid=217450,fd=14),(\"nginx\",pid=217449,fd=14),(\"nginx\",pid=217448,fd=14),(\"nginx\",pid=217447,fd=14),(\"nginx\",pid=217446,fd=14),(\"nginx\",pid=217445,fd=14),(\"nginx\",pid=893,fd=14))\ntcp   LISTEN 0      511          0.0.0.0:8443       0.0.0.0:*    users:((\"nginx\",pid=217450,fd=16),(\"nginx\",pid=217449,fd=16),(\"nginx\",pid=217448,fd=16),(\"nginx\",pid=217447,fd=16),(\"nginx\",pid=217446,fd=16),(\"nginx\",pid=217445,fd=16),(\"nginx\",pid=893,fd=16))\ntcp   LISTEN 0      128          0.0.0.0:22         0.0.0.0:*    users:((\"sshd\",pid=15410,fd=3))                                                                                                                                                                  \ntcp   LISTEN 0      511          0.0.0.0:80         0.0.0.0:*    users:((\"nginx\",pid=217450,fd=12),(\"nginx\",pid=217449,fd=12),(\"nginx\",pid=217448,fd=12),(\"nginx\",pid=217447,fd=12),(\"nginx\",pid=217446,fd=12),(\"nginx\",pid=217445,fd=12),(\"nginx\",pid=893,fd=12))\ntcp   LISTEN 0      4096            [::]:1935          [::]:*    users:((\"docker-proxy\",pid=1931,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      4096            [::]:8001          [::]:*    users:((\"docker-proxy\",pid=1948,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      4096            [::]:18080         [::]:*    users:((\"docker-proxy\",pid=1965,fd=7))                                                                                                                                                           \ntcp   LISTEN 0      192             [::]:5432          [::]:*    users:((\"postgres\",pid=885,fd=6))                                                                                                                                                                \ntcp   LISTEN 0      511                *:3010             *:*    users:((\"node /home/mmm/\",pid=1072,fd=25))                                                                                                                                                       \ntcp   LISTEN 0      511             [::]:443           [::]:*    users:((\"nginx\",pid=217450,fd=20),(\"nginx\",pid=217449,fd=20),(\"nginx\",pid=217448,fd=20),(\"nginx\",pid=217447,fd=20),(\"nginx\",pid=217446,fd=20),(\"nginx\",pid=217445,fd=20),(\"nginx\",pid=893,fd=20))\ntcp   LISTEN 0      128             [::]:22            [::]:*    users:((\"sshd\",pid=15410,fd=4))                                                                                                                                                                  \ntcp   LISTEN 0      511             [::]:80            [::]:*    users:((\"nginx\",pid=217450,fd=13),(\"nginx\",pid=217449,fd=13),(\"nginx\",pid=217448,fd=13),(\"nginx\",pid=217447,fd=13),(\"nginx\",pid=217446,fd=13),(\"nginx\",pid=217445,fd=13),(\"nginx\",pid=893,fd=13))\ntcp   LISTEN 0      511            [::1]:6379          [::]:*    users:((\"redis-server\",pid=844,fd=7))                                                                                                                                                            \n",
+      "stderr": ""
+    },
+    "ipv4_input": {
+      "command": "iptables -S INPUT",
+      "exit_code": 0,
+      "stdout": "-P INPUT DROP\n-A INPUT -p tcp -m multiport --dports 22 -j f2b-sshd\n-A INPUT -s 127.0.0.1/32 -p tcp -m tcp --dport 5432 -j ACCEPT\n-A INPUT -s 221.159.164.177/32 -p tcp -m tcp --dport 5432 -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 5432 -j DROP\n-A INPUT -j ufw-before-logging-input\n-A INPUT -j ufw-before-input\n-A INPUT -j ufw-after-input\n-A INPUT -j ufw-after-logging-input\n-A INPUT -j ufw-reject-input\n-A INPUT -j ufw-track-input\n",
+      "stderr": "# Warning: iptables-legacy tables present, use iptables-legacy to see them\n"
+    },
+    "ipv6_input": {
+      "command": "ip6tables -S INPUT",
+      "exit_code": 0,
+      "stdout": "-P INPUT DROP\n-A INPUT -s ::1/128 -p tcp -m tcp --dport 5432 -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 5432 -j DROP\n-A INPUT -j ufw6-before-logging-input\n-A INPUT -j ufw6-before-input\n-A INPUT -j ufw6-after-input\n-A INPUT -j ufw6-after-logging-input\n-A INPUT -j ufw6-reject-input\n-A INPUT -j ufw6-track-input\n",
+      "stderr": ""
+    },
+    "ipv4_user": {
+      "command": "iptables -S ufw-user-input",
+      "exit_code": 0,
+      "stdout": "-N ufw-user-input\n-A ufw-user-input -p tcp -m tcp --dport 8080 -j ACCEPT\n-A ufw-user-input -s 221.159.164.177/32 -p tcp -m tcp --dport 22 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 80 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 443 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 1883 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 1884 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 1935 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 3010 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 5175 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 5177 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 5180 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 5432 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 8001 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 8070 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 8081 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 8443 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 8554 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 8883 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 8889 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 9996 -j ACCEPT\n-A ufw-user-input -p tcp -m tcp --dport 18080 -j ACCEPT\n-A ufw-user-input -p udp -m udp --dport 8000 -j ACCEPT\n-A ufw-user-input -p udp -m udp --dport 8001 -j ACCEPT\n-A ufw-user-input -p udp -m udp --dport 8189 -j ACCEPT\n",
+      "stderr": "# Warning: iptables-legacy tables present, use iptables-legacy to see them\n"
+    },
+    "ipv6_user": {
+      "command": "ip6tables -S ufw6-user-input",
+      "exit_code": 0,
+      "stdout": "-N ufw6-user-input\n-A ufw6-user-input -p tcp -m tcp --dport 8080 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 80 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 443 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 1883 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 1884 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 1935 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 3010 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 5175 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 5177 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 5180 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 5432 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 8001 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 8070 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 8081 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 8443 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 8554 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 8883 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 8889 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 9996 -j ACCEPT\n-A ufw6-user-input -p tcp -m tcp --dport 18080 -j ACCEPT\n-A ufw6-user-input -p udp -m udp --dport 8000 -j ACCEPT\n-A ufw6-user-input -p udp -m udp --dport 8001 -j ACCEPT\n-A ufw6-user-input -p udp -m udp --dport 8189 -j ACCEPT\n",
+      "stderr": ""
+    },
+    "packages": {
+      "command": "dpkg-query -W ufw fail2ban clamav clamav-daemon clamav-freshclam libnginx-mod-http-modsecurity modsecurity-crs nginx",
+      "exit_code": 1,
+      "stdout": "fail2ban\t0.11.2-6\nnginx\t1.18.0-6ubuntu14.6\nufw\t0.36.1-4ubuntu0.1\n",
+      "stderr": "dpkg-query: no packages found matching clamav\ndpkg-query: no packages found matching clamav-daemon\ndpkg-query: no packages found matching clamav-freshclam\ndpkg-query: no packages found matching libnginx-mod-http-modsecurity\ndpkg-query: no packages found matching modsecurity-crs\n"
+    },
+    "fail2ban": {
+      "command": "fail2ban-client status sshd",
+      "exit_code": 0,
+      "stdout": "Status for the jail: sshd\n|- Filter\n|  |- Currently failed:\t0\n|  |- Total failed:\t0\n|  `- File list:\t/var/log/auth.log\n`- Actions\n   |- Currently banned:\t0\n   |- Total banned:\t3\n   `- Banned IP list:\t\n",
+      "stderr": ""
+    },
+    "sshd": {
+      "command": "/usr/sbin/sshd -T",
+      "exit_code": 0,
+      "stdout": "port 22\nmaxauthtries 6\npermitrootlogin yes\npubkeyauthentication yes\npasswordauthentication no\nkbdinteractiveauthentication no\n",
+      "stderr": ""
+    },
+    "fail2ban_maxretry": {
+      "command": "fail2ban-client get sshd maxretry",
+      "exit_code": 0,
+      "stdout": "5\n",
+      "stderr": ""
+    },
+    "fail2ban_findtime": {
+      "command": "fail2ban-client get sshd findtime",
+      "exit_code": 0,
+      "stdout": "600\n",
+      "stderr": ""
+    },
+    "fail2ban_bantime": {
+      "command": "fail2ban-client get sshd bantime",
+      "exit_code": 0,
+      "stdout": "3600\n",
+      "stderr": ""
+    },
+    "fail2ban_ignoreip": {
+      "command": "fail2ban-client get sshd ignoreip",
+      "exit_code": 0,
+      "stdout": "These IP addresses/networks are ignored:\n|- 127.0.0.0/8\n|- ::1\n`- 221.159.164.177\n",
+      "stderr": ""
+    },
+    "nginx_modules": {
+      "command": "find /etc/nginx/modules-enabled -maxdepth 1 -type l -printf %f\n",
+      "exit_code": 0,
+      "stdout": "50-mod-http-xslt-filter.conf\n50-mod-stream.conf\n50-mod-http-geoip2.conf\n50-mod-mail.conf\n50-mod-http-image-filter.conf\n70-mod-stream-geoip2.conf\n",
+      "stderr": ""
+    },
+    "health": {
+      "command": "curl -fsS --max-time 10 http://127.0.0.1:3040/health",
+      "exit_code": 0,
+      "stdout": "{\"db\":true,\"environment\":\"production\",\"ok\":true,\"release\":\"privacy-log-20261107-r1\",\"service\":\"gps-tracker-api\"}",
+      "stderr": ""
+    },
+    "waf_directives": {
+      "command": "nginx -T | select ModSecurity directives",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "unchanged_table_hashes": {
+    "iptables-save:nat": {
+      "exit_code": 0,
+      "sha256": "b6f19eb708981c6b754a7d7692ca3226f5e1283674d78977892c286228e475bf"
+    },
+    "iptables-save:raw": {
+      "exit_code": 0,
+      "sha256": "c19715d3db8b75987de8c1e88adbcdd3becc66e1082837d7251d5f45b3896896"
+    },
+    "ip6tables-save:nat": {
+      "exit_code": 0,
+      "sha256": "c8eadf88e082c0dc0632e2471add801ea79c3176f925d53656b919a467fe3460"
+    },
+    "ip6tables-save:raw": {
+      "exit_code": 0,
+      "sha256": "f2698129b5e71305974c4083a2a413dd28742665bde6bd706f122e6adbf9475e"
+    }
+  }
+}

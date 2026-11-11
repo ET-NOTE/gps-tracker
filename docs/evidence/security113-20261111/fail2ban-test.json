@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-11-11T06:02:00.864967+00:00",
+  "test_address": "192.0.2.123",
+  "ban_result": "1",
+  "banned_rule_observed": true,
+  "hook": "-A INPUT -p tcp -m multiport --dports 22 -j f2b-sshd",
+  "unban_result": "1",
+  "test_address_removed": true,
+  "ignoreip": "These IP addresses/networks are ignored:\n|- 127.0.0.0/8\n|- ::1\n`- 221.159.164.177\n",
+  "maxretry": "5",
+  "findtime": "600",
+  "bantime": "3600",
+  "filter_test": "\nRunning tests\n=============\n\nUse   failregex filter file : sshd, basedir: /etc/fail2ban\nUse   filter options : {'mode': 'normal', 'publickey': 'any'}\nUse         maxlines : 1\nUse      datepattern : {^LN-BEG} : Default Detectors\nUse         log file : /tmp/gps-security113-6ov5gwl6/synthetic-auth.log\nUse         encoding : UTF-8\n\n\nResults\n=======\n\nPrefregex: 5 total\n|  ^(?P<mlfid>(?:\\[\\])?\\s*(?:<[^.]+\\.[^.]+>\\s+)?(?:\\S+\\s+)?(?:kernel:\\s?\\[ *\\d+\\.\\d+\\]:?\\s+)?(?:@vserver_\\S+\\s+)?(?:(?:(?:\\[\\d+\\])?:\\s+[\\[\\(]?sshd(?:\\(\\S+\\))?[\\]\\)]?:?|[\\[\\(]?sshd(?:\\(\\S+\\))?[\\]\\)]?:?(?:\\[\\d+\\])?:?)\\s+)?(?:\\[ID \\d+ \\S+\\]\\s+)?)(?:(?:error|fatal): (?:PAM: )?)?(?P<content>.+)$\n`-\n\nFailregex: 5 total\n|-  #) [# of hits] regular expression\n|   3) [5] ^Failed \\S+ for (?P<cond_inv>invalid user )?<F-USER>(?P<cond_user>\\S+)|(?(cond_inv)(?:(?! from ).)*?|[^:]+)</F-USER> from <HOST>(?: (?:port \\d+|on \\S+)){0,2}(?: ssh\\d*)?(?(cond_user): |(?:(?:(?! from ).)*)$)\n`-\n\nIgnoreregex: 0 total\n\nDate template hits:\n|- [# of hits] date format\n|  [5] {^LN-BEG}(?:DAY )?MON Day %k:Minute:Second(?:\\.Microseconds)?(?: ExYear)?\n`-\n\nLines: 5 lines, 0 ignored, 5 matched, 0 missed\n[processed in 0.00 sec]\n\n",
+  "pass": true
+}

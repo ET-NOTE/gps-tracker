@@ -1,0 +1,65 @@
+{
+  "recorded_at": "2026-11-11T15:06:46.118575+09:00",
+  "records": {
+    "plan": {
+      "value": {
+        "office": "221.159.164.177",
+        "netns": "net:[4026531840]",
+        "changes": [
+          "SSH allow office IPv4 only",
+          "restore six UFW INPUT jumps",
+          "order UFW after netfilter-persistent"
+        ],
+        "production_api_modified": false,
+        "nat_modified": false,
+        "db_access_modified": false
+      },
+      "mtime": "2026-11-11T14:57:18.436619+09:00"
+    },
+    "rehearsal": {
+      "value": {
+        "separate_network_namespace": true,
+        "apply_and_rollback_pass": true,
+        "office": "221.159.164.177"
+      },
+      "mtime": "2026-11-11T14:57:18.692621+09:00"
+    },
+    "applied": {
+      "value": {
+        "ssh_office": "221.159.164.177",
+        "ipv6_ssh_allowed": false,
+        "live_filter_repaired": true,
+        "boot_order_configured": true,
+        "boot_retest_done": false,
+        "automatic_rollback_seconds": 180
+      },
+      "mtime": "2026-11-11T14:58:16.193257+09:00"
+    },
+    "confirmed": {
+      "value": {
+        "rules_verified": true,
+        "automatic_rollback_cancelled": true
+      },
+      "mtime": "2026-11-11T14:58:23.517339+09:00"
+    }
+  },
+  "config_hashes": {
+    "/etc/ufw/user.rules": "a8350b0302a0ae072bae76bd905a37317fa9556147550cd70d2350a3c07e3f44",
+    "/etc/ufw/user6.rules": "5c0dd94642041f90dc75bf2044afd38e7c6e0a9677da4524289faf339b080b37",
+    "/etc/iptables/rules.v4": "582b665f4c5cbd1eb4f71f7744b0e7ce8388d9ef59bc52a3c8b29cf3d2af1f72",
+    "/etc/iptables/rules.v6": "75541cd963bd10bdbdc032c610edb6057752be9bc508d3fc126fe51cd4728f4c",
+    "/etc/fail2ban/jail.d/99-gps-office-sshd.local": "23e69158c3a615831e6e8173dd7cc2de58ef2ca5933e75a573a4eded2c1f384d",
+    "/etc/systemd/system/ufw.service.d/10-after-netfilter-persistent.conf": "c34b1a6c30501dfebf3df8fdb40ba39770ca21db2c2897ba9138fe4aff19cd46",
+    "/etc/systemd/system/fail2ban.service.d/10-after-firewall.conf": "efc71e724454b5b8986e0335c7ea0d86d21be82f82180c04ac309b999c78de20"
+  },
+  "layout": {
+    "exit_code": 0,
+    "stdout": "ok   ufw.service is active and its last start succeeded\nok   ufw is ordered after netfilter-persistent at boot\nok   iptables INPUT: policy DROP and all 6 jumps to ufw\nok   iptables: loopback is accepted\nok   ip6tables INPUT: policy DROP and all 6 jumps to ufw\nok   ip6tables: loopback is accepted\nok   port 22 has an allow rule\nok   port 80 has an allow rule\nok   port 443 has an allow rule\n",
+    "stderr": ""
+  },
+  "timer": {
+    "exit_code": 0,
+    "stdout": "LoadState=not-found\nActiveState=inactive\n",
+    "stderr": ""
+  }
+}
