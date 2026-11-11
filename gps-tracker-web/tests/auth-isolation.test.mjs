@@ -231,3 +231,35 @@ test('wrong MFA credentials are not retried through ordinary refresh',async()=>{
  f.api.setTokens(token('A'),'refresh-A');await assert.rejects(f.api.api.adminMfaVerify('wrong','000000'));
  assert.equal(calls,1);f.queryClient.clear();
 });
+
+
+test('location history aborts the HTTP request on logout; saved data is not resurrected', async () => {
+  let signal;
+  const f = await fixture((_url, options) => new Promise((_resolve, reject) => {
+    signal = options.signal;
+    signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
+  }));
+  f.api.setTokens(token('A'), 'refresh-A');
+  const read = f.api.api.listLocationsGrouped(7, { limit: 2 });
+  assert.equal(signal.aborted, false);
+  f.api.clearTokens();
+  assert.equal(signal.aborted, true);
+  await assert.rejects(read, { name: 'AbortError' });
+  f.queryClient.clear();
+});
+
+test('logout cancels a real 429 backoff before a replacement account can send it', async () => {
+  let calls = 0, notifyWait, cleared = 0;
+  const waiting = new Promise(resolve => { notifyWait = resolve; });
+  const f = await fixture(async () => { calls++; return Response.json({ code: 'location_read_busy' },
+    { status: 429, headers: { 'Retry-After': '2' } }); });
+  f.api.setTokens(token('A'), 'refresh-A');
+  f.context.setTimeout = (_callback, ms) => { if (ms < 10000) notifyWait(); return 99; };
+  f.context.clearTimeout = () => { cleared++; };
+  const read = f.api.api.listLocationPoints(7, { since: '2026-10-01', until: '2026-10-02' });
+  await waiting;
+  f.api.clearTokens(); f.api.setTokens(token('B'), 'refresh-B');
+  await assert.rejects(read, { name: 'AbortError' });
+  assert.equal(calls, 1); assert.ok(cleared > 0);
+  f.queryClient.clear();
+});

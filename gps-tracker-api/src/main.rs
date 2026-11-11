@@ -103,6 +103,7 @@ async fn main() -> anyhow::Result<()> {
             .allow_origin(Any)
             .allow_methods(Any)
             .allow_headers(Any)
+            .expose_headers([axum::http::header::RETRY_AFTER])
     } else {
         let origins = cfg
             .cors_allowed_origins
@@ -113,6 +114,7 @@ async fn main() -> anyhow::Result<()> {
             .allow_origin(origins)
             .allow_methods(Any)
             .allow_headers(Any)
+            .expose_headers([axum::http::header::RETRY_AFTER])
     };
 
     // ── router ────────────────────────────────────────────

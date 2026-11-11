@@ -36,7 +36,7 @@ async function fleetFixture(options = {}) {
     return React.createElement('fake-map');
   });
   const devices = [{id:7, display_name:'Fixture', last_lat:37, last_lng:127, last_fix_at:'2026-10-20T00:00:00Z'}];
-  const context = vm.createContext({console, URLSearchParams, setInterval:(fn,ms)=>{timers.set(ms,fn);return ms;}, clearInterval:ms=>timers.delete(ms)});
+  const context = vm.createContext({console, AbortController, URLSearchParams, setInterval:(fn,ms)=>{timers.set(ms,fn);return ms;}, clearInterval:ms=>timers.delete(ms)});
   const source = await readFile(new URL('../src/pages/FleetDashboard.jsx', import.meta.url), 'utf8');
   const code = (await transform(source, {loader:'jsx', jsx:'automatic', format:'esm'})).code;
   const mod = new vm.SourceTextModule(code, {context});
@@ -180,10 +180,11 @@ test('Fleet trips: clear previous route on load; failure and empty data are retr
 });
 
 test('Fleet trips: late route after changing vehicles cannot draw or reopen selection',async()=>{
-  const response=deferred();const f=await fleetFixture({devices:[fixedDevice,{id:8}],locations:()=>response.promise});
+  const response=deferred();let signal;const f=await fleetFixture({devices:[fixedDevice,{id:8}],locations:(_id,_params,options)=>{signal=options.signal;return response.promise;}});
   const r=await mountFleet(f,'/fleet?device=7');await act(async()=>f.ready());
   let request;await act(async()=>{request=detail(r).onTripSelect(trip);});
   await act(async()=>f.controls.nav('/fleet?device=8'));
+  assert.equal(signal.aborted,true);
   await act(async()=>{response.resolve([{lat:37,lng:127}]);await request;});
   assert.equal(detail(r).selectedTrip,null);assert.equal(f.paths.length,0);
   await act(async()=>r.unmount());

@@ -150,7 +150,7 @@ async fn page(
         ));
     }
     let limit = q.limit.unwrap_or(2000).clamp(1, 5000);
-    let _read_budget = crate::services::location_read_budget::acquire().await?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
     let mut rows = sqlx::query_as::<_, LocationView>(
         "WITH selected AS MATERIALIZED (
          SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
@@ -173,8 +173,10 @@ async fn page(
     .bind(cursor.as_ref().map(|c| c.before))
     .bind(cursor.as_ref().map(|c| c.before_source.as_str()))
     .bind((limit + 1) as i32)
-    .fetch_all(&state.db)
-    .await?;
+    .fetch_all(read.connection())
+    .await
+    .map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
     let has_more = rows.len() > limit as usize;
     rows.truncate(limit as usize);
     let next_cursor = if has_more {
@@ -211,7 +213,7 @@ async fn history(
     if matches!((q.since,q.until),(Some(a),Some(b)) if a>b) {
         return Err(AppError::BadRequest("until < since".into()));
     }
-    let _read_budget = crate::services::location_read_budget::acquire().await?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
     let rows = sqlx::query_as::<_, LocationView>(
         "WITH scoped AS MATERIALIZED (
           SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)
@@ -238,8 +240,9 @@ async fn history(
     .bind(q.source)
     .bind(q.fix_only)
     .bind(q.limit.unwrap_or(100).clamp(1, 10000))
-    .fetch_all(&state.db)
-    .await?;
+    .fetch_all(read.connection())
+    .await.map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
     if !q.grouped.unwrap_or(false) {
         return Ok(Json(json!(rows)));
     }

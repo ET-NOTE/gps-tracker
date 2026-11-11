@@ -257,3 +257,27 @@ test('theme: invalid names normalize, storage failure still renders, foregrounds
     assert.ok(ratio(tokens['--text-3'], tokens['--surface-2']) >= 4.5);
   }
 });
+
+
+test('route playback changes abort old reads; overload is an error with retry, not an empty route', async () => {
+  const pending = deferred(); const signals = []; let calls = 0;
+  const f = await fixture({ listLocationsGrouped: (_id, _params, options) => {
+    signals.push(options.signal); calls++;
+    if (calls === 1) return pending.promise;
+    if (calls === 2) return Promise.reject(Object.assign(Error('busy'), { status: 429 }));
+    return Promise.resolve([]);
+  }, flattenGrouped: rows => rows });
+  f.window.kakao = { maps: { load: fn => fn() } };
+  const { default: RoutePlayback } = await f.module('components/RoutePlayback.jsx');
+  let r; await act(async () => { r = create(React.createElement(RoutePlayback, { devices: [{ id: 1 }, { id: 2 }] })); });
+  await act(async () => r.root.findByProps({ type: 'date' }).props.onChange({ target: { value: '2026-10-01' } }));
+  assert.equal(signals[0].aborted, true);
+  assert.match(text(r), /조회가 많습니다/);
+  assert.doesNotMatch(text(r), /이 날짜의 위치 기록이 없습니다/);
+  await act(async () => pending.resolve([{ lat: 37, lng: 127, recorded_at: '2026-10-01T00:00:00Z' }]));
+  assert.match(text(r), /조회가 많습니다/);
+  await act(async () => button(r, '다시 시도').props.onClick());
+  assert.match(text(r), /이 날짜의 위치 기록이 없습니다/);
+  await act(async () => r.unmount());
+  assert.equal(signals.at(-1).aborted, true);
+});

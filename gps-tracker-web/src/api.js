@@ -5,6 +5,7 @@ import { authScope, assertSession, AUTH_CHANGED, notifyAuthChanged } from './aut
 import { hydrateDeviceColors } from './colors';
 import { hydratePairTutorialSeen } from './pairTutorialSeen';
 import { collectHistory, collectAggregates } from './lib/historyPager';
+import { isLocationRead, retryLocationRead } from './lib/locationRetry';
 import { createAnalysisRequester } from './lib/aiRequest';
 
 const requestAnalysis = createAnalysisRequester({
@@ -241,22 +242,45 @@ async function req(method, path, body, retry = true, options = {}) {
     window.dispatchEvent(new CustomEvent('gps-admin-approval-created',{detail:approval}));
     throw Object.assign(new Error(`승인 요청 #${approval.id}를 등록했습니다. 책임자 승인 후 보안 관리에서 실행해 주세요.`),{status:409});
   }
-  const res = await sessionFetch(BASE + path, {
-    method, signal: options.signal,
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  }, retry);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw Object.assign(new Error(err.error || err.message || res.statusText), { status: res.status });
+  const url = BASE + path;
+  const scope = authScope(), fleet = fleetRequestScope(url);
+  const controller = isLocationRead(method, url) ? new AbortController() : null;
+  const signal = controller?.signal || options.signal;
+  const abort = () => controller?.abort();
+  const checkScope = () => { if (scope !== authScope()) abort(); };
+  if (controller) {
+    options.signal?.addEventListener('abort', abort, { once: true });
+    if (options.signal?.aborted) abort();
+    window.addEventListener(AUTH_CHANGED, checkScope);
+    window.addEventListener('gps-auth-clearing', abort);
+    window.addEventListener('storage', checkScope);
   }
-
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-  if (data && res.headers.get("x-location-scope") === "confirmed-subject-intervals") {
-    Object.defineProperty(data,"subjectScope",{value:true,enumerable:false});
+  try {
+    const res = await retryLocationRead(() => sessionFetch(url, {
+      method, signal,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }, retry, scope, fleet), { method, url, signal,
+      assertActive: () => { assertSession(scope); fleet.assert(); },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(e => { if (e.name === 'AbortError') throw e; return {}; });
+      throw Object.assign(new Error(err.error || err.message || res.statusText), { status: res.status, code: err.code });
+    }
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+    if (data && res.headers.get("x-location-scope") === "confirmed-subject-intervals") {
+      Object.defineProperty(data,"subjectScope",{value:true,enumerable:false});
+    }
+    return data;
+  } finally {
+    if (controller) {
+      options.signal?.removeEventListener('abort', abort);
+      window.removeEventListener(AUTH_CHANGED, checkScope);
+      window.removeEventListener('gps-auth-clearing', abort);
+      window.removeEventListener('storage', checkScope);
+    }
   }
-  return data;
 }
 
 export const api = {
@@ -567,7 +591,7 @@ export const api = {
   },
 
   // locations (legacy flat schema — 호환용. 점진적으로 listLocationsGrouped 로 전환.)
-  listLocations: (deviceId, params = {}) => {
+  listLocations: (deviceId, params = {}, options = {}) => {
     const q = new URLSearchParams();
     if (params.limit)    q.set('limit',    params.limit);
     if (params.since)    q.set('since',    params.since);
@@ -575,20 +599,20 @@ export const api = {
     if (params.fix_only) q.set('fix_only', 'true');
     const qs = q.toString();
     const path = `/devices/${deviceId}/locations${qs ? '?' + qs : ''}`;
-    return cachedRead(path, () => req('GET', path));
+    return cachedRead(path, () => req('GET', path, undefined, true, options));
   },
 
   // Phase 1 schema — POST 단위 grouping. consumer 가 sampling / marker / polyline 로직 짤 때 활용.
   // 응답: [{ post_at, uptime_s, vbat_mv, cbc_mv, csq, reg, batch_size, fixes: [{ recorded_at, source, fix, lat, lng, sat, ttff_s, heading }] }, ...]
   //   · vbat_mv = ESP ADC 측정 (배터리 실측 근접). cbc_mv = SIM7080 AT+CBC (배선 loss 뒤).
-  listLocationsGrouped: (deviceId, params = {}) => {
+  listLocationsGrouped: (deviceId, params = {}, options = {}) => {
     const q = new URLSearchParams({ grouped: 'true' });
     if (params.limit)    q.set('limit',    params.limit);
     if (params.since)    q.set('since',    params.since);
     if (params.until)    q.set('until',    params.until);
     if (params.fix_only) q.set('fix_only', 'true');
     const path = `/devices/${deviceId}/locations?${q.toString()}`;
-    return cachedRead(path, () => req('GET', path));
+    return cachedRead(path, () => req('GET', path, undefined, true, options));
   },
 
   // helper: grouped 응답을 legacy flat 형태로 unpack. 기존 consumer 코드 최소 변경용.

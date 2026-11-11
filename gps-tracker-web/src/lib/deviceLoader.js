@@ -119,7 +119,7 @@ export function makeDeviceLoaders({
   setDevices = () => {}, setDevicesLoaded, onLatest, onDataSource,
   readDevices = () => api.listDevices(),
 }) {
-  let revision = 0;
+  let revision = 0, controller;
   function renderDeviceFixes(d, locs, opts = {}) {
     const { force = false } = opts;
     const label = d.display_name || d.device_uid;
@@ -206,6 +206,9 @@ export function makeDeviceLoaders({
 
   async function loadDevicesIncremental(force = false) {
     const request = ++revision;
+    controller?.abort();
+    const current = new AbortController();
+    controller = current;
     try {
       const list = await readDevices();
       if (request !== revision) return;
@@ -232,7 +235,7 @@ export function makeDeviceLoaders({
         }
         const since = await computeHomeSinceISO(d);
         if (request !== revision) return;
-        const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
+        const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since }, { signal: current.signal });
         if (request !== revision) return;
         const locs = api.flattenGrouped(groups);
         const rendered = renderDeviceFixes(d, locs, { force });
@@ -247,6 +250,9 @@ export function makeDeviceLoaders({
 
   async function loadDevices() {
     const request = ++revision;
+    controller?.abort();
+    const current = new AbortController();
+    controller = current;
     try {
       const targetIdRaw = new URLSearchParams(window.location.search).get('device');
       const targetId = targetIdRaw ? parseInt(targetIdRaw, 10) : NaN;
@@ -262,7 +268,7 @@ export function makeDeviceLoaders({
       if (request !== revision) return;
       await Promise.all(list.map(async (d, li) => {
         const since = sinces[li];
-        const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since });
+        const groups = await api.listLocationsGrouped(d.id, { limit: 2000, fix_only: true, since }, { signal: current.signal });
         if (request !== revision) return;
         const locs = api.flattenGrouped(groups);
         const rendered = renderDeviceFixes(d, locs);
@@ -284,5 +290,5 @@ export function makeDeviceLoaders({
     } catch (e) { if (e.name !== 'AbortError' && e.message !== 'CancelledError') console.error('loadDevices', e); }
   }
 
-  return { loadDevices, loadDevicesIncremental, cancel: () => { revision++; } };
+  return { loadDevices, loadDevicesIncremental, cancel: () => { revision++; controller?.abort(); } };
 }

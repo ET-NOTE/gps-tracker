@@ -15,7 +15,7 @@ async function fixture(api = {}) {
   const values = new Map();
   const storage = { getItem: k => values.get(k) ?? null, setItem: (k, v) => { values.set(k, v); storage[k]=v; }, removeItem: k => {values.delete(k);delete storage[k];} };
   let scope = 'account-A';
-  const context = vm.createContext({ console, window: { location: { search: '' } },
+  const context = vm.createContext({ console, AbortController, window: { location: { search: '' } },
     localStorage: storage, crypto: {randomUUID:()=>String(Math.random())}, DOMException, URLSearchParams, document: new EventTarget() });
   const modules = new Map();
   const synthetic = exports => new vm.SyntheticModule(Object.keys(exports), function() {
@@ -93,10 +93,10 @@ test('home window uses KST midnight and validates wake timestamps', async () => 
 });
 
 test('superseded or unmounted history requests never repaint the map', async () => {
-  const reads = [deferred(), deferred(), deferred()]; let calls = 0;
+  const reads = [deferred(), deferred(), deferred()]; let calls = 0; const signals = [];
   const device = { id: 1, last_fix_at: new Date().toISOString() };
   const f = await fixture({ listDevices: async () => [device],
-    listLocationsGrouped: () => reads[calls++].promise, flattenGrouped: x => x });
+    listLocationsGrouped: (_id, _params, options) => { signals.push(options.signal); return reads[calls++].promise; }, flattenGrouped: x => x });
   const updates = [], loaded = [];
   const loader = (await f.module('lib/deviceLoader.js')).makeDeviceLoaders({
     mapRef: { current: { updateMarker: (...x) => updates.push(x), clearHistoryPoints() {}, addHistoryPoint() {}, fitToAllMarkers() {} } },
@@ -105,10 +105,11 @@ test('superseded or unmounted history requests never repaint the map', async () 
   });
   const first = loader.loadDevices(); await new Promise(r => setImmediate(r));
   const second = loader.loadDevices(); await new Promise(r => setImmediate(r));
+  assert.equal(signals[0].aborted, true); assert.equal(signals[1].aborted, false);
   reads[1].resolve([{ recorded_at: device.last_fix_at, lat: 37, lng: 127 }]); await second;
   reads[0].resolve([{ recorded_at: device.last_fix_at, lat: 38, lng: 128 }]); await first;
   assert.equal(updates.length, 1); assert.equal(updates[0][1], 37); assert.equal(loaded.length, 1);
-  const third = loader.loadDevices(); await new Promise(r => setImmediate(r)); loader.cancel();
+  const third = loader.loadDevices(); await new Promise(r => setImmediate(r)); loader.cancel(); assert.equal(signals[2].aborted, true);
   reads[2].resolve([{ recorded_at: device.last_fix_at, lat: 39, lng: 129 }]); await third;
   assert.equal(updates.length, 1); assert.equal(loaded.length, 1);
 });

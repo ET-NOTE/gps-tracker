@@ -111,7 +111,8 @@ export default function FleetDashboard() {
   }, [selectDevice]);
 
   const tripRevision = useRef(0);
-  useEffect(() => () => { tripRevision.current++; }, []);
+  const tripAbort = useRef(null);
+  useEffect(() => () => { tripRevision.current++; tripAbort.current?.abort(); }, []);
 
   // (F4-b-2) 선택된 trip → seeker path.
   // (F7-a) ?canvas=1 URL flag 로 canvas overlay 시험 사용. 안정성 검증 후 default 전환.
@@ -123,7 +124,7 @@ export default function FleetDashboard() {
 
   // 선택 시 map focus.
   useEffect(() => {
-    tripRevision.current++;
+    tripRevision.current++; tripAbort.current?.abort();
     if (!mapRef.current) return;
     if (selectedId != null) mapRef.current.filterToDevice?.(selectedId, { fit: false });
     else                    mapRef.current.filterToDevice?.(null,       { fit: false });
@@ -242,6 +243,9 @@ export default function FleetDashboard() {
       return;
     }
     const revision = ++tripRevision.current;
+    tripAbort.current?.abort();
+    const controller = new AbortController();
+    tripAbort.current = controller;
     const key = trip.started_at;
     // Clear the previous path before starting a different request.
     m.clearSeekerPathCanvas?.();
@@ -258,7 +262,7 @@ export default function FleetDashboard() {
     try {
       const from = trip.started_at;
       const to   = trip.ended_at || new Date().toISOString();
-      const groups = await api.listLocationsGrouped(selectedId, { since: from, until: to, fix_only: true, limit: 5000 });
+      const groups = await api.listLocationsGrouped(selectedId, { since: from, until: to, fix_only: true, limit: 5000 }, { signal: controller.signal });
       if (revision !== tripRevision.current) return;
       const points = api.flattenGroupedAsc(groups).filter(validFleetPosition);
       if (!points.length) {

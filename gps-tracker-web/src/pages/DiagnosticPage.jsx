@@ -52,7 +52,11 @@ export default function DiagnosticPage() {
   useEffect(() => {
     if (deviceId == null) return;
     let cancelled = false;
+    const controller = new AbortController();
+    let pending = false;
     const doRefresh = async () => {
+      if (pending || cancelled) return;
+      pending = true;
       setLoading(true);
       try {
         const since = new Date(Date.now() - windowMs).toISOString();
@@ -62,7 +66,7 @@ export default function DiagnosticPage() {
         const [rows, bstats, agg, ts] = await Promise.all([
           api.getDeviceEvents(deviceId, { since, limit: 1000 }),
           api.getDeviceBatchStats(deviceId, hours).catch(() => null),
-          api.getDeviceLocationsAggregated(deviceId, aggBucket, since).catch(() => null),
+          api.getDeviceLocationsAggregated(deviceId, aggBucket, since, undefined, { signal: controller.signal }).catch(() => null),
           api.getTimescaleDbStats().catch(() => null),
         ]);
         if (cancelled) return;
@@ -74,6 +78,7 @@ export default function DiagnosticPage() {
       } catch (e) {
         if (!cancelled) setError(e?.message || 'getDeviceEvents failed');
       } finally {
+        pending = false;
         if (!cancelled) setLoading(false);
       }
     };
@@ -83,6 +88,7 @@ export default function DiagnosticPage() {
     }
     return () => {
       cancelled = true;
+      controller.abort();
       clearInterval(pollRef.current);
     };
   }, [deviceId, windowMs, bucketOverride, autoRefresh, refreshNonce]);
