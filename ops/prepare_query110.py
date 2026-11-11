@@ -21,7 +21,9 @@ sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 def prepare():
     assert not JOB.exists()
     (JOB / 'out').mkdir(parents=True)
-    (JOB / 'src').symlink_to(BUILD / 'src', target_is_directory=True)
+    # The file-owner regression mounts JOB as a whole. A sibling source symlink
+    # is outside that container mount, so keep a self-contained source copy.
+    shutil.copytree(BUILD / 'src', JOB / 'src')
     for name in ('fixtures', 'python-deps'):
         (JOB / name).symlink_to((PRIOR / name).resolve(), target_is_directory=True)
     for name in ('gps-tracker-api.baseline99', 'gps-tracker-api.baseline108', 'gps-pdf-render'):
