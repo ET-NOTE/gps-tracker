@@ -1,0 +1,8 @@
+{
+  "applies_to": "limited-disk.json",
+  "field": "api_sha256",
+  "reported": "4db8dd598bb7ac441045b4dcf5e1f82e4504d88fb907ba10c47498d3624b6897",
+  "actual_running_binary": "2745df9f7e2df07f585f3cb4725ed487f569677bb364455ed90481aa97cce1cc",
+  "reason": "Pre-fix harness reread artifact path at end of load while a new candidate was built. Running /proc/1/exe hash was checked and preserved before replacement. Raw report is preserved unchanged; subsequent loads capture verified start hash.",
+  "scope": "This is a preliminary diagnostic, not a final-candidate performance result."
+}
