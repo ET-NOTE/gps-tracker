@@ -36,6 +36,8 @@ def stage():
         assert restore[key]
     owner = read('file-owner116.json')
     assert owner['owner_group_preserved'] and owner['api_identity_can_read']
+    mapping = read('mapping-history116.json')
+    assert len(mapping['owner_count_seconds']) == 3 and max(mapping['owner_count_seconds']) < 5
     assert read('mapping109-queries.json')['all_passed']
     oracle = read('ancestry109-regression.json')
     assert oracle['schema_path'] == [108, 112] and all(c['same_effective_ids'] and c['oracle_equal'] for c in oracle['cases'])
@@ -65,11 +67,16 @@ def stage():
         source_working_changes=source.get('working_changes', []),
         source_manifest_sha256=sha(JOB / 'src/input-manifest.json'), verified_source_files=len(source['files']),
         candidate_schema=112, production_schema_last_observed=99, production_applied=False,
+        base_artifact_sha256=sha(BASE.with_suffix('.tar.gz')),
+        mapping_owner_count_seconds=mapping['owner_count_seconds'],
+        mapping_performance_gate_passed=True,
         activation_ready=False, api_sha256=API_SHA, files=hashes, web_unchanged=False,
         web_source_commit='897892337f6d1c79151a1416314f7b64af3d5231', stress_assessment=stress,
         verification_status='cumulative99_to112_with115_api_web_and_protected_recovery_passed',
         rehearsal='single API; synthetic tmpfs DB; migration faults; compatible112 API/web recovery; encrypted DB/files plus latest checkpoint',
         production_probe_performed_this_round=False)
+    result['stress_assessment_source_round'] = 115
+    result['stress_rerun_this_round'] = False
     result['changed_files'] = sorted(set(base['files']) ^ set(hashes) | {p for p, h in hashes.items() if p in base['files'] and base['files'][p] != h})
     result['activation_gates'] = [
         'single API only; retain115 dual-API408 and constrained-I/O503 failures as open conditions',
