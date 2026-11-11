@@ -20,7 +20,7 @@ assert b.info('volume', b.VOL)['Labels']['gps.query115'] == 'synthetic'
 assert b.ip(b.DB) and len(db['Mounts']) == 1 and db['Mounts'][0]['Name'] == b.VOL
 b.run('docker', 'stop', '-t', '30', b.DB, stdout=subprocess.DEVNULL)
 b.run('docker', 'rm', b.DB, stdout=subprocess.DEVNULL)
-device = '/dev/nvme0n1p5'
+device = '/dev/nvme0n1'  # io.stat accounts the parent block device (259:0).
 b.run('docker', 'run', '-d', '--name', b.DB, '--network', b.NET, '--network-alias', 'query115-db',
       '--cpus=2', '--memory=1500m', '--pids-limit=256',
       '--device-read-bps', device + ':8mb', '--device-write-bps', device + ':8mb',
@@ -36,6 +36,9 @@ for _ in range(60):
 else: raise AssertionError('limited DB readiness')
 cfg = b.info('container', b.DB)['HostConfig']
 b.save('io-limits', {k: cfg[k] for k in ['BlkioDeviceReadBps','BlkioDeviceWriteBps','BlkioDeviceReadIOps','BlkioDeviceWriteIOps']})
+b.save('io-cgroup', {'limits': subprocess.check_output(['docker','exec',b.DB,'cat','/sys/fs/cgroup/io.max'],text=True),
+                     'before': subprocess.check_output(['docker','exec',b.DB,'cat','/sys/fs/cgroup/io.stat'],text=True)})
 b.start()
 b.run('docker', 'restart', b.PROXY, stdout=subprocess.DEVNULL)
 b.load('io-limited', 300, 8)
+b.save('io-cgroup-after', {'after': subprocess.check_output(['docker','exec',b.DB,'cat','/sys/fs/cgroup/io.stat'],text=True)})
