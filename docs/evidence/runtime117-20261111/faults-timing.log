@@ -1,0 +1,4 @@
+2026-11-11T14:35:20.425722Z  WARN http_request: gps_ledger_timing: access ledger timing operation="begin" phase="pool_acquire" outcome="error_or_cancelled" phase_ms=5000 total_ms=5000 method="GET"
+2026-11-11T14:35:25.677945Z  WARN http_request: gps_ledger_timing: access ledger timing operation="begin" phase="pool_acquire" outcome="error_or_cancelled" phase_ms=5001 total_ms=5001 method="GET"
+2026-11-11T14:35:30.926145Z  WARN http_request: gps_ledger_timing: access ledger timing operation="begin" phase="account_lock" outcome="error_or_cancelled" phase_ms=5000 total_ms=5001 method="GET"
+2026-11-11T14:35:36.356038Z  WARN http_request: gps_ledger_timing: access ledger timing operation="finish" phase="event_complete" outcome="error_or_cancelled" phase_ms=5000 total_ms=5000 method="GET"
