@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query111/verify_page111_http.py", line 72, in <module>
+    main(parser.parse_args().mode)
+  File "/home/etcom-hub/build/gps-provision22-20261111query111/verify_page111_http.py", line 29, in main
+    assert code == 200, (code, body[:100])
+           ^^^^^^^^^^^
+AssertionError: (500, b'{"error":"database error"}')

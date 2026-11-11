@@ -1,0 +1,10 @@
+{
+  "before": 25,
+  "after": 50,
+  "queries_pool": 10,
+  "privacy_lease_pool": 16,
+  "writer": 1,
+  "reserved": 3,
+  "production_modified": false,
+  "scope": "synthetic DB only; both versions remeasured with50"
+}
