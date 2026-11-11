@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import uuid
 from urllib.parse import urlencode
 
 from benchmark_location111 import OUT, connect, save
@@ -46,8 +47,9 @@ def main(mode):
                 code, body, _ = request(root + urlencode(old['query']), token(uid))
                 assert code == 200 and digest(body) == old['sha256']
         with connect() as db:
-            other = db.execute("INSERT INTO users(phone,email,password_hash) VALUES('http111other','http111other@example.invalid','') RETURNING id").fetchone()[0]
-            empty = db.execute("INSERT INTO devices(owner_id,device_uid,api_key_hash) VALUES(%s,'http111empty','') RETURNING id", (uid,)).fetchone()[0]
+            tag = 'http111-' + uuid.uuid4().hex[:12]
+            other = db.execute("INSERT INTO users(phone,email,password_hash) VALUES(%s,%s,'') RETURNING id", (tag,tag+'@example.invalid')).fetchone()[0]
+            empty = db.execute("INSERT INTO devices(owner_id,device_uid,api_key_hash) VALUES(%s,%s,'') RETURNING id", (uid,tag)).fetchone()[0]
         valid = root + urlencode(queries[0])
         assert request(valid, token(other))[0] == 404
         assert request(valid)[0] == 401

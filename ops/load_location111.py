@@ -93,6 +93,8 @@ def request(path, auth=None):
 
 def stats(values):
     values = sorted(values)
+    if not values:
+        return {'count': 0, 'p50_s': None, 'p95_s': None, 'max_s': None}
     return {'count': len(values), 'p50_s': statistics.median(values),
             'p95_s': values[min(len(values) - 1, int(len(values) * .95))], 'max_s': max(values)}
 
@@ -116,6 +118,8 @@ def load(workers, iterations):
     stop = threading.Event()
     results, errors, health, writes = [], [], [], []
     with connect() as db:
+        settings = dict(db.execute("SELECT name,setting FROM pg_settings WHERE name IN ('max_connections','superuser_reserved_connections')").fetchall())
+        assert int(settings['max_connections']) >= 32, 'need main10 + privacy16 + writer1 + reserved3 + probes'
         writer = db.execute("INSERT INTO devices(owner_id,device_uid,api_key_hash) VALUES(%s,%s,'') RETURNING id", (uid, 'query-load-' + str(time.time_ns()))).fetchone()[0]
 
     def background():
@@ -154,7 +158,13 @@ def load(workers, iterations):
             except Exception as e:
                 errors.append({'route': name, 'error': type(e).__name__})
 
-    thread = threading.Thread(target=background)
+    def background_checked():
+        try:
+            background()
+        except Exception as error:
+            errors.append({'background_setup': type(error).__name__})
+
+    thread = threading.Thread(target=background_checked)
     thread.start()
     started = time.monotonic()
     try:
@@ -165,14 +175,17 @@ def load(workers, iterations):
         thread.join()
     with connect() as db:
         physical = db.execute('SELECT count(*),count(*) FILTER(WHERE lat IS NOT NULL OR lng IS NOT NULL),bool_and(query_bounds_ready) FROM location_records WHERE device_id=%s', (writer,)).fetchone()
-        assert physical == (len(writes), 0, True), physical
+        if physical != (len(writes), 0, True):
+            errors.append({'encrypted_write_verification': list(physical), 'recorded_writes': len(writes)})
     report = {'api_sha256': binary_hash, 'workers': workers, 'iterations': iterations, 'duration_s': time.monotonic() - started,
               'requests': len(results), 'errors': errors, 'http': {name: stats([r['seconds'] for r in results if r['route'] == name]) for name, _ in routes},
               'health': stats(health), 'encrypted_writes': stats(writes), 'raw': results,
+              'db_connection_settings': settings, 'api_pool_limits': {'queries': 10, 'privacy_leases': 16},
               'storage': 'disk-backed ext4/NVMe synthetic DB; DB 2 CPU/1500MiB, API 2 CPU/550MiB',
               'external_delivery': False, 'production_modified': False}
     save(f'load111-{workers}.json', report)
     assert not errors, errors
+    assert len(results) == workers * iterations and health and writes
     assert report['health']['p95_s'] < 2 and report['encrypted_writes']['p95_s'] < 2, 'interactive health/write budget exceeded'
     print('LOAD PASS', workers, len(results), 'health p95', round(report['health']['p95_s'], 3), 'write p95', round(report['encrypted_writes']['p95_s'], 3), flush=True)
 

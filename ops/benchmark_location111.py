@@ -62,7 +62,8 @@ def setup():
         '--cpus=2', '--memory=1500m', '--pids-limit=256', '--mount', f'type=volume,src={VOL},dst=/var/lib/postgresql/data',
         '-e', 'POSTGRES_PASSWORD=query111-synthetic', '-e', 'POSTGRES_DB=' + NAME,
         'timescale/timescaledb:2.19.3-pg14', '-c', 'log_parameter_max_length=0',
-        '-c', 'log_parameter_max_length_on_error=0', '-c', 'track_io_timing=on')
+        '-c', 'log_parameter_max_length_on_error=0', '-c', 'track_io_timing=on',
+        '-c', 'max_connections=50')
     for _ in range(60):
         if subprocess.run(['docker', 'exec', DB, 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres'], capture_output=True).returncode == 0:
             time.sleep(2)
