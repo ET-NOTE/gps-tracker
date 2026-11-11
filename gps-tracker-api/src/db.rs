@@ -3,17 +3,35 @@ use std::time::Duration;
 
 pub async fn make_pool(database_url: &str) -> anyhow::Result<PgPool> {
     let keys = crate::services::location_storage::load()?;
+    let temp = crate::services::temp_storage::configured()?;
+    if keys.is_some() && temp.is_none() {
+        anyhow::ensure!(
+            matches!(std::env::var("APP_ENV").as_deref(), Ok("test" | "development")),
+            "encrypted production requires GPS_LOCATION_TEMP_TABLESPACE and verified host temporary storage/swap protection"
+        );
+        tracing::warn!("test encrypted pilot has no protected temporary tablespace; not ready for production activation");
+    }
+    let checkout_temp = temp.clone();
     let pool = PgPoolOptions::new()
         .max_connections(10)
         .min_connections(1)
         .acquire_timeout(Duration::from_secs(5))
         .idle_timeout(Some(Duration::from_secs(60 * 10)))
+        .before_acquire(move |connection, _| {
+            let temp = checkout_temp.clone();
+            Box::pin(async move {
+                crate::services::temp_storage::configure(connection, temp.as_deref()).await?;
+                Ok(true)
+            })
+        })
         // JSON batch/window queries spend seconds compiling hundreds of JIT
         // functions for millisecond-scale scans. Scope this to our API pool;
         // do not change the PostgreSQL defaults used by neighboring services.
         .after_connect(move |connection, _| {
             let keys = keys.clone();
+            let temp = temp.clone();
             Box::pin(async move {
+                crate::services::temp_storage::configure(connection, temp.as_deref()).await?;
                 sqlx::query("SET timezone='UTC'")
                     .execute(&mut *connection)
                     .await?;

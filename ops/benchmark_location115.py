@@ -376,7 +376,7 @@ def load(label, seconds, workers, dual=False):
     for entry in completed: grouped[entry['route']].append(entry)
     result = {'label': label, 'production_modified': False, 'requested_seconds': seconds, 'elapsed': time.monotonic() - begun, 'workers': workers,
         'workload': '8 SIMs, 31 dense KST days; personal reads and mapped Fleet reports; dual adds Fleet stats/terminals',
-        'dual_api': dual, 'api_sha256': hashlib.sha256((OUT / 'gps-tracker-api').read_bytes()).hexdigest(), 'completed': dict(Counter(x['status'] for x in completed)), 'attempts': dict(Counter(x['status'] for x in attempts)),
+        'dual_api': dual, 'api_sha256': candidate_sha, 'completed': dict(Counter(x['status'] for x in completed)), 'attempts': dict(Counter(x['status'] for x in attempts)),
         'per_device': {str(d['device_id']): dict(Counter(x['status'] for x in completed if x['device'] == d['device_id'])) for d in data['devices']},
         'per_route': {k: {'statuses': dict(Counter(x['status'] for x in v)), 'end_to_end': stats([x['seconds'] for x in v if x['status'] == 200])} for k, v in grouped.items()},
         'ingest': {'statuses': dict(Counter(x['status'] for x in ingest)), 'latency': stats([x['seconds'] for x in ingest])},

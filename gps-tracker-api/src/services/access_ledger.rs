@@ -1,6 +1,7 @@
 //! Durable, per-operation access intents. Account scope is NOT the actual driver.
 //! OFF by default. When ON, an intent commits before data can leave; recording failure
 //! blocks that operation. A prepared intent after a crash has an UNKNOWN outcome.
+use super::ledger_timing::Timing;
 use crate::{
     auth::{fleet::FleetScope, jwt},
     state::AppState,
@@ -11,7 +12,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
-use sqlx::PgPool;
+use sqlx::{Acquire, PgPool};
 use std::{future::Future, sync::OnceLock};
 
 pub const SCOPE_VERSION: i32 = 4;
@@ -80,17 +81,32 @@ impl Ticket {
     }
     pub async fn finish(self, outcome: &'static str) -> anyhow::Result<()> {
         if let (Some(id), Some(h)) = (self.0, HANDLE.get()) {
-            let mut tx = h.pool.begin().await?;
+            let mut timing = Timing::new("finish", "pool_acquire");
+            let mut connection = h.pool.acquire().await?;
+            timing.next("transaction_open");
+            let mut tx = connection.begin().await?;
+            timing.next("deadline");
+            // Begin already has a local DB deadline. Completion must also be
+            // bounded: a locked event/notification row must not hold a response
+            // and its privacy lease indefinitely. Failure still blocks data.
+            sqlx::query("SET LOCAL statement_timeout='5s'")
+                .execute(&mut *tx)
+                .await?;
+            timing.next("event_complete");
             let changed = sqlx::query("UPDATE location_access_events SET outcome=$2,completed_at=clock_timestamp() WHERE id=$1 AND outcome='prepared'")
                 .bind(id).bind(outcome).execute(&mut *tx).await?.rows_affected();
             anyhow::ensure!(changed == 1, "access intent unavailable; response blocked");
+            timing.next("projection_complete");
             if outcome == "response_ready" {
                 if let Some(p) = &self.2 {
                     super::subject_projection::complete(&mut tx, p, id).await?;
                 }
             }
+            timing.next("provision_complete");
             super::subject_provision::complete(&mut tx, id, outcome).await?;
+            timing.next("commit");
             tx.commit().await?;
+            timing.finish();
         }
         drop(self.1);
         Ok(())
@@ -98,11 +114,17 @@ impl Ticket {
 }
 
 pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
+    let mut timing = Timing::new("begin", "privacy_guard");
     let lease = super::privacy_lifecycle::guard(&access).await?;
     let Some(h) = HANDLE.get() else {
+        timing.finish();
         return Ok(Ticket(None, Some(lease), None));
     };
-    let mut tx = h.pool.begin().await?;
+    timing.next("pool_acquire");
+    let mut connection = h.pool.acquire().await?;
+    timing.next("transaction_open");
+    let mut tx = connection.begin().await?;
+    timing.next("context");
     sqlx::query("SET LOCAL statement_timeout='5s'")
         .execute(&mut *tx)
         .await?;
@@ -168,16 +190,19 @@ pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
         attribution
     };
     if let Some(account) = account {
+        timing.next("account_lock");
         sqlx::query("SELECT pg_advisory_xact_lock(1830,$1::int)")
             .bind(account as i32)
             .execute(&mut *tx)
             .await?;
+        timing.next("erasure_boundary");
         if matches!(attribution, "request_account" | "privacy_request") {
             let erased:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM location_access_erasure_runs WHERE account_scope_id=$1 AND period_from<=$2 AND period_until>$2)")
                 .bind(account).bind(access.at).fetch_one(&mut *tx).await?;
             anyhow::ensure!(!erased, "access intent precedes reviewed erasure boundary");
         }
     }
+    timing.next("bindings");
     let (kind, user, name) = match access.recipient.clone() {
         Recipient::Own(id) => ("self", Some(id), None),
         Recipient::Company(id) => ("company", Some(id), None),
@@ -191,18 +216,24 @@ pub async fn begin(access: Access) -> anyhow::Result<Ticket> {
     } else {
         serde_json::json!([])
     };
+    timing.next("event_insert");
     let id:i64=sqlx::query_scalar("INSERT INTO location_access_events(started_at,coverage_id,account_scope_id,attribution,all_subjects,device_id,vehicle_id,share_id,recipient_kind,recipient_user_id,recipient_name,path,method,route,range_from,range_until,binding_snapshot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id")
         .bind(access.at).bind(h.coverage).bind(account).bind(attribution).bind(matches!(access.target,Target::Everyone))
         .bind(device).bind(vehicle).bind(share).bind(kind).bind(user).bind(name).bind(access.path).bind(access.method).bind(access.route)
         .bind(access.range.map(|r|r.0)).bind(access.range.map(|r|r.1)).bind(bindings).fetch_one(&mut *tx).await?;
+    timing.next("projection_prepare");
     let projection =
         super::subject_projection::prepare(&mut tx, &access, account, device, vehicle).await?;
+    timing.next("provision_prepare");
     if projection.is_none() {
         super::subject_provision::prepare(&mut tx, &access, id, account, device, vehicle).await?;
     }
+    timing.next("coverage_update");
     sqlx::query("UPDATE location_access_coverage SET alive_at=GREATEST(alive_at,clock_timestamp()) WHERE id=$1")
         .bind(h.coverage).execute(&mut *tx).await?;
+    timing.next("commit");
     tx.commit().await?;
+    timing.finish();
     Ok(Ticket(Some(id), Some(lease), projection))
 }
 
