@@ -1,0 +1,54 @@
+{
+  "environment": "isolated synthetic; DB 2 CPU tmpfs",
+  "schema": 112,
+  "production_modified": false,
+  "external_messages": 0,
+  "synthetic_mapping_rows": 32000,
+  "queries": [
+    {
+      "name": "subject_list_200",
+      "rows": 200,
+      "source_sql_sha256": "fda53db1dbd045fd72458559e67411848528203e1fd42e3094d8cfb22bcb5591",
+      "seconds": [
+        0.9336,
+        0.9147,
+        0.9101
+      ],
+      "budget_seconds": 5
+    },
+    {
+      "name": "company_list_200",
+      "rows": 200,
+      "source_sql_sha256": "4b124f2818583d6a772b94649f74b3a91e05f7c43e139388c6e84914cc03ea0b",
+      "seconds": [
+        0.8989,
+        0.9003,
+        0.9117
+      ],
+      "budget_seconds": 5
+    },
+    {
+      "name": "company_projection_1000",
+      "rows": 1000,
+      "source_sql_sha256": "f6200c32f1b3925bd485eb604b8bcba72bd74fd22130bcd3d2fb63924dfaa038",
+      "seconds": [
+        0.902,
+        0.9037,
+        0.8856
+      ],
+      "budget_seconds": 5
+    },
+    {
+      "name": "company_projection_one",
+      "rows": 1,
+      "source_sql_sha256": "f6200c32f1b3925bd485eb604b8bcba72bd74fd22130bcd3d2fb63924dfaa038",
+      "seconds": [
+        0.0145,
+        0.0136,
+        0.0134
+      ],
+      "budget_seconds": 2
+    }
+  ],
+  "all_passed": true
+}

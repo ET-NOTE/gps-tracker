@@ -79,3 +79,6 @@ docs/evidence/security113-20261111/* -text whitespace=-blank-at-eof,-blank-at-eo
 
 # Query115 measurements and failed stress cases preserve original evidence bytes.
 docs/evidence/query115-20261111/* -text whitespace=-blank-at-eof,-blank-at-eol
+
+# Cumulative116 captures preserve original execution evidence bytes.
+docs/evidence/cumulative116-20261111/* -text whitespace=-blank-at-eof,-blank-at-eol

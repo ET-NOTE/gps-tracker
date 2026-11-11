@@ -1,0 +1,17 @@
+{
+  "production_modified": false,
+  "source_commit": "2d95c3d94c9cccbe6685af8785fefb2588fe081f",
+  "source_files": 891,
+  "api_compilation_inputs_matched": 240,
+  "api_sha256": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10",
+  "base_archive_sha256": "8b4d5b3884a6bf522738a5c77c75be965e78159eab1e7d15a303d7851eda7ff6",
+  "overlay_archive_sha256": "bc9edcf72f961a20f4053074b3f8b69cc9421766bda4ba94963abec573522a7e",
+  "candidate_schema": 112,
+  "activation_ready": false,
+  "generated_harnesses": {
+    "run_regressions116.py": "99992eae22b5b015bacb33b38d84c0d363bd54735e4c51a5483251dd1786de02",
+    "test_transition_file_owner.py": "70954d89f22765c3a0a6f80d92ebc5e00bf86f279989e4051a54a8058701b482",
+    "rehearse_cumulative116.py": "ede706574371fe47528444935d14c21b097bc9b11f6425193b8c1440b7d0c366",
+    "check_cumulative116.py": "05c85e66f0d1e1f06251142084de361aa4661aac13b491a2c687967b8b1a9ae0"
+  }
+}

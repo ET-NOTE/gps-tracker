@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-11T13:43:29.117324+00:00",
+  "removed_resources": [
+    "gps-provision22-api-20261111cumulative116",
+    "gps-provision22-db-20261111cumulative116",
+    "gps-provision22-test-20261111cumulative116"
+  ],
+  "private_fixture_paths_absent": true,
+  "other_projects_modified": false,
+  "production_modified": false,
+  "release_fixture_removed": true,
+  "build_host_free_bytes": 19969425408,
+  "metadata_review_copy_removed": true
+}

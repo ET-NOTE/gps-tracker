@@ -1,0 +1,260 @@
+{
+  "source_commit": "5124653e33e91108652e20e515761eea85dace54",
+  "candidate_schema": 112,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10",
+  "excluded": [
+    "credentials",
+    "keyring",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "single API only; retain115 dual-API408 and constrained-I/O503 failures as open conditions",
+    "measure actual shared VPS I/O, ledger start/finish latency and resource headroom before rollout",
+    "protect decrypted PostgreSQL temporary spill files and swap before encrypted operational use",
+    "confirm full DB connection budget: API10+privacy16+cancel2, workers, other projects and reserved slots",
+    "fresh production schema/binary/web/hash inventory and separate maintenance window; no production preflight this round",
+    "stop and drain all GPS writers; review legacy Timescale retention and bind logging before conversion",
+    "provision pgcrypto with DB administrator; separate restricted migration owner and runtime identity",
+    "real key custody and protected backup plus latest external privacy checkpoint verified before reopening",
+    "reviewed retention/notice policy, explicit subject consent and administrator PC/IP/MFA; no inferred consent",
+    "production WAF compatibility, cancellation propagation and static asset/service-worker rollout acceptance",
+    "physical TLS promotion, buffered maintenance/pause/resume and24-hour sleep; actual FCM/alarm delivery",
+    "legacy WAL/snapshots/backups and unclassified/company files remain separately governed"
+  ],
+  "binary_source_commit": "897892337f6d1c79151a1416314f7b64af3d5231",
+  "base_artifact_sha256": "8b4d5b3884a6bf522738a5c77c75be965e78159eab1e7d15a303d7851eda7ff6",
+  "verification_status": "cumulative99_to112_with115_api_web_and_protected_recovery_passed",
+  "mapping_performance_gate_passed": true,
+  "mapping_owner_count_seconds": [
+    0.8887,
+    0.9055,
+    0.9079
+  ],
+  "changed_files": [
+    "gps-tracker-api",
+    "ops/admin_db_roles.py",
+    "ops/admin_security_bootstrap.py",
+    "ops/crypto20b-fields.json",
+    "ops/crypto20b_preflight.py",
+    "ops/crypto20b_transition.py",
+    "ops/gps-privacy-retention.service.example",
+    "ops/gps-privacy-retention.timer.example",
+    "ops/gps-watch.example.ini",
+    "ops/gps_watch.py",
+    "ops/location_query_bounds.py",
+    "ops/location_storage.py",
+    "ops/notice_queue_probe.py",
+    "ops/privacy_account_closure.py",
+    "ops/privacy_file_cleanup.py",
+    "ops/privacy_restore_checkpoint.py",
+    "ops/privacy_retention.py",
+    "ops/privacy_scope_inventory.py",
+    "ops/privacy_subject_checkpoint.py",
+    "ops/privacy_worker_db.py",
+    "web/assets/AdminDashboard-Bhblg0nL.js",
+    "web/assets/AdminDashboard-C_eCiK__.js",
+    "web/assets/Auth-CTtu9ulB.js",
+    "web/assets/Auth-Dm-mszPt.js",
+    "web/assets/BusinessPreferences-CseHAJXD.js",
+    "web/assets/BusinessPreferences-XIo5wWeE.js",
+    "web/assets/CorporatePanel-BRHGmBrZ.js",
+    "web/assets/CorporatePanel-DmK306qp.js",
+    "web/assets/DeliveryPanel-DYVfCi18.js",
+    "web/assets/DeliveryPanel-D_f9ep06.js",
+    "web/assets/DiagnosticPage-70Q4qepN.js",
+    "web/assets/DiagnosticPage-BGKHCXcs.js",
+    "web/assets/FleetDashboard-Ba29FpEZ.js",
+    "web/assets/FleetDashboard-Cn19GaLD.js",
+    "web/assets/HandoffPage-B_uqKur5.js",
+    "web/assets/HandoffPage-bXwooK6H.js",
+    "web/assets/PaymentResult-B1zdKbda.js",
+    "web/assets/PaymentResult-YjFvZntU.js",
+    "web/assets/RentcarPanel-CdClLaRb.js",
+    "web/assets/RentcarPanel-iGUub5Lv.js",
+    "web/assets/SharePage-B-vZnLTg.js",
+    "web/assets/SharePage-C3UPwdS8.js",
+    "web/assets/StatCard-ByvGc5vW.js",
+    "web/assets/StatCard-DMqkEour.js",
+    "web/assets/index-CcEL3ef6.js",
+    "web/assets/index-DX9e08IE.js",
+    "web/index.html",
+    "web/manifest.webmanifest",
+    "web/robots.txt",
+    "web/sitemap.xml",
+    "web/sw.js"
+  ],
+  "rehearsal": "single API; synthetic tmpfs DB; migration faults; compatible112 API/web recovery; encrypted DB/files plus latest checkpoint",
+  "source_manifest_sha256": "b76a9921df1c7039aac953b2b12d0c926965b8503d634eee0f53da386dd79e35",
+  "verified_source_files": 894,
+  "web_source_commit": "897892337f6d1c79151a1416314f7b64af3d5231",
+  "web_unchanged": false,
+  "source_working_changes": [],
+  "candidate": "candidate-cumulative116-20261111-r1",
+  "production_schema_last_observed": 99,
+  "stress_assessment": {
+    "single": {
+      "performance_gate_passed": true,
+      "completed_statuses": {
+        "200": 536,
+        "429": 815
+      },
+      "errors": []
+    },
+    "dual": {
+      "performance_gate_passed": false,
+      "completed_statuses": {
+        "200": 282,
+        "429": 556,
+        "408": 10
+      },
+      "errors": []
+    },
+    "io-limited": {
+      "performance_gate_passed": false,
+      "completed_statuses": {
+        "200": 185,
+        "429": 165,
+        "503": 21
+      },
+      "errors": [
+        {
+          "device": 6,
+          "route": "fleet_xlsx",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 7,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 1,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 8,
+          "route": "fleet_csv",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 7,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 1,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 5,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 3,
+          "route": "month_aggregate",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 7,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 8,
+          "route": "fleet_csv",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 2,
+          "route": "month_aggregate",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 1,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 3,
+          "route": "month_aggregate",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 4,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 5,
+          "route": "fleet_csv",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 6,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 3,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 6,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 5,
+          "route": "fleet_xlsx",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 8,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        },
+        {
+          "device": 8,
+          "route": "fleet_xlsx",
+          "status": 503,
+          "body": "{\"error\":\"\uae30\ub85d \uc800\uc7a5\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.\"}"
+        }
+      ]
+    }
+  },
+  "production_probe_performed_this_round": false,
+  "stress_assessment_source_round": 115,
+  "stress_rerun_this_round": false,
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261111cumulative116/candidate-cumulative116-20261111-r1.tar.gz",
+  "artifact_sha256": "b0ad2eb25f993df683ccbcda76f0d0533e469132eca22798c23bc766a14c128f",
+  "file_count": 76
+}
