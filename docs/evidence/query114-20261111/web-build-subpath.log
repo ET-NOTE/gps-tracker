@@ -1,0 +1,40 @@
+
+> gps-tracker-web@0.1.0 build
+> vite build --base=/gps-tracker/
+
+vite v5.4.21 building for production...
+transforming...
+✓ 289 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /work/gps-tracker-web/src/components/PrivacyDelivery.jsx is dynamically imported by /work/gps-tracker-web/src/App.jsx but also statically imported by /work/gps-tracker-web/src/components/PrivacyAccountPackage.jsx, /work/gps-tracker-web/src/components/PrivacyRequests.jsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                   5.45 kB │ gzip:   2.61 kB
+dist/assets/NanumGothic-Regular-xHXjSUfO.ttf  2,054.74 kB
+dist/assets/NanumGothic-Bold-DvrrFc7E.ttf     2,073.87 kB
+dist/assets/FleetDashboard-Cq4MBq6b.css           1.81 kB │ gzip:   0.65 kB
+dist/assets/CorporatePanel-DqcK_dsY.css          11.19 kB │ gzip:   2.45 kB
+dist/assets/index-D1lYxhGs.css                   74.14 kB │ gzip:  12.81 kB
+dist/assets/StatCard-yrvBCVDw.js                  2.06 kB │ gzip:   0.87 kB
+dist/assets/LegalPage-Ak13cI4-.js                 3.91 kB │ gzip:   2.82 kB
+dist/assets/PaymentResult-B4LS4bAu.js             4.42 kB │ gzip:   1.83 kB
+dist/assets/DeliveryPanel-DYuKHmUs.js             6.00 kB │ gzip:   2.49 kB
+dist/assets/BusinessPreferences-Og-SoBN2.js      10.34 kB │ gzip:   5.04 kB
+dist/assets/SharePage-BIBM-Q1X.js                12.13 kB │ gzip:   4.57 kB
+dist/assets/HandoffPage-BoV36QdH.js              13.91 kB │ gzip:   5.22 kB
+dist/assets/Auth-beV29PLQ.js                     16.11 kB │ gzip:   4.79 kB
+dist/assets/FleetDashboard-D8AjQ_iM.js           29.84 kB │ gzip:   9.64 kB
+dist/assets/DiagnosticPage-BpwFP1dR.js           31.35 kB │ gzip:  10.83 kB
+dist/assets/RentcarPanel-B66ph3Q_.js             54.41 kB │ gzip:  18.03 kB
+dist/assets/AdminDashboard-pXokjzf9.js           62.74 kB │ gzip:  16.41 kB
+dist/assets/CorporatePanel-CJWiyTN8.js          161.75 kB │ gzip:  49.75 kB
+dist/assets/vendor-DRBT1dSS.js                  214.54 kB │ gzip:  68.27 kB
+dist/assets/index-CSR5gyR5.js                   518.99 kB │ gzip: 164.49 kB
+dist/assets/pdf-engine-DjOoUrRi.js            1,221.27 kB │ gzip: 584.79 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.96s
