@@ -69,3 +69,7 @@ docs/evidence/query110-20261111/*.log whitespace=-blank-at-eof,-blank-at-eol
 # Query111 measurements and report captures preserve exact evidence bytes.
 docs/evidence/query111-20261111/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
 docs/evidence/query111-20261111/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Query112 raw measurements and captures preserve exact evidence bytes.
+docs/evidence/query112-20261111/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/query112-20261111/*.log whitespace=-blank-at-eof,-blank-at-eol

@@ -1,0 +1,48 @@
+{
+  "label": "final112",
+  "production_modified": false,
+  "queries": {
+    "location_history_points_between": [
+      {
+        "seconds": 8.297911556903273,
+        "rows": 283001,
+        "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+      },
+      {
+        "seconds": 8.502557051368058,
+        "rows": 283001,
+        "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+      },
+      {
+        "seconds": 8.602566121146083,
+        "rows": 283001,
+        "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+      }
+    ],
+    "location_speed_metrics_between": [
+      {
+        "seconds": 8.310236866120249,
+        "rows": 283001,
+        "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+      },
+      {
+        "seconds": 8.552061446011066,
+        "rows": 283001,
+        "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+      },
+      {
+        "seconds": 8.39011042471975,
+        "rows": 283001,
+        "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+      }
+    ]
+  },
+  "settings": {
+    "effective_cache_size": "284800",
+    "jit": "off",
+    "max_connections": "50",
+    "max_parallel_workers_per_gather": "3",
+    "shared_buffers": "94976",
+    "work_mem": "2532"
+  }
+}

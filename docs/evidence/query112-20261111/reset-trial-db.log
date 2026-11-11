@@ -1,0 +1,6 @@
+CLEANUP PASS: only fixed synthetic query112 objects removed
+96d9410fff0e8795163bc2c6b59e573dc70f307588f39dac6949b4816645512d
+gps-query112-data
+d63d0c7b6aed6a923fa6f5c323c639147c5bb1d38371e7d24f4f68f85287295d
+SETUP PASS
+APPLY PASS: failure rollback and projection OID/owner/ACL preserved

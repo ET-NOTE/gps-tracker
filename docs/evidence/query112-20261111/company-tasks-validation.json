@@ -1,0 +1,16 @@
+{
+  "integration_groups": 10,
+  "groups": [
+    "publication requires platform admin, identity, bounded scope, explicit disclosure and matching revisions",
+    "only company owner gets allowlisted task projection; requester, foreign owner and delegated scope cannot access",
+    "file types, signature, size, path, timestamp, result, attestation and report validation",
+    "concurrent submission is single immutable report, no assigned-admin replacement or completion bypass",
+    "only reviewing admin proof response enables attested decision; owner download and wrong hash do not",
+    "new revision needs new proof review; acceptance links exact report without source, SIM or whole-request mutation",
+    "revocation removes company access and completion state, retaining administrator evidence history",
+    "expired task cannot be viewed, submitted or accepted; administrator can revoke and preserve history",
+    "cancelled parent removes company access and decisions while retaining administrator audit",
+    "closed company cannot access reports; evidence is explicitly counted as a retention review, not anonymous or deleted"
+  ],
+  "api_sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+}

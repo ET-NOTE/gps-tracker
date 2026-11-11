@@ -1,0 +1,21 @@
+2026-11-11T13:33:44+09:00
+6
+               total        used        free      shared  buff/cache   available
+Mem:            2967        1027         196         739        1743        1013
+Swap:           3811         140        3671
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-root   45G   34G  8.9G  80% /
+NRestarts=0
+CPUQuotaPerSecUSec=infinity
+MemoryMax=infinity
+TasksMax=3463
+User=gps-api
+ActiveState=active
+effective_cache_size|284800|8kB
+jit|off|
+max_connections|50|
+max_parallel_workers_per_gather|3|
+shared_buffers|94967|8kB
+statement_timeout|0|ms
+superuser_reserved_connections|3|
+work_mem|2532|kB
