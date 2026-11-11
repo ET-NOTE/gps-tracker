@@ -33,14 +33,14 @@ def main():
     for b in blocks:
         if b.get('Id') in {'fail2ban.service','clamav-daemon.service','clamav-freshclam.service'}:
             lines.append(f"{b['Id']:<26} {b.get('LoadState'):<10} {b.get('ActiveState'):<10} {b.get('UnitFileState') or '-'}")
-    lines+=['ModSecurity loaded directives: '+(text('waf_directives') or 'NONE'),
+    lines+=['Host Nginx ModSecurity directives (separate WAF proxy not included): '+(text('waf_directives') or 'NONE'),
       f"Fail2ban sshd: {text('fail2ban_maxretry')} failures / {text('fail2ban_findtime')} seconds; ban {text('fail2ban_bantime')} seconds.",
       'Office exemption configured: '+str('221.159.164.177' in text('fail2ban_ignoreip')),
       '', '[ PUBLIC TLS ]  verified Python/OpenSSL connections to gps.serial.kr:443',
       f"Issuer: {issuer.get('organizationName')} / {issuer.get('commonName')}"]
     lines += [f"{x['mode']:<12}: {x['version']} | {x['cipher']} | certificate verified" for x in tls]
     lines+=['','[ SERVICE / RESOURCE CHECK ]',text('health'),text('memory').splitlines()[1],text('disk').splitlines()[-1],
-      '', 'Scope limits: Cafe24 panel not changed; ClamAV / ModSecurity not installed.',
+      '', 'Scope limits: Cafe24 panel not changed. For antivirus / WAF use show_security_terminal114.ps1.',
       'Legacy HTTP ingest on port 80 and office-only DB access on 5432 still exist.',
       'Other project ports remain open. This is NOT an all-requirements-passed report.',
       '='*105,'Saved: live-inventory.json / live-tls.json / terminal-output.txt']
