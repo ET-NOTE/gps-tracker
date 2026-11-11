@@ -1,7 +1,12 @@
 // Retry only rejected, read-only location requests. A failed write, an auth
 // throttle, a timeout or a partial/network response must never be replayed here.
-export const isLocationRead = (method, url) => method === 'GET' &&
-  /\/devices\/\d+\/locations(?:\/(?:page|aggregated))?$/.test(new URL(url, 'https://local.invalid').pathname);
+export const isLocationRead = (method, url) => {
+  if (method !== 'GET') return false;
+  const path = new URL(url, 'https://local.invalid').pathname;
+  return /\/devices\/\d+\/locations(?:\/(?:page|aggregated))?$/.test(path) ||
+    /\/corporate\/(?:devices|vehicles)\/\d+\/trips(?:\.csv)?$/.test(path) ||
+    /\/corporate\/(?:report\.xlsx|terminals|vehicle-stats|fleet\/trip-stats)$/.test(path);
+};
 
 export function retryAfterMs(value, now = Date.now()) {
   if (!value) return 0;

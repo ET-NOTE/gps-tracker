@@ -283,6 +283,15 @@ async function req(method, path, body, retry = true, options = {}) {
   }
 }
 
+// Downloads use the same bounded busy retry. Capture account/company scope once
+// so switching accounts during a wait cannot resume under the new identity.
+async function reportFetch(url) {
+  const scope = authScope(), fleet = fleetRequestScope(url);
+  return retryLocationRead(() => sessionFetch(url, {}, true, scope, fleet), {
+    method: 'GET', url, assertActive: () => { assertSession(scope); fleet.assert(); },
+  });
+}
+
 export const api = {
   adminNoticeQueue: () => req('GET','/admin/security/notice-queue'),
   adminSecurity: () => req('GET','/admin/security/status'),
@@ -805,7 +814,7 @@ export const api = {
     if (params.from) q.set('from', params.from);
     if (params.to)   q.set('to',   params.to);
     const qs = q.toString();
-    const res = await sessionFetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`);
+    const res = await reportFetch(`${BASE}/corporate/devices/${deviceId}/trips.csv${qs ? '?' + qs : ''}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || res.statusText);
@@ -954,7 +963,7 @@ export const api = {
     if (params.device_ids?.length) q.set('device_ids', params.device_ids.join(','));
     if (params.purposes?.length)   q.set('purposes',   params.purposes.join(','));
     if (params.departments?.length) q.set('departments', params.departments.join(','));
-    const res = await sessionFetch(`${BASE}/corporate/report.xlsx?${q.toString()}`);
+    const res = await reportFetch(`${BASE}/corporate/report.xlsx?${q.toString()}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || res.statusText);

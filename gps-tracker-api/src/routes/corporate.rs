@@ -260,6 +260,9 @@ async fn compute_trips_unprojected(
     merge_gap_min: i64,
 ) -> AppResult<Vec<Trip>> {
     // 1) wake/sleep_enter 페어링으로 trip 경계 산출 — user_id 격리
+    // Reports share admission, SQL deadlines and disconnect cancellation with
+    // map/history reads. Keep the expensive SQL on this one bounded connection.
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
     let events: Vec<(String, DateTime<Utc>, Option<serde_json::Value>)> = sqlx::query_as(
         r#"SELECT kind, occurred_at, data
              FROM gps_read_events
@@ -272,14 +275,15 @@ async fn compute_trips_unprojected(
     .bind(from)
     .bind(to)
     .bind(user_id)
-    .fetch_all(&state.db)
-    .await?;
+    .fetch_all(read.connection())
+    .await
+    .map_err(crate::services::location_read_budget::query_error)?;
 
     let mut trips = pair_trips(&events);
 
     // 2) sleep/wake 이벤트가 0건 → motion-based fallback
     if trips.is_empty() {
-        trips = motion_based_trips(&state.db, device_id, user_id, from, to).await?;
+        trips = motion_based_trips(read.connection(), device_id, user_id, from, to).await?;
     }
 
     // 2a) (2026-07-28) 인접 trip 병합 — hardware spurious sleep→wake 노이즈 정리.
@@ -291,11 +295,15 @@ async fn compute_trips_unprojected(
     }
 
     // 3) trip endpoints
-    let trip_rows = collect_trip_endpoints(&state.db, device_id, user_id, &trips, to).await?;
+    let trip_rows =
+        collect_trip_endpoints(read.connection(), device_id, user_id, &trips, to).await?;
 
     // 4) 거리 계산용 fixes
     let all_fixes: Vec<(DateTime<Utc>, f64, f64)> = sqlx::query_as(
-        r#"SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng FROM location_points_between($1,$4,$2,$3)
+        r#"WITH points AS MATERIALIZED (
+            SELECT device_id,user_id,recorded_at,lat,lng,fix,source
+            FROM location_points_between($1,$4,$2,$3)
+        ) SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng FROM points
             WHERE device_id = $1 AND user_id = $4 AND fix = TRUE
               AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
               AND recorded_at >= $2 AND recorded_at <= $3
@@ -305,8 +313,10 @@ async fn compute_trips_unprojected(
     .bind(from)
     .bind(to)
     .bind(user_id)
-    .fetch_all(&state.db)
-    .await?;
+    .fetch_all(read.connection())
+    .await
+    .map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
 
     // 5) batch reverse-geocode
     let mut coords_to_resolve: Vec<(f64, f64)> = Vec::new();
@@ -558,7 +568,7 @@ fn validate(stopped: DateTime<Utc>, wake_at: DateTime<Utc>, occurred_at: DateTim
 // >10분 fix 공백 = 운행 경계로 간주. 한 운행은 연속 fix 시퀀스.
 const MOTION_GAP_SEC: i64 = 10 * 60;
 async fn motion_based_trips(
-    db: &sqlx::PgPool,
+    db: &mut sqlx::PgConnection,
     device_id: i64,
     user_id: i64,
     from: DateTime<Utc>,
@@ -575,7 +585,8 @@ async fn motion_based_trips(
     .bind(to)
     .bind(user_id)
     .fetch_all(db)
-    .await?;
+    .await
+    .map_err(crate::services::location_read_budget::query_error)?;
     if times.is_empty() {
         return Ok(vec![]);
     }
@@ -606,7 +617,7 @@ struct TripEndpoint {
 }
 
 async fn collect_trip_endpoints(
-    db: &sqlx::PgPool,
+    db: &mut sqlx::PgConnection,
     device_id: i64,
     user_id: i64,
     trips: &[(DateTime<Utc>, Option<DateTime<Utc>>)],
@@ -656,7 +667,8 @@ async fn collect_trip_endpoints(
     .bind(&ends)
     .bind(user_id)
     .fetch_all(db)
-    .await?;
+    .await
+    .map_err(crate::services::location_read_budget::query_error)?;
 
     let mut out = vec![TripEndpoint::default(); trips.len()];
     for (idx, sla, sln, ela, eln) in rows {

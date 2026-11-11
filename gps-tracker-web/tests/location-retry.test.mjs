@@ -1,8 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { retryLocationRead, retryAfterMs, abortableDelay, retryQuery } from '../src/lib/locationRetry.js';
+import { isLocationRead, retryLocationRead, retryAfterMs, abortableDelay, retryQuery } from '../src/lib/locationRetry.js';
 const url = '/api/v1/devices/7/locations/page?limit=20';
 const busy = (after = '2', code = 'location_read_busy') => Response.json({ code }, { status: 429, headers: { 'Retry-After': after } });
+
+test('business reads share overload retry; mutations and other downloads do not', async () => {
+  for (const path of ['/corporate/devices/7/trips', '/corporate/vehicles/8/trips',
+    '/corporate/devices/7/trips.csv?from=2026-10-01', '/corporate/report.xlsx?month=2026-10',
+    '/corporate/terminals', '/corporate/vehicle-stats', '/corporate/fleet/trip-stats']) {
+    let calls = 0;
+    const result = await retryLocationRead(async () => ++calls === 1 ? busy() : new Response('report'),
+      { method: 'GET', url: path, wait: async () => {} });
+    assert.equal(calls, 2); assert.equal(await result.text(), 'report');
+    assert.equal(isLocationRead('POST', path), false);
+  }
+  for (const path of ['/corporate/devices/7/trips/annotation', '/corporate/report.xlsx/other',
+    '/privacy/requests/7/download', '/corporate/devices/7/trips.csv/delete']) {
+    assert.equal(isLocationRead('GET', path), false);
+  }
+});
 
 test('location overload recovers with bounded jitter and respects Retry-After', async () => {
   let attempts = 0; const waits = [];

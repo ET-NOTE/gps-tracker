@@ -143,6 +143,34 @@ test('deferred document download reads rotated token but rejects a different acc
   f.queryClient.clear();
 });
 
+test('report busy retry preserves company and stops after company/account changes', async () => {
+  for (const change of ['none', 'company', 'account']) {
+    const calls = [];
+    const f = await fixture(async (url, options) => {
+      calls.push({ url, owner: options.headers.get('X-Fleet-Owner') });
+      return calls.length === 1
+        ? Response.json({ code: 'location_read_busy' }, { status: 429, headers: { 'Retry-After': '2' } })
+        : new Response('report');
+    });
+    f.api.setTokens(token('A'), 'refresh-A');
+    const fleet = await f.module('lib/fleetSession.js'); fleet.setFleetOwner(12);
+    f.context.setTimeout = fn => {
+      if (change === 'company') fleet.setFleetOwner(13);
+      if (change === 'account') f.api.clearTokens();
+      return setTimeout(fn, 0);
+    };
+    f.context.clearTimeout = clearTimeout;
+    const pending = change === 'company' ? f.api.api.reportXlsx() : f.api.api.tripsCsv(1);
+    if (change === 'none') {
+      assert.equal(await (await pending).blob.text(), 'report');
+      assert.equal(calls.length, 2); assert.ok(calls.every(c => c.owner === '12'));
+    } else {
+      await assert.rejects(pending, { name: 'AbortError' }); assert.equal(calls.length, 1);
+    }
+    f.queryClient.clear();
+  }
+});
+
 test('a late file body is blocked after account switch; failed writes are not retried', async () => {
   const body = deferred(), started = deferred();
   const f = await fixture(async () => {
