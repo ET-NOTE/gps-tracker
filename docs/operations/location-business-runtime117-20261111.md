@@ -10,7 +10,7 @@
 
 - 23:12:38~23:15:38 KST, 5초 간격 36개 표본. 캐시 비우기나 인공 부하는 없다. SQL 본문·계정·좌표는 수집하지 않았다.
 - CPU6, RAM 약2,967MiB, 표본의 사용 가능 메모리 951~1,042MiB. swap은 사용 중이다. 마지막 디스크 여유 9,134,039,040바이트(약8.51GiB), 사용률80%.
-- PostgreSQL14.18, `max_connections=50`, `shared_buffers=949678kB`, `work_mem=2532kB`, `temp_file_limit=-1`, `temp_tablespaces` 비어 있음. 전용 tablespace나 GPS 역할별 임시 파일 제한은 관측되지 않았다.
+- PostgreSQL14.18, `max_connections=50`, `shared_buffers=759736kB`(약741.93MiB), `work_mem=2532kB`, `temp_file_limit=-1`, `temp_tablespaces` 비어 있음. 전용 tablespace나 GPS 역할별 임시 파일 제한은 관측되지 않았다. **118차 정정:** 원래 관측기의 `setting=94967`과 `unit=8kB`를 붙인 `949678kB` 문자열을 용량으로 잘못 해석했다. 원본 증빙은 보존하며, 아래 시험 설정과 운영 설정이 같다는 설명을 정정한다.
 - GPS DB 임시 파일 누적 카운터가 42,875,092바이트·7개 증가했다. 이는 **누적 생성량**이고 동시 점유나 물리 디스크 쓰기량이 아니다. 운영의 `track_io_timing=off`이므로 쿼리별 실제 I/O 지연을 이 자료로 산정하지 않는다.
 - 호스트 I/O pressure `full avg10`은 2.66~16.46%였다. 공유 자원 경합의 징후이며 특정 프로젝트를 원인으로 확정하지 않는다.
 - 23:41:36 KST의 DB 클라이언트 연결은 총20개 = GPS5개(관측 연결 포함) + 다른 DB15개였다. 후보 단일 API의 설정 상한은 일반10 + 권리 처리 잠금16 + 취소2 =28이다. 단순 합계43/50이며 다른 서비스의 최대치·정비 연결·예약 연결을 반영한 안전 예산은 아직 없다. API 증설은 계속 보류한다.
@@ -43,7 +43,7 @@ PostgreSQL은 역할 기본 설정에 지정한 tablespace가 없거나 접근�
 ## 3. 합성 검증 환경
 
 - 내부 전용 Docker 네트워크, 외부 포트 없음. 가상 소유자2명, SIM8개, 31일·원본119,040행·유효 위치714,240점. 개인4대와 정보주체 매핑된 법인4대.
-- API1개: 2CPU/550MiB. DB: 2CPU/1,500MiB, 운영과 같은 shared_buffers/work_mem, 최대50연결. DB 장치 제한은 읽기·쓰기 각각8MiB/s·200IOPS이며 cgroup 값으로 확인했다. 빌드 호스트 캐시를 유지한 시험이다.
+- API1개: 2CPU/550MiB. DB: 2CPU/1,500MiB, shared_buffers 약927.41MiB(운영 약741.93MiB보다 큼), work_mem2532kB, 최대50연결. DB 장치 제한은 읽기·쓰기 각각8MiB/s·200IOPS이며 cgroup 값으로 확인했다. 빌드 호스트 캐시를 유지한 시험이다. **118차 정정:** 관측 단위 오독이 시험 설정에도 반영되었다. 수치는 당시 조건의 결과로만 보존하고 실제 운영 조건의 성능 인수로 사용하지 않는다. 재실행용 도구는 실제 바이트 값으로 수정했다.
 - 최종 임시 경로는 전용256MiB tmpfs와 기본 임시 경로64MiB tmpfs 두 곳. `nosuid,nodev,noexec`, PostgreSQL 소유0700. 역할의 `temp_file_limit=128MB`는 **프로세스별 한도**다.
 - DB와 API에 swap 상한0·core limit0을 적용하고 실제 `memory.swap.max/current=0`을 확인했다. tmpfs만 사용하면 swap으로 내려갈 수 있으므로 tmpfs만으로 보호를 주장하지 않는다. [systemd 메모리·swap 제어](https://www.freedesktop.org/software/systemd/man/250/systemd.resource-control.html).
 - core limit0은 한도 설정 확인까지만 완료했다. 파이프 처리기로 전달되는 코어 덤프는 이 한도를 우회할 수 있으므로, **충돌 시 덤프가 남지 않는다는 검증은 아니다.** 운영의 apport 처리기까지 포함한 실제 충돌 검증은118차의 별도 조건이다. [Linux core 동작](https://man7.org/linux/man-pages/man5/core.5.html).

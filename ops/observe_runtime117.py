@@ -21,7 +21,9 @@ def observe():
     result['storage'] = json.loads(command('lsblk', '-J', '-o', 'NAME,TYPE,SIZE,FSTYPE,MOUNTPOINTS'))
     result['swap'] = command('cat', '/proc/swaps')
     result['disk'] = command('df', '-B1', '/')
-    result['db_settings'] = query("SELECT name||'='||setting||COALESCE(unit,'') FROM pg_settings WHERE name IN ('server_version','max_connections','shared_buffers','work_mem','temp_tablespaces','temp_file_limit','track_io_timing') ORDER BY name")
+    # Keep unit separate: setting=94967, unit=8kB means 94967*8192 bytes,
+    # not the misleading concatenation '949678kB'. Historical evidence is retained.
+    result['db_settings'] = query("SELECT json_build_object('name',name,'setting',setting,'unit',unit)::text FROM pg_settings WHERE name IN ('server_version','max_connections','shared_buffers','work_mem','temp_tablespaces','temp_file_limit','track_io_timing') ORDER BY name")
     result['tablespaces'] = query("SELECT spcname||'|'||pg_tablespace_location(oid) FROM pg_tablespace ORDER BY 1")
     result['role_settings'] = query("SELECT r.rolname||'|'||s.setconfig::text FROM pg_db_role_setting s JOIN pg_roles r ON r.oid=s.setrole WHERE r.rolname LIKE 'gps%' ORDER BY 1")
     result['schema'] = query('SELECT max(version) FROM _sqlx_migrations WHERE success')

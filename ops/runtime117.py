@@ -55,7 +55,7 @@ def recreate(b, *, limited, protected):
           '--cpus=2','--memory=1500m','--memory-swap=1500m','--ulimit=core=0','--pids-limit=256',
           *extra, '-v', b.VOL+':/var/lib/postgresql/data',
           '-e','POSTGRES_PASSWORD=runtime117-test-only','-e','POSTGRES_DB=gps_runtime117_test',
-          db['Config']['Image'],*[x.replace('shared_buffers=742MB','shared_buffers=949678kB') for x in db['Config']['Cmd']],stdout=subprocess.DEVNULL)
+          db['Config']['Image'],*[x.replace('shared_buffers=742MB','shared_buffers=759736kB') for x in db['Config']['Cmd']],stdout=subprocess.DEVNULL)
     for _ in range(60):
         try:
             if b.sql('SELECT 1') == [(1,)]: break
