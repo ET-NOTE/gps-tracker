@@ -36,7 +36,9 @@ def prepare():
     for p in (JOB / 'src/gps-tracker-api').rglob('*'):
         if p.is_file():
             prior = LATEST / 'src' / p.relative_to(JOB / 'src')
-            assert prior.is_file() and p.read_bytes().replace(b'\r\n', b'\n') == prior.read_bytes().replace(b'\r\n', b'\n'), str(p)
+            # SQLx and include_bytes! embed bytes, not normalized text. Reusing
+            # a binary after CRLF/LF normalization can reject an existing DB.
+            assert prior.is_file() and p.read_bytes() == prior.read_bytes(), str(p)
             checked += 1
     for name in ('fixtures', 'python-deps'):
         (JOB / name).symlink_to((OLD / name).resolve(), target_is_directory=True)

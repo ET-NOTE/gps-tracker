@@ -1,0 +1,16 @@
+{
+  "stale_full_backup_bytes": 129482696,
+  "checkpoint_hash_checked": true,
+  "old_erased_rows_removed": true,
+  "old_consent_not_revived": true,
+  "pause_reapplied": true,
+  "accepted_notice_not_resent": true,
+  "sim_identity_preserved": true,
+  "old_resend_denied": true,
+  "replay": {
+    "replayed_accounts": 1,
+    "paused_controls_replayed": true,
+    "external_copies_verified": false
+  },
+  "external_checkpoint_custody_verified": false
+}

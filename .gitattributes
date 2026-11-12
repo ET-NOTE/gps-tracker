@@ -85,3 +85,6 @@ docs/evidence/cumulative116-20261111/* -text whitespace=-blank-at-eof,-blank-at-
 
 # Runtime118 original inventories, execution logs and hashes are byte-identical.
 docs/evidence/runtime118-20261112/* -text whitespace=-blank-at-eof,-blank-at-eol
+
+# Runtime119 original successes and failures retain exact evidence bytes.
+docs/evidence/runtime119-20261112/* -text whitespace=-blank-at-eof,-blank-at-eol

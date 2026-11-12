@@ -1,0 +1,4 @@
+GPS119 protection {"profile": "api", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3231"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3230"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+[2m2026-11-12T08:05:39.285677Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-12T08:05:39.290069Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_sqlx_migrations" already exists, skipping
+[2m2026-11-12T08:05:39.311939Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m extension "pgcrypto" already exists, skipping

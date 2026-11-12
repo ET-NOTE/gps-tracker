@@ -1,0 +1,101 @@
+{
+  "cases": [
+    {
+      "case": "encrypted_production_requires_temp_setting",
+      "passed": true
+    },
+    {
+      "case": "revoked_tablespace_blocks_reused_pool",
+      "passed": true,
+      "http": 503,
+      "seconds": 5.003383739851415,
+      "new_events": 0
+    },
+    {
+      "case": "missing_tablespace_blocks_existing_pool",
+      "passed": true,
+      "http": 503,
+      "seconds": 5.004584006033838
+    },
+    {
+      "case": "prepare_lock_timeout_fail_closed",
+      "passed": true,
+      "http": 503,
+      "seconds": 5.002688956912607
+    },
+    {
+      "case": "finish_timeout_fail_closed",
+      "passed": true,
+      "http": 503,
+      "seconds": 5.173815817106515,
+      "completed_delta": 0
+    },
+    {
+      "case": "runtime_tablespace",
+      "passed": true
+    },
+    {
+      "case": "external_sort_uses_disk_spill",
+      "passed": true
+    },
+    {
+      "case": "spill_success",
+      "passed": true
+    },
+    {
+      "case": "per_process_temp_limit",
+      "passed": true,
+      "sqlstate": "53400"
+    },
+    {
+      "case": "full_tmpfs_no_disk_fallback",
+      "passed": true,
+      "sqlstate": "53100"
+    },
+    {
+      "case": "spill_recovery",
+      "passed": true
+    },
+    {
+      "case": "fallback_mount_is_tmpfs",
+      "passed": true
+    },
+    {
+      "case": "missing_directory_uses_protected_fallback",
+      "passed": true
+    },
+    {
+      "case": "full_fallback_no_ordinary_disk",
+      "passed": true,
+      "sqlstate": "53100"
+    },
+    {
+      "case": "directory_restored",
+      "passed": true
+    },
+    {
+      "case": "gps-runtime119-db_no_swap",
+      "passed": true,
+      "bytes": 0
+    },
+    {
+      "case": "gps-runtime119-api_no_swap",
+      "passed": true,
+      "bytes": 0
+    },
+    {
+      "case": "prepare_error_phase_observed",
+      "passed": true
+    },
+    {
+      "case": "finish_error_phase_observed",
+      "passed": true
+    },
+    {
+      "case": "diagnostics_exclude_identity_coordinates",
+      "passed": true
+    }
+  ],
+  "all_passed": true,
+  "production_modified": false
+}

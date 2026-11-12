@@ -1,0 +1,50 @@
+[
+  {
+    "image": "gps-runtime119:20261112",
+    "file": "runtime119_entry.py",
+    "actual_sha256": "d10ba1640b7956a3d207ba154ddcc935891078b566fac867a1210614f7d82966",
+    "source_sha256": "c6e132a8477e1014bee916b743048d1631d92e60dd3ad268f62ca119e81159df",
+    "same_after_newline_normalization": false,
+    "text_diff": "--- \n+++ \n@@ -13,7 +13,7 @@\n \n def main():\n     profile = os.environ.get('GPS_RUNTIME_PROFILE', 'api')\n-    require(profile in ('api', 'controller', 'db-memory', 'db-recovery', 'db-disk'), 'unknown protected profile')\n+    require(profile in ('api', 'controller', 'proxy', 'db-memory', 'db-recovery', 'db-disk'), 'unknown protected profile')\n     result = verify('/etc/gps119/' + profile + '.json')\n     # No credentials, arguments or document bytes in evidence.\n     print('GPS119 protection ' + json.dumps(dict(profile=profile, **result)), file=sys.stderr, flush=True)\n"
+  },
+  {
+    "image": "gps-runtime119:20261112",
+    "file": "runtime119_profiles.py",
+    "actual_sha256": "830b8226829f50bd05fe16be086a45848e041f46df427c4d7ad51e77e5847565",
+    "source_sha256": "46dec0dc3e1e53db288927591861332408345749eb8b0d1f909b4837542a46de",
+    "same_after_newline_normalization": false,
+    "text_diff": "--- \n+++ \n@@ -5,7 +5,7 @@\n \n root = Path('/etc/gps119'); root.mkdir()\n lib = '/usr/local/lib/gps-nodump.so'\n-for name, memory in [('api', 550), ('controller', 1024), ('db-memory', 1500), ('db-recovery', 4096), ('db-disk', 1500)]:\n+for name, memory in [('api', 550), ('controller', 1024), ('proxy', 64), ('db-memory', 1500), ('db-recovery', 4096), ('db-disk', 1500)]:\n     mounts = [{'path': '/tmp', 'max_bytes': 64*1024**2}, {'path': '/dev/shm', 'max_bytes': 64*1024**2}]\n     if name in ('db-memory', 'db-recovery'):\n         mounts.append({'path': '/var/lib/postgresql/data', 'max_bytes': 1600*1024**2})\n"
+  },
+  {
+    "image": "gps-runtime119-db:20261112",
+    "file": "runtime119_entry.py",
+    "actual_sha256": "d10ba1640b7956a3d207ba154ddcc935891078b566fac867a1210614f7d82966",
+    "source_sha256": "c6e132a8477e1014bee916b743048d1631d92e60dd3ad268f62ca119e81159df",
+    "same_after_newline_normalization": false,
+    "text_diff": "--- \n+++ \n@@ -13,7 +13,7 @@\n \n def main():\n     profile = os.environ.get('GPS_RUNTIME_PROFILE', 'api')\n-    require(profile in ('api', 'controller', 'db-memory', 'db-recovery', 'db-disk'), 'unknown protected profile')\n+    require(profile in ('api', 'controller', 'proxy', 'db-memory', 'db-recovery', 'db-disk'), 'unknown protected profile')\n     result = verify('/etc/gps119/' + profile + '.json')\n     # No credentials, arguments or document bytes in evidence.\n     print('GPS119 protection ' + json.dumps(dict(profile=profile, **result)), file=sys.stderr, flush=True)\n"
+  },
+  {
+    "image": "gps-runtime119-db:20261112",
+    "file": "runtime119_profiles.py",
+    "actual_sha256": "830b8226829f50bd05fe16be086a45848e041f46df427c4d7ad51e77e5847565",
+    "source_sha256": "46dec0dc3e1e53db288927591861332408345749eb8b0d1f909b4837542a46de",
+    "same_after_newline_normalization": false,
+    "text_diff": "--- \n+++ \n@@ -5,7 +5,7 @@\n \n root = Path('/etc/gps119'); root.mkdir()\n lib = '/usr/local/lib/gps-nodump.so'\n-for name, memory in [('api', 550), ('controller', 1024), ('db-memory', 1500), ('db-recovery', 4096), ('db-disk', 1500)]:\n+for name, memory in [('api', 550), ('controller', 1024), ('proxy', 64), ('db-memory', 1500), ('db-recovery', 4096), ('db-disk', 1500)]:\n     mounts = [{'path': '/tmp', 'max_bytes': 64*1024**2}, {'path': '/dev/shm', 'max_bytes': 64*1024**2}]\n     if name in ('db-memory', 'db-recovery'):\n         mounts.append({'path': '/var/lib/postgresql/data', 'max_bytes': 1600*1024**2})\n"
+  },
+  {
+    "image": "gps-runtime119-proxy:20261112",
+    "file": "runtime119_entry.py",
+    "actual_sha256": "c6e132a8477e1014bee916b743048d1631d92e60dd3ad268f62ca119e81159df",
+    "source_sha256": "c6e132a8477e1014bee916b743048d1631d92e60dd3ad268f62ca119e81159df",
+    "same_after_newline_normalization": true,
+    "text_diff": ""
+  },
+  {
+    "image": "gps-runtime119-proxy:20261112",
+    "file": "runtime119_profiles.py",
+    "actual_sha256": "46dec0dc3e1e53db288927591861332408345749eb8b0d1f909b4837542a46de",
+    "source_sha256": "46dec0dc3e1e53db288927591861332408345749eb8b0d1f909b4837542a46de",
+    "same_after_newline_normalization": true,
+    "text_diff": ""
+  }
+]

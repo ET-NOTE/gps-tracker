@@ -60,6 +60,15 @@ fn limit(resource: libc::c_int, value: u64) -> Result<(), ()> {
 /// Irreversible. Returns an error when any part could not be applied; the caller must then
 /// refuse to process input.
 pub fn enter(cpu_seconds: u64) -> Result<(), ()> {
+    // RLIMIT_CORE alone does not prevent a piped core collector. This static
+    // executable cannot rely on LD_PRELOAD, and the API clears its environment.
+    // Disable dumping in this process before reading document bytes.
+    // SAFETY: prctl with scalar arguments and no pointers.
+    if unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 0, 0, 0, 0) } != 0
+        || unsafe { libc::prctl(libc::PR_GET_DUMPABLE, 0, 0, 0, 0) } != 0
+    {
+        return Err(());
+    }
     limit(libc::RLIMIT_AS as _, MEMORY_BYTES)?;
     limit(libc::RLIMIT_CPU as _, cpu_seconds)?;
     limit(libc::RLIMIT_FSIZE as _, 0)?;
@@ -103,6 +112,10 @@ fn start_process() {
     // SAFETY: plain system call; expected to end the process.
     unsafe { libc::fork() };
 }
+fn enable_dumping() {
+    // SAFETY: scalar system call; the installed filter must reject it.
+    unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 1, 0, 0, 0) };
+}
 fn too_much_memory() {
     // SAFETY: anonymous mapping request with valid arguments; only the result is inspected.
     let mapped = unsafe {
@@ -133,6 +146,7 @@ const PROBES: &[Probe] = &[
     ("open_socket", open_socket, &[libc::SIGSYS]),
     ("start_program", start_program, &[libc::SIGSYS]),
     ("start_process", start_process, &[libc::SIGSYS]),
+    ("enable_dumping", enable_dumping, &[libc::SIGSYS]),
     ("too_much_memory", too_much_memory, &[]),
     (
         "too_much_cpu",
@@ -173,9 +187,11 @@ pub fn selftest(render: fn() -> bool) -> i32 {
         });
         let (blocked, how) = match status {
             Some(status)
-                if libc::WIFSIGNALED(status) && signals.contains(&libc::WTERMSIG(status)) =>
+                if libc::WIFSIGNALED(status)
+                    && signals.contains(&libc::WTERMSIG(status))
+                    && !libc::WCOREDUMP(status) =>
             {
-                (true, format!("signal {}", libc::WTERMSIG(status)))
+                (true, format!("signal {}; no core", libc::WTERMSIG(status)))
             }
             Some(status) if libc::WIFEXITED(status) && libc::WEXITSTATUS(status) == REFUSED => {
                 (true, "refused".to_string())

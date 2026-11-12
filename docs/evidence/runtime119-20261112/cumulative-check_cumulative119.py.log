@@ -1,0 +1,32 @@
+GPS119 protection {"profile": "controller", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3528"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3527"}], "dumpable": 0, "swap_max": 0, "memory_max": 1073741824}
+PASS 22-integration
+PASS reset-before22b
+PASS 22b-integration
+PASS reset-before22d
+PASS 22d-integration
+PASS reset-before-business
+PASS business-regressions
+PASS stop-before-recovery
+GPS119 protection {"profile": "controller", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3511"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3510"}], "dumpable": 0, "swap_max": 0, "memory_max": 1073741824}
+PASS different maintenance/API file owners survive encrypted replacement
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   hypertable
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   chunk
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   continuous_agg
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: NOTICE:  hypertable data are in the chunks, no data will be copied
+DETAIL:  Data for hypertables are stored in the chunks of a hypertable so COPY TO of a hypertable will not copy any data.
+HINT:  Use "COPY (SELECT * FROM <hypertable>) TO ..." to copy all data in hypertable, or copy each chunk individually.
+pg_dump: NOTICE:  hypertable data are in the chunks, no data will be copied
+DETAIL:  Data for hypertables are stored in the chunks of a hypertable so COPY TO of a hypertable will not copy any data.
+HINT:  Use "COPY (SELECT * FROM <hypertable>) TO ..." to copy all data in hypertable, or copy each chunk individually.
+NOTICE:  extension "timescaledb" already exists, skipping
+PASS stale full encrypted restore plus latest checkpoint before any API is started
+PASS mapping-history workload

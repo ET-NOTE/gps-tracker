@@ -1,0 +1,12 @@
+GPS119 protection {"profile": "controller", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3427"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3426"}], "dumpable": 0, "swap_max": 0, "memory_max": 1073741824}
+Error response from daemon: No such container: gps-provision22-api-20261112cumulative119
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261112cumulative119/rehearse_release119.py", line 155, in <module>
+    verify(new)
+  File "/home/etcom-hub/build/gps-provision22-20261112cumulative119/rehearse_release119.py", line 108, in verify
+    assert subprocess.check_output(['docker', 'exec', API, 'sha256sum', '/api']).decode().split()[0] == digest(path / 'gps-tracker-api')
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['docker', 'exec', 'gps-provision22-api-20261112cumulative119', 'sha256sum', '/api']' returned non-zero exit status 1.

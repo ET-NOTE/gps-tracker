@@ -1,0 +1,297 @@
+{
+  "utc": "2026-11-12T08:27:32.663640+00:00",
+  "production_modified": false,
+  "containers": {
+    "gps-runtime119-proxy": {
+      "image_id": "sha256:9c1644416dbcd7c928ccfb19d79e1ecce3b9d4fbf722c55db25b1e2c9e29d900",
+      "state": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "StartedAt": "2026-11-12T08:20:17.330911318Z"
+      },
+      "restart_count": 0,
+      "limits": {
+        "Memory": 67108864,
+        "MemorySwap": 67108864,
+        "NanoCpus": 250000000,
+        "Ulimits": [
+          {
+            "Name": "core",
+            "Hard": 0,
+            "Soft": 0
+          }
+        ],
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,nodev,size=64m"
+        }
+      },
+      "cgroup": {
+        "memory.max": "67108864",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "io.max": ""
+      },
+      "exec_dumpable": 0,
+      "guard_files": "c6e132a8477e1014bee916b743048d1631d92e60dd3ad268f62ca119e81159df  /usr/local/lib/runtime119_entry.py\n46dec0dc3e1e53db288927591861332408345749eb8b0d1f909b4837542a46de  /usr/local/lib/runtime119_profiles.py\n2de6e3a588845ff5eee35373ecab2abbceb149a6c13d65b7c3ff4398356570bd  /usr/local/lib/gps-nodump.so"
+    },
+    "gps-runtime119-api": {
+      "image_id": "sha256:c9eb4bf48c9b2470b7a8eb58350a565cb159e12da1508f55f2c0cda5f07425c0",
+      "state": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "StartedAt": "2026-11-12T08:20:15.805899399Z"
+      },
+      "restart_count": 0,
+      "limits": {
+        "Memory": 576716800,
+        "MemorySwap": 576716800,
+        "NanoCpus": 2000000000,
+        "Ulimits": [
+          {
+            "Name": "core",
+            "Hard": 0,
+            "Soft": 0
+          }
+        ],
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,nodev,size=64m"
+        }
+      },
+      "cgroup": {
+        "memory.max": "576716800",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "io.max": ""
+      },
+      "exec_dumpable": 0,
+      "guard_files": "d10ba1640b7956a3d207ba154ddcc935891078b566fac867a1210614f7d82966  /usr/local/lib/runtime119_entry.py\n830b8226829f50bd05fe16be086a45848e041f46df427c4d7ad51e77e5847565  /usr/local/lib/runtime119_profiles.py\n4576c005efe147b8f085d67e256b99b16155d44da23f865db5df81c185d4aa74  /usr/local/lib/gps-nodump.so"
+    },
+    "gps-provision22-api-20261112cumulative119": {
+      "image_id": "sha256:c9eb4bf48c9b2470b7a8eb58350a565cb159e12da1508f55f2c0cda5f07425c0",
+      "state": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "StartedAt": "2026-11-12T08:20:18.191854977Z"
+      },
+      "restart_count": 0,
+      "limits": {
+        "Memory": 576716800,
+        "MemorySwap": 576716800,
+        "NanoCpus": 0,
+        "Ulimits": [
+          {
+            "Name": "core",
+            "Hard": 0,
+            "Soft": 0
+          }
+        ],
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,nodev,size=64m"
+        }
+      },
+      "cgroup": {
+        "memory.max": "576716800",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "io.max": ""
+      },
+      "exec_dumpable": 0,
+      "guard_files": "d10ba1640b7956a3d207ba154ddcc935891078b566fac867a1210614f7d82966  /usr/local/lib/runtime119_entry.py\n830b8226829f50bd05fe16be086a45848e041f46df427c4d7ad51e77e5847565  /usr/local/lib/runtime119_profiles.py\n4576c005efe147b8f085d67e256b99b16155d44da23f865db5df81c185d4aa74  /usr/local/lib/gps-nodump.so"
+    },
+    "gps-runtime119-pdf-host": {
+      "image_id": "sha256:e89bdd5f6dd5112c3d15fe720d9ab9cb84fb6c70b6776ea36af26a52ee318df3",
+      "state": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "StartedAt": "2026-11-12T08:12:46.813146263Z"
+      },
+      "restart_count": 0,
+      "limits": {
+        "Memory": 1153433600,
+        "MemorySwap": 1153433600,
+        "NanoCpus": 0,
+        "Ulimits": [
+          {
+            "Name": "core",
+            "Hard": 0,
+            "Soft": 0
+          }
+        ],
+        "Tmpfs": {
+          "/run": "",
+          "/run/lock": "",
+          "/tmp": ""
+        }
+      },
+      "cgroup": {
+        "memory.max": "1153433600",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "io.max": ""
+      }
+    },
+    "gps-runtime119-db": {
+      "image_id": "sha256:a406259db573e6637bea4f7eb07d85462936d0330b23d0803de93898151720ba",
+      "state": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "StartedAt": "2026-11-12T08:04:46.987597854Z"
+      },
+      "restart_count": 0,
+      "limits": {
+        "Memory": 1572864000,
+        "MemorySwap": 1572864000,
+        "NanoCpus": 2000000000,
+        "Ulimits": [
+          {
+            "Name": "core",
+            "Hard": 0,
+            "Soft": 0
+          }
+        ],
+        "Tmpfs": {
+          "/gps-temp": "rw,noexec,nosuid,nodev,size=256m,mode=1777",
+          "/tmp": "rw,noexec,nosuid,nodev,size=64m",
+          "/var/lib/postgresql/data/base/pgsql_tmp": "rw,noexec,nosuid,nodev,size=64m,mode=1777"
+        }
+      },
+      "cgroup": {
+        "memory.max": "1572864000",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200"
+      },
+      "exec_dumpable": 0,
+      "guard_files": "d10ba1640b7956a3d207ba154ddcc935891078b566fac867a1210614f7d82966  /usr/local/lib/runtime119_entry.py\n830b8226829f50bd05fe16be086a45848e041f46df427c4d7ad51e77e5847565  /usr/local/lib/runtime119_profiles.py\n2e4fdfd16601cabc6eb8ccb83e2def1fdbb200865e11f55a52ce1a1f1cd2fe58  /usr/local/lib/gps-nodump.so"
+    },
+    "gps-provision22-db-20261112cumulative119": {
+      "image_id": "sha256:a406259db573e6637bea4f7eb07d85462936d0330b23d0803de93898151720ba",
+      "state": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "StartedAt": "2026-11-12T08:04:38.459453719Z"
+      },
+      "restart_count": 0,
+      "limits": {
+        "Memory": 4294967296,
+        "MemorySwap": 4294967296,
+        "NanoCpus": 2000000000,
+        "Ulimits": [
+          {
+            "Name": "core",
+            "Hard": 0,
+            "Soft": 0
+          }
+        ],
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,nodev,size=64m",
+          "/var/lib/postgresql/data": "rw,noexec,nosuid,nodev,size=1600m"
+        }
+      },
+      "cgroup": {
+        "memory.max": "4294967296",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "io.max": ""
+      },
+      "exec_dumpable": 0,
+      "guard_files": "d10ba1640b7956a3d207ba154ddcc935891078b566fac867a1210614f7d82966  /usr/local/lib/runtime119_entry.py\n830b8226829f50bd05fe16be086a45848e041f46df427c4d7ad51e77e5847565  /usr/local/lib/runtime119_profiles.py\n2e4fdfd16601cabc6eb8ccb83e2def1fdbb200865e11f55a52ce1a1f1cd2fe58  /usr/local/lib/gps-nodump.so"
+    }
+  },
+  "databases": {
+    "gps-provision22-db-20261112cumulative119": {
+      "schema": 112,
+      "records": 130020,
+      "plaintext_rows": 0,
+      "encrypted_rows": 130020,
+      "pending_bounds": 0,
+      "active_reads": 0,
+      "idle_transactions": 0,
+      "settings": [
+        {
+          "name": "jit",
+          "setting": "off",
+          "unit": null
+        },
+        {
+          "name": "max_connections",
+          "setting": "50",
+          "unit": null
+        },
+        {
+          "name": "shared_buffers",
+          "setting": "131072",
+          "unit": "8kB"
+        },
+        {
+          "name": "temp_file_limit",
+          "setting": "-1",
+          "unit": "kB"
+        },
+        {
+          "name": "temp_tablespaces",
+          "setting": "",
+          "unit": null
+        },
+        {
+          "name": "work_mem",
+          "setting": "10485",
+          "unit": "kB"
+        }
+      ]
+    },
+    "gps-runtime119-db": {
+      "schema": 112,
+      "records": 119329,
+      "plaintext_rows": 0,
+      "encrypted_rows": 119329,
+      "pending_bounds": 0,
+      "active_reads": 0,
+      "idle_transactions": 0,
+      "settings": [
+        {
+          "name": "jit",
+          "setting": "off",
+          "unit": null
+        },
+        {
+          "name": "max_connections",
+          "setting": "50",
+          "unit": null
+        },
+        {
+          "name": "shared_buffers",
+          "setting": "94967",
+          "unit": "8kB"
+        },
+        {
+          "name": "temp_file_limit",
+          "setting": "-1",
+          "unit": "kB"
+        },
+        {
+          "name": "temp_tablespaces",
+          "setting": "",
+          "unit": null
+        },
+        {
+          "name": "work_mem",
+          "setting": "2532",
+          "unit": "kB"
+        }
+      ]
+    }
+  }
+}
