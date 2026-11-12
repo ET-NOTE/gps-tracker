@@ -1,0 +1,15 @@
+{
+  "admission-budget.json": "4da8f51a2533430f5390e2f8d933331ecbc078ee50abd63f7c010db339391f71",
+  "cleanup.json": "229474b05b15ac87457e191ebc382863b3ee7f240e9c1e24725c99cfbbb77aad",
+  "image-build-final.log": "00822000fcafef4febe5d8abfffe6c96e8e28bc7b520596613a5eb8cba5e8ef2",
+  "input-manifest.json": "840318f4210deac4277420836aa03c1721302b9f18f3fc6223c5e8b0714d1f48",
+  "kit-archive.json": "c8c77f095ffcff77d1bed357ff956d2cb981742557f52751a1f6d50a98e2d749",
+  "kit-manifest.json": "f8ebf7af36b062d6e343a3eaf87ff3daedadde17f2046e00b0735a6debe95e96",
+  "production-final.json": "67701ba43ad7ac988e0347c6ea6b8cc4a2eb7fa8999bf48d475bd91883a2760c",
+  "production-inventory.json": "9231599c35079bc216c48f5ab60cf76e36429254d6ebe8606b0816a788158530",
+  "README.md": "b9a9ac86cb27013d5f44e82fdb64f3ef5809de6d7e2cd10c45bc04089d07cde5",
+  "rehearsal-run.log": "b7f0f7c5cb80c7dcba2108905bcd4d01d3a51ca28818358327b74c2086ec086f",
+  "rehearsal.json": "1d16b64f6dee727b58d882cd12e05fd088f787fb2131f45c7bf30350ab6277dd",
+  "service-journal.log": "d10bf02b38b04745ea0aef02f59e258204b53e25fdf1867acc3b04da9c02b36e",
+  "source-verification.json": "278cc842307aaa4085ee6e0493a96d91b8830e8b8bdbce9b3aa857adf7933344"
+}

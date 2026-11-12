@@ -1,0 +1,203 @@
+Nov 12 01:02:41 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:41 2f52d3537bf9 python3[212]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2416"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2415"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:41 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:41 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:41.935 UTC [213] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:41 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:41.935 UTC [213] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:41 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:41.935 UTC [213] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:41 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:41.937 UTC [213] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:41 2f52d3537bf9 postgres[221]: 2026-11-12 01:02:41.943 UTC [221] LOG:  database system was shut down at 2026-11-12 00:57:54 UTC
+Nov 12 01:02:41 2f52d3537bf9 postgres[228]: 2026-11-12 01:02:41.959 UTC [228] postgres@postgres FATAL:  the database system is starting up
+Nov 12 01:02:41 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:41.961 UTC [213] LOG:  database system is ready to accept connections
+Nov 12 01:02:42 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:42.709 UTC [213] LOG:  received fast shutdown request
+Nov 12 01:02:42 2f52d3537bf9 postgres[232]: 2026-11-12 01:02:42.709 UTC [232] ERROR:  canceling statement due to user request
+Nov 12 01:02:42 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...
+Nov 12 01:02:42 2f52d3537bf9 postgres[234]: 2026-11-12 01:02:42.709 UTC [234] ERROR:  canceling statement due to user request
+Nov 12 01:02:42 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:42.711 UTC [213] LOG:  aborting any active transactions
+Nov 12 01:02:42 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:42.711 UTC [213] LOG:  background worker "logical replication launcher" (PID 234) exited with exit code 1
+Nov 12 01:02:42 2f52d3537bf9 postgres[229]: 2026-11-12 01:02:42.722 UTC [229] LOG:  shutting down
+Nov 12 01:02:42 2f52d3537bf9 postgres[213]: 2026-11-12 01:02:42.826 UTC [213] LOG:  database system is shut down
+Nov 12 01:02:42 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.
+Nov 12 01:02:42 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.
+Nov 12 01:02:42 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:42 2f52d3537bf9 python3[319]: GPS runtime startup refused: memory-protection library hash mismatch
+Nov 12 01:02:42 2f52d3537bf9 systemd[1]: gps118-db.service: Control process exited, code=exited, status=78/CONFIG
+Nov 12 01:02:42 2f52d3537bf9 systemd[1]: gps118-db.service: Failed with result 'exit-code'.
+Nov 12 01:02:42 2f52d3537bf9 systemd[1]: Failed to start GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 python3[365]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2416"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2415"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.070 UTC [366] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.071 UTC [366] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.071 UTC [366] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.073 UTC [366] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:43 2f52d3537bf9 postgres[373]: 2026-11-12 01:02:43.079 UTC [373] LOG:  database system was shut down at 2026-11-12 01:02:42 UTC
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.083 UTC [366] LOG:  database system is ready to accept connections
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.121 UTC [366] LOG:  received fast shutdown request
+Nov 12 01:02:43 2f52d3537bf9 postgres[386]: 2026-11-12 01:02:43.121 UTC [386] ERROR:  canceling statement due to user request
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.123 UTC [366] LOG:  aborting any active transactions
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.123 UTC [366] LOG:  background worker "logical replication launcher" (PID 386) exited with exit code 1
+Nov 12 01:02:43 2f52d3537bf9 postgres[380]: 2026-11-12 01:02:43.124 UTC [380] LOG:  shutting down
+Nov 12 01:02:43 2f52d3537bf9 postgres[366]: 2026-11-12 01:02:43.153 UTC [366] LOG:  database system is shut down
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 python3[420]: GPS runtime startup refused: service memory budget differs from reviewed plan
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Control process exited, code=exited, status=78/CONFIG
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Failed with result 'exit-code'.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Failed to start GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 python3[467]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2416"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2415"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.409 UTC [468] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.409 UTC [468] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.409 UTC [468] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.411 UTC [468] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:43 2f52d3537bf9 postgres[475]: 2026-11-12 01:02:43.417 UTC [475] LOG:  database system was shut down at 2026-11-12 01:02:43 UTC
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.421 UTC [468] LOG:  database system is ready to accept connections
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.448 UTC [468] LOG:  received fast shutdown request
+Nov 12 01:02:43 2f52d3537bf9 postgres[488]: 2026-11-12 01:02:43.448 UTC [488] ERROR:  canceling statement due to user request
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.450 UTC [468] LOG:  aborting any active transactions
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.450 UTC [468] LOG:  background worker "logical replication launcher" (PID 488) exited with exit code 1
+Nov 12 01:02:43 2f52d3537bf9 postgres[483]: 2026-11-12 01:02:43.451 UTC [483] LOG:  shutting down
+Nov 12 01:02:43 2f52d3537bf9 postgres[468]: 2026-11-12 01:02:43.472 UTC [468] LOG:  database system is shut down
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 python3[545]: GPS runtime startup refused: service swap is not disabled
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Control process exited, code=exited, status=78/CONFIG
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Failed with result 'exit-code'.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Failed to start GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 python3[602]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2416"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2415"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.794 UTC [603] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.795 UTC [603] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.795 UTC [603] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.796 UTC [603] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:43 2f52d3537bf9 postgres[616]: 2026-11-12 01:02:43.802 UTC [616] LOG:  database system was shut down at 2026-11-12 01:02:43 UTC
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.806 UTC [603] LOG:  database system is ready to accept connections
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.855 UTC [603] LOG:  received fast shutdown request
+Nov 12 01:02:43 2f52d3537bf9 postgres[623]: 2026-11-12 01:02:43.855 UTC [623] ERROR:  canceling statement due to user request
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.857 UTC [603] LOG:  aborting any active transactions
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.857 UTC [603] LOG:  background worker "logical replication launcher" (PID 623) exited with exit code 1
+Nov 12 01:02:43 2f52d3537bf9 postgres[618]: 2026-11-12 01:02:43.858 UTC [618] LOG:  shutting down
+Nov 12 01:02:43 2f52d3537bf9 postgres[603]: 2026-11-12 01:02:43.879 UTC [603] LOG:  database system is shut down
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:43 2f52d3537bf9 python3[645]: GPS runtime startup refused: temporary mount has unsafe type/options
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Control process exited, code=exited, status=78/CONFIG
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: gps118-db.service: Failed with result 'exit-code'.
+Nov 12 01:02:43 2f52d3537bf9 systemd[1]: Failed to start GPS118 isolated PostgreSQL.
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:44 2f52d3537bf9 python3[679]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2416"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2415"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.073 UTC [680] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.073 UTC [680] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.073 UTC [680] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.075 UTC [680] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:44 2f52d3537bf9 postgres[687]: 2026-11-12 01:02:44.081 UTC [687] LOG:  database system was shut down at 2026-11-12 01:02:43 UTC
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.085 UTC [680] LOG:  database system is ready to accept connections
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.113 UTC [680] LOG:  received fast shutdown request
+Nov 12 01:02:44 2f52d3537bf9 postgres[699]: 2026-11-12 01:02:44.113 UTC [699] ERROR:  canceling statement due to user request
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.115 UTC [680] LOG:  aborting any active transactions
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.115 UTC [680] LOG:  background worker "logical replication launcher" (PID 699) exited with exit code 1
+Nov 12 01:02:44 2f52d3537bf9 postgres[694]: 2026-11-12 01:02:44.116 UTC [694] LOG:  shutting down
+Nov 12 01:02:44 2f52d3537bf9 postgres[680]: 2026-11-12 01:02:44.138 UTC [680] LOG:  database system is shut down
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:44 2f52d3537bf9 python3[851]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2416"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2415"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.499 UTC [852] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.499 UTC [852] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.499 UTC [852] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.501 UTC [852] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:44 2f52d3537bf9 postgres[865]: 2026-11-12 01:02:44.507 UTC [865] LOG:  database system was shut down at 2026-11-12 01:02:44 UTC
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.511 UTC [852] LOG:  database system is ready to accept connections
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.716 UTC [852] LOG:  received fast shutdown request
+Nov 12 01:02:44 2f52d3537bf9 postgres[872]: 2026-11-12 01:02:44.716 UTC [872] ERROR:  canceling statement due to user request
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.718 UTC [852] LOG:  aborting any active transactions
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.718 UTC [852] LOG:  background worker "logical replication launcher" (PID 872) exited with exit code 1
+Nov 12 01:02:44 2f52d3537bf9 postgres[867]: 2026-11-12 01:02:44.719 UTC [867] LOG:  shutting down
+Nov 12 01:02:44 2f52d3537bf9 postgres[852]: 2026-11-12 01:02:44.743 UTC [852] LOG:  database system is shut down
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.
+Nov 12 01:02:44 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.
+Nov 12 01:02:45 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:45 2f52d3537bf9 python3[1039]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2415"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2416"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:45 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.128 UTC [1040] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.128 UTC [1040] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.128 UTC [1040] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.130 UTC [1040] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:45 2f52d3537bf9 postgres[1047]: 2026-11-12 01:02:45.136 UTC [1047] LOG:  database system was shut down at 2026-11-12 01:02:44 UTC
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.140 UTC [1040] LOG:  database system is ready to accept connections
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.334 UTC [1040] LOG:  received fast shutdown request
+Nov 12 01:02:45 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...
+Nov 12 01:02:45 2f52d3537bf9 postgres[1060]: 2026-11-12 01:02:45.334 UTC [1060] ERROR:  canceling statement due to user request
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.336 UTC [1040] LOG:  aborting any active transactions
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.336 UTC [1040] LOG:  background worker "logical replication launcher" (PID 1060) exited with exit code 1
+Nov 12 01:02:45 2f52d3537bf9 postgres[1054]: 2026-11-12 01:02:45.337 UTC [1054] LOG:  shutting down
+Nov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.361 UTC [1040] LOG:  database system is shut down
+Nov 12 01:02:45 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.
+Nov 12 01:02:45 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.
+Nov 12 01:02:45 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:45 2f52d3537bf9 python3[1107]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2416"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2415"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:45 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.425 UTC [1108] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.425 UTC [1108] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.425 UTC [1108] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.427 UTC [1108] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:45 2f52d3537bf9 postgres[1121]: 2026-11-12 01:02:45.433 UTC [1121] LOG:  database system was shut down at 2026-11-12 01:02:45 UTC
+Nov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.437 UTC [1108] LOG:  database system is ready to accept connections
+Nov 12 01:02:45 2f52d3537bf9 postgres[1172]: 2026-11-12 01:02:45.754 UTC [1172] postgres@postgres ERROR:  could not write to file "base/pgsql_tmp/pgsql_tmp1172.1": No space left on device
+Nov 12 01:02:45 2f52d3537bf9 postgres[1172]: 2026-11-12 01:02:45.754 UTC [1172] postgres@postgres STATEMENT:  SET temp_tablespaces='gps118_sort'; SET work_mem='64kB'; EXPLAIN (ANALYZE,FORMAT JSON) SELECT count(*) FROM (SELECT repeat(md5(g::text),4) s FROM generate_series(1,100000) g ORDER BY s) q
+Nov 12 01:02:46 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:46.107 UTC [1108] LOG:  server process (PID 1240) was terminated by signal 6: Aborted
+Nov 12 01:02:46 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:46.107 UTC [1108] DETAIL:  Failed process was running: SELECT pg_sleep(30)
+Nov 12 01:02:46 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:46.107 UTC [1108] LOG:  terminating any other active server processes
+Nov 12 01:02:46 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:46.108 UTC [1108] LOG:  all server processes terminated; reinitializing
+Nov 12 01:02:46 2f52d3537bf9 postgres[1248]: 2026-11-12 01:02:46.114 UTC [1248] LOG:  database system was interrupted; last known up at 2026-11-12 01:02:45 UTC
+Nov 12 01:02:46 2f52d3537bf9 postgres[1256]: 2026-11-12 01:02:46.135 UTC [1256] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:46 2f52d3537bf9 postgres[1264]: 2026-11-12 01:02:46.383 UTC [1264] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:46 2f52d3537bf9 postgres[1272]: 2026-11-12 01:02:46.628 UTC [1272] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:46 2f52d3537bf9 postgres[1280]: 2026-11-12 01:02:46.869 UTC [1280] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:47 2f52d3537bf9 postgres[1288]: 2026-11-12 01:02:47.108 UTC [1288] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:47 2f52d3537bf9 postgres[1296]: 2026-11-12 01:02:47.356 UTC [1296] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:47 2f52d3537bf9 postgres[1304]: 2026-11-12 01:02:47.597 UTC [1304] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:47 2f52d3537bf9 postgres[1312]: 2026-11-12 01:02:47.833 UTC [1312] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:48 2f52d3537bf9 postgres[1320]: 2026-11-12 01:02:48.075 UTC [1320] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:48 2f52d3537bf9 postgres[1328]: 2026-11-12 01:02:48.318 UTC [1328] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:48 2f52d3537bf9 postgres[1336]: 2026-11-12 01:02:48.560 UTC [1336] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:48 2f52d3537bf9 postgres[1344]: 2026-11-12 01:02:48.799 UTC [1344] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:49 2f52d3537bf9 postgres[1352]: 2026-11-12 01:02:49.033 UTC [1352] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:49 2f52d3537bf9 postgres[1360]: 2026-11-12 01:02:49.278 UTC [1360] postgres@postgres FATAL:  the database system is in recovery mode
+Nov 12 01:02:49 2f52d3537bf9 postgres[1248]: 2026-11-12 01:02:49.367 UTC [1248] LOG:  database system was not properly shut down; automatic recovery in progress
+Nov 12 01:02:49 2f52d3537bf9 postgres[1248]: 2026-11-12 01:02:49.371 UTC [1248] LOG:  invalid record length at 0/171DD28: wanted 24, got 0
+Nov 12 01:02:49 2f52d3537bf9 postgres[1248]: 2026-11-12 01:02:49.371 UTC [1248] LOG:  redo is not required
+Nov 12 01:02:49 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:49.389 UTC [1108] LOG:  database system is ready to accept connections
+Nov 12 01:02:49 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:49.703 UTC [1108] LOG:  received fast shutdown request
+Nov 12 01:02:49 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...
+Nov 12 01:02:49 2f52d3537bf9 postgres[1366]: 2026-11-12 01:02:49.704 UTC [1366] ERROR:  canceling statement due to user request
+Nov 12 01:02:49 2f52d3537bf9 postgres[1364]: 2026-11-12 01:02:49.704 UTC [1364] ERROR:  canceling statement due to user request
+Nov 12 01:02:49 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:49.705 UTC [1108] LOG:  aborting any active transactions
+Nov 12 01:02:49 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:49.705 UTC [1108] LOG:  background worker "logical replication launcher" (PID 1366) exited with exit code 1
+Nov 12 01:02:49 2f52d3537bf9 postgres[1361]: 2026-11-12 01:02:49.707 UTC [1361] LOG:  shutting down
+Nov 12 01:02:49 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:49.728 UTC [1108] LOG:  database system is shut down
+Nov 12 01:02:49 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.
+Nov 12 01:02:49 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.
+Nov 12 01:02:50 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...
+Nov 12 01:02:50 2f52d3537bf9 python3[52]: {"passed": true, "mounts": [{"path": "/run/gps118/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2416"}, {"path": "/run/gps118/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2415"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 12 01:02:50 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.
+Nov 12 01:02:50 2f52d3537bf9 postgres[53]: 2026-11-12 01:02:50.108 UTC [53] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 12 01:02:50 2f52d3537bf9 postgres[53]: 2026-11-12 01:02:50.109 UTC [53] LOG:  listening on IPv6 address "::1", port 5432
+Nov 12 01:02:50 2f52d3537bf9 postgres[53]: 2026-11-12 01:02:50.109 UTC [53] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 12 01:02:50 2f52d3537bf9 postgres[53]: 2026-11-12 01:02:50.110 UTC [53] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 12 01:02:50 2f52d3537bf9 postgres[55]: 2026-11-12 01:02:50.117 UTC [55] LOG:  database system was shut down at 2026-11-12 01:02:49 UTC
+Nov 12 01:02:50 2f52d3537bf9 postgres[53]: 2026-11-12 01:02:50.121 UTC [53] LOG:  database system is ready to accept connections
+Nov 12 01:02:50 2f52d3537bf9 postgres[175]: 2026-11-12 01:02:50.878 UTC [175] gps118_client@postgres FATAL:  too many connections for role "gps118_client"
+Nov 12 01:02:50 2f52d3537bf9 postgres[179]: 2026-11-12 01:02:50.896 UTC [179] maintenance118@postgres FATAL:  remaining connection slots are reserved for non-replication superuser connections

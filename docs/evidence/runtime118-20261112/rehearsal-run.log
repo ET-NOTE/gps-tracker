@@ -1,0 +1,21 @@
+guarded database starts: PASS
+real SQL spills to protected sort: PASS
+startup rejects library_sha256: PASS
+startup rejects memory_max_bytes: PASS
+startup rejects unbounded service swap: PASS
+startup rejects unsafe mount options: PASS
+mount loss stops DB and underlay denies writes: sort: PASS
+missing mount refuses DB startup: sort: PASS
+mount restored and persistent data retained: sort: PASS
+mount loss stops DB and underlay denies writes: fallback: PASS
+missing mount refuses DB startup: fallback: PASS
+mount restored and persistent data retained: fallback: PASS
+external unmount detected: PASS
+missing selected directory uses protected fallback: PASS
+full fallback rejects sort instead of disk bypass: PASS
+capacity recovery: PASS
+non-dumpable after exec and fork crash: PASS
+PG backend crash recovers data and protected sort: PASS
+cold service boot reconstructs protected mounts: PASS
+bounded role connections preserve reserved access: PASS
+connection exhaustion cleanup: PASS
