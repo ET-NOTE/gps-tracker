@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/opt/gps121/verify_runtime123.py", line 110, in <module>
+    elif action=='rights':rights()
+  File "/opt/gps121/verify_runtime123.py", line 98, in rights
+    select()
+  File "/opt/gps121/load_runtime123.py", line 25, in select
+    load.start(300)
+  File "/opt/gps121/load_runtime122.py", line 78, in start
+    raise AssertionError('API startup failed')
+AssertionError: API startup failed

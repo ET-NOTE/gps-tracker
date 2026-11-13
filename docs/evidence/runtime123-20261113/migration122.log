@@ -1,0 +1,8 @@
+Starting gps121-migration.service...
+{"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2918"}], "dumpable": 0, "swap_max": 0, "memory_max": 134217728}
+[2m2026-11-13T14:38:23.090068Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-13T14:38:23.300236Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "role" of relation "users" already exists, skipping
+[2m2026-11-13T14:38:25.247184Z[0m [33m WARN[0m [2msqlx::postgres::notice[0m[2m:[0m column "source" should be used for segmenting or ordering
+[2m2026-11-13T14:38:31.594602Z[0m [33m WARN[0m [2msqlx::query[0m[2m:[0m slow statement: execution time exceeded alert threshold [3msummary[0m[2m=[0m"COMMIT" [3mdb.statement[0m[2m=[0m"" [3mrows_affected[0m[2m=[0m0 [3mrows_returned[0m[2m=[0m0 [3melapsed[0m[2m=[0m3.199288237s [3melapsed_secs[0m[2m=[0m3.199288237 [3mslow_threshold[0m[2m=[0m1s
+gps121-migration.service: Deactivated successfully.
+Finished gps121-migration.service.

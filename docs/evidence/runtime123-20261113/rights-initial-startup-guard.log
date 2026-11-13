@@ -1,0 +1,12 @@
+2026-11-13T15:49:24+0000 0bac6bebaaec systemd[1]: Stopping gps121-api.service...
+2026-11-13T15:49:24+0000 0bac6bebaaec active-api[14578]: 2026-11-13T15:49:24.734018Z  INFO gps_tracker_api: shutdown: SIGTERM received
+2026-11-13T15:49:24+0000 0bac6bebaaec systemd[1]: gps121-api.service: Deactivated successfully.
+2026-11-13T15:49:24+0000 0bac6bebaaec systemd[1]: Stopped gps121-api.service.
+2026-11-13T15:49:24+0000 0bac6bebaaec systemd[1]: Starting gps121-api.service...
+2026-11-13T15:49:24+0000 0bac6bebaaec python3[14603]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2918"}], "dumpable": 0, "swap_max": 0, "memory_max": 671088640}
+2026-11-13T15:49:24+0000 0bac6bebaaec systemd[1]: Started gps121-api.service.
+2026-11-13T15:49:24+0000 0bac6bebaaec active-api[14604]: 2026-11-13T15:49:24.804831Z  INFO gps_tracker_api: starting gps-tracker-api bind=127.0.0.1:3043
+2026-11-13T15:49:24+0000 0bac6bebaaec active-api[14604]: 2026-11-13T15:49:24.818494Z  WARN gps_tracker_api::services::opinet: opinet fetch failed: OPINET_API_KEY not set — fallback to cached/default
+2026-11-13T15:49:24+0000 0bac6bebaaec active-api[14604]: Error: subject provision policy not enabled by owner
+2026-11-13T15:49:24+0000 0bac6bebaaec systemd[1]: gps121-api.service: Main process exited, code=exited, status=1/FAILURE
+2026-11-13T15:49:24+0000 0bac6bebaaec systemd[1]: gps121-api.service: Failed with result 'exit-code'.

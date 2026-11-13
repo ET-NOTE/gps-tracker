@@ -1,0 +1,9 @@
+# /etc/systemd/system/run-gps121-sort.mount
+[Unit]
+Requires=gps121-underlay.service
+After=gps121-underlay.service
+[Mount]
+What=tmpfs
+Where=/run/gps121/sort
+Type=tmpfs
+Options=size=256M,mode=0700,uid=postgres,gid=postgres,nosuid,nodev,noexec

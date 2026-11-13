@@ -1,0 +1,21 @@
+{
+  "suite": "22B company readers",
+  "passed": [
+    "existing map ignores cached/unconfirmed positions; trips split at two confirmed subjects; notices match returned mappings",
+    "legacy and vehicle reports, CSV, browser-export intents, monthly point stats and both XLSX scope modes obey the same projection",
+    "cross-subject/gap correction overlay cannot reintroduce excluded evidence",
+    "empty period emits no notice; outsider/unassigned member denied; self interval is not third-party provision",
+    "subject pause filters only that subject; revoked final interval removes map/trips/stats without zero-km fallback",
+    "notice storage failure discards the prepared response; recovery resumes durable notices",
+    "hardware auth replacement keeps SIM history; changed binding clips coverage and cannot restore excluded location"
+  ],
+  "schema": 112,
+  "api_sha256": "1052de1ee68e700b6565e73124e727ef45ee26527c7eb9f196c71efcdd0221f5",
+  "encrypted": true,
+  "fixture": {
+    "owner": 23,
+    "device": 20
+  },
+  "production_modified": false,
+  "external_messages": 0
+}

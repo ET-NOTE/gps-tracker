@@ -1,0 +1,12 @@
+shared-123 0 reads 0 ingest 0 PDF 0 cleanup 0 errors 0
+shared-123 10 reads 16 ingest 9 PDF 4 cleanup 2 errors 0
+shared-123 20 reads 29 ingest 18 PDF 7 cleanup 4 errors 0
+shared-123 30 reads 38 ingest 27 PDF 10 cleanup 6 errors 0
+shared-123 40 reads 54 ingest 36 PDF 14 cleanup 8 errors 0
+shared-123 50 reads 64 ingest 45 PDF 17 cleanup 10 errors 0
+shared-123 60 reads 74 ingest 55 PDF 20 cleanup 12 errors 0
+shared-123 70 reads 90 ingest 64 PDF 23 cleanup 14 errors 0
+shared-123 80 reads 100 ingest 72 PDF 27 cleanup 16 errors 0
+shared-123 90 reads 115 ingest 81 PDF 30 cleanup 18 errors 0
+shared-123 100 reads 127 ingest 90 PDF 33 cleanup 19 errors 0
+shared-123 111 reads 138 ingest 99 PDF 37 cleanup 21 errors 0
