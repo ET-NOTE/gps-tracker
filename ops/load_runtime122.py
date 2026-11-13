@@ -66,7 +66,7 @@ def start(poll=300):
         GPS_LOCATION_ACCESS_LOG='on', GPS_LOCATION_ACCESS_FLUSH_SECONDS='1', GPS_SUBJECT_PROVISION='on',
         GPS_INGEST_TLS_REQUIRED='on', GPS_TLS_TRUSTED_PROXIES='127.0.0.1/32', GPS_STATS_POLL_SECONDS=str(poll))
     secret('/etc/gps121/api.env', '\n'.join(k+'='+v for k,v in values.items()))
-    command('systemctl', 'reset-failed', 'gps121-api')
+    subprocess.run(['systemctl', 'reset-failed', 'gps121-api'], check=False, capture_output=True)
     command('systemctl', 'start', 'gps121-api')
     for _ in range(100):
         try:
@@ -156,6 +156,11 @@ def seed():
     for name in ['uploads/device_documents/1/1','private']:
         (ROOT/'test-storage'/name).mkdir(parents=True,exist_ok=True)
     for p in (ROOT/'test-storage').rglob('*'):os.chown(p,uid,uid)
+    finish_seed()
+
+
+def finish_seed():
+    assert sql('SELECT count(*) FROM location_records') == [(119040,)]
     start(5);tls();b.repair();start(300)
     assert Client().get('/gps-tracker/health')[0] == 200
     save('seed122',dict(encrypted_rows=sql('SELECT count(*),count(*) FILTER(WHERE lat IS NOT NULL OR lng IS NOT NULL OR fixes_jsonb IS NOT NULL) FROM location_records')[0],
@@ -190,7 +195,7 @@ def pressure(kind):
         for i in range(0,len(memory),4096):memory[i]=(memory[i]+1)&255
         if clients:
             with clients[counter%24].cursor() as q:q.execute('SELECT sum(i*i::bigint) FROM generate_series(1,10000) i');q.fetchone()
-            with open('/tmp/gps122-io.bin','wb') as f:f.write(memory[:1024**2]);f.flush();os.fsync(f.fileno())
+            with open(ROOT/'pressure122-io.bin','wb') as f:f.write(memory[:1024**2]);f.flush();os.fsync(f.fileno())
         counter+=1
         time.sleep(.2)
 
@@ -199,9 +204,11 @@ def shared(enable):
     if not enable:
         for kind in ['other','av']:subprocess.run(['systemctl','stop','gps122-'+kind],check=False,capture_output=True)
         return
-    sql("CREATE ROLE other122 LOGIN PASSWORD 'synthetic-only' CONNECTION LIMIT 24 NOSUPERUSER")
+    if not sql("SELECT 1 FROM pg_roles WHERE rolname='other122'"):
+        sql("CREATE ROLE other122 LOGIN PASSWORD 'synthetic-only' CONNECTION LIMIT 24 NOSUPERUSER")
     sql('GRANT CONNECT ON DATABASE gps_closure_test TO other122')
     for kind,limit,cpu in [('other',1024,25),('av',675,25)]:
+        Path('/tmp/gps122-'+kind+'-ready').unlink(missing_ok=True)
         text=f'''[Service]
 ExecStart=/usr/bin/python3 /opt/gps121/load_runtime122.py pressure-{kind}
 MemoryMax={limit}M
@@ -222,7 +229,7 @@ Environment=LD_PRELOAD=/usr/local/lib/gps-nodump.so
 
 def load(label,seconds=300):
     data=b.fixture(); stop=threading.Event(); deadline=time.monotonic()+seconds
-    done=[];attempts=[];ingest=[];health=[];pdf=[];cleanups=[];errors=[];resources=[];walks=[]
+    done=[];attempts=[];ingest=[];health=[];pdf=[];cleanups=[];deferred=[];errors=[];resources=[];walks=[]
     secret_key=os.urandom(32); hardware='runtime122-'+uuid.uuid4().hex; iccid='89'+str(time.time_ns())[-17:]
     owner=data['users'][0]
     did=sql("INSERT INTO devices(owner_id,device_uid,iccid,api_key_hash) VALUES(%s,%s,%s,'') RETURNING id",(owner,hardware,iccid))[0][0]
@@ -284,14 +291,24 @@ def load(label,seconds=300):
     def cleanup():
         cfg=dict(DATABASE_URL=runtime(),GPS_LOCATION_ENCRYPTION='pilot',GPS_LOCATION_KEYRING_FILE=str(ROOT/'test-keys.json'),
             UPLOAD_DIR=str(ROOT/'test-storage/uploads'),PRIVATE_UPLOAD_DIR=str(ROOT/'test-storage/private'))
+        pending=None
         while time.monotonic()<deadline and not stop.is_set():
             p=ROOT/'test-storage/uploads/device_documents/1/1'/('cleanup122-'+uuid.uuid4().hex+'.bin')
             try:
-                p.write_bytes(b'GPSFILE1\n'+b'synthetic file cleanup workload');uid=pwd.getpwnam('gps-api').pw_uid;os.chown(p,uid,uid)
-                qid=sql("INSERT INTO privacy_file_cleanup(storage_kind,storage_key,reason,source_table,source_id) VALUES('document',%s,'runtime122','synthetic',122) RETURNING id",(str(p),))[0][0]
+                if pending is None:
+                    p.write_bytes(b'GPSFILE1\n'+b'synthetic file cleanup workload');uid=pwd.getpwnam('gps-api').pw_uid;os.chown(p,uid,uid)
+                    qid=sql("INSERT INTO privacy_file_cleanup(storage_kind,storage_key,reason,source_table,source_id) VALUES('document',%s,'runtime122','synthetic',122) RETURNING id",(str(p),))[0][0]
+                    pending=(p,qid)
+                p,qid=pending
                 begin=time.monotonic();value=job('cleanup',worker=cfg)
-                assert value['processed']['job_id']==qid and not p.exists(),value
-                cleanups.append(dict(seconds=time.monotonic()-begin,state=value['processed']['state']))
+                if value['processed'].get('deferred'):
+                    assert value['processed']=={'deferred':True,'reason':'lock_busy'}
+                    assert p.exists() and sql('SELECT state FROM privacy_file_cleanup WHERE id=%s',(qid,))==[('pending',)]
+                    deferred.append(dict(seconds=time.monotonic()-begin,reason='lock_busy'))
+                else:
+                    assert value['processed']['job_id']==qid and not p.exists(),value
+                    cleanups.append(dict(seconds=time.monotonic()-begin,state=value['processed']['state']))
+                    pending=None
             except Exception as e:errors.append(dict(cleanup=repr(e)[:200]))
             stop.wait(5)
 
@@ -313,7 +330,7 @@ def load(label,seconds=300):
         per_route={k:dict(statuses=dict(Counter(x['status'] for x in v)),latency=b.stats([x['seconds'] for x in v if x['status']==200])) for k,v in grouped.items()},
         ingest=dict(statuses=dict(Counter(x['status'] for x in ingest)),latency=b.stats([x['seconds'] for x in ingest])),
         health=dict(statuses=dict(Counter(x['status'] for x in health)),latency=b.stats([x['seconds'] for x in health])),
-        pdf=dict(completed=len(pdf),latency=b.stats([x['seconds'] for x in pdf])),cleanup=dict(completed=len(cleanups),latency=b.stats([x['seconds'] for x in cleanups])),
+        pdf=dict(completed=len(pdf),latency=b.stats([x['seconds'] for x in pdf])),cleanup=dict(completed=len(cleanups),latency=b.stats([x['seconds'] for x in cleanups]),deferred=len(deferred)),
         full_month_traversals=walks,errors=errors,resources=resources,before=before,after=after,
         db_io_delta=dict(zip(['temp_bytes','temp_files','read_ms','write_ms'],[y-x for x,y in zip(db_before,db_after)])),
         saved_ingest=sql('SELECT count(*) FROM location_records WHERE device_id=%s',(did,))[0][0],production_modified=False)
@@ -322,6 +339,8 @@ def load(label,seconds=300):
     assert ingest and all(x['status']==200 for x in ingest) and result['saved_ingest']==len(ingest)
     assert health and all(x['status']==200 for x in health)
     assert len(pdf)>=10 and len(cleanups)>=10
+    assert walks and all(v['latency']['count']>0 for v in result['per_route'].values())
+    assert set(result['per_route'])=={name for name,_ in b.routes(data['devices'][0]['device_id'])}
     for label2 in ['gps','db','api','pdf','container']:
         event=lambda x:dict(line.split() for line in x['memory.events'].splitlines())
         assert event(before[label2])['oom_kill']==event(after[label2])['oom_kill']
@@ -332,8 +351,11 @@ def load(label,seconds=300):
 if __name__=='__main__':
     action=sys.argv[1]
     if action=='seed':seed()
+    elif action=='finish-seed':finish_seed()
     elif action=='dedicated':load('dedicated-4g')
-    elif action=='shared':shared(True);load('shared-6g');shared(False)
+    elif action=='shared':
+        try:shared(True);load('shared-6g')
+        finally:shared(False)
     elif action.startswith('pressure-'):pressure(action.split('-',1)[1])
     elif action=='probe':b.probe()
     else:raise ValueError(action)

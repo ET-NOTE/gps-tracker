@@ -83,6 +83,17 @@ def unlink_local(kind, key, cfg):
 
 
 def process_one(db, cfg):
+    try:
+        return _process_one(db, cfg)
+    except Exception as exc:
+        # The transaction context has rolled back. Keep the durable job for the
+        # next worker invocation; never report a deferred deletion as complete.
+        if (getattr(exc, 'sqlstate', None) or getattr(exc, 'pgcode', None)) == '55P03':
+            return {'deferred': True, 'reason': 'lock_busy'}
+        raise
+
+
+def _process_one(db, cfg):
     with transaction(db):
         with db.cursor() as q:
             q.execute("SET LOCAL lock_timeout='2s'; SET LOCAL statement_timeout='5s'")
@@ -138,6 +149,8 @@ def main():
             if result is None:
                 break
             processed.append(result)
+            if result.get('deferred'):
+                break
         print(json.dumps({'processed': processed, 'external_copies_verified': False}))
     except Exception as exc:
         # SQL diagnostics can include filenames; log only the safe SQLSTATE.
