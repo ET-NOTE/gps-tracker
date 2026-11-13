@@ -19,6 +19,8 @@ def select(previous=False):
     link.unlink(); link.symlink_to(target)
     load.b.SHA = digest
     load.start(300)
+    pid = load.command('systemctl','show','gps121-api','-p','MainPID','--value')
+    assert load.command('sha256sum','/proc/'+pid+'/exe').split()[0] == digest
 
 
 if __name__ == '__main__':
