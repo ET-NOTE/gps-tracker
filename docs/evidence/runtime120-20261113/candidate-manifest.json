@@ -1,0 +1,23 @@
+{
+  "release": "runtime120-20261113-r1",
+  "schema": 112,
+  "source_commit": "077eca0026052dc4e5a2e6ac34e67c9795171546",
+  "activation_ready": false,
+  "production_installer": false,
+  "base_candidate": "/home/etcom-hub/build/gps-runtime119-20261112/candidate-runtime119-20261112-r1.tar.gz",
+  "base_sha256": "902a2002aeb12befd0a8c385f074d5dff1b911b698c493e071035072a4c198de",
+  "api_sha256": "56912e102bd55db65f253d7f19c409a04e239b8e993f60baead577e51efbf536",
+  "pdf_sha256": "f73150c48d4a4507547ae5f63f01f3f7a817e820e87c49492a08948059b662d2",
+  "boundaries": [
+    "PDF global lock requires new service mode, shared lock and API status8 support",
+    "local child fallback is not globally admitted; production must use service socket",
+    "4GiB synthetic aggregate limit is not production capacity acceptance",
+    "DB used protected Timescale container; native production DB unit/maintenance/restore integration remains",
+    "two API concurrency is PDF-only proof; full multi-API DB connection budget is not accepted",
+    "prior encryption, monthly, cumulative and restore evidence remains round119; not rerun in120"
+  ],
+  "archive": "/home/etcom-hub/build/gps-runtime120-20261113/candidate-runtime120-20261113-r1.tar.gz",
+  "archive_sha256": "3b4bfa22719081d7a6f11448f23cb86f6cbfad4c0175aaea78dc5346e426bd33",
+  "files": 636,
+  "bytes": 14858436
+}
