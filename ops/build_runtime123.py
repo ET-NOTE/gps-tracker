@@ -13,7 +13,7 @@ def main():
     (JOB/'out').mkdir(exist_ok=True)
     for p in (JOB/'src/gps-tracker-api/migrations').glob('*.sql'):
         assert p.read_bytes()==(JOB.parent/'gps-runtime122-20261113/canonical/gps-tracker-api/migrations'/p.name).read_bytes()
-    commands='cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked && cargo build --locked --release && cp /cache/target/release/gps-tracker-api /out/gps-tracker-api'
+    commands='cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked && cargo build --locked --release && cp /cache/target/release/gps-tracker-api /out/gps-tracker-api.building && mv -f /out/gps-tracker-api.building /out/gps-tracker-api'
     args=['docker','run','--rm','--name','gps123-build-api','--label','gps.runtime123=synthetic',
         '--user','1000:1000','-v',str(JOB/'src')+':/src','-v',str(JOB/'out')+':/out',
         '-v',str(CACHE)+':/cache','-w','/src/gps-tracker-api','-e','CARGO_HOME=/cache/cargo',
