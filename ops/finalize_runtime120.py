@@ -37,12 +37,13 @@ def archive(source_commit):
     # Extracted canonical git archive supplied by the operator, then byte-compare
     # every compiled source and font against what was built. Never fix migrations.
     clean=r.JOB/'canonical';assert clean.is_dir()
-    for folder in ('gps-tracker-api','gps-pdf-render','fonts'):
+    for folder in ('gps-tracker-api','gps-pdf-render','gps-tracker-web/src/assets/fonts'):
+        assert (clean/folder).is_dir(),folder
         for p in (clean/folder).rglob('*'):
             if p.is_file():assert p.read_bytes()==(r.JOB/'src'/p.relative_to(clean)).read_bytes(),str(p)
     package=r.JOB/'candidate-runtime120-20261113-r1';assert not package.exists();package.mkdir()
     for name in ('gps-tracker-api','gps-pdf-render'):shutil.copy2(r.OUT/name,package/name)
-    for folder in ('gps-tracker-api','gps-pdf-render','fonts','ops'):
+    for folder in ('gps-tracker-api','gps-pdf-render','gps-tracker-web/src/assets/fonts','ops'):
         shutil.copytree(clean/folder,package/'source'/folder)
     # Generated unit files are configuration candidates, not a production installer.
     units=package/'units';units.mkdir()
