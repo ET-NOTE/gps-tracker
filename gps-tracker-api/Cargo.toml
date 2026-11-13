@@ -76,5 +76,6 @@ name = "ws_smoke"
 path = "examples/ws_smoke.rs"
 
 [dev-dependencies]
+tokio             = { version = "1", features = ["test-util"] }
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 url               = "2"

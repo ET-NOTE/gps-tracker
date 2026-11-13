@@ -213,7 +213,8 @@ async fn history(
     if matches!((q.since,q.until),(Some(a),Some(b)) if a>b) {
         return Err(AppError::BadRequest("until < since".into()));
     }
-    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
+    let mut read =
+        crate::services::location_read_budget::ReadQuery::start_history(&state.db).await?;
     let rows = sqlx::query_as::<_, LocationView>(
         "WITH scoped AS MATERIALIZED (
           SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)

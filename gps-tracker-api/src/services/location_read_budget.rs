@@ -8,15 +8,68 @@ use sqlx::{
 use std::{sync::OnceLock, time::Duration};
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-static READS: Semaphore = Semaphore::const_new(2);
+struct ReadBudget {
+    total: Semaphore,
+    history: Semaphore,
+    regular_waiters: Semaphore,
+    history_waiters: Semaphore,
+    wait: Duration,
+}
 
-async fn acquire_from(reads: &Semaphore) -> AppResult<SemaphorePermit<'_>> {
-    tokio::time::timeout(Duration::from_millis(250), reads.acquire())
+struct ReadPermits<'a> {
+    _total: SemaphorePermit<'a>,
+    _history: Option<SemaphorePermit<'a>>,
+}
+
+async fn wait_for(
+    semaphore: &Semaphore,
+    deadline: tokio::time::Instant,
+) -> AppResult<SemaphorePermit<'_>> {
+    tokio::time::timeout_at(deadline, semaphore.acquire())
         .await
         .ok()
         .and_then(Result::ok)
         .ok_or(AppError::LocationReadBusy)
 }
+
+impl ReadBudget {
+    const fn new(wait: Duration) -> Self {
+        Self {
+            total: Semaphore::const_new(2),
+            history: Semaphore::const_new(1),
+            regular_waiters: Semaphore::const_new(8),
+            history_waiters: Semaphore::const_new(4),
+            wait,
+        }
+    }
+
+    async fn acquire(&self, history: bool) -> AppResult<ReadPermits<'_>> {
+        // Separate bounded queues: a flood of full-history requests cannot use
+        // every waiting position for interactive reads. No DB connection yet.
+        let queue = if history {
+            &self.history_waiters
+        } else {
+            &self.regular_waiters
+        };
+        let _waiting = queue
+            .try_acquire()
+            .map_err(|_| AppError::LocationReadBusy)?;
+        let deadline = tokio::time::Instant::now() + self.wait;
+        // Never hold a global slot while waiting for another long history.
+        let history_permit = if history {
+            Some(wait_for(&self.history, deadline).await?)
+        } else {
+            None
+        };
+        let total = wait_for(&self.total, deadline).await?;
+        Ok(ReadPermits {
+            _total: total,
+            _history: history_permit,
+        })
+    }
+}
+
+static READS: ReadBudget = ReadBudget::new(Duration::from_secs(3));
 
 // A separate, bounded pool can cancel even when every regular connection is busy.
 // It uses the same unprivileged DB role, never a superuser or pg_signal_backend.
@@ -24,7 +77,7 @@ static CANCEL_POOL: OnceLock<PgPool> = OnceLock::new();
 
 pub struct ReadQuery {
     connection: Option<PoolConnection<Postgres>>,
-    permit: Option<SemaphorePermit<'static>>,
+    permit: Option<ReadPermits<'static>>,
     cancel_pool: PgPool,
     backend: Option<i32>,
     marker: String,
@@ -32,7 +85,15 @@ pub struct ReadQuery {
 
 impl ReadQuery {
     pub async fn start(pool: &PgPool) -> AppResult<Self> {
-        let permit = acquire_from(&READS).await?;
+        Self::start_class(pool, false).await
+    }
+
+    pub async fn start_history(pool: &PgPool) -> AppResult<Self> {
+        Self::start_class(pool, true).await
+    }
+
+    async fn start_class(pool: &PgPool, history: bool) -> AppResult<Self> {
+        let permit = READS.acquire(history).await?;
         let cancel_pool = CANCEL_POOL
             .get_or_init(|| {
                 PgPoolOptions::new()
@@ -148,32 +209,99 @@ pub fn query_error(error: sqlx::Error) -> AppError {
 mod tests {
     use super::*;
 
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn excess_reads_are_rejected_and_release_allows_retry() {
-        let budget = Semaphore::new(2);
-        let first = acquire_from(&budget).await.unwrap();
-        let second = acquire_from(&budget).await.unwrap();
+        let budget = ReadBudget::new(Duration::from_millis(30));
+        let first = budget.acquire(false).await.unwrap();
+        let second = budget.acquire(false).await.unwrap();
         assert!(matches!(
-            acquire_from(&budget).await,
+            budget.acquire(false).await,
             Err(AppError::LocationReadBusy)
         ));
         drop(first);
-        let retry = acquire_from(&budget).await.unwrap();
-        assert_eq!(budget.available_permits(), 0);
+        let retry = budget.acquire(false).await.unwrap();
+        assert_eq!(budget.total.available_permits(), 0);
         drop((second, retry));
-        assert_eq!(budget.available_permits(), 2);
+        assert_eq!(budget.total.available_permits(), 2);
     }
 
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn cancelled_waiter_does_not_leak_capacity() {
-        let budget = Semaphore::new(1);
-        let active = acquire_from(&budget).await.unwrap();
+        let budget = ReadBudget::new(Duration::from_secs(1));
+        let active = budget.acquire(true).await.unwrap();
         assert!(
-            tokio::time::timeout(Duration::from_millis(5), acquire_from(&budget))
+            tokio::time::timeout(Duration::from_millis(5), budget.acquire(true))
                 .await
                 .is_err()
         );
         drop(active);
-        assert!(acquire_from(&budget).await.is_ok());
+        assert!(budget.acquire(true).await.is_ok());
+        assert_eq!(budget.history_waiters.available_permits(), 4);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn history_waiter_does_not_block_the_other_global_slot() {
+        let budget = ReadBudget::new(Duration::from_secs(1));
+        let first = budget.acquire(true).await.unwrap();
+        let pending = budget.acquire(true);
+        tokio::pin!(pending);
+        tokio::select! {
+            _ = &mut pending => panic!("second history cannot run"),
+            _ = tokio::time::sleep(Duration::from_millis(5)) => {}
+        }
+        let regular = budget.acquire(false).await.unwrap();
+        assert_eq!(budget.total.available_permits(), 0);
+        drop(first);
+        let next = pending.await.unwrap();
+        assert_eq!(budget.history.available_permits(), 0);
+        drop((regular, next));
+        assert_eq!(budget.total.available_permits(), 2);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn queue_overload_is_bounded_and_classes_are_independent() {
+        let budget = ReadBudget::new(Duration::from_secs(1));
+        let waiting = budget.history_waiters.acquire_many(4).await.unwrap();
+        assert!(matches!(
+            budget.acquire(true).await,
+            Err(AppError::LocationReadBusy)
+        ));
+        assert!(budget.acquire(false).await.is_ok());
+        drop(waiting);
+        assert!(budget.acquire(true).await.is_ok());
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn cancel_after_history_gate_releases_both_gates() {
+        let budget = ReadBudget::new(Duration::from_secs(1));
+        let first = budget.acquire(false).await.unwrap();
+        let second = budget.acquire(false).await.unwrap();
+        assert!(
+            tokio::time::timeout(Duration::from_millis(5), budget.acquire(true))
+                .await
+                .is_err()
+        );
+        assert_eq!(budget.history.available_permits(), 1);
+        assert_eq!(budget.history_waiters.available_permits(), 4);
+        drop((first, second));
+        assert!(budget.acquire(true).await.is_ok());
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn waits_share_one_deadline_and_release_on_expiry() {
+        let budget = ReadBudget::new(Duration::from_millis(60));
+        let first = budget.acquire(false).await.unwrap();
+        let second = budget.acquire(false).await.unwrap();
+        let history = budget.history.acquire().await.unwrap();
+        let begin = tokio::time::Instant::now();
+        let release = async {
+            tokio::time::sleep(Duration::from_millis(40)).await;
+            drop(history);
+        };
+        let (result, ()) = tokio::join!(budget.acquire(true), release);
+        assert!(matches!(result, Err(AppError::LocationReadBusy)));
+        assert!(begin.elapsed() < Duration::from_millis(90));
+        assert_eq!(budget.history.available_permits(), 1);
+        drop((first, second));
     }
 }
