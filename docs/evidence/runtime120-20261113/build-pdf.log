@@ -1,0 +1,17 @@
+    Checking gps-pdf-render v0.1.0 (/src/gps-pdf-render)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.11s
+   Compiling gps-pdf-render v0.1.0 (/src/gps-pdf-render)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.47s
+     Running unittests src/main.rs (/cache/target-pdf/x86_64-unknown-linux-musl/debug/deps/gps_pdf_render-c0dbcfbc4bc294e8)
+
+running 5 tests
+test protocol::tests::reply_layout_is_fixed ... ok
+test protocol::tests::request_is_exactly_what_was_declared ... ok
+test render::tests::target_fills_the_limits_without_exceeding_them ... ok
+test render::tests::unreadable_documents_and_missing_pages_are_refused ... ok
+test render::tests::built_in_page_renders_with_exact_pixels ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+   Compiling gps-pdf-render v0.1.0 (/src/gps-pdf-render)
+    Finished `release` profile [optimized] target(s) in 0.49s
