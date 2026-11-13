@@ -1,0 +1,4328 @@
+{
+  "at": "2026-11-13T08:33:59.518567+00:00",
+  "read_only": true,
+  "cpu_count": "6",
+  "disk": "Filesystem                    1B-blocks        Used  Available Use% Mounted on\n/dev/mapper/ubuntu--vg-root 47863853056 36562071552 8951312384  81% /",
+  "swap": "Filename\t\t\t\tType\t\tSize\t\tUsed\t\tPriority\n/dev/dm-0                               partition\t3903484\t\t143020\t\t-2\n",
+  "settings": [
+    {
+      "name": "effective_cache_size",
+      "setting": "284800",
+      "unit": "8kB"
+    },
+    {
+      "name": "max_connections",
+      "setting": "50",
+      "unit": null
+    },
+    {
+      "name": "max_parallel_workers_per_gather",
+      "setting": "3",
+      "unit": null
+    },
+    {
+      "name": "shared_buffers",
+      "setting": "94967",
+      "unit": "8kB"
+    },
+    {
+      "name": "superuser_reserved_connections",
+      "setting": "3",
+      "unit": null
+    },
+    {
+      "name": "temp_file_limit",
+      "setting": "-1",
+      "unit": "kB"
+    },
+    {
+      "name": "temp_tablespaces",
+      "setting": "",
+      "unit": null
+    },
+    {
+      "name": "work_mem",
+      "setting": "2532",
+      "unit": "kB"
+    }
+  ],
+  "roles": [
+    {
+      "rolname": "aaa",
+      "rolsuper": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "bbb",
+      "rolsuper": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "gps_tracker_app",
+      "rolsuper": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "gps_tracker_dev_app",
+      "rolsuper": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "postgres",
+      "rolsuper": true,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "shield_app",
+      "rolsuper": false,
+      "rolconnlimit": 6
+    }
+  ],
+  "databases": [
+    {
+      "datname": "aaa_db",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "bbb_db",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_next_20260924",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261007",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261008",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261009_connection",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261020",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_sync_20261025",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "postgres",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "shield_prod",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "template1",
+      "datconnlimit": -1
+    }
+  ],
+  "schema": [
+    {
+      "version": 99
+    }
+  ],
+  "units_before": {
+    "accounts-daemon.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/accounts-daemon.service",
+      "MemoryCurrent": "2072576",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "atd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/atd.service",
+      "MemoryCurrent": "696320",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "containerd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/containerd.service",
+      "MemoryCurrent": "65044480",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "cron.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/cron.service",
+      "MemoryCurrent": "51470336",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "dbus.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/dbus.service",
+      "MemoryCurrent": "2154496",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "docker.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/docker.service",
+      "MemoryCurrent": "62394368",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:05:05 KST"
+    },
+    "fail2ban.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/fail2ban.service",
+      "MemoryCurrent": "12427264",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Wed 2026-11-11 14:59:47 KST"
+    },
+    "getty@tty1.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/system-getty.slice/getty@tty1.service",
+      "MemoryCurrent": "2764800",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "gps-modsecurity.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-modsecurity.service",
+      "MemoryCurrent": "16273408",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Wed 2026-11-11 16:08:08 KST"
+    },
+    "gps-nginx-log.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-nginx-log.service",
+      "MemoryCurrent": "1515520",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 17:06:36 KST"
+    },
+    "gps-tracker-api-dev.service": {
+      "NRestarts": "252",
+      "ControlGroup": "/system.slice/gps-tracker-api-dev.service",
+      "MemoryCurrent": "7340032",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "1572864000",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:39:32 KST"
+    },
+    "gps-tracker-api.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-tracker-api.service",
+      "MemoryCurrent": "48369664",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 17:16:49 KST"
+    },
+    "gps-tracker.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-tracker.service",
+      "MemoryCurrent": "7180288",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "irqbalance.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/irqbalance.service",
+      "MemoryCurrent": "659456",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "mosquitto.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/mosquitto.service",
+      "MemoryCurrent": "2772992",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "networkd-dispatcher.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/networkd-dispatcher.service",
+      "MemoryCurrent": "9179136",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "nginx.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/nginx.service",
+      "MemoryCurrent": "44617728",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "packagekit.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/packagekit.service",
+      "MemoryCurrent": "4386816",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 09:06:42 KST"
+    },
+    "pm2-mmm.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/pm2-mmm.service",
+      "MemoryCurrent": "297730048",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:52 KST"
+    },
+    "polkit.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/polkit.service",
+      "MemoryCurrent": "2097152",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "postgresql@14-main.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/system-postgresql.slice/postgresql@14-main.service",
+      "MemoryCurrent": "1392533504",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:53 KST"
+    },
+    "redis-server.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/redis-server.service",
+      "MemoryCurrent": "4521984",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "rsyslog.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/rsyslog.service",
+      "MemoryCurrent": "5242880",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "shield-api.service": {
+      "NRestarts": "237",
+      "ControlGroup": "/system.slice/shield-api.service",
+      "MemoryCurrent": "16850944",
+      "CPUQuotaPerSecUSec": "1s",
+      "MemoryMax": "134217728",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:45:30 KST"
+    },
+    "snapd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/snapd.service",
+      "MemoryCurrent": "31375360",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:50 KST"
+    },
+    "ssh.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/ssh.service",
+      "MemoryCurrent": "10788864",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:47:14 KST"
+    },
+    "systemd-journald.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-journald.service",
+      "MemoryCurrent": "37568512",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:44 KST"
+    },
+    "systemd-logind.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-logind.service",
+      "MemoryCurrent": "2260992",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-resolved.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-resolved.service",
+      "MemoryCurrent": "6287360",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-timesyncd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-timesyncd.service",
+      "MemoryCurrent": "1466368",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-udevd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-udevd.service",
+      "MemoryCurrent": "6025216",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:45 KST"
+    },
+    "unattended-upgrades.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/unattended-upgrades.service",
+      "MemoryCurrent": "6774784",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "user@0.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/user.slice/user-0.slice/user@0.service",
+      "MemoryCurrent": "4210688",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:37:53 KST"
+    },
+    "user@1000.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/user.slice/user-1000.slice/user@1000.service",
+      "MemoryCurrent": "5804032",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 10:54:44 KST"
+    },
+    "wpa_supplicant.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/wpa_supplicant.service",
+      "MemoryCurrent": "1449984",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    }
+  },
+  "samples": [
+    {
+      "at": "2026-11-13T08:34:00.303321+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          130528 kB\nMemAvailable:     956244 kB\nBuffers:          147032 kB\nCached:          1515084 kB\nSwapCached:        29600 kB\nActive:          1306428 kB\nInactive:        1260056 kB\nActive(anon):     934636 kB\nInactive(anon):   768192 kB\nActive(file):     371792 kB\nInactive(file):   491864 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               660 kB\nWriteback:             0 kB\nAnonPages:        879468 kB\nMapped:           850312 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             224056 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70316 kB\nKernelStack:        8048 kB\nPageTables:        38100 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4500752 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21864 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562129 29187 1148206 359153601 8225854 0 406882 849254 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=8.48 avg60=6.21 avg300=5.66 total=41000508191\nfull avg10=8.18 avg60=6.02 avg300=5.50 total=40205416540\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911375 3793415 107983574 592078459 0 58821036 600613863 0 0 0 0 3272956 870782\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911311 3793414 107983528 592077235 0 58819392 599717961 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5297975 65626 41416160 238852755 0 36653504 240664905 0 0 0 0 3143379 769372\n 252      17 vdb1 114658 3428 9492624 1042740 5297975 65626 41416160 238852755 0 36653512 239895496 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12041146 0 134425160 981087996 0 69084684 990472992 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 15
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125545,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212337,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125529,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215010,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125532,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238087,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18041852,
+          "xact_rollback": 6112859,
+          "blks_read": 276087,
+          "blks_hit": 666493567,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125529,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717112,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587593,
+          "xact_rollback": 21238,
+          "blks_read": 14317,
+          "blks_hit": 418052816,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335159,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32041721,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131908,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280122,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:05.496808+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          117760 kB\nMemAvailable:     943684 kB\nBuffers:          147032 kB\nCached:          1515292 kB\nSwapCached:        29600 kB\nActive:          1306732 kB\nInactive:        1267880 kB\nActive(anon):     934712 kB\nInactive(anon):   776036 kB\nActive(file):     372020 kB\nInactive(file):   491844 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               740 kB\nWriteback:             0 kB\nAnonPages:        887488 kB\nMapped:           850732 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             224088 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70348 kB\nKernelStack:        8064 kB\nPageTables:        38364 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4507988 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21896 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562249 29187 1148220 359156484 8225903 0 406890 849263 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=6.07 avg60=5.90 avg300=5.61 total=41000646830\nfull avg10=5.91 avg60=5.73 avg300=5.45 total=40205548743\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911425 3793560 107984830 592078580 0 58821236 600613991 0 0 0 0 3272995 870790\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911361 3793559 107984784 592077356 0 58819592 599718082 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298158 65628 41418032 238875712 0 36654096 240687868 0 0 0 0 3143417 769379\n 252      17 vdb1 114658 3428 9492624 1042740 5298158 65628 41418032 238875712 0 36654104 239918452 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12041488 0 134428288 981112700 0 69085304 990497696 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 15
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125545,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212337,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125529,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215010,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125532,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238087,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18042018,
+          "xact_rollback": 6112912,
+          "blks_read": 276089,
+          "blks_hit": 666499660,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125531,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717219,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587632,
+          "xact_rollback": 21238,
+          "blks_read": 14317,
+          "blks_hit": 418070461,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335167,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32043759,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131908,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280122,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:10.605215+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          115748 kB\nMemAvailable:     941764 kB\nBuffers:          147040 kB\nCached:          1515376 kB\nSwapCached:        29600 kB\nActive:          1306752 kB\nInactive:        1264816 kB\nActive(anon):     934724 kB\nInactive(anon):   772888 kB\nActive(file):     372028 kB\nInactive(file):   491928 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               880 kB\nWriteback:             0 kB\nAnonPages:        884196 kB\nMapped:           850292 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             224052 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70312 kB\nKernelStack:        8032 kB\nPageTables:        38072 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4502332 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21896 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562283 29187 1148231 359159483 8225920 0 406893 849270 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=4.25 avg60=5.55 avg300=5.54 total=41000682543\nfull avg10=4.14 avg60=5.39 avg300=5.38 total=40205582390\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911457 3793584 107985062 592078641 0 58821368 600614057 0 0 0 0 3273022 870795\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911393 3793583 107985016 592077417 0 58819724 599718143 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298213 65628 41418496 238875875 0 36654320 240688036 0 0 0 0 3143444 769384\n 252      17 vdb1 114658 3428 9492624 1042740 5298213 65628 41418496 238875875 0 36654328 239918616 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12041572 0 134428984 981113096 0 69085540 990498092 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 15
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125547,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212420,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125531,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215109,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125534,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238170,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18042214,
+          "xact_rollback": 6112963,
+          "blks_read": 276089,
+          "blks_hit": 666505162,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125531,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717219,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587643,
+          "xact_rollback": 21238,
+          "blks_read": 14317,
+          "blks_hit": 418072626,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335168,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32043760,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131910,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280213,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:15.731161+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          119088 kB\nMemAvailable:     945160 kB\nBuffers:          147052 kB\nCached:          1515420 kB\nSwapCached:        29600 kB\nActive:          1306756 kB\nInactive:        1263368 kB\nActive(anon):     934704 kB\nInactive(anon):   771408 kB\nActive(file):     372052 kB\nInactive(file):   491960 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:              1256 kB\nWriteback:             0 kB\nAnonPages:        882748 kB\nMapped:           850300 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             223764 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70024 kB\nKernelStack:        8032 kB\nPageTables:        37840 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4497140 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21848 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562327 29187 1148248 359162474 8225930 0 406899 849282 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=2.33 avg60=5.03 avg300=5.42 total=41000705889\nfull avg10=2.27 avg60=4.88 avg300=5.27 total=40205604391\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911498 3793616 107985414 592078877 0 58821540 600614302 0 0 0 0 3273052 870803\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911434 3793615 107985368 592077653 0 58819896 599718379 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298321 65629 41419512 238883613 0 36654684 240695782 0 0 0 0 3143473 769391\n 252      17 vdb1 114658 3428 9492624 1042740 5298321 65629 41419512 238883613 0 36654692 239926354 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12041725 0 134430352 981121248 0 69085920 990506244 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 14
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125547,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212420,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125531,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215109,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125536,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238253,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18042386,
+          "xact_rollback": 6113011,
+          "blks_read": 276090,
+          "blks_hit": 666511380,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125533,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717326,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587654,
+          "xact_rollback": 21238,
+          "blks_read": 14317,
+          "blks_hit": 418075648,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335172,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044018,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131910,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280213,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:20.843235+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          121524 kB\nMemAvailable:     947628 kB\nBuffers:          147060 kB\nCached:          1515444 kB\nSwapCached:        29600 kB\nActive:          1306764 kB\nInactive:        1263644 kB\nActive(anon):     934700 kB\nInactive(anon):   771664 kB\nActive(file):     372064 kB\nInactive(file):   491980 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               964 kB\nWriteback:             0 kB\nAnonPages:        882972 kB\nMapped:           850304 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             223928 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70188 kB\nKernelStack:        8048 kB\nPageTables:        37936 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4497240 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21912 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562368 29187 1148260 359165274 8226133 0 406902 849291 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=12.34 avg60=6.88 avg300=5.81 total=41002071009\nfull avg10=11.97 avg60=6.68 avg300=5.65 total=40206948572\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911584 3793639 107985702 592081365 0 58823036 600616802 0 0 0 0 3273126 870816\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911520 3793638 107985656 592080140 0 58821392 599720867 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298545 65631 41421584 238953662 0 36656656 240765843 0 0 0 0 3143546 769404\n 252      17 vdb1 114658 3428 9492624 1042740 5298545 65631 41421584 238953662 0 36656664 239996403 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12041987 0 134432712 981196580 0 69087856 990581576 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 14
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125549,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212503,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125533,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215208,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125536,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238253,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18042640,
+          "xact_rollback": 6113064,
+          "blks_read": 276091,
+          "blks_hit": 666521739,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125533,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717326,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587665,
+          "xact_rollback": 21238,
+          "blks_read": 14317,
+          "blks_hit": 418077737,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335173,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044019,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131912,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280304,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:25.955685+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          123188 kB\nMemAvailable:     949228 kB\nBuffers:          147068 kB\nCached:          1515372 kB\nSwapCached:        29600 kB\nActive:          1306784 kB\nInactive:        1264036 kB\nActive(anon):     934708 kB\nInactive(anon):   772132 kB\nActive(file):     372076 kB\nInactive(file):   491904 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               264 kB\nWriteback:             0 kB\nAnonPages:        883424 kB\nMapped:           850556 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             223824 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70084 kB\nKernelStack:        8032 kB\nPageTables:        37972 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4497316 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21912 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562491 29187 1148276 359168135 8226169 0 406909 849301 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=7.13 avg60=6.29 avg300=5.71 total=41002139257\nfull avg10=6.93 avg60=6.11 avg300=5.55 total=40207013882\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911734 3793731 107988054 592094482 0 58823536 600629927 0 0 0 0 3273162 870823\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911670 3793730 107988008 592093258 0 58821892 599733984 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298644 65632 41422880 238956173 0 36656968 240768361 0 0 0 0 3143581 769410\n 252      17 vdb1 114658 3428 9492624 1042740 5298644 65632 41422880 238956173 0 36656976 239998913 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12042294 0 134436360 981221544 0 69088412 990606540 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 14
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125549,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212503,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125533,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215208,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125538,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238336,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18042931,
+          "xact_rollback": 6113112,
+          "blks_read": 276093,
+          "blks_hit": 666534536,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125535,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717433,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587698,
+          "xact_rollback": 21238,
+          "blks_read": 14317,
+          "blks_hit": 418095603,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335176,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044164,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131912,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280304,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:31.067756+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          124732 kB\nMemAvailable:     950800 kB\nBuffers:          147076 kB\nCached:          1515392 kB\nSwapCached:        29600 kB\nActive:          1306792 kB\nInactive:        1261400 kB\nActive(anon):     934700 kB\nInactive(anon):   769484 kB\nActive(file):     372092 kB\nInactive(file):   491916 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               300 kB\nWriteback:             0 kB\nAnonPages:        880780 kB\nMapped:           850532 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             223800 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70060 kB\nKernelStack:        8016 kB\nPageTables:        37052 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4491888 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21896 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562527 29187 1148292 359171011 8226302 0 406911 849308 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=10.74 avg60=7.15 avg300=5.90 total=41003097879\nfull avg10=10.63 avg60=6.98 avg300=5.75 total=40207955055\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911770 3793767 107988478 592094706 0 58823676 600630156 0 0 0 0 3273189 870828\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911706 3793766 107988432 592093482 0 58822032 599734208 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298702 65632 41423808 238957498 0 36658288 240769690 0 0 0 0 3143607 769414\n 252      17 vdb1 114658 3428 9492624 1042740 5298702 65632 41423808 238957498 0 36658296 240000239 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12042398 0 134437712 981226960 0 69088732 990611956 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 13
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125551,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212586,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125535,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215307,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125538,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238336,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18043116,
+          "xact_rollback": 6113163,
+          "blks_read": 276093,
+          "blks_hit": 666539908,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125535,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717433,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587713,
+          "xact_rollback": 21239,
+          "blks_read": 14317,
+          "blks_hit": 418097834,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335177,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044165,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131915,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280396,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:36.186241+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          124480 kB\nMemAvailable:     950868 kB\nBuffers:          147084 kB\nCached:          1515708 kB\nSwapCached:        29600 kB\nActive:          1306800 kB\nInactive:        1261876 kB\nActive(anon):     934700 kB\nInactive(anon):   769648 kB\nActive(file):     372100 kB\nInactive(file):   492228 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               360 kB\nWriteback:             0 kB\nAnonPages:        880916 kB\nMapped:           850536 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             223712 kB\nSReclaimable:     153740 kB\nSUnreclaim:        69972 kB\nKernelStack:        8016 kB\nPageTables:        37060 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4491888 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21896 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562558 29187 1148300 359174022 8226312 0 406916 849315 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=7.20 avg60=6.68 avg300=5.82 total=41003122033\nfull avg10=7.12 avg60=6.53 avg300=5.67 total=40207978501\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911809 3793787 107988782 592094810 0 58823828 600630265 0 0 0 0 3273217 870834\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911745 3793786 107988736 592093585 0 58822184 599734312 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298779 65633 41424552 238959352 0 36658512 240771548 0 0 0 0 3143634 769418\n 252      17 vdb1 114658 3428 9492624 1042740 5298779 65633 41424552 238959352 0 36658520 240002093 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12042508 0 134438760 981229044 0 69088980 990614040 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 13
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125551,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212586,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125535,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215307,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125540,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238419,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18043270,
+          "xact_rollback": 6113210,
+          "blks_read": 276094,
+          "blks_hit": 666545360,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125537,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717540,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587722,
+          "xact_rollback": 21239,
+          "blks_read": 14317,
+          "blks_hit": 418099811,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335185,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044352,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131915,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280396,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:41.292669+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          123724 kB\nMemAvailable:     950140 kB\nBuffers:          147088 kB\nCached:          1515728 kB\nSwapCached:        29600 kB\nActive:          1306808 kB\nInactive:        1261836 kB\nActive(anon):     934700 kB\nInactive(anon):   769588 kB\nActive(file):     372108 kB\nInactive(file):   492248 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               428 kB\nWriteback:             0 kB\nAnonPages:        880856 kB\nMapped:           850540 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             223800 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70060 kB\nKernelStack:        8016 kB\nPageTables:        37060 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4491964 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21896 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562588 29187 1148310 359177020 8226327 0 406919 849325 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=3.95 avg60=6.05 avg300=5.70 total=41003166638\nfull avg10=3.91 avg60=5.91 avg300=5.55 total=40208019255\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911849 3793813 107989086 592096498 0 58824416 600631959 0 0 0 0 3273247 870839\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911785 3793812 107989040 592095274 0 58822772 599736000 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298849 65634 41425248 238975897 0 36659964 240788098 0 0 0 0 3143663 769423\n 252      17 vdb1 114658 3428 9492624 1042740 5298849 65634 41425248 238975897 0 36659972 240018638 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12042616 0 134439760 981249124 0 69089712 990634120 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 13
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125553,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212669,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125537,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215406,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125540,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238419,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18043481,
+          "xact_rollback": 6113264,
+          "blks_read": 276094,
+          "blks_hit": 666551556,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125537,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717540,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587733,
+          "xact_rollback": 21239,
+          "blks_read": 14317,
+          "blks_hit": 418101979,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335191,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044380,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131917,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280487,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:46.413481+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          114972 kB\nMemAvailable:     941424 kB\nBuffers:          147088 kB\nCached:          1516620 kB\nSwapCached:        29600 kB\nActive:          1307448 kB\nInactive:        1269492 kB\nActive(anon):     935332 kB\nInactive(anon):   777216 kB\nActive(file):     372116 kB\nInactive(file):   492276 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               384 kB\nWriteback:             0 kB\nAnonPages:        888312 kB\nMapped:           852488 kB\nShmem:            799316 kB\nKReclaimable:     153740 kB\nSlab:             223928 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70188 kB\nKernelStack:        8032 kB\nPageTables:        37916 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4504552 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21912 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562725 29187 1148328 359179896 8226337 0 406925 849340 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=2.65 avg60=5.66 avg300=5.62 total=41003187207\nfull avg10=2.62 avg60=5.53 avg300=5.47 total=40208036960\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911887 3793833 107989318 592096577 0 58824576 600632044 0 0 0 0 3273277 870846\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911823 3793832 107989272 592095353 0 58822932 599736079 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5298935 65635 41426088 238978375 0 36660216 240790580 0 0 0 0 3143692 769428\n 252      17 vdb1 114658 3428 9492624 1042740 5298935 65635 41426088 238978375 0 36660224 240021115 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12042732 0 134440832 981251756 0 69089992 990636752 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 13
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125553,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212669,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125537,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215406,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125542,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238502,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18043655,
+          "xact_rollback": 6113314,
+          "blks_read": 276095,
+          "blks_hit": 666564954,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125539,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717647,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587756,
+          "xact_rollback": 21239,
+          "blks_read": 14317,
+          "blks_hit": 418113747,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335195,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044526,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131917,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280487,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:51.735139+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          118304 kB\nMemAvailable:     944808 kB\nBuffers:          147092 kB\nCached:          1515816 kB\nSwapCached:        29600 kB\nActive:          1306824 kB\nInactive:        1264064 kB\nActive(anon):     934700 kB\nInactive(anon):   771744 kB\nActive(file):     372124 kB\nInactive(file):   492320 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               496 kB\nWriteback:             8 kB\nAnonPages:        883008 kB\nMapped:           850608 kB\nShmem:            798460 kB\nKReclaimable:     153740 kB\nSlab:             223812 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70072 kB\nKernelStack:        8016 kB\nPageTables:        37656 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4493448 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21880 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562756 29187 1148340 359182952 8226395 0 406931 849350 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=3.53 avg60=5.56 avg300=5.60 total=41003496174\nfull avg10=3.51 avg60=5.45 avg300=5.46 total=40208340577\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911926 3793849 107989550 592096973 0 58824808 600632446 0 0 0 0 3273304 870851\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911862 3793848 107989504 592095749 0 58823164 599736475 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5299003 65636 41426792 238980134 0 36660932 240792344 0 0 0 0 3143718 769433\n 252      17 vdb1 114658 3428 9492624 1042740 5299003 65636 41426792 238980134 0 36660940 240022874 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12042830 0 134441768 981254028 0 69090796 990639024 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 13
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125555,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212752,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125539,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215505,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125542,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238502,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18043840,
+          "xact_rollback": 6113363,
+          "blks_read": 276096,
+          "blks_hit": 666569842,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125539,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717647,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587777,
+          "xact_rollback": 21239,
+          "blks_read": 14317,
+          "blks_hit": 418120871,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335197,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044640,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131919,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280578,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    },
+    {
+      "at": "2026-11-13T08:34:56.839858+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          122388 kB\nMemAvailable:     948968 kB\nBuffers:          147100 kB\nCached:          1515888 kB\nSwapCached:        29596 kB\nActive:          1306836 kB\nInactive:        1264404 kB\nActive(anon):     934700 kB\nInactive(anon):   772020 kB\nActive(file):     372136 kB\nInactive(file):   492384 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3760464 kB\nDirty:               444 kB\nWriteback:           124 kB\nAnonPages:        883296 kB\nMapped:           850636 kB\nShmem:            798464 kB\nKReclaimable:     153740 kB\nSlab:             223812 kB\nSReclaimable:     153740 kB\nSUnreclaim:        70072 kB\nKernelStack:        8016 kB\nPageTables:        37660 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4493580 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21880 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      372728 kB\nDirectMap2M:     2772992 kB\n",
+      "cpu": "cpu  5562787 29187 1148352 359185952 8226404 0 406934 849356 0 0",
+      "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=663159078\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=643363424\n",
+      "io_pressure": "some avg10=2.36 avg60=5.20 avg300=5.53 total=41003517584\nfull avg10=2.35 avg60=5.10 avg300=5.38 total=40208358788\n",
+      "diskstats": "   7       0 loop0 262 0 3070 430 0 0 0 0 0 348 430 0 0 0 0 0 0\n   7       1 loop1 9214 0 227786 25020 0 0 0 0 0 35892 25020 0 0 0 0 0 0\n   7       2 loop2 553 0 4478 639 0 0 0 0 0 692 639 0 0 0 0 0 0\n   7       3 loop3 606 0 4556 422 0 0 0 0 0 536 422 0 0 0 0 0 0\n   7       4 loop4 620 0 4566 576 0 0 0 0 0 532 576 0 0 0 0 0 0\n   7       5 loop5 308 0 3190 514 0 0 0 0 0 340 514 0 0 0 0 0 0\n   7       6 loop6 1381 0 74474 8285 0 0 0 0 0 10952 8285 0 0 0 0 0 0\n   7       7 loop7 475 0 2454 180 0 0 0 0 0 288 180 0 0 0 0 0 0\n 252       0 vda 1311919 1183482 48305392 7664621 7911961 3793869 107989790 592097085 0 58824956 600632563 0 0 0 0 3273330 870856\n 252       1 vda1 743 139 75902 23837 64 1 46 1224 0 2528 25062 0 0 0 0 0 0\n 252       2 vda2 1311071 1183343 48225050 7640726 7911897 3793868 107989744 592095861 0 58823312 599736587 0 0 0 0 0 0\n 252      16 vdb 114734 3428 9495240 1042777 5299052 65637 41427272 238980226 16 36661068 240792441 0 0 0 0 3143743 769437\n 252      17 vdb1 114658 3428 9492624 1042740 5299052 65637 41427272 238980226 16 36661076 240022967 0 0 0 0 0 0\n 253       0 dm-0 1594120 0 12760024 4603268 1871816 0 14974528 207692312 0 1787700 212295580 0 0 0 0 0 0\n 253       1 dm-1 1016006 0 44950226 9384996 12042926 0 134442736 981254208 17 69090976 990639204 0 0 0 0 0 0\n   7       8 loop8 707 0 3474 432 0 0 0 0 0 632 432 0 0 0 0 0 0\n   7       9 loop9 53 0 736 196 0 0 0 0 0 204 196 0 0 0 0 0 0\n   7      10 loop10 5655 0 465636 50626 0 0 0 0 0 66572 50626 0 0 0 0 0 0\n   7      11 loop11 3235 0 71060 8919 0 0 0 0 0 12288 8919 0 0 0 0 0 0\n   7      12 loop12 504 0 2580 91 0 0 0 0 0 204 91 0 0 0 0 0 0\n",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 13
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 2
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "db_io": [
+        {
+          "datname": "postgres",
+          "xact_commit": 125555,
+          "xact_rollback": 0,
+          "blks_read": 188,
+          "blks_hit": 5212752,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "aaa_db",
+          "xact_commit": 125539,
+          "xact_rollback": 0,
+          "blks_read": 77,
+          "blks_hit": 6215505,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template1",
+          "xact_commit": 125544,
+          "xact_rollback": 0,
+          "blks_read": 69,
+          "blks_hit": 5238585,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "template0",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "bbb_db",
+          "xact_commit": 18044016,
+          "xact_rollback": 6113416,
+          "blks_read": 276099,
+          "blks_hit": 666575312,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev",
+          "xact_commit": 125541,
+          "xact_rollback": 0,
+          "blks_read": 79,
+          "blks_hit": 6717754,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker",
+          "xact_commit": 1587790,
+          "xact_rollback": 21240,
+          "blks_read": 14317,
+          "blks_hit": 418123918,
+          "temp_bytes": 67302894879,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "xact_commit": 335200,
+          "xact_rollback": 0,
+          "blks_read": 1121,
+          "blks_hit": 32044785,
+          "temp_bytes": 7820361728,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "shield_prod",
+          "xact_commit": 131919,
+          "xact_rollback": 14,
+          "blks_read": 8597,
+          "blks_hit": 6280578,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "xact_commit": 0,
+          "xact_rollback": 0,
+          "blks_read": 0,
+          "blks_hit": 0,
+          "temp_bytes": 0,
+          "blk_read_time": 0,
+          "blk_write_time": 0
+        }
+      ]
+    }
+  ],
+  "units_after": {
+    "accounts-daemon.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/accounts-daemon.service",
+      "MemoryCurrent": "2072576",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "atd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/atd.service",
+      "MemoryCurrent": "696320",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "containerd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/containerd.service",
+      "MemoryCurrent": "65040384",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "cron.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/cron.service",
+      "MemoryCurrent": "51478528",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "dbus.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/dbus.service",
+      "MemoryCurrent": "2093056",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "docker.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/docker.service",
+      "MemoryCurrent": "62414848",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:05:05 KST"
+    },
+    "fail2ban.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/fail2ban.service",
+      "MemoryCurrent": "12304384",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Wed 2026-11-11 14:59:47 KST"
+    },
+    "getty@tty1.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/system-getty.slice/getty@tty1.service",
+      "MemoryCurrent": "2764800",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "gps-modsecurity.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-modsecurity.service",
+      "MemoryCurrent": "16273408",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Wed 2026-11-11 16:08:08 KST"
+    },
+    "gps-nginx-log.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-nginx-log.service",
+      "MemoryCurrent": "1515520",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 17:06:36 KST"
+    },
+    "gps-tracker-api-dev.service": {
+      "NRestarts": "252",
+      "ControlGroup": "/system.slice/gps-tracker-api-dev.service",
+      "MemoryCurrent": "7340032",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "1572864000",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:39:32 KST"
+    },
+    "gps-tracker-api.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-tracker-api.service",
+      "MemoryCurrent": "48369664",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 17:16:49 KST"
+    },
+    "gps-tracker.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-tracker.service",
+      "MemoryCurrent": "7180288",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "irqbalance.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/irqbalance.service",
+      "MemoryCurrent": "659456",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "mosquitto.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/mosquitto.service",
+      "MemoryCurrent": "2772992",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "networkd-dispatcher.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/networkd-dispatcher.service",
+      "MemoryCurrent": "9179136",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "nginx.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/nginx.service",
+      "MemoryCurrent": "44494848",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "packagekit.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/packagekit.service",
+      "MemoryCurrent": "4386816",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 09:06:42 KST"
+    },
+    "pm2-mmm.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/pm2-mmm.service",
+      "MemoryCurrent": "297762816",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:52 KST"
+    },
+    "polkit.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/polkit.service",
+      "MemoryCurrent": "2097152",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "postgresql@14-main.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/system-postgresql.slice/postgresql@14-main.service",
+      "MemoryCurrent": "1396043776",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:53 KST"
+    },
+    "redis-server.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/redis-server.service",
+      "MemoryCurrent": "4509696",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "rsyslog.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/rsyslog.service",
+      "MemoryCurrent": "5263360",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "shield-api.service": {
+      "NRestarts": "237",
+      "ControlGroup": "/system.slice/shield-api.service",
+      "MemoryCurrent": "16850944",
+      "CPUQuotaPerSecUSec": "1s",
+      "MemoryMax": "134217728",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:45:30 KST"
+    },
+    "snapd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/snapd.service",
+      "MemoryCurrent": "31375360",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:50 KST"
+    },
+    "ssh.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/ssh.service",
+      "MemoryCurrent": "10792960",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:47:14 KST"
+    },
+    "systemd-journald.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-journald.service",
+      "MemoryCurrent": "38043648",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:44 KST"
+    },
+    "systemd-logind.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-logind.service",
+      "MemoryCurrent": "2260992",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-resolved.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-resolved.service",
+      "MemoryCurrent": "6287360",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-timesyncd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-timesyncd.service",
+      "MemoryCurrent": "1466368",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-udevd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-udevd.service",
+      "MemoryCurrent": "6025216",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:45 KST"
+    },
+    "unattended-upgrades.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/unattended-upgrades.service",
+      "MemoryCurrent": "6774784",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "user@0.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/user.slice/user-0.slice/user@0.service",
+      "MemoryCurrent": "4210688",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:37:53 KST"
+    },
+    "user@1000.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/user.slice/user-1000.slice/user@1000.service",
+      "MemoryCurrent": "5804032",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 10:54:44 KST"
+    },
+    "wpa_supplicant.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/wpa_supplicant.service",
+      "MemoryCurrent": "1449984",
+      "CPUQuotaPerSecUSec": "infinity",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    }
+  },
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-log-20261107-r1",
+    "service": "gps-tracker-api"
+  },
+  "changed_service_lifetimes": []
+}

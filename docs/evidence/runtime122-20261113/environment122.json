@@ -1,0 +1,44 @@
+{
+  "image": "sha256:a0bc650b308d2099a5cb2a1d561c8051dced45c991d43b065da665899c632a00",
+  "internal": true,
+  "binds": null,
+  "ports": {},
+  "memory": 5905580032,
+  "memory_swap": 5905580032,
+  "cpu_nano": 2000000000,
+  "blkio": {
+    "BlkioWeight": 0,
+    "BlkioWeightDevice": [],
+    "BlkioDeviceReadBps": [
+      {
+        "Path": "/dev/nvme0n1",
+        "Rate": 8388608
+      }
+    ],
+    "BlkioDeviceWriteBps": [
+      {
+        "Path": "/dev/nvme0n1",
+        "Rate": 8388608
+      }
+    ],
+    "BlkioDeviceReadIOps": [
+      {
+        "Path": "/dev/nvme0n1",
+        "Rate": 200
+      }
+    ],
+    "BlkioDeviceWriteIOps": [
+      {
+        "Path": "/dev/nvme0n1",
+        "Rate": 200
+      }
+    ]
+  },
+  "cap_add": [
+    "CAP_SYS_ADMIN"
+  ],
+  "security_opt": [
+    "seccomp=unconfined",
+    "apparmor=unconfined"
+  ]
+}

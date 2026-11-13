@@ -1,0 +1,30 @@
+{
+  "before": "2026-11-13T08:33:59.518567+00:00",
+  "after": "2026-11-13T08:53:15.987780+00:00",
+  "before_schema": [
+    {
+      "version": 99
+    }
+  ],
+  "after_schema": [
+    {
+      "version": 99
+    }
+  ],
+  "before_health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-log-20261107-r1",
+    "service": "gps-tracker-api"
+  },
+  "after_health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-log-20261107-r1",
+    "service": "gps-tracker-api"
+  },
+  "changed_service_lifetimes": [],
+  "production_modified": false
+}
