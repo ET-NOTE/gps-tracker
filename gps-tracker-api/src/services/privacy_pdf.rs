@@ -37,6 +37,7 @@ const MAX_PIXELS: u64 = 1_000_000;
 const REPLY_LIMIT: u64 = 32 + 3 * MAX_PIXELS + 1;
 /// Wall clock for one page. The renderer's own CPU ceiling is lower.
 const DEADLINE: Duration = Duration::from_secs(15);
+const MAX_PDF: usize = 5 * 1024 * 1024;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PdfError {
@@ -142,6 +143,7 @@ fn parse(reply: &[u8]) -> Result<Reply<'_>, PdfError> {
             (4, 12) => PdfError::TooManyPages,
             (5, 12) => PdfError::NoSuchPage,
             (6, 12) => PdfError::PageSize,
+            (8, 12) => PdfError::Busy,
             _ => PdfError::Failed,
         });
     }
@@ -176,8 +178,12 @@ pub async fn render(pdf: &[u8], page: u32) -> Result<Normalized, PdfError> {
     if !(1..=MAX_PAGES).contains(&page) {
         return Err(PdfError::NoSuchPage);
     }
-    let (path, digest) = renderer().await?;
+    if pdf.is_empty() || pdf.len() > MAX_PDF {
+        return Err(PdfError::Invalid);
+    }
+    // Also cover self-test initialization, which can otherwise outlive admission.
     let _permit = LIMIT.try_acquire().map_err(|_| PdfError::Busy)?;
+    let (path, digest) = renderer().await?;
     let mut request = Vec::with_capacity(16 + pdf.len());
     request.extend_from_slice(MAGIC);
     request.extend_from_slice(&page.to_be_bytes());
@@ -222,7 +228,12 @@ async fn through_service(address: &Path, request: &[u8]) -> Result<Vec<u8>, PdfE
         let mut reply = Vec::new();
         let mut limited = reader.take(REPLY_LIMIT);
         let (_, received) = tokio::join!(send, limited.read_to_end(&mut reply));
-        received.map_err(|_| PdfError::Failed)?;
+        // A busy supervisor intentionally closes without consuming a document.
+        // Unix sockets may then report reset after the complete rejection frame.
+        // Accept only that exact bounded error frame, never a partial success.
+        if received.is_err() && parse(&reply) != Err(PdfError::Busy) {
+            return Err(PdfError::Failed);
+        }
         Ok::<_, PdfError>(reply)
     };
     // Dropping the connection at the deadline ends the exchange; the service has its own limits.
@@ -282,6 +293,42 @@ mod tests {
         bytes
     }
 
+    #[tokio::test]
+    async fn busy_service_rejects_before_consuming_large_request() {
+        let address =
+            std::env::temp_dir().join(format!("gps-pdf-busy-{}.sock", uuid::Uuid::new_v4()));
+        let listener = tokio::net::UnixListener::bind(&address).unwrap();
+        let task = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            stream.write_all(&reply(&[8], &[])).await.unwrap();
+        });
+        let response = through_service(&address, &vec![0; MAX_PDF]).await.unwrap();
+        assert_eq!(parse(&response), Err(PdfError::Busy));
+        task.await.unwrap();
+        std::fs::remove_file(address).unwrap();
+    }
+
+    #[tokio::test]
+    async fn dropping_service_exchange_closes_the_socket() {
+        let address =
+            std::env::temp_dir().join(format!("gps-pdf-cancel-{}.sock", uuid::Uuid::new_v4()));
+        let listener = tokio::net::UnixListener::bind(&address).unwrap();
+        let client = tokio::spawn({
+            let address = address.clone();
+            async move { through_service(&address, b"bounded request").await }
+        });
+        let (mut server, _) = listener.accept().await.unwrap();
+        let mut request = Vec::new();
+        server.read_to_end(&mut request).await.unwrap();
+        assert_eq!(request, b"bounded request");
+        client.abort();
+        assert!(client.await.unwrap_err().is_cancelled());
+        // The cancelled future drops both halves; it cannot leave a detached
+        // writer/socket holding the renderer alive.
+        assert!(server.write_all(b"reply").await.is_err());
+        std::fs::remove_file(address).unwrap();
+    }
+
     #[test]
     fn only_the_documented_reply_layout_is_accepted() {
         let ok = reply(&[0, 2, 1, 7, 595_276, 841_890], &[1, 2, 3, 4, 5, 6]);
@@ -296,6 +343,7 @@ mod tests {
             (6, PdfError::PageSize),
             (1, PdfError::Failed),
             (7, PdfError::Failed),
+            (8, PdfError::Busy),
             (99, PdfError::Failed),
         ] {
             assert_eq!(parse(&reply(&[status], &[])), Err(error));

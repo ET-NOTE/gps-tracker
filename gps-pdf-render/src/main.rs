@@ -11,6 +11,7 @@
 mod protocol;
 mod render;
 mod sandbox;
+mod supervisor;
 
 use protocol::{Request, Status};
 use std::io::{stdin, stdout};
@@ -36,6 +37,7 @@ fn serve() -> i32 {
 fn main() {
     let code = match std::env::args().nth(1).as_deref() {
         None => serve(),
+        Some("service") => supervisor::serve(),
         Some("selftest") => sandbox::selftest(render::sample_renders),
         Some(_) => 64,
     };

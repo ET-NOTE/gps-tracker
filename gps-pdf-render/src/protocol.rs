@@ -26,6 +26,8 @@ pub enum Status {
     PageSize = 6,
     /// The renderer gave up on this page.
     Failed = 7,
+    /// The shared service already has a live worker; no document was read.
+    Busy = 8,
 }
 
 pub struct Request {
