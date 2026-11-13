@@ -177,7 +177,7 @@ def cancellation():
         assert client.get(path,data['user_id'])[0]==200
         results.append(dict(route=name,cancel_seconds=elapsed,retry_after_respected=True,slot_reused=True))
     save('cancellation122',dict(passed=results,remaining_queries=len(active())))
-    print('PASS TLS cancel/429/slot reuse for3 encrypted paths')
+    print(f'PASS TLS cancel/429/slot reuse for{len(results)} encrypted paths')
 
 
 if __name__=='__main__':
