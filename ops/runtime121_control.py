@@ -161,3 +161,30 @@ def start_baseline():
 
 def boot_new(env=None, should_fail=None):
     boot('/opt/gps-tracker-api',env,should_fail)
+
+
+def boot_settled(env=None):
+    """Business fixtures begin after startup workers release the real fence.
+
+    This never retries an HTTP mutation or disables a worker. Deliberate 409
+    assertions in the original consent/withdrawal suites remain unchanged.
+    """
+    import psycopg
+    boot_new(env)
+    started=time.monotonic();quiet_since=None;busy_samples=0
+    with psycopg.connect(DSN,autocommit=True) as db:
+        while time.monotonic()-started < 60:
+            held=db.execute("""SELECT count(*) FROM pg_locks
+                WHERE locktype='advisory' AND database=(SELECT oid FROM pg_database WHERE datname=current_database())
+                AND classid=0 AND objid=210571031 AND objsubid=1""").fetchone()[0]
+            if held:
+                quiet_since=None;busy_samples+=1
+            elif quiet_since is None:
+                quiet_since=time.monotonic()
+            elif time.monotonic()-quiet_since >= 1:
+                with (ROOT/'out/startup-settle121.jsonl').open('a') as evidence:
+                    evidence.write(json.dumps(dict(seconds=round(time.monotonic()-started,3),
+                        busy_samples=busy_samples,quiet_seconds=1,http_retries=0,workers_disabled=False))+'\n')
+                return
+            time.sleep(.1)
+    raise AssertionError('startup privacy fence did not settle within60 seconds')

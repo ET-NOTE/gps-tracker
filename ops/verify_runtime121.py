@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-from runtime121_control import ROOT, DSN, boot_new, stop_api
+from runtime121_control import ROOT, DSN, boot_settled as boot_new, stop_api
 
 assert Path('/etc/runtime121-test-only').read_text().strip() == 'synthetic'
 cred=json.loads((ROOT/'test-runtime.json').read_text())
@@ -38,7 +38,7 @@ for name in ['test_provision22.py','test_provision22b.py','test_provision22d.py'
     source=(ROOT/name).read_text()
     a=source.index("NET='gps-provision22-test-")
     b=source.index('db=psycopg.connect',a)
-    source=source[:a]+"from runtime121_control import DSN as dsn,boot_new\nassert HERE==pathlib.Path('/opt/gps121')\ndigest=hashlib.sha256((HERE/'out/gps-tracker-api').read_bytes()).hexdigest()\n"+source[b:]
+    source=source[:a]+"from runtime121_control import DSN as dsn,boot_settled as boot_new\nassert HERE==pathlib.Path('/opt/gps121')\ndigest=hashlib.sha256((HERE/'out/gps-tracker-api').read_bytes()).hexdigest()\n"+source[b:]
     source=source.replace("host=inspect('container',API)['NetworkSettings']['Networks'][NET]['IPAddress']", "host='127.0.0.1'")
     if name=='test_provision22d.py':
         cases=ROOT/'test_provision22d_cases.py'
