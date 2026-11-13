@@ -11,7 +11,9 @@ def transaction(db):
     return db.transaction() if hasattr(db, 'transaction') else db
 
 
-def connect(cfg):
+def connect(cfg, *, maintenance_owner=False):
+    # Opt-in is reserved for the checkpoint maintenance entry point. Ordinary
+    # workers still fail closed. It never changes the storage maintenance flag.
     mode = cfg.get('GPS_LOCATION_ENCRYPTION', 'off')
     if mode not in ('off', 'pilot'):
         raise ValueError('invalid location encryption mode')
@@ -34,8 +36,17 @@ def connect(cfg):
                 return db
             c.execute('SELECT enabled,coalesce(to_jsonb(p)->>\'maintenance\',\'false\')::boolean FROM location_storage_policy p WHERE singleton')
             enabled, maintenance = c.fetchone()
-            if maintenance or enabled != (mode == 'pilot'):
+            if enabled != (mode == 'pilot'):
                 raise ValueError('storage policy mismatch or maintenance; worker stopped')
+            if maintenance:
+                if not maintenance_owner:
+                    raise ValueError('storage policy mismatch or maintenance; worker stopped')
+                c.execute("SELECT pg_has_role(current_user,(SELECT relowner FROM pg_class WHERE oid='privacy_retention_policy'::regclass),'USAGE')")
+                if not c.fetchone()[0]:
+                    raise ValueError('maintenance owner required')
+                c.execute("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND backend_type='client backend'")
+                if c.fetchone()[0]:
+                    raise ValueError('stop all API/worker/client sessions before maintenance checkpoint')
             if enabled:
                 c.execute("SELECT current_setting('log_parameter_max_length')='0' AND current_setting('log_parameter_max_length_on_error')='0' AND coalesce(current_setting('pgaudit.log_parameter',true),'off') IN ('off','false','0')")
                 if not c.fetchone()[0]:

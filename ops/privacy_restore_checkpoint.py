@@ -2,13 +2,17 @@
 
 The operator must obtain the LATEST checkpoint/hash from independent custody.
 An old DB cannot prove that a checkpoint is latest. No live-server restoration.
+
+GPS_PRIVACY_CHECKPOINT_MAINTENANCE=1 explicitly allows an otherwise fenced
+database only for a policy-table owner with every other client stopped. Normal
+workers remain blocked; export/replay never lower the maintenance fence.
 """
 import argparse, hashlib, json, os, pathlib
 from privacy_worker_db import connect, transaction
 from privacy_retention import TABLES, LOCK
 
 def export(cfg, path):
-    db = connect(cfg)
+    db = connect(cfg, maintenance_owner=cfg.get('GPS_PRIVACY_CHECKPOINT_MAINTENANCE') == '1')
     try:
         with transaction(db), db.cursor() as c:
             c.execute('SELECT pg_advisory_xact_lock(%s)', (LOCK,))
@@ -37,7 +41,7 @@ def restore(cfg, path, expected_sha256):
     if hashlib.sha256(body).hexdigest() != expected_sha256: raise ValueError('checkpoint hash mismatch')
     data = json.loads(body)
     if data.get('version') not in (1,2): raise ValueError('unsupported checkpoint')
-    db = connect(cfg)
+    db = connect(cfg, maintenance_owner=cfg.get('GPS_PRIVACY_CHECKPOINT_MAINTENANCE') == '1')
     try:
         with transaction(db), db.cursor() as c:
             c.execute("SELECT pg_has_role(current_user,(SELECT relowner FROM pg_class WHERE oid='privacy_retention_policy'::regclass),'USAGE')")
