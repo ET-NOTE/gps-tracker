@@ -95,10 +95,10 @@ def rights():
     p=subprocess.run([sys.executable,str(path)],capture_output=True,text=True)
     (ROOT/'out/rights123.log').write_text(p.stdout+p.stderr)
     assert p.returncode==0,p.stdout[-1000:]+p.stderr[-2000:]
-    select()
     # Checkpoint regression deliberately disabled subject policy. Restore only
-    # the isolated test policy to continue final mapped-reader verification.
+    # the isolated test policy BEFORE starting an API that requires it enabled.
     sql("UPDATE location_subject_policy SET enabled=true,push_enabled=false")
+    select()
     print('PASS22/22B/22D encrypted consent/pause/withdrawal/correction/checkpoint suites',flush=True)
 
 
