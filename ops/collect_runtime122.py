@@ -33,6 +33,12 @@ def collect():
         memory=config['Memory'],memory_swap=config['MemorySwap'],cpu_nano=config['NanoCpus'],
         blkio={k:v for k,v in config.items() if k.startswith('Blkio')},
         cap_add=config['CapAdd'],security_opt=config['SecurityOpt']))
+    source_hashes={}
+    for name in ('load_runtime122.py','verify_runtime122.py','privacy_file_cleanup.py','runtime121_control.py','runtime121_job.py'):
+        actual=base.inside('sha256sum','/opt/gps121/'+name).stdout.split()[0]
+        assert actual==sha(JOB/'src/ops'/name),name
+        source_hashes[name]=actual
+    write('running-source122',source_hashes)
     units=OUT/'units';units.mkdir(exist_ok=True)
     for name in ['gps121-db.service','gps121-api.service','gps121-cleanup.service','gps122-proxy.service',
         'gps122-other.service','gps122-av.service','gps-workload.slice','gps-workload-pdf.slice',
