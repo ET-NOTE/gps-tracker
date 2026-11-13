@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-13T04:14:26.318558+00:00",
+  "container_removed": "gps-runtime121-host",
+  "network_removed": "gps-runtime121-private",
+  "unrelated_containers": 32,
+  "container_state_unchanged_since": "2026-11-13T03:17:50.312623+00:00",
+  "protected_prior_artifact_hashes": 5,
+  "canonical_source_files_checked": 380,
+  "source_commit": "cce99a67c030e132dc8dcecb28c9bc74de1e4820",
+  "candidate_sha256": "e8208d08c2a1d20a4f6b362713814158eec3aaf627d14a89a5f7744de7acdf07",
+  "build_free_bytes": 8351940608,
+  "production_contacted": false,
+  "credentials_dumps_synthetic_database_removed_with_container": true,
+  "automatic_retention_added": false
+}

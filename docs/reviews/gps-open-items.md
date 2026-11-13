@@ -8,10 +8,10 @@
 |---|---|---|
 | GPS-PERF-115-01 | 여러API·전체 연결·RAM/PDF 예산 | **운영인수열림, API증설 금지.**120차PDF전역1건·취소/종료·집계896MiB를실제두API/서비스에서검증. 전체4GiB합성시험이며공유3GiB운영인수아님.119표본타DB17>예산15·RAM제안약270MiB초과와백신675MiB/타프로젝트동시예산은미해결. |
 | GPS-PERF-115-02 | 느린I/O에서 원장·수집지연 | **119차 정정된버퍼 격리부하통과 / 운영인수열림.**8SIM×31일·300초·DB1500MiB/8MiB/s/200IOPS, 조회255성공·최종429 251,408/503 0,수집289/289·p95 0.054초. 제한·긴전체이력대기는남음. 실제VPS/공유부하와다중API 인수아님. |
-| GPS-PERF-115-03 | 임시파일·swap/core 보호 | **후보 검증 완료 / 운영조건열림.**119누적보호·복원검증에이어120실제API/PDF서비스의취소·전체메모리한도확인. DB는보호컨테이너여서네이티브운영DB·정리/복구unit전체결합은후속.120에서119누적/월간/복원을재실행하지않음. |
+| GPS-PERF-115-03 | 임시파일·swap/core 보호 | **121 네이티브 결합 검증 완료 / 운영조건열림.**120API/PDF를네이티브PG14.24/Timescale2.19.3·정비8unit과결합해99→112/암호화/전체복원·권리checkpoint·3tmpfs장애/재시작·PDF10검사통과. checkpoint는명시적소유자정비경로로차단유지복구. 시험4GiB·버퍼128MB이며월간부하/공유3GiB용량인수아님. 실제정비권한·키/백업·과거WAL파기는열림. |
 | GPS-BUILD-120-01 | 빌드 보관 누적·여유공간 | **당면 공간 확보 완료 / 자동 보관 정책은 열림.**11월13일 캐시11곳5.037GiB 정리, 여유3.185→8.119GiB. 보존835파일 해시·실행 서비스 동일. 운영/복구/최신후보와 의존 묶음 유지, 중복 압축본11묶음37.15MiB 보존. 자동 개수/기간 제한 없음. [결과](../operations/build-cleanup-20261113.md). |
 
-후보는`activation_ready=false`. [120차](../operations/location-business-runtime120-20261113.md)는119누적기반위의API/PDF교체와unit생성후보다. [119차](../operations/location-business-runtime119-20261112.md)의117API체크섬정정·전환/복구증거는보존한다. 빌드 공간은 확보했으며 다음은120후보를네이티브unit/누적전환에결합하는검증이다. 운영인수전정책·키/권리체크포인트·유지보수시간·공유상한/용량확정이필요하다. 백신/WAF실무검증은[인프라4차](../operations/infra-round4-antivirus-waf-20261111.md)의보류상태를유지한다.
+후보는`activation_ready=false`. [121차](../operations/location-business-runtime121-20261113.md)는[120차](../operations/location-business-runtime120-20261113.md)API/PDF를네이티브unit/누적전환에결합한격리검증이며운영설치기가아니다. [119차](../operations/location-business-runtime119-20261112.md)의117API체크섬정정·전환/복구증거는보존한다. 다음122차는전체RAM·DB연결·I/O 예산을확정한조건의공유부하인수다. 운영인수전정책·키/권리체크포인트·유지보수시간·공유상한/용량확정이필요하다. 백신/WAF실무검증은[인프라4차](../operations/infra-round4-antivirus-waf-20261111.md)의보류상태를유지한다.
 
 2026-11-06 인계 보충: 아래 시험 시점 이후 [권리 처리 6차](../operations/location-rights-round6-20261105.md)에서 단말-520211을 `1c8e692`의 `https-pilot`으로 갱신하고 실내 수집 중지/재개를 검증했다. 절전 OFF는 유지하며 아래 운영 인수·전체 전환의 열린 상태를 닫지 않는다. 최신 운영 및 후속 작업은 [인계 문서](../operations/HANDOFF.md)를 따른다.
 

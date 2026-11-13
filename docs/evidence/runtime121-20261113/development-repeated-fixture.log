@@ -1,0 +1,8 @@
+PASS all native data-processing units share memory, no-swap, no-core and mount dependencies
+Traceback (most recent call last):
+  File "/opt/gps121/test_runtime121.py", line 66, in <module>
+    qid=db.execute("INSERT INTO privacy_file_cleanup(storage_kind,storage_key,reason,source_table,source_id) VALUES('document',%s,'runtime121','synthetic',121) RETURNING id",(str(p),)).fetchone()[0]
+  File "/usr/local/lib/python3.10/dist-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "privacy_file_cleanup_storage_kind_storage_key_key"
+DETAIL:  Key (storage_kind, storage_key)=(document, /opt/gps121/test-storage/uploads/device_documents/1/1/cleanup121.bin) already exists.

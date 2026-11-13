@@ -1,0 +1,28 @@
+# /etc/systemd/system/gps121-migration.service
+[Unit]
+BindsTo=run-gps121-sort.mount run-gps121-fallback.mount run-gps121-tmp.mount
+Requires=gps121-temp-ready.service
+After=gps121-temp-ready.service run-gps121-sort.mount run-gps121-fallback.mount run-gps121-tmp.mount
+[Service]
+Environment=LD_PRELOAD=/usr/local/lib/gps-nodump.so
+Environment=PYTHONDONTWRITEBYTECODE=1
+MemorySwapMax=0
+LimitCORE=0
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+BindPaths=/run/gps121/tmp:/tmp
+BindPaths=/run/gps121/tmp:/var/tmp
+Slice=gps-workload.slice
+KillMode=control-group
+TimeoutStartSec=900
+TimeoutStopSec=25
+User=gps-api
+Group=gps-api
+MemoryMax=550M
+CapabilityBoundingSet=
+EnvironmentFile=/etc/gps121/migration.env
+ExecStartPre=/usr/bin/python3 /usr/local/lib/runtime118_guard.py /etc/gps121/job.json
+ExecStart=/opt/gps-tracker-api
+ReadWritePaths=/opt/gps121/out /opt/gps121/test-storage /opt/gps121/job-results /opt/gps121/recovery
+Type=oneshot

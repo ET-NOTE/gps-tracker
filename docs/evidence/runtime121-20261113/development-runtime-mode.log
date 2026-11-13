@@ -1,0 +1,22 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+PASS all thirteen migration transactions roll back on injected failure; committed prefixes resume with real candidate
+PASS missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes
+PASS prepared restricted owner completes real single-pass99 to112 with original data preserved and defaults OFF
+PASS 99 to112 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred
+PASS other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected
+PASS conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_cumulative.py", line 282, in <module>
+    boot_new({'RUNTIME_DSN': runtime, 'STORAGE': 'off'}, should_fail='storage')
+  File "/opt/gps121/runtime121_control.py", line 160, in boot_new
+    boot('/opt/gps-tracker-api',env,should_fail)
+  File "/opt/gps121/runtime121_control.py", line 143, in boot
+    raise AssertionError(log[-4000:])
+AssertionError: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2618"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+[2m2026-11-13T03:41:21.449072Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3043
+Error: migration failed
+Caused by:
+    0: while executing migrations: error returned from database: permission denied for schema public
+    1: error returned from database: permission denied for schema public
+    2: permission denied for schema public
+

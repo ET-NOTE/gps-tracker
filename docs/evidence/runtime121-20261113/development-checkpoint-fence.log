@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/opt/gps121/restore_runtime121.py", line 34, in <module>
+    proof=job('checkpoint',action='export',worker=cfg)
+  File "/opt/gps121/runtime121_control.py", line 57, in job
+    raise RuntimeError(journal(unit))
+RuntimeError: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2619"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_job.py", line 84, in <module>
+    result = export(worker,path) if cfg['action']=='export' else restore(worker,path,cfg['sha256'])
+  File "/opt/gps121/privacy_restore_checkpoint.py", line 11, in export
+    db = connect(cfg)
+  File "/opt/gps121/privacy_worker_db.py", line 38, in connect
+    raise ValueError('storage policy mismatch or maintenance; worker stopped')
+ValueError: storage policy mismatch or maintenance; worker stopped
+
