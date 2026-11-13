@@ -19,12 +19,20 @@ def suite(name, timeout=900):
 
 def reboot():
     # Docker restart discards /run tmpfs, while synthetic PGDATA remains.
+    verification=inside('systemd-analyze','verify','/etc/systemd/system/gps121-db.service')
+    (OUT/'unit-order-verification.txt').write_text(verification.stdout+verification.stderr)
+    assert 'ordering cycle' not in verification.stdout+verification.stderr
+    assert 'deleted to break' not in verification.stdout+verification.stderr
+    cursor=inside('journalctl','-n','0','--show-cursor','--no-pager').stdout.strip().split('-- cursor: ',1)[1]
     inside('touch','/run/gps121/tmp/reboot-proof')
     call('docker','restart',HOST,timeout=90)
     for _ in range(150):
         if inside('pg_isready',check=False).returncode==0:break
         time.sleep(.2)
     else:raise AssertionError('native DB failed to boot with empty /run')
+    boot_log=inside('journalctl','--after-cursor='+cursor,'--no-pager').stdout
+    (OUT/'reboot-order121.log').write_text(boot_log)
+    assert 'ordering cycle' not in boot_log and 'deleted to break' not in boot_log
     assert inside('test','-e','/run/gps121/tmp/reboot-proof',check=False).returncode!=0
     p=inside('python3','-c',"""
 import json,subprocess,sys

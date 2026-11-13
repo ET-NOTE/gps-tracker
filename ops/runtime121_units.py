@@ -32,7 +32,14 @@ Where=/run/gps121/{name}
 Type=tmpfs
 Options=size={size}M,mode={mode}{owner},nosuid,nodev,noexec
 '''
-    result[str(UNIT/'gps121-underlay.service')] = '''[Service]
+    # Local mounts precede local-fs.target/sysinit. A normal service's implicit
+    # After=sysinit would create a boot/shutdown ordering cycle with these mounts.
+    result[str(UNIT/'gps121-underlay.service')] = '''[Unit]
+DefaultDependencies=no
+After=systemd-remount-fs.service
+Before=local-fs.target shutdown.target
+Conflicts=shutdown.target
+[Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/install -d -o root -g root -m 0555 /run/gps121 /run/gps121/tmp /run/gps121/sort /run/gps121/fallback

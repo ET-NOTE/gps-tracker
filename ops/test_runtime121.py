@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import time
+import uuid
 import psycopg
 from runtime121_control import ROOT, DSN, boot_new, stop_api, transition, job, drain
 
@@ -57,7 +58,7 @@ for name in names:
 record('all native data-processing units share memory, no-swap, no-core and mount dependencies',units=properties)
 
 # A real protected worker deletes one explicitly queued synthetic encrypted file.
-p=ROOT/'test-storage/uploads/device_documents/1/1/cleanup121.bin'
+p=ROOT/'test-storage/uploads/device_documents/1/1'/('cleanup121-'+uuid.uuid4().hex+'.bin')
 p.write_bytes(b'GPSFILE1\n'+b'synthetic deletion fixture')
 import pwd
 uid=pwd.getpwnam('gps-api').pw_uid
