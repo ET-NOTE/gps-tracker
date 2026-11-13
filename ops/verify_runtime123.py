@@ -109,7 +109,7 @@ if __name__=='__main__':
     elif action=='fairness':fairness()
     elif action=='rights':rights()
     elif action=='final':
-        select()
+        fairness()
         from verify_runtime122 import final
         final()
     else:raise ValueError(action)
