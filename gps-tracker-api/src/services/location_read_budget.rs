@@ -69,7 +69,9 @@ impl ReadBudget {
     }
 }
 
-static READS: ReadBudget = ReadBudget::new(Duration::from_secs(3));
+// Longer queues reduce 429 counts by hiding overload as latency. Preserve the
+// short retry contract while isolating history from the other execution slot.
+static READS: ReadBudget = ReadBudget::new(Duration::from_millis(250));
 
 // A separate, bounded pool can cancel even when every regular connection is busy.
 // It uses the same unprivileged DB role, never a superuser or pg_signal_backend.
