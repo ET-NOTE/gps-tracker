@@ -30,7 +30,9 @@ def processes():
             result[int(p.name)]=dict(ppid=int(status['PPid']),state=status['State'].strip(),
                 seccomp=int(status['Seccomp']),filters=int(status.get('Seccomp_filters','0')),
                 caps=status['CapEff'].strip())
-        except FileNotFoundError:pass
+        # procfs can return ESRCH after open when SIGKILL wins the read race.
+        # Other failures (including permission errors) must still fail the test.
+        except (FileNotFoundError,ProcessLookupError):pass
     return result
 
 
