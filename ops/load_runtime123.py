@@ -40,11 +40,11 @@ if __name__ == '__main__':
     action = sys.argv[1]
     load.b.SHA = (ROOT/'candidate123.sha256').read_text().strip()
     if action == 'seed': load.seed()
-    elif action in ('baseline','dedicated','shared'):
+    elif action in ('baseline','screen','dedicated','shared'):
         select(action == 'baseline')
         try:
             if action == 'shared': load.shared(True)
-            load.load('baseline-4g' if action == 'baseline' else action+'-123',300 if action == 'baseline' else 900)
+            load.load('baseline-4g' if action == 'baseline' else action+'-123',300 if action in ('baseline','screen') else 900)
         finally:
             if action == 'shared': load.shared(False)
     elif action == 'candidate': select()

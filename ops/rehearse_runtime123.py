@@ -57,8 +57,8 @@ def suite(action, timeout=2100):
     base.guard()
     info = json.loads(original_call('docker', 'inspect', HOST).stdout)[0]
     assert info['Config']['Labels'].get('gps.runtime123') == 'synthetic'
-    if action in ('baseline', 'dedicated', 'shared'):
-        mib = 3584 if action in ('baseline', 'dedicated') else 5632
+    if action in ('baseline', 'screen', 'dedicated', 'shared'):
+        mib = 3584 if action in ('baseline', 'screen', 'dedicated') else 5632
         original_call('docker', 'update', '--memory='+str(mib)+'m', '--memory-swap='+str(mib)+'m', HOST)
     p = base.inside('python3', '/opt/gps121/load_runtime123.py', action, check=False, timeout=timeout)
     (base.OUT/(action+'.log')).write_text(p.stdout+p.stderr)

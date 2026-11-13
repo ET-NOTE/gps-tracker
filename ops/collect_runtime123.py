@@ -63,7 +63,9 @@ def package(commit):
                 assert hashlib.sha256(built.extractfile(m).read()).hexdigest()==files[m.name]
     manifest=dict(release='fairness123-20261113-r1',source_commit=commit,schema=112,
         activation_ready=False,production_installer=False,base_kit=str(prior),base_kit_sha256=sha(prior),
-        api_build_commit='a30b4eb',api_sha256=sha(OUT/'gps-tracker-api'),pdf_sha256=sha(OUT/'gps-pdf-render'),
+        api_build_commit='a30b4ebe3edf18ad9964e9ca21a65fd781279426',
+        api_build_archive_sha256=sha(JOB/'canonical.tar'),source_archive_sha256=sha(JOB/'final-source.tar'),
+        api_sha256=sha(OUT/'gps-tracker-api'),pdf_sha256=sha(OUT/'gps-pdf-render'),
         source_files=len(files),contents=files,
         boundaries=['Synthetic native protected services, warm database cache',
             'Current3GiB shared production not admitted; no production changes',

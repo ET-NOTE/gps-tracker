@@ -63,10 +63,10 @@ def fairness():
         with lock.cursor() as q:q.execute("LOCK TABLE location_records IN ACCESS EXCLUSIVE MODE")
         first=request(history);wait(lambda:len(active())==1 and active()[0][1]=='Lock')
         first_pid=active()[0][0]
-        waiting=request(history);time.sleep(.15);assert len(active())==1
+        waiting=request(history);time.sleep(.02);assert len(active())==1
         interactive=request(page);wait(lambda:len(active())==2 and all(x[1]=='Lock' for x in active()))
-        close(waiting);time.sleep(.1);assert len(active())==2
-        replacement=request(history);time.sleep(.1);assert len(active())==2
+        close(waiting);time.sleep(.02);assert len(active())==2
+        replacement=request(history);time.sleep(.02);assert len(active())==2
         close(first);elapsed=wait(lambda:len(active())==2 and first_pid not in [x[0] for x in active()])
         close(replacement);close(interactive);wait(lambda:not active())
     finally:
