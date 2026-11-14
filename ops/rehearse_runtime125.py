@@ -108,6 +108,16 @@ def prepare():
     source = prior/'canonical/gps-tracker-api/migrations'
     target = JOB/'canonical/gps-tracker-api/migrations'
     shutil.copytree(source, target)
+    finish_prepare()
+
+
+def finish_prepare():
+    assert sha((base.OUT/'gps-tracker-api').read_bytes()) == API_SHA
+    target = JOB/'canonical/gps-tracker-api/migrations'
+    newer = JOB/'src/gps-tracker-api/migrations/0113_location_device_projection.sql'
+    built = JOB.parent/'gps-runtime124-20261114/src/gps-tracker-api/migrations'/newer.name
+    assert newer.read_bytes()==built.read_bytes()
+    shutil.copy2(built,target/built.name)
     manifest = {p.name:sha(p.read_bytes()) for p in target.glob('*.sql')}
     assert len(manifest) == 113
     (base.OUT/'migration-bytes.json').write_text(json.dumps(manifest, indent=2))
@@ -173,6 +183,7 @@ if __name__=='__main__':
     base.guard()
     action=sys.argv[1]
     if action=='prepare':prepare()
+    elif action=='finish-prepare':finish_prepare()
     elif action=='setup':setup()
     elif action=='reboot':reboot()
     elif action=='cleanup':cleanup()
