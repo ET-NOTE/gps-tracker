@@ -10,11 +10,14 @@ import load_runtime122 as load
 
 load.b.JWT = 'synthetic-cumulative-migration-only'
 load.b.SHA = (ROOT/'candidate124.sha256').read_text().strip()
+MONTH=load.b.MONTH
+DAY='since=2026-10-02T00:00:00Z&until=2026-10-03T00:00:00Z'
 
 
 def read(uid, did, tls=False):
     rows=[]
     for name,path in load.b.routes(did)[:3]:
+        path=path.replace(MONTH,DAY)
         if tls:
             status,body,_,elapsed=load.Client().get(path,uid)
         else:
@@ -23,7 +26,7 @@ def read(uid, did, tls=False):
             r=c.getresponse();status=r.status;body=r.read();c.close();elapsed=None
         assert status==200,(name,status,body[:160])
         assert json.loads(body),name
-        rows.append(dict(route=name,status=status,bytes=len(body),sha256=hashlib.sha256(body).hexdigest(),seconds=elapsed))
+        rows.append(dict(route=name.replace('month','day'),period=DAY,status=status,bytes=len(body),sha256=hashlib.sha256(body).hexdigest(),seconds=elapsed))
     return rows
 
 
@@ -56,6 +59,13 @@ def final():
     previous=json.loads((ROOT/'out/restored-api125.json').read_text())['queries']
     assert [(x['route'],x['sha256']) for x in rows]==[(x['route'],x['sha256']) for x in previous]
     load.b.fixture=lambda:dict(devices=[dict(device_id=did,user_id=uid)])
+    #Keep the dense full-month outcome visible; recovery success is not its latency acceptance.
+    status,body,_,seconds=load.Client().get(load.b.routes(did)[0][1],uid)
+    assert status in (200,408),(status,body[:160])
+    load.save('dense-month125',dict(status=status,seconds=seconds,period=MONTH,
+        api_budget_seconds=20,performance_accepted=False,restore_probe_previously_timed_out=True))
+    original_routes=load.b.routes
+    load.b.routes=lambda d:[(name,path.replace(MONTH,DAY)) for name,path in original_routes(d)]
     import verify_runtime124 as verify
     verify.select=lambda:boot_settled(env)
     verify.fairness()

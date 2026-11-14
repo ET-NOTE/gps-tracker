@@ -24,11 +24,14 @@ def collect():
     original_call('docker','cp',HOST+':/opt/gps121/out/.',str(OUT))
     hashes={}
     for name in ('runtime121_cumulative.py','test_runtime121.py','verify_runtime125_reads.py',
-        'runtime121_control.py','runtime121_job.py','privacy_file_cleanup.py','restore_runtime121.py'):
+        'runtime121_control.py','runtime121_job.py','privacy_file_cleanup.py','restore_runtime121.py',
+        'admin_db_roles.py','crypto20b_transition.py','location_storage.py',
+        'location_query_bounds.py','test_schema125_tools.py'):
         expected=OUT/'adapters'/name if (OUT/'adapters'/name).exists() else JOB/'src/ops'/name
         actual=base.inside('sha256sum','/opt/gps121/'+name).stdout.split()[0]
         assert actual==sha(expected.read_bytes()),name
         hashes[name]=actual
+    assert base.inside('sha256sum','/opt/gps121/out/gps-tracker-api').stdout.split()[0]==API_SHA
     (OUT/'running-source125.json').write_text(json.dumps(hashes,indent=2))
     units=OUT/'units';units.mkdir(exist_ok=True)
     for name in ('gps121-db.service','gps121-api.service','gps121-migration.service',
