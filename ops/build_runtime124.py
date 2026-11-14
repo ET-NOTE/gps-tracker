@@ -3,6 +3,8 @@ import hashlib
 import fcntl
 from pathlib import Path
 import subprocess
+import re
+import shutil
 
 JOB=Path('/home/etcom-hub/build/gps-runtime124-20261114')
 CACHE=Path('/home/etcom-hub/build/gps-tracker/cache')
@@ -25,6 +27,11 @@ def main():
         fcntl.flock(lock,fcntl.LOCK_EX)
         result=subprocess.run(args,stdout=log,stderr=subprocess.STDOUT)
     assert result.returncode==0,'See out/build-api.log'
+    tests=re.findall(r'Running unittests src/main.rs \((/cache/target/debug/deps/gps_tracker_api-[0-9a-f]+)\)', (JOB/'out/build-api.log').read_text())
+    assert len(tests)==1, 'Expected one API unit-test executable'
+    test_binary=CACHE/Path(tests[0]).relative_to('/cache')
+    assert test_binary.is_file() and test_binary.resolve().is_relative_to(CACHE.resolve())
+    shutil.copy2(test_binary, JOB/'out/gps-read124-tests')
     print('PASS API fmt/clippy/tests/release',hashlib.sha256((JOB/'out/gps-tracker-api').read_bytes()).hexdigest())
 
 if __name__=='__main__':main()
