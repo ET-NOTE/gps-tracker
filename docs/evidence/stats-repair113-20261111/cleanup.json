@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "containers_removed": true,
+  "internal_network_removed": true,
+  "temporary_database_removed": true,
+  "test_credentials_removed": [
+    "fixture.env",
+    "test-runtime.json",
+    "test-keys.json"
+  ],
+  "candidate_files_verified": 7,
+  "free_gib": 26.26,
+  "production_connected": false
+}

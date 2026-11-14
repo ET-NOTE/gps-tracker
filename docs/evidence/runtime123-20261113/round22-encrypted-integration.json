@@ -1,0 +1,24 @@
+{
+  "api_sha256": "1052de1ee68e700b6565e73124e727ef45ee26527c7eb9f196c71efcdd0221f5",
+  "suite": "round22",
+  "passed": [
+    "subject-only confirmation, company roles, tenant denial, idempotent proposals and stale revisions",
+    "same-SIM overlapping confirmed driver rejected atomically; explicit rejection retained",
+    "bounded actual location response; ignored widening query; changed vehicle binding blocked; one durable subject notice and account-isolated acknowledgement",
+    "in-flight revocation fence; former staff pause/revocation persists with feature and ledger OFF; rights inbox remains available",
+    "SIM identity remains the telemetry key across changed hardware auth identity",
+    "review queue retry is explicit, audited, subject-only and idempotent by state",
+    "cursor pagination retains access to old revocations and never changes subject scope"
+  ],
+  "schema": 112,
+  "fixture": {
+    "owner": 19,
+    "subject": 20,
+    "vehicle": 9,
+    "device": 19,
+    "mapping": 218,
+    "notice": 3011
+  },
+  "production_modified": false,
+  "external_messages": 0
+}

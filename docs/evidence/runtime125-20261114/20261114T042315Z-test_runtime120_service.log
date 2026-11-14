@@ -1,0 +1,10 @@
+PASS normal write half-close renders exact red and white pixels
+PASS global lock rejects six independent requests; worker has stricter seccomp
+PASS disconnect during request read kills and reaps worker
+PASS disconnect with pending page kills a stopped worker and permits recovery
+PASS slow open peer is terminated by 13-second deadline
+PASS supervisor SIGKILL kills stopped child; inherited lock cannot leak
+PASS socket stop cancels whole unit; restart preserves lock inode
+PASS budget restart terminates active work without replacing live lock
+PASS writable lock is rejected; safe permissions restore service
+PASS all lifetime cases finish without residual renderers

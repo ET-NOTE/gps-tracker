@@ -1,0 +1,440 @@
+{
+  "environment": "isolated synthetic fixture; not production capacity",
+  "batches": 300,
+  "points": 9000,
+  "insert_ms": 124.65,
+  "history_count_ms": [
+    252.7,
+    248.1,
+    233.97
+  ],
+  "history_count_median_ms": 248.1,
+  "timeout_ms": 20000,
+  "parent_relation_bytes": [
+    65536,
+    188416
+  ],
+  "candidate_inventory_requires_content_review": [
+    {
+      "table": "admin_approvals",
+      "column": "path",
+      "type": "text"
+    },
+    {
+      "table": "admin_approvals",
+      "column": "payload",
+      "type": "jsonb"
+    },
+    {
+      "table": "admin_audit_log",
+      "column": "data",
+      "type": "jsonb"
+    },
+    {
+      "table": "admin_security_events",
+      "column": "route",
+      "type": "text"
+    },
+    {
+      "table": "ai_analyses",
+      "column": "analysis",
+      "type": "text"
+    },
+    {
+      "table": "ai_analysis_requests",
+      "column": "analysis_id",
+      "type": "bigint"
+    },
+    {
+      "table": "chat_messages",
+      "column": "meta",
+      "type": "jsonb"
+    },
+    {
+      "table": "corporate_info",
+      "column": "address",
+      "type": "text"
+    },
+    {
+      "table": "device_audit_log",
+      "column": "data",
+      "type": "jsonb"
+    },
+    {
+      "table": "device_commands",
+      "column": "arguments",
+      "type": "jsonb"
+    },
+    {
+      "table": "device_data_erasure_jobs",
+      "column": "deleted_counts",
+      "type": "jsonb"
+    },
+    {
+      "table": "device_documents",
+      "column": "stored_path",
+      "type": "text"
+    },
+    {
+      "table": "devices",
+      "column": "last_lat",
+      "type": "double precision"
+    },
+    {
+      "table": "devices",
+      "column": "last_lng",
+      "type": "double precision"
+    },
+    {
+      "table": "devices",
+      "column": "sim_info_cache",
+      "type": "jsonb"
+    },
+    {
+      "table": "devices",
+      "column": "last_stationary",
+      "type": "jsonb"
+    },
+    {
+      "table": "devices",
+      "column": "license_plate",
+      "type": "text"
+    },
+    {
+      "table": "devices",
+      "column": "car_plate",
+      "type": "text"
+    },
+    {
+      "table": "events",
+      "column": "data",
+      "type": "jsonb"
+    },
+    {
+      "table": "fcm_outbox",
+      "column": "message",
+      "type": "jsonb"
+    },
+    {
+      "table": "fcm_tokens",
+      "column": "platform",
+      "type": "text"
+    },
+    {
+      "table": "fcm_tokens",
+      "column": "installation_id",
+      "type": "text"
+    },
+    {
+      "table": "fleet_expense_audit",
+      "column": "before_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_expense_audit",
+      "column": "after_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_expenses",
+      "column": "request_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_site_versions",
+      "column": "snapshot",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_sites",
+      "column": "address",
+      "type": "text"
+    },
+    {
+      "table": "fleet_sites",
+      "column": "geometry",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_team_audit",
+      "column": "before_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_team_audit",
+      "column": "after_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_trip_assignment_audit",
+      "column": "before_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_trip_assignment_audit",
+      "column": "after_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_trip_corrections",
+      "column": "sources",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_trip_corrections",
+      "column": "outputs",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_vehicle_audit",
+      "column": "before_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_vehicle_audit",
+      "column": "after_value",
+      "type": "jsonb"
+    },
+    {
+      "table": "fleet_vehicles",
+      "column": "license_plate",
+      "type": "text"
+    },
+    {
+      "table": "fleet_vehicles",
+      "column": "profile",
+      "type": "jsonb"
+    },
+    {
+      "table": "geocode_cache",
+      "column": "lat_q",
+      "type": "integer"
+    },
+    {
+      "table": "geocode_cache",
+      "column": "lng_q",
+      "type": "integer"
+    },
+    {
+      "table": "geofences",
+      "column": "center_lat",
+      "type": "double precision"
+    },
+    {
+      "table": "geofences",
+      "column": "center_lng",
+      "type": "double precision"
+    },
+    {
+      "table": "location_1hour",
+      "column": "lat_avg",
+      "type": "double precision"
+    },
+    {
+      "table": "location_1hour",
+      "column": "lng_avg",
+      "type": "double precision"
+    },
+    {
+      "table": "location_1hour",
+      "column": "lat_last",
+      "type": "double precision"
+    },
+    {
+      "table": "location_1hour",
+      "column": "lng_last",
+      "type": "double precision"
+    },
+    {
+      "table": "location_1min",
+      "column": "lat_avg",
+      "type": "double precision"
+    },
+    {
+      "table": "location_1min",
+      "column": "lng_avg",
+      "type": "double precision"
+    },
+    {
+      "table": "location_1min",
+      "column": "lat_last",
+      "type": "double precision"
+    },
+    {
+      "table": "location_1min",
+      "column": "lng_last",
+      "type": "double precision"
+    },
+    {
+      "table": "location_5min",
+      "column": "lat_avg",
+      "type": "double precision"
+    },
+    {
+      "table": "location_5min",
+      "column": "lng_avg",
+      "type": "double precision"
+    },
+    {
+      "table": "location_5min",
+      "column": "lat_last",
+      "type": "double precision"
+    },
+    {
+      "table": "location_5min",
+      "column": "lng_last",
+      "type": "double precision"
+    },
+    {
+      "table": "location_access_events",
+      "column": "path",
+      "type": "text"
+    },
+    {
+      "table": "location_access_events",
+      "column": "route",
+      "type": "text"
+    },
+    {
+      "table": "location_access_events",
+      "column": "binding_snapshot",
+      "type": "jsonb"
+    },
+    {
+      "table": "location_access_log",
+      "column": "path",
+      "type": "text"
+    },
+    {
+      "table": "location_records",
+      "column": "lat",
+      "type": "double precision"
+    },
+    {
+      "table": "location_records",
+      "column": "lng",
+      "type": "double precision"
+    },
+    {
+      "table": "location_records",
+      "column": "raw",
+      "type": "jsonb"
+    },
+    {
+      "table": "location_records",
+      "column": "fixes_jsonb",
+      "type": "jsonb"
+    },
+    {
+      "table": "payment_orders",
+      "column": "raw_response",
+      "type": "jsonb"
+    },
+    {
+      "table": "payment_orders",
+      "column": "virtual_account_info",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_account_closures",
+      "column": "deleted_counts",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_account_closures",
+      "column": "review_reasons",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_account_packages",
+      "column": "documents",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_company_review_events",
+      "column": "state",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_company_reviews",
+      "column": "inventory",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_image_deliveries",
+      "column": "regions",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_image_deliveries",
+      "column": "source_normalization",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_receipt_reads",
+      "column": "normalization",
+      "type": "jsonb"
+    },
+    {
+      "table": "privacy_redacted_deliveries",
+      "column": "ranges",
+      "type": "jsonb"
+    },
+    {
+      "table": "rental_contracts",
+      "column": "late_hours",
+      "type": "integer"
+    },
+    {
+      "table": "rental_contracts",
+      "column": "late_fee_krw",
+      "type": "bigint"
+    },
+    {
+      "table": "rental_contracts",
+      "column": "settlement_json",
+      "type": "jsonb"
+    },
+    {
+      "table": "sim_topup_requests",
+      "column": "api_response",
+      "type": "jsonb"
+    },
+    {
+      "table": "sim_topup_requests",
+      "column": "order_info",
+      "type": "jsonb"
+    },
+    {
+      "table": "trip_annotations",
+      "column": "driver_name_snapshot",
+      "type": "text"
+    },
+    {
+      "table": "trip_annotations",
+      "column": "driver_department_snapshot",
+      "type": "text"
+    },
+    {
+      "table": "trip_annotations",
+      "column": "driver_position_snapshot",
+      "type": "text"
+    },
+    {
+      "table": "trip_annotations",
+      "column": "assignment_source",
+      "type": "jsonb"
+    },
+    {
+      "table": "users",
+      "column": "prefs",
+      "type": "jsonb"
+    },
+    {
+      "table": "vehicle_reservations",
+      "column": "driver_name_snapshot",
+      "type": "text"
+    }
+  ],
+  "api_sha256": "e3ff355248e129d85ae9aa8e7f87edb7cdba5038ca256cf8c4be10e61432fe4b"
+}

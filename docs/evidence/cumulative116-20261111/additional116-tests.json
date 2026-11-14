@@ -1,0 +1,18 @@
+[
+  {
+    "check": "ancestry109-on112",
+    "exit": 0
+  },
+  {
+    "check": "mapping109-on112",
+    "exit": 0
+  },
+  {
+    "check": "external-all",
+    "exit": 0
+  },
+  {
+    "check": "external-boundary",
+    "exit": 0
+  }
+]

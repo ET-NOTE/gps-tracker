@@ -1,0 +1,53 @@
+GPS119 protection {"profile": "controller", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2648"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "2647"}], "dumpable": 0, "swap_max": 0, "memory_max": 1073741824}
+GPS119 protection {"profile": "db-memory", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3088"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3087"}, {"path": "/var/lib/postgresql/data", "capacity": 1677721600, "type": "tmpfs", "mount_id": "3116"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+sh: locale: not found
+2026-11-12 08:04:38.736 UTC [39] WARNING:  no usable system locales were found
+initdb: warning: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+[37;1mUsing postgresql.conf at this path:
+[0m/var/lib/postgresql/data/postgresql.conf
+
+[37;1mWriting backup to:
+[0m/tmp/timescaledb_tune.backup202611120804
+
+[37;1mRecommendations based on 1.46 GB of available memory and 32 CPUs for PostgreSQL 14
+[0m[37;1mSaving changes to: /var/lib/postgresql/data/postgresql.conf
+[0m2026-11-12 08:04:44.396 UTC [7] LOG:  starting PostgreSQL 14.17 on x86_64-pc-linux-musl, compiled by gcc (Alpine 13.2.1_git20240309) 13.2.1 20240309, 64-bit
+2026-11-12 08:04:44.396 UTC [7] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-11-12 08:04:44.396 UTC [7] LOG:  listening on IPv6 address "::", port 5432
+2026-11-12 08:04:44.401 UTC [7] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-12 08:04:44.402 UTC [109] LOG:  database system was shut down at 2026-11-12 08:04:44 UTC
+2026-11-12 08:04:44.406 UTC [7] LOG:  database system is ready to accept connections
+2026-11-12 08:04:44.407 UTC [115] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-12 08:04:46.574 UTC [7] LOG:  received fast shutdown request
+2026-11-12 08:04:46.574 UTC [7] LOG:  aborting any active transactions
+2026-11-12 08:04:46.574 UTC [115] FATAL:  terminating background worker "TimescaleDB Background Worker Launcher" due to administrator command
+2026-11-12 08:04:46.574 UTC [118] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-12 08:04:46.574 UTC [117] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-12 08:04:46.575 UTC [7] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 115) exited with exit code 1
+2026-11-12 08:04:46.576 UTC [7] LOG:  background worker "logical replication launcher" (PID 116) exited with exit code 1
+2026-11-12 08:04:46.576 UTC [7] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 118) exited with exit code 1
+2026-11-12 08:04:46.576 UTC [7] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 117) exited with exit code 1
+2026-11-12 08:04:46.576 UTC [110] LOG:  shutting down
+2026-11-12 08:04:46.580 UTC [7] LOG:  database system is shut down
+GPS119 protection {"profile": "api", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3440"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3439"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+SEEDED 1 seconds 19.62
+SEEDED 2 seconds 21.22
+SEEDED 3 seconds 19.12
+SEEDED 4 seconds 20.46
+SEEDED 5 seconds 16.1
+SEEDED 6 seconds 22.37
+SEEDED 7 seconds 19.9
+SEEDED 8 seconds 25.87
+SETUP COMPLETE
+REPAIR {'elapsed': 0.04037570673972368, 'days': 13, 'queue': 10}
+REPAIR {'elapsed': 10.123906990047544, 'days': 40, 'queue': 0}
+REPAIR {'elapsed': 20.21128469100222, 'days': 72, 'queue': 0}
+REPAIR {'elapsed': 30.298676817677915, 'days': 88, 'queue': 0}
+REPAIR {'elapsed': 40.38595843408257, 'days': 120, 'queue': 0}
+REPAIR {'elapsed': 50.476162953767926, 'days': 136, 'queue': 0}
+REPAIR {'elapsed': 60.56299837073311, 'days': 168, 'queue': 0}
+REPAIR {'elapsed': 70.6486959271133, 'days': 193, 'queue': 6}
+REPAIR {'elapsed': 80.73857901711017, 'days': 224, 'queue': 0}
+REPAIR {'elapsed': 90.82768648071215, 'days': 248, 'queue': 0}

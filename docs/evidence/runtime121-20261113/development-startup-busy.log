@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/opt/gps121/verify_runtime121.py", line 47, in <module>
+    run(name,restart(source))
+  File "/opt/gps121/verify_runtime121.py", line 33, in run
+    raise AssertionError((name,(ROOT/'out'/name.replace('.py','.log')).read_text()[-2500:]))
+AssertionError: ('test_provision22.py', 'Traceback (most recent call last):\n  File "/opt/gps121/native_test_provision22.py", line 54, in <module>\n    body=proposal();code,m=request(\'POST\',\'/corporate/subject-mappings\',body,token);assert code==200,(code,m);mid=m[\'id\']\nAssertionError: (409, {\'error\': \'조회 처리 중입니다. 잠시 후 다시 시도해 주세요.\'})\n')

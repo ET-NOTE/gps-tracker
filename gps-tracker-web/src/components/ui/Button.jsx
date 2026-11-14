@@ -22,12 +22,12 @@ const VARIANT = {
   },
   danger: {
     background: 'var(--danger)',
-    color:      '#FFF',
+    color:      'var(--danger-fg)',
     border:     'none',
   },
   success: {
     background: 'var(--accent)',
-    color:      '#FFF',
+    color:      'var(--accent-fg)',
     border:     'none',
   },
   link: {
@@ -60,10 +60,13 @@ export default function Button({
   const s = SIZE[size] || SIZE.md;
   return (
     <button
+      type="button"
+      aria-busy={busy || undefined}
       disabled={disabled || busy}
       {...rest}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        minHeight: size === 'xs' ? 32 : 'var(--touch-target)',
         borderRadius: 'var(--radius-sm)',
         fontWeight: 700,
         cursor: (disabled || busy) ? 'not-allowed' : 'pointer',

@@ -1,0 +1,38 @@
+{
+  "schema": 113,
+  "plaintext_locations": 0,
+  "idle_transactions": 0,
+  "images": 0,
+  "pending_cleanup": 0,
+  "queries": [
+    {
+      "route": "day_aggregate",
+      "period": "since=2026-10-02T00:00:00Z&until=2026-10-03T00:00:00Z",
+      "status": 200,
+      "bytes": 10828,
+      "sha256": "6c8f9d5904c016811f67e37b4f1a2ecd0114b82e3d6d31207d393b880e3da869",
+      "seconds": 1.5276539172045887
+    },
+    {
+      "route": "day_history",
+      "period": "since=2026-10-02T00:00:00Z&until=2026-10-03T00:00:00Z",
+      "status": 200,
+      "bytes": 29084100,
+      "sha256": "6a0cc5e0e75041de90f4efdedff976e58cd4cea51b0f9b0cc64e1eece0684253",
+      "seconds": 2.2255859123542905
+    },
+    {
+      "route": "day_page",
+      "period": "since=2026-10-02T00:00:00Z&until=2026-10-03T00:00:00Z",
+      "status": 200,
+      "bytes": 1728456,
+      "sha256": "c065fa4153c8a58385fbbdb82cde5871cda36182d3e464d0abb48333000ab736",
+      "seconds": 0.30266388691961765
+    }
+  ],
+  "restored_and_rebooted_responses_equal": true,
+  "foreign_denied": 404,
+  "tls": "TLS1.2, verified synthetic localhost certificate",
+  "production_modified": false,
+  "activation_ready": false
+}

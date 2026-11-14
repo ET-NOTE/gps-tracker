@@ -1,0 +1,30 @@
+{
+  "production_modified": false,
+  "containers_removed": [
+    "gps-runtime119-proxy",
+    "gps-runtime119-api",
+    "gps-provision22-api-20261112cumulative119",
+    "gps-runtime119-pdf-host",
+    "gps-runtime119-db",
+    "gps-provision22-db-20261112cumulative119"
+  ],
+  "networks_removed": [
+    "gps-provision22-test-20261112cumulative119",
+    "gps-runtime119-test"
+  ],
+  "private_paths_removed": [
+    "/home/etcom-hub/build/gps-provision22-20261112cumulative119/test-keys.json",
+    "/home/etcom-hub/build/gps-provision22-20261112cumulative119/test-runtime.json",
+    "/home/etcom-hub/build/gps-provision22-20261112cumulative119/regression.env",
+    "/home/etcom-hub/build/gps-provision22-20261112cumulative119/test-storage",
+    "/home/etcom-hub/build/gps-provision22-20261112runtime119/test-keys.json",
+    "/home/etcom-hub/build/gps-provision22-20261112runtime119/test-runtime.json",
+    "/home/etcom-hub/build/gps-provision22-20261112runtime119/tls",
+    "/home/etcom-hub/build/gps-provision22-20261112runtime119/storage-gps-runtime119-api",
+    "/home/etcom-hub/build/gps-provision22-20261112cumulative119-recovery-1500m-oom/test-keys.json",
+    "/home/etcom-hub/build/gps-provision22-20261112cumulative119-recovery-1500m-oom/test-runtime.json",
+    "/home/etcom-hub/build/gps-provision22-20261112cumulative119-recovery-1500m-oom/test-storage",
+    "/home/etcom-hub/build/gps-provision22-20261112runtime119-seed-dependency-failed/test-keys.json"
+  ],
+  "free_bytes": 18228850688
+}

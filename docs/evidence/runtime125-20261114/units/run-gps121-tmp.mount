@@ -1,0 +1,9 @@
+# /etc/systemd/system/run-gps121-tmp.mount
+[Unit]
+Requires=gps121-underlay.service
+After=gps121-underlay.service
+[Mount]
+What=tmpfs
+Where=/run/gps121/tmp
+Type=tmpfs
+Options=size=64M,mode=1777,nosuid,nodev,noexec

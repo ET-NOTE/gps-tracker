@@ -1,0 +1,3608 @@
+{
+  "at": "2026-11-13T03:17:50.312623+00:00",
+  "candidates": [
+    {
+      "path": "gps-admin19-20261107/src/gps-tracker-web/node_modules",
+      "bytes": 87568384,
+      "inode": 3018939,
+      "device": 66309
+    },
+    {
+      "path": "gps-lifecycle21-20261107/src/gps-tracker-web/node_modules",
+      "bytes": 111849472,
+      "inode": 3035398,
+      "device": 66309
+    },
+    {
+      "path": "gps-provision22-20261108/src/gps-tracker-web/node_modules",
+      "bytes": 111845376,
+      "inode": 3043675,
+      "device": 66309
+    },
+    {
+      "path": "gps-provision22-20261108b/src/gps-tracker-web/node_modules",
+      "bytes": 4096,
+      "inode": 3045535,
+      "device": 66309
+    },
+    {
+      "path": "gps-provision22-20261108c/src/gps-tracker-web/node_modules",
+      "bytes": 4096,
+      "inode": 3046636,
+      "device": 66309
+    },
+    {
+      "path": "gps-provision22-20261108cumulative/src/gps-tracker-web/node_modules",
+      "bytes": 112001024,
+      "inode": 3048248,
+      "device": 66309
+    },
+    {
+      "path": "gps-provision22-20261108cumulative109/src/gps-tracker-web/node_modules",
+      "bytes": 112001024,
+      "inode": 3055261,
+      "device": 66309
+    },
+    {
+      "path": "gps-provision22-20261111query114/src/gps-tracker-web/node_modules",
+      "bytes": 87572480,
+      "inode": 3073865,
+      "device": 66309
+    },
+    {
+      "path": "gps-provision22-20261111query115/src/gps-tracker-web/node_modules",
+      "bytes": 87572480,
+      "inode": 3152756,
+      "device": 66309
+    },
+    {
+      "path": "gps-tracker/cache/target",
+      "bytes": 3264995328,
+      "inode": 2884356,
+      "device": 66309
+    },
+    {
+      "path": "gps-tracker/cache/target-pdf",
+      "bytes": 1433165824,
+      "inode": 2910555,
+      "device": 66309
+    }
+  ],
+  "protected": {
+    "gps-privacy-images-20261105/focused-source.tar.gz": {
+      "bytes": 3822877,
+      "sha256": "d27df036740ccec34bfc8349e200051e3bfbb1bf4759b5816d88f5f7870ad88b"
+    },
+    "gps-privacy-images-20261105/out/focused-source.tar.gz": {
+      "bytes": 3819027,
+      "sha256": "d1c184422387ba96e4159222e180843037f7accf1ec4d2926ec640222e12a929"
+    },
+    "gps-privacy-images-20261105/out/gps-tracker-api": {
+      "bytes": 17153880,
+      "sha256": "a205019cab0ea7496e06da6e1a91d26e76778fe3a768c0023889e331aa54f9fa"
+    },
+    "gps-privacy-images-20261105/out/web.tar.gz": {
+      "bytes": 3824057,
+      "sha256": "b2b8e16c5a6384773971f72bb3d1af45f76a5a349697a9ff143aad53b84079f4"
+    },
+    "gps-final-20261031/web.tar.gz": {
+      "bytes": 3800583,
+      "sha256": "152cf7aa6b1620cf14334b2f8e5fd8930b4c26573185b066cf1e1666c64f4bd6"
+    },
+    "gps-final-20261031/source-final.tar.gz": {
+      "bytes": 10084911,
+      "sha256": "e6f9ba2b42f0f3472ed26303a4436e429b786a44db7b014ac5354bde53733636"
+    },
+    "gps-directions-20261022/web-source.tar.gz": {
+      "bytes": 3613875,
+      "sha256": "dad850df2de05fe5f0efe3b6e1fe1a59c3fb5030700539a11dedc894d671d789"
+    },
+    "gps-directions-20261022/out/web.tar.gz": {
+      "bytes": 3757029,
+      "sha256": "9e74aff585d226257575e6199492a65e559acf484468ba678949419629bce179"
+    },
+    "gps-runtime120-20261113/candidate-runtime120-20261113-r1.tar.gz": {
+      "bytes": 14858436,
+      "sha256": "3b4bfa22719081d7a6f11448f23cb86f6cbfad4c0175aaea78dc5346e426bd33"
+    },
+    "gps-runtime120-20261113/candidate-runtime120-20261113-r1/gps-tracker-api": {
+      "bytes": 18784288,
+      "sha256": "56912e102bd55db65f253d7f19c409a04e239b8e993f60baead577e51efbf536"
+    },
+    "gps-runtime120-20261113/candidate-runtime120-20261113-r1/gps-pdf-render": {
+      "bytes": 10925144,
+      "sha256": "f73150c48d4a4507547ae5f63f01f3f7a817e820e87c49492a08948059b662d2"
+    },
+    "gps-runtime120-20261113/out/gps-tracker-api": {
+      "bytes": 18784288,
+      "sha256": "56912e102bd55db65f253d7f19c409a04e239b8e993f60baead577e51efbf536"
+    },
+    "gps-runtime120-20261113/out/gps-pdf-render": {
+      "bytes": 10925144,
+      "sha256": "f73150c48d4a4507547ae5f63f01f3f7a817e820e87c49492a08948059b662d2"
+    },
+    "gps-access-ledger-20261107/out/gps-tracker-api": {
+      "bytes": 17850456,
+      "sha256": "3fa6b7ab697ea9f10e3202c1be1cff48c232d573871fb7beb325b7755b2c9a5b"
+    },
+    "gps-access-ledger-20261107/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-collection-control-20261105/focused-source.tar.gz": {
+      "bytes": 3765952,
+      "sha256": "b19caf6d920c915ece7e4fd028e15546f7d680ccbad678d384f833add54a2b14"
+    },
+    "gps-collection-control-20261105/out/focused-source.tar.gz": {
+      "bytes": 3766379,
+      "sha256": "c20e3fe5634f6db7e0cec45825a62f11812451eb0132bd522a59934849bd9521"
+    },
+    "gps-collection-control-20261105/out/gps-tracker-api": {
+      "bytes": 15920936,
+      "sha256": "4ae7c5a61a22f8f88966520f437a8f8d4f7d48ebc1c69ae641db131f5ba6e7d0"
+    },
+    "gps-collection-control-20261105/out/web.tar.gz": {
+      "bytes": 3807575,
+      "sha256": "ba277595461e78a65bda1bd55ffb171d32d8cc5b6c0672c69c9fec40a288bfc9"
+    },
+    "gps-pdf-eval-20261106/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-runtime-account-20261106/source.tar.gz": {
+      "bytes": 269899,
+      "sha256": "dc902bd6d6dd7ff42ce9cafb48ed63ccc004d1581e3161d6b3bc6bba7b8cdf7b"
+    },
+    "gps-provision22-20261111cumulative116/candidate-cumulative116-20261111-r1.tar.gz": {
+      "bytes": 11534123,
+      "sha256": "b0ad2eb25f993df683ccbcda76f0d0533e469132eca22798c23bc766a14c128f"
+    },
+    "gps-provision22-20261111cumulative116/cumulative116-evidence.tar.gz": {
+      "bytes": 50172,
+      "sha256": "acde031e73e26b9426fba1b04df31779bc7bf752366a08095fae646dbae84e46"
+    },
+    "gps-provision22-20261111cumulative116/candidate-cumulative116-20261111-r1/gps-tracker-api": {
+      "bytes": 18767832,
+      "sha256": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10"
+    },
+    "gps-provision22-20261111cumulative116/out/gps-tracker-api": {
+      "bytes": 18767832,
+      "sha256": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10"
+    },
+    "gps-provision22-20261111cumulative116/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261111query114/candidate-query114-20261111-r1.tar.gz": {
+      "bytes": 15411090,
+      "sha256": "e7e47b76ad075760b24b20bac96a141aac2d4eda2430017c5bc7507409a91c25"
+    },
+    "gps-provision22-20261111query114/source.tar.gz": {
+      "bytes": 4506003,
+      "sha256": "b40892838e004ac2e4c25a2fee933b4ef1947bcaad71b3129b0147414e7529c9"
+    },
+    "gps-provision22-20261111query114/web.tar.gz": {
+      "bytes": 7270994,
+      "sha256": "16589eeb7889e9f4ff69754dd93fdc179b4f9686c56a6a03ed0d4ceab416ff82"
+    },
+    "gps-provision22-20261111query114/candidate-query114-20261111-r1/gps-tracker-api.bin": {
+      "bytes": 18759640,
+      "sha256": "fc8f97815eb02fc0ee9ca92e1788444f30398532bb670b6ed8d2178cb9565429"
+    },
+    "gps-provision22-20261111query114/out/gps-tracker-api": {
+      "bytes": 18759640,
+      "sha256": "fc8f97815eb02fc0ee9ca92e1788444f30398532bb670b6ed8d2178cb9565429"
+    },
+    "gps-provision22-20261111query114/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__arduino-esp32/libraries/Update/examples/AWS_S3_OTA_Update/StartCounter.ino.bin": {
+      "bytes": 357276,
+      "sha256": "2e233d709b5360df26388fb3031820e6b21afe3fda7941d55ea8ee1620622419"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/hello_world.bin": {
+      "bytes": 146768,
+      "sha256": "2759fc5debc992a761ee4ddd6b1c8a294c3426fae0c8481db057e3da57ff9b9e"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/bootloader.bin": {
+      "bytes": 20416,
+      "sha256": "658e52894aab3c7dc9af8ede0ec110408bb9e57423a10b56e8d7e02cec95891d"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/hello-world.bin": {
+      "bytes": 195984,
+      "sha256": "0fc099da62881522204825a9d9ea1a526d6e195d1d5b034972189c7e98eb0a99"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "5d1dbc1e3c50d7bc93b123215900b57fdfda24131e76da03999a54fe9b554ec3"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/bootloader.bin": {
+      "bytes": 10768,
+      "sha256": "4ebe1cfe7b195bfbc6aa74245648155e0466c522a6da2417c9fef614bda2db34"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/hello-world.bin": {
+      "bytes": 142320,
+      "sha256": "a1f56518fd24dd4ff39ee98c512807f36c5388cdbc0a5b40aa63f4b75f6fd98e"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/bootloader.bin": {
+      "bytes": 24880,
+      "sha256": "6200f89fe61eb3758d3e844562cc69254d193282da6ae9f1857d600632233888"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/hello_world.bin": {
+      "bytes": 136224,
+      "sha256": "b74c30177b1159c8f5d138531a85c90cce03bb1e98682340906cb4052fbeaa51"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/bootloader.bin": {
+      "bytes": 19264,
+      "sha256": "7826d1fa01d98efc94b2aaf9a6f63abfe8eed928235d322fa1ce310f452ae33c"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/hello-world.bin": {
+      "bytes": 142528,
+      "sha256": "5f5d057d551af6223888b73ef4c715c5acc1eadbb90a046578a927eab5a80e9f"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/bootloader.bin": {
+      "bytes": 20000,
+      "sha256": "2b2bfbd61260af10cb74c907c42f49285689a6cebcceb8ec03124992207c0e27"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/ESP32_AT_Firmware/Firmware.bin": {
+      "bytes": 4194304,
+      "sha256": "b688de362472cff747f2ebe73e032987c1ee7532851150523f08710e7026b413"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C2/app.bin": {
+      "bytes": 54080,
+      "sha256": "af74a99385aded6ffde220a93cf5893d4d81ee87ee9e205072dcced80d6ee568"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_S3/app.bin": {
+      "bytes": 145936,
+      "sha256": "350ca35cdc5c3146ab634635fb98b1fdc79e8e0eb263f95de745974bda239314"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H2/app.bin": {
+      "bytes": 55600,
+      "sha256": "ba98ea3494ba535857b7a29d3fea96a22fde053ff529b8fdd3bb26d07447b31b"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32/app.bin": {
+      "bytes": 127584,
+      "sha256": "335d3748709b9d2efb0a89d968433f1787301d5c22bfd930a27b85af970488c0"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H4/app.bin": {
+      "bytes": 113536,
+      "sha256": "229370b19ae3660bb4c91401e1b9a5b1340f472509341a4e9e00a20a376d799b"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C3/app.bin": {
+      "bytes": 101408,
+      "sha256": "2e6f6729a66b13df4f789aa8ec038a7f9b7c099fd15d1b7f7ef00dba8f5b9833"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/test/hello-world.bin": {
+      "bytes": 144672,
+      "sha256": "e3992ca5ad3069abf49a8cf117b0da302d97302e1b3c9a6ad77ceee9efe144b9"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/joltwallet__littlefs/test/testfs.bin": {
+      "bytes": 49152,
+      "sha256": "16225b76da120e172b41cf5b11cc976a8de553b625d5e2944cac2d4d2ad019dd"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_modem/test/target_ota/bin/blink.bin": {
+      "bytes": 184608,
+      "sha256": "9fd9b4d02b6b2f2d0ce14b6bf18a11dcad5f1324c31ee22df3f8059f48fd931f"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after_corrupt.bin": {
+      "bytes": 101,
+      "sha256": "cdca355aa0c4c64dc56d82cd452faa3b03dbbf76a6c3d54e862c213891f4db74"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_before.bin": {
+      "bytes": 1808,
+      "sha256": "de7fc3f38fb5c1fb20af2a1417bdc863761ee90c416da48e5b3e26d5b4da9671"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after.bin": {
+      "bytes": 1808,
+      "sha256": "4a9a148fbb36ba7f8a2bea31e3a94c20e237be38250882386729368f8fb87b1e"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/esp_secure_cert.bin": {
+      "bytes": 3600,
+      "sha256": "acfca80c259f223636a1cce06140aa4bdbab6f21ed5bf12a9563286a654c2a78"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/qemu_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "3856c9bc8540d2cf3edc020161c65e4f15cd0ebd739fdc86052e566e9916f67c"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/cust_flash.bin": {
+      "bytes": 24576,
+      "sha256": "852759453c560691b3331724197e9dfba08eb6b7eb2853cf9c3a5a6166b50366"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "61a0ad0011af31b8d3589d85d965a3074da41ddc966d4de8e662730196b922f1"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/cust_flash_tlv.bin": {
+      "bytes": 8192,
+      "sha256": "aacba3774662c9c13309f9b7a7f0a6ebf6a80cb91aabf97a19db243f8edbe9d3"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_verification.bin": {
+      "bytes": 7760,
+      "sha256": "dc96d5b2f19a2f4d305463859b8de212460e99632e65c3a1edf116dc2cce896f"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/nvs_legacy.bin": {
+      "bytes": 12288,
+      "sha256": "6d5a7de9aaeb30e71eea8f7e77dd2338347aab38c8fc8180d3828cb161c477fd"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "b70cb53c59aa6febf75e01fd411838688135958207b839a6ff52737d777c9301"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/secure_verification_corrupt.bin": {
+      "bytes": 11504,
+      "sha256": "2f082dfd3ffc23ced70589cd526938b6fbd0a5756dac79524f0149c62c20b7cd"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/nvs.bin": {
+      "bytes": 12288,
+      "sha256": "b2c8eb81f30f6b4f980b6c7005eaac41268a7451e1f688597961cb847c3bfacd"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "f7f021e6b6b8d9be364c994706585ccf566c7fb5e82a45554fc29f79711951d1"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/cust_flash_legacy.bin": {
+      "bytes": 24576,
+      "sha256": "f88ee14b4f99f12ccf6c9caa24a79a246f0a37aa915858c69e3aa67609890644"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "9c01b9db0230e9637331d7800481177f5beb0626aeb60dd36ac625eb8b0f714c"
+    },
+    "gps-remote-report-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/tools/tests/input_data/esp_secure_cert.bin": {
+      "bytes": 5280,
+      "sha256": "549c702529866d67aef53f26344c223126e3121ae5105b739774d19c3349f343"
+    },
+    "gps-remote-report-20261021/out/gps-operating-remote-report.zip": {
+      "bytes": 2836684,
+      "sha256": "f1311b97a7c8239d2bc7d49f405aac9ad44ad2435bbfbe9f57404e9a7c874ed2"
+    },
+    "gps-privacy-raster-20261106/out/gps-tracker-api": {
+      "bytes": 17493848,
+      "sha256": "c8f7c6f4326316082efac9125d88d913c976a7347a9f1b620b53dbf317a25e11"
+    },
+    "gps-privacy-raster-20261106/out/web.tar.gz": {
+      "bytes": 3822802,
+      "sha256": "fff70fce0cc679128f70a38f63b5e8a1ad81a6063ec82c4984fd80ec51fc1f2f"
+    },
+    "gps-location-aggregate-20261105/focused-source.tar.gz": {
+      "bytes": 3745802,
+      "sha256": "946aa44e994d7d2387e9b03b35acd372f5177b6be70ce038b40dd31d2c44045d"
+    },
+    "gps-location-aggregate-20261105/out/gps-tracker-api": {
+      "bytes": 15679272,
+      "sha256": "8195421e0bc0463b1777e58db25aa5c34353c0e944b6fb633ad3791d6ba01e6f"
+    },
+    "gps-location-aggregate-20261105/out/web.tar.gz": {
+      "bytes": 3798651,
+      "sha256": "88dc049c996b4ef406a0a6178d9c870d37bd7b5d475693a907b478004c18efe7"
+    },
+    "gps-location-rights-20261105/delta.tar.gz": {
+      "bytes": 16253,
+      "sha256": "3e35146381fa945b907a66791202fb356a88ee195bcaa6e222ad7e59f301ca8a"
+    },
+    "gps-location-rights-20261105/source.tar.gz": {
+      "bytes": 7485793,
+      "sha256": "b6cd38b53b0b599f8a1d02e91b53649baedd36ac64a77e0d4a85eeb2a08e7df2"
+    },
+    "gps-location-rights-20261105/out/gps-tracker-api": {
+      "bytes": 235033240,
+      "sha256": "e6f147023b8ef5324cdb9d8d7144fa0ff706288dd696a15c839de994f204d5b2"
+    },
+    "gps-design-cleanup-20261027/web-source.tar.gz": {
+      "bytes": 3334377,
+      "sha256": "d3797d6d9b727b85a839d05a5626fdd5a423515ca0aeebb6dcaa355e54406d02"
+    },
+    "gps-design-cleanup-20261027/out/web.tar.gz": {
+      "bytes": 3760160,
+      "sha256": "7cc46ea1250f3ec3fb53ec185468c43eb04b32687284d49ee5fc0ea36baa050b"
+    },
+    "gps-privacy-account-20261105/focused-source.tar.gz": {
+      "bytes": 3789683,
+      "sha256": "9b8c9d9e9de27450058f8a49f6aa4e2e36869099371875fc75e1b51c904275ef"
+    },
+    "gps-privacy-account-20261105/out/focused-source.tar.gz": {
+      "bytes": 3788384,
+      "sha256": "ff4c499e99559541bfb9eef107eff55f971b713ab1443ee90d6833bb5d850a5b"
+    },
+    "gps-privacy-account-20261105/out/gps-tracker-api": {
+      "bytes": 16420648,
+      "sha256": "f73ea0c33ce6db3014d84acc692fadfb0e280f3c594b1ad046a7e355045bf2bd"
+    },
+    "gps-privacy-account-20261105/out/web.tar.gz": {
+      "bytes": 3814233,
+      "sha256": "7c5c4ee9e45ddaf8c02fc8999cb6061a211c9d82a6787d8fecbf638d0b80b6ba"
+    },
+    "gps-fleet-filters-20261031/web-final.tar.gz": {
+      "bytes": 3796840,
+      "sha256": "cab2eebf1dbd979fe94b6cf45dba1ebaf2f8838cdc49b9ac9f72e05925be00cb"
+    },
+    "gps-fleet-filters-20261031/source-final.tar.gz": {
+      "bytes": 10064314,
+      "sha256": "4e12106e4640a65a0c01f3202c29a952cba551a5d40bdfdcf033aac678c7b04b"
+    },
+    "gps-admin19-20261107/out/gps-tracker-api": {
+      "bytes": 18161488,
+      "sha256": "79e168d3ab81f7ece3a8a15f9d375b1aaa2b1832a75ed14a552d3350ee9b1f57"
+    },
+    "gps-admin19-20261107/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-privacy-sections-20261105/focused-source.tar.gz": {
+      "bytes": 3794480,
+      "sha256": "02526a615f57badabafa178d866538c4f5a81470c07bac16bfc243d24661c0ec"
+    },
+    "gps-privacy-sections-20261105/out/focused-source.tar.gz": {
+      "bytes": 3792920,
+      "sha256": "63fff0cffe982871d7fb3d6b18bcb3b5cbccd78c99794863bb4b08dda52c5d6f"
+    },
+    "gps-privacy-sections-20261105/out/gps-tracker-api": {
+      "bytes": 16469800,
+      "sha256": "347961ce5f3f88e83a841d8e30a3c8cdcbfb7a173253018e3e2f0ad6bf416318"
+    },
+    "gps-privacy-sections-20261105/out/web.tar.gz": {
+      "bytes": 3813412,
+      "sha256": "7c0a0cac4cc6de87f920a3b8c2863736f833deb07026ab43e8bb617f60971c68"
+    },
+    "gps-provision22-20261111query115/web.tar.gz": {
+      "bytes": 7282922,
+      "sha256": "2d306ab2ab782e47aa34371d6025a63a82081478bb0a6fd2a8b6ac8ca8160723"
+    },
+    "gps-provision22-20261111query115/candidate-query115-20261111-r1.tar.gz": {
+      "bytes": 15394841,
+      "sha256": "bc9edcf72f961a20f4053074b3f8b69cc9421766bda4ba94963abec573522a7e"
+    },
+    "gps-provision22-20261111query115/query115-evidence.tar.gz": {
+      "bytes": 51311,
+      "sha256": "d455bacf7e3c32bc107be568c2b0893e74b605dfe0b7b526dcbd02c84b70909d"
+    },
+    "gps-provision22-20261111query115/candidate-query115-20261111-r1/gps-tracker-api.bin": {
+      "bytes": 18767832,
+      "sha256": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10"
+    },
+    "gps-provision22-20261111query115/out/gps-tracker-api": {
+      "bytes": 18767832,
+      "sha256": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10"
+    },
+    "gps-provision22-20261111query115/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-crypto20b-20261107/source.tar.gz": {
+      "bytes": 439345,
+      "sha256": "44d4ce53414c81211412ffc1850f91381b938a28117c5bd84008bed9240bc437"
+    },
+    "gps-crypto20b-20261107/candidate-crypto20b-20261107-r1.tar.gz": {
+      "bytes": 11393578,
+      "sha256": "57202597c5046135d3fb5ed0da2b798a281e73b042797281916c87f8ed4b50cf"
+    },
+    "gps-crypto20b-20261107/candidate-crypto20b-20261107-r1/gps-tracker-api": {
+      "bytes": 18231120,
+      "sha256": "2651194a349d5f9b9c61eb9c77f87bc2124ee36909d963332574721645b3b766"
+    },
+    "gps-crypto20b-20261107/out/gps-tracker-api": {
+      "bytes": 18231120,
+      "sha256": "2651194a349d5f9b9c61eb9c77f87bc2124ee36909d963332574721645b3b766"
+    },
+    "gps-crypto20b-20261107/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-crypto20b-20261107/out/evidence.tar.gz": {
+      "bytes": 10617,
+      "sha256": "a5a62b9f675e480711c9e2004014ebe73d5d177a0fd1908543badbed4f8fcb21"
+    },
+    "gps-privacy-facts-20261106/out/gps-tracker-api": {
+      "bytes": 17653752,
+      "sha256": "dfae8bcd70f1cdb985e8bde4678888f60b5eea733695f8f267004979161372ca"
+    },
+    "gps-privacy-facts-20261106/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261111query111/out/gps-tracker-api": {
+      "bytes": 18673536,
+      "sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9"
+    },
+    "gps-provision22-20261111query111/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__arduino-esp32/libraries/Update/examples/AWS_S3_OTA_Update/StartCounter.ino.bin": {
+      "bytes": 357276,
+      "sha256": "2e233d709b5360df26388fb3031820e6b21afe3fda7941d55ea8ee1620622419"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/hello_world.bin": {
+      "bytes": 146768,
+      "sha256": "2759fc5debc992a761ee4ddd6b1c8a294c3426fae0c8481db057e3da57ff9b9e"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/bootloader.bin": {
+      "bytes": 20416,
+      "sha256": "658e52894aab3c7dc9af8ede0ec110408bb9e57423a10b56e8d7e02cec95891d"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/hello-world.bin": {
+      "bytes": 195984,
+      "sha256": "0fc099da62881522204825a9d9ea1a526d6e195d1d5b034972189c7e98eb0a99"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "5d1dbc1e3c50d7bc93b123215900b57fdfda24131e76da03999a54fe9b554ec3"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/bootloader.bin": {
+      "bytes": 10768,
+      "sha256": "4ebe1cfe7b195bfbc6aa74245648155e0466c522a6da2417c9fef614bda2db34"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/hello-world.bin": {
+      "bytes": 142320,
+      "sha256": "a1f56518fd24dd4ff39ee98c512807f36c5388cdbc0a5b40aa63f4b75f6fd98e"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/bootloader.bin": {
+      "bytes": 24880,
+      "sha256": "6200f89fe61eb3758d3e844562cc69254d193282da6ae9f1857d600632233888"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/hello_world.bin": {
+      "bytes": 136224,
+      "sha256": "b74c30177b1159c8f5d138531a85c90cce03bb1e98682340906cb4052fbeaa51"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/bootloader.bin": {
+      "bytes": 19264,
+      "sha256": "7826d1fa01d98efc94b2aaf9a6f63abfe8eed928235d322fa1ce310f452ae33c"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/hello-world.bin": {
+      "bytes": 142528,
+      "sha256": "5f5d057d551af6223888b73ef4c715c5acc1eadbb90a046578a927eab5a80e9f"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/bootloader.bin": {
+      "bytes": 20000,
+      "sha256": "2b2bfbd61260af10cb74c907c42f49285689a6cebcceb8ec03124992207c0e27"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/ESP32_AT_Firmware/Firmware.bin": {
+      "bytes": 4194304,
+      "sha256": "b688de362472cff747f2ebe73e032987c1ee7532851150523f08710e7026b413"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C2/app.bin": {
+      "bytes": 54080,
+      "sha256": "af74a99385aded6ffde220a93cf5893d4d81ee87ee9e205072dcced80d6ee568"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_S3/app.bin": {
+      "bytes": 145936,
+      "sha256": "350ca35cdc5c3146ab634635fb98b1fdc79e8e0eb263f95de745974bda239314"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H2/app.bin": {
+      "bytes": 55600,
+      "sha256": "ba98ea3494ba535857b7a29d3fea96a22fde053ff529b8fdd3bb26d07447b31b"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32/app.bin": {
+      "bytes": 127584,
+      "sha256": "335d3748709b9d2efb0a89d968433f1787301d5c22bfd930a27b85af970488c0"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H4/app.bin": {
+      "bytes": 113536,
+      "sha256": "229370b19ae3660bb4c91401e1b9a5b1340f472509341a4e9e00a20a376d799b"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C3/app.bin": {
+      "bytes": 101408,
+      "sha256": "2e6f6729a66b13df4f789aa8ec038a7f9b7c099fd15d1b7f7ef00dba8f5b9833"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp-serial-flasher/test/hello-world.bin": {
+      "bytes": 144672,
+      "sha256": "e3992ca5ad3069abf49a8cf117b0da302d97302e1b3c9a6ad77ceee9efe144b9"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/joltwallet__littlefs/test/testfs.bin": {
+      "bytes": 49152,
+      "sha256": "16225b76da120e172b41cf5b11cc976a8de553b625d5e2944cac2d4d2ad019dd"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_modem/test/target_ota/bin/blink.bin": {
+      "bytes": 184608,
+      "sha256": "9fd9b4d02b6b2f2d0ce14b6bf18a11dcad5f1324c31ee22df3f8059f48fd931f"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after_corrupt.bin": {
+      "bytes": 101,
+      "sha256": "cdca355aa0c4c64dc56d82cd452faa3b03dbbf76a6c3d54e862c213891f4db74"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_before.bin": {
+      "bytes": 1808,
+      "sha256": "de7fc3f38fb5c1fb20af2a1417bdc863761ee90c416da48e5b3e26d5b4da9671"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after.bin": {
+      "bytes": 1808,
+      "sha256": "4a9a148fbb36ba7f8a2bea31e3a94c20e237be38250882386729368f8fb87b1e"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/esp_secure_cert.bin": {
+      "bytes": 3600,
+      "sha256": "acfca80c259f223636a1cce06140aa4bdbab6f21ed5bf12a9563286a654c2a78"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/qemu_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "3856c9bc8540d2cf3edc020161c65e4f15cd0ebd739fdc86052e566e9916f67c"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/cust_flash.bin": {
+      "bytes": 24576,
+      "sha256": "852759453c560691b3331724197e9dfba08eb6b7eb2853cf9c3a5a6166b50366"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "61a0ad0011af31b8d3589d85d965a3074da41ddc966d4de8e662730196b922f1"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/cust_flash_tlv.bin": {
+      "bytes": 8192,
+      "sha256": "aacba3774662c9c13309f9b7a7f0a6ebf6a80cb91aabf97a19db243f8edbe9d3"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_verification.bin": {
+      "bytes": 7760,
+      "sha256": "dc96d5b2f19a2f4d305463859b8de212460e99632e65c3a1edf116dc2cce896f"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/nvs_legacy.bin": {
+      "bytes": 12288,
+      "sha256": "6d5a7de9aaeb30e71eea8f7e77dd2338347aab38c8fc8180d3828cb161c477fd"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "b70cb53c59aa6febf75e01fd411838688135958207b839a6ff52737d777c9301"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/secure_verification_corrupt.bin": {
+      "bytes": 11504,
+      "sha256": "2f082dfd3ffc23ced70589cd526938b6fbd0a5756dac79524f0149c62c20b7cd"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/nvs.bin": {
+      "bytes": 12288,
+      "sha256": "b2c8eb81f30f6b4f980b6c7005eaac41268a7451e1f688597961cb847c3bfacd"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "f7f021e6b6b8d9be364c994706585ccf566c7fb5e82a45554fc29f79711951d1"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/cust_flash_legacy.bin": {
+      "bytes": 24576,
+      "sha256": "f88ee14b4f99f12ccf6c9caa24a79a246f0a37aa915858c69e3aa67609890644"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "9c01b9db0230e9637331d7800481177f5beb0626aeb60dd36ac625eb8b0f714c"
+    },
+    "gps-daily-20261021/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/tools/tests/input_data/esp_secure_cert.bin": {
+      "bytes": 5280,
+      "sha256": "549c702529866d67aef53f26344c223126e3121ae5105b739774d19c3349f343"
+    },
+    "gps-daily-20261021/out/caltest.bin": {
+      "bytes": 462800,
+      "sha256": "3caa19cac685bff1bfac5b7b853aa22e3cbee661ed813aa64fb529b4c7424d94"
+    },
+    "gps-daily-20261021/out/ota_data_initial.bin": {
+      "bytes": 8192,
+      "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
+    },
+    "gps-daily-20261021/out/caltest.elf": {
+      "bytes": 7528308,
+      "sha256": "23937ef65dedc574f43193bbd973e38b70975e92e764d79bddd7301e1e1fc928"
+    },
+    "gps-daily-20261021/out/gps-operating-daily-20261021.zip": {
+      "bytes": 2819876,
+      "sha256": "9b42dbbcc9d5ad635993721e1ff9b5a676fd7812a642535ad75ddc15e1833a7a"
+    },
+    "gps-daily-20261021/out/partition_table/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "53b39ac69f21abb9b90559315ea6cb0ab00216639cdccf2fec5c61d04e0aa970"
+    },
+    "gps-daily-20261021/out/bootloader/bootloader.bin": {
+      "bytes": 21024,
+      "sha256": "d3c5983df2241d108d1e6aecb6619b20ad7a4198576e86016a1d334c627f2d5c"
+    },
+    "gps-location-files-20261105/focused-source.tar.gz": {
+      "bytes": 350993,
+      "sha256": "fe7bfc86e3b7df4080389e93a08e7e9c43dc24898d870d9b30a4ad8c0db850cd"
+    },
+    "gps-location-files-20261105/out/gps-tracker-api": {
+      "bytes": 15679272,
+      "sha256": "edc6f2284a4001f7787b557c587c4fc3140ee64ce35dc61ab681d40b28b6c3c4"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/collection-source.tar.gz": {
+      "bytes": 126023,
+      "sha256": "5c2b351ffb3c5e5dbd33341f20a4825ea033a8ea42cfb758dea47b9d3a66b483"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-1c8e692.zip": {
+      "bytes": 3694773,
+      "sha256": "bf10b50e80db7305fd6194c3cb2654137fb72582d5590e4c2aaf09e314f84e83"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-6ce4745.zip": {
+      "bytes": 3675081,
+      "sha256": "8145fed85f2519ee38c1b36d6c709ca866c932d891530d932df8424655e2af9c"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-45c6e4a.zip": {
+      "bytes": 3674885,
+      "sha256": "03ed873f75f55f7fd6a471ef9333705e5e5730cc18b28c4f7e53b033216c7fc5"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-11acce8.zip": {
+      "bytes": 2771739,
+      "sha256": "92ddb7ae83c1a46d30599da34e1d5b58919fd1836e6ff7ef30b7dc323e19738e"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-tls-cert-test-c0ce013.zip": {
+      "bytes": 2227430,
+      "sha256": "cb592e0bf7f1c1bed9ee8830a529a9d278fa1950c89a76c2817a7caa12f7cd42"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-8ac80c7.zip": {
+      "bytes": 2770057,
+      "sha256": "e0bddb8a307e6ca9c7773ac92426c3d5d2035a099bba297bb7ba4c7e78075e82"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-8925151.zip": {
+      "bytes": 2771012,
+      "sha256": "b1394be28654c9bfc6480a5eefaa290359f99765f6cdff9a7deef67aab9067f9"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-496fc32.zip": {
+      "bytes": 2770982,
+      "sha256": "95768bb6cad516868d0f8fe59537f8185aa7c2621e7be511b7c171972e89dbf2"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-tls-cert-test-6ce4745.zip": {
+      "bytes": 3236023,
+      "sha256": "4fa898594b79e8e96dc0de15fc3f0d5efbc6c21f3bf8e65be5c6f80a3ffdd72d"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-c0ce013.zip": {
+      "bytes": 2772793,
+      "sha256": "b22e104987afaccf089ce406c6125de53eb634601758907ec6f20d1bfca36dd0"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-sleep-test-0e00b7e.zip": {
+      "bytes": 3740668,
+      "sha256": "a2af23039dc89d5931f395bccbca038c5b221b0f2b1a729886e07aaf5221467f"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-tls-cert-test-f7f9212.zip": {
+      "bytes": 2226324,
+      "sha256": "82d0b5398362fc0207506cdfa7c8146f658ff6829a51f8be322d8a3eadf82013"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-https-pilot-awake-ae664c1.zip": {
+      "bytes": 2768501,
+      "sha256": "d6b83a76f8d1d28f781bbc1b1229f3c005a98e3b7f8dbc1b0a511cec06d850b6"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/gps-tls-cert-test-0de7733.zip": {
+      "bytes": 3235820,
+      "sha256": "687648573b2839cdecc1c64995d00ec8931f0e4ef0c61fb94f3353da114a0499"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__arduino-esp32/libraries/Update/examples/AWS_S3_OTA_Update/StartCounter.ino.bin": {
+      "bytes": 357276,
+      "sha256": "2e233d709b5360df26388fb3031820e6b21afe3fda7941d55ea8ee1620622419"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/hello_world.bin": {
+      "bytes": 146768,
+      "sha256": "2759fc5debc992a761ee4ddd6b1c8a294c3426fae0c8481db057e3da57ff9b9e"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/bootloader.bin": {
+      "bytes": 20416,
+      "sha256": "658e52894aab3c7dc9af8ede0ec110408bb9e57423a10b56e8d7e02cec95891d"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/hello-world.bin": {
+      "bytes": 195984,
+      "sha256": "0fc099da62881522204825a9d9ea1a526d6e195d1d5b034972189c7e98eb0a99"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "5d1dbc1e3c50d7bc93b123215900b57fdfda24131e76da03999a54fe9b554ec3"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/bootloader.bin": {
+      "bytes": 10768,
+      "sha256": "4ebe1cfe7b195bfbc6aa74245648155e0466c522a6da2417c9fef614bda2db34"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/hello-world.bin": {
+      "bytes": 142320,
+      "sha256": "a1f56518fd24dd4ff39ee98c512807f36c5388cdbc0a5b40aa63f4b75f6fd98e"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/bootloader.bin": {
+      "bytes": 24880,
+      "sha256": "6200f89fe61eb3758d3e844562cc69254d193282da6ae9f1857d600632233888"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/hello_world.bin": {
+      "bytes": 136224,
+      "sha256": "b74c30177b1159c8f5d138531a85c90cce03bb1e98682340906cb4052fbeaa51"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/bootloader.bin": {
+      "bytes": 19264,
+      "sha256": "7826d1fa01d98efc94b2aaf9a6f63abfe8eed928235d322fa1ce310f452ae33c"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/hello-world.bin": {
+      "bytes": 142528,
+      "sha256": "5f5d057d551af6223888b73ef4c715c5acc1eadbb90a046578a927eab5a80e9f"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/bootloader.bin": {
+      "bytes": 20000,
+      "sha256": "2b2bfbd61260af10cb74c907c42f49285689a6cebcceb8ec03124992207c0e27"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/ESP32_AT_Firmware/Firmware.bin": {
+      "bytes": 4194304,
+      "sha256": "b688de362472cff747f2ebe73e032987c1ee7532851150523f08710e7026b413"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C2/app.bin": {
+      "bytes": 54080,
+      "sha256": "af74a99385aded6ffde220a93cf5893d4d81ee87ee9e205072dcced80d6ee568"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_S3/app.bin": {
+      "bytes": 145936,
+      "sha256": "350ca35cdc5c3146ab634635fb98b1fdc79e8e0eb263f95de745974bda239314"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H2/app.bin": {
+      "bytes": 55600,
+      "sha256": "ba98ea3494ba535857b7a29d3fea96a22fde053ff529b8fdd3bb26d07447b31b"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32/app.bin": {
+      "bytes": 127584,
+      "sha256": "335d3748709b9d2efb0a89d968433f1787301d5c22bfd930a27b85af970488c0"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H4/app.bin": {
+      "bytes": 113536,
+      "sha256": "229370b19ae3660bb4c91401e1b9a5b1340f472509341a4e9e00a20a376d799b"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C3/app.bin": {
+      "bytes": 101408,
+      "sha256": "2e6f6729a66b13df4f789aa8ec038a7f9b7c099fd15d1b7f7ef00dba8f5b9833"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp-serial-flasher/test/hello-world.bin": {
+      "bytes": 144672,
+      "sha256": "e3992ca5ad3069abf49a8cf117b0da302d97302e1b3c9a6ad77ceee9efe144b9"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/joltwallet__littlefs/test/testfs.bin": {
+      "bytes": 49152,
+      "sha256": "16225b76da120e172b41cf5b11cc976a8de553b625d5e2944cac2d4d2ad019dd"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_modem/test/target_ota/bin/blink.bin": {
+      "bytes": 184608,
+      "sha256": "9fd9b4d02b6b2f2d0ce14b6bf18a11dcad5f1324c31ee22df3f8059f48fd931f"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after_corrupt.bin": {
+      "bytes": 101,
+      "sha256": "cdca355aa0c4c64dc56d82cd452faa3b03dbbf76a6c3d54e862c213891f4db74"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_before.bin": {
+      "bytes": 1808,
+      "sha256": "de7fc3f38fb5c1fb20af2a1417bdc863761ee90c416da48e5b3e26d5b4da9671"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after.bin": {
+      "bytes": 1808,
+      "sha256": "4a9a148fbb36ba7f8a2bea31e3a94c20e237be38250882386729368f8fb87b1e"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/esp_secure_cert.bin": {
+      "bytes": 3600,
+      "sha256": "acfca80c259f223636a1cce06140aa4bdbab6f21ed5bf12a9563286a654c2a78"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/qemu_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "3856c9bc8540d2cf3edc020161c65e4f15cd0ebd739fdc86052e566e9916f67c"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/cust_flash.bin": {
+      "bytes": 24576,
+      "sha256": "852759453c560691b3331724197e9dfba08eb6b7eb2853cf9c3a5a6166b50366"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "61a0ad0011af31b8d3589d85d965a3074da41ddc966d4de8e662730196b922f1"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/cust_flash_tlv.bin": {
+      "bytes": 8192,
+      "sha256": "aacba3774662c9c13309f9b7a7f0a6ebf6a80cb91aabf97a19db243f8edbe9d3"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_verification.bin": {
+      "bytes": 7760,
+      "sha256": "dc96d5b2f19a2f4d305463859b8de212460e99632e65c3a1edf116dc2cce896f"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/nvs_legacy.bin": {
+      "bytes": 12288,
+      "sha256": "6d5a7de9aaeb30e71eea8f7e77dd2338347aab38c8fc8180d3828cb161c477fd"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "b70cb53c59aa6febf75e01fd411838688135958207b839a6ff52737d777c9301"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/secure_verification_corrupt.bin": {
+      "bytes": 11504,
+      "sha256": "2f082dfd3ffc23ced70589cd526938b6fbd0a5756dac79524f0149c62c20b7cd"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/nvs.bin": {
+      "bytes": 12288,
+      "sha256": "b2c8eb81f30f6b4f980b6c7005eaac41268a7451e1f688597961cb847c3bfacd"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "f7f021e6b6b8d9be364c994706585ccf566c7fb5e82a45554fc29f79711951d1"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/cust_flash_legacy.bin": {
+      "bytes": 24576,
+      "sha256": "f88ee14b4f99f12ccf6c9caa24a79a246f0a37aa915858c69e3aa67609890644"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "9c01b9db0230e9637331d7800481177f5beb0626aeb60dd36ac625eb8b0f714c"
+    },
+    "gps-awake-pilot-ae664c1.1mKrQz/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/tools/tests/input_data/esp_secure_cert.bin": {
+      "bytes": 5280,
+      "sha256": "549c702529866d67aef53f26344c223126e3121ae5105b739774d19c3349f343"
+    },
+    "gps-provision22-20261111cumulative111/evidence-query111.tar.gz": {
+      "bytes": 182633,
+      "sha256": "ee84b81ef2ed267a9d8a23190452047234e9b418123170eab1d72d764e7f2c64"
+    },
+    "gps-provision22-20261111cumulative111/candidate-cumulative111-20261111-r1.tar.gz": {
+      "bytes": 11489443,
+      "sha256": "2b22794ef68bd50f8214d208cd7d40a8618de6160278bca79e0a869cae46b7b2"
+    },
+    "gps-provision22-20261111cumulative111/candidate-cumulative111-20261111-r1/gps-tracker-api": {
+      "bytes": 18673536,
+      "sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9"
+    },
+    "gps-provision22-20261111cumulative111/out/gps-tracker-api": {
+      "bytes": 18673536,
+      "sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9"
+    },
+    "gps-provision22-20261111cumulative111/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261108/source.tar.gz": {
+      "bytes": 4330544,
+      "sha256": "5fa681f2c935ce12b5aae371cd3e099bd8ab876e3f0db56b54a09790eee72190"
+    },
+    "gps-provision22-20261108/binary-inputs.tar.gz": {
+      "bytes": 2845659,
+      "sha256": "1a50fd6ac0cd35a16f3ce8648127442322726037f3859c96c5b4b5281746d89e"
+    },
+    "gps-provision22-20261108/candidate-provision22-20261108-r1.tar.gz": {
+      "bytes": 11497819,
+      "sha256": "a01c4f14bf4f2540249dee3d3a57abd0f3315d167b930963d4494c6b47d66fa3"
+    },
+    "gps-provision22-20261108/ops.tar.gz": {
+      "bytes": 407677,
+      "sha256": "07b88d5350bb8e78d92bc3080ed447dcfa3e4f79c98cc2bf4d1bba714f06a934"
+    },
+    "gps-provision22-20261108/out/gps-tracker-api": {
+      "bytes": 18497384,
+      "sha256": "20ff720ec3659e0edb3084cbb173b88e686f88e9e832e71dae0175889c9d037f"
+    },
+    "gps-provision22-20261108/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261108/candidate-provision22-20261108-r1/gps-tracker-api": {
+      "bytes": 18497384,
+      "sha256": "20ff720ec3659e0edb3084cbb173b88e686f88e9e832e71dae0175889c9d037f"
+    },
+    "gps-fleet-expenses-20261029/source-final.tar.gz": {
+      "bytes": 9997715,
+      "sha256": "6a9bf5a78dd7bcabeff4749483382c4564cbed84b9ebcccc77b2a08925266a22"
+    },
+    "gps-fleet-expenses-20261029/source-wip.tar.gz": {
+      "bytes": 9982579,
+      "sha256": "91de01e6e2f3f819270efd8b448781038127444e9a30b3d0fe67cf5bee560d82"
+    },
+    "gps-fleet-expenses-20261029/out-final/gps-tracker-api": {
+      "bytes": 15138600,
+      "sha256": "edbc9fbb261aafabe872891ce9a727868739444feb2ef0f2713c6c14b6afc471"
+    },
+    "gps-fleet-expenses-20261029/out-final/web.tar.gz": {
+      "bytes": 3762567,
+      "sha256": "e0a88d1da2ebce0bb9fc54a39789af25588e727105e48c59da326582055a6550"
+    },
+    "gps-fleet-expenses-20261029/out/gps-tracker-api": {
+      "bytes": 15138600,
+      "sha256": "59841811b308f07d550f9907965c9c55b1ca41adcb41edd5a2f6b7a96f1b0b38"
+    },
+    "gps-fleet-team-20261029/source-final.tar.gz": {
+      "bytes": 3762076,
+      "sha256": "4c72fc4491b8df2e153d356995f4a809fcbeea3842ec6199fd514c1144a7bdf1"
+    },
+    "gps-fleet-team-20261029/working-source.tar.gz": {
+      "bytes": 3736846,
+      "sha256": "823a4e38eba8de69ac3964c086ad74a87c07811d3fc15fa0ea128a86820141f7"
+    },
+    "gps-fleet-team-20261029/out-final/gps-tracker-api": {
+      "bytes": 14602000,
+      "sha256": "a862dc01461ae950b1ba95f52af454816e8871f703dbff2930bf3d9b9d0ea370"
+    },
+    "gps-fleet-team-20261029/out-final/web.tar.gz": {
+      "bytes": 3745286,
+      "sha256": "da0c73ab33b1d1fa8c08e97bf9e276531c161bdaec6fe4b8722ddfd80d678025"
+    },
+    "gps-fleet-team-20261029/out/gps-tracker-api": {
+      "bytes": 14602000,
+      "sha256": "513c315c2cdfc773f044116a4aaa0041787e147021b0b43daf25faf4f816e7ad"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__arduino-esp32/libraries/Update/examples/AWS_S3_OTA_Update/StartCounter.ino.bin": {
+      "bytes": 357276,
+      "sha256": "2e233d709b5360df26388fb3031820e6b21afe3fda7941d55ea8ee1620622419"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/hello_world.bin": {
+      "bytes": 146768,
+      "sha256": "2759fc5debc992a761ee4ddd6b1c8a294c3426fae0c8481db057e3da57ff9b9e"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/bootloader.bin": {
+      "bytes": 20416,
+      "sha256": "658e52894aab3c7dc9af8ede0ec110408bb9e57423a10b56e8d7e02cec95891d"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/hello-world.bin": {
+      "bytes": 195984,
+      "sha256": "0fc099da62881522204825a9d9ea1a526d6e195d1d5b034972189c7e98eb0a99"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "5d1dbc1e3c50d7bc93b123215900b57fdfda24131e76da03999a54fe9b554ec3"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/bootloader.bin": {
+      "bytes": 10768,
+      "sha256": "4ebe1cfe7b195bfbc6aa74245648155e0466c522a6da2417c9fef614bda2db34"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/hello-world.bin": {
+      "bytes": 142320,
+      "sha256": "a1f56518fd24dd4ff39ee98c512807f36c5388cdbc0a5b40aa63f4b75f6fd98e"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/bootloader.bin": {
+      "bytes": 24880,
+      "sha256": "6200f89fe61eb3758d3e844562cc69254d193282da6ae9f1857d600632233888"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/hello_world.bin": {
+      "bytes": 136224,
+      "sha256": "b74c30177b1159c8f5d138531a85c90cce03bb1e98682340906cb4052fbeaa51"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/bootloader.bin": {
+      "bytes": 19264,
+      "sha256": "7826d1fa01d98efc94b2aaf9a6f63abfe8eed928235d322fa1ce310f452ae33c"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/hello-world.bin": {
+      "bytes": 142528,
+      "sha256": "5f5d057d551af6223888b73ef4c715c5acc1eadbb90a046578a927eab5a80e9f"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/bootloader.bin": {
+      "bytes": 20000,
+      "sha256": "2b2bfbd61260af10cb74c907c42f49285689a6cebcceb8ec03124992207c0e27"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/ESP32_AT_Firmware/Firmware.bin": {
+      "bytes": 4194304,
+      "sha256": "b688de362472cff747f2ebe73e032987c1ee7532851150523f08710e7026b413"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C2/app.bin": {
+      "bytes": 54080,
+      "sha256": "af74a99385aded6ffde220a93cf5893d4d81ee87ee9e205072dcced80d6ee568"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_S3/app.bin": {
+      "bytes": 145936,
+      "sha256": "350ca35cdc5c3146ab634635fb98b1fdc79e8e0eb263f95de745974bda239314"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H2/app.bin": {
+      "bytes": 55600,
+      "sha256": "ba98ea3494ba535857b7a29d3fea96a22fde053ff529b8fdd3bb26d07447b31b"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32/app.bin": {
+      "bytes": 127584,
+      "sha256": "335d3748709b9d2efb0a89d968433f1787301d5c22bfd930a27b85af970488c0"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H4/app.bin": {
+      "bytes": 113536,
+      "sha256": "229370b19ae3660bb4c91401e1b9a5b1340f472509341a4e9e00a20a376d799b"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C3/app.bin": {
+      "bytes": 101408,
+      "sha256": "2e6f6729a66b13df4f789aa8ec038a7f9b7c099fd15d1b7f7ef00dba8f5b9833"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp-serial-flasher/test/hello-world.bin": {
+      "bytes": 144672,
+      "sha256": "e3992ca5ad3069abf49a8cf117b0da302d97302e1b3c9a6ad77ceee9efe144b9"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/joltwallet__littlefs/test/testfs.bin": {
+      "bytes": 49152,
+      "sha256": "16225b76da120e172b41cf5b11cc976a8de553b625d5e2944cac2d4d2ad019dd"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_modem/test/target_ota/bin/blink.bin": {
+      "bytes": 184608,
+      "sha256": "9fd9b4d02b6b2f2d0ce14b6bf18a11dcad5f1324c31ee22df3f8059f48fd931f"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after_corrupt.bin": {
+      "bytes": 101,
+      "sha256": "cdca355aa0c4c64dc56d82cd452faa3b03dbbf76a6c3d54e862c213891f4db74"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_before.bin": {
+      "bytes": 1808,
+      "sha256": "de7fc3f38fb5c1fb20af2a1417bdc863761ee90c416da48e5b3e26d5b4da9671"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after.bin": {
+      "bytes": 1808,
+      "sha256": "4a9a148fbb36ba7f8a2bea31e3a94c20e237be38250882386729368f8fb87b1e"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/esp_secure_cert.bin": {
+      "bytes": 3600,
+      "sha256": "acfca80c259f223636a1cce06140aa4bdbab6f21ed5bf12a9563286a654c2a78"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/qemu_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "3856c9bc8540d2cf3edc020161c65e4f15cd0ebd739fdc86052e566e9916f67c"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/cust_flash.bin": {
+      "bytes": 24576,
+      "sha256": "852759453c560691b3331724197e9dfba08eb6b7eb2853cf9c3a5a6166b50366"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "61a0ad0011af31b8d3589d85d965a3074da41ddc966d4de8e662730196b922f1"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/cust_flash_tlv.bin": {
+      "bytes": 8192,
+      "sha256": "aacba3774662c9c13309f9b7a7f0a6ebf6a80cb91aabf97a19db243f8edbe9d3"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_verification.bin": {
+      "bytes": 7760,
+      "sha256": "dc96d5b2f19a2f4d305463859b8de212460e99632e65c3a1edf116dc2cce896f"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/nvs_legacy.bin": {
+      "bytes": 12288,
+      "sha256": "6d5a7de9aaeb30e71eea8f7e77dd2338347aab38c8fc8180d3828cb161c477fd"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "b70cb53c59aa6febf75e01fd411838688135958207b839a6ff52737d777c9301"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/secure_verification_corrupt.bin": {
+      "bytes": 11504,
+      "sha256": "2f082dfd3ffc23ced70589cd526938b6fbd0a5756dac79524f0149c62c20b7cd"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/nvs.bin": {
+      "bytes": 12288,
+      "sha256": "b2c8eb81f30f6b4f980b6c7005eaac41268a7451e1f688597961cb847c3bfacd"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "f7f021e6b6b8d9be364c994706585ccf566c7fb5e82a45554fc29f79711951d1"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/cust_flash_legacy.bin": {
+      "bytes": 24576,
+      "sha256": "f88ee14b4f99f12ccf6c9caa24a79a246f0a37aa915858c69e3aa67609890644"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "9c01b9db0230e9637331d7800481177f5beb0626aeb60dd36ac625eb8b0f714c"
+    },
+    "gps-remediation-134e44a/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/tools/tests/input_data/esp_secure_cert.bin": {
+      "bytes": 5280,
+      "sha256": "549c702529866d67aef53f26344c223126e3121ae5105b739774d19c3349f343"
+    },
+    "gps-provision22-20261111repair113/candidate-stats-repair113-20261111-r1.tar.gz": {
+      "bytes": 7659111,
+      "sha256": "346b3e17925b66bf749aa4543a17c8aa7c0c4f52ccad7f904c4066b0234854aa"
+    },
+    "gps-provision22-20261111repair113/out/gps-tracker-api": {
+      "bytes": 18718656,
+      "sha256": "36cf858d9f8f5ef08168f32e8a2c1d0349b2a0893650f7eeba36f8fe4f7f9287"
+    },
+    "gps-provision22-20261111repair113/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261111repair113/candidate-stats-repair113-20261111-r1/gps-tracker-api.bin": {
+      "bytes": 18718656,
+      "sha256": "36cf858d9f8f5ef08168f32e8a2c1d0349b2a0893650f7eeba36f8fe4f7f9287"
+    },
+    "gps-privacy-delivery-20261105/focused-source.tar.gz": {
+      "bytes": 3774763,
+      "sha256": "83b55832078973cf2c5a0c0a57f07db44f7a0315f0fbbb856acb1050cc5aa660"
+    },
+    "gps-privacy-delivery-20261105/out/focused-source.tar.gz": {
+      "bytes": 3775298,
+      "sha256": "e737f5e93a18f85ae916929baef84a52ac6a6f86d09395fe4a12fc7bd7460cd3"
+    },
+    "gps-privacy-delivery-20261105/out/gps-tracker-api": {
+      "bytes": 16109352,
+      "sha256": "5e8860313fd8869044164428ddc8cc6304bb20bcb31eff69d9c7ae2ecddd1945"
+    },
+    "gps-privacy-delivery-20261105/out/web.tar.gz": {
+      "bytes": 3807810,
+      "sha256": "b714150ba6f903b642bd91f9961a9946d222f9d8cbb3a4837b99fa9ed2b799fc"
+    },
+    "gps-provision22-20261111query112/out/gps-tracker-api": {
+      "bytes": 18681768,
+      "sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+    },
+    "gps-provision22-20261111query112/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-location-storage-20261031/web.tar.gz": {
+      "bytes": 3799676,
+      "sha256": "d8ef6aec66df7a8c3d1bcfc77e0c48b3974b69eb3d8c5cf0505058ad09e3467b"
+    },
+    "gps-location-storage-20261031/source-final.tar.gz": {
+      "bytes": 10078443,
+      "sha256": "a06d89d31458cd923f6e497a7391449d491cae0e8879455ef4a51c2ce7686f4e"
+    },
+    "gps-location-storage-20261031/out-release/gps-tracker-api": {
+      "bytes": 15650600,
+      "sha256": "25d9635292e6c8aab3a686e81a165a9d03e8984f8776234fa531902c9b108997"
+    },
+    "gps-fleet-assets-20261029/web-final.tar.gz": {
+      "bytes": 3767625,
+      "sha256": "fb0ce890af440284e79d3733bd2e652ba01878ac74eb1d56d16097994af5b7fb"
+    },
+    "gps-fleet-assets-20261029/source-final.tar.gz": {
+      "bytes": 3717888,
+      "sha256": "7e58b1a177366490f097978c9e0446e7d6e387568416a17c80b9b299e383591d"
+    },
+    "gps-fleet-assets-20261029/working-source.tar.gz": {
+      "bytes": 3714443,
+      "sha256": "90513cf87dcd6e925a452ac91a2cabe57a72105d8e49f73f941d2c043b11f355"
+    },
+    "gps-fleet-assets-20261029/web-root.tar.gz": {
+      "bytes": 3767229,
+      "sha256": "57119f506697abd9acd3caaad3ccdbe003b7daa76b09c695f52f675e0fc55cb5"
+    },
+    "gps-fleet-assets-20261029/out-final/gps-tracker-api": {
+      "bytes": 14307088,
+      "sha256": "2056e2f3f46cfe6de61bb0e7425ac8564b185e4370cf40c26ed57547cbc28896"
+    },
+    "gps-fleet-assets-20261029/out/formatted-rust.tar.gz": {
+      "bytes": 226166,
+      "sha256": "5fa6c20c9285c750fac354623bc4f7ca5a3a4e8275ac395aebacceca270884be"
+    },
+    "gps-fleet-assets-20261029/out/gps-tracker-api": {
+      "bytes": 14307088,
+      "sha256": "04000f959a254f57336a4000cf084d0dbdd43d081c74b78098e9f74eac24e04c"
+    },
+    "gps-runtime-format-20261014/source.tar.gz": {
+      "bytes": 36413,
+      "sha256": "17abd105aedd963712fe02f078129f389b31ed8e880b599f303b594855b32a68"
+    },
+    "gps-runtime-format-20261014/formatted.tar.gz": {
+      "bytes": 36097,
+      "sha256": "0cc1bc0ed5b9936d61895c3a14acd1c23e652750ce811fa583e67ec03bd987f0"
+    },
+    "gps-fleet-print-20261031/web-final.tar.gz": {
+      "bytes": 3799528,
+      "sha256": "a7cd0ff0e70be747ec72bb4d2db14c31cd92322bd98ad971fee4538a71b960c4"
+    },
+    "gps-fleet-print-20261031/source-final.tar.gz": {
+      "bytes": 10070099,
+      "sha256": "60f2d5c805b890fb3a3efd7b85e4d4b26a701574319dea27f43d1f54c50c1c3c"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__arduino-esp32/libraries/Update/examples/AWS_S3_OTA_Update/StartCounter.ino.bin": {
+      "bytes": 357276,
+      "sha256": "2e233d709b5360df26388fb3031820e6b21afe3fda7941d55ea8ee1620622419"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/hello_world.bin": {
+      "bytes": 146768,
+      "sha256": "2759fc5debc992a761ee4ddd6b1c8a294c3426fae0c8481db057e3da57ff9b9e"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/bootloader.bin": {
+      "bytes": 20416,
+      "sha256": "658e52894aab3c7dc9af8ede0ec110408bb9e57423a10b56e8d7e02cec95891d"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/hello-world.bin": {
+      "bytes": 195984,
+      "sha256": "0fc099da62881522204825a9d9ea1a526d6e195d1d5b034972189c7e98eb0a99"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "5d1dbc1e3c50d7bc93b123215900b57fdfda24131e76da03999a54fe9b554ec3"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/bootloader.bin": {
+      "bytes": 10768,
+      "sha256": "4ebe1cfe7b195bfbc6aa74245648155e0466c522a6da2417c9fef614bda2db34"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/hello-world.bin": {
+      "bytes": 142320,
+      "sha256": "a1f56518fd24dd4ff39ee98c512807f36c5388cdbc0a5b40aa63f4b75f6fd98e"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/bootloader.bin": {
+      "bytes": 24880,
+      "sha256": "6200f89fe61eb3758d3e844562cc69254d193282da6ae9f1857d600632233888"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/hello_world.bin": {
+      "bytes": 136224,
+      "sha256": "b74c30177b1159c8f5d138531a85c90cce03bb1e98682340906cb4052fbeaa51"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/bootloader.bin": {
+      "bytes": 19264,
+      "sha256": "7826d1fa01d98efc94b2aaf9a6f63abfe8eed928235d322fa1ce310f452ae33c"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/hello-world.bin": {
+      "bytes": 142528,
+      "sha256": "5f5d057d551af6223888b73ef4c715c5acc1eadbb90a046578a927eab5a80e9f"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/bootloader.bin": {
+      "bytes": 20000,
+      "sha256": "2b2bfbd61260af10cb74c907c42f49285689a6cebcceb8ec03124992207c0e27"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/ESP32_AT_Firmware/Firmware.bin": {
+      "bytes": 4194304,
+      "sha256": "b688de362472cff747f2ebe73e032987c1ee7532851150523f08710e7026b413"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C2/app.bin": {
+      "bytes": 54080,
+      "sha256": "af74a99385aded6ffde220a93cf5893d4d81ee87ee9e205072dcced80d6ee568"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_S3/app.bin": {
+      "bytes": 145936,
+      "sha256": "350ca35cdc5c3146ab634635fb98b1fdc79e8e0eb263f95de745974bda239314"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H2/app.bin": {
+      "bytes": 55600,
+      "sha256": "ba98ea3494ba535857b7a29d3fea96a22fde053ff529b8fdd3bb26d07447b31b"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32/app.bin": {
+      "bytes": 127584,
+      "sha256": "335d3748709b9d2efb0a89d968433f1787301d5c22bfd930a27b85af970488c0"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H4/app.bin": {
+      "bytes": 113536,
+      "sha256": "229370b19ae3660bb4c91401e1b9a5b1340f472509341a4e9e00a20a376d799b"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C3/app.bin": {
+      "bytes": 101408,
+      "sha256": "2e6f6729a66b13df4f789aa8ec038a7f9b7c099fd15d1b7f7ef00dba8f5b9833"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp-serial-flasher/test/hello-world.bin": {
+      "bytes": 144672,
+      "sha256": "e3992ca5ad3069abf49a8cf117b0da302d97302e1b3c9a6ad77ceee9efe144b9"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/joltwallet__littlefs/test/testfs.bin": {
+      "bytes": 49152,
+      "sha256": "16225b76da120e172b41cf5b11cc976a8de553b625d5e2944cac2d4d2ad019dd"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_modem/test/target_ota/bin/blink.bin": {
+      "bytes": 184608,
+      "sha256": "9fd9b4d02b6b2f2d0ce14b6bf18a11dcad5f1324c31ee22df3f8059f48fd931f"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after_corrupt.bin": {
+      "bytes": 101,
+      "sha256": "cdca355aa0c4c64dc56d82cd452faa3b03dbbf76a6c3d54e862c213891f4db74"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_before.bin": {
+      "bytes": 1808,
+      "sha256": "de7fc3f38fb5c1fb20af2a1417bdc863761ee90c416da48e5b3e26d5b4da9671"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after.bin": {
+      "bytes": 1808,
+      "sha256": "4a9a148fbb36ba7f8a2bea31e3a94c20e237be38250882386729368f8fb87b1e"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/esp_secure_cert.bin": {
+      "bytes": 3600,
+      "sha256": "acfca80c259f223636a1cce06140aa4bdbab6f21ed5bf12a9563286a654c2a78"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/qemu_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "3856c9bc8540d2cf3edc020161c65e4f15cd0ebd739fdc86052e566e9916f67c"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/cust_flash.bin": {
+      "bytes": 24576,
+      "sha256": "852759453c560691b3331724197e9dfba08eb6b7eb2853cf9c3a5a6166b50366"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "61a0ad0011af31b8d3589d85d965a3074da41ddc966d4de8e662730196b922f1"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/cust_flash_tlv.bin": {
+      "bytes": 8192,
+      "sha256": "aacba3774662c9c13309f9b7a7f0a6ebf6a80cb91aabf97a19db243f8edbe9d3"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_verification.bin": {
+      "bytes": 7760,
+      "sha256": "dc96d5b2f19a2f4d305463859b8de212460e99632e65c3a1edf116dc2cce896f"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/nvs_legacy.bin": {
+      "bytes": 12288,
+      "sha256": "6d5a7de9aaeb30e71eea8f7e77dd2338347aab38c8fc8180d3828cb161c477fd"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "b70cb53c59aa6febf75e01fd411838688135958207b839a6ff52737d777c9301"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/secure_verification_corrupt.bin": {
+      "bytes": 11504,
+      "sha256": "2f082dfd3ffc23ced70589cd526938b6fbd0a5756dac79524f0149c62c20b7cd"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/nvs.bin": {
+      "bytes": 12288,
+      "sha256": "b2c8eb81f30f6b4f980b6c7005eaac41268a7451e1f688597961cb847c3bfacd"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "f7f021e6b6b8d9be364c994706585ccf566c7fb5e82a45554fc29f79711951d1"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/cust_flash_legacy.bin": {
+      "bytes": 24576,
+      "sha256": "f88ee14b4f99f12ccf6c9caa24a79a246f0a37aa915858c69e3aa67609890644"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "9c01b9db0230e9637331d7800481177f5beb0626aeb60dd36ac625eb8b0f714c"
+    },
+    "gps-battery-ccb6132-source/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/tools/tests/input_data/esp_secure_cert.bin": {
+      "bytes": 5280,
+      "sha256": "549c702529866d67aef53f26344c223126e3121ae5105b739774d19c3349f343"
+    },
+    "gps-provision22-20261112cumulative119/release-fixture/candidate115/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23"
+    },
+    "gps-provision22-20261112cumulative119/release-fixture/compatible112/gps-tracker-api": {
+      "bytes": 18681768,
+      "sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+    },
+    "gps-provision22-20261112cumulative119/release-fixture-missing-initial-api/candidate115/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23"
+    },
+    "gps-provision22-20261112cumulative119/release-fixture-missing-initial-api/compatible112/gps-tracker-api": {
+      "bytes": 18681768,
+      "sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+    },
+    "gps-provision22-20261112cumulative119/out/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23"
+    },
+    "gps-provision22-20261112cumulative119/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "048cffd2113dd03c415cd777746b02358930c5e9c4015317bad00404fe5b4e3f"
+    },
+    "gps-provision22-20261112cumulative119/compatible112/gps-tracker-api": {
+      "bytes": 18681768,
+      "sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+    },
+    "gps-provision22-20261112runtime119/out/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23"
+    },
+    "gps-provision22-20261112cumulative119-recovery-1500m-oom/out/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23"
+    },
+    "gps-provision22-20261112cumulative119-recovery-1500m-oom/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "048cffd2113dd03c415cd777746b02358930c5e9c4015317bad00404fe5b4e3f"
+    },
+    "gps-provision22-20261112cumulative119-recovery-1500m-oom/compatible112/gps-tracker-api": {
+      "bytes": 18681768,
+      "sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+    },
+    "gps-pdf-service-20261106-r1/source.tar.gz": {
+      "bytes": 4160059,
+      "sha256": "18b3e47b9f65c30f8db3adbe6b66d95cb69b7f47f8cc1cf706ab4de15270fed1"
+    },
+    "gps-pdf-service-20261106-r1/out/gps-tracker-api": {
+      "bytes": 17620984,
+      "sha256": "0d28667f3c21af82a43b987a12eec2836547d3717c69ae304688c6e5363ce826"
+    },
+    "gps-pdf-service-20261106-r1/out/source.tar.gz": {
+      "bytes": 4160059,
+      "sha256": "18b3e47b9f65c30f8db3adbe6b66d95cb69b7f47f8cc1cf706ab4de15270fed1"
+    },
+    "gps-provision22-20261111runtime117/candidate-runtime117-20261111-r1.tar.gz": {
+      "bytes": 8200718,
+      "sha256": "2898c87db1b1ad71e54f08d77dc4d5320a087c6d51c3ba930bbde28769790340"
+    },
+    "gps-provision22-20261111runtime117/out/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "f1e0d29ed9773f1279798021be511450003bc2239a73bc10c4204a853055ac3d"
+    },
+    "gps-provision22-20261111runtime117/candidate-runtime117-20261111-r1/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "f1e0d29ed9773f1279798021be511450003bc2239a73bc10c4204a853055ac3d"
+    },
+    "gps-fleet-trip-quality-20261030/source-final.tar.gz": {
+      "bytes": 3835469,
+      "sha256": "e66e1d39d3d49efd23602fd27f488c4fcb9cda2f0a3fd6185dfc0f884f6ddb53"
+    },
+    "gps-fleet-trip-quality-20261030/source-wip.tar.gz": {
+      "bytes": 3834275,
+      "sha256": "38e31de195089ebaab5f3a5adaf9b6bfdb986dc83b589e6087081feaf1fac302"
+    },
+    "gps-fleet-trip-quality-20261030/out-final/gps-tracker-api": {
+      "bytes": 15552296,
+      "sha256": "8e5b482c5cba70f177ef26fde9e72fd7eadd9f23ee704861379e6c35eb071294"
+    },
+    "gps-fleet-trip-quality-20261030/out/gps-tracker-api": {
+      "bytes": 15552296,
+      "sha256": "8e5b482c5cba70f177ef26fde9e72fd7eadd9f23ee704861379e6c35eb071294"
+    },
+    "gps-fleet-trip-quality-20261030/out-release/gps-tracker-api": {
+      "bytes": 15552296,
+      "sha256": "eb0545f370a977a64092d5520ee5e058d124ef537260314b5830a3cfd4d4c072"
+    },
+    "gps-fleet-trip-quality-20261030/out-release/web.tar.gz": {
+      "bytes": 3795447,
+      "sha256": "cfc4f9437b87ac859af01403cd3fe9e92659d2687acb8c2feb87a2105d998e94"
+    },
+    "gps-location-pilot-20261104.D6MWGE/gps-https-pilot-7e29fdf.zip": {
+      "bytes": 2837838,
+      "sha256": "e72f475c3167ccd9dde754bc0d5d56b102fa96960264849123b45684d7e99d2b"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__arduino-esp32/libraries/Update/examples/AWS_S3_OTA_Update/StartCounter.ino.bin": {
+      "bytes": 357276,
+      "sha256": "2e233d709b5360df26388fb3031820e6b21afe3fda7941d55ea8ee1620622419"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/hello_world.bin": {
+      "bytes": 146768,
+      "sha256": "2759fc5debc992a761ee4ddd6b1c8a294c3426fae0c8481db057e3da57ff9b9e"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/bootloader.bin": {
+      "bytes": 20416,
+      "sha256": "658e52894aab3c7dc9af8ede0ec110408bb9e57423a10b56e8d7e02cec95891d"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/hello-world.bin": {
+      "bytes": 195984,
+      "sha256": "0fc099da62881522204825a9d9ea1a526d6e195d1d5b034972189c7e98eb0a99"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "5d1dbc1e3c50d7bc93b123215900b57fdfda24131e76da03999a54fe9b554ec3"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/bootloader.bin": {
+      "bytes": 10768,
+      "sha256": "4ebe1cfe7b195bfbc6aa74245648155e0466c522a6da2417c9fef614bda2db34"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/hello-world.bin": {
+      "bytes": 142320,
+      "sha256": "a1f56518fd24dd4ff39ee98c512807f36c5388cdbc0a5b40aa63f4b75f6fd98e"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/bootloader.bin": {
+      "bytes": 24880,
+      "sha256": "6200f89fe61eb3758d3e844562cc69254d193282da6ae9f1857d600632233888"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/hello_world.bin": {
+      "bytes": 136224,
+      "sha256": "b74c30177b1159c8f5d138531a85c90cce03bb1e98682340906cb4052fbeaa51"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/bootloader.bin": {
+      "bytes": 19264,
+      "sha256": "7826d1fa01d98efc94b2aaf9a6f63abfe8eed928235d322fa1ce310f452ae33c"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/hello-world.bin": {
+      "bytes": 142528,
+      "sha256": "5f5d057d551af6223888b73ef4c715c5acc1eadbb90a046578a927eab5a80e9f"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/bootloader.bin": {
+      "bytes": 20000,
+      "sha256": "2b2bfbd61260af10cb74c907c42f49285689a6cebcceb8ec03124992207c0e27"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/ESP32_AT_Firmware/Firmware.bin": {
+      "bytes": 4194304,
+      "sha256": "b688de362472cff747f2ebe73e032987c1ee7532851150523f08710e7026b413"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C2/app.bin": {
+      "bytes": 54080,
+      "sha256": "af74a99385aded6ffde220a93cf5893d4d81ee87ee9e205072dcced80d6ee568"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_S3/app.bin": {
+      "bytes": 145936,
+      "sha256": "350ca35cdc5c3146ab634635fb98b1fdc79e8e0eb263f95de745974bda239314"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H2/app.bin": {
+      "bytes": 55600,
+      "sha256": "ba98ea3494ba535857b7a29d3fea96a22fde053ff529b8fdd3bb26d07447b31b"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32/app.bin": {
+      "bytes": 127584,
+      "sha256": "335d3748709b9d2efb0a89d968433f1787301d5c22bfd930a27b85af970488c0"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H4/app.bin": {
+      "bytes": 113536,
+      "sha256": "229370b19ae3660bb4c91401e1b9a5b1340f472509341a4e9e00a20a376d799b"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C3/app.bin": {
+      "bytes": 101408,
+      "sha256": "2e6f6729a66b13df4f789aa8ec038a7f9b7c099fd15d1b7f7ef00dba8f5b9833"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp-serial-flasher/test/hello-world.bin": {
+      "bytes": 144672,
+      "sha256": "e3992ca5ad3069abf49a8cf117b0da302d97302e1b3c9a6ad77ceee9efe144b9"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/joltwallet__littlefs/test/testfs.bin": {
+      "bytes": 49152,
+      "sha256": "16225b76da120e172b41cf5b11cc976a8de553b625d5e2944cac2d4d2ad019dd"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_modem/test/target_ota/bin/blink.bin": {
+      "bytes": 184608,
+      "sha256": "9fd9b4d02b6b2f2d0ce14b6bf18a11dcad5f1324c31ee22df3f8059f48fd931f"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after_corrupt.bin": {
+      "bytes": 101,
+      "sha256": "cdca355aa0c4c64dc56d82cd452faa3b03dbbf76a6c3d54e862c213891f4db74"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_before.bin": {
+      "bytes": 1808,
+      "sha256": "de7fc3f38fb5c1fb20af2a1417bdc863761ee90c416da48e5b3e26d5b4da9671"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after.bin": {
+      "bytes": 1808,
+      "sha256": "4a9a148fbb36ba7f8a2bea31e3a94c20e237be38250882386729368f8fb87b1e"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/esp_secure_cert.bin": {
+      "bytes": 3600,
+      "sha256": "acfca80c259f223636a1cce06140aa4bdbab6f21ed5bf12a9563286a654c2a78"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/qemu_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "3856c9bc8540d2cf3edc020161c65e4f15cd0ebd739fdc86052e566e9916f67c"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/cust_flash.bin": {
+      "bytes": 24576,
+      "sha256": "852759453c560691b3331724197e9dfba08eb6b7eb2853cf9c3a5a6166b50366"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "61a0ad0011af31b8d3589d85d965a3074da41ddc966d4de8e662730196b922f1"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/cust_flash_tlv.bin": {
+      "bytes": 8192,
+      "sha256": "aacba3774662c9c13309f9b7a7f0a6ebf6a80cb91aabf97a19db243f8edbe9d3"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_verification.bin": {
+      "bytes": 7760,
+      "sha256": "dc96d5b2f19a2f4d305463859b8de212460e99632e65c3a1edf116dc2cce896f"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/nvs_legacy.bin": {
+      "bytes": 12288,
+      "sha256": "6d5a7de9aaeb30e71eea8f7e77dd2338347aab38c8fc8180d3828cb161c477fd"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "b70cb53c59aa6febf75e01fd411838688135958207b839a6ff52737d777c9301"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/secure_verification_corrupt.bin": {
+      "bytes": 11504,
+      "sha256": "2f082dfd3ffc23ced70589cd526938b6fbd0a5756dac79524f0149c62c20b7cd"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/nvs.bin": {
+      "bytes": 12288,
+      "sha256": "b2c8eb81f30f6b4f980b6c7005eaac41268a7451e1f688597961cb847c3bfacd"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "f7f021e6b6b8d9be364c994706585ccf566c7fb5e82a45554fc29f79711951d1"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/cust_flash_legacy.bin": {
+      "bytes": 24576,
+      "sha256": "f88ee14b4f99f12ccf6c9caa24a79a246f0a37aa915858c69e3aa67609890644"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "9c01b9db0230e9637331d7800481177f5beb0626aeb60dd36ac625eb8b0f714c"
+    },
+    "gps-location-pilot-20261104.D6MWGE/src/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/tools/tests/input_data/esp_secure_cert.bin": {
+      "bytes": 5280,
+      "sha256": "549c702529866d67aef53f26344c223126e3121ae5105b739774d19c3349f343"
+    },
+    "gps-privacy-raster-20261106-r1/source.tar.gz": {
+      "bytes": 4057313,
+      "sha256": "caf07e6c7b6552081866f30a96f1c9113e54438ad405d992c8c0cea99ea0d314"
+    },
+    "gps-privacy-raster-20261106-r1/out/gps-tracker-api": {
+      "bytes": 17493848,
+      "sha256": "9acd61b3e21a6c188fe9140a764d67ea65b9ee83c18edef2404de78387691250"
+    },
+    "gps-privacy-raster-20261106-r1/out/source.tar.gz": {
+      "bytes": 4057313,
+      "sha256": "caf07e6c7b6552081866f30a96f1c9113e54438ad405d992c8c0cea99ea0d314"
+    },
+    "gps-privacy-raster-20261106-r1/out/web.tar.gz": {
+      "bytes": 3822809,
+      "sha256": "132febaf74c0829cdd9c099ecb5e79807c245f3080c5d1a037fcfb4846cc8037"
+    },
+    "gps-provision22-20261112runtime119-seed-dependency-failed/out/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23"
+    },
+    "gps-operating-20261014-98bf4a6/caltest.bin": {
+      "bytes": 410016,
+      "sha256": "cbf9230fed3bf8e1d3475824623141cb60090ac7675558d35e89d70f2abfa784"
+    },
+    "gps-operating-20261014-98bf4a6/gps-operating-20261014-98bf4a6.zip": {
+      "bytes": 2528373,
+      "sha256": "8d6120860fab541f289f1179475f1d00bb54fa55c4ec8a9533118eec55d32cf8"
+    },
+    "gps-operating-20261014-98bf4a6/ota_data_initial.bin": {
+      "bytes": 8192,
+      "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
+    },
+    "gps-operating-20261014-98bf4a6/caltest.elf": {
+      "bytes": 6751924,
+      "sha256": "b2e352bf6ffd787670e54e67621eee8b69973f1905a8c35fd1173321a1f890eb"
+    },
+    "gps-operating-20261014-98bf4a6/partition_table/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "53b39ac69f21abb9b90559315ea6cb0ab00216639cdccf2fec5c61d04e0aa970"
+    },
+    "gps-operating-20261014-98bf4a6/bootloader/bootloader.bin": {
+      "bytes": 21024,
+      "sha256": "d3c5983df2241d108d1e6aecb6619b20ad7a4198576e86016a1d334c627f2d5c"
+    },
+    "gps-provision22-20261112cumulative119-checksum-rejected/out/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "f1e0d29ed9773f1279798021be511450003bc2239a73bc10c4204a853055ac3d"
+    },
+    "gps-provision22-20261112cumulative119-checksum-rejected/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "048cffd2113dd03c415cd777746b02358930c5e9c4015317bad00404fe5b4e3f"
+    },
+    "gps-provision22-20261112cumulative119-checksum-rejected/compatible112/gps-tracker-api": {
+      "bytes": 18681768,
+      "sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+    },
+    "gps-provision22-20261108c/source.tar.gz": {
+      "bytes": 4358519,
+      "sha256": "ccd57a8c2a5aff4931407dc462b6231e0320c3ea0e73e8bcd9c8c4694b587b77"
+    },
+    "gps-provision22-20261108c/candidate-provision22c-20261108-r1.tar.gz": {
+      "bytes": 11566013,
+      "sha256": "37fcd1172f17eb52860434af02aee3388a555652ea8023d4821c6711b69e7b31"
+    },
+    "gps-provision22-20261108c/web-source.tar.gz": {
+      "bytes": 3434218,
+      "sha256": "ddf39bac78fcba1983592f04d9d3ffc0724e5f079724600cf4bc8b180c9b7e17"
+    },
+    "gps-provision22-20261108c/evidence22c.tar.gz": {
+      "bytes": 69688,
+      "sha256": "3778798e8330f25100758cd9ba0a1ed7a7753e647192174ccb8da6f037161301"
+    },
+    "gps-provision22-20261108c/candidate-provision22c-20261108-r1/gps-tracker-api": {
+      "bytes": 18636672,
+      "sha256": "43b80c5e73668d3d16c2f7e50cdae0e5f5924e0bcc36c1a52cd230145b27775c"
+    },
+    "gps-provision22-20261108c/out/gps-tracker-api": {
+      "bytes": 18636672,
+      "sha256": "43b80c5e73668d3d16c2f7e50cdae0e5f5924e0bcc36c1a52cd230145b27775c"
+    },
+    "gps-provision22-20261108c/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261111query110/source.tar.gz": {
+      "bytes": 1025736,
+      "sha256": "72dce142348f399ef70161cd2ac17f755769a2b6017e9b85c0f25ef3e9fe45c3"
+    },
+    "gps-provision22-20261111query110/source-final.tar.gz": {
+      "bytes": 990775,
+      "sha256": "cd8b7799d3ace968b7ae5919b57dd3e191f759d947ada2584a66e5f87e6fe122"
+    },
+    "gps-provision22-20261111query110/out/gps-tracker-api": {
+      "bytes": 18669440,
+      "sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d"
+    },
+    "gps-provision22-20261111query110/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-firmware-profiles-sleep/firmware-59ae4ed.tar.gz": {
+      "bytes": 4946917,
+      "sha256": "7a6c550ba8dfc857354c42c4691c255cdc3b0d2d0d4aedc6ac0ae077a94b0720"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__arduino-esp32/libraries/Update/examples/AWS_S3_OTA_Update/StartCounter.ino.bin": {
+      "bytes": 357276,
+      "sha256": "2e233d709b5360df26388fb3031820e6b21afe3fda7941d55ea8ee1620622419"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/hello_world.bin": {
+      "bytes": 146768,
+      "sha256": "2759fc5debc992a761ee4ddd6b1c8a294c3426fae0c8481db057e3da57ff9b9e"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/bootloader.bin": {
+      "bytes": 20416,
+      "sha256": "658e52894aab3c7dc9af8ede0ec110408bb9e57423a10b56e8d7e02cec95891d"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/hello-world.bin": {
+      "bytes": 195984,
+      "sha256": "0fc099da62881522204825a9d9ea1a526d6e195d1d5b034972189c7e98eb0a99"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "5d1dbc1e3c50d7bc93b123215900b57fdfda24131e76da03999a54fe9b554ec3"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/bootloader.bin": {
+      "bytes": 10768,
+      "sha256": "4ebe1cfe7b195bfbc6aa74245648155e0466c522a6da2417c9fef614bda2db34"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/hello-world.bin": {
+      "bytes": 142320,
+      "sha256": "a1f56518fd24dd4ff39ee98c512807f36c5388cdbc0a5b40aa63f4b75f6fd98e"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/bootloader.bin": {
+      "bytes": 24880,
+      "sha256": "6200f89fe61eb3758d3e844562cc69254d193282da6ae9f1857d600632233888"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/hello_world.bin": {
+      "bytes": 136224,
+      "sha256": "b74c30177b1159c8f5d138531a85c90cce03bb1e98682340906cb4052fbeaa51"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/bootloader.bin": {
+      "bytes": 19264,
+      "sha256": "7826d1fa01d98efc94b2aaf9a6f63abfe8eed928235d322fa1ce310f452ae33c"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/hello-world.bin": {
+      "bytes": 142528,
+      "sha256": "5f5d057d551af6223888b73ef4c715c5acc1eadbb90a046578a927eab5a80e9f"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/bootloader.bin": {
+      "bytes": 20000,
+      "sha256": "2b2bfbd61260af10cb74c907c42f49285689a6cebcceb8ec03124992207c0e27"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/ESP32_AT_Firmware/Firmware.bin": {
+      "bytes": 4194304,
+      "sha256": "b688de362472cff747f2ebe73e032987c1ee7532851150523f08710e7026b413"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C2/app.bin": {
+      "bytes": 54080,
+      "sha256": "af74a99385aded6ffde220a93cf5893d4d81ee87ee9e205072dcced80d6ee568"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_S3/app.bin": {
+      "bytes": 145936,
+      "sha256": "350ca35cdc5c3146ab634635fb98b1fdc79e8e0eb263f95de745974bda239314"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H2/app.bin": {
+      "bytes": 55600,
+      "sha256": "ba98ea3494ba535857b7a29d3fea96a22fde053ff529b8fdd3bb26d07447b31b"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32/app.bin": {
+      "bytes": 127584,
+      "sha256": "335d3748709b9d2efb0a89d968433f1787301d5c22bfd930a27b85af970488c0"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H4/app.bin": {
+      "bytes": 113536,
+      "sha256": "229370b19ae3660bb4c91401e1b9a5b1340f472509341a4e9e00a20a376d799b"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C3/app.bin": {
+      "bytes": 101408,
+      "sha256": "2e6f6729a66b13df4f789aa8ec038a7f9b7c099fd15d1b7f7ef00dba8f5b9833"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp-serial-flasher/test/hello-world.bin": {
+      "bytes": 144672,
+      "sha256": "e3992ca5ad3069abf49a8cf117b0da302d97302e1b3c9a6ad77ceee9efe144b9"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/joltwallet__littlefs/test/testfs.bin": {
+      "bytes": 49152,
+      "sha256": "16225b76da120e172b41cf5b11cc976a8de553b625d5e2944cac2d4d2ad019dd"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_modem/test/target_ota/bin/blink.bin": {
+      "bytes": 184608,
+      "sha256": "9fd9b4d02b6b2f2d0ce14b6bf18a11dcad5f1324c31ee22df3f8059f48fd931f"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after_corrupt.bin": {
+      "bytes": 101,
+      "sha256": "cdca355aa0c4c64dc56d82cd452faa3b03dbbf76a6c3d54e862c213891f4db74"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_before.bin": {
+      "bytes": 1808,
+      "sha256": "de7fc3f38fb5c1fb20af2a1417bdc863761ee90c416da48e5b3e26d5b4da9671"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after.bin": {
+      "bytes": 1808,
+      "sha256": "4a9a148fbb36ba7f8a2bea31e3a94c20e237be38250882386729368f8fb87b1e"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/esp_secure_cert.bin": {
+      "bytes": 3600,
+      "sha256": "acfca80c259f223636a1cce06140aa4bdbab6f21ed5bf12a9563286a654c2a78"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/qemu_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "3856c9bc8540d2cf3edc020161c65e4f15cd0ebd739fdc86052e566e9916f67c"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/cust_flash.bin": {
+      "bytes": 24576,
+      "sha256": "852759453c560691b3331724197e9dfba08eb6b7eb2853cf9c3a5a6166b50366"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "61a0ad0011af31b8d3589d85d965a3074da41ddc966d4de8e662730196b922f1"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/cust_flash_tlv.bin": {
+      "bytes": 8192,
+      "sha256": "aacba3774662c9c13309f9b7a7f0a6ebf6a80cb91aabf97a19db243f8edbe9d3"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_verification.bin": {
+      "bytes": 7760,
+      "sha256": "dc96d5b2f19a2f4d305463859b8de212460e99632e65c3a1edf116dc2cce896f"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/nvs_legacy.bin": {
+      "bytes": 12288,
+      "sha256": "6d5a7de9aaeb30e71eea8f7e77dd2338347aab38c8fc8180d3828cb161c477fd"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "b70cb53c59aa6febf75e01fd411838688135958207b839a6ff52737d777c9301"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/secure_verification_corrupt.bin": {
+      "bytes": 11504,
+      "sha256": "2f082dfd3ffc23ced70589cd526938b6fbd0a5756dac79524f0149c62c20b7cd"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/nvs.bin": {
+      "bytes": 12288,
+      "sha256": "b2c8eb81f30f6b4f980b6c7005eaac41268a7451e1f688597961cb847c3bfacd"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "f7f021e6b6b8d9be364c994706585ccf566c7fb5e82a45554fc29f79711951d1"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/cust_flash_legacy.bin": {
+      "bytes": 24576,
+      "sha256": "f88ee14b4f99f12ccf6c9caa24a79a246f0a37aa915858c69e3aa67609890644"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "9c01b9db0230e9637331d7800481177f5beb0626aeb60dd36ac625eb8b0f714c"
+    },
+    "gps-firmware-profiles-sleep/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/tools/tests/input_data/esp_secure_cert.bin": {
+      "bytes": 5280,
+      "sha256": "549c702529866d67aef53f26344c223126e3121ae5105b739774d19c3349f343"
+    },
+    "gps-lifecycle21-20261107/candidate-lifecycle21-20261107-r1.tar.gz": {
+      "bytes": 11416943,
+      "sha256": "5f9231c717dd6cc491dee19395e2ba5cb2290e1fec838219dfdad2e01b11970c"
+    },
+    "gps-lifecycle21-20261107/ops-final.tar.gz": {
+      "bytes": 430269,
+      "sha256": "d126f46f16dbb8726a2be8833bd7a522038a914ad37ea80569fcf26b31663e3a"
+    },
+    "gps-lifecycle21-20261107/candidate-lifecycle21-20261107-r1/gps-tracker-api": {
+      "bytes": 18292560,
+      "sha256": "f10f9e532c0a42b1a0e1887dfe36f09e1b4af2ed8a77acf5fd42c02243df0b16"
+    },
+    "gps-lifecycle21-20261107/out/gps-tracker-api": {
+      "bytes": 18292560,
+      "sha256": "f10f9e532c0a42b1a0e1887dfe36f09e1b4af2ed8a77acf5fd42c02243df0b16"
+    },
+    "gps-lifecycle21-20261107/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261108cumulative/candidate-cumulative108-20261108-r2.tar.gz": {
+      "bytes": 11486832,
+      "sha256": "0b470b08e8442917879867e4c4c1b3cc398cfd864c0f1b68ea5b8b0e478f5339"
+    },
+    "gps-provision22-20261108cumulative/candidate-cumulative108-20261108-r1.tar.gz": {
+      "bytes": 11486844,
+      "sha256": "ddc8bd9ba587ae0b2e2211846f8692f37a7ee9eac5c27d03c6478dede8bf7318"
+    },
+    "gps-provision22-20261108cumulative/candidate-cumulative108-20261108-r2/gps-tracker-api": {
+      "bytes": 18661248,
+      "sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0"
+    },
+    "gps-provision22-20261108cumulative/out/gps-tracker-api": {
+      "bytes": 18661248,
+      "sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0"
+    },
+    "gps-provision22-20261108cumulative/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261108cumulative/candidate-cumulative108-20261108-r1/gps-tracker-api": {
+      "bytes": 18661248,
+      "sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0"
+    },
+    "gps-fleet-query-expenses-20261031/web.tar.gz": {
+      "bytes": 3793816,
+      "sha256": "7b397a3569eee202d7685604cd394d681637771874ec2736efa4d1b0b80870b3"
+    },
+    "gps-fleet-query-expenses-20261031/source-final.tar.gz": {
+      "bytes": 4099613,
+      "sha256": "5e768ef790eaf364cc19b4c2a089b659232bab1045a979f45b4e0c1de3a0cd55"
+    },
+    "gps-fleet-query-expenses-20261031/source-wip.tar.gz": {
+      "bytes": 3839253,
+      "sha256": "b5cb89ce21fbda8ef25b98bc285b69181227900a54abe9a727888e00b922a01b"
+    },
+    "gps-fleet-query-expenses-20261031/out-web-final/web.tar.gz": {
+      "bytes": 3796477,
+      "sha256": "6e347e104d05e16d0cb91471f28a26b873efab6818358164d70110de6bb9ad5c"
+    },
+    "gps-fleet-query-expenses-20261031/out/gps-tracker-api": {
+      "bytes": 15568680,
+      "sha256": "829e6d9351aeab2a128cc610a69847aa5ab82d184b8a53310ef7693360f4fae3"
+    },
+    "gps-fleet-query-expenses-20261031/out-release/gps-tracker-api": {
+      "bytes": 15568680,
+      "sha256": "829e6d9351aeab2a128cc610a69847aa5ab82d184b8a53310ef7693360f4fae3"
+    },
+    "gps-runtime118-20261112/protection-kit-runtime118-20261112-r1.tar.gz": {
+      "bytes": 18748,
+      "sha256": "1347b558ad5afb5e595ee9bbe9646eb0e12696ba43c3f2babe36c18530ca4dae"
+    },
+    "gps-provision22-20261108d/source.tar.gz": {
+      "bytes": 4365442,
+      "sha256": "847c573158b9517827f783b27cbaa15106c68d9ebc32bb26cd37dcd0740b559d"
+    },
+    "gps-provision22-20261108d/source-final.tar.gz": {
+      "bytes": 4365442,
+      "sha256": "847c573158b9517827f783b27cbaa15106c68d9ebc32bb26cd37dcd0740b559d"
+    },
+    "gps-provision22-20261108d/candidate-provision22d-20261108-r1.tar.gz": {
+      "bytes": 11580850,
+      "sha256": "a4fc3a66b1ca0c9c410cfb811f720e74c3759a482edf8e057bd480801e58b8cc"
+    },
+    "gps-provision22-20261108d/evidence22d.tar.gz": {
+      "bytes": 70118,
+      "sha256": "1b2bbbe97b405a547a703c38fe9f1863677e5403d6f745d907ea7e9857a51bf4"
+    },
+    "gps-provision22-20261108d/out/gps-tracker-api": {
+      "bytes": 18661248,
+      "sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0"
+    },
+    "gps-provision22-20261108d/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261108d/candidate-provision22d-20261108-r1/gps-tracker-api": {
+      "bytes": 18661248,
+      "sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0"
+    },
+    "gps-ledger18b-20261107/source.tar.gz": {
+      "bytes": 1187370,
+      "sha256": "05244a158dcb789b2a796e436d9b99fa32d8cb62380a1b41005c8baed8e7e445"
+    },
+    "gps-ledger18b-20261107/out/gps-tracker-api": {
+      "bytes": 17882984,
+      "sha256": "36522dd395e2d0c024198ad00ec12147c291bf2373ba64ae8607846e4b349712"
+    },
+    "gps-ledger18b-20261107/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261111cumulative112/candidate-cumulative112-20261111-r1.tar.gz": {
+      "bytes": 11495194,
+      "sha256": "8b4d5b3884a6bf522738a5c77c75be965e78159eab1e7d15a303d7851eda7ff6"
+    },
+    "gps-provision22-20261111cumulative112/candidate-cumulative112-20261111-r1/gps-tracker-api": {
+      "bytes": 18681768,
+      "sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+    },
+    "gps-provision22-20261111cumulative112/out/gps-tracker-api": {
+      "bytes": 18681768,
+      "sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+    },
+    "gps-provision22-20261111cumulative112/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-provision22-20261111cumulative110/candidate-cumulative110-20261111-r1.tar.gz": {
+      "bytes": 11488510,
+      "sha256": "02df050a4f624ec47943bdfd414328083bc191afc5a726ee54e437fed5441fc7"
+    },
+    "gps-provision22-20261111cumulative110/evidence110.tar.gz": {
+      "bytes": 118264,
+      "sha256": "54a1206002901fb1fce24e9a77bf314cf6e189010c8cb14bbb7d888d366ac7cc"
+    },
+    "gps-provision22-20261111cumulative110/candidate-cumulative110-20261111-r1/gps-tracker-api": {
+      "bytes": 18669440,
+      "sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d"
+    },
+    "gps-provision22-20261111cumulative110/out/gps-tracker-api": {
+      "bytes": 18669440,
+      "sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d"
+    },
+    "gps-provision22-20261111cumulative110/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-report-design-20261023/web-source.tar.gz": {
+      "bytes": 3332695,
+      "sha256": "6ac9e9674579cfc7d6ef86e013d769f6e9d0ab825ab2e7968a04fce9e2c12d1d"
+    },
+    "gps-report-design-20261023/out/web.tar.gz": {
+      "bytes": 3760911,
+      "sha256": "225317d70786e3e39c4820b43b755b6579af734395d0477cbfcc35587d49e915"
+    },
+    "gps-location-erasure-20261105/source.tar.gz": {
+      "bytes": 349594,
+      "sha256": "6c77828b7623a1a157d0f24475ca2707607e7e34faee69e6dd2b088f7a118167"
+    },
+    "gps-location-erasure-20261105/out/gps-tracker-api": {
+      "bytes": 235053344,
+      "sha256": "9a8b6cc9b68b83fbd6924b54502634ba544ae4970c5d47841fe5fb3ea292326d"
+    },
+    "gps-fleet-completion-20261031/web-final.tar.gz": {
+      "bytes": 4036891,
+      "sha256": "972d5882ecffdded02b29c97ed5dfeb9bc6581adf532cc17c63f1d2db8a4f319"
+    },
+    "gps-fleet-completion-20261031/web.tar.gz": {
+      "bytes": 3798024,
+      "sha256": "9f388bf16809d50f2fce1613c22d9d52f6172243924a7ff001add8e860427dc9"
+    },
+    "gps-fleet-completion-20261031/source-final.tar.gz": {
+      "bytes": 4118227,
+      "sha256": "799c18d2e40e88326c8753d2e7e4fddbbfa611e386c5ae5f7ebfea692ce98396"
+    },
+    "gps-fleet-completion-20261031/out-release/gps-tracker-api": {
+      "bytes": 15646504,
+      "sha256": "4cc5b2b46897dfc1b8bd275344ce97b9a4818b931e0ae2c7bddc041498342986"
+    },
+    "gps-fleet-sites-20261029/source-r2.tar.gz": {
+      "bytes": 9976447,
+      "sha256": "30cb2143511a69263fcc72ecb65fc947535da40b8e8841123e61fd49d8a8301d"
+    },
+    "gps-fleet-sites-20261029/source-final.tar.gz": {
+      "bytes": 3779465,
+      "sha256": "a47582189dc8118a2d3c4f37bb57b9ac4cd795cbb8b11f02d82f18b3fd792df2"
+    },
+    "gps-fleet-sites-20261029/working-source.tar.gz": {
+      "bytes": 3750795,
+      "sha256": "21238ea6876e23b7ec952e7a96d27c6b4456b644bc26e36d16fe34236f263f65"
+    },
+    "gps-fleet-sites-20261029/out-final/gps-tracker-api": {
+      "bytes": 14847784,
+      "sha256": "c1fb7ad22015529956b1f0d03531964a4fcf1a4c4d71240c9a1ed49827f148de"
+    },
+    "gps-fleet-sites-20261029/out-final/web.tar.gz": {
+      "bytes": 3753800,
+      "sha256": "5bcdc95bff8c1ac335a5e4b817d79bde862da9856e74119c728c5ee788ada083"
+    },
+    "gps-fleet-sites-20261029/out-r2/web.tar.gz": {
+      "bytes": 3753904,
+      "sha256": "2a27376543b7c1a373473ba5b7783c8a9463b5fde97158e75610ab0e1114db7f"
+    },
+    "gps-fleet-sites-20261029/out/gps-tracker-api": {
+      "bytes": 14847784,
+      "sha256": "2f1a366ce76cc88f2af2b3633112950116f6adfc1db7651de1d3d8559343c6ac"
+    },
+    "gps-location-query-20261031/source-final.tar.gz": {
+      "bytes": 4105524,
+      "sha256": "e0d2cf77b07bece49ffd460290d13ff2f5925b812547e7cb53831f0c9fa6eea5"
+    },
+    "gps-location-query-20261031/out-release/gps-tracker-api": {
+      "bytes": 15576872,
+      "sha256": "35727f8d40f6553d078e02f604677369c4f6a7b5914360b1550a73bdb191367e"
+    },
+    "gps-privacy-facts-20261106-r1/source.tar.gz": {
+      "bytes": 4212614,
+      "sha256": "57f7b662eacea109ebcb77aad0d6a29b367ede38e0eee145d2542f919f665743"
+    },
+    "gps-privacy-facts-20261106-r1/out/gps-tracker-api": {
+      "bytes": 17653752,
+      "sha256": "1fc16f783259d18898456318ff2ad14eb7caa9278e3739609f077e967f115a4d"
+    },
+    "gps-privacy-facts-20261106-r1/out/source.tar.gz": {
+      "bytes": 4212614,
+      "sha256": "57f7b662eacea109ebcb77aad0d6a29b367ede38e0eee145d2542f919f665743"
+    },
+    "gps-privacy-facts-20261106-r1/out/web.tar.gz": {
+      "bytes": 3827170,
+      "sha256": "96fb79aba378da13457252c030f593027bc315927c46b153ec9d1fdae02b9f83"
+    },
+    "gps-location-month-20261031/source-final.tar.gz": {
+      "bytes": 4106602,
+      "sha256": "714e0ce630fe556607b9929345bba995ab8c559a2df2e7187ca656bab8314484"
+    },
+    "gps-location-month-20261031/out-release/gps-tracker-api": {
+      "bytes": 15580968,
+      "sha256": "14ae829bf2dd9bf91fa877bffc56dda585b5846a584b302190561750b66972f4"
+    },
+    "gps-privacy-redacted-20261105/focused-source.tar.gz": {
+      "bytes": 3812218,
+      "sha256": "5e8ac821bf886f122da7a4f3a7e839070faafb8935d1385a8143f0955c4b5152"
+    },
+    "gps-privacy-redacted-20261105/out/focused-source.tar.gz": {
+      "bytes": 3810534,
+      "sha256": "e318a4734f1441629b578b983d39d838993dad6ef2d6d924440186c528558ca1"
+    },
+    "gps-privacy-redacted-20261105/out/gps-tracker-api": {
+      "bytes": 16879400,
+      "sha256": "df5bdaa382d4155e8d5875fd7947dd1321b1b060decf801285ec6196e1803038"
+    },
+    "gps-privacy-redacted-20261105/out/web.tar.gz": {
+      "bytes": 3819471,
+      "sha256": "fe61e53e1a1acefc348275f5e86625d5bee0645769848d568bcfd148b533bf62"
+    },
+    "gps-provision22-20261108b/source.tar.gz": {
+      "bytes": 4374532,
+      "sha256": "07f3d26131a2a030c374658a109ab6aed5ff050318dc81d63912c11551fd76f5"
+    },
+    "gps-provision22-20261108b/candidate-provision22b-20261108-r1.tar.gz": {
+      "bytes": 11536036,
+      "sha256": "2263ce4cd5aaba5d0ee38ab405184bb608c7063f0cf5dd6e974a9572a624e8a7"
+    },
+    "gps-provision22-20261108b/candidate-provision22b-20261108-r1/gps-tracker-api": {
+      "bytes": 18587496,
+      "sha256": "f6ba49c12896d2ea99a13a32e13f901760c1f98d754b0d4ffc319d98c1069754"
+    },
+    "gps-provision22-20261108b/out/gps-tracker-api": {
+      "bytes": 18587496,
+      "sha256": "f6ba49c12896d2ea99a13a32e13f901760c1f98d754b0d4ffc319d98c1069754"
+    },
+    "gps-provision22-20261108b/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-runtime119-20261112/candidate-runtime119-20261112-r1.tar.gz": {
+      "bytes": 22486241,
+      "sha256": "902a2002aeb12befd0a8c385f074d5dff1b911b698c493e071035072a4c198de"
+    },
+    "gps-runtime119-20261112/out/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23"
+    },
+    "gps-runtime119-20261112/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "048cffd2113dd03c415cd777746b02358930c5e9c4015317bad00404fe5b4e3f"
+    },
+    "gps-runtime119-20261112/candidate-runtime119-20261112-r1/gps-tracker-api": {
+      "bytes": 18780192,
+      "sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23"
+    },
+    "gps-runtime119-20261112/candidate-runtime119-20261112-r1/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "048cffd2113dd03c415cd777746b02358930c5e9c4015317bad00404fe5b4e3f"
+    },
+    "gps-provision22-20261108cumulative109/candidate-cumulative109-20261108-r1.tar.gz": {
+      "bytes": 11487412,
+      "sha256": "19b20e2670b281576a0170f1a94a383d7600a4fe0bd277c119b56bb4f2c12f1a"
+    },
+    "gps-provision22-20261108cumulative109/candidate-cumulative109-20261108-r1/gps-tracker-api": {
+      "bytes": 18665344,
+      "sha256": "b20be1f8b71c05e5658b78d439934b772641c54617f2044f269830f3634a653c"
+    },
+    "gps-provision22-20261108cumulative109/out/gps-tracker-api": {
+      "bytes": 18665344,
+      "sha256": "b20be1f8b71c05e5658b78d439934b772641c54617f2044f269830f3634a653c"
+    },
+    "gps-provision22-20261108cumulative109/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-tracker/shield-unified-tests.tar.gz": {
+      "bytes": 164095,
+      "sha256": "a903bd53ad1680eb61de59ea78e25fe513140d2c8104ed5b2abd0165eaa1f4e6"
+    },
+    "gps-tracker/shield-platform-source.tar.gz": {
+      "bytes": 297699,
+      "sha256": "d3a651451ea82feb24fc6f48b02e2771f9a81d904ee95d604d714eb945534e85"
+    },
+    "gps-tracker/shield-unified-firmware.tar.gz": {
+      "bytes": 91237,
+      "sha256": "fbfcae95674549c45124e3bfcdacc4429bc1454f4239ebda8bd57dc092d9a680"
+    },
+    "gps-tracker/ai-reliability-20261008/source.tar.gz": {
+      "bytes": 2058341,
+      "sha256": "918b2bff2dcfd4cf285eedac45f5bb0747b4ae480342795cd07e9c2e0e758066"
+    },
+    "gps-tracker/ai-reliability-20261008/rollback-source.tar.gz": {
+      "bytes": 253450,
+      "sha256": "d3ef7f526b365af7ce1dc4289128f6e5a98ded10b4fe49a5f4a631d39cf3417a"
+    },
+    "gps-tracker/ai-reliability-20261008/formatted-final.tar.gz": {
+      "bytes": 12110,
+      "sha256": "50cb3d0ccd2cdd410765a603198b50e9dedcebf1d12375258ceaab695f2774f8"
+    },
+    "gps-tracker/ai-reliability-20261008/formatted.tar.gz": {
+      "bytes": 17172,
+      "sha256": "1135cf0120116e8c9421cd8a9b4f08938ad5a8e1b0a57ac20b4ec7829177c36e"
+    },
+    "gps-tracker/incoming/dev-20260928-004958-f83374f/artifacts.tar.gz": {
+      "bytes": 9399759,
+      "sha256": "8ce69032ba9e03626dbb2f154663318495a3efe721660f146c1e8496b132e466"
+    },
+    "gps-tracker/incoming/dev-20260928-004958-f83374f/source.tar.gz": {
+      "bytes": 2005789,
+      "sha256": "cabde2edb1cab1c3179ecb225d68bcdf31f7f6fe40e18c60f4e2a70b552cfd26"
+    },
+    "gps-tracker/incoming/dev-20261021-183155-4c16410/source.tar.gz": {
+      "bytes": 3679057,
+      "sha256": "01d0d4a35af724f4cf3ba248d01cf86a90827945b66825d414efdd45e376e3c0"
+    },
+    "gps-tracker/incoming/gps-web-20261006-202421-e1f6149/artifacts.tar.gz": {
+      "bytes": 3410738,
+      "sha256": "f00443d81dbb79e51cbff79c8b4ab7b3e5070e1a61a86d67825d97c646d2cfe0"
+    },
+    "gps-tracker/incoming/gps-web-20261006-202421-e1f6149/source.tar.gz": {
+      "bytes": 1771926,
+      "sha256": "f8e343ca17257149c6b02a41a35832925dea98610624d92139cb1cf75ac6d1f2"
+    },
+    "gps-tracker/incoming/dev-20260928-101122-a7be64e/artifacts.tar.gz": {
+      "bytes": 9425356,
+      "sha256": "d50e6ecb1641b02460fd6b20d12650200e08058219421587fb425d152bd19a69"
+    },
+    "gps-tracker/incoming/dev-20260928-101122-a7be64e/source.tar.gz": {
+      "bytes": 2016863,
+      "sha256": "aa210f687eaae194bab9e46e854adb4afa045b78920bad80493182cb43616dfc"
+    },
+    "gps-tracker/incoming/dev-20261014-130920-c2ce5f7/source.tar.gz": {
+      "bytes": 3591056,
+      "sha256": "4bbeaef26bace7e3cb31632866373c5c2dbba7eaaa329c9f94d087c0d16939b2"
+    },
+    "gps-tracker/incoming/dev-20260924-200237-660c60f/artifacts.tar.gz": {
+      "bytes": 9363589,
+      "sha256": "710fac19983dfe35c25e6046316e99734c574c224fcdc0d6ce7fe493b57a5e5b"
+    },
+    "gps-tracker/incoming/dev-20260924-200237-660c60f/source.tar.gz": {
+      "bytes": 1991385,
+      "sha256": "3605e934c2b951a296637c6b1d7a7786da9c33351cb73ad9bc7de8cec4f3fd2d"
+    },
+    "gps-tracker/incoming/dev-20261014-180945-120a144/artifacts.tar.gz": {
+      "bytes": 13140844,
+      "sha256": "c3b4ef77dcded7fac7c6475867b4112b6a7125f2b5e11c0aa630d20a85ec79a9"
+    },
+    "gps-tracker/incoming/dev-20261014-180945-120a144/source.tar.gz": {
+      "bytes": 3603297,
+      "sha256": "d406262e797d47735e3e8eeb9c5f01c73ef06e9f7dd01f80788fdebe69c73f75"
+    },
+    "gps-tracker/incoming/dev-20260927-144654-172709d/artifacts.tar.gz": {
+      "bytes": 9376084,
+      "sha256": "2ca20af4c70a8a936d597737783f962ffb1db270cc91205ba9da2cb2bfae871f"
+    },
+    "gps-tracker/incoming/dev-20260927-144654-172709d/source.tar.gz": {
+      "bytes": 1996607,
+      "sha256": "f305eafcc9053509a12c3b4d0c46734d8e509bda8944b66e8f2ce69a86171d12"
+    },
+    "gps-tracker/incoming/dev-20260924-195150-67f5a12/artifacts.tar.gz": {
+      "bytes": 9360060,
+      "sha256": "b6be9e87ced2a2edcd9e395fded3828735682f0ce4a20464495c0aa37a8ad55c"
+    },
+    "gps-tracker/incoming/dev-20260924-195150-67f5a12/source.tar.gz": {
+      "bytes": 1989868,
+      "sha256": "ccee7376362793d24c3813195cf325e6954c054ba599a0a50cb56457310a90ad"
+    },
+    "gps-tracker/incoming/dev-20261009-152034-2cb78a7/artifacts.tar.gz": {
+      "bytes": 9525716,
+      "sha256": "ff543d5a0866946dc02c208bb3e7894e86a2f8380b875eb3e5b09238556e64cb"
+    },
+    "gps-tracker/incoming/dev-20261009-152034-2cb78a7/source.tar.gz": {
+      "bytes": 2061241,
+      "sha256": "698eefacc89c5c99755a124062616cdcba99b7238d4838377f78984aea84ef11"
+    },
+    "gps-tracker/incoming/dev-20261020-144837-67d27f7/artifacts.tar.gz": {
+      "bytes": 13250901,
+      "sha256": "887a6f96a8936f8cc4ea7bab6a319e615daf33e3f8a7a6084aa58f8207b9f583"
+    },
+    "gps-tracker/incoming/dev-20261020-144837-67d27f7/source.tar.gz": {
+      "bytes": 3652069,
+      "sha256": "9d0bced043312b95f6334fd3af9852c604ebd000f6820e9a8e6d5bfd0135b7f3"
+    },
+    "gps-tracker/incoming/gps-web-20261006-210059-dede6c6/artifacts.tar.gz": {
+      "bytes": 3385358,
+      "sha256": "7229c0892dd1294f7a14d0a369ddab39dca0fd96db749976fafb7cd5de58b1ea"
+    },
+    "gps-tracker/incoming/gps-web-20261006-210059-dede6c6/source.tar.gz": {
+      "bytes": 1743457,
+      "sha256": "167839eee008f3f47d987bf4d585d342f46a940e48ce1b64030cc80863628241"
+    },
+    "gps-tracker/incoming/gps-web-20261006-210059-dede6c6/out/source.tar.gz": {
+      "bytes": 1743457,
+      "sha256": "167839eee008f3f47d987bf4d585d342f46a940e48ce1b64030cc80863628241"
+    },
+    "gps-tracker/incoming/dev-20261021-190449-d541456/artifacts.tar.gz": {
+      "bytes": 13309284,
+      "sha256": "217444a2b6f0259f9e1cd5f45889d5b57aad67cf317953efe011e6eca47422f3"
+    },
+    "gps-tracker/incoming/dev-20261021-190449-d541456/source.tar.gz": {
+      "bytes": 3685907,
+      "sha256": "7b0f2eab52fc4ddad3638270054f666bec30e1973adf8376fe0cd1823bccb6ab"
+    },
+    "gps-tracker/incoming/dev-20261021-190449-d541456/out/source.tar.gz": {
+      "bytes": 3685907,
+      "sha256": "7b0f2eab52fc4ddad3638270054f666bec30e1973adf8376fe0cd1823bccb6ab"
+    },
+    "gps-tracker/incoming/gps-web-20261006-221245-3cb7de9/artifacts.tar.gz": {
+      "bytes": 3393841,
+      "sha256": "82bd47c421f4407d168ae2a7cbcea1adc994db9ab221904ff43e1e1e29270e14"
+    },
+    "gps-tracker/incoming/gps-web-20261006-221245-3cb7de9/source.tar.gz": {
+      "bytes": 1750009,
+      "sha256": "5bce70ebff6211ae997b1d63063ff87e98ba8711c1e91c09040176646575642a"
+    },
+    "gps-tracker/incoming/gps-web-20261006-221245-3cb7de9/out/source.tar.gz": {
+      "bytes": 1750009,
+      "sha256": "5bce70ebff6211ae997b1d63063ff87e98ba8711c1e91c09040176646575642a"
+    },
+    "gps-tracker/incoming/dev-20260924-182949-5ffeb03/artifacts.tar.gz": {
+      "bytes": 9301113,
+      "sha256": "927fc0a7dfe8b9cfa54dc20c48df93a55ffc5b72f5ca6b988247f26aa2d24600"
+    },
+    "gps-tracker/incoming/dev-20260924-182949-5ffeb03/source.tar.gz": {
+      "bytes": 1974419,
+      "sha256": "4957beecb00df692d5007d16c2da67003a766a8b67b7078f228151442beabc83"
+    },
+    "gps-tracker/incoming/dev-20261014-135339-d2dcccf/artifacts.tar.gz": {
+      "bytes": 13119066,
+      "sha256": "9a17ed894262c5b7077b6221e202716c6dde2719480ff68748e3d9de3cd39c07"
+    },
+    "gps-tracker/incoming/dev-20261014-135339-d2dcccf/source.tar.gz": {
+      "bytes": 3594899,
+      "sha256": "ca271a734df82b8e5f0d00b802483ae8696b25adf4d8df843d2689e12e0b5ee9"
+    },
+    "gps-tracker/incoming/dev-20260928-115217-dd57257/artifacts.tar.gz": {
+      "bytes": 9427245,
+      "sha256": "deea00aa9cee4fc1662f8d1d35a03f6aab540a04c640876972af4a26e6113d15"
+    },
+    "gps-tracker/incoming/dev-20260928-115217-dd57257/source.tar.gz": {
+      "bytes": 2018792,
+      "sha256": "d3fb9f44b5b014d25b22e8ac6cad6e1b20830a9dbbd8907ea6c59995a3d75dfe"
+    },
+    "gps-tracker/incoming/dev-20260924-190747-907ac5f/artifacts.tar.gz": {
+      "bytes": 9345367,
+      "sha256": "a56e9cf656f1f4bdef757e51478d03b6169fd22098b39ee3ca5ca6f9b96916a8"
+    },
+    "gps-tracker/incoming/dev-20260924-190747-907ac5f/source.tar.gz": {
+      "bytes": 1985083,
+      "sha256": "ee474e11a42f32f370984b935920edb788db8b3ee0edcf6b9c3f3ea72e0e68dc"
+    },
+    "gps-tracker/incoming/dev-20260924-204107-ebaad50/artifacts.tar.gz": {
+      "bytes": 9364307,
+      "sha256": "a0b89406031efe5368eb5cec5f5a2614ddcd4ea959a812017b15518c4f7ab40a"
+    },
+    "gps-tracker/incoming/dev-20260924-204107-ebaad50/source.tar.gz": {
+      "bytes": 1992664,
+      "sha256": "db79a392ae8de5475f3172beb77213617a0c3944aaeaa07dab95986c435b189d"
+    },
+    "gps-tracker/incoming/dev-20260928-131222-231b29b/artifacts.tar.gz": {
+      "bytes": 9477686,
+      "sha256": "38643e5b457e23bd78aad8ce879843c5e978137f7ba2390b2386cf913a177421"
+    },
+    "gps-tracker/incoming/dev-20260928-131222-231b29b/source.tar.gz": {
+      "bytes": 2032536,
+      "sha256": "d2ad1e87610d5f2868fdecbf543e5ba315d6449d69889e570894f60dc1e170f5"
+    },
+    "gps-tracker/incoming/dev-20261014-180401-3aa5bc7/artifacts.tar.gz": {
+      "bytes": 13138500,
+      "sha256": "960ff5c145aa53974ae9b1552807835a1a8c17758b861bc2c1cad5143214243a"
+    },
+    "gps-tracker/incoming/dev-20261014-180401-3aa5bc7/source.tar.gz": {
+      "bytes": 3602999,
+      "sha256": "7610127f27ddc880c34f47296b2a8a966120a589c36cdf4a3c0b64c03428312d"
+    },
+    "gps-tracker/incoming/gps-web-20261014-145212-2539220/artifacts.tar.gz": {
+      "bytes": 7291315,
+      "sha256": "52c4976d2a46dd39c1ff0a6dff364c58d2720e0380193864b3cf7a47cb0b32bf"
+    },
+    "gps-tracker/incoming/gps-web-20261014-145212-2539220/source.tar.gz": {
+      "bytes": 3594809,
+      "sha256": "f782cbd43244348731637fea0e928911587f56c11eff5653955d07884b62d876"
+    },
+    "gps-tracker/incoming/gps-web-20261014-145212-2539220/out/source.tar.gz": {
+      "bytes": 3594809,
+      "sha256": "f782cbd43244348731637fea0e928911587f56c11eff5653955d07884b62d876"
+    },
+    "gps-tracker/incoming/dev-20260924-204716-8fe18d7/artifacts.tar.gz": {
+      "bytes": 9364250,
+      "sha256": "f33178aefa0500324ce33b690a7ccd6dd159485c3196d6aa7c43e19ee9291427"
+    },
+    "gps-tracker/incoming/dev-20260924-204716-8fe18d7/source.tar.gz": {
+      "bytes": 1992816,
+      "sha256": "d0d9746f5da1f35c7e7b4d8435e672e6b7df688499413cfec9f9e8818521a009"
+    },
+    "gps-tracker/incoming/dev-20261021-183138-c79e23c/source.tar.gz": {
+      "bytes": 3679149,
+      "sha256": "fd4ece0948549be27075808ff524bcb3c2c45038c767390be037a76648ecc551"
+    },
+    "gps-tracker/incoming/dev-20261020-145138-db3163c/artifacts.tar.gz": {
+      "bytes": 13249888,
+      "sha256": "1c152f1ddb229b9ce5a14491c02536ed66f8cb833540510ae7006b6e6fd80be1"
+    },
+    "gps-tracker/incoming/dev-20261020-145138-db3163c/source.tar.gz": {
+      "bytes": 3652207,
+      "sha256": "52c0449357c78dcdd91cbe42d2a03ebf7df084ee0643e2c4a5343cf1f3d6bfde"
+    },
+    "gps-tracker/incoming/dev-20260928-123509-e2bb6e0/artifacts.tar.gz": {
+      "bytes": 9458237,
+      "sha256": "ab049a1dabac763f8199577afd2948abb84b16168d1bfc66715223c77b935079"
+    },
+    "gps-tracker/incoming/dev-20260928-123509-e2bb6e0/source.tar.gz": {
+      "bytes": 2024853,
+      "sha256": "99c9b94e5a709cbc2a0cd6997e83bd964796e03137d114ce5e71fdad5cb2cccb"
+    },
+    "gps-tracker/incoming/dev-20261021-183207-4eccbaa/artifacts.tar.gz": {
+      "bytes": 13287679,
+      "sha256": "d57d838b6a5bbb6dd877518e39e87fecbb0c641b8769e7195ef8270424954e24"
+    },
+    "gps-tracker/incoming/dev-20261021-183207-4eccbaa/source.tar.gz": {
+      "bytes": 3679042,
+      "sha256": "2f20998df7d8c74aa5634d9e69954accfe0f591e9e46dafd951616df777dfc64"
+    },
+    "gps-tracker/incoming/dev-20261021-183207-4eccbaa/out/source.tar.gz": {
+      "bytes": 3679042,
+      "sha256": "2f20998df7d8c74aa5634d9e69954accfe0f591e9e46dafd951616df777dfc64"
+    },
+    "gps-tracker/incoming/dev-20261008-005228-97aa52b/artifacts.tar.gz": {
+      "bytes": 9523993,
+      "sha256": "9a9f9d43ebd3fbaa896651c4cdcf33a4252b285ab59582a55772710f27ee728d"
+    },
+    "gps-tracker/incoming/dev-20261008-005228-97aa52b/source.tar.gz": {
+      "bytes": 2057099,
+      "sha256": "b4b73aaa99df97dbf080079296f1d6dab225ac873864367098549c609b9cba20"
+    },
+    "gps-tracker/incoming/dev-20261014-130944-ed2a1da/artifacts.tar.gz": {
+      "bytes": 13115856,
+      "sha256": "6a1691b9a2fb464e89e9872c1834c04cbc0924732c19e21a55773a7db0d411c3"
+    },
+    "gps-tracker/incoming/dev-20261014-130944-ed2a1da/source.tar.gz": {
+      "bytes": 3591080,
+      "sha256": "e05caa9647c1bd986258afe5434ded5a0241626054c8ad093c41940be86b16ee"
+    },
+    "gps-tracker/incoming/dev-20261008-001905-f507395/artifacts.tar.gz": {
+      "bytes": 9511447,
+      "sha256": "88555b4d2d1c3798d99e7ced54fcab085b7bb22e4e7b17af53e55080d756aa61"
+    },
+    "gps-tracker/incoming/dev-20261008-001905-f507395/source.tar.gz": {
+      "bytes": 2049192,
+      "sha256": "d24ed21cbc1f5978f4886e3105b9eeecd34139a330239fb51457097134da3328"
+    },
+    "gps-tracker/incoming/dev-20261020-135345-a8494d4/artifacts.tar.gz": {
+      "bytes": 13241736,
+      "sha256": "6f9e91f9f2478cac76635ba80990b6a35dc1055b33e30de7b31d4502a4f68467"
+    },
+    "gps-tracker/incoming/dev-20261020-135345-a8494d4/source.tar.gz": {
+      "bytes": 3647395,
+      "sha256": "8c49d3fe24af8ffa4486d0afc2acab1752065fc56d13d295a997de9f8987fe4d"
+    },
+    "gps-tracker/incoming/dev-20261014-125717-81e500b/artifacts.tar.gz": {
+      "bytes": 13109474,
+      "sha256": "2ee6c478f6a34f97aaa15b6c9b675b94d7354d0607a362475d16fd61bc3d06b8"
+    },
+    "gps-tracker/incoming/dev-20261014-125717-81e500b/source.tar.gz": {
+      "bytes": 3583844,
+      "sha256": "9efd1357c06279083d58500975f2dbd2de9283e6bee64cf2952a8a4bf28d37a9"
+    },
+    "gps-tracker/incoming/dev-20261014-165919-b71d81d/artifacts.tar.gz": {
+      "bytes": 13118626,
+      "sha256": "6bd4d2eea621b3d71036477638d547f388a92af84260aee8f683c0a33e9cdf8c"
+    },
+    "gps-tracker/incoming/dev-20261014-165919-b71d81d/source.tar.gz": {
+      "bytes": 3595673,
+      "sha256": "9098a87c9a79b2fd6d35066c0ea7edfea23d91720f2b1011ac48d736666de4e4"
+    },
+    "gps-tracker/incoming/dev-20261007-094759-21adc14/artifacts.tar.gz": {
+      "bytes": 15576177,
+      "sha256": "5df835dba759252f4cfa592d3885f94a8b4a35afcb5910e70ea1ab5b11a1dd17"
+    },
+    "gps-tracker/incoming/dev-20261007-094759-21adc14/source.tar.gz": {
+      "bytes": 8146785,
+      "sha256": "2bcc522afb295b59ddf7ab3d0cc448dfef64501d5ffdb79db07b0324a37947ca"
+    },
+    "gps-tracker/incoming/dev-20261009-225207-cdd659d/artifacts.tar.gz": {
+      "bytes": 9554386,
+      "sha256": "10e7148dbdbbb19fbd09333e31717147ddbe81de305253fc4964cb3c788ff1fa"
+    },
+    "gps-tracker/incoming/dev-20261009-225207-cdd659d/source.tar.gz": {
+      "bytes": 2076706,
+      "sha256": "ed2dced4c37a627a7a592c3eb854a6c238c09e33d5a16e7863f37038a8db35fd"
+    },
+    "gps-tracker/incoming/dev-20261020-141821-338093d/artifacts.tar.gz": {
+      "bytes": 13250584,
+      "sha256": "011999a96f528fd2c1adb761f121e0aec38700182f6a630fbac4138f183037d1"
+    },
+    "gps-tracker/incoming/dev-20261020-141821-338093d/source.tar.gz": {
+      "bytes": 3650622,
+      "sha256": "0126c45b67bd71984a36284154e096a7d8f024634a36b247396a2c224dc1b816"
+    },
+    "gps-tracker/incoming/dev-20261020-131847-7bcbff3/artifacts.tar.gz": {
+      "bytes": 13214606,
+      "sha256": "50691b015ce3a2b9278f5374b3ae461bcc4aa407a071ad68d016154abeff57c6"
+    },
+    "gps-tracker/incoming/dev-20261020-131847-7bcbff3/source.tar.gz": {
+      "bytes": 3641206,
+      "sha256": "037e90cde5bcad9c88b8b4cd33bfa14c2f50f2d6a4bd97804ee5d40e4918dad9"
+    },
+    "gps-tracker/incoming/dev-20260924-195931-a5416b6/artifacts.tar.gz": {
+      "bytes": 9364558,
+      "sha256": "9b55108c8ceee8efb7a153b76bc3a40894ff15e20e16cdfe9fe5c8f8241dcfa2"
+    },
+    "gps-tracker/incoming/dev-20260924-195931-a5416b6/source.tar.gz": {
+      "bytes": 1991373,
+      "sha256": "5a3a08e3e3deb9e233f918bf307d3783d36c543aedd02775a562938442325bb5"
+    },
+    "gps-tracker/incoming/dev-20260928-122815-efb10f5/artifacts.tar.gz": {
+      "bytes": 9456835,
+      "sha256": "74f28d1165f46e920521374a4541b0c21d7c2ec2c99832c42dfe75c0dc308091"
+    },
+    "gps-tracker/incoming/dev-20260928-122815-efb10f5/source.tar.gz": {
+      "bytes": 2023894,
+      "sha256": "6a5e9b6556e18e0f56c00d1b7e1bbfce18a082f9c57abed5cf6b1e2f8bf38043"
+    },
+    "gps-tracker/incoming/dev-20260928-005731-18c829d/artifacts.tar.gz": {
+      "bytes": 9404237,
+      "sha256": "3173822f8ef3e41a11db071fdd0844455f49baa0e586f272459fa9aa8dcd3180"
+    },
+    "gps-tracker/incoming/dev-20260928-005731-18c829d/source.tar.gz": {
+      "bytes": 2008055,
+      "sha256": "9f898134520d26d93e09efc97eac55a4b359ca5d619e0422554c16fb9555979e"
+    },
+    "gps-tracker/incoming/dev-20260924-181220-d3b51ba/artifacts.tar.gz": {
+      "bytes": 9298702,
+      "sha256": "b43271047fa940276ceccdf701d22f61f9a0e895a911fa410349496a24ed734d"
+    },
+    "gps-tracker/incoming/dev-20260924-181220-d3b51ba/source.tar.gz": {
+      "bytes": 1973393,
+      "sha256": "a216d43c74aa5cf06d617397b6794aa1ad083342fcc1e451603e6e9eefd39c02"
+    },
+    "gps-tracker/incoming/dev-20260924-181617-604b74d/artifacts.tar.gz": {
+      "bytes": 9300453,
+      "sha256": "3b63686a6fe38a1c6ec15a97957be0b2ea2378ce822a49bb110de0b8096923a7"
+    },
+    "gps-tracker/incoming/dev-20260924-181617-604b74d/source.tar.gz": {
+      "bytes": 1973972,
+      "sha256": "f9987dd9fc7bd63ea248735565c17fdeccf2dd14fe60e13a706792820e15e56c"
+    },
+    "gps-tracker/incoming/dev-20261020-142447-9018116/artifacts.tar.gz": {
+      "bytes": 13252098,
+      "sha256": "37cb4c40c83065fe8a482b464ef075cd6fc84e7157f3acb6d5dbde988fcb6d83"
+    },
+    "gps-tracker/incoming/dev-20261020-142447-9018116/source.tar.gz": {
+      "bytes": 3650741,
+      "sha256": "ca90a1e511eb0a33698a6af24f7a3e03b9300c6b451646bb6d547edda72ff33a"
+    },
+    "gps-tracker/incoming/dev-20261009-224944-0db9646/artifacts.tar.gz": {
+      "bytes": 9555732,
+      "sha256": "2059608e3d1ea3c37459f542a961703406bb07059c018b5a52ea4b9a2bfd0646"
+    },
+    "gps-tracker/incoming/dev-20261009-224944-0db9646/source.tar.gz": {
+      "bytes": 2076465,
+      "sha256": "9cc2aac5edca985de7c0c0566e761dfe11ce0eded4d0459b0ca6b968c7f847ce"
+    },
+    "gps-tracker/incoming/dev-20260927-150045-b340ba2/artifacts.tar.gz": {
+      "bytes": 9377910,
+      "sha256": "51b2f8159c9e0b1f39749b2cb501a557de6c1aef020488110b0abf3acfcdb90f"
+    },
+    "gps-tracker/incoming/dev-20260927-150045-b340ba2/source.tar.gz": {
+      "bytes": 1998490,
+      "sha256": "266aa1284f55ea4b43abb07fe5cdec1b83badab074bc14a9f29718ad21b633e2"
+    },
+    "gps-tracker/incoming/dev-20261020-135024-ef6d338/artifacts.tar.gz": {
+      "bytes": 13240433,
+      "sha256": "f60d46c3b954552ddafb4c0098893191d0add386004c0d80ca71993bda3ad0f5"
+    },
+    "gps-tracker/incoming/dev-20261020-135024-ef6d338/source.tar.gz": {
+      "bytes": 3647297,
+      "sha256": "1ea9edd975756b8128783a5a4c5e8610e32dd3e02dadba3e38fdc3501bb23f63"
+    },
+    "gps-tracker/incoming/gps-web-20261006-202508-6221d69/artifacts.tar.gz": {
+      "bytes": 3411517,
+      "sha256": "134a7350a58dde55167ae1ad21b91e5029d1d06cf66b6d856d9d9b423926fdcf"
+    },
+    "gps-tracker/incoming/gps-web-20261006-202508-6221d69/source.tar.gz": {
+      "bytes": 1771940,
+      "sha256": "219f8aab8b887b6200ee4491c964ac2f03ba451fe862ac0e11cc03890198e9ca"
+    },
+    "gps-tracker/incoming/dev-20260928-130840-a8603ad/artifacts.tar.gz": {
+      "bytes": 9477501,
+      "sha256": "71d7e43d38962a2513e9199af65e7f7af6f6179646f54f103ecfd1980c6cfe9d"
+    },
+    "gps-tracker/incoming/dev-20260928-130840-a8603ad/source.tar.gz": {
+      "bytes": 2031154,
+      "sha256": "8e74e93811c02fc4f565c6b402ea2c76d96609473ac526cd54bcc471d0bcd0c5"
+    },
+    "gps-tracker/incoming/dev-20261020-135731-2cf9d70/artifacts.tar.gz": {
+      "bytes": 13241866,
+      "sha256": "ee121b80a5599a2fb58b7030e1c42acd1cf09c8e2be0052acd46ee69ead11a99"
+    },
+    "gps-tracker/incoming/dev-20261020-135731-2cf9d70/source.tar.gz": {
+      "bytes": 3647510,
+      "sha256": "6c91c241c7a9052a0e8e285b5bca821223cf48e62aabccf1599043431f88e62a"
+    },
+    "gps-tracker/incoming/dev-20260924-191237-973c63d/artifacts.tar.gz": {
+      "bytes": 9346000,
+      "sha256": "55d1bd8af5737575ac0ea66cb8596ef100d59c881ef2fb3a0d56a537e202a055"
+    },
+    "gps-tracker/incoming/dev-20260924-191237-973c63d/source.tar.gz": {
+      "bytes": 1985224,
+      "sha256": "f8c4e9c172e4aa88a97bc6de6728b0ec2e0b2f728f9c43941e32bdd4df3fbca6"
+    },
+    "gps-tracker/incoming/dev-20260924-182058-4674da4/artifacts.tar.gz": {
+      "bytes": 9300616,
+      "sha256": "9dd35bafbf68bf18110c830536d6a628d831993ece008fe05cf2a47867ad14b7"
+    },
+    "gps-tracker/incoming/dev-20260924-182058-4674da4/source.tar.gz": {
+      "bytes": 1973912,
+      "sha256": "fedf507166c7e164febbb162d1d155e4fc4ce26f16725c807977a1131368ae6a"
+    },
+    "gps-tracker/incoming/gps-web-20261006-201034-09fbf0e/artifacts.tar.gz": {
+      "bytes": 3410119,
+      "sha256": "b829e214c92d79215921000b7d0a5755119ce869b6f412a7528d55b932737677"
+    },
+    "gps-tracker/incoming/gps-web-20261006-201034-09fbf0e/source.tar.gz": {
+      "bytes": 1770079,
+      "sha256": "3bd6dc50e1c68740f54ffcaa522622e67b023151815f895104d40600bbbc718f"
+    },
+    "gps-tracker/fcm-ui-format/source.tar.gz": {
+      "bytes": 260174,
+      "sha256": "c8b80a30b3fd74eb55a9357e333cc876150a721715636a197883c22da1817b90"
+    },
+    "gps-tracker/fcm-content-format-20260928/rust-src.tar.gz": {
+      "bytes": 180020,
+      "sha256": "0dfbf8d3ae2767de8f48fe123fa6bb7c3f0719d8234057bcb174985dbf2acb6d"
+    },
+    "gps-tracker/fcm-content-format-20260928/formatted.tar.gz": {
+      "bytes": 28227,
+      "sha256": "21b88581a47ee6c596a732d85acbc2f0e7231a705a0190d555f72fad6d7902d2"
+    },
+    "gps-tracker/connection-rollback-20261009/predecessor.tar.gz": {
+      "bytes": 260248,
+      "sha256": "1987d7fa8d423274e1fe53e5224bcfd96b4a70c5c2dfc0d4c11b604f5db65361"
+    },
+    "gps-tracker/fcm-preflight/source.tar.gz": {
+      "bytes": 1995538,
+      "sha256": "70f52396521dc99f45ffd20a8c6cae6ed4867ed5a0c95c4838bc76c505fbe107"
+    },
+    "gps-tracker/fcm-preflight/rollback-source.tar.gz": {
+      "bytes": 229643,
+      "sha256": "3cb687d5990c6778b7ba840f03ccd32aeb56e63e695bfa66964c1f0a887acade"
+    },
+    "gps-tracker/fcm-ui-rollback/predecessor.tar.gz": {
+      "bytes": 258216,
+      "sha256": "a846242675ff5374c81f2d84e0664cb03fc1d12e85f473014a7daaa74f22b04e"
+    },
+    "gps-tracker/security-rollback-20261020/predecessor.tar.gz": {
+      "bytes": 3603297,
+      "sha256": "d406262e797d47735e3e8eeb9c5f01c73ef06e9f7dd01f80788fdebe69c73f75"
+    },
+    "gps-tracker/review-20261020-p1/api-check.tar.gz": {
+      "bytes": 281297,
+      "sha256": "8ce6bf8a6c8fa011768126b2cd2594c420f0aa58af165ad016fb50a4de91e3e9"
+    },
+    "gps-tracker/review-20261020-p1/formatted.tar.gz": {
+      "bytes": 209363,
+      "sha256": "ec7e538bd151888149c0d98594eadb8b7f315f4f628e2e6d6b2254239db7cfaa"
+    },
+    "gps-privacy-pdf-20261106/out/gps-tracker-api": {
+      "bytes": 17604600,
+      "sha256": "38a9bc1fc39719fa43cb4631948119304779b8d9d8ffff136b7cd1582e2c2974"
+    },
+    "gps-privacy-pdf-20261106/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-privacy-pdf-20261106/out/web.tar.gz": {
+      "bytes": 3822573,
+      "sha256": "1181a5b47531b476a9f23cab2b2111555a3744e9d4327cd41436958108f04174"
+    },
+    "gps-corporate-reference-20261029/source.tar.gz": {
+      "bytes": 3628779,
+      "sha256": "4e92b3b2400460104512a878e391aaf47ea4af17a3d6453bebd4572700ff6cb9"
+    },
+    "gps-corporate-reference-20261029/migrations-canonical.tar.gz": {
+      "bytes": 32586,
+      "sha256": "89962a2562e729ce8c310f3c03208768840d80c6cf37dbd2f5dbda3c41e22dc7"
+    },
+    "gps-corporate-reference-20261029/source-final.tar.gz": {
+      "bytes": 3602614,
+      "sha256": "fe03dc79a3fa90244d18880a8ba3d6efea9e3b11bf18f77e82c3f6ee5fb86d65"
+    },
+    "gps-corporate-reference-20261029/out/gps-tracker-api": {
+      "bytes": 13860600,
+      "sha256": "abc7e94fb907ea10ba26ba54633b59296136912e0c855d7ab426742ea30225d9"
+    },
+    "gps-corporate-reference-20261029/out/web.tar.gz": {
+      "bytes": 3762964,
+      "sha256": "6a4888ef09562430fec36df7bfb87c38eaba79dfd5e3320231122ae587d56273"
+    },
+    "gps-privacy-company-tasks-20261105/focused-source.tar.gz": {
+      "bytes": 3804048,
+      "sha256": "cca5e8352dc89f6dabeafb781b93bcb981e8086a74eeb25f46c06ab8774a5da0"
+    },
+    "gps-privacy-company-tasks-20261105/out/focused-source.tar.gz": {
+      "bytes": 3804023,
+      "sha256": "c6e55433e4668d172937a5f95120fe9dc9eb49be821b4bb707a4cf2cdeb78d02"
+    },
+    "gps-privacy-company-tasks-20261105/out/gps-tracker-api": {
+      "bytes": 16682792,
+      "sha256": "36cdebe60cabbae4921a231712393d0421a22f6ff971b1711d9eb0eecd2fccbf"
+    },
+    "gps-privacy-company-tasks-20261105/out/web.tar.gz": {
+      "bytes": 3816880,
+      "sha256": "348086675a20fef4cbd0586ce9fd49cc461839a133c9a546fabdce54a9e1ed48"
+    },
+    "gps-account-closure-20261105/focused-source.tar.gz": {
+      "bytes": 3762051,
+      "sha256": "fd5884b5e5f81b1348c11026507cbbb66880be2799ef88a51407c8378c9661d1"
+    },
+    "gps-account-closure-20261105/out/focused-source.tar.gz": {
+      "bytes": 3762051,
+      "sha256": "075278c54dfae11937a2242bce3cb0a7500bc0814a7b00c874517d3f6fd194de"
+    },
+    "gps-account-closure-20261105/out/gps-tracker-api": {
+      "bytes": 15875880,
+      "sha256": "ba7adb13aa2211f81b3a02b98de0e19923232b5a9777899895bfbb5b67d500c7"
+    },
+    "gps-account-closure-20261105/out/web.tar.gz": {
+      "bytes": 3803805,
+      "sha256": "e199323e6e44c9dda1bab8b62db51669b62452f798d1bb70d9a852572b934d5e"
+    },
+    "gps-corporate-feedback-20261029/source.tar.gz": {
+      "bytes": 3622432,
+      "sha256": "663c456d9763943cd2a9fb9427b4929deed0b13de2c137f23bdb020da06fa665"
+    },
+    "gps-corporate-feedback-20261029/source-final.tar.gz": {
+      "bytes": 3622263,
+      "sha256": "45f6351999b35684ffdb581c943e9651289278fa9e89ba76c838a86fb086b643"
+    },
+    "gps-corporate-feedback-20261029/out/gps-tracker-api": {
+      "bytes": 13852408,
+      "sha256": "50b96186dd082a68843f37dcb5395f2a88d9d091756dcd1aa72f6e4bdbfe65ac"
+    },
+    "gps-corporate-feedback-20261029/out/web.tar.gz": {
+      "bytes": 3763333,
+      "sha256": "a5ee388f9d94074e92681b5f92a9e8da986fe2cec1ee8ae438ffd7dbe1f7f006"
+    },
+    "gps-privacy-receipts-20261106/focused-source.tar.gz": {
+      "bytes": 3826928,
+      "sha256": "56ce832447184b266b768353f3fdf3613d4544f8300e1042ac9fdb8cf81b375e"
+    },
+    "gps-privacy-receipts-20261106/out/focused-source.tar.gz": {
+      "bytes": 3822594,
+      "sha256": "3754ee137bf8cb0a68688387108964e3f9902e03413ca718d8ff5ee09c2a956e"
+    },
+    "gps-privacy-receipts-20261106/out/gps-tracker-api": {
+      "bytes": 17477464,
+      "sha256": "65abe14ca7e8acd246a8aa5447f357da3a5956e99f2be202a4b9861841185b04"
+    },
+    "gps-privacy-receipts-20261106/out/web.tar.gz": {
+      "bytes": 3823684,
+      "sha256": "4a985466b770034242c4324578bba13568213b2b55eb551fa90944bf81b84e01"
+    },
+    "gps-crypto20-20261107/src.tar.gz": {
+      "bytes": 3868304,
+      "sha256": "6c708c84b4a2977908b5701fd6f43f7e44762ffcc9275c4925d35da7807f1000"
+    },
+    "gps-crypto20-20261107/fw.tar.gz": {
+      "bytes": 121545,
+      "sha256": "8c6d3b09fafbcb7c0389da4764aebb5d4f99acbf422ff297adbbf464d2cc77e9"
+    },
+    "gps-crypto20-20261107/source.tgz": {
+      "bytes": 565707,
+      "sha256": "3cca8d66d22bec272a69386b10c646501464855296bf6b53a7e8b2c5f640dde7"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__arduino-esp32/libraries/Update/examples/AWS_S3_OTA_Update/StartCounter.ino.bin": {
+      "bytes": 357276,
+      "sha256": "2e233d709b5360df26388fb3031820e6b21afe3fda7941d55ea8ee1620622419"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/hello_world.bin": {
+      "bytes": 146768,
+      "sha256": "2759fc5debc992a761ee4ddd6b1c8a294c3426fae0c8481db057e3da57ff9b9e"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H2/bootloader.bin": {
+      "bytes": 20416,
+      "sha256": "658e52894aab3c7dc9af8ede0ec110408bb9e57423a10b56e8d7e02cec95891d"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/hello-world.bin": {
+      "bytes": 195984,
+      "sha256": "0fc099da62881522204825a9d9ea1a526d6e195d1d5b034972189c7e98eb0a99"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "5d1dbc1e3c50d7bc93b123215900b57fdfda24131e76da03999a54fe9b554ec3"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP8266/bootloader.bin": {
+      "bytes": 10768,
+      "sha256": "4ebe1cfe7b195bfbc6aa74245648155e0466c522a6da2417c9fef614bda2db34"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/hello-world.bin": {
+      "bytes": 142320,
+      "sha256": "a1f56518fd24dd4ff39ee98c512807f36c5388cdbc0a5b40aa63f4b75f6fd98e"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32/bootloader.bin": {
+      "bytes": 24880,
+      "sha256": "6200f89fe61eb3758d3e844562cc69254d193282da6ae9f1857d600632233888"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/hello_world.bin": {
+      "bytes": 136224,
+      "sha256": "b74c30177b1159c8f5d138531a85c90cce03bb1e98682340906cb4052fbeaa51"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_H4/bootloader.bin": {
+      "bytes": 19264,
+      "sha256": "7826d1fa01d98efc94b2aaf9a6f63abfe8eed928235d322fa1ce310f452ae33c"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/hello-world.bin": {
+      "bytes": 142528,
+      "sha256": "5f5d057d551af6223888b73ef4c715c5acc1eadbb90a046578a927eab5a80e9f"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/Hello-world/ESP32_S2/bootloader.bin": {
+      "bytes": 20000,
+      "sha256": "2b2bfbd61260af10cb74c907c42f49285689a6cebcceb8ec03124992207c0e27"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/ESP32_AT_Firmware/Firmware.bin": {
+      "bytes": 4194304,
+      "sha256": "b688de362472cff747f2ebe73e032987c1ee7532851150523f08710e7026b413"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C2/app.bin": {
+      "bytes": 54080,
+      "sha256": "af74a99385aded6ffde220a93cf5893d4d81ee87ee9e205072dcced80d6ee568"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_S3/app.bin": {
+      "bytes": 145936,
+      "sha256": "350ca35cdc5c3146ab634635fb98b1fdc79e8e0eb263f95de745974bda239314"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H2/app.bin": {
+      "bytes": 55600,
+      "sha256": "ba98ea3494ba535857b7a29d3fea96a22fde053ff529b8fdd3bb26d07447b31b"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32/app.bin": {
+      "bytes": 127584,
+      "sha256": "335d3748709b9d2efb0a89d968433f1787301d5c22bfd930a27b85af970488c0"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_H4/app.bin": {
+      "bytes": 113536,
+      "sha256": "229370b19ae3660bb4c91401e1b9a5b1340f472509341a4e9e00a20a376d799b"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/examples/binaries/RAM_APP/ESP32_C3/app.bin": {
+      "bytes": 101408,
+      "sha256": "2e6f6729a66b13df4f789aa8ec038a7f9b7c099fd15d1b7f7ef00dba8f5b9833"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp-serial-flasher/test/hello-world.bin": {
+      "bytes": 144672,
+      "sha256": "e3992ca5ad3069abf49a8cf117b0da302d97302e1b3c9a6ad77ceee9efe144b9"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/joltwallet__littlefs/test/testfs.bin": {
+      "bytes": 49152,
+      "sha256": "16225b76da120e172b41cf5b11cc976a8de553b625d5e2944cac2d4d2ad019dd"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_modem/test/target_ota/bin/blink.bin": {
+      "bytes": 184608,
+      "sha256": "9fd9b4d02b6b2f2d0ce14b6bf18a11dcad5f1324c31ee22df3f8059f48fd931f"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after_corrupt.bin": {
+      "bytes": 101,
+      "sha256": "cdca355aa0c4c64dc56d82cd452faa3b03dbbf76a6c3d54e862c213891f4db74"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_before.bin": {
+      "bytes": 1808,
+      "sha256": "de7fc3f38fb5c1fb20af2a1417bdc863761ee90c416da48e5b3e26d5b4da9671"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_ota_example/tests/esp_secure_cert_after.bin": {
+      "bytes": 1808,
+      "sha256": "4a9a148fbb36ba7f8a2bea31e3a94c20e237be38250882386729368f8fb87b1e"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/esp_secure_cert.bin": {
+      "bytes": 3600,
+      "sha256": "acfca80c259f223636a1cce06140aa4bdbab6f21ed5bf12a9563286a654c2a78"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/examples/esp_secure_cert_app/tests/qemu_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "3856c9bc8540d2cf3edc020161c65e4f15cd0ebd739fdc86052e566e9916f67c"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/cust_flash.bin": {
+      "bytes": 24576,
+      "sha256": "852759453c560691b3331724197e9dfba08eb6b7eb2853cf9c3a5a6166b50366"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "61a0ad0011af31b8d3589d85d965a3074da41ddc966d4de8e662730196b922f1"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/cust_flash_tlv.bin": {
+      "bytes": 8192,
+      "sha256": "aacba3774662c9c13309f9b7a7f0a6ebf6a80cb91aabf97a19db243f8edbe9d3"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_tlv/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_flash_encrypt/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32c3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_key_0_esp32s3_efuse.bin": {
+      "bytes": 1024,
+      "sha256": "a326a2fd28ee066b7fb4f0fe1d45f58ce5efbb3c24317b93b35e959abc9b0d87"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification/secure_verification.bin": {
+      "bytes": 7760,
+      "sha256": "dc96d5b2f19a2f4d305463859b8de212460e99632e65c3a1edf116dc2cce896f"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/nvs_legacy.bin": {
+      "bytes": 12288,
+      "sha256": "6d5a7de9aaeb30e71eea8f7e77dd2338347aab38c8fc8180d3828cb161c477fd"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "b70cb53c59aa6febf75e01fd411838688135958207b839a6ff52737d777c9301"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "27d7e6495348affbeb58cfc3e17808a9a45569a39257d24520d96a98db0393da"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/secure_verification_corrupt/secure_verification_corrupt.bin": {
+      "bytes": 11504,
+      "sha256": "2f082dfd3ffc23ced70589cd526938b6fbd0a5756dac79524f0149c62c20b7cd"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/nvs.bin": {
+      "bytes": 12288,
+      "sha256": "b2c8eb81f30f6b4f980b6c7005eaac41268a7451e1f688597961cb847c3bfacd"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/nvs/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "f7f021e6b6b8d9be364c994706585ccf566c7fb5e82a45554fc29f79711951d1"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/cust_flash_legacy.bin": {
+      "bytes": 24576,
+      "sha256": "f88ee14b4f99f12ccf6c9caa24a79a246f0a37aa915858c69e3aa67609890644"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/test_apps/qemu_test/cust_flash_legacy/partition-table.bin": {
+      "bytes": 3072,
+      "sha256": "9c01b9db0230e9637331d7800481177f5beb0626aeb60dd36ac625eb8b0f714c"
+    },
+    "gps-crypto20-20261107/fwsrc/idf_caltest/managed_components/espressif__esp_secure_cert_mgr/tools/tests/input_data/esp_secure_cert.bin": {
+      "bytes": 5280,
+      "sha256": "549c702529866d67aef53f26344c223126e3121ae5105b739774d19c3349f343"
+    },
+    "gps-crypto20-20261107/out/gps-tracker-api": {
+      "bytes": 18218832,
+      "sha256": "e3ff355248e129d85ae9aa8e7f87edb7cdba5038ca256cf8c4be10e61432fe4b"
+    },
+    "gps-crypto20-20261107/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-fleet-trip-assignment-20261029/migration-canonical.tar.gz": {
+      "bytes": 36888,
+      "sha256": "212d20404ffe615cbb3f8452afdeb0d40780d770872d144d42076a983636a24c"
+    },
+    "gps-fleet-trip-assignment-20261029/source-final.tar.gz": {
+      "bytes": 4075929,
+      "sha256": "2f759ea66fe236dba5cabe1c556c1ccba073104ff5b1e85e9df75920e2f5e4fd"
+    },
+    "gps-fleet-trip-assignment-20261029/source-wip.tar.gz": {
+      "bytes": 4090003,
+      "sha256": "4e9c1caa889302ed1b4c1c9c6722a2f49bc123689ea92118e907c768882d86f1"
+    },
+    "gps-fleet-trip-assignment-20261029/out-final/gps-tracker-api": {
+      "bytes": 15331112,
+      "sha256": "e98ab8efaceb93e540abe4d8728c6e4ae815b906ab198201560520d17b13d45e"
+    },
+    "gps-fleet-trip-assignment-20261029/out-final/web.tar.gz": {
+      "bytes": 3792577,
+      "sha256": "0d03bc461316d7da098eba6b22678c600cf1043cea12ffe73bfe60e918bebd1f"
+    },
+    "gps-fleet-trip-assignment-20261029/out/gps-tracker-api": {
+      "bytes": 15331112,
+      "sha256": "347704bac22b233af576544fac7a7fb5806d37857d73392d3d34b5fe030c4ccc"
+    },
+    "gps-privacy-pdf-20261106-r1/source.tar.gz": {
+      "bytes": 4103699,
+      "sha256": "74df858a0ba4a49b9a6912fff7755e2c820bf2252161cbb29c0d7f064a7d5017"
+    },
+    "gps-privacy-pdf-20261106-r1/out/gps-tracker-api": {
+      "bytes": 17604600,
+      "sha256": "b6ac9edb5bacae749db3c2561f95763860599abc7de7099dcf50bc63a427bba7"
+    },
+    "gps-privacy-pdf-20261106-r1/out/source.tar.gz": {
+      "bytes": 4103699,
+      "sha256": "74df858a0ba4a49b9a6912fff7755e2c820bf2252161cbb29c0d7f064a7d5017"
+    },
+    "gps-privacy-pdf-20261106-r1/out/gps-pdf-render": {
+      "bytes": 10921048,
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb"
+    },
+    "gps-privacy-pdf-20261106-r1/out/web.tar.gz": {
+      "bytes": 3822553,
+      "sha256": "bc7c52ed66c130b98f916a751030ce52ec0eea7913b79f28006041543ab9b2e1"
+    },
+    "gps-privacy-company-20261105/focused-source.tar.gz": {
+      "bytes": 3782011,
+      "sha256": "45349ad49ab55017957e2569a7ddd4b7b0b2eb328faee6dbd5bdc56746f65631"
+    },
+    "gps-privacy-company-20261105/out/focused-source.tar.gz": {
+      "bytes": 3780548,
+      "sha256": "5080304f6c88134aa93ccc7ec080164cfa13dd1280856e027b1c34cd4a22b96a"
+    },
+    "gps-privacy-company-20261105/out/gps-tracker-api": {
+      "bytes": 16219944,
+      "sha256": "3f1c4f9f5c5a7fdb9d5a67a283a195ff58529cb16a40edbe3766b9e5d5beaf2e"
+    },
+    "gps-privacy-company-20261105/out/web.tar.gz": {
+      "bytes": 3810213,
+      "sha256": "e0ac9659010a5d4001dea87449b7546a3f7ed3f492674c35bc73c3f725bf4703"
+    }
+  },
+  "containers": [
+    {
+      "id": "e740ddbdba80b67c1e28f780f48e0f2ec9a6074eb31957fd24252ad0ae5ce74a",
+      "name": "/cb-api",
+      "started": "2026-10-05T02:03:07.842826999Z",
+      "restarts": 0
+    },
+    {
+      "id": "960b91aaa336cf9a73ae116a598eaa17494874b332cce7ea9353d063a4816c00",
+      "name": "/cb-cloudflared",
+      "started": "2026-10-05T02:03:07.577767833Z",
+      "restarts": 0
+    },
+    {
+      "id": "6703f6327b24c88c9126c6497bc01583b8bacf55c4b6c3dd9fdd297311f66687",
+      "name": "/cb-minio",
+      "started": "2026-10-05T02:03:07.868858751Z",
+      "restarts": 0
+    },
+    {
+      "id": "011b7a331eeb916cfa3b6ab33245a0d369d31269c4dfc7ccf5fabcb7d10a817d",
+      "name": "/cb-postgres",
+      "started": "2026-10-05T02:03:07.679291528Z",
+      "restarts": 0
+    },
+    {
+      "id": "fec7c8d0be4e48edc6ec189489701703c4b9f9d32d8fd60ce105a473d6cf3466",
+      "name": "/cb-redis",
+      "started": "2026-10-05T02:03:07.662164815Z",
+      "restarts": 0
+    },
+    {
+      "id": "bb6e3a51771b4f1aca671fb6ea99ce756a9f6a57193385bbc61ff12de141b411",
+      "name": "/fp-api",
+      "started": "2026-10-05T02:03:07.775531642Z",
+      "restarts": 0
+    },
+    {
+      "id": "408745eab87f31caa70b97012fce296673cac7cfc7e4b09bd62ea5063027cd59",
+      "name": "/fp-cloudflared",
+      "started": "2026-10-05T02:03:07.628745165Z",
+      "restarts": 0
+    },
+    {
+      "id": "14ad5d25fc805e933c337c28eae27121f8c2c0edc12b8bc00dd79dba70866977",
+      "name": "/fp-minio",
+      "started": "2026-10-05T02:03:07.7897717Z",
+      "restarts": 0
+    },
+    {
+      "id": "8be2893afdb5a117d265d1491470046364aeddeee5ea349cfbc40707ab72b3f2",
+      "name": "/fp-postgres",
+      "started": "2026-10-05T02:03:07.482775694Z",
+      "restarts": 0
+    },
+    {
+      "id": "253e29b5514f48ae22825600c03dfc29eaf769b62d84bcc4dfcd55e7a6fdbce2",
+      "name": "/fp-redis",
+      "started": "2026-10-05T02:03:07.851460667Z",
+      "restarts": 0
+    },
+    {
+      "id": "aeb1513f43464d7bddabc898454ed2da62421f77fead79957d1195ebcf9c75e0",
+      "name": "/fp-web",
+      "started": "2026-10-05T02:03:07.856985002Z",
+      "restarts": 0
+    },
+    {
+      "id": "b57f88e2791eb03adcd80bcc9bf71a78fc604732d7bf5c70adb5c321865cedf3",
+      "name": "/kc-cloudflared",
+      "started": "2026-10-05T02:03:07.706076667Z",
+      "restarts": 0
+    },
+    {
+      "id": "a31514d278ef4560b72852e47a975dde91138d7dfcfe94e7204db3b86b1c8385",
+      "name": "/kc-label-studio",
+      "started": "2026-10-05T02:03:07.701272877Z",
+      "restarts": 0
+    },
+    {
+      "id": "5f1e4d3c87b5dee7ba9d372bf1e64f374484a72ecfce977b31e71a48b4a0b08d",
+      "name": "/kc-minio",
+      "started": "2026-10-05T02:03:07.712853856Z",
+      "restarts": 0
+    },
+    {
+      "id": "1a5ac864fc5decfbaa436fa83c6e3bd1fb1ea7a0d6a060b6859076c8d53e324a",
+      "name": "/kc-postgres",
+      "started": "2026-10-05T02:03:07.723090989Z",
+      "restarts": 0
+    },
+    {
+      "id": "6a2ad0f8b8adaaa541d4897e9e7b0ae9636efe7f7a6945b1525bd88704299f40",
+      "name": "/kc-redis",
+      "started": "2026-10-05T02:03:07.751975173Z",
+      "restarts": 0
+    },
+    {
+      "id": "dd327aea3da11ca725567a24c84a01c07e92aec32ad48089b734539ff5843de2",
+      "name": "/life-time-r07-postgres-1",
+      "started": "2026-10-14T04:52:31.164521091Z",
+      "restarts": 0
+    },
+    {
+      "id": "063fe1f5e29cb73e6a7c60d7513c82ec9ad817cc1b14bd96032b3d19378d3ab1",
+      "name": "/life-time-validation-postgres-1",
+      "started": "2026-10-22T06:10:01.371804871Z",
+      "restarts": 0
+    },
+    {
+      "id": "ba89a22aa27f747b1b4fdefd9bbf20f1954dd13d136f3b8163d39853c35e3451",
+      "name": "/pdrive-copyparty-1",
+      "started": "2026-11-05T06:31:38.498070202Z",
+      "restarts": 0
+    },
+    {
+      "id": "57d0bf21857775ebf1eb3c822bd326da4583265e207d1a448eca5aef08dbcf2e",
+      "name": "/pdrive-syncthing-1",
+      "started": "2026-11-05T06:31:38.502145113Z",
+      "restarts": 0
+    },
+    {
+      "id": "58d5501f392b0b22f756755d2d0d640f25adbd4e03569c4525a149b3dcd90ee5",
+      "name": "/pdrive-tunnel-1",
+      "started": "2026-11-05T06:31:38.671027283Z",
+      "restarts": 0
+    },
+    {
+      "id": "4b48e8b34912a1a83a17b748ce14e61caa4b1f762c48f76878f48b58a7aaebd1",
+      "name": "/sc-api",
+      "started": "2026-10-05T02:03:07.797875803Z",
+      "restarts": 0
+    },
+    {
+      "id": "54b2bec0f9d9835b8ff7dfeb6c6628455af0d7ab1914ee950cd9f210dd3c1c46",
+      "name": "/sc-cloudflared",
+      "started": "2026-10-05T02:03:07.817279316Z",
+      "restarts": 0
+    },
+    {
+      "id": "ea8325e2eb0fdc677bf6b501af04e3263981730c4cff9efdf5c0928739292d47",
+      "name": "/sc-postgres",
+      "started": "2026-10-05T02:03:07.826818868Z",
+      "restarts": 0
+    },
+    {
+      "id": "7b2c6ec13e88167560032790bb4e857cc3c8ed6e5c552223cf0865504e41a4db",
+      "name": "/sc-redis",
+      "started": "2026-10-05T02:03:07.737546962Z",
+      "restarts": 0
+    },
+    {
+      "id": "682b181422ef4258772227d93aeccd3536ccd2249c42956c99170f07e059e877",
+      "name": "/sc-web",
+      "started": "2026-10-05T02:03:07.806509372Z",
+      "restarts": 0
+    },
+    {
+      "id": "8da8471a0841ced21338ef399a698226410591ba000a728f3ff855afe761eb01",
+      "name": "/sc-worker",
+      "started": "2026-10-05T02:03:07.846376952Z",
+      "restarts": 0
+    },
+    {
+      "id": "2728656b0712b7e22987518ea0497af8caaf1263b73a2f0fbe842ff333db98cb",
+      "name": "/siyuan",
+      "started": "2026-10-05T02:03:07.813791861Z",
+      "restarts": 0
+    },
+    {
+      "id": "685cd8ae741e1195f5d237a63e48d60e0e29c7997f3e25ff9fef3200457dcda6",
+      "name": "/siyuan-cloudflared",
+      "started": "2026-10-05T02:03:10.742970606Z",
+      "restarts": 3
+    },
+    {
+      "id": "990d8ab43adc0633da44ed9ecdb934b5ab77c76f65139877972cb477a1b9d271",
+      "name": "/siyuan-minio",
+      "started": "2026-10-05T02:03:07.832622778Z",
+      "restarts": 0
+    },
+    {
+      "id": "c6af06953f275e310da3759348bce9f0feeaa180701fc7f6ffcce7a01b5adb2a",
+      "name": "/tapo-mtx",
+      "started": "2026-10-05T02:03:07.526825075Z",
+      "restarts": 0
+    },
+    {
+      "id": "2bc69be0c5708a74052eb4130bf13e45ab05f7e1e490cca40143208b2da2bfe4",
+      "name": "/tapo-web",
+      "started": "2026-10-05T02:03:07.862148317Z",
+      "restarts": 0
+    }
+  ],
+  "disk_free": 3419643904
+}

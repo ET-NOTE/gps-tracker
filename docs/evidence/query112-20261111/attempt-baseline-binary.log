@@ -1,0 +1,12 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111cumulative112/rehearse_cumulative112.py", line 199, in <module>
+    migrate('resume-after-per-migration-interruptions', fault)
+  File "/home/etcom-hub/build/gps-provision22-20261111cumulative112/rehearse_cumulative112.py", line 71, in migrate
+    cmd('docker', 'run', '--rm', '--network', NET, '--memory=550m', '--cap-drop=ALL',
+  File "/home/etcom-hub/build/gps-provision22-20261111cumulative112/rehearse_cumulative112.py", line 43, in cmd
+    return subprocess.run(list(args), check=True, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['docker', 'run', '--rm', '--network', 'gps-provision22-test-20261111cumulative112', '--memory=550m', '--cap-drop=ALL', '--security-opt=no-new-privileges', '-e', 'APP_ENV=test', '-e', 'GPS_MIGRATE_ONLY=1', '-e', 'DATABASE_URL=postgres://postgres:closure-test-only@172.28.0.2/gps_cumulative_faults', '-e', 'JWT_SECRET=synthetic-cumulative-migration-only', '-v', '/home/etcom-hub/build/gps-provision22-20261111cumulative112/out/gps-tracker-api:/api:ro', 'gps-build:rust1.88-node22.22.2', '/api']' returned non-zero exit status 1.

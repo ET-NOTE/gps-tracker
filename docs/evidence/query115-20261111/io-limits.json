@@ -1,0 +1,26 @@
+{
+  "BlkioDeviceReadBps": [
+    {
+      "Path": "/dev/nvme0n1",
+      "Rate": 8388608
+    }
+  ],
+  "BlkioDeviceWriteBps": [
+    {
+      "Path": "/dev/nvme0n1",
+      "Rate": 8388608
+    }
+  ],
+  "BlkioDeviceReadIOps": [
+    {
+      "Path": "/dev/nvme0n1",
+      "Rate": 200
+    }
+  ],
+  "BlkioDeviceWriteIOps": [
+    {
+      "Path": "/dev/nvme0n1",
+      "Rate": 200
+    }
+  ]
+}

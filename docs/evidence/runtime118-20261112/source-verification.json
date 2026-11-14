@@ -1,0 +1,12 @@
+{
+  "utc": "2026-11-12T01:06:06.291885+00:00",
+  "source_commit": "cda22ac62ed38fc41264352b1e9fb897fb113bf2",
+  "verified_source_count": 7,
+  "image_sources_verified": {
+    "runtime118_nodump.c": "b9c1c45d0ba14c5343afd0954e8db4cbe42bc0e78277c38b5b2e18091de6e9bd",
+    "runtime118_guard.py": "a0776e84254def28378ba66acd81f1c5b93c751fcc211ccdd2efd0bde1c5f98d"
+  },
+  "image_id": "sha256:e89bdd5f6dd5112c3d15fe720d9ab9cb84fb6c70b6776ea36af26a52ee318df3",
+  "cgroup": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+  "core_pattern_unchanged": "|/usr/share/apport/apport -p%p -s%s -c%c -d%d -P%P -u%u -g%g -F%F -- %E"
+}

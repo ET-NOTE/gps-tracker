@@ -1,0 +1,14 @@
+{
+  "pid": 3867,
+  "health": {
+    "db": true,
+    "environment": "test",
+    "ok": true,
+    "release": "runtime123-20261113-r1",
+    "service": "gps-tracker-api"
+  },
+  "root_owned_sha256": "1052de1ee68e700b6565e73124e727ef45ee26527c7eb9f196c71efcdd0221f5",
+  "mode": "0o555",
+  "startup_link": "/opt/gps121/out/gps-tracker-api.previous",
+  "proc_exe_hash_unavailable_due_to_dump_protection": true
+}

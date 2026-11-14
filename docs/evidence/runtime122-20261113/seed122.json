@@ -1,0 +1,9 @@
+{
+  "encrypted_rows": [
+    119040,
+    0
+  ],
+  "source_fixture": "benchmark_location115.setup synthetic seed block",
+  "stats_days": 248,
+  "legacy_retention_disabled_only_in_fixture": true
+}

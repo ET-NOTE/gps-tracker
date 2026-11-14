@@ -1,0 +1,10 @@
+{"started_utc": "20261114T041041Z", "seconds": 21.436, "command": ["python3", "/opt/gps121/runtime121_cumulative.py"], "exit": 1, "log": "20261114T041041Z-runtime121_cumulative.log", "free_bytes": 4584951808}
+{"started_utc": "20261114T041216Z", "seconds": 229.263, "command": ["python3", "/opt/gps121/runtime121_cumulative.py"], "exit": 1, "log": "20261114T041216Z-runtime121_cumulative.log", "free_bytes": 3536392192}
+{"started_utc": "20261114T041714Z", "seconds": 222.3, "command": ["python3", "/opt/gps121/runtime121_cumulative.py"], "exit": 0, "log": "20261114T041714Z-runtime121_cumulative.log", "free_bytes": 3634049024}
+{"started_utc": "20261114T042056Z", "seconds": 5.6, "command": ["python3", "/opt/gps121/test_schema125_tools.py"], "exit": 0, "log": "20261114T042056Z-test_schema125_tools.log", "free_bytes": 3633844224}
+{"started_utc": "20261114T042102Z", "seconds": 77.303, "command": ["python3", "/opt/gps121/verify_runtime121.py"], "exit": 0, "log": "20261114T042102Z-verify_runtime121.log", "free_bytes": 3613790208}
+{"started_utc": "20261114T042219Z", "seconds": 21.542, "command": ["python3", "/opt/gps121/restore_runtime121.py"], "exit": 0, "log": "20261114T042219Z-restore_runtime121.log", "free_bytes": 3588890624}
+{"started_utc": "20261114T042241Z", "seconds": 5.893, "command": ["python3", "/opt/gps121/test_runtime121.py"], "exit": 0, "log": "20261114T042241Z-test_runtime121.log", "free_bytes": 3588612096}
+{"started_utc": "20261114T042315Z", "seconds": 13.972, "command": ["python3", "/opt/gps121/test_runtime120_service.py"], "exit": 0, "log": "20261114T042315Z-test_runtime120_service.log", "free_bytes": 3587235840}
+{"started_utc": "20261114T042354Z", "seconds": 1.523, "command": ["python3", "/opt/gps121/verify_runtime125_reads.py"], "exit": 1, "log": "20261114T042354Z-verify_runtime125_reads.log", "free_bytes": 3586170880}
+{"started_utc": "20261114T042431Z", "seconds": 16.078, "command": ["python3", "/opt/gps121/verify_runtime125_reads.py"], "exit": 0, "log": "20261114T042431Z-verify_runtime125_reads.log", "free_bytes": 3584438272}

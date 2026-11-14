@@ -1,0 +1,7 @@
+2026-11-13T03:21:48+00:00
+Filesystem        1B-blocks         Used  Available Use% Mounted on
+/dev/nvme0n1p5 233092624384 212465577984 8712077312  97% /
+346M	/home/etcom-hub/build/gps-tracker/cache/cargo
+61M	/home/etcom-hub/build/gps-tracker/cache/npm
+28M	/home/etcom-hub/build/gps-location-erasure-20261105/venv
+17750405120	total

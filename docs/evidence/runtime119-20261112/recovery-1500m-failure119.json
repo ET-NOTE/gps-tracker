@@ -1,0 +1,23 @@
+{
+  "production_modified": false,
+  "reason": "recovery-1500m-oom",
+  "containers": [
+    {
+      "name": "gps-provision22-db-20261112cumulative119",
+      "state": {
+        "Status": "running",
+        "Running": true,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": true,
+        "Dead": false,
+        "Pid": 2910888,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-11-12T07:55:28.353095267Z",
+        "FinishedAt": "0001-01-01T00:00:00Z"
+      },
+      "memory_events": "low 0\nhigh 0\nmax 3582\noom 208\noom_kill 2\noom_group_kill 0\n"
+    }
+  ]
+}

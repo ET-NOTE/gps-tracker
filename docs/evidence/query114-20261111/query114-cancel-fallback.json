@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "deadline_seconds": 20.017633786890656,
+  "normal_pool_recovered": true,
+  "admission_retained_during_cancel_outage": true,
+  "runtime_superuser": false,
+  "extra_signal_role": false
+}

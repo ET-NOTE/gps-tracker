@@ -1,0 +1,144 @@
+{
+  "found": "2026-11-06, round 15 deployment check; unrelated to the round 15 change",
+  "unit": "gps-privacy-accounts.service (timer, every 2 minutes): privacy_account_closure.py --pending --execute",
+  "failing_since": "about 2026-11-05 20:30 KST",
+  "causes": [
+    "main() wrapped the loop in `with psycopg2.connect(...) as db` while process()/execute() enter `with db` themselves; psycopg2 2.9 refuses: the connection cannot be re-entered recursively",
+    "one queue ordered by updated_at with LIMIT 5: file-held closures are rechecked without a write, so five of them are picked on every run and no later request starts"
+  ],
+  "fix": [
+    "open the connection without a context and close it in finally",
+    "pick new/retry closures (oldest first, 5) and file-held closures (random, 5) separately"
+  ],
+  "regression_test": {
+    "file": "ops/test_account_closure.py",
+    "sha256": "75a7b77537e65be51920d4e25deba6f69924d4e7bcaa952ee3cbcfe15d383075",
+    "groups": 15,
+    "new_groups": 3
+  },
+  "same_test_three_scripts": [
+    {
+      "script": "deployed on production (HEAD before the fix)",
+      "sha256": "e84364e7f83b4430f9cc9425c1958f566caa8246ff17e5128168e388f2a68aae",
+      "result": "fail",
+      "groups_passed": 12,
+      "failure": "psycopg2.ProgrammingError: the connection cannot be re-entered recursively (first timer run)"
+    },
+    {
+      "script": "connection fix only, old queue query",
+      "sha256": "21e10a75ebe8170d238fc3f252170ed16ab19e6c5dda58d42f31ea167eba7e16",
+      "result": "fail",
+      "groups_passed": 13,
+      "failure": "new closure starved behind file-held closures (10 timer runs)"
+    },
+    {
+      "script": "fixed",
+      "sha256": "1704d2bbbd99e3f9c8fa4b8e0dba6d493adcbc7fb6a01db824a34a365d13312f",
+      "result": "pass",
+      "groups_passed": 15
+    }
+  ],
+  "full_suite_fresh_environment": {
+    "groups": 99,
+    "by_script": {
+      "test_privacy_receipt_pdf.py": 7,
+      "test_privacy_receipt_scaling.py": 9,
+      "test_privacy_receipts.py": 7,
+      "test_privacy_images.py": 8,
+      "test_privacy_redacted.py": 8,
+      "test_privacy_company_tasks.py": 10,
+      "test_privacy_account_sections.py": 5,
+      "test_privacy_packages.py": 9,
+      "test_privacy_company.py": 10,
+      "test_privacy_delivery.py": 11,
+      "test_account_closure.py": 15
+    },
+    "schema": 98,
+    "api_sha256": "38a9bc1fc39719fa43cb4631948119304779b8d9d8ffff136b7cd1582e2c2974",
+    "pdf_renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+    "environment": "build host, internal Docker network, throwaway database, APP_ENV=test; removed afterwards"
+  },
+  "production_changed": true,
+  "production_reflection": {
+    "approved_by_user": true,
+    "precheck_at": "2026-11-06T12:43:35+09:00",
+    "precheck": {
+      "installed_sha256": "e84364e7f83b4430f9cc9425c1958f566caa8246ff17e5128168e388f2a68aae",
+      "reentry_errors_last_24h": 274,
+      "closures": 21,
+      "synthetic_closures": 21,
+      "pending": [
+        6,
+        9
+      ],
+      "pending_file_jobs": {
+        "local_absent": 2
+      }
+    },
+    "dry_run_at": "2026-11-06T12:44:11+09:00",
+    "dry_run": {
+      "listed": [
+        9,
+        6
+      ],
+      "personal_scope_counts_all_zero": true,
+      "closure_rows_unchanged": true
+    },
+    "replaced_at": "2026-11-06T12:45:03+09:00",
+    "path": "/home/mmm/gps-ops/privacy_account_closure.py",
+    "installed_sha256": "1704d2bbbd99e3f9c8fa4b8e0dba6d493adcbc7fb6a01db824a34a365d13312f",
+    "owner_mode": "root:root 644 (as before)",
+    "backup": "/home/mmm/backups/privacy-account-closure-fix-20261106/privacy_account_closure.py.previous",
+    "services_restarted": false,
+    "unit_or_timer_changed": false,
+    "timer_runs_after": [
+      {
+        "ended_at": "2026-11-06T12:46:33+09:00",
+        "result": "success",
+        "processed": [
+          6,
+          9
+        ],
+        "personal_scope_verified": true,
+        "rows_deleted": 0,
+        "file_hold_reason_removed": true
+      },
+      {
+        "ended_at": "2026-11-06T12:48:40+09:00",
+        "result": "success",
+        "processed": []
+      }
+    ],
+    "after": {
+      "reentry_errors": 0,
+      "pending": 0,
+      "closures": 21,
+      "synthetic_closures": 21,
+      "review_required": 21,
+      "personal_scope_verified": 15,
+      "closures_updated_since_replacement": [
+        6,
+        9
+      ],
+      "request_events_added": [
+        {
+          "request_id": 6,
+          "revision": 4
+        },
+        {
+          "request_id": 9,
+          "revision": 4
+        }
+      ],
+      "api_health": {
+        "db": true,
+        "environment": "production",
+        "ok": true,
+        "release": "privacy-raster-20261106-r1"
+      },
+      "api_restarts": 0,
+      "api_error_log_entries": 0,
+      "files_timer_result": "success"
+    }
+  }
+}

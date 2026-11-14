@@ -1,0 +1,2074 @@
+{
+  "label": "dedicated-4g",
+  "seconds": 300,
+  "elapsed": 100.44477098388597,
+  "workers": 8,
+  "api_sha256": "56912e102bd55db65f253d7f19c409a04e239b8e993f60baead577e51efbf536",
+  "statuses": {
+    "200": 127,
+    "429": 59,
+    "502": 270
+  },
+  "attempts": {
+    "429": 269,
+    "200": 127,
+    "502": 270
+  },
+  "per_route": {
+    "month_aggregate": {
+      "statuses": {
+        "200": 22,
+        "429": 8,
+        "502": 35
+      },
+      "latency": {
+        "count": 22,
+        "p50": 1.7749979398213327,
+        "p95": 6.738006537314504,
+        "max": 7.085642524063587
+      }
+    },
+    "month_history": {
+      "statuses": {
+        "200": 24,
+        "429": 4,
+        "502": 36
+      },
+      "latency": {
+        "count": 24,
+        "p50": 1.7638216307386756,
+        "p95": 6.528216104954481,
+        "max": 6.936926081776619
+      }
+    },
+    "month_page": {
+      "statuses": {
+        "200": 49,
+        "429": 22,
+        "502": 94
+      },
+      "latency": {
+        "count": 49,
+        "p50": 0.3974895509891212,
+        "p95": 5.549605553969741,
+        "max": 5.648528477177024
+      }
+    },
+    "fleet_trips": {
+      "statuses": {
+        "429": 9,
+        "200": 12,
+        "502": 34
+      },
+      "latency": {
+        "count": 12,
+        "p50": 1.8294558329507709,
+        "p95": 6.934619391802698,
+        "max": 7.1936348848976195
+      }
+    },
+    "fleet_csv": {
+      "statuses": {
+        "200": 15,
+        "429": 4,
+        "502": 35
+      },
+      "latency": {
+        "count": 15,
+        "p50": 1.856817761901766,
+        "p95": 6.825896380003542,
+        "max": 6.89407448656857
+      }
+    },
+    "fleet_xlsx": {
+      "statuses": {
+        "429": 12,
+        "200": 5,
+        "502": 36
+      },
+      "latency": {
+        "count": 5,
+        "p50": 6.882125688251108,
+        "p95": 9.13113968912512,
+        "max": 13.633943662047386
+      }
+    }
+  },
+  "ingest": {
+    "statuses": {
+      "200": 92,
+      "502": 4
+    },
+    "latency": {
+      "count": 96,
+      "p50": 0.03154250793159008,
+      "p95": 0.18827707134187222,
+      "max": 0.3653752887621522
+    }
+  },
+  "health": {
+    "statuses": {
+      "200": 92,
+      "502": 4
+    },
+    "latency": {
+      "count": 96,
+      "p50": 0.001363640185445547,
+      "p95": 0.0021520699374377728,
+      "max": 0.04486851766705513
+    }
+  },
+  "pdf": {
+    "completed": 33,
+    "latency": {
+      "count": 33,
+      "p50": 0.05188017804175615,
+      "p95": 0.07093534804880619,
+      "max": 0.09271457372233272
+    }
+  },
+  "cleanup": {
+    "completed": 20,
+    "latency": {
+      "count": 20,
+      "p50": 0.19431209191679955,
+      "p95": 0.2857981640845537,
+      "max": 0.3187906346283853
+    },
+    "deferred": 0
+  },
+  "full_month_traversals": [],
+  "errors": [
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "IncompleteRead(962934 bytes read, 681426 more expected)"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 6,
+      "error": "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 7,
+      "error": "AssertionError(('fleet_trips', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 4,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 5,
+      "error": "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 0,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 1,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 2,
+      "error": "AssertionError(('month_aggregate', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    },
+    {
+      "reader": 3,
+      "error": "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"
+    }
+  ],
+  "resources": [
+    {
+      "seconds": 0.00341246509924531,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1159012352",
+          "memory.peak": "1649958912",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 28\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 65624235\nuser_usec 61404043\nsystem_usec 4220191\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1192308736",
+          "memory.peak": "1476395008",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 28\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 62307251\nuser_usec 58464043\nsystem_usec 3843208\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "5386240",
+          "memory.peak": "6012928",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 53858\nuser_usec 36250\nsystem_usec 17607\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "937984",
+          "memory.peak": "9318400",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1099212\nuser_usec 1062036\nsystem_usec 37176\ncore_sched.force_idle_usec 0"
+        },
+        "cleanup": {
+          "memory.current": "1126400",
+          "memory.peak": "1126400",
+          "memory.max": "134217728",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 7307\nuser_usec 5219\nsystem_usec 2087\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1301454848",
+          "memory.peak": "1802752000",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 28\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 69180692\nuser_usec 64119451\nsystem_usec 5061240\ncore_sched.force_idle_usec 0\nnr_periods 2215\nnr_throttled 66\nthrottled_usec 1608979\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=389120 wbytes=1390530560 rios=20 wios=18163 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          5
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          5
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          9
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 10.053271937184036,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1544429568",
+          "memory.peak": "1674080256",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 345\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 84341346\nuser_usec 79235428\nsystem_usec 5105917\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1385177088",
+          "memory.peak": "1476395008",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 345\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 79440291\nuser_usec 75014930\nsystem_usec 4425361\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "155217920",
+          "memory.peak": "400986112",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1210072\nuser_usec 998918\nsystem_usec 211153\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "442368",
+          "memory.peak": "9318400",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1156596\nuser_usec 1096199\nsystem_usec 60396\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1693880320",
+          "memory.peak": "1802752000",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 345\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 88004300\nuser_usec 82009785\nsystem_usec 5994514\ncore_sched.force_idle_usec 0\nnr_periods 2315\nnr_throttled 129\nthrottled_usec 2782850\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=389120 wbytes=1393766400 rios=20 wios=18720 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          15
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          2
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 20.089236898813397,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1685291008",
+          "memory.peak": "1759330304",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 510\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 103991509\nuser_usec 97946608\nsystem_usec 6044900\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1403207680",
+          "memory.peak": "1476395008",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 510\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 97798219\nuser_usec 92604482\nsystem_usec 5193737\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "278159360",
+          "memory.peak": "400986112",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 2182327\nuser_usec 1880268\nsystem_usec 302059\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "507904",
+          "memory.peak": "9453568",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1206981\nuser_usec 1125306\nsystem_usec 81675\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1831911424",
+          "memory.peak": "1905967104",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 510\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 107815890\nuser_usec 100854137\nsystem_usec 6961753\ncore_sched.force_idle_usec 0\nnr_periods 2415\nnr_throttled 206\nthrottled_usec 4781043\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1396080640 rios=25 wios=19130 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          15
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          2
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 30.132145268842578,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1695936512",
+          "memory.peak": "1759330304",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 510\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 123513639\nuser_usec 116620157\nsystem_usec 6893482\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1402081280",
+          "memory.peak": "1476395008",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 510\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 116115715\nuser_usec 110205684\nsystem_usec 5910030\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "289816576",
+          "memory.peak": "400986112",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 3081939\nuser_usec 2721437\nsystem_usec 360502\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "417792",
+          "memory.peak": "9535488",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1255142\nuser_usec 1151303\nsystem_usec 103839\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1840943104",
+          "memory.peak": "1905967104",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 510\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 127502487\nuser_usec 119653421\nsystem_usec 7849065\ncore_sched.force_idle_usec 0\nnr_periods 2516\nnr_throttled 287\nthrottled_usec 6561623\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1398849536 rios=25 wios=19793 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          13
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          4
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 40.16640741704032,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1679233024",
+          "memory.peak": "1814052864",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 142461996\nuser_usec 134748172\nsystem_usec 7713823\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1340522496",
+          "memory.peak": "1476395008",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 133850259\nuser_usec 127295510\nsystem_usec 6554749\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "334688256",
+          "memory.peak": "400986112",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 3963455\nuser_usec 3528625\nsystem_usec 434830\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "598016",
+          "memory.peak": "9773056",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1320778\nuser_usec 1188498\nsystem_usec 132279\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1841070080",
+          "memory.peak": "1972600832",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 146634598\nuser_usec 137931696\nsystem_usec 8702902\ncore_sched.force_idle_usec 0\nnr_periods 2616\nnr_throttled 363\nthrottled_usec 7831022\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1401389056 rios=25 wios=20283 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          15
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          2
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 50.20068621914834,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1653526528",
+          "memory.peak": "1814732800",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 161879412\nuser_usec 153376258\nsystem_usec 8503154\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1314697216",
+          "memory.peak": "1476395008",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 151637111\nuser_usec 144459992\nsystem_usec 7177119\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "335429632",
+          "memory.peak": "402071552",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 5261525\nuser_usec 4742629\nsystem_usec 518895\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "479232",
+          "memory.peak": "9773056",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1368398\nuser_usec 1213771\nsystem_usec 154627\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1845125120",
+          "memory.peak": "2001072128",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 166275360\nuser_usec 156734282\nsystem_usec 9541078\ncore_sched.force_idle_usec 0\nnr_periods 2717\nnr_throttled 443\nthrottled_usec 9896391\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1404215296 rios=25 wios=20786 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          14
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          3
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 60.24226415483281,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1743454208",
+          "memory.peak": "1814732800",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 181473995\nuser_usec 172156782\nsystem_usec 9317213\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1405288448",
+          "memory.peak": "1476395008",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 169891986\nuser_usec 162015049\nsystem_usec 7876937\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "334749696",
+          "memory.peak": "402071552",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 6272015\nuser_usec 5709731\nsystem_usec 562284\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "487424",
+          "memory.peak": "9773056",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1416561\nuser_usec 1235831\nsystem_usec 180730\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1938849792",
+          "memory.peak": "2001072128",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 646\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 186039120\nuser_usec 175655671\nsystem_usec 10383448\ncore_sched.force_idle_usec 0\nnr_periods 2817\nnr_throttled 529\nthrottled_usec 11369167\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1406640128 rios=25 wios=21239 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          12
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          5
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 70.2684321817942,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1650511872",
+          "memory.peak": "1818701824",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 201084643\nuser_usec 190992220\nsystem_usec 10092423\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1311145984",
+          "memory.peak": "1476399104",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 187954268\nuser_usec 179475796\nsystem_usec 8478472\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "335003648",
+          "memory.peak": "402243584",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 7470449\nuser_usec 6830517\nsystem_usec 639932\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "655360",
+          "memory.peak": "9809920",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1480781\nuser_usec 1267070\nsystem_usec 213710\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1841217536",
+          "memory.peak": "2009223168",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 205860147\nuser_usec 194659009\nsystem_usec 11201137\ncore_sched.force_idle_usec 0\nnr_periods 2917\nnr_throttled 616\nthrottled_usec 13122911\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1409081344 rios=25 wios=21709 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          13
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          4
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 80.31870080623776,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1716293632",
+          "memory.peak": "1818701824",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 220763204\nuser_usec 210024781\nsystem_usec 10738422\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1378422784",
+          "memory.peak": "1476399104",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 206517754\nuser_usec 197480463\nsystem_usec 9037290\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "334815232",
+          "memory.peak": "402243584",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 8281850\nuser_usec 7624720\nsystem_usec 657130\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "585728",
+          "memory.peak": "9809920",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1529569\nuser_usec 1293393\nsystem_usec 236176\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1909645312",
+          "memory.peak": "2009223168",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 225693910\nuser_usec 213822493\nsystem_usec 11871417\ncore_sched.force_idle_usec 0\nnr_periods 3018\nnr_throttled 704\nthrottled_usec 14440864\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1410969600 rios=25 wios=22084 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          14
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          3
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 90.35383344721049,
+      "cgroups": {
+        "gps": {
+          "memory.current": "1785372672",
+          "memory.peak": "1818701824",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 240164476\nuser_usec 228828013\nsystem_usec 11336463\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "1447178240",
+          "memory.peak": "1476399104",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 224699356\nuser_usec 215172363\nsystem_usec 9526992\ncore_sched.force_idle_usec 0"
+        },
+        "api": {
+          "memory.current": "335257600",
+          "memory.peak": "402243584",
+          "memory.max": "402653184",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 9188490\nuser_usec 8498473\nsystem_usec 690016\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "536576",
+          "memory.peak": "9809920",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1577700\nuser_usec 1314919\nsystem_usec 262780\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1975664640",
+          "memory.peak": "2009223168",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 245256061\nuser_usec 232757707\nsystem_usec 12498353\ncore_sched.force_idle_usec 0\nnr_periods 3118\nnr_throttled 781\nthrottled_usec 16258775\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1413431296 rios=25 wios=22558 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "gps_runtime",
+          "active",
+          2
+        ],
+        [
+          "gps_runtime",
+          "idle",
+          14
+        ],
+        [
+          "gps_runtime",
+          "idle in transaction",
+          3
+        ],
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    },
+    {
+      "seconds": 100.38847180595621,
+      "cgroups": {
+        "gps": {
+          "memory.current": "892239872",
+          "memory.peak": "1818701824",
+          "memory.max": "3221225472",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 813\noom 3\noom_kill 1\noom_group_kill 0",
+          "cpu.stat": "usage_usec 253847234\nuser_usec 241989655\nsystem_usec 11857578\ncore_sched.force_idle_usec 0"
+        },
+        "db": {
+          "memory.current": "887775232",
+          "memory.peak": "1476399104",
+          "memory.max": "1476395008",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 237495555\nuser_usec 227555435\nsystem_usec 9940120\ncore_sched.force_idle_usec 0"
+        },
+        "pdf": {
+          "memory.current": "540672",
+          "memory.peak": "9809920",
+          "memory.max": "939524096",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.stat": "usage_usec 1622879\nuser_usec 1340197\nsystem_usec 282682\ncore_sched.force_idle_usec 0"
+        },
+        "container": {
+          "memory.current": "1084764160",
+          "memory.peak": "2009223168",
+          "memory.max": "3758096384",
+          "memory.swap.current": "0",
+          "memory.events": "low 0\nhigh 0\nmax 813\noom 3\noom_kill 1\noom_group_kill 0",
+          "cpu.max": "200000 100000",
+          "cpu.stat": "usage_usec 259235876\nuser_usec 246164613\nsystem_usec 13071262\ncore_sched.force_idle_usec 0\nnr_periods 3218\nnr_throttled 841\nthrottled_usec 17246242\nnr_bursts 0\nburst_usec 0",
+          "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+          "io.stat": "259:0 rbytes=425984 wbytes=1416314880 rios=25 wios=23075 dbytes=0 dios=0"
+        }
+      },
+      "connections": [
+        [
+          "postgres",
+          "active",
+          1
+        ]
+      ]
+    }
+  ],
+  "before": {
+    "gps": {
+      "memory.current": "1158176768",
+      "memory.peak": "1649958912",
+      "memory.max": "3221225472",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 28\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.stat": "usage_usec 65617494\nuser_usec 61399162\nsystem_usec 4218332\ncore_sched.force_idle_usec 0"
+    },
+    "db": {
+      "memory.current": "1149997056",
+      "memory.peak": "1476395008",
+      "memory.max": "1476395008",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 28\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.stat": "usage_usec 62219952\nuser_usec 58393669\nsystem_usec 3826282\ncore_sched.force_idle_usec 0"
+    },
+    "api": {
+      "memory.current": "4251648",
+      "memory.peak": "5808128",
+      "memory.max": "402653184",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.stat": "usage_usec 46812\nuser_usec 32565\nsystem_usec 14247\ncore_sched.force_idle_usec 0"
+    },
+    "pdf": {
+      "memory.current": "376832",
+      "memory.peak": "9318400",
+      "memory.max": "939524096",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.stat": "usage_usec 1094564\nuser_usec 1058380\nsystem_usec 36183\ncore_sched.force_idle_usec 0"
+    },
+    "container": {
+      "memory.current": "1214472192",
+      "memory.peak": "1802752000",
+      "memory.max": "3758096384",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 28\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.max": "200000 100000",
+      "cpu.stat": "usage_usec 68986649\nuser_usec 63967608\nsystem_usec 5019041\ncore_sched.force_idle_usec 0\nnr_periods 2214\nnr_throttled 66\nthrottled_usec 1608979\nnr_bursts 0\nburst_usec 0",
+      "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+      "io.stat": "259:0 rbytes=389120 wbytes=1390407680 rios=20 wios=18142 dbytes=0 dios=0"
+    }
+  },
+  "after": {
+    "gps": {
+      "memory.current": "891990016",
+      "memory.peak": "1818701824",
+      "memory.max": "3221225472",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 813\noom 3\noom_kill 1\noom_group_kill 0",
+      "cpu.stat": "usage_usec 253855573\nuser_usec 241995029\nsystem_usec 11860543\ncore_sched.force_idle_usec 0"
+    },
+    "db": {
+      "memory.current": "887795712",
+      "memory.peak": "1476399104",
+      "memory.max": "1476395008",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 702\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.stat": "usage_usec 237501986\nuser_usec 227558897\nsystem_usec 9943089\ncore_sched.force_idle_usec 0"
+    },
+    "pdf": {
+      "memory.current": "540672",
+      "memory.peak": "9809920",
+      "memory.max": "939524096",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.stat": "usage_usec 1622879\nuser_usec 1340197\nsystem_usec 282682\ncore_sched.force_idle_usec 0"
+    },
+    "container": {
+      "memory.current": "1084522496",
+      "memory.peak": "2009223168",
+      "memory.max": "3758096384",
+      "memory.swap.current": "0",
+      "memory.events": "low 0\nhigh 0\nmax 813\noom 3\noom_kill 1\noom_group_kill 0",
+      "cpu.max": "200000 100000",
+      "cpu.stat": "usage_usec 259267951\nuser_usec 246190485\nsystem_usec 13077466\ncore_sched.force_idle_usec 0\nnr_periods 3219\nnr_throttled 841\nthrottled_usec 17246242\nnr_bursts 0\nburst_usec 0",
+      "io.max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200",
+      "io.stat": "259:0 rbytes=425984 wbytes=1416314880 rios=25 wios=23075 dbytes=0 dios=0"
+    }
+  },
+  "db_io_delta": {
+    "temp_bytes": 17005883120,
+    "temp_files": 11740,
+    "read_ms": 3.268,
+    "write_ms": 0.0
+  },
+  "saved_ingest": 92,
+  "production_modified": false
+}

@@ -1,0 +1,151 @@
+{
+  "passed": true,
+  "baseline_schema": 110,
+  "candidate_schema": 111,
+  "matched_responses": 11,
+  "all_item_fields_and_cursors_equal": true,
+  "existing_other_account_denied": true,
+  "empty_and_invalid_inputs_passed": true,
+  "pages": [
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 1
+      },
+      "page": 0,
+      "sha256": "e483d75556b9d1539a13d780f5cdde632709dc59ee0745ccda4d5f95755fdc83",
+      "items": 1,
+      "has_more": true,
+      "seconds": 0.11889210529625416
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 1,
+        "cursor": "eyJkZXZpY2UiOjEsInVzZXIiOjEsInNpbmNlIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJ1bnRpbCI6IjIwMjYtMTEtMDFUMDA6MDA6MDBaIiwic291cmNlIjpudWxsLCJmaXhfb25seSI6bnVsbCwiYmVmb3JlIjoiMjAyNi0xMC0xNlQwMTowNjo0MFoiLCJiZWZvcmVfc291cmNlIjoibDgwIn0"
+      },
+      "page": 1,
+      "sha256": "6e62beffb5668cf251bfc827766b98eaebd3e4555b6c83010834dedcf830551a",
+      "items": 1,
+      "has_more": true,
+      "seconds": 0.09974363585934043
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 500
+      },
+      "page": 0,
+      "sha256": "d50432f8e57eaae93b7089b1e557e447919aab5e55fb5eb321b27559d719e7ab",
+      "items": 500,
+      "has_more": true,
+      "seconds": 0.1258983239531517
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 500,
+        "cursor": "eyJkZXZpY2UiOjEsInVzZXIiOjEsInNpbmNlIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJ1bnRpbCI6IjIwMjYtMTEtMDFUMDA6MDA6MDBaIiwic291cmNlIjpudWxsLCJmaXhfb25seSI6bnVsbCwiYmVmb3JlIjoiMjAyNi0xMC0xNVQyMzo0MzozMFoiLCJiZWZvcmVfc291cmNlIjoibDgwIn0"
+      },
+      "page": 1,
+      "sha256": "665ab2e5dd80a2704f493494dc3e2106c6b98f7cff1b780c13ab12c3f7d359a6",
+      "items": 500,
+      "has_more": true,
+      "seconds": 0.12400074303150177
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 5000
+      },
+      "page": 0,
+      "sha256": "30237b0f719f576b97a888cab3f2de6f0e6ed544c153f19bcd1628166e964f86",
+      "items": 5000,
+      "has_more": true,
+      "seconds": 0.34735454386100173
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 5000,
+        "cursor": "eyJkZXZpY2UiOjEsInVzZXIiOjEsInNpbmNlIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJ1bnRpbCI6IjIwMjYtMTEtMDFUMDA6MDA6MDBaIiwic291cmNlIjpudWxsLCJmaXhfb25seSI6bnVsbCwiYmVmb3JlIjoiMjAyNi0xMC0xNVQxMToxMzozMFoiLCJiZWZvcmVfc291cmNlIjoibDgwIn0"
+      },
+      "page": 1,
+      "sha256": "9334c8a0ea5ab00d158464e7a24a623a7d8531f07ed232104a841f3af6cafff0",
+      "items": 5000,
+      "has_more": true,
+      "seconds": 0.35143890138715506
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 9,
+        "source": "l80"
+      },
+      "page": 0,
+      "sha256": "7588c4449f7e398ab74dc83726cf2e757390a406bc17b168959ea5303c1e2919",
+      "items": 9,
+      "has_more": true,
+      "seconds": 0.09946735389530659
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 9,
+        "source": "l80",
+        "cursor": "eyJkZXZpY2UiOjEsInVzZXIiOjEsInNpbmNlIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJ1bnRpbCI6IjIwMjYtMTEtMDFUMDA6MDA6MDBaIiwic291cmNlIjoibDgwIiwiZml4X29ubHkiOm51bGwsImJlZm9yZSI6IjIwMjYtMTAtMTZUMDE6MDU6MjBaIiwiYmVmb3JlX3NvdXJjZSI6Imw4MCJ9"
+      },
+      "page": 1,
+      "sha256": "9fa44661a0285cfcd9f7d8d83321c064eb1a92de414e30f3feb48f8dcfaadc6a",
+      "items": 9,
+      "has_more": true,
+      "seconds": 0.09840507013723254
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 7,
+        "fix_only": "false"
+      },
+      "page": 0,
+      "sha256": "0e176bb9964568da6024a894d6c55812f8d7799f8ed4e06a8f7bc9c50f9f5840",
+      "items": 0,
+      "has_more": false,
+      "seconds": 2.0387992770411074
+    },
+    {
+      "query": {
+        "since": "2026-10-01T00:00:00Z",
+        "until": "2026-11-01T00:00:00Z",
+        "limit": 7,
+        "source": "missing"
+      },
+      "page": 0,
+      "sha256": "0e176bb9964568da6024a894d6c55812f8d7799f8ed4e06a8f7bc9c50f9f5840",
+      "items": 0,
+      "has_more": false,
+      "seconds": 1.6087722037918866
+    },
+    {
+      "query": {
+        "since": "2026-10-10T00:00:00Z",
+        "until": "2026-10-10T00:01:00Z",
+        "limit": 7
+      },
+      "page": 0,
+      "sha256": "48bb9e3a332025225d55bc3642e4bdaaa35b1e4959ddb923b9bbe0bffc158d5c",
+      "items": 6,
+      "has_more": false,
+      "seconds": 0.07976184412837029
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+PASS all fourteen migration transactions roll back on injected failure; committed prefixes resume with real candidate
+PASS missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes
+PASS prepared restricted owner completes real single-pass99 to113 with original data preserved and defaults OFF
+PASS 99 to113 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_cumulative.py", line 90, in failure
+    call()
+  File "/opt/gps121/runtime121_cumulative.py", line 211, in <lambda>
+    failure(lambda: transition(DSN, ring, uploads, private, 'fence'), 'stop ALL')
+  File "/opt/gps121/runtime121_control.py", line 64, in transition
+    return job('transition', dsn=dsn, ring=ring, mode=mode,
+  File "/opt/gps121/runtime121_control.py", line 57, in job
+    raise RuntimeError(journal(unit))
+RuntimeError: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2949"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_job.py", line 61, in <module>
+    result = c.run(local(cfg['dsn']), cfg['ring'], str(ROOT/'test-storage/uploads'),
+  File "/opt/gps121/crypto20b_transition.py", line 104, in run
+    db=connect(dsn,ring)
+  File "/opt/gps121/crypto20b_transition.py", line 20, in connect
+    if not name.startswith('gps_') or version not in (104,105,106,107,108,109,110,111,112): raise ValueError('GPS schema 104/105/106/107/108/109/110/111/112 required')
+ValueError: GPS schema 104/105/106/107/108/109/110/111/112 required
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_cumulative.py", line 211, in <module>
+    failure(lambda: transition(DSN, ring, uploads, private, 'fence'), 'stop ALL')
+  File "/opt/gps121/runtime121_cumulative.py", line 92, in failure
+    assert contains in str(e), type(e).__name__
+AssertionError: RuntimeError

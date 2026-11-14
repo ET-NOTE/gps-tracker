@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "checks": 42,
+  "oracle": "unchanged111 view definition + authenticated context bytes",
+  "cases": [
+    "mixed plaintext/ciphertext",
+    "NULL/JSON null",
+    "JSON array/object/scalar",
+    "coordinate boundaries and float bits",
+    "microseconds",
+    "four timezones",
+    "two DateStyles",
+    "missing key denied"
+  ],
+  "fixture_rolled_back": true,
+  "production_modified": false
+}

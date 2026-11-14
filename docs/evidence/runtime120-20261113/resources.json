@@ -1,0 +1,107 @@
+{
+  "production_changed": false,
+  "profile": "isolated 4GiB total; not capacity approval for shared 3GiB VPS",
+  "before": {
+    "gps-workload.slice": {
+      "memory.max": "4294967296",
+      "memory.peak": "406441984",
+      "memory.current": "235859968",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    },
+    "gps-workload-pdf.slice": {
+      "memory.max": "939524096",
+      "memory.peak": "138346496",
+      "memory.current": "851968",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    },
+    "gps120-api@one.service": {
+      "memory.max": "576716800",
+      "memory.peak": "284119040",
+      "memory.current": "222949376",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    },
+    "gps120-api@two.service": {
+      "memory.max": "576716800",
+      "memory.peak": "16855040",
+      "memory.current": "11849728",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    },
+    "host_total": {
+      "memory.max": "4294967296",
+      "memory.peak": "711888896",
+      "memory.current": "542584832",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    }
+  },
+  "injected_fault_result": "oom-kill",
+  "after": {
+    "gps-workload.slice": {
+      "memory.max": "4294967296",
+      "memory.peak": "1174540288",
+      "memory.current": "235868160",
+      "memory.events": "low 0\nhigh 0\nmax 40\noom 1\noom_kill 1\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    },
+    "gps-workload-pdf.slice": {
+      "memory.max": "939524096",
+      "memory.peak": "939524096",
+      "memory.current": "856064",
+      "memory.events": "low 0\nhigh 0\nmax 40\noom 1\noom_kill 1\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    },
+    "gps120-api@one.service": {
+      "memory.max": "576716800",
+      "memory.peak": "284119040",
+      "memory.current": "222949376",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    },
+    "gps120-api@two.service": {
+      "memory.max": "576716800",
+      "memory.peak": "16855040",
+      "memory.current": "11853824",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    },
+    "host_total": {
+      "memory.max": "4294967296",
+      "memory.peak": "1481609216",
+      "memory.current": "542453760",
+      "memory.events": "low 0\nhigh 0\nmax 40\noom 1\noom_kill 1\noom_group_kill 0",
+      "memory.swap.max": "0",
+      "memory.swap.current": "0"
+    }
+  },
+  "api_restarted": false,
+  "health": [
+    {
+      "db": true,
+      "environment": "test",
+      "ok": true,
+      "release": "runtime120-20261113-r1",
+      "service": "gps-tracker-api"
+    },
+    {
+      "db": true,
+      "environment": "test",
+      "ok": true,
+      "release": "runtime120-20261113-r1",
+      "service": "gps-tracker-api"
+    }
+  ],
+  "pdf_recovery": "(1414, 707)"
+}

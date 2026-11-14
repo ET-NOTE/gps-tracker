@@ -1,0 +1,105 @@
+{
+  "checked_utc": "2026-11-11T14:40:33.146757+00:00",
+  "scope": "isolated runtime117 only",
+  "passed": true,
+  "checks": [
+    {
+      "name": "gps-runtime117-db_swap",
+      "passed": true,
+      "evidence": {
+        "max": "0",
+        "current": "0"
+      }
+    },
+    {
+      "name": "gps-runtime117-db_core",
+      "passed": true,
+      "evidence": [
+        {
+          "Name": "core",
+          "Hard": 0,
+          "Soft": 0
+        }
+      ]
+    },
+    {
+      "name": "gps-runtime117-api_swap",
+      "passed": true,
+      "evidence": {
+        "max": "0",
+        "current": "0"
+      }
+    },
+    {
+      "name": "gps-runtime117-api_core",
+      "passed": true,
+      "evidence": [
+        {
+          "Name": "core",
+          "Hard": 0,
+          "Soft": 0
+        }
+      ]
+    },
+    {
+      "name": "mount_/gps-temp",
+      "passed": true,
+      "evidence": [
+        [
+          "tmpfs",
+          "/gps-temp",
+          "tmpfs",
+          "rw,nosuid,nodev,noexec,relatime,size=262144k,inode64",
+          "0",
+          "0"
+        ]
+      ]
+    },
+    {
+      "name": "mount_/var/lib/postgresql/data/base/pgsql_tmp",
+      "passed": true,
+      "evidence": [
+        [
+          "tmpfs",
+          "/var/lib/postgresql/data/base/pgsql_tmp",
+          "tmpfs",
+          "rw,nosuid,nodev,noexec,relatime,size=65536k,inode64",
+          "0",
+          "0"
+        ]
+      ]
+    },
+    {
+      "name": "known_database_fallback",
+      "passed": true,
+      "evidence": [
+        [
+          "pg_default"
+        ]
+      ]
+    },
+    {
+      "name": "dedicated_tablespace",
+      "passed": true,
+      "evidence": [
+        [
+          "/gps-temp/work",
+          true
+        ]
+      ]
+    },
+    {
+      "name": "role_temp_file_limit",
+      "passed": true,
+      "evidence": [
+        [
+          [
+            "temp_tablespaces=gps_runtime117_temp",
+            "temp_file_limit=128MB"
+          ]
+        ]
+      ]
+    }
+  ],
+  "production_ready": false
+}

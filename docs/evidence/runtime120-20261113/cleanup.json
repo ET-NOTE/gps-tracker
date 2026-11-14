@@ -1,0 +1,12 @@
+{
+  "networks": [],
+  "production_changed": false,
+  "captured_at": "2026-11-13T03:08:02.2569425Z",
+  "retained_build_artifacts": true,
+  "containers": [],
+  "slice": [
+    "ActiveState=inactive",
+    "FragmentPath=",
+    "DropInPaths="
+  ]
+}

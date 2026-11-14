@@ -1,3 +1,7 @@
+import PrivacyRequests from './PrivacyRequests';
+import {rememberFleetOwner} from '../lib/fleetSession';
+import {FleetJoin} from './business/FleetAccess';
+import Switch from './ui/Switch';
 // 내정보 패널 — 서브탭 구조: 계정 / 포인트 / 채팅 / 알림 / 테마.
 // 채팅 탭은 admin 본인은 노출 안 함 (자기 자신과의 채팅 thread 가 admin inbox 에 잡히지 않게).
 import { useState, useEffect } from 'react';
@@ -8,14 +12,22 @@ import { useMe, useAccountType, useSetAccountType, useChatUnread, qk } from '../
 import Icon from './Icon';
 import ChatPanel from './ChatPanel';
 import NotificationSettings from './NotificationSettings';
-import { currentTheme, toggleTheme } from '../theme';
+import { useTheme, toggleTheme } from '../theme';
 import { confirmDialog, alertDialog, promptDialog } from './Dialog';
 import { startPhoneTracker, stopPhoneTracker } from '../lib/phoneTracker';
+import './ProfilePanel.css';
+
+// Match the versioned public files; ZIP is the default distribution format.
+const APP_DOWNLOAD = {
+  version: '1.0.7',
+  zip: 'https://gps.serial.kr/gps-tracker-1.0.7-13.zip',
+  apk: 'https://gps.serial.kr/gps-tracker-1.0.7-13.apk',
+};
 
 function initialProfileTab() {
   if (typeof window === 'undefined') return 'account';
-  const v = localStorage.getItem('profile_tab');
-  return ['account','credit','chat','notif','theme','lab'].includes(v) ? v : 'account';
+  const v = new URLSearchParams(window.location.search).get('tab') || localStorage.getItem('profile_tab');
+  return ['account','credit','chat','notif','theme','lab','privacy'].includes(v) ? v : 'account';
 }
 
 // (F2-b) accountType 은 backward-compat prop (부모 렌더 hints 용). AccountTypeCard 는
@@ -26,6 +38,7 @@ export default function ProfilePanel({ onLogout, accountType }) {
   const { data: me } = useMe();
   const qc = useQueryClient();
   const setMe = (next) => qc.setQueryData(qk.me(), next);
+  const theme = useTheme();
   const [tab, setTabRaw] = useState(initialProfileTab);
   const setTab = (v) => { setTabRaw(v); try { localStorage.setItem('profile_tab', v); } catch {} };
   // (F2-c) useChatUnread hook — 10s refetchInterval + dedup 로 ChatPanel 과 하나의 fetch 공유.
@@ -38,42 +51,38 @@ export default function ProfilePanel({ onLogout, accountType }) {
   const isAdmin = me.role === 'admin';
   const tabs = [
     { id: 'account',  label: '계정',     icon: 'user' },
+    { id: 'privacy', label: '개인정보 요청', icon: 'user' },
     { id: 'credit',   label: '포인트',   icon: 'coin' },
     ...(isAdmin ? [] : [
       { id: 'chat',   label: '관리자 채팅', icon: 'message', badge: chatUnread },
     ]),
     { id: 'notif',    label: '알림',     icon: 'warn' },
-    { id: 'theme',    label: '테마',     icon: currentTheme() === 'dark' ? 'moon' : 'sun' },
+    { id: 'theme',    label: '테마',     icon: theme === 'dark' ? 'moon' : 'sun' },
     // 연구소 — 실험적 / 옵트인 기능. 안정화되면 다른 곳으로 옮겨가거나 default 화.
     { id: 'lab',      label: '연구소',   icon: 'spark' },
   ];
 
   return (
-    <div style={st.wrap}>
-      <div style={st.tabBar}>
+    <div className="gps-user-panel profile-panel" style={st.wrap}>
+      <nav className="profile-tabs" aria-label="내 정보 메뉴">
         {tabs.map(t => {
           const on = tab === t.id;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              style={{
-                ...st.tabBtn,
-                color: on ? 'var(--primary)' : 'var(--text-2)',
-                background: on ? 'var(--surface-2)' : 'transparent',
-                fontWeight: on ? 600 : 500,
-                borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
-              }}>
+            <button key={t.id} onClick={() => setTab(t.id)} className="profile-tab"
+              aria-label={t.label} aria-current={on ? 'page' : undefined}>
               <Icon name={t.icon} size={14} />
-              <span>{t.label}</span>
+              <span>{t.id === 'chat' ? '채팅' : t.label}</span>
               {t.badge > 0 && (
                 <span style={st.badge}>{t.badge}</span>
               )}
             </button>
           );
         })}
-      </div>
+      </nav>
 
       <div style={tab === 'chat' ? st.bodyFill : st.body}>
-        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} />}
+        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} onPrivacy={()=>setTab('privacy')} />}
+        {tab === 'privacy' && <PrivacyRequests />}
         {tab === 'credit'  && <CreditTab />}
         {tab === 'chat'    && !isAdmin && <ChatTab onRead={() => setChatUnread(0)} />}
         {tab === 'notif'   && <NotifTab />}
@@ -86,7 +95,9 @@ export default function ProfilePanel({ onLogout, accountType }) {
 
 // ─── 계정 (이메일/이름/비번/탈퇴) ─────────────────────────
 // (F2-b) accountType prop 제거 — AccountTypeCard 자체 완결.
-function AccountTab({ me, setMe, onLogout }) {
+function AccountTab({ me, setMe, onLogout, onPrivacy }) {
+  const navigate=useNavigate(),qc=useQueryClient();
+  const [joinFleet,setJoinFleet]=useState(false);
   const [name, setName]     = useState(me.display_name || '');
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -95,48 +106,43 @@ function AccountTab({ me, setMe, onLogout }) {
   const [pwNew, setPwNew]   = useState('');
   const [pwBusy, setPwBusy] = useState(false);
 
-  const [delOpen, setDelOpen] = useState(false);
-  const [delPw, setDelPw]     = useState('');
-  const [delBusy, setDelBusy] = useState(false);
-
   async function saveProfile() {
     setSavingProfile(true);
     try {
       const next = await api.updateMe({ display_name: name || null });
       setMe(next);
-    } catch (e) { alert(e.message); }
+    } catch (e) { await alertDialog({ title: '처리하지 못했습니다', body: e.message, tone: 'danger' }); }
     finally { setSavingProfile(false); }
   }
 
   async function changePassword() {
-    if (pwNew.length < 8) { alert('새 비밀번호는 8자 이상'); return; }
+    if (pwNew.length < 8) { await alertDialog({ title: '비밀번호 확인', body: '새 비밀번호는 8자 이상 입력해 주세요.' }); return; }
     setPwBusy(true);
     try {
       await api.changePassword(pwCur, pwNew);
       setPwOpen(false); setPwCur(''); setPwNew('');
-      alert('비밀번호 변경 완료. 다시 로그인해주세요.');
+      await alertDialog({ title: '비밀번호 변경 완료', body: '변경한 비밀번호로 다시 로그인해 주세요.', tone: 'success' });
       clearTokens(); onLogout();
-    } catch (e) { alert('현재 비밀번호가 올바르지 않습니다.'); }
+    } catch (e) { await alertDialog({ title: '변경하지 못했습니다', body: e.message || '현재 비밀번호와 연결 상태를 확인해 주세요.', tone: 'danger' }); }
     finally { setPwBusy(false); }
   }
 
-  async function deleteAccount() {
-    if (!confirm('정말 회원탈퇴하시겠습니까? 모든 디바이스 데이터가 사라집니다.')) return;
-    setDelBusy(true);
-    try {
-      await api.deleteMe(delPw);
-      clearTokens(); onLogout();
-    } catch (e) { alert('비밀번호가 올바르지 않습니다.'); }
-    finally { setDelBusy(false); }
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <Card>
         <Field label="이메일" value={me.email} />
-        <Field label="권한"   value={me.role} />
+        <Field label="권한"   value={{ user: '일반 사용자', admin: '관리자' }[me.role] || me.role} />
       </Card>
 
+      <Card title="회사 초대 연결">
+        <p className="profile-help">초대 코드로 회사에 참여하세요.</p>
+        <div className="profile-company-actions">
+          <button style={st.btnSecondary} onClick={()=>setJoinFleet(true)}>초대 코드 입력</button>
+          <button style={st.btnSecondary} onClick={()=>navigate('/corporate')}>회사 화면 열기</button>
+        </div>
+      </Card>
+      {joinFleet&&<FleetJoin onClose={()=>setJoinFleet(false)} onJoined={async id=>{rememberFleetOwner(id);await qc.invalidateQueries({queryKey:['fleet-memberships']});setJoinFleet(false);navigate('/corporate');}}/>}
       <AccountTypeCard />
 
       <PhonesCard me={me} setMe={setMe} />
@@ -172,25 +178,28 @@ function AccountTab({ me, setMe, onLogout }) {
 
       <CleanupCard />
 
+      <Card title="앱 다운로드">
+        <p style={{ fontSize: 13, color: 'var(--text)', margin: '0 0 6px' }}>
+          GPS Tracker · Android {APP_DOWNLOAD.version}
+        </p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6, margin: '0 0 12px' }}>
+          휴대폰에 앱을 설치하거나 업데이트하세요. ZIP을 압축 해제한 뒤 APK 파일을 열어 설치하면 됩니다.
+        </p>
+        <a href={APP_DOWNLOAD.zip} download target="_blank" rel="noopener noreferrer"
+          style={{ ...st.btn, ...st.downloadLink }}>
+          <Icon name="download" size={16} /> Android 앱 다운로드 (ZIP)
+        </a>
+        <a href={APP_DOWNLOAD.apk} download target="_blank" rel="noopener noreferrer"
+          style={{ ...st.btnSecondary, ...st.downloadLink, marginTop: 8 }}>
+          APK 직접 다운로드
+        </a>
+      </Card>
+
       <Card title="계정">
         <button onClick={() => { clearTokens(); onLogout(); }} style={st.btnSecondary}>로그아웃</button>
-        {!delOpen ? (
-          <button onClick={() => setDelOpen(true)} style={{ ...st.btnDanger, marginTop: 8 }}>
-            <Icon name="trash2" size={14} /> 회원탈퇴
-          </button>
-        ) : (
-          <>
-            <input type="password" placeholder="비밀번호 확인" value={delPw}
-              onChange={e => setDelPw(e.target.value)} style={{ ...st.input, marginTop: 8 }} />
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              <button onClick={deleteAccount} disabled={delBusy} style={{ ...st.btnDanger, flex: 1 }}>
-                {delBusy ? '...' : '탈퇴 확인'}
-              </button>
-              <button onClick={() => { setDelOpen(false); setDelPw(''); }}
-                style={{ ...st.btnSecondary, flex: 1 }}>취소</button>
-            </div>
-          </>
-        )}
+        <button onClick={onPrivacy} style={{ ...st.btnSecondary, marginTop: 8 }}>
+          개인정보·회원 탈퇴 요청
+        </button>
       </Card>
     </div>
   );
@@ -211,21 +220,21 @@ function CleanupCard() {
   const anySelected = Object.values(opts).some(v => v);
 
   async function run() {
-    if (!anySelected) { alert('정리할 항목을 1개 이상 선택하세요.'); return; }
-    if (!pw)          { alert('비밀번호를 입력하세요.');          return; }
-    if (!confirm('선택한 데이터를 영구히 삭제합니다. 진행할까요?')) return;
+    if (!anySelected) { await alertDialog({ title: '항목 선택', body: '정리할 항목을 1개 이상 선택해 주세요.' }); return; }
+    if (!pw)          { await alertDialog({ title: '비밀번호 확인', body: '현재 비밀번호를 입력해 주세요.' });          return; }
+    if (!await confirmDialog({ title: '선택한 데이터 삭제', body: '선택한 데이터를 영구히 삭제합니다. 삭제 후에는 복구할 수 없습니다.', danger: true, confirmLabel: '삭제하기' })) return;
     setBusy(true);
     try {
       const r = await api.cleanupMe({ password: pw, ...opts });
       const lines = [];
       if (r.corporate_info_deleted   != null) lines.push(`회사 정보: ${r.corporate_info_deleted}건 삭제`);
-      if (r.staff_deleted            != null) lines.push(`직원 명단: ${r.staff_deleted}명 삭제`);
-      if (r.device_overrides_cleared != null) lines.push(`디바이스 계정유형 오버라이드: ${r.device_overrides_cleared}대 정리`);
-      alert('정리 완료\n' + lines.join('\n'));
+      if (r.staff_deleted            != null) lines.push(`사용자 명단: ${r.staff_deleted}명 삭제`);
+      if (r.device_overrides_cleared != null) lines.push(`단말기별 유형 설정: ${r.device_overrides_cleared}대 정리`);
+      await alertDialog({ title: '정리 완료', body: lines.join('\n'), tone: 'success' });
       setOpen(false); setPw('');
       setOpts({ corporate_info: false, staff: false, device_overrides: false });
     } catch (e) {
-      alert(e.message || '정리 실패');
+      await alertDialog({ title: '정리하지 못했습니다', body: e.message || '잠시 후 다시 시도해 주세요.', tone: 'danger' });
     } finally { setBusy(false); }
   }
 
@@ -233,8 +242,8 @@ function CleanupCard() {
     <Card title="데이터 일괄 정리">
       {!open ? (
         <>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
-            계정 유형을 자주 바꿔서 회사 정보 / 직원 명단 / 디바이스 오버라이드 등이 남았다면 일괄 정리할 수 있습니다.
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
+            회사 정보, 사용자 명단, 단말기별 유형 설정을 선택해 정리합니다.
           </div>
           <button onClick={() => setOpen(true)} style={st.btnSecondary}>정리 메뉴 열기</button>
         </>
@@ -244,19 +253,19 @@ function CleanupCard() {
             checked={opts.corporate_info}
             onChange={v => setOpts(o => ({ ...o, corporate_info: v }))}
             label="회사 정보"
-            desc="사업자 등록번호 / 회사명 / 주소 / 대표자 (corporate_fleet 유형에 사용)"
+            desc="사업자번호·회사명·주소·대표자 정보를 삭제합니다."
           />
           <CheckRow
             checked={opts.staff}
             onChange={v => setOpts(o => ({ ...o, staff: v }))}
-            label="직원 명단"
-            desc="등록한 직원 모두 삭제. 운행 일지의 운전자 참조는 NULL 처리됨 (이력 보존)"
+            label="사용자 명단"
+            desc="사용자 명단을 삭제하고 운행 기록의 운전자 연결을 해제합니다. 운행 기록은 유지됩니다."
           />
           <CheckRow
             checked={opts.device_overrides}
             onChange={v => setOpts(o => ({ ...o, device_overrides: v }))}
-            label="디바이스 계정유형 오버라이드"
-            desc="device 별 account_type_override 를 NULL 로 — 사용자 기본 유형 따름"
+            label="단말기별 유형 설정"
+            desc="단말기별 설정을 해제하고 계정의 기본 유형을 적용합니다."
           />
           <input type="password" placeholder="비밀번호 확인" value={pw}
             onChange={e => setPw(e.target.value)}
@@ -288,7 +297,7 @@ function CheckRow({ checked, onChange, label, desc }) {
         style={{ marginTop: 2, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>{desc}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>{desc}</div>
       </div>
     </label>
   );
@@ -298,10 +307,10 @@ function CheckRow({ checked, onChange, label, desc }) {
 // rentcar / corporate_fleet / delivery / unspecified
 // 유형마다 특화 메뉴 (예: corporate_fleet → 법인운행 리포트) 가 활성화됨.
 const TYPE_META = {
-  unspecified:     { label: '미지정',         icon: 'spark', desc: '운영 성격을 정하면 맞춤 메뉴가 활성화됩니다.' },
-  rentcar:         { label: '렌트카 운영',    icon: 'list',  desc: '렌탈 차량 — 차량별 사용자 매칭/대여 이력 관리 (개발 중)' },
-  corporate_fleet: { label: '법인차 운영',    icon: 'list',  desc: '회사 차량 — 운행일지, 운전자/유류 관리, 인쇄 가능한 운행 리포트' },
-  delivery:        { label: '배달 운영',      icon: 'list',  desc: '배달 — 건별 추적, 평균 운행 시간 (개발 중)' },
+  unspecified:     { label: '기본 차량 관리', icon: 'mapPin', desc: '개인 차량의 위치와 단말기 상태를 확인해요.', menus: '홈 지도 · 단말기 · 내정보' },
+  rentcar:         { label: '렌트카 운영', icon: 'route', desc: '대여 계약, 출고·반납, 임차인과 계약 사진을 관리해요.', menus: '운영 현황 · 계약 관리 · 배차·반납 일정 · 임차인' },
+  corporate_fleet: { label: '법인차 운영', icon: 'list', desc: '차량·사용자·지점과 운행기록·지출을 관리해요.', menus: '운영 현황 · 차량 · 사용자 · 지점 · 운행 · 지출' },
+  delivery:        { label: '배달 운영', icon: 'mapPin', desc: '차량의 운행 현황을 확인해요. 배차·성과 기능은 준비 중이에요.', menus: '오늘 배송 · 경로·성과(준비 중)' },
 };
 
 // ─── 휴대폰 (다중 번호 + OTP 인증) ─────────────────────
@@ -326,18 +335,18 @@ function PhonesCard({ me, setMe }) {
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
   async function promote(id) {
-    if (!confirm('이 번호를 메인 번호로 변경하시겠어요?')) return;
+    if (!await confirmDialog({ title: '대표 전화번호 변경', body: '이 번호를 대표 전화번호로 사용하시겠습니까?', confirmLabel: '변경하기' })) return;
     try {
       await api.setPrimaryPhone(id);
       await refresh();
-    } catch (e) { alert(e.message); }
+    } catch (e) { await alertDialog({ title: '처리하지 못했습니다', body: e.message, tone: 'danger' }); }
   }
   async function remove(id) {
-    if (!confirm('이 번호를 삭제하시겠어요?')) return;
+    if (!await confirmDialog({ title: '전화번호 삭제', body: '등록된 이 전화번호를 삭제하시겠습니까?', danger: true, confirmLabel: '삭제하기' })) return;
     try {
       await api.deletePhone(id);
       await refresh();
-    } catch (e) { alert(e.message); }
+    } catch (e) { await alertDialog({ title: '처리하지 못했습니다', body: e.message, tone: 'danger' }); }
   }
 
   return (
@@ -434,7 +443,7 @@ function AddPhoneModal({ onClose, onAdded, hasAny, prefill }) {
       <div style={phs.modal}>
         <div style={phs.title}>{isReverify ? '번호 재인증 / 변경' : '번호 추가'}</div>
         {isReverify && (
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
             본인 번호로 인증하세요. 다른 번호로 변경 시, 기존 미인증 번호는 부가 번호로 남으며 별도 삭제 가능합니다.
           </div>
         )}
@@ -459,7 +468,7 @@ function AddPhoneModal({ onClose, onAdded, hasAny, prefill }) {
                 onChange={e => setSetPrimary(e.target.checked)} />
               메인 번호로 설정
             </label>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
               남은 시간: {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2,'0')}
             </div>
             <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
@@ -473,7 +482,7 @@ function AddPhoneModal({ onClose, onAdded, hasAny, prefill }) {
             </div>
           </>
         )}
-        {error && <div style={{ marginTop: 8, fontSize: 11, color: 'var(--danger)' }}>{error}</div>}
+        {error && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
         <button onClick={onClose} style={{ ...st.btnSecondary, width: '100%', marginTop: 8 }}>
           취소
         </button>
@@ -489,7 +498,7 @@ const phs = {
     borderBottom: '1px solid var(--border)',
   },
   btnSmall: {
-    padding: '4px 8px', fontSize: 11,
+    padding: '4px 8px', fontSize: 12,
     background: 'transparent', color: 'var(--text-2)',
     border: '1px solid var(--border)', borderRadius: 4,
     cursor: 'pointer',
@@ -516,11 +525,13 @@ function AccountTypeCard() {
   const { data: accountTypeRaw } = useAccountType();
   const cur = accountTypeRaw?.account_type ?? null;
   const setType = useSetAccountType();
+  const [selection, setSelection] = useState(null);
+  const selected = selection || cur;
 
   async function pick(type) {
     if (type === cur || setType.isPending) return;
     try { await setType.mutateAsync(type); }
-    catch (e) { alert(e.message); }
+    catch (e) { await alertDialog({ title: '처리하지 못했습니다', body: e.message, tone: 'danger' }); }
   }
   const busy = setType.isPending;
 
@@ -528,30 +539,21 @@ function AccountTypeCard() {
 
   return (
     <Card title="계정 유형">
-      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>
-        {TYPE_META[cur]?.desc || ''}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+      <p className="profile-help">사용할 메뉴를 선택하세요. 단말기와 운행기록은 유지됩니다.</p>
+      <div className="profile-type-grid">
         {Object.entries(TYPE_META).map(([id, meta]) => {
-          const on = cur === id;
+          const on = selected === id;
           return (
-            <button key={id} onClick={() => pick(id)} disabled={busy}
-              style={{
-                padding: '10px 8px',
-                background: on ? 'var(--primary)' : 'var(--surface)',
-                color:      on ? 'var(--primary-fg)' : 'var(--text)',
-                border: on ? 'none' : '1px solid var(--border)',
-                borderRadius: 8,
-                cursor: busy ? 'not-allowed' : 'pointer',
-                fontSize: 12, fontWeight: on ? 700 : 500,
-                textAlign: 'left',
-                opacity: busy ? 0.6 : 1,
-              }}>
-              {meta.label}
+            <button key={id} onClick={() => setSelection(id)} disabled={busy} aria-pressed={on}
+              aria-label={meta.label} className="profile-type-option">
+              <span className="profile-type-title"><Icon name={meta.icon} size={17} /><span>{meta.label}</span></span>
+              <span className="profile-type-description">{meta.desc}</span>
             </button>
           );
         })}
       </div>
+      <div className="profile-type-summary"><span>선택한 메뉴</span><strong>{TYPE_META[selected]?.menus}</strong><span>일부 기능은 별도 이용권이 필요합니다.</span></div>
+      <button onClick={() => pick(selected)} disabled={busy || selected === cur} style={{ ...st.btn, marginTop: 12 }}>{busy ? '변경 중…' : selected === cur ? '현재 사용 중인 유형' : `${TYPE_META[selected]?.label} 적용`}</button>
     </Card>
   );
 }
@@ -628,14 +630,14 @@ function CreditTab() {
           display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
           marginBottom: 8,
         }}>
-          <span style={{ fontSize: 11, color: 'var(--text-2)' }}>보유 포인트</span>
+          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>보유 포인트</span>
           <span style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>
             {balance != null ? balance.toLocaleString() : '—'}
             <span style={{ fontSize: 13, color: 'var(--text-3)', marginLeft: 4 }}>원</span>
           </span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>
-          1 credit = 1 KRW · AI 분석 회당 20원, SIM 100MB = 100원
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10 }}>
+          1포인트 = 1원 · AI 분석 회당 20원 · SIM 데이터 100MB당 100원
         </div>
 
         {!open ? (
@@ -653,7 +655,7 @@ function CreditTab() {
                 <button key={v} onClick={() => setAmount(v)}
                   style={{
                     ...st.btnSecondary, flex: 1,
-                    padding: '6px 4px', fontSize: 11,
+                    padding: '6px 4px', fontSize: 12,
                     border: amount === v ? '1px solid var(--primary)' : '1px solid var(--border)',
                     color: amount === v ? 'var(--primary)' : 'var(--text)',
                   }}>
@@ -675,7 +677,7 @@ function CreditTab() {
             <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
               <TossPayButton amount={amount} onPaid={refresh} fullWidth />
             </div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>
               * 요청 = 관리자 승인 후 반영. 직접 결제 = Toss 카드/간편결제 즉시 충전.
             </div>
           </>
@@ -689,7 +691,7 @@ function CreditTab() {
           거래 내역
           {pendingReqs.length > 0 && (
             <span style={{
-              marginLeft: 6, fontSize: 11, color: 'var(--warning, #fbbf24)',
+              marginLeft: 6, fontSize: 12, color: 'var(--warning, #fbbf24)',
               fontWeight: 600,
             }}>· 대기 {pendingReqs.length}</span>
           )}
@@ -740,12 +742,12 @@ function CreditLogRow({ e, REASON }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      fontSize: 11, padding: '8px 0',
+      fontSize: 12, padding: '8px 0',
       borderBottom: '1px solid var(--border)',
     }}>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>{title}</div>
-        <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
           {new Date(e.created_at).toLocaleString('ko-KR')}
         </div>
       </div>
@@ -756,7 +758,7 @@ function CreditLogRow({ e, REASON }) {
         }}>
           {e.delta > 0 ? '+' : ''}{e.delta.toLocaleString()}원
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
           잔액 {e.balance.toLocaleString()}
         </div>
       </div>
@@ -802,7 +804,7 @@ function TossPayButton({ amount: amountProp, onPaid, fullWidth }) {
     if (!cfg.enabled || !cfg.client_key) {
       await alertDialog({
         title: 'Toss 결제 미설정',
-        body: '서버에 TOSS_CLIENT_KEY 가 설정되지 않았습니다.',
+        body: '온라인 결제가 아직 준비되지 않았습니다. 포인트 충전 요청을 이용해 주세요.',
         tone: 'warn',
       });
       return;
@@ -891,7 +893,7 @@ function TossPayButton({ amount: amountProp, onPaid, fullWidth }) {
                 <button key={m.id} onClick={() => payWithMethod(m.id)}
                   style={pst.methodBtn}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{m.label}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{m.desc}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{m.desc}</div>
                 </button>
               ))}
             </div>
@@ -977,19 +979,19 @@ function CreditReqRow({ r, REQ_STATUS, onCancelled }) {
         <div style={{ color: 'var(--text)', fontWeight: 600 }}>
           #{r.id} · {r.amount.toLocaleString()}원
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
           {new Date(r.requested_at).toLocaleString('ko-KR')}
           {r.note ? ` · ${r.note}` : ''}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ color: s.color, fontWeight: 600, fontSize: 11 }}>
+        <span style={{ color: s.color, fontWeight: 600, fontSize: 12 }}>
           {s.label}
         </span>
         {r.status === 'pending' && (
           <button onClick={cancel} disabled={busy}
             style={{
-              padding: '3px 8px', fontSize: 11,
+              padding: '3px 8px', fontSize: 12,
               background: 'transparent', color: 'var(--danger)',
               border: '1px solid var(--danger)', borderRadius: 4,
               cursor: 'pointer', opacity: busy ? 0.5 : 1,
@@ -1015,7 +1017,7 @@ function ChatTab({ onRead }) {
       borderRadius: 10, padding: 12,
     }}>
       <div style={{ ...st.cardTitle, marginBottom: 6, flexShrink: 0 }}>관리자 채팅</div>
-      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, flexShrink: 0 }}>
+      <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, flexShrink: 0 }}>
         SIM 충전, 결제, 기타 문의를 자유롭게 보내주세요. 관리자가 확인 후 답변합니다.
       </div>
       <ChatPanel onRead={onRead} />
@@ -1035,15 +1037,14 @@ function NotifTab() {
 
 // ─── 테마 ───────────────────────────────────────────────
 function ThemeTab() {
-  const [, force] = useState(0);
-  const cur = currentTheme();
+  const cur = useTheme();
   return (
     <Card>
       <div style={{ ...st.cardTitle, marginBottom: 8 }}>화면 테마</div>
       <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>
         현재: <b style={{ color: 'var(--text)' }}>{cur === 'dark' ? '다크' : '라이트'}</b>
       </div>
-      <button onClick={() => { toggleTheme(); force(x => x + 1); }} style={{
+      <button onClick={toggleTheme} style={{
         ...st.btnSecondary,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       }}>
@@ -1091,8 +1092,8 @@ function LabTab() {
         await api.patchMyPrefs({ lab_phone_tracker: true });
         setPrefs(p => ({ ...p, lab_phone_tracker: true }));
         await alertDialog({
-          title: '스마트폰 tracker 활성',
-          body: `등록된 device: ${device.display_name || device.device_uid}\n\n홈 탭에서 확인할 수 있습니다. 브라우저 탭이 열려 있는 동안 위치 전송됩니다.`,
+          title: '스마트폰 위치 전송 시작',
+          body: `등록된 단말기: ${device.display_name || device.device_uid}\n\n홈 탭에서 확인할 수 있습니다. 브라우저 탭이 열려 있는 동안 위치 전송됩니다.`,
           tone: 'success',
         });
       } catch (e) {
@@ -1116,17 +1117,17 @@ function LabTab() {
     <>
       <Card>
         <div style={{ ...st.cardTitle, marginBottom: 8 }}>실험 기능</div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 12 }}>
-          ⚗️ 안정화되지 않은 기능들. 사용해보고 어색하면 끄세요.
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>
+          시험 중인 기능입니다. 필요할 때 켜서 사용할 수 있습니다.
         </div>
 
         <LabToggleRow
-          label="오늘 첫 열람 — 어제 운행 요약 팝업"
+          label="어제 운행 요약"
           desc={
             <>
-              디바이스를 잡으면 어제 운행 요약 (이동거리 · 운행시간 · 정지구간 · 최고속도) 을 띄움.<br />
-              <b>OFF</b>: 디바이스별 최초 1회만 노출 (인트로).&nbsp;
-              <b>ON</b>: 디바이스를 잡을 때마다 매번 노출.
+              단말기를 선택하면 어제의 이동거리·운행시간·정지구간·최고속도를 표시합니다.<br />
+              <b>꺼짐</b>: 단말기별 처음 한 번 표시.&nbsp;
+              <b>켜짐</b>: 선택할 때마다 표시.
             </>
           }
           on={!!prefs.lab_first_view_summary}
@@ -1135,11 +1136,11 @@ function LabTab() {
         />
 
         <LabToggleRow
-          label="사이클 seeker — wake/sleep 단위 탐색 + 삭제"
+          label="운행 주기별 기록 탐색·삭제"
           desc={
             <>
-              seeker 에 사이클 목록 추가. boot/wake → sleep_enter 묶음별로 보기 / 삭제 가능.<br />
-              테스트 사이클 누적 데이터 정리에 유용. <b>주의:</b> 삭제 시 해당 사이클 events + location_records 모두 영구 삭제.
+              기동부터 절전까지의 기록을 묶어 확인합니다.<br />
+              삭제하면 해당 주기의 작동·위치 기록이 영구 삭제됩니다.
             </>
           }
           on={!!prefs.lab_cycle_seeker}
@@ -1148,12 +1149,12 @@ function LabTab() {
         />
 
         <LabToggleRow
-          label="📱 스마트폰을 tracker 로 사용"
+          label="스마트폰을 위치 단말기로 사용"
           desc={
             <>
-              위치 권한을 획득하고 스마트폰을 하나의 단말기로 등록해 지도에 표시.<br />
-              <b>ON</b>: 브라우저 탭이 열린 동안 30초 간격으로 위치 전송. Flutter 앱에선 백그라운드에서도 동작.<br />
-              <b>OFF</b>: 위치 전송 중단 (등록된 device 는 유지 — 홈에서 수동 삭제 가능).
+              위치 권한을 허용하면 이 스마트폰의 위치를 지도에서 볼 수 있습니다.<br />
+              웹에서는 탭이 열린 동안 30초마다 전송하며, 앱에서는 백그라운드에서도 전송합니다.<br />
+              끄면 위치 전송만 중단하고 단말기 등록은 유지합니다.
             </>
           }
           on={!!prefs.lab_phone_tracker}
@@ -1164,9 +1165,6 @@ function LabTab() {
 
       <Card>
         <div style={{ ...st.cardTitle, marginBottom: 8 }}>도구</div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>
-          1회성 인트로 / 튜토리얼을 다시 보거나 reset 합니다.
-        </div>
         <button
           onClick={() => navigate('/devices/pair?tutorial=1')}
           className="btn-bounce"
@@ -1175,7 +1173,7 @@ function LabTab() {
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
           <Icon name="route" size={14} />
-          페어링 튜토리얼 다시 보기
+          단말기 연결 안내
         </button>
       </Card>
     </>
@@ -1191,26 +1189,9 @@ function LabToggleRow({ label, desc, on, onChange, busy }) {
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
-        {desc && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>{desc}</div>}
+        {desc && <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>{desc}</div>}
       </div>
-      <button onClick={() => !busy && onChange(!on)}
-        disabled={busy}
-        style={{
-          position: 'relative', width: 40, height: 22, borderRadius: 11,
-          border: 'none', padding: 0,
-          cursor: busy ? 'wait' : 'pointer',
-          background: on ? 'var(--primary)' : 'var(--surface-2)',
-          transition: 'background .15s',
-          flexShrink: 0,
-        }}>
-        <span style={{
-          position: 'absolute', top: 2, left: 2,
-          width: 18, height: 18, borderRadius: 9,
-          background: 'white',
-          transform: `translateX(${on ? 18 : 0}px)`,
-          transition: 'transform .15s',
-        }} />
-      </button>
+      <Switch label={label} checked={on} disabled={busy} onChange={onChange} />
     </div>
   );
 }
@@ -1218,16 +1199,16 @@ function LabToggleRow({ label, desc, on, onChange, busy }) {
 // ─── 공용 sub-컴포넌트 ─────────────────────────────────
 function Card({ title, children }) {
   return (
-    <div style={st.card}>
-      {title && <div style={st.cardTitle}>{title}</div>}
+    <section className="profile-card" style={st.card}>
+      {title && <h2 style={st.cardTitle}>{title}</h2>}
       {children}
-    </div>
+    </section>
   );
 }
 
 function Field({ label, value }) {
   return (
-    <div style={st.row}>
+    <div className="profile-field" style={st.row}>
       <span style={{ color: 'var(--text-2)', fontSize: 12 }}>{label}</span>
       <span style={{ color: 'var(--text)', fontSize: 13 }}>{value || '—'}</span>
     </div>
@@ -1237,38 +1218,22 @@ function Field({ label, value }) {
 const st = {
   wrap: {
     display: 'flex', flexDirection: 'column',
-    height: '100%', minHeight: 0,
-  },
-  tabBar: {
-    display: 'flex', overflowX: 'auto',
-    background: 'var(--surface)',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-    scrollbarWidth: 'thin',
-  },
-  tabBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: 5,
-    padding: '10px 12px',
-    background: 'transparent',
-    border: 'none',
-    fontSize: 12, cursor: 'pointer',
-    whiteSpace: 'nowrap', flexShrink: 0,
-    transition: 'background .12s, color .12s',
+    height: '100%', minHeight: 0, minWidth: 0, width: '100%',
   },
   badge: {
     minWidth: 16, height: 16, padding: '0 5px',
-    background: 'var(--danger)', color: 'white',
-    borderRadius: 8, fontSize: 9, fontWeight: 700,
+    background: 'var(--status-danger-bg)', color: 'var(--status-danger-text)',
+    borderRadius: 8, fontSize: 12, fontWeight: 700,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     marginLeft: 2,
   },
   badgeOk: {
-    fontSize: 9, fontWeight: 700,
-    background: 'var(--accent)', color: 'white',
+    fontSize: 12, fontWeight: 700,
+    background: 'var(--status-success-bg)', color: 'var(--status-success-text)',
     borderRadius: 4, padding: '2px 6px',
   },
   badgeWarn: {
-    fontSize: 9, fontWeight: 700,
+    fontSize: 12, fontWeight: 700,
     background: 'var(--warning, #fbbf24)', color: '#1A1A2E',
     borderRadius: 4, padding: '2px 6px',
   },
@@ -1281,14 +1246,13 @@ const st = {
     display: 'flex', flexDirection: 'column',
   },
   card: {
-    background: 'var(--surface-2)',
+    background: 'var(--surface)', minWidth: 0,
     border: '1px solid var(--border)',
-    borderRadius: 10, padding: 12,
+    borderRadius: 12, padding: 14,
   },
   cardTitle: {
-    fontWeight: 700, fontSize: 11, color: 'var(--text-2)',
-    textTransform: 'uppercase', letterSpacing: '0.04em',
-    marginBottom: 8,
+    fontWeight: 700, fontSize: 14, color: 'var(--text)',
+    lineHeight: 1.5, marginBottom: 10,
   },
   row: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -1311,6 +1275,10 @@ const st = {
     background: 'var(--surface)', color: 'var(--text)',
     border: '1px solid var(--border)', borderRadius: 6,
     fontSize: 13, cursor: 'pointer',
+  },
+  downloadLink: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    minHeight: 44, boxSizing: 'border-box', textAlign: 'center', textDecoration: 'none',
   },
   btnDanger: {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,

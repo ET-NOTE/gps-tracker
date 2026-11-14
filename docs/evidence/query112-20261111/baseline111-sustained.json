@@ -1,0 +1,1412 @@
+{
+  "label": "baseline111",
+  "api_sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9",
+  "target_duration_s": 180,
+  "duration_s": 205.4909801799804,
+  "workers": 8,
+  "http": {
+    "month_aggregate": {
+      "count": 0,
+      "p50_s": null,
+      "p95_s": null,
+      "max_s": null
+    },
+    "month_history": {
+      "count": 13,
+      "p50_s": 14.294662181753665,
+      "p95_s": 22.885170322842896,
+      "max_s": 22.885170322842896
+    },
+    "day_aggregate": {
+      "count": 17,
+      "p50_s": 5.071627961937338,
+      "p95_s": 12.161955839022994,
+      "max_s": 12.161955839022994
+    },
+    "latest": {
+      "count": 22,
+      "p50_s": 2.3484808653593063,
+      "p95_s": 9.20199515717104,
+      "max_s": 9.28414475498721
+    },
+    "month_page": {
+      "count": 52,
+      "p50_s": 1.9005801978055388,
+      "p95_s": 7.901548896916211,
+      "max_s": 12.602938401978463
+    }
+  },
+  "requests": 104,
+  "errors": [
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "day_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "latest",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "month_page",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "day_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "day_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "day_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "latest",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "latest",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "latest",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "day_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "month_page",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "month_page",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "day_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "day_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "month_page",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "month_page",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "day_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "route": "month_history",
+      "error": "AssertionError",
+      "detail": "HTTP 503"
+    },
+    {
+      "background": "AssertionError",
+      "detail": "ingest HTTP 500"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "latest",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 500"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "route": "month_aggregate",
+      "error": "AssertionError",
+      "detail": "HTTP 408"
+    },
+    {
+      "physical_storage": [
+        67,
+        0,
+        true
+      ],
+      "ingest": 64
+    }
+  ],
+  "health": {
+    "count": 64,
+    "p50_s": 0.00044394307769834995,
+    "p95_s": 0.0006067552603781223,
+    "max_s": 1.0959342392161489
+  },
+  "signed_tls12_ingest": {
+    "count": 64,
+    "p50_s": 0.40189951518550515,
+    "p95_s": 3.7050441559404135,
+    "max_s": 15.6926906616427
+  },
+  "physical_ciphertext_rows": 67,
+  "physical_plaintext_rows": 0,
+  "daily_stats_rows": 0,
+  "traversals": [],
+  "resources": [
+    {
+      "at_s": 5.049825100693852,
+      "connections": [
+        20,
+        10
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "200.58%",
+          "memory": "566.9MiB / 1.465GiB",
+          "block_io": "0B / 2.06GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "2.24%",
+          "memory": "23.94MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.11%",
+          "memory": "2.801MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 27354951680
+    },
+    {
+      "at_s": 25.073644870892167,
+      "connections": [
+        22,
+        9
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "199.84%",
+          "memory": "610.3MiB / 1.465GiB",
+          "block_io": "0B / 2.89GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "0.12%",
+          "memory": "38.72MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.11%",
+          "memory": "2.809MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 26873339904
+    },
+    {
+      "at_s": 45.09799798205495,
+      "connections": [
+        22,
+        11
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "202.18%",
+          "memory": "755.4MiB / 1.465GiB",
+          "block_io": "29.6MB / 4.14GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "4.40%",
+          "memory": "56.17MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.00%",
+          "memory": "2.824MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 26199969792
+    },
+    {
+      "at_s": 65.12451387289912,
+      "connections": [
+        22,
+        9
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "200.13%",
+          "memory": "640.7MiB / 1.465GiB",
+          "block_io": "130MB / 4.93GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "1.33%",
+          "memory": "43.25MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.00%",
+          "memory": "2.836MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 26765803520
+    },
+    {
+      "at_s": 85.19828780181706,
+      "connections": [
+        22,
+        11
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "200.62%",
+          "memory": "630MiB / 1.465GiB",
+          "block_io": "130MB / 5.65GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "0.00%",
+          "memory": "30.84MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.09%",
+          "memory": "3.074MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 26668965888
+    },
+    {
+      "at_s": 105.29700525803491,
+      "connections": [
+        22,
+        10
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "200.54%",
+          "memory": "742.9MiB / 1.465GiB",
+          "block_io": "273MB / 7.06GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "0.00%",
+          "memory": "54.47MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.00%",
+          "memory": "2.82MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 26022723584
+    },
+    {
+      "at_s": 125.33649145392701,
+      "connections": [
+        22,
+        10
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "199.68%",
+          "memory": "620MiB / 1.465GiB",
+          "block_io": "300MB / 7.75GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "0.11%",
+          "memory": "39.41MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.11%",
+          "memory": "2.797MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 27013861376
+    },
+    {
+      "at_s": 145.36052063200623,
+      "connections": [
+        22,
+        10
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "200.11%",
+          "memory": "661.8MiB / 1.465GiB",
+          "block_io": "303MB / 8.4GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "0.01%",
+          "memory": "39.53MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.02%",
+          "memory": "2.801MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 26198315008
+    },
+    {
+      "at_s": 165.39563083695248,
+      "connections": [
+        22,
+        10
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "201.06%",
+          "memory": "741.8MiB / 1.465GiB",
+          "block_io": "498MB / 9.56GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "0.00%",
+          "memory": "37.89MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.00%",
+          "memory": "2.832MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 26042032128
+    },
+    {
+      "at_s": 185.42127811396495,
+      "connections": [
+        22,
+        9
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "199.38%",
+          "memory": "615.6MiB / 1.465GiB",
+          "block_io": "511MB / 10.5GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "3.85%",
+          "memory": "37.98MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.12%",
+          "memory": "2.801MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 27089448960
+    },
+    {
+      "at_s": 205.44432637281716,
+      "connections": [
+        22,
+        6
+      ],
+      "containers": [
+        {
+          "name": "gps-query112-db",
+          "cpu": "200.40%",
+          "memory": "681.4MiB / 1.465GiB",
+          "block_io": "511MB / 11.4GB",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-api",
+          "cpu": "0.00%",
+          "memory": "37.97MiB / 550MiB",
+          "block_io": "0B / 0B",
+          "oom": false,
+          "restarts": 0
+        },
+        {
+          "name": "gps-query112-proxy",
+          "cpu": "0.00%",
+          "memory": "2.801MiB / 64MiB",
+          "block_io": "0B / 4.1kB",
+          "oom": false,
+          "restarts": 0
+        }
+      ],
+      "free_bytes": 26953211904
+    }
+  ],
+  "raw": [
+    {
+      "route": "latest",
+      "seconds": 0.2912279940210283,
+      "bytes": 323,
+      "at_s": 0.2942418330349028
+    },
+    {
+      "route": "latest",
+      "seconds": 0.29431134508922696,
+      "bytes": 323,
+      "at_s": 0.29627672396600246
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.214191947132349,
+      "bytes": 1620267,
+      "at_s": 1.2217546408064663
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.0737980669364333,
+      "bytes": 116151,
+      "at_s": 2.0771781359799206
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.093652353156358,
+      "bytes": 116151,
+      "at_s": 2.0962425507605076
+    },
+    {
+      "route": "latest",
+      "seconds": 0.2215731148608029,
+      "bytes": 323,
+      "at_s": 2.2988728107884526
+    },
+    {
+      "route": "latest",
+      "seconds": 0.3810372562147677,
+      "bytes": 323,
+      "at_s": 2.4773810086771846
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.380239493213594,
+      "bytes": 1620267,
+      "at_s": 2.6089579588733613
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.4719267282634974,
+      "bytes": 1620267,
+      "at_s": 4.088076642714441
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.4906740617007017,
+      "bytes": 1620267,
+      "at_s": 5.585277965757996
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.5925204432569444,
+      "bytes": 1620267,
+      "at_s": 7.184102357830852
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.50789629900828,
+      "bytes": 1620267,
+      "at_s": 8.698408806696534
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.5804547783918679,
+      "bytes": 1620267,
+      "at_s": 10.285310402978212
+    },
+    {
+      "route": "month_history",
+      "seconds": 11.323138013016433,
+      "bytes": 3240001,
+      "at_s": 11.33714884892106
+    },
+    {
+      "route": "month_history",
+      "seconds": 11.376382235903293,
+      "bytes": 3240001,
+      "at_s": 11.394459777977318
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.5226276637986302,
+      "bytes": 1620267,
+      "at_s": 11.814911719877273
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.0471245259977877,
+      "bytes": 116151,
+      "at_s": 13.386022737715393
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.583074449095875,
+      "bytes": 1620267,
+      "at_s": 13.404868761077523
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.01061086403206,
+      "bytes": 116151,
+      "at_s": 13.406822327990085
+    },
+    {
+      "route": "latest",
+      "seconds": 0.28478310676291585,
+      "bytes": 323,
+      "at_s": 13.691732103936374
+    },
+    {
+      "route": "latest",
+      "seconds": 0.30744786793366075,
+      "bytes": 323,
+      "at_s": 13.693606321699917
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3952405177988112,
+      "bytes": 1620267,
+      "at_s": 14.806684860028327
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.5014234031550586,
+      "bytes": 1620267,
+      "at_s": 16.31466160202399
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.4613659321330488,
+      "bytes": 1620267,
+      "at_s": 17.78243641089648
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.393738938961178,
+      "bytes": 1620267,
+      "at_s": 19.182595878839493
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3063693540170789,
+      "bytes": 1620267,
+      "at_s": 20.496989419683814
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3031955868937075,
+      "bytes": 1620267,
+      "at_s": 21.806663095019758
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3875001557171345,
+      "bytes": 1620267,
+      "at_s": 23.201662194915116
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3884001267142594,
+      "bytes": 1620267,
+      "at_s": 24.596585013903677
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.4004396279342473,
+      "bytes": 1620267,
+      "at_s": 26.003446513786912
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.38786301901564,
+      "bytes": 1620267,
+      "at_s": 27.399372221902013
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3947820300236344,
+      "bytes": 1620267,
+      "at_s": 28.80101151484996
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.20910050207749,
+      "bytes": 1620267,
+      "at_s": 30.016945835668594
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.6663498138077557,
+      "bytes": 1620267,
+      "at_s": 31.691791846882552
+    },
+    {
+      "route": "month_page",
+      "seconds": 12.602938401978463,
+      "bytes": 1665861,
+      "at_s": 44.30163337988779
+    },
+    {
+      "route": "month_history",
+      "seconds": 14.381757488008589,
+      "bytes": 3240001,
+      "at_s": 44.40227676881477
+    },
+    {
+      "route": "month_history",
+      "seconds": 14.107819475233555,
+      "bytes": 3240001,
+      "at_s": 44.41710477694869
+    },
+    {
+      "route": "month_history",
+      "seconds": 22.885170322842896,
+      "bytes": 3240001,
+      "at_s": 55.20082529401407
+    },
+    {
+      "route": "month_page",
+      "seconds": 5.400377940852195,
+      "bytes": 1734267,
+      "at_s": 55.28501302096993
+    },
+    {
+      "route": "latest",
+      "seconds": 2.5152605450712144,
+      "bytes": 323,
+      "at_s": 57.78953816369176
+    },
+    {
+      "route": "month_history",
+      "seconds": 14.294662181753665,
+      "bytes": 3240001,
+      "at_s": 58.00253240810707
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.80195815814659,
+      "bytes": 116151,
+      "at_s": 58.00468305684626
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.893943781964481,
+      "bytes": 1734267,
+      "at_s": 60.186174917034805
+    },
+    {
+      "route": "latest",
+      "seconds": 2.1817011856473982,
+      "bytes": 323,
+      "at_s": 60.18648250773549
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.684023644775152,
+      "bytes": 116151,
+      "at_s": 60.68874339107424
+    },
+    {
+      "route": "latest",
+      "seconds": 0.40078007616102695,
+      "bytes": 323,
+      "at_s": 61.08965496579185
+    },
+    {
+      "route": "month_page",
+      "seconds": 3.1969046792946756,
+      "bytes": 1734267,
+      "at_s": 70.70688007306308
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.469364832621068,
+      "bytes": 1734267,
+      "at_s": 75.18756659608334
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.989831424318254,
+      "bytes": 1734267,
+      "at_s": 77.18857698980719
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.8877377789467573,
+      "bytes": 1734267,
+      "at_s": 79.0883534019813
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.0919971223920584,
+      "bytes": 1734267,
+      "at_s": 81.18752282205969
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.7098383461125195,
+      "bytes": 1734267,
+      "at_s": 83.90436090994626
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.2769289570860565,
+      "bytes": 1734267,
+      "at_s": 86.19241642765701
+    },
+    {
+      "route": "month_history",
+      "seconds": 18.990792951080948,
+      "bytes": 3240001,
+      "at_s": 104.20859621884301
+    },
+    {
+      "route": "month_history",
+      "seconds": 16.490401715040207,
+      "bytes": 3240001,
+      "at_s": 104.29374762298539
+    },
+    {
+      "route": "month_history",
+      "seconds": 18.45366060268134,
+      "bytes": 3240001,
+      "at_s": 108.65376537200063
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 12.161955839022994,
+      "bytes": 116151,
+      "at_s": 108.67625975981355
+    },
+    {
+      "route": "latest",
+      "seconds": 9.28414475498721,
+      "bytes": 323,
+      "at_s": 108.67853195872158
+    },
+    {
+      "route": "latest",
+      "seconds": 9.20199515717104,
+      "bytes": 323,
+      "at_s": 108.6793722147122
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 9.292002267204225,
+      "bytes": 116151,
+      "at_s": 108.68307669693604
+    },
+    {
+      "route": "month_page",
+      "seconds": 6.9951479425653815,
+      "bytes": 1734267,
+      "at_s": 110.70410976698622
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 9.16704691760242,
+      "bytes": 116151,
+      "at_s": 113.37813516100869
+    },
+    {
+      "route": "latest",
+      "seconds": 4.702183721587062,
+      "bytes": 323,
+      "at_s": 113.37855146592483
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 9.086597509682178,
+      "bytes": 116151,
+      "at_s": 113.38288425374776
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 4.732631964143366,
+      "bytes": 116151,
+      "at_s": 113.38907149294391
+    },
+    {
+      "route": "latest",
+      "seconds": 4.706145490054041,
+      "bytes": 323,
+      "at_s": 113.38937142910436
+    },
+    {
+      "route": "latest",
+      "seconds": 1.6033971258439124,
+      "bytes": 323,
+      "at_s": 114.98166032880545
+    },
+    {
+      "route": "latest",
+      "seconds": 1.6015729238279164,
+      "bytes": 323,
+      "at_s": 114.98455672571436
+    },
+    {
+      "route": "latest",
+      "seconds": 1.5973991956561804,
+      "bytes": 323,
+      "at_s": 114.98656756198034
+    },
+    {
+      "route": "month_page",
+      "seconds": 5.596965478733182,
+      "bytes": 1734267,
+      "at_s": 116.3082493278198
+    },
+    {
+      "route": "month_page",
+      "seconds": 3.477978224866092,
+      "bytes": 1734267,
+      "at_s": 119.79378029797226
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.0992561429739,
+      "bytes": 1734267,
+      "at_s": 121.90048725390807
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.9947520508430898,
+      "bytes": 1734267,
+      "at_s": 123.90252418583259
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.9867368983104825,
+      "bytes": 1734267,
+      "at_s": 125.90100798709318
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.908094369340688,
+      "bytes": 1734267,
+      "at_s": 127.81685510883108
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.878584316931665,
+      "bytes": 1734267,
+      "at_s": 129.7048539556563
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.8995228968560696,
+      "bytes": 1734267,
+      "at_s": 131.61226562270895
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.9872475741431117,
+      "bytes": 1734267,
+      "at_s": 133.60707041202113
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.888380791991949,
+      "bytes": 1734267,
+      "at_s": 135.5027334787883
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.9367490350268781,
+      "bytes": 1734267,
+      "at_s": 137.447092206683
+    },
+    {
+      "route": "month_page",
+      "seconds": 7.155434082727879,
+      "bytes": 1734267,
+      "at_s": 144.60995943006128
+    },
+    {
+      "route": "month_history",
+      "seconds": 13.4064852418378,
+      "bytes": 3240001,
+      "at_s": 152.09915179573
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 7.189308345317841,
+      "bytes": 116151,
+      "at_s": 157.1771476357244
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 9.188413343857974,
+      "bytes": 116151,
+      "at_s": 159.17635008879006
+    },
+    {
+      "route": "month_history",
+      "seconds": 15.810478947125375,
+      "bytes": 3240001,
+      "at_s": 159.20464161783457
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 9.494314806070179,
+      "bytes": 116151,
+      "at_s": 159.48433683579788
+    },
+    {
+      "route": "month_page",
+      "seconds": 7.901548896916211,
+      "bytes": 1734267,
+      "at_s": 159.50310253584757
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 9.599453192669898,
+      "bytes": 116151,
+      "at_s": 161.19254329800606
+    },
+    {
+      "route": "latest",
+      "seconds": 4.093931959010661,
+      "bytes": 323,
+      "at_s": 161.19563407171518
+    },
+    {
+      "route": "latest",
+      "seconds": 4.1024381732568145,
+      "bytes": 323,
+      "at_s": 161.2796814488247
+    },
+    {
+      "route": "latest",
+      "seconds": 2.608280540909618,
+      "bytes": 323,
+      "at_s": 161.78475862089545
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 4.989830636885017,
+      "bytes": 116151,
+      "at_s": 162.10050877276808
+    },
+    {
+      "route": "latest",
+      "seconds": 2.619075457099825,
+      "bytes": 323,
+      "at_s": 162.10353368194774
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 5.071627961937338,
+      "bytes": 116151,
+      "at_s": 164.27785342000425
+    },
+    {
+      "route": "latest",
+      "seconds": 7.786059382837266,
+      "bytes": 323,
+      "at_s": 168.97878943476826
+    },
+    {
+      "route": "month_page",
+      "seconds": 9.481992449611425,
+      "bytes": 1734267,
+      "at_s": 168.99511539004743
+    },
+    {
+      "route": "latest",
+      "seconds": 7.312940492294729,
+      "bytes": 323,
+      "at_s": 171.59093811409548
+    },
+    {
+      "route": "month_page",
+      "seconds": 3.8910918566398323,
+      "bytes": 1734267,
+      "at_s": 172.8950097518973
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.3992849900387228,
+      "bytes": 1734267,
+      "at_s": 175.30967193609104
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.092756303958595,
+      "bytes": 1734267,
+      "at_s": 177.41063804505393
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.9884403590112925,
+      "bytes": 1734267,
+      "at_s": 179.4068254660815
+    },
+    {
+      "route": "month_history",
+      "seconds": 11.981438037008047,
+      "bytes": 3240001,
+      "at_s": 180.9890141757205
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.901637498755008,
+      "bytes": 1734267,
+      "at_s": 181.31649123784155
+    },
+    {
+      "route": "month_history",
+      "seconds": 13.247062738984823,
+      "bytes": 3240001,
+      "at_s": 182.6355731911026
+    }
+  ],
+  "pg_settings": {
+    "jit": "off",
+    "max_connections": "50",
+    "shared_buffers": "94976",
+    "work_mem": "2532"
+  },
+  "temp_bytes_delta": 7893943963,
+  "temp_files_delta": 654,
+  "security_preflight": [
+    "direct HTTP denied",
+    "spoofed TLS header denied",
+    "TLS1.2 signed request accepted",
+    "replay denied",
+    "tamper denied"
+  ],
+  "scope": "synthetic private Docker network on build-host NVMe, production DB settings and explicit CPU/memory budgets; not LTE nor production storage IO",
+  "production_modified": false,
+  "external_delivery": false
+}

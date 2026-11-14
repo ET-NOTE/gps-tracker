@@ -1,15 +1,33 @@
+#include "report_config.h"
+#include "collection_control.h"
 #include "lte.h"
 #include "config.h"
 #include "hw_power.h"
 #include "gps.h"        // [2026-08-14] hardCycle 후 GPS 재설정 (공유 레일)
 #include "breadcrumb.h"
 #include "loopwdt.h"
+#include "device_security.h"
+#include <inttypes.h>
 #include <HardwareSerial.h>
 #include <ctype.h>
+#if GPS_TLS_CERT_TEST
+#include GPS_TLS_TEST_CA_HEADER
+#elif GPS_HTTPS_PILOT
+#include "ingest_root_ca.h"
+#endif
+#if GPS_HTTPS_PILOT
+#include "secure_http.h"
+#ifdef ESP_PLATFORM
+#include <sys/time.h>
+#endif
+#endif
 
 namespace lte {
 
 static HardwareSerial serial(1);   // UART1 — LTE RX=2/TX=4
+static bool serialStarted_ = false;
+static void (*sleepObserver_)() = nullptr;
+void setSleepObserver(void (*observer)()) { sleepObserver_ = observer; }
 static String   lastResp;
 static bool     ready_        = false;
 static int      csq_          = -1;
@@ -33,6 +51,7 @@ static bool     serverReset_    = false;
 
 // -----------------------------------------------------------------
 static void drain() {
+  if (sleepObserver_) sleepObserver_();
   while (serial.available()) {
     char c = (char)serial.read();
     lastResp += c;
@@ -45,6 +64,33 @@ static bool healthy() {
   if (lastResp.indexOf("POWER DOWN")    >= 0) return false;
   return true;
 }
+
+#if GPS_HTTPS_PILOT
+// Only connection setup is logged. Never print request headers, keys or bodies.
+static bool tlsDiagnosticCommand(const char *cmd) {
+  return cmd && (strncmp(cmd, "AT+CFS", 6) == 0 || strncmp(cmd, "AT+CSSLCFG", 10) == 0 ||
+    strncmp(cmd, "AT+SHCONF", 9) == 0 || strncmp(cmd, "AT+SHSSL", 8) == 0 ||
+    strcmp(cmd, "AT+SHCONN") == 0 || strcmp(cmd, "AT+SHSTATE?") == 0 ||
+    strcmp(cmd, "AT+SHDISC") == 0 || strcmp(cmd, "AT+CCLK?") == 0);
+}
+static void tlsDiagnostic(const char *cmd, const char *result) {
+#if GPS_TLS_CERT_TEST
+  if (cmd && strncmp(cmd, "AT+CNTP", 7) == 0) {
+    String clockReply = lastResp; clockReply.replace("\r", " "); clockReply.replace("\n", " ");
+    Serial.printf("[CERT-CLOCK] %s result=%s response=%.200s\n", cmd, result, clockReply.c_str());
+  }
+#endif
+  if (!tlsDiagnosticCommand(cmd)) return;
+  int error = -1;
+  int at = lastResp.indexOf("+CME ERROR:");
+  if (at >= 0) error = lastResp.substring(at + 11).toInt();
+  Serial.printf("[TLS-AT] %s result=%s cme=%d bytes=%u\n", cmd, result, error, (unsigned)lastResp.length());
+  if (at >= 0) {
+    String reason = lastResp.substring(at, lastResp.indexOf('\r', at));
+    Serial.printf("[TLS-ERROR] %.100s\n", reason.c_str());
+  }
+}
+#endif
 
 // AT 트랜잭션. expect=nullptr 면 timeout 까지 대기 후 true.
 // ※ 원본의 esp_task_wdt_reset() feed 없음 — no-op 이라 제거 (2026-07-02).
@@ -62,12 +108,22 @@ static bool sendAT(const char *cmd, const char *expect, uint32_t timeoutMs) {
       if (DBG) { Serial.print(F("<< (UV abort) ")); Serial.println(lastResp); }
       return false;
     }
+#if GPS_HTTPS_PILOT
+    if (lastResp.indexOf("\r\nERROR\r\n") >= 0 || lastResp.indexOf("+CME ERROR:") >= 0 ||
+        lastResp.indexOf("\r\nRDY\r\n") >= 0) { tlsDiagnostic(cmd, "error"); return false; }
+#endif
     if (expect && lastResp.indexOf(expect) >= 0) {
+#if GPS_HTTPS_PILOT
+      tlsDiagnostic(cmd, "ok");
+#endif
       if (DBG) { Serial.print(F("<< ")); Serial.println(lastResp); }
       return true;
     }
     delay(5);
   }
+#if GPS_HTTPS_PILOT
+  tlsDiagnostic(cmd, "timeout");
+#endif
   if (DBG && cmd && *cmd) { Serial.print(F("<< (timeout) ")); Serial.println(lastResp); }
   return expect == nullptr;
 }
@@ -81,6 +137,7 @@ static void waitUartIdle(uint32_t idleMs, uint32_t maxWaitMs) {
   }
 }
 
+#if !GPS_HTTPS_PILOT
 // SHBOD 후 '>' 프롬프트 대기 → body 전송 → OK.
 static bool sendBodyAfterPrompt(const char *body, uint32_t len) {
   uint32_t t0 = millis();
@@ -94,6 +151,8 @@ static bool sendBodyAfterPrompt(const char *body, uint32_t len) {
   serial.write((const uint8_t *)body, len);
   return sendAT("", "OK", SHBODY_MAXWAIT_MS);
 }
+
+#endif
 
 // (P3 2026-07-03) 모뎀 생명신호 판별. AT 를 주기적으로 쏘며 maxWaitMs 동안 관찰.
 //   MP_READY: AT+OK 확인(AT 채널 준비됨).  MP_BOOTING: 부팅 URC/바이트만 봄(살아있으나 AT 미동기).
@@ -145,7 +204,56 @@ static void powerOn() {
 void init() {
   serial.setRxBufferSize(LTE_RX_BUF);   // HW팀 기대값(표준): begin 前 호출 필수 — RX 오버플로우 여유
   serial.begin(LTE_BAUD, SERIAL_8N1, PIN_LTE_RX, PIN_LTE_TX);
+  serialStarted_ = true;
   powerOn();
+}
+
+ShutdownResult shutdownForSleep() {
+#if SLEEP_DISABLED
+  return ShutdownResult::NotStarted;
+#else
+  // Bounce re-sleep runs before UART/powerOn. Never pulse an unknown/off modem.
+  if (!serialStarted_) return ShutdownResult::NotStarted;
+  ready_ = false;
+  csq_ = -1; reg_ = -1;
+  snprintf(ip_, sizeof(ip_), "-");
+  bringReset();
+  resetHttpKeepalive();
+  while (serial.available()) serial.read();
+  lastResp = "";
+  serial.print("AT+CPOWD=1\r\n");
+  const uint32_t start = millis();
+  while (millis() - start < LTE_SHUTDOWN_TIMEOUT_MS) {
+    lwdt::feed();
+    drain();
+    // sendAT intentionally rejects POWER DOWN; shutdown has its own collector.
+    if (lastResp.indexOf("NORMAL POWER DOWN") >= 0) {
+      Serial.println(F("[LTE] shutdown confirmed (NORMAL POWER DOWN)"));
+      return ShutdownResult::Confirmed;
+    }
+    delay(10);
+  }
+  Serial.println(F("[LTE] shutdown unconfirmed — bounded rail-off fallback"));
+  return ShutdownResult::Unconfirmed;
+#endif
+}
+
+void resumeAfterSleepAbort(bool railWasCut, ShutdownResult result) {
+  if (!serialStarted_) return; // early bounce path continues regular setup()
+  if (result == ShutdownResult::Unconfirmed) {
+    // CPOWD may still be in flight. Fully discharge before probing/pulsing so a
+    // late shutdown cannot turn off the modem we have just resumed.
+    hw_power::railCycle();
+    railWasCut = true;
+  }
+  if (railWasCut) gps::reconfigure();
+  // Give the single CPOWD attempt time to finish before powerOn probes. Caller
+  // waits for shutdownForSleep's result; it never cancels that command halfway.
+  waitUartIdle(200, 1000); // trailing CPOWD CR/LF must not look like a booting modem
+  powerOn();
+  ready_ = false;
+  bringReset();
+  resetHttpKeepalive();
 }
 
 // (2026-07-08) bringUp non-blocking 리팩터: 90초 블로킹 reg-wait 제거.
@@ -385,6 +493,12 @@ void fetchSimInfo() {
 //   ② AT+CPSI?     : 지금 망에 붙어 "실제로 쓰는" serving 밴드 → band_ (telemetry 로 서버 관측).
 //   ONLINE 전환마다 호출 (2 AT tx, 저비용). 밴드가 재등록으로 바뀌면 최신값 반영.
 void fetchBandInfo() {
+#if GPS_HTTPS_PILOT
+  if (sendAT("AT+GMR", "\r\nOK\r\n", 3000)) {
+    String version = lastResp; version.replace("\r", " "); version.replace("\n", " "); version.trim();
+    Serial.printf("[MODEM] %s\n", version.c_str());
+  }
+#endif
   // ① enable 된 밴드셋 — 인증밴드만 lock 됐는지 필드 확인용 (로그만, payload 미포함).
   if (sendAT("AT+CBANDCFG?", "OK", 2000)) {
     String s = lastResp; s.replace("\r", " "); s.replace("\n", " "); s.trim();
@@ -436,7 +550,11 @@ void resetHttpKeepalive() {
 //   운행 로그 진단: SHCONN "operation not allowed" 의 주원인 = handover 로 CNACT 베어러가
 //   조용히 죽었는데 CNACT? 확인 없이 SHCONN 을 쏨. 죽은 베어러 위 SHCONN 은 무조건 거부.
 static bool bearerActive() {
+#if GPS_HTTPS_PILOT
+  if (!sendAT("AT+CNACT?", "\r\nOK\r\n", 2000)) return false;
+#else
   if (!sendAT("AT+CNACT?", "+CNACT:", 2000)) return false;
+#endif
   int p = lastResp.indexOf("+CNACT: 0,");
   if (p < 0) return false;
   if (lastResp.substring(p + 10, p + 11).toInt() != 1) return false;   // status 0,<1>
@@ -449,6 +567,66 @@ static bool bearerActive() {
   return false;
 }
 
+#if GPS_HTTPS_PILOT
+static constexpr char okLine[] = "\r\nOK\r\n";
+static bool modemClockSet() {
+  if (!sendAT("AT+CCLK?", okLine, 3000)) return false;
+  int start = lastResp.indexOf("+CCLK: \"");
+  int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, zone = 0;
+  if (start < 0 || sscanf(lastResp.c_str() + start + 8, "%2d/%2d/%2d,%2d:%2d:%2d%3d",
+      &year, &month, &day, &hour, &minute, &second, &zone) != 7) return false;
+  Serial.printf("[TLS-CLOCK] year=%d month=%d day=%d hour=%d minute=%d second=%d zone=%d\n",
+                year, month, day, hour, minute, second, zone);
+  // 1951B12 resets to 80/01/06 (GPS epoch), not 00/01/01. Reject that
+  // sentinel and implausible future dates. This CA/profile needs replacement
+  // before ISRG Root X2 expires in 2040, so don't accept 2040+ as usable time.
+  if (year < 26 || year >= 40 || month < 1 || month > 12 || hour < 0 || hour > 23 ||
+      minute < 0 || minute > 59 || second < 0 || second > 59 || zone < -48 || zone > 56) return false;
+  const int days[] = {31, (year % 4 == 0 ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  if (day < 1 || day > days[month - 1]) return false;
+#ifdef ESP_PLATFORM
+  // CCLK timezone is in quarter-hours. Use UTC arithmetic, independent of libc TZ.
+  int64_t count = 0;
+  for (int y=1970; y<2000+year; ++y) count += (y%4==0 && (y%100!=0 || y%400==0)) ? 366 : 365;
+  for (int m=1; m<month; ++m) count += days[m-1];
+  count += day-1;
+  struct timeval utc = {};
+  utc.tv_sec = count*86400 + hour*3600 + minute*60 + second - zone*900;
+  if (settimeofday(&utc, nullptr) != 0) return false;
+#endif
+  return true;
+}
+
+static bool syncModemClock() {
+  if (!sendAT("AT+CNTPCID=0", okLine, 2000) ||
+      !sendAT("AT+CNTP=\"time.cloudflare.com\",0,0,0", okLine, 3000) ||
+      !sendAT("AT+CNTP", "\r\n+CNTP:", 45000)) return false;
+  int start = lastResp.indexOf("+CNTP:");
+  uint32_t waitStart = millis();
+  while (lastResp.indexOf('\n', start) < 0 && millis() - waitStart < 2000) {
+    lwdt::feed(); drain(); delay(5);
+  }
+  if (lastResp.indexOf('\n', start) < 0) return false;
+  int code = 0, consumed = 0;
+  const char *value = lastResp.c_str() + start + 6;
+  if (sscanf(value, " %d%n", &code, &consumed) != 1 || code != 1) return false;
+  while (value[consumed] == ' ') ++consumed;
+  // Some revisions append ,"YYYY/MM/DD,hh:mm:ss" even after success.
+  if (value[consumed] != ',' && value[consumed] != '\r' && value[consumed] != '\n') return false;
+  return modemClockSet();
+}
+
+static bool secureExchange(bool probe, const char *body, uint64_t counter,
+                           const char *signature, int &status) {
+  if (!bearerActive() && !reactivateData()) return false;
+  if (!modemClockSet() && !syncModemClock()) return false;
+  waitUartIdle(100, 500);
+  return secure_http::exchange(serial, probe, body, counter, signature,
+                              probe ? "" : device_security::uid(), status, lastResp);
+}
+#endif
+
+#if !GPS_HTTPS_PILOT
 // SHCONF/SHSSL — host 고정이라 세션당 1회. 성공 시 httpConfigured_ 는 호출측이 세팅.
 static bool configureHttp() {
   char cmd[96];
@@ -481,7 +659,8 @@ static bool connectHttp() {
     sendAT("AT+SHDISC", nullptr, 800);          // 매 연결 전 잔류 세션 정리 (not-allowed 예방)
     waitUartIdle(150, 800);
     bc::set("lte_shconn");                      // (crash 위치 특정) SHCONN 진입 — 오전 stuck 지점
-    if (sendAT("AT+SHCONN", "OK", SHCONN_TIMEOUT_MS)) {
+    bool connected = sendAT("AT+SHCONN", "OK", SHCONN_TIMEOUT_MS);
+    if (connected) {
       httpConnected_ = true;
       return true;
     }
@@ -492,13 +671,33 @@ static bool connectHttp() {
   return false;
 }
 
+#endif // legacy modem HTTP transport
+
+#if GPS_TLS_CERT_TEST
+bool certificateProbe() {
+  int status=-1;
+  bool ok=secureExchange(true, "", 0, "", status);
+  Serial.printf("[CERT-HTTP] requested=%d status=%d\n", (int)ok, status);
+  return ok && status==200;
+}
+#endif
+
 bool httpPost(const char *body, int *statusOut) {
   bc::set("lte_post");
-  char cmd[96];
   *statusOut = -1;
+  String wireBody;
+  uint64_t requestCounter=0;
+  char requestSignature[65];
+  if(!device_security::prepare(body,wireBody,requestCounter,requestSignature))return false;
+  body=wireBody.c_str();
+  bool verifiedResponse=!device_security::enabled();
 
   if (!sendAT("AT", "OK", 1500)) { DBGLN(F("[POST] module unresponsive")); return false; }
 
+#if GPS_HTTPS_PILOT
+  if (!secureExchange(false, body, requestCounter, requestSignature, *statusOut)) return false;
+#else
+  char cmd[96];
   // keepalive 가정 vs 실제 conn sync (SIM7080G 가 매 SHREQ 후 auto-disconnect 하는 경우 대비)
   if (httpConnected_) {
     sendAT("AT+SHSTATE?", "+SHSTATE:", 1500);
@@ -515,6 +714,16 @@ bool httpPost(const char *body, int *statusOut) {
 
   sendAT("AT+SHCHEAD", "OK", 2000);
   sendAT("AT+SHAHEAD=\"Content-Type\",\"application/json\"", "OK", 2000);
+  if(device_security::enabled()) {
+    if(!sendAT("AT+SHAHEAD=\"X-GPS-Auth-Version\",\"2\"","OK",2000))return false;
+    char header[180];
+    snprintf(header,sizeof(header),"AT+SHAHEAD=\"X-GPS-UID\",\"%s\"",device_security::uid());
+    if(!sendAT(header,"OK",2000))return false;
+    snprintf(header,sizeof(header),"AT+SHAHEAD=\"X-GPS-Counter\",\"%" PRIu64 "\"",requestCounter);
+    if(!sendAT(header,"OK",2000))return false;
+    snprintf(header,sizeof(header),"AT+SHAHEAD=\"X-GPS-Signature\",\"%s\"",requestSignature);
+    if(!sendAT(header,"OK",2000))return false;
+  }
 
   size_t len = strlen(body);
   snprintf(cmd, sizeof(cmd), "AT+SHBOD=%u,10000", (unsigned)len);
@@ -543,33 +752,52 @@ bool httpPost(const char *body, int *statusOut) {
   if (c1 > 0 && c2 > c1) *statusOut = lastResp.substring(c1 + 1, c2).toInt();
   DBGP(F("[POST] HTTP ")); DBGLN(*statusOut);
 
-  // 응답 body → 서버 cmd (beep/reset 은 플래그로, main 이 처리)
+  // Collect the response before the shared authenticated acknowledgement handler.
+  bool bodyRead=false;
   if (c2 > c1) {
-    int rlen = lastResp.substring(c2 + 1).toInt();
-    if (rlen > 0 && rlen < 512) {
-      char rc[40];
-      snprintf(rc, sizeof(rc), "AT+SHREAD=0,%d", rlen);
-      if (sendAT(rc, "+SHREAD:", 5000)) {
-        uint32_t t0 = millis();
-        while (millis() - t0 < 500) { drain(); delay(10); }
-        if (lastResp.indexOf("\"cmd\":\"beep\"")  >= 0 || lastResp.indexOf("\"cmd\": \"beep\"")  >= 0) serverBeep_  = true;
-        if (lastResp.indexOf("\"cmd\":\"reset\"") >= 0 || lastResp.indexOf("\"cmd\": \"reset\"") >= 0) serverReset_ = true;
-        int pi = lastResp.indexOf("\"post_interval_s\":");
-        if (pi < 0) pi = lastResp.indexOf("\"post_interval_s\" :");
-        if (pi >= 0) {
-          int colon = lastResp.indexOf(':', pi);
-          if (colon > 0) {
-            int sec = lastResp.substring(colon + 1).toInt();
-            if (sec >= POST_INTERVAL_MIN_S && sec <= POST_INTERVAL_MAX_S) {
-              postIntervalMs_ = (uint32_t)sec * 1000UL;
-              Serial.printf("[POST] interval ← %ds (server cmd)\n", sec);
-            }
-          }
-        }
+    int rlen=lastResp.substring(c2+1).toInt();
+    if (rlen>0 && rlen<2048) {
+      char rc[40]; snprintf(rc,sizeof(rc),"AT+SHREAD=0,%d",rlen);
+      if (sendAT(rc,"+SHREAD:",5000)) {
+        uint32_t t0=millis();
+        while (millis()-t0<500) { drain(); delay(10); }
+        bodyRead=true;
       }
     }
   }
-  return true;   // SHDISC 안 함 — keepalive (다음 SHREQ 즉시 재사용)
+  if (!bodyRead) return verifiedResponse;
+#endif
+  if(device_security::enabled()) {
+    String decoded;
+    if(*statusOut!=200 || !device_security::response(lastResp,requestCounter,decoded)) {
+      Serial.println("[AUTH] Server response verification failed; batch retained.");return false;
+    }
+    verifiedResponse=true;
+    collection_control::applyAuthenticatedResponse(decoded.c_str());
+    Serial.printf("[AUTH] Signed request and response verified (counter=%" PRIu64 ")\n",requestCounter);
+    if(device_security::linkRequired()) {
+      report_config::useDefault(); // An unlinked SIM must not inherit another owner's short interval.
+      Serial.println("[PAIR] Enter the full SIM number and a device name on the website. Hardware authenticated; batch retained.");
+      return false;
+    }
+    report_config::applyAuthenticatedResponse(decoded.c_str());
+    lastResp=device_security::acceptCommand(decoded)?decoded:"{\"ok\":true}";
+  }
+  if (lastResp.indexOf("\"cmd\":\"beep\"")  >= 0 || lastResp.indexOf("\"cmd\": \"beep\"")  >= 0) serverBeep_  = true;
+  if (lastResp.indexOf("\"cmd\":\"reset\"") >= 0 || lastResp.indexOf("\"cmd\": \"reset\"") >= 0) serverReset_ = true;
+  int pi = lastResp.indexOf("\"post_interval_s\":");
+  if (pi < 0) pi = lastResp.indexOf("\"post_interval_s\" :");
+  if (pi >= 0) {
+    int colon = lastResp.indexOf(':', pi);
+    if (colon > 0) {
+      int sec = lastResp.substring(colon + 1).toInt();
+      if (sec >= POST_INTERVAL_MIN_S && sec <= POST_INTERVAL_MAX_S) {
+        postIntervalMs_ = (uint32_t)sec * 1000UL;
+        Serial.printf("[POST] interval ← %ds (server cmd)\n", sec);
+      }
+    }
+  }
+  return verifiedResponse;   // Only an authenticated response confirms a signed upload.
 }
 
 bool     httpConnected()  { return httpConnected_; }

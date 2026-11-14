@@ -1,0 +1,22 @@
+{
+  "label": "narrow-context",
+  "production_modified": false,
+  "queries": {
+    "month_history": {
+      "seconds": 12.92928699683398,
+      "count": 283001
+    },
+    "day_history": {
+      "seconds": 3.9299151888117194,
+      "count": 8641
+    },
+    "month_keys": {
+      "seconds": 5.986289988737553,
+      "count": 283001
+    },
+    "small_history": {
+      "seconds": 3.6522432737983763,
+      "count": 61
+    }
+  }
+}

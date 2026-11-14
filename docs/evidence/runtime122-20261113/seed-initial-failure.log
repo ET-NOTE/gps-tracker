@@ -1,0 +1,23 @@
+SEEDED 1 seconds 12.66
+SEEDED 2 seconds 13.32
+SEEDED 3 seconds 26.38
+SEEDED 4 seconds 12.75
+SEEDED 5 seconds 12.24
+SEEDED 6 seconds 24.96
+SEEDED 7 seconds 12.45
+SEEDED 8 seconds 12.87
+Failed to reset failed state of unit gps121-api.service: Unit gps121-api.service not loaded.
+Traceback (most recent call last):
+  File "/opt/gps121/load_runtime122.py", line 334, in <module>
+    if action=='seed':seed()
+  File "/opt/gps121/load_runtime122.py", line 159, in seed
+    start(5);tls();b.repair();start(300)
+  File "/opt/gps121/load_runtime122.py", line 69, in start
+    command('systemctl', 'reset-failed', 'gps121-api')
+  File "/opt/gps121/load_runtime122.py", line 48, in command
+    return subprocess.check_output(args, text=True).strip()
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '('systemctl', 'reset-failed', 'gps121-api')' returned non-zero exit status 1.

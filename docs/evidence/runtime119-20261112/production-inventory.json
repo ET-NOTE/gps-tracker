@@ -1,0 +1,1400 @@
+{
+  "utc": "2026-11-12T08:19:48.290474+00:00",
+  "read_only": true,
+  "settings": [
+    {
+      "name": "max_connections",
+      "setting": "50",
+      "unit": null
+    },
+    {
+      "name": "max_parallel_workers_per_gather",
+      "setting": "3",
+      "unit": null
+    },
+    {
+      "name": "shared_buffers",
+      "setting": "94967",
+      "unit": "8kB"
+    },
+    {
+      "name": "superuser_reserved_connections",
+      "setting": "3",
+      "unit": null
+    },
+    {
+      "name": "temp_file_limit",
+      "setting": "-1",
+      "unit": "kB"
+    },
+    {
+      "name": "temp_tablespaces",
+      "setting": "",
+      "unit": null
+    },
+    {
+      "name": "work_mem",
+      "setting": "2532",
+      "unit": "kB"
+    }
+  ],
+  "roles": [
+    {
+      "rolname": "aaa",
+      "rolsuper": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "bbb",
+      "rolsuper": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "gps_tracker_app",
+      "rolsuper": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "gps_tracker_dev_app",
+      "rolsuper": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "postgres",
+      "rolsuper": true,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "shield_app",
+      "rolsuper": false,
+      "rolconnlimit": 6
+    }
+  ],
+  "databases": [
+    {
+      "datname": "aaa_db",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "bbb_db",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_next_20260924",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261007",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261008",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261009_connection",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_prodreview_20261020",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "gps_tracker_dev_sync_20261025",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "postgres",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "shield_prod",
+      "datconnlimit": -1
+    },
+    {
+      "datname": "template1",
+      "datconnlimit": -1
+    }
+  ],
+  "schema": [
+    {
+      "version": 99
+    }
+  ],
+  "units": {
+    "accounts-daemon.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/accounts-daemon.service",
+      "MemoryCurrent": "2080768",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "atd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/atd.service",
+      "MemoryCurrent": "696320",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "containerd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/containerd.service",
+      "MemoryCurrent": "62328832",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "cron.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/cron.service",
+      "MemoryCurrent": "50626560",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "dbus.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/dbus.service",
+      "MemoryCurrent": "2154496",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "docker.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/docker.service",
+      "MemoryCurrent": "64372736",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:05:05 KST"
+    },
+    "fail2ban.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/fail2ban.service",
+      "MemoryCurrent": "12464128",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Wed 2026-11-11 14:59:47 KST"
+    },
+    "getty@tty1.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/system-getty.slice/getty@tty1.service",
+      "MemoryCurrent": "2785280",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "gps-modsecurity.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-modsecurity.service",
+      "MemoryCurrent": "17063936",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Wed 2026-11-11 16:08:08 KST"
+    },
+    "gps-nginx-log.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-nginx-log.service",
+      "MemoryCurrent": "1585152",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 17:06:36 KST"
+    },
+    "gps-tracker-api-dev.service": {
+      "NRestarts": "252",
+      "ControlGroup": "/system.slice/gps-tracker-api-dev.service",
+      "MemoryCurrent": "7360512",
+      "MemoryMax": "1572864000",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:39:32 KST"
+    },
+    "gps-tracker-api.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-tracker-api.service",
+      "MemoryCurrent": "47960064",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 17:16:49 KST"
+    },
+    "gps-tracker.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/gps-tracker.service",
+      "MemoryCurrent": "7413760",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "irqbalance.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/irqbalance.service",
+      "MemoryCurrent": "659456",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "mosquitto.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/mosquitto.service",
+      "MemoryCurrent": "2805760",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "networkd-dispatcher.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/networkd-dispatcher.service",
+      "MemoryCurrent": "9478144",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "nginx.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/nginx.service",
+      "MemoryCurrent": "42606592",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "packagekit.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/packagekit.service",
+      "MemoryCurrent": "4538368",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Sat 2026-11-07 09:06:42 KST"
+    },
+    "pm2-mmm.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/pm2-mmm.service",
+      "MemoryCurrent": "267501568",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:52 KST"
+    },
+    "polkit.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/polkit.service",
+      "MemoryCurrent": "2121728",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "postgresql@14-main.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/system-postgresql.slice/postgresql@14-main.service",
+      "MemoryCurrent": "1160802304",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:53 KST"
+    },
+    "redis-server.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/redis-server.service",
+      "MemoryCurrent": "4571136",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "rsyslog.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/rsyslog.service",
+      "MemoryCurrent": "4562944",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "shield-api.service": {
+      "NRestarts": "237",
+      "ControlGroup": "/system.slice/shield-api.service",
+      "MemoryCurrent": "15544320",
+      "MemoryMax": "134217728",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:45:30 KST"
+    },
+    "snapd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/snapd.service",
+      "MemoryCurrent": "42315776",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:50 KST"
+    },
+    "ssh.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/ssh.service",
+      "MemoryCurrent": "7892992",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:47:14 KST"
+    },
+    "systemd-journald.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-journald.service",
+      "MemoryCurrent": "37994496",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:44 KST"
+    },
+    "systemd-logind.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-logind.service",
+      "MemoryCurrent": "2260992",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-resolved.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-resolved.service",
+      "MemoryCurrent": "6369280",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-timesyncd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-timesyncd.service",
+      "MemoryCurrent": "1470464",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    },
+    "systemd-udevd.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/systemd-udevd.service",
+      "MemoryCurrent": "6070272",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:45 KST"
+    },
+    "unattended-upgrades.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/unattended-upgrades.service",
+      "MemoryCurrent": "7020544",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:47 KST"
+    },
+    "user@0.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/user.slice/user-0.slice/user@0.service",
+      "MemoryCurrent": "4108288",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:37:53 KST"
+    },
+    "user@1000.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/user.slice/user-1000.slice/user@1000.service",
+      "MemoryCurrent": "6520832",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Thu 2026-11-12 17:19:45 KST"
+    },
+    "wpa_supplicant.service": {
+      "NRestarts": "0",
+      "ControlGroup": "/system.slice/wpa_supplicant.service",
+      "MemoryCurrent": "1454080",
+      "MemoryMax": "infinity",
+      "MemorySwapMax": "infinity",
+      "LimitCORE": "infinity",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 11:04:46 KST"
+    }
+  },
+  "core_pattern": "|/usr/share/apport/apport -p%p -s%s -c%c -d%d -P%P -u%u -g%g -F%F -- %E",
+  "swap": "Filename\t\t\t\tType\t\tSize\t\tUsed\t\tPriority\n/dev/dm-0                               partition\t3903484\t\t185636\t\t-2",
+  "disk": "Filesystem                    1B-blocks        Used  Available Use% Mounted on\n/dev/mapper/ubuntu--vg-root 47863853056 36383174656 9130209280  80% /",
+  "cgroup_type": "cgroup2fs",
+  "samples": [
+    {
+      "utc": "2026-11-12T08:19:48.773753+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          151888 kB\nMemAvailable:    1032200 kB\nBuffers:           81448 kB\nCached:          1599112 kB\nSwapCached:        26812 kB\nActive:          1364408 kB\nInactive:        1208396 kB\nActive(anon):     902316 kB\nInactive(anon):   739536 kB\nActive(file):     462092 kB\nInactive(file):   468860 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3717848 kB\nDirty:              1092 kB\nWriteback:             0 kB\nAnonPages:        870112 kB\nMapped:           845780 kB\nShmem:            749584 kB\nKReclaimable:     141040 kB\nSlab:             210780 kB\nSReclaimable:     141040 kB\nSUnreclaim:        69740 kB\nKernelStack:        8048 kB\nPageTables:        35712 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4474356 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21880 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      323576 kB\nDirectMap2M:     2822144 kB",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 12
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 3
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "pressure": "some avg10=0.29 avg60=0.06 avg300=0.01 total=560436328\nfull avg10=0.14 avg60=0.03 avg300=0.00 total=543407833"
+    },
+    {
+      "utc": "2026-11-12T08:19:53.824986+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          146268 kB\nMemAvailable:    1026720 kB\nBuffers:           81456 kB\nCached:          1599220 kB\nSwapCached:        26812 kB\nActive:          1364552 kB\nInactive:        1208356 kB\nActive(anon):     902324 kB\nInactive(anon):   739492 kB\nActive(file):     462228 kB\nInactive(file):   468864 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3717848 kB\nDirty:              1316 kB\nWriteback:             0 kB\nAnonPages:        870012 kB\nMapped:           845436 kB\nShmem:            749584 kB\nKReclaimable:     141040 kB\nSlab:             210456 kB\nSReclaimable:     141040 kB\nSUnreclaim:        69416 kB\nKernelStack:        7984 kB\nPageTables:        35464 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4474356 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21848 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      323576 kB\nDirectMap2M:     2822144 kB",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 12
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 3
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "pressure": "some avg10=0.16 avg60=0.05 avg300=0.01 total=560436328\nfull avg10=0.08 avg60=0.02 avg300=0.00 total=543407833"
+    },
+    {
+      "utc": "2026-11-12T08:19:58.878437+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          138168 kB\nMemAvailable:    1018772 kB\nBuffers:           81460 kB\nCached:          1599368 kB\nSwapCached:        26812 kB\nActive:          1364576 kB\nInactive:        1208688 kB\nActive(anon):     902320 kB\nInactive(anon):   739700 kB\nActive(file):     462256 kB\nInactive(file):   468988 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3717848 kB\nDirty:               764 kB\nWriteback:             0 kB\nAnonPages:        870180 kB\nMapped:           845440 kB\nShmem:            749584 kB\nKReclaimable:     141040 kB\nSlab:             210728 kB\nSReclaimable:     141040 kB\nSUnreclaim:        69688 kB\nKernelStack:        7984 kB\nPageTables:        35468 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4474496 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21864 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      323576 kB\nDirectMap2M:     2822144 kB",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 12
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 3
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "pressure": "some avg10=0.10 avg60=0.05 avg300=0.01 total=560436328\nfull avg10=0.05 avg60=0.02 avg300=0.00 total=543407833"
+    },
+    {
+      "utc": "2026-11-12T08:20:03.939598+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          138888 kB\nMemAvailable:    1019676 kB\nBuffers:           81476 kB\nCached:          1599536 kB\nSwapCached:        26812 kB\nActive:          1364644 kB\nInactive:        1209184 kB\nActive(anon):     902372 kB\nInactive(anon):   740028 kB\nActive(file):     462272 kB\nInactive(file):   469156 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3717848 kB\nDirty:              1324 kB\nWriteback:            20 kB\nAnonPages:        870556 kB\nMapped:           845452 kB\nShmem:            749584 kB\nKReclaimable:     141040 kB\nSlab:             210752 kB\nSReclaimable:     141040 kB\nSUnreclaim:        69712 kB\nKernelStack:        8000 kB\nPageTables:        35468 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4474752 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21880 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      323576 kB\nDirectMap2M:     2822144 kB",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "active",
+          "connections": 3
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 9
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 3
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "pressure": "some avg10=0.05 avg60=0.04 avg300=0.00 total=560436328\nfull avg10=0.02 avg60=0.02 avg300=0.00 total=543407833"
+    },
+    {
+      "utc": "2026-11-12T08:20:08.999693+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          136876 kB\nMemAvailable:    1017708 kB\nBuffers:           81484 kB\nCached:          1599572 kB\nSwapCached:        26812 kB\nActive:          1364624 kB\nInactive:        1208608 kB\nActive(anon):     902316 kB\nInactive(anon):   739444 kB\nActive(file):     462308 kB\nInactive(file):   469164 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3717848 kB\nDirty:               764 kB\nWriteback:             0 kB\nAnonPages:        869924 kB\nMapped:           845452 kB\nShmem:            749584 kB\nKReclaimable:     141040 kB\nSlab:             210796 kB\nSReclaimable:     141040 kB\nSUnreclaim:        69756 kB\nKernelStack:        8016 kB\nPageTables:        35564 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4474752 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21864 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      323576 kB\nDirectMap2M:     2822144 kB",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 12
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 3
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "pressure": "some avg10=0.03 avg60=0.04 avg300=0.00 total=560436328\nfull avg10=0.01 avg60=0.02 avg300=0.00 total=543407833"
+    },
+    {
+      "utc": "2026-11-12T08:20:14.059184+00:00",
+      "memory": "MemTotal:        3038932 kB\nMemFree:          132900 kB\nMemAvailable:    1013856 kB\nBuffers:           81488 kB\nCached:          1599700 kB\nSwapCached:        26816 kB\nActive:          1364656 kB\nInactive:        1211168 kB\nActive(anon):     902312 kB\nInactive(anon):   741916 kB\nActive(file):     462344 kB\nInactive(file):   469252 kB\nUnevictable:        1536 kB\nMlocked:               0 kB\nSwapTotal:       3903484 kB\nSwapFree:        3717848 kB\nDirty:               820 kB\nWriteback:            12 kB\nAnonPages:        872388 kB\nMapped:           845584 kB\nShmem:            749588 kB\nKReclaimable:     141040 kB\nSlab:             210756 kB\nSReclaimable:     141040 kB\nSUnreclaim:        69716 kB\nKernelStack:        8064 kB\nPageTables:        35748 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:     5422948 kB\nCommitted_AS:    4480108 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       21912 kB\nVmallocChunk:          0 kB\nPercpu:             6752 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      323576 kB\nDirectMap2M:     2822144 kB",
+      "connections": [
+        {
+          "datname": "bbb_db",
+          "usename": "bbb",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 13
+        },
+        {
+          "datname": "bbb_db",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "gps_tracker_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 5
+        },
+        {
+          "datname": "gps_tracker",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "gps_tracker_dev_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 3
+        },
+        {
+          "datname": "gps_tracker_dev_next_20260924",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261007",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261008_fcmui",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261009_connection",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_prodreview_20261020",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "gps_tracker_dev_sync_20261025",
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Scheduler",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": "shield_prod",
+          "usename": "shield_app",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "logical replication launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": "postgres",
+          "backend_type": "TimescaleDB Background Worker Launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "autovacuum launcher",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "background writer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "checkpointer",
+          "state": null,
+          "connections": 1
+        },
+        {
+          "datname": null,
+          "usename": null,
+          "backend_type": "walwriter",
+          "state": null,
+          "connections": 1
+        }
+      ],
+      "pressure": "some avg10=0.02 avg60=0.03 avg300=0.00 total=560436334\nfull avg10=0.00 avg60=0.01 avg300=0.00 total=543407838"
+    }
+  ],
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-log-20261107-r1",
+    "service": "gps-tracker-api"
+  },
+  "pdf_service": {
+    "MemoryMax": "872415232",
+    "MemorySwapMax": "0",
+    "User": "gps-pdf"
+  },
+  "pdf_socket": {
+    "MaxConnections": "4",
+    "NConnections": "0",
+    "ActiveState": "active"
+  },
+  "budget": {
+    "read_only": true,
+    "production_admission_passed": false,
+    "connections": {
+      "server_max": 50,
+      "superuser_reserved": 3,
+      "single_api_max": 28,
+      "maintenance_proposed": 4,
+      "remaining_other_budget": 15,
+      "other_clients_observed_peak": 17,
+      "uncapped_other_login_roles": [
+        "aaa",
+        "bbb",
+        "gps_tracker_dev_app"
+      ],
+      "observed_clients_are_not_maxima": true
+    },
+    "memory": {
+      "physical_bytes": 3111866368,
+      "db_proposed_cap": 1572864000,
+      "api_proposed_cap": 576716800,
+      "other_running_service_observed_bytes": 708800512,
+      "os_proposed_margin": 536870912,
+      "proposed_plan_bytes": 3395252224,
+      "plan_shortfall_bytes": 283385856,
+      "unbounded_other_units": [
+        "accounts-daemon.service",
+        "atd.service",
+        "containerd.service",
+        "cron.service",
+        "dbus.service",
+        "docker.service",
+        "fail2ban.service",
+        "getty@tty1.service",
+        "gps-modsecurity.service",
+        "gps-nginx-log.service",
+        "gps-tracker.service",
+        "irqbalance.service",
+        "mosquitto.service",
+        "networkd-dispatcher.service",
+        "nginx.service",
+        "packagekit.service",
+        "pm2-mmm.service",
+        "polkit.service",
+        "redis-server.service",
+        "rsyslog.service",
+        "snapd.service",
+        "ssh.service",
+        "systemd-journald.service",
+        "systemd-logind.service",
+        "systemd-resolved.service",
+        "systemd-timesyncd.service",
+        "systemd-udevd.service",
+        "unattended-upgrades.service",
+        "user@0.service",
+        "user@1000.service",
+        "wpa_supplicant.service"
+      ],
+      "tmpfs_included_in_db_cap": true,
+      "observed_other_memory_is_not_reserved_or_peak": true,
+      "antivirus_scan_extra_not_reserved": 707788800,
+      "production_shared_buffers_bytes": 777969664
+    },
+    "decision": "Keep single API; do not activate protected candidate on current shared host without bounded budgets and combined rehearsal.",
+    "alternatives": {
+      "bounded_tmpfs": "rehearsed filesystem choice, conditional on RAM budget; never swap-backed",
+      "ephemeral_encrypted_disk": "not selected or installed; would still require swap/core protection, encrypted fallback, key lifecycle and storage-I/O rehearsal",
+      "host_isolation_or_capacity": "recommended if other projects cannot commit finite caps; sizing requires full shared workload, not this snapshot"
+    },
+    "production_changes": false
+  },
+  "pdf_capacity": {
+    "per_process_bytes": 872415232,
+    "socket_max_connections": 4,
+    "on_demand_not_reserved_by_running_service_snapshot": true,
+    "note": "Single API semaphore is1, but dropped callers or multiple API processes can overlap socket workers. Global aggregate budget remains open."
+  }
+}

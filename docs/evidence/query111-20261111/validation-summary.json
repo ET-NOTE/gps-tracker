@@ -1,0 +1,550 @@
+{
+  "verified": true,
+  "environment": "isolated synthetic; no production deployment",
+  "date_kst": "2026-11-11",
+  "schema_path": [
+    99,
+    111
+  ],
+  "production_applied": false,
+  "last_production_observation": "2026-11-08 17:26:29 KST, schema99; not refreshed this round",
+  "source_commit": "a223ff04ab948da69ef95179cd9d6185433992fc",
+  "api_sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9",
+  "candidate_archive_sha256": "2b22794ef68bd50f8214d208cd7d40a8618de6160278bca79e0a869cae46b7b2",
+  "candidate_file_count": 75,
+  "activation_ready": false,
+  "page_equivalence": {
+    "passed": true,
+    "comparisons": 2230,
+    "fixture_rolled_back": true,
+    "oracle": "unchanged110 full-range page selector and all projected fields",
+    "scope": [
+      "source/fix/cursor/window ties",
+      "far batch anchors",
+      "unbackfilled/mixed ciphertext",
+      "row owners/SIM transfer",
+      "late update/delete",
+      "all cursor pages",
+      "timezone",
+      "input bounds"
+    ],
+    "production_modified": false
+  },
+  "dataset": {
+    "passed": true,
+    "rows": 283001,
+    "pages": 57,
+    "page_size": 5000,
+    "sha256_all_return_columns": "3f691d3e8e3f0685def48207cfa47470565215050093bd29bea19266327d5248",
+    "seconds": 33.266459012404084,
+    "oracle": "unchanged110 full history; all111 pages descending with identical speed/context fields"
+  },
+  "snapshot": {
+    "passed": true,
+    "rows_before": 30,
+    "rows_during": 30,
+    "rows_after": 31,
+    "verified_statement_snapshot": true,
+    "concurrent_commit_visible_next_request": true,
+    "scope": "single page statement; separate HTTP pages retain existing read-committed semantics"
+  },
+  "http_compatibility": {
+    "passed": true,
+    "baseline_schema": 110,
+    "candidate_schema": 111,
+    "matched_responses": 11,
+    "all_item_fields_and_cursors_equal": true,
+    "existing_other_account_denied": true,
+    "empty_and_invalid_inputs_passed": true,
+    "pages": [
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 1
+        },
+        "page": 0,
+        "sha256": "e483d75556b9d1539a13d780f5cdde632709dc59ee0745ccda4d5f95755fdc83",
+        "items": 1,
+        "has_more": true,
+        "seconds": 0.11889210529625416
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 1,
+          "cursor": "eyJkZXZpY2UiOjEsInVzZXIiOjEsInNpbmNlIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJ1bnRpbCI6IjIwMjYtMTEtMDFUMDA6MDA6MDBaIiwic291cmNlIjpudWxsLCJmaXhfb25seSI6bnVsbCwiYmVmb3JlIjoiMjAyNi0xMC0xNlQwMTowNjo0MFoiLCJiZWZvcmVfc291cmNlIjoibDgwIn0"
+        },
+        "page": 1,
+        "sha256": "6e62beffb5668cf251bfc827766b98eaebd3e4555b6c83010834dedcf830551a",
+        "items": 1,
+        "has_more": true,
+        "seconds": 0.09974363585934043
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 500
+        },
+        "page": 0,
+        "sha256": "d50432f8e57eaae93b7089b1e557e447919aab5e55fb5eb321b27559d719e7ab",
+        "items": 500,
+        "has_more": true,
+        "seconds": 0.1258983239531517
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 500,
+          "cursor": "eyJkZXZpY2UiOjEsInVzZXIiOjEsInNpbmNlIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJ1bnRpbCI6IjIwMjYtMTEtMDFUMDA6MDA6MDBaIiwic291cmNlIjpudWxsLCJmaXhfb25seSI6bnVsbCwiYmVmb3JlIjoiMjAyNi0xMC0xNVQyMzo0MzozMFoiLCJiZWZvcmVfc291cmNlIjoibDgwIn0"
+        },
+        "page": 1,
+        "sha256": "665ab2e5dd80a2704f493494dc3e2106c6b98f7cff1b780c13ab12c3f7d359a6",
+        "items": 500,
+        "has_more": true,
+        "seconds": 0.12400074303150177
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 5000
+        },
+        "page": 0,
+        "sha256": "30237b0f719f576b97a888cab3f2de6f0e6ed544c153f19bcd1628166e964f86",
+        "items": 5000,
+        "has_more": true,
+        "seconds": 0.34735454386100173
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 5000,
+          "cursor": "eyJkZXZpY2UiOjEsInVzZXIiOjEsInNpbmNlIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJ1bnRpbCI6IjIwMjYtMTEtMDFUMDA6MDA6MDBaIiwic291cmNlIjpudWxsLCJmaXhfb25seSI6bnVsbCwiYmVmb3JlIjoiMjAyNi0xMC0xNVQxMToxMzozMFoiLCJiZWZvcmVfc291cmNlIjoibDgwIn0"
+        },
+        "page": 1,
+        "sha256": "9334c8a0ea5ab00d158464e7a24a623a7d8531f07ed232104a841f3af6cafff0",
+        "items": 5000,
+        "has_more": true,
+        "seconds": 0.35143890138715506
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 9,
+          "source": "l80"
+        },
+        "page": 0,
+        "sha256": "7588c4449f7e398ab74dc83726cf2e757390a406bc17b168959ea5303c1e2919",
+        "items": 9,
+        "has_more": true,
+        "seconds": 0.09946735389530659
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 9,
+          "source": "l80",
+          "cursor": "eyJkZXZpY2UiOjEsInVzZXIiOjEsInNpbmNlIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJ1bnRpbCI6IjIwMjYtMTEtMDFUMDA6MDA6MDBaIiwic291cmNlIjoibDgwIiwiZml4X29ubHkiOm51bGwsImJlZm9yZSI6IjIwMjYtMTAtMTZUMDE6MDU6MjBaIiwiYmVmb3JlX3NvdXJjZSI6Imw4MCJ9"
+        },
+        "page": 1,
+        "sha256": "9fa44661a0285cfcd9f7d8d83321c064eb1a92de414e30f3feb48f8dcfaadc6a",
+        "items": 9,
+        "has_more": true,
+        "seconds": 0.09840507013723254
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 7,
+          "fix_only": "false"
+        },
+        "page": 0,
+        "sha256": "0e176bb9964568da6024a894d6c55812f8d7799f8ed4e06a8f7bc9c50f9f5840",
+        "items": 0,
+        "has_more": false,
+        "seconds": 2.0387992770411074
+      },
+      {
+        "query": {
+          "since": "2026-10-01T00:00:00Z",
+          "until": "2026-11-01T00:00:00Z",
+          "limit": 7,
+          "source": "missing"
+        },
+        "page": 0,
+        "sha256": "0e176bb9964568da6024a894d6c55812f8d7799f8ed4e06a8f7bc9c50f9f5840",
+        "items": 0,
+        "has_more": false,
+        "seconds": 1.6087722037918866
+      },
+      {
+        "query": {
+          "since": "2026-10-10T00:00:00Z",
+          "until": "2026-10-10T00:01:00Z",
+          "limit": 7
+        },
+        "page": 0,
+        "sha256": "48bb9e3a332025225d55bc3642e4bdaaa35b1e4959ddb923b9bbe0bffc158d5c",
+        "items": 6,
+        "has_more": false,
+        "seconds": 0.07976184412837029
+      }
+    ]
+  },
+  "compression": {
+    "passed": true,
+    "cases": [
+      {
+        "initially_encrypted": false,
+        "compressed_chunks": 1,
+        "points_preserved": 20,
+        "backfill": {
+          "schema": 111,
+          "apply": true,
+          "encrypted": false,
+          "updated": 0,
+          "batches": 0,
+          "pending_before": 0,
+          "pending_after": 0,
+          "complete": true
+        }
+      },
+      {
+        "initially_encrypted": true,
+        "compressed_chunks": 1,
+        "points_preserved": 20,
+        "backfill": {
+          "schema": 111,
+          "apply": true,
+          "encrypted": true,
+          "updated": 0,
+          "batches": 0,
+          "pending_before": 0,
+          "pending_after": 0,
+          "complete": true
+        }
+      }
+    ],
+    "synthetic_databases_removed": true,
+    "production_modified": false
+  },
+  "concurrency": [
+    {
+      "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d",
+      "workers": 8,
+      "iterations": 25,
+      "duration_s": 59.97822345094755,
+      "requests": 200,
+      "errors": [],
+      "http": {
+        "latest": {
+          "count": 40,
+          "p50_s": 0.3002848499454558,
+          "p95_s": 0.3867546571418643,
+          "max_s": 0.3869524230249226
+        },
+        "day_page": {
+          "count": 40,
+          "p50_s": 0.4919602144509554,
+          "p95_s": 0.5891470140777528,
+          "max_s": 0.6009428421966732
+        },
+        "day_aggregate": {
+          "count": 40,
+          "p50_s": 1.9892744880635291,
+          "p95_s": 2.3157651289366186,
+          "max_s": 2.321422996930778
+        },
+        "day_history": {
+          "count": 40,
+          "p50_s": 0.5959932231344283,
+          "p95_s": 0.6855983100831509,
+          "max_s": 0.6856162492185831
+        },
+        "month_page": {
+          "count": 40,
+          "p50_s": 8.500909542664886,
+          "p95_s": 9.136954197194427,
+          "max_s": 9.401067454833537
+        }
+      },
+      "health": {
+        "count": 264,
+        "p50_s": 0.0006858441047370434,
+        "p95_s": 0.0008837678469717503,
+        "max_s": 0.07866132399067283
+      },
+      "encrypted_writes": {
+        "count": 264,
+        "p50_s": 0.007110721431672573,
+        "p95_s": 0.08413662202656269,
+        "max_s": 0.08921646187081933
+      },
+      "db_connection_settings": {
+        "max_connections": "50",
+        "superuser_reserved_connections": "3"
+      },
+      "api_pool_limits": {
+        "queries": 10,
+        "privacy_leases": 16
+      },
+      "storage": "disk-backed ext4/NVMe synthetic DB; DB 2 CPU/1500MiB, API 2 CPU/550MiB",
+      "external_delivery": false,
+      "production_modified": false
+    },
+    {
+      "api_sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9",
+      "workers": 8,
+      "iterations": 25,
+      "duration_s": 18.00970041938126,
+      "requests": 200,
+      "errors": [],
+      "http": {
+        "latest": {
+          "count": 40,
+          "p50_s": 0.28981576301157475,
+          "p95_s": 0.3027667421847582,
+          "max_s": 0.3043619841337204
+        },
+        "day_page": {
+          "count": 40,
+          "p50_s": 0.4090711767785251,
+          "p95_s": 0.4969865111634135,
+          "max_s": 0.4980261670425534
+        },
+        "day_aggregate": {
+          "count": 40,
+          "p50_s": 1.9850751084741205,
+          "p95_s": 2.079811272677034,
+          "max_s": 2.0871266182512045
+        },
+        "day_history": {
+          "count": 40,
+          "p50_s": 0.5112631283700466,
+          "p95_s": 0.6021351469680667,
+          "max_s": 0.6962362071499228
+        },
+        "month_page": {
+          "count": 40,
+          "p50_s": 0.3985567654017359,
+          "p95_s": 0.4839790752157569,
+          "max_s": 0.4868281208910048
+        }
+      },
+      "health": {
+        "count": 81,
+        "p50_s": 0.0006155208684504032,
+        "p95_s": 0.0015887981280684471,
+        "max_s": 0.07906712172552943
+      },
+      "encrypted_writes": {
+        "count": 81,
+        "p50_s": 0.004681632854044437,
+        "p95_s": 0.08042300911620259,
+        "max_s": 0.08424698375165462
+      },
+      "db_connection_settings": {
+        "max_connections": "50",
+        "superuser_reserved_connections": "3"
+      },
+      "api_pool_limits": {
+        "queries": 10,
+        "privacy_leases": 16
+      },
+      "storage": "disk-backed ext4/NVMe synthetic DB; DB 2 CPU/1500MiB, API 2 CPU/550MiB",
+      "external_delivery": false,
+      "production_modified": false
+    },
+    {
+      "api_sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9",
+      "workers": 16,
+      "iterations": 50,
+      "duration_s": 71.65321849379689,
+      "requests": 800,
+      "errors": [],
+      "http": {
+        "latest": {
+          "count": 160,
+          "p50_s": 0.7793009742163122,
+          "p95_s": 1.5071273320354521,
+          "max_s": 2.2152974042110145
+        },
+        "day_page": {
+          "count": 160,
+          "p50_s": 1.001577603397891,
+          "p95_s": 1.6770111098885536,
+          "max_s": 2.2009784253314137
+        },
+        "day_aggregate": {
+          "count": 160,
+          "p50_s": 2.9835298359394073,
+          "p95_s": 3.5020400462672114,
+          "max_s": 4.089572673663497
+        },
+        "day_history": {
+          "count": 160,
+          "p50_s": 1.1969923512078822,
+          "p95_s": 2.002567050047219,
+          "max_s": 2.3903912119567394
+        },
+        "month_page": {
+          "count": 160,
+          "p50_s": 0.9793541729450226,
+          "p95_s": 1.506814202759415,
+          "max_s": 2.296835521236062
+        }
+      },
+      "health": {
+        "count": 160,
+        "p50_s": 0.19507870241068304,
+        "p95_s": 0.6034642341546714,
+        "max_s": 1.0856081387028098
+      },
+      "encrypted_writes": {
+        "count": 160,
+        "p50_s": 0.006762864766642451,
+        "p95_s": 0.0884115919470787,
+        "max_s": 0.09075668966397643
+      },
+      "db_connection_settings": {
+        "max_connections": "50",
+        "superuser_reserved_connections": "3"
+      },
+      "api_pool_limits": {
+        "queries": 10,
+        "privacy_leases": 16
+      },
+      "storage": "disk-backed ext4/NVMe synthetic DB; DB 2 CPU/1500MiB, API 2 CPU/550MiB",
+      "external_delivery": false,
+      "production_modified": false
+    }
+  ],
+  "connection_budget": {
+    "before": 25,
+    "after": 50,
+    "queries_pool": 10,
+    "privacy_lease_pool": 16,
+    "writer": 1,
+    "reserved": 3,
+    "production_modified": false,
+    "scope": "synthetic DB only; both versions remeasured with50"
+  },
+  "protected_restore": {
+    "stale_full_backup_bytes": 129471332,
+    "checkpoint_hash_checked": true,
+    "old_erased_rows_removed": true,
+    "old_consent_not_revived": true,
+    "pause_reapplied": true,
+    "accepted_notice_not_resent": true,
+    "sim_identity_preserved": true,
+    "old_resend_denied": true,
+    "replay": {
+      "replayed_accounts": 1,
+      "paused_controls_replayed": true,
+      "external_copies_verified": false
+    },
+    "external_checkpoint_custody_verified": false
+  },
+  "file_owner": {
+    "maintenance_uid": 0,
+    "api_uid": 65534,
+    "owner_group_preserved": true,
+    "mode": "0600",
+    "api_identity_can_read": true,
+    "plaintext_roundtrip_preserved": true,
+    "external_files_modified": false
+  },
+  "consent_oracle": {
+    "environment": "isolated synthetic",
+    "production_modified": false,
+    "external_messages": 0,
+    "cases": [
+      {
+        "case": "before migration: explicit consent/withdrawal/interval/tenant matrix",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 7
+      },
+      {
+        "case": "before migration: deterministic mixed histories",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 23
+      },
+      {
+        "case": "populated108->111: identity, view owner/grants, all rows and effective decisions preserved",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 23
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 6",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 22
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 10",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 21
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 12",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 21
+      },
+      {
+        "case": "inactive staff removes all affected mappings",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 14
+      },
+      {
+        "case": "unlinked staff removes all affected mappings",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 14
+      }
+    ],
+    "schema_path": [
+      108,
+      111
+    ],
+    "synthetic_mapping_rows": 941,
+    "failed109_transaction_atomic": true,
+    "view_identity_owner_grants_preserved": true,
+    "no_identity_or_consent_rewrite": true,
+    "runtime_select_preserved": true,
+    "api_sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9"
+  },
+  "rust": {
+    "unit_passed": 81,
+    "ignored_run_separately": 7,
+    "fmt": true,
+    "clippy": true
+  },
+  "regression_groups": {
+    "privacy_and_reset": 8,
+    "business": 8,
+    "additional": 4
+  },
+  "limits": [
+    "synthetic warm-cache first-page mix; not production latency guarantee",
+    "full-month history/statistics and rare-filter worst case not optimized",
+    "parallel encrypted DB INSERT is not authenticated LTE ingest load",
+    "actual VPS connection/IO budget and sustained load remain open",
+    "separate HTTP pages retain read-committed semantics",
+    "policy, key/checkpoint custody, PC/IP, actual FCM and physical TLS/sleep acceptance remain open"
+  ],
+  "evidence_capture": "verification-report.png"
+}

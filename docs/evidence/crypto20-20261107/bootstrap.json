@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "production_modified": false,
+  "schema": 103,
+  "checks": [
+    "dry-run writes no principals",
+    "apply creates two distinct officer/operator principals",
+    "encryption policy remains enabled"
+  ],
+  "passed": true
+}

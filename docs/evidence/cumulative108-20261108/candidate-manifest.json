@@ -1,0 +1,50 @@
+{
+  "source_commit": "14078606670820c2582e34938ea22cf19da8552c",
+  "candidate_schema": 108,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+  "excluded": [
+    "credentials",
+    "keyring",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "mapping effective-view history load must meet the 5-second owner-query budget; do not rewrite migration108",
+    "production maintenance window, live I/O/headroom and all GPS writers inventory",
+    "bind logging disabled before keys; pgcrypto provisioned for restricted migration owner",
+    "legacy Timescale retention jobs reviewed, paused and drained before conversion/restore",
+    "separate runtime/maintenance identity, real key custody and protected backup restore",
+    "latest external privacy checkpoint custody and offline replay before reopening",
+    "reviewed retention/notice policy, explicit subject consent and administrator PC/IP/MFA",
+    "real FCM handset arrival, notification entry and dedicated queue alarm acceptance",
+    "physical TLS promotion, buffered pause/resume and 24-hour sleep acceptance",
+    "legacy WAL, snapshots, backups and unclassified/company files separately governed"
+  ],
+  "base_source_manifest_sha256": "5483cde2ca5a2ebe86fad5703bb07a593d9281aba0ad6411159e5ff60f4d2406",
+  "base_verified_source_files": 806,
+  "binary_source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+  "base_artifact_sha256": "a4fc3a66b1ca0c9c410cfb811f720e74c3759a482edf8e057bd480801e58b8cc",
+  "verification_status": "functional_pass_performance_blocked",
+  "mapping_performance_gate_passed": false,
+  "mapping_owner_count_seconds": [
+    23.931,
+    24.7838,
+    24.286
+  ],
+  "changed_files": [
+    "ops/crypto20b_preflight.py",
+    "ops/crypto20b_transition.py"
+  ],
+  "patched_operations_sha256": {
+    "ops/crypto20b_preflight.py": "ed57afe14bcff98948bbf34278a83c4fa256489dc38360000088972538b5bd79",
+    "ops/crypto20b_transition.py": "476a2e3d0af206acf1d7b62ad00fdbbe8a885eb87db651c892631528b45f2b9e"
+  },
+  "rehearsal": "actual99 to108; larger synthetic row/sample counts, not a production clone",
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261108cumulative/candidate-cumulative108-20261108-r2.tar.gz",
+  "artifact_sha256": "0b470b08e8442917879867e4c4c1b3cc398cfd864c0f1b68ea5b8b0e478f5339",
+  "file_count": 71
+}

@@ -1,0 +1,6 @@
+{
+  "python_syntax_compilation": "passed",
+  "prepare_existing_job_rejected": true,
+  "full_prepare_wrapper_executed": false,
+  "initial_setup": "equivalent guarded manual preparation; whole rehearsal rerun from clean schema99"
+}

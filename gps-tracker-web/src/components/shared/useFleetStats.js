@@ -9,7 +9,10 @@
 // KST 기준 (한국 사업자 환경).
 
 import { useMemo } from 'react';
+import { classifyDevice } from '../../colors';
 import { useFleetTripStats } from '../../state';
+import { useBusinessClock } from '../business/useBusinessData';
+import { fleetDistance } from '../../lib/corporateOverview';
 
 function kstDateStr(d = new Date()) {
   const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
@@ -20,29 +23,28 @@ function kstMonthStartStr(d = new Date()) {
 }
 
 export function useFleetStats(devices) {
+  const clock = useBusinessClock();
+  const today = kstDateStr(new Date(clock));
   const params = useMemo(() => ({
     from: new Date(kstMonthStartStr() + 'T00:00:00+09:00').toISOString(),
-    to:   new Date().toISOString(),
-  }), []);
+    to: new Date(new Date(today + 'T00:00:00+09:00').getTime() + 86400_000).toISOString(),
+  }), [today]);
   // devices 유무와 관계없이 항상 fetch — hook 규칙 (조건부 hook 금지).
-  const { data, isLoading, error } = useFleetTripStats(params, {
+  const { data, isLoading, error, refetch } = useFleetTripStats(params, {
+    refetchInterval: 60_000,
     enabled: !!devices,   // devices 없으면 skip
   });
 
   return useMemo(() => {
     const totalCount = devices?.length ?? 0;
     const activeCount = (devices || []).filter(d => d.last_event_kind === 'wake').length;
-    let todayM = 0, monthM = 0;
-    for (const s of (data?.per_device || [])) {
-      monthM += s.total_distance_m || 0;
-      todayM += s.today_distance_m || 0;
-    }
+    const connectedCount = (devices || []).filter(d => ['active', 'gps_loss', 'low_batt', 'critical_batt', 'overcharge'].includes(classifyDevice(d).id)).length;
+    const distance = fleetDistance(devices, data?.per_device, clock);
     return {
-      totalCount, activeCount,
-      todayKm: Math.round(todayM / 100) / 10,
-      monthKm: Math.round(monthM / 1000),
+      totalCount, activeCount, connectedCount, refetch,
+      ...distance,
       loading: isLoading,
       error: error?.message || null,
     };
-  }, [devices, data, isLoading, error]);
+  }, [devices, data, isLoading, error, refetch, clock]);
 }

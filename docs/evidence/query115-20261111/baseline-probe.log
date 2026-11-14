@@ -1,0 +1,33 @@
+PROBE {'device': 1, 'route': 'month_aggregate', 'status': 503, 'seconds': 0.0034155650064349174, 'bytes': 118, 'sha256': '15f8c5695781e35b893c06dc1f1319042e051bf1474b1cb7494d7512c5ead063'}
+PROBE {'device': 1, 'route': 'month_history', 'status': 503, 'seconds': 0.002450818195939064, 'bytes': 118, 'sha256': '15f8c5695781e35b893c06dc1f1319042e051bf1474b1cb7494d7512c5ead063'}
+PROBE {'device': 1, 'route': 'month_page', 'status': 200, 'seconds': 0.16376712219789624, 'bytes': 1644359, 'sha256': '579b780bb097485f43636d98a049e41096c8868e9c0b31ed41047a8d69267784'}
+PROBE {'device': 1, 'route': 'fleet_trips', 'status': 408, 'seconds': 30.00313774915412, 'bytes': 107, 'sha256': '0932955a02cc6de4c0819ac41f224b076f602c5534fce60652fcaa515b3bf62d'}
+PROBE {'device': 1, 'route': 'fleet_csv', 'status': 408, 'seconds': 30.002310479991138, 'bytes': 107, 'sha256': '0932955a02cc6de4c0819ac41f224b076f602c5534fce60652fcaa515b3bf62d'}
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query115/benchmark_location115.py", line 414, in <module>
+    else: globals()[a.command]()
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/etcom-hub/build/gps-provision22-20261111query115/benchmark_location115.py", line 245, in probe
+    status, body, _, elapsed = client.get(path, uid)
+                               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/etcom-hub/build/gps-provision22-20261111query115/benchmark_location115.py", line 204, in get
+    r = conn.getresponse(); data = r.read()
+        ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 1457, in getresponse
+    response.begin()
+  File "/usr/lib/python3.12/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socket.py", line 707, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/ssl.py", line 1252, in recv_into
+    return self.read(nbytes, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/ssl.py", line 1104, in read
+    return self._sslobj.read(len, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

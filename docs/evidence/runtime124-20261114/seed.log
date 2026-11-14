@@ -1,0 +1,18 @@
+SEEDED 1 seconds 11.41
+SEEDED 2 seconds 14.24
+SEEDED 3 seconds 22.48
+SEEDED 4 seconds 14.69
+SEEDED 5 seconds 13.9
+SEEDED 6 seconds 24.19
+SEEDED 7 seconds 12.22
+SEEDED 8 seconds 14.15
+REPAIR {'elapsed': 0.007703591603785753, 'days': 1, 'queue': 23}
+REPAIR {'elapsed': 10.035603815689683, 'days': 40, 'queue': 0}
+REPAIR {'elapsed': 20.06293067196384, 'days': 71, 'queue': 1}
+REPAIR {'elapsed': 30.091853350866586, 'days': 88, 'queue': 0}
+REPAIR {'elapsed': 40.11980946967378, 'days': 120, 'queue': 0}
+REPAIR {'elapsed': 50.148302978836, 'days': 136, 'queue': 12}
+REPAIR {'elapsed': 60.17569229379296, 'days': 168, 'queue': 0}
+REPAIR {'elapsed': 70.20392955699936, 'days': 200, 'queue': 0}
+REPAIR {'elapsed': 80.23270956566557, 'days': 224, 'queue': 0}
+REPAIR {'elapsed': 90.26272262167186, 'days': 248, 'queue': 0}

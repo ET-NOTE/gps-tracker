@@ -1,0 +1,9 @@
+PASS all three encrypted response shapes match113; other-account/auth rejection unchanged {}
+PASS 429, disconnect cancels DB, slot reuse, recovery {'proxy_tls': False, 'route': '/gps-tracker/api/v1/devices/1/locations', 'cancel_seconds': 0.017725700978189707}
+PASS 429, disconnect cancels DB, slot reuse, recovery {'proxy_tls': False, 'route': '/gps-tracker/api/v1/devices/1/locations/page', 'cancel_seconds': 0.018529072869569063}
+PASS 429, disconnect cancels DB, slot reuse, recovery {'proxy_tls': False, 'route': '/gps-tracker/api/v1/devices/1/locations/aggregated', 'cancel_seconds': 0.018669086042791605}
+PASS 429, disconnect cancels DB, slot reuse, recovery {'proxy_tls': True, 'route': '/gps-tracker/api/v1/devices/1/locations', 'cancel_seconds': 0.018642866984009743}
+PASS 429, disconnect cancels DB, slot reuse, recovery {'proxy_tls': True, 'route': '/gps-tracker/api/v1/devices/1/locations/page', 'cancel_seconds': 0.01782394526526332}
+PASS 429, disconnect cancels DB, slot reuse, recovery {'proxy_tls': True, 'route': '/gps-tracker/api/v1/devices/1/locations/aggregated', 'cancel_seconds': 0.019009186886250973}
+PASS DB 20 second deadline returns408 and releases connection {'seconds': 20.00767026282847}
+PASS 10 cancel/success cycles, no stale cancel or idle transaction {}

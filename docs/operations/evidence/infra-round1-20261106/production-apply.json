@@ -1,0 +1,141 @@
+{
+  "mode": "apply",
+  "name": "runtime-account-20261106",
+  "account": {
+    "uid": 997,
+    "shell": "/usr/sbin/nologin",
+    "home": "/nonexistent",
+    "groups": []
+  },
+  "previous_account": "mmm",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-pdf-20261106-r1",
+    "service": "gps-tracker-api"
+  },
+  "api_process": {
+    "user": "gps-api",
+    "group": "gps-api",
+    "supplementary_groups": [],
+    "no_new_privileges": true,
+    "capabilities": {
+      "CapEff": 0,
+      "CapPrm": 0,
+      "CapBnd": 0,
+      "CapAmb": 0
+    },
+    "system_call_filter": false
+  },
+  "api_restarts": 0,
+  "refused": [
+    "-w /home/mmm/projects/gps-tracker-api/.env",
+    "-w /home/mmm/projects/gps-tracker-api/bin/gps-tracker-api",
+    "-w /home/mmm/projects/gps-tracker-api/bin",
+    "-w /home/mmm/projects/gps-tracker-api",
+    "-r /etc/sudoers",
+    "-w /var/run/docker.sock",
+    "-r /home/mmm/.ssh",
+    "-w /home/mmm/gps-ops",
+    "-r /home/mmm/projects/gps-tracker-api/.env.bak_1784951479",
+    "-w /etc/gps-tracker/fcm-service-account.json",
+    "sudo -n true"
+  ],
+  "pdf_processor_self_test": {
+    "as_account": {
+      "open_file": "signal 31",
+      "open_socket": "signal 31",
+      "start_program": "signal 31",
+      "start_process": "signal 31",
+      "too_much_memory": "refused",
+      "too_much_cpu": "signal 9"
+    },
+    "inside_unit_confinement": {
+      "open_file": "signal 31",
+      "open_socket": "signal 31",
+      "start_program": "signal 31",
+      "start_process": "signal 31",
+      "too_much_memory": "refused",
+      "too_much_cpu": "signal 9"
+    }
+  },
+  "workers": {
+    "gps-privacy-accounts.service": "success",
+    "gps-privacy-files.service": "success"
+  },
+  "files": {
+    "/home/mmm/projects/gps-tracker-api/.env": "root:gps-api 640",
+    "/etc/gps-tracker/fcm-service-account.json": "root:gps-api 640"
+  },
+  "upload_trees": {
+    "/home/mmm/uploads": 6,
+    "/home/mmm/gps-private-uploads": 2
+  },
+  "drop_ins": [
+    "/etc/systemd/system/gps-tracker-api.service.d/10-runtime-account.conf",
+    "/etc/systemd/system/gps-privacy-accounts.service.d/10-runtime-account.conf",
+    "/etc/systemd/system/gps-privacy-files.service.d/10-runtime-account.conf"
+  ],
+  "record": "/home/mmm/backups/runtime-account-20261106/record.json",
+  "other_services_unchanged": true,
+  "file_contents_unchanged": true,
+  "_applied_by": "operator (root on the production host)",
+  "_api_restart": {
+    "stopping": "2026-11-06T15:32:43.083+09:00",
+    "listening": "2026-11-06T15:32:43.150+09:00"
+  },
+  "_independent_verification": {
+    "at": "2026-11-06T15:33:53+09:00",
+    "account": "gps-api uid 997, shell /usr/sbin/nologin, home /nonexistent, no other group",
+    "units_run_as": {
+      "gps-tracker-api.service": "gps-api",
+      "gps-privacy-accounts.service": "gps-api",
+      "gps-privacy-files.service": "gps-api"
+    },
+    "api_process": {
+      "Uid": 997,
+      "Groups": "primary only",
+      "NoNewPrivs": 1,
+      "Seccomp": 0,
+      "CapEff": "0",
+      "CapBnd": "0"
+    },
+    "files": {
+      "env": "root:gps-api 640",
+      "fcm": "root:gps-api 640",
+      "uploads": "gps-api:gps-api 750",
+      "private_uploads": "gps-api:gps-api 700",
+      "api_binary": "root:root 755",
+      "pdf_processor": "root:root 755"
+    },
+    "account_checks": {
+      "sudo": false,
+      "read_env": true,
+      "write_env": false,
+      "read_old_env_copy": false,
+      "write_bin_directory": false,
+      "docker_socket": false,
+      "read_deployment_ssh_directory": false,
+      "write_uploads": true,
+      "read_fcm": true
+    },
+    "health_public_and_local": "ok, release privacy-pdf-20261106-r1",
+    "api_error_log_entries": 0,
+    "ingest_after_restart": {
+      "200": 3,
+      "5xx": 0
+    },
+    "other_services_start_times_predate_the_change": [
+      "gps-tracker",
+      "pm2-mmm",
+      "gps-tracker-api-dev",
+      "shield-api",
+      "nginx",
+      "postgresql@14-main",
+      "docker"
+    ],
+    "deployment_account_unchanged": "mmm in sudo and docker; sudoers.d unchanged",
+    "drop_in_directories_mode": "700 (script defect; systemd applies them, `systemctl cat` by another account does not show them)"
+  }
+}

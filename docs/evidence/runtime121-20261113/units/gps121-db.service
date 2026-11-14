@@ -1,0 +1,29 @@
+# /etc/systemd/system/gps121-db.service
+[Unit]
+BindsTo=run-gps121-sort.mount run-gps121-fallback.mount run-gps121-tmp.mount
+Requires=gps121-temp-ready.service
+After=gps121-temp-ready.service run-gps121-sort.mount run-gps121-fallback.mount run-gps121-tmp.mount
+[Service]
+Environment=LD_PRELOAD=/usr/local/lib/gps-nodump.so
+Environment=PYTHONDONTWRITEBYTECODE=1
+MemorySwapMax=0
+LimitCORE=0
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+BindPaths=/run/gps121/tmp:/tmp
+BindPaths=/run/gps121/tmp:/var/tmp
+Slice=gps-workload.slice
+KillMode=control-group
+TimeoutStartSec=900
+TimeoutStopSec=25
+User=postgres
+Group=postgres
+MemoryMax=1500M
+CapabilityBoundingSet=
+ExecStartPre=/usr/bin/python3 /usr/local/lib/runtime118_guard.py /etc/gps121/db.json
+ExecStart=/usr/lib/postgresql/14/bin/postgres -D /var/lib/postgresql/14/main -c config_file=/etc/postgresql/14/main/postgresql.conf -c shared_preload_libraries=timescaledb -c shared_buffers=128MB -c max_connections=50 -c work_mem=2532kB -c logging_collector=off -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c listen_addresses=127.0.0.1
+KillSignal=SIGINT
+ReadWritePaths=/var/lib/postgresql/14/main /run/postgresql /run/gps121
+[Install]
+WantedBy=multi-user.target

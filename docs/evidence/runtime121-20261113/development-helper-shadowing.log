@@ -1,0 +1,11 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+PASS all thirteen migration transactions roll back on injected failure; committed prefixes resume with real candidate
+PASS missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes
+PASS prepared restricted owner completes real single-pass99 to112 with original data preserved and defaults OFF
+PASS 99 to112 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred
+PASS other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected
+PASS conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_cumulative.py", line 298, in <module>
+    job('cleanup',worker={**cfg,'UPLOAD_DIR':uploads,'PRIVATE_UPLOAD_DIR':private})
+TypeError: 'int' object is not callable

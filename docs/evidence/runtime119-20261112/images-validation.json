@@ -1,0 +1,15 @@
+{
+  "integration_groups": 8,
+  "groups": [
+    "admin-only preview; bounded RGB/regions; excluded pixels and all metadata absent; no preview payload retained",
+    "same-admin preview, both confirmations, exact content and revision required",
+    "concurrent issue once; explicit public projection; password/foreign denial; real PNG download; no whole completion",
+    "immutable selection/payload/audit; revocation deletes temporary bytes once",
+    "confirmed company identity/staff/request/revision required; scope change blocks and purges",
+    "cancelled request and closed account remove payload; reopening never recreates it",
+    "expiry denies before cleanup; actual minute worker purges payload; cleanup is idempotent and leaves review metadata only",
+    "per-request issue cap; no source/SIM mutation or raw bytes stored"
+  ],
+  "api_sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23",
+  "schema": 112
+}

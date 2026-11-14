@@ -1,5 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
+:root { --bottom-nav-content-height: 56px; }
+/* Flutter SafeArea owns the system inset for every tab. */
+.app-bottom-nav { height: calc(var(--bottom-nav-content-height) + 1px); padding-bottom: 0; box-sizing: border-box; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
   /* BottomNav 와 같은 surface 색으로 — 모바일에서 패널 닫힘/스크롤 등으로 body 가
@@ -9,7 +12,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 input, button, textarea, select { font-family: inherit; color: inherit; }
-button { user-select: none; }
+button { user-select: none; touch-action: manipulation; }
+:where(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 
 /* 전역 색상 보조 클래스 */
 .surface  { background: var(--surface); }
@@ -148,4 +152,35 @@ button { user-select: none; }
 
   /* A4 가로 — 컬럼 많은 운행일지에 적합. 여백 12mm 표준 */
   @page { size: A4 landscape; margin: 12mm; }
+}
+
+/* Shared keyboard visibility also covers older inline outline:none controls. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* User panels share comfortable input targets; compact switch artwork stays inside its control. */
+.gps-map-tool button, .gps-map-tool select,
+.gps-user-panel button, .gps-user-panel select, .gps-user-panel input:not([type="checkbox"]):not([type="radio"]) { min-height: var(--touch-target); }
+.gps-map-tool button, .gps-user-panel button { touch-action: manipulation; }
+.gps-map-tool input, .gps-map-tool select, .gps-user-panel input, .gps-user-panel select { max-width: 100%; }
+.gps-user-panel input[type="date"], .gps-user-panel input[type="datetime-local"] { min-width: 0; max-width: 100%; }
+.gps-user-panel button:not([style]):not([class]) { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--primary); font-size: 13px; cursor: pointer; }
+.gps-business-panel textarea { min-height: 88px; }
+/* Keep the focus ring inside scrollable dialogs instead of clipping its sides. */
+.gps-modal .gps-modal-body :is(input, select, textarea):focus-visible { outline-offset: -2px; }
+.gps-modal-body > * { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .gps-user-panel input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .gps-user-panel select, .gps-user-panel textarea { font-size: 16px !important; }
 }

@@ -1,0 +1,242 @@
+{
+  "checked_at": "2026-11-11T16:17:18.833323+09:00",
+  "commands": {
+    "ufw": {
+      "command": [
+        "ufw",
+        "status",
+        "verbose"
+      ],
+      "exit_code": 0,
+      "stdout": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n8080/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n22/tcp                     ALLOW IN    221.159.164.177           \n80/tcp                     ALLOW IN    Anywhere                   # listening-inventory-20261007\n443/tcp                    ALLOW IN    Anywhere                   # listening-inventory-20261007\n1883/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n1884/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n1935/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n3010/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5175/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5177/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5180/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8001/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8070/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8081/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8443/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8554/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8883/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8889/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n9996/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n18080/tcp                  ALLOW IN    Anywhere                   # listening-inventory-20261007\n8000/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n8001/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n8189/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n5432/tcp                   ALLOW IN    221.159.164.177           \n8080/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1883/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1884/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1935/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n3010/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5175/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5177/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5180/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8001/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8070/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8081/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8443/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8554/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8883/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8889/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n9996/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n18080/tcp (v6)             ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8000/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007\n8001/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007\n8189/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007\n\n",
+      "stderr": ""
+    },
+    "services": {
+      "command": [
+        "systemctl",
+        "show",
+        "ufw",
+        "fail2ban",
+        "gps-modsecurity",
+        "gps-antivirus-update.timer",
+        "gps-antivirus-scan.timer",
+        "gps-antivirus-scan@daily",
+        "-p",
+        "Id",
+        "-p",
+        "ActiveState",
+        "-p",
+        "SubState",
+        "-p",
+        "UnitFileState"
+      ],
+      "exit_code": 0,
+      "stdout": "Id=ufw.service\nActiveState=active\nSubState=exited\nUnitFileState=enabled\n\nId=fail2ban.service\nActiveState=active\nSubState=running\nUnitFileState=enabled\n\nId=gps-modsecurity.service\nActiveState=active\nSubState=running\nUnitFileState=enabled\n\nId=gps-antivirus-update.timer\nActiveState=active\nSubState=waiting\nUnitFileState=enabled\n\nId=gps-antivirus-scan.timer\nActiveState=inactive\nSubState=dead\nUnitFileState=disabled\n\nId=gps-antivirus-scan@daily.service\nActiveState=failed\nSubState=failed\nUnitFileState=static\n",
+      "stderr": ""
+    },
+    "sshd": {
+      "command": [
+        "/usr/sbin/sshd",
+        "-T"
+      ],
+      "exit_code": 0,
+      "stdout": "pubkeyauthentication yes\npasswordauthentication no\nkbdinteractiveauthentication no",
+      "stderr": ""
+    },
+    "fail2ban": {
+      "command": [
+        "fail2ban-client",
+        "status",
+        "sshd"
+      ],
+      "exit_code": 0,
+      "stdout": "Status for the jail: sshd\n|- Filter\n|  |- Currently failed:\t0\n|  |- Total failed:\t0\n|  `- File list:\t/var/log/auth.log\n`- Actions\n   |- Currently banned:\t0\n   |- Total banned:\t3\n   `- Banned IP list:\t\n",
+      "stderr": ""
+    },
+    "clamav": {
+      "command": [
+        "clamscan",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "ClamAV 1.5.4/28180/Wed Nov 11 15:24:27 2026\n",
+      "stderr": ""
+    },
+    "waf_config": {
+      "command": [
+        "docker",
+        "exec",
+        "gps-modsecurity114",
+        "nginx",
+        "-t"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful\n"
+    },
+    "waf_resource": {
+      "command": [
+        "docker",
+        "stats",
+        "--no-stream",
+        "--format",
+        "{{.Name}} | RAM {{.MemUsage}} | CPU {{.CPUPerc}}",
+        "gps-modsecurity114"
+      ],
+      "exit_code": 0,
+      "stdout": "gps-modsecurity114 | RAM 44.52MiB / 256MiB | CPU 0.00%\n",
+      "stderr": ""
+    },
+    "memory": {
+      "command": [
+        "free",
+        "-m"
+      ],
+      "exit_code": 0,
+      "stdout": "               total        used        free      shared  buff/cache   available\nMem:            2967        1004         760         653        1202        1127\nSwap:           3811         250        3561\n",
+      "stderr": ""
+    },
+    "disk": {
+      "command": [
+        "df",
+        "-h",
+        "/"
+      ],
+      "exit_code": 0,
+      "stdout": "Filesystem                   Size  Used Avail Use% Mounted on\n/dev/mapper/ubuntu--vg-root   45G   34G  8.6G  80% /\n",
+      "stderr": ""
+    },
+    "health": {
+      "command": [
+        "curl",
+        "-fsS",
+        "--max-time",
+        "10",
+        "http://127.0.0.1:3045/health"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"db\":true,\"environment\":\"production\",\"ok\":true,\"release\":\"privacy-log-20261107-r1\",\"service\":\"gps-tracker-api\"}",
+      "stderr": ""
+    }
+  },
+  "waf_engine": [
+    "SecRuleEngine DetectionOnly"
+  ],
+  "checks": {
+    "selftest": {
+      "started_at": "2026-11-11T15:45:21.499292+09:00",
+      "mode": "selftest",
+      "scope": [
+        "local harmless EICAR fixture"
+      ],
+      "network": "disabled by service",
+      "action": "report only; no deletion/quarantine",
+      "skipped": {},
+      "scope_files": {},
+      "files_selected": 1,
+      "bytes_selected": 0,
+      "enumeration_errors": [],
+      "guard_stopped": null,
+      "findings": [
+        {
+          "file_path_sha256": "8156880226bd4f1daf1c7faab1c7f52a3fc491744fceed3c35347764c638ea8f",
+          "signature": "Eicar-Test-Signature"
+        }
+      ],
+      "scanner_summary": "Known viruses: 3628258\nEngine version: 1.5.4\nScanned directories: 0\nScanned files: 1\nInfected files: 1\nData scanned: 68 B\nData read: 68 B (ratio 1.00:1)\nTime: 565.177 sec (9 m 25 s)\nStart Date: 2026:11:11 15:45:22\nEnd Date:   2026:11:11 15:54:48",
+      "scanner_warnings": 0,
+      "finished_at": "2026-11-11T15:54:48.576361+09:00",
+      "elapsed_seconds": 567.088,
+      "scanner_exit": 1,
+      "scanner_peak_rss_kib": 708936,
+      "scanner_cpu_seconds": 48.461,
+      "passed": true
+    },
+    "daily": {
+      "started_at": "2026-11-11T16:06:12.236090+09:00",
+      "mode": "daily",
+      "scope": [
+        "api",
+        "web",
+        "uploads",
+        "private-uploads",
+        "downloads"
+      ],
+      "network": "disabled by service",
+      "action": "report only; no deletion/quarantine",
+      "skipped": {},
+      "scope_files": {
+        "api": 3,
+        "web": 41,
+        "uploads": 0,
+        "private-uploads": 0,
+        "downloads": 8
+      },
+      "files_selected": 52,
+      "bytes_selected": 497576678,
+      "enumeration_errors": [],
+      "guard_stopped": null,
+      "findings": [
+        {
+          "file_path_sha256": "d603e9435f8ada6617cbb24ff47d3adad41ab4c3f347728dfa9e8048a564bd0f",
+          "signature": "Heuristics.Limits.Exceeded.MaxScanTime"
+        },
+        {
+          "file_path_sha256": "cd15e046fc75e83d97a44b3c73b0c66c0660de223767c5e6d401f458e9b2da85",
+          "signature": "Heuristics.Limits.Exceeded.MaxScanTime"
+        },
+        {
+          "file_path_sha256": "0d648daf96697fc29a16659d7ba46a6fec607216d6af372807401e7a74174647",
+          "signature": "Heuristics.Limits.Exceeded.MaxScanTime"
+        },
+        {
+          "file_path_sha256": "2cd2d4e8c4184c1fd39c843cc94952e6657ed7797ec05b8fa29ae3a609dbc86a",
+          "signature": "Heuristics.Limits.Exceeded.MaxScanTime"
+        },
+        {
+          "file_path_sha256": "4546f3a0f82463198f2a7e4bf4c0111641ad392686743d05cf9b82d00e46dc07",
+          "signature": "Heuristics.Limits.Exceeded.MaxScanTime"
+        },
+        {
+          "file_path_sha256": "7d3a66292012baacf158c1dbe8a3868d7dbd98041f9a2970a9476a335be35922",
+          "signature": "Heuristics.Limits.Exceeded.MaxScanTime"
+        }
+      ],
+      "scanner_summary": "",
+      "scanner_warnings": 0,
+      "finished_at": "2026-11-11T16:15:49.053988+09:00",
+      "elapsed_seconds": 576.82,
+      "scanner_exit": -15,
+      "scanner_peak_rss_kib": 693344,
+      "scanner_cpu_seconds": 232.806,
+      "status": "incomplete"
+    },
+    "selftest_resources": {
+      "at": "2026-11-11T06:54:53.231275+00:00",
+      "unit": "gps-antivirus-scan@selftest.service",
+      "guard_stopped": null,
+      "final": {
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryCurrent": "[not set]",
+        "CPUUsageNSec": "[not set]",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "duration_seconds": 572.55,
+      "sample_peak_cgroup_mib": 699.96,
+      "minimum_available_mib": 360.59,
+      "health_failures": 0,
+      "health_p95_ms": 2.955
+    },
+    "deferred": {
+      "at": "2026-11-11T07:15:52.169999+00:00",
+      "reason": "User prioritizes actual terminal evidence; practical validation deferred",
+      "waf": "DetectionOnly pending photo JSON compatibility",
+      "daily_scan": "stopped; daily timer remains disabled",
+      "signature_updates": "timer enabled"
+    }
+  },
+  "evidence_note": "Live allowlisted status; verbose EICAR resource samples omitted, summary retained. PNG pixels unchanged."
+}

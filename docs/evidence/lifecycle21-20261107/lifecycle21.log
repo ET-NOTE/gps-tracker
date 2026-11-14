@@ -1,0 +1,8 @@
+PASS ledger OFF: independent provision/use controls, existing share denied, self rights and other account preserved; stale revisions rejected
+PASS in-flight fence returns conflict without pretending pause succeeded; resume succeeds after drain
+PASS use pause suppresses automatic derived writes while collection remains independent
+PASS six calendar months, no inferred consent, original/event/AI erasure, other historical SIM owner preserved, replay and late derivation blocked
+PASS twelve months requires contract; expired contract removes remaining covered telemetry
+stopped (exit 0)
+PASS offline checkpoint replays collection/account/use pause with fresh ACK epoch and deletion cutoff; incorrect hash/live restore rejected; no backup-erasure claim
+api ready at 172.29.0.3 (ledger off)

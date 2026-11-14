@@ -1,0 +1,11 @@
+{
+  "user_id": 1,
+  "device_id": 1,
+  "rows": 130000,
+  "unique_points": 283001,
+  "source_api": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9",
+  "storage": "Docker named volume on build-host ext4/NVMe; not production VPS",
+  "cpu_limit": 2,
+  "memory_limit_mib": 1500,
+  "database_bytes": 332997411
+}

@@ -1,0 +1,11 @@
+{
+  "read_only": true,
+  "schema_changed": false,
+  "proposal_implemented": false,
+  "scope": "one synthetic history shape; consent/revocation regression still required",
+  "existing_seconds": 23.9534,
+  "confirmed_seed_proposal_seconds": 0.8798,
+  "same_effective_ids": true,
+  "count": 1000,
+  "ids_sha256": "02a350b6167fbad66631db47a1ba9803d8a740d0fbc0cb1a7507f04e7cc56e98"
+}

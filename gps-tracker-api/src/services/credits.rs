@@ -12,7 +12,7 @@ use crate::error::{AppError, AppResult};
 
 #[derive(Debug, Serialize)]
 pub struct CreditTxn {
-    pub id:      i64,
+    pub id: i64,
     pub balance: i64,
 }
 
@@ -36,12 +36,13 @@ pub async fn charge_tx(
             WHERE id = $1 AND credits >= $2
         RETURNING credits"#,
     )
-    .bind(user_id).bind(cost)
-    .fetch_optional(&mut **tx).await?;
+    .bind(user_id)
+    .bind(cost)
+    .fetch_optional(&mut **tx)
+    .await?;
 
-    let balance = updated.ok_or_else(|| AppError::BadRequest(
-        format!("포인트가 부족합니다 (필요 {cost}원).")
-    ))?;
+    let balance = updated
+        .ok_or_else(|| AppError::BadRequest(format!("포인트가 부족합니다 (필요 {cost}원).")))?;
 
     // 거래 로그
     let log_id: i64 = sqlx::query_scalar(
@@ -55,9 +56,13 @@ pub async fn charge_tx(
     .bind(reason)
     .bind(ref_id)
     .bind(note)
-    .fetch_one(&mut **tx).await?;
+    .fetch_one(&mut **tx)
+    .await?;
 
-    Ok(CreditTxn { id: log_id, balance })
+    Ok(CreditTxn {
+        id: log_id,
+        balance,
+    })
 }
 
 /// 차감 (자체 트랜잭션). 후속 작업 없는 단순 차감용.
@@ -91,25 +96,37 @@ pub async fn refund(
     let balance: i64 = sqlx::query_scalar(
         "UPDATE users SET credits = credits + $2 WHERE id = $1 RETURNING credits",
     )
-    .bind(user_id).bind(amount)
-    .fetch_one(&mut *tx).await?;
+    .bind(user_id)
+    .bind(amount)
+    .fetch_one(&mut *tx)
+    .await?;
 
     let log_id: i64 = sqlx::query_scalar(
         r#"INSERT INTO credit_log (user_id, delta, balance, reason, ref_id, note)
            VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id"#,
     )
-    .bind(user_id).bind(amount).bind(balance)
-    .bind(reason).bind(ref_id).bind(note)
-    .fetch_one(&mut *tx).await?;
+    .bind(user_id)
+    .bind(amount)
+    .bind(balance)
+    .bind(reason)
+    .bind(ref_id)
+    .bind(note)
+    .fetch_one(&mut *tx)
+    .await?;
 
     tx.commit().await?;
-    Ok(CreditTxn { id: log_id, balance })
+    Ok(CreditTxn {
+        id: log_id,
+        balance,
+    })
 }
 
 /// 잔액 단순 조회.
 pub async fn balance(db: &PgPool, user_id: i64) -> AppResult<i64> {
     let v: Option<i64> = sqlx::query_scalar("SELECT credits FROM users WHERE id = $1")
-        .bind(user_id).fetch_optional(db).await?;
+        .bind(user_id)
+        .fetch_optional(db)
+        .await?;
     Ok(v.unwrap_or(0))
 }

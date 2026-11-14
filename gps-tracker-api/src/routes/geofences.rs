@@ -3,7 +3,7 @@
 
 use axum::{
     extract::{Path, State},
-    routing::{get, post},
+    routing::get,
     Json, Router,
 };
 use chrono::{DateTime, Utc};
@@ -30,7 +30,7 @@ async fn enforce_geofence_cap(
     target_device: Option<i64>,
 ) -> AppResult<()> {
     let owner_wide_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM geofences WHERE owner_id = $1 AND device_id IS NULL",
+        "SELECT COUNT(*) FROM gps_read_geofences WHERE owner_id = $1 AND device_id IS NULL",
     )
     .bind(owner_id)
     .fetch_one(&state.db)
@@ -39,14 +39,16 @@ async fn enforce_geofence_cap(
     match target_device {
         Some(d) => {
             let dev_count: i64 = sqlx::query_scalar(
-                "SELECT COUNT(*) FROM geofences WHERE owner_id = $1 AND device_id = $2",
+                "SELECT COUNT(*) FROM gps_read_geofences WHERE owner_id = $1 AND device_id = $2",
             )
-            .bind(owner_id).bind(d).fetch_one(&state.db).await?;
+            .bind(owner_id)
+            .bind(d)
+            .fetch_one(&state.db)
+            .await?;
             let total = dev_count + owner_wide_count;
             if total >= MAX_GEOFENCES_PER_SIM {
                 return Err(AppError::Conflict(format!(
-                    "이 SIM 의 지오펜스가 이미 {}개입니다 (최대 {})",
-                    total, MAX_GEOFENCES_PER_SIM
+                    "이 SIM 의 지오펜스가 이미 {total}개입니다 (최대 {MAX_GEOFENCES_PER_SIM})"
                 )));
             }
         }
@@ -54,27 +56,30 @@ async fn enforce_geofence_cap(
             // owner-wide 펜스를 추가하면 모든 디바이스의 effective count 가 +1.
             // 디바이스가 없으면 owner_wide_count 만 검증.
             let device_ids: Vec<i64> =
-                sqlx::query_scalar("SELECT id FROM devices WHERE owner_id = $1")
-                    .bind(owner_id).fetch_all(&state.db).await?;
+                sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE owner_id = $1")
+                    .bind(owner_id)
+                    .fetch_all(&state.db)
+                    .await?;
             if device_ids.is_empty() {
                 if owner_wide_count >= MAX_GEOFENCES_PER_SIM {
                     return Err(AppError::Conflict(format!(
-                        "지오펜스가 이미 {}개입니다 (최대 {})",
-                        owner_wide_count, MAX_GEOFENCES_PER_SIM
+                        "지오펜스가 이미 {owner_wide_count}개입니다 (최대 {MAX_GEOFENCES_PER_SIM})"
                     )));
                 }
                 return Ok(());
             }
             for d in device_ids {
                 let dev_count: i64 = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM geofences WHERE owner_id = $1 AND device_id = $2",
+                    "SELECT COUNT(*) FROM gps_read_geofences WHERE owner_id = $1 AND device_id = $2",
                 )
-                .bind(owner_id).bind(d).fetch_one(&state.db).await?;
+                .bind(owner_id)
+                .bind(d)
+                .fetch_one(&state.db)
+                .await?;
                 let total = dev_count + owner_wide_count;
                 if total >= MAX_GEOFENCES_PER_SIM {
                     return Err(AppError::Conflict(format!(
-                        "디바이스 #{} 의 지오펜스가 이미 {}개입니다 (최대 {})",
-                        d, total, MAX_GEOFENCES_PER_SIM
+                        "디바이스 #{d} 의 지오펜스가 이미 {total}개입니다 (최대 {MAX_GEOFENCES_PER_SIM})"
                     )));
                 }
             }
@@ -85,14 +90,14 @@ async fn enforce_geofence_cap(
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct GeofenceView {
-    pub id:         i64,
-    pub owner_id:   i64,
-    pub device_id:  Option<i64>,
-    pub name:       String,
+    pub id: i64,
+    pub owner_id: i64,
+    pub device_id: Option<i64>,
+    pub name: String,
     pub center_lat: f64,
     pub center_lng: f64,
-    pub radius_m:   i32,
-    pub active:     bool,
+    pub radius_m: i32,
+    pub active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -100,24 +105,24 @@ pub struct GeofenceView {
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreateRequest {
     #[validate(length(min = 1, max = 64))]
-    pub name:       String,
+    pub name: String,
     pub center_lat: f64,
     pub center_lng: f64,
     #[validate(range(min = 10, max = 100000))]
-    pub radius_m:   i32,
-    pub device_id:  Option<i64>,   // None = 모든 본인 디바이스
+    pub radius_m: i32,
+    pub device_id: Option<i64>, // None = 모든 본인 디바이스
 }
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct UpdateRequest {
     #[validate(length(min = 1, max = 64))]
-    pub name:       Option<String>,
+    pub name: Option<String>,
     pub center_lat: Option<f64>,
     pub center_lng: Option<f64>,
     #[validate(range(min = 10, max = 100000))]
-    pub radius_m:   Option<i32>,
-    pub active:     Option<bool>,
-    pub device_id:  Option<Option<i64>>, // 명시적 null 허용 (Some(None) → device_id를 NULL로)
+    pub radius_m: Option<i32>,
+    pub active: Option<bool>,
+    pub device_id: Option<Option<i64>>, // 명시적 null 허용 (Some(None) → device_id를 NULL로)
 }
 
 pub fn router() -> Router<AppState> {
@@ -128,14 +133,11 @@ pub fn router() -> Router<AppState> {
         .route("/geofences/:id/history", get(history_one))
 }
 
-async fn list(
-    State(state): State<AppState>,
-    user: AuthUser,
-) -> AppResult<Json<Vec<GeofenceView>>> {
+async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Vec<GeofenceView>>> {
     let rows = sqlx::query_as::<_, GeofenceView>(
         r#"SELECT id, owner_id, device_id, name, center_lat, center_lng,
                   radius_m, active, created_at, updated_at
-             FROM geofences
+             FROM gps_read_geofences
             WHERE owner_id = $1
             ORDER BY id DESC"#,
     )
@@ -162,16 +164,18 @@ async fn create(
     user: AuthUser,
     Json(req): Json<CreateRequest>,
 ) -> AppResult<Json<GeofenceView>> {
-    req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    req.validate()
+        .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
     check_lat_lng(req.center_lat, req.center_lng)?;
 
     // device_id 지정 시 본인 소유 확인
     if let Some(did) = req.device_id {
-        let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-            .bind(did)
-            .fetch_optional(&state.db)
-            .await?
-            .flatten();
+        let owner: Option<i64> =
+            sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+                .bind(did)
+                .fetch_optional(&state.db)
+                .await?
+                .flatten();
         if owner != Some(user.user_id) {
             return Err(AppError::NotFound);
         }
@@ -210,11 +214,20 @@ async fn arm_geofence_for_devices(
     // device_id 지정시 그 디바이스만, 아니면 owner의 모든 디바이스
     let device_ids: Vec<(i64, Option<f64>, Option<f64>)> = match req.device_id {
         Some(did) => sqlx::query_as(
-            "SELECT id, last_lat, last_lng FROM devices WHERE id = $1 AND owner_id = $2"
-        ).bind(did).bind(owner_id).fetch_all(&state.db).await.unwrap_or_default(),
+            "SELECT id, last_lat, last_lng FROM gps_read_devices WHERE id = $1 AND owner_id = $2",
+        )
+        .bind(did)
+        .bind(owner_id)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default(),
         None => sqlx::query_as(
-            "SELECT id, last_lat, last_lng FROM devices WHERE owner_id = $1"
-        ).bind(owner_id).fetch_all(&state.db).await.unwrap_or_default(),
+            "SELECT id, last_lat, last_lng FROM gps_read_devices WHERE owner_id = $1",
+        )
+        .bind(owner_id)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default(),
     };
 
     for (did, lat, lng) in device_ids {
@@ -235,8 +248,11 @@ async fn arm_geofence_for_devices(
                ON CONFLICT (geofence_id, device_id)
                DO UPDATE SET inside = EXCLUDED.inside"#,
         )
-        .bind(geofence_id).bind(did).bind(inside)
-        .execute(&state.db).await;
+        .bind(geofence_id)
+        .bind(did)
+        .bind(inside)
+        .execute(&state.db)
+        .await;
 
         // 알림은 "이미 안에 있는" 경우에만 발송 (밖이면 조용히 활성).
         if inside {
@@ -244,7 +260,7 @@ async fn arm_geofence_for_devices(
             let _ = sqlx::query(
                 r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
                    VALUES ($1, 'geofence_armed', now(), $2,
-                           (SELECT owner_id FROM devices WHERE id = $1))"#,
+                           (SELECT owner_id FROM gps_read_devices WHERE id = $1))"#,
             )
             .bind(did)
             .bind(serde_json::json!({
@@ -254,7 +270,8 @@ async fn arm_geofence_for_devices(
                 "distance_m":    dist_i,
                 "radius_m":      req.radius_m,
             }))
-            .execute(&state.db).await;
+            .execute(&state.db)
+            .await;
         }
     }
 }
@@ -273,46 +290,52 @@ async fn update(
     Path(id): Path<i64>,
     Json(req): Json<UpdateRequest>,
 ) -> AppResult<Json<GeofenceView>> {
-    req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    req.validate()
+        .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
     // [2026-08-14] 부분 업데이트 개별 검증 — 기존엔 lat/lng 둘 다 보낼 때만 검증해, 하나만 보내면
     //   (나머지는 DB 유지) 범위 밖 값(lat=999)이 저장돼 haversine 거리 오염 → 스퓨리어스 이탈 push.
     if let Some(la) = req.center_lat {
-        if !(-90.0..=90.0).contains(&la) { return Err(AppError::BadRequest("center_lat out of range".into())); }
+        if !(-90.0..=90.0).contains(&la) {
+            return Err(AppError::BadRequest("center_lat out of range".into()));
+        }
     }
     if let Some(ln) = req.center_lng {
-        if !(-180.0..=180.0).contains(&ln) { return Err(AppError::BadRequest("center_lng out of range".into())); }
+        if !(-180.0..=180.0).contains(&ln) {
+            return Err(AppError::BadRequest("center_lng out of range".into()));
+        }
     }
 
     // device_id 변경 시 권한 확인
     if let Some(Some(did)) = req.device_id {
-        let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-            .bind(did)
-            .fetch_optional(&state.db)
-            .await?
-            .flatten();
+        let owner: Option<i64> =
+            sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+                .bind(did)
+                .fetch_optional(&state.db)
+                .await?
+                .flatten();
         if owner != Some(user.user_id) {
             return Err(AppError::NotFound);
         }
     }
 
     let res = sqlx::query(
-        r#"UPDATE geofences
-              SET name       = COALESCE($1, name),
-                  center_lat = COALESCE($2, center_lat),
-                  center_lng = COALESCE($3, center_lng),
-                  radius_m   = COALESCE($4, radius_m),
-                  active     = COALESCE($5, active),
-                  device_id  = CASE WHEN $7 THEN $6 ELSE device_id END,
+        r#"UPDATE geofences AS g
+              SET name       = COALESCE($1, r.name),
+                  center_lat = COALESCE($2, r.center_lat),
+                  center_lng = COALESCE($3, r.center_lng),
+                  radius_m   = COALESCE($4, g.radius_m),
+                  active     = COALESCE($5, g.active),
+                  device_id  = CASE WHEN $7 THEN $6 ELSE g.device_id END,
                   updated_at = now()
-            WHERE id = $8 AND owner_id = $9"#,
+            FROM gps_read_geofences r WHERE g.id=r.id AND g.id = $8 AND g.owner_id = $9"#,
     )
     .bind(&req.name)
     .bind(req.center_lat)
     .bind(req.center_lng)
     .bind(req.radius_m)
     .bind(req.active)
-    .bind(req.device_id.flatten())          // Some(Some(did))→did, Some(None)→NULL, None→NULL
-    .bind(req.device_id.is_some())          // device_id 필드 자체를 보냈는지
+    .bind(req.device_id.flatten()) // Some(Some(did))→did, Some(None)→NULL, None→NULL
+    .bind(req.device_id.is_some()) // device_id 필드 자체를 보냈는지
     .bind(id)
     .bind(user.user_id)
     .execute(&state.db)
@@ -323,10 +346,15 @@ async fn update(
     }
     // [2026-08-14] 위치/반경 변경 또는 재활성화 시 geofence_states 리셋 → 다음 ingest 가 첫 측정으로
     //   재arm(이벤트 없음). 기존엔 stale prev(inside) 기준으로 허위 "이탈" push 를 쏘던 것 차단.
-    if req.center_lat.is_some() || req.center_lng.is_some() || req.radius_m.is_some()
-        || req.active == Some(true) {
+    if req.center_lat.is_some()
+        || req.center_lng.is_some()
+        || req.radius_m.is_some()
+        || req.active == Some(true)
+    {
         let _ = sqlx::query("DELETE FROM geofence_states WHERE geofence_id = $1")
-            .bind(id).execute(&state.db).await;
+            .bind(id)
+            .execute(&state.db)
+            .await;
     }
     fetch(&state, id, user.user_id).await
 }
@@ -351,15 +379,15 @@ async fn remove(
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct GeofenceEvent {
-    pub id:            i64,
-    pub device_id:     i64,
-    pub device_name:   Option<String>,
-    pub geofence_id:   Option<i64>,
+    pub id: i64,
+    pub device_id: i64,
+    pub device_name: Option<String>,
+    pub geofence_id: Option<i64>,
     pub geofence_name: Option<String>,
-    pub kind:          String,             // geofence_armed | geofence_in | geofence_out
-    pub distance_m:    Option<i64>,
-    pub inside:        Option<bool>,       // armed 일 때만
-    pub occurred_at:   DateTime<Utc>,
+    pub kind: String, // geofence_armed | geofence_in | geofence_out
+    pub distance_m: Option<i64>,
+    pub inside: Option<bool>, // armed 일 때만
+    pub occurred_at: DateTime<Utc>,
 }
 
 async fn history_all(
@@ -379,9 +407,14 @@ async fn history_one(
     Path(id): Path<i64>,
 ) -> AppResult<Json<Vec<GeofenceEvent>>> {
     // 본인 펜스 확인
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM geofences WHERE id = $1")
-        .bind(id).fetch_optional(&state.db).await?;
-    if owner != Some(user.user_id) { return Err(AppError::NotFound); }
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_geofences WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await?;
+    if owner != Some(user.user_id) {
+        return Err(AppError::NotFound);
+    }
 
     let rows = sqlx::query_as::<_, GeofenceEvent>(HISTORY_SQL_ONE)
         .bind(user.user_id)
@@ -404,8 +437,8 @@ const HISTORY_SQL_ALL: &str = r#"
            THEN (e.data->>'inside')::boolean
            ELSE NULL END                                      AS inside,
       e.occurred_at
-    FROM events e
-    JOIN devices d ON d.id = e.device_id
+    FROM gps_read_events e
+    JOIN gps_read_devices d ON d.id = e.device_id
     WHERE d.owner_id = $1 AND e.user_id = $1
       AND e.kind IN ('geofence_in','geofence_out','geofence_armed')
     ORDER BY e.occurred_at DESC
@@ -425,8 +458,8 @@ const HISTORY_SQL_ONE: &str = r#"
            THEN (e.data->>'inside')::boolean
            ELSE NULL END                                      AS inside,
       e.occurred_at
-    FROM events e
-    JOIN devices d ON d.id = e.device_id
+    FROM gps_read_events e
+    JOIN gps_read_devices d ON d.id = e.device_id
     WHERE d.owner_id = $1 AND e.user_id = $1
       AND e.kind IN ('geofence_in','geofence_out','geofence_armed')
       AND NULLIF((e.data->>'geofence_id'),'')::bigint = $2
@@ -438,7 +471,7 @@ async fn fetch(state: &AppState, id: i64, owner_id: i64) -> AppResult<Json<Geofe
     let row = sqlx::query_as::<_, GeofenceView>(
         r#"SELECT id, owner_id, device_id, name, center_lat, center_lng,
                   radius_m, active, created_at, updated_at
-             FROM geofences
+             FROM gps_read_geofences
             WHERE id = $1 AND owner_id = $2"#,
     )
     .bind(id)

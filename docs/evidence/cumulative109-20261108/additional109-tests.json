@@ -1,0 +1,18 @@
+[
+  {
+    "check": "ancestry109",
+    "exit": 0
+  },
+  {
+    "check": "query109",
+    "exit": 0
+  },
+  {
+    "check": "external-all",
+    "exit": 0
+  },
+  {
+    "check": "external-boundary",
+    "exit": 0
+  }
+]

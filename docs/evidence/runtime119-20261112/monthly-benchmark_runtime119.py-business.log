@@ -1,0 +1,17 @@
+GPS119 protection {"profile": "controller", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3487"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3486"}], "dumpable": 0, "swap_max": 0, "memory_max": 1073741824}
+{'test': 'fleet_trips response', 'status': 200, 'seconds': 2.008977676741779, 'bytes': 25824}
+{'test': 'fleet_trips shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.04000406013801694}
+{'test': 'fleet_csv response', 'status': 200, 'seconds': 1.8488918393850327, 'bytes': 3189}
+{'test': 'fleet_csv shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.04024537326768041}
+{'test': 'fleet_xlsx response', 'status': 200, 'seconds': 7.666879260912538, 'bytes': 13435}
+{'test': 'fleet_xlsx shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.04143121279776096}
+{'test': 'fleet_stats response', 'status': 200, 'seconds': 2.7556355129927397, 'bytes': 1009}
+{'test': 'fleet_stats shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.03979760594666004}
+{'test': 'vehicle_stats response', 'status': 200, 'seconds': 3.0268706679344177, 'bytes': 997}
+{'test': 'vehicle_stats shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.03943728096783161}
+{'test': 'terminals response', 'status': 200, 'seconds': 2.786677191965282, 'bytes': 1149}
+{'test': 'terminals shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.03999941283836961}
+{'test': 'owner use pause', 'statuses': [423, 423, 423, 423, 423, 423]}
+{'test': 'withdrawn subject excluded', 'trips_empty': True, 'stats_excluded': True}
+{'test': 'fixture restored', 'trips': 31}
+{'test': 'no residual reads or transactions', 'passed': True}

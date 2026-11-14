@@ -1,0 +1,25 @@
+{
+  "release": "privacy-facts-20261106-r1",
+  "commit": "682ab5df2b10a871e6576901e756d0f535034272",
+  "schema": 99,
+  "api_sha256": "1fc16f783259d18898456318ff2ad14eb7caa9278e3739609f077e967f115a4d",
+  "web": "/home/mmm/releases/privacy-facts-20261106-r1/web",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-facts-20261106-r1",
+    "service": "gps-tracker-api"
+  },
+  "previous_release": "pdf-service-20261106-r1",
+  "backup": "/home/mmm/backups/privacy-facts-20261106-r1",
+  "existing_grants_kept": 2,
+  "pdf_processor_service": {
+    "unchanged_and_not_restarted": true,
+    "socket": "active",
+    "proof": "success"
+  },
+  "neighbor_releases_unchanged": true,
+  "existing_collection_policies_unchanged": true,
+  "timers_active": true
+}

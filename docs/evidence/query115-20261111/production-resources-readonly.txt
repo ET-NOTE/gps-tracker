@@ -1,0 +1,8 @@
+2026-11-11T21:52:10+09:00
+               total        used        free      shared  buff/cache   available
+Mem:            2967        1125         317         665        1524         992
+Swap:           3811         233        3578
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-root   45G   34G  8.6G  80% /
+ 21:52:10 up 5 days, 10:47,  1 user,  load average: 0.37, 0.36, 0.29
+active

@@ -1,3 +1,5 @@
+#include "report_config.h"
+#include "collection_control.h"
 // =================================================================
 // 15_a_modular — 13_4_aa 구조적 리팩터.
 //   목표: 사고 대응 패치 누적으로 얽힌 복구 경로(7개)/블로킹 구조를 모듈로 분리하고
@@ -20,6 +22,7 @@
 #include <Preferences.h>    // HW-DIAG: NVS 크래시 카운터 (INT-WDT RTC 소실에도 유지)
 #include <esp_system.h>
 #include "config.h"
+#include "firmware_info.h"
 #include "buzzer.h"
 #include "hw_power.h"
 #include "gps.h"
@@ -30,6 +33,7 @@
 #include "sleep_mgr.h"
 #include "breadcrumb.h"
 #include "loopwdt.h"
+#include "device_security.h"
 
 static uint32_t bootMs = 0;
 static uint32_t nextPostAt = 0;
@@ -86,9 +90,16 @@ static void doPost() {
   int status = -1;
   uint32_t t0 = millis();
   bool ok = lte::httpPost(body, &status);
+  memset(body,0,sizeof(body)); // Do not retain an already-sent location JSON in static RAM.
   bool ok200 = ok && status == 200;
   Serial.printf("[POST] elapsed=%lums status=%d ok=%d conn=%d posted=%u\n",
     (unsigned long)(millis() - t0), status, (int)ok, (int)lte::httpConnected(), posted);
+
+  if (device_security::linkRequired()) {
+    // The signed exchange succeeded; registration waiting is not a radio failure.
+    recovery::notifyPostResult(true);
+    return; // Keep the GPS batch/diagnostic until this SIM is linked.
+  }
 
   if (ok200 && posted > 0) gps::batchDrop(posted);
   recovery::notifyPostResult(ok200);
@@ -116,8 +127,11 @@ void setup() {
   //   대가: 리더 없을 때 로그 drop. 단일 펌웨어 수렴 방향과도 일치.
   Serial.setTxTimeoutMs(0);
   delay(2000);   // USB CDC 안정화 대기
+  device_security::begin();
+  collection_control::begin();
   Serial.println();
   Serial.println(F("=== 15_a_modular — Block 8: sleep_mgr (non-blocking CDC) ==="));
+  Serial.println(firmware::settings);
 #if KC_TEST_BUILD
   Serial.println(F("*********************************************************"));
   Serial.println(F("*  KC TEST BUILD — 콜박스 시험용 (운영 배포 금지!)          *"));
@@ -202,6 +216,7 @@ void setup() {
 
   bc::set("mot_init");
   Serial.println(F("[MOT] init"));  motion::init();
+  report_config::begin();           // NVS settings must load before bounce re-sleep.
   sleep_mgr::begin(bootMs);          // wake/reset 부기 + bounce 필터 (motion 이후)
 
   // 부저 마일스톤 — 모션 wake 6회. (콜드부팅=길게1/크래시=긴3/전원=길게1 은 위 부팅 블록서 처리 →
@@ -224,6 +239,8 @@ void setup() {
 }
 
 void loop() {
+  collection_control::syncSim(lte::iccid());
+  device_security::poll();
   lwdt::feed();   // loop 진전 신호 (AT 대기루프·sleep 진입서도 별도 feed)
   gps::feed();
   motion::tick();

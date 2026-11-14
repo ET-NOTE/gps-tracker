@@ -1,0 +1,12 @@
+.battery-status { min-width: 0; color: var(--battery-color); }
+.battery-status-value { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-variant-numeric: tabular-nums; }
+.battery-status-value strong { font-size: 18px; }
+.battery-status-value > span { font-size: 13px; color: var(--text-2); white-space: nowrap; }
+.battery-status-caption { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-top: 4px; }
+.battery-status-meter { background: var(--surface-2); height: 5px; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.battery-status-meter > span { display: block; height: 100%; background: var(--battery-color); border-radius: inherit; }
+.device-summary > .battery-status { margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.battery-status-compact .battery-status-value strong { font-size: 16px; }
+.battery-runtime { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--text-2); overflow-wrap: anywhere; min-width: 0; }
+.battery-runtime-time { font-weight: 600; color: var(--text); }
+.battery-runtime-basis { font-size: 11px; }

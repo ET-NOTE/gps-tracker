@@ -5,13 +5,25 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use tokio::sync::broadcast;
 
+#[derive(Clone, Debug, Default, Serialize, sqlx::FromRow)]
+pub struct SpeedDetails {
+    pub reported_speed_kmh: Option<f32>,
+    pub speed_interval_s: Option<f32>,
+    pub speed_reason: String,
+    pub speed_source: String,
+}
+
 /// P1: WS 의 batch broadcast 용 fix entry. 1 POST = N fix array.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, sqlx::FromRow)]
 pub struct LocationFix {
     pub recorded_at: DateTime<Utc>,
     pub lat: Option<f64>,
     pub lng: Option<f64>,
     pub sat: Option<i16>,
+    pub speed_kmh: Option<f32>,
+    #[serde(flatten)]
+    #[sqlx(flatten)]
+    pub speed_details: SpeedDetails,
 }
 
 /// (2026-07-29 F7-b) 채팅 메시지 push 용 payload.
@@ -31,6 +43,8 @@ pub struct ChatMessagePayload {
 pub enum Event {
     Location {
         device_id: i64,
+        #[serde(skip)]
+        owner_id: Option<i64>,
         recorded_at: DateTime<Utc>,
         source: String,
         fix: bool,
@@ -39,18 +53,26 @@ pub enum Event {
         sat: Option<i16>,
         ttff_s: Option<i32>,
         vbat_mv: Option<i32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        battery_runtime: Option<Box<crate::services::battery_runtime::RuntimeEstimate>>,
         /// (F11) SIM7080G AT+CBC 로 읽는 모듈 전압 — 실시간 모듈 헬스 관측용.
         /// 이전엔 broadcast 안 실려 wsEventHandler.js 가 msg.cbc_mv 를 undefined 로 읽어 stale 값 유지.
         #[serde(skip_serializing_if = "Option::is_none")]
         cbc_mv: Option<i32>,
         heading: Option<f32>,
+        speed_kmh: Option<f32>,
+        #[serde(flatten)]
+        speed_details: SpeedDetails,
         /// P1: 1 POST 안 모든 fix (firmware batch). legacy single fix POST 는 None.
         /// top-level lat/lng/sat 은 fixes 의 마지막 fix 와 동일 (backward compat).
         #[serde(skip_serializing_if = "Option::is_none")]
         fixes: Option<Vec<LocationFix>>,
     },
+    #[allow(clippy::enum_variant_names)] // Keep the existing event vocabulary and wire contract.
     DeviceEvent {
         device_id: i64,
+        #[serde(skip)]
+        owner_id: Option<i64>,
         kind: String,
         data: serde_json::Value,
     },
@@ -66,7 +88,7 @@ pub enum Event {
 /// broadcast 이벤트 배송 대상 — WS 핸들러가 필터링에 사용.
 pub enum EventTarget {
     /// device 소유자 & subscribe 한 WS 에게만 배송.
-    Device(i64),
+    Device(i64, Option<i64>),
     /// 대상 user_id 의 모든 WS 에게 배송 (subscription 무관).
     User(i64),
 }
@@ -74,8 +96,16 @@ pub enum EventTarget {
 impl Event {
     pub fn target(&self) -> EventTarget {
         match self {
-            Event::Location { device_id, .. } => EventTarget::Device(*device_id),
-            Event::DeviceEvent { device_id, .. } => EventTarget::Device(*device_id),
+            Event::Location {
+                device_id,
+                owner_id,
+                ..
+            } => EventTarget::Device(*device_id, *owner_id),
+            Event::DeviceEvent {
+                device_id,
+                owner_id,
+                ..
+            } => EventTarget::Device(*device_id, *owner_id),
             Event::ChatMessage { target_user_id, .. } => EventTarget::User(*target_user_id),
         }
     }

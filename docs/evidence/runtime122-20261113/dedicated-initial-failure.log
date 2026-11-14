@@ -1,0 +1,8 @@
+dedicated-4g 0 reads 0 ingest 0 PDF 0 cleanup 0 errors 0
+dedicated-4g 10 reads 18 ingest 8 PDF 4 cleanup 0 errors 2
+Traceback (most recent call last):
+  File "/opt/gps121/load_runtime122.py", line 343, in <module>
+    elif action=='dedicated':load('dedicated-4g')
+  File "/opt/gps121/load_runtime122.py", line 328, in load
+    assert not errors,errors[:5]
+AssertionError: [{'cleanup': 'RuntimeError(\'{"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3232"}], "dumpable": 0, "swap_max": 0, "memory_max": 134217728}\\nTraceback (most recent c'}, {'cleanup': "AssertionError({'processed': {'job_id': 1, 'state': 'local_absent', 'reason': 'unlinked'}})"}]

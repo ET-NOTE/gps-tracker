@@ -1,0 +1,40 @@
+{
+  "environment": "isolated encrypted synthetic DB and loopback static server",
+  "production_modified": false,
+  "schema": 112,
+  "checks": [
+    {
+      "check": "schema99 recovery and artifact corruption rejected before service mutation"
+    },
+    {
+      "check": "compatible112 recovery after startup",
+      "seconds": 3.641,
+      "encrypted_rows": 130020,
+      "web_assets_checked": 3,
+      "raw_rows_and_sim_identity_unchanged": true
+    },
+    {
+      "check": "compatible112 recovery after after-api",
+      "seconds": 4.648,
+      "encrypted_rows": 130020,
+      "web_assets_checked": 3,
+      "raw_rows_and_sim_identity_unchanged": true
+    },
+    {
+      "check": "compatible112 recovery after after-web",
+      "seconds": 6.205,
+      "encrypted_rows": 130020,
+      "web_assets_checked": 3,
+      "raw_rows_and_sim_identity_unchanged": true
+    },
+    {
+      "check": "final115 API/web and encrypted location read restored",
+      "api_sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23",
+      "web_assets_checked": 3
+    },
+    {
+      "check": "no residual location queries or idle transactions"
+    }
+  ],
+  "external_messages": 0
+}

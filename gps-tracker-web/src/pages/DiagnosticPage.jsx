@@ -52,7 +52,11 @@ export default function DiagnosticPage() {
   useEffect(() => {
     if (deviceId == null) return;
     let cancelled = false;
+    const controller = new AbortController();
+    let pending = false;
     const doRefresh = async () => {
+      if (pending || cancelled) return;
+      pending = true;
       setLoading(true);
       try {
         const since = new Date(Date.now() - windowMs).toISOString();
@@ -62,7 +66,7 @@ export default function DiagnosticPage() {
         const [rows, bstats, agg, ts] = await Promise.all([
           api.getDeviceEvents(deviceId, { since, limit: 1000 }),
           api.getDeviceBatchStats(deviceId, hours).catch(() => null),
-          api.getDeviceLocationsAggregated(deviceId, aggBucket, since).catch(() => null),
+          api.getDeviceLocationsAggregated(deviceId, aggBucket, since, undefined, { signal: controller.signal }).catch(() => null),
           api.getTimescaleDbStats().catch(() => null),
         ]);
         if (cancelled) return;
@@ -74,6 +78,7 @@ export default function DiagnosticPage() {
       } catch (e) {
         if (!cancelled) setError(e?.message || 'getDeviceEvents failed');
       } finally {
+        pending = false;
         if (!cancelled) setLoading(false);
       }
     };
@@ -83,6 +88,7 @@ export default function DiagnosticPage() {
     }
     return () => {
       cancelled = true;
+      controller.abort();
       clearInterval(pollRef.current);
     };
   }, [deviceId, windowMs, bucketOverride, autoRefresh, refreshNonce]);
@@ -166,7 +172,7 @@ export default function DiagnosticPage() {
 
         {/* TimescaleDB continuous aggregate — 시간대별 fix 수 / 평균 위성 추세 (raw 대신 view scan, ms 응답). */}
         {aggregated && aggregated.rows.length > 0 && (
-          <SectionCard title={`📈 시간대 추세 (${aggregated.bucket} bucket — TimescaleDB continuous aggregate)`}>
+          <SectionCard title={`📈 시간대 추세 (${aggregated.bucket} 구간 · 배치 좌표 포함)`}>
             <div style={{ display: 'flex', gap: 6, marginBottom: 10, fontSize: 11, alignItems: 'center' }}>
               <span style={{ color: '#666' }}>간격:</span>
               {['auto', '1m', '5m', '1h'].map(b => (
@@ -537,6 +543,8 @@ function TimescaleDbStatsBody({ stats }) {
   const c = stats.compression || {};
   const ratio = c.ratio;
   const aggs = stats.aggregates || {};
+  const aggregateMode = stats.aggregate_mode === 'preserved_legacy'
+    ? '과거 집계 · 자동 갱신 종료' : 'continuous aggregate';
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: 12 }}>
@@ -562,9 +570,9 @@ function TimescaleDbStatsBody({ stats }) {
         />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
-        <BatchStatTile label="1m aggregate"  value={fmtBytes(aggs.location_1min)}  sub="continuous aggregate" />
-        <BatchStatTile label="5m aggregate"  value={fmtBytes(aggs.location_5min)}  sub="continuous aggregate" />
-        <BatchStatTile label="1h aggregate"  value={fmtBytes(aggs.location_1hour)} sub="continuous aggregate" />
+        <BatchStatTile label="1m aggregate"  value={fmtBytes(aggs.location_1min)}  sub={aggregateMode} />
+        <BatchStatTile label="5m aggregate"  value={fmtBytes(aggs.location_5min)}  sub={aggregateMode} />
+        <BatchStatTile label="1h aggregate"  value={fmtBytes(aggs.location_1hour)} sub={aggregateMode} />
         <BatchStatTile label="retention"     value="영구" sub="2026-06-27 결정" />
       </div>
       <div style={{ fontSize: 10, color: '#888', marginTop: 10, lineHeight: 1.5 }}>

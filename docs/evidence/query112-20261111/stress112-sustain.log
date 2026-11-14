@@ -1,0 +1,20 @@
+gps-query112-proxy
+gps-query112-api
+API READY: schema111/112 restricted runtime, encrypted, ledger enabled
+PROGRESS stress112 seconds 5 queries 7 ingest 5 errors 0
+PROGRESS stress112 seconds 25 queries 30 ingest 23 errors 0
+PROGRESS stress112 seconds 45 queries 44 ingest 41 errors 0
+PROGRESS stress112 seconds 65 queries 55 ingest 59 errors 0
+PROGRESS stress112 seconds 85 queries 63 ingest 77 errors 0
+PROGRESS stress112 seconds 105 queries 77 ingest 95 errors 0
+PROGRESS stress112 seconds 125 queries 100 ingest 114 errors 0
+PROGRESS stress112 seconds 145 queries 117 ingest 132 errors 0
+PROGRESS stress112 seconds 165 queries 125 ingest 150 errors 0
+PROGRESS stress112 seconds 185 queries 147 ingest 168 errors 0
+PROGRESS stress112 seconds 205 queries 152 ingest 186 errors 0
+PROGRESS stress112 seconds 225 queries 167 ingest 204 errors 0
+PROGRESS stress112 seconds 245 queries 180 ingest 222 errors 0
+PROGRESS stress112 seconds 265 queries 193 ingest 241 errors 0
+PROGRESS stress112 seconds 285 queries 206 ingest 259 errors 0
+PROGRESS stress112 seconds 305 queries 218 ingest 275 errors 0
+SUSTAIN PASS stress112 requests 218 ingest 275 traversals 0

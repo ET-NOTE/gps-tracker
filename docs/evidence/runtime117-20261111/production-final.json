@@ -1,0 +1,20 @@
+{
+  "checked_utc": "2026-11-11T14:41:36.944720+00:00",
+  "read_only": true,
+  "cpus": "6",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-log-20261107-r1",
+    "service": "gps-tracker-api"
+  },
+  "schema": "99",
+  "connection_counts_including_observer": "20|5|15",
+  "units": {
+    "gps-tracker-api": "NRestarts=0\nExecMainStartTimestamp=Sat 2026-11-07 17:16:49 KST\nMemoryCurrent=49008640\nMemoryMax=infinity\nMemorySwapMax=infinity\nLimitCORE=infinity\nActiveState=active",
+    "postgresql@14-main": "NRestarts=0\nExecMainStartTimestamp=Fri 2026-11-06 11:04:53 KST\nMemoryCurrent=1202753536\nMemoryMax=infinity\nMemorySwapMax=infinity\nLimitCORE=infinity\nActiveState=active"
+  },
+  "core_pattern": "|/usr/share/apport/apport -p%p -s%s -c%c -d%d -P%P -u%u -g%g -F%F -- %E",
+  "disk": "Filesystem                    1B-blocks        Used  Available Use% Mounted on\n/dev/mapper/ubuntu--vg-root 47863853056 36379344896 9134039040  80% /"
+}

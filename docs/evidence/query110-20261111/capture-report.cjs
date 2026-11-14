@@ -1,0 +1,21 @@
+// Render measured test evidence. This is not a production application screen.
+const fs = require('fs'), path = require('path');
+const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'C:/Users/msb/AppData/Local/Temp/gps-admin19-qa/node_modules/playwright');
+const read = n => JSON.parse(fs.readFileSync(path.join(__dirname,n),'utf8'));
+const s=read('validation-summary.json'), before=read('baseline109.json'), after=read('final110.json');
+const load=read('load110-8.json'), exact=read('equivalence110.json');
+if(!s.verified || !exact.passed || load.errors.length || s.production_applied) throw Error('Evidence incomplete');
+const labels={month_history:'월간 전체 이력',day_history:'하루 이력',month_keys:'월간 표본 키',small_history:'10분 이력'};
+const rows=Object.keys(labels).map(k=>`<tr><th>${labels[k]}</th><td>${before.queries[k].seconds.toFixed(3)}초</td><td>${after.queries[k].seconds.toFixed(3)}초</td><td>${after.queries[k].count.toLocaleString('ko-KR')}건</td></tr>`).join('');
+const html=`<!doctype html><html lang="ko"><meta charset="utf-8"><title>110차 암호화 위치 조회 검증</title><style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f8;color:#172c46;font:16px/1.65 'Malgun Gothic',sans-serif}main{width:1180px;margin:30px auto}.tag{display:inline-block;background:#fff0ca;color:#735500;padding:6px 14px;border-radius:6px;font-weight:700}h1{font-size:34px;margin:14px 0 4px}h2{font-size:22px;margin:0 0 12px}p{color:#53687d;margin:6px 0}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:22px 0}.card,section{background:#fff;border:1px solid #d7e1ed;border-radius:12px;padding:22px}.card strong{display:block;font-size:30px;color:#006e77}.card span{color:#64758b;font-size:14px}section{margin-top:18px}th,td{padding:12px 8px;text-align:left;border-top:1px solid #e3e9ef}table{width:100%;border-collapse:collapse}.alert{background:#fffaf0;border-color:#e4cc8d}.hash{font-size:12px;word-break:break-all;color:#62758a;margin-top:18px}ul{padding-left:24px;margin:4px 0}
+</style><main><div class="tag">합성 자료 · 격리 검증 보고서 — 운영 배포 / 운영 화면 증빙 아님</div>
+<h1>암호화 위치 조회 성능 · 동시 요청 검증</h1><p>2026-11-11 · 110차 · 좌표와 원본 본문은 암호문 유지 · 시간 구간으로 후보 배치를 먼저 선택</p>
+<div class="cards"><div class="card"><span>월간 이력 전체 열 비교</span><strong>283,001행 일치</strong><span>109 / 110 반환값 SHA-256 동일</span></div><div class="card"><span>8개 동시 작업자</span><strong>200요청 · 오류 0</strong><span>최근 위치 · 하루 · 월간 경로 혼합</span></div><div class="card"><span>암호화 복원·동의/철회 검증</span><strong>99 → 110 통과</strong><span>운영 미배포 · 후보 준비 완료</span></div></div>
+<section><h2>단독 SQL 조회 — 동일 자료</h2><table><thead><tr><th>조회</th><th>109</th><th>110</th><th>반환 건수</th></tr></thead><tbody>${rows}</tbody></table><p>DB 2 CPU · 1,500MiB · ext4/NVMe · JIT OFF · 각1회 / warm cache. 운영 VPS의 응답 보장이 아닙니다.</p></section>
+<section><h2>정확성·보호 경계</h2><ul><li>${exact.checks}개 비교: 기간 경계, 늦은 배치, 중복, 소유 계정/SIM, 시각·암호문 변조, 보정 중단·재개</li><li>평문·암호화 Timescale 압축 chunk 모두 전환 및 조회 일치</li><li>실제99 바이너리에서11개 migration 실패·재개,13만 위치 행·파일 암호화와 보호 복원</li><li>22/22B/22D, 기존 업무8시험군, 동의·철회 판정기, Rust81건+별도7건 통과</li></ul></section>
+<section><h2>8개 동시 요청과 쓰기 병행</h2><p>최근 위치 p95 ${(load.http.latest.p95_s*1000).toFixed(0)}ms · 하루 목록 ${(load.http.day_page.p95_s*1000).toFixed(0)}ms · 하루 이력 ${(load.http.day_history.p95_s*1000).toFixed(0)}ms</p><p>Health ${load.health.count}회 p95 ${(load.health.p95_s*1000).toFixed(2)}ms · 암호화 DB INSERT ${load.encrypted_writes.count}회 p95 ${(load.encrypted_writes.p95_s*1000).toFixed(2)}ms</p><p>DB 쓰기는 별도 연결의 직접 INSERT이며, 실물 LTE·수집 API 처리량 시험은 아닙니다.</p></section>
+<section class="alert"><h2>남은 운영 인수</h2><p>월간 목록 p95 <b>${load.http.month_page.p95_s.toFixed(2)}초</b>. 월간 전개·정렬 비용과 실제 VPS I/O는 추가 인수가 필요합니다.</p><p>실제 키/checkpoint 보관 · 정책/동의 · 관리자 PC/IP · FCM/경보 · 실물 TLS/24시간 절전은 별도 항목입니다.</p></section>
+<p class="hash">API SHA-256 ${load.api_sha256}<br>원본 검증 JSON·로그와 파일 해시는 같은 증빙 폴더의 SHA256SUMS에 보관합니다.</p></main></html>`;
+fs.writeFileSync(path.join(__dirname,'verification-report.html'),html);
+(async()=>{const browser=await chromium.launch({headless:true,channel:'msedge'});try{const page=await browser.newPage({viewport:{width:1240,height:1100},deviceScaleFactor:1});await page.setContent(html,{waitUntil:'load'});await page.screenshot({path:path.join(__dirname,'verification-report.png'),fullPage:true});}finally{await browser.close();}})();

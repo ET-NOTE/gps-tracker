@@ -1,0 +1,28 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+PASS all ten migration transactions roll back on injected failure; committed prefixes resume with real candidate
+PASS missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes
+PASS prepared restricted owner completes real single-pass99 to109 with original data preserved and defaults OFF
+PASS 99 to109 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261108cumulative109/rehearse_cumulative109.py", line 123, in failure
+    call()
+  File "/home/etcom-hub/build/gps-provision22-20261108cumulative109/rehearse_cumulative109.py", line 257, in <lambda>
+    failure(lambda: transition(DSN, ring, uploads, private, 'fence'), 'stop ALL')
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/etcom-hub/build/gps-provision22-20261108cumulative109/src/ops/crypto20b_transition.py", line 104, in run
+    db=connect(dsn,ring)
+       ^^^^^^^^^^^^^^^^^
+  File "/home/etcom-hub/build/gps-provision22-20261108cumulative109/src/ops/crypto20b_transition.py", line 20, in connect
+    if not name.startswith('gps_') or version not in (104,105,106,107,108): raise ValueError('GPS schema 104/105/106/107/108 required')
+                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: GPS schema 104/105/106/107/108 required
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261108cumulative109/rehearse_cumulative109.py", line 257, in <module>
+    failure(lambda: transition(DSN, ring, uploads, private, 'fence'), 'stop ALL')
+  File "/home/etcom-hub/build/gps-provision22-20261108cumulative109/rehearse_cumulative109.py", line 125, in failure
+    assert contains in str(e), type(e).__name__
+           ^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError

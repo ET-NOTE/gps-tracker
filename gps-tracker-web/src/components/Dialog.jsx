@@ -1,7 +1,9 @@
+import { createPortal } from 'react-dom';
+import { lockModalFocus } from '../lib/modalFocus';
 // 커스텀 모달 — 브라우저 네이티브 alert/confirm/prompt 대체.
 // imperative API: await confirmDialog({...}) / alertDialog({...}) / promptDialog({...}).
 // DialogHost 한 번 마운트하면 어디서든 호출 가능.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 
 // ─── 싱글톤 큐 ───────────────────────────────────────────
@@ -85,25 +87,17 @@ function DialogModal({ state, top, onCancel, onConfirm }) {
   const inputRef = useRef(null);
   const confirmRef = useRef(null);
 
-  useEffect(() => {
-    // 진입 시 적절한 요소에 포커스 — input 있으면 input, 없으면 confirm
-    setTimeout(() => {
-      if (state.kind === 'prompt') inputRef.current?.focus();
-      else                          confirmRef.current?.focus();
-    }, 50);
-  }, [state.kind]);
+  const dialogRef = useRef(null), backdropRef = useRef(null);
+  const options = useRef(null);
+  options.current = { closeOnEsc: true, onClose: onCancel,
+    initialFocus: state.kind === 'prompt' ? inputRef : confirmRef };
+  useLayoutEffect(() => lockModalFocus(dialogRef.current, backdropRef.current, () => options.current), []);
 
-  // ESC / Enter 단축키 (최상위 dialog 만 반응)
+  // Single-line prompt Enter submits; buttons keep their native keyboard actions.
   useEffect(() => {
     if (!top) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onCancel();
-      } else if (e.key === 'Enter' && state.kind !== 'prompt') {
-        e.preventDefault();
-        onConfirm();
-      } else if (e.key === 'Enter' && state.kind === 'prompt' && !state.multiline) {
+      if (e.key === 'Enter' && !e.isComposing && state.kind === 'prompt' && !state.multiline && e.target === inputRef.current) {
         e.preventDefault();
         onConfirm(val);
       }
@@ -116,9 +110,9 @@ function DialogModal({ state, top, onCancel, onConfirm }) {
   const accent = TONE_COLOR[tone] || 'var(--primary)';
   const iconName = TONE_ICON[tone] || 'spark';
 
-  return (
-    <div style={st.backdrop} onClick={state.kind === 'alert' ? onConfirm : onCancel}>
-      <div style={st.modal} onClick={e => e.stopPropagation()}>
+  return createPortal(
+    <div ref={backdropRef} style={st.backdrop} onClick={state.kind === 'alert' ? onConfirm : onCancel}>
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={state.title} style={st.modal} onClick={e => e.stopPropagation()}>
         {/* 헤더 — 아이콘 + 타이틀 */}
         <div style={st.header}>
           <div style={{
@@ -174,7 +168,7 @@ function DialogModal({ state, top, onCancel, onConfirm }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>, document.body
   );
 }
 

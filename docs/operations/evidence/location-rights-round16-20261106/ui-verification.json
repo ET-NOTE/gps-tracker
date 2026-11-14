@@ -1,0 +1,69 @@
+{
+  "mode": "actual components with synthetic API; PDF reads are real responses saved from the isolated test API, preview and issue are imitated in the browser",
+  "desktopWidth": 1280,
+  "mobileWidth": 390,
+  "horizontalOverflow": false,
+  "consoleErrors": 0,
+  "listRow": "2026-01-01 · 보험 · 120,000원 · 영수증 #1 · PDF",
+  "page1": {
+    "shown": [
+      1414,
+      707
+    ],
+    "status": "서버 원본 연결 · 변경 시 제공 중단 · 1414 × 707px · PDF 1/2쪽 · 서버가 원본에서 그린 쪽 · 공개 영역 0/30개",
+    "reference": "지출 #1 / 영수증 #1 / 1쪽",
+    "previousDisabled": true,
+    "nextDisabled": false,
+    "left": [
+      255,
+      0,
+      0
+    ],
+    "right": [
+      255,
+      255,
+      255
+    ]
+  },
+  "page2": {
+    "shown": [
+      1000,
+      1000
+    ],
+    "status": "서버 원본 연결 · 변경 시 제공 중단 · 1000 × 1000px · PDF 2/2쪽 · 서버가 원본에서 그린 쪽 · 공개 영역 0/30개",
+    "reference": "지출 #1 / 영수증 #1 / 2쪽",
+    "previousDisabled": false,
+    "nextDisabled": true,
+    "square": [
+      0,
+      0,
+      255
+    ]
+  },
+  "selectedRegion": {
+    "x": 300,
+    "y": 600,
+    "width": 100,
+    "height": 100
+  },
+  "previewInside": [
+    0,
+    0,
+    255
+  ],
+  "previewOutsideBlack": true,
+  "previewAndTwoConfirmations": true,
+  "issueHistoryLine": "지출 #1 / 영수증 #1 / 2쪽 · 서버 원본 연결 · PDF 2/2쪽 · 서버가 원본에서 그린 쪽 · 회사 검토 #9",
+  "mobile": {
+    "canvasPixels": [
+      1414,
+      707
+    ],
+    "displayed": [
+      338,
+      170
+    ],
+    "pageControlsInsideViewport": true
+  },
+  "productionAccountSessionChanged": false
+}

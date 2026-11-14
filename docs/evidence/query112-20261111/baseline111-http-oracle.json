@@ -1,0 +1,32 @@
+[
+  {
+    "route": "month_aggregate",
+    "sha256": "0d41317e6de62495eeb2cfb14420f20b814e8b19c7ab4d521de272be442746ab",
+    "items": 362
+  },
+  {
+    "route": "month_history",
+    "sha256": "2a239aaebc05d2660969dd812d7335033a4ee8d2f93bb0754809410c051fa0e4",
+    "items": 10000
+  },
+  {
+    "route": "day_aggregate",
+    "sha256": "0185dfd75ee3ff984479375eac380d2ca3acd11d20d3d68e70b3e91637e34e24",
+    "items": 289
+  },
+  {
+    "route": "latest",
+    "sha256": "42f124e706fb78858e88a769a7ef028744b52cc17c0bc6e681f2d4727a3f7007",
+    "items": 1
+  },
+  {
+    "route": "grouped",
+    "sha256": "504ad9601381372692f2d99d6d5b9a8133dab50d12ef7fd3bb264fd0feb4a2cf",
+    "items": 100
+  },
+  {
+    "route": "filtered",
+    "sha256": "57e6247e13b68287e0323f3396c48e86c242eb5041c18295123b879d14f25b17",
+    "items": 100
+  }
+]

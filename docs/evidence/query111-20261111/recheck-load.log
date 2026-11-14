@@ -1,0 +1,20 @@
+gps-query111-api
+gps-query111-api
+gps-query111-db
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query111/load_location111.py", line 200, in <module>
+    start()
+  File "/home/etcom-hub/build/gps-provision22-20261111query111/load_location111.py", line 58, in start
+    raise RuntimeError('test API exited; inspect its private startup log')
+RuntimeError: test API exited; inspect its private startup log
+gps-query111-api
+gps-query111-api
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query111/recheck_load.py", line 35, in <module>
+    run(PY,'load_location111.py','start')
+  File "/home/etcom-hub/build/gps-provision22-20261111query111/recheck_load.py", line 10, in run
+    else: subprocess.run(args,check=True)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '('/home/etcom-hub/build/gps-location-erasure-20261105/venv/bin/python', 'load_location111.py', 'start')' returned non-zero exit status 1.

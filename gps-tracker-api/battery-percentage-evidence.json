@@ -1,0 +1,214 @@
+{
+  "version": "gps-1s-standard-520211-20261014-final",
+  "standard_device": "520211",
+  "user_zero_mv": 2600,
+  "zero_reference_window": [
+    "2026-10-14T13:48:00+09:00",
+    "2026-10-14T13:49:00+09:00"
+  ],
+  "zero_window_mean_mv": 2605.37,
+  "zero_window_median_mv": 2603.36,
+  "zero_window_snapshot_min_mv": 1900,
+  "reboot_evidence": {
+    "before": "2026-10-14T13:47:52.644074+09:00",
+    "before_uptime_s": 2566,
+    "after": "2026-10-14T13:48:35.998485+09:00",
+    "after_uptime_s": 23,
+    "reset_cause": "BROWNOUT"
+  },
+  "start_reference": "2026-10-12T10:45:00+09:00",
+  "end_reference": "2026-10-14T13:48:00+09:00",
+  "limitations": "User-selected zero following repeated crash beeps; not the first brownout (also detected at 13:05). Zero is not a recommended safety cutoff or electrochemical empty. Exact initial USB removal unknown. Elapsed-time fraction at this load is not charge counting or guaranteed remaining runtime.",
+  "method": "Five-minute physical-voltage medians at relative elapsed-time fractions; rounded to 5mV, adjacent reversals pooled. User zero 2.60V, display full convention 4.20V.",
+  "targets": [
+    {
+      "percent": 0,
+      "mv": 2600,
+      "scope_median_mv": 2622.17,
+      "center": "2026-10-14T13:48:00+09:00",
+      "samples": 51
+    },
+    {
+      "percent": 1,
+      "mv": 2720,
+      "scope_median_mv": 2718.47,
+      "center": "2026-10-14T13:17:22.200000+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 2,
+      "mv": 2770,
+      "scope_median_mv": 2770.73,
+      "center": "2026-10-14T12:46:44.400000+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 3,
+      "mv": 2785,
+      "scope_median_mv": 2787.4,
+      "center": "2026-10-14T12:16:06.600000+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 5,
+      "mv": 2860,
+      "scope_median_mv": 2861.66,
+      "center": "2026-10-14T11:14:51+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 10,
+      "mv": 3055,
+      "scope_median_mv": 3052.95,
+      "center": "2026-10-14T08:41:42+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 15,
+      "mv": 3215,
+      "scope_median_mv": 3216.35,
+      "center": "2026-10-14T06:08:33+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 20,
+      "mv": 3315,
+      "scope_median_mv": 3317.26,
+      "center": "2026-10-14T03:35:24+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 25,
+      "mv": 3400,
+      "scope_median_mv": 3399.49,
+      "center": "2026-10-14T01:02:15+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 40,
+      "mv": 3475,
+      "scope_median_mv": 3473.65,
+      "center": "2026-10-13T17:22:48+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 50,
+      "mv": 3655,
+      "scope_median_mv": 3656.61,
+      "center": "2026-10-13T12:16:30+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 60,
+      "mv": 3775,
+      "scope_median_mv": 3772.62,
+      "center": "2026-10-13T07:10:12+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 75,
+      "mv": 3895,
+      "scope_median_mv": 3895.63,
+      "center": "2026-10-12T23:30:45+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 80,
+      "mv": 3945,
+      "scope_median_mv": 3946.02,
+      "center": "2026-10-12T20:57:36+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 90,
+      "mv": 4030,
+      "scope_median_mv": 4027.52,
+      "center": "2026-10-12T15:51:18+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 95,
+      "mv": 4060,
+      "scope_median_mv": 4061.68,
+      "center": "2026-10-12T13:18:09+09:00",
+      "samples": 60
+    },
+    {
+      "percent": 100,
+      "mv": 4200,
+      "scope_median_mv": 4112.65,
+      "center": "2026-10-12T10:45:00+09:00",
+      "samples": 60
+    }
+  ],
+  "curve": [
+    [
+      2600,
+      0
+    ],
+    [
+      2720,
+      1
+    ],
+    [
+      2770,
+      2
+    ],
+    [
+      2785,
+      3
+    ],
+    [
+      2860,
+      5
+    ],
+    [
+      3055,
+      10
+    ],
+    [
+      3215,
+      15
+    ],
+    [
+      3315,
+      20
+    ],
+    [
+      3400,
+      25
+    ],
+    [
+      3475,
+      40
+    ],
+    [
+      3655,
+      50
+    ],
+    [
+      3775,
+      60
+    ],
+    [
+      3895,
+      75
+    ],
+    [
+      3945,
+      80
+    ],
+    [
+      4030,
+      90
+    ],
+    [
+      4060,
+      95
+    ],
+    [
+      4200,
+      100
+    ]
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "rows": 283001,
+  "pages": 57,
+  "page_size": 5000,
+  "sha256_all_return_columns": "3f691d3e8e3f0685def48207cfa47470565215050093bd29bea19266327d5248",
+  "seconds": 33.266459012404084,
+  "oracle": "unchanged110 full history; all111 pages descending with identical speed/context fields"
+}

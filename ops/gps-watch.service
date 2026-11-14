@@ -1,0 +1,11 @@
+# User unit: ~/.config/systemd/user/gps-watch.service. Installed by ops/install_gps_watch.sh.
+# One cycle of ops/gps_watch.py. Needs no root and no network service of its own.
+[Unit]
+Description=GPS external watch: one cycle (checks gps.serial.kr from outside)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/gps-watch/gps_watch.py run
+TimeoutStartSec=50
+Nice=10
+NoNewPrivileges=yes

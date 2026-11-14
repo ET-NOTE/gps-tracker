@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "rows_before": 30,
+  "rows_during": 30,
+  "rows_after": 31,
+  "verified_statement_snapshot": true,
+  "concurrent_commit_visible_next_request": true,
+  "scope": "single page statement; separate HTTP pages retain existing read-committed semantics"
+}

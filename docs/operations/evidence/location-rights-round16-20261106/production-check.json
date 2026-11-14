@@ -1,0 +1,63 @@
+{
+  "transferred_at": "2026-11-06T13:37:51+09:00",
+  "stage": "/home/mmm/gps-artifacts/privacy-pdf-20261106-r1",
+  "files": 10,
+  "all_hashes_equal_to_build_host": true,
+  "modes_preserved": {
+    "gps-pdf-render": "755",
+    "smoke-private.json": "600"
+  },
+  "check_started_at": "2026-11-06T13:38:02+09:00",
+  "check_finished_at": "2026-11-06T13:38:06+09:00",
+  "exit": 0,
+  "result": {
+    "mode": "check",
+    "release": "privacy-pdf-20261106-r1",
+    "ready": true,
+    "found": {
+      "database": "previous",
+      "health_release": "privacy-raster-20261106-r1",
+      "api_sha256": "9acd61b3e21a6c188fe9140a764d67ea65b9ee83c18edef2404de78387691250",
+      "renderer_sha256": null,
+      "web": "/home/mmm/releases/privacy-raster-20261106-r1/web"
+    },
+    "artifact_api_sha256": "b6ac9edb5bacae749db3c2561f95763860599abc7de7099dcf50bc63a427bba7",
+    "artifact_renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+    "pdf_processor": {
+      "self_test": "passed",
+      "run_as": "mmm",
+      "blocked": {
+        "open_file": "signal 31",
+        "open_socket": "signal 31",
+        "start_program": "signal 31",
+        "start_process": "signal 31",
+        "too_much_memory": "refused",
+        "too_much_cpu": "signal 9"
+      },
+      "api_service_system_call_filter": false,
+      "api_service_memory_max": "max",
+      "host_memory_and_swap_available_mib": 5357,
+      "processor_memory_ceiling_mib": 768
+    },
+    "commit": "9ac432292080ba10b35d8ae05a03ac84bc81ac0d",
+    "changes_made": false
+  },
+  "independent_verification_after_check": {
+    "stage_entries": 10,
+    "api_directory_unchanged": true,
+    "processor_installed": false,
+    "backup_release_or_staged_link_created": false,
+    "web_link": "/home/mmm/releases/privacy-raster-20261106-r1/web",
+    "health_release": "privacy-raster-20261106-r1",
+    "schema": 97,
+    "migration_rows": 97,
+    "new_columns": 0,
+    "pdf_in_receipt_scope": false,
+    "api_restarts": 0,
+    "processor_processes_left": 0,
+    "api_error_log_entries": 0,
+    "api_slow_statement_warnings": "routine and unrelated: 49 since the 12:02 restart, before and after the check (mostly COMMIT and single-row UPDATE just over 1 s)"
+  },
+  "kernel": "5.15.0-151-generic",
+  "apply_run": false
+}

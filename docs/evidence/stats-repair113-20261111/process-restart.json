@@ -1,0 +1,22 @@
+{
+  "scope": "synthetic isolated build host; no production",
+  "schema": 112,
+  "checks": {
+    "baseline112_partial_stays3": true,
+    "sigkill_committed4_pending27": true,
+    "restart_completed31": true,
+    "fixes93": true,
+    "encrypted_original_unchanged": true,
+    "existing3_not_rewritten": true
+  },
+  "restart_to_complete_seconds": 1.255,
+  "daily_stats": {
+    "days": 31,
+    "fix_count": 93,
+    "min_distance_m": 222.38985328938924,
+    "max_distance_m": 222.38985328938924
+  },
+  "api_sha256": "36cf858d9f8f5ef08168f32e8a2c1d0349b2a0893650f7eeba36f8fe4f7f9287",
+  "resources": "gps-provision22-api-20261111repair113 5.547MiB / 550MiB 0.00%\ngps-provision22-db-20261111repair113 191.7MiB / 700MiB 0.41%",
+  "passed": true
+}

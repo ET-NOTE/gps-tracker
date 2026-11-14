@@ -1,0 +1,20 @@
+{
+  "suite": "22D correction and reconsent",
+  "passed": [
+    "correction suspends old reads, preserves notices and requires fresh exact-subject consent; duplicate/stale/cross-subject requests denied",
+    "reconsent restores only withdrawn subject and interval; new roots or other subjects cannot bypass withdrawal across multiple revisions",
+    "unlinked staff is excluded from both readers and reported ineffective",
+    "read/correction fence, tenant checks, shape validation and immutable DB identity prevent silent rewrites",
+    "public sharing cannot reuse company consent or exploit an unmapped company SIM; create and extend denied before charging",
+    "stale or pre-108 checkpoint cannot restore revoked consent; conflicting lineage rejected atomically; replay disables delivery"
+  ],
+  "schema": 112,
+  "api_sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a",
+  "encrypted": true,
+  "fixture": {
+    "owner": 10,
+    "device": 4
+  },
+  "production_modified": false,
+  "external_messages": 0
+}

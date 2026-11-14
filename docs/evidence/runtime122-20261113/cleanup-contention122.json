@@ -1,0 +1,21 @@
+{
+  "passed": [
+    {
+      "adapter": "psycopg3",
+      "deferred_seconds": 2.0008169962093234,
+      "pending_unchanged": true,
+      "transaction_usable_after_rollback": true,
+      "retry_deleted_once": true,
+      "other_errors_propagate": true
+    },
+    {
+      "adapter": "psycopg2",
+      "deferred_seconds": 2.001837666146457,
+      "pending_unchanged": true,
+      "transaction_usable_after_rollback": true,
+      "retry_deleted_once": true,
+      "other_errors_propagate": true
+    }
+  ],
+  "previous_synthetic_jobs_drained": 1
+}

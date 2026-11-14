@@ -1,0 +1,42 @@
+{
+  "release": "pdf-service-20261106-r1",
+  "schema": 98,
+  "request_id": 37,
+  "delivery_id": 6,
+  "synthetic_account_ids": [
+    62,
+    63,
+    64
+  ],
+  "renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+  "pdf_pages_rendered": [
+    [
+      1,
+      1414,
+      707
+    ],
+    [
+      2,
+      1000,
+      1000
+    ]
+  ],
+  "processor_reached_through": "child of the API",
+  "requests_served_by_the_service": 0,
+  "api_runs_as": "gps-api",
+  "read_proof_bound_to_page_and_pixels": true,
+  "missing_page_refused": true,
+  "unreadable_and_encrypted_pdf_refused_without_read_proof": true,
+  "selection_bound_to_page": true,
+  "forged_client_rgb_ignored": true,
+  "excluded_pixels_removed_and_metadata_absent": true,
+  "preview_and_download_exact_bytes": true,
+  "password_and_foreign_account_denial": true,
+  "source_changed_delivery_purged": true,
+  "no_automatic_whole_request_completion": true,
+  "synthetic_source_removed": true,
+  "synthetic_accounts_closed": true,
+  "real_accounts_and_sim_ownership_unchanged": true,
+  "external_messages_sent": false,
+  "full_erasure_confirmed": false
+}

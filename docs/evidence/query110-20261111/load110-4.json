@@ -1,0 +1,257 @@
+{
+  "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d",
+  "workers": 4,
+  "iterations": 10,
+  "duration_s": 12.482588056940585,
+  "requests": 40,
+  "errors": [],
+  "http": {
+    "latest": {
+      "count": 8,
+      "p50_s": 0.14973267912864685,
+      "p95_s": 0.17219429090619087,
+      "max_s": 0.17219429090619087
+    },
+    "day_page": {
+      "count": 8,
+      "p50_s": 0.24094623746350408,
+      "p95_s": 0.3668964961543679,
+      "max_s": 0.3668964961543679
+    },
+    "day_aggregate": {
+      "count": 8,
+      "p50_s": 0.9839406805112958,
+      "p95_s": 1.2182626347057521,
+      "max_s": 1.2182626347057521
+    },
+    "day_history": {
+      "count": 8,
+      "p50_s": 0.31050595245324075,
+      "p95_s": 0.4015753101557493,
+      "max_s": 0.4015753101557493
+    },
+    "month_page": {
+      "count": 8,
+      "p50_s": 4.385740913683549,
+      "p95_s": 4.971770147792995,
+      "max_s": 4.971770147792995
+    }
+  },
+  "health": {
+    "count": 59,
+    "p50_s": 0.000744903925806284,
+    "p95_s": 0.0009922799654304981,
+    "max_s": 0.0013182652182877064
+  },
+  "encrypted_writes": {
+    "count": 59,
+    "p50_s": 0.006906678434461355,
+    "p95_s": 0.058096813037991524,
+    "max_s": 0.06316770194098353
+  },
+  "raw": [
+    {
+      "route": "latest",
+      "seconds": 0.13629969488829374,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.3060782519169152,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.3253238177858293,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.3668964961543679,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 1.2072283569723368,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 1.2182626347057521,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.4015753101557493,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 1.2084417450241745,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.39135710010305047,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.31845356803387403,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.971770147792995,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.126199115999043,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.2801261260174215,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.634126987773925,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.1714631919749081,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.604154374450445,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.2140340320765972,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 0.9358339160680771,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.17219429090619087,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.701656349003315,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.16316566336899996,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.21497839270159602,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.30166596500203013,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.2110748146660626,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 0.9747383259236813,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 0.9931430350989103,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.30043383222073317,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 0.9282027329318225,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.2859295438975096,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.30255833687260747,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.167327452916652,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.1307997778058052,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.26691408222541213,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.116874215193093,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.1696442230604589,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.10911302594468,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.2128589367493987,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 4.069268554914743,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.1171575840562582,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 0.9432560135610402,
+      "bytes": 116151
+    }
+  ],
+  "storage": "disk-backed ext4/NVMe synthetic DB; DB 2 CPU/1500MiB, API 2 CPU/550MiB",
+  "external_delivery": false,
+  "production_modified": false
+}
