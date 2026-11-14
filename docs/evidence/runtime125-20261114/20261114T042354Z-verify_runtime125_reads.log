@@ -1,0 +1,28 @@
+Traceback (most recent call last):
+  File "/opt/gps121/verify_runtime125_reads.py", line 90, in <module>
+    if __name__=='__main__':final()
+  File "/opt/gps121/verify_runtime125_reads.py", line 58, in final
+    rows=read(uid,did,tls=True)
+  File "/opt/gps121/verify_runtime125_reads.py", line 22, in read
+    status,body,_,elapsed=load.Client().get(path,uid)
+  File "/opt/gps121/load_runtime122.py", line 121, in get
+    c.request('POST' if body is not None else 'GET',path,body,headers or ({'Authorization':'Bearer '+b.token(uid)} if uid else {}))
+  File "/usr/lib/python3.10/http/client.py", line 1312, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1358, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1307, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1067, in _send_output
+    self.send(msg)
+  File "/usr/lib/python3.10/http/client.py", line 1005, in send
+    self.connect()
+  File "/usr/lib/python3.10/http/client.py", line 1477, in connect
+    super().connect()
+  File "/usr/lib/python3.10/http/client.py", line 971, in connect
+    self.sock = self._create_connection(
+  File "/usr/lib/python3.10/socket.py", line 845, in create_connection
+    raise err
+  File "/usr/lib/python3.10/socket.py", line 833, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused

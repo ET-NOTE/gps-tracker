@@ -1,0 +1,21 @@
+{
+  "stale_full_backup_bytes": 129400264,
+  "checkpoint_hash_checked": true,
+  "old_erased_rows_removed": true,
+  "old_consent_not_revived": true,
+  "pause_reapplied": true,
+  "accepted_notice_not_resent": true,
+  "sim_identity_preserved": true,
+  "old_resend_denied": true,
+  "replay": {
+    "replayed_accounts": 1,
+    "paused_controls_replayed": true,
+    "external_copies_verified": false
+  },
+  "external_checkpoint_custody_verified": false,
+  "maintenance_kept": true,
+  "checkpoint_requires_opt_in": true,
+  "checkpoint_rejects_runtime_role": true,
+  "checkpoint_rejects_other_clients": true,
+  "checkpoint_rejects_mode_mismatch": true
+}

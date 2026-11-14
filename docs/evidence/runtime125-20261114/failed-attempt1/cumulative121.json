@@ -1,0 +1,51 @@
+{
+  "environment": "isolated synthetic; not production evidence",
+  "production_modified": false,
+  "baseline_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "candidate_sha256": "89293eb52d7c07229e7fdfa594a63aa61282abe14ed1bf5d0a66d21fb3e15bc8",
+  "schema_path": [
+    99,
+    113
+  ],
+  "external_messages": 0,
+  "checks": [
+    {
+      "check": "actual schema99 binary and historical migration checksums; synthetic workload seeded"
+    },
+    {
+      "check": "all fourteen migration transactions roll back on injected failure; committed prefixes resume with real candidate",
+      "versions": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113
+      ]
+    },
+    {
+      "check": "missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes"
+    },
+    {
+      "check": "prepared restricted owner completes real single-pass99 to113 with original data preserved and defaults OFF"
+    },
+    {
+      "check": "99 to113 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred"
+    }
+  ],
+  "timings": {},
+  "synthetic": {
+    "rows": 130000,
+    "batched_rows": 17000,
+    "expanded_points": 623000
+  },
+  "database_bytes_before": 87919963
+}

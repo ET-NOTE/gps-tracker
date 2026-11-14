@@ -1,0 +1,14 @@
+{
+  "removed": [
+    {
+      "path": "/home/etcom-hub/build/gps-tracker/cache/target/debug",
+      "bytes": 849252352
+    },
+    {
+      "path": "/home/etcom-hub/build/gps-tracker/cache/target/release",
+      "bytes": 769679360
+    }
+  ],
+  "preserved_files": 847,
+  "free_bytes": 4971462656
+}

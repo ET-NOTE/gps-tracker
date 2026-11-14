@@ -1,0 +1,12 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+PASS all fourteen migration transactions roll back on injected failure; committed prefixes resume with real candidate
+PASS missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes
+PASS prepared restricted owner completes real single-pass99 to113 with original data preserved and defaults OFF
+PASS 99 to113 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred
+PASS other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected
+PASS conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes
+PASS restricted API and actual cleanup and closure units use same key/mode; policy, DDL and maintenance bypass rejected
+PASS all original location values survive encryption; physical columns NULL; 623000 raw samples yield283001 deduplicated in-range history points
+PASS full Timescale DB plus encrypted files restore while fenced; separately held key required; all location/file hashes equal
+PASS restored113 DB through actual non-owner API: aggregate/history/page
+PASS cumulative rehearsal complete; isolated encrypted API ready for business/privacy regression
