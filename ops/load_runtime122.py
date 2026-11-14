@@ -239,23 +239,28 @@ def load(label,seconds=300):
     start_time=time.monotonic()
 
     def reader(index):
+        rng=random.Random(124+index)
         client=Client(); d=data['devices'][index]; count=0;cursor=None;points=pages=0;walk_start=time.monotonic()
         while time.monotonic()<deadline and not stop.is_set():
             routes=b.routes(d['device_id'])
             choices=routes[:3] if index<4 else routes[2:]
             name,path=routes[2] if index==0 else choices[count%len(choices)]
             if index==0 and cursor:path+='&cursor='+quote(cursor)
-            begin=time.monotonic()
+            begin=time.monotonic(); request_seconds=retry_seconds=0.; attempt_count=0
             try:
                 for attempt in range(3):
                     status,body,headers,elapsed=client.get(path,d['user_id'])
+                    request_seconds+=elapsed;attempt_count+=1
                     attempts.append(dict(route=name,status=status,seconds=elapsed))
                     if status!=429:break
                     retry=float(headers.get('retry-after','0'))
                     assert json.loads(body).get('code')=='location_read_busy' and 0<retry<=10
                     if attempt==2:break
-                    if stop.wait(max(retry,2**attempt)+random.random()*.5):return
-                done.append(dict(route=name,status=status,seconds=time.monotonic()-begin,device=index))
+                    wait_begin=time.monotonic()
+                    if stop.wait(max(retry,2**attempt)+rng.random()*.5):return
+                    retry_seconds+=time.monotonic()-wait_begin
+                done.append(dict(route=name,status=status,seconds=time.monotonic()-begin,device=index,
+                    request_seconds=request_seconds,retry_wait_seconds=retry_seconds,attempt_count=attempt_count))
                 if status==200 and index==0:
                     payload=json.loads(body);points+=len(payload['items']);pages+=1;cursor=payload['next_cursor']
                     if not payload['has_more']:
@@ -327,7 +332,9 @@ def load(label,seconds=300):
     for x in done:grouped[x['route']].append(x)
     result=dict(label=label,seconds=seconds,elapsed=time.monotonic()-start_time,workers=8,api_sha256=b.SHA,
         statuses=dict(Counter(x['status'] for x in done)),attempts=dict(Counter(x['status'] for x in attempts)),
-        per_route={k:dict(statuses=dict(Counter(x['status'] for x in v)),latency=b.stats([x['seconds'] for x in v if x['status']==200])) for k,v in grouped.items()},
+        per_route={k:dict(statuses=dict(Counter(x['status'] for x in v)),latency=b.stats([x['seconds'] for x in v if x['status']==200]),
+            phases={phase:b.stats([x[phase] for x in v if x['status']==200]) for phase in ['request_seconds','retry_wait_seconds']},
+            attempts=sum(x['attempt_count'] for x in v),retry_wait_total=sum(x['retry_wait_seconds'] for x in v)) for k,v in grouped.items()},
         ingest=dict(statuses=dict(Counter(x['status'] for x in ingest)),latency=b.stats([x['seconds'] for x in ingest])),
         health=dict(statuses=dict(Counter(x['status'] for x in health)),latency=b.stats([x['seconds'] for x in health])),
         pdf=dict(completed=len(pdf),latency=b.stats([x['seconds'] for x in pdf])),cleanup=dict(completed=len(cleanups),latency=b.stats([x['seconds'] for x in cleanups]),deferred=len(deferred)),

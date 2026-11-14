@@ -111,7 +111,7 @@ def reference_guard():
     start(300);print('PASS reference added during contention survives; deleted only after final reference removed')
 
 
-def final():
+def final(expected_schema=112):
     client=Client();tests=[]
     data=b.fixture()
     for d in data['devices']:
@@ -141,7 +141,7 @@ def final():
         renderers=sum(p.read_text().strip()=='gps-pdf-render' for p in Path('/proc').glob('[0-9]*/comm') if p.exists()),
         ready_days=sql("SELECT count(*) FROM daily_stats WHERE date BETWEEN '2026-10-01' AND '2026-10-31'")[0][0],
         queries=tests,production_modified=False,activation_ready=False)
-    assert state['schema']==112 and state['ready_days']==248
+    assert state['schema']==expected_schema and state['ready_days']==248
     assert all(state[k]==0 for k in ('plaintext_locations','idle_transactions','images','pending_cleanup','renderers'))
     save('final-state122',state);print('PASS28 queries,8 foreign denials,TLS/auth gates,encrypted DB and drained queues')
 

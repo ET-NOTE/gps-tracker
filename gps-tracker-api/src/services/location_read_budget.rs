@@ -77,12 +77,66 @@ static READS: ReadBudget = ReadBudget::new(Duration::from_millis(250));
 // It uses the same unprivileged DB role, never a superuser or pg_signal_backend.
 static CANCEL_POOL: OnceLock<PgPool> = OnceLock::new();
 
+// Opt-in numeric diagnostics (RUST_LOG=gps_read_timing=debug). Never record
+// identities, SQL, parameters, coordinates, connection strings or URLs.
+struct ReadTiming {
+    class: &'static str,
+    phase: &'static str,
+    since: tokio::time::Instant,
+    admission_ms: f64,
+    pool_ms: f64,
+    setup_ms: f64,
+    scope_ms: f64,
+    outcome: &'static str,
+}
+
+impl ReadTiming {
+    fn new(history: bool) -> Self {
+        Self {
+            class: if history { "history" } else { "regular" },
+            phase: "admission",
+            since: tokio::time::Instant::now(),
+            admission_ms: 0.0,
+            pool_ms: 0.0,
+            setup_ms: 0.0,
+            scope_ms: 0.0,
+            outcome: "unfinished",
+        }
+    }
+
+    fn advance(&mut self, phase: &'static str) {
+        let elapsed = self.since.elapsed().as_secs_f64() * 1000.0;
+        match self.phase {
+            "admission" => self.admission_ms += elapsed,
+            "pool" => self.pool_ms += elapsed,
+            "setup" => self.setup_ms += elapsed,
+            "scope" => self.scope_ms += elapsed,
+            _ => {}
+        }
+        self.phase = phase;
+        self.since = tokio::time::Instant::now();
+    }
+}
+
+impl Drop for ReadTiming {
+    fn drop(&mut self) {
+        let last_phase = self.phase;
+        self.advance("done");
+        // Scope includes SQL/decryption, result transfer and work while the
+        // connection is held. It is NOT a pure database execution timer.
+        tracing::debug!(target: "gps_read_timing", class=self.class, outcome=self.outcome,
+            last_phase, admission_ms=self.admission_ms, pool_ms=self.pool_ms,
+            setup_ms=self.setup_ms, scope_ms=self.scope_ms, "location read phases");
+    }
+}
+
 pub struct ReadQuery {
     connection: Option<PoolConnection<Postgres>>,
     permit: Option<ReadPermits<'static>>,
     cancel_pool: PgPool,
     backend: Option<i32>,
     marker: String,
+    timing: ReadTiming,
 }
 
 impl ReadQuery {
@@ -95,7 +149,11 @@ impl ReadQuery {
     }
 
     async fn start_class(pool: &PgPool, history: bool) -> AppResult<Self> {
-        let permit = READS.acquire(history).await?;
+        let mut timing = ReadTiming::new(history);
+        let permit = READS.acquire(history).await.inspect_err(|_| {
+            timing.outcome = "busy";
+        })?;
+        timing.advance("pool");
         let cancel_pool = CANCEL_POOL
             .get_or_init(|| {
                 PgPoolOptions::new()
@@ -110,12 +168,15 @@ impl ReadQuery {
                     )
             })
             .clone();
+        let connection = pool.acquire().await?;
+        timing.advance("setup");
         let mut read = Self {
-            connection: Some(pool.acquire().await?),
+            connection: Some(connection),
             permit: Some(permit),
             cancel_pool,
             backend: None,
             marker: format!("gps-read-{}", uuid::Uuid::new_v4()),
+            timing,
         };
         // Set the independent DB deadline before doing expensive work. Transaction
         // local settings cannot escape into the next request on this connection.
@@ -123,6 +184,12 @@ impl ReadQuery {
             .execute(read.connection())
             .await?;
         sqlx::query("SET LOCAL statement_timeout = '20s'")
+            .execute(read.connection())
+            .await?;
+        // Parameter-sensitive encrypted range queries can get an expensive
+        // generic plan. Replan only these reads with their actual SIM/range;
+        // do not change the pool default or other services on the shared DB.
+        sqlx::query("SET LOCAL plan_cache_mode = 'force_custom_plan'")
             .execute(read.connection())
             .await?;
         let marker = read.marker.clone();
@@ -133,6 +200,7 @@ impl ReadQuery {
         .fetch_one(read.connection())
         .await?;
         read.backend = Some(pid);
+        read.timing.advance("scope");
         Ok(read)
     }
 
@@ -144,6 +212,7 @@ impl ReadQuery {
         sqlx::query("COMMIT").execute(self.connection()).await?;
         // Completed reads can safely reuse the normal pool connection.
         self.connection.take();
+        self.timing.outcome = "completed";
         Ok(())
     }
 }
@@ -210,6 +279,55 @@ pub fn query_error(error: sqlx::Error) -> AppError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    #[ignore = "requires disposable runtime124 DB and unprivileged runtime role"]
+    async fn read_settings_are_transaction_local_and_do_not_escape_pool() {
+        let url = std::env::var("GPS_READ_TEST_DATABASE_URL").expect("isolated DB required");
+        let pool = PgPoolOptions::new()
+            .max_connections(1)
+            .connect(&url)
+            .await
+            .unwrap();
+        let defaults: (String, String) = sqlx::query_as(
+            "SELECT current_setting('plan_cache_mode'), current_setting('statement_timeout')",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        let mut read = ReadQuery::start_history(&pool).await.unwrap();
+        let active: (String, String, bool) = sqlx::query_as(
+            "SELECT current_setting('plan_cache_mode'), current_setting('statement_timeout'), \
+             current_setting('transaction_read_only')::bool",
+        )
+        .fetch_one(read.connection())
+        .await
+        .unwrap();
+        assert_eq!(active, ("force_custom_plan".into(), "20s".into(), true));
+        read.finish().await.unwrap();
+        let restored: (String, String) = sqlx::query_as(
+            "SELECT current_setting('plan_cache_mode'), current_setting('statement_timeout')",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(restored, defaults);
+        pool.close().await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn timing_stages_do_not_double_count_wait_or_query_scope() {
+        let mut timing = ReadTiming::new(true);
+        for (delay, next) in [(10, "pool"), (20, "setup"), (30, "scope"), (40, "done")] {
+            tokio::time::advance(Duration::from_millis(delay)).await;
+            timing.advance(next);
+        }
+        assert_eq!(timing.admission_ms, 10.0);
+        assert_eq!(timing.pool_ms, 20.0);
+        assert_eq!(timing.setup_ms, 30.0);
+        assert_eq!(timing.scope_ms, 40.0);
+        assert_eq!(timing.class, "history");
+    }
 
     #[tokio::test(start_paused = true)]
     async fn excess_reads_are_rejected_and_release_allows_retry() {
