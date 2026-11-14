@@ -124,8 +124,10 @@ def verify():
                 else:
                     q.execute("SELECT gps_open_cell(fixes_jsonb_sealed,'wrong-context') FROM location_records WHERE device_id=%s AND fixes_jsonb_sealed IS NOT NULL LIMIT 1",(did,))
                 q.fetchall()
-            except l.psycopg2.Error:
-                checks.append(dict(case=case,rejected=True))
+            except l.psycopg2.Error as error:
+                expected='location decryption key unavailable' if case=='missing-key' else 'location ciphertext authentication failed'
+                assert error.pgcode=='P0001' and error.diag.message_primary==expected
+                checks.append(dict(case=case,rejected=True,sqlstate=error.pgcode,reason=expected))
             else:raise AssertionError(case+' unexpectedly accepted')
             finally:q.execute('ROLLBACK TO SAVEPOINT denied')
     finally:

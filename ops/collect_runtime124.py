@@ -7,7 +7,7 @@ import sys
 import tarfile
 import re
 from rehearse_runtime124 import JOB, HOST, NET, original_call as call, base
-from build_cleanup_20261113 import containers, REQUIRED, sha
+from build_cleanup_20261113 import containers, protected, REQUIRED, sha
 
 OUT=JOB/'out'
 
@@ -92,8 +92,12 @@ def finish():
     assert call('docker','network','inspect',NET,check=False).returncode!=0
     before=json.loads((OUT/'cache-cleanup124.json').read_text());after=snapshot()
     assert before['containers']==after['containers'],'Unrelated container changed'
+    retained=json.loads((OUT/'prior-artifacts124.json').read_text())
+    current={k:v for k,v in protected().items() if not k.startswith(JOB.name+'/')}
+    assert retained==current,'Prior retained build artifact changed'
     write('cleanup124',dict(at=after['at'],unrelated_containers=len(after['containers']),
         unchanged_since=before['at'],prior_artifacts_verified=len(REQUIRED),free_bytes=after['free_bytes'],
+        retained_files_verified=len(retained),retained_hashes_unchanged=True,
         removed_only_labelled_synthetic_container_and_network=True,keys_and_database_removed=True,
         automatic_retention_added=False,production_modified=False))
     print('PASS final environment and preserved artifacts')
