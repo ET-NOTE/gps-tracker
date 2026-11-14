@@ -71,12 +71,29 @@ def adapter(name):
 
 def prepare():
     base.guard()
-    assert not base.OUT.exists()
-    base.OUT.mkdir()
-    assert shutil.disk_usage(JOB).free > 4*1024**3
+    base.OUT.mkdir(exist_ok=True)
+    assert not (base.OUT/'host-before.json').exists()
     from build_cleanup_20261113 import protected, containers
     snapshot = dict(protected=protected(), containers=containers(), free_bytes=shutil.disk_usage(JOB).free)
     (base.OUT/'host-before.json').write_text(json.dumps(snapshot, indent=2))
+    #Only reproducible Rust targets; retained binaries, archives and DBs untouched.
+    if snapshot['free_bytes'] < 4.5*1024**3:
+        import fcntl
+        cache=JOB.parent/'gps-tracker/cache'
+        with (cache/'build.lock').open('a') as lock:
+            fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            assert not any(p.read_text().strip() in ('cargo','rustc') for p in Path('/proc').glob('[0-9]*/comm') if p.exists())
+            removed=[]
+            for name in ('debug','release'):
+                path=cache/'target'/name
+                assert path.resolve()==path and not path.is_symlink() and path.parent==cache/'target'
+                size=int(original_call('du','-sx','-B1',str(path)).stdout.split()[0])
+                shutil.rmtree(path); removed.append(dict(path=str(path),bytes=size))
+            after=protected()
+            assert all(after.get(k)==v for k,v in snapshot['protected'].items())
+            (base.OUT/'cache-cleanup125.json').write_text(json.dumps(dict(removed=removed,
+                preserved_files=len(snapshot['protected']),free_bytes=shutil.disk_usage(JOB).free),indent=2))
+    assert shutil.disk_usage(JOB).free > 4*1024**3
     prior = JOB.parent/'gps-runtime124-20261114'
     archive = prior/'candidate-runtime124-20261114-r1.tar.gz'
     assert sha(archive.read_bytes()) == '353c16488c7f4aa0fb6cbc264ab0a30f9330ec0fe875ae59208c8be9ec195649'
