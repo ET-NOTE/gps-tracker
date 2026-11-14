@@ -160,6 +160,13 @@ def reboot():
         shutil.copy2(base.OUT/'reboot-order121.log',base.OUT/f'reboot-order125-{n}.log')
 
 
+def pdf():
+    base.inside('sh','-c','printf synthetic > /etc/runtime120-test-only')
+    suite('test_runtime120_service.py',180)
+    #/tmp is a runtime tmpfs; read through exec instead of Docker's archive view.
+    (base.OUT/'pdf-lifetime125.json').write_text(base.inside('cat','/tmp/runtime120-service-results.json').stdout)
+
+
 def cleanup():
     info = json.loads(original_call('docker','inspect',HOST).stdout)[0]
     net = json.loads(original_call('docker','network','inspect',NET).stdout)[0]
@@ -186,5 +193,6 @@ if __name__=='__main__':
     elif action=='finish-prepare':finish_prepare()
     elif action=='setup':setup()
     elif action=='reboot':reboot()
+    elif action=='pdf':pdf()
     elif action=='cleanup':cleanup()
     else:suite(action)

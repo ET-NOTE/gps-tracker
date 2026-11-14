@@ -4,6 +4,7 @@ import http.client
 import json
 from pathlib import Path
 import subprocess
+import time
 import psycopg
 from runtime121_control import ROOT, DSN, boot_settled, stop_api, transition, drain
 import load_runtime122 as load
@@ -54,7 +55,17 @@ def final():
         did,uid=db.execute("SELECT id,owner_id FROM devices WHERE device_uid='cumulative119-sim'").fetchone()
     env=dict(RUNTIME_DSN=runtime,STORAGE='pilot')
     boot_settled(env)
+    #A rerun replaces the synthetic certificate; an already running nginx must
+    #not keep the old one. systemctl start returning does not mean TLS is ready.
+    subprocess.run(['systemctl','stop','gps122-proxy.service'],check=False,capture_output=True)
     load.tls()
+    for _ in range(50):
+        try:
+            status,body,_,_=load.Client().get('/gps-tracker/health')
+            if status==200 and json.loads(body)['db']:break
+        except OSError:pass
+        time.sleep(.1)
+    else:raise AssertionError('synthetic TLS proxy did not become ready')
     rows=read(uid,did,tls=True)
     previous=json.loads((ROOT/'out/restored-api125.json').read_text())['queries']
     assert [(x['route'],x['sha256']) for x in rows]==[(x['route'],x['sha256']) for x in previous]
