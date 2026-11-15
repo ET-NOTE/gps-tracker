@@ -7,8 +7,51 @@ import argparse
 import json
 import os
 import pathlib
+from contextlib import contextmanager
 
 import psycopg
+
+
+MAX_DECOMPRESSED_TUPLES = 5000
+
+
+def _bounded_settings(db, decompression_limit):
+    # Constants for the segment-by/time columns must reach Timescale's DML
+    # planner even after psycopg starts preparing this frequently used UPDATE.
+    # SET LOCAL stays inside our transaction/savepoint, including on failure.
+    db.execute("SET LOCAL plan_cache_mode='force_custom_plan'")
+    for name, ceiling in (('statement_timeout', 60000), ('lock_timeout', 5000)):
+        current = int(db.execute('SELECT setting FROM pg_settings WHERE name=%s', (name,)).fetchone()[0])
+        db.execute('SELECT set_config(%s,%s,true)', (name, str(min(current, ceiling) if current else ceiling)))
+    db.execute("SELECT set_config('timescaledb.max_tuples_decompressed_per_dml_transaction',%s,true)",
+               (str(decompression_limit),))
+
+
+@contextmanager
+def _bounded_transaction(db, decompression_limit):
+    with db.transaction():
+        previous = db.execute("""SELECT name,setting FROM pg_settings WHERE name IN
+          ('plan_cache_mode','statement_timeout','lock_timeout',
+           'timescaledb.max_tuples_decompressed_per_dml_transaction')""").fetchall()
+        _bounded_settings(db, decompression_limit)
+        yield
+        # RELEASE SAVEPOINT does not restore SET LOCAL on a successful nested
+        # transaction. Restore explicitly; SQL failures instead roll back the
+        # savepoint (including these settings) before the caller catches them.
+        for name, value in previous:
+            db.execute('SELECT set_config(%s,%s,true)', (name, value))
+
+
+def _write_one(db, key, decompression_limit):
+    # A concrete segment/time/PK predicate excludes unrelated compressed
+    # batches. Do not UPDATE ... FROM a selected-key CTE: that join can make
+    # Timescale decompress every chunk before testing the join keys.
+    # Autocommit callers commit one key at a time; callers already inside a
+    # transaction get a savepoint and retain control of their outer commit.
+    with _bounded_transaction(db, decompression_limit):
+        return db.execute('''UPDATE location_records SET query_bounds_ready=true
+          WHERE device_id=%s AND recorded_at=%s AND source=%s
+            AND NOT query_bounds_ready''', key).rowcount
 
 
 def private_text(path):
@@ -42,20 +85,31 @@ def backfill(db, apply=False, batch_size=2000, max_batches=0):
         if not locked:
             raise ValueError('another query backfill is active')
         try:
+            # Never raise an operator's lower limit. Also bound an unlimited
+            # session rather than silently inheriting unbounded decompression.
+            with db.transaction():
+                current = int(db.execute("SELECT current_setting('timescaledb.max_tuples_decompressed_per_dml_transaction')").fetchone()[0])
+            limit = min(current, MAX_DECOMPRESSED_TUPLES) if current > 0 else MAX_DECOMPRESSED_TUPLES
+            report.update(decompressed_tuple_limit_per_statement=limit, statements=0)
             while not max_batches or report['batches'] < max_batches:
-                # No SKIP LOCKED: an interrupted/locked batch must not be reported
-                # as complete. Each statement is atomic and commits independently.
-                count = db.execute('''WITH batch AS (
-                  SELECT device_id,recorded_at,source FROM location_records
-                  WHERE NOT query_bounds_ready ORDER BY device_id,recorded_at,source LIMIT %s
-                ) UPDATE location_records r SET query_bounds_ready=true FROM batch b
-                  WHERE r.device_id=b.device_id AND r.recorded_at=b.recorded_at AND r.source=b.source
-                    AND NOT r.query_bounds_ready''', (batch_size,)).rowcount
-                if not count:
+                with _bounded_transaction(db, limit):
+                    keys = db.execute('''SELECT device_id,recorded_at,source FROM location_records
+                      WHERE NOT query_bounds_ready ORDER BY device_id,recorded_at,source LIMIT %s''',
+                                      (batch_size,)).fetchall()
+                if not keys:
                     break
-                report['updated'] += count
+                changed = 0
+                for key in keys:
+                    count = _write_one(db, key, limit)
+                    changed += count
+                    report['updated'] += count
+                    report['statements'] += 1
                 report['batches'] += 1
+                if not changed:
+                    raise RuntimeError('selected pending rows changed concurrently; retry backfill')
         finally:
+            # SQL failures inside the savepoints above have already rolled back,
+            # so unlocking cannot mask them with InFailedSqlTransaction.
             db.execute("SELECT pg_advisory_unlock(hashtextextended('gps-query-bounds-110',0))")
     report['pending_after'] = db.execute('SELECT count(*) FROM location_records WHERE NOT query_bounds_ready').fetchone()[0]
     report['complete'] = report['pending_after'] == 0
