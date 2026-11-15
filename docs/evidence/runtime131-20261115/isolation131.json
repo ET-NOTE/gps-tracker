@@ -1,0 +1,40 @@
+{
+  "image": "sha256:a0bc650b308d2099a5cb2a1d561c8051dced45c991d43b065da665899c632a00",
+  "container": "gps-runtime131-host",
+  "internal_network": true,
+  "ports": {},
+  "binds": null,
+  "memory_bytes": 5905580032,
+  "memory_swap_bytes": 5905580032,
+  "cpu_nanos": 2000000000,
+  "blkio": {
+    "BlkioWeight": 0,
+    "BlkioWeightDevice": [],
+    "BlkioDeviceReadBps": [
+      {
+        "Path": "/dev/nvme0n1",
+        "Rate": 8388608
+      }
+    ],
+    "BlkioDeviceWriteBps": [
+      {
+        "Path": "/dev/nvme0n1",
+        "Rate": 8388608
+      }
+    ],
+    "BlkioDeviceReadIOps": [
+      {
+        "Path": "/dev/nvme0n1",
+        "Rate": 200
+      }
+    ],
+    "BlkioDeviceWriteIOps": [
+      {
+        "Path": "/dev/nvme0n1",
+        "Rate": 200
+      }
+    ]
+  },
+  "api_sha256": "9800f06d48fb25be3bef16af91ce50f1c95e405448bf4bf93f9ba5da768a9a99",
+  "production_modified": false
+}

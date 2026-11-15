@@ -1,0 +1,6 @@
+{"started_utc": "20261115T122525Z", "action": "seed", "seconds": 472.132, "exit": 0, "log": "20261115T122525Z-seed.log", "free_bytes": 30655950848}
+{"started_utc": "20261115T123353Z", "action": "baseline-shared", "seconds": 359.339, "exit": 1, "log": "20261115T123353Z-baseline-shared.log", "free_bytes": 30614872064}
+{"started_utc": "20261115T124002Z", "action": "guards-candidate", "seconds": 1.209, "exit": 0, "log": "20261115T124002Z-guards-candidate.log", "free_bytes": 30567391232}
+{"started_utc": "20261115T124003Z", "action": "candidate-shared", "seconds": 351.185, "exit": 0, "log": "20261115T124003Z-candidate-shared.log", "free_bytes": 30543114240}
+{"started_utc": "20261115T124602Z", "action": "final", "seconds": 33.234, "exit": 1, "log": "20261115T124602Z-final.log", "free_bytes": 30541111296}
+{"started_utc": "20261115T124736Z", "action": "final", "seconds": 134.389, "exit": 0, "log": "20261115T124736Z-final.log", "free_bytes": 30513348608}

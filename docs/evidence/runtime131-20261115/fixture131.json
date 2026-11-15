@@ -1,0 +1,69 @@
+{
+  "ciphertext_fingerprint": [
+    119040,
+    "c5db0170409e922b7fea4c03e98e0809"
+  ],
+  "compressed_chunks": 6,
+  "rows": 119040,
+  "unique_points": 714240,
+  "sim_count": 8,
+  "personal": 4,
+  "mapped_company": 4,
+  "schema": 114,
+  "statistics": {
+    "completed": true,
+    "columns": [
+      "device_id",
+      "user_id",
+      "recorded_at",
+      "source",
+      "fix",
+      "query_bounds_ready",
+      "query_first_at",
+      "query_last_at"
+    ],
+    "relations": [
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_1_chunk",
+        "seconds": 0.000699
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_2_chunk",
+        "seconds": 0.000446
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_3_chunk",
+        "seconds": 0.000237
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_4_chunk",
+        "seconds": 0.000232
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_5_chunk",
+        "seconds": 0.000215
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_6_chunk",
+        "seconds": 0.000216
+      },
+      {
+        "schema": "public",
+        "table": "location_records",
+        "seconds": 0.001742
+      }
+    ],
+    "seconds": 0.00646,
+    "decrypted": false,
+    "location_rows_written": 0,
+    "automatic_statistics_required": false
+  },
+  "api_sha256": "42d3e8768c66d280bc623fe7c3eb9a1a24bd63cddf635413a339886ec5e8bb59",
+  "production_modified": false
+}

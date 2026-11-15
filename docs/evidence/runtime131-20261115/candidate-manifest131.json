@@ -1,0 +1,22 @@
+{
+  "archive": "/home/etcom-hub/build/gps-runtime131-20261115/candidate-runtime131-20261115-r1.tar.gz",
+  "bytes": 19480597,
+  "sha256": "4ab9787e363dc94cecb2f8f5e360799c694c1bf42f9c0f719054bad618866234",
+  "files": 1457,
+  "source_commit": "d664a9dafef6d3b087a64abe2773e2991d66b84f",
+  "baseline_source_commit": "20abfadfbc57fd659011ae519bacb02113c94dbe",
+  "api_sha256": "9800f06d48fb25be3bef16af91ce50f1c95e405448bf4bf93f9ba5da768a9a99",
+  "baseline_api_sha256": "42d3e8768c66d280bc623fe7c3eb9a1a24bd63cddf635413a339886ec5e8bb59",
+  "schema": 114,
+  "activation_ready": false,
+  "archive_readback_verified": true,
+  "baseline_source_adjustments": {},
+  "dependencies": {
+    "candidate-runtime130-20261115-r1.tar.gz": "0759789c07f40a471e19a7f0b477be333f714b64e4dad6393970b95a32ef7f76",
+    "candidate-runtime129-20261115-r1.tar.gz": "4b0d40965b60cd9081149ac72bc7eba96f9a7510934a56ff7a9dd2c64cedf6bd",
+    "candidate-runtime128-20261115-r1.tar.gz": "f9eae87e2429ba1035e370a1d75c179caa5c82d2b830de0999d58f3e01604fbc",
+    "candidate-runtime127-20261115-r1.tar.gz": "2d4975611671b93eca2b47dec2fc3824ca7f511a0fa1aa5f95ab76ace02fdf3e",
+    "recovery-kit-runtime125-20261114-r1.tar.gz": "f469828ce877ffffa555fe9b168200c7e423c0e1228f9a858df5218f67ec6c73",
+    "candidate-runtime124-20261114-r1.tar.gz": "353c16488c7f4aa0fb6cbc264ab0a30f9330ec0fe875ae59208c8be9ec195649"
+  }
+}
