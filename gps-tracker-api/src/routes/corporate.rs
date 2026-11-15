@@ -364,12 +364,12 @@ async fn compute_trips_unprojected(
     let mut out = Vec::with_capacity(trips.len());
     for (i, (s, e)) in trips.iter().enumerate() {
         let end = e.unwrap_or(to);
-        let slice: Vec<(DateTime<Utc>, f64, f64)> = all_fixes
-            .iter()
-            .filter(|(t, _, _)| *t >= *s && *t <= end)
-            .copied()
-            .collect();
-        let distance_m = crate::services::stats::calculate_metrics(&slice).distance_m;
+        // The shared SQL result is already ordered by time. Locate each trip's
+        // inclusive range instead of rescanning the entire month for every trip.
+        let first = all_fixes.partition_point(|(t, _, _)| *t < *s);
+        let last = all_fixes.partition_point(|(t, _, _)| *t <= end);
+        let slice = all_fixes.get(first..last).unwrap_or_default();
+        let distance_m = crate::services::stats::calculate_metrics(slice).distance_m;
 
         let row = trip_rows.get(i).cloned().unwrap_or_default();
         let (s_idx, e_idx) = idx_map[i];
@@ -405,7 +405,7 @@ async fn compute_trips_unprojected(
             quality: super::fleet_trip_quality::quality(
                 *s,
                 *e,
-                &slice,
+                slice,
                 &events
                     .iter()
                     .filter(|(_, at, _)| *at >= *s && *at <= end + chrono::Duration::hours(24))
@@ -646,19 +646,19 @@ async fn collect_trip_endpoints(
             WHERE p.fix = TRUE
         )
         SELECT t.idx::INT4 AS idx,
-               (SELECT lat FROM points lr
-                  WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
-                  ORDER BY lr.recorded_at ASC LIMIT 1) AS start_lat,
-               (SELECT lng FROM points lr
-                  WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
-                  ORDER BY lr.recorded_at ASC LIMIT 1) AS start_lng,
-               (SELECT lat FROM points lr
-                  WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
-                  ORDER BY lr.recorded_at DESC LIMIT 1) AS end_lat,
-               (SELECT lng FROM points lr
-                  WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
-                  ORDER BY lr.recorded_at DESC LIMIT 1) AS end_lng
+               first_fix.lat AS start_lat, first_fix.lng AS start_lng,
+               last_fix.lat AS end_lat, last_fix.lng AS end_lng
           FROM t
+          LEFT JOIN LATERAL (
+            SELECT lat,lng FROM points lr
+             WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+             ORDER BY lr.recorded_at ASC LIMIT 1
+          ) first_fix ON true
+          LEFT JOIN LATERAL (
+            SELECT lat,lng FROM points lr
+             WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+             ORDER BY lr.recorded_at DESC LIMIT 1
+          ) last_fix ON true
           ORDER BY t.idx
         "#,
     )
