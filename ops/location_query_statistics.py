@@ -11,8 +11,8 @@ from psycopg import sql
 
 def refresh(db):
     name,version=db.execute('SELECT current_database(),max(version) FROM _sqlx_migrations WHERE success').fetchone()
-    if not name.startswith('gps_') or version not in (104,105,106,107,108,109,110,111,112,113):
-        raise ValueError('reviewed GPS schema104 through113 required for statistics')
+    if not name.startswith('gps_') or version not in (104,105,106,107,108,109,110,111,112,113,114):
+        raise ValueError('reviewed GPS schema104 through114 required for statistics')
     if db.execute('SELECT maintenance FROM location_storage_policy WHERE singleton').fetchone()!=(True,):
         raise ValueError('statistics refresh requires maintenance fence')
     owned=db.execute("SELECT pg_has_role(current_user,relowner,'USAGE') FROM pg_class WHERE oid='location_storage_policy'::regclass").fetchone()
