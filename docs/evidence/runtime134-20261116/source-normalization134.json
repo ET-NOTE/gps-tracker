@@ -1,0 +1,10 @@
+{
+  "verified_git_files": 1074,
+  "crlf_to_lf_only": [
+    "gps-tracker-api/location-access-routes.json",
+    "ops/build_runtime134.py",
+    "ops/package_runtime134.py",
+    "ops/rehearse_runtime134.py"
+  ],
+  "semantic_source_changes": false
+}

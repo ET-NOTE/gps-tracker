@@ -1,0 +1,8 @@
+PASS real request creation; owner-only history, anonymous401 and foreign/missing/admin404; no-store
+PASS real administrator review3 transitions after officer approval and operator execution; historical messages/deadlines; exact public projection excludes internal evidence and actor IDs
+PASS 56 historical revisions25/25/6 exact and read-only; frozen upper revision excludes later append; refresh sees57; legacy empty stays empty
+PASS invalid/unknown/oversized cursors rejected; collection-use/provision controls do not prevent own rights history
+PASS one blocked TLS history read cancels SQL and releases query capacity; retry200 and source hash unchanged; no sustained load
+PASS owner cancellation adds exactly one public history transition; foreign denial and stale revision409 retained
+PASS restricted account session cannot query new route; existing password-only result portal retains scoped public history without session restoration
+PASS all 7 functional groups
