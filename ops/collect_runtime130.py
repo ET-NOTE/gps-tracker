@@ -2,6 +2,7 @@
 import hashlib
 import json
 import shutil
+import subprocess
 import rehearse_runtime130 as r
 
 r.base.guard()
@@ -19,7 +20,7 @@ for path in r.JOB.glob('source130-*.json'):
 hashes={}
 for name in ('load_runtime130.py','run_runtime130.py','audit_runtime130.py','profile_ingest130.py','test_ingest130.py','location_query_bounds.py','location_query_statistics.py',
              'privacy_file_cleanup.py','runtime121_control.py','runtime121_job.py','verify_runtime124.py','verify_runtime122.py'):
-    value=r.base.inside('cat','/opt/gps121/'+name).stdout.encode()
+    value=subprocess.check_output(['docker','exec',r.HOST,'cat','/opt/gps121/'+name])
     digest=hashlib.sha256(value).hexdigest();assert digest==r.sha(r.JOB/'src/ops'/name),name
     hashes[name]=digest
 (r.base.OUT/'running-source130.json').write_text(json.dumps(hashes,indent=2))
