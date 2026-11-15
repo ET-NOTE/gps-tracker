@@ -31,6 +31,7 @@ pub mod privacy_company;
 pub mod privacy_company_tasks;
 pub mod privacy_delivery;
 pub mod privacy_images;
+pub mod privacy_inventory;
 pub mod privacy_packages;
 pub mod privacy_redacted;
 pub mod profile_type;
@@ -53,6 +54,7 @@ pub fn build_router(state: AppState) -> Router {
     let api_v1 = Router::new()
         .merge(auth::router())
         .merge(privacy::router())
+        .merge(privacy_inventory::router())
         .merge(subject_provision::router())
         .merge(privacy_delivery::router())
         .merge(privacy_packages::router())

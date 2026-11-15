@@ -43,6 +43,10 @@
     "class": "non_location",
     "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
   },
+  "admin_security.rs GET /admin/security/notice-queue": {
+    "class": "non_location",
+    "reason": "Aggregate notice queue health only; no identities, tokens or position payload. Admin authentication and security audit apply."
+  },
   "admin_security.rs GET /admin/security/principals": {
     "class": "non_location",
     "reason": "Administrator authentication, permission configuration, approval workflow or security access evidence; contains no position payload."
@@ -835,6 +839,10 @@
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
+  "privacy.rs GET /privacy/processing": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
   "privacy.rs GET /privacy/requests": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
@@ -848,6 +856,10 @@
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
   "privacy.rs POST /privacy/collection/:id": {
+    "class": "non_location",
+    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "privacy.rs POST /privacy/processing": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
@@ -974,6 +986,10 @@
   "privacy_images.rs POST /privacy/images/:id/download": {
     "class": "ledger",
     "reason": "Conservative location/derived/file response classification; uploaded content may contain location."
+  },
+  "privacy_inventory.rs GET /admin/privacy/unattributed": {
+    "class": "non_location",
+    "reason": "Aggregate metadata of NULL collection-account records only; no coordinates, raw/event body, names, current owner IDs or decryption. Individual admin MFA/IP/role and security access audit required even when legacy admin security is OFF."
   },
   "privacy_packages.rs GET /admin/privacy/requests/:id/account-packages": {
     "class": "non_location",
@@ -1219,23 +1235,15 @@
     "class": "ledger",
     "reason": "Location or derived record response; durable intent before handler."
   },
-  "ws.rs GET /realtime": {
-    "class": "outside_api",
-    "reason": "WebSocket data sends instrumented per message."
-  },
-  "privacy.rs GET /privacy/processing": {
-    "class": "non_location",
-    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
-  },
-  "privacy.rs POST /privacy/processing": {
-    "class": "non_location",
-    "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
-  },
   "subject_provision.rs GET /corporate/subject-mappings": {
     "class": "non_location",
     "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
   },
-  "subject_provision.rs POST /corporate/subject-mappings": {
+  "subject_provision.rs GET /corporate/subject-mappings/:id/locations": {
+    "class": "handler_ledger",
+    "reason": "Handler enforces FleetScope and immutable subject interval before manual durable ledger intent; no caller-controlled range."
+  },
+  "subject_provision.rs GET /privacy/provision-notices": {
     "class": "non_location",
     "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
   },
@@ -1243,11 +1251,7 @@
     "class": "non_location",
     "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
   },
-  "subject_provision.rs POST /privacy/subject-mappings/:id/decision": {
-    "class": "non_location",
-    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
-  },
-  "subject_provision.rs GET /privacy/provision-notices": {
+  "subject_provision.rs POST /corporate/subject-mappings": {
     "class": "non_location",
     "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
   },
@@ -1259,12 +1263,12 @@
     "class": "non_location",
     "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
   },
-  "subject_provision.rs GET /corporate/subject-mappings/:id/locations": {
-    "class": "handler_ledger",
-    "reason": "Handler enforces FleetScope and immutable subject interval before manual durable ledger intent; no caller-controlled range."
-  },
-  "admin_security.rs GET /admin/security/notice-queue": {
+  "subject_provision.rs POST /privacy/subject-mappings/:id/decision": {
     "class": "non_location",
-    "reason": "Aggregate notice queue health only; no identities, tokens or position payload. Admin authentication and security audit apply."
+    "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."
+  },
+  "ws.rs GET /realtime": {
+    "class": "outside_api",
+    "reason": "WebSocket data sends instrumented per message."
   }
 }

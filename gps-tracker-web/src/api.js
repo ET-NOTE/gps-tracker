@@ -295,6 +295,7 @@ async function reportFetch(url) {
 export const api = {
   adminNoticeQueue: () => req('GET','/admin/security/notice-queue'),
   adminSecurity: () => req('GET','/admin/security/status'),
+  adminUnattributed: (params, signal) => req('GET', '/admin/privacy/unattributed?' + new URLSearchParams(params), undefined, true, { signal }),
   adminMfaEnroll: (password) => req('POST','/admin/security/enroll',{password},false),
   adminMfaVerify: (password,code) => req('POST','/admin/security/verify',{password,code},false),
   adminSecurityLogout: () => req('POST','/admin/security/logout',{}),
