@@ -62,7 +62,7 @@ impl Drop for IngestTiming {
         self.advance(Phase::Done);
         let e = &self.elapsed;
         // Each stage includes await/scheduling time. PoolBegin includes BEGIN;
-        // Store includes triggers and autocommit, not just SQL execution. This
+        // Store includes triggers and its transaction commit, not just SQL. This
         // records partial failed/cancelled work without inventing a success.
         tracing::debug!(target: "gps_ingest_timing", completed=self.completed, ?last_phase,
             total_ms=e.iter().sum::<f64>(), admission_ms=e[0], parse_ms=e[1],

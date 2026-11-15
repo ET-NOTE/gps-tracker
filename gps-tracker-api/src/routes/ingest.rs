@@ -1070,6 +1070,11 @@ async fn insert_location(
     parsed: &IngestPayload,
     raw: &Value,
 ) -> AppResult<()> {
+    // A point and its rebuild request are one durable operation. If scheduling
+    // fails, neither the point nor its trigger side effects may survive while
+    // the outer authentication counter rolls back. This also avoids a second
+    // autocommit/WAL flush for every single fix. The outer SIM fence stays held.
+    let mut tx = state.db.begin().await?;
     sqlx::query(
         r#"
         INSERT INTO location_records (
@@ -1100,7 +1105,7 @@ async fn insert_location(
         fix.speed_kmh
             .filter(|v| v.is_finite() && (0.0..=250.0).contains(v)),
     )
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await?;
     if fix.fix {
         sqlx::query(
@@ -1112,9 +1117,10 @@ async fn insert_location(
         )
         .bind(device_id)
         .bind(recorded_at)
-        .execute(&state.db)
+        .execute(&mut *tx)
         .await?;
     }
+    tx.commit().await?;
     Ok(())
 }
 
