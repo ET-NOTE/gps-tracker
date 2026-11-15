@@ -1,0 +1,39 @@
+{
+  "at": "2026-11-15T13:36:56Z",
+  "schema": 114,
+  "api_sha256": "8c53686cd1f15ee5b9dbcbbcd385fb7369e05ddbc49be8dc95d6afbfc3fa4bee",
+  "environment": "internal synthetic native PostgreSQL14/Timescale2.19.3; TLS1.2; restricted gps_runtime",
+  "passed": [
+    "personal MFA required; anonymous, ordinary user, handler and delegated scope denied; officer allowed",
+    "encrypted physical rows grouped without coordinates, source free-text or owners; exact KST boundaries and NULL-only counts; no-store",
+    "six keyset pages equal full result; filter-bound cursor, 31-day/size/device bounds, empty and event categories verified",
+    "current-owner reassignment never rewrites historical attribution; physical source hashes unchanged; works with decryption EXECUTE revoked",
+    "IP denial ignores spoofed forwarding headers; audit write failure denies access; successful requests leave admin evidence",
+    "existing read limit returns429; TLS disconnect cancels blocked SQL and releases slots; retry succeeds; sources unchanged",
+    "security OFF fails closed for legacy admin; no new schema, ownership or deletion writes"
+  ],
+  "fixture": {
+    "location_rows": 16,
+    "event_rows": 9
+  },
+  "source_hashes_before": {
+    "location_records": "d1201069a2b9f2e673b72684efcc3f22",
+    "events": "03a636575bdfb48eb617203e765e38b4"
+  },
+  "source_hashes_after": {
+    "location_records": "d1201069a2b9f2e673b72684efcc3f22",
+    "events": "03a636575bdfb48eb617203e765e38b4"
+  },
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false
+}

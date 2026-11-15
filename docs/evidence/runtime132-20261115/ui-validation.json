@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-15T13:36:03.827Z",
+  "environment": "actual component; local synthetic responses; no production access",
+  "checks": [
+    "no automatic metadata query",
+    "desktop real component render",
+    "390px document has no overflow",
+    "filter change clears prior rows",
+    "empty result bounded to selected scope",
+    "cancel does not surface stale result/error"
+  ],
+  "errors": []
+}

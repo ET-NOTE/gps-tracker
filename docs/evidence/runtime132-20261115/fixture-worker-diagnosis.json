@@ -1,0 +1,24 @@
+{
+  "events_fields": [
+    "count",
+    "notified_count",
+    "first_notified",
+    "last_notified",
+    "first_created",
+    "last_created"
+  ],
+  "events": [
+    9,
+    9,
+    "2026-11-15 13:35:45.341958+00:00",
+    "2026-11-15 13:35:45.341958+00:00",
+    "2026-11-15 13:35:44.672333+00:00",
+    "2026-11-15 13:35:44.702259+00:00"
+  ],
+  "location_counts": [
+    16,
+    15,
+    0
+  ],
+  "explanation": "Existing FCM startup worker marks undeliverable events notified, including encrypted UPDATE reseal. Test events must be already-processed to isolate inventory reads; worker is not disabled."
+}
