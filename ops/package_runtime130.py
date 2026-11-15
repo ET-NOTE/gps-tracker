@@ -17,14 +17,28 @@ sha=lambda data:hashlib.sha256(data).hexdigest()
 files={}
 for source_name,prefix in [('source130-final.tar','sources/'),('source130-baseline.tar','baseline-sources/')]:
     with tarfile.open(JOB/source_name) as source:
+        assert source.pax_headers.get('comment')==(commit if prefix=='sources/' else baseline_commit), 'Archive commit must match manifest'
         for entry in source:
             if not entry.isfile():continue
             assert entry.name.startswith(('ops/','gps-tracker-api/')) and not entry.name.startswith('/') and '..' not in Path(entry.name).parts
             files[prefix+entry.name]=source.extractfile(entry).read()
 assert len(files)>600
+adjustments={}
 for variant,prefix in [('baseline','baseline-sources/'),('candidate-r1','sources/')]:
     hashes=json.loads((JOB/('source130-'+variant+'.json')).read_text())
-    for name,digest in hashes.items():assert sha(files[prefix+name])==digest,(variant,name)
+    for name,digest in hashes.items():
+        data=files[prefix+name]
+        if variant=='baseline' and name=='gps-tracker-api/src/services/mod.rs':
+            # The baseline builder ran rustfmt before its source snapshot. Keep
+            # the Git input AND the exact formatted bytes, validated by that
+            # pre-existing snapshot; never claim an unformatted Git blob built.
+            formatted=data.replace(b'pub mod ingest_timing;\npub mod housekeeping;',b'pub mod housekeeping;\npub mod ingest_timing;')
+            assert sha(formatted)==digest
+            if data!=formatted:
+                files['baseline-git-inputs/'+name]=data
+                files[prefix+name]=formatted
+                adjustments[name]=dict(reason='rustfmt module declaration order',git_sha256=sha(data),built_sha256=digest)
+        assert sha(files[prefix+name])==digest,(variant,name)
 for path in (JOB/'canonical/gps-tracker-api/migrations').glob('*.sql'):
     assert files['sources/gps-tracker-api/migrations/'+path.name]==path.read_bytes()
 for name,digest in json.loads((JOB/'out/running-source130.json').read_text()).items():
@@ -39,7 +53,7 @@ files['api/gps-tracker-api']=binary;files['api/gps-tracker-api-baseline']=baseli
 for name in ('evidence130.tar.gz','candidate-input.tar'):
     files[name]=(JOB/name).read_bytes()
 files['host-after.json']=(JOB/'out/host-after.json').read_bytes()
-manifest=dict(source_commit=commit,baseline_source_commit=baseline_commit,schema=114,activation_ready=False,production_modified=False,
+manifest=dict(source_commit=commit,baseline_source_commit=baseline_commit,baseline_source_adjustments=adjustments,schema=114,activation_ready=False,production_modified=False,
     purpose='isolated ingest stage instrumentation and atomic single-point/statistics-queue protection; not a production installer',
     api_sha256=sha(binary),baseline_api_sha256=sha(baseline),dependencies={
         'candidate-runtime129-20261115-r1.tar.gz':'4b0d40965b60cd9081149ac72bc7eba96f9a7510934a56ff7a9dd2c64cedf6bd',
@@ -57,6 +71,6 @@ with tarfile.open(archive) as tar:
     for entry in tar:assert tar.extractfile(entry).read()==files[entry.name]
 result=dict(archive=str(archive),bytes=archive.stat().st_size,sha256=sha(archive.read_bytes()),
     files=len(files),source_commit=commit,baseline_source_commit=baseline_commit,api_sha256=sha(binary),baseline_api_sha256=sha(baseline),
-    schema=114,activation_ready=False,archive_readback_verified=True,dependencies=manifest['dependencies'])
+    schema=114,activation_ready=False,archive_readback_verified=True,baseline_source_adjustments=adjustments,dependencies=manifest['dependencies'])
 (JOB/'out/candidate-manifest130.json').write_text(json.dumps(result,indent=2))
 print(json.dumps(result),flush=True)
