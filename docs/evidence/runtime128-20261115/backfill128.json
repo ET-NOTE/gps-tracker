@@ -1,0 +1,76 @@
+{
+  "schema": 114,
+  "production_modified": false,
+  "checks": [
+    {
+      "name": "old seven-row update fails at unchanged100k limit",
+      "sqlstate": "53400",
+      "detail": "current limit: 100000, tuples decompressed: 130000"
+    },
+    {
+      "name": "uncompressed pending rows do not decompress unrelated130k rows",
+      "result": {
+        "schema": 114,
+        "apply": true,
+        "encrypted": true,
+        "updated": 7,
+        "batches": 1,
+        "pending_before": 7,
+        "decompressed_tuple_limit_per_statement": 5000,
+        "statements": 7,
+        "pending_after": 0,
+        "complete": true
+      },
+      "seconds": 1.107491821050644
+    },
+    {
+      "name": "lower500 limit honored; original SQLSTATE and outer transaction/lock preserved",
+      "earlier_keys_rolled_back": 1
+    },
+    {
+      "name": "row lock fails promptly, not skipped or declared complete"
+    },
+    {
+      "name": "three committed keys survive interruption;2004 pending remain",
+      "compressed_rows_remaining": 127528
+    },
+    {
+      "name": "non-superuser partial batch and resume complete; all ciphertext unchanged",
+      "partial": {
+        "schema": 114,
+        "apply": true,
+        "encrypted": true,
+        "updated": 7,
+        "batches": 1,
+        "pending_before": 2004,
+        "decompressed_tuple_limit_per_statement": 5000,
+        "statements": 7,
+        "pending_after": 1997,
+        "complete": false
+      },
+      "result": {
+        "schema": 114,
+        "apply": true,
+        "encrypted": true,
+        "updated": 1997,
+        "batches": 1,
+        "pending_before": 1997,
+        "decompressed_tuple_limit_per_statement": 5000,
+        "statements": 1997,
+        "pending_after": 0,
+        "complete": true
+      },
+      "seconds": 9.167454168200493,
+      "compression_limit_after": "100000",
+      "compressed_rows_remaining": 121487,
+      "prepared_update": true
+    }
+  ],
+  "api_sha256": "5c6f4529207f9ab0d5d30598dbb4fe8a4e4b77dc4e5304a8736f311fdcdb7e52",
+  "complete": true,
+  "all_ciphertext_equal": true,
+  "all_rows_recompressed": true,
+  "final_pending": 0,
+  "decompression_limit_raised": false,
+  "final_rows": 130007
+}

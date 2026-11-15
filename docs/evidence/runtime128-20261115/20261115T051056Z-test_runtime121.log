@@ -1,0 +1,8 @@
+PASS all native data-processing units share memory, no-swap, no-core and mount dependencies
+PASS non-root cleanup unit removes only queued synthetic file and records local absence
+PASS recovery job refuses an invalid protection library hash
+PASS mount loss stops API/DB and missing mount prevents restart: sort
+PASS mount loss stops API/DB and missing mount prevents restart: fallback
+PASS mount loss stops API/DB and missing mount prevents restart: tmp
+PASS protected cleanup and closure units recover after temporary mount reconstruction
+PASS normal fault suite completed without uncontrolled disk fallback

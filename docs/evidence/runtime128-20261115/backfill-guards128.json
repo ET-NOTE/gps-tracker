@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "keyless read-only status makes no writes",
+    "keyless apply rejected",
+    "invalid batch rejected (0, 0)",
+    "invalid batch rejected (5001, 0)",
+    "invalid batch rejected (7, -1)",
+    "maintenance fence respected",
+    "unlimited caller bounded to5000 during write; setting and row rollback preserved",
+    "unreviewed115 rejected before reading policy"
+  ],
+  "unlimited_case": {
+    "schema": 114,
+    "apply": true,
+    "encrypted": true,
+    "updated": 1,
+    "batches": 1,
+    "pending_before": 1,
+    "decompressed_tuple_limit_per_statement": 5000,
+    "statements": 1,
+    "pending_after": 0,
+    "complete": true
+  },
+  "production_modified": false
+}

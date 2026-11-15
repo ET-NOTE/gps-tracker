@@ -1,0 +1,75 @@
+{
+  "checks": [
+    "other client rejected",
+    "runtime role rejected",
+    "unreviewed115 rejected",
+    "post-statistics interruption",
+    "interruption kept maintenance fence",
+    "non-superuser owner resume analyzed all4 relations",
+    "unfenced refresh rejected"
+  ],
+  "owner_statistics": {
+    "completed": true,
+    "columns": [
+      "device_id",
+      "user_id",
+      "recorded_at",
+      "source",
+      "fix",
+      "query_bounds_ready",
+      "query_first_at",
+      "query_last_at"
+    ],
+    "relations": [
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_1_chunk",
+        "seconds": 0.000585
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_2_chunk",
+        "seconds": 0.000215
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_3_chunk",
+        "seconds": 0.000198
+      },
+      {
+        "schema": "public",
+        "table": "location_records",
+        "seconds": 0.00096
+      }
+    ],
+    "seconds": 0.006978,
+    "decrypted": false,
+    "location_rows_written": 0,
+    "automatic_statistics_required": false
+  },
+  "restored_lock_wait_seconds": 4.087515457998961,
+  "queries": [
+    {
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 7.568472,
+      "bytes": 148204,
+      "sha256": "333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da"
+    },
+    {
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.244714,
+      "bytes": 3260001,
+      "sha256": "ea1b29c7edb68c6cc82c0bffaf42a708ce52fb8066eff1e4acb5962d5aad27f9"
+    },
+    {
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.241013,
+      "bytes": 1630267,
+      "sha256": "4f6370ba7e1f42f43030c88aa51c6c5a902a468968fdb934db1aeb164162e262"
+    }
+  ],
+  "production_modified": false
+}

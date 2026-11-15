@@ -1,0 +1,22 @@
+# /etc/systemd/system/gps-pdf-budget.service
+[Unit]
+Description=GPS PDF stable admission lock
+Before=gps-pdf-render.socket
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+Group=gps-pdf
+RuntimeDirectory=gps-pdf-budget
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/bin/python3 /usr/local/lib/pdf_budget120.py
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/run/gps-pdf-budget
+PrivateNetwork=yes
+MemoryMax=32M
+MemorySwapMax=0
+LimitCORE=0
+Slice=gps-workload-pdf.slice

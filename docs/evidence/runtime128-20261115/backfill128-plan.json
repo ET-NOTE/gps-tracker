@@ -1,0 +1,184 @@
+{
+  "plan": [
+    {
+      "Plan": {
+        "Node Type": "Custom Scan",
+        "Custom Plan Provider": "HypertableModify",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0.0,
+        "Total Cost": 14.56,
+        "Plan Rows": 1,
+        "Plan Width": 11,
+        "Actual Startup Time": 11.085,
+        "Actual Total Time": 11.086,
+        "Actual Rows": 0,
+        "Actual Loops": 1,
+        "Batches decompressed": 1,
+        "Tuples decompressed": 479,
+        "Shared Hit Blocks": 11946,
+        "Shared Read Blocks": 20,
+        "Shared Dirtied Blocks": 359,
+        "Shared Written Blocks": 343,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0,
+        "Plans": [
+          {
+            "Node Type": "ModifyTable",
+            "Operation": "Update",
+            "Parent Relationship": "child",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Relation Name": "location_records",
+            "Alias": "location_records",
+            "Startup Cost": 0.0,
+            "Total Cost": 14.56,
+            "Plan Rows": 1,
+            "Plan Width": 11,
+            "Actual Startup Time": 11.085,
+            "Actual Total Time": 11.086,
+            "Actual Rows": 0,
+            "Actual Loops": 1,
+            "Target Tables": [
+              {
+                "Relation Name": "_hyper_1_1_chunk",
+                "Alias": "location_records_1"
+              }
+            ],
+            "Shared Hit Blocks": 11946,
+            "Shared Read Blocks": 20,
+            "Shared Dirtied Blocks": 359,
+            "Shared Written Blocks": 343,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Result",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 0.0,
+                "Total Cost": 14.56,
+                "Plan Rows": 1,
+                "Plan Width": 11,
+                "Actual Startup Time": 0.066,
+                "Actual Total Time": 0.085,
+                "Actual Rows": 1,
+                "Actual Loops": 1,
+                "Shared Hit Blocks": 60,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "_hyper_1_1_chunk",
+                    "Alias": "location_records_1",
+                    "Startup Cost": 0.0,
+                    "Total Cost": 14.55,
+                    "Plan Rows": 1,
+                    "Plan Width": 10,
+                    "Actual Startup Time": 0.065,
+                    "Actual Total Time": 0.084,
+                    "Actual Rows": 1,
+                    "Actual Loops": 1,
+                    "Filter": "((NOT query_bounds_ready) AND (device_id = '1'::smallint) AND (recorded_at = '2026-10-01 00:16:40+00'::timestamp with time zone) AND (source = 'l80'::text))",
+                    "Rows Removed by Filter": 478,
+                    "Shared Hit Blocks": 60,
+                    "Shared Read Blocks": 0,
+                    "Shared Dirtied Blocks": 0,
+                    "Shared Written Blocks": 0,
+                    "Local Hit Blocks": 0,
+                    "Local Read Blocks": 0,
+                    "Local Dirtied Blocks": 0,
+                    "Local Written Blocks": 0,
+                    "Temp Read Blocks": 0,
+                    "Temp Written Blocks": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "Planning": {
+        "Shared Hit Blocks": 69,
+        "Shared Read Blocks": 2,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.231,
+      "Triggers": [
+        {
+          "Trigger Name": "RI_ConstraintTrigger_c_369029",
+          "Constraint Name": "1_1_location_records_device_id_fkey",
+          "Relation": "_hyper_1_1_chunk",
+          "Time": 0.069,
+          "Calls": 1
+        },
+        {
+          "Trigger Name": "RI_ConstraintTrigger_c_369034",
+          "Constraint Name": "1_3_location_records_user_id_fkey",
+          "Relation": "_hyper_1_1_chunk",
+          "Time": 0.101,
+          "Calls": 1
+        },
+        {
+          "Trigger Name": "gps_storage_fence",
+          "Relation": "_hyper_1_1_chunk",
+          "Time": 0.261,
+          "Calls": 1
+        },
+        {
+          "Trigger Name": "privacy_account_write",
+          "Relation": "_hyper_1_1_chunk",
+          "Time": 0.319,
+          "Calls": 1
+        },
+        {
+          "Trigger Name": "privacy_device_write",
+          "Relation": "_hyper_1_1_chunk",
+          "Time": 0.39,
+          "Calls": 1
+        },
+        {
+          "Trigger Name": "privacy_retention_ingest",
+          "Relation": "_hyper_1_1_chunk",
+          "Time": 0.106,
+          "Calls": 1
+        },
+        {
+          "Trigger Name": "zz_location_query_bounds",
+          "Relation": "_hyper_1_1_chunk",
+          "Time": 0.481,
+          "Calls": 1
+        }
+      ],
+      "Execution Time": 11.634
+    }
+  ],
+  "rolled_back": true
+}

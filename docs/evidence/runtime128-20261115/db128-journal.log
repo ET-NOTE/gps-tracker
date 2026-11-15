@@ -1,0 +1,1037 @@
+2026-11-15T04:40:49+0000 06a5ff7ca70c systemd[1]: Starting gps121-db.service...
+2026-11-15T04:40:49+0000 06a5ff7ca70c python3[738]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2711"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2710"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+2026-11-15T04:40:49+0000 06a5ff7ca70c systemd[1]: Started gps121-db.service.
+2026-11-15T04:40:49+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:40:49.921 UTC [739] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T04:40:49+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:40:49.921 UTC [739] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T04:40:49+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:40:49.922 UTC [739] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T04:40:49+0000 06a5ff7ca70c postgres[747]: 2026-11-15 04:40:49.928 UTC [747] LOG:  database system was shut down at 2026-11-12 00:57:54 UTC
+2026-11-15T04:40:49+0000 06a5ff7ca70c postgres[748]: 2026-11-15 04:40:49.928 UTC [748] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T04:40:49+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:40:49.946 UTC [739] LOG:  database system is ready to accept connections
+2026-11-15T04:40:49+0000 06a5ff7ca70c postgres[754]: 2026-11-15 04:40:49.947 UTC [754] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1014]: 2026-11-15 04:40:53.287 UTC [1014] postgres@gps_closure_test WARNING:  column "source" should be used for segmenting or ordering
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1032]: 2026-11-15 04:40:53.518 UTC [1032] LOG:  continuous aggregate refresh (individual invalidation) on "location_1hour" in window [ 2026-10-16 05:00:00+00, 2026-11-15 03:00:00+00 ]
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1032]: 2026-11-15 04:40:53.519 UTC [1032] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_4"
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1032]: 2026-11-15 04:40:53.520 UTC [1032] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_4"
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1033]: 2026-11-15 04:40:53.523 UTC [1033] LOG:  continuous aggregate refresh (individual invalidation) on "location_5min" in window [ 2026-11-01 04:45:00+00, 2026-11-15 04:35:00+00 ]
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1033]: 2026-11-15 04:40:53.524 UTC [1033] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_5"
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1033]: 2026-11-15 04:40:53.525 UTC [1033] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_5"
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1034]: 2026-11-15 04:40:53.528 UTC [1034] LOG:  continuous aggregate refresh (individual invalidation) on "location_1min" in window [ 2026-11-08 04:41:00+00, 2026-11-15 04:39:00+00 ]
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1034]: 2026-11-15 04:40:53.528 UTC [1034] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_3"
+2026-11-15T04:40:53+0000 06a5ff7ca70c postgres[1034]: 2026-11-15 04:40:53.529 UTC [1034] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_3"
+2026-11-15T04:40:54+0000 06a5ff7ca70c postgres[1045]: 2026-11-15 04:40:54.274 UTC [1045] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:40:54+0000 06a5ff7ca70c postgres[1044]: 2026-11-15 04:40:54.274 UTC [1044] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:40:54+0000 06a5ff7ca70c postgres[1014]: 2026-11-15 04:40:54.274 UTC [1014] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:40:54+0000 06a5ff7ca70c postgres[1046]: 2026-11-15 04:40:54.274 UTC [1046] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:40:54+0000 06a5ff7ca70c postgres[1047]: 2026-11-15 04:40:54.274 UTC [1047] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:40:54+0000 06a5ff7ca70c postgres[1043]: 2026-11-15 04:40:54.274 UTC [1043] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:40:54+0000 06a5ff7ca70c postgres[1042]: 2026-11-15 04:40:54.274 UTC [1042] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:40:54+0000 06a5ff7ca70c postgres[1041]: 2026-11-15 04:40:54.274 UTC [1041] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:40:59+0000 06a5ff7ca70c postgres[1025]: 2026-11-15 04:40:59.381 UTC [1025] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:40:59+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:40:59.383 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1025) exited with exit code 1
+2026-11-15T04:41:02+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:02.571 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:02+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:02.571 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:02+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:02.992 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:02+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:02.992 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:03+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:03.423 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:03+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:03.423 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:03+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:03.852 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:03+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:03.852 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:04+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:04.344 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:04+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:04.344 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:04+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:04.842 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:04+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:04.842 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:05+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:05.286 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:05+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:05.286 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:05+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:05.722 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:05+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:05.722 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:06+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:06.111 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:06+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:06.111 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:06+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:06.493 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:06+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:06.493 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:06+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:06.946 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:06+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:06.946 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:07+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:07.397 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:07+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:07.397 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:07+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:07.778 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:07+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:07.778 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:08+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:08.160 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:08+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:08.160 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:08+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:08.542 UTC [1111] postgres@gps_cumulative_faults ERROR:  division by zero
+2026-11-15T04:41:08+0000 06a5ff7ca70c postgres[1111]: 2026-11-15 04:41:08.542 UTC [1111] postgres@gps_cumulative_faults STATEMENT:  SELECT 1/0
+2026-11-15T04:41:08+0000 06a5ff7ca70c postgres[1125]: 2026-11-15 04:41:08.967 UTC [1125] postgres@gps_cumulative_faults LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:09+0000 06a5ff7ca70c postgres[1133]: 2026-11-15 04:41:09.024 UTC [1133] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 20767 will be stopped
+2026-11-15T04:41:09+0000 06a5ff7ca70c postgres[1133]: 2026-11-15 04:41:09.024 UTC [1133] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_faults WITH (FORCE);
+2026-11-15T04:41:09+0000 06a5ff7ca70c postgres[1112]: 2026-11-15 04:41:09.024 UTC [1112] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:41:09+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:41:09.025 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1112) exited with exit code 1
+2026-11-15T04:41:09+0000 06a5ff7ca70c postgres[1110]: 2026-11-15 04:41:09.462 UTC [1110] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:41:09+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:41:09.464 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1110) exited with exit code 1
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]: 2026-11-15 04:41:11.584 UTC [1148] gps_migration@gps_closure_test ERROR:  permission denied to create extension "pgcrypto"
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]: 2026-11-15 04:41:11.584 UTC [1148] gps_migration@gps_closure_test HINT:  Must have CREATE privilege on current database to create this extension.
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]: 2026-11-15 04:41:11.584 UTC [1148] gps_migration@gps_closure_test STATEMENT:  -- Additive pilot: no existing row conversion or production enablement at startup.
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         -- Keys are connection-local, loaded from a private file outside the database.
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         CREATE EXTENSION IF NOT EXISTS pgcrypto;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         CREATE TABLE location_storage_policy (
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          enabled boolean NOT NULL DEFAULT false,
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          activated_at timestamptz
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         );
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         INSERT INTO location_storage_policy(singleton) VALUES(true);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         CREATE FUNCTION gps_seal_cell(value jsonb, context text) RETURNS jsonb
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         LANGUAGE plpgsql SET search_path=pg_catalog,public AS $$
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         DECLARE ring jsonb; kid text; secret text;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         BEGIN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          IF value IS NULL OR value='null'::jsonb THEN RETURN NULL; END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          ring:=nullif(current_setting('gps.storage_keys',true),'')::jsonb;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          kid:=ring->>'active'; secret:=ring->'keys'->>kid;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          IF secret IS NULL OR octet_length(decode(secret,'base64'))<>32 THEN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           RAISE EXCEPTION 'location encryption key unavailable'; END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          RETURN jsonb_build_object('v',1,'kid',kid,'cipher',encode(public.pgp_sym_encrypt(
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           jsonb_build_object('context',context,'kid',kid,'value',value)::text,secret,
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           'cipher-algo=aes256,sess-key=1,s2k-mode=0,compress-algo=0,disable-mdc=0'),'base64'));
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         END $$;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         CREATE FUNCTION gps_open_cell(envelope jsonb, context text) RETURNS jsonb
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         LANGUAGE plpgsql STABLE PARALLEL RESTRICTED SET search_path=pg_catalog,public AS $$
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         DECLARE ring jsonb; secret text; plain jsonb;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         BEGIN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          IF envelope IS NULL THEN RETURN NULL; END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          ring:=nullif(current_setting('gps.storage_keys',true),'')::jsonb;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          secret:=ring->'keys'->>(envelope->>'kid');
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          IF envelope->>'v' IS DISTINCT FROM '1' OR secret IS NULL OR octet_length(decode(secret,'base64'))<>32 THEN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           RAISE EXCEPTION 'location decryption key unavailable'; END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          BEGIN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           plain:=public.pgp_sym_decrypt(decode(envelope->>'cipher','base64'),secret)::jsonb;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           IF plain->>'context' IS DISTINCT FROM context OR plain->>'kid' IS DISTINCT FROM envelope->>'kid'
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:             OR NOT plain ? 'value' THEN RAISE EXCEPTION 'invalid envelope'; END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'location ciphertext authentication failed'; END;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          RETURN plain->'value';
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         END $$;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         CREATE FUNCTION gps_cell_context(table_name text, row_data jsonb, identity_columns text[], field_name text)
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         RETURNS text LANGUAGE sql IMMUTABLE AS $$
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          SELECT jsonb_build_array('gps-location-v1',table_name,field_name,
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            (SELECT jsonb_object_agg(k,CASE WHEN k='recorded_at' THEN to_jsonb((row_data->>k)::timestamptz AT TIME ZONE 'UTC') ELSE row_data->k END) FROM unnest(identity_columns) k))::text
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         $$;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         CREATE FUNCTION gps_encrypt_location_field() RETURNS trigger LANGUAGE plpgsql
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         SET search_path=pg_catalog,public SET timezone='UTC' AS $$
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         DECLARE doc jsonb; field_name text:=TG_ARGV[0]; encrypted_name text:=TG_ARGV[0]||'_sealed';
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         BEGIN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          IF NOT (SELECT enabled FROM public.location_storage_policy WHERE singleton) THEN RETURN NEW; END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          doc:=to_jsonb(NEW);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          NEW:=jsonb_populate_record(NEW,jsonb_build_object(encrypted_name,
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           public.gps_seal_cell(doc->field_name,public.gps_cell_context(TG_ARGV[2],doc,string_to_array(TG_ARGV[1],','),field_name)),
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           field_name,NULL));
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          RETURN NEW;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         END $$;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         -- Immutable primary identities bind ciphertext to a table/row/field. SIM owner
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         -- changes are deliberately not part of the binding; historical owner is retained.
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         CREATE TABLE location_storage_fields (
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          table_name text PRIMARY KEY, identity_columns text[] NOT NULL, fields text[] NOT NULL
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         );
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         INSERT INTO location_storage_fields VALUES
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          ('location_records',ARRAY['device_id','recorded_at','source'],ARRAY['lat','lng','raw','fixes_jsonb']),
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          ('devices',ARRAY['id'],ARRAY['last_lat','last_lng','last_stationary']),
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          ('events',ARRAY['id'],ARRAY['data']);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         DO $$
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         DECLARE target record; f text; column_info record; projection text; expression text;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         BEGIN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          FOR target IN SELECT * FROM location_storage_fields ORDER BY table_name LOOP
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           FOREACH f IN ARRAY target.fields LOOP
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            EXECUTE format('ALTER TABLE public.%I ADD COLUMN %I jsonb',target.table_name,f||'_sealed');
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            EXECUTE format('CREATE TRIGGER %I BEFORE INSERT OR UPDATE OF %I ON public.%I FOR EACH ROW EXECUTE FUNCTION gps_encrypt_location_field(%L,%L,%L)',
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:              'seal_'||f,f,target.table_name,f,array_to_string(target.identity_columns,','),target.table_name);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           END LOOP;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           projection:='';
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           FOR column_info IN SELECT attname,format_type(atttypid,atttypmod) typ FROM pg_attribute
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            WHERE attrelid=format('public.%I',target.table_name)::regclass AND attnum>0 AND NOT attisdropped ORDER BY attnum LOOP
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            IF column_info.attname LIKE '%\_sealed' ESCAPE '\' THEN CONTINUE; END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            expression:=format('t.%I',column_info.attname);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            IF column_info.attname=ANY(target.fields) THEN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:             expression:=format('CASE WHEN t.%I IS NULL THEN t.%I ELSE (jsonb_populate_record(NULL::public.%I,jsonb_build_object(%L,public.gps_open_cell(t.%I,public.gps_cell_context(%L,to_jsonb(t),%L::text[],%L))))).%I END',
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:               column_info.attname||'_sealed',column_info.attname,target.table_name,column_info.attname,
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:               column_info.attname||'_sealed',target.table_name,target.identity_columns,column_info.attname,column_info.attname);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            projection:=projection||CASE WHEN projection='' THEN '' ELSE ',' END||expression||format(' AS %I',column_info.attname);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           END LOOP;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           EXECUTE format('CREATE VIEW public.gps_read_%I AS SELECT %s FROM public.%I t',target.table_name,projection,target.table_name);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          END LOOP;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         END $$;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         -- Existing canonical projection and bounded SQL functions must decrypt before
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         -- coordinates are expanded/aggregated. DML targets remain the physical tables.
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         DO $$
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         DECLARE r record; definition text; changed text; t text;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         BEGIN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          definition:=pg_get_viewdef('location_points'::regclass,true);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          definition:=regexp_replace(definition,'FROM location_records\M','FROM gps_read_location_records','g');
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          EXECUTE 'CREATE OR REPLACE VIEW location_points AS '||definition;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          FOR r IN SELECT p.oid,p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            WHERE n.nspname='public' AND p.prokind='f' AND p.proname NOT LIKE 'gps_%'
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:              AND NOT EXISTS(SELECT 1 FROM pg_depend d WHERE d.classid='pg_proc'::regclass AND d.objid=p.oid AND d.deptype='e') LOOP
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           definition:=pg_get_functiondef(r.oid); changed:=definition;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           -- Session key access belongs on the leader. Do not preserve an older SAFE
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           -- declaration on wrappers which now read decrypted projections.
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           IF r.proname LIKE 'location_%' THEN
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            changed:=replace(changed,'PARALLEL SAFE','PARALLEL RESTRICTED');
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           FOREACH t IN ARRAY ARRAY['location_records','devices','events'] LOOP
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            -- DELETE FROM must never become a delete through a computed view.
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            changed:=regexp_replace(changed,'(DELETE\s+FROM\s+)'||t||'\M','\1__gps_delete_'||t,'gi');
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            changed:=regexp_replace(changed,'((FROM|JOIN)\s+)'||t||'\M','\1gps_read_'||t,'gi');
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:            changed:=replace(changed,'__gps_delete_'||t,t);
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           END LOOP;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:           IF changed<>definition THEN EXECUTE changed; END IF;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:          END LOOP;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         END $$;
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]:         
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]: 2026-11-15 04:41:11.584 UTC [1148] gps_migration@gps_closure_test LOG:  could not send data to client: Broken pipe
+2026-11-15T04:41:11+0000 06a5ff7ca70c postgres[1148]: 2026-11-15 04:41:11.584 UTC [1148] gps_migration@gps_closure_test FATAL:  connection to client lost
+2026-11-15T04:41:12+0000 06a5ff7ca70c postgres[1158]: 2026-11-15 04:41:12.356 UTC [1158] gps_migration@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:12+0000 06a5ff7ca70c postgres[1172]: 2026-11-15 04:41:12.848 UTC [1172] gps_migration@gps_cumulative_direct LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:13+0000 06a5ff7ca70c postgres[1184]: 2026-11-15 04:41:13.312 UTC [1184] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 22545 will be stopped
+2026-11-15T04:41:13+0000 06a5ff7ca70c postgres[1184]: 2026-11-15 04:41:13.312 UTC [1184] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_direct WITH (FORCE);
+2026-11-15T04:41:13+0000 06a5ff7ca70c postgres[1159]: 2026-11-15 04:41:13.312 UTC [1159] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:41:13+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:41:13.313 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1159) exited with exit code 1
+2026-11-15T04:41:14+0000 06a5ff7ca70c postgres[1197]: 2026-11-15 04:41:14.274 UTC [1197] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:14+0000 06a5ff7ca70c postgres[1197]: 2026-11-15 04:41:14.274 UTC [1197] postgres@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T04:41:14+0000 06a5ff7ca70c postgres[1201]: 2026-11-15 04:41:14.275 UTC [1201] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:14+0000 06a5ff7ca70c postgres[1198]: 2026-11-15 04:41:14.275 UTC [1198] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:14+0000 06a5ff7ca70c postgres[1196]: 2026-11-15 04:41:14.275 UTC [1196] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:14+0000 06a5ff7ca70c postgres[1199]: 2026-11-15 04:41:14.275 UTC [1199] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:14+0000 06a5ff7ca70c postgres[1195]: 2026-11-15 04:41:14.275 UTC [1195] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]: 2026-11-15 04:41:15.441 UTC [1200] postgres@gps_closure_test LOG:  could not send data to client: Broken pipe
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]: 2026-11-15 04:41:15.441 UTC [1200] postgres@gps_closure_test STATEMENT:  SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng, speed_kmh
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                      FROM location_speed_metrics_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$3)
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                     WHERE device_id = $1
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                       AND user_id = (SELECT owner_id FROM gps_read_devices WHERE id = $1)
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                       AND fix = TRUE
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                       AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                       AND recorded_at >= $2 AND recorded_at < $3
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                     ORDER BY recorded_at,CASE source WHEN 'phone' THEN 0 WHEN 'l80' THEN 1 ELSE 2 END
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]: 2026-11-15 04:41:15.441 UTC [1200] postgres@gps_closure_test FATAL:  connection to client lost
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]: 2026-11-15 04:41:15.441 UTC [1200] postgres@gps_closure_test STATEMENT:  SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng, speed_kmh
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                      FROM location_speed_metrics_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$3)
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                     WHERE device_id = $1
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                       AND user_id = (SELECT owner_id FROM gps_read_devices WHERE id = $1)
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                       AND fix = TRUE
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                       AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                       AND recorded_at >= $2 AND recorded_at < $3
+2026-11-15T04:41:15+0000 06a5ff7ca70c postgres[1200]:                     ORDER BY recorded_at,CASE source WHEN 'phone' THEN 0 WHEN 'l80' THEN 1 ELSE 2 END
+2026-11-15T04:41:16+0000 06a5ff7ca70c postgres[1255]: 2026-11-15 04:41:16.408 UTC [1255] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:41:16+0000 06a5ff7ca70c postgres[1254]: 2026-11-15 04:41:16.408 UTC [1254] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.300 UTC [1304] gps_runtime@gps_closure_test ERROR:  must be owner of table devices
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.300 UTC [1304] gps_runtime@gps_closure_test STATEMENT:  ALTER TABLE devices DISABLE TRIGGER ALL
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.301 UTC [1304] gps_runtime@gps_closure_test ERROR:  permission denied for table location_storage_policy
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.301 UTC [1304] gps_runtime@gps_closure_test STATEMENT:  UPDATE location_storage_policy SET maintenance=false
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.301 UTC [1304] gps_runtime@gps_closure_test ERROR:  permission denied for table location_notice_attempts
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.301 UTC [1304] gps_runtime@gps_closure_test STATEMENT:  DELETE FROM location_notice_attempts
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.301 UTC [1304] gps_runtime@gps_closure_test ERROR:  permission denied for table privacy_retention_policy
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.301 UTC [1304] gps_runtime@gps_closure_test STATEMENT:  UPDATE privacy_retention_policy SET enabled=true
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.302 UTC [1304] gps_runtime@gps_closure_test ERROR:  location storage maintenance
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.302 UTC [1304] gps_runtime@gps_closure_test CONTEXT:  PL/pgSQL function gps_storage_write_fence() line 5 at RAISE
+2026-11-15T04:43:46+0000 06a5ff7ca70c postgres[1304]: 2026-11-15 04:43:46.302 UTC [1304] gps_runtime@gps_closure_test STATEMENT:  UPDATE users SET display_name=display_name
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1324]: 2026-11-15 04:43:49.475 UTC [1324] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1323]: 2026-11-15 04:43:49.475 UTC [1323] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1339]: 2026-11-15 04:43:49.916 UTC [1339] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1339]: 2026-11-15 04:43:49.916 UTC [1339] gps_runtime@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1342]: 2026-11-15 04:43:49.916 UTC [1342] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1341]: 2026-11-15 04:43:49.916 UTC [1341] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1337]: 2026-11-15 04:43:49.916 UTC [1337] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1340]: 2026-11-15 04:43:49.916 UTC [1340] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:49+0000 06a5ff7ca70c postgres[1338]: 2026-11-15 04:43:49.916 UTC [1338] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:43:50+0000 06a5ff7ca70c postgres[1356]: 2026-11-15 04:43:50.090 UTC [1356] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T04:43:50+0000 06a5ff7ca70c postgres[1362]: 2026-11-15 04:43:50.215 UTC [1362] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]: 2026-11-15 04:43:51.134 UTC [1343] gps_runtime@gps_closure_test LOG:  could not send data to client: Broken pipe
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]: 2026-11-15 04:43:51.134 UTC [1343] gps_runtime@gps_closure_test STATEMENT:  SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng, speed_kmh
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                      FROM location_speed_metrics_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$3)
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                     WHERE device_id = $1
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                       AND user_id = (SELECT owner_id FROM gps_read_devices WHERE id = $1)
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                       AND fix = TRUE
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                       AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                       AND recorded_at >= $2 AND recorded_at < $3
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                     ORDER BY recorded_at,CASE source WHEN 'phone' THEN 0 WHEN 'l80' THEN 1 ELSE 2 END
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]: 2026-11-15 04:43:51.134 UTC [1343] gps_runtime@gps_closure_test FATAL:  connection to client lost
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]: 2026-11-15 04:43:51.134 UTC [1343] gps_runtime@gps_closure_test STATEMENT:  SELECT DISTINCT ON(recorded_at) recorded_at, lat, lng, speed_kmh
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                      FROM location_speed_metrics_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$3)
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                     WHERE device_id = $1
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                       AND user_id = (SELECT owner_id FROM gps_read_devices WHERE id = $1)
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                       AND fix = TRUE
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                       AND lat BETWEEN -90 AND 90 AND lng BETWEEN -180 AND 180
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                       AND recorded_at >= $2 AND recorded_at < $3
+2026-11-15T04:43:51+0000 06a5ff7ca70c postgres[1343]:                     ORDER BY recorded_at,CASE source WHEN 'phone' THEN 0 WHEN 'l80' THEN 1 ELSE 2 END
+2026-11-15T04:44:02+0000 06a5ff7ca70c postgres[1390]: 2026-11-15 04:44:02.006 UTC [1390] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:44:02+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:44:02.007 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1390) exited with exit code 1
+2026-11-15T04:44:09+0000 06a5ff7ca70c postgres[1427]: 2026-11-15 04:44:09.167 UTC [1427] LOG:  scheduler for database 41344 exiting with exit status 0
+2026-11-15T04:44:09+0000 06a5ff7ca70c postgres[1427]: 2026-11-15 04:44:09.167 UTC [1427] DETAIL:  the database is restoring or upgrading
+2026-11-15T04:44:09+0000 06a5ff7ca70c postgres[1428]: 2026-11-15 04:44:09.177 UTC [1428] postgres@gps_cumulative_restore ERROR:  location decryption key unavailable
+2026-11-15T04:44:09+0000 06a5ff7ca70c postgres[1428]: 2026-11-15 04:44:09.177 UTC [1428] postgres@gps_cumulative_restore CONTEXT:  PL/pgSQL function gps_open_cell(jsonb,text) line 8 at RAISE
+2026-11-15T04:44:09+0000 06a5ff7ca70c postgres[1428]: 2026-11-15 04:44:09.177 UTC [1428] postgres@gps_cumulative_restore STATEMENT:  SELECT lat FROM gps_read_location_records LIMIT 1
+2026-11-15T04:44:26+0000 06a5ff7ca70c postgres[1454]: 2026-11-15 04:44:26.556 UTC [1454] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:44:26+0000 06a5ff7ca70c postgres[1452]: 2026-11-15 04:44:26.556 UTC [1452] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:44:26+0000 06a5ff7ca70c postgres[1453]: 2026-11-15 04:44:26.556 UTC [1453] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:44:26+0000 06a5ff7ca70c postgres[1448]: 2026-11-15 04:44:26.556 UTC [1448] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:44:26+0000 06a5ff7ca70c postgres[1449]: 2026-11-15 04:44:26.556 UTC [1449] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:44:26+0000 06a5ff7ca70c postgres[1451]: 2026-11-15 04:44:26.556 UTC [1451] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:44:26+0000 06a5ff7ca70c postgres[1450]: 2026-11-15 04:44:26.556 UTC [1450] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:47:01+0000 06a5ff7ca70c postgres[1486]: 2026-11-15 04:47:01.800 UTC [1486] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:47:01+0000 06a5ff7ca70c postgres[1487]: 2026-11-15 04:47:01.800 UTC [1487] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:47:01+0000 06a5ff7ca70c postgres[1485]: 2026-11-15 04:47:01.800 UTC [1485] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:47:01+0000 06a5ff7ca70c postgres[1482]: 2026-11-15 04:47:01.800 UTC [1482] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:47:01+0000 06a5ff7ca70c postgres[1484]: 2026-11-15 04:47:01.800 UTC [1484] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:47:01+0000 06a5ff7ca70c postgres[1481]: 2026-11-15 04:47:01.800 UTC [1481] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:47:01+0000 06a5ff7ca70c postgres[1483]: 2026-11-15 04:47:01.800 UTC [1483] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]: 2026-11-15 04:47:09.966 UTC [1514] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]: 2026-11-15 04:47:09.966 UTC [1514] postgres@gps_cumulative_restore DETAIL:  current limit: 100000, tuples decompressed: 130000
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]: 2026-11-15 04:47:09.966 UTC [1514] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]: 2026-11-15 04:47:09.966 UTC [1514] postgres@gps_cumulative_restore STATEMENT:  WITH batch AS (
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]:                           SELECT device_id,recorded_at,source FROM location_records
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]:                           WHERE NOT query_bounds_ready ORDER BY device_id,recorded_at,source LIMIT $1
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]:                         ) UPDATE location_records r SET query_bounds_ready=true FROM batch b
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]:                           WHERE r.device_id=b.device_id AND r.recorded_at=b.recorded_at AND r.source=b.source
+2026-11-15T04:47:09+0000 06a5ff7ca70c postgres[1514]:                             AND NOT r.query_bounds_ready
+2026-11-15T04:47:14+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:47:14.525 UTC [749] LOG:  checkpoints are occurring too frequently (6 seconds apart)
+2026-11-15T04:47:14+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:47:14.525 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:47:17+0000 06a5ff7ca70c postgres[1514]: 2026-11-15 04:47:17.716 UTC [1514] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:47:17+0000 06a5ff7ca70c postgres[1514]: 2026-11-15 04:47:17.716 UTC [1514] postgres@gps_cumulative_restore DETAIL:  current limit: 500, tuples decompressed: 1000
+2026-11-15T04:47:17+0000 06a5ff7ca70c postgres[1514]: 2026-11-15 04:47:17.716 UTC [1514] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:47:17+0000 06a5ff7ca70c postgres[1514]: 2026-11-15 04:47:17.716 UTC [1514] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T04:47:17+0000 06a5ff7ca70c postgres[1514]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T04:47:17+0000 06a5ff7ca70c postgres[1514]:                     AND NOT query_bounds_ready
+2026-11-15T04:49:20+0000 06a5ff7ca70c postgres[1557]: 2026-11-15 04:49:20.348 UTC [1557] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 41344 will be stopped
+2026-11-15T04:49:20+0000 06a5ff7ca70c postgres[1557]: 2026-11-15 04:49:20.348 UTC [1557] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_restore WITH (FORCE);
+2026-11-15T04:49:21+0000 06a5ff7ca70c postgres[1570]: 2026-11-15 04:49:21.462 UTC [1570] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:49:21+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:49:21.463 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1570) exited with exit code 1
+2026-11-15T04:49:28+0000 06a5ff7ca70c postgres[1608]: 2026-11-15 04:49:28.587 UTC [1608] LOG:  scheduler for database 101732 exiting with exit status 0
+2026-11-15T04:49:28+0000 06a5ff7ca70c postgres[1608]: 2026-11-15 04:49:28.587 UTC [1608] DETAIL:  the database is restoring or upgrading
+2026-11-15T04:49:35+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:49:35.470 UTC [749] LOG:  checkpoints are occurring too frequently (14 seconds apart)
+2026-11-15T04:49:35+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:49:35.470 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]: 2026-11-15 04:49:36.350 UTC [1616] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]: 2026-11-15 04:49:36.350 UTC [1616] postgres@gps_cumulative_restore DETAIL:  current limit: 100000, tuples decompressed: 130000
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]: 2026-11-15 04:49:36.350 UTC [1616] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]: 2026-11-15 04:49:36.350 UTC [1616] postgres@gps_cumulative_restore STATEMENT:  WITH batch AS (
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]:                           SELECT device_id,recorded_at,source FROM location_records
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]:                           WHERE NOT query_bounds_ready ORDER BY device_id,recorded_at,source LIMIT $1
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]:                         ) UPDATE location_records r SET query_bounds_ready=true FROM batch b
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]:                           WHERE r.device_id=b.device_id AND r.recorded_at=b.recorded_at AND r.source=b.source
+2026-11-15T04:49:36+0000 06a5ff7ca70c postgres[1616]:                             AND NOT r.query_bounds_ready
+2026-11-15T04:49:41+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:49:41.369 UTC [749] LOG:  checkpoints are occurring too frequently (6 seconds apart)
+2026-11-15T04:49:41+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:49:41.369 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:49:43+0000 06a5ff7ca70c postgres[1616]: 2026-11-15 04:49:43.746 UTC [1616] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:49:43+0000 06a5ff7ca70c postgres[1616]: 2026-11-15 04:49:43.746 UTC [1616] postgres@gps_cumulative_restore DETAIL:  current limit: 500, tuples decompressed: 1000
+2026-11-15T04:49:43+0000 06a5ff7ca70c postgres[1616]: 2026-11-15 04:49:43.746 UTC [1616] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:49:43+0000 06a5ff7ca70c postgres[1616]: 2026-11-15 04:49:43.746 UTC [1616] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T04:49:43+0000 06a5ff7ca70c postgres[1616]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T04:49:43+0000 06a5ff7ca70c postgres[1616]:                     AND NOT query_bounds_ready
+2026-11-15T04:50:01+0000 06a5ff7ca70c postgres[1650]: 2026-11-15 04:50:01.526 UTC [1650] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:50:01+0000 06a5ff7ca70c postgres[1650]: 2026-11-15 04:50:01.526 UTC [1650] postgres@gps_cumulative_restore DETAIL:  current limit: 500, tuples decompressed: 1000
+2026-11-15T04:50:01+0000 06a5ff7ca70c postgres[1650]: 2026-11-15 04:50:01.526 UTC [1650] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:50:01+0000 06a5ff7ca70c postgres[1650]: 2026-11-15 04:50:01.526 UTC [1650] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T04:50:01+0000 06a5ff7ca70c postgres[1650]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T04:50:01+0000 06a5ff7ca70c postgres[1650]:                     AND NOT query_bounds_ready
+2026-11-15T04:50:59+0000 06a5ff7ca70c postgres[1674]: 2026-11-15 04:50:59.837 UTC [1674] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 101732 will be stopped
+2026-11-15T04:50:59+0000 06a5ff7ca70c postgres[1674]: 2026-11-15 04:50:59.837 UTC [1674] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_restore WITH (FORCE);
+2026-11-15T04:51:00+0000 06a5ff7ca70c postgres[1687]: 2026-11-15 04:51:00.964 UTC [1687] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:51:00+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:51:00.965 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1687) exited with exit code 1
+2026-11-15T04:51:08+0000 06a5ff7ca70c postgres[1725]: 2026-11-15 04:51:08.042 UTC [1725] LOG:  scheduler for database 163592 exiting with exit status 0
+2026-11-15T04:51:08+0000 06a5ff7ca70c postgres[1725]: 2026-11-15 04:51:08.042 UTC [1725] DETAIL:  the database is restoring or upgrading
+2026-11-15T04:51:14+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:51:14.869 UTC [749] LOG:  checkpoints are occurring too frequently (14 seconds apart)
+2026-11-15T04:51:14+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:51:14.869 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]: 2026-11-15 04:51:15.771 UTC [1733] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]: 2026-11-15 04:51:15.771 UTC [1733] postgres@gps_cumulative_restore DETAIL:  current limit: 100000, tuples decompressed: 130000
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]: 2026-11-15 04:51:15.771 UTC [1733] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]: 2026-11-15 04:51:15.771 UTC [1733] postgres@gps_cumulative_restore STATEMENT:  WITH batch AS (
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]:                           SELECT device_id,recorded_at,source FROM location_records
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]:                           WHERE NOT query_bounds_ready ORDER BY device_id,recorded_at,source LIMIT $1
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]:                         ) UPDATE location_records r SET query_bounds_ready=true FROM batch b
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]:                           WHERE r.device_id=b.device_id AND r.recorded_at=b.recorded_at AND r.source=b.source
+2026-11-15T04:51:15+0000 06a5ff7ca70c postgres[1733]:                             AND NOT r.query_bounds_ready
+2026-11-15T04:51:20+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:51:20.676 UTC [749] LOG:  checkpoints are occurring too frequently (6 seconds apart)
+2026-11-15T04:51:20+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:51:20.676 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:51:23+0000 06a5ff7ca70c postgres[1733]: 2026-11-15 04:51:23.256 UTC [1733] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:51:23+0000 06a5ff7ca70c postgres[1733]: 2026-11-15 04:51:23.256 UTC [1733] postgres@gps_cumulative_restore DETAIL:  current limit: 500, tuples decompressed: 1000
+2026-11-15T04:51:23+0000 06a5ff7ca70c postgres[1733]: 2026-11-15 04:51:23.256 UTC [1733] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:51:23+0000 06a5ff7ca70c postgres[1733]: 2026-11-15 04:51:23.256 UTC [1733] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T04:51:23+0000 06a5ff7ca70c postgres[1733]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T04:51:23+0000 06a5ff7ca70c postgres[1733]:                     AND NOT query_bounds_ready
+2026-11-15T04:51:23+0000 06a5ff7ca70c postgres[1758]: 2026-11-15 04:51:23.287 UTC [1758] postgres@gps_cumulative_restore ERROR:  locking compressed tuples is not supported
+2026-11-15T04:51:23+0000 06a5ff7ca70c postgres[1758]: 2026-11-15 04:51:23.287 UTC [1758] postgres@gps_cumulative_restore STATEMENT:  SELECT 1 FROM location_records WHERE device_id=$1 AND recorded_at=$2 AND source=$3 FOR UPDATE
+2026-11-15T04:53:12+0000 06a5ff7ca70c postgres[1814]: 2026-11-15 04:53:12.778 UTC [1814] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 163592 will be stopped
+2026-11-15T04:53:12+0000 06a5ff7ca70c postgres[1814]: 2026-11-15 04:53:12.778 UTC [1814] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_restore WITH (FORCE);
+2026-11-15T04:53:13+0000 06a5ff7ca70c postgres[1827]: 2026-11-15 04:53:13.884 UTC [1827] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:53:13+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:53:13.885 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1827) exited with exit code 1
+2026-11-15T04:53:21+0000 06a5ff7ca70c postgres[1864]: 2026-11-15 04:53:21.006 UTC [1864] LOG:  scheduler for database 223971 exiting with exit status 0
+2026-11-15T04:53:21+0000 06a5ff7ca70c postgres[1864]: 2026-11-15 04:53:21.006 UTC [1864] DETAIL:  the database is restoring or upgrading
+2026-11-15T04:53:28+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:53:28.738 UTC [749] LOG:  checkpoints are occurring too frequently (15 seconds apart)
+2026-11-15T04:53:28+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:53:28.738 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:29.593 UTC [1873] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:29.593 UTC [1873] postgres@gps_cumulative_restore DETAIL:  current limit: 100000, tuples decompressed: 130000
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:29.593 UTC [1873] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:29.593 UTC [1873] postgres@gps_cumulative_restore STATEMENT:  WITH batch AS (
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]:                           SELECT device_id,recorded_at,source FROM location_records
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]:                           WHERE NOT query_bounds_ready ORDER BY device_id,recorded_at,source LIMIT $1
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]:                         ) UPDATE location_records r SET query_bounds_ready=true FROM batch b
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]:                           WHERE r.device_id=b.device_id AND r.recorded_at=b.recorded_at AND r.source=b.source
+2026-11-15T04:53:29+0000 06a5ff7ca70c postgres[1873]:                             AND NOT r.query_bounds_ready
+2026-11-15T04:53:34+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:53:34.602 UTC [749] LOG:  checkpoints are occurring too frequently (6 seconds apart)
+2026-11-15T04:53:34+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:53:34.602 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:37.087 UTC [1873] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:37.087 UTC [1873] postgres@gps_cumulative_restore DETAIL:  current limit: 500, tuples decompressed: 1000
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:37.087 UTC [1873] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:37.087 UTC [1873] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]:                     AND NOT query_bounds_ready
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:37.255 UTC [1873] postgres@gps_cumulative_restore ERROR:  canceling statement due to lock timeout
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:37.255 UTC [1873] postgres@gps_cumulative_restore CONTEXT:  while deleting tuple (2,11) in relation "compress_hyper_2_7_chunk"
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]: 2026-11-15 04:53:37.255 UTC [1873] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T04:53:37+0000 06a5ff7ca70c postgres[1873]:                     AND NOT query_bounds_ready
+2026-11-15T04:55:07+0000 06a5ff7ca70c postgres[1933]: 2026-11-15 04:55:07.875 UTC [1933] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 223971 will be stopped
+2026-11-15T04:55:07+0000 06a5ff7ca70c postgres[1933]: 2026-11-15 04:55:07.875 UTC [1933] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_restore WITH (FORCE);
+2026-11-15T04:55:08+0000 06a5ff7ca70c postgres[1946]: 2026-11-15 04:55:08.958 UTC [1946] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T04:55:08+0000 06a5ff7ca70c postgres[739]: 2026-11-15 04:55:08.959 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1946) exited with exit code 1
+2026-11-15T04:55:16+0000 06a5ff7ca70c postgres[1983]: 2026-11-15 04:55:16.066 UTC [1983] LOG:  scheduler for database 285830 exiting with exit status 0
+2026-11-15T04:55:16+0000 06a5ff7ca70c postgres[1983]: 2026-11-15 04:55:16.066 UTC [1983] DETAIL:  the database is restoring or upgrading
+2026-11-15T04:55:22+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:55:22.974 UTC [749] LOG:  checkpoints are occurring too frequently (14 seconds apart)
+2026-11-15T04:55:22+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:55:22.974 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:23.853 UTC [1991] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:23.853 UTC [1991] postgres@gps_cumulative_restore DETAIL:  current limit: 100000, tuples decompressed: 130000
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:23.853 UTC [1991] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:23.853 UTC [1991] postgres@gps_cumulative_restore STATEMENT:  WITH batch AS (
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]:                           SELECT device_id,recorded_at,source FROM location_records
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]:                           WHERE NOT query_bounds_ready ORDER BY device_id,recorded_at,source LIMIT $1
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]:                         ) UPDATE location_records r SET query_bounds_ready=true FROM batch b
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]:                           WHERE r.device_id=b.device_id AND r.recorded_at=b.recorded_at AND r.source=b.source
+2026-11-15T04:55:23+0000 06a5ff7ca70c postgres[1991]:                             AND NOT r.query_bounds_ready
+2026-11-15T04:55:27+0000 06a5ff7ca70c postgres[1996]: 2026-11-15 04:55:27.091 UTC [1996] ERROR:  canceling autovacuum task
+2026-11-15T04:55:27+0000 06a5ff7ca70c postgres[1996]: 2026-11-15 04:55:27.091 UTC [1996] CONTEXT:  while vacuuming block 7312 of relation "_timescaledb_internal._hyper_1_1_chunk"
+2026-11-15T04:55:27+0000 06a5ff7ca70c postgres[1996]:         automatic vacuum of table "gps_cumulative_restore._timescaledb_internal._hyper_1_1_chunk"
+2026-11-15T04:55:29+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:55:29.943 UTC [749] LOG:  checkpoints are occurring too frequently (7 seconds apart)
+2026-11-15T04:55:29+0000 06a5ff7ca70c postgres[749]: 2026-11-15 04:55:29.943 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T04:55:31+0000 06a5ff7ca70c postgres[1996]: 2026-11-15 04:55:31.213 UTC [1996] ERROR:  canceling autovacuum task
+2026-11-15T04:55:31+0000 06a5ff7ca70c postgres[1996]: 2026-11-15 04:55:31.213 UTC [1996] CONTEXT:  while vacuuming block 3657 of relation "pg_toast.pg_toast_287468"
+2026-11-15T04:55:31+0000 06a5ff7ca70c postgres[1996]:         automatic vacuum of table "gps_cumulative_restore.pg_toast.pg_toast_287468"
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:33.091 UTC [1991] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:33.091 UTC [1991] postgres@gps_cumulative_restore DETAIL:  current limit: 500, tuples decompressed: 1000
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:33.091 UTC [1991] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:33.091 UTC [1991] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]:                     AND NOT query_bounds_ready
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:33.255 UTC [1991] postgres@gps_cumulative_restore ERROR:  canceling statement due to lock timeout
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:33.255 UTC [1991] postgres@gps_cumulative_restore CONTEXT:  while deleting tuple (2,11) in relation "compress_hyper_2_7_chunk"
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]: 2026-11-15 04:55:33.255 UTC [1991] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T04:55:33+0000 06a5ff7ca70c postgres[1991]:                     AND NOT query_bounds_ready
+2026-11-15T04:55:36+0000 06a5ff7ca70c postgres[2025]: 2026-11-15 04:55:36.447 UTC [2025] gps_migration@gps_cumulative_restore ERROR:  permission denied for tablespace gps121_sort
+2026-11-15T04:55:36+0000 06a5ff7ca70c postgres[2025]: 2026-11-15 04:55:36.447 UTC [2025] gps_migration@gps_cumulative_restore STATEMENT:  SET statement_timeout='60s'; SET lock_timeout='5s'; SET jit=off; SET temp_tablespaces='gps121_sort'
+2026-11-15T05:02:11+0000 06a5ff7ca70c postgres[2066]: 2026-11-15 05:02:11.667 UTC [2066] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 285830 will be stopped
+2026-11-15T05:02:11+0000 06a5ff7ca70c postgres[2066]: 2026-11-15 05:02:11.667 UTC [2066] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_restore WITH (FORCE);
+2026-11-15T05:02:12+0000 06a5ff7ca70c postgres[2079]: 2026-11-15 05:02:12.655 UTC [2079] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T05:02:12+0000 06a5ff7ca70c postgres[739]: 2026-11-15 05:02:12.656 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 2079) exited with exit code 1
+2026-11-15T05:02:19+0000 06a5ff7ca70c postgres[2116]: 2026-11-15 05:02:19.757 UTC [2116] LOG:  scheduler for database 348171 exiting with exit status 0
+2026-11-15T05:02:19+0000 06a5ff7ca70c postgres[2116]: 2026-11-15 05:02:19.757 UTC [2116] DETAIL:  the database is restoring or upgrading
+2026-11-15T05:02:25+0000 06a5ff7ca70c postgres[2125]: 2026-11-15 05:02:25.150 UTC [2125] ERROR:  canceling autovacuum task
+2026-11-15T05:02:25+0000 06a5ff7ca70c postgres[2125]: 2026-11-15 05:02:25.150 UTC [2125] CONTEXT:  while scanning block 7055 of relation "_timescaledb_internal._hyper_1_2_chunk"
+2026-11-15T05:02:25+0000 06a5ff7ca70c postgres[2125]:         automatic vacuum of table "gps_cumulative_restore._timescaledb_internal._hyper_1_2_chunk"
+2026-11-15T05:02:27+0000 06a5ff7ca70c postgres[749]: 2026-11-15 05:02:27.640 UTC [749] LOG:  checkpoints are occurring too frequently (15 seconds apart)
+2026-11-15T05:02:27+0000 06a5ff7ca70c postgres[749]: 2026-11-15 05:02:27.640 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:28.550 UTC [2124] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:28.550 UTC [2124] postgres@gps_cumulative_restore DETAIL:  current limit: 100000, tuples decompressed: 130000
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:28.550 UTC [2124] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:28.550 UTC [2124] postgres@gps_cumulative_restore STATEMENT:  WITH batch AS (
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]:                           SELECT device_id,recorded_at,source FROM location_records
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]:                           WHERE NOT query_bounds_ready ORDER BY device_id,recorded_at,source LIMIT $1
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]:                         ) UPDATE location_records r SET query_bounds_ready=true FROM batch b
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]:                           WHERE r.device_id=b.device_id AND r.recorded_at=b.recorded_at AND r.source=b.source
+2026-11-15T05:02:28+0000 06a5ff7ca70c postgres[2124]:                             AND NOT r.query_bounds_ready
+2026-11-15T05:02:33+0000 06a5ff7ca70c postgres[749]: 2026-11-15 05:02:33.445 UTC [749] LOG:  checkpoints are occurring too frequently (6 seconds apart)
+2026-11-15T05:02:33+0000 06a5ff7ca70c postgres[749]: 2026-11-15 05:02:33.445 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:36.070 UTC [2124] postgres@gps_cumulative_restore ERROR:  tuple decompression limit exceeded by operation
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:36.070 UTC [2124] postgres@gps_cumulative_restore DETAIL:  current limit: 500, tuples decompressed: 1000
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:36.070 UTC [2124] postgres@gps_cumulative_restore HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:36.070 UTC [2124] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]:                     AND NOT query_bounds_ready
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:36.236 UTC [2124] postgres@gps_cumulative_restore ERROR:  canceling statement due to lock timeout
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:36.236 UTC [2124] postgres@gps_cumulative_restore CONTEXT:  while deleting tuple (2,11) in relation "compress_hyper_2_7_chunk"
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]: 2026-11-15 05:02:36.236 UTC [2124] postgres@gps_cumulative_restore STATEMENT:  UPDATE location_records SET query_bounds_ready=true
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]:                   WHERE device_id=$1 AND recorded_at=$2 AND source=$3
+2026-11-15T05:02:36+0000 06a5ff7ca70c postgres[2124]:                     AND NOT query_bounds_ready
+2026-11-15T05:02:51+0000 06a5ff7ca70c postgres[749]: 2026-11-15 05:02:51.520 UTC [749] LOG:  checkpoints are occurring too frequently (18 seconds apart)
+2026-11-15T05:02:51+0000 06a5ff7ca70c postgres[749]: 2026-11-15 05:02:51.520 UTC [749] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[739]: 2026-11-15 05:02:53.434 UTC [739] LOG:  received fast shutdown request
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[1141]: 2026-11-15 05:02:53.434 UTC [1141] ERROR:  canceling statement due to user request
+2026-11-15T05:02:53+0000 06a5ff7ca70c systemd[1]: Stopping gps121-db.service...
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[754]: 2026-11-15 05:02:53.434 UTC [754] ERROR:  canceling statement due to user request
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[755]: 2026-11-15 05:02:53.434 UTC [755] ERROR:  canceling statement due to user request
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[739]: 2026-11-15 05:02:53.440 UTC [739] LOG:  aborting any active transactions
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[739]: 2026-11-15 05:02:53.440 UTC [739] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 754) exited with exit code 1
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[739]: 2026-11-15 05:02:53.440 UTC [739] LOG:  background worker "logical replication launcher" (PID 755) exited with exit code 1
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[739]: 2026-11-15 05:02:53.440 UTC [739] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 1141) exited with exit code 1
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[749]: 2026-11-15 05:02:53.730 UTC [749] LOG:  shutting down
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[739]: 2026-11-15 05:02:53.865 UTC [739] LOG:  database system is shut down
+2026-11-15T05:02:53+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Deactivated successfully.
+2026-11-15T05:02:53+0000 06a5ff7ca70c systemd[1]: Stopped gps121-db.service.
+2026-11-15T05:02:53+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Consumed 5min 8.244s CPU time.
+2026-11-15T05:02:53+0000 06a5ff7ca70c systemd[1]: Starting gps121-db.service...
+2026-11-15T05:02:53+0000 06a5ff7ca70c python3[2201]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2711"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2710"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+2026-11-15T05:02:53+0000 06a5ff7ca70c systemd[1]: Started gps121-db.service.
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:02:53.927 UTC [2202] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:02:53.927 UTC [2202] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:02:53.929 UTC [2202] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[2209]: 2026-11-15 05:02:53.934 UTC [2209] LOG:  database system was shut down at 2026-11-15 05:02:53 UTC
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[2213]: 2026-11-15 05:02:53.942 UTC [2213] gps_runtime@gps_cumulative_restore FATAL:  the database system is starting up
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:02:53.942 UTC [2202] LOG:  database system is ready to accept connections
+2026-11-15T05:02:53+0000 06a5ff7ca70c postgres[2219]: 2026-11-15 05:02:53.943 UTC [2219] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2233]: 2026-11-15 05:03:31.694 UTC [2233] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2230]: 2026-11-15 05:03:31.694 UTC [2230] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2232]: 2026-11-15 05:03:31.694 UTC [2232] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2231]: 2026-11-15 05:03:31.694 UTC [2231] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2229]: 2026-11-15 05:03:31.694 UTC [2229] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2227]: 2026-11-15 05:03:31.694 UTC [2227] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2225]: 2026-11-15 05:03:31.694 UTC [2225] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2228]: 2026-11-15 05:03:31.695 UTC [2228] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:03:31.697 UTC [2202] LOG:  received fast shutdown request
+2026-11-15T05:03:31+0000 06a5ff7ca70c systemd[1]: Stopping gps121-db.service...
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2219]: 2026-11-15 05:03:31.697 UTC [2219] ERROR:  canceling statement due to user request
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2223]: 2026-11-15 05:03:31.697 UTC [2223] ERROR:  canceling statement due to user request
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2221]: 2026-11-15 05:03:31.697 UTC [2221] ERROR:  canceling statement due to user request
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2220]: 2026-11-15 05:03:31.697 UTC [2220] ERROR:  canceling statement due to user request
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:03:31.699 UTC [2202] LOG:  aborting any active transactions
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:03:31.699 UTC [2202] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 2219) exited with exit code 1
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:03:31.699 UTC [2202] LOG:  background worker "logical replication launcher" (PID 2220) exited with exit code 1
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:03:31.699 UTC [2202] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 2221) exited with exit code 1
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:03:31.699 UTC [2202] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 2223) exited with exit code 1
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2214]: 2026-11-15 05:03:31.700 UTC [2214] LOG:  shutting down
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2202]: 2026-11-15 05:03:31.819 UTC [2202] LOG:  database system is shut down
+2026-11-15T05:03:31+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Deactivated successfully.
+2026-11-15T05:03:31+0000 06a5ff7ca70c systemd[1]: Stopped gps121-db.service.
+2026-11-15T05:03:31+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Consumed 1.729s CPU time.
+2026-11-15T05:03:31+0000 06a5ff7ca70c systemd[1]: Starting gps121-db.service...
+2026-11-15T05:03:31+0000 06a5ff7ca70c python3[2331]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2711"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2710"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+2026-11-15T05:03:31+0000 06a5ff7ca70c systemd[1]: Started gps121-db.service.
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:03:31.866 UTC [2332] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:03:31.866 UTC [2332] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:03:31.868 UTC [2332] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2337]: 2026-11-15 05:03:31.872 UTC [2337] LOG:  database system was shut down at 2026-11-15 05:03:31 UTC
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:03:31.879 UTC [2332] LOG:  database system is ready to accept connections
+2026-11-15T05:03:31+0000 06a5ff7ca70c postgres[2344]: 2026-11-15 05:03:31.879 UTC [2344] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2399]: 2026-11-15 05:08:45.525 UTC [2399] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[3438]: 2026-11-15 05:08:45.525 UTC [3438] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2360]: 2026-11-15 05:08:45.525 UTC [2360] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2358]: 2026-11-15 05:08:45.525 UTC [2358] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2356]: 2026-11-15 05:08:45.525 UTC [2356] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2359]: 2026-11-15 05:08:45.525 UTC [2359] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2355]: 2026-11-15 05:08:45.525 UTC [2355] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2357]: 2026-11-15 05:08:45.525 UTC [2357] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2353]: 2026-11-15 05:08:45.525 UTC [2353] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[2354]: 2026-11-15 05:08:45.525 UTC [2354] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[3504]: 2026-11-15 05:08:45.703 UTC [3504] postgres@gps_cumulative_restore ERROR:  location encryption key unavailable
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[3504]: 2026-11-15 05:08:45.703 UTC [3504] postgres@gps_cumulative_restore CONTEXT:  PL/pgSQL function gps_seal_cell(jsonb,text) line 8 at RAISE
+2026-11-15T05:08:45+0000 06a5ff7ca70c postgres[3504]: 2026-11-15 05:08:45.703 UTC [3504] postgres@gps_cumulative_restore STATEMENT:  SELECT gps_open_cell(gps_seal_cell('true'::jsonb,'query-backfill'),'query-backfill')
+2026-11-15T05:08:46+0000 06a5ff7ca70c postgres[3517]: 2026-11-15 05:08:46.558 UTC [3517] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 427784 will be stopped
+2026-11-15T05:08:46+0000 06a5ff7ca70c postgres[3517]: 2026-11-15 05:08:46.558 UTC [3517] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_faults WITH (FORCE);
+2026-11-15T05:08:50+0000 06a5ff7ca70c postgres[3547]: 2026-11-15 05:08:50.202 UTC [3547] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 427788 will be stopped
+2026-11-15T05:08:50+0000 06a5ff7ca70c postgres[3547]: 2026-11-15 05:08:50.202 UTC [3547] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_faults WITH (FORCE);
+2026-11-15T05:08:53+0000 06a5ff7ca70c postgres[3554]: 2026-11-15 05:08:53.920 UTC [3554] ERROR:  canceling autovacuum task
+2026-11-15T05:08:53+0000 06a5ff7ca70c postgres[3554]: 2026-11-15 05:08:53.920 UTC [3554] CONTEXT:  while truncating relation "_timescaledb_internal._hyper_1_1_chunk" to 0 blocks
+2026-11-15T05:08:53+0000 06a5ff7ca70c postgres[3554]:         automatic vacuum of table "gps_cumulative_restore._timescaledb_internal._hyper_1_1_chunk"
+2026-11-15T05:09:09+0000 06a5ff7ca70c postgres[3590]: 2026-11-15 05:09:09.841 UTC [3590] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:09+0000 06a5ff7ca70c postgres[3585]: 2026-11-15 05:09:09.841 UTC [3585] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:09+0000 06a5ff7ca70c postgres[3586]: 2026-11-15 05:09:09.841 UTC [3586] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:09+0000 06a5ff7ca70c postgres[3588]: 2026-11-15 05:09:09.841 UTC [3588] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:09+0000 06a5ff7ca70c postgres[3589]: 2026-11-15 05:09:09.841 UTC [3589] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:09+0000 06a5ff7ca70c postgres[3587]: 2026-11-15 05:09:09.841 UTC [3587] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:09+0000 06a5ff7ca70c postgres[3584]: 2026-11-15 05:09:09.841 UTC [3584] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:09+0000 06a5ff7ca70c postgres[3583]: 2026-11-15 05:09:09.841 UTC [3583] gps_runtime@gps_cumulative_restore LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.663 UTC [3615] postgres@gps_closure_test ERROR:  invalid input syntax for type json at character 68
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.663 UTC [3615] postgres@gps_closure_test DETAIL:  Token "broken" is invalid.
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.663 UTC [3615] postgres@gps_closure_test CONTEXT:  JSON data, line 1: broken
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.663 UTC [3615] postgres@gps_closure_test STATEMENT:  UPDATE location_records SET fixes_jsonb_sealed=fixes_jsonb_sealed||'broken' WHERE device_id=$1 AND recorded_at=$2 AND source='l80'
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.664 UTC [3615] postgres@gps_closure_test ERROR:  location ciphertext authentication failed
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.664 UTC [3615] postgres@gps_closure_test CONTEXT:  PL/pgSQL function gps_open_cell(jsonb,text) line 13 at RAISE
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]:         PL/pgSQL function gps_location_query_bounds() line 14 at assignment
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.664 UTC [3615] postgres@gps_closure_test STATEMENT:  UPDATE location_records SET recorded_at=recorded_at+interval '1 second' WHERE device_id=$1 AND recorded_at=$2 AND source='l80'
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.666 UTC [3615] postgres@gps_closure_test ERROR:  location encryption key unavailable
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.666 UTC [3615] postgres@gps_closure_test CONTEXT:  PL/pgSQL function gps_seal_cell(jsonb,text) line 8 at RAISE
+2026-11-15T05:09:19+0000 06a5ff7ca70c postgres[3615]: 2026-11-15 05:09:19.666 UTC [3615] postgres@gps_closure_test STATEMENT:  SELECT gps_open_cell(gps_seal_cell('true'::jsonb,'query-backfill'),'query-backfill')
+2026-11-15T05:09:21+0000 06a5ff7ca70c postgres[3638]: 2026-11-15 05:09:21.384 UTC [3638] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:21+0000 06a5ff7ca70c postgres[3636]: 2026-11-15 05:09:21.384 UTC [3636] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:21+0000 06a5ff7ca70c postgres[3637]: 2026-11-15 05:09:21.384 UTC [3637] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:21+0000 06a5ff7ca70c postgres[3632]: 2026-11-15 05:09:21.384 UTC [3632] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:21+0000 06a5ff7ca70c postgres[3635]: 2026-11-15 05:09:21.384 UTC [3635] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:21+0000 06a5ff7ca70c postgres[3633]: 2026-11-15 05:09:21.384 UTC [3633] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:21+0000 06a5ff7ca70c postgres[3634]: 2026-11-15 05:09:21.385 UTC [3634] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3661]: 2026-11-15 05:09:22.678 UTC [3661] gps_runtime@gps_closure_test ERROR:  conflicting key value violates exclusion constraint "location_subject_mappings_int8range_tstzrange_excl"
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3661]: 2026-11-15 05:09:22.678 UTC [3661] gps_runtime@gps_closure_test DETAIL:  Key (int8range(device_id, device_id, '[]'::text), tstzrange(starts_at, ends_at, '[)'::text))=([3,4), ["2026-11-15 04:09:21+00","2026-11-15 06:09:21+00")) conflicts with existing key (int8range(device_id, device_id, '[]'::text), tstzrange(starts_at, ends_at, '[)'::text))=([3,4), ["2026-11-15 04:09:21+00","2026-11-15 06:09:21+00")).
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3661]: 2026-11-15 05:09:22.678 UTC [3661] gps_runtime@gps_closure_test STATEMENT:  UPDATE location_subject_mappings SET status=$2,revision=revision+1,decided_at=clock_timestamp() WHERE id=$1
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3661]: 2026-11-15 05:09:22.788 UTC [3661] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3664]: 2026-11-15 05:09:22.788 UTC [3664] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3663]: 2026-11-15 05:09:22.788 UTC [3663] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3662]: 2026-11-15 05:09:22.788 UTC [3662] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3660]: 2026-11-15 05:09:22.788 UTC [3660] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3656]: 2026-11-15 05:09:22.788 UTC [3656] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3657]: 2026-11-15 05:09:22.788 UTC [3657] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3659]: 2026-11-15 05:09:22.788 UTC [3659] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3658]: 2026-11-15 05:09:22.788 UTC [3658] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3655]: 2026-11-15 05:09:22.788 UTC [3655] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3653]: 2026-11-15 05:09:22.788 UTC [3653] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:22+0000 06a5ff7ca70c postgres[3654]: 2026-11-15 05:09:22.788 UTC [3654] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3685]: 2026-11-15 05:09:24.496 UTC [3685] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3686]: 2026-11-15 05:09:24.496 UTC [3686] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3684]: 2026-11-15 05:09:24.496 UTC [3684] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3683]: 2026-11-15 05:09:24.496 UTC [3683] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3679]: 2026-11-15 05:09:24.496 UTC [3679] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3682]: 2026-11-15 05:09:24.496 UTC [3682] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3680]: 2026-11-15 05:09:24.496 UTC [3680] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3678]: 2026-11-15 05:09:24.496 UTC [3678] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:24+0000 06a5ff7ca70c postgres[3681]: 2026-11-15 05:09:24.496 UTC [3681] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:25+0000 06a5ff7ca70c postgres[3705]: 2026-11-15 05:09:25.963 UTC [3705] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:25+0000 06a5ff7ca70c postgres[3704]: 2026-11-15 05:09:25.963 UTC [3704] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:25+0000 06a5ff7ca70c postgres[3702]: 2026-11-15 05:09:25.963 UTC [3702] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:25+0000 06a5ff7ca70c postgres[3699]: 2026-11-15 05:09:25.963 UTC [3699] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:25+0000 06a5ff7ca70c postgres[3706]: 2026-11-15 05:09:25.963 UTC [3706] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:25+0000 06a5ff7ca70c postgres[3701]: 2026-11-15 05:09:25.963 UTC [3701] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:25+0000 06a5ff7ca70c postgres[3703]: 2026-11-15 05:09:25.963 UTC [3703] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:25+0000 06a5ff7ca70c postgres[3700]: 2026-11-15 05:09:25.963 UTC [3700] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3729]: 2026-11-15 05:09:27.656 UTC [3729] gps_runtime@gps_closure_test ERROR:  synthetic notice failure
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3729]: 2026-11-15 05:09:27.656 UTC [3729] gps_runtime@gps_closure_test CONTEXT:  PL/pgSQL function fail22b_notice() line 1 at RAISE
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3729]: 2026-11-15 05:09:27.656 UTC [3729] gps_runtime@gps_closure_test STATEMENT:  INSERT INTO location_provision_notices(event_id,mapping_id,subject_id,owner_id,actor_id,device_id,vehicle_id,purpose,consent_version,policy_reference,range_from,range_until,started_at) SELECT $1,$2,$3,$4,$5,$6,$7,'fleet_operations','fleet-subject-v1',$8,$9,$10,started_at FROM location_access_events WHERE id=$1
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3722]: 2026-11-15 05:09:27.790 UTC [3722] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3730]: 2026-11-15 05:09:27.791 UTC [3730] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3727]: 2026-11-15 05:09:27.791 UTC [3727] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3732]: 2026-11-15 05:09:27.791 UTC [3732] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3728]: 2026-11-15 05:09:27.791 UTC [3728] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3731]: 2026-11-15 05:09:27.791 UTC [3731] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3726]: 2026-11-15 05:09:27.791 UTC [3726] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3723]: 2026-11-15 05:09:27.791 UTC [3723] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3725]: 2026-11-15 05:09:27.791 UTC [3725] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3724]: 2026-11-15 05:09:27.791 UTC [3724] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3729]: 2026-11-15 05:09:27.791 UTC [3729] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:27+0000 06a5ff7ca70c postgres[3721]: 2026-11-15 05:09:27.791 UTC [3721] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:29+0000 06a5ff7ca70c postgres[3760]: 2026-11-15 05:09:29.273 UTC [3760] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:29+0000 06a5ff7ca70c postgres[3757]: 2026-11-15 05:09:29.273 UTC [3757] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:29+0000 06a5ff7ca70c postgres[3759]: 2026-11-15 05:09:29.273 UTC [3759] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:29+0000 06a5ff7ca70c postgres[3756]: 2026-11-15 05:09:29.273 UTC [3756] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:29+0000 06a5ff7ca70c postgres[3758]: 2026-11-15 05:09:29.273 UTC [3758] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:29+0000 06a5ff7ca70c postgres[3754]: 2026-11-15 05:09:29.273 UTC [3754] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:29+0000 06a5ff7ca70c postgres[3755]: 2026-11-15 05:09:29.273 UTC [3755] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:29+0000 06a5ff7ca70c postgres[3753]: 2026-11-15 05:09:29.273 UTC [3753] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3784]: 2026-11-15 05:09:30.611 UTC [3784] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3786]: 2026-11-15 05:09:30.611 UTC [3786] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3785]: 2026-11-15 05:09:30.611 UTC [3785] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3781]: 2026-11-15 05:09:30.611 UTC [3781] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3782]: 2026-11-15 05:09:30.611 UTC [3782] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3776]: 2026-11-15 05:09:30.611 UTC [3776] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3775]: 2026-11-15 05:09:30.611 UTC [3775] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3778]: 2026-11-15 05:09:30.611 UTC [3778] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3780]: 2026-11-15 05:09:30.611 UTC [3780] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3777]: 2026-11-15 05:09:30.611 UTC [3777] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3779]: 2026-11-15 05:09:30.611 UTC [3779] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:30+0000 06a5ff7ca70c postgres[3783]: 2026-11-15 05:09:30.611 UTC [3783] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:31+0000 06a5ff7ca70c postgres[3804]: 2026-11-15 05:09:31.887 UTC [3804] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:31+0000 06a5ff7ca70c postgres[3801]: 2026-11-15 05:09:31.887 UTC [3801] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:31+0000 06a5ff7ca70c postgres[3803]: 2026-11-15 05:09:31.887 UTC [3803] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:31+0000 06a5ff7ca70c postgres[3806]: 2026-11-15 05:09:31.887 UTC [3806] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:31+0000 06a5ff7ca70c postgres[3805]: 2026-11-15 05:09:31.887 UTC [3805] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:31+0000 06a5ff7ca70c postgres[3799]: 2026-11-15 05:09:31.887 UTC [3799] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:31+0000 06a5ff7ca70c postgres[3802]: 2026-11-15 05:09:31.887 UTC [3802] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:31+0000 06a5ff7ca70c postgres[3800]: 2026-11-15 05:09:31.887 UTC [3800] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3765]: 2026-11-15 05:09:33.337 UTC [3765] postgres@gps_closure_test ERROR:  subject identity is immutable
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3765]: 2026-11-15 05:09:33.337 UTC [3765] postgres@gps_closure_test CONTEXT:  PL/pgSQL function protect_subject_identity() line 5 at RAISE
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3765]: 2026-11-15 05:09:33.337 UTC [3765] postgres@gps_closure_test STATEMENT:  UPDATE location_subject_mappings SET subject_id=$1 WHERE id=$2
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3820]: 2026-11-15 05:09:33.435 UTC [3820] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3829]: 2026-11-15 05:09:33.436 UTC [3829] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3827]: 2026-11-15 05:09:33.436 UTC [3827] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3826]: 2026-11-15 05:09:33.436 UTC [3826] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3823]: 2026-11-15 05:09:33.436 UTC [3823] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3821]: 2026-11-15 05:09:33.436 UTC [3821] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3828]: 2026-11-15 05:09:33.436 UTC [3828] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3831]: 2026-11-15 05:09:33.436 UTC [3831] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3824]: 2026-11-15 05:09:33.436 UTC [3824] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3822]: 2026-11-15 05:09:33.436 UTC [3822] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3825]: 2026-11-15 05:09:33.436 UTC [3825] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:09:33+0000 06a5ff7ca70c postgres[3819]: 2026-11-15 05:09:33.436 UTC [3819] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[4040]: 2026-11-15 05:10:34.766 UTC [4040] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3859]: 2026-11-15 05:10:34.766 UTC [3859] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[4038]: 2026-11-15 05:10:34.766 UTC [4038] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3858]: 2026-11-15 05:10:34.766 UTC [3858] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[4039]: 2026-11-15 05:10:34.766 UTC [4039] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3855]: 2026-11-15 05:10:34.766 UTC [3855] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3856]: 2026-11-15 05:10:34.766 UTC [3856] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3857]: 2026-11-15 05:10:34.766 UTC [3857] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[4037]: 2026-11-15 05:10:34.766 UTC [4037] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3852]: 2026-11-15 05:10:34.766 UTC [3852] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3854]: 2026-11-15 05:10:34.766 UTC [3854] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3853]: 2026-11-15 05:10:34.766 UTC [3853] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:34+0000 06a5ff7ca70c postgres[3851]: 2026-11-15 05:10:34.766 UTC [3851] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:10:44+0000 06a5ff7ca70c postgres[4125]: 2026-11-15 05:10:44.382 UTC [4125] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-15T05:10:44+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:10:44.383 UTC [2332] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 4125) exited with exit code 1
+2026-11-15T05:10:51+0000 06a5ff7ca70c postgres[4162]: 2026-11-15 05:10:51.941 UTC [4162] LOG:  scheduler for database 428215 exiting with exit status 0
+2026-11-15T05:10:51+0000 06a5ff7ca70c postgres[4162]: 2026-11-15 05:10:51.941 UTC [4162] DETAIL:  the database is restoring or upgrading
+2026-11-15T05:10:52+0000 06a5ff7ca70c postgres[4176]: 2026-11-15 05:10:52.204 UTC [4176] postgres@gps_cumulative_stale ERROR:  location collection policy denied
+2026-11-15T05:10:52+0000 06a5ff7ca70c postgres[4176]: 2026-11-15 05:10:52.204 UTC [4176] postgres@gps_cumulative_stale CONTEXT:  PL/pgSQL function collection_guard_location() line 8 at RAISE
+2026-11-15T05:10:52+0000 06a5ff7ca70c postgres[4176]: 2026-11-15 05:10:52.204 UTC [4176] postgres@gps_cumulative_stale STATEMENT:  INSERT INTO location_records(device_id,user_id,source,fix,lat,lng,recorded_at) VALUES($1,$2,'l80',true,37,127,'2025-01-02')
+2026-11-15T05:10:52+0000 06a5ff7ca70c postgres[4182]: 2026-11-15 05:10:52.270 UTC [4182] postgres@postgres LOG:  TimescaleDB background worker scheduler for database 428215 will be stopped
+2026-11-15T05:10:52+0000 06a5ff7ca70c postgres[4182]: 2026-11-15 05:10:52.270 UTC [4182] postgres@postgres STATEMENT:  DROP DATABASE gps_cumulative_stale WITH (FORCE);
+2026-11-15T05:10:52+0000 06a5ff7ca70c postgres[4167]: 2026-11-15 05:10:52.270 UTC [4167] FATAL:  terminating autovacuum process due to administrator command
+2026-11-15T05:10:59+0000 06a5ff7ca70c postgres[4202]: 2026-11-15 05:10:59.798 UTC [4202] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T05:10:59+0000 06a5ff7ca70c postgres[4208]: 2026-11-15 05:10:59.924 UTC [4208] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4243]: 2026-11-15 05:11:00.345 UTC [4243] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:11:00.409 UTC [2332] LOG:  received fast shutdown request
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2344]: 2026-11-15 05:11:00.409 UTC [2344] ERROR:  canceling statement due to user request
+2026-11-15T05:11:00+0000 06a5ff7ca70c systemd[1]: Stopping gps121-db.service...
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2346]: 2026-11-15 05:11:00.409 UTC [2346] ERROR:  canceling statement due to user request
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2348]: 2026-11-15 05:11:00.409 UTC [2348] ERROR:  canceling statement due to user request
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2345]: 2026-11-15 05:11:00.409 UTC [2345] ERROR:  canceling statement due to user request
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4227]: 2026-11-15 05:11:00.411 UTC [4227] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4226]: 2026-11-15 05:11:00.411 UTC [4226] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4225]: 2026-11-15 05:11:00.411 UTC [4225] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4223]: 2026-11-15 05:11:00.411 UTC [4223] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4222]: 2026-11-15 05:11:00.411 UTC [4222] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4220]: 2026-11-15 05:11:00.411 UTC [4220] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4224]: 2026-11-15 05:11:00.411 UTC [4224] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4221]: 2026-11-15 05:11:00.411 UTC [4221] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4219]: 2026-11-15 05:11:00.411 UTC [4219] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:11:00.412 UTC [2332] LOG:  aborting any active transactions
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:11:00.412 UTC [2332] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 2344) exited with exit code 1
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:11:00.412 UTC [2332] LOG:  background worker "logical replication launcher" (PID 2345) exited with exit code 1
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:11:00.412 UTC [2332] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 2346) exited with exit code 1
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:11:00.412 UTC [2332] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 2348) exited with exit code 1
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2339]: 2026-11-15 05:11:00.414 UTC [2339] LOG:  shutting down
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[2332]: 2026-11-15 05:11:00.553 UTC [2332] LOG:  database system is shut down
+2026-11-15T05:11:00+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Deactivated successfully.
+2026-11-15T05:11:00+0000 06a5ff7ca70c systemd[1]: Stopped gps121-db.service.
+2026-11-15T05:11:00+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Consumed 10min 40.145s CPU time.
+2026-11-15T05:11:00+0000 06a5ff7ca70c systemd[1]: Starting gps121-db.service...
+2026-11-15T05:11:00+0000 06a5ff7ca70c python3[4335]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2712"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2710"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+2026-11-15T05:11:00+0000 06a5ff7ca70c systemd[1]: Started gps121-db.service.
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:00.789 UTC [4336] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:00.789 UTC [4336] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:00.792 UTC [4336] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4338]: 2026-11-15 05:11:00.797 UTC [4338] LOG:  database system was shut down at 2026-11-15 05:11:00 UTC
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:00.805 UTC [4336] LOG:  database system is ready to accept connections
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4344]: 2026-11-15 05:11:00.806 UTC [4344] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T05:11:00+0000 06a5ff7ca70c postgres[4350]: 2026-11-15 05:11:00.895 UTC [4350] root@root FATAL:  role "root" does not exist
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:01.178 UTC [4336] LOG:  received fast shutdown request
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: Stopping gps121-db.service...
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4345]: 2026-11-15 05:11:01.178 UTC [4345] ERROR:  canceling statement due to user request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4344]: 2026-11-15 05:11:01.178 UTC [4344] ERROR:  canceling statement due to user request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4346]: 2026-11-15 05:11:01.178 UTC [4346] ERROR:  canceling statement due to user request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4348]: 2026-11-15 05:11:01.178 UTC [4348] ERROR:  canceling statement due to user request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4368]: 2026-11-15 05:11:01.179 UTC [4368] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4367]: 2026-11-15 05:11:01.179 UTC [4367] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4365]: 2026-11-15 05:11:01.179 UTC [4365] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4363]: 2026-11-15 05:11:01.179 UTC [4363] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4366]: 2026-11-15 05:11:01.179 UTC [4366] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4361]: 2026-11-15 05:11:01.179 UTC [4361] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4364]: 2026-11-15 05:11:01.179 UTC [4364] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4362]: 2026-11-15 05:11:01.179 UTC [4362] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4360]: 2026-11-15 05:11:01.179 UTC [4360] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:01.182 UTC [4336] LOG:  aborting any active transactions
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:01.182 UTC [4336] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 4344) exited with exit code 1
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:01.182 UTC [4336] LOG:  background worker "logical replication launcher" (PID 4345) exited with exit code 1
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:01.182 UTC [4336] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 4346) exited with exit code 1
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:01.182 UTC [4336] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 4348) exited with exit code 1
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4339]: 2026-11-15 05:11:01.183 UTC [4339] LOG:  shutting down
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4336]: 2026-11-15 05:11:01.211 UTC [4336] LOG:  database system is shut down
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Deactivated successfully.
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: Stopped gps121-db.service.
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: Starting gps121-db.service...
+2026-11-15T05:11:01+0000 06a5ff7ca70c python3[4457]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2711"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2712"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: Started gps121-db.service.
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.429 UTC [4458] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.429 UTC [4458] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.431 UTC [4458] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4460]: 2026-11-15 05:11:01.436 UTC [4460] LOG:  database system was shut down at 2026-11-15 05:11:01 UTC
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.445 UTC [4458] LOG:  database system is ready to accept connections
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4466]: 2026-11-15 05:11:01.445 UTC [4466] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4472]: 2026-11-15 05:11:01.535 UTC [4472] root@root FATAL:  role "root" does not exist
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: Stopping gps121-db.service...
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.799 UTC [4458] LOG:  received fast shutdown request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4466]: 2026-11-15 05:11:01.799 UTC [4466] ERROR:  canceling statement due to user request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4470]: 2026-11-15 05:11:01.799 UTC [4470] ERROR:  canceling statement due to user request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4468]: 2026-11-15 05:11:01.799 UTC [4468] ERROR:  canceling statement due to user request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4467]: 2026-11-15 05:11:01.799 UTC [4467] ERROR:  canceling statement due to user request
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4490]: 2026-11-15 05:11:01.800 UTC [4490] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4489]: 2026-11-15 05:11:01.800 UTC [4489] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4487]: 2026-11-15 05:11:01.800 UTC [4487] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4488]: 2026-11-15 05:11:01.800 UTC [4488] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4485]: 2026-11-15 05:11:01.800 UTC [4485] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4483]: 2026-11-15 05:11:01.800 UTC [4483] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4484]: 2026-11-15 05:11:01.800 UTC [4484] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4486]: 2026-11-15 05:11:01.800 UTC [4486] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4482]: 2026-11-15 05:11:01.800 UTC [4482] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.802 UTC [4458] LOG:  aborting any active transactions
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.802 UTC [4458] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 4466) exited with exit code 1
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.802 UTC [4458] LOG:  background worker "logical replication launcher" (PID 4467) exited with exit code 1
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.802 UTC [4458] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 4468) exited with exit code 1
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.802 UTC [4458] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 4470) exited with exit code 1
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4461]: 2026-11-15 05:11:01.803 UTC [4461] LOG:  shutting down
+2026-11-15T05:11:01+0000 06a5ff7ca70c postgres[4458]: 2026-11-15 05:11:01.827 UTC [4458] LOG:  database system is shut down
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Deactivated successfully.
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: Stopped gps121-db.service.
+2026-11-15T05:11:01+0000 06a5ff7ca70c systemd[1]: Starting gps121-db.service...
+2026-11-15T05:11:02+0000 06a5ff7ca70c python3[4579]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2710"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2711"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+2026-11-15T05:11:02+0000 06a5ff7ca70c systemd[1]: Started gps121-db.service.
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:02.028 UTC [4580] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:02.028 UTC [4580] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:02.030 UTC [4580] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4582]: 2026-11-15 05:11:02.035 UTC [4582] LOG:  database system was shut down at 2026-11-15 05:11:01 UTC
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:02.044 UTC [4580] LOG:  database system is ready to accept connections
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4588]: 2026-11-15 05:11:02.044 UTC [4588] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4594]: 2026-11-15 05:11:02.133 UTC [4594] root@root FATAL:  role "root" does not exist
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4611]: 2026-11-15 05:11:02.388 UTC [4611] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4612]: 2026-11-15 05:11:02.388 UTC [4612] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4607]: 2026-11-15 05:11:02.388 UTC [4607] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4605]: 2026-11-15 05:11:02.388 UTC [4605] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4610]: 2026-11-15 05:11:02.388 UTC [4610] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4609]: 2026-11-15 05:11:02.388 UTC [4609] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4604]: 2026-11-15 05:11:02.388 UTC [4604] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4606]: 2026-11-15 05:11:02.388 UTC [4606] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4608]: 2026-11-15 05:11:02.388 UTC [4608] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4622]: 2026-11-15 05:11:02.489 UTC [4622] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T05:11:02+0000 06a5ff7ca70c postgres[4628]: 2026-11-15 05:11:02.606 UTC [4628] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:16.794 UTC [4580] LOG:  received fast shutdown request
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4589]: 2026-11-15 05:11:16.794 UTC [4589] ERROR:  canceling statement due to user request
+2026-11-15T05:11:16+0000 06a5ff7ca70c systemd[1]: Stopping gps121-db.service...
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4588]: 2026-11-15 05:11:16.794 UTC [4588] ERROR:  canceling statement due to user request
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4592]: 2026-11-15 05:11:16.794 UTC [4592] ERROR:  canceling statement due to user request
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4590]: 2026-11-15 05:11:16.794 UTC [4590] ERROR:  canceling statement due to user request
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:16.796 UTC [4580] LOG:  aborting any active transactions
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:16.796 UTC [4580] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 4588) exited with exit code 1
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:16.796 UTC [4580] LOG:  background worker "logical replication launcher" (PID 4589) exited with exit code 1
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:16.796 UTC [4580] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 4590) exited with exit code 1
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:16.796 UTC [4580] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 4592) exited with exit code 1
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4583]: 2026-11-15 05:11:16.797 UTC [4583] LOG:  shutting down
+2026-11-15T05:11:16+0000 06a5ff7ca70c postgres[4580]: 2026-11-15 05:11:16.825 UTC [4580] LOG:  database system is shut down
+2026-11-15T05:11:16+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Deactivated successfully.
+2026-11-15T05:11:16+0000 06a5ff7ca70c systemd[1]: Stopped gps121-db.service.
+2026-11-15T05:11:17+0000 06a5ff7ca70c systemd[1]: Starting gps121-db.service...
+2026-11-15T05:11:17+0000 06a5ff7ca70c python3[50]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2711"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2710"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+2026-11-15T05:11:17+0000 06a5ff7ca70c systemd[1]: Started gps121-db.service.
+2026-11-15T05:11:17+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:17.220 UTC [85] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T05:11:17+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:17.220 UTC [85] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T05:11:17+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:17.226 UTC [85] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T05:11:17+0000 06a5ff7ca70c postgres[124]: 2026-11-15 05:11:17.233 UTC [124] LOG:  database system was shut down at 2026-11-15 05:11:16 UTC
+2026-11-15T05:11:17+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:17.242 UTC [85] LOG:  database system is ready to accept connections
+2026-11-15T05:11:17+0000 06a5ff7ca70c postgres[147]: 2026-11-15 05:11:17.242 UTC [147] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T05:11:17+0000 06a5ff7ca70c postgres[159]: 2026-11-15 05:11:17.397 UTC [159] root@root FATAL:  role "root" does not exist
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:19.039 UTC [85] LOG:  received fast shutdown request
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[147]: 2026-11-15 05:11:19.039 UTC [147] ERROR:  canceling statement due to user request
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[152]: 2026-11-15 05:11:19.039 UTC [152] ERROR:  canceling statement due to user request
+2026-11-15T05:11:19+0000 06a5ff7ca70c systemd[1]: Stopping gps121-db.service...
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[150]: 2026-11-15 05:11:19.039 UTC [150] ERROR:  canceling statement due to user request
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[148]: 2026-11-15 05:11:19.039 UTC [148] ERROR:  canceling statement due to user request
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[194]: 2026-11-15 05:11:19.041 UTC [194] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[192]: 2026-11-15 05:11:19.041 UTC [192] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[193]: 2026-11-15 05:11:19.041 UTC [193] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[191]: 2026-11-15 05:11:19.041 UTC [191] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[190]: 2026-11-15 05:11:19.041 UTC [190] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[189]: 2026-11-15 05:11:19.041 UTC [189] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[188]: 2026-11-15 05:11:19.041 UTC [188] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[187]: 2026-11-15 05:11:19.041 UTC [187] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:19.043 UTC [85] LOG:  aborting any active transactions
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:19.043 UTC [85] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 147) exited with exit code 1
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:19.043 UTC [85] LOG:  background worker "logical replication launcher" (PID 148) exited with exit code 1
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:19.043 UTC [85] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 150) exited with exit code 1
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:19.043 UTC [85] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 152) exited with exit code 1
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[142]: 2026-11-15 05:11:19.044 UTC [142] LOG:  shutting down
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[85]: 2026-11-15 05:11:19.067 UTC [85] LOG:  database system is shut down
+2026-11-15T05:11:19+0000 06a5ff7ca70c systemd[1]: gps121-db.service: Deactivated successfully.
+2026-11-15T05:11:19+0000 06a5ff7ca70c systemd[1]: Stopped gps121-db.service.
+2026-11-15T05:11:19+0000 06a5ff7ca70c systemd[1]: Starting gps121-db.service...
+2026-11-15T05:11:19+0000 06a5ff7ca70c python3[50]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2711"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2710"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+2026-11-15T05:11:19+0000 06a5ff7ca70c systemd[1]: Started gps121-db.service.
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[84]: 2026-11-15 05:11:19.430 UTC [84] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[84]: 2026-11-15 05:11:19.430 UTC [84] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[84]: 2026-11-15 05:11:19.435 UTC [84] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[126]: 2026-11-15 05:11:19.442 UTC [126] LOG:  database system was shut down at 2026-11-15 05:11:19 UTC
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[84]: 2026-11-15 05:11:19.451 UTC [84] LOG:  database system is ready to accept connections
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[149]: 2026-11-15 05:11:19.451 UTC [149] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T05:11:19+0000 06a5ff7ca70c postgres[160]: 2026-11-15 05:11:19.600 UTC [160] root@root FATAL:  role "root" does not exist
+2026-11-15T05:11:21+0000 06a5ff7ca70c postgres[193]: 2026-11-15 05:11:21.307 UTC [193] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:21+0000 06a5ff7ca70c postgres[195]: 2026-11-15 05:11:21.307 UTC [195] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:21+0000 06a5ff7ca70c postgres[191]: 2026-11-15 05:11:21.307 UTC [191] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:21+0000 06a5ff7ca70c postgres[194]: 2026-11-15 05:11:21.307 UTC [194] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:21+0000 06a5ff7ca70c postgres[192]: 2026-11-15 05:11:21.307 UTC [192] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:21+0000 06a5ff7ca70c postgres[190]: 2026-11-15 05:11:21.307 UTC [190] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:21+0000 06a5ff7ca70c postgres[189]: 2026-11-15 05:11:21.307 UTC [189] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:21+0000 06a5ff7ca70c postgres[188]: 2026-11-15 05:11:21.307 UTC [188] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:34+0000 06a5ff7ca70c postgres[348]: 2026-11-15 05:11:34.792 UTC [348] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:34+0000 06a5ff7ca70c postgres[349]: 2026-11-15 05:11:34.792 UTC [349] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:34+0000 06a5ff7ca70c postgres[351]: 2026-11-15 05:11:34.792 UTC [351] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:34+0000 06a5ff7ca70c postgres[350]: 2026-11-15 05:11:34.792 UTC [350] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:34+0000 06a5ff7ca70c postgres[346]: 2026-11-15 05:11:34.792 UTC [346] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:34+0000 06a5ff7ca70c postgres[344]: 2026-11-15 05:11:34.792 UTC [344] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:34+0000 06a5ff7ca70c postgres[347]: 2026-11-15 05:11:34.792 UTC [347] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:34+0000 06a5ff7ca70c postgres[345]: 2026-11-15 05:11:34.792 UTC [345] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]: 2026-11-15 05:11:36.201 UTC [558] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]: 2026-11-15 05:11:36.201 UTC [558] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]: 2026-11-15 05:11:36.201 UTC [558] gps_runtime@gps_closure_test STATEMENT:  WITH scoped AS MATERIALIZED (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                   SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                   WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                     AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                 ), anchors AS MATERIALIZED (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                   SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                 ), bounds AS (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                   SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM scoped JOIN anchors USING(anchor_at,source)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                 ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                 JOIN anchors a USING(anchor_at,source)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                 WHERE b.first IS NOT NULL AND ($3::timestamptz IS NULL OR p.recorded_at >= $3)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                   AND ($4::timestamptz IS NULL OR p.recorded_at <= $4)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                   AND ($6::bool IS NULL OR p.fix=$6)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[558]:                 ORDER BY p.recorded_at DESC,p.source
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]: 2026-11-15 05:11:36.210 UTC [563] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]: 2026-11-15 05:11:36.210 UTC [563] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]: 2026-11-15 05:11:36.210 UTC [563] gps_runtime@gps_closure_test STATEMENT:  WITH scoped AS MATERIALIZED (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                   SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                   WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                     AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                 ), anchors AS MATERIALIZED (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                   SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                 ), bounds AS (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                   SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM scoped JOIN anchors USING(anchor_at,source)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                 ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                 JOIN anchors a USING(anchor_at,source)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                 WHERE b.first IS NOT NULL AND ($3::timestamptz IS NULL OR p.recorded_at >= $3)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                   AND ($4::timestamptz IS NULL OR p.recorded_at <= $4)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                   AND ($6::bool IS NULL OR p.fix=$6)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[563]:                 ORDER BY p.recorded_at DESC,p.source
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]: 2026-11-15 05:11:36.215 UTC [559] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]: 2026-11-15 05:11:36.215 UTC [559] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]: 2026-11-15 05:11:36.215 UTC [559] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                 WHERE b.first IS NOT NULL
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[559]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]: 2026-11-15 05:11:36.783 UTC [564] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]: 2026-11-15 05:11:36.783 UTC [564] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]: 2026-11-15 05:11:36.783 UTC [564] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                  )
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                  FROM speed
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[564]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]: 2026-11-15 05:11:36.799 UTC [562] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]: 2026-11-15 05:11:36.799 UTC [562] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]: 2026-11-15 05:11:36.799 UTC [562] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                  )
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                  FROM speed
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[562]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]: 2026-11-15 05:11:36.800 UTC [565] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]: 2026-11-15 05:11:36.800 UTC [565] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]: 2026-11-15 05:11:36.800 UTC [565] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                  )
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                  FROM speed
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T05:11:36+0000 06a5ff7ca70c postgres[565]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]: 2026-11-15 05:11:39.171 UTC [592] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]: 2026-11-15 05:11:39.171 UTC [592] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]: 2026-11-15 05:11:39.171 UTC [592] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                 WHERE b.first IS NOT NULL
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[592]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]: 2026-11-15 05:11:39.191 UTC [561] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]: 2026-11-15 05:11:39.191 UTC [561] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]: 2026-11-15 05:11:39.191 UTC [561] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                 WHERE b.first IS NOT NULL
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[561]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]: 2026-11-15 05:11:39.191 UTC [595] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]: 2026-11-15 05:11:39.191 UTC [595] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]: 2026-11-15 05:11:39.191 UTC [595] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                 WHERE b.first IS NOT NULL
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[595]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[576]: 2026-11-15 05:11:39.502 UTC [576] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[566]: 2026-11-15 05:11:39.502 UTC [566] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[597]: 2026-11-15 05:11:39.502 UTC [597] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[601]: 2026-11-15 05:11:39.502 UTC [601] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[581]: 2026-11-15 05:11:39.502 UTC [581] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[560]: 2026-11-15 05:11:39.502 UTC [560] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T05:11:39+0000 06a5ff7ca70c postgres[584]: 2026-11-15 05:11:39.502 UTC [584] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer

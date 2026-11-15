@@ -1,0 +1,6 @@
+{
+  "source": "/home/etcom-hub/build/gps-runtime128-20261115/out/host-after.json",
+  "bytes": 168,
+  "sha256": "530fcfbf7bd941c7e9a9ce4d8bba7621b43588773cf454b5269f7f19764df2ff",
+  "verification": "remote sha256sum matched downloaded bytes"
+}

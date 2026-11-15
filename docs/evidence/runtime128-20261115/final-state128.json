@@ -1,0 +1,48 @@
+{
+  "databases": [
+    {
+      "database": "gps_closure_test",
+      "schema": 114,
+      "plaintext": 0,
+      "pending_bounds": 0,
+      "images": 0,
+      "cleanup": 0,
+      "active": 0
+    },
+    {
+      "database": "gps_cumulative_restore",
+      "schema": 114,
+      "plaintext": 0,
+      "pending_bounds": 0,
+      "images": 0,
+      "cleanup": 0,
+      "active": 0
+    }
+  ],
+  "monthly_reads": [
+    {
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 7.627635810058564,
+      "sha256": "333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da"
+    },
+    {
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.287998269777745,
+      "sha256": "ea1b29c7edb68c6cc82c0bffaf42a708ce52fb8066eff1e4acb5962d5aad27f9"
+    },
+    {
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.21587486611679196,
+      "sha256": "4f6370ba7e1f42f43030c88aa51c6c5a902a468968fdb934db1aeb164162e262"
+    }
+  ],
+  "api_sha256": "5c6f4529207f9ab0d5d30598dbb4fe8a4e4b77dc4e5304a8736f311fdcdb7e52",
+  "tls": "verified synthetic localhost TLS1.2",
+  "foreign_denied": 404,
+  "production_modified": false,
+  "external_messages": 0,
+  "activation_ready": false
+}
