@@ -117,12 +117,23 @@ def run(dsn,ring,uploads,private,mode):
             file_report=convert_files(db,uploads,private,ring)
             database=convert_database(dsn,ring)
         ready=database['enabled'] and all(t['plaintext_rows']==0 for t in database['tables'].values()) and file_report['plaintext_files']==0
+        statistics=None
         if mode=='resume':
             if not ready: raise ValueError('plaintext or decrypt failures remain; do not resume')
             with db.cursor() as c:
                 offline(c)
+                c.execute('SELECT maintenance FROM location_storage_policy WHERE singleton')
+                fenced=c.fetchone()[0]
+            if fenced:
+                # Restore does not restore planner statistics. Keep the fence
+                # until bounded queries can plan against current chunk samples.
+                from location_query_statistics import refresh
+                statistics=refresh(db)
+            with db.cursor() as c:
+                offline(c)
                 c.execute('UPDATE location_storage_policy SET maintenance=false WHERE singleton')
         return {'mode':mode,'ready_to_start_key_configured_api':ready,'database':database,'files':file_report,
+                'query_statistics':statistics,
                 'old_wal_snapshots_backups_erased':False,'production_services_changed':False}
     finally:db.close()
 

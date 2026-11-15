@@ -172,7 +172,11 @@ def boot_settled(env=None):
     import psycopg
     boot_new(env)
     started=time.monotonic();quiet_since=None;busy_samples=0
-    with psycopg.connect(DSN,autocommit=True) as db:
+    # A restored clone has its own advisory-lock namespace. Observe the same
+    # database the API was started against, not always the original fixture.
+    target=(env or {}).get('RUNTIME_DSN',DSN)
+    with psycopg.connect(target,autocommit=True) as db:
+        database=db.execute('SELECT current_database()').fetchone()[0]
         while time.monotonic()-started < 60:
             held=db.execute("""SELECT count(*) FROM pg_locks
                 WHERE locktype='advisory' AND database=(SELECT oid FROM pg_database WHERE datname=current_database())
@@ -184,7 +188,7 @@ def boot_settled(env=None):
             elif time.monotonic()-quiet_since >= 1:
                 with (ROOT/'out/startup-settle121.jsonl').open('a') as evidence:
                     evidence.write(json.dumps(dict(seconds=round(time.monotonic()-started,3),
-                        busy_samples=busy_samples,quiet_seconds=1,http_retries=0,workers_disabled=False))+'\n')
+                        database=database,busy_samples=busy_samples,quiet_seconds=1,http_retries=0,workers_disabled=False))+'\n')
                 return
             time.sleep(.1)
     raise AssertionError('startup privacy fence did not settle within60 seconds')

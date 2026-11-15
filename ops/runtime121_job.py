@@ -50,6 +50,13 @@ def local(dsn):
 
 if kind == 'transition':
     import crypto20b_transition as c
+    if cfg.get('interrupt_after_statistics'):
+        import location_query_statistics as stats
+        original_stats=stats.refresh
+        def interrupted_stats(db):
+            original_stats(db)
+            raise RuntimeError('synthetic interruption after query statistics')
+        stats.refresh=interrupted_stats
     if cfg.get('interrupt_after_db'):
         original = c.convert_files
         def interrupted(db, uploads, private, ring, apply=False):
