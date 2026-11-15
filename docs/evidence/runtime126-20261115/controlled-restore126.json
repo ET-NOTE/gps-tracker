@@ -1,0 +1,5 @@
+{
+  "seconds": 7.1094540427438915,
+  "database": "gps_cumulative_restore",
+  "control": "autovacuum off only in isolated fixture; not proposed for deployment"
+}

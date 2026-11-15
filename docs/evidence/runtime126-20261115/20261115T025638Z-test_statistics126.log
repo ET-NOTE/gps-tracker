@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/opt/gps121/test_statistics126.py", line 46, in <module>
+    proof=v.transition(owner,ring,str(v.ROOT/'test-storage/uploads'),str(v.ROOT/'test-storage/private'),'resume')
+  File "/opt/gps121/runtime121_control.py", line 64, in transition
+    return job('transition', dsn=dsn, ring=ring, mode=mode,
+  File "/opt/gps121/runtime121_control.py", line 57, in job
+    raise RuntimeError(journal(unit))
+RuntimeError: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2949"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_job.py", line 68, in <module>
+    result = c.run(local(cfg['dsn']), cfg['ring'], str(ROOT/'test-storage/uploads'),
+  File "/opt/gps121/crypto20b_transition.py", line 104, in run
+    db=connect(dsn,ring)
+  File "/opt/gps121/crypto20b_transition.py", line 18, in connect
+    c.execute("SELECT current_database(),(SELECT max(version) FROM _sqlx_migrations WHERE success),current_setting('log_parameter_max_length'),current_setting('log_parameter_max_length_on_error'),coalesce(current_setting('pgaudit.log_parameter',true),'off')")
+  File "/usr/local/lib/python3.10/dist-packages/psycopg/cursor.py", line 97, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.InsufficientPrivilege: permission denied for table _sqlx_migrations
+

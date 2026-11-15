@@ -1,0 +1,21 @@
+{
+  "api_sha256": "89293eb52d7c07229e7fdfa594a63aa61282abe14ed1bf5d0a66d21fb3e15bc8",
+  "period": "since=2026-09-30T15:00:00Z&until=2026-10-31T15:00:00Z",
+  "api_budget_seconds": 20,
+  "queries": [
+    {
+      "route": "month_aggregate",
+      "status": 408,
+      "seconds": 20.009046,
+      "bytes": 96,
+      "sha256": "cd5d512905a5fbce96e7196db0a5a4d0ef292e1e2152db01a6e9e061e0643804"
+    },
+    {
+      "route": "month_aggregate",
+      "status": 408,
+      "seconds": 20.004672,
+      "bytes": 96,
+      "sha256": "cd5d512905a5fbce96e7196db0a5a4d0ef292e1e2152db01a6e9e061e0643804"
+    }
+  ]
+}

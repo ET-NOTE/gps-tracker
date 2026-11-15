@@ -1,0 +1,4 @@
+{
+  "autovacuum": "on",
+  "test_override_removed": true
+}

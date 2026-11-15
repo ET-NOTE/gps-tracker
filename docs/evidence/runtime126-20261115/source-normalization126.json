@@ -1,0 +1,16 @@
+[
+  {
+    "file": "crypto20b_transition.py",
+    "original_sha256": "a0cb5c0127b62b821f6a45f001a275d4db71cb2cb952374f95a1137ed40dbe19",
+    "canonical_sha256": "7e30447eadf21b4d868afbb4886c24410f69106db93613fa23b6cc7500f9995f",
+    "only_line_endings": true,
+    "ast_equal": true
+  },
+  {
+    "file": "location_query_statistics.py",
+    "original_sha256": "efd18eb0f8ff0c35e52577fb36b96445fe88554e498064ed2f1af131f62b598f",
+    "canonical_sha256": "99b718855e4c4ec2ccbe7c87d8c60d58f2e6caa7dd1d606aa7d5b47195fcec06",
+    "only_line_endings": true,
+    "ast_equal": true
+  }
+]

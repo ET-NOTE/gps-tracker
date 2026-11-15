@@ -1,0 +1,10 @@
+RESTORE BASELINE {'route': 'month_aggregate', 'status': 200, 'seconds': 6.039685, 'bytes': 148204, 'sha256': '333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da'}
+RESTORE BASELINE {'route': 'month_aggregate', 'status': 200, 'seconds': 6.06517, 'bytes': 148204, 'sha256': '333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da'}
+Traceback (most recent call last):
+  File "/opt/gps121/diagnose_runtime126.py", line 6, in <module>
+    p.profile('before-plan',analyze=False)
+  File "/opt/gps121/profile_runtime126.py", line 31, in profile
+    result['plan']=db.execute('EXPLAIN ('+options+') EXECUTE measured126('+','.join(['%s']*6)+')',values).fetchone()[0][0]
+  File "/usr/local/lib/python3.10/dist-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.IndeterminateDatatype: could not determine data type of parameter $2

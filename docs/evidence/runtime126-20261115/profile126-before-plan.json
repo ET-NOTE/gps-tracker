@@ -1,0 +1,522 @@
+{
+  "label": "before-plan",
+  "analyze": false,
+  "timeout_seconds": 60,
+  "api_timeout_seconds": 20,
+  "jit": "on",
+  "plan": {
+    "Plan": {
+      "Node Type": "Aggregate",
+      "Strategy": "Sorted",
+      "Partial Mode": "Simple",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Startup Cost": 77302.75,
+      "Total Cost": 77302.85,
+      "Plan Rows": 1,
+      "Plan Width": 40,
+      "Group Key": [
+        "(time_bucket(('1 hour'::cstring)::interval, speed.recorded_at))"
+      ],
+      "Plans": [
+        {
+          "Node Type": "Subquery Scan",
+          "Parent Relationship": "InitPlan",
+          "Subplan Name": "CTE speed",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Alias": "location_speed_metrics_between",
+          "Startup Cost": 76767.32,
+          "Total Cost": 77298.53,
+          "Plan Rows": 106,
+          "Plan Width": 91,
+          "Plans": [
+            {
+              "Node Type": "CTE Scan",
+              "Parent Relationship": "Subquery",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "CTE Name": "classified",
+              "Alias": "classified",
+              "Startup Cost": 76767.32,
+              "Total Cost": 77297.47,
+              "Plan Rows": 106,
+              "Plan Width": 179,
+              "Filter": "((at >= '2026-09-30 15:00:00+00'::timestamp with time zone) AND (at <= '2026-10-31 15:00:00+00'::timestamp with time zone))",
+              "Plans": [
+                {
+                  "Node Type": "Subquery Scan",
+                  "Parent Relationship": "InitPlan",
+                  "Subplan Name": "CTE records",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Alias": "r_8",
+                  "Startup Cost": 21473.17,
+                  "Total Cost": 35782.58,
+                  "Plan Rows": 2112,
+                  "Plan Width": 135,
+                  "Plans": [
+                    {
+                      "Node Type": "Nested Loop",
+                      "Parent Relationship": "Subquery",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Join Type": "Inner",
+                      "Startup Cost": 21473.17,
+                      "Total Cost": 35750.9,
+                      "Plan Rows": 2112,
+                      "Plan Width": 135,
+                      "Inner Unique": false,
+                      "Plans": [
+                        {
+                          "Node Type": "Append",
+                          "Parent Relationship": "InitPlan",
+                          "Subplan Name": "CTE candidates",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Startup Cost": 0.0,
+                          "Total Cost": 21472.88,
+                          "Plan Rows": 129977,
+                          "Plan Width": 20,
+                          "Subplans Removed": 0,
+                          "Plans": [
+                            {
+                              "Node Type": "Custom Scan",
+                              "Parent Relationship": "Member",
+                              "Custom Plan Provider": "ChunkAppend",
+                              "Parallel Aware": false,
+                              "Async Capable": false,
+                              "Relation Name": "location_records",
+                              "Alias": "r",
+                              "Startup Cost": 0.0,
+                              "Total Cost": 19501.0,
+                              "Plan Rows": 129974,
+                              "Plan Width": 20,
+                              "Startup Exclusion": true,
+                              "Runtime Exclusion": false,
+                              "Chunks excluded during startup": 0,
+                              "Plans": [
+                                {
+                                  "Node Type": "Seq Scan",
+                                  "Parent Relationship": "children",
+                                  "Parallel Aware": false,
+                                  "Async Capable": false,
+                                  "Relation Name": "_hyper_1_1_chunk",
+                                  "Alias": "r_1",
+                                  "Startup Cost": 0.0,
+                                  "Total Cost": 9071.98,
+                                  "Plan Rows": 60467,
+                                  "Plan Width": 20,
+                                  "Filter": "(query_bounds_ready AND (query_first_at <= '2026-10-31 15:00:00+00'::timestamp with time zone) AND (device_id = '1'::bigint) AND (user_id = '1'::bigint) AND ((('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval) IS NULL) OR (query_last_at >= ('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval))))"
+                                },
+                                {
+                                  "Node Type": "Seq Scan",
+                                  "Parent Relationship": "children",
+                                  "Parallel Aware": false,
+                                  "Async Capable": false,
+                                  "Relation Name": "_hyper_1_2_chunk",
+                                  "Alias": "r_2",
+                                  "Startup Cost": 0.0,
+                                  "Total Cost": 9072.0,
+                                  "Plan Rows": 60468,
+                                  "Plan Width": 20,
+                                  "Filter": "(query_bounds_ready AND (query_first_at <= '2026-10-31 15:00:00+00'::timestamp with time zone) AND (device_id = '1'::bigint) AND (user_id = '1'::bigint) AND ((('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval) IS NULL) OR (query_last_at >= ('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval))))"
+                                },
+                                {
+                                  "Node Type": "Seq Scan",
+                                  "Parent Relationship": "children",
+                                  "Parallel Aware": false,
+                                  "Async Capable": false,
+                                  "Relation Name": "_hyper_1_3_chunk",
+                                  "Alias": "r_3",
+                                  "Startup Cost": 0.0,
+                                  "Total Cost": 1357.03,
+                                  "Plan Rows": 9039,
+                                  "Plan Width": 20,
+                                  "Filter": "(query_bounds_ready AND (query_first_at <= '2026-10-31 15:00:00+00'::timestamp with time zone) AND (device_id = '1'::bigint) AND (user_id = '1'::bigint) AND ((('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval) IS NULL) OR (query_last_at >= ('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval))))"
+                                }
+                              ]
+                            },
+                            {
+                              "Node Type": "Custom Scan",
+                              "Parent Relationship": "Member",
+                              "Custom Plan Provider": "ChunkAppend",
+                              "Parallel Aware": false,
+                              "Async Capable": false,
+                              "Relation Name": "location_records",
+                              "Alias": "r_4",
+                              "Startup Cost": 0.12,
+                              "Total Cost": 22.23,
+                              "Plan Rows": 3,
+                              "Plan Width": 20,
+                              "Startup Exclusion": true,
+                              "Runtime Exclusion": false,
+                              "Chunks excluded during startup": 0,
+                              "Plans": [
+                                {
+                                  "Node Type": "Index Scan",
+                                  "Parent Relationship": "children",
+                                  "Parallel Aware": false,
+                                  "Async Capable": false,
+                                  "Scan Direction": "Forward",
+                                  "Index Name": "_hyper_1_1_chunk_location_query_pending_idx",
+                                  "Relation Name": "_hyper_1_1_chunk",
+                                  "Alias": "r_5",
+                                  "Startup Cost": 0.12,
+                                  "Total Cost": 7.41,
+                                  "Plan Rows": 1,
+                                  "Plan Width": 20,
+                                  "Index Cond": "((device_id = '1'::bigint) AND (user_id = '1'::bigint))",
+                                  "Filter": "((location_point_bound(recorded_at, CASE WHEN (fixes_jsonb_sealed IS NULL) THEN fixes_jsonb ELSE gps_open_cell(fixes_jsonb_sealed, gps_cell_context('location_records'::text, jsonb_build_object('device_id', device_id, 'recorded_at', recorded_at, 'source', source), '{device_id,recorded_at,source}'::text[], 'fixes_jsonb'::text)) END, false) <= '2026-10-31 15:00:00+00'::timestamp with time zone) AND ((('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval) IS NULL) OR (location_point_bound(recorded_at, CASE WHEN (fixes_jsonb_sealed IS NULL) THEN fixes_jsonb ELSE gps_open_cell(fixes_jsonb_sealed, gps_cell_context('location_records'::text, jsonb_build_object('device_id', device_id, 'recorded_at', recorded_at, 'source', source), '{device_id,recorded_at,source}'::text[], 'fixes_jsonb'::text)) END, true) >= ('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval))))"
+                                },
+                                {
+                                  "Node Type": "Index Scan",
+                                  "Parent Relationship": "children",
+                                  "Parallel Aware": false,
+                                  "Async Capable": false,
+                                  "Scan Direction": "Forward",
+                                  "Index Name": "_hyper_1_2_chunk_location_query_pending_idx",
+                                  "Relation Name": "_hyper_1_2_chunk",
+                                  "Alias": "r_6",
+                                  "Startup Cost": 0.12,
+                                  "Total Cost": 7.41,
+                                  "Plan Rows": 1,
+                                  "Plan Width": 20,
+                                  "Index Cond": "((device_id = '1'::bigint) AND (user_id = '1'::bigint))",
+                                  "Filter": "((location_point_bound(recorded_at, CASE WHEN (fixes_jsonb_sealed IS NULL) THEN fixes_jsonb ELSE gps_open_cell(fixes_jsonb_sealed, gps_cell_context('location_records'::text, jsonb_build_object('device_id', device_id, 'recorded_at', recorded_at, 'source', source), '{device_id,recorded_at,source}'::text[], 'fixes_jsonb'::text)) END, false) <= '2026-10-31 15:00:00+00'::timestamp with time zone) AND ((('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval) IS NULL) OR (location_point_bound(recorded_at, CASE WHEN (fixes_jsonb_sealed IS NULL) THEN fixes_jsonb ELSE gps_open_cell(fixes_jsonb_sealed, gps_cell_context('location_records'::text, jsonb_build_object('device_id', device_id, 'recorded_at', recorded_at, 'source', source), '{device_id,recorded_at,source}'::text[], 'fixes_jsonb'::text)) END, true) >= ('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval))))"
+                                },
+                                {
+                                  "Node Type": "Index Scan",
+                                  "Parent Relationship": "children",
+                                  "Parallel Aware": false,
+                                  "Async Capable": false,
+                                  "Scan Direction": "Forward",
+                                  "Index Name": "_hyper_1_3_chunk_location_query_pending_idx",
+                                  "Relation Name": "_hyper_1_3_chunk",
+                                  "Alias": "r_7",
+                                  "Startup Cost": 0.12,
+                                  "Total Cost": 7.41,
+                                  "Plan Rows": 1,
+                                  "Plan Width": 20,
+                                  "Index Cond": "((device_id = '1'::bigint) AND (user_id = '1'::bigint))",
+                                  "Filter": "((location_point_bound(recorded_at, CASE WHEN (fixes_jsonb_sealed IS NULL) THEN fixes_jsonb ELSE gps_open_cell(fixes_jsonb_sealed, gps_cell_context('location_records'::text, jsonb_build_object('device_id', device_id, 'recorded_at', recorded_at, 'source', source), '{device_id,recorded_at,source}'::text[], 'fixes_jsonb'::text)) END, false) <= '2026-10-31 15:00:00+00'::timestamp with time zone) AND ((('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval) IS NULL) OR (location_point_bound(recorded_at, CASE WHEN (fixes_jsonb_sealed IS NULL) THEN fixes_jsonb ELSE gps_open_cell(fixes_jsonb_sealed, gps_cell_context('location_records'::text, jsonb_build_object('device_id', device_id, 'recorded_at', recorded_at, 'source', source), '{device_id,recorded_at,source}'::text[], 'fixes_jsonb'::text)) END, true) >= ('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval))))"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "Node Type": "CTE Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "CTE Name": "candidates",
+                          "Alias": "c",
+                          "Startup Cost": 0.0,
+                          "Total Cost": 2924.48,
+                          "Plan Rows": 650,
+                          "Plan Width": 48,
+                          "Filter": "(device_id = '1'::bigint)"
+                        },
+                        {
+                          "Node Type": "Append",
+                          "Parent Relationship": "Inner",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Startup Cost": 0.29,
+                          "Total Cost": 13.98,
+                          "Plan Rows": 3,
+                          "Plan Width": 1028,
+                          "Subplans Removed": 0,
+                          "Plans": [
+                            {
+                              "Node Type": "Index Scan",
+                              "Parent Relationship": "Member",
+                              "Parallel Aware": false,
+                              "Async Capable": false,
+                              "Scan Direction": "Forward",
+                              "Index Name": "_hyper_1_1_chunk_location_records_ts_recorded_at_idx",
+                              "Relation Name": "_hyper_1_1_chunk",
+                              "Alias": "t_1",
+                              "Startup Cost": 0.29,
+                              "Total Cost": 5.19,
+                              "Plan Rows": 1,
+                              "Plan Width": 1021,
+                              "Index Cond": "(recorded_at = c.recorded_at)",
+                              "Filter": "((device_id = '1'::bigint) AND (user_id = '1'::bigint) AND (c.source = source))"
+                            },
+                            {
+                              "Node Type": "Index Scan",
+                              "Parent Relationship": "Member",
+                              "Parallel Aware": false,
+                              "Async Capable": false,
+                              "Scan Direction": "Forward",
+                              "Index Name": "_hyper_1_2_chunk_location_records_ts_recorded_at_idx",
+                              "Relation Name": "_hyper_1_2_chunk",
+                              "Alias": "t_2",
+                              "Startup Cost": 0.29,
+                              "Total Cost": 5.19,
+                              "Plan Rows": 1,
+                              "Plan Width": 1035,
+                              "Index Cond": "(recorded_at = c.recorded_at)",
+                              "Filter": "((device_id = '1'::bigint) AND (user_id = '1'::bigint) AND (c.source = source))"
+                            },
+                            {
+                              "Node Type": "Index Scan",
+                              "Parent Relationship": "Member",
+                              "Parallel Aware": false,
+                              "Async Capable": false,
+                              "Scan Direction": "Forward",
+                              "Index Name": "_hyper_1_3_chunk_location_records_ts_recorded_at_idx",
+                              "Relation Name": "_hyper_1_3_chunk",
+                              "Alias": "t_3",
+                              "Startup Cost": 0.29,
+                              "Total Cost": 3.58,
+                              "Plan Rows": 1,
+                              "Plan Width": 1035,
+                              "Index Cond": "(recorded_at = c.recorded_at)",
+                              "Filter": "((device_id = '1'::bigint) AND (user_id = '1'::bigint) AND (c.source = source))"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Node Type": "Subquery Scan",
+                  "Parent Relationship": "InitPlan",
+                  "Subplan Name": "CTE measurement",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Alias": "baseline",
+                  "Startup Cost": 17439.62,
+                  "Total Cost": 40088.0,
+                  "Plan Rows": 21100,
+                  "Plan Width": 334,
+                  "Plans": [
+                    {
+                      "Node Type": "WindowAgg",
+                      "Parent Relationship": "Subquery",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Startup Cost": 17439.62,
+                      "Total Cost": 34021.75,
+                      "Plan Rows": 21100,
+                      "Plan Width": 294,
+                      "Plans": [
+                        {
+                          "Node Type": "Subquery Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Alias": "counted",
+                          "Startup Cost": 17439.62,
+                          "Total Cost": 33441.5,
+                          "Plan Rows": 21100,
+                          "Plan Width": 254,
+                          "Plans": [
+                            {
+                              "Node Type": "WindowAgg",
+                              "Parent Relationship": "Subquery",
+                              "Parallel Aware": false,
+                              "Async Capable": false,
+                              "Startup Cost": 17439.62,
+                              "Total Cost": 33230.5,
+                              "Plan Rows": 21100,
+                              "Plan Width": 254,
+                              "Plans": [
+                                {
+                                  "Node Type": "Subquery Scan",
+                                  "Parent Relationship": "Outer",
+                                  "Parallel Aware": false,
+                                  "Async Capable": false,
+                                  "Alias": "previous",
+                                  "Startup Cost": 17439.62,
+                                  "Total Cost": 19199.0,
+                                  "Plan Rows": 21100,
+                                  "Plan Width": 213,
+                                  "Plans": [
+                                    {
+                                      "Node Type": "WindowAgg",
+                                      "Parent Relationship": "Subquery",
+                                      "Parallel Aware": false,
+                                      "Async Capable": false,
+                                      "Startup Cost": 17439.62,
+                                      "Total Cost": 18988.0,
+                                      "Plan Rows": 21100,
+                                      "Plan Width": 213,
+                                      "Plans": [
+                                        {
+                                          "Node Type": "Subquery Scan",
+                                          "Parent Relationship": "Outer",
+                                          "Parallel Aware": false,
+                                          "Async Capable": false,
+                                          "Alias": "p",
+                                          "Startup Cost": 17439.62,
+                                          "Total Cost": 17827.5,
+                                          "Plan Rows": 21100,
+                                          "Plan Width": 147,
+                                          "Plans": [
+                                            {
+                                              "Node Type": "Unique",
+                                              "Parent Relationship": "Subquery",
+                                              "Parallel Aware": false,
+                                              "Async Capable": false,
+                                              "Startup Cost": 17439.62,
+                                              "Total Cost": 17616.5,
+                                              "Plan Rows": 21100,
+                                              "Plan Width": 148,
+                                              "Plans": [
+                                                {
+                                                  "Node Type": "Sort",
+                                                  "Parent Relationship": "Outer",
+                                                  "Parallel Aware": false,
+                                                  "Async Capable": false,
+                                                  "Startup Cost": 17439.62,
+                                                  "Total Cost": 17498.58,
+                                                  "Plan Rows": 23583,
+                                                  "Plan Width": 148,
+                                                  "Sort Key": [
+                                                    "r_9.source",
+                                                    "((r_9.recorded_at + ((COALESCE(((f.item ->> 'at_ms'::text))::bigint, '0'::bigint))::double precision * '00:00:00.001'::interval)))",
+                                                    "((f.item IS NOT NULL)) DESC",
+                                                    "r_9.recorded_at DESC"
+                                                  ],
+                                                  "Plans": [
+                                                    {
+                                                      "Node Type": "Nested Loop",
+                                                      "Parent Relationship": "Outer",
+                                                      "Parallel Aware": false,
+                                                      "Async Capable": false,
+                                                      "Join Type": "Left",
+                                                      "Startup Cost": 0.01,
+                                                      "Total Cost": 13952.35,
+                                                      "Plan Rows": 23583,
+                                                      "Plan Width": 148,
+                                                      "Inner Unique": false,
+                                                      "Filter": "(((r_9.fixes_jsonb IS NULL) OR (f.item IS NOT NULL)) AND ((r_9.recorded_at + ((COALESCE(((f.item ->> 'at_ms'::text))::bigint, '0'::bigint))::double precision * '00:00:00.001'::interval)) <= '2026-10-31 15:00:00+00'::timestamp with time zone) AND ((('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval) IS NULL) OR ((r_9.recorded_at + ((COALESCE(((f.item ->> 'at_ms'::text))::bigint, '0'::bigint))::double precision * '00:00:00.001'::interval)) >= ('2026-09-30 15:00:00+00'::timestamp with time zone - '00:01:05'::interval))))",
+                                                      "Plans": [
+                                                        {
+                                                          "Node Type": "CTE Scan",
+                                                          "Parent Relationship": "Outer",
+                                                          "Parallel Aware": false,
+                                                          "Async Capable": false,
+                                                          "CTE Name": "records",
+                                                          "Alias": "r_9",
+                                                          "Startup Cost": 0.0,
+                                                          "Total Cost": 42.24,
+                                                          "Plan Rows": 2112,
+                                                          "Plan Width": 163
+                                                        },
+                                                        {
+                                                          "Node Type": "Function Scan",
+                                                          "Parent Relationship": "Inner",
+                                                          "Parallel Aware": false,
+                                                          "Async Capable": false,
+                                                          "Function Name": "jsonb_array_elements",
+                                                          "Alias": "f",
+                                                          "Startup Cost": 0.01,
+                                                          "Total Cost": 1.01,
+                                                          "Plan Rows": 100,
+                                                          "Plan Width": 32
+                                                        }
+                                                      ]
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Node Type": "CTE Scan",
+                  "Parent Relationship": "InitPlan",
+                  "Subplan Name": "CTE classified",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "CTE Name": "measurement",
+                  "Alias": "measurement",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 896.75,
+                  "Plan Rows": 21100,
+                  "Plan Width": 366
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "Node Type": "Seq Scan",
+          "Parent Relationship": "InitPlan",
+          "Subplan Name": "InitPlan 6 (returns $8)",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "devices",
+          "Alias": "t_4",
+          "Startup Cost": 0.0,
+          "Total Cost": 1.01,
+          "Plan Rows": 1,
+          "Plan Width": 0,
+          "Filter": "((id = '1'::bigint) AND (owner_id = '1'::bigint))"
+        },
+        {
+          "Node Type": "Sort",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 3.2,
+          "Total Cost": 3.2,
+          "Plan Rows": 1,
+          "Plan Width": 82,
+          "Sort Key": [
+            "(time_bucket(('1 hour'::cstring)::interval, speed.recorded_at))"
+          ],
+          "Plans": [
+            {
+              "Node Type": "Result",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 0.0,
+              "Total Cost": 3.19,
+              "Plan Rows": 1,
+              "Plan Width": 82,
+              "One-Time Filter": "$8",
+              "Plans": [
+                {
+                  "Node Type": "CTE Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "CTE Name": "speed",
+                  "Alias": "speed",
+                  "Startup Cost": 0.0,
+                  "Total Cost": 3.18,
+                  "Plan Rows": 1,
+                  "Plan Width": 74,
+                  "Filter": "(fix AND (recorded_at >= '2026-09-30 15:00:00+00'::timestamp with time zone) AND (recorded_at <= '2026-10-31 15:00:00+00'::timestamp with time zone) AND (device_id = '1'::bigint) AND (user_id = '1'::bigint))"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "functions": [],
+  "ok": true,
+  "seconds": 0.007058
+}

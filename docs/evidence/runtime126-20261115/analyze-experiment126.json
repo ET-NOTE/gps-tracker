@@ -1,0 +1,47 @@
+{
+  "seconds": 2.945179793983698,
+  "ciphertext_rows_unchanged": true,
+  "rows": 130000,
+  "row_digest": "333f12f7146c5dd2d983f22e901b5cc9",
+  "scope": "location query columns only; explicit child and parent ANALYZE; protected transition unit",
+  "query_statistics": {
+    "completed": true,
+    "columns": [
+      "device_id",
+      "user_id",
+      "recorded_at",
+      "source",
+      "fix",
+      "query_bounds_ready",
+      "query_first_at",
+      "query_last_at"
+    ],
+    "relations": [
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_1_chunk",
+        "seconds": 0.035722
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_2_chunk",
+        "seconds": 0.037151
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_3_chunk",
+        "seconds": 0.005491
+      },
+      {
+        "schema": "public",
+        "table": "location_records",
+        "seconds": 0.102372
+      }
+    ],
+    "seconds": 0.185639,
+    "decrypted": false,
+    "location_rows_written": 0,
+    "automatic_statistics_required": false
+  },
+  "jit_changed": false
+}

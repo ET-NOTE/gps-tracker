@@ -1,0 +1,26 @@
+{"seconds": 1.013, "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.013, "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.013, "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.017, "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 3.833, "database": "gps_cumulative_restore", "busy_samples": 28, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.918, "database": "gps_cumulative_restore", "busy_samples": 9, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.919, "database": "gps_cumulative_restore", "busy_samples": 9, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.918, "database": "gps_cumulative_restore", "busy_samples": 9, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.013, "database": "gps_cumulative_restore", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.018, "database": "gps_cumulative_restore", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.018, "database": "gps_cumulative_restore", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.015, "database": "gps_cumulative_restore", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.016, "database": "gps_cumulative_restore", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.916, "database": "gps_cumulative_restore", "busy_samples": 9, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.918, "database": "gps_closure_test", "busy_samples": 9, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.016, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.015, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.016, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.015, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.015, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.016, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.016, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.015, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.016, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.018, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}
+{"seconds": 1.016, "database": "gps_closure_test", "busy_samples": 0, "quiet_seconds": 1, "http_retries": 0, "workers_disabled": false}

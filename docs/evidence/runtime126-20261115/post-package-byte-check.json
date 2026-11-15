@@ -1,0 +1,6 @@
+{
+  "source": "/home/etcom-hub/build/gps-runtime126-20261115/out/candidate-manifest126-r2.json",
+  "bytes": 45950,
+  "sha256": "653f6e49e845608305e8d5433b167b267cb87ffd384b6cf20ac48b27f4aab8dd",
+  "verification": "remote sha256sum matched downloaded bytes"
+}

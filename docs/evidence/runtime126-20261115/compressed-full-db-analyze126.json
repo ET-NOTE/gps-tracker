@@ -1,0 +1,43 @@
+{
+  "chunks": [
+    [
+      "_timescaledb_internal",
+      "_hyper_1_1_chunk",
+      true
+    ],
+    [
+      "_timescaledb_internal",
+      "_hyper_1_2_chunk",
+      true
+    ],
+    [
+      "_timescaledb_internal",
+      "_hyper_1_3_chunk",
+      true
+    ]
+  ],
+  "queries": [
+    {
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 5.936485,
+      "bytes": 148204,
+      "sha256": "333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da"
+    },
+    {
+      "route": "month_history",
+      "status": 500,
+      "seconds": 1.014906,
+      "bytes": 26,
+      "sha256": "e0e80a180a3a0786fef135f5b4c3c7f5afed3f87f8c62d11ace2b8c713d6f2ed"
+    },
+    {
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.40787,
+      "bytes": 1630267,
+      "sha256": "4f6370ba7e1f42f43030c88aa51c6c5a902a468968fdb934db1aeb164162e262"
+    }
+  ],
+  "scope": "diagnostic disposable DB only; entire DB ANALYZE is not the production fix"
+}

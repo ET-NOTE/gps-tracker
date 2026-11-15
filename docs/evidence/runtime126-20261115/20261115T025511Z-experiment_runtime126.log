@@ -1,0 +1,4 @@
+RESTORE BASELINE {'route': 'month_aggregate', 'status': 200, 'seconds': 6.014754, 'bytes': 148204, 'sha256': '333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da'}
+RESTORE BASELINE {'route': 'month_aggregate', 'status': 200, 'seconds': 6.053707, 'bytes': 148204, 'sha256': '333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da'}
+PROFILE after-analyze-default True 6.430108 jit on
+PROFILE after-analyze-jit-off True 6.437443 jit off

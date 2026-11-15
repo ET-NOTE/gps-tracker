@@ -1,0 +1,26 @@
+{
+  "queries": [
+    {
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 5.990038,
+      "bytes": 148204,
+      "sha256": "333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da"
+    },
+    {
+      "route": "month_history",
+      "status": 500,
+      "seconds": 1.012897,
+      "bytes": 26,
+      "sha256": "e0e80a180a3a0786fef135f5b4c3c7f5afed3f87f8c62d11ace2b8c713d6f2ed"
+    },
+    {
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.42568,
+      "bytes": 1630267,
+      "sha256": "4f6370ba7e1f42f43030c88aa51c6c5a902a468968fdb934db1aeb164162e262"
+    }
+  ],
+  "api_budget_seconds": 20
+}

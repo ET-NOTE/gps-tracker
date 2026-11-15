@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/opt/gps121/perf_runtime126.py", line 34, in <module>
+    assert status==200 and observed['sha256']==expected[name],observed
+AssertionError: {'route': 'month_history', 'status': 500, 'bytes': 26, 'seconds': 1.0114954048767686, 'sha256': 'e0e80a180a3a0786fef135f5b4c3c7f5afed3f87f8c62d11ace2b8c713d6f2ed', 'expected_sha256': 'ea1b29c7edb68c6cc82c0bffaf42a708ce52fb8066eff1e4acb5962d5aad27f9'}

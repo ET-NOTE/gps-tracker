@@ -1,0 +1,50 @@
+# /etc/systemd/system/gps-pdf-render@.service
+# Written by ops/pdf_service.py. Remove with `pdf_service.py rollback`.
+[Unit]
+Description=GPS PDF processor: one page
+BindsTo=gps-pdf-render.socket gps-pdf-budget.service
+After=gps-pdf-budget.service
+PartOf=gps-pdf-render.socket
+CollectMode=inactive-or-failed
+[Service]
+Slice=gps-workload-pdf.slice
+KillMode=control-group
+ExecStart=/opt/gps-pdf-render service
+StandardInput=socket
+StandardOutput=socket
+StandardError=null
+RuntimeMaxSec=20
+TimeoutStopSec=2
+User=gps-pdf
+Group=gps-pdf
+SupplementaryGroups=
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+PrivateNetwork=yes
+IPAddressDeny=any
+RestrictAddressFamilies=none
+PrivateDevices=yes
+TemporaryFileSystem=/:ro
+BindReadOnlyPaths=/opt/gps-pdf-render
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service seccomp
+MemoryMax=872415232
+MemorySwapMax=0
+TasksMax=16
+LimitCORE=0
+BindReadOnlyPaths=/run/gps-pdf-budget/render.lock
