@@ -54,11 +54,18 @@ def audit(label):
             row[key]=float(re.search(r'\b'+key+r'=([0-9.eE+-]+)',line)[1]);assert row[key]>=0
         rows.append(row)
     assert rows
-    l.save('timings124-'+label+'-129',dict(rows=rows,service_invocation=invocation,
-        allowlisted_numeric_fields_only=True,scope_note='Transaction-held scope, not pure SQL; excludes background cancel cleanup'))
+    timing_path=l.ROOT/'out'/('timings124-'+label+'-129.json')
+    # A successful load already captured timings before its quiet equivalence
+    # queries. Preserve that capture; a later audit must not mix those queries
+    # into the measured load. Failed loads have no quiet checks in this invocation.
+    existing_timing=timing_path.exists()
+    if not existing_timing:
+        l.save('timings124-'+label+'-129',dict(rows=rows,service_invocation=invocation,
+            allowlisted_numeric_fields_only=True,scope_note='Transaction-held scope, not pure SQL; excludes background cancel cleanup'))
     result=dict(label=label,planned=x['ingest']['planned'],sent=len(sent),missed=len(missed),unaccounted=unaccounted,
         all_sent_stored=True,devices=counters,capacity_passed=len(sent)==x['ingest']['planned'] and not missed and not unaccounted,
         original_acceptance_gate_unchanged=True,services_unchanged=True,memory_event_delta=events,
+        timing_capture_preserved=existing_timing,
         temp_peak_bytes=temp['peak_bytes'],health_pdf_cleanup_guards_passed=True,
         full_month_traversals=len(x['full_month_traversals']),production_modified=False)
     l.save('audit129-'+label,result)

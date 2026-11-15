@@ -16,7 +16,8 @@ def summarize(root):
         'Other service memory/DB/IO and AV memory/CPU are simulators, not actual apps or malware scans.',
         'Dedicated4GiB/shared6GiB candidate budgets do not admit current3GiB production.',
         'Final429 and retry delays are not successes; no agreed production latency SLA is inferred.',
-        'HTTP success timing includes retries; percentiles of timer components must not be added.'])
+        'HTTP success timing includes retries; percentiles of timer components must not be added.',
+        'The original shared-low API phase capture includes subsequent quiet equivalence queries; preserve it as raw evidence but exclude it from API phase percentiles. Client load timings remain separate.'])
     for label in ('dedicated','shared','shared-low'):
         path=root/(label+'-129.json')
         if not path.exists():continue
@@ -32,7 +33,7 @@ def summarize(root):
             traversals=len(x['full_month_traversals']),temp_peak_bytes=temp['peak_bytes'],
             db_io_delta=x['db_io_delta'],errors=x['errors'],api_memory_peak_bytes=int(x['after']['api']['memory.peak'])))
         timing=root/('timings124-'+label+'-129.json')
-        if not timing.exists():continue
+        if not timing.exists() or label=='shared-low':continue
         groups={}
         for row in json.loads(timing.read_text())['rows']:groups.setdefault((row['class'],row['outcome']),[]).append(row)
         for (kind,outcome),rows in groups.items():
