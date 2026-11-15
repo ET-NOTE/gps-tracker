@@ -1,0 +1,3 @@
+PROFILE candidate127-aggregate True 7.897334 jit off
+PROFILE candidate127-history True 1.346006 jit off
+PASS127 actual route SQL plans, restricted role, API JIT-off and under20s

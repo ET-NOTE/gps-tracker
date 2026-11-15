@@ -1,0 +1,16 @@
+{"started_utc": "20261115T040120Z", "seconds": 205.057, "command": "runtime121_cumulative.py", "exit": 0, "log": "20261115T040120Z-runtime121_cumulative.log", "free_bytes": 7566979072}
+{"started_utc": "20261115T040501Z", "seconds": 24.044, "command": "probe_runtime127.py", "exit": 1, "log": "20261115T040501Z-probe_runtime127.log", "free_bytes": 7459659776}
+{"started_utc": "20261115T040616Z", "seconds": 29.238, "command": "probe_runtime127.py", "exit": 0, "log": "20261115T040616Z-probe_runtime127.log", "free_bytes": 7456714752}
+{"started_utc": "20261115T040757Z", "seconds": 35.005, "command": "prototype_pipeline127.py", "exit": 0, "log": "20261115T040757Z-prototype_pipeline127.log", "free_bytes": 6983135232}
+{"started_utc": "20261115T041134Z", "seconds": 72.307, "command": "baseline_load127.py", "exit": 0, "log": "20261115T041134Z-baseline_load127.log", "free_bytes": 6185627648}
+{"started_utc": "20261115T041247Z", "seconds": 11.141, "command": "migrate_runtime127.py", "exit": 0, "log": "20261115T041247Z-migrate_runtime127.log", "free_bytes": 6185062400}
+{"started_utc": "20261115T041258Z", "seconds": 3.124, "command": "verify_query127.py", "exit": 1, "log": "20261115T041258Z-verify_query127.log", "free_bytes": 5924892672}
+{"started_utc": "20261115T041338Z", "seconds": 7.163, "command": "verify_query127.py", "exit": 1, "log": "20261115T041338Z-verify_query127.log", "free_bytes": 5922308096}
+{"started_utc": "20261115T041414Z", "seconds": 6.946, "command": "verify_query127.py", "exit": 0, "log": "20261115T041414Z-verify_query127.log", "free_bytes": 6123851776}
+{"started_utc": "20261115T041421Z", "seconds": 0.141, "command": "test_statistics127.py", "exit": 1, "log": "20261115T041421Z-test_statistics127.log", "free_bytes": 6123843584}
+{"started_utc": "20261115T041434Z", "seconds": 25.461, "command": "test_statistics127.py", "exit": 0, "log": "20261115T041434Z-test_statistics127.log", "free_bytes": 6122352640}
+{"started_utc": "20261115T041500Z", "seconds": 336.026, "command": "restore_load127.py", "exit": 0, "log": "20261115T041500Z-restore_load127.log", "free_bytes": 6218412032}
+{"started_utc": "20261115T042108Z", "seconds": 3.299, "command": "compressed_oracle127.py", "exit": 0, "log": "20261115T042108Z-compressed_oracle127.log", "free_bytes": 6217183232}
+{"started_utc": "20261115T042112Z", "seconds": 9.395, "command": "profile_runtime127.py", "exit": 0, "log": "20261115T042112Z-profile_runtime127.log", "free_bytes": 6215983104}
+{"started_utc": "20261115T042122Z", "seconds": 327.693, "command": "uncompressed_load127.py", "exit": 0, "log": "20261115T042122Z-uncompressed_load127.log", "free_bytes": 6366441472}
+{"started_utc": "20261115T042649Z", "seconds": 85.44, "command": "regress_runtime127.py", "exit": 0, "log": "20261115T042649Z-regress_runtime127.log", "free_bytes": 6346457088}

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/opt/gps121/verify_query127.py", line 46, in <module>
+    test_location112.main()
+  File "/opt/gps121/test_location112.py", line 121, in main
+    assert backfill(db, True)['complete']
+  File "/opt/gps121/location_query_bounds.py", line 43, in backfill
+    raise ValueError('another query backfill is active')
+ValueError: another query backfill is active

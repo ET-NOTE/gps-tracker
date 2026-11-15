@@ -1,0 +1,132 @@
+{
+  "schema": 114,
+  "compressed_chunks": 3,
+  "checks": [
+    {
+      "function": "location_points_between",
+      "since": "2026-10-01T00:00:00Z",
+      "until": "2026-10-01T01:00:00Z",
+      "rows": 3601,
+      "md5": "dc253290dbf820b37d29a7cf360a0887",
+      "seconds": 0.2628612872213125
+    },
+    {
+      "function": "location_points_between",
+      "since": "2026-10-07T23:30:00Z",
+      "until": "2026-10-08T00:30:00Z",
+      "rows": 361,
+      "md5": "e5848fe717bde1b4bb7e072a7479989c",
+      "seconds": 0.18739142268896103
+    },
+    {
+      "function": "location_points_between",
+      "since": "2026-10-14T23:30:00Z",
+      "until": "2026-10-15T00:30:00Z",
+      "rows": 361,
+      "md5": "3cdc523773d75b89fcd27e4d01b73b37",
+      "seconds": 0.18692638678476214
+    },
+    {
+      "function": "location_speed_points_between",
+      "since": "2026-10-01T00:00:00Z",
+      "until": "2026-10-01T01:00:00Z",
+      "rows": 3601,
+      "md5": "2ffc279338c51fc23b039465c1b5a387",
+      "seconds": 0.3700805567204952
+    },
+    {
+      "function": "location_speed_points_between",
+      "since": "2026-10-07T23:30:00Z",
+      "until": "2026-10-08T00:30:00Z",
+      "rows": 361,
+      "md5": "546e156d09176aa6e179b702daa344e0",
+      "seconds": 0.2012256970629096
+    },
+    {
+      "function": "location_speed_points_between",
+      "since": "2026-10-14T23:30:00Z",
+      "until": "2026-10-15T00:30:00Z",
+      "rows": 361,
+      "md5": "015171f0c451761722d97209c05bae0b",
+      "seconds": 0.20147492596879601
+    },
+    {
+      "function": "location_speed_metrics_between",
+      "since": "2026-10-01T00:00:00Z",
+      "until": "2026-10-01T01:00:00Z",
+      "rows": 3601,
+      "md5": "1b83293e45bd903e160efe9871d4bb0b",
+      "seconds": 0.3462050757370889
+    },
+    {
+      "function": "location_speed_metrics_between",
+      "since": "2026-10-07T23:30:00Z",
+      "until": "2026-10-08T00:30:00Z",
+      "rows": 361,
+      "md5": "86ce85bdaf2ad66c7536492c826a09d3",
+      "seconds": 0.1996031398884952
+    },
+    {
+      "function": "location_speed_metrics_between",
+      "since": "2026-10-14T23:30:00Z",
+      "until": "2026-10-15T00:30:00Z",
+      "rows": 361,
+      "md5": "de021f875f400d6003f5f70003c22e91",
+      "seconds": 0.1991105219349265
+    },
+    {
+      "function": "location_history_points_between",
+      "since": "2026-10-01T00:00:00Z",
+      "until": "2026-10-01T01:00:00Z",
+      "rows": 3601,
+      "md5": "e9cc1cda16139c3687b048108c9f783b",
+      "seconds": 0.34742401307448745
+    },
+    {
+      "function": "location_history_points_between",
+      "since": "2026-10-07T23:30:00Z",
+      "until": "2026-10-08T00:30:00Z",
+      "rows": 361,
+      "md5": "1e3fc48c9b7090b6a9f742b2cb8094f5",
+      "seconds": 0.199874400626868
+    },
+    {
+      "function": "location_history_points_between",
+      "since": "2026-10-14T23:30:00Z",
+      "until": "2026-10-15T00:30:00Z",
+      "rows": 361,
+      "md5": "b17eb5e517b3c6c728c322e4ac0e2a2c",
+      "seconds": 0.20011371187865734
+    },
+    {
+      "function": "location_sample_keys_between",
+      "since": "2026-10-01T00:00:00Z",
+      "until": "2026-10-01T01:00:00Z",
+      "rows": 3601,
+      "md5": "73767ac9a43db23a6ddda2870a2648bb",
+      "seconds": 0.10444338107481599
+    },
+    {
+      "function": "location_sample_keys_between",
+      "since": "2026-10-07T23:30:00Z",
+      "until": "2026-10-08T00:30:00Z",
+      "rows": 361,
+      "md5": "3cb51ca402bdbf576bc89c16d2a3b6e0",
+      "seconds": 0.06882610777392983
+    },
+    {
+      "function": "location_sample_keys_between",
+      "since": "2026-10-14T23:30:00Z",
+      "until": "2026-10-15T00:30:00Z",
+      "rows": 361,
+      "md5": "13625bb4137011b4dd2a807cd4f853c5",
+      "seconds": 0.06850999174639583
+    }
+  ],
+  "runtime_role": true,
+  "foreign_empty_functions": 5,
+  "keyless_denied": true,
+  "logical_rows_equal": true,
+  "oracle": "pinned113 full logical rows, not only route counts",
+  "production_modified": false
+}

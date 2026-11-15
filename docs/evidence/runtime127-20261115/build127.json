@@ -1,0 +1,10 @@
+{
+  "api_sha256": "5c6f4529207f9ab0d5d30598dbb4fe8a4e4b77dc4e5304a8736f311fdcdb7e52",
+  "schema": 114,
+  "old_migration_bytes_equal": 113,
+  "rust_source_changed": false,
+  "checks": [
+    "cargo fmt --check",
+    "cargo build --locked --release"
+  ]
+}

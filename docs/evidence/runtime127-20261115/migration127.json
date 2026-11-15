@@ -1,0 +1,24 @@
+{
+  "databases": [
+    {
+      "database": "gps_closure_test",
+      "schema": 114,
+      "rows": 130000,
+      "ciphertext_hash": "ba80ac6557f9c7aa646e0c1dfe5e85af",
+      "migration_superuser": false,
+      "injected_transaction_rolled_back": true,
+      "physical_rows_unchanged": true
+    },
+    {
+      "database": "gps_cumulative_restore",
+      "schema": 114,
+      "rows": 130000,
+      "ciphertext_hash": "ba80ac6557f9c7aa646e0c1dfe5e85af",
+      "migration_superuser": false,
+      "injected_transaction_rolled_back": true,
+      "physical_rows_unchanged": true
+    }
+  ],
+  "api_sha256": "5c6f4529207f9ab0d5d30598dbb4fe8a4e4b77dc4e5304a8736f311fdcdb7e52",
+  "source_sha256": "7b8dd29bef39d1724f1bf39e3fda31cd6d276e08b44fd411b5457414320dc08e"
+}

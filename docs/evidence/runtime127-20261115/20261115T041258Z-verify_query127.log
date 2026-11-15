@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "/opt/gps121/location_query_bounds.py", line 48, in backfill
+    count = db.execute('''WITH batch AS (
+  File "/usr/local/lib/python3.10/dist-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.ConfigurationLimitExceeded: tuple decompression limit exceeded by operation
+DETAIL:  current limit: 100000, tuples decompressed: 130000
+HINT:  Consider increasing timescaledb.max_tuples_decompressed_per_dml_transaction or set to 0 (unlimited).
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/gps121/verify_query127.py", line 43, in <module>
+    test_location112.main()
+  File "/opt/gps121/test_location112.py", line 69, in main
+    report = backfill(db, True, 7, 1)
+  File "/opt/gps121/location_query_bounds.py", line 59, in backfill
+    db.execute("SELECT pg_advisory_unlock(hashtextextended('gps-query-bounds-110',0))")
+  File "/usr/local/lib/python3.10/dist-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction block

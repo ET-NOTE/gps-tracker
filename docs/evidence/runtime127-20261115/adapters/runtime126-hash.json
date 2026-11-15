@@ -1,0 +1,5 @@
+{
+  "input_sha256": "dc730def56f6df4e01663d9189995f13286ba938f3cbd0effba4f6b1735bf67f",
+  "generated_sha256": "e471d80a5a08d1eeed15bfa6c92c0c2a910d53c14de2756aa2f44f57aee0883e",
+  "scope": "125 migration/conversion/full hash restore; stop before clone deletion"
+}

@@ -1,0 +1,33 @@
+{
+  "queries": [
+    {
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 7.5838749767281115,
+      "sha256": "333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da"
+    },
+    {
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.2904959260486066,
+      "sha256": "ea1b29c7edb68c6cc82c0bffaf42a708ce52fb8066eff1e4acb5962d5aad27f9"
+    },
+    {
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.20574202807620168,
+      "sha256": "4f6370ba7e1f42f43030c88aa51c6c5a902a468968fdb934db1aeb164162e262"
+    }
+  ],
+  "database": {
+    "schema": 114,
+    "compressed_chunks": 0,
+    "temp": {
+      "files": 58,
+      "bytes": 52699542
+    },
+    "active": 0
+  },
+  "cache": "PostgreSQL restarted; host OS cache retained",
+  "tls": "verified synthetic localhost TLS1.2"
+}
