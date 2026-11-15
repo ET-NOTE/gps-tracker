@@ -1,0 +1,33 @@
+PASS24-client cap,25th denied, operations remains available
+shared-low-129 0 reads 0 ingest 0 PDF 0 cleanup 0 errors 0
+shared-low-129 10 reads 34 ingest 74 PDF 4 cleanup 2 errors 0
+shared-low-129 20 reads 68 ingest 152 PDF 7 cleanup 4 errors 0
+shared-low-129 30 reads 104 ingest 235 PDF 10 cleanup 6 errors 0
+shared-low-129 40 reads 138 ingest 317 PDF 14 cleanup 8 errors 0
+shared-low-129 50 reads 173 ingest 398 PDF 17 cleanup 10 errors 0
+shared-low-129 60 reads 208 ingest 478 PDF 20 cleanup 12 errors 0
+shared-low-129 70 reads 243 ingest 558 PDF 24 cleanup 14 errors 0
+shared-low-129 80 reads 278 ingest 639 PDF 27 cleanup 16 errors 0
+shared-low-129 90 reads 313 ingest 714 PDF 30 cleanup 17 errors 0
+shared-low-129 100 reads 348 ingest 799 PDF 33 cleanup 19 errors 0
+shared-low-129 110 reads 382 ingest 880 PDF 37 cleanup 21 errors 0
+shared-low-129 120 reads 416 ingest 960 PDF 40 cleanup 23 errors 0
+shared-low-129 130 reads 452 ingest 1040 PDF 43 cleanup 25 errors 0
+shared-low-129 140 reads 486 ingest 1120 PDF 47 cleanup 27 errors 0
+shared-low-129 150 reads 521 ingest 1200 PDF 50 cleanup 29 errors 0
+shared-low-129 160 reads 555 ingest 1281 PDF 53 cleanup 31 errors 0
+shared-low-129 170 reads 591 ingest 1357 PDF 56 cleanup 33 errors 0
+shared-low-129 180 reads 626 ingest 1439 PDF 60 cleanup 34 errors 0
+shared-low-129 190 reads 659 ingest 1521 PDF 63 cleanup 36 errors 0
+shared-low-129 200 reads 697 ingest 1602 PDF 66 cleanup 38 errors 0
+shared-low-129 210 reads 731 ingest 1683 PDF 70 cleanup 40 errors 0
+shared-low-129 220 reads 764 ingest 1763 PDF 73 cleanup 42 errors 0
+shared-low-129 230 reads 799 ingest 1844 PDF 76 cleanup 44 errors 0
+shared-low-129 240 reads 833 ingest 1923 PDF 79 cleanup 46 errors 0
+shared-low-129 250 reads 867 ingest 2004 PDF 83 cleanup 48 errors 0
+shared-low-129 261 reads 904 ingest 2084 PDF 86 cleanup 50 errors 0
+shared-low-129 271 reads 940 ingest 2160 PDF 89 cleanup 51 errors 0
+shared-low-129 281 reads 974 ingest 2241 PDF 93 cleanup 53 errors 0
+shared-low-129 291 reads 1010 ingest 2325 PDF 96 cleanup 55 errors 0
+PASS sustained concurrent workload shared-low-129
+PASS12928 semantic responses shared-low

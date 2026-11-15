@@ -1,0 +1,5 @@
+{"started_utc": "20261115T093411Z", "action": "seed", "seconds": 474.715, "exit": 0, "log": "20261115T093411Z-seed.log", "free_bytes": 31980138496}
+{"started_utc": "20261115T094220Z", "action": "dedicated", "seconds": 301.968, "exit": 1, "log": "20261115T094220Z-dedicated.log", "free_bytes": 31958953984}
+{"started_utc": "20261115T094751Z", "action": "shared", "seconds": 302.835, "exit": 1, "log": "20261115T094751Z-shared.log", "free_bytes": 31930118144}
+{"started_utc": "20261115T095304Z", "action": "shared-low", "seconds": 356.469, "exit": 0, "log": "20261115T095304Z-shared-low.log", "free_bytes": 31899045888}
+{"started_utc": "20261115T095948Z", "action": "final", "seconds": 137.521, "exit": 0, "log": "20261115T095948Z-final.log", "free_bytes": 31889604608}

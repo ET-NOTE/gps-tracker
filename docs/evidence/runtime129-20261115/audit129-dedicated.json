@@ -1,0 +1,116 @@
+{
+  "label": "dedicated",
+  "planned": 2400,
+  "sent": 2281,
+  "missed": 119,
+  "unaccounted": 0,
+  "all_sent_stored": true,
+  "devices": [
+    {
+      "device": 0,
+      "device_id": 9,
+      "stored": 285,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "417f767f7be584587c16e7ff92799ee5a43d8471110fe4cd7d2ffae33c9a1223"
+    },
+    {
+      "device": 1,
+      "device_id": 10,
+      "stored": 286,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "cfae2e08d1c45aa3197265708208503b2b3f5cf0ed4d54997de8cc77bb490fd0"
+    },
+    {
+      "device": 2,
+      "device_id": 11,
+      "stored": 288,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "ff23be822488d5c1666fce41a63bc95a0ccb7dbb7164373e60d1d97ef4f2f6e1"
+    },
+    {
+      "device": 3,
+      "device_id": 12,
+      "stored": 284,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "98c95ebeaddac6f88902b5dfd85d9460c6a51a7c0c464eb71de4793f6b74afba"
+    },
+    {
+      "device": 4,
+      "device_id": 13,
+      "stored": 284,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "98c95ebeaddac6f88902b5dfd85d9460c6a51a7c0c464eb71de4793f6b74afba"
+    },
+    {
+      "device": 5,
+      "device_id": 14,
+      "stored": 285,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "4891829558158bbad879b0012beffff7591069a32e626f616f44acf5bce2d149"
+    },
+    {
+      "device": 6,
+      "device_id": 15,
+      "stored": 285,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "1d893c359df2f7e6fdc0f6aa555ec4a56e223d0cfcd1ac0c7b44617bf7187cfd"
+    },
+    {
+      "device": 7,
+      "device_id": 16,
+      "stored": 284,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "3dbb6df8e7a8eca1f1ec821e5f27c5e9cd5c223fbcfe234d01f323e3b09216df"
+    }
+  ],
+  "capacity_passed": false,
+  "original_acceptance_gate_unchanged": true,
+  "services_unchanged": true,
+  "memory_event_delta": {
+    "container": {
+      "low": 0,
+      "high": 0,
+      "max": 174,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "gps": {
+      "low": 0,
+      "high": 0,
+      "max": 174,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "pdf": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "db": {
+      "low": 0,
+      "high": 0,
+      "max": 174,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "api": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    }
+  },
+  "timing_capture_preserved": true,
+  "temp_peak_bytes": 78880768,
+  "health_pdf_cleanup_guards_passed": true,
+  "full_month_traversals": 1,
+  "production_modified": false
+}

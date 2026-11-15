@@ -1,0 +1,9 @@
+# /etc/systemd/system/gps122-other.service
+[Service]
+ExecStart=/usr/bin/python3 /opt/gps121/load_runtime122.py pressure-other
+MemoryMax=1024M
+MemorySwapMax=0
+CPUQuota=25%
+LimitCORE=0
+NoNewPrivileges=yes
+Environment=LD_PRELOAD=/usr/local/lib/gps-nodump.so

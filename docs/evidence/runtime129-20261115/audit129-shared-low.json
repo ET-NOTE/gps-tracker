@@ -1,0 +1,132 @@
+{
+  "label": "shared-low",
+  "planned": 2400,
+  "sent": 2400,
+  "missed": 0,
+  "unaccounted": 0,
+  "all_sent_stored": true,
+  "devices": [
+    {
+      "device": 0,
+      "device_id": 25,
+      "stored": 300,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "e05d5673f728dd47c8722fbfae231c7be65b9734cde379b3e6b710d1d3fae7f9"
+    },
+    {
+      "device": 1,
+      "device_id": 26,
+      "stored": 300,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "e05d5673f728dd47c8722fbfae231c7be65b9734cde379b3e6b710d1d3fae7f9"
+    },
+    {
+      "device": 2,
+      "device_id": 27,
+      "stored": 300,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "e05d5673f728dd47c8722fbfae231c7be65b9734cde379b3e6b710d1d3fae7f9"
+    },
+    {
+      "device": 3,
+      "device_id": 28,
+      "stored": 300,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "e05d5673f728dd47c8722fbfae231c7be65b9734cde379b3e6b710d1d3fae7f9"
+    },
+    {
+      "device": 4,
+      "device_id": 29,
+      "stored": 300,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "e05d5673f728dd47c8722fbfae231c7be65b9734cde379b3e6b710d1d3fae7f9"
+    },
+    {
+      "device": 5,
+      "device_id": 30,
+      "stored": 300,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "e05d5673f728dd47c8722fbfae231c7be65b9734cde379b3e6b710d1d3fae7f9"
+    },
+    {
+      "device": 6,
+      "device_id": 31,
+      "stored": 300,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "e05d5673f728dd47c8722fbfae231c7be65b9734cde379b3e6b710d1d3fae7f9"
+    },
+    {
+      "device": 7,
+      "device_id": 32,
+      "stored": 300,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "e05d5673f728dd47c8722fbfae231c7be65b9734cde379b3e6b710d1d3fae7f9"
+    }
+  ],
+  "capacity_passed": true,
+  "original_acceptance_gate_unchanged": true,
+  "services_unchanged": true,
+  "memory_event_delta": {
+    "av": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "pdf": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "gps": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "api": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "db": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "container": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "other": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    }
+  },
+  "timing_capture_preserved": true,
+  "temp_peak_bytes": 20512768,
+  "health_pdf_cleanup_guards_passed": true,
+  "full_month_traversals": 46,
+  "production_modified": false
+}
