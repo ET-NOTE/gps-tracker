@@ -1,0 +1,7 @@
+PASS personal login and existing admin MFA/role boundary; handler and ordinary accounts denied global list
+PASS 110 personal rows reached across50/50/10 pages with exact IDs; other-account exclusion; legacy100-array compatible; no internal evidence
+PASS admin kind/status/overdue/undated/mine/unassigned filters; exact due boundary and closed-request exclusion;115 rows paginated
+PASS invalid/owner override filters rejected; processing pause still permits personal rights lookup; IP restriction retained; source rows unchanged
+PASS single blocked TLS read cancels SQL and releases slot; retry succeeds; immutable requests/events
+PASS owner-only request cancellation, stale revision409 and single history row; refreshed admin filter removes completed work
+PASS all 6 functional groups

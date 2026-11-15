@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-15T15:42:41.185Z",
+  "environment": "actual React components; synthetic local API responses",
+  "checks": [
+    "overdue clears initial received-only filter",
+    "mine combines with overdue",
+    "390px document no overflow",
+    "empty filtered response distinct",
+    "cancel visible and aborts request",
+    "personal110 reaches50/50/10 third page"
+  ],
+  "errors": []
+}
