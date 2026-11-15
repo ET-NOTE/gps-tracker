@@ -46,18 +46,19 @@ def collect():
     print('PASS126 isolated environment/unit/log/mount evidence retained',flush=True)
 
 
-def package(commit):
+def package(commit,revision='r1'):
     r.base.guard();assert re.fullmatch('[0-9a-f]{40}',commit)
+    assert revision in ('r1','r2')
     dependency=r.JOB.parent/'gps-runtime125-20261114/recovery-kit-runtime125-20261114-r1.tar.gz'
     assert sha(dependency)=='f469828ce877ffffa555fe9b168200c7e423c0e1228f9a858df5218f67ec6c73'
-    stage=r.JOB/'kit';assert not stage.exists();stage.mkdir()
+    stage=r.JOB/('kit' if revision=='r1' else 'kit-'+revision);assert not stage.exists();stage.mkdir()
     with tarfile.open(r.JOB/'source-final.tar') as source:
         canonical={m.name:hashlib.sha256(source.extractfile(m).read()).hexdigest() for m in source if m.isfile()}
     assert all(sha(r.JOB/'src'/name)==value for name,value in canonical.items())
     shutil.copytree(r.JOB/'src/ops',stage/'ops',ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
     shutil.copytree(r.base.OUT/'adapters',stage/'adapters')
     contents={p.relative_to(stage).as_posix():sha(p) for p in stage.rglob('*') if p.is_file()}
-    manifest=dict(release='runtime126-20261115-r1',source_commit=commit,schema=113,
+    manifest=dict(release='runtime126-20261115-'+revision,source_commit=commit,schema=113,
         production_installer=False,activation_ready=False,performance_accepted=False,
         dependency=str(dependency),dependency_sha256=sha(dependency),api_sha256=sha(r.base.OUT/'gps-tracker-api'),
         source_archive_sha256=sha(r.JOB/'source-final.tar'),
@@ -67,15 +68,15 @@ def package(commit):
         'restore statistics fix verified; compressed history temp-space failure remains',
         'no keys, credentials, backups or plaintext result payloads in kit'])
     (stage/'manifest.json').write_text(json.dumps(manifest,indent=2))
-    archive=r.JOB/'recovery-kit-runtime126-20261115-r1.tar.gz'
+    archive=r.JOB/('recovery-kit-runtime126-20261115-'+revision+'.tar.gz')
     assert not archive.exists()
     with tarfile.open(archive,'w:gz') as tar:tar.add(stage,arcname='runtime126')
     with tarfile.open(archive) as tar:
         for name,digest in contents.items():assert hashlib.sha256(tar.extractfile('runtime126/'+name).read()).hexdigest()==digest
     manifest.update(archive=str(archive),archive_sha256=sha(archive),files=len(contents),bytes=archive.stat().st_size)
-    (r.base.OUT/'candidate-manifest126.json').write_text(json.dumps(manifest,indent=2))
+    (r.base.OUT/('candidate-manifest126.json' if revision=='r1' else 'candidate-manifest126-'+revision+'.json')).write_text(json.dumps(manifest,indent=2))
     print('PASS126 kit, every source hash and pinned dependency; activation_ready=false',flush=True)
 
 
 if __name__=='__main__':
-    collect() if sys.argv[1]=='collect' else package(sys.argv[2])
+    collect() if sys.argv[1]=='collect' else package(sys.argv[2],sys.argv[3] if len(sys.argv)>3 else 'r1')

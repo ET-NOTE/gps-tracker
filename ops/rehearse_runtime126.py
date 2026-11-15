@@ -68,7 +68,8 @@ def install(phase):
     for name in names:
         source=root/name
         values[name]=prior.sha(source.read_bytes())
-        if phase=='before':assert values[name]=='2273b0e00190642625c2998c96c1fed438829020230d0c6e2cd433d9edef3894'
+        # Pin125's actual archived/tested bytes, including its line endings.
+        if phase=='before':assert values[name]=='b637f14cccd4d37570c231b4dc4976f7cb8bf32f2f33d65bf261a40dd1fd2feb'
         base.call('docker','cp',str(source),HOST+':/opt/gps121/'+name)
     (base.OUT/('installed-'+phase+'126.json')).write_text(json.dumps(dict(phase=phase,source=str(root),sha256=values),indent=2))
 
