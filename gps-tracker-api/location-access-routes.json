@@ -847,6 +847,14 @@
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
+  "privacy.rs GET /privacy/requests/:id/history": {
+    "class": "non_location",
+    "reason": "Owner-scoped public rights-request status history only; no stored location, internal evidence or actor identifiers."
+  },
+  "privacy.rs GET /privacy/requests/page": {
+    "class": "non_location",
+    "reason": "Personal rights-request workflow metadata; server fixes owner to authenticated account, no coordinates or internal evidence reference."
+  },
   "privacy.rs PATCH /admin/privacy/requests/:id": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
@@ -1270,9 +1278,5 @@
   "ws.rs GET /realtime": {
     "class": "outside_api",
     "reason": "WebSocket data sends instrumented per message."
-  },
-  "privacy.rs GET /privacy/requests/page": {
-    "class": "non_location",
-    "reason": "Personal rights-request workflow metadata; server fixes owner to authenticated account, no coordinates or internal evidence reference."
   }
 }

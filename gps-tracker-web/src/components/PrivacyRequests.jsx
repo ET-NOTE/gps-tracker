@@ -12,6 +12,7 @@ import {PersonalAccountPackages,AdminAccountPackages} from './PrivacyAccountPack
 import {PersonalRedacted,AdminRedacted} from './PrivacyRedacted';
 import {PersonalImages,AdminImages} from './PrivacyImages';
 import {useRightsQueue,RightsQueueTools} from './RightsQueue';
+import PersonalRequestHistory from './PersonalRequestHistory';
 
 export const rightsKinds = {access:'정보 열람',rectification:'정보 정정',erasure:'정보 삭제',account_closure:'회원 탈퇴'};
 export const rightsStatuses = {received:'접수',in_review:'검토 중',needs_information:'추가 확인',fulfilled:'처리 완료',rejected:'처리 제한',cancelled:'요청 취소'};
@@ -88,6 +89,7 @@ export default function PrivacyRequests() {
         <div className="rights-heading"><h3>#{row.id} · {rightsKinds[row.kind]}</h3><span>{rightsStatuses[row.status]}</span></div>
         <p className="rights-text">{row.scope}</p><p>접수 {date(row.created_at)} · 처리 기한 {date(row.due_at)}</p>
         {row.result_message&&<p className="rights-text rights-notice">{row.result_message}</p>}
+        <PersonalRequestHistory key={`${row.id}-${row.revision}`} requestId={row.id} statuses={rightsStatuses}/>
         {row.kind==='access'&&<PersonalDeliveries request={row}/>}
         {row.kind==='access'&&<PersonalAccountPackages request={row}/>}
         {row.kind==='access'&&<PersonalRedacted request={row}/>}

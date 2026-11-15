@@ -24,6 +24,7 @@ pub fn router() -> Router<AppState> {
         .route("/privacy/collection/:id", post(collection_set))
         .route("/privacy/requests", get(list).post(create))
         .route("/privacy/requests/page", get(personal_page))
+        .route("/privacy/requests/:id/history", get(personal_history))
         .route("/privacy/impact", get(impact))
         .route("/privacy/requests/:id/cancel", post(cancel))
         .route("/admin/privacy/requests", get(admin_list))
@@ -127,6 +128,69 @@ async fn list(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<V
 }
 async fn impact(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Value>> {
     Ok(Json(privacy::impact(&state.db, user.user_id).await?))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HistoryPage {
+    before: Option<i32>,
+    through: Option<i32>,
+}
+impl HistoryPage {
+    fn validate(&self) -> AppResult<()> {
+        if self.before.is_some_and(|v| v <= 0) || self.through.is_some_and(|v| v <= 0) {
+            return Err(AppError::BadRequest(
+                "처리 이력 조회 조건이 올바르지 않습니다.".into(),
+            ));
+        }
+        Ok(())
+    }
+}
+async fn personal_history(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i64>,
+    Query(q): Query<HistoryPage>,
+) -> AppResult<Json<Value>> {
+    q.validate()?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
+    // One SQL snapshot for ownership, current revision and the explicit public
+    // projection. Never serialize actor IDs, internal evidence or closure jobs.
+    let row: Option<(i32, Value)> = sqlx::query_as(
+        "SELECT r.revision,
+      COALESCE((SELECT jsonb_agg(e ORDER BY revision DESC) FROM (
+        SELECT revision,status,message,due_at,created_at FROM privacy_request_events
+        WHERE request_id=r.id AND revision<=COALESCE($4,r.revision)
+          AND ($3::integer IS NULL OR revision<$3)
+        ORDER BY revision DESC LIMIT 26
+      ) e),'[]'::jsonb) FROM privacy_requests r WHERE r.id=$1 AND r.user_id=$2",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .bind(q.before)
+    .bind(q.through)
+    .fetch_optional(read.connection())
+    .await
+    .map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
+    // An empty lookup completed normally; release it before returning404.
+    let (revision, mut items) = row.ok_or(AppError::NotFound)?;
+    let through = q.through.unwrap_or(revision);
+    if through > revision {
+        return Err(AppError::BadRequest(
+            "처리 이력 기준이 올바르지 않습니다. 새로고침해 주세요.".into(),
+        ));
+    }
+    let rows = items.as_array_mut().expect("SQL returns a JSON array");
+    let more = rows.len() > 25;
+    rows.truncate(25);
+    let next = if more {
+        rows.last().and_then(|r| r["revision"].as_i64())
+    } else {
+        None
+    };
+    Ok(Json(
+        json!({"request_id":id,"through":through,"current_revision":revision,"items":items,"next":next}),
+    ))
 }
 #[derive(Deserialize)]
 struct Revision {
@@ -254,6 +318,28 @@ async fn request_page(
 #[cfg(test)]
 mod queue_tests {
     use super::*;
+    #[test]
+    fn public_history_accepts_only_positive_revision_cursors() {
+        for value in [json!({}), json!({"before":26,"through":56})] {
+            assert!(serde_json::from_value::<HistoryPage>(value)
+                .unwrap()
+                .validate()
+                .is_ok());
+        }
+        for value in [json!({"before":0}), json!({"through":-1})] {
+            assert!(serde_json::from_value::<HistoryPage>(value)
+                .unwrap()
+                .validate()
+                .is_err());
+        }
+        for value in [
+            json!({"user_id":3}),
+            json!({"include_internal":true}),
+            json!({"before":2147483648_i64}),
+        ] {
+            assert!(serde_json::from_value::<HistoryPage>(value).is_err());
+        }
+    }
     #[test]
     fn page_filters_are_explicit_and_personal_scope_cannot_be_overridden() {
         let parse = |value| serde_json::from_value::<Page>(value).unwrap();

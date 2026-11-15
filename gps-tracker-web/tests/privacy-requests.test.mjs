@@ -15,6 +15,7 @@ async function components(api={}) {
   const code=(await transform(source+'\nexport {ReviewForm};',{loader:'jsx',jsx:'automatic',format:'esm'})).code;
   const m=new vm.SourceTextModule(code,{context});
   await m.link(name=>{
+    if(name==='./PersonalRequestHistory')return moduleOf({default:()=>null});
     if(name==='./RightsQueue')return moduleOf({useRightsQueue:()=>({data:{items:[]},reload:()=>{}}),RightsQueueTools:()=>null});
     if(name==='./SubjectProvision')return moduleOf({SubjectMappings:()=>null,ProvisionNotices:()=>null});
     if(name==='./PrivacyImages')return moduleOf({PersonalImages:()=>null,AdminImages:()=>null});

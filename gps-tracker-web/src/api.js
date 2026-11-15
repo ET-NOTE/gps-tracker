@@ -413,6 +413,7 @@ export const api = {
   deleteMe:        (password) => req('DELETE', '/auth/me', { password }),
   privacyRequests: () => req('GET', '/privacy/requests'),
   privacyRequestPage: (params,signal) => req('GET', '/privacy/requests/page?' + new URLSearchParams(params), undefined, true, {signal}),
+  privacyRequestHistory: (id,params,signal) => req('GET', `/privacy/requests/${id}/history?` + new URLSearchParams(params), undefined, true, {signal}),
   companyTasks: after => req('GET', `/privacy/company-tasks?after=${after||0}`),
   companyTask: id => req('GET', `/privacy/company-tasks/${id}`),
   submitCompanyTask: (id,body) => req('POST', `/privacy/company-tasks/${id}`,body),
