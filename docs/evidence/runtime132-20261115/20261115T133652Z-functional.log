@@ -1,0 +1,8 @@
+PASS personal MFA required; anonymous, ordinary user, handler and delegated scope denied; officer allowed
+PASS encrypted physical rows grouped without coordinates, source free-text or owners; exact KST boundaries and NULL-only counts; no-store
+PASS six keyset pages equal full result; filter-bound cursor, 31-day/size/device bounds, empty and event categories verified
+PASS current-owner reassignment never rewrites historical attribution; physical source hashes unchanged; works with decryption EXECUTE revoked
+PASS IP denial ignores spoofed forwarding headers; audit write failure denies access; successful requests leave admin evidence
+PASS existing read limit returns429; TLS disconnect cancels blocked SQL and releases slots; retry succeeds; sources unchanged
+PASS security OFF fails closed for legacy admin; no new schema, ownership or deletion writes
+PASS all 7 functional groups

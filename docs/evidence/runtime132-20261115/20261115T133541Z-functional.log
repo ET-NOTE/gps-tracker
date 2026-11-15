@@ -1,0 +1,12 @@
+PASS personal MFA required; anonymous, ordinary user, handler and delegated scope denied; officer allowed
+PASS encrypted physical rows grouped without coordinates, source free-text or owners; exact KST boundaries and NULL-only counts; no-store
+PASS six keyset pages equal full result; filter-bound cursor, 31-day/size/device bounds, empty and event categories verified
+PASS current-owner reassignment never rewrites historical attribution; physical source hashes unchanged; works with decryption EXECUTE revoked
+PASS IP denial ignores spoofed forwarding headers; audit write failure denies access; successful requests leave admin evidence
+PASS existing read limit returns429; TLS disconnect cancels blocked SQL and releases slots; retry succeeds; sources unchanged
+Traceback (most recent call last):
+  File "/opt/gps121/test_unattributed132.py", line 258, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_unattributed132.py", line 246, in main
+    assert fingerprint()==before
+AssertionError
