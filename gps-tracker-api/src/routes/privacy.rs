@@ -23,6 +23,7 @@ pub fn router() -> Router<AppState> {
         .route("/privacy/collection", get(collection_list))
         .route("/privacy/collection/:id", post(collection_set))
         .route("/privacy/requests", get(list).post(create))
+        .route("/privacy/requests/page", get(personal_page))
         .route("/privacy/impact", get(impact))
         .route("/privacy/requests/:id/cancel", post(cancel))
         .route("/admin/privacy/requests", get(admin_list))
@@ -159,25 +160,87 @@ async fn cancel(
     Ok(Json(row))
 }
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Page {
     before: Option<i64>,
     status: Option<String>,
+    kind: Option<String>,
+    due: Option<String>,
+    assignment: Option<String>,
+    as_of: Option<DateTime<Utc>>,
+}
+impl Page {
+    fn validate(&self, personal: bool) -> AppResult<()> {
+        let invalid = self.before.is_some_and(|v| v <= 0)
+            || self.status.as_deref().is_some_and(|v| {
+                !matches!(
+                    v,
+                    "received"
+                        | "in_review"
+                        | "needs_information"
+                        | "fulfilled"
+                        | "rejected"
+                        | "cancelled"
+                )
+            })
+            || self.kind.as_deref().is_some_and(|v| {
+                !matches!(
+                    v,
+                    "access" | "rectification" | "erasure" | "account_closure"
+                )
+            })
+            || self
+                .due
+                .as_deref()
+                .is_some_and(|v| !matches!(v, "overdue" | "undated"))
+            || self
+                .assignment
+                .as_deref()
+                .is_some_and(|v| !matches!(v, "mine" | "unassigned"))
+            || (personal && (self.due.is_some() || self.assignment.is_some()));
+        if invalid {
+            return Err(AppError::BadRequest(
+                "조회 조건이 올바르지 않습니다.".into(),
+            ));
+        }
+        Ok(())
+    }
+}
+async fn personal_page(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Query(q): Query<Page>,
+) -> AppResult<Json<Value>> {
+    request_page(&state, q, Some(user.user_id), user.user_id).await
 }
 async fn admin_list(
     State(state): State<AppState>,
-    _admin: AdminUser,
+    admin: AdminUser,
     Query(q): Query<Page>,
 ) -> AppResult<Json<Value>> {
-    if q.status.as_deref().is_some_and(|s| {
-        !matches!(
-            s,
-            "received" | "in_review" | "needs_information" | "fulfilled" | "rejected" | "cancelled"
-        )
-    }) {
-        return Err(AppError::BadRequest("잘못된 상태 필터입니다.".into()));
-    }
-    let mut rows: Vec<RequestRow> = sqlx::query_as("SELECT * FROM privacy_requests WHERE ($1::bigint IS NULL OR id<$1) AND ($2::text IS NULL OR status=$2) ORDER BY id DESC LIMIT 51")
-        .bind(q.before).bind(q.status).fetch_all(&state.db).await?;
+    request_page(&state, q, None, admin.user_id).await
+}
+async fn request_page(
+    state: &AppState,
+    q: Page,
+    owner: Option<i64>,
+    actor: i64,
+) -> AppResult<Json<Value>> {
+    q.validate(owner.is_some())?;
+    // A stable comparison instant across pages is not a statutory deadline or
+    // a snapshot of mutable request status. Only staff-entered due_at is used.
+    let as_of = q.as_of.unwrap_or_else(Utc::now);
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
+    let mut rows: Vec<RequestRow> = sqlx::query_as("SELECT * FROM privacy_requests
+      WHERE ($1::bigint IS NULL OR user_id=$1) AND ($2::bigint IS NULL OR id<$2)
+        AND ($3::text IS NULL OR status=$3) AND ($4::text IS NULL OR kind=$4)
+        AND ($5::text IS NULL OR (status IN ('received','in_review','needs_information') AND
+            (($5='overdue' AND due_at<$6) OR ($5='undated' AND due_at IS NULL))))
+        AND ($7::text IS NULL OR ($7='mine' AND assigned_to=$8) OR ($7='unassigned' AND assigned_to IS NULL))
+      ORDER BY id DESC LIMIT 51")
+        .bind(owner).bind(q.before).bind(q.status).bind(q.kind).bind(q.due).bind(as_of).bind(q.assignment).bind(actor)
+        .fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
     let more = rows.len() > 50;
     rows.truncate(50);
     let next = if more {
@@ -185,7 +248,37 @@ async fn admin_list(
     } else {
         None
     };
-    Ok(Json(json!({"items":rows,"next":next})))
+    Ok(Json(json!({"items":rows,"next":next,"as_of":as_of})))
+}
+
+#[cfg(test)]
+mod queue_tests {
+    use super::*;
+    #[test]
+    fn page_filters_are_explicit_and_personal_scope_cannot_be_overridden() {
+        let parse = |value| serde_json::from_value::<Page>(value).unwrap();
+        assert!(parse(json!({})).validate(true).is_ok());
+        assert!(
+            parse(json!({"status":"cancelled","kind":"access","before":10}))
+                .validate(true)
+                .is_ok()
+        );
+        assert!(parse(json!({"due":"overdue","assignment":"mine"}))
+            .validate(false)
+            .is_ok());
+        for value in [
+            json!({"before":0}),
+            json!({"status":"unknown"}),
+            json!({"kind":"all"}),
+            json!({"due":"tomorrow"}),
+            json!({"assignment":"another"}),
+        ] {
+            assert!(parse(value).validate(false).is_err());
+        }
+        assert!(parse(json!({"assignment":"mine"})).validate(true).is_err());
+        assert!(parse(json!({"due":"undated"})).validate(true).is_err());
+        assert!(serde_json::from_value::<Page>(json!({"user_id":3})).is_err());
+    }
 }
 async fn detail(
     State(state): State<AppState>,

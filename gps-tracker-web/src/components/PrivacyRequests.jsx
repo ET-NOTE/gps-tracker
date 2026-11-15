@@ -1,6 +1,6 @@
 import {CompanyTaskInbox} from './PrivacyCompanyTask';
 import {PersonalCompanyReviews,AdminCompanyReviews} from './PrivacyCompanyReview';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import './PrivacyRequests.css';
@@ -11,6 +11,7 @@ import {PersonalDeliveries,AdminDeliveries} from './PrivacyDelivery';
 import {PersonalAccountPackages,AdminAccountPackages} from './PrivacyAccountPackage';
 import {PersonalRedacted,AdminRedacted} from './PrivacyRedacted';
 import {PersonalImages,AdminImages} from './PrivacyImages';
+import {useRightsQueue,RightsQueueTools} from './RightsQueue';
 
 export const rightsKinds = {access:'정보 열람',rectification:'정보 정정',erasure:'정보 삭제',account_closure:'회원 탈퇴'};
 export const rightsStatuses = {received:'접수',in_review:'검토 중',needs_information:'추가 확인',fulfilled:'처리 완료',rejected:'처리 제한',cancelled:'요청 취소'};
@@ -39,7 +40,7 @@ function Impact({requestId}) {
 
 export default function PrivacyRequests() {
   const qc=useQueryClient();
-  const query=useQuery({queryKey:['privacy-requests'],queryFn:api.privacyRequests,retry:false});
+  const queue=useRightsQueue();
   const [kind,setKind]=useState('access'),[scope,setScope]=useState(''),[password,setPassword]=useState('');
   const [busy,setBusy]=useState(false),[error,setError]=useState(null),[message,setMessage]=useState('');
   const [key,setKey]=useState(()=>crypto.randomUUID());
@@ -51,6 +52,7 @@ export default function PrivacyRequests() {
       setPassword('');setScope('');setKey(crypto.randomUUID());
       setMessage(`요청 #${row.id}을 접수했습니다. 아래에서 처리 상태를 확인하세요.`);
       await qc.invalidateQueries({queryKey:['privacy-requests']});
+      queue.reload();
     } catch(e) {setError(e);} finally {setBusy(false);}
   }
   async function cancel(row) {
@@ -81,11 +83,8 @@ export default function PrivacyRequests() {
       <Impact/>
     </section>
     <section className="rights-card">
-      <div className="rights-heading"><h2>요청 내역</h2><button type="button" onClick={()=>query.refetch()} disabled={query.isFetching}>새로고침</button></div>
-      <ErrorMessage error={query.error}/>
-      {query.isPending&&<p role="status">요청을 불러오고 있습니다.</p>}
-      {query.data?.length===0&&<p>접수한 요청이 없습니다.</p>}
-      {query.data?.map(row=><article key={row.id} className="rights-request">
+      <h2>요청 내역</h2><RightsQueueTools queue={queue} kinds={rightsKinds} statuses={rightsStatuses}/>
+      {queue.data?.items.map(row=><article key={row.id} className="rights-request">
         <div className="rights-heading"><h3>#{row.id} · {rightsKinds[row.kind]}</h3><span>{rightsStatuses[row.status]}</span></div>
         <p className="rights-text">{row.scope}</p><p>접수 {date(row.created_at)} · 처리 기한 {date(row.due_at)}</p>
         {row.result_message&&<p className="rights-text rights-notice">{row.result_message}</p>}
@@ -102,20 +101,17 @@ export default function PrivacyRequests() {
 }
 
 export function AdminPrivacyRequests() {
-  const [filter,setFilter]=useState('received'),[before,setBefore]=useState(null),[selected,setSelected]=useState(null);
-  const query=useQuery({queryKey:['admin-privacy',filter,before],queryFn:()=>api.adminPrivacyRequests({status:filter||undefined,before:before||undefined}),retry:false});
+  const queue=useRightsQueue(true),[selected,setSelected]=useState(null);
+  useEffect(()=>setSelected(null),[queue.state]);
   return <div className="rights-panel rights-admin">
     <section className="rights-card"><h2>개인정보 요청</h2><p>담당자가 본인·대리인 여부와 처리 범위, 적용 법정 기한을 확인하세요. 접수와 실행 완료는 별도입니다.</p>
-      <label>처리 상태<select value={filter} onChange={e=>{setFilter(e.target.value);setBefore(null);setSelected(null);}}><option value="">전체</option>{Object.entries(rightsStatuses).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-      <ErrorMessage error={query.error}/>{query.isPending&&<p role="status">불러오는 중…</p>}
-      {query.data?.items.length===0&&<p>해당 요청이 없습니다.</p>}
-      {query.data?.items.map(row=><div className="rights-request" key={row.id}>
+      <RightsQueueTools queue={queue} admin kinds={rightsKinds} statuses={rightsStatuses}/>
+      {queue.data?.items.map(row=><div className="rights-request" key={row.id}>
         <button type="button" onClick={()=>setSelected(selected===row.id?null:row.id)} aria-expanded={selected===row.id}>#{row.id} · 계정 {row.user_id} · {rightsKinds[row.kind]} · {rightsStatuses[row.status]}</button>
         <p>{date(row.created_at)} · {row.due_at ? `기한 ${date(row.due_at)}` : '기한 지정 필요'}</p>
-        {row.due_at&&isOpen(row)&&new Date(row.due_at)<new Date()&&<p className="rights-error">처리 기한 경과</p>}
+        {row.due_at&&isOpen(row)&&new Date(row.due_at)<new Date(queue.data.as_of)&&<p className="rights-error">처리 기한 경과</p>}
         {selected===row.id&&<AdminReview key={`${row.id}-${row.revision}`} id={row.id}/>}
       </div>)}
-      <div className="rights-heading"><button type="button" onClick={()=>{setBefore(null);query.refetch();}}>처음 / 새로고침</button>{query.data?.next&&<button type="button" onClick={()=>{setBefore(query.data.next);setSelected(null);}}>다음</button>}</div>
     </section>
   </div>;
 }

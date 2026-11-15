@@ -1270,5 +1270,9 @@
   "ws.rs GET /realtime": {
     "class": "outside_api",
     "reason": "WebSocket data sends instrumented per message."
+  },
+  "privacy.rs GET /privacy/requests/page": {
+    "class": "non_location",
+    "reason": "Personal rights-request workflow metadata; server fixes owner to authenticated account, no coordinates or internal evidence reference."
   }
 }
