@@ -1,3 +1,4 @@
+use crate::services::ingest_timing::{IngestTiming, Phase};
 // ESP32 디바이스 위치 업로드 엔드포인트 (레거시 호환).
 //
 // 호환 페이로드 (현재 11_final_tracker.ino):
@@ -158,6 +159,7 @@ pub async fn ingest(
     body: axum::body::Bytes,
 ) -> AppResult<Json<Value>> {
     use crate::services::device_auth::{self, IngestMode};
+    let mut timing = IngestTiming::new();
     let _permit = tokio::time::timeout(
         std::time::Duration::from_secs(5),
         state.ingest_limit.acquire(),
@@ -165,9 +167,11 @@ pub async fn ingest(
     .await
     .map_err(|_| AppError::TooManyRequests("device ingest busy; retry later".into()))?
     .map_err(|_| AppError::Internal(anyhow::anyhow!("ingest queue closed")))?;
+    timing.advance(Phase::Parse);
     let payload: Value =
         serde_json::from_slice(&body).map_err(|_| AppError::BadRequest("invalid JSON".into()))?;
-    let (id, mode, mut gate) = device_auth::authorize(&state, &headers, &body, &payload).await?;
+    let (id, mode, mut gate) =
+        device_auth::authorize(&state, &headers, &body, &payload, &mut timing).await?;
     let counter = headers
         .get("x-gps-counter")
         .and_then(|h| h.to_str().ok())
@@ -180,12 +184,14 @@ pub async fn ingest(
         .to_owned();
     // authorize holds the SIM/device advisory lock until the signed response is
     // committed. Erasure uses that same lock, including legacy/phone senders.
+    timing.advance(Phase::Privacy);
     let privacy_blocked: bool = sqlx::query_scalar(
         "SELECT COALESCE((SELECT c.blocked OR COALESCE(a.restricted,false) FROM device_data_controls c JOIN gps_read_devices d ON d.id=c.device_id LEFT JOIN privacy_account_controls a ON a.user_id=d.owner_id WHERE c.device_id=$1),false)",
     )
     .bind(id)
     .fetch_one(&mut *gate)
     .await?;
+    timing.advance(Phase::Collection);
     let (collection_store, collection_policy) = crate::services::collection_control::evaluate(
         &state.db,
         id,
@@ -210,9 +216,11 @@ pub async fn ingest(
             Json(payload.clone()),
             id,
             mode,
+            &mut timing,
         )
         .await?
     };
+    timing.advance(Phase::Binding);
     response.0["collection"] = collection_policy;
     response.0["stored"] = json!(collection_store && mode != IngestMode::HardwarePending);
     if mode == IngestMode::Signed && !privacy_blocked {
@@ -231,6 +239,7 @@ pub async fn ingest(
     if hardware && !privacy_blocked {
         crate::services::hardware_auth::finish(&mut gate, id, &auth_uid, mode, &payload).await?;
     }
+    timing.advance(Phase::Sign);
     let result = if mode == IngestMode::Signed || hardware {
         Json(
             device_auth::signed_response(
@@ -246,7 +255,9 @@ pub async fn ingest(
     } else {
         response
     };
+    timing.advance(Phase::Commit);
     gate.commit().await?;
+    timing.complete();
     Ok(result)
 }
 
@@ -256,7 +267,9 @@ async fn ingest_payload(
     Json(payload): Json<Value>,
     device_id: i64,
     mode: crate::services::device_auth::IngestMode,
+    timing: &mut IngestTiming,
 ) -> AppResult<Json<Value>> {
+    timing.advance(Phase::Metadata);
     // 클라이언트 IP (X-Real-IP, X-Forwarded-For, fallback)
     let remote_ip = headers
         .get("x-real-ip")
@@ -329,6 +342,7 @@ async fn ingest_payload(
     );
     let mut fix_records: Vec<StoredFix> = Vec::new();
     if let Some(fixes) = parsed.fixes.as_ref().filter(|f| !f.is_empty()) {
+        timing.advance(Phase::Batch);
         // Serialize competing retransmissions with pairing/deletion/stat aggregation.
         let mut tx = state.db.begin().await?;
         let owner_id: Option<i64> =
@@ -515,6 +529,7 @@ async fn ingest_payload(
 
     if !has_batch {
         if let Some(l80) = &parsed.l80 {
+            timing.advance(Phase::Store);
             insert_location(
                 &state,
                 device_id,
@@ -525,7 +540,9 @@ async fn ingest_payload(
                 &payload,
             )
             .await?;
+            timing.advance(Phase::Publish);
             broadcast_location(&state, device_id, recorded_at, "l80", l80, &parsed).await?;
+            timing.advance(Phase::Geofence);
             if let (true, Some(lat), Some(lng)) = (l80.fix, l80.lat, l80.lng) {
                 let _ =
                     crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng)
@@ -534,6 +551,7 @@ async fn ingest_payload(
         }
     }
     if let Some(lte) = &parsed.lte {
+        timing.advance(Phase::Store);
         insert_location(
             &state,
             device_id,
@@ -544,7 +562,9 @@ async fn ingest_payload(
             &payload,
         )
         .await?;
+        timing.advance(Phase::Publish);
         broadcast_location(&state, device_id, recorded_at, "lte_gnss", lte, &parsed).await?;
+        timing.advance(Phase::Geofence);
         if let (true, Some(lat), Some(lng)) = (lte.fix, lte.lat, lte.lng) {
             let _ =
                 crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
@@ -552,6 +572,7 @@ async fn ingest_payload(
     }
     // (2026-07-30) 스마트폰 tracker — 자체 GPS/WiFi/셀 hybrid fix. source='phone' 별도 라벨.
     if let Some(phone) = &parsed.phone {
+        timing.advance(Phase::Store);
         insert_location(
             &state,
             device_id,
@@ -562,13 +583,16 @@ async fn ingest_payload(
             &payload,
         )
         .await?;
+        timing.advance(Phase::Publish);
         broadcast_location(&state, device_id, recorded_at, "phone", phone, &parsed).await?;
+        timing.advance(Phase::Geofence);
         if let (true, Some(lat), Some(lng)) = (phone.fix, phone.lat, phone.lng) {
             let _ =
                 crate::services::geofence::check_after_ingest(&state.db, device_id, lat, lng).await;
         }
     }
 
+    timing.advance(Phase::Lifecycle);
     // (2026-07-01) cycle_first_fix 중복 push fix — wake pending=TRUE 마킹을 first_fix 판정 *전*
     // 으로 이동. 이전 순서 (lifecycle event 분기 안 line 486 근처) 는 첫 fix 감지 → 이전 wake 의
     // pending 소진 → 같은 POST 안 wake 로 pending 재-set → 다음 POST 의 fix 로 재-발행 = 2번.
@@ -929,6 +953,7 @@ async fn ingest_payload(
         ));
     }
 
+    timing.advance(Phase::Command);
     Ok(Json(
         crate::services::device_commands::dispatch(
             &state.db,

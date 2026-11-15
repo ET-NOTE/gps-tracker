@@ -1,3 +1,4 @@
+use super::ingest_timing::{IngestTiming, Phase};
 use axum::http::HeaderMap;
 use hmac::{Hmac, Mac};
 use serde_json::Value;
@@ -103,14 +104,16 @@ pub async fn authorize(
     headers: &HeaderMap,
     body: &[u8],
     payload: &Value,
+    timing: &mut IngestTiming,
 ) -> AppResult<(i64, IngestMode, Transaction<'static, Postgres>)> {
     if headers
         .get("x-gps-auth-version")
         .and_then(|h| h.to_str().ok())
         == Some("2")
     {
-        return super::hardware_auth::authorize(state, headers, body, payload).await;
+        return super::hardware_auth::authorize(state, headers, body, payload, timing).await;
     }
+    timing.advance(Phase::Auth);
     let uid = payload
         .get("device_uid")
         .and_then(Value::as_str)
@@ -143,11 +146,14 @@ pub async fn authorize(
             .bind(uid).bind(iccid).fetch_one(&state.db).await?);
     }
     let (id, owner, kind, legacy) = row.ok_or(AppError::Unauthorized)?;
+    timing.advance(Phase::PoolBegin);
     let mut gate = state.db.begin().await?;
+    timing.advance(Phase::DeviceLock);
     sqlx::query("SELECT pg_advisory_xact_lock($1)")
         .bind(id)
         .execute(&mut *gate)
         .await?;
+    timing.advance(Phase::Auth);
     if kind.as_deref() == Some("phone") {
         let token = header(headers, "authorization")?
             .strip_prefix("Bearer ")

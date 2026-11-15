@@ -14,6 +14,7 @@ pub mod fcm;
 pub mod fleet_sites;
 pub mod geofence;
 pub mod hardware_auth;
+pub mod ingest_timing;
 pub mod housekeeping;
 mod ledger_timing;
 pub mod privacy_lifecycle;

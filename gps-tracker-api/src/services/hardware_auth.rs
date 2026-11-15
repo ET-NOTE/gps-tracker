@@ -1,3 +1,4 @@
+use super::ingest_timing::{IngestTiming, Phase};
 use super::{
     device_auth::{self, IngestMode},
     sim_identity,
@@ -15,6 +16,7 @@ pub async fn authorize(
     headers: &HeaderMap,
     body: &[u8],
     payload: &Value,
+    timing: &mut IngestTiming,
 ) -> AppResult<(i64, IngestMode, Transaction<'static, Postgres>)> {
     if payload.get("phone").is_some() {
         return Err(AppError::Forbidden);
@@ -23,11 +25,14 @@ pub async fn authorize(
     let counter: i64 = device_auth::header(headers, "x-gps-counter")?
         .parse()
         .map_err(|_| AppError::Unauthorized)?;
+    timing.advance(Phase::PoolBegin);
     let mut tx = state.db.begin().await?;
+    timing.advance(Phase::HardwareLock);
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('gps-hardware:'||$1,0))")
         .bind(uid)
         .execute(&mut *tx)
         .await?;
+    timing.advance(Phase::Auth);
     let (key, owner): (Vec<u8>, Option<i64>) = sqlx::query_as(
         "SELECT key_digest,authorized_owner_id FROM hardware_credentials WHERE auth_uid=$1",
     )
@@ -52,11 +57,13 @@ pub async fn authorize(
         .ok_or_else(|| AppError::BadRequest("full SIM number required".into()))?
         .trim();
     let iccid = sim_identity::canonical(wire_iccid)?;
+    timing.advance(Phase::SimLock);
     // One logical device per SIM, regardless of the modem or the hardware signing key.
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('gps-sim:'||$1,0))")
         .bind(&iccid)
         .execute(&mut *tx)
         .await?;
+    timing.advance(Phase::Auth);
     let id =
         match sim_identity::find(&state.db, &iccid).await? {
             Some(id) => id,
@@ -68,10 +75,12 @@ pub async fn authorize(
             .fetch_one(&state.db)
             .await?,
         };
+    timing.advance(Phase::DeviceLock);
     sqlx::query("SELECT pg_advisory_xact_lock($1)")
         .bind(id)
         .execute(&mut *tx)
         .await?;
+    timing.advance(Phase::Auth);
     let sim_owner: Option<i64> =
         sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id=$1")
             .bind(id)
