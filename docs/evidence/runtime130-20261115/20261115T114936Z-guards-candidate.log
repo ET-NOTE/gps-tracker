@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/opt/gps121/run_runtime130.py", line 147, in <module>
+    run(action.removeprefix('guards-'))
+  File "/opt/gps121/test_ingest130.py", line 79, in run
+    assert status==200 and value['stored'] and count()==before+added,(source,status,value,count()-before)
+AssertionError: ('batch', 200, {'collection': {'epoch': '001f7e2b-b7b2-425d-9c74-d82ca08dc178', 'paused': False, 'restricted': False, 'sim': '8994743377063814149', 'version': 1}, 'device_config': {'sleep_report_interval_s': 86400}, 'ok': True, 'stored': True}, 1)

@@ -1,0 +1,10 @@
+{
+  "source": "/home/etcom-hub/build/gps-runtime130-20261115/out/candidate-manifest130.json",
+  "files": {
+    "candidate-manifest130.json": {
+      "bytes": 1538,
+      "sha256": "cb3d94ee98d0b2483b57222ba31e25351f695c878c42518edc6c86f9e2de2a8b"
+    }
+  },
+  "production_modified": false
+}

@@ -1,0 +1,15 @@
+{
+  "variant": "baseline",
+  "injected_stats_failure_status": 500,
+  "remaining_location_rows_after_failure": 1,
+  "latest_after_failure": false,
+  "auth_counter_rolled_back": true,
+  "retry_accepted": true,
+  "replay_status": 409,
+  "bad_signature_status": 401,
+  "paused_stored_false": true,
+  "health_during_lock": 200,
+  "device_lock_phase_observed": true,
+  "no_unacknowledged_location_partial_commit": false,
+  "production_modified": false
+}

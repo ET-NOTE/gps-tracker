@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/opt/gps121/run_runtime130.py", line 133, in <module>
+    run(action.removeprefix('guards-'))
+  File "/opt/gps121/test_ingest130.py", line 44, in run
+    assert remaining==expected,(variant,remaining)
+AssertionError: ('candidate', 1)

@@ -1,0 +1,22 @@
+SEEDED 1 seconds 14.25
+SEEDED 2 seconds 12.87
+SEEDED 3 seconds 21.38
+SEEDED 4 seconds 12.67
+SEEDED 5 seconds 21.29
+SEEDED 6 seconds 12.51
+SEEDED 7 seconds 10.29
+SEEDED 8 seconds 29.47
+REPAIR {'elapsed': 0.008732452988624573, 'days': 1, 'queue': 23}
+REPAIR {'elapsed': 10.030876877252012, 'days': 40, 'queue': 0}
+REPAIR {'elapsed': 20.058644514065236, 'days': 56, 'queue': 16}
+REPAIR {'elapsed': 30.087496735155582, 'days': 88, 'queue': 0}
+REPAIR {'elapsed': 40.11153605533764, 'days': 117, 'queue': 3}
+REPAIR {'elapsed': 50.1410086392425, 'days': 136, 'queue': 0}
+REPAIR {'elapsed': 60.16846742294729, 'days': 168, 'queue': 0}
+REPAIR {'elapsed': 70.19735570810735, 'days': 184, 'queue': 0}
+REPAIR {'elapsed': 80.22675322601572, 'days': 224, 'queue': 0}
+REPAIR {'elapsed': 90.25557560101151, 'days': 240, 'queue': 0}
+REPAIR {'elapsed': 100.28424459928647, 'days': 248, 'queue': 0}
+PASS13028 semantic responses before
+PASS13028 semantic responses compressed
+PASS130 seeded114 encrypted8SIM,248 daily rows; compression hash unchanged

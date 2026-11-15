@@ -1,0 +1,43 @@
+PASS24-client cap,25th denied, operations remains available
+baseline-shared-130 0 reads 0 ingest 0 PDF 0 cleanup 0 errors 0
+baseline-shared-130 10 reads 19 ingest 77 PDF 4 cleanup 2 errors 0
+baseline-shared-130 20 reads 36 ingest 151 PDF 7 cleanup 4 errors 0
+baseline-shared-130 30 reads 57 ingest 229 PDF 10 cleanup 6 errors 0
+baseline-shared-130 40 reads 74 ingest 313 PDF 14 cleanup 8 errors 0
+baseline-shared-130 50 reads 95 ingest 398 PDF 17 cleanup 10 errors 0
+baseline-shared-130 60 reads 110 ingest 479 PDF 20 cleanup 12 errors 0
+baseline-shared-130 70 reads 127 ingest 559 PDF 24 cleanup 14 errors 0
+baseline-shared-130 80 reads 141 ingest 632 PDF 27 cleanup 16 errors 0
+baseline-shared-130 90 reads 158 ingest 720 PDF 30 cleanup 17 errors 0
+baseline-shared-130 100 reads 173 ingest 788 PDF 33 cleanup 19 errors 0
+baseline-shared-130 110 reads 189 ingest 876 PDF 37 cleanup 21 errors 0
+baseline-shared-130 120 reads 203 ingest 959 PDF 40 cleanup 23 errors 0
+baseline-shared-130 130 reads 222 ingest 1034 PDF 43 cleanup 25 errors 0
+baseline-shared-130 140 reads 237 ingest 1121 PDF 46 cleanup 27 errors 0
+baseline-shared-130 150 reads 249 ingest 1183 PDF 50 cleanup 28 errors 0
+baseline-shared-130 160 reads 267 ingest 1283 PDF 53 cleanup 30 errors 0
+baseline-shared-130 170 reads 287 ingest 1352 PDF 56 cleanup 32 errors 0
+baseline-shared-130 180 reads 302 ingest 1440 PDF 60 cleanup 34 errors 0
+baseline-shared-130 190 reads 319 ingest 1516 PDF 63 cleanup 36 errors 0
+baseline-shared-130 200 reads 332 ingest 1598 PDF 66 cleanup 38 errors 0
+baseline-shared-130 210 reads 351 ingest 1680 PDF 69 cleanup 40 errors 0
+baseline-shared-130 221 reads 371 ingest 1762 PDF 73 cleanup 41 errors 0
+baseline-shared-130 231 reads 389 ingest 1844 PDF 76 cleanup 43 errors 0
+baseline-shared-130 241 reads 406 ingest 1924 PDF 79 cleanup 45 errors 0
+baseline-shared-130 251 reads 422 ingest 2005 PDF 83 cleanup 47 errors 0
+baseline-shared-130 261 reads 441 ingest 2086 PDF 86 cleanup 49 errors 0
+baseline-shared-130 271 reads 459 ingest 2166 PDF 89 cleanup 51 errors 0
+baseline-shared-130 281 reads 472 ingest 2238 PDF 92 cleanup 52 errors 0
+baseline-shared-130 291 reads 493 ingest 2324 PDF 96 cleanup 54 errors 0
+PASS130 fixed numeric ingest profile baseline-shared 2314
+PASS13028 semantic responses baseline-shared
+Traceback (most recent call last):
+  File "/opt/gps121/run_runtime130.py", line 134, in <module>
+    elif action.startswith(('baseline-','candidate-')):load(action)
+  File "/opt/gps121/run_runtime130.py", line 108, in load
+    if failure is not None:raise failure
+  File "/opt/gps121/run_runtime130.py", line 94, in load
+    try:l.load(label+'-130',300,readers)
+  File "/opt/gps121/load_runtime130.py", line 382, in load
+    assert len(ingest)==seconds*8 and not result['ingest']['missed_slots'] and all(x['status']==200 for x in ingest)
+AssertionError

@@ -1,0 +1,1625 @@
+{
+  "schema": 114,
+  "loads": [
+    {
+      "label": "baseline-shared",
+      "seconds": 300,
+      "elapsed": 301.6810691021383,
+      "workers": 8,
+      "capacity_passed": false,
+      "unaccounted_slots": 0,
+      "exact_sent_counter_sets_match": true,
+      "successful_reads": 324,
+      "final429": 189,
+      "http": {
+        "429": 756,
+        "200": 324
+      },
+      "final429_percent": 36.8421052631579,
+      "routes": {
+        "month_page": {
+          "statuses": {
+            "200": 140,
+            "429": 62
+          },
+          "latency": {
+            "count": 140,
+            "p50": 2.599397985264659,
+            "p95": 6.292050179094076,
+            "max": 8.365531268063933
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 140,
+              "p50": 0.8060977929271758,
+              "p95": 2.51549550332129,
+              "max": 3.949977188371122
+            },
+            "retry_wait_seconds": {
+              "count": 140,
+              "p50": 2.0022278442047536,
+              "p95": 4.574889651499689,
+              "max": 4.781673631630838
+            }
+          },
+          "attempts": 422,
+          "retry_wait_total": 492.9749234225601
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 43,
+            "429": 30
+          },
+          "latency": {
+            "count": 43,
+            "p50": 2.5505960169248283,
+            "p95": 7.606139441952109,
+            "max": 10.591672203037888
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 43,
+              "p50": 2.5505234701558948,
+              "p95": 4.042306185234338,
+              "max": 5.749511038418859
+            },
+            "retry_wait_seconds": {
+              "count": 43,
+              "p50": 0.0,
+              "p95": 4.331204942893237,
+              "max": 4.841945539228618
+            }
+          },
+          "attempts": 153,
+          "retry_wait_total": 180.04087277222425
+        },
+        "month_history": {
+          "statuses": {
+            "200": 47,
+            "429": 25
+          },
+          "latency": {
+            "count": 47,
+            "p50": 2.3868143651634455,
+            "p95": 8.402329364791512,
+            "max": 10.211995623074472
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 47,
+              "p50": 2.3867277610115707,
+              "p95": 4.041995526757091,
+              "max": 5.644079130142927
+            },
+            "retry_wait_seconds": {
+              "count": 47,
+              "p50": 0.0,
+              "p95": 4.446998817846179,
+              "max": 4.7662008590996265
+            }
+          },
+          "attempts": 140,
+          "retry_wait_total": 153.65442794561386
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 39,
+            "429": 17
+          },
+          "latency": {
+            "count": 39,
+            "p50": 2.1984599423594773,
+            "p95": 8.59907089266926,
+            "max": 8.699642786756158
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 39,
+              "p50": 2.180620287079364,
+              "p95": 4.397085263393819,
+              "max": 4.963040047790855
+            },
+            "retry_wait_seconds": {
+              "count": 39,
+              "p50": 0.0,
+              "p95": 4.62962107360363,
+              "max": 4.686717255972326
+            }
+          },
+          "attempts": 114,
+          "retry_wait_total": 129.01279771421105
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 39,
+            "429": 16
+          },
+          "latency": {
+            "count": 39,
+            "p50": 1.8699013446457684,
+            "p95": 8.345071038696915,
+            "max": 8.56779498187825
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 39,
+              "p50": 1.8698059152811766,
+              "p95": 3.904911364428699,
+              "max": 5.049592388793826
+            },
+            "retry_wait_seconds": {
+              "count": 39,
+              "p50": 0.0,
+              "p95": 4.439820266328752,
+              "max": 4.645969972014427
+            }
+          },
+          "attempts": 100,
+          "retry_wait_total": 101.08068277593702
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 39,
+            "200": 16
+          },
+          "latency": {
+            "count": 16,
+            "p50": 9.434026539791375,
+            "p95": 16.48235247703269,
+            "max": 17.953081375919282
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 16,
+              "p50": 7.507527128327638,
+              "p95": 12.0506179491058,
+              "max": 13.460488174110651
+            },
+            "retry_wait_seconds": {
+              "count": 16,
+              "p50": 2.0793246142566204,
+              "p95": 4.492380529176444,
+              "max": 4.529804195277393
+            }
+          },
+          "attempts": 146,
+          "retry_wait_total": 205.24094800418243
+        }
+      },
+      "ingest": {
+        "planned": 2400,
+        "scheduled_terminals": 8,
+        "hz_per_terminal": 1,
+        "missed_slots": 86,
+        "statuses": {
+          "200": 2314
+        },
+        "latency": {
+          "count": 2314,
+          "p50": 0.3251146599650383,
+          "p95": 1.6202251752838492,
+          "max": 3.2483319300226867
+        },
+        "start_lateness": {
+          "count": 2400,
+          "p50": 7.990002632141113e-05,
+          "p95": 0.8351618782617152,
+          "max": 2.248612578958273
+        }
+      },
+      "saved_ingest": [
+        {
+          "device": 0,
+          "device_id": 11,
+          "rows": 288,
+          "counter_summary": [
+            1,
+            300,
+            288
+          ]
+        },
+        {
+          "device": 1,
+          "device_id": 12,
+          "rows": 291,
+          "counter_summary": [
+            1,
+            300,
+            291
+          ]
+        },
+        {
+          "device": 2,
+          "device_id": 13,
+          "rows": 288,
+          "counter_summary": [
+            1,
+            300,
+            288
+          ]
+        },
+        {
+          "device": 3,
+          "device_id": 14,
+          "rows": 291,
+          "counter_summary": [
+            1,
+            300,
+            291
+          ]
+        },
+        {
+          "device": 4,
+          "device_id": 15,
+          "rows": 290,
+          "counter_summary": [
+            1,
+            300,
+            290
+          ]
+        },
+        {
+          "device": 5,
+          "device_id": 16,
+          "rows": 290,
+          "counter_summary": [
+            1,
+            300,
+            290
+          ]
+        },
+        {
+          "device": 6,
+          "device_id": 17,
+          "rows": 287,
+          "counter_summary": [
+            1,
+            300,
+            287
+          ]
+        },
+        {
+          "device": 7,
+          "device_id": 18,
+          "rows": 289,
+          "counter_summary": [
+            1,
+            300,
+            289
+          ]
+        }
+      ],
+      "health": {
+        "statuses": {
+          "200": 288
+        },
+        "latency": {
+          "count": 288,
+          "p50": 0.0019252588972449303,
+          "p95": 0.2515421989373863,
+          "max": 1.6451460211537778
+        }
+      },
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.05325323110446334,
+          "p95": 0.07683867821469903,
+          "max": 0.08715835819020867
+        }
+      },
+      "cleanup": {
+        "completed": 56,
+        "latency": {
+          "count": 56,
+          "p50": 0.2458066209219396,
+          "p95": 0.42367167212069035,
+          "max": 1.1978104221634567
+        },
+        "deferred": 0
+      },
+      "traversals": 2,
+      "temp_peak_bytes": 78880768,
+      "db_io_delta": {
+        "temp_bytes": 16617659944,
+        "temp_files": 2641,
+        "read_ms": 0.9499999999999993,
+        "write_ms": 0.0
+      },
+      "errors": [],
+      "api_memory_peak_bytes": 391143424
+    },
+    {
+      "label": "candidate-dedicated",
+      "seconds": 300,
+      "elapsed": 303.0025739814155,
+      "workers": 8,
+      "capacity_passed": true,
+      "unaccounted_slots": 0,
+      "exact_sent_counter_sets_match": true,
+      "successful_reads": 358,
+      "final429": 210,
+      "http": {
+        "429": 853,
+        "200": 358
+      },
+      "final429_percent": 36.971830985915496,
+      "routes": {
+        "month_page": {
+          "statuses": {
+            "200": 150,
+            "429": 72
+          },
+          "latency": {
+            "count": 150,
+            "p50": 0.5794199611991644,
+            "p95": 5.694899979047477,
+            "max": 6.663911222945899
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 150,
+              "p50": 0.5172547558322549,
+              "p95": 1.2111681653186679,
+              "max": 2.121562462300062
+            },
+            "retry_wait_seconds": {
+              "count": 150,
+              "p50": 0.0,
+              "p95": 4.598318738397211,
+              "max": 4.882543817628175
+            }
+          },
+          "attempts": 463,
+          "retry_wait_total": 539.7689972212538
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 54,
+            "429": 27
+          },
+          "latency": {
+            "count": 54,
+            "p50": 2.713809182867408,
+            "p95": 7.300703722983599,
+            "max": 7.485950384289026
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 54,
+              "p50": 2.490694636013359,
+              "p95": 2.934609699063003,
+              "max": 3.1538760303519666
+            },
+            "retry_wait_seconds": {
+              "count": 54,
+              "p50": 0.0,
+              "p95": 4.465551444329321,
+              "max": 4.797488791868091
+            }
+          },
+          "attempts": 173,
+          "retry_wait_total": 207.60850935988128
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 39,
+            "429": 23
+          },
+          "latency": {
+            "count": 39,
+            "p50": 1.9922734037972987,
+            "p95": 6.994217771105468,
+            "max": 7.3843930517323315
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 39,
+              "p50": 1.900574292987585,
+              "p95": 2.682031861040741,
+              "max": 2.86248164717108
+            },
+            "retry_wait_seconds": {
+              "count": 39,
+              "p50": 0.0,
+              "p95": 4.5791749488562346,
+              "max": 4.629947008565068
+            }
+          },
+          "attempts": 134,
+          "retry_wait_total": 161.86502910126
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 46,
+            "429": 15
+          },
+          "latency": {
+            "count": 46,
+            "p50": 1.8563674339093268,
+            "p95": 7.0210517616942525,
+            "max": 7.309072596952319
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 46,
+              "p50": 1.8562917113304138,
+              "p95": 2.6243493407964706,
+              "max": 2.6343745035119355
+            },
+            "retry_wait_seconds": {
+              "count": 46,
+              "p50": 0.0,
+              "p95": 4.4770992998965085,
+              "max": 4.6744184964336455
+            }
+          },
+          "attempts": 120,
+          "retry_wait_total": 133.5179591625929
+        },
+        "month_history": {
+          "statuses": {
+            "200": 53,
+            "429": 28
+          },
+          "latency": {
+            "count": 53,
+            "p50": 2.153499153908342,
+            "p95": 7.006349124014378,
+            "max": 7.560918785165995
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 53,
+              "p50": 2.1444102730602026,
+              "p95": 2.7735664290376008,
+              "max": 3.0960745732299984
+            },
+            "retry_wait_seconds": {
+              "count": 53,
+              "p50": 0.0,
+              "p95": 4.114356372505426,
+              "max": 4.614257773850113
+            }
+          },
+          "attempts": 156,
+          "retry_wait_total": 169.00831308122724
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "200": 16,
+            "429": 45
+          },
+          "latency": {
+            "count": 16,
+            "p50": 6.629790504928678,
+            "p95": 9.605305115226656,
+            "max": 11.266976212151349
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 16,
+              "p50": 6.629711595829576,
+              "p95": 7.192309824284166,
+              "max": 7.291120330803096
+            },
+            "retry_wait_seconds": {
+              "count": 16,
+              "p50": 0.0,
+              "p95": 2.3140146140940487,
+              "max": 4.0743938949890435
+            }
+          },
+          "attempts": 156,
+          "retry_wait_total": 210.01681228727102
+        }
+      },
+      "ingest": {
+        "planned": 2400,
+        "scheduled_terminals": 8,
+        "hz_per_terminal": 1,
+        "missed_slots": 0,
+        "statuses": {
+          "200": 2400
+        },
+        "latency": {
+          "count": 2400,
+          "p50": 0.027090041898190975,
+          "p95": 0.7644703639671206,
+          "max": 1.3164479457773268
+        },
+        "start_lateness": {
+          "count": 2400,
+          "p50": 7.371418178081512e-05,
+          "p95": 9.085796773433685e-05,
+          "max": 0.31670976197347045
+        }
+      },
+      "saved_ingest": [
+        {
+          "device": 0,
+          "device_id": 24,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 1,
+          "device_id": 25,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 2,
+          "device_id": 26,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 3,
+          "device_id": 27,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 4,
+          "device_id": 28,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 5,
+          "device_id": 29,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 6,
+          "device_id": 30,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 7,
+          "device_id": 31,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        }
+      ],
+      "health": {
+        "statuses": {
+          "200": 299
+        },
+        "latency": {
+          "count": 299,
+          "p50": 0.0017440500669181347,
+          "p95": 0.021089144982397556,
+          "max": 0.1891096942126751
+        }
+      },
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.05450105480849743,
+          "p95": 0.08118867315351963,
+          "max": 0.12462575919926167
+        }
+      },
+      "cleanup": {
+        "completed": 57,
+        "latency": {
+          "count": 57,
+          "p50": 0.22175690485164523,
+          "p95": 0.30391391506418586,
+          "max": 1.2764450670219958
+        },
+        "deferred": 0
+      },
+      "traversals": 2,
+      "temp_peak_bytes": 71819264,
+      "db_io_delta": {
+        "temp_bytes": 17672395920,
+        "temp_files": 2814,
+        "read_ms": 0.008000000000000895,
+        "write_ms": 0.0
+      },
+      "errors": [],
+      "api_memory_peak_bytes": 412450816
+    },
+    {
+      "label": "candidate-shared",
+      "seconds": 300,
+      "elapsed": 303.140058870893,
+      "workers": 8,
+      "capacity_passed": true,
+      "unaccounted_slots": 0,
+      "exact_sent_counter_sets_match": true,
+      "successful_reads": 339,
+      "final429": 203,
+      "http": {
+        "429": 832,
+        "200": 339
+      },
+      "final429_percent": 37.45387453874539,
+      "routes": {
+        "month_page": {
+          "statuses": {
+            "200": 137,
+            "429": 74
+          },
+          "latency": {
+            "count": 137,
+            "p50": 0.7537557687610388,
+            "p95": 5.756090467330068,
+            "max": 6.600587642285973
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 137,
+              "p50": 0.629946778062731,
+              "p95": 1.3279887619428337,
+              "max": 1.878595307469368
+            },
+            "retry_wait_seconds": {
+              "count": 137,
+              "p50": 0.0,
+              "p95": 4.594119004439563,
+              "max": 4.721751360222697
+            }
+          },
+          "attempts": 448,
+          "retry_wait_total": 531.8455655896105
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 61,
+            "429": 19
+          },
+          "latency": {
+            "count": 61,
+            "p50": 2.820095623843372,
+            "p95": 7.798582380171865,
+            "max": 8.626461877953261
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 61,
+              "p50": 2.568787524010986,
+              "p95": 3.153794266283512,
+              "max": 3.8549806769005954
+            },
+            "retry_wait_seconds": {
+              "count": 61,
+              "p50": 0.0,
+              "p95": 4.7513345018960536,
+              "max": 4.778556235134602
+            }
+          },
+          "attempts": 161,
+          "retry_wait_total": 183.16830148361623
+        },
+        "month_history": {
+          "statuses": {
+            "200": 59,
+            "429": 19
+          },
+          "latency": {
+            "count": 59,
+            "p50": 2.293175536673516,
+            "p95": 7.53796993708238,
+            "max": 7.857726907823235
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 59,
+              "p50": 2.29311939002946,
+              "p95": 3.1170338299125433,
+              "max": 3.3043424393981695
+            },
+            "retry_wait_seconds": {
+              "count": 59,
+              "p50": 0.0,
+              "p95": 4.532788496930152,
+              "max": 4.632202479988337
+            }
+          },
+          "attempts": 143,
+          "retry_wait_total": 145.30770575115457
+        },
+        "fleet_trips": {
+          "statuses": {
+            "429": 23,
+            "200": 35
+          },
+          "latency": {
+            "count": 35,
+            "p50": 2.035654980223626,
+            "p95": 6.980427846778184,
+            "max": 7.338260008953512
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 35,
+              "p50": 1.9464773526415229,
+              "p95": 2.619544638786465,
+              "max": 2.9022760903462768
+            },
+            "retry_wait_seconds": {
+              "count": 35,
+              "p50": 0.0,
+              "p95": 4.43568277079612,
+              "max": 4.657509163487703
+            }
+          },
+          "attempts": 125,
+          "retry_wait_total": 149.072646392975
+        },
+        "fleet_csv": {
+          "statuses": {
+            "429": 22,
+            "200": 36
+          },
+          "latency": {
+            "count": 36,
+            "p50": 1.972144931089133,
+            "p95": 7.662438347004354,
+            "max": 8.086143185384572
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 36,
+              "p50": 1.932170749641955,
+              "p95": 3.0684515926986933,
+              "max": 3.639204353094101
+            },
+            "retry_wait_seconds": {
+              "count": 36,
+              "p50": 0.0,
+              "p95": 4.698927171994001,
+              "max": 4.722564286086708
+            }
+          },
+          "attempts": 132,
+          "retry_wait_total": 165.91820845706388
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 46,
+            "200": 11
+          },
+          "latency": {
+            "count": 11,
+            "p50": 6.877103843726218,
+            "p95": 14.136880322359502,
+            "max": 15.508467516861856
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 11,
+              "p50": 6.877019114326686,
+              "p95": 10.507929457351565,
+              "max": 10.829734424129128
+            },
+            "retry_wait_seconds": {
+              "count": 11,
+              "p50": 0.0,
+              "p95": 4.663728571031243,
+              "max": 4.6784517131745815
+            }
+          },
+          "attempts": 154,
+          "retry_wait_total": 217.12670827982947
+        }
+      },
+      "ingest": {
+        "planned": 2400,
+        "scheduled_terminals": 8,
+        "hz_per_terminal": 1,
+        "missed_slots": 0,
+        "statuses": {
+          "200": 2400
+        },
+        "latency": {
+          "count": 2400,
+          "p50": 0.05746344476938248,
+          "p95": 0.9048790498636663,
+          "max": 1.295935639180243
+        },
+        "start_lateness": {
+          "count": 2400,
+          "p50": 7.532769814133644e-05,
+          "p95": 0.00011266209185123444,
+          "max": 0.29617475904524326
+        }
+      },
+      "saved_ingest": [
+        {
+          "device": 0,
+          "device_id": 32,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 1,
+          "device_id": 33,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 2,
+          "device_id": 34,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 3,
+          "device_id": 35,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 4,
+          "device_id": 36,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 5,
+          "device_id": 37,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 6,
+          "device_id": 38,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        },
+        {
+          "device": 7,
+          "device_id": 39,
+          "rows": 300,
+          "counter_summary": [
+            1,
+            300,
+            300
+          ]
+        }
+      ],
+      "health": {
+        "statuses": {
+          "200": 298
+        },
+        "latency": {
+          "count": 298,
+          "p50": 0.0017894660122692585,
+          "p95": 0.04877768876031041,
+          "max": 0.3911930681206286
+        }
+      },
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.054656028281897306,
+          "p95": 0.07779746409505606,
+          "max": 0.10259664198383689
+        }
+      },
+      "cleanup": {
+        "completed": 57,
+        "latency": {
+          "count": 57,
+          "p50": 0.24405025783926249,
+          "p95": 0.3159407312050462,
+          "max": 0.4030884183011949
+        },
+        "deferred": 0
+      },
+      "traversals": 2,
+      "temp_peak_bytes": 71819264,
+      "db_io_delta": {
+        "temp_bytes": 15772107288,
+        "temp_files": 2535,
+        "read_ms": 0.0,
+        "write_ms": 0.0
+      },
+      "errors": [],
+      "api_memory_peak_bytes": 387809280
+    }
+  ],
+  "api": [
+    {
+      "label": "baseline-shared",
+      "kind": "regular",
+      "outcome": "busy",
+      "count": 662,
+      "p95_ms": {
+        "admission_ms": 251.890201,
+        "pool_ms": 0.0,
+        "setup_ms": 0.0,
+        "scope_ms": 0.0
+      }
+    },
+    {
+      "label": "baseline-shared",
+      "kind": "regular",
+      "outcome": "completed",
+      "count": 390,
+      "p95_ms": {
+        "admission_ms": 219.717045,
+        "pool_ms": 2.063,
+        "setup_ms": 0.198735,
+        "scope_ms": 2108.897642
+      }
+    },
+    {
+      "label": "baseline-shared",
+      "kind": "history",
+      "outcome": "busy",
+      "count": 94,
+      "p95_ms": {
+        "admission_ms": 251.85757800000002,
+        "pool_ms": 0.0,
+        "setup_ms": 0.0,
+        "scope_ms": 0.0
+      }
+    },
+    {
+      "label": "baseline-shared",
+      "kind": "history",
+      "outcome": "completed",
+      "count": 47,
+      "p95_ms": {
+        "admission_ms": 216.500091,
+        "pool_ms": 1.5284719999999998,
+        "setup_ms": 0.183636,
+        "scope_ms": 1882.343836
+      }
+    },
+    {
+      "label": "candidate-dedicated",
+      "kind": "regular",
+      "outcome": "busy",
+      "count": 750,
+      "p95_ms": {
+        "admission_ms": 251.91753500000002,
+        "pool_ms": 0.0,
+        "setup_ms": 0.0,
+        "scope_ms": 0.0
+      }
+    },
+    {
+      "label": "candidate-dedicated",
+      "kind": "regular",
+      "outcome": "completed",
+      "count": 421,
+      "p95_ms": {
+        "admission_ms": 233.52182699999997,
+        "pool_ms": 0.232819,
+        "setup_ms": 0.215898,
+        "scope_ms": 2114.01666
+      }
+    },
+    {
+      "label": "candidate-dedicated",
+      "kind": "history",
+      "outcome": "completed",
+      "count": 53,
+      "p95_ms": {
+        "admission_ms": 196.869819,
+        "pool_ms": 0.22176800000000002,
+        "setup_ms": 0.202953,
+        "scope_ms": 1813.196566
+      }
+    },
+    {
+      "label": "candidate-dedicated",
+      "kind": "history",
+      "outcome": "busy",
+      "count": 103,
+      "p95_ms": {
+        "admission_ms": 251.703951,
+        "pool_ms": 0.0,
+        "setup_ms": 0.0,
+        "scope_ms": 0.0
+      }
+    },
+    {
+      "label": "candidate-shared",
+      "kind": "regular",
+      "outcome": "busy",
+      "count": 746,
+      "p95_ms": {
+        "admission_ms": 251.909985,
+        "pool_ms": 0.0,
+        "setup_ms": 0.0,
+        "scope_ms": 0.0
+      }
+    },
+    {
+      "label": "candidate-shared",
+      "kind": "regular",
+      "outcome": "completed",
+      "count": 385,
+      "p95_ms": {
+        "admission_ms": 232.26041,
+        "pool_ms": 0.213653,
+        "setup_ms": 0.207822,
+        "scope_ms": 2157.557141
+      }
+    },
+    {
+      "label": "candidate-shared",
+      "kind": "history",
+      "outcome": "busy",
+      "count": 86,
+      "p95_ms": {
+        "admission_ms": 251.90460799999997,
+        "pool_ms": 0.0,
+        "setup_ms": 0.0,
+        "scope_ms": 0.0
+      }
+    },
+    {
+      "label": "candidate-shared",
+      "kind": "history",
+      "outcome": "completed",
+      "count": 59,
+      "p95_ms": {
+        "admission_ms": 223.6782,
+        "pool_ms": 0.221057,
+        "setup_ms": 0.251625,
+        "scope_ms": 1877.400336
+      }
+    }
+  ],
+  "ingest_profiles": [
+    {
+      "label": "baseline-shared",
+      "completed": 2314,
+      "unfinished": 0,
+      "stages": {
+        "total_ms": {
+          "count": 2314,
+          "p50": 322.69331900000003,
+          "p95": 1618.7058110000003,
+          "max": 3246.006747000001
+        },
+        "admission_ms": {
+          "count": 2314,
+          "p50": 0.0019240000000000001,
+          "p95": 1055.015529,
+          "max": 2863.4723219999996
+        },
+        "parse_ms": {
+          "count": 2314,
+          "p50": 0.006732,
+          "p95": 0.010159999999999999,
+          "max": 0.052669
+        },
+        "pool_begin_ms": {
+          "count": 2314,
+          "p50": 0.183586,
+          "p95": 0.35128200000000004,
+          "max": 538.1708179999999
+        },
+        "auth_ms": {
+          "count": 2314,
+          "p50": 0.371129,
+          "p95": 0.7528980000000001,
+          "max": 1143.978001
+        },
+        "hardware_lock_ms": {
+          "count": 2314,
+          "p50": 0.025858,
+          "p95": 0.039525,
+          "max": 32.810738
+        },
+        "sim_lock_ms": {
+          "count": 2314,
+          "p50": 0.019937,
+          "p95": 0.032281,
+          "max": 32.751681
+        },
+        "device_lock_ms": {
+          "count": 2314,
+          "p50": 0.017924,
+          "p95": 0.038282,
+          "max": 32.80173
+        },
+        "privacy_ms": {
+          "count": 2314,
+          "p50": 0.041777999999999996,
+          "p95": 0.092043,
+          "max": 22.690046
+        },
+        "collection_ms": {
+          "count": 2314,
+          "p50": 0.130166,
+          "p95": 0.24422099999999997,
+          "max": 401.176035
+        },
+        "metadata_ms": {
+          "count": 2314,
+          "p50": 3.593554,
+          "p95": 309.362725,
+          "max": 2647.738956
+        },
+        "batch_ms": {
+          "count": 2314,
+          "p50": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        },
+        "store_ms": {
+          "count": 2314,
+          "p50": 8.060613,
+          "p95": 403.940453,
+          "max": 1909.8032630000002
+        },
+        "publish_ms": {
+          "count": 2314,
+          "p50": 6.125919,
+          "p95": 27.676626,
+          "max": 383.243895
+        },
+        "geofence_ms": {
+          "count": 2314,
+          "p50": 0.466058,
+          "p95": 0.9429069999999999,
+          "max": 209.172223
+        },
+        "lifecycle_ms": {
+          "count": 2314,
+          "p50": 3.7547539999999997,
+          "p95": 209.252982,
+          "max": 2041.582511
+        },
+        "command_ms": {
+          "count": 2314,
+          "p50": 3.972589,
+          "p95": 97.068867,
+          "max": 999.9602229999999
+        },
+        "binding_ms": {
+          "count": 2314,
+          "p50": 0.32484199999999996,
+          "p95": 0.6203479999999999,
+          "max": 209.38009899999997
+        },
+        "sign_ms": {
+          "count": 2314,
+          "p50": 0.037751,
+          "p95": 0.065453,
+          "max": 40.804172
+        },
+        "commit_ms": {
+          "count": 2314,
+          "p50": 3.5755600000000003,
+          "p95": 86.84384100000001,
+          "max": 434.321285
+        }
+      },
+      "requests_over_one_second": 301,
+      "largest_stage_over_one_second": {
+        "store_ms": 42,
+        "metadata_ms": 53,
+        "admission_ms": 186,
+        "command_ms": 11,
+        "commit_ms": 5,
+        "lifecycle_ms": 3,
+        "auth_ms": 1
+      },
+      "stage_sum_ms": {
+        "admission_ms": 526629.233501,
+        "parse_ms": 15.672452,
+        "pool_begin_ms": 2488.180365,
+        "auth_ms": 3608.897862,
+        "hardware_lock_ms": 107.740659,
+        "sim_lock_ms": 117.433949,
+        "device_lock_ms": 132.058988,
+        "privacy_ms": 174.010363,
+        "collection_ms": 1640.578287,
+        "metadata_ms": 164322.279238,
+        "batch_ms": 0.0,
+        "store_ms": 172297.171885,
+        "publish_ms": 21669.546244,
+        "geofence_ms": 2329.976543,
+        "lifecycle_ms": 92777.594371,
+        "command_ms": 53066.20903,
+        "binding_ms": 1998.014535,
+        "sign_ms": 510.98169,
+        "commit_ms": 46923.126358
+      },
+      "captured_before_quiet_queries": true
+    },
+    {
+      "label": "candidate-dedicated",
+      "completed": 2400,
+      "unfinished": 0,
+      "stages": {
+        "total_ms": {
+          "count": 2400,
+          "p50": 24.70851,
+          "p95": 762.8520389999999,
+          "max": 1314.0589899999998
+        },
+        "admission_ms": {
+          "count": 2400,
+          "p50": 0.000981,
+          "p95": 381.372694,
+          "max": 939.818136
+        },
+        "parse_ms": {
+          "count": 2400,
+          "p50": 0.006622,
+          "p95": 0.009398,
+          "max": 0.024737000000000002
+        },
+        "pool_begin_ms": {
+          "count": 2400,
+          "p50": 0.20682999999999999,
+          "p95": 0.35030100000000003,
+          "max": 145.139281
+        },
+        "auth_ms": {
+          "count": 2400,
+          "p50": 0.39245,
+          "p95": 0.606003,
+          "max": 261.42847400000005
+        },
+        "hardware_lock_ms": {
+          "count": 2400,
+          "p50": 0.027643,
+          "p95": 0.037200000000000004,
+          "max": 0.23452299999999998
+        },
+        "sim_lock_ms": {
+          "count": 2400,
+          "p50": 0.020168000000000002,
+          "p95": 0.030556999999999997,
+          "max": 34.417811
+        },
+        "device_lock_ms": {
+          "count": 2400,
+          "p50": 0.018545,
+          "p95": 0.037169999999999995,
+          "max": 0.4949140000000001
+        },
+        "privacy_ms": {
+          "count": 2400,
+          "p50": 0.043432,
+          "p95": 0.07717500000000001,
+          "max": 0.579804
+        },
+        "collection_ms": {
+          "count": 2400,
+          "p50": 0.152237,
+          "p95": 0.24822800000000003,
+          "max": 205.015965
+        },
+        "metadata_ms": {
+          "count": 2400,
+          "p50": 3.1647200000000004,
+          "p95": 203.49852900000002,
+          "max": 923.384085
+        },
+        "batch_ms": {
+          "count": 2400,
+          "p50": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        },
+        "store_ms": {
+          "count": 2400,
+          "p50": 4.023529,
+          "p95": 303.96043099999997,
+          "max": 505.022537
+        },
+        "publish_ms": {
+          "count": 2400,
+          "p50": 6.255401,
+          "p95": 16.596269,
+          "max": 405.40774400000004
+        },
+        "geofence_ms": {
+          "count": 2400,
+          "p50": 0.507387,
+          "p95": 0.9698690000000001,
+          "max": 193.806707
+        },
+        "lifecycle_ms": {
+          "count": 2400,
+          "p50": 3.28659,
+          "p95": 88.581275,
+          "max": 486.515058
+        },
+        "command_ms": {
+          "count": 2400,
+          "p50": 2.0247490000000004,
+          "p95": 24.658485000000002,
+          "max": 307.924461
+        },
+        "binding_ms": {
+          "count": 2400,
+          "p50": 0.294877,
+          "p95": 0.533026,
+          "max": 928.723798
+        },
+        "sign_ms": {
+          "count": 2400,
+          "p50": 0.038292,
+          "p95": 0.0583,
+          "max": 40.1685
+        },
+        "commit_ms": {
+          "count": 2400,
+          "p50": 1.803722,
+          "p95": 4.4642409999999995,
+          "max": 399.51446699999997
+        }
+      },
+      "requests_over_one_second": 9,
+      "largest_stage_over_one_second": {
+        "lifecycle_ms": 1,
+        "store_ms": 4,
+        "admission_ms": 1,
+        "binding_ms": 1,
+        "publish_ms": 1,
+        "metadata_ms": 1
+      },
+      "stage_sum_ms": {
+        "admission_ms": 108540.249908,
+        "parse_ms": 15.794737,
+        "pool_begin_ms": 1101.37341,
+        "auth_ms": 2230.062679,
+        "hardware_lock_ms": 67.171514,
+        "sim_lock_ms": 132.011762,
+        "device_lock_ms": 50.847809,
+        "privacy_ms": 122.31125,
+        "collection_ms": 868.6805519999999,
+        "metadata_ms": 58642.425215,
+        "batch_ms": 0.0,
+        "store_ms": 72328.386827,
+        "publish_ms": 21500.311104,
+        "geofence_ms": 2527.729748,
+        "lifecycle_ms": 44168.916007,
+        "command_ms": 15149.597347,
+        "binding_ms": 2547.890952,
+        "sign_ms": 208.930361,
+        "commit_ms": 12362.783617
+      },
+      "captured_before_quiet_queries": true
+    },
+    {
+      "label": "candidate-shared",
+      "completed": 2400,
+      "unfinished": 0,
+      "stages": {
+        "total_ms": {
+          "count": 2400,
+          "p50": 54.330255,
+          "p95": 900.771322,
+          "max": 1292.079925
+        },
+        "admission_ms": {
+          "count": 2400,
+          "p50": 0.001092,
+          "p95": 525.467181,
+          "max": 917.688032
+        },
+        "parse_ms": {
+          "count": 2400,
+          "p50": 0.006703,
+          "p95": 0.009809,
+          "max": 0.022733
+        },
+        "pool_begin_ms": {
+          "count": 2400,
+          "p50": 0.204496,
+          "p95": 0.350722,
+          "max": 139.31551000000002
+        },
+        "auth_ms": {
+          "count": 2400,
+          "p50": 0.40152699999999997,
+          "p95": 0.6853420000000001,
+          "max": 200.234277
+        },
+        "hardware_lock_ms": {
+          "count": 2400,
+          "p50": 0.027081,
+          "p95": 0.037521,
+          "max": 21.264982000000003
+        },
+        "sim_lock_ms": {
+          "count": 2400,
+          "p50": 0.019948,
+          "p95": 0.029886000000000003,
+          "max": 37.857657
+        },
+        "device_lock_ms": {
+          "count": 2400,
+          "p50": 0.018424,
+          "p95": 0.038262,
+          "max": 21.433487
+        },
+        "privacy_ms": {
+          "count": 2400,
+          "p50": 0.042581,
+          "p95": 0.082236,
+          "max": 0.390016
+        },
+        "collection_ms": {
+          "count": 2400,
+          "p50": 0.147678,
+          "p95": 0.24977099999999997,
+          "max": 42.069706
+        },
+        "metadata_ms": {
+          "count": 2400,
+          "p50": 3.367002,
+          "p95": 204.088799,
+          "max": 753.31151
+        },
+        "batch_ms": {
+          "count": 2400,
+          "p50": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        },
+        "store_ms": {
+          "count": 2400,
+          "p50": 4.040884,
+          "p95": 399.942196,
+          "max": 615.548744
+        },
+        "publish_ms": {
+          "count": 2400,
+          "p50": 6.246715,
+          "p95": 28.258215,
+          "max": 539.5387430000001
+        },
+        "geofence_ms": {
+          "count": 2400,
+          "p50": 0.49559500000000006,
+          "p95": 0.868518,
+          "max": 236.054775
+        },
+        "lifecycle_ms": {
+          "count": 2400,
+          "p50": 3.3263659999999997,
+          "p95": 186.46130399999998,
+          "max": 436.695675
+        },
+        "command_ms": {
+          "count": 2400,
+          "p50": 2.02947,
+          "p95": 57.067943,
+          "max": 434.971219
+        },
+        "binding_ms": {
+          "count": 2400,
+          "p50": 0.308963,
+          "p95": 0.706302,
+          "max": 86.293758
+        },
+        "sign_ms": {
+          "count": 2400,
+          "p50": 0.038572,
+          "p95": 0.058521,
+          "max": 38.332454
+        },
+        "commit_ms": {
+          "count": 2400,
+          "p50": 2.519654,
+          "p95": 58.777232999999995,
+          "max": 399.488113
+        }
+      },
+      "requests_over_one_second": 58,
+      "largest_stage_over_one_second": {
+        "store_ms": 34,
+        "lifecycle_ms": 10,
+        "publish_ms": 3,
+        "command_ms": 5,
+        "metadata_ms": 6
+      },
+      "stage_sum_ms": {
+        "admission_ms": 182204.469556,
+        "parse_ms": 16.048078,
+        "pool_begin_ms": 1066.553608,
+        "auth_ms": 1987.435016,
+        "hardware_lock_ms": 126.41708200000001,
+        "sim_lock_ms": 200.86562800000002,
+        "device_lock_ms": 92.897463,
+        "privacy_ms": 122.93736,
+        "collection_ms": 734.57759,
+        "metadata_ms": 80834.112313,
+        "batch_ms": 0.0,
+        "store_ms": 89797.766208,
+        "publish_ms": 23625.46958,
+        "geofence_ms": 3021.326395,
+        "lifecycle_ms": 70034.342851,
+        "command_ms": 26998.705619,
+        "binding_ms": 2710.662627,
+        "sign_ms": 464.302215,
+        "commit_ms": 25279.587973
+      },
+      "captured_before_quiet_queries": true
+    }
+  ],
+  "production_admitted": false,
+  "limitations": [
+    "Synthetic internal localhost TLS1.2; no physical terminal or external LTE path.",
+    "Sequential300-second baseline/candidate runs with warm host cache; single samples, no statistical superiority claim.",
+    "Other service memory/DB/IO and AV memory/CPU are simulators, not actual apps or malware scans.",
+    "Dedicated4GiB/shared6GiB candidate budgets do not admit current3GiB production.",
+    "Final429 and retry delays are not successes; no agreed production latency SLA is inferred.",
+    "Query HTTP success timing includes retries; percentiles of timer components must not be added.",
+    "Ingest stages are exclusive wall-clock intervals including awaits; pool_begin includes BEGIN and store includes triggers/commit.",
+    "Phase timing alone does not identify WAL, CPU scheduling or physical I/O as the unique cause."
+  ]
+}
