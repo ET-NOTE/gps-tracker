@@ -1,0 +1,111 @@
+{
+  "at": "2026-11-16T16:56:01+0900",
+  "passed": true,
+  "health": {
+    "db": true,
+    "environment": "development",
+    "ok": true,
+    "release": "review137-20261116-r3",
+    "service": "gps-tracker-api"
+  },
+  "schema": 114,
+  "web_files_verified": 41,
+  "policies": {
+    "location_storage_policy": false,
+    "privacy_retention_policy": false,
+    "location_subject_policy": false
+  },
+  "production_unchanged": true,
+  "dev_data": {
+    "users": [
+      6,
+      "d88beee0ea266a0d6ee20355b766e6d5"
+    ],
+    "devices": [
+      10,
+      "eaaedb27c3cb265b5e7b93bda8ab6e9c"
+    ],
+    "location_records": [
+      47823,
+      "0baebc1c4391687b034c38e287bcc72e"
+    ]
+  },
+  "source": "a4c6cb0801c9aeac10a0bd8343a01c9bdd592f06",
+  "disk_free_bytes": 8306470912,
+  "accounts_checked": 2,
+  "authenticated_checks": [
+    {
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/auth/me/prefs",
+      "status": 200
+    },
+    {
+      "path": "/devices",
+      "status": 200
+    },
+    {
+      "path": "/privacy/requests/page",
+      "status": 200
+    },
+    {
+      "path": "/privacy/collection",
+      "status": 200
+    },
+    {
+      "path": "/privacy/processing",
+      "status": 200
+    },
+    {
+      "path": "/privacy/subject-mappings",
+      "status": 200
+    },
+    {
+      "path": "/privacy/provision-notices",
+      "status": 200
+    },
+    {
+      "path": "/corporate/subject-bindings?limit=1",
+      "status": 200
+    },
+    {
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/auth/me/prefs",
+      "status": 200
+    },
+    {
+      "path": "/devices",
+      "status": 200
+    },
+    {
+      "path": "/privacy/requests/page",
+      "status": 200
+    },
+    {
+      "path": "/privacy/collection",
+      "status": 200
+    },
+    {
+      "path": "/privacy/processing",
+      "status": 200
+    },
+    {
+      "path": "/privacy/subject-mappings",
+      "status": 200
+    },
+    {
+      "path": "/privacy/provision-notices",
+      "status": 200
+    },
+    {
+      "path": "/corporate/subject-bindings?limit=1",
+      "status": 200
+    }
+  ],
+  "anonymous": 401
+}

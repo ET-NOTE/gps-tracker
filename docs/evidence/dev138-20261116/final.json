@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-16T17:00:31+0900",
+  "passed": true,
+  "production_unchanged": true,
+  "environment_unchanged": true,
+  "health": {
+    "db": true,
+    "environment": "development",
+    "ok": true,
+    "release": "review137-20261116-r3",
+    "service": "gps-tracker-api"
+  },
+  "schema": 114,
+  "compressed_chunks": 17,
+  "service": "NRestarts=0\nExecMainStartTimestamp=Mon 2026-11-16 16:55:27 KST\nActiveState=active",
+  "journal_error_priority_lines": 0,
+  "checkout_clean": true,
+  "source": "a4c6cb0801c9aeac10a0bd8343a01c9bdd592f06",
+  "disk_free_bytes": 8389099520
+}

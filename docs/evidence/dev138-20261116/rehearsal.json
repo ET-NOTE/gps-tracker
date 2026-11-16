@@ -1,0 +1,94 @@
+{
+  "at": "2026-11-16T16:55:01+0900",
+  "passed": true,
+  "script_sha256": "b1239332a405e68a10a448a5c59723a5f88e6ed8c74e49ddf439948ebb6cb02a",
+  "migration_seconds": 9.11,
+  "core_rows_unchanged": true,
+  "backup_clone_verified": true,
+  "health": {
+    "db": true,
+    "environment": "test",
+    "ok": true,
+    "release": "review137-20261116-r3",
+    "service": "gps-tracker-api"
+  },
+  "accounts_checked": 2,
+  "authenticated_checks": [
+    {
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/auth/me/prefs",
+      "status": 200
+    },
+    {
+      "path": "/devices",
+      "status": 200
+    },
+    {
+      "path": "/privacy/requests/page",
+      "status": 200
+    },
+    {
+      "path": "/privacy/collection",
+      "status": 200
+    },
+    {
+      "path": "/privacy/processing",
+      "status": 200
+    },
+    {
+      "path": "/privacy/subject-mappings",
+      "status": 200
+    },
+    {
+      "path": "/privacy/provision-notices",
+      "status": 200
+    },
+    {
+      "path": "/corporate/subject-bindings?limit=1",
+      "status": 200
+    },
+    {
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/auth/me/prefs",
+      "status": 200
+    },
+    {
+      "path": "/devices",
+      "status": 200
+    },
+    {
+      "path": "/privacy/requests/page",
+      "status": 200
+    },
+    {
+      "path": "/privacy/collection",
+      "status": 200
+    },
+    {
+      "path": "/privacy/processing",
+      "status": 200
+    },
+    {
+      "path": "/privacy/subject-mappings",
+      "status": 200
+    },
+    {
+      "path": "/privacy/provision-notices",
+      "status": 200
+    },
+    {
+      "path": "/corporate/subject-bindings?limit=1",
+      "status": 200
+    }
+  ],
+  "anonymous": 401,
+  "production_unchanged": true,
+  "external_credentials": "absent",
+  "load_test_added": false
+}

@@ -92,3 +92,7 @@ docs/evidence/runtime119-20261112/* -text whitespace=-blank-at-eof,-blank-at-eol
 # Team-review137 deployment evidence and executed script hashes are exact bytes.
 docs/evidence/review137-20261116/* -text whitespace=-blank-at-eof,-blank-at-eol
 ops/review137_*.py text eol=lf
+
+# Dev alignment captures preserve exact verification bytes.
+docs/evidence/dev138-20261116/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/align_dev_20261116.py text eol=lf

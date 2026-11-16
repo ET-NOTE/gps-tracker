@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-16T07:56:03.090Z",
+  "origin": "https://dev-gps.serial.kr",
+  "checks": [
+    "authenticated profile",
+    "privacy request tab",
+    "corporate page",
+    "mobile profile"
+  ],
+  "page_errors": [],
+  "server_errors": [],
+  "production_api_requests": [],
+  "passed": true
+}
