@@ -83,17 +83,96 @@ async fn company_list(
     State(state): State<AppState>,
     user: AuthUser,
     scope: Option<Extension<FleetScope>>,
+    Query(page): Query<CompanyPage>,
 ) -> AppResult<Json<Value>> {
     let scope = company_scope(&state, user, scope).await?;
     if !scope.admin() {
         return Err(AppError::Forbidden);
     }
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(m)||jsonb_build_object('effective',EXISTS(SELECT 1 FROM location_subject_effective e WHERE e.id=m.id),'has_successor',EXISTS(SELECT 1 FROM location_subject_mappings n WHERE n.replaces_id=m.id)) FROM location_subject_mappings m WHERE owner_id=$1 ORDER BY id DESC LIMIT 200").bind(scope.owner).fetch_all(&state.db).await?;
-    let people:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('staff_id',s.id,'subject_id',a.account_id,'name',s.name) FROM staff s JOIN fleet_staff_accounts a ON a.staff_id=s.id AND a.owner_id=s.user_id WHERE s.user_id=$1 AND s.active ORDER BY s.id").bind(scope.owner).fetch_all(&state.db).await?;
-    let bindings:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',b.id,'vehicle_id',b.vehicle_id,'device_id',b.device_id,'starts_at',b.started_at,'ends_at',b.ended_at) FROM fleet_vehicle_bindings b WHERE b.owner_id=$1 AND b.device_id IS NOT NULL ORDER BY b.id DESC LIMIT 200").bind(scope.owner).fetch_all(&state.db).await?;
+    let limit = page.validate()?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
+    let mut rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(m)||jsonb_build_object('effective',EXISTS(SELECT 1 FROM location_subject_effective e WHERE e.id=m.id),'has_successor',EXISTS(SELECT 1 FROM location_subject_mappings n WHERE n.replaces_id=m.id)) FROM location_subject_mappings m WHERE owner_id=$1 AND ($2::bigint IS NULL OR m.id<$2) AND ($3::text IS NULL OR m.status=$3) ORDER BY m.id DESC LIMIT $4")
+        .bind(scope.owner).bind(page.before).bind(page.status).bind(limit+1).fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
+    let more = rows.len() > limit as usize;
+    rows.truncate(limit as usize);
+    let next = if more {
+        rows.last().map(|r| r["id"].clone())
+    } else {
+        None
+    };
+    let binding_ids: Vec<i64> = rows
+        .iter()
+        .filter_map(|r| r["binding_id"].as_i64())
+        .collect();
+    let people:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('staff_id',s.id,'subject_id',a.account_id,'name',s.name) FROM staff s JOIN fleet_staff_accounts a ON a.staff_id=s.id AND a.owner_id=s.user_id WHERE s.user_id=$1 AND s.active ORDER BY s.id").bind(scope.owner).fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
+    // Old mapping revisions must retain their owned binding option even when
+    // that binding is outside the recent200 used for creating new requests.
+    let bindings:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',b.id,'vehicle_id',b.vehicle_id,'device_id',b.device_id,'starts_at',b.started_at,'ends_at',b.ended_at) FROM fleet_vehicle_bindings b WHERE b.owner_id=$1 AND b.device_id IS NOT NULL AND (b.id IN (SELECT id FROM fleet_vehicle_bindings WHERE owner_id=$1 AND device_id IS NOT NULL ORDER BY id DESC LIMIT 200) OR b.id=ANY($2::bigint[])) ORDER BY b.id DESC").bind(scope.owner).bind(binding_ids).fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
     Ok(Json(
-        json!({"enabled":crate::services::subject_provision::enabled(),"items":rows,"people":people,"bindings":bindings}),
+        json!({"enabled":crate::services::subject_provision::enabled(),"items":rows,"people":people,"bindings":bindings,"next_before":next}),
     ))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompanyPage {
+    before: Option<i64>,
+    status: Option<String>,
+    limit: Option<i64>,
+}
+impl CompanyPage {
+    fn validate(&self) -> AppResult<i64> {
+        let limit = self.limit.unwrap_or(200);
+        if !(1..=200).contains(&limit)
+            || self.before.is_some_and(|v| v <= 0)
+            || self.status.as_deref().is_some_and(|v| {
+                !matches!(
+                    v,
+                    "pending" | "confirmed" | "rejected" | "revoked" | "superseded"
+                )
+            })
+        {
+            return Err(AppError::BadRequest(
+                "연결 목록 조회 조건이 올바르지 않습니다.".into(),
+            ));
+        }
+        Ok(limit)
+    }
+}
+#[cfg(test)]
+mod company_page_tests {
+    use super::*;
+    #[test]
+    fn bounded_company_filters_preserve_legacy_default_and_reject_owner_override() {
+        assert_eq!(
+            serde_json::from_value::<CompanyPage>(json!({}))
+                .unwrap()
+                .validate()
+                .unwrap(),
+            200
+        );
+        assert_eq!(
+            serde_json::from_value::<CompanyPage>(
+                json!({"before":300,"status":"revoked","limit":50})
+            )
+            .unwrap()
+            .validate()
+            .unwrap(),
+            50
+        );
+        for value in [
+            json!({"before":0}),
+            json!({"limit":201}),
+            json!({"limit":0}),
+            json!({"status":"all"}),
+        ] {
+            assert!(serde_json::from_value::<CompanyPage>(value)
+                .unwrap()
+                .validate()
+                .is_err());
+        }
+        assert!(serde_json::from_value::<CompanyPage>(json!({"owner_id":1})).is_err());
+    }
 }
 #[derive(Deserialize)]
 struct Proposal {
