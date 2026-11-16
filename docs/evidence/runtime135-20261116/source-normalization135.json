@@ -1,0 +1,8 @@
+{
+  "verified_git_files": 1081,
+  "crlf_to_lf_only": [
+    "gps-tracker-web/src/components/SubjectProvision.jsx",
+    "gps-tracker-web/tests/subject-provision.test.mjs"
+  ],
+  "semantic_source_changes": false
+}

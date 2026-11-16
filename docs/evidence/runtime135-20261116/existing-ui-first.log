@@ -1,0 +1,42 @@
+TAP version 13
+# (node:28984) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: subject confirms exact revision and consent version; conflict remains unconfirmed and visible
+ok 1 - subject confirms exact revision and consent version; conflict remains unconfirmed and visible
+  ---
+  duration_ms: 389.7922
+  ...
+# Subtest: feature OFF cannot disable existing consent revocation
+ok 2 - feature OFF cannot disable existing consent revocation
+  ---
+  duration_ms: 6.7227
+  ...
+# Subtest: provider acceptance does not auto-acknowledge inbox; retry errors stay visible
+ok 3 - provider acceptance does not auto-acknowledge inbox; retry errors stay visible
+  ---
+  duration_ms: 5.1847
+  ...
+# Subtest: company correction posts lineage revision and clears displayed location on submit
+ok 4 - company correction posts lineage revision and clears displayed location on submit
+  ---
+  duration_ms: 6.709
+  ...
+# Subtest: reconsent locks identity and exact interval, ineffective mapping cannot show locations
+ok 5 - reconsent locks identity and exact interval, ineffective mapping cannot show locations
+  ---
+  duration_ms: 5.9538
+  ...
+# Subtest: subject sees replacement and external scope limits before confirming
+ok 6 - subject sees replacement and external scope limits before confirming
+  ---
+  duration_ms: 3.756
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 574.1536
