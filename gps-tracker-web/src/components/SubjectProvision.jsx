@@ -3,6 +3,7 @@ import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {api} from '../api';
 import './PrivacyRequests.css';
 import {useCompanyMappingQueue,CompanyMappingTools,CompanyMappingLocations} from './CompanyMappingQueue';
+import {CompanyBindingPicker} from './CompanyBindingPicker';
 
 const when=v=>v?new Date(v).toLocaleString('ko-KR'):'—';
 const stateName={pending:'본인 확인 대기',confirmed:'본인 확인됨',rejected:'거절됨',revoked:'철회됨',superseded:'정정 요청으로 중지됨'};
@@ -60,13 +61,15 @@ export function ProvisionNotices(){
 export function CompanySubjectMappings(){
  const q=useCompanyMappingQueue();
  const [locations,setLocations]=useState(null),[replacement,setReplacement]=useState(null);
- useEffect(()=>{setLocations(null);setReplacement(null);setStaff('');setBinding('');setKey(crypto.randomUUID());setError('');},[q.state]);
+ const [bindingSearch,setBindingSearch]=useState(false),[pickedBinding,setPickedBinding]=useState(null);
+ useEffect(()=>{setLocations(null);setReplacement(null);setStaff('');setBinding('');setPickedBinding(null);setBindingSearch(false);setKey(crypto.randomUUID());setError('');},[q.state]);
  // Refreshing the mapping authority must never revive an earlier location response.
- useEffect(()=>{if(q.busy)setLocations(null);},[q.busy]);
- function replace(row){setReplacement(row);setStaff(String(row.staff_id));setBinding(String(row.binding_id));const local=v=>new Date(new Date(v)-new Date(v).getTimezoneOffset()*60000).toISOString().slice(0,16);setFrom(local(row.starts_at));setUntil(local(row.ends_at));setKey(crypto.randomUUID());setLocations(null);setMessage('');setError('');}
+ useEffect(()=>{if(q.busy){setLocations(null);setBindingSearch(false);}},[q.busy]);
+ function replace(row){setPickedBinding(null);setBindingSearch(false);setReplacement(row);setStaff(String(row.staff_id));setBinding(String(row.binding_id));const local=v=>new Date(new Date(v)-new Date(v).getTimezoneOffset()*60000).toISOString().slice(0,16);setFrom(local(row.starts_at));setUntil(local(row.ends_at));setKey(crypto.randomUUID());setLocations(null);setMessage('');setError('');}
  function cancelReplacement(){setReplacement(null);setKey(crypto.randomUUID());setMessage('');}
  const [staff,setStaff]=useState(''),[binding,setBinding]=useState(''),[from,setFrom]=useState(localNow),[until,setUntil]=useState(localNow);
  const [key,setKey]=useState(()=>crypto.randomUUID()),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
+ const bindingOptions=q.data?[...q.data.bindings,...(pickedBinding&&!q.data.bindings.some(b=>b.id===pickedBinding.id)?[pickedBinding]:[])]:[];
  function change(setter,value){setter(value);setKey(crypto.randomUUID());setMessage('');}
  async function submit(e){e.preventDefault();setBusy(true);setError('');try{
   await api.proposeSubjectMapping({request_key:key,staff_id:Number(staff),binding_id:Number(binding),starts_at:replacement?.status==='revoked'?replacement.starts_at:new Date(from).toISOString(),ends_at:replacement?.status==='revoked'?replacement.ends_at:new Date(until).toISOString(),...(replacement?{replaces_id:replacement.id,replaces_revision:replacement.revision,change_kind:replacement.status==='revoked'?'reconsent':'correction'}:{})});
@@ -79,11 +82,14 @@ export function CompanySubjectMappings(){
  {replacement&&<div role="status"><strong>{replacement.status==='revoked'?'재동의 요청':'연결 정정'} · #{replacement.id}</strong><p>{replacement.status==='revoked'?'기존 본인·차량·기간을 바꾸지 않고 다시 동의를 받습니다.':'요청을 저장하면 기존 연결의 제공은 중지됩니다. 새 사용자가 확인해야 다시 제공됩니다.'}</p><button onClick={cancelReplacement} disabled={busy}>새 요청으로 돌아가기</button></div>}
  {q.data?.enabled&&<form onSubmit={submit}><fieldset disabled={busy}>
   <label>운전자 계정<select required disabled={replacement?.status==='revoked'} value={staff} onChange={e=>change(setStaff,e.target.value)}><option value="">선택</option>{q.data.people.map(p=><option key={p.staff_id} value={p.staff_id}>{p.name} · 계정 #{p.subject_id}</option>)}</select></label>
-  <label>차량·SIM 연결<select required disabled={replacement?.status==='revoked'} value={binding} onChange={e=>change(setBinding,e.target.value)}><option value="">선택</option>{q.data.bindings.map(b=><option key={b.id} value={b.id}>차량 #{b.vehicle_id} · SIM #{b.device_id} · {when(b.starts_at)}</option>)}</select></label>
+  <label>차량·SIM 연결<select required disabled={replacement?.status==='revoked'} value={binding} onChange={e=>change(setBinding,e.target.value)}><option value="">선택</option>{bindingOptions.map(b=><option key={b.id} value={b.id}>차량 #{b.vehicle_id} · SIM #{b.device_id} · {when(b.starts_at)}</option>)}</select></label>
+  {replacement?.status!=='revoked'&&<button type="button" onClick={()=>setBindingSearch(true)}>과거 차량·SIM 연결 찾기</button>}
+  {pickedBinding&&binding===String(pickedBinding.id)&&<p>선택한 연결 기간: {when(pickedBinding.starts_at)} ~ {pickedBinding.ends_at?when(pickedBinding.ends_at):'계속 연결 중'}. 이 기간 안에서 실제 운전자와 요청 기간을 확인하세요.</p>}
   <label>시작<input required disabled={replacement?.status==='revoked'} type="datetime-local" value={from} onChange={e=>change(setFrom,e.target.value)}/></label>
   <label>종료<input required disabled={replacement?.status==='revoked'} type="datetime-local" value={until} onChange={e=>change(setUntil,e.target.value)}/></label>
   <p>최대 31일, 같은 SIM의 운전자 확인 기간은 겹칠 수 없습니다.</p><button type="submit">{replacement?.status==='revoked'?'재동의 요청':replacement?'기존 연결 중지 및 정정 요청':'본인 확인 요청'}</button>
  </fieldset></form>}
+ {bindingSearch&&q.data?.enabled&&!busy&&replacement?.status!=='revoked'&&<CompanyBindingPicker onClose={()=>setBindingSearch(false)} onChoose={row=>{setPickedBinding(row);change(setBinding,String(row.id));setBindingSearch(false);}}/>}
  {q.data?.items.map(row=><article className="rights-request" key={row.id}><h3>연결 #{row.id} · 차량 #{row.vehicle_id} · 사용자 #{row.subject_id}</h3><Period row={row}/><Revision row={row}/><span>{mappingState(row)}</span>{q.data.enabled&&!row.has_successor&&['pending','confirmed','rejected','revoked','superseded'].includes(row.status)&&<button disabled={busy} onClick={()=>replace(row)}>{row.status==='revoked'?'재동의 요청':'연결 정정'}</button>}{row.status==='confirmed'&&row.effective!==false&&<button disabled={busy} onClick={()=>setLocations(row.id)}>확인된 기간 위치 조회</button>}{locations===row.id&&row.status==='confirmed'&&row.effective!==false&&<CompanyMappingLocations key={`${row.id}-${row.revision}`} row={row} onClose={()=>setLocations(null)}/>}</article>)}
  </section>;
 }

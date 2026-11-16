@@ -1243,6 +1243,10 @@
     "class": "ledger",
     "reason": "Location or derived record response; durable intent before handler."
   },
+  "subject_provision.rs GET /corporate/subject-bindings": {
+    "class": "non_location",
+    "reason": "Company owner/admin scoped vehicle-SIM binding metadata picker. No coordinates, driver identities or location records; selection does not grant subject consent."
+  },
   "subject_provision.rs GET /corporate/subject-mappings": {
     "class": "non_location",
     "reason": "Authenticated subject declaration / notice metadata only; no coordinates or location track. Own inbox is available while processing is paused."

@@ -22,6 +22,7 @@ pub fn router() -> Router<AppState> {
             get(company_list).post(propose),
         )
         .route("/corporate/subject-mappings/:id/locations", get(locations))
+        .route("/corporate/subject-bindings", get(binding_list))
         .route("/privacy/subject-mappings", get(personal_list))
         .route("/privacy/subject-mappings/:id/decision", post(decide))
         .route("/privacy/provision-notices", get(notices))
@@ -172,6 +173,81 @@ mod company_page_tests {
                 .is_err());
         }
         assert!(serde_json::from_value::<CompanyPage>(json!({"owner_id":1})).is_err());
+    }
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BindingPage {
+    before: Option<i64>,
+    q: Option<String>,
+    limit: Option<i64>,
+}
+impl BindingPage {
+    fn validate(&self) -> AppResult<(i64, &str)> {
+        let limit = self.limit.unwrap_or(50);
+        let query = self.q.as_deref().unwrap_or("").trim();
+        if !(1..=100).contains(&limit)
+            || self.before.is_some_and(|v| v <= 0)
+            || self
+                .q
+                .as_deref()
+                .is_some_and(|v| v.chars().count() > 80 || v.chars().any(char::is_control))
+        {
+            return Err(AppError::BadRequest(
+                "차량·SIM 연결 검색 조건을 확인하세요.".into(),
+            ));
+        }
+        Ok((limit, query))
+    }
+}
+async fn binding_list(
+    State(state): State<AppState>,
+    user: AuthUser,
+    scope: Option<Extension<FleetScope>>,
+    Query(page): Query<BindingPage>,
+) -> AppResult<Json<Value>> {
+    let scope = company_scope(&state, user, scope).await?;
+    if !scope.admin() {
+        return Err(AppError::Forbidden);
+    }
+    let (limit, query) = page.validate()?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
+    // Search owned binding metadata only. Choosing a result grants no location
+    // access; proposal and subject consent still validate the current authority.
+    let mut items:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',b.id,'vehicle_id',b.vehicle_id,'device_id',b.device_id,'starts_at',b.started_at,'ends_at',b.ended_at,'vehicle_name',v.name,'terminal_name',b.terminal_name) FROM fleet_vehicle_bindings b JOIN fleet_vehicles v ON v.id=b.vehicle_id AND v.owner_id=b.owner_id WHERE b.owner_id=$1 AND b.device_id IS NOT NULL AND ($2::bigint IS NULL OR b.id<$2) AND ($3::text='' OR strpos(lower(v.name),lower($3))>0 OR strpos(lower(coalesce(b.terminal_name,'')),lower($3))>0 OR b.device_id::text=$3) ORDER BY b.id DESC LIMIT $4")
+        .bind(scope.owner).bind(page.before).bind(query).bind(limit+1).fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
+    let more = items.len() > limit as usize;
+    items.truncate(limit as usize);
+    let next = if more {
+        items.last().map(|r| r["id"].clone())
+    } else {
+        None
+    };
+    read.finish().await?;
+    Ok(Json(
+        json!({"items":items,"next_before":next,"enabled":crate::services::subject_provision::enabled()}),
+    ))
+}
+#[cfg(test)]
+mod binding_page_tests {
+    use super::*;
+    #[test]
+    fn bounded_literal_search_and_owner_override_rejection() {
+        let value = serde_json::from_value::<BindingPage>(json!({"q":"  차량_%  "})).unwrap();
+        assert_eq!(value.validate().unwrap(), (50, "차량_%"));
+        for value in [
+            json!({"q":"한".repeat(81)}),
+            json!({"q":"line\nbreak"}),
+            json!({"before":0}),
+            json!({"limit":101}),
+            json!({"limit":0}),
+        ] {
+            assert!(serde_json::from_value::<BindingPage>(value)
+                .unwrap()
+                .validate()
+                .is_err());
+        }
+        assert!(serde_json::from_value::<BindingPage>(json!({"owner_id":1})).is_err());
     }
 }
 #[derive(Deserialize)]

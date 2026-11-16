@@ -328,6 +328,7 @@ export const api = {
   retryProvisionNotice: id => req('POST',`/privacy/provision-notices/${id}/retry`,{}),
   subjectLocations: (id,signal) => req('GET',`/corporate/subject-mappings/${id}/locations`,undefined,true,{signal}),
   companySubjectMappings: (params={},signal) => req('GET','/corporate/subject-mappings?'+new URLSearchParams(params),undefined,true,{signal}),
+  companySubjectBindings: (params={},signal) => req('GET','/corporate/subject-bindings?'+new URLSearchParams(params),undefined,true,{signal}),
   proposeSubjectMapping: body => req('POST','/corporate/subject-mappings',body),
   fleetAccess: () => req('GET','/corporate/access'),
   fleetOrganization: () => req('GET','/corporate/organization'),

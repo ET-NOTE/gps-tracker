@@ -123,6 +123,7 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
         ["corporate", "staff", _, ..] => admin,
         ["corporate", "invites", ..] => admin,
         ["corporate", "subject-mappings"] => admin,
+        ["corporate", "subject-bindings"] => read && admin,
         ["corporate", "subject-mappings", _, "locations"] => read,
         ["corporate", "info"] => read || admin,
         ["corporate", "subscription"] | ["corporate", "fuel-prices"] => read,
