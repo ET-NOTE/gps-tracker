@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-16T11:09:08+0900",
+  "passed": true,
+  "schema": 114,
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "runtime136-20261116-r1",
+    "service": "gps-tracker-api"
+  },
+  "script_sha256": "038e43b8c41c6e86ed7a49195116bf982c0917d8edf6c0878a5c223d4dc0b069",
+  "api_sha256": "c6475670005ce79718d452ce882165f48a9e549249b97aad010f9247a0747cf8",
+  "web": "/home/mmm/releases/review137-20261116-r1/web",
+  "migration_seconds": 3.616,
+  "elapsed_seconds": 107.855,
+  "backup": {
+    "bytes": 13991889,
+    "sha256": "d1d464a2671bb6318cf77d65c28f9f487b235883ecba1c8905013de717d06a30"
+  },
+  "backup_directory": "/home/mmm/backups/review137-20261116-r1",
+  "original_row_hashes_unchanged": true,
+  "backup_database": "gps_tracker_review137_backup99",
+  "backup_decompressed_chunks": 25,
+  "configuration_unchanged": true,
+  "neighbors_unchanged": true,
+  "rollback": "post-commit forward repair; never overwrite new live writes"
+}

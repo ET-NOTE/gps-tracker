@@ -1,0 +1,8 @@
+{
+  "at": "2026-11-16T11:18:10+0900",
+  "passed": true,
+  "database_dump_sha256": "d1d464a2671bb6318cf77d65c28f9f487b235883ecba1c8905013de717d06a30",
+  "five_core_table_hashes_equal": true,
+  "source_schema": 99,
+  "production_database_untouched": true
+}

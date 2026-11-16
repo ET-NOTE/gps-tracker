@@ -88,3 +88,7 @@ docs/evidence/runtime118-20261112/* -text whitespace=-blank-at-eof,-blank-at-eol
 
 # Runtime119 original successes and failures retain exact evidence bytes.
 docs/evidence/runtime119-20261112/* -text whitespace=-blank-at-eof,-blank-at-eol
+
+# Team-review137 deployment evidence and executed script hashes are exact bytes.
+docs/evidence/review137-20261116/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/review137_*.py text eol=lf

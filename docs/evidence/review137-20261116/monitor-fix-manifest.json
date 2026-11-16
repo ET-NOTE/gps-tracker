@@ -1,0 +1,14 @@
+{
+  "release": "review137-20261116-r3",
+  "api_sha256": "62f67f352bcdc677273a88caa7c44b4c409d760c97b9da9128f734da790f648d",
+  "bytes": 18931928,
+  "schema": 114,
+  "base_source_commit": "d29198a884b4f403fb5d8957257de3bc9b07381d",
+  "changed_source": "gps-tracker-api/src/services/access_ledger.rs",
+  "changed_source_sha256": "f3c967974252064507a8bdd8d904d8c8eed0469e5afd036f6b16af54d4255f22",
+  "build_log_sha256": "12e17a8855d2c26377ffddbbb9d754e0709dbe7f5363459814bba34180b613b9",
+  "tests_passed": 98,
+  "tests_ignored": 9,
+  "fmt_clippy_passed": true,
+  "reason": "Keep external ingest GET monitor compatibility while denying unreviewed paths; no handler execution for unsupported methods"
+}

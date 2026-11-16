@@ -728,7 +728,7 @@ pub async fn middleware(State(state): State<AppState>, request: Request, next: N
         request.method().as_str()
     };
     if !classified(verb, route) {
-        return unavailable();
+        return unreviewed_request(route);
     }
     let planned = request
         .extensions()
@@ -793,16 +793,50 @@ pub async fn middleware(State(state): State<AppState>, request: Request, next: N
     response
 }
 
-fn classified(verb: &str, route: &str) -> bool {
+fn reviewed_routes() -> &'static serde_json::Value {
     static MANIFEST: OnceLock<serde_json::Value> = OnceLock::new();
-    let manifest = MANIFEST.get_or_init(|| {
+    MANIFEST.get_or_init(|| {
         serde_json::from_str(include_str!("../../location-access-routes.json"))
             .expect("reviewed route manifest")
-    });
+    })
+}
+
+fn classified(verb: &str, route: &str) -> bool {
     let suffix = format!(" {verb} {route}");
-    manifest
+    reviewed_routes()
         .as_object()
         .is_some_and(|m| m.keys().any(|k| k.ends_with(&suffix)))
+}
+
+/// Reject unsupported methods without invoking a handler. In particular, the
+/// external monitor probes the POST-only /ingest route with GET and expects
+/// 405/Allow: POST. An entirely unreviewed path still fails closed with 503.
+fn unreviewed_request(route: &str) -> Response {
+    let mut allowed = std::collections::BTreeSet::new();
+    if let Some(manifest) = reviewed_routes().as_object() {
+        for key in manifest.keys() {
+            let mut parts = key.rsplit(' ');
+            if parts.next() == Some(route) {
+                if let Some(method) = parts.next() {
+                    allowed.insert(method);
+                    if method == "GET" {
+                        allowed.insert("HEAD");
+                    }
+                }
+            }
+        }
+    }
+    if allowed.is_empty() {
+        return unavailable();
+    }
+    (
+        axum::http::StatusCode::METHOD_NOT_ALLOWED,
+        [(
+            axum::http::header::ALLOW,
+            allowed.into_iter().collect::<Vec<_>>().join(", "),
+        )],
+    )
+        .into_response()
 }
 
 pub async fn outer_middleware(
@@ -832,6 +866,32 @@ mod tests {
         assert!(classified("GET", "/devices/:id/locations"));
         assert!(!classified("GET", "/devices/:id/new-location-export"));
         assert!(!classified("POST", "/devices/:id/locations"));
+    }
+
+    #[test]
+    fn ingest_monitor_get_is_rejected_as_a_method_not_an_outage() {
+        // Nginx exposes /ingest; Axum's matched route includes the mount prefix.
+        assert!(!classified("GET", "/gps-tracker/ingest"));
+        let response = unreviewed_request("/gps-tracker/ingest");
+        assert_eq!(
+            response.status(),
+            axum::http::StatusCode::METHOD_NOT_ALLOWED
+        );
+        assert_eq!(response.headers()[axum::http::header::ALLOW], "POST");
+    }
+
+    #[test]
+    fn wrong_method_on_known_location_route_does_not_call_a_reader() {
+        let response = unreviewed_request("/devices/:id/locations");
+        assert_eq!(
+            response.status(),
+            axum::http::StatusCode::METHOD_NOT_ALLOWED
+        );
+        assert_eq!(response.headers()[axum::http::header::ALLOW], "GET, HEAD");
+        assert_eq!(
+            unreviewed_request("/devices/:id/new-location-export").status(),
+            axum::http::StatusCode::SERVICE_UNAVAILABLE
+        );
     }
 
     #[tokio::test]

@@ -1,0 +1,11 @@
+{
+  "at": "2026-11-16T11:15:20+0900",
+  "passed": true,
+  "web": "/home/mmm/releases/review137-20261116-r2/web",
+  "archive_sha256": "9a851063d61d72601404a25fa373d9ed028063b901b465335037bb13f14cfeeb",
+  "vite_base": "/",
+  "entry_files_and_mime_verified": 9,
+  "api_restarted": false,
+  "previous_web": "/home/mmm/releases/privacy-facts-20261106-r1/web",
+  "browser_followup_required": true
+}

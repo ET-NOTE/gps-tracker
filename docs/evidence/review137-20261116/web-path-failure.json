@@ -1,0 +1,1 @@
+{"at": "2026-11-16T11:12:28+0900", "cause": "candidate Vite base /gps-tracker/app/ incompatible with primary domain root; module returned text/html", "action": "temporarily restored previous web symlink; current API/schema114 kept", "browser_verified": false}

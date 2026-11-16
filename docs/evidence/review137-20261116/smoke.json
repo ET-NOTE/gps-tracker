@@ -1,0 +1,16 @@
+{
+  "at": "2026-11-16T11:06:41+0900",
+  "passed": true,
+  "checks": {
+    "/api/v1/auth/me": 200,
+    "/api/v1/auth/me/prefs": 200,
+    "/api/v1/devices": 200,
+    "/api/v1/privacy/requests/page": 200,
+    "/api/v1/privacy/collection": 200,
+    "anonymous_private_request": 401
+  },
+  "external_credentials": "absent",
+  "egress": "systemd IPAddressDeny=any; allow localhost",
+  "files": "isolated scratch directory",
+  "production_authentication": false
+}
