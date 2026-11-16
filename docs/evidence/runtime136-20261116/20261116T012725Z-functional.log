@@ -1,0 +1,8 @@
+PASS owner/admin only, foreign/no-SIM excluded, explicit metadata fields;207 bindings50/50/50/50/7; old unrequested binding beyond200 is reachable without writes
+PASS literal case-insensitive name/Korean/SIM search, wildcard and injection text remain literal; exact last-page and input/owner override rejection
+PASS one blocked TLS search cancels SQL and releases read slot; retry200 and source unchanged; no sustained load
+PASS old never-requested binding creates first pending request via delegated admin; idempotent retry, exact interval, subject-only fresh consent before encrypted location and notice
+PASS search cannot undo revocation; ordinary new request stays pending and confirmation409; explicit identical reconsent requires subject confirmation; second notice retained
+PASS proposal rechecks selected binding owner/period and active subject; closed binding, removed staff or revoked delegated access cannot reuse stale search authority
+PASS feature OFF permits historical metadata only; new proposal409, existing consent can still be revoked, encrypted storage retained
+PASS all 7 functional groups
