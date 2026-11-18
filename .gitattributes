@@ -135,3 +135,7 @@ docs/evidence/runtime144-20261118/** -text whitespace=-blank-at-eof,-blank-at-eo
 ops/*runtime144*.py text eol=lf
 ops/*tasks144*.py text eol=lf
 ops/check-company-tasks144-ui.mjs text eol=lf
+
+# Round145 original logs, captures and manifests preserve exact bytes.
+docs/evidence/integration145-20261118/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/integration145-20261118/*.log whitespace=-blank-at-eof,-blank-at-eol

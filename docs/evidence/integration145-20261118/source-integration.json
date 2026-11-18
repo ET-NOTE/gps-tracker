@@ -1,0 +1,16 @@
+{
+  "base": "f27948255e54dee4f82d5b7c82f69b0d8d0b1a33",
+  "previous_main": "5e471fd90347f219f20304689846c57aaf59c4eb",
+  "dev_source": "fb705249f7bd406920dad534c4b5442c07749733",
+  "candidate": "f93baa1258ca7880bb44b34adfca56a32a67d127",
+  "main_exclusive_sources_preserved": 21,
+  "overlap": [
+    "gps-tracker-web/src/api.js",
+    "gps-tracker-web/src/components/CorporatePanel.jsx"
+  ],
+  "merge_conflicts_resolved": [
+    "gps-tracker-web/src/components/CorporatePanel.jsx",
+    "gps-tracker-web/tests/company-binding-picker.test.mjs"
+  ],
+  "prod139_to_dev_base_api_identical": true
+}

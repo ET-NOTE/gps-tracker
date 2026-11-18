@@ -1,0 +1,11 @@
+BEGIN
+SET
+SET
+DO
+INSERT 0 1
+ id | user_id |       kind       |           starts_at           |          expires_at           | paid_credits |                                note                                 
+----+---------+------------------+-------------------------------+-------------------------------+--------------+---------------------------------------------------------------------
+  3 |      28 | corporate_report | 2026-11-18 17:40:42.035458+09 | 2027-11-18 17:40:42.035458+09 |              | operator-grant:20261118:notion-dev-review:user-request:corporate-1y
+(1 row)
+
+COMMIT

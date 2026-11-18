@@ -1,0 +1,41 @@
+{
+  "prod": {
+    "web_root": "/home/mmm/releases/android139-web-20261118-r1/web",
+    "version": {
+      "release": "android139-web-20261118-r1",
+      "git_commit": "6592023f3fe14987a1646710c9fd58f67f379d73",
+      "api_release": "review137-20261116-r3",
+      "schema": 114
+    },
+    "api_sha256": "62f67f352bcdc677273a88caa7c44b4c409d760c97b9da9128f734da790f648d",
+    "health": {
+      "db": true,
+      "environment": "production",
+      "ok": true,
+      "release": "review137-20261116-r3",
+      "service": "gps-tracker-api"
+    },
+    "service": "MainPID=1833697\nExecMainStartTimestamp=Mon 2026-11-16 11:26:09 KST\nActiveState=active"
+  },
+  "dev": {
+    "web_root": "/home/gps-dev/gps-tracker-web-dev/releases/dev-20261118-notion-followup-fb705249/web",
+    "version": {
+      "release": "dev-20261118-notion-followup-fb705249",
+      "source_commit": "fb705249f7bd406920dad534c4b5442c07749733",
+      "api_release": "dev-20261118-corp-review",
+      "schema": 115
+    },
+    "api_sha256": "d12f65d2ece880855df8ef8a202d143980a1c5c7ea5b9538ad3473d73c5c964b",
+    "health": {
+      "db": true,
+      "environment": "development",
+      "ok": true,
+      "release": "dev-20261118-corp-review",
+      "service": "gps-tracker-api"
+    },
+    "service": "MainPID=2276664\nExecMainStartTimestamp=Wed 2026-11-18 12:41:19 KST\nActiveState=active"
+  },
+  "dev_checkout_head": "fb705249f7bd406920dad534c4b5442c07749733",
+  "dev_checkout_status": "",
+  "checked_at": "2026-11-18T17:57:51.917132+09:00"
+}
