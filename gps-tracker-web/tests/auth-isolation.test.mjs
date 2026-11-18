@@ -291,3 +291,18 @@ test('logout cancels a real 429 backoff before a replacement account can send it
   assert.equal(calls, 1); assert.ok(cleared > 0);
   f.queryClient.clear();
 });
+
+test('personal provision page filters and abort signal remain outside company scope', async()=>{
+  const calls=[];let pending;
+  const f=await fixture((url,options)=>{calls.push({url,options});return pending?pending.promise:Promise.resolve(Response.json({items:[]}));});
+  f.api.setTokens(token('A'),'refresh-A');(await f.module('lib/fleetSession.js')).setFleetOwner(12);
+  const controller=new AbortController();
+  await f.api.api.subjectMappingPage({before:151,limit:50,status:'pending'},controller.signal);
+  await f.api.api.provisionNoticePage({before:51,limit:50,read_state:'unread'},controller.signal);
+  for(const call of calls){assert.equal(call.options.headers.get('X-Fleet-Owner'),null);assert.equal(call.options.signal,controller.signal);}
+  assert.match(calls[0].url,/before=151&limit=50&status=pending$/);assert.match(calls[1].url,/before=51&limit=50&read_state=unread$/);
+  await f.api.api.subjectMappings(11);await f.api.api.provisionNotices(12);
+  assert.match(calls[2].url,/subject-mappings\?before=11$/);assert.match(calls[3].url,/provision-notices\?before=12$/);
+  pending=deferred();const read=f.api.api.subjectMappingPage({limit:50},controller.signal);controller.abort();pending.resolve(Response.json({items:[{id:99}]}));
+  await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
+});

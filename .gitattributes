@@ -103,3 +103,8 @@ ops/ssh_access_20261118.py text eol=lf
 # Android139 evidence includes original Windows/Linux output: preserve exact bytes.
 docs/evidence/android139-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
 ops/*android139*.py text eol=lf
+
+# Round140 raw functional evidence retains original bytes.
+docs/evidence/runtime140-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime140*.py text eol=lf
+ops/*provision140*.py text eol=lf

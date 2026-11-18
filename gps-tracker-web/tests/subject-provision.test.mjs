@@ -11,9 +11,9 @@ async function mount(name,query,api){
  const context=vm.createContext({console,crypto:{randomUUID:()=> 'synthetic-request-id'}});
  const code=await readFile(new URL('../src/components/SubjectProvision.jsx',import.meta.url),'utf8');
  const m=new vm.SourceTextModule((await transform(code,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
- let clears=0;
+ let clears=0; const personalState={filter:'',pages:[null]};
  await m.link(async name=>{
-  const values=name==='./CompanyBindingPicker'?{CompanyBindingPicker:()=>null}:name==='./CompanyMappingQueue'?{useCompanyMappingQueue:()=>({...query,reload:query.refetch}),CompanyMappingTools:()=>null,CompanyMappingLocations:()=>null}:name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?{useQuery:()=>query,useQueryClient:()=>({removeQueries:()=>clears++})}:name.endsWith('.css')?{}:{api};
+  const values=name==='./PersonalProvisionQueue'?{usePersonalProvisionQueue:()=>({...query,state:personalState}),PersonalProvisionTools:()=>null}:name==='./CompanyBindingPicker'?{CompanyBindingPicker:()=>null}:name==='./CompanyMappingQueue'?{useCompanyMappingQueue:()=>({...query,reload:query.refetch}),CompanyMappingTools:()=>null,CompanyMappingLocations:()=>null}:name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?{useQuery:()=>query,useQueryClient:()=>({removeQueries:()=>clears++})}:name.endsWith('.css')?{}:{api};
   return new vm.SyntheticModule(Object.keys(values),function(){for(const[k,v]of Object.entries(values))this.setExport(k,v);},{context});
  });await m.evaluate();let r;
  await act(async()=>{r=create(React.createElement(m.namespace[name]));});

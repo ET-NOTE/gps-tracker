@@ -17,7 +17,7 @@ async function setup(){
  async function load(file,queue){
   const source=await readFile(new URL('../src/components/'+file,import.meta.url),'utf8');
   const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
-  await m.link(name=>name==='./CompanyMappingQueue'?queue:exportsOf(name==='./CompanyBindingPicker'?{CompanyBindingPicker:()=>null}:name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?rq:name.endsWith('.css')?{}:{api}));await m.evaluate();return m;
+  await m.link(name=>name==='./CompanyMappingQueue'?queue:exportsOf(name==='./PersonalProvisionQueue'?{usePersonalProvisionQueue:()=>null,PersonalProvisionTools:()=>null}:name==='./CompanyBindingPicker'?{CompanyBindingPicker:()=>null}:name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?rq:name.endsWith('.css')?{}:{api}));await m.evaluate();return m;
  }
  const queue=await load('CompanyMappingQueue.jsx'),panel=await load('SubjectProvision.jsx',queue);
  const client=new rq.QueryClient({defaultOptions:{queries:{retry:false}}});let renderer;

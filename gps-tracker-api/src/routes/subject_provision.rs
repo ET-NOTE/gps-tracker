@@ -75,9 +75,13 @@ async fn personal_list(
     Query(page): Query<Page>,
 ) -> AppResult<Json<Value>> {
     self_session(&headers, &state, user.user_id)?;
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(m)||jsonb_build_object('effective',EXISTS(SELECT 1 FROM location_subject_effective e WHERE e.id=m.id),'has_successor',EXISTS(SELECT 1 FROM location_subject_mappings n WHERE n.replaces_id=m.id),'owner_name',COALESCE(NULLIF(c.company_name,''),u.display_name),'vehicle_name',v.name) FROM location_subject_mappings m LEFT JOIN corporate_info c ON c.user_id=m.owner_id LEFT JOIN users u ON u.id=m.owner_id LEFT JOIN fleet_vehicles v ON v.id=m.vehicle_id AND v.owner_id=m.owner_id WHERE m.subject_id=$1 AND ($2::bigint IS NULL OR m.id<$2) ORDER BY m.id DESC LIMIT 200").bind(user.user_id).bind(page.before).fetch_all(&state.db).await?;
+    let limit = page.validate(true)?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
+    let mut rows:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(m)||jsonb_build_object('effective',EXISTS(SELECT 1 FROM location_subject_effective e WHERE e.id=m.id),'has_successor',EXISTS(SELECT 1 FROM location_subject_mappings n WHERE n.replaces_id=m.id),'owner_name',COALESCE(NULLIF(c.company_name,''),u.display_name),'vehicle_name',v.name) FROM location_subject_mappings m LEFT JOIN corporate_info c ON c.user_id=m.owner_id LEFT JOIN users u ON u.id=m.owner_id LEFT JOIN fleet_vehicles v ON v.id=m.vehicle_id AND v.owner_id=m.owner_id WHERE m.subject_id=$1 AND ($2::bigint IS NULL OR m.id<$2) AND ($3::text IS NULL OR m.status=$3) ORDER BY m.id DESC LIMIT $4").bind(user.user_id).bind(page.before).bind(page.status).bind(limit+1).fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
+    let next = page_cursor(&mut rows, limit);
     Ok(Json(
-        json!({"enabled":crate::services::subject_provision::enabled(),"items":rows,"next_before":if rows.len()==200{rows.last().map(|v|v["id"].clone())}else{None},"consent_text":"지정된 차량·SIM의 해당 기간 운전자임을 확인하고, 차량 운영 목적으로 이 회사의 권한 있는 사용자에게 위치·운행 기록을 제공하는 데 동의합니다. 예약·SIM 소유만으로 운전자로 확정하지 않습니다. 철회하면 이후 제공을 중지하며 이미 제공된 자료는 회수되지 않습니다.","consent_version":"fleet-subject-v1"}),
+        json!({"enabled":crate::services::subject_provision::enabled(),"items":rows,"next_before":next,"consent_text":"지정된 차량·SIM의 해당 기간 운전자임을 확인하고, 차량 운영 목적으로 이 회사의 권한 있는 사용자에게 위치·운행 기록을 제공하는 데 동의합니다. 예약·SIM 소유만으로 운전자로 확정하지 않습니다. 철회하면 이후 제공을 중지하며 이미 제공된 자료는 회수되지 않습니다.","consent_version":"fleet-subject-v1"}),
     ))
 }
 async fn company_list(
@@ -442,8 +446,100 @@ async fn decide(
     Ok(Json(json!({"status":req.action,"revision":revision+1})))
 }
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Page {
     before: Option<i64>,
+    limit: Option<i64>,
+    status: Option<String>,
+    read_state: Option<String>,
+}
+impl Page {
+    fn validate(&self, mappings: bool) -> AppResult<i64> {
+        // Preserve the old default page sizes for installed/older clients.
+        let maximum = if mappings { 200 } else { 100 };
+        let limit = self.limit.unwrap_or(maximum);
+        if !(1..=maximum).contains(&limit)
+            || self.before.is_some_and(|v| v <= 0)
+            || self.status.as_deref().is_some_and(|v| {
+                !mappings
+                    || !matches!(
+                        v,
+                        "pending" | "confirmed" | "rejected" | "revoked" | "superseded"
+                    )
+            })
+            || self
+                .read_state
+                .as_deref()
+                .is_some_and(|v| mappings || !matches!(v, "unread" | "read"))
+        {
+            return Err(AppError::BadRequest(
+                "본인 내역 조회 조건이 올바르지 않습니다.".into(),
+            ));
+        }
+        Ok(limit)
+    }
+}
+fn page_cursor(rows: &mut Vec<Value>, limit: i64) -> Option<Value> {
+    let more = rows.len() > limit as usize;
+    rows.truncate(limit as usize);
+    if more {
+        rows.last().map(|row| row["id"].clone())
+    } else {
+        None
+    }
+}
+#[cfg(test)]
+mod personal_page_tests {
+    use super::*;
+    #[test]
+    fn bounded_and_distinct_filters_with_legacy_defaults() {
+        let page: Page = serde_json::from_value(json!({})).unwrap();
+        assert_eq!(page.validate(true).unwrap(), 200);
+        assert_eq!(page.validate(false).unwrap(), 100);
+        for (value, mappings) in [
+            (json!({"limit":0}), true),
+            (json!({"limit":201}), true),
+            (json!({"limit":101}), false),
+            (json!({"before":0}), true),
+            (json!({"before":-1}), false),
+            (json!({"status":"invalid"}), true),
+            (json!({"status":"confirmed"}), false),
+            (json!({"read_state":"all"}), false),
+            (json!({"read_state":"unread"}), true),
+        ] {
+            assert!(serde_json::from_value::<Page>(value)
+                .unwrap()
+                .validate(mappings)
+                .is_err());
+        }
+        assert!(serde_json::from_value::<Page>(json!({"subject_id":42})).is_err());
+        for value in ["pending", "confirmed", "rejected", "revoked", "superseded"] {
+            assert_eq!(
+                serde_json::from_value::<Page>(json!({"status":value,"limit":50}))
+                    .unwrap()
+                    .validate(true)
+                    .unwrap(),
+                50
+            );
+        }
+        for value in ["unread", "read"] {
+            assert_eq!(
+                serde_json::from_value::<Page>(json!({"read_state":value,"limit":50}))
+                    .unwrap()
+                    .validate(false)
+                    .unwrap(),
+                50
+            );
+        }
+    }
+    #[test]
+    fn next_cursor_requires_a_real_following_row() {
+        let mut rows: Vec<Value> = (1..=51).rev().map(|id| json!({"id":id})).collect();
+        assert_eq!(page_cursor(&mut rows, 50), Some(json!(2)));
+        assert_eq!(rows.len(), 50);
+        assert_eq!(page_cursor(&mut rows, 50), None);
+        assert_eq!(page_cursor(&mut vec![], 50), None);
+    }
 }
 async fn notices(
     State(state): State<AppState>,
@@ -452,9 +548,13 @@ async fn notices(
     Query(page): Query<Page>,
 ) -> AppResult<Json<Value>> {
     self_session(&headers, &state, user.user_id)?;
-    let items:Vec<Value>=sqlx::query_scalar("SELECT (to_jsonb(n)-'lease_id'-'lease_until')||jsonb_build_object('owner_name',COALESCE(NULLIF(c.company_name,''),u.display_name),'vehicle_name',v.name) FROM location_provision_notices n LEFT JOIN corporate_info c ON c.user_id=n.owner_id LEFT JOIN users u ON u.id=n.owner_id LEFT JOIN fleet_vehicles v ON v.id=n.vehicle_id AND v.owner_id=n.owner_id WHERE n.subject_id=$1 AND n.delivery NOT IN ('waiting','not_provided') AND ($2::bigint IS NULL OR n.id<$2) ORDER BY n.id DESC LIMIT 100").bind(user.user_id).bind(page.before).fetch_all(&state.db).await?;
+    let limit = page.validate(false)?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&state.db).await?;
+    let mut items:Vec<Value>=sqlx::query_scalar("SELECT (to_jsonb(n)-'lease_id'-'lease_until')||jsonb_build_object('owner_name',COALESCE(NULLIF(c.company_name,''),u.display_name),'vehicle_name',v.name) FROM location_provision_notices n LEFT JOIN corporate_info c ON c.user_id=n.owner_id LEFT JOIN users u ON u.id=n.owner_id LEFT JOIN fleet_vehicles v ON v.id=n.vehicle_id AND v.owner_id=n.owner_id WHERE n.subject_id=$1 AND n.delivery NOT IN ('waiting','not_provided') AND ($2::bigint IS NULL OR n.id<$2) AND ($3::text IS NULL OR ($3='unread' AND n.read_at IS NULL) OR ($3='read' AND n.read_at IS NOT NULL)) ORDER BY n.id DESC LIMIT $4").bind(user.user_id).bind(page.before).bind(page.read_state).bind(limit+1).fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
+    let next = page_cursor(&mut items, limit);
     Ok(Json(
-        json!({"items":items,"next_before":if items.len()==100{items.last().map(|v|v["id"].clone())}else{None},"delivery_note":"앱 내 기록, 푸시 서버 접수, 본인 열람은 서로 다른 상태입니다."}),
+        json!({"items":items,"next_before":next,"delivery_note":"앱 내 기록, 푸시 서버 접수, 본인 열람은 서로 다른 상태입니다."}),
     ))
 }
 async fn mark_read(

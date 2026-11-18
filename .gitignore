@@ -69,5 +69,6 @@ Thumbs.db
 .cache/
 *.log
 !docs/evidence/android139-20261118/logs/*.log
+!docs/evidence/runtime140-20261118/*.log
 __pycache__/
 *.pyc

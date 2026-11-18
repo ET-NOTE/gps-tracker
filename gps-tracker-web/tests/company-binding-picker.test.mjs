@@ -24,9 +24,15 @@ async function setup(reconsent=false){
   const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
   await m.link(name=>modules[name.slice(2)]??exportsOf(name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?rq:name.endsWith('.css')?{}:{api}));await m.evaluate();modules[file]=m;return m;
  }
- await load('CompanyBindingPicker');await load('CompanyMappingQueue');const panel=await load('SubjectProvision');
+ await load('PersonalProvisionQueue');await load('CompanyBindingPicker');await load('CompanyMappingQueue');const panel=await load('SubjectProvision');
  const client=new rq.QueryClient({defaultOptions:{queries:{retry:false}}});let renderer;
  await act(async()=>{renderer=create(React.createElement(rq.QueryClientProvider,{client},React.createElement(panel.namespace.CompanySubjectMappings)));await new Promise(r=>setTimeout(r,20));});
+ // Query notifications may arrive after the first act under the full test runner.
+ // Wait for the ready form instead of assuming a fixed20ms scheduling window.
+ for(let attempt=0;attempt<50&&renderer.root.findAllByType('form').length===0;attempt++){
+  await act(async()=>{await new Promise(r=>setTimeout(r,20));});
+ }
+ assert(renderer.root.findAllByType('form').length>0,'company mapping form did not become ready');
  const run=async fn=>act(async()=>{fn();await new Promise(r=>setTimeout(r,20));});
  const buttons=()=>renderer.root.findAllByType('button');
  return {calls,sent,renderer,client,run,buttons,text:()=>JSON.stringify(renderer.toJSON()),
