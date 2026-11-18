@@ -24,6 +24,10 @@ base.call = call
 
 
 def setup():
+    # This is our candidate alias, not a protected prior-round artifact. Stage it
+    # before the baseline snapshot so rebuilding this round does not look like
+    # a rehearsal mutation of an unrelated executable.
+    shutil.copy2(base.OUT/'gps-tracker-api140', base.OUT/'gps-tracker-api')
     from build_cleanup_20261113 import protected, containers
     snapshot=dict(protected=protected(), containers=containers())
     previous=base.OUT/'host-before.json'
@@ -34,7 +38,6 @@ def setup():
         assert all(k.startswith(JOB.name+'/') for k in snapshot['protected'].keys()-old['protected'].keys())
     else:
         previous.write_text(json.dumps(snapshot, indent=2))
-    shutil.copy2(base.OUT/'gps-tracker-api140', base.OUT/'gps-tracker-api')
     base.setup()
 
 
