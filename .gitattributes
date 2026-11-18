@@ -113,3 +113,6 @@ ops/*provision140*.py text eol=lf
 docs/evidence/runtime141-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
 ops/*runtime141*.py text eol=lf
 ops/*tasks141*.py text eol=lf
+# Rustfmt rewrote this source with LF; keep archive/checkouts identical to the tested file.
+gps-tracker-api/src/routes/privacy_company_tasks.rs text eol=lf
+ops/check-company-tasks141-ui.mjs text eol=lf
