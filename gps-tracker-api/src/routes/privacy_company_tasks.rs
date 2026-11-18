@@ -137,9 +137,23 @@ fn expected(kind: &str) -> &str {
     }
 }
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Page {
     #[serde(default)]
     after: i64,
+    status: Option<String>,
+    category: Option<String>,
+}
+impl Page {
+    fn validate(&self) -> AppResult<()> {
+        if self.after < 0
+            || self.status.as_deref().is_some_and(|s| !matches!(s, "requested" | "submitted" | "changes_requested" | "accepted"))
+            || self.category.as_deref().is_some_and(|s| !matches!(s, "staff" | "trips" | "reservations" | "expenses" | "files" | "snapshots"))
+        {
+            return Err(AppError::BadRequest("회사 처리 요청 조회 조건이 올바르지 않습니다.".into()));
+        }
+        Ok(())
+    }
 }
 // Strict projection: no requester identity, internal reasons, inventory or scope text.
 const VIEW:&str="SELECT jsonb_build_object('id',t.id,'revision',t.revision,'status',t.status,'instructions',t.instructions,'feedback',t.feedback,'created_at',t.created_at,'expires_at',t.expires_at,'staff_id',c.staff_id,'category',c.category,'from_at',c.from_at,'until_at',c.until_at,'kind',r.kind) FROM privacy_company_tasks t JOIN privacy_company_reviews c ON c.id=t.review_id JOIN privacy_requests r ON r.id=c.request_id";
@@ -148,12 +162,17 @@ async fn inbox(
     u: AuthUser,
     Query(p): Query<Page>,
 ) -> AppResult<Json<Value>> {
-    let query=format!("{VIEW} WHERE t.company_owner_id=$1 AND t.id>$2 AND t.status<>'revoked' AND t.expires_at>now() AND c.identity='confirmed' AND r.status IN ('received','in_review','needs_information') ORDER BY t.id LIMIT 51");
+    p.validate()?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&s.db).await?;
+    let query=format!("{VIEW} WHERE t.company_owner_id=$1 AND t.id>$2 AND t.status<>'revoked' AND t.expires_at>now() AND c.identity='confirmed' AND r.status IN ('received','in_review','needs_information') AND ($3::text IS NULL OR t.status=$3) AND ($4::text IS NULL OR c.category=$4) ORDER BY t.id LIMIT 51");
     let mut rows: Vec<Value> = sqlx::query_scalar(&query)
         .bind(u.user_id)
         .bind(p.after)
-        .fetch_all(&s.db)
-        .await?;
+        .bind(p.status)
+        .bind(p.category)
+        .fetch_all(read.connection())
+        .await.map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
     let more = rows.len() > 50;
     rows.truncate(50);
     let next = if more {
@@ -524,4 +543,24 @@ async fn revoke(
     .await?;
     tx.commit().await?;
     Ok(Json(json!({"status":"revoked"})))
+}
+
+#[cfg(test)]
+mod inbox_filter_tests {
+    use super::*;
+    #[test]
+    fn legacy_cursor_and_valid_filters_are_bounded() {
+        let page: Page = serde_json::from_value(json!({})).unwrap();
+        assert_eq!(page.after, 0);
+        assert!(page.validate().is_ok());
+        for status in ["requested", "submitted", "changes_requested", "accepted"] {
+            for category in ["staff", "trips", "reservations", "expenses", "files", "snapshots"] {
+                assert!(serde_json::from_value::<Page>(json!({"after":50,"status":status,"category":category})).unwrap().validate().is_ok());
+            }
+        }
+        for value in [json!({"after":-1}), json!({"status":"revoked"}), json!({"status":""}), json!({"category":"unknown"})] {
+            assert!(serde_json::from_value::<Page>(value).unwrap().validate().is_err());
+        }
+        assert!(serde_json::from_value::<Page>(json!({"owner_id":42})).is_err());
+    }
 }

@@ -306,3 +306,14 @@ test('personal provision page filters and abort signal remain outside company sc
   pending=deferred();const read=f.api.api.subjectMappingPage({limit:50},controller.signal);controller.abort();pending.resolve(Response.json({items:[{id:99}]}));
   await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
 });
+
+test('company task inbox/detail preserve personal scope and propagate cancellation', async()=>{
+ const calls=[];let pending;const f=await fixture((url,options)=>{calls.push({url,options});return pending?pending.promise:Promise.resolve(Response.json({items:[]}));});
+ f.api.setTokens(token('A'),'refresh-A');(await f.module('lib/fleetSession.js')).setFleetOwner(12);const control=new AbortController();
+ await f.api.api.companyTaskPage({after:50,status:'changes_requested',category:'files'},control.signal);
+ await f.api.api.companyTask(51,control.signal);await f.api.api.companyTasks(10);
+ assert.match(calls[0].url,/after=50&status=changes_requested&category=files$/);assert.match(calls[1].url,/company-tasks\/51$/);assert.match(calls[2].url,/after=10$/);
+ for(const call of calls)assert.equal(call.options.headers.get('X-Fleet-Owner'),null);
+ assert.equal(calls[0].options.signal,control.signal);assert.equal(calls[1].options.signal,control.signal);
+ pending=deferred();const read=f.api.api.companyTask(51,control.signal);control.abort();pending.resolve(Response.json({task:{id:51}}));await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
+});

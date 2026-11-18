@@ -108,3 +108,8 @@ ops/*android139*.py text eol=lf
 docs/evidence/runtime140-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
 ops/*runtime140*.py text eol=lf
 ops/*provision140*.py text eol=lf
+
+# Round141 original evidence and Linux runners.
+docs/evidence/runtime141-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime141*.py text eol=lf
+ops/*tasks141*.py text eol=lf

@@ -1,7 +1,9 @@
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {api} from '../api';
-import {saveBlob} from '../lib/fileDownload';
+import {saveBlob,fileSaveMessage} from '../lib/fileDownload';
+
+import {useCompanyTaskQueue,CompanyTaskTools} from './CompanyTaskQueue';
 
 const states={requested:'처리 보고 요청',submitted:'담당자 검토 중',changes_requested:'보완 요청',accepted:'담당자 확인',revoked:'요청 회수'};
 const kinds={access:'정보 열람',rectification:'정보 정정',erasure:'정보 삭제',account_closure:'회원 탈퇴'};
@@ -11,50 +13,71 @@ const expected=k=>({access:'provided',rectification:'corrected'}[k]||'erased');
 const date=x=>new Date(x).toLocaleString('ko-KR');
 const local=x=>new Date(new Date(x).getTime()-new Date(x).getTimezoneOffset()*60000).toISOString().slice(0,16);
 const open=r=>['received','in_review','needs_information'].includes(r.status);
-async function save(t,p,admin){const blob=await api.companyProof(t.id,p.id,admin);await saveBlob(blob,`company-proof-${p.id}.${({'application/pdf':'pdf','image/png':'png','image/jpeg':'jpg'})[p.mime]||'bin'}`);}
-
 export function CompanyTaskInbox(){
- const [after,setAfter]=useState(0),[selected,setSelected]=useState(null);
- const q=useQuery({queryKey:['company-tasks',after],queryFn:()=>api.companyTasks(after),retry:false});
- if(!q.error&&!q.data?.items.length&&!after)return null;
- return <section className="rights-card"><div className="rights-heading"><h2>회사 자료 처리 요청</h2><button onClick={()=>q.refetch()}>새로고침</button></div>
+ const [selected,setSelected]=useState(null),[working,setWorking]=useState(false);
+ const q=useCompanyTaskQueue();
+ useEffect(()=>setSelected(null),[q.state,q.busy]);
+ if(q.data&&!q.data.items.length&&!q.state.status&&!q.state.category&&q.state.pages.length===1)return null;
+ return <section className="rights-card"><h2>회사 자료 처리 요청</h2>
   <p>회사 소유 계정에 지정된 범위입니다. 제출한 보고서와 증빙은 플랫폼 담당자가 검토합니다.</p>
-  {q.error&&<p role="alert">{q.error.message}</p>}
-  {q.data?.items.map(t=><details key={`${t.id}-${t.revision}`} open={selected===t.id} onToggle={e=>{if(e.currentTarget.open)setSelected(t.id);else if(selected===t.id)setSelected(null);}}><summary>#{t.id} · {categories[t.category]} · {states[t.status]}</summary>
-   {selected===t.id&&<OwnerCompanyTask id={t.id} refresh={()=>q.refetch()}/>}
-  </details>)}
-  {(after>0||q.data?.next)&&<div className="rights-heading"><button disabled={!after} onClick={()=>{setAfter(0);setSelected(null);}}>처음</button><button disabled={!q.data?.next} onClick={()=>{setAfter(q.data.next);setSelected(null);}}>다음</button></div>}
+  <CompanyTaskTools queue={q} states={states} categories={categories} disabled={working}/>
+  {q.data?.items.map(t=><article className="rights-request" key={`${t.id}-${t.revision}`}>
+   <button disabled={working} aria-expanded={selected===t.id} onClick={()=>setSelected(selected===t.id?null:t.id)}>#{t.id} · {categories[t.category]} · {states[t.status]}</button>
+   <p>제출 기한 {date(t.expires_at)}</p>
+   {selected===t.id&&<OwnerCompanyTask id={t.id} onBusy={setWorking} refresh={()=>q.refetch()}/>}
+  </article>)}
  </section>;
 }
-function ProofList({task,proofs,admin,onRead}){
- const [busy,setBusy]=useState(false),[error,setError]=useState('');
- async function download(p){setBusy(true);setError('');try{await save(task,p,admin);onRead?.(p);}catch(e){setError(e.message);}finally{setBusy(false);}}
+function ProofList({task,proofs,admin,onRead,onBusy,disabled=false}){
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
+ const generation=useRef(0);
+ const proofVersion=proofs.map(p=>`${p.id}:${p.sha256}`).join('|');
+ useEffect(()=>{generation.current++;setError('');setMessage('');setBusy(false);return()=>{generation.current++;};},[task.id,task.revision,proofVersion]);
+ useEffect(()=>{onBusy?.(busy);return()=>onBusy?.(false);},[busy,onBusy]);
+ async function download(p){
+  const current=++generation.current;setBusy(true);setError('');setMessage('');onRead?.(null);
+  try{
+   const blob=await api.companyProof(task.id,p.id,admin);
+   if(current!==generation.current)return;
+   const result=await saveBlob(blob,`company-proof-${p.id}.${({'application/pdf':'pdf','image/png':'png','image/jpeg':'jpg'})[p.mime]||'bin'}`);
+   if(current!==generation.current)return;
+   setMessage(fileSaveMessage(result));
+   // Starting a browser download/share is not proof of review: the operator
+   // must still explicitly attest. Cancellation/failure never enables it.
+   if(['saved','share_opened','browser_started'].includes(result?.status))onRead?.(p);
+  }catch(e){if(current===generation.current)setError(e.message);}
+  finally{if(current===generation.current)setBusy(false);}
+ }
  return <><p>증빙은 파일로 내려받습니다. 필요한 정보만 확인하고 별도 전달·보관 범위를 지켜 주세요.</p>{proofs.map(p=><article className="rights-request" key={p.id}>
   <p>제출 #{p.id} · {date(p.created_at)} · {results[p.outcome]}</p><p>처리 {date(p.executed_at)} · {p.affected_count}건</p><p className="rights-text">{p.summary}</p><p>근거 {p.evidence_reference}</p>
-  <div className="rights-package-file"><span>{p.filename} · {Math.ceil(p.size/1024)}KB</span><button disabled={busy} onClick={()=>download(p)}>증빙 내려받기</button></div>
- </article>)}{error&&<p role="alert">{error}</p>}</>;
+  <div className="rights-package-file"><span>{p.filename} · {Math.ceil(p.size/1024)}KB</span><button disabled={busy||disabled} onClick={()=>download(p)}>증빙 내려받기</button></div>
+ </article>)}{message&&<p role="status">{message}</p>}{error&&<p role="alert">{error}</p>}</>;
 }
-export function OwnerCompanyTask({id,refresh}){
- const q=useQuery({queryKey:['company-task',id],queryFn:()=>api.companyTask(id),retry:false});
+export function OwnerCompanyTask({id,refresh,onBusy}){
+ const q=useQuery({queryKey:['company-task',id],queryFn:({signal})=>api.companyTask(id,signal),retry:false,staleTime:0,gcTime:0,refetchOnWindowFocus:false,refetchOnReconnect:false});
+ const [formBusy,setFormBusy]=useState(false),[proofBusy,setProofBusy]=useState(false);
+ useEffect(()=>{onBusy?.(formBusy||proofBusy);return()=>onBusy?.(false);},[formBusy,proofBusy,onBusy]);
+ if(q.isFetching)return <p role="status">요청의 유효 범위를 확인하고 있습니다.</p>;
  if(q.error)return <p role="alert">{q.error.message} <button onClick={()=>q.refetch()}>다시 확인</button></p>;
  if(!q.data)return <p role="status">불러오는 중…</p>;
  const {task:t,submissions}=q.data;
  return <div><p>{kinds[t.kind]} · 회사 명단 #{t.staff_id} · {categories[t.category]}</p><p>{date(t.from_at)} ~ {date(t.until_at)} (종료 시각 제외)</p><p>제출 기한 {date(t.expires_at)}</p><p className="rights-text">{t.instructions}</p>
   {t.feedback&&<p className="rights-notice rights-text">담당자 안내: {t.feedback}</p>}
-  {['requested','changes_requested'].includes(t.status)&&<CompanySubmissionForm key={t.revision} task={t} refresh={async()=>{await q.refetch();await refresh();}}/>}
-  {!!submissions.length&&<ProofList task={t} proofs={submissions}/>}
+  {['requested','changes_requested'].includes(t.status)&&<CompanySubmissionForm key={t.revision} task={t} onBusy={setFormBusy} disabled={proofBusy} revalidate={()=>q.refetch()} refresh={async()=>{await q.refetch();await refresh();}}/>}
+  {!!submissions.length&&<ProofList task={t} proofs={submissions} onBusy={setProofBusy} disabled={formBusy}/>}
  </div>;
 }
-export function CompanySubmissionForm({task,refresh}){
+export function CompanySubmissionForm({task,refresh,onBusy,disabled=false,revalidate}){
  const [form,setForm]=useState({outcome:expected(task.kind),executed_at:local(new Date()),affected_count:0,summary:'',evidence_reference:''});
  const [file,setFile]=useState(null),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ useEffect(()=>{onBusy?.(busy);return()=>onBusy?.(false);},[busy,onBusy]);
  function field(k,v){setForm(f=>({...f,[k]:v}));setConfirmed(false);}
  async function submit(e){e.preventDefault();if(!confirmed||!file)return;setBusy(true);setError('');try{
   if(file.size>2*1024*1024||!['application/pdf','image/png','image/jpeg'].includes(file.type))throw Error('PDF·PNG·JPG 파일을 2MB 이하로 첨부해 주세요.');
   const file_base64=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=()=>reject(Error('파일을 읽지 못했습니다.'));r.readAsDataURL(file);});
   await api.submitCompanyTask(task.id,{...form,revision:task.revision,executed_at:new Date(form.executed_at).toISOString(),affected_count:Number(form.affected_count),filename:file.name,mime:file.type,file_base64,confirmed});await refresh();
- }catch(e){setError(e.message);}finally{setBusy(false);}}
- return <form onSubmit={submit}><fieldset disabled={busy}>
+ }catch(e){setError(e.message);if(e.status===409||e.status===404||e.status===403)await revalidate?.();}finally{setBusy(false);}}
+ return <form onSubmit={submit}><fieldset disabled={busy||disabled}>
   <label>처리 결과<select value={form.outcome} onChange={e=>field('outcome',e.target.value)}>{[expected(task.kind),'limited'].map(k=><option key={k} value={k}>{results[k]}</option>)}</select></label>
   <div className="rights-date-row"><label>실제 처리 시각<input required type="datetime-local" value={form.executed_at} onChange={e=>field('executed_at',e.target.value)}/></label><label>처리 건수<input required type="number" min="0" max="10000000" value={form.affected_count} onChange={e=>field('affected_count',e.target.value)}/></label></div>
   <label>처리 방법·결과 또는 제한 사유<textarea required maxLength={2000} rows={3} value={form.summary} onChange={e=>field('summary',e.target.value)}/></label>
@@ -90,18 +113,20 @@ export function AdminCompanyTasks({row,request,refresh,children}){
 export function CompanyTaskDecision({item,row,request,refresh}){
  const {task:t,submissions}=item,latest=submissions[0];
  const [read,setRead]=useState(null),[confirmed,setConfirmed]=useState(false),[feedback,setFeedback]=useState(''),[message,setMessage]=useState(''),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [proofBusy,setProofBusy]=useState(false);
+ useEffect(()=>{setRead(null);setConfirmed(false);},[t.id,t.revision,latest?.id,latest?.sha256]);
  const canReview=open(request)&&t.status==='submitted'&&new Date(t.expires_at)>new Date();
  async function run(accept){setBusy(true);setError('');try{await api.decideCompanyTask(t.id,{request_revision:request.revision,review_revision:row.revision,revision:t.revision,submission_id:latest.id,sha256:read.sha256,accept,confirmed,feedback,public_message:message});await refresh();}catch(e){setError(e.message);}finally{setBusy(false);}}
  async function revoke(e){e.preventDefault();setBusy(true);setError('');try{await api.revokeCompanyTask(t.id,{request_revision:request.revision,revision:t.revision,reason});await refresh();}catch(e){setError(e.message);}finally{setBusy(false);}}
  return <article className="rights-request"><div className="rights-heading"><h4>제출 요청 #{t.id}</h4><span>{states[t.status]}</span></div><p>기한 {date(t.expires_at)}</p><p className="rights-text">{t.instructions}</p>{t.feedback&&<p className="rights-notice rights-text">{t.feedback}</p>}
-  {!!submissions.length&&<ProofList task={t} proofs={submissions} admin onRead={p=>{setRead(p);setConfirmed(false);}}/>}
-  {canReview&&<fieldset disabled={busy}><label>회사에 전달할 검토 결과<textarea maxLength={1000} value={feedback} onChange={e=>{setFeedback(e.target.value);setConfirmed(false);}}/></label>
+  {!!submissions.length&&<ProofList task={t} proofs={submissions} admin disabled={busy} onBusy={setProofBusy} onRead={p=>{setRead(p);setConfirmed(false);}}/>}
+  {canReview&&<fieldset disabled={busy||proofBusy}><label>회사에 전달할 검토 결과<textarea maxLength={1000} value={feedback} onChange={e=>{setFeedback(e.target.value);setConfirmed(false);}}/></label>
    <label>요청자에게 전달할 안내<textarea maxLength={1000} value={message} onChange={e=>{setMessage(e.target.value);setConfirmed(false);}}/></label>
    <p>최신 증빙을 내려받아 실제 전달·정정·삭제 또는 제한 근거를 확인하세요. 다운로드 기록과 파일 해시만으로 처리 사실이 증명되지는 않습니다.</p>
    <label className="rights-confirm"><input type="checkbox" disabled={read?.id!==latest?.id} checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> 최신 증빙의 내용과 실제 처리 결과를 확인했습니다.</label>
    <div className="rights-heading"><button disabled={!confirmed||read?.id!==latest?.id||!feedback.trim()||!message.trim()} onClick={()=>run(false)}>보완 요청</button><button disabled={!confirmed||read?.id!==latest?.id||!feedback.trim()||!message.trim()} onClick={()=>run(true)}>검토 결과 대장에 반영</button></div><p>이 범위의 검토 결과만 반영합니다. 전체 개인정보 요청은 별도로 처리하세요.</p>
   </fieldset>}
-  {open(request)&&t.status!=='revoked'&&<details><summary>제출 요청 회수</summary><form onSubmit={revoke}><fieldset disabled={busy}><label>회수 사유<input required maxLength={1000} value={reason} onChange={e=>setReason(e.target.value)}/></label><p>회사 접근을 차단하고 해당 검토 항목을 대기 상태로 돌립니다. 기존 증빙·이력은 보존합니다.</p><button type="submit">요청 회수</button></fieldset></form></details>}
+  {open(request)&&t.status!=='revoked'&&<details><summary>제출 요청 회수</summary><form onSubmit={revoke}><fieldset disabled={busy||proofBusy}><label>회수 사유<input required maxLength={1000} value={reason} onChange={e=>setReason(e.target.value)}/></label><p>회사 접근을 차단하고 해당 검토 항목을 대기 상태로 돌립니다. 기존 증빙·이력은 보존합니다.</p><button type="submit">요청 회수</button></fieldset></form></details>}
   {error&&<p role="alert" className="rights-error">{error}</p>}
  </article>;
 }
