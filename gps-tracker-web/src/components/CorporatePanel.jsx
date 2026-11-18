@@ -112,7 +112,6 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setMissingSchedulesOnly(false); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     toolbar={toolbar} globalNavigation={globalNavigation}
     headerNavigation={sectionNavigation[tab]&&<nav className="business-subnav no-print" aria-label={`${corporateTabs.find(item=>item.id===tab)?.label} 하위 메뉴`}>{sectionNavigation[tab].map(([id,label])=><button type="button" className="business-subnav-item" key={id} aria-current={sectionTabs[tab]===id?'page':undefined} onClick={()=>selectSection(id)}>{label}</button>)}</nav>}
-    mobileAction={<BusinessButton icon="user" onClick={()=>setTab('staff')}>사용자</BusinessButton>}
     >
     {subjectScoped && tab!=='report' && <p className="business-note" role="status">{subjectScopeNote}</p>}
     {needsVehicles&&(!terminalsReady||!vehiclesReady) ? (vehicleNotice || <SkeletonList count={3} itemHeight={140}/>) : <>
@@ -311,9 +310,9 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
           ))}
         </select>
         <div className="corporate-report-date-range">
-        <input aria-label="운행 조회 시작일" type="date" value={from} onChange={e => setFrom(e.target.value)} />
-        <span>~</span>
-        <input aria-label="운행 조회 종료일" type="date" value={to} onChange={e => setTo(e.target.value)} />
+          <label><span>시작일</span><input aria-label="운행 조회 시작일" type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>
+          <span aria-hidden="true">~</span>
+          <label><span>종료일</span><input aria-label="운행 조회 종료일" type="date" value={to} onChange={e => setTo(e.target.value)} /></label>
         </div>
         <BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={!!filterDraft} onClick={openFilters}>필터{filterActive && <span className="corporate-report-dot" aria-label="필터 적용 중"/>}</BusinessButton>
         {filterDraft&&<Modal open title="운행 필터" size={640} onClose={()=>setFilterDraft(null)} footer={<div className="corporate-report-filter-footer"><BusinessButton onClick={()=>setFilterDraft({driver:'all',purpose:'all',minHours:'',onlyIncomplete:false,onlyReview:false})}>초기화</BusinessButton><div><BusinessButton onClick={()=>setFilterDraft(null)}>취소</BusinessButton><BusinessButton primary disabled={draftHoursInvalid} onClick={applyFilters}>적용</BusinessButton></div></div>}>

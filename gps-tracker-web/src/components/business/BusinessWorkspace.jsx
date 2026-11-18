@@ -67,11 +67,26 @@ export function BusinessWorkspace({ renderVehicleDetail, title, description, tab
     {onNavigate && <nav className="app-bottom-nav business-mobile-nav no-print" aria-label={`${title} 빠른 메뉴`}>
       <button className="business-mobile-item" aria-current={tab === tabs[0].id ? 'page' : undefined} onClick={() => choose(tabs[0].id)}><Icon name="home" size={22} />현황</button>
       <button className="business-mobile-item" aria-current={(kind === 'corporate' ? activeGroup === 'vehicles' : tab === schedule?.id) ? 'page' : undefined} onClick={() => choose(kind === 'corporate' ? lastInGroup.vehicles || 'vehicles' : schedule.id)}><Icon name={kind === 'corporate' ? 'list' : 'clock'} size={22} />{kind === 'rentcar' ? '배차표' : '차량'}</button>
-      <div className="business-mobile-create">{mobileAction || action}</div>
+      {corporate && tabs.some(item => item.id === 'staff')
+        ? <button type="button" className="business-mobile-item" aria-current={activeGroup === 'staff' ? 'page' : undefined} onClick={() => choose('staff')}><Icon name="user" size={22} />사용자</button>
+        : <div className="business-mobile-create">{mobileAction || action}</div>}
       <button className="business-mobile-item" onClick={() => onNavigate('home')}><Icon name="mapPin" size={22} />지도</button>
       <button className="business-mobile-item" aria-expanded={more} onClick={() => setMore(true)}><Icon name="more" size={22} />더보기</button>
     </nav>}
-    {more && <BusinessDrawer title={`${title} 메뉴`} onClose={() => setMore(false)}><div className="business-more-menu">{groups ? groups.map(group => <section className="business-menu-group" key={group.id}><h3>{group.label}</h3>{tabs.filter(item => item.group === group.id).map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}>{item.label}</button>)}</section>) : tabs.map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}><Icon name={item.icon} size={18} />{item.label}</button>)}<hr />{corporate ? accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setMore(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>) : <><button className="business-button" onClick={() => { setMore(false); onNavigate('devices'); }}>단말기 관리</button><button className="business-button" onClick={() => { setMore(false); onNavigate('profile'); }}>내정보·계정 유형</button></>}</div></BusinessDrawer>}
+    {more && <BusinessDrawer title={`${title} 메뉴`} onClose={() => setMore(false)}>
+      <div className={`business-more-menu${corporate ? ' business-more-menu--corporate' : ''}`}>
+        {groups ? groups.map(group => {
+          const items = tabs.filter(item => item.group === group.id);
+          const links = items.map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}>
+            {corporate && <Icon name={item.icon} size={18} />}{item.label}
+          </button>);
+          if (corporate && items.length === 1) return links[0];
+          return <section className="business-menu-group" key={group.id}><h3>{group.label}</h3>{links}</section>;
+        }) : tabs.map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}><Icon name={item.icon} size={18} />{item.label}</button>)}
+        <hr />
+        {corporate ? accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setMore(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>) : <><button className="business-button" onClick={() => { setMore(false); onNavigate('devices'); }}>단말기 관리</button><button className="business-button" onClick={() => { setMore(false); onNavigate('profile'); }}>내정보·계정 유형</button></>}
+      </div>
+    </BusinessDrawer>}
     {accountMenu && onNavigate && <BusinessDrawer title="계정 메뉴" onClose={() => setAccountMenu(false)}><div className="business-more-menu">{accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setAccountMenu(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>)}</div></BusinessDrawer>}
     {selected && (renderVehicleDetail ? renderVehicleDetail(selected,()=>setSelectedId(null)) : <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} onUpdated={onVehiclesChange} />)}
   </section></VehicleContext.Provider></SelectionContext.Provider>;
