@@ -1,10 +1,12 @@
 # GPS 작업 인계 — 2026-11-18
 
+**139차 Android 호환성·배포 완료 (2026-11-18):** 앱 **1.0.8(14)**와 웹 **android139-web-20261118-r1**을 게시했다. JSON·PNG/JPEG/WebP/GIF·XLSX·GPX를 기존 CSV/PDF와 함께 저장·공유하고, 구형 앱 안내·취소·파일 검토 확인 처리를 보완했다. Flutter35·Kotlin2·브리지JS·웹278검증, SM-F711N/Android15 실물9파일 해시 일치·공유/취소 확인, 같은 서명으로 실제 최종 APK 설치와 기존 로그인 유지·개인정보 요청 화면 확인을 완료했다. [139차 인계·APK·복구](location-business-android139-20261118.md), [실제 화면7장·원본 증거](../evidence/android139-20261118/README.md), [별도 앱 PR2](https://github.com/yeyebee/gps-tracker-app/pull/2)를 따른다. **API review137-20261116-r3·schema114·기존 정책OFF 그대로, dev-gps 변경과 추가 부하 시험 없음.** 웹만139로 전환했으며, 아래137·138 기록은 당시 배포 내역이다.
+
 **SSH 접속 정책 변경 (2026-11-18 11:27 KST):** 다른 사무실의 부사수 작업을 위해 사용자 지시로 공유 VPS의 TCP22 출발지 IP 제한을 해제했다(IPv4/IPv6). 기존 `gps-dev` 키6개·키 인증·비밀번호 로그인 차단·Fail2ban·계정별 권한은 유지했다. 별도 외부 VPS(`115.68.178.125`)를 경유한 **실제 gps-dev 키 로그인과 개발 소스 읽기**를 확인했다. 개발/운영 API 정상, 서비스 재시작 없음. [변경·검증·복구 기록](ssh-access-20261118.md)을 따른다. 11월11일 계획서용 SSH 제한 캡처는 당시 상태의 증거이며 현재 IP 제한 상태로 해석하지 않는다.
 
 **개발 서버 정합 완료 (16:55:36 KST):** 부사수 UI 작업용 `dev-gps.serial.kr`도 최신 웹·API와 스키마114로 갱신했다. 개발 DB72→114, 기존 사용자6/장치10/위치47,823건 유지, 운영 데이터/키 복사 없음. API는 `review137-20261116-r3`를 재사용하되 `environment=development`, 웹은 `dev-aligned-20261116-r1`이다. 개발 소스 `/home/gps-dev/workspace/gps-tracker`, 로컬 브랜치 `codex/dev-aligned-20261116`, 제품 커밋 `a4c6cb0`. [개발 환경·UI 작업/배포 방법·백업](dev-alignment-20261116.md)과 [실제 화면·검증 증거](../evidence/dev138-20261116/README.md)를 따른다. 기존 개발 설정/기능OFF 유지, 운영 GPS/Shield/Nginx/PDF 변경 없음. APK 변경 없음.
 
-다른 PC에서 작업을 이어갈 때 먼저 읽는 문서다. **현재 실제 서버는 팀 검토용 137차 배포: API `review137-20261116-r3`, DB 스키마114, 웹 `review137-20261116-r2`**다. 2026-11-16 11:09 KST API/DB 전환, 11:15:20 KST 주 도메인 웹 교체와 실제 계정 화면 확인을 완료했다. 11:26:10 KST에는 감시 GET `/ingest`가405 대신503을 받던 호환성을 수정한 r3 API를 적용했다(Rust98 통과·HTTP/HTTPS GET/HEAD405 확인). [137차 배포·복구·제한](location-business-review137-20261116.md)과 [증거](../evidence/review137-20261116/README.md)를 먼저 읽는다.
+다른 PC에서 작업을 이어갈 때 먼저 읽는 문서다. **현재 실제 서버는 팀 검토용 137차 배포: API `review137-20261116-r3`, DB 스키마114, 웹 `android139-web-20261118-r1`**다. 웹은11월18일139차에서 추가 갱신했다. 2026-11-16 11:09 KST API/DB 전환, 11:15:20 KST 주 도메인 웹 교체와 실제 계정 화면 확인을 완료했다. 11:26:10 KST에는 감시 GET `/ingest`가405 대신503을 받던 호환성을 수정한 r3 API를 적용했다(Rust98 통과·HTTP/HTTPS GET/HEAD405 확인). [137차 배포·복구·제한](location-business-review137-20261116.md)과 [증거](../evidence/review137-20261116/README.md)를 먼저 읽는다.
 
 **사용자 범위 확정:** 실제 서비스 개시가 아니라 팀원에게 디자인·백엔드·DB 변경을 보여주기 위한 배포다. 백신·WAF 등의 인수 미완료로 이번 검토 배포를 막지 않는다. 기존 설정은 유지했고 저장 암호화/자동 파기/신규 취급대장/정보주체 제공·통보/관리자 보안/TLS 강제는 미활성 상태다. 부하 검증 추가 없음. 18A·schema99는 아래 과거 라운드의 당시 상태이며 현재 상태가 아니다.
 
@@ -264,7 +266,7 @@ PDF 전체896MiB·시험 전체4GiB·swap0, 정상OOM0. 별도2GiB 할당 장애
 - 작업 브랜치: `codex/location-business-prep`
 - PR 대상: `main`. 앞선 GPS/Fleet 개선과 위치정보사업 준비가 누적되어 있다. 최신 패치만의 작은 PR로 해석하지 않는다.
 - [PR #248](https://github.com/ET-NOTE/gps-tracker/pull/248)은 검토용 초안으로 유지한다. 운영 배포 완료와 GitHub 병합 완료는 서로 다르다.
-- 이 브랜치의 API·웹·`idf_caltest` 소스가 이어받을 기준이다. Flutter 앱은 별도 저장소이며 이 인계로 APK가 새로 만들어지지 않는다.
+- 이 브랜치의 API·웹·`idf_caltest` 소스가 이어받을 기준이다. Flutter 앱은 별도 저장소 `yeyebee/gps-tracker-app`이다.139차에서 `codex/android139-file-compat` 브랜치로1.0.8(14)을 빌드·배포했으며 [139차 인계](location-business-android139-20261118.md)를 함께 읽는다.
 - **운영 패치 소스만 재현할 때:** `codex/privacy-log-hotfix-20261107`의 `ee295ece717eef7140171b289514bf1c62c007b5`. 개발 브랜치 HEAD는 운영 미배포 스키마100~113을 포함한다. 격리 리허설 통과를 운영 배포 승인으로 해석하지 않으며 운영 배포 절차 없이 그대로 올리지 않는다.
 
 새 PC에서는 다음과 같이 시작한다.

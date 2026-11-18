@@ -1,0 +1,73 @@
+{
+  "model": "SM-F711N",
+  "android": "15",
+  "files": [
+    {
+      "format": "csv",
+      "mime": "text/csv",
+      "bytes": 35,
+      "sha256": "e2d5c90de7d5d837fb1f5e7f220f846e8bf95a41687a0ed45947e33fa8888dbe",
+      "saved_bytes_equal": true
+    },
+    {
+      "format": "pdf",
+      "mime": "application/pdf",
+      "bytes": 1558,
+      "sha256": "f6690ca913565091145054526af5ea61d87aa95ec2ef40834795b95c3439525e",
+      "saved_bytes_equal": true
+    },
+    {
+      "format": "json",
+      "mime": "application/json",
+      "bytes": 47,
+      "sha256": "f2d625fef82397f1add6eea189f70a78341c8bed36e5a4c8b54055ac99d03b4a",
+      "saved_bytes_equal": true
+    },
+    {
+      "format": "png",
+      "mime": "image/png",
+      "bytes": 77,
+      "sha256": "96729a3556fa35faa8529e5f7dff1b46f0a97751e858020453abc37848cbbb2c",
+      "saved_bytes_equal": true
+    },
+    {
+      "format": "jpg",
+      "mime": "image/jpeg",
+      "bytes": 633,
+      "sha256": "beafc57911e2564c1bc5527c772540d2dbcf08fbe0f89e2ba7038cca4a1768dd",
+      "saved_bytes_equal": true
+    },
+    {
+      "format": "webp",
+      "mime": "image/webp",
+      "bytes": 66,
+      "sha256": "5646f7f61b0e694eb7f915a28e308013938d24c6ad11691b8faf94932c9a1245",
+      "saved_bytes_equal": true
+    },
+    {
+      "format": "gif",
+      "mime": "image/gif",
+      "bytes": 54,
+      "sha256": "e682d572fec059b1100ce8cbb6e23d69a0aa98d1f38dca9ee53c9457de1a8cdd",
+      "saved_bytes_equal": true
+    },
+    {
+      "format": "gpx",
+      "mime": "application/gpx+xml",
+      "bytes": 83,
+      "sha256": "1ff8f523c55469557aef705b4f1aa6182b1fdcfeded9b9dab4b094a74b5e3c72",
+      "saved_bytes_equal": true
+    },
+    {
+      "format": "xlsx",
+      "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "bytes": 486,
+      "sha256": "0607da850aaedead74feb895bf3ce0ce7f24d74bb6dcdc0ecc25505d2f448153",
+      "saved_bytes_equal": true
+    }
+  ],
+  "share_opened_not_sent": true,
+  "bottom_sheet_cancelled": true,
+  "document_picker_cancelled": true,
+  "verified_existing_files": true
+}

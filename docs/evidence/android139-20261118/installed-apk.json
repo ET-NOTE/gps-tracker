@@ -1,0 +1,9 @@
+{
+  "model": "SM-F711N",
+  "android": "15",
+  "version": "1.0.8",
+  "version_code": 14,
+  "installed_apk_sha256": "cef467a459a55eb07f8ce2bd0d905793de00c10f390711bc44d2bad4b30ec016",
+  "release_apk_equal": true,
+  "data_reset": false
+}

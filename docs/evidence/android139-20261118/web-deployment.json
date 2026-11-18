@@ -1,0 +1,32 @@
+{
+  "release": "android139-web-20261118-r1",
+  "previous": "/home/mmm/releases/review137-20261116-r2/web",
+  "target": "/home/mmm/releases/android139-web-20261118-r1/web",
+  "protected_state_unchanged": true,
+  "inherited_assets": {
+    "linked": 27,
+    "copied": 0,
+    "reused_bytes": 2046833
+  },
+  "after": {
+    "files": {
+      "/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api": "62f67f352bcdc677273a88caa7c44b4c409d760c97b9da9128f734da790f648d",
+      "/home/mmm/projects/gps-tracker-api/.env": "fab21aeaaef7a00f1283530e1136690c28d416d5d4d62b9968d4a6a6cdb3df55",
+      "/home/gps-dev/gps-tracker-web-dev/dist/index.html": "a2ad8d21d25c892cfdb62739e57888da442d0eaea25d255cfb9a862c13d5247f"
+    },
+    "services": {
+      "gps-tracker-api": "MainPID=1833697\nExecMainStartTimestamp=Mon 2026-11-16 11:26:09 KST\nActiveState=active\n",
+      "gps-tracker-api-dev": "MainPID=2276664\nExecMainStartTimestamp=Wed 2026-11-18 12:41:19 KST\nActiveState=active\n",
+      "nginx": "MainPID=893\nExecMainStartTimestamp=Fri 2026-11-06 11:04:47 KST\nActiveState=active\n",
+      "postgresql": "MainPID=0\nExecMainStartTimestamp=Fri 2026-11-06 11:04:53 KST\nActiveState=active\n",
+      "gps-pdf-render.socket": "ActiveState=active\n"
+    },
+    "health": {
+      "db": true,
+      "environment": "production",
+      "ok": true,
+      "release": "review137-20261116-r3",
+      "service": "gps-tracker-api"
+    }
+  }
+}
