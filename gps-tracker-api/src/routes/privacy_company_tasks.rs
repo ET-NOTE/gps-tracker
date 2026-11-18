@@ -147,10 +147,22 @@ struct Page {
 impl Page {
     fn validate(&self) -> AppResult<()> {
         if self.after < 0
-            || self.status.as_deref().is_some_and(|s| !matches!(s, "requested" | "submitted" | "changes_requested" | "accepted"))
-            || self.category.as_deref().is_some_and(|s| !matches!(s, "staff" | "trips" | "reservations" | "expenses" | "files" | "snapshots"))
+            || self.status.as_deref().is_some_and(|s| {
+                !matches!(
+                    s,
+                    "requested" | "submitted" | "changes_requested" | "accepted"
+                )
+            })
+            || self.category.as_deref().is_some_and(|s| {
+                !matches!(
+                    s,
+                    "staff" | "trips" | "reservations" | "expenses" | "files" | "snapshots"
+                )
+            })
         {
-            return Err(AppError::BadRequest("회사 처리 요청 조회 조건이 올바르지 않습니다.".into()));
+            return Err(AppError::BadRequest(
+                "회사 처리 요청 조회 조건이 올바르지 않습니다.".into(),
+            ));
         }
         Ok(())
     }
@@ -171,7 +183,8 @@ async fn inbox(
         .bind(p.status)
         .bind(p.category)
         .fetch_all(read.connection())
-        .await.map_err(crate::services::location_read_budget::query_error)?;
+        .await
+        .map_err(crate::services::location_read_budget::query_error)?;
     read.finish().await?;
     let more = rows.len() > 50;
     rows.truncate(50);
@@ -554,12 +567,32 @@ mod inbox_filter_tests {
         assert_eq!(page.after, 0);
         assert!(page.validate().is_ok());
         for status in ["requested", "submitted", "changes_requested", "accepted"] {
-            for category in ["staff", "trips", "reservations", "expenses", "files", "snapshots"] {
-                assert!(serde_json::from_value::<Page>(json!({"after":50,"status":status,"category":category})).unwrap().validate().is_ok());
+            for category in [
+                "staff",
+                "trips",
+                "reservations",
+                "expenses",
+                "files",
+                "snapshots",
+            ] {
+                assert!(serde_json::from_value::<Page>(
+                    json!({"after":50,"status":status,"category":category})
+                )
+                .unwrap()
+                .validate()
+                .is_ok());
             }
         }
-        for value in [json!({"after":-1}), json!({"status":"revoked"}), json!({"status":""}), json!({"category":"unknown"})] {
-            assert!(serde_json::from_value::<Page>(value).unwrap().validate().is_err());
+        for value in [
+            json!({"after":-1}),
+            json!({"status":"revoked"}),
+            json!({"status":""}),
+            json!({"category":"unknown"}),
+        ] {
+            assert!(serde_json::from_value::<Page>(value)
+                .unwrap()
+                .validate()
+                .is_err());
         }
         assert!(serde_json::from_value::<Page>(json!({"owner_id":42})).is_err());
     }
