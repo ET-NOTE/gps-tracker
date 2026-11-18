@@ -36,3 +36,25 @@
 @media screen and (min-width:1200px){
 .business-workspace--corporate .fleet-directory-layout{min-height:calc(100dvh - 132px)}
 .business-workspace--corporate .fleet-directory-content>.fleet-directory-notice{flex-shrink:0}}
+
+@media screen and (min-width:1200px){
+  :is(.fleet-assets-list,.fleet-people-cartax) > .fleet-directory-layout {
+    gap: 16px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  :is(.fleet-assets-list,.fleet-people-cartax) .fleet-directory-sidebar {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  :is(.fleet-assets-list,.fleet-people-cartax) .fleet-directory-group[aria-pressed=true] {
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 90%, #4a759b);
+  }
+}
+@media screen and (min-width:1200px) and (max-width:1599px){
+  :is(.fleet-assets-list,.fleet-people-cartax) > .fleet-directory-layout {
+    grid-template-columns: 200px minmax(0,1fr);
+  }
+}

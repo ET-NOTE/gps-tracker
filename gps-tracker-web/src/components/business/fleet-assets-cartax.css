@@ -16,7 +16,7 @@
 .business-workspace--corporate .fleet-assets-state-groups button:hover{background:var(--surface-2)}
 .business-workspace--corporate .fleet-assets-state-groups button[aria-pressed=true]{background:color-mix(in srgb,var(--primary) 9%,var(--surface));color:var(--primary);font-weight:600}
 .business-workspace--corporate .fleet-assets-state-groups button:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
-.business-workspace--corporate .fleet-assets-group-count{display:inline-flex;align-items:center;justify-content:center;min-width:28px;padding:2px 8px;border-radius:10px;background:var(--surface-2);color:var(--text-2);font-size:16px;font-variant-numeric:tabular-nums}
+.business-workspace--corporate .fleet-assets-group-count{display:inline-flex;align-items:center;justify-content:center;min-width:28px;padding:2px 7px;border-radius:4px;background:var(--surface-2);color:var(--text-2);font-size:16px;font-variant-numeric:tabular-nums}
 .business-workspace--corporate .fleet-assets-ledger{overflow:hidden;display:flex;flex-direction:column;min-height:0;flex:1}
 .business-workspace--corporate .fleet-assets-ledger>.fleet-asset-table-wrap{border:0}
 .business-workspace--corporate .fleet-assets-ledger>.fleet-asset-table-wrap:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
@@ -31,6 +31,7 @@
 .business-workspace--corporate .fleet-assets-cartax-table td:first-child{min-width:250px;max-width:320px}
 .business-workspace--corporate .fleet-assets-cartax-table td:nth-child(2){min-width:130px;max-width:220px}
 .business-workspace--corporate .fleet-assets-cartax-table td:nth-child(3){min-width:160px;max-width:250px}
+.business-workspace--corporate .fleet-assets-cartax-table td:nth-child(3)>div{word-break:keep-all;overflow-wrap:anywhere}
 .business-workspace--corporate .fleet-assets-cartax-table td:nth-child(5){white-space:nowrap}
 .business-workspace--corporate .fleet-assets-cartax-table small{margin-top:4px;font-size:16px;color:var(--text-3)}
 .business-workspace--corporate .fleet-assets-cartax-table .business-link{display:block;min-height:0;padding:0;text-align:left;font-size:18px;font-weight:500;line-height:1.5;white-space:normal;overflow-wrap:anywhere;color:var(--text)}
@@ -87,6 +88,19 @@
 .fleet-assets-editor fieldset{padding:18px 0 0;border:0;border-top:1px solid var(--border);border-radius:0}
 .fleet-assets-editor legend{padding:0 8px 0 0;font-size:18px;font-weight:600}
 .fleet-assets-editor summary{font-size:18px}
+@media screen and (min-width:1200px){
+ .business-workspace--corporate .fleet-assets-controls{padding:0 0 16px;border:0;background:transparent}
+ .business-workspace--corporate .fleet-assets-ledger{border:1px solid var(--border);border-radius:6px}
+}
+@media screen and (max-width:1599px){
+ .business-workspace--corporate .fleet-assets-cartax-table{min-width:900px}
+ .business-workspace--corporate .fleet-assets-cartax-table :is(th,td){padding-inline:12px}
+ .business-workspace--corporate .fleet-assets-cartax-table td:first-child{min-width:180px}
+ .business-workspace--corporate .fleet-assets-cartax-table td:nth-child(2){min-width:120px;word-break:keep-all}
+ .business-workspace--corporate .fleet-assets-cartax-table td:nth-child(3){min-width:120px}
+ .business-workspace--corporate .fleet-assets-identity{gap:10px}
+ .business-workspace--corporate .fleet-assets-thumbnail{flex-basis:44px;width:44px;height:42px}
+}
 @media(max-width:1199px){
  .business-workspace--corporate .fleet-assets-state-groups{display:flex;gap:8px;flex-wrap:wrap}
  .business-workspace--corporate .fleet-assets-state-groups button{width:auto;flex-shrink:0;min-height:48px;padding:10px 12px}

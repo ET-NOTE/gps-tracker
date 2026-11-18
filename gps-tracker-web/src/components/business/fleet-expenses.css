@@ -44,17 +44,18 @@
 .business-workspace--corporate .expense-ledger{display:flex;flex-direction:column;overflow:hidden;min-height:min(560px,60vh)}
 .business-workspace--corporate .expense-ledger>.fleet-asset-table-wrap{border:0;min-width:0;flex-shrink:0}
 .business-workspace--corporate .expense-ledger>.fleet-asset-table-wrap:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
-.business-workspace--corporate .expense-table{width:100%;min-width:1400px;font-size:18px;table-layout:auto}
+.business-workspace--corporate .expense-table{width:100%;min-width:1120px;font-size:18px;table-layout:auto}
 .business-workspace--corporate .expense-table thead{display:table-header-group}
 .business-workspace--corporate .expense-table tbody{display:table-row-group}
 .business-workspace--corporate .expense-table tr{display:table-row}
-.business-workspace--corporate .expense-table :is(th,td){display:table-cell;text-align:left;vertical-align:middle;padding:18px 20px!important;border:0!important;border-right:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;min-width:0;white-space:normal;overflow-wrap:anywhere}
+.business-workspace--corporate .expense-table :is(th,td){display:table-cell;text-align:left;vertical-align:middle;padding:18px clamp(12px,1vw,20px)!important;border:0!important;border-right:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;min-width:0;white-space:normal;overflow-wrap:anywhere}
 .business-workspace--corporate .expense-table td::before{content:none}
 .business-workspace--corporate .expense-table th{background:color-mix(in srgb,var(--surface) 91%,#426b94);color:var(--text-2);font-weight:600;font-size:16px;white-space:nowrap}
 .business-workspace--corporate .expense-table td{height:80px;box-sizing:border-box;line-height:1.6}
 .business-workspace--corporate .expense-table :is(th,td):last-child{border-right:0!important;text-align:center}
 .business-workspace--corporate .expense-table :is(th,td):first-child{white-space:nowrap;min-width:100px}
 .business-workspace--corporate .expense-table :is(th,td):nth-child(2){text-align:center;min-width:90px}
+.business-workspace--corporate .expense-table :is(th,td):is(:nth-child(3),:nth-child(5)){min-width:130px}
 .business-workspace--corporate .expense-table :is(th,td):nth-child(4){min-width:140px;max-width:220px}
 .business-workspace--corporate .expense-table :is(th,td):nth-child(6){min-width:86px;text-align:center}
 .business-workspace--corporate .expense-table :is(th,td).number{text-align:right;white-space:nowrap;min-width:100px;font-variant-numeric:tabular-nums}
@@ -66,8 +67,8 @@
 .business-workspace--corporate .expense-table .expense-status-pending{background:var(--status-info-bg);color:var(--status-info-text)}
 .business-workspace--corporate .expense-table .expense-status-rejected{background:var(--status-danger-bg);color:var(--status-danger-text)}
 .business-workspace--corporate .expense-table .business-button{min-height:48px;padding:10px 12px;border-radius:3px;font-size:18px;white-space:nowrap}
-.business-workspace--corporate .expense-table :is(th,td):nth-child(8){width:84px;min-width:84px;padding:18px 12px!important;text-align:center}
-.business-workspace--corporate .expense-table :is(th,td):last-child{width:116px;min-width:116px;padding:16px 20px!important;text-align:center}
+.business-workspace--corporate .expense-table :is(th,td):nth-child(8){width:76px;min-width:76px;padding:16px 10px!important;text-align:center}
+.business-workspace--corporate .expense-table :is(th,td):last-child{width:96px;min-width:96px;padding:16px 12px!important;text-align:center}
 .expense-detail-link{border:0;background:none;color:inherit;font:inherit;padding:6px 0;cursor:pointer;text-underline-offset:4px;text-decoration:underline;text-decoration-color:var(--border)}
 .expense-detail-link:hover{color:var(--primary);text-decoration-color:currentColor}
 .expense-memo-button{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;width:48px;height:48px;padding:0;border:0;border-radius:4px;background:transparent;color:var(--text-2);cursor:pointer}
@@ -167,7 +168,9 @@
  .business-workspace--corporate .expense-status-tabs{width:100%}
  .business-workspace--corporate .expense-status-tabs button{padding:10px 12px;min-height:48px}
  .business-workspace--corporate .expense-approved-total{border:0;padding:3px 6px;margin:0;gap:10px}
- .business-workspace--corporate .expense-output-actions{width:100%;justify-content:flex-end}
+ .business-workspace--corporate .expense-output-actions{position:relative;width:100%;justify-content:flex-end}
+ .business-workspace--corporate .expense-output-actions>:is(.expense-download,.expense-settings){position:static}
+ .business-workspace--corporate .expense-output-actions :is(.expense-download-menu,.expense-settings-menu){width:min(100%,224px);max-width:100%}
  .business-workspace--corporate .expense-controls .business-button{min-height:48px}
  .business-workspace--corporate .expense-ledger{min-height:0}
  .business-workspace--corporate .expense-pagination{padding:14px}

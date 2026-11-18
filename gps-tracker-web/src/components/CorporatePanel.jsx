@@ -505,7 +505,11 @@ function TripRow({ t, date, dailyKm, onEdit, onEvidence, selected, onSelect, sel
           </div>
         )}
       </td>
-      <td style={{ ...st.td, textAlign: 'right' }}>{km}{km !== '—' ? ' km' : ''}{(ann.odometer_before_km != null || ann.odometer_after_km != null)&&<small className="corporate-trip-odometer">{odometerSummary(ann)}</small>}{t.allocation_note&&<small>{t.allocation_note}</small>}</td>
+      <td style={{ ...st.td, textAlign: 'right' }}>
+        <span className="corporate-trip-distance">{km}{km !== '—' ? ' km' : ''}</span>
+        {(ann.odometer_before_km != null || ann.odometer_after_km != null) && <small className="corporate-trip-odometer">{odometerSummary(ann)}</small>}
+        {t.allocation_note && <small className="corporate-trip-distance-note">{t.allocation_note}</small>}
+      </td>
       <td style={{ ...st.td, textAlign: 'right' }}>{dailyKm}</td>
       <td style={st.td}>
         {ann.fuel_liters ? `${ann.fuel_liters}L` : '—'}

@@ -1,10 +1,11 @@
-import React,{createContext,useContext,useEffect,useRef,useState} from 'react';
+import React,{createContext,useContext,useEffect,useId,useRef,useState} from 'react';
 import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
 import {api} from '../../api';
 import {setFleetOwner,rememberFleetOwner,preferredFleetOwner} from '../../lib/fleetSession';
 import {authScope,AUTH_CHANGED} from '../../authSession';
 import {Modal,Input,Button,FormField} from '../ui';
 import {BusinessError} from './BusinessWorkspace';
+import Icon from '../Icon';
 import './fleet-team.css';
 
 export const fleetRoles={owner:'소유자',admin:'관리자',department_manager:'부서 관리자',member:'일반 사용자'};
@@ -29,7 +30,34 @@ function AccessGate({owner,onChoose,children}) {
  const [join,setJoin]=useState(false);
  const previous=useRef(null),signature=access.data?JSON.stringify(access.data):null;
  useEffect(()=>{if(signature&&previous.current&&previous.current!==signature){onChoose(owner);}previous.current=signature;},[signature]);
- const toolbar=<div className="fleet-account-bar"><label>회사 <select aria-label="회사 선택" value={owner??''} onChange={e=>onChoose(e.target.value?Number(e.target.value):null)}><option value="">내 회사</option>{spaces.data?.memberships.map(m=><option value={m.owner_id} key={m.owner_id}>{m.company_name} · {fleetRoles[m.role]}</option>)}</select></label>{access.data&&<span className="business-badge">{fleetRoles[access.data.role]}</span>}<button className="business-button" onClick={()=>setJoin(true)}>초대 코드로 연결</button>{join&&<FleetJoin onClose={()=>setJoin(false)} onJoined={id=>{setJoin(false);onChoose(id);}}/>}</div>;
+ const roleId=useId();
+ const memberships=spaces.data?.memberships ?? [];
+ const membership=memberships.find(m=>Number(m.owner_id)===owner);
+ let companyName='내 회사';
+ if(membership) companyName=membership.company_name?.trim() || '회사명 미등록';
+ else if(owner!=null) companyName=spaces.isPending ? '회사 확인 중…' : '선택한 회사';
+ const roleName=fleetRoles[access.data?.role];
+ const toolbar=(
+   <div className="fleet-account-bar">
+     <label className="fleet-company-picker" title={companyName}>
+       <span className="fleet-company-mark"><Icon name="office" size={20}/></span>
+       <span className="fleet-company-identity">
+         <strong aria-hidden="true">{companyName}</strong>
+         {roleName && <small id={roleId}>{roleName}</small>}
+       </span>
+       <Icon name="chevron-down" size={16}/>
+       <select aria-label="회사 선택" aria-describedby={roleName ? roleId : undefined} value={owner??''} onChange={e=>onChoose(e.target.value ? Number(e.target.value) : null)}>
+         <option value="">내 회사</option>
+         {owner!=null && !membership && <option value={owner} disabled>{companyName}</option>}
+         {memberships.map(m=><option value={m.owner_id} key={m.owner_id}>{m.company_name?.trim() || '회사명 미등록'} · {fleetRoles[m.role]}</option>)}
+       </select>
+     </label>
+     <button type="button" className="fleet-company-invite" onClick={()=>setJoin(true)}>
+       <Icon name="link" size={17}/>초대 코드로 연결
+     </button>
+     {join && <FleetJoin onClose={()=>setJoin(false)} onJoined={id=>{setJoin(false);onChoose(id);}}/>}
+   </div>
+ );
  if(access.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={access.refetch}>회사에 접근할 수 없습니다. 초대·활성 상태를 확인하거나 다른 회사를 선택해 주세요.</BusinessError></div>;
  if(!access.data)return <p>접근 권한 확인 중…</p>;
  return <Context.Provider value={access.data}>{children(toolbar)}</Context.Provider>;

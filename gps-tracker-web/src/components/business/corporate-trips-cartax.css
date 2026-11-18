@@ -79,16 +79,19 @@
  .business-workspace--corporate .corporate-report-print-heading{display:none}
  .business-workspace--corporate .corporate-report-page>.report-area{padding:0!important;border-radius:6px!important;overflow:hidden;min-height:300px}
  .business-workspace--corporate .corporate-trip-table-scroll{margin-top:0!important}
- .business-workspace--corporate .corporate-trip-table{min-width:2000px!important;width:100%;table-layout:auto!important;font-size:18px!important}
- .business-workspace--corporate .corporate-trip-table :is(th,td){font-size:18px!important;padding:18px 20px!important;border-right:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;vertical-align:middle!important;line-height:1.5}
+ .business-workspace--corporate .corporate-trip-table{min-width:1520px!important;width:100%;table-layout:auto!important;font-size:18px!important}
+ .business-workspace--corporate .corporate-trip-table :is(th,td){font-size:18px!important;padding:18px clamp(12px,1vw,20px)!important;border-right:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;vertical-align:middle!important;line-height:1.5}
  .business-workspace--corporate .corporate-trip-table th{background:color-mix(in srgb,var(--surface) 91%,#426b94)!important;color:var(--text-2)!important;font-size:16px!important;font-weight:600;white-space:nowrap}
  .business-workspace--corporate .corporate-trip-table :is(th,td):last-child{border-right:0!important}
- .business-workspace--corporate .corporate-trip-table td:nth-child(2){white-space:nowrap}
+ .business-workspace--corporate .corporate-trip-table td:is(:nth-child(2),:nth-child(3),:nth-child(9)){white-space:nowrap;font-variant-numeric:tabular-nums}
+ .business-workspace--corporate .corporate-trip-table :is(th,td):nth-child(4){text-align:center!important}
  .business-workspace--corporate .corporate-trip-table :is(th,td):nth-child(5){min-width:100px;white-space:nowrap;word-break:normal;overflow-wrap:normal}
  .business-workspace--corporate .corporate-trip-table td:nth-child(5)>div{max-width:180px;white-space:normal;word-break:keep-all;overflow-wrap:anywhere}
- .business-workspace--corporate .corporate-trip-table :is(th,td):nth-child(10){min-width:200px;white-space:nowrap;word-break:normal;overflow-wrap:normal}
- .business-workspace--corporate .corporate-trip-table :is(th,td):nth-child(11){min-width:150px;white-space:nowrap;word-break:normal;overflow-wrap:normal}
- .business-workspace--corporate .corporate-trip-table :is(td:nth-child(6),td:nth-child(7)){min-width:230px;max-width:360px;overflow-wrap:anywhere}
+ .business-workspace--corporate .corporate-trip-table :is(th,td):nth-child(10){min-width:115px;white-space:nowrap}
+ .business-workspace--corporate .corporate-trip-table :is(th,td):nth-child(11){min-width:112px;max-width:200px;white-space:normal;word-break:keep-all;overflow-wrap:anywhere}
+ .business-workspace--corporate .corporate-trip-table :is(td:nth-child(6),td:nth-child(7)){min-width:190px;max-width:360px;overflow-wrap:anywhere}
+ .business-workspace--corporate .corporate-trip-distance{white-space:nowrap}
+ .business-workspace--corporate .corporate-trip-table .corporate-trip-distance-note{display:block;margin-top:5px;max-width:24ch;white-space:normal;overflow-wrap:anywhere}
  .business-workspace--corporate .corporate-trip-table :is(small,.corporate-trip-coordinates,.corporate-trip-note){font-size:16px!important;color:var(--text-2)}
  .business-workspace--corporate .corporate-trip-table .fleet-quality-status{font-size:16px;padding:5px 9px;border-radius:3px;white-space:nowrap}
  .business-workspace--corporate .corporate-trip-table .business-button{font-size:16px;min-height:48px;padding:10px 12px}
