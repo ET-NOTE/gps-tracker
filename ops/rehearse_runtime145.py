@@ -28,6 +28,9 @@ def setup():
     # before the baseline snapshot so rebuilding this round does not look like
     # a rehearsal mutation of an unrelated executable.
     shutil.copy2(base.OUT/'gps-tracker-api145', base.OUT/'gps-tracker-api')
+    previous_out = JOB.parent/'gps-runtime144-20261118/out'
+    for name in ('gps-pdf-render', 'gps-tracker-api.baseline99'):
+        shutil.copy2(previous_out/name, base.OUT/name)
     from build_cleanup_20261113 import protected, containers
     snapshot=dict(protected=protected(), containers=containers())
     previous=base.OUT/'host-before.json'
@@ -39,6 +42,7 @@ def setup():
     else:
         previous.write_text(json.dumps(snapshot, indent=2))
     base.setup()
+    call('docker', 'cp', str(previous_out/'gps-tracker-api144'), HOST+':/opt/gps121/out/gps-tracker-api144')
 
 
 def test():
