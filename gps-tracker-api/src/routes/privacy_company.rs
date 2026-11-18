@@ -26,7 +26,10 @@ pub fn router() -> Router<AppState> {
             "/admin/privacy/requests/:id/company-reviews",
             get(list).post(create),
         )
-        .route("/admin/privacy/requests/:id/company-review-events", get(review_events))
+        .route(
+            "/admin/privacy/requests/:id/company-review-events",
+            get(review_events),
+        )
         .route("/admin/privacy/company-reviews/:id", patch(update))
         .layer(axum::middleware::from_fn(super::privacy_delivery::no_store))
 }
@@ -163,9 +166,24 @@ struct ReviewEventPage {
 }
 impl ReviewEventPage {
     fn validate(&self) -> AppResult<()> {
-        if self.before.is_some_and(|n| n <= 0) || self.review_id.is_some_and(|n| n <= 0)
-            || self.status.as_deref().is_some_and(|v| !matches!(v, "identity_pending" | "in_review" | "awaiting_company" | "awaiting_policy" | "verified" | "excluded" | "restricted")) {
-            return Err(AppError::BadRequest("검토 변경 이력 조회 조건이 올바르지 않습니다.".into()));
+        if self.before.is_some_and(|n| n <= 0)
+            || self.review_id.is_some_and(|n| n <= 0)
+            || self.status.as_deref().is_some_and(|v| {
+                !matches!(
+                    v,
+                    "identity_pending"
+                        | "in_review"
+                        | "awaiting_company"
+                        | "awaiting_policy"
+                        | "verified"
+                        | "excluded"
+                        | "restricted"
+                )
+            })
+        {
+            return Err(AppError::BadRequest(
+                "검토 변경 이력 조회 조건이 올바르지 않습니다.".into(),
+            ));
         }
         Ok(())
     }
@@ -176,27 +194,67 @@ mod review_event_tests {
     use serde_json::json;
     #[test]
     fn history_filters_are_bounded_and_reject_unknown_fields() {
-        for status in ["identity_pending", "in_review", "awaiting_company", "awaiting_policy", "verified", "excluded", "restricted"] {
-            assert!(serde_json::from_value::<ReviewEventPage>(json!({"before":5,"review_id":2,"status":status})).unwrap().validate().is_ok());
+        for status in [
+            "identity_pending",
+            "in_review",
+            "awaiting_company",
+            "awaiting_policy",
+            "verified",
+            "excluded",
+            "restricted",
+        ] {
+            assert!(serde_json::from_value::<ReviewEventPage>(
+                json!({"before":5,"review_id":2,"status":status})
+            )
+            .unwrap()
+            .validate()
+            .is_ok());
         }
         assert!(ReviewEventPage::default().validate().is_ok());
-        for v in [json!({"before":0}),json!({"before":-1}),json!({"review_id":0}),json!({"review_id":-1}),json!({"status":""}),json!({"status":"other"})] {
-            assert!(serde_json::from_value::<ReviewEventPage>(v).unwrap().validate().is_err());
+        for v in [
+            json!({"before":0}),
+            json!({"before":-1}),
+            json!({"review_id":0}),
+            json!({"review_id":-1}),
+            json!({"status":""}),
+            json!({"status":"other"}),
+        ] {
+            assert!(serde_json::from_value::<ReviewEventPage>(v)
+                .unwrap()
+                .validate()
+                .is_err());
         }
         assert!(serde_json::from_value::<ReviewEventPage>(json!({"request_id":42})).is_err());
     }
 }
-async fn review_events(State(s): State<AppState>, _: AdminUser, Path(id): Path<i64>, Query(p): Query<ReviewEventPage>) -> AppResult<Json<Value>> {
+async fn review_events(
+    State(s): State<AppState>,
+    _: AdminUser,
+    Path(id): Path<i64>,
+    Query(p): Query<ReviewEventPage>,
+) -> AppResult<Json<Value>> {
     p.validate()?;
-    let mut read=crate::services::location_read_budget::ReadQuery::start(&s.db).await?;
-    let exists:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_requests WHERE id=$1)").bind(id).fetch_one(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
-    if !exists {return Err(AppError::NotFound);}
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&s.db).await?;
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_requests WHERE id=$1)")
+            .bind(id)
+            .fetch_one(read.connection())
+            .await
+            .map_err(crate::services::location_read_budget::query_error)?;
+    if !exists {
+        return Err(AppError::NotFound);
+    }
     // Only recorded review fields: never return the raw snapshot or company inventory.
     let mut rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',e.id,'review_id',e.review_id,'actor_id',e.actor_id,'revision',e.revision,'created_at',e.created_at,'state',jsonb_build_object('category',e.state->'category','from_at',e.state->'from_at','until_at',e.state->'until_at','status',e.state->'status','identity',e.state->'identity','identity_evidence',e.state->'identity_evidence','outcome',e.state->'outcome','evidence_reference',e.state->'evidence_reference','internal_reason',e.state->'internal_reason','public_message',e.state->'public_message','due_at',e.state->'due_at')) FROM privacy_company_review_events e JOIN privacy_company_reviews c ON c.id=e.review_id WHERE c.request_id=$1 AND ($2::bigint IS NULL OR e.id<$2) AND ($3::bigint IS NULL OR e.review_id=$3) AND ($4::text IS NULL OR e.state->>'status'=$4) ORDER BY e.id DESC LIMIT 51")
       .bind(id).bind(p.before).bind(p.review_id).bind(p.status).fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
     read.finish().await?;
-    let more=rows.len()>50;rows.truncate(50);
-    let next=if more {rows.last().and_then(|r|r["id"].as_i64())} else {None};
+    let more = rows.len() > 50;
+    rows.truncate(50);
+    let next = if more {
+        rows.last().and_then(|r| r["id"].as_i64())
+    } else {
+        None
+    };
     Ok(Json(json!({"items":rows,"next":next})))
 }
 async fn list(
