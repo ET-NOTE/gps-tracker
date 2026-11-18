@@ -17,9 +17,14 @@ const column = (key, label, numeric = false) => ({ key, label, numeric });
 export function filterTrips(trips, { driver = 'all', purpose = 'all', minHours = '' } = {}) {
   const minutes = Math.max(0, num(minHours) * 60);
   return trips.filter(t => (driver === 'all' || (driver === 'unassigned'
-    ? t.annotation?.driver_staff_id == null : String(t.annotation?.driver_staff_id) === String(driver)))
+    ? t.annotation?.driver_staff_id == null && !t.annotation?.driver_name?.trim() : String(t.annotation?.driver_staff_id) === String(driver)))
     && (purpose === 'all' || (t.annotation?.purpose || 'unspecified') === purpose)
     && num(t.duration_min) >= minutes);
+}
+
+// Keep unknown/invalid GPS values distinct from a measured zero on every trip view.
+export function tripDistance(meters) {
+  return Number.isFinite(meters) && meters >= 0 ? monthlyDistance(meters / 1000, 1) : '—';
 }
 
 export function rentalPeriod(contracts, { from, to, kind }) {

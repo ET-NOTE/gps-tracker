@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { locationState, locationSummary, fleetDistance, groupMapPositions, missingMaintenance, corporateVehicleName, corporateAttention } from '../src/lib/corporateOverview.js';
+import { projectFleetAssets } from '../src/lib/fleetAssets.js';
 const now=Date.parse('2026-10-29T12:00:00+09:00');
 const position={last_lat:37.5,last_lng:127,last_fix_at:new Date(now).toISOString()};
 test('fresh GPS is not inferred from current telemetry or stale coordinates',()=>{
@@ -43,4 +44,23 @@ test('sleeping within its reporting window is not a long communication warning',
  const d={id:1};
  assert.equal(corporateAttention([d],now,{classify:()=>({id:'sleeping'}),battery:()=>({state:'normal'})}).length,0);
  assert.equal(corporateAttention([d],now,{classify:()=>({id:'offline'}),battery:()=>({state:'critical',percent:2,voltage:'2.78 V',label:'전압 매우 부족'})}).length,2);
+});
+
+test('registered vehicles without current primary terminals keep maintenance, not communication alerts',()=>{
+ const devices=projectFleetAssets([
+  {id:1,name:'단말기 미연결',profile:{next_service_date:'2026-10-28'},bindings:[]},
+  {id:2,name:'연결 해제됨',profile:{},bindings:[{is_primary:true,device_id:12,ended_at:'2026-10-28T00:00:00Z'}]},
+  {id:3,name:'삭제된 단말기',profile:{},bindings:[{is_primary:true,device_id:null}]},
+  {id:4,name:'대표 단말기 없음',profile:{},bindings:[{is_primary:false,device_id:14}]},
+ ],[]);
+ const tasks=corporateAttention(devices,now,{classify:()=>({id:'unknown'}),battery:()=>({state:'critical',percent:2})});
+ assert.deepEqual(tasks.map(t=>t.id),['maintenance-1-next_service_date']);
+});
+
+test('a current primary binding still needs communication checks when its telemetry is absent',()=>{
+ const [bound]=projectFleetAssets([{id:5,name:'단말 연결 차량',profile:{},bindings:[{is_primary:true,device_id:15,started_at:'2026-10-01T00:00:00Z'}]}],[]);
+ assert.equal(bound.source_device_id,undefined);
+ const tasks=corporateAttention([bound],now,{classify:()=>({id:'unknown'}),battery:()=>({state:'unknown'})});
+ assert.deepEqual(tasks.map(t=>t.id),['signal-5']);
+ assert.equal(tasks[0].description,'통신 이력 없음');
 });

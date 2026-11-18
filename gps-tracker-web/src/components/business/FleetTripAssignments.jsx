@@ -6,10 +6,11 @@ import {useFleetAccess,staffCanDrive} from './FleetAccess';
 import {businessDate} from '../../lib/business';
 import {kstDateTime,purposeLabel} from '../../lib/businessExport';
 import {assignmentSource,tripAssignmentRef} from '../../lib/tripAssignments';
+import {odometerSummary} from '../../lib/tripOdometer';
 import './FleetTripAssignments.css';
 
 const purposes=[['commute','출퇴근'],['business','업무'],['other','기타']];
-const summary=a=>`${a?.driver_name || a?.driver_name_snapshot || '운전자 미지정'} · ${purposeLabel[a?.purpose] || '용무 미지정'}${a?.purpose_note ? ` (${a.purpose_note})` : ''}`;
+const summary=a=>`${a?.driver_name || a?.driver_name_snapshot || '운전자 미지정'} · ${purposeLabel[a?.purpose] || '용무 미지정'}${a?.purpose_note ? ` (${a.purpose_note})` : ''}${a && ('odometer_before_km' in a || 'odometer_after_km' in a) ? ` · ${odometerSummary(a)}` : ''}`;
 function PurposeOptions(){return <>{purposes.map(([v,n])=><option key={v} value={v}>{n}</option>)}</>;}
 export function TripAssignmentModal({mode,trips,vehicle,from,to,staff,onClose,onSaved}){
   const access=useFleetAccess();

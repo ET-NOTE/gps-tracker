@@ -20,7 +20,7 @@ import ProfilePanel from '../components/ProfilePanel';
 import DeviceDetail from '../components/DeviceDetail';
 import DeviceCardSummary from '../components/DeviceCardSummary';
 import BottomNav from '../components/BottomNav';
-import SideRail from '../components/SideRail';
+import SideRail, { sideRailItems } from '../components/SideRail';
 import MapTopOverlay from '../components/MapTopOverlay';
 import MapActions from '../components/MapActions';
 import { useHomeMapTools } from '../hooks/useHomeMapTools';
@@ -900,7 +900,7 @@ export default function Dashboard({ onLogout }) {
   );
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: isDesktop ? 'row' : 'column' }}>
+    <div className="dashboard-layout" style={{ height: '100dvh', display: 'flex', flexDirection: isDesktop ? 'row' : 'column' }}>
 
       {deviceLink.notice && <div role="alert" style={{ position: 'fixed', zIndex: 45,
         left: isDesktop ? 84 : 12, right: 12, bottom: isDesktop ? 20 : 'calc(76px + env(safe-area-inset-bottom, 0px))',
@@ -938,7 +938,7 @@ export default function Dashboard({ onLogout }) {
             flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
           }}>
             <Suspense fallback={<LazyPanelFallback />}>
-              <CorporatePanel devices={devices} onNavigate={setView} meta={lastMetaRef.current} onMap={id => { setView('home'); persistFilterDevice(id); }}
+              <CorporatePanel devices={devices} onNavigate={setView} globalNavigation={sideRailItems({isAdmin,isCorporate,isRentcar,isDelivery}).filter(item=>item.id!=='corporate')} meta={lastMetaRef.current} onMap={id => { setView('home'); persistFilterDevice(id); }}
                 onDevice={id => { setDetailId(id); setView('devices'); }} onVehiclesChange={reloadDevicesAfterMutation} />
             </Suspense>
           </div>

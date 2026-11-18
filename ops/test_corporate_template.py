@@ -24,6 +24,34 @@ def sheet(blob):
    val=cell.find('s:v',ns)
    if val is not None:cells[cell.attrib['r']]=strings[int(val.text)] if cell.attrib.get('t')=='s' else float(val.text)
   return cells
+
+def summary(cells,prefix):
+ # Summary labels occupy three merged columns; the value is below the label.
+ key=next(k for k,v in cells.items() if isinstance(v,str) and v.startswith(prefix))
+ col=key.rstrip('0123456789');row=int(key[len(col):])
+ return cells.get(f'{col}{row+1}','')
+
+def template_layout(blob):
+ cells=sheet(blob)
+ header=int(next(k for k,v in cells.items() if isinstance(v,str) and v.startswith('③사용'))[1:])
+ expected={f'A{header}':'③사용일자\n(요일)',f'B{header}':'④사용자',f'D{header}':'운 행 내 역',
+  f'B{header+1}':'부서',f'C{header+1}':'성명',f'D{header+1}':'⑤주행 전\n계기판 거리(㎞)',
+  f'E{header+1}':'⑥주행 후\n계기판 거리(㎞)',f'F{header+1}':'⑦주행거리\n(㎞)',
+  f'G{header+1}':'업무용 사용거리(㎞)',f'G{header+2}':'⑧출·퇴근용',f'H{header+2}':'⑨일반 업무용',f'I{header+1}':'⑩비고'}
+ assert {key:cells.get(key) for key in expected}==expected
+ assert '1. 기본정보' in cells.values() and '2. 업무용 사용비율 계산' in cells.values()
+ with zipfile.ZipFile(io.BytesIO(blob)) as z:
+  ns={'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+  root=ET.fromstring(z.read('xl/worksheets/sheet1.xml'))
+  merges={node.attrib['ref'] for node in root.findall('s:mergeCells/s:mergeCell',ns)}
+  assert {f'A{header}:A{header+2}',f'B{header}:C{header}',f'D{header}:I{header}',f'G{header+1}:H{header+1}'}<=merges
+  page=root.find('s:pageSetup',ns)
+  assert page is not None and page.attrib['orientation']=='landscape' and page.attrib['paperSize']=='9'
+  assert page.attrib.get('fitToWidth','1')=='1' and page.attrib.get('fitToHeight')=='0'
+  defined=ET.fromstring(z.read('xl/workbook.xml')).findall('s:definedNames/s:definedName',ns)
+  repeat=next(node.text for node in defined if node.attrib['name']=='_xlnm.Print_Titles' and node.attrib.get('localSheetId')=='0')
+  assert repeat.endswith(f'!${header}:${header+2}')
+ return header+3
 try:
  for label in ('a','b'):
   user=sql("INSERT INTO users(email,password_hash,display_name,phone) VALUES(%s,'test-only','Template review','01000000000') RETURNING id",(f'template-{run}-{label}@example.invalid',));users.append(user)
@@ -38,24 +66,21 @@ try:
   if n<3:sql("INSERT INTO events(device_id,user_id,kind,occurred_at) VALUES(%s,%s,'sleep_enter',%s)",(dev,a,end))
   for step in range(3):sql("INSERT INTO location_records(device_id,user_id,source,fix,lat,lng,recorded_at) VALUES(%s,%s,'l80',true,%s,127,%s)",(dev,a,35+(0 if n==2 else step*.001),start+datetime.timedelta(minutes=step*5)))
   sql("INSERT INTO trip_annotations(device_id,user_id,trip_started_at,purpose,driver_staff_id) VALUES(%s,%s,%s,%s,%s)",(dev,a,start,purpose,staff))
- cells=sheet(get(a,'report.xlsx',{'type':'nts','month':'2026-10','device_ids':dev}))
+ blob=get(a,'report.xlsx',{'type':'nts','month':'2026-10','device_ids':dev})
+ cells=sheet(blob);first=template_layout(blob)
  values=list(cells.values());assert 'MODEL_a' in values and 'PLATE_a' in values and 'MODEL_b' not in values
- header=int(next(k for k,v in cells.items() if isinstance(v,str) and v.startswith('③사용'))[1:])
- assert [cells[f'{col}{header}'] for col in 'ABCDEFGHI']==['③사용일자 (요일)','④사용자 부서','④사용자 성명','⑤주행 전 계기판 거리(㎞)','⑥주행 후 계기판 거리(㎞)','⑦주행거리(㎞)','⑧출·퇴근용(㎞)','⑨일반 업무용(㎞)','⑩비고']
- for row in range(header+1,header+5):
+ for row in range(first,first+4):
   assert cells.get(f'B{row}','')==cells.get(f'D{row}','')==cells.get(f'E{row}','')==''
   assert cells[f'C{row}']=='Driver A'
- assert cells[f'G{header+1}']>0 and cells[f'H{header+1}']==0
- assert cells[f'H{header+2}']>0 and cells[f'G{header+2}']==0
- assert cells[f'F{header+3}']==0
- assert '합계 제외' in cells[f'I{header+4}']
- def summary(prefix):
-  key=next(k for k,v in cells.items() if isinstance(v,str) and v.startswith(prefix));return cells.get('E'+key[1:],'')
- assert abs(summary('⑪')-(cells[f'F{header+1}']+cells[f'F{header+2}']))<.001
- assert summary('⑬')==''
+ assert cells[f'G{first}']>0 and cells[f'H{first}']==0
+ assert cells[f'H{first+1}']>0 and cells[f'G{first+1}']==0
+ assert cells[f'F{first+2}']==0
+ assert '합계 제외' in cells[f'I{first+3}']
+ assert abs(summary(cells,'⑪')-(cells[f'F{first}']+cells[f'F{first+1}']))<.001
+ assert summary(cells,'⑬')==''
  filtered=sheet(get(a,'report.xlsx',{'type':'nts','month':'2026-10','device_ids':dev,'purposes':'commute'}))
- ratio_key=next(k for k,v in filtered.items() if isinstance(v,str) and v.startswith('⑬'))
- assert filtered['E'+ratio_key[1:]]==1
+ assert summary(filtered,'⑬')==1
+ assert any(isinstance(value,str) and '목적: 출퇴근' in value and '필터 적용' in value for value in filtered.values())
  foreign=sheet(get(b,'report.xlsx',{'type':'nts','month':'2026-10'}));assert 'PLATE_a' not in foreign.values() and 'PLATE_b' in foreign.values()
  for dep in ('VEHICLE_DEPARTMENT_NOT_STAFF','(부서없음)'):
   blob=get(a,'report.xlsx',{'type':'nts','month':'2026-10','departments':dep});assert blob[:2]==b'PK'

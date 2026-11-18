@@ -11,6 +11,15 @@ import {transform} from 'esbuild';
 
 const old={id:1,vehicle_id:2,device_id:3,starts_at:'2026-11-01T00:00:00Z',ends_at:'2026-11-05T00:00:00Z',vehicle_name:'합성 차량',terminal_name:'Archive %_'};
 const page=(items=[old],next_before=null,enabled=true)=>({items,next_before,enabled});
+async function waitForRender(ready,description){
+ const deadline=Date.now()+5000;
+ while(!ready()){
+  assert(Date.now()<deadline,`Timed out waiting for ${description}`);
+  // React Query batches observer notifications onto the next timer turn.
+  // Wait for rendered state, rather than assuming 20 ms is enough under load.
+  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,0));});
+ }
+}
 async function setup(reconsent=false){
  const calls=[],sent=[];
  const api={companySubjectBindings:(arg,signal)=>new Promise((resolve,reject)=>calls.push({arg,signal,resolve,reject})),
@@ -26,12 +35,25 @@ async function setup(reconsent=false){
  }
  await load('CompanyBindingPicker');await load('CompanyMappingQueue');const panel=await load('SubjectProvision');
  const client=new rq.QueryClient({defaultOptions:{queries:{retry:false}}});let renderer;
- await act(async()=>{renderer=create(React.createElement(rq.QueryClientProvider,{client},React.createElement(panel.namespace.CompanySubjectMappings)));await new Promise(r=>setTimeout(r,20));});
- const run=async fn=>act(async()=>{fn();await new Promise(r=>setTimeout(r,20));});
+ await act(async()=>{renderer=create(React.createElement(rq.QueryClientProvider,{client},React.createElement(panel.namespace.CompanySubjectMappings)));});
+ const run=async fn=>act(async()=>{await fn();});
  const buttons=()=>renderer.root.findAllByType('button');
- return {calls,sent,renderer,client,run,buttons,text:()=>JSON.stringify(renderer.toJSON()),
-  click:async name=>run(()=>buttons().find(b=>b.children.join('')===name).props.onClick()),
-  resolve:async(n,data)=>run(()=>calls[n].resolve(data)),
+ const text=()=>JSON.stringify(renderer.toJSON());
+ await waitForRender(()=>buttons().some(b=>b.children.join('')==='과거 차량·SIM 연결 찾기'),'initial mapping form');
+ return {calls,sent,renderer,client,run,buttons,text,
+  click:async name=>{
+   let button;
+   await waitForRender(()=>{button=buttons().find(b=>b.children.join('')===name);return button&&!button.props.disabled;},`enabled button: ${name}`);
+   await run(()=>button.props.onClick());
+  },
+  resolve:async(n,data)=>{
+   await run(()=>calls[n].resolve(data));
+   if(!calls[n].signal.aborted)await waitForRender(()=>!text().includes('차량·SIM 연결을 검색하는 중…'),'binding response');
+  },
+  reject:async(n,error)=>{
+   await run(()=>calls[n].reject(error));
+   await waitForRender(()=>text().includes(error.message),'binding error');
+  },
   search:async value=>{await run(()=>renderer.root.findByProps({maxLength:80}).props.onChange({target:{value}}));await run(()=>renderer.root.findAllByType('form')[1].props.onSubmit({preventDefault(){}}));},
   close:async()=>{await act(async()=>renderer.unmount());client.clear();}};
 }
@@ -64,7 +86,7 @@ test('reconsent cannot change identity through the binding picker',async()=>{
 });
 
 test('binding errors are not empty results; cancel/retry/feature OFF and close discard pending or late rows',async()=>{
- const h=await setup();await h.click('과거 차량·SIM 연결 찾기');await h.run(()=>h.calls[0].reject(Error('연결 조회 실패')));
+ const h=await setup();await h.click('과거 차량·SIM 연결 찾기');await h.reject(0,Error('연결 조회 실패'));
  assert.match(h.text(),/연결 조회 실패/);assert.doesNotMatch(h.text(),/검색 조건에 맞는/);
  await h.click('연결 다시 조회');await h.click('연결 검색 취소');assert(h.calls[1].signal.aborted);
  await h.resolve(1,page());assert.doesNotMatch(h.text(),/연결 #1 선택/);

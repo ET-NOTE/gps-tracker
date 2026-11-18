@@ -33,7 +33,7 @@ export function BusinessCompanyInfo({readOnly=false}) {
 }
 
 const features = {
-  corporate: [['route', '운행 리포트', '차량·기간별 운행과 운전자·용무 기록'], ['bar', '월간 리포트', '운행 거리와 입력한 유류비 확인'], ['share', '보고서 내보내기', 'CSV·PDF·엑셀 및 인쇄'], ['user', '운전자 관리', '운전자 등록과 활성 상태 관리']],
+  corporate: [['route', '운행 리포트', '차량·기간별 운행과 운전자·용무 기록'], ['bar', '월간 리포트', '운행 거리와 입력한 유류비 확인'], ['share', '보고서 내보내기', 'CSV·PDF·엑셀 및 인쇄'], ['user', '사용자 관리', '사용자 등록과 활성 상태 관리']],
   rentcar: [['route', '계약·반납 정산', '계약 이력, 정산 내역과 청구서 확인'], ['clock', '배차·반납 일정', '차량별 배차표와 반납 일정 확인'], ['user', '임차인 관리', '이용 이력과 계약 시 유의사항 확인'], ['cam', '인수·반납 기록', '인수·반납 링크 발급과 사진 기록']],
 };
 export function BusinessSubscription({ sub, onChange, kind = 'corporate', report = false, canBuy = true }) {

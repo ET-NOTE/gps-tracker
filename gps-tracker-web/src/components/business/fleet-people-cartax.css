@@ -1,0 +1,98 @@
+/* Keep the people directory aligned with the compact corporate expense list. */
+.business-workspace--corporate .fleet-people-cartax{gap:24px;min-width:0}
+.business-workspace--corporate .fleet-people-cartax>.business-switch{gap:0;margin:0;border-bottom:1px solid var(--border);overflow-x:auto}
+.business-workspace--corporate .fleet-people-cartax>.business-switch button{flex-shrink:0;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;padding:14px 20px;min-height:48px;font-size:18px}
+.business-workspace--corporate .fleet-people-cartax>.business-switch button[aria-pressed=true]{border-bottom-color:var(--primary);font-weight:600}
+.business-workspace--corporate :is(.fleet-people-controls,.fleet-people-ledger,.fleet-people-invites){background:var(--surface);border:1px solid var(--border);border-radius:6px;min-width:0}
+.business-workspace--corporate .fleet-people-controls{display:grid;gap:20px;padding:20px 24px;flex-shrink:0}
+.business-workspace--corporate :is(.fleet-people-control-row,.fleet-people-query,.fleet-people-toolbar-actions){display:flex;align-items:center;flex-wrap:wrap;gap:12px;min-width:0}
+.business-workspace--corporate .fleet-people-control-row{justify-content:space-between}
+.business-workspace--corporate .fleet-people-query{flex:1}
+.business-workspace--corporate .fleet-people-search{display:flex;align-items:center;gap:8px;padding:0 14px;border:1px solid var(--border);border-radius:4px;min-width:160px;max-width:400px;flex:1;color:var(--text-2)}
+.business-workspace--corporate .fleet-people-search input:not([type=checkbox]){padding:9px 0;width:100%;min-width:0;min-height:48px;border:0;border-radius:0;background:transparent;color:var(--text);font:inherit;font-size:18px}
+.business-workspace--corporate .fleet-people-search input::placeholder{color:var(--text-3)}
+.business-workspace--corporate .fleet-people-query>select{width:auto;max-width:200px;min-width:125px;min-height:48px;padding:9px 30px 9px 12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text-2);font:inherit;font-size:18px}
+.business-workspace--corporate .fleet-people-cartax .business-button{min-height:48px;padding:10px 14px;border-radius:4px;font-size:18px;white-space:nowrap}
+.business-workspace--corporate .fleet-people-status-tabs{display:flex;gap:2px;padding:4px;max-width:100%;overflow-x:auto;border-radius:4px;background:var(--surface-2)}
+.business-workspace--corporate .fleet-people-status-tab{flex-shrink:0;min-height:48px;padding:10px 16px;border:0;border-radius:3px;background:transparent;color:var(--text-2);font:inherit;font-size:18px;cursor:pointer;white-space:nowrap}
+.business-workspace--corporate .fleet-people-status-tab[aria-pressed=true]{background:#4a586d;color:#fff;font-weight:600;box-shadow:0 1px 3px #17243a20}
+.business-workspace--corporate .fleet-people-result-count{color:var(--text-2);font-size:18px;font-variant-numeric:tabular-nums}
+.business-workspace--corporate .fleet-people-ledger{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.business-workspace--corporate .fleet-people-ledger>.fleet-asset-table-wrap{border:0;min-width:0}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table{font-size:18px}
+.business-workspace--corporate .fleet-people-cartax .fleet-people-table{min-width:1280px;width:100%;table-layout:fixed}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table :is(th,td){padding:18px;text-align:left;border-right:0;line-height:1.5;vertical-align:middle}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table th{background:color-mix(in srgb,var(--surface) 91%,#426b94);color:var(--text-2);font-size:16px;font-weight:600}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table td{height:84px;box-sizing:border-box}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table :is(th,td):last-child{border-right:0;min-width:70px;text-align:center}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table :is(th,td):first-child{min-width:110px}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table tbody tr:hover{background:var(--surface-2)}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table strong{font-size:18px;font-weight:500}
+.business-workspace--corporate .fleet-people-cartax .fleet-asset-table small{font-size:16px;margin-top:4px}
+.business-workspace--corporate .fleet-people-cartax .business-badge{font-size:16px;padding:4px 8px;border-radius:3px;white-space:nowrap}
+.business-workspace--corporate .fleet-people-row-menu{font-size:18px;min-width:55px}
+.business-workspace--corporate .fleet-people-row-menu summary{cursor:pointer;border:1px solid var(--border);border-radius:3px;padding:10px 12px;min-height:48px;box-sizing:border-box;color:var(--text-2);background:var(--surface)}
+.business-workspace--corporate .fleet-people-row-menu .fleet-row-actions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.business-workspace--corporate .fleet-people-row-menu .business-button{margin:0;min-width:0;max-width:100%;min-height:48px;padding:10px 8px;font-size:18px;justify-content:center;white-space:normal;overflow-wrap:anywhere}
+.business-workspace--corporate .fleet-people-footer{margin-top:auto;padding:18px 20px;border-top:1px solid var(--border);font-size:18px;color:var(--text-2)}
+.business-workspace--corporate .fleet-people-invites>summary{cursor:pointer;padding:18px 20px;font-size:18px;color:var(--text-2)}
+.business-workspace--corporate .fleet-people-invites :is(.fleet-team-note,.fleet-team-empty){margin:0;padding:0 20px 20px;font-size:16px}
+.business-workspace--corporate .fleet-people-invites .fleet-pending-invite{font-size:18px}
+.business-workspace--corporate .fleet-people-cartax .business-section{border-radius:6px;overflow:hidden}
+.business-workspace--corporate .fleet-people-cartax .business-section-title{padding:20px 24px}
+.business-workspace--corporate .fleet-people-cartax .business-section-title h3{font-size:22px}
+.business-workspace--corporate .fleet-people-cartax .fleet-org-row{padding:18px 20px;font-size:18px}
+.business-workspace--corporate .fleet-people-cartax .fleet-org-row>span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+.business-workspace--corporate .fleet-people-cartax .fleet-directory-content>.fleet-people-controls{border:0;border-bottom:1px solid var(--border);border-radius:0}
+.business-workspace--corporate .fleet-people-cartax .fleet-directory-content>.fleet-people-ledger{border:0;border-radius:0;flex:1}
+.business-workspace--corporate .fleet-people-cartax .fleet-directory-content>.fleet-people-invites{border:0;border-top:1px solid var(--border);border-radius:0;flex-shrink:0}
+.business-workspace--corporate .fleet-people-cartax .fleet-directory-heading .business-button{font-size:16px}
+.business-workspace--corporate .fleet-people-table th:nth-child(1),.business-workspace--corporate .fleet-people-table th:nth-child(2){width:11.5%}
+.business-workspace--corporate .fleet-people-table th:nth-child(3){width:13%}
+.business-workspace--corporate .fleet-people-table th:nth-child(4),.business-workspace--corporate .fleet-people-table th:nth-child(7){width:10%}
+.business-workspace--corporate .fleet-people-table th:nth-child(5){width:12%}.business-workspace--corporate .fleet-people-table th:nth-child(6){width:12%}
+.business-workspace--corporate .fleet-people-table th:nth-child(8){width:8.5%}.business-workspace--corporate .fleet-people-table th:nth-child(9){width:11.5%}
+.business-workspace--corporate .fleet-people-table td{overflow-wrap:anywhere}
+.business-workspace--corporate .fleet-people-table :is(th,td):nth-child(8){text-align:center}
+.business-workspace--corporate .fleet-people-account-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fleet-people-assigned-vehicle{display:block;word-break:keep-all;overflow-wrap:anywhere}
+.fleet-people-assigned-vehicle small{display:block;white-space:nowrap}
+.fleet-people-vehicle-list summary{cursor:pointer;color:var(--primary);font-size:18px;line-height:1.5}
+.fleet-people-vehicle-list ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:10px;font-size:18px;line-height:1.5}
+.fleet-people-vehicle-list summary:focus-visible,.fleet-people-row-menu summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.business-workspace--corporate .fleet-org-section{overflow:hidden;min-width:0;border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+.business-workspace--corporate .fleet-org-section>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;flex-wrap:wrap}
+.business-workspace--corporate .fleet-org-section h3{display:flex;align-items:center;gap:8px;margin:0;font-size:20px;font-weight:600}.fleet-org-section h3>span{font-size:16px;font-weight:500;color:var(--text-2)}
+.business-workspace--corporate .fleet-org-table{width:100%;border-collapse:collapse;font-size:18px}
+.business-workspace--corporate .fleet-org-table :is(th,td){padding:18px;border-top:1px solid var(--border);line-height:1.5;text-align:left;overflow-wrap:anywhere}
+.business-workspace--corporate .fleet-org-table th{font-size:16px;font-weight:600;color:var(--text-2);background:color-mix(in srgb,var(--surface) 91%,#426b94)}
+.business-workspace--corporate .fleet-org-table :is(th,td):nth-child(2){width:120px;text-align:center;white-space:nowrap}
+.business-workspace--corporate .fleet-org-table :is(th,td):nth-child(3){width:120px;text-align:center}
+.business-workspace--corporate .fleet-org-table tbody tr:hover{background:var(--surface-2)}
+.fleet-people-name{border:0;background:transparent;padding:0;color:var(--primary);font:inherit;font-size:18px;font-weight:500;cursor:pointer;text-align:left;overflow-wrap:anywhere}
+.fleet-people-name:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.fleet-person-form-section{display:grid;gap:16px;min-width:0}.fleet-person-form-section h3{font-size:20px;font-weight:600;margin:0;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.fleet-person-form,.fleet-org-form{gap:20px;font-size:18px;line-height:1.6;min-width:0}
+.fleet-person-form label,.fleet-org-form label{font-size:18px!important}
+.fleet-person-form :is(input:not([type=checkbox]),select),.fleet-org-form input:not([type=checkbox]){font-size:18px!important;min-height:48px}
+.fleet-person-form :is(p,small),.fleet-org-form :is(p,small){font-size:16px;margin:0}
+.fleet-person-form fieldset{border-radius:6px;padding:18px}
+.fleet-person-form .fleet-connection-list{max-height:240px;overflow:auto;overscroll-behavior:contain;margin:8px 0}
+.fleet-person-form .fleet-connection-list label{font-size:18px;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:600px){
+ .business-workspace--corporate .fleet-people-controls{padding:16px;gap:16px;flex-shrink:0}
+ .business-workspace--corporate .fleet-people-query{flex-basis:100%}
+ .business-workspace--corporate .fleet-people-search{max-width:400px;flex-basis:100%;padding:0 14px}
+ .business-workspace--corporate .fleet-people-query>select{max-width:none;flex:1;padding:9px 30px 9px 12px}
+ .business-workspace--corporate .fleet-people-toolbar-actions{margin-left:auto}
+ .business-workspace--corporate .fleet-people-controls .business-button{min-height:48px}
+ .business-workspace--corporate .fleet-people-status-tab{min-height:48px;padding:10px 12px}
+ .business-workspace--corporate .fleet-people-cartax>.business-switch button{padding:14px 16px}
+ .business-workspace--corporate .fleet-people-ledger{min-height:0}
+}
+@media screen and (min-width:1200px){
+.business-workspace--corporate .fleet-people-cartax>.fleet-people-ledger{min-height:calc(100dvh - 132px)}}
+@media screen and (max-width:600px){
+.business-workspace--corporate .fleet-org-table :is(th,td){padding:16px 12px}
+.business-workspace--corporate .fleet-org-table :is(th,td):nth-child(2){width:112px}
+.business-workspace--corporate .fleet-org-table :is(th,td):nth-child(3){width:100px}}

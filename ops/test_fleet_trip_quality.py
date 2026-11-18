@@ -65,8 +65,8 @@ try:
  for minute in [0,5,10]:sql("INSERT INTO location_records(device_id,user_id,source,fix,lat,lng,recorded_at) VALUES(%s,%s,'l80',true,%s,127,%s)",(device,a,37+minute*.001,t0+datetime.timedelta(hours=10,minutes=minute)))
  root=f"/corporate/vehicles/{va['id']}"
  def trips():return call(a,'GET',root+f'/trips?from={day}&to={day}')
- def export_cells(kind='nts'):
-  blob=call(a,'GET',f"/corporate/report.xlsx?scope=vehicles&type={kind}&month=2026-10&vehicle_ids={va['id']}",binary=True)
+ def export_cells(kind='nts',month='2026-10'):
+  blob=call(a,'GET',f"/corporate/report.xlsx?scope=vehicles&type={kind}&month={month}&vehicle_ids={va['id']}",binary=True)
   with zipfile.ZipFile(io.BytesIO(blob)) as z:
    ns={'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
    strings=[''.join(si.itertext()) for si in ET.fromstring(z.read('xl/sharedStrings.xml')).findall('s:si',ns)]
@@ -79,7 +79,9 @@ try:
   cells=export_cells()
   key=next(k for k,v in cells.items() if isinstance(v,str) and v.startswith('⑪'))
   expected=sum(round(t['distance_m']/1000,2) for t in trips() if t['quality']['report_included'])
-  return abs(cells['E'+key[1:]]-expected)<.001
+  # The grouped form puts each total below its merged heading.
+  col=key.rstrip('0123456789');row=int(key[len(col):])
+  return abs(cells[f'{col}{row+1}']-expected)<.001
  def key(t):return dict(source_device_id=device,binding_id=bid,trip_started_at=t['source_started_at'])
  ts=trips();assert len(ts)==6,len(ts)
  original=json.loads(json.dumps(ts));raw_count=sql('SELECT count(*) FROM location_records WHERE device_id=%s',(device,));event_count=sql('SELECT count(*) FROM events WHERE device_id=%s',(device,))
@@ -158,6 +160,10 @@ try:
  p=body([trips()[1]]);pr=correction(p)
  sql('UPDATE fleet_vehicle_bindings SET ended_at=%s WHERE id=%s',(t0+datetime.timedelta(hours=2,minutes=10),bid))
  correction(dict(p,preview_token=pr['preview_token']),expected=400)
+ boundary=next(t for t in trips() if t['allocation_status']=='boundary_review')
+ check('boundary preserves observed end but not distance or included status',boundary['ended_at'] is not None and boundary['distance_m'] is None and not boundary['quality']['report_included'])
+ boundary_sheet=export_cells()
+ check('NTS workbook leaves boundary distance blank instead of substituting zero','F14' not in boundary_sheet and '거리 확인 필요 1건' in boundary_sheet['A7'])
  sql('UPDATE fleet_vehicle_bindings SET ended_at=NULL WHERE id=%s',(bid,))
  check('SIM binding boundary cannot be silently corrected')
  history=call(a,'GET',root+'/trips/corrections')['rows'];check('history retains original outputs reasons and restoration',len(history)>=5 and all(r['sources'] and r['outputs'] and r['reason'] for r in history))
@@ -165,6 +171,10 @@ try:
  call(member,'POST',root+f"/trips/corrections/{split['id']}/restore",{'reason':'권한 없음'},owner=a,expected=403)
  check('restore requires vehicle and manager permission')
  check('raw SIM records and events are never rewritten',sql('SELECT count(*) FROM location_records WHERE device_id=%s',(device,))==raw_count+1 and sql('SELECT count(*) FROM events WHERE device_id=%s',(device,))==event_count)
+ midnight=datetime.datetime(2026,10,31,15,tzinfo=datetime.timezone.utc)
+ for kind,minute in [('wake',0),('sleep_enter',20)]:
+  sql('INSERT INTO events(device_id,user_id,kind,occurred_at) VALUES(%s,%s,%s,%s)',(device,a,kind,midnight+datetime.timedelta(minutes=minute)))
+ check('a trip starting at KST midnight on Nov 1 belongs only to the November workbook','2026-11-01 (일)' not in export_cells().values() and '2026-11-01 (일)' in export_cells(month='2026-11').values())
  print(json.dumps({'quality_checks':len(checks),'checks':checks},ensure_ascii=False))
 finally:
  if users:sql('DELETE FROM fleet_expenses WHERE owner_id=ANY(%s)',(users,))

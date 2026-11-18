@@ -505,9 +505,13 @@ pub(super) async fn allocated_trips(
                 if let Some(ann) = row["annotation"].as_object_mut() {
                     ann.insert("fuel_cost".into(), Value::Null);
                     ann.insert("fuel_liters".into(), Value::Null);
+                    ann.insert("odometer_before_km".into(), Value::Null);
+                    ann.insert("odometer_after_km".into(), Value::Null);
                 }
                 row["allocation_status"] = json!("boundary_review");
                 row["allocation_note"] = json!("단말기 연결 변경 구간 · 거리 합계 제외");
+                row["quality"]["status"] = json!("review");
+                row["quality"]["report_included"] = json!(false);
                 row["start_address"] = Value::Null;
                 row["end_address"] = Value::Null;
                 for k in ["start_lat", "start_lng", "end_lat", "end_lng"] {

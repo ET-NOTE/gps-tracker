@@ -57,6 +57,9 @@ export function groupMapPositions(items, width = 154, height = 46) {
 export function corporateAttention(devices, now, { classify, battery }) {
   const tasks = [];
   for (const d of devices) {
+    // A registered vehicle without a current primary terminal is not offline.
+    // Use the binding, not source_device_id: bound terminals may lack telemetry.
+    if (Array.isArray(d.asset?.bindings) && !d.asset.bindings.some(b => b.is_primary && b.device_id != null && !b.ended_at)) continue;
     const status = classify(d, undefined, now), b = battery(d);
     if (['offline', 'lost', 'unknown'].includes(status.id)) tasks.push({ id: `signal-${d.id}`, device: d, priority: 0, label: '통신 확인', description: d.last_seen_at ? '장기간 새 통신 없음' : '통신 이력 없음', tone: 'urgent' });
     if (['low', 'critical', 'overcharge'].includes(b.state)) tasks.push({ id: `battery-${d.id}`, device: d, priority: 1, label: b.label, description: `마지막 배터리 ${b.percent}% · ${b.voltage}`, tone: b.state === 'low' ? 'info' : 'urgent' });

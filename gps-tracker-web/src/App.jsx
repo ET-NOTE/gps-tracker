@@ -1,6 +1,5 @@
 import { dashboardView } from './lib/dashboardRoutes';
 import RouteNotice from './components/RouteNotice';
-const PrivacyResult = lazy(() => import('./components/PrivacyDelivery'));
 import { authScope, AUTH_CHANGED } from './authSession';
 // 라우팅 — react-router 기반 path-routing.
 //
@@ -36,6 +35,7 @@ import { api, clearTokens } from './api';
 import { startPhoneTracker, stopPhoneTracker } from './lib/phoneTracker';
 
 // 나머지 라우트는 각자 진입할 때만 로드 — 초기 bundle 축소.
+const PrivacyResult  = lazy(() => import('./components/PrivacyDelivery'));
 const Auth           = lazy(() => import('./pages/Auth'));
 const SharePage      = lazy(() => import('./pages/SharePage'));
 const PaymentResult  = lazy(() => import('./pages/PaymentResult'));

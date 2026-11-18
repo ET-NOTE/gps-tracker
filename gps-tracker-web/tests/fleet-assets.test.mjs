@@ -16,3 +16,12 @@ test('unconnected asset has no device or another vehicles telemetry',()=>{
  const [row]=projectFleetAssets([{...asset,bindings:[]}],[{id:800,last_lat:37,last_lng:127}]);
  assert.equal(row.source_device_id,undefined);assert.equal(row.last_lat,undefined);assert.equal(row.display_name,'단말기 미연결');
 });
+test('a current binding without telemetry shows its recorded terminal name and no location',()=>{
+ const current={...asset.bindings[0],terminal_name:'현재 단말'};
+ const ended={...current,device_id:13,terminal_name:'이전 단말',ended_at:'2026-10-01T00:00:00Z'};
+ const [row]=projectFleetAssets([{...asset,bindings:[ended,current]}],[{id:13,display_name:'이전 단말',last_lat:37,last_lng:127,last_fix_at:'2026-10-03T00:00:00Z'}]);
+ assert.equal(row.display_name,'현재 단말');
+ assert.equal(row.source_device_id,undefined);
+ assert.equal(row.last_lat,null);
+ assert.equal(row.last_lng,null);
+});

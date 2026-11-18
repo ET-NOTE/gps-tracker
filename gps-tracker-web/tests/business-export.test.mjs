@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {filterTrips,tripReport,rentalReport,rentalPeriod,invoiceReport,reportCsv,reportPdfDefinition,csvCell,monthDateBounds} from '../src/lib/businessExport.js';
+import {filterTrips,tripReport,tripDistance,rentalReport,rentalPeriod,invoiceReport,reportCsv,reportPdfDefinition,csvCell,monthDateBounds} from '../src/lib/businessExport.js';
+import {tripCompleteness} from '../src/lib/businessWorkspace.js';
+import {tripNeedsDetails} from '../src/lib/incompleteTrips.js';
 const trips=[
   {started_at:'2026-10-08T15:01:00Z',ended_at:'2026-10-08T16:01:00Z',duration_min:60,distance_m:4200,annotation:{purpose:'business',driver_staff_id:2,driver_name:'가상 운전자',fuel_cost:0,note:'쉼표, "따옴표"\n줄 바꿈'}},
   {duration_min:10,distance_m:1000,annotation:{purpose:'commute',driver_staff_id:3}},
@@ -20,6 +22,25 @@ test('trip exports use the same AND filters, including unassigned and minimum du
 test('CSV escapes formula-like text while preserving negative numeric settlements',()=>{
   for(const text of ['=1+1',' @SUM(1)','\t+1','-2+3']) assert.ok(csvCell(text).startsWith('"\''));
   assert.equal(csvCell(-20000),'"-20000"');assert.equal(csvCell(null),'""');
+});
+test('unassigned driver filtering agrees with completeness for captured historical names',()=>{
+  const history={duration_min:30,annotation:{purpose:'business',driver_staff_id:null,driver_name:'과거 운전자'}};
+  const namedId={duration_min:30,annotation:{purpose:'business',driver_staff_id:9,driver_name:''}};
+  const blank={duration_min:30,annotation:{purpose:'business',driver_staff_id:null,driver_name:'  '}};
+  const missing={duration_min:30};
+  const records=[history,namedId,blank,missing];
+  assert.deepEqual(filterTrips(records,{driver:'unassigned'}),[blank,missing]);
+  assert.equal(tripCompleteness(records).missingDriver,2);
+  assert.equal(tripNeedsDetails(history),false);
+  assert.deepEqual(filterTrips(records,{driver:'9'}),[namedId]);
+});
+test('trip distance preserves short journeys and separates unknown values from measured zero',()=>{
+  for(const value of [null,undefined,NaN,Infinity,-Infinity,-1,'40',false]) assert.equal(tripDistance(value),'—');
+  assert.equal(tripDistance(0),'0');
+  assert.equal(tripDistance(4),'<0.01');
+  assert.equal(tripDistance(40),'0.04');
+  assert.equal(tripDistance(70),'0.07');
+  assert.equal(tripDistance(1234567),'1,234.57');
 });
 const contracts=[
   {id:1,device_id:3005,renter_name:'[테스트] A',status:'returned',starts_at:'2026-09-28T00:00:00Z',ends_at:'2026-09-29T00:00:00Z',settled_at:'2026-10-01T00:00:00Z',deposit_krw:30000,settled_amount_krw:50000,base_fee_krw:50000,settlement_json:{lines:[{kind:'base',label:'기본료',amount:50000}]}},

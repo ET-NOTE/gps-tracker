@@ -32,3 +32,16 @@ test('empty and missing metadata print honestly with repeatable grouped headers 
 test('generic rental and expense PDF layout remains separate from the driving form',()=>{
  const pdf=reportPdfDefinition(rentalReport([]));assert.equal(pdf.content[0].text,'렌트카 계약 목록');assert.ok(!pdf.content.some(n=>n.table?.headerRows===3));
 });
+
+test('PDF and CSV preserve measured values, mixed distance basis, zero and excluded totals consistently',()=>{
+ const measured=trip(10000),zero=trip(3000,'commute'),fallback=trip(5000,'commute');
+ measured.annotation={...measured.annotation,odometer_before_km:1200,odometer_after_km:1212.34};
+ zero.annotation={...zero.annotation,odometer_before_km:0,odometer_after_km:0};
+ const report=ntsTripReport([measured,zero,fallback],context),pdf=reportPdfDefinition(report),table=grid(pdf);
+ assert.deepEqual(table.body[3].slice(3,6).map(c=>c.text),['1,200','1,212.34','12.34']);
+ assert.deepEqual(table.body[4].slice(3,6).map(c=>c.text),['0','0','0']);
+ assert.deepEqual(table.body[5].slice(3,6).map(c=>c.text),['','','5']);
+ assert.equal(table.body.at(-1)[5].text,'17.34');
+ assert.ok(pdf.content.some(n=>n.text?.includes(report.printForm.distanceBasis)));
+ assert.match(reportCsv(report),/"⑪조회 내역 총주행거리\(㎞\)","17.34"/);
+});

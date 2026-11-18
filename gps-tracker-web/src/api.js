@@ -773,7 +773,7 @@ export const api = {
   correctTrips:(id,body)=>req('POST',`/corporate/vehicles/${id}/trips/corrections`,body),
   tripCorrectionHistory:id=>req('GET',`/corporate/vehicles/${id}/trips/corrections`),
   restoreTripCorrection:(id,correction,body)=>req('POST',`/corporate/vehicles/${id}/trips/corrections/${correction}/restore`,body),
-  listFleetVehicleTrips: (id,params={}) => req('GET',`/corporate/vehicles/${id}/trips?${new URLSearchParams(params)}`),
+  listFleetVehicleTrips: (id,params={},options={}) => req('GET',`/corporate/vehicles/${id}/trips?${new URLSearchParams(params)}`,undefined,true,options),
   listTripRules: id => req('GET',`/corporate/vehicles/${id}/trip-rules`),
   createTripRule: (id,body) => req('POST',`/corporate/vehicles/${id}/trip-rules`,body),
   updateTripRule: (id,rule,body) => req('PUT',`/corporate/vehicles/${id}/trip-rules/${rule}`,body),
@@ -978,7 +978,24 @@ export const api = {
     const m2 = cd.match(/filename\s*=\s*"?([^";]+)"?/i);
     const filename = m1 ? decodeURIComponent(m1[1])
                    : m2 ? decodeURIComponent(m2[1])
-                        : `운행기록부_${params.month || 'this-month'}_${params.type || 'ours'}.xlsx`;
+                        : (() => {
+                          // Without the response header only the requested scope is known,
+                          // not the server's resolved vehicle names or resulting count.
+                          const ids = params.scope === 'vehicles' ? params.vehicle_ids : params.device_ids;
+                          const count = new Set((ids || []).map(Number).filter(id => Number.isSafeInteger(id) && id > 0)).size;
+                          const filtered = params.departments?.some(value => String(value).trim());
+                          const selection = filtered ? '조건선택' : count ? `선택요청${count}대`
+                            : params.scope === 'vehicles' && ids ? '대상차량없음' : '전체차량';
+                          const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.month) ? params.month.replace('-', '') : '조회월';
+                          const kind = params.type === 'nts' ? '국세청양식' : '우리양식';
+                          const choices = [['business', '업무'], ['commute', '출퇴근'], ['other', '기타'], ['unspecified', '미지정']];
+                          const purposes = new Set((params.purposes || []).map(value => String(value).trim()).filter(Boolean));
+                          const labels = choices.filter(([key]) => purposes.has(key)).map(([, label]) => label);
+                          const unknown = [...purposes].some(value => !choices.some(([key]) => key === value));
+                          if (unknown) labels.push('알수없는목적');
+                          const purpose = labels.length && (labels.length !== choices.length || unknown) ? `_목적-${labels.join('-')}` : '';
+                          return `운행기록부_${selection}_${month}_${kind}${purpose}.xlsx`;
+                        })();
     return { blob, filename };
   },
 
