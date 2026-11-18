@@ -17,6 +17,8 @@ export function projectFleetAssets(assets=[],devices=[]) {
       for(const key of ['last_lat','last_lng','last_fix_at'])telemetry[key]=null;
     }
     return {...telemetry,...asset.profile,id:asset.id,fleet_vehicle_id:asset.id,source_device_id:sim?.id,
+      has_primary_terminal:Boolean(primary),
+      terminal_status_label:sim ? null : primary ? '연결됨 · 통신 정보 확인 불가' : '미연결',
       vehicle_name:asset.name,car_model:asset.car_model,car_plate:asset.license_plate,license_plate:asset.license_plate,
       display_name:terminalLabel,device_uid:sim?.device_uid||'',
       department:asset.department,enabled:asset.enabled,created_at:asset.created_at,asset};

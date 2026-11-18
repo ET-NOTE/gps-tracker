@@ -24,6 +24,28 @@ test('commute and business stay separate and both feed the template business-dis
   assert.equal(r.rows[0].commute,10);assert.equal(r.rows[0].business,0);
   assert.equal(r.rows[1].commute,0);assert.equal(r.rows[1].business,20);
 });
+
+test('CSV and print filenames use the registered vehicle name without changing the official model field',()=>{
+  const device = {...context.device,vehicle_name:'본사/영업 1호'};
+  const report = ntsTripReport([trip('business')],{...context,device});
+  assert.equal(report.filename,'업무용승용차_운행기록부_본사_영업 1호_12가3456_2026-10-01_2026-10-31');
+  assert.equal(report.printForm.model,'아반떼');
+  assert.deepEqual(report.csvPreamble.find(row=>row[0]==='①차종'),['①차종','아반떼']);
+
+  const fromAsset = ntsTripReport([],{...context,device:{...device,vehicle_name:' ',asset:{name:'관리 차량'}}});
+  assert.match(fromAsset.filename,/관리 차량_12가3456_/);
+  const sameName = ntsTripReport([],{...context,device:{...device,vehicle_name:device.car_plate}});
+  assert.equal(sameName.filename,'업무용승용차_운행기록부_12가3456_2026-10-01_2026-10-31');
+});
+
+test('long Unicode vehicle names leave room for the plate and both dates in the saved stem',()=>{
+  const device = {...context.device,vehicle_name:'🚙영업'.repeat(60)};
+  const {filename} = ntsTripReport([],{...context,device});
+  assert.equal([...filename].length,60);
+  assert.ok(filename.startsWith('업무용승용차_운행기록부_🚙영업'));
+  assert.ok(filename.endsWith('_12가3456_2026-10-01_2026-10-31'));
+  assert.equal(Buffer.from(filename,'utf8').toString('utf8'),filename);
+});
 test('open/invalid trips remain marked in rows but do not inflate totals or produce a percentage',()=>{
   const r=ntsTripReport([trip('business'),{...trip('business'),ended_at:null},trip('business',null),trip('business',-2),{...trip('business'),ended_at:'2026-10-27T15:00:00Z'}],context);
   assert.equal(r.rows.length,5);assert.equal(footer(r,'⑪'),10);assert.equal(footer(r,'⑬'),'');

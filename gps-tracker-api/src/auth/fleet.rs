@@ -128,6 +128,7 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
         ["corporate", "info"] => read || admin,
         ["corporate", "subscription"] | ["corporate", "fuel-prices"] => read,
         ["corporate", "vehicles"] => read || admin,
+        ["corporate", "vehicles", "bindings", "batch"] => method == Method::PUT && admin,
         ["corporate", "terminals"]
         | ["corporate", "vehicle-stats"]
         | ["corporate", "report.xlsx"] => read,

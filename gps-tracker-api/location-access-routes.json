@@ -671,6 +671,10 @@
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
+  "fleet_vehicles.rs PUT /corporate/vehicles/bindings/batch": {
+    "class": "non_location",
+    "reason": "Administrative assignment of terminals to vehicles. The response contains only the number of changed vehicles."
+  },
   "geofences.rs DELETE /geofences/:id": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."

@@ -1,5 +1,11 @@
 // These are manually recorded odometer readings, not GPS trip totals.
-export const emptyAssetFilters = { distance: 'all', minKm: '', maxKm: '', from: '', to: '' };
+export const emptyAssetFilters = { distance: 'all', minKm: '', maxKm: '', from: '', to: '', missingSchedulesOnly: false };
+export const maintenanceScheduleFields = [
+  ['next_service_date', '다음 정비일'],
+  ['insurance_expiry', '보험 만료일'],
+  ['inspection_expiry', '검사 만료일'],
+];
+export const missingScheduleFields = profile => maintenanceScheduleFields.filter(([key]) => !profile?.[key]);
 export function assetOdometer(asset) {
   const value = asset.profile?.odometer_km;
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
@@ -34,6 +40,7 @@ export function filterFleetAssets(assets, { query = '', status = 'all', sort = '
   return assets.filter(v => {
     const km = assetOdometer(v), day = assetRegistrationDay(v.created_at);
     return (status === 'all' || v.enabled === (status === 'enabled'))
+      && (!f.missingSchedulesOnly || missingScheduleFields(v.profile).length > 0)
       && [v.name, v.license_plate, v.department, managers.get(v.manager_staff_id), ...(v.bindings || []).map(b => b.terminal_name)]
         .some(s => String(s || '').toLocaleLowerCase('ko').includes(term))
       && (f.distance === 'missing' ? km === null : (f.distance !== 'recorded' && !hasRange || km !== null)

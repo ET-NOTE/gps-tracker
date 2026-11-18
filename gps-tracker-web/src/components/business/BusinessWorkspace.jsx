@@ -144,7 +144,11 @@ export function BusinessVehicles({ devices = [], onMap, onDetail, detailLabel = 
           {separateTerminal && <div className="business-terminal-name"><small>단말명</small><span title={terminalName(device)}>{terminalName(device)}</span></div>}
           <div className="business-vehicle-availability"><span className={`business-badge ${device.enabled === false || statusUnknown ? '' : available?.tone || 'good'}`}>{device.enabled === false ? '사용 정지' : statusUnknown ? '확인 필요' : available?.label || '사용 가능'}</span></div>
         </div>
-        <div className="business-connection"><span style={{ color: status.color }}>{status.label}</span><small>{device.last_seen_at ? `최근 통신 ${ageString(device.last_seen_at)}` : '수신 이력 없음'}</small>{separateTerminal && <small>{locationState(device, now) === 'none' ? '위치 없음' : `${locationState(device,now) === 'current' ? '현재 수신' : '오래된 위치'} · ${device.last_fix_at ? kstDateTime(device.last_fix_at) : '시각 없음'}`}</small>}</div>
+        <div className="business-connection">
+          <span style={{ color: status.color }}>{device.terminal_status_label || status.label}</span>
+          {!device.terminal_status_label && <small>{device.last_seen_at ? `최근 통신 ${ageString(device.last_seen_at)}` : '수신 이력 없음'}</small>}
+          {separateTerminal && <small>{locationState(device, now) === 'none' ? '위치 없음' : `${locationState(device,now) === 'current' ? '현재 수신' : '오래된 위치'} · ${device.last_fix_at ? kstDateTime(device.last_fix_at) : '시각 없음'}`}</small>}
+        </div>
         <div className="business-row-actions">{onMap && <BusinessButton icon="mapPin" onClick={() => focusOnMap(device)}>{localMap ? '위치' : '지도'}</BusinessButton>}{onDetail && <BusinessButton icon={detailLabel === '운행 리포트' ? 'bar' : 'wrench'} onClick={() => onDetail(device)}>{detailLabel}</BusinessButton>}</div>
       </div>;
     }) : <BusinessEmpty title={devices.length ? '검색 결과가 없습니다.' : '등록된 차량이 없습니다.'}>{devices.length ? '검색어나 상태 필터를 변경해 주세요.' : separateTerminal ? '차량 관리에서 차량을 먼저 등록한 뒤 단말기를 연결해 주세요.' : '연결된 단말기의 차량 정보를 등록해 주세요.'}</BusinessEmpty>}

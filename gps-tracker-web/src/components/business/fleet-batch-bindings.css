@@ -1,0 +1,18 @@
+.fleet-batch-body {display: grid; gap: 18px; font-size: 16px; line-height: 1.55;}
+.fleet-batch-body p {margin: 0;}
+.fleet-batch-body fieldset {display: grid; min-width: 0; margin: 0; padding: 0; border: 0;}
+.fleet-batch-body legend {padding: 0 0 8px; font-weight: 700;}
+.fleet-batch-vehicle, .fleet-batch-row, .fleet-batch-review {padding: 12px 4px; border-top: 1px solid var(--border, #dce3ea); overflow-wrap: anywhere;}
+.fleet-batch-vehicle {display: flex; align-items: center; gap: 12px; cursor: pointer;}
+.fleet-batch-vehicle input {flex: 0 0 auto; width: 18px; height: 18px;}
+.fleet-batch-row {display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: center; gap: 12px;}
+.fleet-batch-row small {display: block; color: var(--text-2); font-size: .88em;}
+.fleet-batch-row select {min-width: 0; width: 100%; padding: 8px; border: 1px solid var(--border, #ccd5df); border-radius: 6px; color: inherit; background: var(--surface, white); font: inherit;}
+.fleet-batch-review dl {display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 6px 0 0;}
+.fleet-batch-review dt, .fleet-batch-notice {color: var(--text-2);}
+.fleet-batch-review dd {margin: 0;}
+.fleet-batch-body [role="alert"] {color: var(--danger, #b42318);}
+.fleet-batch-actions {display: flex; width: 100%; flex-wrap: wrap; justify-content: flex-end; gap: 8px;}
+@media (max-width: 590px) {
+  .fleet-batch-row {grid-template-columns: minmax(0, 1fr); gap: 6px;}
+}

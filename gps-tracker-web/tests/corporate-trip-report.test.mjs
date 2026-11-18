@@ -16,6 +16,7 @@ import * as tripQuality from '../src/lib/tripQuality.js';
 import * as tripAssignments from '../src/lib/tripAssignments.js';
 import * as incompleteTrips from '../src/lib/incompleteTrips.js';
 import * as navigation from '../src/lib/corporateNavigation.js';
+import {missingMaintenance} from '../src/lib/corporateOverview.js';
 
 // Run the actual panel/dialog bodies with isolated hooks and file downloads.
 async function components({trips=[],staff=[],access={manage_reports:true,staff_id:1},api:overrides={},companyQuery={data:{}},modules={}}={}) {
@@ -60,6 +61,32 @@ const vehicle={id:2,car_model:'테스트차',car_plate:'12가3456'};
 const trip=distance_m=>({started_at:'2026-12-20T00:00:00Z',ended_at:'2026-12-20T00:30:00Z',distance_m,duration_min:30,annotation:{purpose:'business',driver_staff_id:1,driver_name:'김운전자'}});
 const shownRows=r=>r.root.findAllByProps({className:'corporate-trip-table'})[0]?.findByType('tbody').findAllByType('tr').length||0;
 const filterRecords=[trip(40),{...trip(1000),started_at:'2026-12-21T00:00:00Z',ended_at:'2026-12-21T02:00:00Z',duration_min:120,annotation:{purpose:'commute',driver_staff_id:9,driver_name:'박운전자'}}];
+
+test('dashboard missing-schedule shortcut opens filtered vehicles; normal navigation opens all',async t=>{
+ const complete={next_service_date:'2030-02-01',insurance_expiry:'2030-02-02',inspection_expiry:'2030-02-03'};
+ const devices=[{id:2,asset:{profile:complete}},{id:3,asset:{profile:{...complete,insurance_expiry:null}}}];
+ const panel=await components({modules:{
+  './business/FleetAccess':{FleetAccountScope:({children})=>children(null)},
+  '../lib/corporateNavigation':navigation,
+  '../lib/corporateOverview':{missingMaintenance,corporateAttention:()=>[]},
+  './business/useBusinessData':{useBusinessClock:()=>Date.parse('2026-11-18T00:00:00Z')},
+  '@tanstack/react-query':{useQuery:()=>({data:[]})},
+  './business/FleetAssets':{useFleetAssets:()=>({data:devices}),projectFleetAssets:rows=>rows,useAssetStats:()=>({}),useFleetReservations:()=>({data:[]}),FleetAssets:({initialMissingSchedules})=>React.createElement('output',{'data-missing':initialMissingSchedules})},
+  './business/BusinessWorkspace':{
+   BusinessWorkspace:({onTab,tabs,children})=>React.createElement('main',{},...tabs.map(item=>React.createElement('button',{key:item.id,onClick:()=>onTab(item.id)},item.label)),children),
+   BusinessSection:({children})=>React.createElement('section',{},children),
+   BusinessTask:({title,action,onClick})=>React.createElement('button',{title,onClick},action),
+  },
+ }});
+ let r;await act(async()=>{r=create(React.createElement(panel.default));});
+ t.after(async()=>{await act(async()=>r.unmount());});
+ const shortcut=button(r,'미등록 차량 보기');
+ assert.equal(shortcut.props.title,'점검 일정 미등록 1대');
+ await act(async()=>shortcut.props.onClick());
+ assert.equal(r.root.findByType('output').props['data-missing'],true);
+ await act(async()=>button(r,'차량 관리').props.onClick());
+ assert.equal(r.root.findByType('output').props['data-missing'],false);
+});
 
 test('expense categories remain reachable during vehicle and terminal outages while terminal access denials close the workspace',async()=>{
  let assetRetries=0,terminalRetries=0;

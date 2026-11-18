@@ -17,6 +17,10 @@ use sqlx::{FromRow, Postgres, Transaction};
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/corporate/vehicles", get(list).post(create))
+        .route(
+            "/corporate/vehicles/bindings/batch",
+            axum::routing::put(connect_batch),
+        )
         .route("/corporate/vehicles/:id", get(detail).put(update))
         .route(
             "/corporate/vehicles/:id/bindings",
@@ -338,95 +342,246 @@ struct ConnectionInput {
     primary_device_id: Option<i64>,
     updated_at: DateTime<Utc>,
 }
+#[derive(Deserialize)]
+struct VehicleConnections {
+    vehicle_id: i64,
+    #[serde(flatten)]
+    connection: ConnectionInput,
+}
+
+#[derive(Deserialize)]
+struct ConnectionBatch {
+    vehicles: Vec<VehicleConnections>,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum ConnectionMode {
+    Single,
+    Batch,
+}
+
 async fn connect(
     State(state): State<AppState>,
     user: AuthUser,
     Path(id): Path<i64>,
-    Json(mut input): Json<ConnectionInput>,
+    Json(input): Json<ConnectionInput>,
 ) -> AppResult<Json<Vehicle>> {
-    input.device_ids.sort_unstable();
-    input.device_ids.dedup();
-    if input.device_ids.len() > 20
-        || input.device_ids.iter().any(|id| *id <= 0)
-        || (!input.device_ids.is_empty()
-            && !input
-                .primary_device_id
-                .is_some_and(|id| input.device_ids.contains(&id)))
-        || (input.device_ids.is_empty() && input.primary_device_id.is_some())
-    {
+    apply_connections(
+        &state,
+        user.user_id,
+        ConnectionMode::Single,
+        vec![VehicleConnections {
+            vehicle_id: id,
+            connection: input,
+        }],
+    )
+    .await?;
+    Ok(Json(read(&state, user.user_id, id).await?))
+}
+
+async fn connect_batch(
+    State(state): State<AppState>,
+    user: AuthUser,
+    scope: Option<Extension<crate::auth::fleet::FleetScope>>,
+    Json(batch): Json<ConnectionBatch>,
+) -> AppResult<Json<Value>> {
+    if let Some(Extension(scope)) = scope {
+        if !scope.admin() {
+            return Err(AppError::Forbidden);
+        }
+        for item in &batch.vehicles {
+            scope.vehicle(item.vehicle_id)?;
+        }
+    }
+    let count =
+        apply_connections(&state, user.user_id, ConnectionMode::Batch, batch.vehicles).await?;
+    Ok(Json(json!({"updated": count})))
+}
+
+async fn apply_connections(
+    state: &AppState,
+    owner: i64,
+    mode: ConnectionMode,
+    vehicles: Vec<VehicleConnections>,
+) -> AppResult<usize> {
+    use std::collections::{BTreeMap, BTreeSet};
+    if vehicles.is_empty() || vehicles.len() > 100 {
         return Err(AppError::BadRequest(
-            "연결할 단말기와 대표 단말기 한 대를 선택해 주세요.".into(),
+            "한 번에 차량 1~100대를 선택해 주세요.".into(),
         ));
     }
+    let mut plans = BTreeMap::new();
+    let mut requested = BTreeSet::new();
+    for VehicleConnections {
+        vehicle_id,
+        mut connection,
+    } in vehicles
+    {
+        connection.device_ids.sort_unstable();
+        connection.device_ids.dedup();
+        if vehicle_id <= 0 || plans.contains_key(&vehicle_id) {
+            return Err(AppError::BadRequest(
+                "차량을 중복 없이 선택해 주세요.".into(),
+            ));
+        }
+        if connection.device_ids.len() > 20
+            || connection.device_ids.iter().any(|id| *id <= 0)
+            || match connection.primary_device_id {
+                Some(id) => !connection.device_ids.contains(&id),
+                None => !connection.device_ids.is_empty(),
+            }
+        {
+            return Err(AppError::BadRequest(
+                "차량별 단말기는 최대 20대이며, 연결할 단말기 중 대표 한 대를 선택해 주세요."
+                    .into(),
+            ));
+        }
+        for &device in &connection.device_ids {
+            if !requested.insert(device) {
+                return Err(AppError::BadRequest(
+                    "각 단말기는 차량 한 대에만 연결할 수 있습니다.".into(),
+                ));
+            }
+        }
+        plans.insert(vehicle_id, connection);
+    }
+    let vehicle_ids: Vec<_> = plans.keys().copied().collect();
+    let requested: Vec<_> = requested.into_iter().collect();
     let mut tx = state.db.begin().await?;
-    let mut lock_ids:Vec<i64>=sqlx::query_scalar("SELECT device_id FROM fleet_vehicle_bindings WHERE vehicle_id=$1 AND owner_id=$2 AND ended_at IS NULL AND device_id IS NOT NULL").bind(id).bind(user.user_id).fetch_all(&mut *tx).await?;
-    lock_ids.extend(&input.device_ids);
+    let mut lock_ids: Vec<i64> = sqlx::query_scalar(
+        "SELECT device_id FROM fleet_vehicle_bindings WHERE owner_id=$1 AND vehicle_id=ANY($2)
+         AND ended_at IS NULL AND device_id IS NOT NULL",
+    )
+    .bind(owner)
+    .bind(&vehicle_ids)
+    .fetch_all(&mut *tx)
+    .await?;
+    lock_ids.extend_from_slice(&requested);
     lock_ids.sort_unstable();
     lock_ids.dedup();
-    let _: Vec<i64> = sqlx::query_scalar(
-        "SELECT id FROM gps_read_devices WHERE id=ANY($1) ORDER BY id FOR UPDATE",
+    // SIM release and single/batch assignments acquire device locks before vehicle locks.
+    let devices: Vec<(i64, String)> = sqlx::query_as(
+        "SELECT id,COALESCE(display_name,device_uid) FROM gps_read_devices
+         WHERE owner_id=$1 AND id=ANY($2) ORDER BY id FOR UPDATE",
     )
+    .bind(owner)
     .bind(&lock_ids)
     .fetch_all(&mut *tx)
     .await?;
-    // Lock SIM rows before the vehicle. Owner-release uses the same SIM row lock.
-    let devices:Vec<(i64,String)>=sqlx::query_as("SELECT id,COALESCE(display_name,device_uid) FROM gps_read_devices WHERE id=ANY($1) AND owner_id=$2 ORDER BY id FOR UPDATE")
-        .bind(&input.device_ids).bind(user.user_id).fetch_all(&mut *tx).await?;
-    if devices.len() != input.device_ids.len() {
+    let device_names: BTreeMap<_, _> = devices.into_iter().collect();
+    if requested
+        .iter()
+        .any(|device| !device_names.contains_key(device))
+    {
         return Err(AppError::BadRequest(
             "현재 계정에 등록된 단말기만 연결할 수 있습니다.".into(),
         ));
     }
-    let v: Vehicle =
-        sqlx::query_as("SELECT * FROM fleet_vehicles WHERE id=$1 AND owner_id=$2 FOR UPDATE")
-            .bind(id)
-            .bind(user.user_id)
-            .fetch_optional(&mut *tx)
-            .await?
-            .ok_or(AppError::NotFound)?;
-    if v.updated_at != input.updated_at {
+    let versions: Vec<(i64, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT id,updated_at FROM fleet_vehicles WHERE owner_id=$1 AND id=ANY($2) ORDER BY id FOR UPDATE"
+    ).bind(owner).bind(&vehicle_ids).fetch_all(&mut *tx).await?;
+    if versions.len() != plans.len() {
+        return Err(AppError::NotFound);
+    }
+    if versions
+        .iter()
+        .any(|(id, version)| plans[id].updated_at != *version)
+    {
         return Err(AppError::Conflict(
             "차량 연결이 변경됐습니다. 새로고침 후 다시 시도해 주세요.".into(),
         ));
     }
-    let used:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_vehicle_bindings WHERE device_id=ANY($1) AND vehicle_id<>$2 AND ended_at IS NULL)").bind(&input.device_ids).bind(id).fetch_one(&mut *tx).await?;
-    if used {
-        return Err(AppError::Conflict(
-            "다른 차량에 연결된 단말기가 있습니다. 기존 차량에서 연결을 해제해 주세요.".into(),
-        ));
+    let used_elsewhere: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM fleet_vehicle_bindings WHERE device_id=ANY($1)
+         AND NOT(vehicle_id=ANY($2)) AND ended_at IS NULL)",
+    )
+    .bind(&requested)
+    .bind(&vehicle_ids)
+    .fetch_one(&mut *tx)
+    .await?;
+    if used_elsewhere {
+        let message = match mode {
+            ConnectionMode::Single => {
+                "다른 차량에 연결된 단말기가 있습니다. 기존 차량에서 연결을 해제해 주세요."
+            }
+            ConnectionMode::Batch => {
+                "다른 차량에 연결된 단말기가 있습니다. 기존 차량도 함께 선택해 주세요."
+            }
+        };
+        return Err(AppError::Conflict(message.into()));
     }
-    let old:Vec<Binding>=sqlx::query_as("SELECT * FROM fleet_vehicle_bindings WHERE vehicle_id=$1 AND ended_at IS NULL ORDER BY id FOR UPDATE").bind(id).fetch_all(&mut *tx).await?;
-    let at:DateTime<Utc>=sqlx::query_scalar("SELECT GREATEST(clock_timestamp(),COALESCE(max(started_at)+interval '1 microsecond',clock_timestamp())) FROM fleet_vehicle_bindings WHERE vehicle_id=$1").bind(id).fetch_one(&mut *tx).await?;
-    for b in &old {
-        if !b.device_id.is_some_and(|d| input.device_ids.contains(&d))
-            || b.is_primary != (b.device_id == input.primary_device_id)
-        {
-            sqlx::query("UPDATE fleet_vehicle_bindings SET ended_at=$2 WHERE id=$1")
-                .bind(b.id)
-                .bind(at)
-                .execute(&mut *tx)
-                .await?;
+
+    let old: Vec<Binding> = sqlx::query_as(
+        "SELECT * FROM fleet_vehicle_bindings WHERE owner_id=$1 AND vehicle_id=ANY($2)
+         AND ended_at IS NULL ORDER BY id FOR UPDATE",
+    )
+    .bind(owner)
+    .bind(&vehicle_ids)
+    .fetch_all(&mut *tx)
+    .await?;
+    let at: DateTime<Utc> = sqlx::query_scalar(
+        "SELECT GREATEST(clock_timestamp(), max(started_at) + interval '1 microsecond')
+         FROM fleet_vehicle_bindings WHERE vehicle_id=ANY($1)",
+    )
+    .bind(&vehicle_ids)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    // Close every departing interval before opening any new intervals: swaps share
+    // one precise boundary and cannot temporarily overlap either unique assignment.
+    let mut retained = BTreeSet::new();
+    let mut ended = Vec::new();
+    let mut previous: BTreeMap<i64, Vec<&Binding>> = BTreeMap::new();
+    for binding in &old {
+        previous
+            .entry(binding.vehicle_id)
+            .or_default()
+            .push(binding);
+        let plan = &plans[&binding.vehicle_id];
+        match binding.device_id {
+            Some(id)
+                if plan.device_ids.contains(&id)
+                    && binding.is_primary == (Some(id) == plan.primary_device_id) =>
+            {
+                retained.insert((binding.vehicle_id, id));
+            }
+            _ => ended.push(binding.id),
         }
     }
-    for (device, name) in devices {
-        let primary = Some(device) == input.primary_device_id;
-        if old
-            .iter()
-            .any(|b| b.device_id == Some(device) && b.is_primary == primary)
-        {
-            continue;
-        }
-        sqlx::query("INSERT INTO fleet_vehicle_bindings(vehicle_id,owner_id,device_id,terminal_name,is_primary,started_at) VALUES($1,$2,$3,$4,$5,$6)")
-            .bind(id).bind(user.user_id).bind(device).bind(name).bind(primary).bind(at).execute(&mut *tx).await.map_err(db_error)?;
-    }
-    sqlx::query("UPDATE fleet_vehicles SET updated_at=$2 WHERE id=$1")
-        .bind(id)
+    sqlx::query("UPDATE fleet_vehicle_bindings SET ended_at=$2 WHERE id=ANY($1)")
+        .bind(&ended)
         .bind(at)
         .execute(&mut *tx)
         .await?;
-    record(&mut tx,user.user_id,id,"connections",json!(old),json!({"device_ids":input.device_ids,"primary_device_id":input.primary_device_id,"effective_at":at})).await?;
+    let mut updated = 0;
+    for (id, plan) in plans {
+        let before = previous.remove(&id).unwrap_or_default();
+        if mode == ConnectionMode::Batch
+            && before.len() == plan.device_ids.len()
+            && plan.device_ids.iter().all(|d| retained.contains(&(id, *d)))
+        {
+            continue;
+        }
+        for device in &plan.device_ids {
+            if retained.contains(&(id, *device)) {
+                continue;
+            }
+            sqlx::query("INSERT INTO fleet_vehicle_bindings(vehicle_id,owner_id,device_id,terminal_name,is_primary,started_at) VALUES($1,$2,$3,$4,$5,$6)")
+                .bind(id).bind(owner).bind(device).bind(&device_names[device])
+                .bind(Some(*device)==plan.primary_device_id).bind(at)
+                .execute(&mut *tx).await.map_err(db_error)?;
+        }
+        sqlx::query("UPDATE fleet_vehicles SET updated_at=$2 WHERE id=$1")
+            .bind(id)
+            .bind(at)
+            .execute(&mut *tx)
+            .await?;
+        record(&mut tx, owner, id, "connections", json!(before),
+            json!({"device_ids":plan.device_ids,"primary_device_id":plan.primary_device_id,"effective_at":at})).await?;
+        updated += 1;
+    }
     tx.commit().await?;
-    Ok(Json(read(&state, user.user_id, id).await?))
+    Ok(updated)
 }
 
 async fn trips(
