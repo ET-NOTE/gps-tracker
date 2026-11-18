@@ -351,8 +351,15 @@ export const api = {
   listFleetSiteVisits: (params={}) => req('GET',`/corporate/site-visits?${new URLSearchParams(params)}`),
   // auth
   register: (body) => req('POST', '/auth/register', body),     // {email,password,phone,otp_code,display_name?}
-  login:    (email, password, remember_me = false) =>
-              req('POST', '/auth/login', { email, password, remember_me }),
+  async login(email, password, remember_me = false) {
+    try {
+      // Login checks the submitted credentials, so refreshing a previous session cannot fix a 401.
+      return await req('POST', '/auth/login', { email, password, remember_me }, false);
+    } catch (error) {
+      if (error.status === 401) error.message = '이메일 또는 비밀번호를 확인해 주세요.';
+      throw error;
+    }
+  },
   sendOtp:  (phone) => req('POST', '/auth/send-otp', { phone }),
 
   // 아이디 찾기 (2-step: 번호 OTP → 결과 ≤3개)

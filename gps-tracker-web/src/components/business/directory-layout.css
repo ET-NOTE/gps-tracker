@@ -29,6 +29,45 @@
  .fleet-directory-group-footer{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 16px;margin-top:0}
  .fleet-directory-footer-action{width:auto;min-height:48px;padding:10px 12px}
 }
+/* Keep group choices and status available above the ledger when the sidebar folds. */
+@media screen and (max-width:1199px) {
+  :is(.fleet-assets-list, .fleet-people-cartax) .fleet-directory-groups {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px 12px;
+    padding: 8px 14px;
+    min-height: 0;
+  }
+  :is(.fleet-assets-list, .fleet-people-cartax) .fleet-directory-heading {
+    gap: 8px;
+    min-height: 48px;
+    padding: 0;
+  }
+  :is(.fleet-assets-list, .fleet-people-cartax) .fleet-directory-group-list {
+    align-items: center;
+    padding: 2px 0;
+  }
+  :is(.fleet-assets-list, .fleet-people-cartax) .fleet-directory-group-footer {
+    grid-column: 1 / -1;
+    padding: 4px 0 0;
+  }
+}
+@media screen and (min-width:720px) and (max-width:1199px) {
+  :is(.fleet-assets-list, .fleet-people-cartax) .fleet-directory-groups {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  :is(.fleet-assets-list, .fleet-people-cartax) .fleet-directory-group-footer {
+    grid-column: auto;
+    border-top: 0;
+    border-inline-start: 1px solid var(--border);
+    padding: 0 0 0 12px;
+  }
+  .fleet-people-cartax .fleet-directory-group-footer:has(.business-error, [role="status"]) {
+    grid-column: 1 / -1;
+    border: 0;
+    padding: 0;
+  }
+}
 @media(max-width:600px){
  .fleet-directory-group,.fleet-directory-footer-action{min-height:48px}
  .fleet-directory-group-count{font-size:16px;min-width:28px;padding:2px 7px}

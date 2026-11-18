@@ -70,6 +70,24 @@ async function mockDownloadHttp(t, respond) {
   t.after(() => f.queryClient.clear());
   return { ...f, requests, origin };
 }
+for (const signedIn of [false, true]) test(`login rejection reports a credential error and leaves the form usable (existing session: ${signedIn})`, async t => {
+  const calls = [];
+  const f = await fixture(async url => {
+    calls.push(url);
+    if (url.endsWith('/auth/refresh')) return Response.json({error:'unauthorized'}, {status:401});
+    if (calls.length === 1) return Response.json({error:'unauthorized'}, {status:401});
+    return Response.json({access_token:'new-access',refresh_token:'new-refresh'});
+  });
+  t.after(() => f.queryClient.clear());
+  if (signedIn) f.api.setTokens(token('A'), 'refresh-A', false);
+  await assert.rejects(f.api.api.login('driver@example.test','wrong-password'), {
+    status:401, message:'이메일 또는 비밀번호를 확인해 주세요.',
+  });
+  assert.equal(f.context.sessionStorage.getItem('refresh_token'), signedIn ? 'refresh-A' : null);
+  assert.equal((await f.api.api.login('driver@example.test','correct-password')).access_token, 'new-access');
+  assert.deepEqual(calls.map(url => url.split('/').at(-1)), ['login', 'login']);
+});
+
 test('new account never reuses previous account query cache', async () => {
   const f = await fixture(async () => new Response('{}'));
   f.api.setTokens(token('A'), 'refresh-A');

@@ -63,10 +63,10 @@ export default function FleetExpenses({categoriesOnly=false,onOpenCategories}){
  const selectedNames=[assets.data.find(v=>String(v.id)===filters.vehicle_id)&&siteVehicleLabel(assets.data.find(v=>String(v.id)===filters.vehicle_id)),staff.data.find(s=>String(s.id)===filters.staff_id)?.name,departments.find(d=>String(d.id)===filters.department_id)?.name,cats.data.find(c=>String(c.id)===filters.category_id)?.name,expenseStatus[status],query.trim()&&`차량·사용자 검색: ${query.trim()}`].filter(Boolean).join(' · ')||'전체 조회';
  return <div className="fleet-expenses">
  <section className="expense-controls" aria-label="지출 조회 조건">
-  <div className="expense-control-row">
-   <div className="expense-query-controls">
-    <div className="expense-date-range" role="group" aria-label="지출 조회 기간"><input type="date" aria-label="지출 조회 시작일" value={filters.from||''} max={filters.to||undefined} onChange={e=>filter('from',e.target.value)}/><span aria-hidden="true">~</span><input type="date" aria-label="지출 조회 종료일" value={filters.to||''} min={filters.from||undefined} onChange={e=>filter('to',e.target.value)}/></div>
-    <label className="expense-search"><Icon name="search" size={16}/><input type="search" aria-label="차량 및 사용자 검색" placeholder="차량 및 사용자 검색" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);setDownloadsOpen(false);}}/></label>
+  <div className="expense-query-row">
+   <div className="expense-date-range" role="group" aria-label="지출 조회 기간"><input type="date" aria-label="지출 조회 시작일" value={filters.from||''} max={filters.to||undefined} onChange={e=>filter('from',e.target.value)}/><span aria-hidden="true">~</span><input type="date" aria-label="지출 조회 종료일" value={filters.to||''} min={filters.from||undefined} onChange={e=>filter('to',e.target.value)}/></div>
+   <label className="expense-search"><Icon name="search" size={16}/><input type="search" aria-label="차량 및 사용자 검색" placeholder="차량·사용자 검색" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);setDownloadsOpen(false);}}/></label>
+   <div className="expense-query-actions">
     <BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={openFilters}>필터{advancedCount>0&&<span className="expense-filter-count">{advancedCount}</span>}</BusinessButton>
     <BusinessButton icon="refresh" aria-label="지출 새로고침" title="새로고침" disabled={!valid||entries.isFetching} onClick={refresh}/>
    </div>

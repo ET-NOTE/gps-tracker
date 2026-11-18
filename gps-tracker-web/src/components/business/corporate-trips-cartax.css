@@ -9,7 +9,8 @@
 .business-workspace--corporate .corporate-report-menu{position:relative}
 .business-workspace--corporate .corporate-report-menu>summary{display:flex;align-items:center;justify-content:center;gap:7px;min-height:48px;box-sizing:border-box;padding:10px 14px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:18px;color:var(--text-2);cursor:pointer;list-style:none;white-space:nowrap}
 .business-workspace--corporate .corporate-report-menu>summary::-webkit-details-marker{display:none}
-.business-workspace--corporate .corporate-report-menu>summary:after{content:'⌄';font-size:18px;margin-left:3px}
+.business-workspace--corporate .corporate-report-menu>summary:after{content:'';width:7px;height:7px;box-sizing:border-box;margin-inline:3px 1px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:translateY(-2px) rotate(45deg)}
+.business-workspace--corporate .corporate-report-menu[open]>summary:after{transform:translateY(2px) rotate(225deg)}
 .business-workspace--corporate .corporate-report-menu[open]>summary{background:var(--surface-2)}
 .business-workspace--corporate .corporate-report-menu-body{position:absolute;z-index:15;top:calc(100% + 7px);left:0;display:flex;flex-direction:column;gap:8px;min-width:300px;max-width:calc(100vw - 48px);padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:5px;box-shadow:0 6px 20px #17243a26}
 .business-workspace--corporate .corporate-report-menu-body>button{justify-content:flex-start}
@@ -102,7 +103,7 @@
 .business-workspace--corporate .corporate-report-layout{border:0;background:transparent;gap:20px;overflow:visible}
 .business-workspace--corporate .corporate-report-layout>.fleet-directory-content{overflow:visible}
 .business-workspace--corporate .corporate-report-vehicle-sidebar{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;align-self:stretch;overflow:hidden}
-.business-workspace--corporate .corporate-report-vehicle-search{display:flex;align-items:center;gap:8px;margin:16px;padding:10px;border:1px solid var(--border);border-radius:4px;color:var(--text-2)}
+.business-workspace--corporate .corporate-report-vehicle-search{display:flex;align-items:center;gap:8px;margin:12px;padding:0 10px;border:1px solid var(--border);border-radius:4px;color:var(--text-2)}
 .business-workspace--corporate .corporate-report-vehicle-search input{width:100%;min-width:0;border:0;outline:none;background:transparent;color:var(--text);font:inherit;font-size:18px}
 .business-workspace--corporate .corporate-report-vehicle-search:focus-within{outline:2px solid var(--primary);outline-offset:1px}
 .business-workspace--corporate .corporate-report-vehicle-list{display:grid;max-height:560px;overflow-y:auto;padding:0 8px 12px;gap:4px}
@@ -177,6 +178,14 @@
 @media(max-width:480px){.corporate-editor-footer button{flex:1}.corporate-trip-editor-summary{padding:14px 16px}.corporate-editor-fields{gap:20px}.corporate-export-footer .corporate-export-actions{flex-wrap:wrap}.corporate-export-footer .corporate-export-actions>button{flex:1 1 120px!important}}
 @media(min-width:1200px){.business-workspace--corporate .corporate-report-control-row .corporate-report-vehicle{display:none}}
 @media(max-width:1199px){.business-workspace--corporate .corporate-report-vehicle-sidebar{display:none}}
+@media screen and (min-width:701px) and (max-width:1599px){
+ .business-workspace--corporate .corporate-report-page { gap:16px; }
+ .business-workspace--corporate .corporate-report-page .corporate-report-controls { padding:16px; gap:14px; }
+ .business-workspace--corporate .corporate-report-control-row { gap:8px 10px; }
+ .business-workspace--corporate .corporate-report-date-range input:not([type=checkbox]) { width:146px; }
+ .business-workspace--corporate .corporate-report-control-row .corporate-report-vehicle { width:min(100%,210px); }
+ .business-workspace--corporate .corporate-report-vehicle-list button { gap:3px; padding:12px; }
+}
 @media screen and (min-width:1024px){
  .business-workspace--corporate :is(.corporate-report-page,.corporate-monthly-page,.corporate-reservations){min-height:max(480px,calc(100dvh - 132px))}
  .business-workspace--corporate .corporate-report-layout>.fleet-directory-content>.corporate-report-page{flex:1}
