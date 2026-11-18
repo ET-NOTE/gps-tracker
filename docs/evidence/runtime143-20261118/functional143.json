@@ -1,0 +1,46 @@
+{
+  "at": "2026-11-18T07:03:41Z",
+  "passed": [
+    "admin security ON: anonymous/user/company/unverified admin/handler/delegation denied; enrolled officer and operator allowed",
+    "107 grouped historical links traverse50/50/7 exactly across company boundary; strict metadata/no-store; subject scoped and source hashes unchanged",
+    "literal/case-insensitive company search, exact IDs, linked2/unlinked105, paired cursor validation, Unicode80 bound, unknown request404 and empty page",
+    "candidate GET records admin access/response evidence; audit-write failure fails closed and recovers without source mutation",
+    "one blocked candidate SELECT cancelled by TLS disconnect, SQL ends and next read200; no sustained/concurrent load",
+    "explicit operator execution needs officer approval; changed payload denied; archived link creates only identity_pending review; duplicate rejected and no company task/disclosure",
+    "IP spoofing, disabled principal and revoked step-up denied; cancelled parent history remains auditable; schema114 unchanged"
+  ],
+  "schema": 114,
+  "api_sha256": "9ce1e1237653c5f04c6d891dfb22ca645e9e4ec43569f7372d6c01fb74b6b465",
+  "fixture": {
+    "accounts": 7,
+    "history_pairs": 107,
+    "foreign_pairs": 1,
+    "page_lengths": [
+      50,
+      50,
+      7
+    ],
+    "current_links": 2,
+    "created_reviews": 1
+  },
+  "read_only_hashes": {
+    "privacy_requests": "11ed1993c86f4919879b2339ea9dcc1c",
+    "privacy_company_reviews": "d41d8cd98f00b204e9800998ecf8427e",
+    "privacy_company_link_history": "9ed4672423919cec788dbcb887170a9a",
+    "staff": "e48e512d1fdc6314f6e48eaac9cc0e53",
+    "fleet_staff_accounts": "33ba633787c7926dab466fd16d99256b"
+  },
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false,
+  "environment": "internal TLS1.2; PostgreSQL14/Timescale; separated gps_runtime; encryption ON; admin security ON with TOTP and IP"
+}

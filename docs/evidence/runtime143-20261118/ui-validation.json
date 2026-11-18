@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-18T07:02:26.502Z",
+  "environment": "actual React/React Query and Edge; synthetic local API",
+  "checks": [
+    "lazy open and107 historical pairs50/50/7, back and final next disabled",
+    "search and link filter reset page; Enter never submits form",
+    "390px search and selected historical candidate without overflow",
+    "explicit create preserves KST inclusive dates and exact pair; no identity confirmation",
+    "approval conflict displayed; query access error distinct from empty and retry works",
+    "cancel removes late choices; no nested forms"
+  ],
+  "errors": []
+}

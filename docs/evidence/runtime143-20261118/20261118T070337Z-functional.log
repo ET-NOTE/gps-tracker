@@ -1,0 +1,8 @@
+PASS admin security ON: anonymous/user/company/unverified admin/handler/delegation denied; enrolled officer and operator allowed
+PASS 107 grouped historical links traverse50/50/7 exactly across company boundary; strict metadata/no-store; subject scoped and source hashes unchanged
+PASS literal/case-insensitive company search, exact IDs, linked2/unlinked105, paired cursor validation, Unicode80 bound, unknown request404 and empty page
+PASS candidate GET records admin access/response evidence; audit-write failure fails closed and recovers without source mutation
+PASS one blocked candidate SELECT cancelled by TLS disconnect, SQL ends and next read200; no sustained/concurrent load
+PASS explicit operator execution needs officer approval; changed payload denied; archived link creates only identity_pending review; duplicate rejected and no company task/disclosure
+PASS IP spoofing, disabled principal and revoked step-up denied; cancelled parent history remains auditable; schema114 unchanged
+PASS all 7 functional groups
