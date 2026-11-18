@@ -1,0 +1,58 @@
+{
+  "account-entitlements.json": {
+    "bytes": 997,
+    "sha256": "2f6530709a2a9eda8cafd66e2250f7d1bccbb434e48e2f227608bbcde0d50359"
+  },
+  "backup-verified.json": {
+    "bytes": 409,
+    "sha256": "cf263c80695a2b405b5c1602966dbdcd486641f76201992257f48c36da1fbb85"
+  },
+  "check-accounts.py": {
+    "bytes": 1117,
+    "sha256": "2efdf80dc130b0ff83e22cc4e9dec8e7deb7febe728905dee75b87dabbfdfed8"
+  },
+  "cleanup.json": {
+    "bytes": 255,
+    "sha256": "65f47c1e10a0219b348e264a59cd3a805f830847a4838c190e73c626bbdeeee6"
+  },
+  "deployment.json": {
+    "bytes": 857,
+    "sha256": "ecc6adec42598ab8066305f9ea9b8a2551bcd9014f2163ca1ee6bfbf149f9576"
+  },
+  "postcheck.json": {
+    "bytes": 4448,
+    "sha256": "ad0a5ec34e88589f39ad1434887151a58a8a10b84ef38b6854475c88b8379ac6"
+  },
+  "prod-subscription.jpg": {
+    "bytes": 64732,
+    "sha256": "75cce4b30b955d294a63c26d4247ea80731f9fb1103280542fcaf3b7eeb27096"
+  },
+  "prod-vehicles.jpg": {
+    "bytes": 63766,
+    "sha256": "5ea6e0a6adca0ccb3a4c93738e38da379150a611b03819320cf8f8592bf4851e"
+  },
+  "rehearsal.json": {
+    "bytes": 3126,
+    "sha256": "9415d5cdee76133273ca6f6c3d7482dbb1b0763e1933fad78f36f0917f3f3f14"
+  },
+  "review137_deploy.py": {
+    "bytes": 26044,
+    "sha256": "a601953b6f21ae9e4029be53573ba80b9a73c3a0e1b42aa8b907634191b1cfdd"
+  },
+  "review146_deploy.py": {
+    "bytes": 18570,
+    "sha256": "59b3bedb1fe284b8c8ea84bbc407607f277ec35f5912235dcc43d2d2bef1b420"
+  },
+  "review146_postcheck.py": {
+    "bytes": 4094,
+    "sha256": "cd2d537760b4f8fd91738e9cb2460bd72492b74c1e127ed6a6fa7c677234ce1d"
+  },
+  "staged.json": {
+    "bytes": 1348,
+    "sha256": "f57813206f3821149c17eccfdaecfaa24f91676933f81ac90a68022b70f34674"
+  },
+  "verified.json": {
+    "bytes": 1676,
+    "sha256": "8426d01ed1fa425a2d7efabc3f61b3eabf375ffcd2cf548a2d58623a6a01acab"
+  }
+}

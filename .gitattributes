@@ -140,3 +140,7 @@ ops/check-company-tasks144-ui.mjs text eol=lf
 docs/evidence/integration145-20261118/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
 docs/evidence/integration145-20261118/*.log whitespace=-blank-at-eof,-blank-at-eol
 docs/evidence/integration145-20261118/*.txt whitespace=-blank-at-eof,-blank-at-eol
+
+# Round146 executed bytes and actual deployment evidence.
+docs/evidence/review146-20261118/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/review146*.py text eol=lf

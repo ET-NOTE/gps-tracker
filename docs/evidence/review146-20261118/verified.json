@@ -1,0 +1,59 @@
+{
+  "at": "2026-11-18T18:19:09+0900",
+  "passed": true,
+  "api_sha256": "b0765d1d8e0fd44188cb6856468cd15926b75635e4597cafbfc20371816a060d",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "runtime145-20261118-r1",
+    "service": "gps-tracker-api"
+  },
+  "schema": 115,
+  "public_files_verified": 22,
+  "account_smoke": {
+    "user@user.com": {
+      "/auth/me": 200,
+      "/auth/me/prefs": 200,
+      "/me/account-type": 200,
+      "/devices": 200,
+      "/corporate/info": 200,
+      "/corporate/vehicles": 200,
+      "/corporate/staff": 200,
+      "/corporate/subscription": 200,
+      "/rentcar/subscription": 200,
+      "/privacy/requests/page": 200,
+      "/privacy/company-tasks": 200
+    },
+    "user@user4.com": {
+      "/auth/me": 200,
+      "/auth/me/prefs": 200,
+      "/me/account-type": 200,
+      "/devices": 200,
+      "/corporate/info": 200,
+      "/corporate/vehicles": 200,
+      "/corporate/staff": 200,
+      "/corporate/subscription": 200,
+      "/rentcar/subscription": 200,
+      "/privacy/requests/page": 200,
+      "/privacy/company-tasks": 200
+    },
+    "anonymous_private_request": 401
+  },
+  "policies": {
+    "location_storage_policy": false,
+    "privacy_retention_policy": false,
+    "location_subject_policy": false
+  },
+  "feature_flags": {
+    "GPS_ADMIN_SECURITY": "<unset/off>",
+    "GPS_LOCATION_ENCRYPTION": "<unset/off>",
+    "GPS_LOCATION_ACCESS_LOG": "<unset/off>",
+    "GPS_SUBJECT_PROVISION": "<unset/off>",
+    "GPS_INGEST_TLS_REQUIRED": "<unset/off>"
+  },
+  "environment_unchanged": true,
+  "neighbors_unchanged": true,
+  "timers_active": true,
+  "disk_available_bytes": 6864404480
+}

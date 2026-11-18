@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-18T18:22:06+0900",
+  "passed": true,
+  "database_dump": {
+    "bytes": 14591363,
+    "sha256": "13768c4adb95ac09d1053f5b486de2a416a2f5ad05e614f43d92d868e6e37b3e"
+  },
+  "directory": "/home/mmm/backups/review146-20261118-r1",
+  "source_schema": 114,
+  "cutover_snapshot_restored": true,
+  "decompressed_copy_chunks": 25,
+  "physical_backup_closed": true,
+  "production_decompressed": false
+}

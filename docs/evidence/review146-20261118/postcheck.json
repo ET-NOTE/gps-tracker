@@ -1,0 +1,148 @@
+{
+  "at": "2026-11-18T18:25:46+0900",
+  "passed": true,
+  "observed_until": "2026-11-18T18:25:43.906033+09:00",
+  "ready_at": "2026-11-18T18:19:04+0900",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "runtime145-20261118-r1",
+    "service": "gps-tracker-api"
+  },
+  "state": {
+    "schema": 115,
+    "users": 43,
+    "devices": 18,
+    "api": "b0765d1d8e0fd44188cb6856468cd15926b75635e4597cafbfc20371816a060d",
+    "env": "fab21aeaaef7a00f1283530e1136690c28d416d5d4d62b9968d4a6a6cdb3df55",
+    "web": "/home/mmm/releases/review146-20261118-r1/web",
+    "neighbors": {
+      "dev_api": "d12f65d2ece880855df8ef8a202d143980a1c5c7ea5b9538ad3473d73c5c964b",
+      "dev_web": "/home/gps-dev/gps-tracker-web-dev/releases/dev-20261118-notion-followup-fb705249/web",
+      "shield": "/srv/shield/releases/shield-20261102-142702-b9babe2",
+      "services": "MainPID=2276664\nId=gps-tracker-api-dev.service\nActiveEnterTimestamp=Wed 2026-11-18 12:41:19 KST\n\nMainPID=15160\nId=shield-api.service\nActiveEnterTimestamp=Fri 2026-11-06 11:45:30 KST\n\nId=gps-pdf-render.socket\nActiveEnterTimestamp=Fri 2026-11-06 16:48:34 KST\n",
+      "nginx": "c3b420dca0e3426fc50503b5781d6ac0a417d30dd883c3e133a82749946b869f"
+    }
+  },
+  "service": "MainPID=2334316\nNRestarts=0\nExecMainStartTimestamp=Wed 2026-11-18 18:19:03 KST\nActiveState=active\n",
+  "api_error_priority_journal_entries_after_ready": 0,
+  "http_status_counts": {
+    "during_preparation": {
+      "502": 2,
+      "200": 10,
+      "405": 4
+    },
+    "after_ready": {
+      "200": 206,
+      "405": 7,
+      "401": 7,
+      "429": 6
+    }
+  },
+  "exception_counts": {
+    "during_preparation": {
+      "502 /ingest": 1,
+      "502 /health": 1
+    },
+    "after_ready": {
+      "429 /api/v1/devices/:resource": 3,
+      "429 /api/v1/corporate/:resource": 3
+    }
+  },
+  "exception_times": [
+    {
+      "at": "2026-11-18T18:14:16+09:00",
+      "status": 502,
+      "route": "/ingest"
+    },
+    {
+      "at": "2026-11-18T18:14:16+09:00",
+      "status": 502,
+      "route": "/health"
+    },
+    {
+      "at": "2026-11-18T18:19:38+09:00",
+      "status": 429,
+      "route": "/api/v1/devices/:resource"
+    },
+    {
+      "at": "2026-11-18T18:19:38+09:00",
+      "status": 429,
+      "route": "/api/v1/corporate/:resource"
+    },
+    {
+      "at": "2026-11-18T18:19:40+09:00",
+      "status": 429,
+      "route": "/api/v1/devices/:resource"
+    },
+    {
+      "at": "2026-11-18T18:19:41+09:00",
+      "status": 429,
+      "route": "/api/v1/corporate/:resource"
+    },
+    {
+      "at": "2026-11-18T18:19:43+09:00",
+      "status": 429,
+      "route": "/api/v1/devices/:resource"
+    },
+    {
+      "at": "2026-11-18T18:19:43+09:00",
+      "status": 429,
+      "route": "/api/v1/corporate/:resource"
+    }
+  ],
+  "ingest_or_report_route_status_counts": {
+    "during_preparation": {
+      "502": 1,
+      "405": 4
+    },
+    "after_ready": {
+      "405": 7
+    }
+  },
+  "log_interval_start": "2026-11-18T18:13:46+09:00",
+  "account_entitlements": {
+    "checked_at": "2026-11-18T18:25:44.242546+09:00",
+    "target": "2027-11-18T18:25:44.242546+09:00",
+    "accounts": [
+      {
+        "email": "user@user.com",
+        "role": "user",
+        "account_type": "corporate_fleet",
+        "subscriptions": {
+          "corporate_report": {
+            "continuous_until": "2027-12-05T19:56:15.958288+09:00",
+            "at_least_one_year": true
+          },
+          "rentcar_report": {
+            "continuous_until": "2027-11-22T18:43:18.162228+09:00",
+            "at_least_one_year": true
+          }
+        }
+      },
+      {
+        "email": "user@user4.com",
+        "role": "user",
+        "account_type": "corporate_fleet",
+        "subscriptions": {
+          "corporate_report": {
+            "continuous_until": "2027-11-22T19:04:07.659994+09:00",
+            "at_least_one_year": true
+          },
+          "rentcar_report": {
+            "continuous_until": "2027-11-22T19:04:07.659994+09:00",
+            "at_least_one_year": true
+          }
+        }
+      }
+    ],
+    "database_changes": 0
+  },
+  "neighbors_unchanged": true,
+  "environment_unchanged": true,
+  "dev_checkout_head": "fb705249f7bd406920dad534c4b5442c07749733",
+  "dev_checkout_clean": true,
+  "disk_available_bytes": 7218761728,
+  "note": "Read-only checks. Normal application/browser traffic, not a load test. No new device telemetry claim without observed reports."
+}
