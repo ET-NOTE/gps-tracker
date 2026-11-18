@@ -1,3 +1,4 @@
+import {fileSaveMessage} from '../src/lib/fileDownload.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -13,7 +14,7 @@ async function components(api={},queries={}){
  const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
  await m.link(name=>{
   if(name==='react')return moduleOf(React);if(name==='react/jsx-runtime')return moduleOf(jsx);
-  if(name==='../api')return moduleOf({api});if(name==='../lib/fileDownload')return moduleOf({saveBlob:async()=>{}});
+  if(name==='../api')return moduleOf({api});if(name==='../lib/fileDownload')return moduleOf({fileSaveMessage,saveBlob:async()=>({status:'saved'})});
   if(name==='@tanstack/react-query')return moduleOf({useQuery:({queryKey})=>({data:queries[queryKey[0]],refetch:async()=>{}})});
   throw Error(name);
  });await m.evaluate();return m.namespace;

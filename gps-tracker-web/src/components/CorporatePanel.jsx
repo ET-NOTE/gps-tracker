@@ -1,3 +1,4 @@
+import {saveBlob} from '../lib/fileDownload';
 import { subjectReport, subjectScopeNote } from '../lib/subjectReport';
 import {summarizeMonthlyTrips,monthlyDistance,monthlyPercentages,monthlyStatus} from '../lib/monthlySummary';
 import FleetIncompleteTrips from './business/FleetIncompleteTrips';
@@ -1375,10 +1376,8 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
         params.departments = Array.from(selectedDeps);
       }
       const { blob, filename } = await api.reportXlsx(params);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const result = await saveBlob(blob, filename);
+      if (result.status === 'cancelled') return;
       onClose();
     } catch (e) {
       alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' });

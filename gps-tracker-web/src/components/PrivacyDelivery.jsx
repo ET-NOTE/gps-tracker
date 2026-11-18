@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Link} from 'react-router-dom';
 import {api} from '../api';
-import {saveBlob} from '../lib/fileDownload';
+import {saveBlob,fileSaveMessage} from '../lib/fileDownload';
 import './PrivacyRequests.css';
 
 const date=x=>new Date(x).toLocaleString('ko-KR');
@@ -15,7 +15,7 @@ export function PersonalDeliveries({request}) {
   const [password,setPassword]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
   async function download(row) {
     setBusy(true);setError('');setMessage('');
-    try {const {blob,filename}=await api.downloadPrivacyDelivery(row.id,password);await saveBlob(blob,filename);setMessage('자료 저장을 요청했습니다. 다운로드 목록을 확인해 주세요.');}
+    try {const {blob,filename}=await api.downloadPrivacyDelivery(row.id,password);const result=await saveBlob(blob,filename);setMessage(fileSaveMessage(result));}
     catch(e){setError(e.message);} finally{setPassword('');setBusy(false);}
   }
   const downloadable=q.data?.some(row=>deliveryState(row)==='다운로드 가능')&&!['cancelled','rejected'].includes(request.status);

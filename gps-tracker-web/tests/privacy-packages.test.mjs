@@ -1,3 +1,4 @@
+import {fileSaveMessage} from '../src/lib/fileDownload.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -6,7 +7,7 @@ import * as React from 'react';
 import * as jsx from 'react/jsx-runtime';
 import {create,act} from 'react-test-renderer';
 import {transform} from 'esbuild';
-async function components(api={},queries={}) {
+async function components(api={},queries={},save=async()=>({status:"saved"})) {
  const context=vm.createContext({console});
  const source=await readFile(new URL('../src/components/PrivacyAccountPackage.jsx',import.meta.url),'utf8');
  const moduleOf=exports=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [k,v] of Object.entries(exports))this.setExport(k,v);},{context});
@@ -14,7 +15,7 @@ async function components(api={},queries={}) {
  await m.link(name=>{
   if(name==='react')return moduleOf(React);if(name==='react/jsx-runtime')return moduleOf(jsx);
   if(name==='../api')return moduleOf({api});
-  if(name==='../lib/fileDownload')return moduleOf({saveBlob:async()=>{}});
+  if(name==='../lib/fileDownload')return moduleOf({fileSaveMessage,saveBlob:save});
   if(name==='./PrivacyDelivery')return moduleOf({deliveryState:p=>p.revoked_at?'회수됨':'다운로드 가능'});
   if(name==='@tanstack/react-query')return moduleOf({useQuery:({queryKey})=>({data:queries[queryKey[0]],refetch:async()=>{}})});
   throw Error(name);
@@ -101,4 +102,13 @@ test('collection/use/provision facts need a past period of at most 366 Korean da
  // Issued in the middle of the last day: that day is still the last day shown.
  assert.equal(scopes[1],'포함 범위: 기본정보·요청 처리이력 / 위치정보 수집·이용·제공사실 (좌표 제외) 2026-11-01~2026-11-06');
  await act(async()=>r.unmount());
+});
+
+test('cancelled document export does not enable review attestation',async()=>{
+ const {AdminAccountPackages}=await components({reviewPrivacyDocument:async()=>({blob:'file',sha256:'a'.repeat(64)})},{'admin-personal-documents':{items:[document]},'admin-account-packages':{items:[],events:[]}},async()=>({status:'cancelled'}));let r;
+ await act(async()=>{r=create(React.createElement(AdminAccountPackages,{request,refresh:async()=>{}}));});
+ await act(async()=>r.root.findAllByType('button').find(b=>b.children.join('')==='서류 내려받아 검토').props.onClick());
+ assert.equal(r.root.findAllByProps({type:'checkbox'})[0].props.disabled,true);
+ assert.equal(r.root.findByProps({type:'submit'}).props.disabled,true);
+ r.unmount();
 });

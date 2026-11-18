@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {api} from '../api';
-import {saveBlob} from '../lib/fileDownload';
+import {saveBlob,fileSaveMessage} from '../lib/fileDownload';
 const kinds={document:'문서 페이지',photo:'사진',receipt:'영수증'};
 const date=v=>new Date(v).toLocaleString('ko-KR');
 const valid=d=>d.available&&!d.revoked_at&&new Date(d.expires_at)>new Date();
@@ -94,7 +94,7 @@ export function AdminImages({request,refresh}){
 export function PersonalImages({request}){
  const q=useQuery({queryKey:['personal-privacy-images',request.id,request.revision],queryFn:()=>api.personalPrivacyImage(request.id),retry:false});const [password,setPassword]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
  useEffect(()=>{const clear=()=>{setPassword('');setMessage('');};window.addEventListener('pagehide',clear);return()=>window.removeEventListener('pagehide',clear);},[]);
- async function download(id){setBusy(true);setError('');setMessage('');try{await saveBlob(await api.downloadPrivacyImage(id,password),`reviewed-image-${id}.png`);setMessage('파일 저장을 요청했습니다. 다운로드 목록을 확인해 주세요.');}catch(e){setError(e.message);}finally{setPassword('');setBusy(false);}}
+ async function download(id){setBusy(true);setError('');setMessage('');try{const result=await saveBlob(await api.downloadPrivacyImage(id,password),`reviewed-image-${id}.png`);setMessage(fileSaveMessage(result));}catch(e){setError(e.message);}finally{setPassword('');setBusy(false);}}
  useEffect(()=>{setPassword('');setMessage('');setError('');},[request.id]);
  const allowed=!['cancelled','rejected'].includes(request.status);
  return <section className="rights-delivery">{q.error&&<p role="alert">제공 이미지를 불러오지 못했습니다. <button onClick={()=>q.refetch()}>다시 시도</button></p>}{!!q.data?.items?.length&&<><h4>검토한 이미지 · 일부 제공</h4><p>검게 표시된 부분은 제외한 영역입니다. 자료별 안내를 함께 확인하세요.</p>{allowed&&q.data.items.some(valid)&&<label>다운로드 확인용 현재 비밀번호<input type="password" autoComplete="current-password" disabled={busy} value={password} onChange={e=>setPassword(e.target.value)}/></label>}{q.data.items.map(d=><div className="rights-request" key={d.id}><p>{kinds[d.category]} · {valid(d)?'다운로드 가능':'제공 종료'} · 만료 {date(d.expires_at)}</p><p className="rights-text">{d.notice}</p>{allowed&&valid(d)&&<button type="button" disabled={busy||!password} onClick={()=>download(d.id)}>검토한 이미지 내려받기</button>}</div>)}</>}{error&&<p role="alert" className="rights-error">{error}</p>}{message&&<p role="status">{message}</p>}</section>;

@@ -1,3 +1,4 @@
+import {fileSaveMessage} from '../src/lib/fileDownload.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -17,7 +18,7 @@ async function components(api={},queries={}) {
     if(name==='react')return moduleOf(React);if(name==='react/jsx-runtime')return moduleOf(jsx);
     if(name==='react-router-dom')return moduleOf({Link:({children})=>React.createElement('a',{},children)});
     if(name==='../api')return moduleOf({api});
-    if(name==='../lib/fileDownload')return moduleOf({saveBlob:async()=>{}});
+    if(name==='../lib/fileDownload')return moduleOf({fileSaveMessage,saveBlob:async()=>({status:'saved'})});
     if(name==='@tanstack/react-query')return moduleOf({useQuery:({queryKey})=>({data:queries[queryKey[0]],refetch:async()=>{}})});
     if(name.endsWith('.css'))return moduleOf({});throw Error(name);
   });await m.evaluate();return m.namespace;

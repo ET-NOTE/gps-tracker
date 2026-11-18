@@ -19,9 +19,9 @@ import './ProfilePanel.css';
 
 // Match the versioned public files; ZIP is the default distribution format.
 const APP_DOWNLOAD = {
-  version: '1.0.7',
-  zip: 'https://gps.serial.kr/gps-tracker-1.0.7-13.zip',
-  apk: 'https://gps.serial.kr/gps-tracker-1.0.7-13.apk',
+  version: '1.0.8',
+  zip: 'https://gps.serial.kr/gps-tracker-1.0.8-14.zip',
+  apk: 'https://gps.serial.kr/gps-tracker-1.0.8-14.apk',
 };
 
 function initialProfileTab() {

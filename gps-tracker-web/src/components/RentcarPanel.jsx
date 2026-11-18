@@ -1,3 +1,4 @@
+import {saveBlob} from '../lib/fileDownload';
 import React, { useEffect, useMemo, useState } from 'react';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
@@ -514,10 +515,8 @@ function SettlementSummary({ c }) {
 async function downloadInvoice(c) {
   try {
     const { blob, filename } = await api.rentalInvoiceXlsx(c.id);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
-    a.remove(); URL.revokeObjectURL(url);
+    const result = await saveBlob(blob, filename);
+    if (result.status === 'cancelled') return;
   } catch (e) {
     alertDialog({ title: '청구서 다운로드 실패', body: e.message, tone: 'danger' });
   }

@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {api} from '../api';
-import {saveBlob} from '../lib/fileDownload';
+import {saveBlob,fileSaveMessage} from '../lib/fileDownload';
 import {deliveryState} from './PrivacyDelivery';
 
 const date=x=>new Date(x).toLocaleString('ko-KR');
@@ -24,7 +24,7 @@ const coverage=p=>['기본정보·요청 처리이력',...(p.sections||[]).map(s
 export function PersonalAccountPackages({request}) {
  const q=useQuery({queryKey:['privacy-account-packages',request.id,request.revision],queryFn:()=>api.privacyAccountPackages(request.id),retry:false});
  const [password,setPassword]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
- async function download(p,d){setBusy(true);setError('');setMessage('');try{const file=await api.privacyPackageFile(p.id,password,d?.id);await saveBlob(file.blob,d?`personal-document-${d.id}.${ext(d.mime)}`:file.filename);setMessage('자료 저장을 요청했습니다. 다운로드 목록을 확인해 주세요.');}catch(e){setError(e.message);}finally{setPassword('');setBusy(false);}}
+ async function download(p,d){setBusy(true);setError('');setMessage('');try{const file=await api.privacyPackageFile(p.id,password,d?.id);const result=await saveBlob(file.blob,d?`personal-document-${d.id}.${ext(d.mime)}`:file.filename);setMessage(fileSaveMessage(result));}catch(e){setError(e.message);}finally{setPassword('');setBusy(false);}}
  const available=p=>deliveryState(p)==='다운로드 가능'&&!['cancelled','rejected'].includes(request.status);
  return <section className="rights-delivery">
   {q.error&&<p role="alert">계정 자료 목록을 불러오지 못했습니다. <button onClick={()=>q.refetch()}>다시 시도</button></p>}
@@ -46,7 +46,7 @@ export function AdminAccountPackages({request,refresh}) {
  const [reviewed,setReviewed]=useState({}),[selected,setSelected]=useState([]),[extraSections,setExtraSections]=useState([]),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [factsFrom,setFactsFrom]=useState(()=>kstDay(Date.now()-180*DAY)),[factsUntil,setFactsUntil]=useState(()=>kstDay(Date.now()));
  const wantsFacts=extraSections.includes('location_facts'),period=wantsFacts?factsPeriod(factsFrom,factsUntil):null;
- async function review(d){setBusy(true);setError('');try{const file=await api.reviewPrivacyDocument(request.id,d.id);await saveBlob(file.blob,`review-${d.id}.${ext(d.mime)}`);if(!file.sha256)throw new Error('파일 확인값을 받지 못했습니다. 다시 확인해 주세요.');setReviewed(v=>({...v,[d.id]:file.sha256}));setConfirmed(false);}catch(e){setError(e.message);}finally{setBusy(false);}}
+ async function review(d){setBusy(true);setError('');try{const file=await api.reviewPrivacyDocument(request.id,d.id);const result=await saveBlob(file.blob,`review-${d.id}.${ext(d.mime)}`);if(result?.status==='cancelled')return;if(!file.sha256)throw new Error('파일 확인값을 받지 못했습니다. 다시 확인해 주세요.');setReviewed(v=>({...v,[d.id]:file.sha256}));setConfirmed(false);}catch(e){setError(e.message);}finally{setBusy(false);}}
  async function issue(e){e.preventDefault();setBusy(true);setError('');try{await api.issuePrivacyAccountPackage(request.id,{revision:request.revision,confirmed,sections:extraSections,...(period||{}),documents:selected.map(id=>({id,sha256:reviewed[id]}))});setSelected([]);setExtraSections([]);setReviewed({});setConfirmed(false);await refresh();await q.refetch();}catch(e){setError(e.message);}finally{setBusy(false);}}
  async function revoke(id){setBusy(true);setError('');try{await api.revokePrivacyAccountPackage(id);await q.refetch();}catch(e){setError(e.message);}finally{setBusy(false);}}
  return <section className="rights-impact"><h3>계정 정보·개인 서류 제공</h3>

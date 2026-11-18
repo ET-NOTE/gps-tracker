@@ -803,13 +803,13 @@ export default function SeekerSheet({ device, mapRef, onClose }) {
               <div style={sty.toolRow}>
                 <button onClick={() => {
                   const tag = selectedTripIdx != null ? `_trip${selectedTripIdx + 1}` : '';
-                  exportGpx(points, `${device?.display_name || device?.device_uid || 'track'}_${date}${tag}.gpx`);
+                  exportGpx(points, `${device?.display_name || device?.device_uid || 'track'}_${date}${tag}.gpx`).catch(e => alertDialog({title:'다운로드 실패',body:e.message,tone:'danger'}));
                 }} style={sty.toolBtn} title="GPX 내보내기 (지도/네비 앱)">
                   <Icon name="share" size={11} /> GPX
                 </button>
                 <button onClick={() => {
                   const tag = selectedTripIdx != null ? `_trip${selectedTripIdx + 1}` : '';
-                  exportCsv(points, `${device?.display_name || device?.device_uid || 'track'}_${date}${tag}.csv`);
+                  exportCsv(points, `${device?.display_name || device?.device_uid || 'track'}_${date}${tag}.csv`).catch(e => alertDialog({title:'다운로드 실패',body:e.message,tone:'danger'}));
                 }} style={sty.toolBtn} title="CSV 내보내기 (엑셀/분석)">
                   <Icon name="share" size={11} /> CSV
                 </button>
