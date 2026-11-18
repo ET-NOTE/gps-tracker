@@ -15,11 +15,11 @@ import './business.css';
 const VehicleContext = createContext(null);
 const SelectionContext = createContext(null);
 export const useBusinessVehicle = () => useContext(VehicleContext);
-export function BusinessWorkspace({ renderVehicleDetail, title, description, tabs, groups, tab, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
+export function BusinessWorkspace({ renderVehicleDetail, title, description, tabs, groups, tab, section, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
   const workspaceRef = useRef(null);
   // Mobile scrolls the persistent workspace; desktop's keyed content remounts
   // below. Reset only on navigation so vehicle-map focus keeps its own scroll.
-  useEffect(() => { if (kind === 'corporate') workspaceRef.current?.scrollTo({ top: 0 }); }, [kind, tab]);
+  useEffect(() => { if (kind === 'corporate') workspaceRef.current?.scrollTo({ top: 0 }); }, [kind, tab, section]);
   const active = tabs.find(item => item.id === tab) || tabs[0];
   const navigation = groups || tabs;
   const activeGroup = active.group || active.id;

@@ -95,3 +95,11 @@
 @media(max-width:600px){.fleet-import-table thead{display:none}.fleet-import-table :is(table,tbody){display:block}.fleet-import-table tr{display:grid;grid-template-columns:30px minmax(0,1fr);padding:10px 4px;border-bottom:1px solid var(--border)}.fleet-import-table .fleet-asset-table td{display:block;max-width:none;border:0;padding:4px 6px;grid-column:2}.fleet-import-table .fleet-asset-table td:first-child{grid-column:1;grid-row:1 / span 4;color:var(--text-3)}.fleet-import-table td[data-label]::before{content:attr(data-label);display:inline-block;margin-right:8px;min-width:72px;font-size:16px;color:var(--text-3)}.fleet-import-table small{margin-left:80px}.fleet-import-actions{align-items:end}}
 @media screen and (max-width:900px){
 .fleet-org-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){
+ .fleet-team-form .fleet-import-actions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-items:stretch;
+ }
+ .fleet-team-form .fleet-import-actions>button{justify-self:start}
+}

@@ -123,12 +123,51 @@
  .business-workspace--corporate .fleet-assets-ledger{min-height:0;flex:1}
  .fleet-assets-filter-footer .business-button{min-width:54px;padding:8px 11px}
  .business-drawer:has(.fleet-assets-detail)>.business-drawer-body{padding:0 16px 16px}
- .fleet-assets-detail .fleet-assets-detail-tabs{margin:0 -16px;padding:0 10px}
- .fleet-assets-detail .fleet-assets-detail-tabs button{padding:14px 12px;min-height:56px}
- .fleet-assets-detail .business-detail-facts>div{grid-template-columns:148px minmax(0,1fr)}
- .fleet-assets-detail .business-detail-facts :is(dt,dd){padding:14px 12px}
- .fleet-assets-detail-actions{bottom:-16px;justify-content:flex-start;padding:12px 0}
- .fleet-assets-detail-actions .business-button{flex:1 1 auto}
+ .business-drawer .fleet-assets-detail .fleet-assets-detail-tabs{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:0;
+  margin:0;
+  padding:0;
+ }
+ .business-drawer .fleet-assets-detail .fleet-assets-detail-tabs button{
+  min-width:0;
+  min-height:48px;
+  padding:6px 2px;
+  font-size:16px;
+  line-height:1.3;
+  white-space:normal;
+  word-break:keep-all;
+ }
+ .fleet-assets-detail .business-detail-facts>div{grid-template-columns:40% minmax(0,1fr)}
+ .fleet-assets-detail .business-detail-facts :is(dt,dd){min-width:0;padding:12px 10px;overflow-wrap:anywhere}
+ .fleet-assets-detail-actions{
+  position:static;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;
+  gap:8px;
+  padding:12px 0 0;
+ }
+ .business-drawer .fleet-assets-detail-actions .business-button{
+  min-width:0;
+  min-height:48px;
+  padding:8px 6px;
+  font-size:16px;
+  line-height:1.4;
+  white-space:normal;
+  word-break:keep-all;
+ }
+ .fleet-assets-detail .fleet-connection-list label{overflow-wrap:anywhere}
+}
+@media(max-width:900px){
+ .fleet-assets-detail .fleet-asset-media{grid-template-columns:minmax(0,1fr)}
+ .fleet-assets-detail .fleet-document-row{flex-wrap:wrap}
+ .fleet-assets-detail .fleet-document-row>span{flex-basis:100%;overflow-wrap:anywhere;white-space:normal}
+}
+@media(max-height:500px) and (min-width:601px) and (max-width:900px){
+ .business-drawer .fleet-assets-detail .fleet-assets-detail-tabs{margin-inline:0;padding-inline:0}
+ .fleet-assets-detail-actions{position:static}
 }
 @media screen and (max-width:380px){
  .fleet-assets-list .fleet-directory-group-footer .fleet-assets-state-groups{

@@ -179,7 +179,20 @@
 .corporate-calendar-date{font-size:18px;font-weight:600;line-height:1.5}
 .corporate-calendar-event{min-width:0;padding:6px 8px;border-radius:3px;font-size:16px;font-weight:500;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .corporate-calendar-more{font-size:16px;color:var(--text-2);line-height:1.5;text-align:center}
-@media(max-width:480px){.corporate-editor-footer button{flex:1}.corporate-trip-editor-summary{padding:14px 16px}.corporate-editor-fields{gap:20px}.corporate-export-footer .corporate-export-actions{flex-wrap:wrap}.corporate-export-footer .corporate-export-actions>button{flex:1 1 120px!important}}
+@media(max-width:480px){
+ .corporate-editor-footer button{flex:1}
+ .corporate-trip-editor-summary{padding:14px 16px}
+ .corporate-editor-fields{gap:20px}
+ .gps-modal:has(.corporate-export-dialog){word-break:keep-all}
+ .corporate-export-footer .corporate-export-actions{display:grid;grid-template-columns:auto minmax(0,1fr)}
+ .corporate-export-footer .corporate-export-actions>button{
+   display:flex;align-items:center;justify-content:center;word-break:keep-all;overflow-wrap:anywhere;
+ }
+ .corporate-export-footer .corporate-export-actions svg{flex-shrink:0}
+}
+@media(max-width:415px){
+ .gps-modal:has(.corporate-trip-editor-summary) .corporate-editor-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(min-width:1200px){.business-workspace--corporate .corporate-report-control-row .corporate-report-vehicle{display:none}}
 @media(max-width:1199px){.business-workspace--corporate .corporate-report-vehicle-sidebar{display:none}}
 @media screen and (min-width:701px) and (max-width:1599px){

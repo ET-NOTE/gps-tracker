@@ -106,6 +106,7 @@
  .business-workspace--corporate .fleet-people-table th:nth-child(9){width:9.5%}
 }
 @media screen and (max-width:600px){
-.business-workspace--corporate .fleet-org-table :is(th,td){padding:16px 12px}
-.business-workspace--corporate .fleet-org-table :is(th,td):nth-child(2){width:112px}
-.business-workspace--corporate .fleet-org-table :is(th,td):nth-child(3){width:100px}}
+ .business-workspace--corporate .fleet-org-table :is(th,td){padding:12px 8px}
+ .business-workspace--corporate .fleet-org-table :is(th,td):nth-child(2){width:80px}
+ .business-workspace--corporate .fleet-org-table :is(th,td):nth-child(3){width:84px}
+}
