@@ -1,0 +1,84 @@
+TAP version 13
+# (node:16764) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company task next/previous/first keep status/category filters and accurate last page
+ok 1 - company task next/previous/first keep status/category filters and accurate last page
+  ---
+  duration_ms: 388.4785
+  ...
+# Subtest: filter and close abort lazy detail; late instructions never revive the old form
+ok 2 - filter and close abort lazy detail; late instructions never revive the old form
+  ---
+  duration_ms: 209.536
+  ...
+# Subtest: list cancel/retry and failed refresh hide previous details and distinguish empty results
+ok 3 - list cancel/retry and failed refresh hide previous details and distinguish empty results
+  ---
+  duration_ms: 300.5323
+  ...
+# Subtest: submission locks navigation; conflict revalidates detail and removes stale form on access loss
+ok 4 - submission locks navigation; conflict revalidates detail and removes stale form on access loss
+  ---
+  duration_ms: 242.0609
+  ...
+# (node:44820) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company publication requires disclosure confirmation, resets on changes and sends both revisions
+ok 5 - company publication requires disclosure confirmation, resets on changes and sends both revisions
+  ---
+  duration_ms: 34.3197
+  ...
+# Subtest: decision requires latest downloaded proof and renewed attestation after feedback changes
+ok 6 - decision requires latest downloaded proof and renewed attestation after feedback changes
+  ---
+  duration_ms: 23.179
+  ...
+# Subtest: submission requires explicit file confirmation and shows server failure without success refresh
+ok 7 - submission requires explicit file confirmation and shows server failure without success refresh
+  ---
+  duration_ms: 6.5022
+  ...
+# Subtest: proof result cancelled never silently approves review
+ok 8 - proof result cancelled never silently approves review
+  ---
+  duration_ms: 5.6986
+  ...
+# Subtest: proof result saved never silently approves review
+ok 9 - proof result saved never silently approves review
+  ---
+  duration_ms: 6.3489
+  ...
+# Subtest: proof result share_opened never silently approves review
+ok 10 - proof result share_opened never silently approves review
+  ---
+  duration_ms: 6.7103
+  ...
+# Subtest: proof result browser_started never silently approves review
+ok 11 - proof result browser_started never silently approves review
+  ---
+  duration_ms: 6.8599
+  ...
+# Subtest: proof result unknown never silently approves review
+ok 12 - proof result unknown never silently approves review
+  ---
+  duration_ms: 5.4878
+  ...
+# Subtest: new cancelled or failed download clears earlier proof permission; pending file work blocks review
+ok 13 - new cancelled or failed download clears earlier proof permission; pending file work blocks review
+  ---
+  duration_ms: 8.7257
+  ...
+# Subtest: replacing a submission invalidates an in-flight save result
+ok 14 - replacing a submission invalidates an in-flight save result
+  ---
+  duration_ms: 5.8484
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1292.9027

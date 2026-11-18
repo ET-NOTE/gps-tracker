@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-18T05:44:05.352Z",
+  "environment": "actual React/React Query and Edge; synthetic local API and native file result",
+  "checks": [
+    "107 tasks50/50/7 and back",
+    "two filters reset page and lazy correction detail opens",
+    "390px no overflow; filter hides previous form",
+    "error distinct from empty and explicit retry",
+    "cancel hides late rows",
+    "native cancelled does not enable proof attestation",
+    "share_opened reports only picker and still needs explicit attestation"
+  ],
+  "errors": []
+}
