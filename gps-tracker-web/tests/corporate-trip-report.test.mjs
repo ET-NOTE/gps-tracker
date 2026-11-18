@@ -621,7 +621,7 @@ test('native save cancellation keeps export choices and lets the user retry',asy
     await act(async()=>button(r,'XLSX 다운로드').props.onClick());
     assert.equal(closed,0);
     assert.equal(button(r,'XLSX 다운로드').props.disabled,false);
-    assert.equal(r.root.findByProps({'aria-label':'엑셀 다운로드 월'}).props.value,'2026-11');
+    assert.match(text(r.root.findByProps({className:'corporate-export-summary'}).children),/2026-11/);
     await act(async()=>button(r,'XLSX 다운로드').props.onClick());
     assert.deepEqual(saved,['test.xlsx','test.xlsx']);assert.equal(closed,1);
   } finally {await act(async()=>r.unmount());}
