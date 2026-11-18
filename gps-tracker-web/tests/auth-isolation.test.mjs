@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { QueryClient } from '@tanstack/react-query';
 import { webcrypto } from 'node:crypto';
+import { createServer } from 'node:http';
 
 const src = fileURLToPath(new URL('../src/', import.meta.url));
 class Storage {
@@ -43,6 +44,50 @@ async function fixture(fetch) {
     const m = await load(path.join(src, name).replaceAll('\\', '/')); await m.evaluate(); return m.namespace;
   } };
 }
+
+// Exercise the real API client over loopback HTTP with synthetic responses.
+// This does not run the Rust route, authentication server, or database.
+async function mockDownloadHttp(t, respond) {
+  const requests = [];
+  const server = createServer((request, response) => {
+    requests.push({ url: request.url, method: request.method, headers: request.headers });
+    respond(response, requests.length);
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => { server.off('error', reject); resolve(); });
+  });
+  t.after(() => new Promise((resolve, reject) => {
+    server.close(error => error ? reject(error) : resolve());
+    server.closeAllConnections();
+  }));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const f = await fixture((url, options) => {
+    const target = new URL(url, origin);
+    assert.equal(target.origin, origin, 'test requests must stay on the loopback fixture');
+    return fetch(target, options);
+  });
+  t.after(() => f.queryClient.clear());
+  return { ...f, requests, origin };
+}
+for (const signedIn of [false, true]) test(`login rejection reports a credential error and leaves the form usable (existing session: ${signedIn})`, async t => {
+  const calls = [];
+  const f = await fixture(async url => {
+    calls.push(url);
+    if (url.endsWith('/auth/refresh')) return Response.json({error:'unauthorized'}, {status:401});
+    if (calls.length === 1) return Response.json({error:'unauthorized'}, {status:401});
+    return Response.json({access_token:'new-access',refresh_token:'new-refresh'});
+  });
+  t.after(() => f.queryClient.clear());
+  if (signedIn) f.api.setTokens(token('A'), 'refresh-A', false);
+  await assert.rejects(f.api.api.login('driver@example.test','wrong-password'), {
+    status:401, message:'이메일 또는 비밀번호를 확인해 주세요.',
+  });
+  assert.equal(f.context.sessionStorage.getItem('refresh_token'), signedIn ? 'refresh-A' : null);
+  assert.equal((await f.api.api.login('driver@example.test','correct-password')).access_token, 'new-access');
+  assert.deepEqual(calls.map(url => url.split('/').at(-1)), ['login', 'login']);
+});
+
 test('new account never reuses previous account query cache', async () => {
   const f = await fixture(async () => new Response('{}'));
   f.api.setTokens(token('A'), 'refresh-A');
@@ -127,6 +172,115 @@ test('CSV, XLSX and multipart use session login, and only retry rejected authent
   assert.equal(uploads[1].headers.get('Authorization'), `Bearer ${token('A-new')}`);
   assert.equal(f.context.sessionStorage.getItem('access_token'), token('A-new'));
   f.queryClient.clear();
+});
+
+test('reportXlsx mock HTTP contract preserves Korean filenames, filters, company scope and binary bytes', { timeout: 5000 }, async t => {
+  const bytes = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x80, 0xff, 0x0d, 0x0a, 0x00]);
+  const filename = '운행기록부_2026-11_nts_목적-업무-출퇴근.xlsx';
+  const mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const f = await mockDownloadHttp(t, response => {
+    response.writeHead(200, {
+      'Content-Type': mime,
+      'Content-Disposition': `attachment; filename="fallback.xlsx"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    });
+    response.end(bytes);
+  });
+  f.api.setTokens(token('A'), 'refresh-A', false);
+  const fleet = await f.module('lib/fleetSession.js'); fleet.setFleetOwner(12);
+  const result = await f.api.api.reportXlsx({
+    type: 'nts', month: '2026-11', scope: 'vehicles', vehicle_ids: [11, 23],
+    purposes: ['business', 'commute'], departments: ['영업 1팀', '(부서없음)', 'R&D 지원'],
+  });
+  assert.equal(f.requests.length, 1);
+  const request = f.requests[0], url = new URL(request.url, f.origin);
+  assert.equal(request.method, 'GET');
+  assert.equal(url.pathname, '/gps-tracker/api/v1/corporate/report.xlsx');
+  assert.deepEqual(Object.fromEntries(url.searchParams), {
+    scope: 'vehicles', vehicle_ids: '11,23', type: 'nts', month: '2026-11',
+    purposes: 'business,commute', departments: '영업 1팀,(부서없음),R&D 지원',
+  });
+  assert.equal(request.headers['x-fleet-owner'], '12');
+  assert.equal(request.headers.authorization, `Bearer ${token('A')}`);
+  assert.equal(result.filename, filename, 'UTF-8 filename takes precedence over the ASCII fallback');
+  assert.equal(result.blob.type, mime);
+  assert.deepEqual(Buffer.from(await result.blob.arrayBuffer()), bytes);
+});
+
+test('reportXlsx missing-header filenames describe requested scope without inventing vehicle identities', { timeout: 5000 }, async t => {
+  const bytes = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0xff]);
+  const f = await mockDownloadHttp(t, response => {
+    response.writeHead(200, { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    response.end(bytes);
+  });
+  f.api.setTokens(token('A'), 'refresh-A');
+  const cases = [
+    [{ month: '2026-11' }, '운행기록부_전체차량_202611_우리양식.xlsx'],
+    [{ month: '2026-11', type: 'nts', scope: 'vehicles', vehicle_ids: [23, 11, 23], purposes: ['commute', 'business', 'business'] },
+      '운행기록부_선택요청2대_202611_국세청양식_목적-업무-출퇴근.xlsx'],
+    [{ month: '2026-11', scope: 'vehicles', vehicle_ids: [23, 11], departments: ['../PRIVATE-DEPARTMENT'] },
+      '운행기록부_조건선택_202611_우리양식.xlsx'],
+    [{ month: '2026-11', scope: 'vehicles', vehicle_ids: [] }, '운행기록부_대상차량없음_202611_우리양식.xlsx'],
+    [{ month: '2026-11', device_ids: [23, '23'], departments: [' '] }, '운행기록부_선택요청1대_202611_우리양식.xlsx'],
+    [{ month: '2026-11', purposes: ['other', 'commute', 'business', 'unspecified', 'business'] },
+      '운행기록부_전체차량_202611_우리양식.xlsx'],
+    [{ month: '../PRIVATE\r\n2026:11', type: '../PRIVATE', purposes: ['../PRIVATE', 'business'] },
+      '운행기록부_전체차량_조회월_우리양식_목적-업무-알수없는목적.xlsx'],
+  ];
+  for (const [params, expected] of cases) {
+    const result = await f.api.api.reportXlsx(params);
+    assert.equal(result.filename, expected);
+    assert.doesNotMatch(result.filename, /[\\/:"<>?*|\r\n]|PRIVATE/);
+    assert.deepEqual(Buffer.from(await result.blob.arrayBuffer()), bytes);
+  }
+  assert.equal(f.requests.length, cases.length);
+  const selected = new URL(f.requests[1].url, f.origin).searchParams;
+  assert.equal(selected.get('vehicle_ids'), '23,11,23', 'filename normalization does not change the request');
+  assert.equal(selected.get('purposes'), 'commute,business,business');
+});
+
+test('reportXlsx plain filename header takes precedence over fallback selection metadata', async () => {
+  const f = await fixture(async () => new Response('file', {
+    headers: { 'Content-Disposition': 'attachment; filename="server-resolved.xlsx"' },
+  }));
+  try {
+    f.api.setTokens(token('A'), 'refresh-A');
+    const result = await f.api.api.reportXlsx({ month: '2026-11', scope: 'vehicles', vehicle_ids: [23, 11] });
+    assert.equal(result.filename, 'server-resolved.xlsx');
+  } finally { f.queryClient.clear(); }
+});
+
+test('reportXlsx mock HTTP contract surfaces a 403 JSON error and preserves parameters on manual retry', { timeout: 5000 }, async t => {
+  const message = '선택한 회사의 운행기록부를 내려받을 권한이 없습니다.';
+  const bytes = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0xff]);
+  const filename = '운행기록부_2026-11_nts_목적-업무.xlsx';
+  const f = await mockDownloadHttp(t, (response, attempt) => {
+    if (attempt === 1) {
+      response.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify({ error: message }));
+      return;
+    }
+    response.writeHead(200, {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    });
+    response.end(bytes);
+  });
+  f.api.setTokens(token('A'), 'refresh-A');
+  const fleet = await f.module('lib/fleetSession.js'); fleet.setFleetOwner(12);
+  const params = { type: 'nts', month: '2026-11', scope: 'vehicles', vehicle_ids: [23], purposes: ['business'], departments: ['영업부'] };
+  await assert.rejects(f.api.api.reportXlsx(params), { message });
+  assert.equal(f.requests.length, 1, '403 must not trigger automatic refresh or download retries');
+  assert.equal(f.api.activeStorage().getItem('access_token'), token('A'));
+  const result = await f.api.api.reportXlsx(params);
+  assert.equal(f.requests.length, 2);
+  assert.equal(f.requests[1].url, f.requests[0].url, 'manual retry retains the selected month, vehicle and purpose filters');
+  for (const request of f.requests) {
+    assert.equal(request.method, 'GET');
+    assert.equal(request.headers['x-fleet-owner'], '12');
+    assert.equal(request.headers.authorization, `Bearer ${token('A')}`);
+  }
+  assert.equal(result.filename, filename);
+  assert.deepEqual(Buffer.from(await result.blob.arrayBuffer()), bytes);
 });
 
 test('deferred document download reads rotated token but rejects a different account', async () => {

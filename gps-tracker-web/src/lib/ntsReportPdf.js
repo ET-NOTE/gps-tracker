@@ -50,7 +50,7 @@ export function ntsReportPdfDefinition(report) {
       section('1. 기본정보'),
       {table:{widths:[75,'*',108,'*'],body:[[heading('1 차종'),{text:f.model},heading('2 자동차등록번호'),{text:f.plate}]]},layout:grid},
       section('2. 업무용 사용비율 계산'),
-      {text:`${f.filtered ? '필터 적용 내역' : '선택 차량·조회기간 내역'} · ${report.rows.length}건 · 거리: GPS 계산값 · 주행 전·후 계기판: 실제 기록 보완`,fontSize:8,color:'#58616d',margin:[0,0,0,6]},
+      {text:`${f.filtered ? '필터 적용 내역' : '선택 차량·조회기간 내역'} · ${report.rows.length}건 · ${f.distanceBasis}`,fontSize:8,color:'#58616d',margin:[0,0,0,6]},
       table,
       {unbreakable:true,margin:[0,10,0,0],stack:[
         {table:{widths:['*','*','*'],body:[

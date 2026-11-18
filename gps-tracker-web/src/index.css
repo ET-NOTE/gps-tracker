@@ -181,6 +181,7 @@ button:disabled { cursor: not-allowed; }
 .gps-modal .gps-modal-body :is(input, select, textarea):focus-visible { outline-offset: -2px; }
 .gps-modal-body > * { flex-shrink: 0; }
 @media (max-width: 600px) {
+  /* Keep the mobile zoom safeguard without shrinking larger business controls. */
   .gps-user-panel input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-  .gps-user-panel select, .gps-user-panel textarea { font-size: 16px !important; }
+  .gps-user-panel select, .gps-user-panel textarea { font-size: max(16px, var(--control-font-size, 16px)) !important; }
 }

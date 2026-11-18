@@ -5,18 +5,19 @@ import {readFile} from 'node:fs/promises';
 
 async function fixture() {
  const document=new EventTarget(); const observers=[];
- const element=(name,parent=null)=>({name,parent,inert:false,isConnected:true,tabIndex:0,fields:[],
+ const element=(name,parent=null,tagName=name.toUpperCase())=>{const node={name,parent,tagName,children:[],inert:false,isConnected:true,tabIndex:0,fields:[],
+  get parentElement(){return this.parent;},
   focus(){document.activeElement=this;document.dispatchEvent(new Event('focusin'));},
   closest(){let n=this;while(n){if(n.inert)return n;n=n.parent;}return null;},
   contains(n){while(n){if(n===this)return true;n=n.parent;}return false;},
-  querySelectorAll(){return this.fields;},getClientRects(){return this.hidden?[]:[{}];},matches(){return this.name==='input';}});
+  querySelectorAll(){return this.fields;},getClientRects(){return this.hidden?[]:[{}];},matches(){return ['INPUT','SELECT','TEXTAREA'].includes(this.tagName);}};parent?.children.push(node);return node;};
  const root=element('root'),opener=element('opener',root);
  document.body={children:[root],style:{overflow:'auto'}};document.activeElement=opener;
  const context=vm.createContext({document,Map,Array,getComputedStyle:()=>({visibility:'visible'}),MutationObserver:class{constructor(fn){observers.push(fn);}observe(){}disconnect(){}}});
  const mod=new vm.SourceTextModule(await readFile(new URL('../src/lib/modalFocus.js',import.meta.url),'utf8'),{context});await mod.link(()=>{});await mod.evaluate();
  const modal=()=>{const backdrop=element('backdrop'),dialog=element('dialog',backdrop),first=element('close',dialog),input=element('input',dialog),last=element('last',dialog);dialog.fields=[first,input,last];document.body.children.push(backdrop);return{backdrop,dialog,first,input,last};};
  const key=(key,shiftKey=false)=>{const e=new Event('keydown',{cancelable:true});Object.assign(e,{key,shiftKey});document.dispatchEvent(e);return e;};
- return {document,root,opener,modal,key,lock:mod.namespace.lockModalFocus,observers};
+ return {document,root,opener,modal,key,element,lock:mod.namespace.lockModalFocus,observers};
 }
 test('modal: initial field, forward/backward boundaries, outside focus and opener restoration',async()=>{
  const f=await fixture(),m=f.modal();const unlock=f.lock(m.dialog,m.backdrop,()=>({closeOnEsc:true}));
@@ -39,4 +40,37 @@ test('modal: latest close policy is used without refocusing an edited field',asy
  const f=await fixture(),m=f.modal();let closed=0,options={closeOnEsc:false};
  const unlock=f.lock(m.dialog,m.backdrop,()=>options);m.last.focus();f.key('Escape');assert.equal(closed,0);
  options={closeOnEsc:true,onClose:()=>closed++};f.key('Escape');assert.equal(closed,1);assert.equal(f.document.activeElement,m.last);unlock();
+});
+
+test('modal: closed details inputs with layout rectangles cannot steal initial focus or tab boundaries',async()=>{
+ const f=await fixture(),m=f.modal();
+ const details=f.element('receipts',m.dialog,'DETAILS');details.open=false;
+ const summary=f.element('summary',details,'SUMMARY'),summaryButton=f.element('summary-button',summary,'BUTTON'),file=f.element('file',details,'INPUT');
+ m.dialog.fields=[m.first,summary,summaryButton,file];
+ assert.equal(file.getClientRects().length,1,'matches Chromium reporting a box inside a closed disclosure');
+ const unlock=f.lock(m.dialog,m.backdrop,()=>({closeOnEsc:true}));
+ assert.equal(f.document.activeElement,m.first,'the visible close button receives initial focus');
+ f.key('Tab',true);assert.equal(f.document.activeElement,summaryButton,'summary controls remain reachable while hidden file controls do not');
+ f.key('Tab');assert.equal(f.document.activeElement,m.first);
+ m.dialog.fields=[m.first,summary,file];
+ f.key('Tab',true);assert.equal(f.document.activeElement,summary,'the primary summary itself also stays reachable');
+ unlock();
+ details.open=true;
+ const unlockOpen=f.lock(m.dialog,m.backdrop,()=>({closeOnEsc:true}));
+ assert.equal(f.document.activeElement,file,'opening the disclosure makes its input a valid initial field');
+ unlockOpen();
+});
+
+test('modal: nested and non-primary summaries do not expose fields inside a collapsed ancestor',async()=>{
+ const f=await fixture(),m=f.modal();
+ const outer=f.element('outer',m.dialog,'DETAILS');outer.open=false;
+ f.element('first-summary',outer,'SUMMARY');
+ const secondSummary=f.element('second-summary',outer,'SUMMARY'),secondField=f.element('second-input',secondSummary,'INPUT');
+ const inner=f.element('inner',outer,'DETAILS');inner.open=true;
+ const innerSummary=f.element('inner-summary',inner,'SUMMARY'),innerField=f.element('inner-input',innerSummary,'INPUT');
+ m.dialog.fields=[m.first,secondField,innerField];
+ const unlock=f.lock(m.dialog,m.backdrop,()=>({closeOnEsc:true}));
+ assert.equal(f.document.activeElement,m.first);
+ f.key('Tab',true);assert.equal(f.document.activeElement,m.first,'neither inner input is reachable through the collapsed outer details');
+ unlock();
 });

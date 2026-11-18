@@ -2,7 +2,19 @@
 const stack = [];
 const originalInert = new Map();
 let originalOverflow;
-const selector = 'button:not(:disabled),a[href],input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])';
+const selector = 'button:not(:disabled),a[href],input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),summary,[tabindex]:not([tabindex="-1"])';
+
+function insideCollapsedDetails(node) {
+  // Closed <details> descendants can still report rectangles and visibility:
+  // visible in Chromium, although focusing them fails. Only its first summary
+  // remains available; check every ancestor for nested disclosure sections.
+  for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+    if (parent.tagName !== 'DETAILS' || parent.open) continue;
+    const summary = Array.from(parent.children).find(child => child.tagName === 'SUMMARY');
+    if (!summary?.contains(node)) return true;
+  }
+  return false;
+}
 
 function syncBackground() {
   for (const [node, value] of originalInert) node.inert = value;
@@ -24,7 +36,7 @@ export function lockModalFocus(dialog, backdrop, options) {
   stack.push(entry);
   syncBackground();
   const items = () => Array.from(dialog.querySelectorAll(selector)).filter(node =>
-    node.tabIndex >= 0 && !node.closest('[inert]') && node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden');
+    node.tabIndex >= 0 && !node.closest('[inert]') && !insideCollapsedDetails(node) && node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden');
   const focusFirst = () => {
     const fields = items();
     const initial = options().initialFocus?.current || fields.find(node => node.matches('[autofocus],input,select,textarea')) || fields[0] || dialog;

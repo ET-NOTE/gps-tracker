@@ -8,15 +8,20 @@ const BASE_TABS = [
   { id: 'profile', label: '내정보', icon: 'user',   toggleable: true  },
 ];
 
-export default function SideRail({ active, onChange, isAdmin, isCorporate, isRentcar, isDelivery }) {
+export function sideRailItems({ isAdmin, isCorporate, isRentcar, isDelivery } = {}) {
   const tabs = [...BASE_TABS];
   if (isCorporate) tabs.push({ id: 'corporate', label: '법인운행', icon: 'route',  toggleable: true });
   if (isRentcar)   tabs.push({ id: 'rentcar',   label: '렌트카',   icon: 'route',  toggleable: true });
   if (isDelivery)  tabs.push({ id: 'delivery',  label: '배송',     icon: 'mapPin', toggleable: true });
   if (isAdmin)     tabs.push({ id: 'admin',     label: '관리자',   icon: 'wrench', toggleable: true });
+  return tabs;
+}
+
+export default function SideRail({ active, onChange, ...access }) {
+  const tabs = sideRailItems(access);
 
   return (
-    <nav style={s.wrap}>
+    <nav className="dashboard-side-rail" style={s.wrap}>
       {tabs.map(t => {
         const on = t.id === active;
         return (

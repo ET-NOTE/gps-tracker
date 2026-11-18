@@ -37,17 +37,17 @@ export default function FormField({ label, hint, error, children, style }) {
   const id = child?.props.id || generatedId;
   const helpId = `${id}-help`;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, ...style }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--field-gap, 4px)', minWidth: 0, ...style }}>
       {label && (
         <label htmlFor={id} style={{
-          fontSize: 12, fontWeight: 600, color: 'var(--text-2)',
+          fontSize: 'var(--field-label-size, 12px)', fontWeight: 600, color: 'var(--text-2)',
         }}>{label}</label>
       )}
       {child ? cloneElement(child, { id, 'aria-describedby': [child.props['aria-describedby'], (hint || error) && helpId].filter(Boolean).join(' ') || undefined, 'aria-invalid': error ? true : child.props['aria-invalid'] }) : children}
       {error ? (
-        <div id={helpId} style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 600 }}>{error}</div>
+        <div id={helpId} style={{ fontSize: 'var(--field-help-size, 12px)', color: 'var(--danger)', fontWeight: 600 }}>{error}</div>
       ) : hint ? (
-        <div id={helpId} style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>{hint}</div>
+        <div id={helpId} style={{ fontSize: 'var(--field-help-size, 12px)', color: 'var(--text-3)', lineHeight: 1.5 }}>{hint}</div>
       ) : null}
     </div>
   );

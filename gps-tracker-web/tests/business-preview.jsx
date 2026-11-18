@@ -8,6 +8,9 @@ import { api } from '../src/api';
 import CorporatePanel from '../src/components/CorporatePanel';
 import RentcarPanel from '../src/components/RentcarPanel';
 import { businessDate } from '../src/lib/business';
+import SideRail, { sideRailItems } from '../src/components/SideRail';
+import useBreakpoint from '../src/useBreakpoint';
+import { createPreviewExpenseReceipts } from './expense-receipt-fixture';
 
 // Isolated visual fixture: all network methods are stubbed; return tests never write to a server.
 const params = new URLSearchParams(location.search);
@@ -149,6 +152,18 @@ if(params.has('team'))Object.assign(api,{
 });
 Object.assign(api,{
  listTripRules:async id=>tripRules.filter(r=>r.vehicle_id===id).map(r=>({...r})),
+ annotateFleetVehicleTrip:async(id,p)=>{
+  const trips=await api.listFleetVehicleTrips(id,{}), trip=trips.find(t=>(t.source_started_at||t.started_at)===p.trip_started_at);
+  if(!trip)throw Error('운행을 찾을 수 없습니다.');
+  if(params.has('trip-write-error'))throw Error('미리보기 저장 실패 · 입력값은 유지됩니다.');
+  const before=trip.annotation;
+  if((before?.updated_at||'new')!==p.expected_version)throw Error('다른 변경이 반영되었습니다. 다시 조회해 주세요.');
+  const after={...before,...p,driver_name:teamStaff.find(s=>s.id===p.driver_staff_id)?.name||null,updated_at:new Date().toISOString()};
+  delete after.expected_version;
+  assignmentAnnotations.set(`${id}:${p.trip_started_at}`,after);
+  tripAudit.unshift({id:tripAudit.length+1,action:'annotation',actor_name:'검증 관리자',created_at:after.updated_at,before_value:before,after_value:after});
+  return after;
+ },
  createTripRule:async(id,p)=>{const r={...p,id:tripRules.length+1,vehicle_id:id,driver_name:teamStaff.find(s=>s.id===p.driver_staff_id)?.name,updated_at:new Date().toISOString()};tripRules.push(r);return r;},
  updateTripRule:async(id,rid,p)=>{const r=tripRules.find(r=>r.id===rid);Object.assign(r,p,{updated_at:new Date().toISOString()});return {...r};},
  tripAssignmentHistory:async()=>tripAudit,
@@ -180,20 +195,32 @@ Object.assign(api,{
 // Expense writes below stay in memory and never reach the server.
 const expenseCats=[{id:1,name:'차량유지비',kind:'group',parent_id:null,active:true},{id:2,name:'유류비',kind:'fuel',parent_id:1,active:true},{id:3,name:'정비비',kind:'expense',parent_id:1,active:true},{id:4,name:'여비교통비',kind:'group',parent_id:null,active:true},{id:5,name:'숙박비',kind:'expense',parent_id:4,active:true}].map(c=>({...c,updated_at:new Date().toISOString()}));
 let expenseRows=params.has('empty')?[]:[{id:1,spent_on:at('12').slice(0,10),status:'approved',staff_id:1,staff_name:'김영업',department_id:1,department_name:'영업팀',vehicle_id:100,vehicle_name:'업무 차량 1 · 123가 4567',category_id:2,category_name:'유류비',group_name:'차량유지비',category_kind:'fuel',amount_krw:50000,payment_method:'company_card',note:'모의 데이터 · 고객사 방문',created_at:at('10'),updated_at:at('10')},{id:2,spent_on:at('12').slice(0,10),status:'pending',staff_id:1,staff_name:'김영업',department_id:1,department_name:'영업팀',vehicle_id:null,vehicle_name:'일반 지출',category_id:5,category_name:'숙박비',group_name:'여비교통비',category_kind:'expense',amount_krw:80000,payment_method:'personal_card',note:'모의 데이터 · 출장',created_at:at('11'),updated_at:at('11')}];
-const expenseReceipts=new Map(),expenseHistory=new Map();
+if (params.has('expense-style') && !empty) {
+  teamOrg.push({id:3,kind:'department',name:'관리팀',active:true},{id:4,kind:'department',name:'지원팀',active:true});
+  teamStaff.push(...[{id:2,name:'박관리',department_id:3,department:'관리팀'},{id:3,name:'이지원',department_id:4,department:'지원팀'}].map(s=>({...teamStaff[0],...s,all_vehicles:true})));
+  api.listStaff=async()=>teamStaff.map(s=>({...s}));
+  const amounts=[52000,18000,86000,24000,38000,69000,15000,50000,32000,120000,48000,76000];
+  const statuses=['approved','pending','approved','rejected','approved','approved','approved','cancelled','approved','approved','approved','pending'];
+  const base=expenseRows[0];
+  expenseRows=amounts.map((amount,i)=>{
+    const s=teamStaff[i%3],category=expenseCats.find(c=>c.id===[2,3,5][i%3]),vehicle=i%3===2?null:assets[i%assets.length];
+    return {...base,id:i+1,spent_on:businessDate(now-Math.floor(i/2)*86400000),status:statuses[i],staff_id:s.id,staff_name:s.name,department_id:s.department_id,department_name:s.department,vehicle_id:vehicle?.id||null,vehicle_name:vehicle?`${vehicle.name} · ${vehicle.license_plate}`:'일반 지출',category_id:category.id,category_name:category.name,category_kind:category.kind,group_name:expenseCats.find(c=>c.id===category.parent_id).name,amount_krw:amount,payment_method:i%4===1?'personal_card':'company_card',note:i%4===0?'':'미리보기 데이터 · '+['거래처 방문','정기 점검','지방 출장'][i%3]};
+  });
+}
+const expenseReceipts=params.has('expense-style')&&!empty?await createPreviewExpenseReceipts(expenseRows):new Map(),expenseHistory=new Map();
 const expenseView=r=>({...r,can_edit:['pending','rejected'].includes(r.status),can_review:teamRole!=='member',can_cancel:r.status!=='cancelled',receipt_count:(expenseReceipts.get(r.id)||[]).length});
 function mockExpense(p,id){const c=expenseCats.find(c=>c.id===p.category_id),v=assets.find(v=>v.id===p.vehicle_id),s=teamStaff.find(s=>s.id===p.staff_id);return {...p,id,status:'pending',staff_name:s?.name||'미지정',department_id:s?.department_id,department_name:s?.department||'',vehicle_name:v?.name||'일반 지출',category_name:c.name,category_kind:c.kind,group_name:expenseCats.find(g=>g.id===c.parent_id).name,updated_at:new Date().toISOString()};}
 Object.assign(api,{
  expenseCategories:async()=>expenseCats.map(c=>({...c})),
  createExpenseCategory:async p=>{const c={...p,id:expenseCats.length+1,updated_at:new Date().toISOString()};expenseCats.push(c);return c;},
  updateExpenseCategory:async(id,p)=>{Object.assign(expenseCats.find(c=>c.id===id),p,{updated_at:new Date().toISOString()});return {...expenseCats.find(c=>c.id===id)};},
- listExpenses:async p=>{if(failed)throw Error('지출 조회 실패');return {items:expenseRows.filter(r=>(!p.status||r.status===p.status)&&(!p.category_id||r.category_id===Number(p.category_id))&&(!p.vehicle_id||r.vehicle_id===Number(p.vehicle_id))&&(!p.staff_id||r.staff_id===Number(p.staff_id))&&r.spent_on>=p.from&&r.spent_on<=p.to).map(expenseView)};},
+ listExpenses:async p=>{if(failed||params.has('expense-error'))throw Error('지출 조회 실패');return {items:expenseRows.filter(r=>(!p.status||r.status===p.status)&&(!p.category_id||r.category_id===Number(p.category_id))&&(!p.vehicle_id||r.vehicle_id===Number(p.vehicle_id))&&(!p.staff_id||r.staff_id===Number(p.staff_id))&&(!p.department_id||r.department_id===Number(p.department_id))&&r.spent_on>=p.from&&r.spent_on<=p.to).map(expenseView)};},
  createExpense:async p=>{const r=mockExpense(p,Math.max(0,...expenseRows.map(r=>r.id))+1);expenseRows.unshift(r);return expenseView(r);},
  updateExpense:async(id,p)=>{const r=mockExpense(p,id);expenseRows=expenseRows.map(x=>x.id===id?r:x);return expenseView(r);},
  expenseDetail:async id=>({expense:expenseView(expenseRows.find(r=>r.id===id)),receipts:(expenseReceipts.get(id)||[]).map(({file,...r})=>r),history:expenseHistory.get(id)||[]}),
  reviewExpense:async(id,p)=>{const r=expenseRows.find(r=>r.id===id);Object.assign(r,{status:p.status,review_note:p.note,updated_at:new Date().toISOString()});expenseHistory.set(id,[{id:Date.now(),actor_id:1,action:p.status,after_value:{...r},created_at:new Date().toISOString()},...(expenseHistory.get(id)||[])]);return expenseView(r);},
  uploadExpenseReceipt:async(id,file)=>{const r={id:Date.now(),filename:file.name,mime:file.type,size_bytes:file.size,file};expenseReceipts.set(id,[...(expenseReceipts.get(id)||[]),r]);return r;},
- downloadExpenseReceipt:async(id,fid)=>expenseReceipts.get(id).find(f=>f.id===fid).file,
+ downloadExpenseReceipt:async(id,fid)=>{if(params.has('receipt-error'))throw Error('미리보기 첨부파일 조회 실패');const receipt=expenseReceipts.get(id)?.find(f=>f.id===fid);if(!receipt)throw Error('첨부파일을 찾을 수 없습니다.');return receipt.file;},
  removeExpenseReceipt:async(id,fid)=>expenseReceipts.set(id,expenseReceipts.get(id).filter(f=>f.id!==fid)),
 });
 
@@ -210,6 +237,18 @@ if(params.has('quality')){
  api.restoreTripCorrection=async(id,cid,p)=>{const c=changes.find(c=>c.id===cid);rows=[...rows.filter(t=>t.correction_id!==cid),...c.sources].sort((a,b)=>a.started_at.localeCompare(b.started_at));Object.assign(c,{reverted_at:new Date().toISOString(),reverted_by_name:'검증 관리자',revert_reason:p.reason});return {restored:true};};
 }
 
+// Report edge cases stay entirely in the local preview, including past driver snapshots.
+if (params.has('trip-list-edge')) {
+  api.listStaff=read([{id:1,name:'현재 운전자',active:true},{id:2,name:'퇴사 운전자',active:false}]);
+  const reportRows=[
+    {distance_m:40,annotation:{purpose:'business',driver_staff_id:null,driver_name:'과거 이름 기록'}},
+    {distance_m:null,annotation:null},
+    {distance_m:0,annotation:{purpose:'commute',driver_staff_id:2,driver_name:'퇴사 운전자'}},
+    {distance_m:4,annotation:{purpose:'business',driver_staff_id:1,driver_name:'현재 운전자'}},
+  ].map((t,i)=>({...t,started_at:at(String(9+i*2).padStart(2,'0')),ended_at:at(String(10+i*2).padStart(2,'0')),duration_min:60,quality:{status:t.distance_m===null?'review':'confirmed',report_included:t.distance_m!==null},source_device_id:1,binding_id:100,vehicle_id:100,allocation_status:'assigned'}));
+  api.listFleetVehicleTrips=async()=>reportRows.map(t=>({...t,source_started_at:t.started_at}));
+}
+
 if (params.has('monthly-edge')) {
   api.listFleetVehicleTrips=async id=>id===101?[]:[{
     started_at:at('09'),ended_at:at('10'),distance_m:id===100?70:0,
@@ -217,14 +256,44 @@ if (params.has('monthly-edge')) {
   },{started_at:at('11'),ended_at:at('12'),distance_m:9000,quality:{report_included:false}}];
 }
 
+// Opt-in response delay for checking locked inputs and retry UX without a server.
+if (params.has('xlsx-review')) {
+  api.reportXlsx=async()=>{
+    await new Promise(resolve=>setTimeout(resolve,8000));
+    throw Error('검증용 다운로드 실패입니다. 선택 조건을 유지한 채 다시 시도할 수 있습니다.');
+  };
+}
+
+// Isolated acceptance cases for dashboard counting and export preflight.
+// These alter fixture responses only; no request reaches the development API.
+if (params.has('report-missing')) {
+  api.getCorporateInfo=read({company_name:'',business_number:'',representative:''});
+  assets=assets.map((v,i)=>({...v,...(i===0?{license_plate:''}:{}),...(i===1?{car_model:''}:{})}));
+}
+if (params.has('report-info-error')) api.getCorporateInfo=async()=>{throw Error('검증용 회사 정보 조회 실패');};
+if (params.has('incomplete-state')) {
+  const fixtureTrips=api.listFleetVehicleTrips,mode=params.get('incomplete-state');
+  api.listFleetVehicleTrips=async(id,p,options)=>{
+    if(mode==='error'||(mode==='partial'&&id===101))throw Error('검증용 운행 조회 실패');
+    const rows=await fixtureTrips(id,p,options);
+    return mode==='clear'?rows.map(t=>({...t,annotation:{...t.annotation,driver_staff_id:1,driver_name:'미리보기 운전자',purpose:'business'}})):rows;
+  };
+}
+
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');
   const [action,setAction] = useState('');
+  const desktop=useBreakpoint()==='desktop';
+  const fullShell=params.has('shell');
+  const navigate=view=>setAction(`메뉴 이동: ${view}`);
   return <div style={{height:'100%',display:'flex',flexDirection:'column'}}>
-    <div style={{padding:8,display:'flex',gap:12,flexWrap:'wrap',flexShrink:0,fontSize:12}}><button onClick={()=>setKind('rental')}>렌트카 미리보기</button><button onClick={()=>setKind('corporate')}>법인차 미리보기</button><a href="?error=1">오류 상태</a><a href="?empty=1">빈 상태</a><span>{action}</span></div>
-    <div style={{flex:1,minHeight:0,width:params.has('mobile')?390:'100%',maxWidth:'100%',margin:'0 auto'}}>
-      {kind==='rental'?<RentcarPanel devices={devices} onNavigate={view=>setAction(`메뉴 이동: ${view}`)} onMap={id=>setAction(`지도 이동: ${id}`)}/>:<CorporatePanel devices={devices} onNavigate={view=>setAction(`메뉴 이동: ${view}`)} onMap={id=>setAction(`지도 이동: ${id}`)} onDevice={id=>setAction(`차량 상세: ${id}`)}/>}
+    {!params.has('presentation') && <div style={{padding:8,display:'flex',gap:12,flexWrap:'wrap',flexShrink:0,fontSize:12}}><button onClick={()=>setKind('rental')}>렌트카 미리보기</button><button onClick={()=>setKind('corporate')}>법인차 미리보기</button><a href="?error=1">오류 상태</a><a href="?empty=1">빈 상태</a><span>{action}</span></div>}
+    <div className={fullShell?'dashboard-layout':undefined} style={{flex:1,minHeight:0,minWidth:0,display:'flex',width:params.has('mobile')?390:'100%',maxWidth:'100%',margin:'0 auto'}}>
+      {fullShell&&desktop&&<SideRail active={kind==='corporate'?'corporate':'rentcar'} onChange={navigate} isCorporate={kind==='corporate'} isRentcar={kind==='rental'}/>}
+      <div style={{flex:1,minWidth:0,minHeight:0}}>
+        {kind==='rental'?<RentcarPanel devices={devices} onNavigate={navigate} onMap={id=>setAction(`지도 이동: ${id}`)}/>:<CorporatePanel devices={devices} onNavigate={navigate} globalNavigation={sideRailItems()} onMap={id=>setAction(`지도 이동: ${id}`)} onDevice={id=>setAction(`차량 상세: ${id}`)}/>}
+      </div>
     </div>
   </div>;
 }

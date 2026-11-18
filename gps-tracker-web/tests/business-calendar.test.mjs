@@ -13,6 +13,7 @@ import * as businessAttention from '../src/lib/businessAttention.js';
 import * as corporateOverview from '../src/lib/corporateOverview.js';
 import * as corporateNavigation from '../src/lib/corporateNavigation.js';
 import * as ntsReport from '../src/lib/ntsReport.js';
+import * as tripOdometer from '../src/lib/tripOdometer.js';
 import * as monthlySummary from '../src/lib/monthlySummary.js';
 import * as subjectReport from '../src/lib/subjectReport.js';
 
@@ -38,6 +39,7 @@ async function calendar(file, name) {
     if (specifier==='../lib/corporateOverview') return moduleOf(corporateOverview);
     if (specifier==='../lib/corporateNavigation') return moduleOf(corporateNavigation);
     if (specifier==='../lib/ntsReport') return moduleOf(ntsReport);
+    if (specifier==='../lib/tripOdometer') return moduleOf(tripOdometer);
     if (specifier==='../lib/monthlySummary') return moduleOf(monthlySummary);
     if (specifier==='../lib/subjectReport') return moduleOf(subjectReport);
     // Only the named exports requested by this module are needed. None of these

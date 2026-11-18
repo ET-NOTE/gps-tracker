@@ -41,7 +41,7 @@ export default function Modal({
   options.current = { onClose, closeOnEsc };
   useLayoutEffect(() => {
     if (!open || !dialog.current) return;
-    backdrop.current.classList.toggle('gps-business-modal', !!anchor.current?.closest('.business-workspace'));
+    backdrop.current.classList.toggle('gps-business-modal', !!anchor.current?.closest('.business-workspace, .business-drawer, .gps-business-modal'));
     return lockModalFocus(dialog.current, backdrop.current, () => options.current);
   }, [open]);
 
@@ -74,25 +74,25 @@ export default function Modal({
           background: 'var(--surface)',
           color: 'var(--text)',
           borderRadius: 'var(--radius-xl)',
-          padding: 'var(--space-4)',
+          padding: 'var(--modal-padding, var(--space-4))',
           width: '100%',
           maxWidth,
           maxHeight: '92dvh',
           display: 'flex',
           flexDirection: 'column',
-          gap: 'var(--space-3)',
+          gap: 'var(--modal-gap, var(--space-3))',
           boxSizing: 'border-box',
           boxShadow: 'var(--shadow-lg)',
         }}
       >
         {(title != null || subtitle != null) && (
           <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: 'var(--space-2)' }}>
-            <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ minWidth: 0, flex: 1, overflowWrap: 'anywhere' }}>
               {title != null && (
-                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{title}</div>
+                <div style={{ fontSize: 'var(--modal-title-size, 15px)', fontWeight: 800, color: 'var(--text)' }}>{title}</div>
               )}
               {subtitle != null && (
-                <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{subtitle}</div>
+                <div style={{ fontSize: 'var(--modal-subtitle-size, 12px)', color: 'var(--text-2)', marginTop: 4 }}>{subtitle}</div>
               )}
             </div>
             {onClose && (
@@ -104,7 +104,7 @@ export default function Modal({
                   border: 'none', cursor: 'pointer',
                   padding: 'var(--space-1) var(--space-2)',
                   borderRadius: 'var(--radius-sm)',
-                  fontSize: 18, lineHeight: 1, minWidth: 44, minHeight: 44,
+                  fontSize: 18, lineHeight: 1, minWidth: 44, minHeight: 44, flexShrink: 0,
                 }}
               >×</button>
             )}

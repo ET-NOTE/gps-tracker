@@ -142,7 +142,7 @@ pub(super) struct Trip {
     started_at: DateTime<Utc>,
     ended_at: Option<DateTime<Utc>>,
     duration_min: Option<i64>,
-    distance_m: f64,
+    distance_m: Option<f64>,
     start_lat: Option<f64>,
     start_lng: Option<f64>,
     start_address: Option<String>,
@@ -152,6 +152,8 @@ pub(super) struct Trip {
     annotation: Option<TripAnnotation>,
     #[serde(default)]
     quality: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allocation_note: Option<String>,
 }
 
 #[derive(Debug, Serialize, FromRow, Clone, Deserialize)]
@@ -171,6 +173,10 @@ pub(super) struct TripAnnotation {
     updated_at: Option<DateTime<Utc>>,
     #[serde(default)]
     assignment_source: Option<Value>,
+    #[serde(default)]
+    odometer_before_km: Option<f64>,
+    #[serde(default)]
+    odometer_after_km: Option<f64>,
     note: Option<String>,
 }
 
@@ -394,7 +400,7 @@ async fn compute_trips_unprojected(
             started_at: *s,
             ended_at: *e,
             duration_min,
-            distance_m,
+            distance_m: Some(distance_m),
             start_lat: row.start_lat,
             start_lng: row.start_lng,
             start_address,
@@ -402,6 +408,7 @@ async fn compute_trips_unprojected(
             end_lng: row.end_lng,
             end_address,
             annotation,
+            allocation_note: None,
             quality: super::fleet_trip_quality::quality(
                 *s,
                 *e,
@@ -697,7 +704,8 @@ pub(super) async fn load_annotations(
                   a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
                   CASE WHEN a.fuel_expense_id IS NULL THEN a.fuel_cost WHEN e.status='approved' THEN e.amount_krw END AS fuel_cost,
-                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note,a.updated_at,a.assignment_source
+                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note,a.updated_at,a.assignment_source,
+                  a.odometer_before_km::FLOAT8 AS odometer_before_km,a.odometer_after_km::FLOAT8 AS odometer_after_km
              FROM trip_annotations a
         LEFT JOIN fleet_expenses e ON e.id=a.fuel_expense_id AND e.owner_id=a.user_id
         LEFT JOIN staff s ON s.id = a.driver_staff_id
@@ -713,6 +721,9 @@ pub(super) async fn load_annotations(
     Ok(rows)
 }
 
+#[path = "trip_odometer.rs"]
+pub(super) mod trip_odometer;
+
 #[derive(Debug, Deserialize)]
 pub(super) struct AnnotationPayload {
     pub(super) trip_started_at: DateTime<Utc>,
@@ -723,6 +734,8 @@ pub(super) struct AnnotationPayload {
     fuel_liters: Option<f64>,
     fuel_cost: Option<i32>,
     note: Option<String>,
+    #[serde(flatten)]
+    odometer: trip_odometer::OdometerPatch,
 }
 
 async fn upsert_annotation(
@@ -742,6 +755,10 @@ pub(super) async fn save_annotation(
     self_driver: Option<i64>,
     actor: Option<i64>,
 ) -> AppResult<Json<TripAnnotation>> {
+    let odometer = req
+        .odometer
+        .validate()
+        .map_err(|message| AppError::BadRequest(message.into()))?;
     if req
         .fuel_liters
         .is_some_and(|v| !v.is_finite() || !(0.0..=100000.0).contains(&v))
@@ -773,6 +790,32 @@ pub(super) async fn save_annotation(
         .bind(actor.unwrap_or(user.user_id).to_string())
         .execute(&mut *tx)
         .await?;
+    // Corrections and annotation saves share the owner lock. A report projection
+    // must never modify the original trip's dashboard readings behind its history.
+    let (update_odometer, odometer_before, odometer_after) = match odometer {
+        trip_odometer::OdometerUpdate::Preserve => (false, None, None),
+        trip_odometer::OdometerUpdate::Replace(pair) => {
+            let corrected: bool = sqlx::query_scalar(
+                r#"SELECT EXISTS(SELECT 1 FROM gps_read_fleet_trip_corrections c
+                    WHERE c.owner_id=$1 AND c.source_device_id=$2 AND c.reverted_at IS NULL
+                      AND (EXISTS(SELECT 1 FROM jsonb_array_elements(c.sources) s
+                          WHERE (s->>'source_started_at')::timestamptz=$3)
+                        OR EXISTS(SELECT 1 FROM jsonb_array_elements(c.outputs) o
+                          WHERE (o->>'source_started_at')::timestamptz=$3)))"#,
+            )
+            .bind(user.user_id)
+            .bind(device_id)
+            .bind(req.trip_started_at)
+            .fetch_one(&mut *tx)
+            .await?;
+            if corrected {
+                return Err(AppError::Conflict(
+                    "보정된 운행은 이력에서 원본으로 복원한 뒤 계기판을 수정해 주세요.".into(),
+                ));
+            }
+            (true, pair.map(|p| p.0), pair.map(|p| p.1))
+        }
+    };
     if let Some(expected) = req.expected_version {
         let current:Option<DateTime<Utc>>=sqlx::query_scalar("SELECT updated_at FROM trip_annotations WHERE user_id=$1 AND device_id=$2 AND trip_started_at=$3").bind(user.user_id).bind(device_id).bind(req.trip_started_at).fetch_optional(&mut *tx).await?;
         let matches = if expected == "new" {
@@ -799,8 +842,8 @@ pub(super) async fn save_annotation(
     }
     let count=sqlx::query(
         r#"INSERT INTO trip_annotations
-              (device_id, user_id, trip_started_at, purpose, purpose_note, driver_staff_id, fuel_liters, fuel_cost, note)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              (device_id, user_id, trip_started_at, purpose, purpose_note, driver_staff_id, fuel_liters, fuel_cost, note, odometer_before_km, odometer_after_km)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $12::float8::numeric, $13::float8::numeric)
            ON CONFLICT (device_id, user_id, trip_started_at) DO UPDATE SET
               assignment_source = CASE WHEN trip_annotations.driver_staff_id IS DISTINCT FROM EXCLUDED.driver_staff_id OR trip_annotations.purpose IS DISTINCT FROM EXCLUDED.purpose OR trip_annotations.purpose_note IS DISTINCT FROM EXCLUDED.purpose_note THEN NULL ELSE trip_annotations.assignment_source END,
               purpose         = EXCLUDED.purpose,
@@ -809,12 +852,15 @@ pub(super) async fn save_annotation(
               fuel_liters     = EXCLUDED.fuel_liters,
               fuel_cost       = EXCLUDED.fuel_cost,
               note            = EXCLUDED.note,
+              odometer_before_km = CASE WHEN $11 THEN EXCLUDED.odometer_before_km ELSE trip_annotations.odometer_before_km END,
+              odometer_after_km = CASE WHEN $11 THEN EXCLUDED.odometer_after_km ELSE trip_annotations.odometer_after_km END,
               updated_at      = clock_timestamp()
            WHERE $10::bigint IS NULL OR trip_annotations.driver_staff_id IS NULL OR trip_annotations.driver_staff_id=$10"#,
     )
     .bind(device_id).bind(user.user_id).bind(req.trip_started_at).bind(purpose).bind(req.purpose_note)
     .bind(req.driver_staff_id).bind(req.fuel_liters).bind(req.fuel_cost).bind(req.note)
-    .bind(self_driver).execute(&mut *tx).await?.rows_affected();
+    .bind(self_driver).bind(update_odometer).bind(odometer_before).bind(odometer_after)
+    .execute(&mut *tx).await?.rows_affected();
     if count == 0 {
         return Err(AppError::Forbidden);
     }
@@ -824,7 +870,8 @@ pub(super) async fn save_annotation(
                   a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
                   CASE WHEN a.fuel_expense_id IS NULL THEN a.fuel_cost WHEN e.status='approved' THEN e.amount_krw END AS fuel_cost,
-                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note,a.updated_at,a.assignment_source
+                  a.fuel_expense_id,e.status AS fuel_expense_status,a.note,a.updated_at,a.assignment_source,
+                  a.odometer_before_km::FLOAT8 AS odometer_before_km,a.odometer_after_km::FLOAT8 AS odometer_after_km
              FROM trip_annotations a
         LEFT JOIN fleet_expenses e ON e.id=a.fuel_expense_id AND e.owner_id=a.user_id
         LEFT JOIN staff s ON s.id = a.driver_staff_id
@@ -887,7 +934,10 @@ async fn trips_csv(
         let etime = e_kst
             .map(|e| e.format("%H:%M").to_string())
             .unwrap_or_else(|| "—".into());
-        let km = t.distance_m / 1000.0;
+        let km = t
+            .distance_m
+            .map(|m| format!("{:.2}", m / 1000.0))
+            .unwrap_or_default();
         let ann = t.annotation.as_ref();
         let purpose = match ann.map(|a| a.purpose.as_str()) {
             Some("commute") => "출퇴근",
@@ -929,7 +979,7 @@ async fn trips_csv(
             csv_escape(&s_coord),
             csv_escape(&e_addr),
             csv_escape(&e_coord),
-            csv_escape(&format!("{km:.2}")),
+            csv_escape(&km),
             csv_escape(&driver),
             csv_escape(&fuel_l),
             csv_escape(&fuel_c),
@@ -1409,15 +1459,7 @@ async fn report_xlsx(
                     .await?;
             values
                 .into_iter()
-                .map(|mut value| {
-                    if value["allocation_status"] == "boundary_review" {
-                        value["distance_m"] = serde_json::json!(0.0);
-                        value["ended_at"] = Value::Null;
-                        if value["annotation"].is_object() {
-                            value["annotation"]["note"] =
-                                serde_json::json!("미확정 운행 · 거리 합계 제외");
-                        }
-                    }
+                .map(|value| {
                     serde_json::from_value::<Trip>(value).map_err(|e| AppError::Internal(e.into()))
                 })
                 .collect::<AppResult<Vec<_>>>()?
@@ -1427,6 +1469,12 @@ async fn report_xlsx(
         let lite: Vec<xlsx_report::TripLite> = trips
             .into_iter()
             .filter_map(|t| {
+                // The event query includes the closing midnight so it can
+                // resolve a previous trip's end. Each report row belongs to
+                // the KST month of its usage (start) date.
+                if t.started_at < from || t.started_at >= to {
+                    return None;
+                }
                 // 좌표 전무 trip 은 리포트에서 제외 (유저급 뷰). 개발자 진단은 /trips?include_no_coord=1
                 if !fleet_scope && t.start_lat.is_none() && t.end_lat.is_none() {
                     return None;
@@ -1447,16 +1495,21 @@ async fn report_xlsx(
                     ended_at: t.ended_at,
                     distance_m: t.distance_m,
                     report_included: t.quality["report_included"] != false,
-                    quality_note: super::fleet_trip_quality::status_label(&t.quality).to_string(),
+                    quality_note: t.allocation_note.unwrap_or_else(|| {
+                        super::fleet_trip_quality::status_label(&t.quality).to_string()
+                    }),
                     start_address: t.start_address,
                     end_address: t.end_address,
                     purpose: Some(purpose),
                     purpose_note: t.annotation.as_ref().and_then(|a| a.purpose_note.clone()),
+                    note: t.annotation.as_ref().and_then(|a| a.note.clone()),
                     driver_name: t.annotation.as_ref().and_then(|a| a.driver_name.clone()),
                     driver_department: t
                         .annotation
                         .as_ref()
                         .and_then(|a| a.driver_department.clone()),
+                    odometer_before_km: t.annotation.as_ref().and_then(|a| a.odometer_before_km),
+                    odometer_after_km: t.annotation.as_ref().and_then(|a| a.odometer_after_km),
                     fuel_liters: t.annotation.as_ref().and_then(|a| a.fuel_liters),
                     fuel_cost_krw: t
                         .annotation
@@ -1472,6 +1525,7 @@ async fn report_xlsx(
     let fuel_prices = state.opinet.get_or_fetch().await;
     let ctx = xlsx_report::ReportContext {
         month_ym: ym.clone(),
+        purpose_filter: purpose_filter.clone(),
         corp: &corp_info,
         per_device,
         fuel_price: Box::new(make_fuel_price_fn(fuel_prices)),
@@ -1483,13 +1537,12 @@ async fn report_xlsx(
     }
     .map_err(|e| anyhow::anyhow!("xlsx build: {e}"))?;
 
-    let kind_ko = if kind == "nts" {
-        "국세청양식"
-    } else {
-        "우리양식"
-    };
-    let month_slug = ym.replace('-', "");
-    let filename = format!("운행기록부_{month_slug}_{kind_ko}.xlsx");
+    // Counts and single-vehicle identity come from the same resolved scope as
+    // the workbook. An explicit selection or restricted projection is not
+    // labelled as the company's entire fleet.
+    let all_vehicles =
+        device_id_filter.is_none() && department_filter.is_none() && projection.is_none();
+    let filename = xlsx_report::report_filename(&ctx, kind, all_vehicles);
     let pct = percent_encode(&filename);
     let cd = format!("attachment; filename=\"{pct}\"; filename*=UTF-8''{pct}");
 

@@ -477,6 +477,7 @@ async fn correct(
         } else {
             Value::Null
         };
+        super::corporate::trip_odometer::clear_derived_readings(&mut row, &p.action);
         if *a != original_start {
             row["start_address"] = Value::Null;
         }
@@ -507,7 +508,7 @@ async fn correct(
     } else {
         tx.rollback().await?;
         Ok(Json(
-            json!({"preview_token":fingerprint,"before":sources,"after":outputs,"reason":p.reason,"action":p.action,"note":"원본 수신은 유지됩니다. 분할 시 기존 용무·운전자·주유비는 첫 구간에만 남습니다. 병합 거리는 원본 거리 합계이며 공백 거리를 더하지 않습니다."}),
+            json!({"preview_token":fingerprint,"before":sources,"after":outputs,"reason":p.reason,"action":p.action,"note":"원본 수신은 유지됩니다. 분할 시 기존 용무·운전자·주유비는 첫 구간에만 남습니다. 구간이 바뀌는 보정의 계기판 값은 원본 이력에만 보관하며 자동 배분하지 않습니다. 병합 거리는 원본 거리 합계이며 공백 거리를 더하지 않습니다."}),
         ))
     }
 }
@@ -588,6 +589,12 @@ pub(super) async fn overlay(
                 row["annotation"] =
                     serde_json::to_value(a).map_err(|e| AppError::Internal(e.into()))?;
             }
+            // Re-loading the original annotation must not reintroduce its full
+            // interval readings into an adjusted/split/merged report interval.
+            super::corporate::trip_odometer::clear_derived_readings(
+                &mut row,
+                c["action"].as_str().unwrap_or(""),
+            );
             row["correction_id"] = c["id"].clone();
             row["correction_action"] = c["action"].clone();
             if changed {
