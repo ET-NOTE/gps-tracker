@@ -96,3 +96,6 @@ ops/review137_*.py text eol=lf
 # Dev alignment captures preserve exact verification bytes.
 docs/evidence/dev138-20261116/* -text whitespace=-blank-at-eof,-blank-at-eol
 ops/align_dev_20261116.py text eol=lf
+
+docs/evidence/ssh-access-20261118/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/ssh_access_20261118.py text eol=lf

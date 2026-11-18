@@ -43,6 +43,8 @@ API SHA256: `62f67f352bcdc677273a88caa7c44b4c409d760c97b9da9128f734da790f648d`. 
 
 ## 부사수 작업 방법
 
+2026-11-18부터 SSH TCP22의 출발지 IP 제한을 해제해 다른 사무실에서도 기존 등록 키로 `gps-dev@dev-gps.serial.kr`에 접속할 수 있다. 키 추가·교체나 비밀번호 로그인 활성화는 하지 않았다. [접속 정책/실제 외부 로그인 검증](ssh-access-20261118.md).
+
 기존 `gps-dev` SSH 계정과 기존 개발 로그인 계정을 사용한다. 운영 SSH/DB 자격증명을 받을 필요가 없다. 서버 checkout은 새 개발 로컬 브랜치로 fast-forward했고 기존 브랜치를 남겼다. 개인 PC에서는 원격 `codex/location-business-prep`의 최신 커밋을 받은 뒤 별도 `codex/` 작업 브랜치를 만든다. 서버 개발 브랜치 자체를 원격에 게시한 것은 아니다. 화면 파일은 `gps-tracker-web/src` 아래에 있다.
 
 ### 개인 PC에서 UI 실행

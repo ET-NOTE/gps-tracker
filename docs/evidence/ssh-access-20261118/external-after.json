@@ -1,0 +1,1 @@
+{"checked_at": "2026-11-18T11:27:46.691632+09:00", "target": "dev-gps.serial.kr", "resolved_ipv4": "210.114.18.16", "port": 22, "scope": "external TCP/SSH banner only; no account or key authentication", "probe_source": "10.2.0.191", "ssh_banner": "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.13", "reachable": true}

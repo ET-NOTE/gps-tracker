@@ -1,0 +1,1 @@
+{"applied": true, "at": "2026-11-18T11:27:43.732550+09:00", "ssh_ipv4": "any source", "ssh_ipv6": "any source", "keys_and_auth_unchanged": true, "fail2ban_unchanged": true, "other_rules_and_services_unchanged": true, "backup": "/var/lib/gps-ssh-access-20261118-r2"}
