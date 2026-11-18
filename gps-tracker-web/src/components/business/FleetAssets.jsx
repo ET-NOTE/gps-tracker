@@ -1,5 +1,5 @@
 import {useFleetAccess,useFleetOrganization} from './FleetAccess';
-import React,{useState,useMemo} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {useQuery,useQueryClient,useMutation} from '@tanstack/react-query';
 import {api} from '../../api';
 import {useStaff} from '../../state';
@@ -88,24 +88,35 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport}) {
 }
 export function FleetAssetForm({asset,staff=[],onClose,onSaved}) {
   const org=useFleetOrganization();
+  const queryClient=useQueryClient();
   const [form,setForm]=useState({name:asset.name||'',license_plate:asset.license_plate||'',car_model:asset.car_model||'',department:'',department_id:asset.department_id||'',manager_staff_id:asset.manager_staff_id||'',enabled:asset.enabled!==false,profile:{...asset.profile}}),[saving,setSaving]=useState(false),[error,setError]=useState('');
+  const pending=useRef(false),mounted=useRef(true);
+  useEffect(()=>{mounted.current=true;return ()=>{mounted.current=false;};},[]);
+  const close=()=>{if(!pending.current)onClose();};
   const field=(key,value)=>setForm(p=>({...p,[key]:value}));
   const profile=(key,value)=>setForm(p=>({...p,profile:{...p.profile,[key]:value}}));
-  async function save(e){e.preventDefault();if(saving)return;setSaving(true);setError('');try{
-    const p={...form,profile:{...form.profile},department_id:Number(form.department_id)||null,manager_staff_id:form.manager_staff_id?Number(form.manager_staff_id):null,updated_at:asset.updated_at};
-    for(const key of ['odometer_km','next_service_km','model_year','engine_cc','purchase_price_krw','fuel_efficiency_kmpl']){
-      const value=p.profile[key];
-      if(typeof value==='string') p.profile[key]=value.trim()===''?null:Number(value);
-    }
-    if(asset.id)await api.updateFleetVehicle(asset.id,p);else await api.createFleetVehicle(p);onSaved();
-  }catch(e){setError(e.message||'차량을 저장하지 못했습니다.');}finally{setSaving(false);}}
-  return <Modal open title={asset.id?'차량 정보 수정':'차량 등록'} onClose={onClose}><form onSubmit={save} className="fleet-asset-form fleet-assets-editor">
+  async function save(e){
+    e.preventDefault();
+    if(pending.current||!mounted.current)return;
+    pending.current=true;setSaving(true);setError('');
+    try{
+      const p={...form,profile:{...form.profile},department_id:Number(form.department_id)||null,manager_staff_id:form.manager_staff_id?Number(form.manager_staff_id):null,updated_at:asset.updated_at};
+      for(const key of ['odometer_km','next_service_km','model_year','engine_cc','purchase_price_krw','fuel_efficiency_kmpl']){
+        const value=p.profile[key];
+        if(typeof value==='string') p.profile[key]=value.trim()===''?null:Number(value);
+      }
+      if(asset.id)await api.updateFleetVehicle(asset.id,p);else await api.createFleetVehicle(p);
+      if(mounted.current)onSaved();else queryClient.invalidateQueries({queryKey:fleetAssetsKey});
+    }catch(e){if(mounted.current)setError(e.message||'차량을 저장하지 못했습니다.');}
+    finally{pending.current=false;if(mounted.current)setSaving(false);}
+  }
+  return <Modal open title={asset.id?'차량 정보 수정':'차량 등록'} onClose={saving?undefined:close}><form onSubmit={save} aria-busy={saving}><fieldset className="fleet-asset-form fleet-assets-editor" disabled={saving} style={{border:0,margin:0,padding:0,minWidth:0}}>
     <div className="fleet-asset-fields"><FormField label="차량명" required><Input required maxLength={120} value={form.name} onChange={e=>field('name',e.target.value)}/></FormField><FormField label="차량번호"><Input maxLength={32} value={form.license_plate} onChange={e=>field('license_plate',e.target.value)}/></FormField><FormField label="차종"><Input maxLength={120} value={form.car_model} onChange={e=>field('car_model',e.target.value)}/></FormField><FormField label="부서"><Select value={form.department_id} onChange={e=>field('department_id',e.target.value)}><option value="">미지정</option>{(org.data||[]).filter(i=>i.kind==='department'&&(i.active||i.id===asset.department_id)).map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</Select></FormField><FormField label="담당자"><Select value={form.manager_staff_id} onChange={e=>field('manager_staff_id',e.target.value)}><option value="">미지정</option>{staff.filter(s=>s.active||s.id===asset.manager_staff_id).map(s=><option key={s.id} value={s.id}>{s.name}{!s.active?' (비활성)':''}</option>)}</Select></FormField><FormField label="계기판 누적거리 (km)"><Input type="number" min="0" step="0.1" value={form.profile.odometer_km??''} onChange={e=>profile('odometer_km',e.target.value)}/></FormField></div>
     <fieldset><legend>점검 일정</legend><div className="fleet-asset-fields">{[['next_service_date','다음 정비일'],['insurance_expiry','보험 만료일'],['inspection_expiry','검사 만료일']].map(([key,label])=><FormField key={key} label={label}><Input type="date" value={form.profile[key]||''} onChange={e=>profile(key,e.target.value)}/></FormField>)}<FormField label="다음 정비 주행거리 (km)"><Input type="number" min="0" value={form.profile.next_service_km??''} onChange={e=>profile('next_service_km',e.target.value)}/></FormField></div></fieldset>
     <details><summary>연식·취득·연료 정보</summary><div className="fleet-asset-fields">{[['model_year','연식'],['engine_cc','배기량 (cc)'],['purchase_price_krw','취득가액 (원)'],['fuel_efficiency_kmpl','연비 (km/L)']].map(([key,label])=><FormField key={key} label={label}><Input type="number" min="0" step={key==='fuel_efficiency_kmpl'?'0.1':'1'} value={form.profile[key]??''} onChange={e=>profile(key,e.target.value)}/></FormField>)}<FormField label="취득일"><Input type="date" value={form.profile.acquired_at||''} onChange={e=>profile('acquired_at',e.target.value)}/></FormField><FormField label="차량 유형"><Select value={form.profile.vehicle_type||''} onChange={e=>profile('vehicle_type',e.target.value)}><option value="">미지정</option>{[['sedan','승용'],['van','승합'],['truck','화물'],['special','특수'],['ev','전기']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</Select></FormField><FormField label="연료"><Select value={form.profile.fuel_type||''} onChange={e=>profile('fuel_type',e.target.value)}><option value="">미지정</option>{[['gasoline','휘발유'],['diesel','경유'],['lpg','LPG'],['ev','전기']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</Select></FormField></div></details>
     <FormField label="메모"><Textarea maxLength={2000} value={form.profile.note||''} onChange={e=>profile('note',e.target.value)}/></FormField><label className="fleet-asset-toggle"><input type="checkbox" checked={form.enabled} onChange={e=>field('enabled',e.target.checked)}/>사용 가능</label>
-    {error&&<p role="alert" className="business-error">{error}</p>}<div className="business-dialog-actions"><Button type="button" variant="ghost" onClick={onClose} disabled={saving}>취소</Button><Button type="submit" disabled={saving}>{saving?'저장 중…':'저장'}</Button></div>
-  </form></Modal>;
+    {error&&<p role="alert" className="business-error">{error}</p>}<div className="business-dialog-actions"><Button type="button" variant="ghost" onClick={close} disabled={saving}>취소</Button><Button type="submit" disabled={saving}>{saving?'저장 중…':'저장'}</Button></div>
+  </fieldset></form></Modal>;
 }
 export function FleetAssetDetail({asset,devices,onClose,onChanged,onEdit,onMap,meta,onReport,initialTab='status'}) {
   const access=useFleetAccess();

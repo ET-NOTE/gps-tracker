@@ -66,6 +66,21 @@ test('corporate groups return to each last selected child without losing the act
  assert.deepEqual(changes,['report','monthly','expenses','expense-categories','monthly','expense-categories']);
 });
 
+test('reservations are fifth in the main menu and both entry points open the same vehicle booking page',async t=>{
+ const {renderer:r,changes}=await mount(t);
+ const primary=()=>r.root.findByProps({'aria-label':'법인차 운영 메뉴'});
+ const vehicleTabs=()=>r.root.findByProps({'aria-label':'차량 하위 메뉴'});
+ assert.deepEqual(buttons(primary()).slice(0,8),['운영 현황','차량','사용자','지점','차량 예약','운행','지출','시스템 설정']);
+ await act(async()=>findButton(primary(),'차량 예약').props.onClick());
+ assert.equal(r.root.findByType('output').children[0],'reservations');
+ assert.equal(findButton(primary(),'차량 예약').props['aria-current'],'page');
+ assert.equal(findButton(vehicleTabs(),'차량 예약').props['aria-current'],'page');
+ await act(async()=>findButton(primary(),'차량').props.onClick());
+ assert.equal(findButton(vehicleTabs(),'차량 관리').props['aria-current'],'page');
+ await act(async()=>findButton(vehicleTabs(),'차량 예약').props.onClick());
+ assert.deepEqual(changes,['reservations','vehicles','reservations']);
+});
+
 test('corporate tab navigation resets the persistent mobile scroll without resetting ordinary workspace interactions',async t=>{
  const resets=[];
  const viewport={scrollTop:30,scrollTo:({top})=>{viewport.scrollTop=top;resets.push(top);}};

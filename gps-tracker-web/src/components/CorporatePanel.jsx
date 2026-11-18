@@ -74,8 +74,9 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const subjectScoped=Boolean(terminals.data?.subjectScope);
   const rawDevices=terminals.data||[],rawMeta=access.billing&&!subjectScoped?personalMeta:{},rawOnMap=access.billing&&!subjectScoped?personalMap:undefined;
   const assets=useFleetAssets();
+  const terminalsReady=!terminals.isPending&&!terminals.error;
   const vehiclesReady=!assets.isPending&&!assets.error;
-  const devices=useMemo(()=>vehiclesReady?projectFleetAssets(assets.data||[],rawDevices):[],[vehiclesReady,assets.data,rawDevices]);
+  const devices=useMemo(()=>vehiclesReady&&terminalsReady?projectFleetAssets(assets.data||[],rawDevices):[],[vehiclesReady,terminalsReady,assets.data,rawDevices]);
   const meta=Object.fromEntries(devices.map(d=>[d.id,rawMeta?.[d.source_device_id]]));
   const onMap=id=>{const sim=devices.find(v=>v.id===id)?.source_device_id;if(sim)rawOnMap?.(sim);};
   const [editAsset,setEditAsset]=useState(null);
@@ -96,18 +97,23 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const updateSub = value => qc.setQueryData(qk.businessSubscription('corporate'), value);
   const reserve = value => { setRequest(value); setTab('reservations'); };
   const report = (device,filter=null) => { setReportDevice(device.id); setReportFilter(filter); setTab('report'); };
-  if(terminals.isPending)return <SkeletonList count={3} itemHeight={140}/>;
-  if(terminals.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={terminals.refetch}>단말기 상태를 불러오지 못했습니다.</BusinessError>{access.manage_team&&<CompanySubjectMappings/>}</div>;
+  const terminalError = terminals.error;
+  const terminalNotice = terminalError && <BusinessError onRetry={terminals.refetch}>단말기 상태를 불러오지 못했습니다.</BusinessError>;
+  if (terminalError) {
+    const {status, name} = terminalError;
+    const unavailable = status == null ? name === 'TypeError' : [0, 408, 429].includes(status) || status >= 500;
+    // Keep the company access gate on denied or unrecognized responses.
+    if (!unavailable) return <div className="fleet-access-error">{toolbar}{terminalNotice}{access.manage_team&&<CompanySubjectMappings/>}</div>;
+  }
   const needsVehicles=tab!=='expense-categories';
+  const vehicleNotice = terminalNotice || (terminalsReady && assets.error && <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>);
   return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     toolbar={toolbar} globalNavigation={globalNavigation}
     headerNavigation={sectionNavigation[tab]&&<nav className="business-subnav no-print" aria-label={`${corporateTabs.find(item=>item.id===tab)?.label} 하위 메뉴`}>{sectionNavigation[tab].map(([id,label])=><button type="button" className="business-subnav-item" key={id} aria-current={sectionTabs[tab]===id?'page':undefined} onClick={()=>selectSection(id)}>{label}</button>)}</nav>}
     mobileAction={<BusinessButton icon="user" onClick={()=>setTab('staff')}>사용자</BusinessButton>}
     >
     {subjectScoped && tab!=='report' && <p className="business-note" role="status">{subjectScopeNote}</p>}
-    {needsVehicles&&!vehiclesReady ? (assets.error
-      ? <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>
-      : <SkeletonList count={3} itemHeight={140}/>) : <>
+    {needsVehicles&&(!terminalsReady||!vehiclesReady) ? (vehicleNotice || <SkeletonList count={3} itemHeight={140}/>) : <>
     {tab === 'overview' && access.manage_vehicles && <details className="corporate-setup"><summary>회사 시작하기</summary><div className="fleet-onboarding" aria-label="회사 시작하기"><BusinessButton onClick={()=>setTab('settings')}>회사 정보</BusinessButton><BusinessButton onClick={()=>setTab('vehicles')}>차량 등록·단말기 연결</BusinessButton><BusinessButton onClick={()=>setTab('staff')}>사용자 배정</BusinessButton></div></details>}
     {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onVehicles={()=>setTab('vehicles')} />}
     {tab === 'vehicles' && <FleetAssets onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={rawOnMap} onChanged={assets.refetch} />}

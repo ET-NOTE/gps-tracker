@@ -23,8 +23,9 @@ export function BusinessWorkspace({ renderVehicleDetail, title, description, tab
   const active = tabs.find(item => item.id === tab) || tabs[0];
   const navigation = groups || tabs;
   const activeGroup = active.group || active.id;
-  const subTabs = groups ? tabs.filter(item => item.group === activeGroup) : [];
-  const activeGroupLabel = navigation.find(item => item.id === activeGroup)?.label;
+  const subnavGroup = active.subnavGroup || activeGroup;
+  const subTabs = groups ? tabs.filter(item => (item.subnavGroup || item.group) === subnavGroup) : [];
+  const subnavLabel = navigation.find(item => item.id === subnavGroup)?.label;
   const [lastInGroup, setLastInGroup] = useState({});
   useEffect(() => { setLastInGroup(previous => previous[activeGroup] === tab ? previous : { ...previous, [activeGroup]: tab }); }, [activeGroup, tab]);
   const [selectedId, setSelectedId] = useState(null), [more, setMore] = useState(false);
@@ -39,7 +40,7 @@ export function BusinessWorkspace({ renderVehicleDetail, title, description, tab
   const accountNavigation = (globalNavigation || [{ id: 'home', label: '지도', icon: 'mapPin' }, { id: 'devices', label: '단말기 관리', icon: 'list' }, { id: 'profile', label: '내정보', icon: 'user' }])
     .map(item => corporate && item.id === 'home' ? { ...item, label: '실시간 지도', icon: 'mapPin' } : item);
   const mapNavigation = corporate && accountNavigation.find(item => item.id === 'home');
-  const subNavigation = subTabs.length > 1 && <nav className="business-subnav no-print" aria-label={`${activeGroupLabel} 하위 메뉴`}>{subTabs.map(item => <button className="business-subnav-item" key={item.id} type="button" aria-current={tab === item.id ? 'page' : undefined} onClick={() => onTab(item.id)}>{item.label}</button>)}</nav>;
+  const subNavigation = subTabs.length > 1 && <nav className="business-subnav no-print" aria-label={`${subnavLabel} 하위 메뉴`}>{subTabs.map(item => <button className="business-subnav-item" key={item.id} type="button" aria-current={tab === item.id ? 'page' : undefined} onClick={() => onTab(item.id)}>{item.label}</button>)}</nav>;
   return <SelectionContext.Provider value={{ focusedId, focusVehicle: d => setFocusedId(d.id), kind }}><VehicleContext.Provider value={openVehicle}><section ref={workspaceRef} className={`gps-user-panel gps-business-panel business-workspace${kind === 'corporate' ? ' business-workspace--corporate' : ''}${onNavigate ? ' has-mobile-nav' : ''}`}>
     {!corporate && <header className="business-header no-print">
       <div><h1>{title}</h1>{description && <p>{description}</p>}</div>

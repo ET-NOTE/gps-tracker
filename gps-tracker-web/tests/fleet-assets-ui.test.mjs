@@ -21,18 +21,19 @@ const groupCount=(r,label)=>Number(text(groupButton(r,label).findAllByType('span
 const rowNames=r=>r.root.findByType('tbody').findAllByType('tr').map(n=>text(n.findAllByType('td')[0].children));
 const detailDrawers=r=>r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']);
 
-async function mount(t,{manage=true,data=vehicles,devices=[]}={}){
+async function mount(t,{manage=true,data=vehicles,devices=[],saveVehicle,onChanged=()=>{}}={}){
  const context=vm.createContext({console});
  const synthetic=exports=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value] of Object.entries(exports))this.setExport(key,value);},{context});
  const code=(await transform(await readFile(new URL('../src/components/business/FleetAssets.jsx',import.meta.url),'utf8'),{loader:'jsx',jsx:'automatic',format:'esm'})).code;
  const mod=new vm.SourceTextModule(code,{context});
  const noop=()=>null,tag=type=>({children,...props})=>React.createElement(type,props,children);
- const connections=[],vehicleUpdates=[];
- const common={default:noop,api:{connectFleetVehicle:async(...args)=>{connections.push(args);},updateFleetVehicle:async(id,body)=>{vehicleUpdates.push({id,body});}},useFleetAccess:()=>({manage_vehicles:manage,manage_reports:manage}),useFleetOrganization:()=>({data:[]}),
+ const connections=[],vehicleUpdates=[],invalidations=[];
+ const save=async(id,body)=>{vehicleUpdates.push({id,body});return saveVehicle?.(id,body);};
+ const common={default:noop,api:{connectFleetVehicle:async(...args)=>{connections.push(args);},updateFleetVehicle:save,createFleetVehicle:body=>save(undefined,body)},useFleetAccess:()=>({manage_vehicles:manage,manage_reports:manage}),useFleetOrganization:()=>({data:[]}),
   useStaff:()=>({data:[{id:1,name:'김영업',active:true},{id:2,name:'이관리',active:true}]}),
-  useQuery:()=>({data}),useMutation:noop,useQueryClient:()=>({invalidateQueries:noop}),fleetDistance:noop,useBusinessClock:noop,kstDateTime:value=>value,
+  useQuery:()=>({data}),useMutation:noop,useQueryClient:()=>({invalidateQueries:options=>invalidations.push(options.queryKey)}),fleetDistance:noop,useBusinessClock:noop,kstDateTime:value=>value,
   classifyDevice:device=>({label:device.source_device_id?'오프라인':'미연결'}),ageString:noop,deviceBattery:noop,
-  Modal:({children,footer,title})=>React.createElement('section',{role:'dialog','aria-label':title},children,footer),
+  Modal:({children,footer,title,onClose})=>React.createElement('section',{role:'dialog','aria-label':title},onClose&&React.createElement('button',{'aria-label':'창 닫기',onClick:onClose}),children,footer),
   FormField:tag('label'),Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
  const real={'react':React,'react/jsx-runtime':jsx,'../../lib/fleetAssetFilters':filters,'../../lib/fleetAssets':assetsLib,
   '../CarImage':{default:({vehicleId,version,fallback})=>React.createElement('span',{'data-vehicle-id':vehicleId,'data-photo-version':version},fallback)}};
@@ -43,9 +44,9 @@ async function mount(t,{manage=true,data=vehicles,devices=[]}={}){
  await mod.link(name=>synthetic(real[name]||(name==='./BusinessDrawer'?{default:({title,children,onClose})=>React.createElement('aside',{'aria-label':title},React.createElement('button',{'aria-label':'상세 닫기',onClick:onClose},'닫기'),children)}:common)));
  await mod.evaluate();
  const reports=[],maps=[];let r;
- await act(async()=>{r=create(React.createElement(mod.namespace.FleetAssets,{assets:data,devices,onChanged:noop,onMap:value=>maps.push(value),onReport:value=>reports.push(value.id)}));});
+ await act(async()=>{r=create(React.createElement(mod.namespace.FleetAssets,{assets:data,devices,onChanged,onMap:value=>maps.push(value),onReport:value=>reports.push(value.id)}));});
  t.after(async()=>{await act(async()=>r.unmount());});
- return {r,reports,maps,connections,vehicleUpdates};
+ return {r,reports,maps,connections,vehicleUpdates,invalidations};
 }
 
 test('saving a vehicle keeps unset profile numbers blank and preserves actual zero readings',async t=>{
@@ -58,6 +59,42 @@ test('saving a vehicle keeps unset profile numbers blank and preserves actual ze
  assert.equal(profile.odometer_km,null);
  assert.equal(profile.model_year,null);
  assert.equal(profile.next_service_km,0);
+});
+
+test('a pending vehicle registration accepts one submission, protects the draft and permits retry on failure',async t=>{
+ let reject,refreshes=0;
+ const firstSave=new Promise((_,fail)=>{reject=fail;});
+ const {r,vehicleUpdates}=await mount(t,{saveVehicle:()=>vehicleUpdates.length===1?firstSave:undefined,onChanged:()=>refreshes++});
+ await act(async()=>button(r,'차량 등록').props.onClick());
+ const name=()=>r.root.find(n=>n.type==='input'&&n.props.maxLength===120&&n.props.required);
+ await act(async()=>name().props.onChange({target:{value:'새 업무 차량'}}));
+ const submit=r.root.findByType('form').props.onSubmit;
+ const close=r.root.findByProps({'aria-label':'창 닫기'}).props.onClick;
+ const cancel=button(r,'취소').props.onClick;
+ let request;
+ await act(async()=>{request=submit({preventDefault(){}});await submit({preventDefault(){}});close();cancel();});
+ assert.equal(vehicleUpdates.length,1);
+ assert.equal(r.root.findAllByProps({'aria-label':'창 닫기'}).length,0);
+ assert.equal(r.root.findByType('form').props['aria-busy'],true);
+ assert.equal(r.root.findByProps({className:'fleet-asset-form fleet-assets-editor'}).props.disabled,true);
+ assert.equal(button(r,'취소').props.disabled,true);
+ await act(async()=>{reject(Error('등록 요청 실패'));await request;});
+ assert.match(text(r.root.findByProps({role:'alert'}).children),/등록 요청 실패/);
+ assert.equal(name().props.value,'새 업무 차량');assert.equal(refreshes,0);
+ await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
+ assert.equal(vehicleUpdates.length,2);assert.equal(vehicleUpdates[1].body.name,'새 업무 차량');
+ assert.equal(r.root.findAllByProps({role:'dialog'}).length,0);assert.equal(refreshes,1);
+});
+
+test('a vehicle update that finishes after leaving the screen refreshes the list without calling the old dialog',async t=>{
+ let resolve,refreshes=0;
+ const pending=new Promise(done=>{resolve=done;});
+ const {r,invalidations}=await mount(t,{saveVehicle:()=>pending,onChanged:()=>refreshes++});
+ await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 수정'}).props.onClick());
+ let request;await act(async()=>{request=r.root.findByType('form').props.onSubmit({preventDefault(){}});});
+ await act(async()=>r.unmount());
+ await act(async()=>{resolve();await request;});
+ assert.equal(refreshes,0);assert.deepEqual(invalidations.map(key=>Array.from(key)),[['business','corporate','vehicles']]);
 });
 
 test('vehicle status counts follow search scope and switching status preserves search and sort',async t=>{

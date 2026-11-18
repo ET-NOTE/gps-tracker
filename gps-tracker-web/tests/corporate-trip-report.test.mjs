@@ -61,7 +61,7 @@ const trip=distance_m=>({started_at:'2026-12-20T00:00:00Z',ended_at:'2026-12-20T
 const shownRows=r=>r.root.findAllByProps({className:'corporate-trip-table'})[0]?.findByType('tbody').findAllByType('tr').length||0;
 const filterRecords=[trip(40),{...trip(1000),started_at:'2026-12-21T00:00:00Z',ended_at:'2026-12-21T02:00:00Z',duration_min:120,annotation:{purpose:'commute',driver_staff_id:9,driver_name:'박운전자'}}];
 
-test('corporate account entry keeps category navigation reachable with unavailable vehicles and retains the terminal access gate',async()=>{
+test('expense categories remain reachable during vehicle and terminal outages while terminal access denials close the workspace',async()=>{
  let assetRetries=0,terminalRetries=0;
  const assets={isPending:true,refetch:()=>assetRetries++};
  const terminals={data:[],refetch:()=>terminalRetries++};
@@ -97,15 +97,34 @@ test('corporate account entry keeps category navigation reachable with unavailab
   assets.error=null;
   await act(async()=>r.update(render()));
   assert.equal(r.root.findAllByType('vehicle-list').length,1);
+  terminals.isPending=true;
+  await act(async()=>r.update(render()));
+  assert.equal(r.root.findAllByType('loading').length,1);
+  assert.equal(r.root.findByType('main').props['data-vehicles'],0);
+  await act(async()=>button(r,'지출 내역').props.onClick());
   await act(async()=>button(r,'항목 관리').props.onClick());
-  terminals.error=Error('단말기 조회 거부');
+  assert.equal(r.root.findAllByType('expense-categories').length,1);
+  terminals.isPending=false;
+  for (const error of [Object.assign(Error('일시 장애'),{status:503}),new TypeError('Failed to fetch')]) {
+    terminals.error=error;
+    await act(async()=>r.update(render()));
+    assert.equal(r.root.findAllByType('expense-categories').length,1);
+    await act(async()=>button(r,'차량 관리').props.onClick());
+    assert.equal(r.root.findAllByType('vehicle-list').length,0);
+    assert.equal(r.root.findByType('main').props['data-vehicles'],0);
+    assert.match(text(r.toJSON()),/단말기 상태를 불러오지 못했습니다/);
+    await act(async()=>button(r,'다시 시도').props.onClick());
+    await act(async()=>button(r,'항목 관리').props.onClick());
+  }
+  assert.equal(terminalRetries,2);
+  terminals.error=Object.assign(Error('단말기 조회 거부'),{status:403});
   await act(async()=>r.update(render()));
   assert.match(text(r.toJSON()),/단말기 상태를 불러오지 못했습니다/);
   assert.ok(r.root.findByProps({'aria-label':'회사 선택'}));
   assert.equal(r.root.findAllByType('expense-categories').length,0);
   assert.equal(button(r,'항목 관리'),undefined);
   await act(async()=>button(r,'다시 시도').props.onClick());
-  assert.equal(terminalRetries,1);
+  assert.equal(terminalRetries,3);
  }finally{if(r)await act(async()=>r.unmount());}
 });
 
