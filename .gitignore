@@ -75,3 +75,5 @@ __pycache__/
 *.pyc
 
 !docs/evidence/runtime142-20261118/*.log
+
+!docs/evidence/runtime143-20261118/*.log

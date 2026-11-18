@@ -6,7 +6,7 @@ use crate::{
     state::AppState,
 };
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{get, patch},
     Json, Router,
 };
@@ -53,20 +53,59 @@ async fn personal(
             .await?,
     ))
 }
+#[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CandidatePage {
+    after_owner: Option<i64>,
+    after_staff: Option<i64>,
+    linked: Option<String>,
+    q: Option<String>,
+}
+#[cfg(test)]
+mod candidate_tests {
+    use super::CandidatePage;
+    use serde_json::json;
+    #[test]
+    fn paired_cursor_and_literal_search_are_bounded() {
+        for v in [json!({}),json!({"after_owner":10,"after_staff":30,"linked":"unlinked","q":"  회사  "}),json!({"linked":"linked","q":"100%_"}),json!({"q":"가".repeat(80)})] {
+            assert!(serde_json::from_value::<CandidatePage>(v).unwrap().validate().is_ok());
+        }
+        for v in [json!({"after_owner":1}),json!({"after_staff":1}),json!({"after_owner":0,"after_staff":1}),json!({"after_owner":1,"after_staff":-1}),json!({"linked":""}),json!({"linked":"other"}),json!({"q":"가".repeat(81)})] {
+            assert!(serde_json::from_value::<CandidatePage>(v).unwrap().validate().is_err());
+        }
+        assert!(serde_json::from_value::<CandidatePage>(json!({"subject_id":42})).is_err());
+    }
+}
+impl CandidatePage {
+    fn validate(&self) -> AppResult<()> {
+        if self.after_owner.is_some() != self.after_staff.is_some()
+            || self.after_owner.is_some_and(|n| n <= 0)
+            || self.after_staff.is_some_and(|n| n <= 0)
+            || self.linked.as_deref().is_some_and(|v| !matches!(v,"linked"|"unlinked"))
+            || self.q.as_deref().is_some_and(|v| v.trim().chars().count()>80)
+        { return Err(AppError::BadRequest("회사 연결 조회 조건이 올바르지 않습니다.".into())); }
+        Ok(())
+    }
+}
 async fn candidates(
     State(s): State<AppState>,
     _: AdminUser,
     Path(id): Path<i64>,
+    Query(p): Query<CandidatePage>,
 ) -> AppResult<Json<Value>> {
+    p.validate()?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&s.db).await?;
     let uid: i64 = sqlx::query_scalar("SELECT user_id FROM privacy_requests WHERE id=$1")
         .bind(id)
-        .fetch_optional(&s.db)
-        .await?
+        .fetch_optional(read.connection())
+        .await.map_err(crate::services::location_read_budget::query_error)?
         .ok_or(AppError::NotFound)?;
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('owner_id',h.company_owner_id,'staff_id',h.staff_id,'company_name',ci.company_name,'first_observed',min(h.captured_at),'last_observed',max(h.captured_at),'currently_linked',EXISTS(SELECT 1 FROM fleet_staff_accounts a WHERE a.owner_id=h.company_owner_id AND a.staff_id=h.staff_id AND a.account_id=$1)) FROM privacy_company_link_history h LEFT JOIN corporate_info ci ON ci.user_id=h.company_owner_id WHERE h.subject_id=$1 GROUP BY h.company_owner_id,h.staff_id,ci.company_name ORDER BY h.company_owner_id,h.staff_id LIMIT 51").bind(uid).fetch_all(&s.db).await?;
-    Ok(Json(
-        json!({"items":rows.iter().take(50).collect::<Vec<_>>(),"more":rows.len()>50,"identity_confirmed":false}),
-    ))
+    let query="WITH candidates AS (SELECT h.company_owner_id owner_id,h.staff_id,ci.company_name,min(h.captured_at) first_observed,max(h.captured_at) last_observed,EXISTS(SELECT 1 FROM fleet_staff_accounts a WHERE a.owner_id=h.company_owner_id AND a.staff_id=h.staff_id AND a.account_id=$1) currently_linked FROM privacy_company_link_history h LEFT JOIN corporate_info ci ON ci.user_id=h.company_owner_id WHERE h.subject_id=$1 AND ($2::bigint IS NULL OR (h.company_owner_id,h.staff_id)>($2,$3)) GROUP BY h.company_owner_id,h.staff_id,ci.company_name) SELECT to_jsonb(c) FROM candidates c WHERE ($4::text IS NULL OR currently_linked=($4='linked')) AND ($5::text='' OR strpos(lower(COALESCE(company_name,'')),lower($5))>0 OR owner_id::text=$5 OR staff_id::text=$5) ORDER BY owner_id,staff_id LIMIT 51";
+    let mut rows:Vec<Value>=sqlx::query_scalar(query).bind(uid).bind(p.after_owner).bind(p.after_staff).bind(p.linked).bind(p.q.as_deref().unwrap_or("").trim()).fetch_all(read.connection()).await.map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
+    let more=rows.len()>50;rows.truncate(50);
+    let next=if more {rows.last().map(|r| json!({"owner_id":r["owner_id"],"staff_id":r["staff_id"]}))}else{None};
+    Ok(Json(json!({"items":rows,"more":more,"identity_confirmed":false,"next":next})))
 }
 async fn list(
     State(s): State<AppState>,

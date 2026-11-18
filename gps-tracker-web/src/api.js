@@ -435,6 +435,7 @@ export const api = {
   privacyCompanyReviews: id => req('GET', `/privacy/requests/${id}/company-reviews`),
   adminCompanyReviews: id => req('GET', `/admin/privacy/requests/${id}/company-reviews`),
   adminCompanyCandidates: id => req('GET', `/admin/privacy/requests/${id}/company-candidates`),
+  adminCompanyCandidatePage: (id,params={},signal) => req('GET', `/admin/privacy/requests/${id}/company-candidates?`+new URLSearchParams(params),undefined,true,{signal}),
   createCompanyReview: (id,body) => req('POST', `/admin/privacy/requests/${id}/company-reviews`,body),
   updateCompanyReview: (id,body) => req('PATCH', `/admin/privacy/company-reviews/${id}`,body),
   privacyResult: async body => {

@@ -1,3 +1,4 @@
+import {CompanyReviewCandidatePicker} from './CompanyReviewCandidatePicker';
 import {AdminCompanyTasks} from './PrivacyCompanyTask';
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
@@ -21,26 +22,10 @@ export function PersonalCompanyReviews({request}) {
 }
 export function AdminCompanyReviews({request,refresh}) {
  const q=useQuery({queryKey:['admin-privacy-company',request.id,request.revision],queryFn:()=>api.adminCompanyReviews(request.id),retry:false});
- const links=useQuery({queryKey:['admin-privacy-company-candidates',request.id,request.revision],queryFn:()=>api.adminCompanyCandidates(request.id),retry:false});
- const [selected,setSelected]=useState(''),[owner,setOwner]=useState(''),[staff,setStaff]=useState(''),[category,setCategory]=useState('staff'),[from,setFrom]=useState(''),[until,setUntil]=useState(''),[due,setDue]=useState(request.due_at?local(request.due_at):'');
- const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const open=['received','in_review','needs_information'].includes(request.status);
- async function create(e){e.preventDefault();setBusy(true);setError('');try{
-   const [cid,sid]=selected==='manual'?[Number(owner),staff?Number(staff):null]:selected.split(':').map(Number);
-   const end=new Date(`${until}T00:00:00+09:00`);end.setUTCDate(end.getUTCDate()+1);
-   await api.createCompanyReview(request.id,{revision:request.revision,company_owner_id:cid,staff_id:sid,category,from_at:new Date(`${from}T00:00:00+09:00`).toISOString(),until_at:end.toISOString(),due_at:new Date(due).toISOString()});await refresh();
- }catch(e){setError(e.message);}finally{setBusy(false);}}
  return <section className="rights-impact"><h3>회사 자료 검토 대장</h3><p>연결 이력은 본인 확인의 단서입니다. 명단 재배정·동명이인·과거 스냅샷을 검토하세요. 이 화면은 회사 자료를 수정·삭제하거나 전달하지 않습니다.</p>
-  {(error||q.error||links.error)&&<p role="alert" className="rights-error">{error||q.error?.message||links.error?.message}</p>}
-  {open&&<details><summary>검토 범위 추가</summary><form onSubmit={create}><fieldset disabled={busy}>
-    <label>회사·명단 연결 단서<select required value={selected} onChange={e=>setSelected(e.target.value)}><option value="">선택하세요</option>{links.data?.items.map(c=><option key={`${c.owner_id}:${c.staff_id}`} value={`${c.owner_id}:${c.staff_id}`}>{c.company_name||`회사 계정 ${c.owner_id}`} · 명단 {c.staff_id} · {c.currently_linked?'연결 중':'연결 해제 이력'}</option>)}<option value="manual">별도 확인한 회사·명단 지정</option></select></label>
-    {links.data?.more&&<p>연결 단서가 50개를 넘습니다. 나머지는 별도 범위 검토가 필요합니다.</p>}
-    {selected==='manual'&&<><p>이력이 없는 과거 자료는 이름으로 자동 매칭하지 않습니다. 관리자 자료에서 확인한 회사 계정과 명단 번호를 지정한 뒤 본인 확인 근거를 기록하세요.</p><div className="rights-date-row"><label>회사 계정 번호<input type="number" min="1" required value={owner} onChange={e=>setOwner(e.target.value)}/></label><label>명단 번호 (선택)<input type="number" min="1" value={staff} onChange={e=>setStaff(e.target.value)}/></label></div></>}
-    <label>자료 종류<select value={category} onChange={e=>setCategory(e.target.value)}>{Object.entries(companyCategories).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-    <div className="rights-date-row"><label>시작일 (한국시간)<input type="date" required value={from} onChange={e=>setFrom(e.target.value)}/></label><label>종료일 (포함)<input type="date" required value={until} onChange={e=>setUntil(e.target.value)}/></label></div>
-    <label>검토 기한<input type="datetime-local" required value={due} onChange={e=>setDue(e.target.value)}/></label><p>항목별 최대 366일입니다. 더 긴 기간은 나누어 등록하세요.</p>
-    <button type="submit" disabled={!selected}>본인 범위 확인 항목 추가</button>
-  </fieldset></form></details>}
+  {q.error&&<p role="alert" className="rights-error">{q.error.message}</p>}
+  {open&&<CompanyReviewCreate key={`${request.id}-${request.revision}`} request={request} refresh={refresh}/>}
   {q.data?.items.map(r=><details key={`${r.id}-${r.revision}`}><summary>#{r.id} · {companyCategories[r.category]} · {companyStatuses[r.status]}{new Date(r.due_at)<new Date()&&!['verified','excluded','restricted'].includes(r.status)?' · 기한 경과':''}</summary>
     <p>회사 계정 {r.company_owner_id} · 명단 {r.staff_id||'별도 확인'} · {date(r.from_at)} ~ {date(r.until_at)}</p>
     {r.staff_id?<p>등록 시점 후보 건수: 운행 {r.inventory.trips?.count??0}{r.inventory.trips?.more?'+':''} · 예약 {r.inventory.reservations?.count??0}{r.inventory.reservations?.more?'+':''} · 지출 {r.inventory.expenses?.count??0}{r.inventory.expenses?.more?'+':''}. 본인 자료 확정 건수나 전체 자료 목록이 아닙니다.</p>:<p>명단 번호가 없어 후보 건수는 산정하지 않았습니다. 첨부·스냅샷 등은 별도로 확인하세요.</p>}
@@ -49,6 +34,27 @@ export function AdminCompanyReviews({request,refresh}) {
   {q.data?.items.length===0&&<p>등록된 검토 항목이 없습니다. 회사 자료가 없다는 뜻은 아닙니다.</p>}
   {!!q.data?.events.length&&<details><summary>검토 변경 이력 (최근 100건)</summary>{q.data.events.map(e=><p className="rights-text" key={e.id}>{date(e.created_at)} · #{e.review_id} · {companyStatuses[e.state.status]} · 담당 계정 {e.actor_id}<br/>{e.state.internal_reason||'범위 등록'}{e.state.evidence_reference&&<><br/>근거 {e.state.evidence_reference}</>}</p>)}</details>}
  </section>;
+}
+export function CompanyReviewCreate({request,refresh}){
+ const [selected,setSelected]=useState(''),[owner,setOwner]=useState(''),[staff,setStaff]=useState(''),[category,setCategory]=useState('staff'),[from,setFrom]=useState(''),[until,setUntil]=useState(''),[due,setDue]=useState(request.due_at?local(request.due_at):'');
+ const [candidate,setCandidate]=useState(null),[searching,setSearching]=useState(false);
+ const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ async function create(e){e.preventDefault();if(busy||!selected)return;setBusy(true);setError('');try{
+   const [cid,sid]=selected==='manual'?[Number(owner),staff?Number(staff):null]:selected.split(':').map(Number);
+   const end=new Date(`${until}T00:00:00+09:00`);end.setUTCDate(end.getUTCDate()+1);
+   await api.createCompanyReview(request.id,{revision:request.revision,company_owner_id:cid,staff_id:sid,category,from_at:new Date(`${from}T00:00:00+09:00`).toISOString(),until_at:end.toISOString(),due_at:new Date(due).toISOString()});await refresh();
+ }catch(e){setError(e.message);}finally{setBusy(false);}}
+ return <details><summary>검토 범위 추가</summary><form onSubmit={create}><fieldset disabled={busy}>
+    <div className="rights-actions"><button type="button" disabled={busy} onClick={()=>setSearching(v=>!v)}>{searching?'연결 단서 목록 닫기':'회사·명단 연결 찾기'}</button><button type="button" disabled={busy} onClick={()=>{setSelected('manual');setCandidate(null);setSearching(false);}}>별도 확인한 번호 입력</button></div>
+    {candidate&&<p className="rights-notice">선택한 연결 단서: {candidate.company_name||'회사명 미등록'} · 회사 계정 #{candidate.owner_id} · 명단 #{candidate.staff_id} · {candidate.currently_linked?'현재 연결':'연결 해제 이력'}. 본인 범위는 별도로 확인해야 합니다.</p>}
+    {!!selected&&<button type="button" disabled={busy} onClick={()=>{setSelected('');setCandidate(null);}}>선택 해제</button>}
+    {searching&&<CompanyReviewCandidatePicker key={request.id} requestId={request.id} disabled={busy} onClose={()=>setSearching(false)} onChoose={c=>{if(busy)return;setCandidate(c);setSelected(`${c.owner_id}:${c.staff_id}`);setSearching(false);}}/>}
+    {selected==='manual'&&<><p>이력이 없는 과거 자료는 이름으로 자동 매칭하지 않습니다. 관리자 자료에서 확인한 회사 계정과 명단 번호를 지정한 뒤 본인 확인 근거를 기록하세요.</p><div className="rights-date-row"><label>회사 계정 번호<input type="number" min="1" required value={owner} onChange={e=>setOwner(e.target.value)}/></label><label>명단 번호 (선택)<input type="number" min="1" value={staff} onChange={e=>setStaff(e.target.value)}/></label></div></>}
+    <label>자료 종류<select value={category} onChange={e=>setCategory(e.target.value)}>{Object.entries(companyCategories).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
+    <div className="rights-date-row"><label>시작일 (한국시간)<input type="date" required value={from} onChange={e=>setFrom(e.target.value)}/></label><label>종료일 (포함)<input type="date" required value={until} onChange={e=>setUntil(e.target.value)}/></label></div>
+    <label>검토 기한<input type="datetime-local" required value={due} onChange={e=>setDue(e.target.value)}/></label><p>항목별 최대 366일입니다. 더 긴 기간은 나누어 등록하세요.</p>
+    <button type="submit" disabled={!selected}>본인 범위 확인 항목 추가</button>
+  </fieldset></form>{error&&<p role="alert" className="rights-error">{error}</p>}</details>;
 }
 export function CompanyReviewEditor({row,request,refresh}){
  const [form,setForm]=useState({status:row.status,identity:row.identity,identity_evidence:row.identity_evidence,evidence_reference:row.evidence_reference,internal_reason:row.internal_reason,public_message:row.public_message,due_at:local(row.due_at)});

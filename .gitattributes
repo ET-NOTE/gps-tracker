@@ -122,3 +122,10 @@ docs/evidence/runtime142-20261118/** -text whitespace=-blank-at-eof,-blank-at-eo
 ops/*runtime142*.py text eol=lf
 ops/*tasks142*.py text eol=lf
 ops/check-company-tasks142-ui.mjs text eol=lf
+
+# Round143 exact evidence and source/build line endings.
+docs/evidence/runtime143-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime143*.py text eol=lf
+ops/*tasks143*.py text eol=lf
+ops/check-company-tasks143-ui.mjs text eol=lf
+gps-tracker-api/src/routes/privacy_company.rs text eol=lf

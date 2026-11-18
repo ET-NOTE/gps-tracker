@@ -328,3 +328,15 @@ test('admin company history forwards step-up session and cancellation without fl
  for(const c of calls){assert.equal(c.options.headers.get('X-Fleet-Owner'),null);assert.equal(c.options.headers.get('X-Admin-Session'),'step-142');assert.equal(c.options.signal,control.signal);}
  pending=deferred();const read=f.api.api.adminCompanyTaskEvents(9,{},control.signal);control.abort();pending.resolve(Response.json({items:[{id:1}]}));await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
 });
+
+
+test('admin candidate paging keeps step-up session, literal parameters and cancellation outside fleet scope',async()=>{
+ const calls=[];let pending;const f=await fixture((url,options)=>{calls.push({url,options});return pending?pending.promise:Promise.resolve(Response.json({items:[]}));});
+ f.api.setTokens(token('A'),'refresh-A');f.context.sessionStorage.setItem('gps_admin_session','step-143');
+ (await f.module('lib/fleetSession.js')).setFleetOwner(12);const control=new AbortController();
+ await f.api.api.adminCompanyCandidatePage(9,{after_owner:2,after_staff:51,linked:'unlinked',q:'100%_'},control.signal);await f.api.api.adminCompanyCandidates(9);
+ assert.match(calls[0].url,/after_owner=2&after_staff=51&linked=unlinked&q=100%25_$/);assert.match(calls[1].url,/company-candidates$/);
+ for(const c of calls){assert.equal(c.options.headers.get('X-Fleet-Owner'),null);assert.equal(c.options.headers.get('X-Admin-Session'),'step-143');}
+ assert.equal(calls[0].options.signal,control.signal);
+ pending=deferred();const read=f.api.api.adminCompanyCandidatePage(9,{},control.signal);control.abort();pending.resolve(Response.json({items:[{staff_id:1}]}));await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
+});

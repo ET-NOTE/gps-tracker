@@ -12,6 +12,7 @@ async function components(api={},queries={}) {
  const moduleOf=exports=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [k,v] of Object.entries(exports))this.setExport(k,v);},{context});
  const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
  await m.link(name=>{
+  if(name==='./CompanyReviewCandidatePicker')return moduleOf({CompanyReviewCandidatePicker:({onChoose})=>React.createElement('button',{type:'button',onClick:()=>onChoose({owner_id:20,staff_id:30,company_name:'회사',currently_linked:false})},'과거 연결 선택')});
   if(name==='./PrivacyCompanyTask')return moduleOf({AdminCompanyTasks:({children})=>children,CompanyTaskInbox:()=>null});
   if(name==='react')return moduleOf(React);if(name==='react/jsx-runtime')return moduleOf(jsx);
   if(name==='../api')return moduleOf({api});
@@ -43,9 +44,10 @@ test('public summary cannot render internal evidence or counts; result does not 
 test('scope dates use Korean inclusive days; historical links stay candidates, not identity proof',async()=>{
  let sent;const {AdminCompanyReviews}=await components({createCompanyReview:async(id,b)=>{sent={id,...b};}},{'admin-privacy-company':{items:[],events:[]},'admin-privacy-company-candidates':{items:[{owner_id:20,staff_id:30,company_name:'회사',currently_linked:false}]}});let r;
  await act(async()=>{r=create(React.createElement(AdminCompanyReviews,{request:{id:7,revision:4,status:'in_review',due_at:'2099-01-01'},refresh:async()=>{}}));});
+ await act(async()=>r.root.findAllByType('button').find(b=>b.children.includes('회사·명단 연결 찾기')).props.onClick());
+ await act(async()=>r.root.findAllByType('button').find(b=>b.children.includes('과거 연결 선택')).props.onClick());
  assert.match(JSON.stringify(r.toJSON()),/연결 해제 이력/);assert.match(JSON.stringify(r.toJSON()),/본인 확인의 단서/);
  await act(async()=>{
-  r.root.findAllByType('select')[0].props.onChange({target:{value:'20:30'}});
   r.root.findAllByProps({type:'date'})[0].props.onChange({target:{value:'2026-11-01'}});
   r.root.findAllByProps({type:'date'})[1].props.onChange({target:{value:'2026-11-02'}});
  });
