@@ -1,0 +1,17 @@
+PASS save and byte equality: csv
+PASS save and byte equality: pdf
+PASS save and byte equality: json
+PASS save and byte equality: png
+PASS save and byte equality: jpg
+PASS save and byte equality: webp
+PASS save and byte equality: gif
+PASS save and byte equality: gpx
+PASS save and byte equality: xlsx
+Traceback (most recent call last):
+  File "C:\Users\msb\.codex\worktrees\gps-app-fcm\esp32c3-mini_gps\ops\verify_android139_device.py", line 68, in <module>
+    screenshot('05-export-cancelled.png');result['bottom_sheet_cancelled']=True
+                                                                                
+  File "C:\Users\msb\.codex\worktrees\gps-app-fcm\esp32c3-mini_gps\ops\verify_android139_device.py", line 40, in status
+    time.sleep(.5)
+^^^^^^^^^^^^^^^^^^^
+AssertionError: Status absent: cancelled

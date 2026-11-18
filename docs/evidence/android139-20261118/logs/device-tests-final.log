@@ -1,0 +1,16 @@
+PASS previously saved and byte equality: csv
+PASS previously saved and byte equality: pdf
+PASS previously saved and byte equality: json
+PASS previously saved and byte equality: png
+PASS previously saved and byte equality: jpg
+PASS previously saved and byte equality: webp
+PASS previously saved and byte equality: gif
+PASS previously saved and byte equality: gpx
+PASS previously saved and byte equality: xlsx
+[Warning] Multiple displays were found, but no display id was specified! Defaulting to the first display found, however this default is not guaranteed to be consistent across captures. A display id should be specified.
+A display ID can be specified with the [-d display-id] option.
+See "dumpsys SurfaceFlinger --display-id" for valid display IDs.
+[Warning] Multiple displays were found, but no display id was specified! Defaulting to the first display found, however this default is not guaranteed to be consistent across captures. A display id should be specified.
+A display ID can be specified with the [-d display-id] option.
+See "dumpsys SurfaceFlinger --display-id" for valid display IDs.
+PASS share opened only, both cancellation paths; no account/API changes
