@@ -340,3 +340,13 @@ test('admin candidate paging keeps step-up session, literal parameters and cance
  assert.equal(calls[0].options.signal,control.signal);
  pending=deferred();const read=f.api.api.adminCompanyCandidatePage(9,{},control.signal);control.abort();pending.resolve(Response.json({items:[{staff_id:1}]}));await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
 });
+
+test('admin review event pages carry step-up/cursor/filters and abort without company delegation',async()=>{
+ const calls=[];let pending;const f=await fixture((url,options)=>{calls.push({url,options});return pending?pending.promise:Promise.resolve(Response.json({items:[]}));});
+ f.api.setTokens(token('A'),'refresh-A');f.context.sessionStorage.setItem('gps_admin_session','step-144');
+ (await f.module('lib/fleetSession.js')).setFleetOwner(12);const control=new AbortController();
+ await f.api.api.adminCompanyReviewEvents(9,{before:51,status:'verified',review_id:7},control.signal);
+ assert.match(calls[0].url,/requests\/9\/company-review-events\?before=51&status=verified&review_id=7$/);
+ assert.equal(calls[0].options.headers.get('X-Fleet-Owner'),null);assert.equal(calls[0].options.headers.get('X-Admin-Session'),'step-144');assert.equal(calls[0].options.signal,control.signal);
+ pending=deferred();const read=f.api.api.adminCompanyReviewEvents(9,{},control.signal);control.abort();pending.resolve(Response.json({items:[{id:1}]}));await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
+});

@@ -883,6 +883,10 @@
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
+  "privacy_company.rs GET /admin/privacy/requests/:id/company-review-events": {
+    "class": "non_location",
+    "reason": "Admin-only recorded company review decisions; explicit projection excludes company inventory/location/file bytes, protected by existing admin security and request audit."
+  },
   "privacy_company.rs GET /admin/privacy/requests/:id/company-reviews": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."

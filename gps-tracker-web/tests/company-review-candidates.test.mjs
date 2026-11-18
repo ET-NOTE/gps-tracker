@@ -6,7 +6,7 @@ async function setup(){
  const api={adminCompanyReviews:async()=>({items:[],events:[]}),adminCompanyCandidatePage:(id,params,signal)=>new Promise((resolve,reject)=>calls.push({id,params,signal,resolve,reject})),createCompanyReview:(id,body)=>new Promise((resolve,reject)=>writes.push({id,body,resolve,reject}))};
  const of=v=>new vm.SyntheticModule(Object.keys(v),function(){for(const[k,x]of Object.entries(v))this.setExport(k,x);},{context});
  async function load(file,picker){const source=await readFile(new URL('../src/components/'+file+'.jsx',import.meta.url),'utf8');const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
-  await m.link(name=>name==='./CompanyReviewCandidatePicker'?picker:of(name==='./PrivacyCompanyTask'?{AdminCompanyTasks:({children})=>children}:name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?rq:{api}));await m.evaluate();return m;}
+  await m.link(name=>name==='./CompanyReviewCandidatePicker'?picker:of(name==='./CompanyReviewHistory'?{CompanyReviewHistory:()=>null}:name==='./PrivacyCompanyTask'?{AdminCompanyTasks:({children})=>children}:name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?rq:{api}));await m.evaluate();return m;}
  const picker=await load('CompanyReviewCandidatePicker'),panel=await load('PrivacyCompanyReview',picker);
  const client=new rq.QueryClient({defaultOptions:{queries:{retry:false}}});let renderer;
  const request=(id=12,revision=3)=>({id,revision,status:'in_review',kind:'access',due_at:'2099-01-01'});

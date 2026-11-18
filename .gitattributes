@@ -129,3 +129,9 @@ ops/*runtime143*.py text eol=lf
 ops/*tasks143*.py text eol=lf
 ops/check-company-tasks143-ui.mjs text eol=lf
 gps-tracker-api/src/routes/privacy_company.rs text eol=lf
+
+# Round144 evidence and repeatable runner sources.
+docs/evidence/runtime144-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime144*.py text eol=lf
+ops/*tasks144*.py text eol=lf
+ops/check-company-tasks144-ui.mjs text eol=lf

@@ -1,3 +1,4 @@
+import {CompanyReviewHistory} from './CompanyReviewHistory';
 import {CompanyReviewCandidatePicker} from './CompanyReviewCandidatePicker';
 import {AdminCompanyTasks} from './PrivacyCompanyTask';
 import {useState} from 'react';
@@ -32,7 +33,7 @@ export function AdminCompanyReviews({request,refresh}) {
     <AdminCompanyTasks row={r} request={request} refresh={refresh}>{open?<CompanyReviewEditor row={r} request={request} refresh={refresh}/>:<p>{r.public_message}</p>}</AdminCompanyTasks>
   </details>)}
   {q.data?.items.length===0&&<p>등록된 검토 항목이 없습니다. 회사 자료가 없다는 뜻은 아닙니다.</p>}
-  {!!q.data?.events.length&&<details><summary>검토 변경 이력 (최근 100건)</summary>{q.data.events.map(e=><p className="rights-text" key={e.id}>{date(e.created_at)} · #{e.review_id} · {companyStatuses[e.state.status]} · 담당 계정 {e.actor_id}<br/>{e.state.internal_reason||'범위 등록'}{e.state.evidence_reference&&<><br/>근거 {e.state.evidence_reference}</>}</p>)}</details>}
+  <CompanyReviewHistory key={`history-${request.id}-${request.revision}`} requestId={request.id} reviews={q.data?.items||[]} statuses={companyStatuses} categories={companyCategories}/>
  </section>;
 }
 export function CompanyReviewCreate({request,refresh}){

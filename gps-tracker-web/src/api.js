@@ -434,6 +434,7 @@ export const api = {
   },
   privacyCompanyReviews: id => req('GET', `/privacy/requests/${id}/company-reviews`),
   adminCompanyReviews: id => req('GET', `/admin/privacy/requests/${id}/company-reviews`),
+  adminCompanyReviewEvents: (id,params={},signal) => req('GET', `/admin/privacy/requests/${id}/company-review-events?`+new URLSearchParams(params),undefined,true,{signal}),
   adminCompanyCandidates: id => req('GET', `/admin/privacy/requests/${id}/company-candidates`),
   adminCompanyCandidatePage: (id,params={},signal) => req('GET', `/admin/privacy/requests/${id}/company-candidates?`+new URLSearchParams(params),undefined,true,{signal}),
   createCompanyReview: (id,body) => req('POST', `/admin/privacy/requests/${id}/company-reviews`,body),
