@@ -4,6 +4,7 @@ import {api} from '../api';
 import {saveBlob,fileSaveMessage} from '../lib/fileDownload';
 
 import {useCompanyTaskQueue,CompanyTaskTools} from './CompanyTaskQueue';
+import {CompanyTaskHistory} from './CompanyTaskHistory';
 
 const states={requested:'처리 보고 요청',submitted:'담당자 검토 중',changes_requested:'보완 요청',accepted:'담당자 확인',revoked:'요청 회수'};
 const kinds={access:'정보 열람',rectification:'정보 정정',erasure:'정보 삭제',account_closure:'회원 탈퇴'};
@@ -90,13 +91,13 @@ export function CompanySubmissionForm({task,refresh,onBusy,disabled=false,revali
 }
 
 export function AdminCompanyTasks({row,request,refresh,children}){
- const q=useQuery({queryKey:['admin-company-tasks',row.id,request.revision],queryFn:()=>api.adminCompanyTasks(row.id),retry:false});
+ const q=useQuery({queryKey:['admin-company-tasks',row.id,request.revision],queryFn:({signal})=>api.adminCompanyTasks(row.id,signal),retry:false,staleTime:0,gcTime:0,refetchOnWindowFocus:false,refetchOnReconnect:false});
  const [instructions,setInstructions]=useState(''),[expires,setExpires]=useState(local(Date.now()+7*86400000)),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const active=q.data?.items.some(x=>x.task.status!=='revoked');
  const renew=async()=>{await q.refetch();await refresh();};
  async function publish(e){e.preventDefault();setBusy(true);setError('');try{await api.publishCompanyTask(row.id,{request_revision:request.revision,review_revision:row.revision,instructions,expires_at:new Date(expires).toISOString(),confirmed});await renew();}catch(e){setError(e.message);}finally{setBusy(false);}}
  return <section className="rights-impact"><h4>회사 처리 결과·증빙</h4>
-  {q.error?<p role="alert">{q.error.message} <button onClick={()=>q.refetch()}>다시 확인</button></p>:!q.data?<p>제출 요청 확인 중…</p>:<>
+  {q.isFetching?<p role="status">제출 요청 확인 중…</p>:q.error?<p role="alert">{q.error.message} <button onClick={()=>q.refetch()}>다시 확인</button></p>:!q.data?<p>제출 요청 확인 중…</p>:<>
    {!active&&children}
    {active&&open(request)&&<p>회사 제출 요청이 연결되어 있습니다. 아래에서 증빙을 검토하세요. 대장을 직접 수정하려면 요청을 회수하세요.</p>}
    {!active&&open(request)&&row.identity==='confirmed'&&row.staff_id&&!['verified','excluded','restricted'].includes(row.status)&&<details><summary>회사에 처리 보고 요청</summary><form onSubmit={publish}><fieldset disabled={busy}>
@@ -106,7 +107,7 @@ export function AdminCompanyTasks({row,request,refresh,children}){
     <label className="rights-confirm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> 본인 범위와 해당 회사에 공개할 내용을 확인했습니다.</label><button type="submit" disabled={!confirmed}>회사 계정에 요청 게시</button>
    </fieldset></form></details>}
    {q.data.items.map(x=><CompanyTaskDecision key={`${x.task.id}-${x.task.revision}`} item={x} row={row} request={request} refresh={renew}/>)}
-   {!!q.data.events.length&&<details><summary>제출·증빙 확인 이력 (최근 100건)</summary>{q.data.events.map(e=><p key={e.id}>#{e.task_id} · {date(e.created_at)} · {({published:'게시',submitted:'제출',downloaded:'증빙 응답 생성',accepted:'검토 반영',changes_requested:'보완 요청',revoked:'회수'})[e.action]} · 계정 {e.actor_id}</p>)}</details>}
+   <CompanyTaskHistory key={`${row.id}-${request.revision}`} reviewId={row.id} tasks={q.data.items.map(x=>x.task)}/>
   </>}{error&&<p role="alert">{error}</p>}
  </section>;
 }

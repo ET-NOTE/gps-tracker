@@ -28,6 +28,10 @@ pub fn router() -> Router<AppState> {
             "/admin/privacy/company-reviews/:id/tasks",
             get(admin_list).post(publish),
         )
+        .route(
+            "/admin/privacy/company-reviews/:id/task-events",
+            get(admin_events),
+        )
         .route("/admin/privacy/company-tasks/:id/decision", post(decide))
         .route("/admin/privacy/company-tasks/:id/revoke", post(revoke))
         .route(
@@ -240,6 +244,48 @@ async fn admin_list(
     let events:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(e) FROM privacy_company_task_events e JOIN privacy_company_tasks t ON t.id=e.task_id WHERE t.review_id=$1 ORDER BY e.id DESC LIMIT 100").bind(id).fetch_all(&mut *tx).await?;
     tx.commit().await?;
     Ok(Json(json!({"items":items,"events":events})))
+}
+#[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EventPage {
+    before: Option<i64>,
+    task_id: Option<i64>,
+    action: Option<String>,
+}
+impl EventPage {
+    fn validate(&self) -> AppResult<()> {
+        if self.before.is_some_and(|n| n <= 0)
+            || self.task_id.is_some_and(|n| n <= 0)
+            || self.action.as_deref().is_some_and(|s| !matches!(s,
+                "published" | "submitted" | "downloaded" | "accepted" | "changes_requested" | "revoked"))
+        {
+            return Err(AppError::BadRequest("회사 처리 이력 조회 조건이 올바르지 않습니다.".into()));
+        }
+        Ok(())
+    }
+}
+async fn admin_events(
+    State(s): State<AppState>,
+    _: AdminUser,
+    Path(id): Path<i64>,
+    Query(p): Query<EventPage>,
+) -> AppResult<Json<Value>> {
+    p.validate()?;
+    let mut read = crate::services::location_read_budget::ReadQuery::start(&s.db).await?;
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM privacy_company_reviews WHERE id=$1)")
+        .bind(id).fetch_one(read.connection()).await
+        .map_err(crate::services::location_read_budget::query_error)?;
+    if !exists { return Err(AppError::NotFound); }
+    // Metadata only: never join proof bytes, requester identity or company inventory.
+    let mut rows: Vec<Value> = sqlx::query_scalar("SELECT jsonb_build_object('id',e.id,'task_id',e.task_id,'actor_id',e.actor_id,'action',e.action,'submission_id',e.submission_id,'detail',e.detail,'created_at',e.created_at) FROM privacy_company_task_events e JOIN privacy_company_tasks t ON t.id=e.task_id WHERE t.review_id=$1 AND ($2::bigint IS NULL OR e.id<$2) AND ($3::bigint IS NULL OR e.task_id=$3) AND ($4::text IS NULL OR e.action=$4) ORDER BY e.id DESC LIMIT 51")
+        .bind(id).bind(p.before).bind(p.task_id).bind(p.action)
+        .fetch_all(read.connection()).await
+        .map_err(crate::services::location_read_budget::query_error)?;
+    read.finish().await?;
+    let more = rows.len() > 50;
+    rows.truncate(50);
+    let next = if more { rows.last().and_then(|r| r["id"].as_i64()) } else { None };
+    Ok(Json(json!({"items":rows,"next":next})))
 }
 #[derive(Deserialize)]
 struct Publish {
@@ -595,5 +641,22 @@ mod inbox_filter_tests {
                 .is_err());
         }
         assert!(serde_json::from_value::<Page>(json!({"owner_id":42})).is_err());
+    }
+}
+
+#[cfg(test)]
+mod event_filter_tests {
+    use super::EventPage;
+    use serde_json::json;
+    #[test]
+    fn history_conditions_are_bounded_and_explicit() {
+        assert!(EventPage::default().validate().is_ok());
+        for action in ["published","submitted","downloaded","accepted","changes_requested","revoked"] {
+            assert!(serde_json::from_value::<EventPage>(json!({"before":9,"task_id":3,"action":action})).unwrap().validate().is_ok());
+        }
+        for value in [json!({"before":0}),json!({"before":-1}),json!({"task_id":0}),json!({"task_id":-1}),json!({"action":""}),json!({"action":"read"})] {
+            assert!(serde_json::from_value::<EventPage>(value).unwrap().validate().is_err());
+        }
+        assert!(serde_json::from_value::<EventPage>(json!({"review_id":12})).is_err());
     }
 }

@@ -13,6 +13,7 @@ async function components(api={},queries={},save=async()=>({status:'saved'})){
  const source=await readFile(new URL('../src/components/PrivacyCompanyTask.jsx',import.meta.url),'utf8');
  const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
  await m.link(name=>{
+  if(name==='./CompanyTaskHistory')return moduleOf({CompanyTaskHistory:()=>null});
   if(name==='./CompanyTaskQueue')return moduleOf({useCompanyTaskQueue:()=>null,CompanyTaskTools:()=>null});
   if(name==='react')return moduleOf(React);if(name==='react/jsx-runtime')return moduleOf(jsx);
   if(name==='../api')return moduleOf({api});if(name==='../lib/fileDownload')return moduleOf({fileSaveMessage,saveBlob:save});

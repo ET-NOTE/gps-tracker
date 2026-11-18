@@ -17,7 +17,7 @@ async function setup(){
  async function load(file,queue){
   const source=await readFile(new URL('../src/components/'+file+'.jsx',import.meta.url),'utf8');
   const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
-  await m.link(name=>name==='./CompanyTaskQueue'?queue:exportsOf(name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?rq:name==='../lib/fileDownload'?{saveBlob:async()=>({status:'saved'}),fileSaveMessage:()=>''}:{api}));await m.evaluate();return m;
+  await m.link(name=>name==='./CompanyTaskHistory'?exportsOf({CompanyTaskHistory:()=>null}):name==='./CompanyTaskQueue'?queue:exportsOf(name==='react'?React:name==='react/jsx-runtime'?jsx:name==='@tanstack/react-query'?rq:name==='../lib/fileDownload'?{saveBlob:async()=>({status:'saved'}),fileSaveMessage:()=>''}:{api}));await m.evaluate();return m;
  }
  const queue=await load('CompanyTaskQueue'),panel=await load('PrivacyCompanyTask',queue);
  const client=new rq.QueryClient({defaultOptions:{queries:{retry:false}}});let renderer;

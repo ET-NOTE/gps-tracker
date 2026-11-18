@@ -116,3 +116,9 @@ ops/*tasks141*.py text eol=lf
 # Rustfmt rewrote this source with LF; keep archive/checkouts identical to the tested file.
 gps-tracker-api/src/routes/privacy_company_tasks.rs text eol=lf
 ops/check-company-tasks141-ui.mjs text eol=lf
+
+# Round142 original functional evidence and Linux runners.
+docs/evidence/runtime142-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime142*.py text eol=lf
+ops/*tasks142*.py text eol=lf
+ops/check-company-tasks142-ui.mjs text eol=lf

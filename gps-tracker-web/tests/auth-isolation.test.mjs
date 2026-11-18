@@ -317,3 +317,14 @@ test('company task inbox/detail preserve personal scope and propagate cancellati
  assert.equal(calls[0].options.signal,control.signal);assert.equal(calls[1].options.signal,control.signal);
  pending=deferred();const read=f.api.api.companyTask(51,control.signal);control.abort();pending.resolve(Response.json({task:{id:51}}));await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
 });
+
+
+test('admin company history forwards step-up session and cancellation without fleet delegation',async()=>{
+ const calls=[];let pending;const f=await fixture((url,options)=>{calls.push({url,options});return pending?pending.promise:Promise.resolve(Response.json({items:[]}));});
+ f.api.setTokens(token('A'),'refresh-A');f.context.sessionStorage.setItem('gps_admin_session','step-142');
+ (await f.module('lib/fleetSession.js')).setFleetOwner(12);const control=new AbortController();
+ await f.api.api.adminCompanyTaskEvents(9,{before:51,action:'downloaded',task_id:7},control.signal);await f.api.api.adminCompanyTasks(9,control.signal);
+ assert.match(calls[0].url,/company-reviews\/9\/task-events\?before=51&action=downloaded&task_id=7$/);
+ for(const c of calls){assert.equal(c.options.headers.get('X-Fleet-Owner'),null);assert.equal(c.options.headers.get('X-Admin-Session'),'step-142');assert.equal(c.options.signal,control.signal);}
+ pending=deferred();const read=f.api.api.adminCompanyTaskEvents(9,{},control.signal);control.abort();pending.resolve(Response.json({items:[{id:1}]}));await assert.rejects(read,{name:'AbortError'});f.queryClient.clear();
+});

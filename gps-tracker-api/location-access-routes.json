@@ -899,6 +899,10 @@
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
+  "privacy_company_tasks.rs GET /admin/privacy/company-reviews/:id/task-events": {
+    "class": "non_location",
+    "reason": "Admin-only company task audit metadata; explicit projection excludes location/file bytes, protected by existing admin security and request audit."
+  },
   "privacy_company_tasks.rs GET /admin/privacy/company-reviews/:id/tasks": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."

@@ -73,3 +73,5 @@ Thumbs.db
 !docs/evidence/runtime141-20261118/*.log
 __pycache__/
 *.pyc
+
+!docs/evidence/runtime142-20261118/*.log
