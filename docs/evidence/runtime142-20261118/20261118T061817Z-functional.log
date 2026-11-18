@@ -1,0 +1,8 @@
+PASS admin security ON: anonymous/user/unverified admin/handler/delegation denied; enrolled officer and operator allowed
+PASS 107 historical events traverse50/50/7 exactly, strict metadata/no-store, sealed proof excluded, other review excluded, source/evidence hashes unchanged
+PASS 18 action/task combinations; exact100 response events end after50/50; invalid conditions400, foreign task empty, unknown review404
+PASS history GET leaves admin access/response evidence, never creates proof-download attestation; audit-write failure fails closed and recovers
+PASS one blocked history SELECT cancelled by TLS disconnect, SQL ends and next read200; no sustained/concurrent load
+PASS IP restriction ignores spoofed forwarding, disabled principal and revoked step-up session deny saved endpoint without changing evidence
+PASS legacy latest100 API unchanged; revoked/expired tasks and cancelled parent remain auditable by authorized admin; schema114 and immutable evidence preserved
+PASS all 7 functional groups

@@ -1,0 +1,46 @@
+{
+  "at": "2026-11-18T06:18:21Z",
+  "passed": [
+    "admin security ON: anonymous/user/unverified admin/handler/delegation denied; enrolled officer and operator allowed",
+    "107 historical events traverse50/50/7 exactly, strict metadata/no-store, sealed proof excluded, other review excluded, source/evidence hashes unchanged",
+    "18 action/task combinations; exact100 response events end after50/50; invalid conditions400, foreign task empty, unknown review404",
+    "history GET leaves admin access/response evidence, never creates proof-download attestation; audit-write failure fails closed and recovers",
+    "one blocked history SELECT cancelled by TLS disconnect, SQL ends and next read200; no sustained/concurrent load",
+    "IP restriction ignores spoofed forwarding, disabled principal and revoked step-up session deny saved endpoint without changing evidence",
+    "legacy latest100 API unchanged; revoked/expired tasks and cancelled parent remain auditable by authorized admin; schema114 and immutable evidence preserved"
+  ],
+  "schema": 114,
+  "api_sha256": "95f5e07e37017d81f0c828989ac571dd57dd9e3f0a4b45c18749e8ec9c6ce95e",
+  "fixture": {
+    "accounts": 5,
+    "events": 107,
+    "foreign_events": 1,
+    "tasks": 3,
+    "page_lengths": [
+      50,
+      50,
+      7
+    ],
+    "sealed_proofs": 1
+  },
+  "read_only_hashes": {
+    "privacy_requests": "b4f790facd1581fb3300abbdd1ee19cc",
+    "privacy_company_reviews": "9b85c6517eee95b61053c007a87b958f",
+    "privacy_company_tasks": "786eccafc2cbfe93d22c420528e8817a",
+    "privacy_company_submissions": "161b57ad3ca21c966bea822fca8c735b",
+    "privacy_company_task_events": "1944c2914ec402cb0dc947354c90c577"
+  },
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false,
+  "environment": "internal TLS1.2; PostgreSQL14/Timescale; separated gps_runtime; encryption ON; admin security ON with TOTP and IP"
+}
