@@ -1,0 +1,118 @@
+TAP version 13
+# (node:22720) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: binding search is lazy; search aborts old results, resets cursor and preserves literal text across pages
+ok 1 - binding search is lazy; search aborts old results, resets cursor and preserves literal text across pages
+  ---
+  duration_ms: 743.8207
+  ...
+# Subtest: choosing an old binding keeps its option, does not change requested dates or submit without user action
+ok 2 - choosing an old binding keeps its option, does not change requested dates or submit without user action
+  ---
+  duration_ms: 195.9788
+  ...
+# Subtest: reconsent cannot change identity through the binding picker
+ok 3 - reconsent cannot change identity through the binding picker
+  ---
+  duration_ms: 61.1182
+  ...
+# Subtest: binding errors are not empty results; cancel/retry/feature OFF and close discard pending or late rows
+ok 4 - binding errors are not empty results; cancel/retry/feature OFF and close discard pending or late rows
+  ---
+  duration_ms: 345.8856
+  ...
+# Subtest: mapping filter change closes the picker and discards old company selection
+ok 5 - mapping filter change closes the picker and discards old company selection
+  ---
+  duration_ms: 121.7403
+  ...
+# (node:5664) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company pages preserve filter, go back and reset to newest without stale rows
+ok 6 - company pages preserve filter, go back and reset to newest without stale rows
+  ---
+  duration_ms: 588.8705
+  ...
+# Subtest: filter navigation aborts location read and clears pending correction; late coordinates never return
+ok 7 - filter navigation aborts location read and clears pending correction; late coordinates never return
+  ---
+  duration_ms: 149.7799
+  ...
+# Subtest: refresh closes displayed coordinates; failed mapping refresh cannot retain authority or show empty state
+ok 8 - refresh closes displayed coordinates; failed mapping refresh cannot retain authority or show empty state
+  ---
+  duration_ms: 151.9212
+  ...
+# Subtest: cancel aborts list and discards late data; explicit retry and unmount clear queries
+ok 9 - cancel aborts list and discards late data; explicit retry and unmount clear queries
+  ---
+  duration_ms: 120.3935
+  ...
+# (node:27804) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: personal mapping next/back/first preserve filter and discard stale rows
+ok 10 - personal mapping next/back/first preserve filter and discard stale rows
+  ---
+  duration_ms: 622.1421
+  ...
+# Subtest: cancel and filter abort reads; late rows do not revive consent and cache is removed
+ok 11 - cancel and filter abort reads; late rows do not revive consent and cache is removed
+  ---
+  duration_ms: 148.9515
+  ...
+# Subtest: old-page consent is locked through mutation/refetch; failed revalidation hides stale actions
+ok 12 - old-page consent is locked through mutation/refetch; failed revalidation hides stale actions
+  ---
+  duration_ms: 212.6944
+  ...
+# Subtest: unread notices paginate without auto-reading; acknowledge/retry preserve current filter and page
+ok 13 - unread notices paginate without auto-reading; acknowledge/retry preserve current filter and page
+  ---
+  duration_ms: 270.0677
+  ...
+# Subtest: notice refetch failure is not an empty inbox; cancel/retry resumes only explicitly
+ok 14 - notice refetch failure is not an empty inbox; cancel/retry resumes only explicitly
+  ---
+  duration_ms: 167.3188
+  ...
+# (node:28548) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: subject confirms exact revision and consent version; conflict remains unconfirmed and visible
+ok 15 - subject confirms exact revision and consent version; conflict remains unconfirmed and visible
+  ---
+  duration_ms: 478.0989
+  ...
+# Subtest: feature OFF cannot disable existing consent revocation
+ok 16 - feature OFF cannot disable existing consent revocation
+  ---
+  duration_ms: 6.9037
+  ...
+# Subtest: provider acceptance does not auto-acknowledge inbox; retry errors stay visible
+ok 17 - provider acceptance does not auto-acknowledge inbox; retry errors stay visible
+  ---
+  duration_ms: 4.9866
+  ...
+# Subtest: company correction posts lineage revision and clears displayed location on submit
+ok 18 - company correction posts lineage revision and clears displayed location on submit
+  ---
+  duration_ms: 6.2941
+  ...
+# Subtest: reconsent locks identity and exact interval, ineffective mapping cannot show locations
+ok 19 - reconsent locks identity and exact interval, ineffective mapping cannot show locations
+  ---
+  duration_ms: 6.8126
+  ...
+# Subtest: subject sees replacement and external scope limits before confirming
+ok 20 - subject sees replacement and external scope limits before confirming
+  ---
+  duration_ms: 3.5786
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1659.797

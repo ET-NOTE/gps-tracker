@@ -1,0 +1,51 @@
+{
+  "at": "2026-11-18T05:22:03Z",
+  "schema": 114,
+  "passed": [
+    "207 mappings and107 visible notices traverse exactly; defaults200/100 remain; subject-only/no-store; owner, impersonation and fleet context cannot read for subject; GET changes no rows",
+    "five mapping states and read/unread filters exact; full100/full50 final pages have no phantom cursor; invalid, cross-kind and identity-override parameters400; hidden delivery states excluded",
+    "one deliberately blocked request per endpoint cancels SQL on disconnect; retry200 and read slot released; no sustained load",
+    "old-page fresh consent uses exact revision/version; foreign404 stale409 bad-version400; confirm/reject leave pending filter; withdrawal removes effective mapping",
+    "explicit acknowledgement idempotent and removes unread row; review-only retry records one attempt; foreign/hidden notices protected; provider acceptance never implies read",
+    "feature OFF retains historical reads and existing withdrawal; new consent409; no production policy changed"
+  ],
+  "api_sha256": "757df0432ddc61a2c510880157739b8b5b336a16e58278711f3c439cc89eb8e9",
+  "fixture": {
+    "accounts": 3,
+    "mappings": 208,
+    "notices": 110,
+    "page_lengths": {
+      "/privacy/subject-mappings": [
+        50,
+        50,
+        50,
+        50,
+        7
+      ],
+      "/privacy/provision-notices": [
+        50,
+        50,
+        7
+      ]
+    }
+  },
+  "read_only_hashes": {
+    "location_subject_mappings": "c62e4343854c92ad6c18a870d221c23e",
+    "location_subject_actions": "d41d8cd98f00b204e9800998ecf8427e",
+    "location_provision_notices": "af1f09bd7d10d9ccf557adf231664c47",
+    "location_notice_attempts": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false,
+  "environment": "internal TLS1.2; PostgreSQL14/Timescale; separated gps_runtime; synthetic only"
+}

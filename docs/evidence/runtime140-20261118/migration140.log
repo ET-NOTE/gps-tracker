@@ -1,0 +1,7 @@
+Starting gps121-migration.service...
+{"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2918"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+[2m2026-11-18T05:28:22.493370Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-18T05:28:22.574698Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "role" of relation "users" already exists, skipping
+[2m2026-11-18T05:28:23.311945Z[0m [33m WARN[0m [2msqlx::postgres::notice[0m[2m:[0m column "source" should be used for segmenting or ordering
+gps121-migration.service: Deactivated successfully.
+Finished gps121-migration.service.

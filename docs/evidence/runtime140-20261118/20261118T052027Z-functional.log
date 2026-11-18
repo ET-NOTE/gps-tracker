@@ -1,0 +1,10 @@
+PASS 207 mappings and107 visible notices traverse exactly; defaults200/100 remain; subject-only/no-store; owner, impersonation and fleet context cannot read for subject; GET changes no rows
+PASS five mapping states and read/unread filters exact; full100/full50 final pages have no phantom cursor; invalid, cross-kind and identity-override parameters400; hidden delivery states excluded
+PASS one deliberately blocked request per endpoint cancels SQL on disconnect; retry200 and read slot released; no sustained load
+PASS old-page fresh consent uses exact revision/version; foreign404 stale409 bad-version400; confirm/reject leave pending filter; withdrawal removes effective mapping
+Traceback (most recent call last):
+  File "/opt/gps121/test_personal_provision140.py", line 164, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_personal_provision140.py", line 140, in main
+    assert t.call('POST',f'{NOTICE}/{notice_ids[107]}/read',{},driver)[0]==404
+AssertionError
