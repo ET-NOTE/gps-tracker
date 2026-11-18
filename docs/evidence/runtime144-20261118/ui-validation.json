@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-18T08:22:50.342Z",
+  "environment": "actual AdminCompanyReviews/React Query and Edge; synthetic local API",
+  "checks": [
+    "cancelled request history107 decisions50/50/7, back and final next disabled",
+    "historical status/review filters reset first page and old fields visible",
+    "390px long evidence reference wraps without overflow",
+    "empty response distinct from access error; explicit retry",
+    "close aborts and reopen resets filters; cancellation removes old rows",
+    "open request creation remains alongside history without duplicate React keys or nested forms"
+  ],
+  "errors": []
+}

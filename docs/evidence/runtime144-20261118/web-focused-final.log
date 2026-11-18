@@ -1,0 +1,193 @@
+TAP version 13
+# (node:25644) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: new account never reuses previous account query cache
+ok 1 - new account never reuses previous account query cache
+  ---
+  duration_ms: 32.2127
+  ...
+# Subtest: company requests carry explicit scope; personal history remains unscoped
+ok 2 - company requests carry explicit scope; personal history remains unscoped
+  ---
+  duration_ms: 12.783
+  ...
+# Subtest: company switch cancels late JSON and deferred private download before transmission
+ok 3 - company switch cancels late JSON and deferred private download before transmission
+  ---
+  duration_ms: 7.5325
+  ...
+# Subtest: late A refresh (200) cannot replace or log out B
+ok 4 - late A refresh (200) cannot replace or log out B
+  ---
+  duration_ms: 11.4094
+  ...
+# Subtest: late A refresh (401) cannot replace or log out B
+ok 5 - late A refresh (401) cannot replace or log out B
+  ---
+  duration_ms: 7.196
+  ...
+# Subtest: late account data cannot complete after login changes
+ok 6 - late account data cannot complete after login changes
+  ---
+  duration_ms: 7.8492
+  ...
+# Subtest: logout prevents a pending refresh from resurrecting a session
+ok 7 - logout prevents a pending refresh from resurrecting a session
+  ---
+  duration_ms: 6.8169
+  ...
+# Subtest: CSV, XLSX and multipart use session login, and only retry rejected authentication
+ok 8 - CSV, XLSX and multipart use session login, and only retry rejected authentication
+  ---
+  duration_ms: 11.0327
+  ...
+# Subtest: deferred document download reads rotated token but rejects a different account
+ok 9 - deferred document download reads rotated token but rejects a different account
+  ---
+  duration_ms: 7.694
+  ...
+# Subtest: report busy retry preserves company and stops after company/account changes
+ok 10 - report busy retry preserves company and stops after company/account changes
+  ---
+  duration_ms: 53.1878
+  ...
+# Subtest: a late file body is blocked after account switch; failed writes are not retried
+ok 11 - a late file body is blocked after account switch; failed writes are not retried
+  ---
+  duration_ms: 11.9398
+  ...
+# Subtest: shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+ok 12 - shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+  ---
+  duration_ms: 9.9786
+  ...
+# Subtest: device mutations cancel pre-write snapshots and offline provenance survives shared state
+ok 13 - device mutations cancel pre-write snapshots and offline provenance survives shared state
+  ---
+  duration_ms: 9.72
+  ...
+# Subtest: admin step-up never leaks to personal requests; sign-out clears elevated session
+ok 14 - admin step-up never leaks to personal requests; sign-out clears elevated session
+  ---
+  duration_ms: 7.7217
+  ...
+# Subtest: protected writes propose first; only explicit approved execution sends original mutation
+ok 15 - protected writes propose first; only explicit approved execution sends original mutation
+  ---
+  duration_ms: 7.056
+  ...
+# Subtest: wrong MFA credentials are not retried through ordinary refresh
+ok 16 - wrong MFA credentials are not retried through ordinary refresh
+  ---
+  duration_ms: 6.9282
+  ...
+# Subtest: location history aborts the HTTP request on logout; saved data is not resurrected
+ok 17 - location history aborts the HTTP request on logout; saved data is not resurrected
+  ---
+  duration_ms: 6.7318
+  ...
+# Subtest: logout cancels a real 429 backoff before a replacement account can send it
+ok 18 - logout cancels a real 429 backoff before a replacement account can send it
+  ---
+  duration_ms: 7.6463
+  ...
+# Subtest: personal provision page filters and abort signal remain outside company scope
+ok 19 - personal provision page filters and abort signal remain outside company scope
+  ---
+  duration_ms: 8.3744
+  ...
+# Subtest: company task inbox/detail preserve personal scope and propagate cancellation
+ok 20 - company task inbox/detail preserve personal scope and propagate cancellation
+  ---
+  duration_ms: 7.1861
+  ...
+# Subtest: admin company history forwards step-up session and cancellation without fleet delegation
+ok 21 - admin company history forwards step-up session and cancellation without fleet delegation
+  ---
+  duration_ms: 9.85
+  ...
+# Subtest: admin candidate paging keeps step-up session, literal parameters and cancellation outside fleet scope
+ok 22 - admin candidate paging keeps step-up session, literal parameters and cancellation outside fleet scope
+  ---
+  duration_ms: 8.9542
+  ...
+# Subtest: admin review event pages carry step-up/cursor/filters and abort without company delegation
+ok 23 - admin review event pages carry step-up/cursor/filters and abort without company delegation
+  ---
+  duration_ms: 7.2682
+  ...
+# (node:36552) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: candidate pages use paired cursor, search/state reset first page and nested search never submits review
+ok 24 - candidate pages use paired cursor, search/state reset first page and nested search never submits review
+  ---
+  duration_ms: 322.4486
+  ...
+# Subtest: search cancellation, errors and closing suppress stale choices; cancelled previous restarts
+ok 25 - search cancellation, errors and closing suppress stale choices; cancelled previous restarts
+  ---
+  duration_ms: 315.0055
+  ...
+# Subtest: old candidate selection survives reopen/filter, posts inclusive KST scope and locks choices during submission
+ok 26 - old candidate selection survives reopen/filter, posts inclusive KST scope and locks choices during submission
+  ---
+  duration_ms: 317.4338
+  ...
+# Subtest: switching requests discards selection and aborts old search; manual entry remains explicit
+ok 27 - switching requests discards selection and aborts old search; manual entry remains explicit
+  ---
+  duration_ms: 226.883
+  ...
+# (node:37656) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history opens lazily; pages retain status/review filters; close aborts and reopen starts fresh
+ok 28 - history opens lazily; pages retain status/review filters; close aborts and reopen starts fresh
+  ---
+  duration_ms: 462.9674
+  ...
+# Subtest: cancel removes stale rows, back from cancelled page restarts; failed refresh is not empty
+ok 29 - cancel removes stale rows, back from cancelled page restarts; failed refresh is not empty
+  ---
+  duration_ms: 346.9172
+  ...
+# Subtest: different parent request cancels old request and clears filters; a late response cannot cross scopes
+ok 30 - different parent request cancels old request and clears filters; a late response cannot cross scopes
+  ---
+  duration_ms: 195.6756
+  ...
+# Subtest: recorded decisions are text snapshots, never actionable completion or raw inventory
+ok 31 - recorded decisions are text snapshots, never actionable completion or raw inventory
+  ---
+  duration_ms: 61.3703
+  ...
+# (node:45308) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company completion requires explicit attestation; changing evidence resets it and sends both revisions
+ok 32 - company completion requires explicit attestation; changing evidence resets it and sends both revisions
+  ---
+  duration_ms: 52.4668
+  ...
+# Subtest: public summary cannot render internal evidence or counts; result does not claim total deletion
+ok 33 - public summary cannot render internal evidence or counts; result does not claim total deletion
+  ---
+  duration_ms: 21.7749
+  ...
+# Subtest: scope dates use Korean inclusive days; historical links stay candidates, not identity proof
+ok 34 - scope dates use Korean inclusive days; historical links stay candidates, not identity proof
+  ---
+  duration_ms: 7.7596
+  ...
+# Subtest: server revision conflict stays visible without reporting success
+ok 35 - server revision conflict stays visible without reporting success
+  ---
+  duration_ms: 6.3691
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1387.9021
