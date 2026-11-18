@@ -40,7 +40,7 @@ def main():
     status,parent,_=t.call('POST','/privacy/requests',dict(request_key=str(uuid.uuid4()),kind='access',scope='PRIVATE-REQUEST-SCOPE',password=t.PASSWORD),user);assert status==202
     rid=parent['id'];now=datetime.now(timezone.utc);start=now-timedelta(days=2);end=now-timedelta(days=1)
     staff=sql("INSERT INTO staff(user_id,name) VALUES(%s,'PRIVATE-NAME') RETURNING id",(owner['user_id'],))[0][0]
-    def review(n):return sql("INSERT INTO privacy_company_reviews(request_id,company_owner_id,staff_id,category,from_at,until_at,status,identity,identity_evidence,internal_reason,updated_by) VALUES(%s,%s,%s,'files',%s,%s,'awaiting_company','confirmed','PRIVATE-IDENTITY','PRIVATE-REASON',%s) RETURNING id",(rid,owner['user_id'],staff,start+timedelta(seconds=n),end+timedelta(seconds=n),operator['user_id']))[0][0]
+    def review(n):return sql("INSERT INTO privacy_company_reviews(request_id,company_owner_id,staff_id,category,from_at,until_at,status,identity,identity_evidence,internal_reason,due_at,updated_by) VALUES(%s,%s,%s,'files',%s,%s,'awaiting_company','confirmed','PRIVATE-IDENTITY','PRIVATE-REASON',%s,%s) RETURNING id",(rid,owner['user_id'],staff,start+timedelta(seconds=n),end+timedelta(seconds=n),now+timedelta(days=7),operator['user_id']))[0][0]
     scope,other_scope,empty_scope=[review(n) for n in range(3)]
     def task(review_id,n):return sql("INSERT INTO privacy_company_tasks(review_id,company_owner_id,instructions,status,expires_at,created_at,updated_by) VALUES(%s,%s,'PRIVATE-INSTRUCTIONS','revoked',%s,%s,%s) RETURNING id",(review_id,owner['user_id'],end, start,operator['user_id']))[0][0]
     tasks=[task(scope,n) for n in range(3)];foreign=task(other_scope,4)
