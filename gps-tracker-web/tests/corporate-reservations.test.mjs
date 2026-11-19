@@ -59,7 +59,7 @@ async function mount(t,{data=reservations,request}={}){
    useCreateFleetReservation:()=>({mutateAsync:async value=>calls.create.push(JSON.parse(JSON.stringify(value)))}),
    useUpdateFleetReservation:()=>({mutateAsync:async value=>calls.update.push(JSON.parse(JSON.stringify(value)))}),
    useCancelFleetReservation:()=>({mutateAsync:async id=>{if(state.cancelError)throw state.cancelError;calls.cancel.push(id);}}),
-   Modal:({children,footer,title})=>React.createElement('section',{role:'dialog','aria-label':title},children,React.createElement('footer',{},footer)),
+   Modal:({children,footer,title,onClose})=>React.createElement('section',{role:'dialog','aria-label':title,onClose},children,React.createElement('footer',{},footer)),
    FormField:body,Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button'),SkeletonList:()=>React.createElement('div',{'aria-label':'불러오는 중'}),
    useCorporateInfo:noop,useStaff:()=>({data:staff}),qk:{},useQuery:noop,useQueryClient:noop};
   return moduleOf(exports);
@@ -98,9 +98,9 @@ test('a reservation refresh error hides stale rows and counts in both list and c
  assert.equal(r.root.findAll(n=>n.type==='button'&&n.props['aria-label']?.includes('상세·수정')).length,0);
  await act(async()=>button(r,'다시 시도').props.onClick());assert.equal(calls.retry,1);
  await act(async()=>button(r,'캘린더').props.onClick());
- assert.equal(r.root.findAll(n=>n.type==='div'&&n.props.title?.includes('방문')).length,0);
+ assert.equal(r.root.findAllByProps({className:'corporate-calendar-event'}).length,0);
  state.error=null;await rerender();
- assert.ok(r.root.findAll(n=>n.type==='div'&&n.props.title?.includes('방문')).length>0);
+ assert.ok(r.root.findAllByProps({className:'corporate-calendar-event'}).length>0);
 });
 
 test('calendar navigation preserves list filters and day selection presets a new booking',async t=>{
@@ -109,10 +109,9 @@ test('calendar navigation preserves list filters and day selection presets a new
  await act(async()=>button(r,'캘린더').props.onClick());
  assert.equal(storage.get('resv_view'),'calendar');
  assert.equal(r.root.findByProps({'aria-label':'예약 조회 월'}).props.value,'2026-11');
- const days=()=>r.root.findAll(n=>n.type==='div'&&typeof n.props.onClick==='function'&&n.props.style?.minHeight);
- assert.equal(days().length,42);
- assert.equal(r.root.findAll(n=>n.type==='div'&&n.props.title?.includes('방문')).length,5,'calendar includes every status');
- await act(async()=>days()[19].props.onClick());
+ assert.equal(r.root.findAllByProps({className:'corporate-calendar-day'}).length,42);
+ assert.equal(r.root.findAllByProps({className:'corporate-calendar-event'}).length,5,'calendar includes every status');
+ await act(async()=>r.root.findByProps({'aria-label':'2026-11-20 새 예약'}).props.onClick({currentTarget:{focus(){}}}));
  const dialog=r.root.findByProps({role:'dialog'});
  assert.equal(dialog.props['aria-label'],'새 예약');
  const dateInputs=dialog.findAll(n=>n.type==='input'&&n.props.type==='datetime-local');
@@ -120,6 +119,45 @@ test('calendar navigation preserves list filters and day selection presets a new
  await act(async()=>dialog.findByType('footer').findAllByType('button')[0].props.onClick());
  await act(async()=>button(r,'목록').props.onClick());
  assert.equal(storage.get('resv_view'),'list');assert.equal(button(r,'완료 (2)').props['aria-pressed'],true);assert.equal(rowIds(r).length,2);
+});
+
+test('calendar overflow lists every matching booking across KST month boundaries and returns from editing',async t=>{
+ const endingAtMidnight={...reservations[0],starts_at:'2026-11-29T22:00:00+09:00',ends_at:'2026-11-30T00:00:00+09:00'};
+ const bookings=reservations.slice(1,4).map((r,i)=>({...r,starts_at:`2026-11-30T${10+i}:00:00+09:00`,ends_at:'2026-12-01T02:00:00+09:00'}));
+ bookings[0].vehicle_name=bookings[0].license_plate;
+ const {r,state,rerender,calls}=await mount(t,{data:[endingAtMidnight,...bookings]});
+ const press=async node=>act(()=>node.props.onClick({currentTarget:{focus(){}}}));
+ await press(button(r,'캘린더'));
+ const dates=['2026-11-30','2026-12-01'];
+ for(const day of dates){
+   const overflow=r.root.findByProps({'aria-label':`${day} 예약 전체 3건 보기`});
+   assert.equal(overflow.type,'button');
+   assert.equal(text(overflow.children),'+1');
+   await press(overflow);
+   const dayDialog=r.root.findByProps({'aria-label':`${day} 예약`});
+   const actions=dayDialog.findAllByProps({className:'corporate-calendar-booking'});
+   assert.equal(actions.length,3);
+   for(const [i,r] of bookings.entries()){
+     const label=text(actions[i].children);
+     assert.ok(label.includes(r.driver_name)&&label.includes(r.vehicle_name)&&label.includes(r.license_plate));
+     assert.ok(label.includes(`목적 ${r.purpose}`));
+     assert.equal(label.split(r.license_plate).length,2,'the same vehicle identity is announced once');
+     assert.ok(label.includes(['진행중','완료','취소'][i]));
+   }
+   assert.match(text(actions[2].children),day===dates[0]?/12:00 ~ 2026-12-01 02:00/:/2026-11-30 12:00 ~ 02:00/);
+   await press(actions[2]);
+   assert.equal(r.root.findByProps({placeholder:'거래처 방문, 외근...'}).props.value,bookings[2].purpose);
+   await act(()=>r.root.findByProps({'aria-label':'예약 편집'}).props.onClose());
+   assert.equal(r.root.findAllByProps({role:'dialog'}).length,1);
+   await act(()=>dayDialog.props.onClose());
+ }
+ assert.equal(r.root.findByProps({'aria-label':'2026-12-01'}).props.disabled,true,'adjacent month dates cannot create new bookings');
+ const last=r.root.findByProps({'aria-label':'2026-11-30 예약 전체 3건 보기'});
+ await press(last);
+ state.data=[bookings[0]];await rerender();
+ assert.equal(r.root.findAllByProps({className:'corporate-calendar-booking'}).length,1,'the open list follows refetches');
+ assert.equal(calls.create.length,0);
+ assert.equal(calls.update.length,0);
 });
 
 test('reservation row details save the selected booking and cancellation remains confirmed',async t=>{

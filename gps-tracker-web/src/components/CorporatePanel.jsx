@@ -875,8 +875,9 @@ function ReservationRow({r,onEdit,onDelete}) {
 
 
 // (2026-07-28) Stage-4F-2: 월 캘린더 뷰. 7x6 grid, 각 셀 = 하루.
-// 예약은 그 날 시간대에 걸치는 것들 (status 색으로 구분). 최대 3개 표시 + "N+ more".
+// 각 날짜에는 두 건을 먼저 표시하고 같은 날의 나머지 예약은 목록에서 연다.
 function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
+  const [openDay, setOpenDay] = useState(null);
   const [y, m] = ym.split('-').map(Number);
   const monthStart = new Date(y, m - 1, 1);
   const monthEnd   = new Date(y, m, 0);   // 마지막날
@@ -898,18 +899,21 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
     cells.push({ date: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1), currentMonth: false });
   }
 
-  function reservationsOn(date) {
-    const dStr = calendarDate(date);
-    return (list || []).filter(r => {
-      const s = businessDate(r.starts_at);
-      const e = businessDate(r.ends_at);
-      return dStr >= s && dStr <= e;
-    });
+  function reservationsOn(day) {
+    const dayStart = Date.parse(`${day}T00:00:00+09:00`);
+    const dayEnd = dayStart + 86400_000;
+    return list.filter(r => Date.parse(r.starts_at) < dayEnd && Date.parse(r.ends_at) > dayStart);
   }
 
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  const openBookings = openDay ? reservationsOn(openDay) : [];
+  function showBooking(event, booking) {
+    event.currentTarget.focus({ preventScroll: true });
+    onEventClick(booking);
+  }
 
   return (
+    <>
     <div className="corporate-reservation-calendar" role="region" aria-label="월간 차량 예약 · 좌우 스크롤" tabIndex={0}>
       {/* DoW header */}
       <div className="corporate-calendar-weekdays">
@@ -920,14 +924,14 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
         ))}
       </div>
       <div className="corporate-calendar-days">
-        {cells.map((c, i) => {
+        {cells.map(c => {
           const dStr = calendarDate(c.date);
-          const dayResv = reservationsOn(c.date);
+          const dayResv = reservationsOn(dStr);
           const isToday = dStr === todayStr;
           const dow = c.date.getDay();
           const MAX_BADGES = 2;   // 모바일 대응: 셀 폭 좁을 때 3개는 넘침
           return (
-            <div className="corporate-calendar-day" key={i} onClick={() => c.currentMonth && onDayClick(dStr)} style={{
+            <div className="corporate-calendar-day" key={dStr} style={{
               minHeight: 'clamp(128px, 12vw, 160px)',
               background: isToday
                 ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
@@ -936,7 +940,11 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
               opacity: c.currentMonth ? 1 : 0.4,
               cursor: c.currentMonth ? 'pointer' : 'default',
             }}>
-              <div className="corporate-calendar-date" style={{
+              <button type="button" className="corporate-calendar-date" disabled={!c.currentMonth}
+                aria-label={c.currentMonth ? `${dStr} 새 예약` : dStr} onClick={event => {
+                  event.currentTarget.focus({ preventScroll: true });
+                  onDayClick(dStr);
+                }} style={{
                 color: !c.currentMonth ? 'var(--text-3)'
                      : isToday ? 'var(--primary)'
                      : dow === 0 ? 'var(--danger)'
@@ -944,27 +952,54 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
                      : 'var(--text)',
               }}>
                 {c.date.getDate()}
-              </div>
+              </button>
               {dayResv.slice(0, MAX_BADGES).map(r => {
                 const s = RESV_STATUS[r.status] || RESV_STATUS.planned;
                 return (
-                  <div className="corporate-calendar-event" key={r.id} onClick={(e) => { e.stopPropagation(); onEventClick(r); }} style={{
+                  <button type="button" className="corporate-calendar-event" key={r.id} aria-haspopup="dialog"
+                    onClick={event => showBooking(event, r)} style={{
                     background: s.bg, color: s.color,
                   }} title={`${r.license_plate || r.device_name || ''} · ${r.purpose || ''} · ${s.label}`}>
                     {[r.license_plate,r.vehicle_name].filter(Boolean).join(' · ') || '차량'}
-                  </div>
+                  </button>
                 );
               })}
               {dayResv.length > MAX_BADGES && (
-                <div className="corporate-calendar-more">
+                <button type="button" className="corporate-calendar-more" aria-haspopup="dialog"
+                  aria-label={`${dStr} 예약 전체 ${dayResv.length}건 보기`} onClick={event => {
+                    event.currentTarget.focus({ preventScroll: true });
+                    setOpenDay(dStr);
+                  }}>
                   +{dayResv.length - MAX_BADGES}
-                </div>
+                </button>
               )}
             </div>
           );
         })}
       </div>
     </div>
+    {openDay && <Modal open title={`${openDay} 예약`} subtitle={`총 ${openBookings.length}건`} size="lg" onClose={() => setOpenDay(null)}>
+      {openBookings.length ? <ul className="corporate-calendar-bookings">{openBookings.map(r => {
+        const state = RESV_STATUS[r.status] || RESV_STATUS.planned;
+        const plate = r.license_plate?.trim();
+        const vehicle = (r.vehicle_name || r.device_name)?.trim();
+        const vehicleLabel = vehicle && plate && vehicle.replace(/\s/g, '') === plate.replace(/\s/g, '')
+          ? plate : [vehicle, plate].filter(Boolean).join(' · ') || '차량';
+        const times = [r.starts_at, r.ends_at].map(value => {
+          const kst = kstDateTime(value);
+          return kst.startsWith(openDay) ? kst.slice(11) : kst;
+        });
+        return <li key={r.id}><button type="button" className="corporate-calendar-booking" aria-haspopup="dialog" onClick={event => showBooking(event, r)}>
+          <span className="business-sr-only">예약 {r.id} 상세·수정</span>
+          <strong>{times.join(' ~ ')}</strong>
+          <span className="corporate-reservation-badge" style={{ color: state.color, background: state.bg }}>{state.label}</span>
+          <span className="corporate-calendar-booking-vehicle">{vehicleLabel}</span>
+          <span className="corporate-calendar-booking-driver">사용자 {r.driver_name || '미지정'}</span>
+          {r.purpose?.trim() && <span className="corporate-calendar-booking-purpose">목적 {r.purpose.trim()}</span>}
+        </button></li>;
+      })}</ul> : <BusinessEmpty title="이 날짜에 표시할 예약이 없습니다."/>}
+    </Modal>}
+    </>
   );
 }
 

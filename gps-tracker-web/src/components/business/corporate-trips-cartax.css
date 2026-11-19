@@ -176,9 +176,20 @@
 .corporate-calendar-weekdays,.corporate-calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;min-width:910px}
 .corporate-calendar-weekdays{margin-bottom:4px}.corporate-calendar-weekdays>div{padding:10px 6px;text-align:center;font-size:16px;font-weight:600;line-height:1.5}
 .corporate-calendar-day{display:flex;flex-direction:column;gap:7px;padding:10px;min-width:0;overflow:hidden;border-radius:4px}
-.corporate-calendar-date{font-size:18px;font-weight:600;line-height:1.5}
-.corporate-calendar-event{min-width:0;padding:6px 8px;border-radius:3px;font-size:16px;font-weight:500;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-.corporate-calendar-more{font-size:16px;color:var(--text-2);line-height:1.5;text-align:center}
+.corporate-calendar-day{position:relative}
+.corporate-calendar-date{align-self:start;min-width:0;padding:0;border:0;background:transparent;font:inherit;font-size:18px;font-weight:600;line-height:1.5;cursor:inherit}
+.corporate-calendar-date:not(:disabled)::after{content:'';position:absolute;inset:0;border-radius:4px}
+.corporate-calendar-date:focus-visible::after{outline:2px solid var(--primary);outline-offset:-2px}
+.corporate-calendar-event,.corporate-calendar-more{position:relative;z-index:1;min-width:0;border:0;font:inherit;cursor:pointer}
+.corporate-calendar-event{padding:6px 8px;border-radius:3px;font-size:16px;font-weight:500;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.corporate-reservation-calendar .corporate-calendar-more{min-height:44px;padding:4px 8px;background:var(--surface-2);color:var(--primary);border-radius:4px;font-size:16px;font-weight:600;line-height:1.5;text-align:center}
+.corporate-calendar-event:focus-visible,.corporate-calendar-more:focus-visible,.corporate-calendar-booking:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+.corporate-calendar-bookings{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.corporate-calendar-booking{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 12px;width:100%;min-height:48px;box-sizing:border-box;padding:12px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);text-align:left;font:inherit;font-size:16px;line-height:1.5;overflow-wrap:anywhere;cursor:pointer}
+.corporate-calendar-booking:hover{background:var(--surface-2)}
+.corporate-calendar-booking strong{font-variant-numeric:tabular-nums}
+.corporate-calendar-booking-vehicle,.corporate-calendar-booking-driver,.corporate-calendar-booking-purpose{grid-column:1/-1}
+.corporate-calendar-booking-driver{color:var(--text-2)}
 @media(max-width:480px){
  .corporate-editor-footer button{flex:1}
  .corporate-trip-editor-summary{padding:14px 16px}

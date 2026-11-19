@@ -97,6 +97,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         None => format!("조회 범위: 선택 차량 · {} · 운행목적 전체", ctx.month_ym),
     };
     let mut detail_notes: Vec<(usize, String, String, String)> = Vec::new();
+    let mut note_pages = std::collections::HashMap::new();
 
     for (i, (device, trips)) in ctx.per_device.iter().enumerate() {
         let sheet = wb.add_worksheet();
@@ -127,12 +128,15 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
             .as_ref()
             .map(|value| format!(" · 목적: {value} (필터 적용)"))
             .unwrap_or_default();
-        sheet.set_footer(format!(
+        let footer = format!(
             "&L{} · {}{}&R&P / &N",
             (if plate.is_empty() { &identity } else { plate }).replace('&', "&&"),
             ctx.month_ym,
             footer_scope
-        ));
+        );
+        sheet.set_footer(&footer);
+        let appendix_name = format!("비고 부록 {}", i + 1);
+        note_pages.insert(name.clone(), (appendix_name.clone(), footer));
 
         // The supplied form's company header, vehicle section and grouped grid.
         sheet.merge_range(0, 0, 1, 0, "조회기간", &label)?;
@@ -288,7 +292,7 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
                 let index = detail_notes.len() + 1;
                 detail_notes.push((index, name.clone(), date_text, note));
                 format!(
-                    "{}상세 비고 {index} 참조",
+                    "{}{appendix_name} · 번호 {index}",
                     if values.is_none() {
                         "합계 제외 · "
                     } else {
@@ -380,21 +384,21 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         } else {
             "계기판 차이(⑥−⑤)를 ⑦에 반영합니다. 조회 범위와 사용자(차량 이용자) 정보를 확인해 주세요.".into()
         };
-        for text in [guidance, "계기판 입력만으로 미확정 운행을 합계에 포함하지 않습니다. 종료·거리 미확인 운행은 합계 제외하며, 미확정 또는 용무 미지정이 있으면 비율은 공란입니다.", &odometer_guidance] {
-            sheet.merge_range(row, 0, row, 8, text, &note_fmt)?;
-            sheet.set_row_height(row, 32)?;
-            row += 1;
-        }
+        let mut guidance_lines = vec![guidance, "계기판 입력만으로 미확정 운행을 합계에 포함하지 않습니다. 종료·거리 미확인 운행은 합계 제외하며, 미확정 또는 용무 미지정이 있으면 비율은 공란입니다.", &odometer_guidance];
         if !trips.is_empty() {
-            sheet.merge_range(row, 0, row, 8, "대체·참고 값은 GPS 계산 또는 검토·보정된 운행기록 거리입니다. 계기판 실제 기록과 다를 수 있습니다.", &note_fmt)?;
-            sheet.set_row_height(row, 32)?;
-            row += 1;
+            guidance_lines.push("대체·참고 값은 GPS 계산 또는 검토·보정된 운행기록 거리입니다. 계기판 실제 기록과 다를 수 있습니다.");
         }
         if super::subject_projection::current().is_some() {
-            sheet.merge_range(row, 0, row, 8, super::subject_projection::NOTE, &note_fmt)?;
-            sheet.set_row_height(row, 28)?;
-            row += 1;
+            guidance_lines.push(super::subject_projection::NOTE);
         }
+        // Excel prints a row as a unit. Keep the guidance together instead of
+        // reserving 32 points for each short sentence and orphaning the last one.
+        // The estimate respects Korean width and explicit newlines, without
+        // shrinking the font or forcing an entire trip list onto one page.
+        let guidance_block = guidance_lines.join("\n");
+        sheet.merge_range(row, 0, row, 8, &guidance_block, &note_fmt)?;
+        sheet.set_row_height(row, 14.0 * text_lines(&guidance_block, 150) as f64 + 10.0)?;
+        row += 1;
         sheet.set_print_area(0, 0, row - 1, 8)?;
         // Preserve management metadata from the previous export below the print
         // form. Vehicle department here never substitutes for the user's field.
@@ -417,10 +421,17 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         }
     }
 
-    if !detail_notes.is_empty() {
+    // Each appendix contains one vehicle, so its repeated footer can identify
+    // the vehicle accurately on every page, including continuation pages.
+    let note_groups: Vec<_> = detail_notes
+        .chunk_by(|left, right| left.1 == right.1)
+        .collect();
+    for notes in note_groups {
         let sheet = wb.add_worksheet();
-        sheet.set_name("상세 비고")?;
+        let (appendix_name, footer) = &note_pages[&notes[0].1];
+        sheet.set_name(appendix_name)?;
         configure_nts_page(sheet);
+        sheet.set_footer(footer);
         sheet.set_column_width(0, 10)?;
         sheet.set_column_width(1, 24)?;
         sheet.set_column_width(2, 96)?;
@@ -441,10 +452,10 @@ pub fn build_nts(ctx: &ReportContext) -> Result<Vec<u8>, XlsxError> {
         sheet.set_row_height(2, 26)?;
         sheet.set_repeat_rows(0, 2)?;
         let mut row = 3;
-        for (index, vehicle, date, note) in detail_notes {
+        for (index, vehicle, date, note) in notes {
             // A bounded row height avoids Excel's 409-point clipping limit.
             // Splitting preserves every character, including newlines and spaces.
-            for (part, text) in split_note(&note).iter().enumerate() {
+            for (part, text) in split_note(note).iter().enumerate() {
                 sheet.write_string_with_format(
                     row,
                     0,
@@ -899,6 +910,7 @@ fn configure_nts_page(sheet: &mut Worksheet) {
         .set_paper_size(9)
         .set_print_fit_to_pages(1, 0)
         .set_margins(0.3, 0.3, 0.35, 0.35, 0.15, 0.15)
+        .set_footer("&R&P / &N")
         .set_print_center_horizontally(true)
         .set_screen_gridlines(false);
 }

@@ -27,6 +27,21 @@ export const fleetAssetsKey=['business','corporate','vehicles'];
 export function useFleetAssets() {return useQuery({queryKey:fleetAssetsKey,queryFn:()=>api.listFleetVehicles(),staleTime:15000});}
 export {projectFleetAssets} from '../../lib/fleetAssets';
 const vehicleDepartmentKey=asset=>asset.department_id!=null?`department:${asset.department_id}`:asset.department?.trim()?`department-name:${asset.department.trim()}`:'unassigned';
+const emptyVehicleLabels=new Set(['','-','—','미등록','차량정보미등록','차량번호미등록','차종미등록']);
+function mobileVehicleLabels(vehicle,manager){
+  const labels=new Map();
+  const add=value=>{
+    const label=value?.trim()||'';
+    const key=label.normalize('NFKC').replace(/\s+/g,'').toLowerCase();
+    if(!emptyVehicleLabels.has(key)&&!labels.has(key))labels.set(key,label);
+  };
+  add(vehicle.license_plate);
+  add(vehicle.name);
+  if(!labels.size)labels.set('차량정보미등록','차량 정보 미등록');
+  add(vehicle.car_model);
+  add(manager?.trim()||vehicle.department);
+  return [...labels.values()];
+}
 export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,initialMissingSchedules=false}) {
   const access=useFleetAccess();
   const mobile=useCorporatePhone();
@@ -79,6 +94,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,ini
       </>}>
       <ul className="mobile-fleet-rows">{rows.map(v=>{
         const distance=assetOdometer(v),manager=staff.find(s=>s.id===v.manager_staff_id)?.name;
+        const [title,...description]=mobileVehicleLabels(v,manager);
         const device=mobileDevices.get(v.id);
         const terminalNames=v.bindings.filter(b=>!b.ended_at&&!b.is_primary).map(b=>b.terminal_name||'연결된 단말기');
         if(device.has_primary_terminal)terminalNames.unshift(device.display_name);
@@ -89,9 +105,9 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,ini
             <span className="mobile-fleet-row-main">
               <span className="mobile-vehicle-title">
                 <span className={`mobile-fleet-pill ${v.enabled?'is-primary':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span>
-                <strong className="mobile-fleet-row-title">{v.license_plate||v.name||'차량 정보 미등록'}</strong>
+                <strong className="mobile-fleet-row-title">{title}</strong>
               </span>
-              <span className="mobile-fleet-row-copy">{[v.name&&v.license_plate?v.name:null,v.car_model,manager||v.department].filter(Boolean).join(' · ')||'차량 정보 미등록'}</span>
+              {description.length>0&&<span className="mobile-fleet-row-copy">{description.join(' · ')}</span>}
               <span className="mobile-vehicle-terminal">단말 {terminalNames.join(' · ')||'미연결'}{terminalStatus}</span>
               <span className="mobile-vehicle-distance">계기판 거리 {distance==null?'미등록':`${distance.toLocaleString()} km`}</span>
             </span>

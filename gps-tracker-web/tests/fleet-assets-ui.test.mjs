@@ -71,6 +71,28 @@ test('phone rows identify the registered terminal even when its telemetry is mis
  assert.equal(r.root.findAllByProps({'aria-label':'차량·점검 정보 수정'}).length,0);
 });
 
+test('phone vehicle headings keep distinct details and omit duplicate or empty descriptions',async t=>{
+ const base={...vehicles[0],manager_staff_id:null,department:null};
+ const data=[
+  {...base,id:10,license_plate:'12tk3456',name:' 12TK 3456 ',car_model:'12tk3456'},
+  {...base,id:11,license_plate:null,name:'차량 정보 미등록',car_model:'미등록'},
+  {...base,id:12,license_plate:'차량번호 미등록',name:'  업무 차량  ',car_model:'쏘나타',department:'영업팀'},
+  {...base,id:13,license_plate:'123가4567',name:'쏘나타',car_model:'쏘나타',manager_staff_id:1},
+  {...base,id:14,license_plate:null,name:null,car_model:'스타리아'},
+ ];
+ const {r}=await mount(t,{phone:true,data});
+ const rows=r.root.findAllByProps({className:'mobile-fleet-row mobile-vehicle-row'});
+ const displayed=rows.map(row=>[
+  text(row.findByProps({className:'mobile-fleet-row-title'}).children),
+  row.findAllByProps({className:'mobile-fleet-row-copy'}).map(cell=>text(cell.children)).join(''),
+ ]);
+ for(const [title,description] of [
+  ['12tk3456',''],['차량 정보 미등록',''],['업무 차량','쏘나타 · 영업팀'],
+  ['123가4567','쏘나타 · 김영업'],['차량 정보 미등록','스타리아'],
+ ])assert.ok(displayed.some(([heading,copy])=>heading===title&&copy===description),title+' / '+description);
+ assert.equal(rows.flatMap(row=>row.findAllByProps({className:'mobile-fleet-row-copy'})).length,3);
+});
+
 test('missing-schedule list edits only missing dates and drops completed vehicles on refresh',async t=>{
  const complete={next_service_date:'2028-02-01',insurance_expiry:'2028-07-03',inspection_expiry:'2028-07-31'};
  const data=[
