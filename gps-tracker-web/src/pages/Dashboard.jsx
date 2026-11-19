@@ -551,8 +551,17 @@ export default function Dashboard({ onLogout }) {
     navigate('/', { state: origin ? { corporateVehicleMap: origin } : null });
     persistFilterDevice(deviceId);
   };
-  const returnToVehicle = view === 'home' && isCorporate && mapOrigin?.actorId === me?.id && mapOrigin
-    ? () => navigate(-1) : undefined;
+  const returnToVehicle = view === 'home' && isCorporate && mapOrigin && mapOrigin.actorId === me?.id
+    ? () => {
+      // Embedded maps can add their own browser-history steps. The app button
+      // must go directly to the corporate route even when Back would stay here.
+      setPendingMapReturn(mapOrigin);
+      navigate('/corporate', { replace: true, state: { returnToVehicleKey: mapOrigin.sourceKey } });
+    } : undefined;
+  const returningToOrigin = pendingMapReturn && (pendingMapReturn.sourceKey === location.key
+    || pendingMapReturn.sourceKey === location.state?.returnToVehicleKey);
+  const restoredVehicle = returningToOrigin && pendingMapReturn.sessionId === sessionId
+    && pendingMapReturn.actorId === me?.id ? pendingMapReturn : null;
   const navigateDashboard = destination => destination === 'corporate' && returnToVehicle ? returnToVehicle() : setView(destination);
   const selectLinkedDevice = useCallback(id => {
     filterAppliedRef.current = true;
@@ -958,7 +967,7 @@ export default function Dashboard({ onLogout }) {
           }}>
             <Suspense fallback={<LazyPanelFallback />}>
               <CorporatePanel devices={devices} onNavigate={setView} globalNavigation={sideRailItems({isAdmin,isCorporate,isRentcar,isDelivery}).filter(item=>item.id!=='corporate')} meta={lastMetaRef.current} onMap={openCorporateMap}
-                mapReturn={pendingMapReturn?.sourceKey === location.key && pendingMapReturn.sessionId === sessionId && pendingMapReturn.actorId === me?.id ? pendingMapReturn : null}
+                mapReturn={restoredVehicle}
                 onMapReturnUsed={consumeMapReturn} onDevice={id => { setDetailId(id); setView('devices'); }} onVehiclesChange={reloadDevicesAfterMutation} />
             </Suspense>
           </div>
