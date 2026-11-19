@@ -1,0 +1,6 @@
+{
+  "/corporate/vehicles": 200,
+  "/corporate/info": 200,
+  "/privacy/requests/page": 200,
+  "empty_batch_rejected": 400
+}

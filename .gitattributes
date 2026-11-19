@@ -147,3 +147,5 @@ ops/review146*.py text eol=lf
 
 # Round147 dev review logs and screenshots preserve original evidence bytes.
 docs/evidence/dev-review147-20261119/* -text whitespace=-blank-at-eof,-blank-at-eol
+docs/evidence/review148-20261119/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/review148_deploy.py text eol=lf
