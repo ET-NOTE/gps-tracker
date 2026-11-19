@@ -117,6 +117,16 @@ Object.assign(api,{
  updateFleetVehicle:async(id,body)=>{assets=assets.map(v=>v.id===id?{...v,...body,updated_at:new Date().toISOString()}:v);return assets.find(v=>v.id===id);},
  fleetVehicleBindings:async id=>assets.find(v=>v.id===id).bindings,
  connectFleetVehicle:async(id,body)=>{const v=assets.find(v=>v.id===id);v.bindings=body.device_ids.map((d,i)=>({id:i+10,device_id:d,terminal_name:devices.find(x=>x.id===d).display_name,is_primary:d===body.primary_device_id,started_at:new Date().toISOString()}));return {...v};},
+ connectFleetVehicles:async({vehicles})=>{
+   if(vehicles.some(row=>assets.find(v=>v.id===row.vehicle_id)?.updated_at!==row.updated_at)) throw Error('차량 연결이 변경됐습니다. 새로고침 후 다시 시도해 주세요.');
+   const at=new Date().toISOString();
+   assets=assets.map(v=>{
+     const row=vehicles.find(r=>r.vehicle_id===v.id);
+     if(!row)return v;
+     return {...v,updated_at:at,bindings:row.device_ids.map(d=>({id:d,device_id:d,terminal_name:devices.find(x=>x.id===d).display_name,is_primary:d===row.primary_device_id,started_at:at}))};
+   });
+   return {updated:vehicles.length};
+ },
  listFleetVehicleTrips:async(id,p)=>(await api.listTrips(devices[id-100]?.id,p)).map(t=>({...t,source_device_id:devices[id-100]?.id,binding_id:id,vehicle_id:id,source_started_at:t.started_at,allocation_status:'assigned',annotation:assignmentAnnotations.get(`${id}:${t.started_at}`)||t.annotation})),
  fleetVehicleStats:async()=>{const rows=await api.fleetTripStats();return {per_device:rows.per_device.map(r=>({...r,device_id:99+r.device_id,vehicle_id:99+r.device_id}))};},
  listFleetDocuments:read([]),

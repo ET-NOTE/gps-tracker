@@ -45,3 +45,19 @@
 .expense-inline-receipt-choice:focus-visible,.expense-inline-image:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 @media(max-width:900px){.expense-inline-attachments{position:static}.expense-inline-preview{min-height:220px}.expense-inline-image img{max-height:340px}}
 @media(max-width:600px){.expense-attachment-preview{min-height:190px;padding:12px}.expense-attachment-preview>img{max-height:50dvh}.expense-attachment-downloads{gap:10px}.expense-attachment-toolbar .business-button{min-height:48px}.expense-attachment-heading{gap:12px}}
+@media(max-width:600px),(pointer:coarse) and (max-height:500px){
+ .expense-attachment-heading{align-items:baseline}
+ .expense-attachment-heading strong{white-space:normal;overflow-wrap:anywhere}
+}
+@media(max-width:600px){
+ .expense-attachment-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+ .expense-attachment-pages{justify-content:center}
+ .expense-attachment-downloads{
+   display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8em),1fr));
+   align-items:stretch;gap:8px;margin:0;font-size:16px;
+ }
+ .expense-attachment-viewer .expense-attachment-downloads .business-button{
+   justify-content:center;min-width:0;gap:6px;padding:8px 6px;font-size:inherit;white-space:normal;word-break:keep-all;
+ }
+ .expense-attachment-downloads svg{flex-shrink:0}
+}

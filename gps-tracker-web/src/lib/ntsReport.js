@@ -1,5 +1,5 @@
 import {reportIncluded,qualityLabel,tripTimeRange} from './tripQuality.js';
-import { kstDateTime } from './businessExport.js';
+import { kstDateTime, safeFilename } from './businessExport.js';
 
 const text = value => typeof value === 'string' ? value.trim() : '';
 const km = value => Math.round(value / 10) / 100;
@@ -15,6 +15,23 @@ export function reportVehicleLabel(device) {
   const identity = [text(device?.vehicle_name || device?.car_model), text(device?.car_plate || device?.license_plate)].filter(Boolean);
   if(identity.every(v=>v==='차량 정보 미등록')) return `차량 정보 미등록 · ${device?.primary_terminal_name || device?.display_name || '차량 #' + device?.id}`;
   return identity.length ? identity.join(' · ') : `차량 정보 미등록 · ${device?.display_name || '단말기 ' + (device?.id ?? '')}`;
+}
+
+function tripFilename(device, model, plate, from, to) {
+  const prefix = '업무용승용차_운행기록부_';
+  const period = `_${from}_${to}`;
+  const name = safeFilename(text(device?.vehicle_name) || text(device?.asset?.name) || model || '차종미등록');
+  const registration = safeFilename(plate || `차량번호미등록_${device?.id ?? ''}`);
+  // saveBlob limits the stem to 60 Unicode characters. Reserve space for both
+  // identifiers and the full period before long user-entered names are clipped.
+  const available = 60 - prefix.length - period.length;
+  if (name === registration) return prefix + [...name].slice(0, available).join('') + period;
+  const nameChars = [...name];
+  const identitySpace = available - 1;
+  const maxPlate = Math.max(Math.floor(identitySpace / 2), identitySpace - nameChars.length);
+  const plateChars = [...registration].slice(0, maxPlate);
+  const namePart = nameChars.slice(0, identitySpace - plateChars.length).join('');
+  return `${prefix}${namePart}_${plateChars.join('')}${period}`;
 }
 
 // Column order follows the supplied "운행기록부 폼" sheet, B12:Q14.
@@ -64,7 +81,7 @@ export function ntsTripReport(trips, { device, info, from, to, filtered = false 
     ['before','⑤주행 전 계기판 거리(㎞)'],['after','⑥주행 후 계기판 거리(㎞)'],['km','⑦주행거리(㎞)'],
     ['commute','⑧출·퇴근용(㎞)'],['business','⑨일반 업무용(㎞)'],['note','⑩비고'],
   ].map(([key,label])=>({key,label,pdfLabel:({date:'3 사용일자 (요일)',department:'4 사용자\n부서',driver:'4 사용자\n성명',before:'5 주행 전\n계기판(km)',after:'6 주행 후\n계기판(km)',km:'7 주행거리\n(km)',commute:'8 출·퇴근용\n(km)',business:'9 일반 업무용\n(km)',note:'10 비고'})[key],numeric:['before','after','km','commute','business'].includes(key),pdfWidth:({date:80,department:48,driver:48,before:62,after:62,km:55,commute:55,business:55,note:'*'})[key]}));
-  return {title:'업무용승용차 운행기록부', filename:`업무용승용차_운행기록부_${model || '차종미등록'}_${plate || '차량번호미등록_' + (device?.id ?? '')}_${from}_${to}`,
+  return {title:'업무용승용차 운행기록부', filename:tripFilename(device, model, plate, from, to),
     columns, rows, warnings,
     printForm:{kind:'nts-trip-log',company:text(info?.company_name),businessNumber:text(info?.business_number),model,plate,from,to,filtered,
       total,commute,business,work,ratio,distanceBasis,odometerCount,recordDistanceCount,missingDistanceCount,missingOdometerCount,includedCount:trips.length-incomplete.length,excludedCount:incomplete.length,excludedRows:trips.map(t=>excluded.has(t))},

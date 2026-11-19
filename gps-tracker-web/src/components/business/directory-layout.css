@@ -71,6 +71,12 @@
 @media(max-width:600px){
  .fleet-directory-group,.fleet-directory-footer-action{min-height:48px}
  .fleet-directory-group-count{font-size:16px;min-width:28px;padding:2px 7px}
+ :is(.fleet-assets-list,.fleet-people-cartax) .fleet-directory-groups{grid-template-columns:minmax(0,1fr);padding:10px 12px;gap:6px}
+ :is(.fleet-assets-list,.fleet-people-cartax) .fleet-directory-heading{min-height:32px}
+ :is(.fleet-assets-list,.fleet-people-cartax) .fleet-directory-group-list{scroll-padding-inline:2px}
+ :is(.fleet-assets-list,.fleet-people-cartax) .fleet-directory-group{min-height:44px;padding:6px 10px;gap:8px}
+ .business-workspace--corporate :is(.fleet-assets-cartax-table,.fleet-people-table) :is(th,td):first-child{position:sticky;inset-inline-start:0;z-index:1;box-shadow:inset -1px 0 var(--border)}
+ .business-workspace--corporate :is(.fleet-assets-cartax-table,.fleet-people-table) td:first-child{background:var(--surface)}
 }
 @media screen and (min-width:1200px){
 .business-workspace--corporate .fleet-directory-layout{min-height:calc(100dvh - 132px)}

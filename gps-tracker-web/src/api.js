@@ -782,6 +782,7 @@ export const api = {
   updateFleetVehicle: (id,body) => req('PUT',`/corporate/vehicles/${id}`,body),
   fleetVehicleBindings: id => req('GET',`/corporate/vehicles/${id}/bindings`),
   connectFleetVehicle: (id,body) => req('PUT',`/corporate/vehicles/${id}/bindings`,body),
+  connectFleetVehicles: body => req('PUT','/corporate/vehicles/bindings/batch',body),
   tripEvidence:(id,body)=>req('POST',`/corporate/vehicles/${id}/trips/evidence`,body),
   correctTrips:(id,body)=>req('POST',`/corporate/vehicles/${id}/trips/corrections`,body),
   tripCorrectionHistory:id=>req('GET',`/corporate/vehicles/${id}/trips/corrections`),

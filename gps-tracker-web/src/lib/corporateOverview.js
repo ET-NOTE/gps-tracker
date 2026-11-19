@@ -1,5 +1,6 @@
 import { businessDate, maintenanceTasks } from './business.js';
 import { validPosition } from './businessWorkspace.js';
+import { missingScheduleFields } from './fleetAssetFilters.js';
 
 export const LOCATION_FRESH_MS = 5 * 60_000;
 export const corporateVehicleName = d => d.vehicle_name || d.car_model || d.car_plate || d.license_plate || '차량 정보 미등록';
@@ -14,7 +15,7 @@ export function locationState(device, now = Date.now()) {
 export function locationSummary(devices, now = Date.now()) {
   return devices.reduce((counts, d) => { counts[locationState(d, now)]++; return counts; }, { current: 0, old: 0, none: 0 });
 }
-export const missingMaintenance = devices => devices.filter(d => ['next_service_date', 'insurance_expiry', 'inspection_expiry'].some(key => !d[key]));
+export const missingMaintenance = devices => devices.filter(d => missingScheduleFields(d.asset ? d.asset.profile : d).length > 0);
 
 // Only count this workspace's vehicles, never other account types returned by
 // the account-wide endpoint. A daily aggregate needs two fixes to measure distance.
@@ -61,7 +62,10 @@ export function corporateAttention(devices, now, { classify, battery }) {
     // Use the binding, not source_device_id: bound terminals may lack telemetry.
     if (Array.isArray(d.asset?.bindings) && !d.asset.bindings.some(b => b.is_primary && b.device_id != null && !b.ended_at)) continue;
     const status = classify(d, undefined, now), b = battery(d);
-    if (['offline', 'lost', 'unknown'].includes(status.id)) tasks.push({ id: `signal-${d.id}`, device: d, priority: 0, label: '통신 확인', description: d.last_seen_at ? '장기간 새 통신 없음' : '통신 이력 없음', tone: 'urgent' });
+    if (['offline', 'lost', 'unknown'].includes(status.id)) {
+      const description = d.terminal_status_label || (d.last_seen_at ? '장기간 새 통신 없음' : '통신 이력 없음');
+      tasks.push({ id: `signal-${d.id}`, device: d, priority: 0, label: '통신 확인', description, tone: 'urgent' });
+    }
     if (['low', 'critical', 'overcharge'].includes(b.state)) tasks.push({ id: `battery-${d.id}`, device: d, priority: 1, label: b.label, description: `마지막 배터리 ${b.percent}% · ${b.voltage}`, tone: b.state === 'low' ? 'info' : 'urgent' });
   }
   for (const t of maintenanceTasks(devices, now)) tasks.push({ ...t, id: `maintenance-${t.device.id}-${t.field}`, priority: t.overdue ? 2 : 3, label: t.overdue ? '점검 기한 경과' : '점검 임박', description: `${t.label} · ${t.date}`, tone: t.overdue ? 'urgent' : 'info' });

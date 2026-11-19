@@ -51,6 +51,38 @@ try:
  va=connect(a,va,[d1,d2],d2)
  history=call(a,'GET',f"/corporate/vehicles/{va['id']}/bindings")
  check('primary change retains periods',len(history)==4 and len([x for x in history if x['ended_at']])==2)
+ def binding_row(v,ids,primary):
+  return dict(vehicle_id=v['id'],updated_at=v['updated_at'],device_ids=ids,primary_device_id=primary)
+ def batch(*rows,expected=200):
+  return call(a,'PUT','/corporate/vehicles/bindings/batch',dict(vehicles=list(rows)),expected=expected)
+ def get_pair():
+  return [vehicle(a,x['id']) for x in (va,vb)]
+ def bindings(v):
+  return sorted((x['device_id'],x['is_primary']) for x in v['bindings'])
+ check('batch is a reviewed write-only route',
+       call(a,'GET','/corporate/vehicles/bindings/batch',expected=None)==405)
+ batch(binding_row(va,[d1],d1),binding_row(vb,[d1],d1),expected=400)
+ batch(binding_row(va,[d1],d1),binding_row(foreign,[],None),expected=404)
+ batch(binding_row(va,[d1],d1),binding_row({**vb,'updated_at':'2000-01-01T00:00:00Z'},[d2],d2),expected=409)
+ check('invalid duplicate, foreign or stale batch keeps both originals',get_pair()==[va,vb])
+ batch(binding_row(va,[d1],d1),binding_row(vb,[d2],d2))
+ va,vb=get_pair()
+ check('batch split preserves each active primary',bindings(va)==[(d1,True)] and bindings(vb)==[(d2,True)])
+ check('unchanged batch leaves both versions and bindings intact',
+       batch(binding_row(va,[d1],d1),binding_row(vb,[d2],d2))=={'updated':0} and get_pair()==[va,vb])
+ swap=[binding_row(va,[d2],d2),binding_row(vb,[d1],d1)]
+ with ThreadPoolExecutor(max_workers=2) as ex:
+  statuses=list(ex.map(lambda _:call(a,'PUT','/corporate/vehicles/bindings/batch',{'vehicles':swap},expected=None),range(2)))
+ check('two simultaneous batch swaps commit exactly once',sorted(statuses)==[200,409])
+ va,vb=get_pair()
+ check('both swapped vehicles share one effective timestamp',va['updated_at']==vb['updated_at'] and bindings(va)==[(d2,True)] and bindings(vb)==[(d1,True)])
+ for v,departing in ((va,d1),(vb,d2)):
+  periods=call(a,'GET',f"/corporate/vehicles/{v['id']}/bindings")
+  check(f"departure and arrival meet at same instant for {v['id']}",v['bindings'][0]['started_at']==v['updated_at'] and any(p['device_id']==departing and p['ended_at']==v['updated_at'] for p in periods))
+ batch(binding_row(va,[d1],d1),expected=409)
+ batch(binding_row(va,[d1,d2],d2),binding_row(vb,[],None))
+ va,vb=get_pair()
+ check('batch restores original assignments',bindings(va)==[(d1,False),(d2,True)] and not vb['bindings'])
  # Independent booking works without any SIM; competing HTTP writes cannot double book.
  booking=dict(vehicle_id=vb['id'],driver_staff_id=None,starts_at='2027-01-02T01:00:00Z',ends_at='2027-01-02T02:00:00Z',purpose='Synthetic',status='planned')
  with ThreadPoolExecutor(max_workers=2) as ex:statuses=list(ex.map(lambda _:call(a,'POST','/corporate/vehicle-reservations',booking,expected=None),range(2)))

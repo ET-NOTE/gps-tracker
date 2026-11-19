@@ -4,6 +4,8 @@
 .business-workspace--corporate .corporate-report-control-row :is(input:not([type=checkbox]),select){min-height:48px;padding:10px 14px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font:inherit;font-size:18px!important;min-width:0;max-width:100%}
 .business-workspace--corporate .corporate-report-control-row .corporate-report-vehicle{width:280px;max-width:100%}
 .business-workspace--corporate .corporate-report-date-range{display:flex;align-items:center;gap:6px;min-width:0;padding:0 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-2)}
+.corporate-report-date-range>label{display:contents}
+.corporate-report-date-range>label>span{display:none}
 .business-workspace--corporate .corporate-report-date-range input:not([type=checkbox]){width:180px;padding:11px 0;border:0;background:transparent;min-height:48px}
 .business-workspace--corporate .corporate-report-control-row>button,.business-workspace--corporate .corporate-report-menu :is(button,.business-button){min-height:48px;padding:10px 14px;border-radius:4px;font-size:18px!important;white-space:nowrap}
 .business-workspace--corporate .corporate-report-menu{position:relative}
@@ -38,6 +40,8 @@
 .business-workspace--corporate .corporate-report-page .fleet-quality-summary label{margin-left:auto;font-size:16px;display:flex;align-items:center;gap:6px}
 .business-workspace--corporate .corporate-report-page .fleet-quality-summary input{width:20px;height:20px;accent-color:var(--primary)}
 .business-workspace--corporate .corporate-report-page .fleet-quality-summary .business-note{width:100%;margin:0;font-size:16px;line-height:1.5}
+.fleet-quality-toggle{display:none}
+.fleet-quality-breakdown{display:contents}
 .business-workspace--corporate .corporate-report-assignment{margin:0;padding:0 2px;min-height:48px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;font-size:16px;color:var(--text-2)}
 .business-workspace--corporate .corporate-report-management{margin-left:auto}
 .business-workspace--corporate .corporate-monthly-totals{display:flex;flex-wrap:wrap;gap:18px 28px;padding-top:18px;border-top:1px solid var(--border)}
@@ -175,7 +179,20 @@
 .corporate-calendar-date{font-size:18px;font-weight:600;line-height:1.5}
 .corporate-calendar-event{min-width:0;padding:6px 8px;border-radius:3px;font-size:16px;font-weight:500;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .corporate-calendar-more{font-size:16px;color:var(--text-2);line-height:1.5;text-align:center}
-@media(max-width:480px){.corporate-editor-footer button{flex:1}.corporate-trip-editor-summary{padding:14px 16px}.corporate-editor-fields{gap:20px}.corporate-export-footer .corporate-export-actions{flex-wrap:wrap}.corporate-export-footer .corporate-export-actions>button{flex:1 1 120px!important}}
+@media(max-width:480px){
+ .corporate-editor-footer button{flex:1}
+ .corporate-trip-editor-summary{padding:14px 16px}
+ .corporate-editor-fields{gap:20px}
+ .gps-modal:has(.corporate-export-dialog){word-break:keep-all}
+ .corporate-export-footer .corporate-export-actions{display:grid;grid-template-columns:auto minmax(0,1fr)}
+ .corporate-export-footer .corporate-export-actions>button{
+   display:flex;align-items:center;justify-content:center;word-break:keep-all;overflow-wrap:anywhere;
+ }
+ .corporate-export-footer .corporate-export-actions svg{flex-shrink:0}
+}
+@media(max-width:415px){
+ .gps-modal:has(.corporate-trip-editor-summary) .corporate-editor-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(min-width:1200px){.business-workspace--corporate .corporate-report-control-row .corporate-report-vehicle{display:none}}
 @media(max-width:1199px){.business-workspace--corporate .corporate-report-vehicle-sidebar{display:none}}
 @media screen and (min-width:701px) and (max-width:1599px){
@@ -210,11 +227,81 @@
  .business-workspace--corporate .corporate-monthly-notes>details{margin-left:0;text-align:left}
  .business-workspace--corporate .corporate-monthly-fuel-prices{order:5;width:100%;margin-left:0!important;flex-wrap:wrap}
 }
-@media(max-width:520px){
- .business-workspace--corporate .corporate-report-date-range{display:grid;grid-template-columns:minmax(0,1fr);gap:0;padding:4px 10px}
- .business-workspace--corporate .corporate-report-date-range input:not([type=checkbox]){width:100%;flex:none;min-width:0;padding:8px 0}
- .business-workspace--corporate .corporate-report-date-range>span{text-align:center;line-height:1;font-size:16px}
+@media screen and (max-width:520px){
+ .business-workspace--corporate :is(.corporate-report-page,.corporate-monthly-page){gap:14px}
+ .business-workspace--corporate .corporate-report-controls{padding:12px;gap:14px}
+ .business-workspace--corporate .corporate-report-control-row{gap:8px}
+ .business-workspace--corporate .corporate-report-control-row:first-child {
+   display:grid;
+   grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1.2fr);
+ }
+ .business-workspace--corporate .corporate-report-control-row :is(.corporate-report-vehicle,.corporate-report-date-range){grid-column:1/-1}
+ .business-workspace--corporate .corporate-report-date-range {
+   display:grid;
+   grid-template-columns:repeat(2,minmax(0,1fr));
+   align-items:stretch;
+   gap:8px;
+   padding:0;
+   border:0;
+ }
+ .business-workspace--corporate .corporate-report-date-range>label {
+   display:grid;
+   gap:2px;
+   min-width:0;
+   padding:6px 8px;
+   border:1px solid var(--border);
+   border-radius:4px;
+ }
+ .business-workspace--corporate .corporate-report-date-range>label>span{display:block;font-size:14px;font-weight:600}
+ .business-workspace--corporate .corporate-report-date-range>span{display:none}
+ .business-workspace--corporate .corporate-report-date-range input:not([type=checkbox]){width:100%;min-width:0;min-height:36px;padding:0;font-size:16px!important;box-sizing:border-box}
+ .business-workspace--corporate .corporate-report-control-row>button,
+ .business-workspace--corporate .corporate-report-control-row>.corporate-report-menu>summary{width:100%;min-width:0;min-height:46px;padding:8px 4px;gap:4px;font-size:16px!important}
+ .business-workspace--corporate .corporate-report-download{margin:0}
+ .business-workspace--corporate .corporate-report-control-row>.corporate-report-menu>.corporate-report-menu-body {
+   max-height:48dvh;
+   overflow:auto;
+   overscroll-behavior:contain;
+ }
+ .business-workspace--corporate .corporate-report-status-tabs{width:100%}
+ .business-workspace--corporate .corporate-report-status-tabs button{flex:1;min-height:44px;padding:7px 10px}
+ .business-workspace--corporate .corporate-report-counts{gap:4px 12px}
+ .business-workspace--corporate .corporate-report-assignment{gap:6px 10px;padding:0;min-width:0}
+ .business-workspace--corporate .corporate-report-assignment>span{flex:1 1 130px;min-width:0}
+ .business-workspace--corporate .corporate-report-management{margin-left:auto;min-width:0}
+ .business-workspace--corporate .corporate-report-management[open]{flex:1 0 100%}
+ .business-workspace--corporate .corporate-report-management>summary{width:fit-content;margin-left:auto}
+ .business-workspace--corporate .corporate-report-management>.corporate-report-menu-body {
+   position:static;
+   min-width:0;
+   max-width:none;
+   margin-top:6px;
+   box-shadow:none;
+ }
+ .business-workspace--corporate .corporate-report-page>.report-area{min-height:0}
+ .fleet-quality-toggle {
+   display:inline-flex;align-items:center;gap:6px;margin-left:auto;min-height:44px;padding:4px 8px;
+   font:inherit;color:var(--text-2);background:transparent;border:0;cursor:pointer;
+ }
+ .fleet-quality-toggle::after{content:'';border:solid currentColor;border-width:0 1.5px 1.5px 0;width:7px;height:7px;transform:rotate(45deg) translateY(-2px)}
+ .fleet-quality-toggle[aria-expanded=true]::after{transform:rotate(225deg)}
+ .fleet-quality-toggle[aria-expanded=false]+.fleet-quality-breakdown{display:none}
+ .fleet-quality-breakdown{display:grid;gap:8px;width:100%}
+ .fleet-quality-breakdown label{min-height:44px}
+ .business-workspace--corporate :is(.corporate-trip-table-scroll,.corporate-monthly-table-scroll){max-width:100%;overscroll-behavior-x:contain}
+ .business-workspace--corporate .corporate-trip-table :is(th,td){padding:12px 10px!important}
+ .business-workspace--corporate .corporate-monthly-page .corporate-report-control-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .business-workspace--corporate .corporate-monthly-page .corporate-report-control-row>:is(input,.corporate-monthly-fuel-prices){grid-column:1/-1;min-width:0}
+ .business-workspace--corporate .corporate-monthly-table{min-width:1300px}
+ .business-workspace--corporate .corporate-monthly-table :is(th,td):nth-child(n){width:auto;padding:12px 10px}
+ .business-workspace--corporate .corporate-monthly-table :is(th,td):first-child{width:170px}
  .corporate-editor-fields input[type=datetime-local]{padding:10px 8px!important}
  .corporate-editor-fields input[type=datetime-local]::-webkit-datetime-edit{padding:0}
  .corporate-editor-fields input[type=datetime-local]::-webkit-calendar-picker-indicator{padding:2px;margin-left:4px}
+}
+@media screen and (max-width:359px) {
+ .business-workspace--corporate .corporate-report-date-range{grid-template-columns:minmax(0,1fr)}
+ .business-workspace--corporate .corporate-report-date-range>label{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px}
+ .business-workspace--corporate .corporate-report-control-row>button>svg,
+ .business-workspace--corporate .corporate-report-control-row>.corporate-report-menu>summary>svg{display:none}
 }

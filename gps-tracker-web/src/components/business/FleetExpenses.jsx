@@ -64,7 +64,11 @@ export default function FleetExpenses({categoriesOnly=false,onOpenCategories}){
  return <div className="fleet-expenses">
  <section className="expense-controls" aria-label="지출 조회 조건">
   <div className="expense-query-row">
-   <div className="expense-date-range" role="group" aria-label="지출 조회 기간"><input type="date" aria-label="지출 조회 시작일" value={filters.from||''} max={filters.to||undefined} onChange={e=>filter('from',e.target.value)}/><span aria-hidden="true">~</span><input type="date" aria-label="지출 조회 종료일" value={filters.to||''} min={filters.from||undefined} onChange={e=>filter('to',e.target.value)}/></div>
+   <div className="expense-date-range" role="group" aria-label="지출 조회 기간">
+    <label><span>시작일</span><input type="date" aria-label="지출 조회 시작일" value={filters.from||''} max={filters.to||undefined} onChange={e=>filter('from',e.target.value)}/></label>
+    <span aria-hidden="true">~</span>
+    <label><span>종료일</span><input type="date" aria-label="지출 조회 종료일" value={filters.to||''} min={filters.from||undefined} onChange={e=>filter('to',e.target.value)}/></label>
+   </div>
    <label className="expense-search"><Icon name="search" size={16}/><input type="search" aria-label="차량 및 사용자 검색" placeholder="차량·사용자 검색" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);setDownloadsOpen(false);}}/></label>
    <div className="expense-query-actions">
     <BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={openFilters}>필터{advancedCount>0&&<span className="expense-filter-count">{advancedCount}</span>}</BusinessButton>

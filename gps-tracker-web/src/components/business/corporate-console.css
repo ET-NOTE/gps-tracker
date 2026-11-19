@@ -111,11 +111,29 @@
 
 }
 @media screen and (max-width:700px) {
- .business-workspace--corporate .business-mobile-nav>button,.business-workspace--corporate .business-mobile-create .business-button {font-size:16px}
+ .business-workspace--corporate .business-topbar {padding-inline:12px;min-height:0}
+ .business-workspace--corporate .business-topbar-navigation>h2 {padding:10px 2px;font-size:22px}
+ .business-workspace--corporate .business-subnav button {min-height:48px;padding-inline:14px}
+ .business-workspace--corporate .business-topbar-account {padding-block:2px}
+ .business-workspace--corporate .business-mobile-nav {--bottom-nav-content-height:60px}
+ .business-workspace--corporate .business-mobile-nav>button {font-size:15px;line-height:1.15;gap:4px}
+ .business-workspace--corporate .business-mobile-nav>button[aria-current=page] {box-shadow:inset 0 3px var(--primary)}
+ .business-workspace--corporate .business-content {padding:14px 12px}
+ .business-workspace--corporate.has-mobile-nav .business-content {padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+ .business-drawer .business-more-menu--corporate {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .business-more-menu--corporate .business-menu-group {grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
+ .business-more-menu--corporate .business-menu-group h3 {grid-column:1/-1;margin:4px 0 0}
+ .business-more-menu--corporate>hr {grid-column:1/-1;border:0;border-top:1px solid var(--border);margin:4px 0}
+ .business-drawer .business-more-menu--corporate .business-button {min-width:0;min-height:48px;padding:9px 10px;gap:8px;white-space:normal;text-align:left;word-break:keep-all;overflow-wrap:anywhere;font-size:16px}
+ .business-more-menu--corporate .business-button svg {flex-shrink:0}
  .gps-business-modal {--modal-padding:20px;--modal-gap:20px}
  .business-drawer>header,.business-drawer-body {padding:20px}
  .business-workspace--corporate .business-list-filters {padding:0 20px 20px;gap:16px}
- .business-workspace--corporate .business-overview-grid {gap:24px}
+ .business-workspace--corporate .business-overview,.business-workspace--corporate .business-overview-grid {gap:16px}
+ .business-workspace--corporate .business-overview-grid>.business-section:last-child {max-height:none;height:auto;overflow:visible}
+ .business-workspace--corporate .corporate-setup>summary {padding:12px 16px}
+ .business-workspace--corporate .business-overview .business-section-title,.business-workspace--corporate .business-overview .business-task,.business-workspace--corporate .business-overview .business-vehicle {padding:16px}
+ .business-workspace--corporate .business-task-copy {overflow-wrap:anywhere}
  .business-workspace--corporate .business-map-wrap {min-height:300px}
  .business-workspace--corporate .business-overview>.business-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
  .business-workspace--corporate .business-overview .business-metric {padding:12px;border-bottom:1px solid var(--border)}

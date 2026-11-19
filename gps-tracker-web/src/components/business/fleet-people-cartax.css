@@ -88,9 +88,11 @@
  .business-workspace--corporate .fleet-people-query{flex-basis:100%}
  .business-workspace--corporate .fleet-people-search{max-width:400px;flex-basis:100%;padding:0 14px}
  .business-workspace--corporate .fleet-people-query>select{max-width:none;flex:1;padding:9px 30px 9px 12px}
- .business-workspace--corporate .fleet-people-toolbar-actions{margin-left:auto}
- .business-workspace--corporate .fleet-people-controls .business-button{min-height:48px}
- .business-workspace--corporate .fleet-people-status-tab{min-height:48px;padding:10px 12px}
+ .business-workspace--corporate .fleet-people-toolbar-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px}
+ .business-workspace--corporate .fleet-people-controls .business-button{min-width:0;min-height:48px;padding:8px;font-size:16px;line-height:1.4;white-space:normal;word-break:keep-all}
+ .business-workspace--corporate .fleet-people-status-tabs{flex:1 1 230px}
+ .business-workspace--corporate .fleet-people-status-tab{flex:1 0 auto;min-height:48px;padding:8px;font-size:16px}
+ .business-workspace--corporate .fleet-people-result-count{margin-inline-start:auto;white-space:nowrap;font-size:16px}
  .business-workspace--corporate .fleet-people-cartax>.business-switch button{padding:14px 16px}
  .business-workspace--corporate .fleet-people-ledger{min-height:0}
 }
@@ -104,6 +106,7 @@
  .business-workspace--corporate .fleet-people-table th:nth-child(9){width:9.5%}
 }
 @media screen and (max-width:600px){
-.business-workspace--corporate .fleet-org-table :is(th,td){padding:16px 12px}
-.business-workspace--corporate .fleet-org-table :is(th,td):nth-child(2){width:112px}
-.business-workspace--corporate .fleet-org-table :is(th,td):nth-child(3){width:100px}}
+ .business-workspace--corporate .fleet-org-table :is(th,td){padding:12px 8px}
+ .business-workspace--corporate .fleet-org-table :is(th,td):nth-child(2){width:80px}
+ .business-workspace--corporate .fleet-org-table :is(th,td):nth-child(3){width:84px}
+}

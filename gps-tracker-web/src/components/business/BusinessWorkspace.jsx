@@ -15,11 +15,11 @@ import './business.css';
 const VehicleContext = createContext(null);
 const SelectionContext = createContext(null);
 export const useBusinessVehicle = () => useContext(VehicleContext);
-export function BusinessWorkspace({ renderVehicleDetail, title, description, tabs, groups, tab, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
+export function BusinessWorkspace({ renderVehicleDetail, title, description, tabs, groups, tab, section, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
   const workspaceRef = useRef(null);
   // Mobile scrolls the persistent workspace; desktop's keyed content remounts
   // below. Reset only on navigation so vehicle-map focus keeps its own scroll.
-  useEffect(() => { if (kind === 'corporate') workspaceRef.current?.scrollTo({ top: 0 }); }, [kind, tab]);
+  useEffect(() => { if (kind === 'corporate') workspaceRef.current?.scrollTo({ top: 0 }); }, [kind, tab, section]);
   const active = tabs.find(item => item.id === tab) || tabs[0];
   const navigation = groups || tabs;
   const activeGroup = active.group || active.id;
@@ -67,11 +67,26 @@ export function BusinessWorkspace({ renderVehicleDetail, title, description, tab
     {onNavigate && <nav className="app-bottom-nav business-mobile-nav no-print" aria-label={`${title} 빠른 메뉴`}>
       <button className="business-mobile-item" aria-current={tab === tabs[0].id ? 'page' : undefined} onClick={() => choose(tabs[0].id)}><Icon name="home" size={22} />현황</button>
       <button className="business-mobile-item" aria-current={(kind === 'corporate' ? activeGroup === 'vehicles' : tab === schedule?.id) ? 'page' : undefined} onClick={() => choose(kind === 'corporate' ? lastInGroup.vehicles || 'vehicles' : schedule.id)}><Icon name={kind === 'corporate' ? 'list' : 'clock'} size={22} />{kind === 'rentcar' ? '배차표' : '차량'}</button>
-      <div className="business-mobile-create">{mobileAction || action}</div>
+      {corporate && tabs.some(item => item.id === 'staff')
+        ? <button type="button" className="business-mobile-item" aria-current={activeGroup === 'staff' ? 'page' : undefined} onClick={() => choose('staff')}><Icon name="user" size={22} />사용자</button>
+        : <div className="business-mobile-create">{mobileAction || action}</div>}
       <button className="business-mobile-item" onClick={() => onNavigate('home')}><Icon name="mapPin" size={22} />지도</button>
       <button className="business-mobile-item" aria-expanded={more} onClick={() => setMore(true)}><Icon name="more" size={22} />더보기</button>
     </nav>}
-    {more && <BusinessDrawer title={`${title} 메뉴`} onClose={() => setMore(false)}><div className="business-more-menu">{groups ? groups.map(group => <section className="business-menu-group" key={group.id}><h3>{group.label}</h3>{tabs.filter(item => item.group === group.id).map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}>{item.label}</button>)}</section>) : tabs.map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}><Icon name={item.icon} size={18} />{item.label}</button>)}<hr />{corporate ? accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setMore(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>) : <><button className="business-button" onClick={() => { setMore(false); onNavigate('devices'); }}>단말기 관리</button><button className="business-button" onClick={() => { setMore(false); onNavigate('profile'); }}>내정보·계정 유형</button></>}</div></BusinessDrawer>}
+    {more && <BusinessDrawer title={`${title} 메뉴`} onClose={() => setMore(false)}>
+      <div className={`business-more-menu${corporate ? ' business-more-menu--corporate' : ''}`}>
+        {groups ? groups.map(group => {
+          const items = tabs.filter(item => item.group === group.id);
+          const links = items.map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}>
+            {corporate && <Icon name={item.icon} size={18} />}{item.label}
+          </button>);
+          if (corporate && items.length === 1) return links[0];
+          return <section className="business-menu-group" key={group.id}><h3>{group.label}</h3>{links}</section>;
+        }) : tabs.map(item => <button className="business-button" key={item.id} aria-current={tab === item.id ? 'page' : undefined} onClick={() => choose(item.id)}><Icon name={item.icon} size={18} />{item.label}</button>)}
+        <hr />
+        {corporate ? accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setMore(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>) : <><button className="business-button" onClick={() => { setMore(false); onNavigate('devices'); }}>단말기 관리</button><button className="business-button" onClick={() => { setMore(false); onNavigate('profile'); }}>내정보·계정 유형</button></>}
+      </div>
+    </BusinessDrawer>}
     {accountMenu && onNavigate && <BusinessDrawer title="계정 메뉴" onClose={() => setAccountMenu(false)}><div className="business-more-menu">{accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setAccountMenu(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>)}</div></BusinessDrawer>}
     {selected && (renderVehicleDetail ? renderVehicleDetail(selected,()=>setSelectedId(null)) : <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} onUpdated={onVehiclesChange} />)}
   </section></VehicleContext.Provider></SelectionContext.Provider>;
@@ -144,7 +159,11 @@ export function BusinessVehicles({ devices = [], onMap, onDetail, detailLabel = 
           {separateTerminal && <div className="business-terminal-name"><small>단말명</small><span title={terminalName(device)}>{terminalName(device)}</span></div>}
           <div className="business-vehicle-availability"><span className={`business-badge ${device.enabled === false || statusUnknown ? '' : available?.tone || 'good'}`}>{device.enabled === false ? '사용 정지' : statusUnknown ? '확인 필요' : available?.label || '사용 가능'}</span></div>
         </div>
-        <div className="business-connection"><span style={{ color: status.color }}>{status.label}</span><small>{device.last_seen_at ? `최근 통신 ${ageString(device.last_seen_at)}` : '수신 이력 없음'}</small>{separateTerminal && <small>{locationState(device, now) === 'none' ? '위치 없음' : `${locationState(device,now) === 'current' ? '현재 수신' : '오래된 위치'} · ${device.last_fix_at ? kstDateTime(device.last_fix_at) : '시각 없음'}`}</small>}</div>
+        <div className="business-connection">
+          <span style={{ color: status.color }}>{device.terminal_status_label || status.label}</span>
+          {!device.terminal_status_label && <small>{device.last_seen_at ? `최근 통신 ${ageString(device.last_seen_at)}` : '수신 이력 없음'}</small>}
+          {separateTerminal && <small>{locationState(device, now) === 'none' ? '위치 없음' : `${locationState(device,now) === 'current' ? '현재 수신' : '오래된 위치'} · ${device.last_fix_at ? kstDateTime(device.last_fix_at) : '시각 없음'}`}</small>}
+        </div>
         <div className="business-row-actions">{onMap && <BusinessButton icon="mapPin" onClick={() => focusOnMap(device)}>{localMap ? '위치' : '지도'}</BusinessButton>}{onDetail && <BusinessButton icon={detailLabel === '운행 리포트' ? 'bar' : 'wrench'} onClick={() => onDetail(device)}>{detailLabel}</BusinessButton>}</div>
       </div>;
     }) : <BusinessEmpty title={devices.length ? '검색 결과가 없습니다.' : '등록된 차량이 없습니다.'}>{devices.length ? '검색어나 상태 필터를 변경해 주세요.' : separateTerminal ? '차량 관리에서 차량을 먼저 등록한 뒤 단말기를 연결해 주세요.' : '연결된 단말기의 차량 정보를 등록해 주세요.'}</BusinessEmpty>}

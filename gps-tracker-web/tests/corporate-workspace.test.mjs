@@ -212,6 +212,9 @@ test('mobile more keeps every corporate child and permitted account destination 
  const allowed=[{id:'home',label:'홈',icon:'home'},{id:'profile',label:'내정보',icon:'user'},{id:'admin',label:'관리자',icon:'wrench'}];
  const {renderer:r,changes,destinations}=await mount(t,{globalNavigation:allowed});
  const mobile=()=>r.root.findByProps({'aria-label':'법인차 운영 빠른 메뉴'});
+ await act(async()=>findButton(mobile(),'사용자').props.onClick());
+ assert.equal(changes.at(-1),'staff');
+ assert.equal(findButton(mobile(),'사용자').props['aria-current'],'page');
  await act(async()=>findButton(mobile(),'더보기').props.onClick());
  let drawer=r.root.findByType('aside');
  for(const child of corporateTabs)assert.ok(buttons(drawer).includes(child.label),child.label);

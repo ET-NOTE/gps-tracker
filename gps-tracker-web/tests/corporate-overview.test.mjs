@@ -62,5 +62,5 @@ test('a current primary binding still needs communication checks when its teleme
  assert.equal(bound.source_device_id,undefined);
  const tasks=corporateAttention([bound],now,{classify:()=>({id:'unknown'}),battery:()=>({state:'unknown'})});
  assert.deepEqual(tasks.map(t=>t.id),['signal-5']);
- assert.equal(tasks[0].description,'통신 이력 없음');
+ assert.equal(tasks[0].description,'연결됨 · 통신 정보 확인 불가');
 });

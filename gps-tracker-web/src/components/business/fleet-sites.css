@@ -37,6 +37,8 @@
 .business-workspace--corporate .fleet-sites-table .business-button+.business-button{margin-left:0}
 .business-workspace--corporate .fleet-site-footer{margin-top:auto;padding:18px 20px;border-top:1px solid var(--border);font-size:16px;color:var(--text-2)}
 .business-workspace--corporate .fleet-site-date-range{display:flex;align-items:center;gap:8px;min-width:0;border:1px solid var(--border);border-radius:4px;padding:0 12px;color:var(--text-2);background:var(--surface)}
+.fleet-site-date-range>label{display:contents}
+.fleet-site-date-label{display:none}
 .business-workspace--corporate .fleet-site-date-range input:not([type=checkbox]){width:172px;min-width:0;min-height:48px;border:0;border-radius:0;background:transparent;color:var(--text-2);font-size:18px;padding:9px 0}
 .business-workspace--corporate .fleet-site-pagination{justify-content:flex-end;margin-top:auto;border-top:1px solid var(--border);padding:16px 20px;font-size:16px;gap:12px;flex-wrap:wrap}
 .business-workspace--corporate .fleet-site-help{border-radius:6px;padding:18px 20px;font-size:16px;background:var(--surface);color:var(--text-2)}
@@ -79,8 +81,15 @@
  .business-workspace--corporate .fleet-site-control-row>.business-button{margin-left:auto;min-height:48px}
  .business-workspace--corporate .fleet-site-status-tab{min-height:48px;padding:10px 12px;font-size:18px}
  .business-workspace--corporate .fleet-sites>.business-switch button{padding:14px 16px}
- .business-workspace--corporate .fleet-site-date-range{flex:1 1 100%;justify-content:space-between;padding:0 12px;gap:8px}
- .business-workspace--corporate .fleet-site-date-range input:not([type=checkbox]){width:calc(50% - 12px);flex:1}
+ .business-workspace--corporate .fleet-site-date-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));flex:1 1 100%;border:0;padding:0;gap:8px}
+ .fleet-site-date-range>label{display:grid;min-width:0;gap:4px}
+ .fleet-site-date-label{display:block;font-size:15px;font-weight:600}
+ .fleet-site-date-divider{display:none}
+ .business-workspace--corporate .fleet-site-date-range input:not([type=checkbox]){width:100%;padding-inline:8px}
  .business-workspace--corporate .fleet-site-ledger{min-height:0}
+}
+@media screen and (max-width:400px){
+ .business-workspace--corporate .fleet-site-date-range{grid-template-columns:minmax(0,1fr)}
+ .fleet-site-date-range>label{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px}
 }
 @media screen and (min-width:1200px){.business-workspace--corporate .fleet-site-visits{display:flex;flex-direction:column;min-height:calc(100dvh - 132px)}.business-workspace--corporate .fleet-site-visits>.fleet-site-ledger{flex:1}}
