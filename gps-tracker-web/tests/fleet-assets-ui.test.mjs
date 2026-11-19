@@ -21,7 +21,7 @@ const groupCount=(r,label)=>Number(text(groupButton(r,label).findAllByType('span
 const rowNames=r=>r.root.findByType('tbody').findAllByType('tr').map(n=>text(n.findAllByType('td')[0].children));
 const detailDrawers=r=>r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']);
 
-async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVehicle,onChanged=()=>{},initialMissingSchedules=false}={}){
+async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVehicle,onChanged=()=>{},initialMissingSchedules=false,mapReturn}={}){
  const context=vm.createContext({console});
  const synthetic=exports=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value] of Object.entries(exports))this.setExport(key,value);},{context});
  const code=(await transform(await readFile(new URL('../src/components/business/FleetAssets.jsx',import.meta.url),'utf8'),{loader:'jsx',jsx:'automatic',format:'esm'})).code;
@@ -52,7 +52,7 @@ async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVeh
  await mod.link(name=>synthetic(real[name]||(name==='./BusinessDrawer'?{default:({title,children,onClose})=>React.createElement('aside',{'aria-label':title},React.createElement('button',{'aria-label':'상세 닫기',onClick:onClose},'닫기'),children)}:common)));
  await mod.evaluate();
  const reports=[],maps=[];let r;
- const render=assets=>React.createElement(mod.namespace.FleetAssets,{assets,devices,onChanged,initialMissingSchedules,onMap:value=>maps.push(value),onReport:value=>reports.push(value.id)});
+ const render=assets=>React.createElement(mod.namespace.FleetAssets,{assets,devices,onChanged,initialMissingSchedules,mapReturn,onMap:(deviceId,origin)=>maps.push({deviceId,origin}),onReport:value=>reports.push(value.id)});
  await act(async()=>{r=create(render(data));});
  t.after(async()=>{await act(async()=>r.unmount());});
  return {r,reports,maps,connections,vehicleUpdates,invalidations,refresh:assets=>act(async()=>r.update(render(assets)))};
@@ -335,7 +335,13 @@ test('vehicle detail keeps operational state, communication, missing schedules a
  assert.match(text(maintenance.children),/다음 정비 주행거리0 km/);
  assert.doesNotMatch(text(maintenance.children),/예정 없음/);
  await act(async()=>button(r,'전체 지도 보기').props.onClick());
- assert.deepEqual(maps,[9001]);assert.equal(detailDrawers(r).length,0);
+ assert.equal(maps.length,1);
+ const [{deviceId,origin}]=maps;
+ assert.equal(deviceId,9001);assert.equal(origin.vehicleId,71);assert.equal(origin.detailTab,'status');
+ const back=await mount(t,{data:[asset],devices:[{id:9001,display_name:'대표 단말'}],mapReturn:origin});
+ assert.equal(detailDrawers(back.r)[0].props['aria-label'],'영업 1호');
+ const revoked=await mount(t,{data:[],mapReturn:origin});
+ assert.equal(detailDrawers(revoked.r).length,0);
 });
 
 test('an active terminal with unavailable telemetry stays connected, while an ended binding is unconnected',async t=>{
@@ -348,4 +354,32 @@ test('an active terminal with unavailable telemetry stays connected, while an en
   assert.deepEqual(facts,current?['검수 단말','연결됨 · 통신 정보 확인 불가','확인 불가','확인 불가']:['단말기 미연결','미연결','수신 이력 없음','수신 이력 없음']);
   assert.equal(r.root.findAll(n=>n.type==='button'&&text(n.children)==='전체 지도 보기').length,0);
  }
+});
+
+test('vehicle detail survives edit cancellation and saving, and uses the refreshed vehicle version for a new connection',async t=>{
+ const asset={...vehicles[0],updated_at:'first-version'};
+ let changes=0;
+ const {r,refresh,connections,vehicleUpdates}=await mount(t,{data:[asset],devices:[{id:901,display_name:'새 단말기'}],onChanged:()=>{changes++;}});
+ await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 상세'}).props.onClick());
+ const open=()=>act(async()=>button(r,'차량·점검 정보 수정').props.onClick({currentTarget:{focus(){}}}));
+ const drawer=detailDrawers(r)[0];
+ await open();
+ assert.equal(detailDrawers(r)[0],drawer);
+ await act(async()=>button(r,'취소').props.onClick());
+ assert.equal(r.root.findAllByProps({role:'dialog'}).length,0);
+ assert.equal(detailDrawers(r)[0],drawer);
+ await open();
+ const type=r.root.find(n=>n.type==='input'&&n.props.maxLength===120&&!n.props.required);
+ await act(async()=>type.props.onChange({target:{value:'테스트 차종'}}));
+ await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
+ assert.equal(vehicleUpdates[0].body.car_model,'테스트 차종');
+ assert.equal(changes,1);
+ await refresh([{...asset,car_model:'테스트 차종',updated_at:'after-edit'}]);
+ assert.equal(detailDrawers(r)[0],drawer);
+ assert.match(text(drawer.children),/테스트 차종/);
+ assert.equal(r.root.findAllByProps({role:'dialog'}).length,0);
+ await act(async()=>button(r,'단말기 연결').props.onClick());
+ await act(async()=>r.root.find(n=>n.type==='input'&&n.props.type==='checkbox').props.onChange({target:{checked:true}}));
+ await act(async()=>button(r,'연결 저장').props.onClick());
+ assert.equal(connections[0][1].updated_at,'after-edit');
 });

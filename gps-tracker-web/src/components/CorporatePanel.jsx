@@ -69,7 +69,7 @@ function reportMonthError(month) {
   return year < 2000 || year > 2100 ? '다운로드 월은 2000년 1월부터 2100년 12월까지 선택할 수 있습니다.' : '';
 }
 
-function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice, onVehiclesChange, onNavigate, globalNavigation, meta: personalMeta, toolbar }) {
+function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice, onVehiclesChange, onNavigate, globalNavigation, meta: personalMeta, toolbar, mapReturn, onMapReturnUsed }) {
   const access=useFleetAccess();
   const terminals=useQuery({queryKey:['fleet-terminals'],queryFn:()=>api.fleetTerminals(),refetchInterval:30000,structuralSharing:false});
   const subjectScoped=Boolean(terminals.data?.subjectScope);
@@ -80,10 +80,14 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const devices=useMemo(()=>vehiclesReady&&terminalsReady?projectFleetAssets(assets.data||[],rawDevices):[],[vehiclesReady,terminalsReady,assets.data,rawDevices]);
   const meta=Object.fromEntries(devices.map(d=>[d.id,rawMeta?.[d.source_device_id]]));
   const onMap=id=>{const sim=devices.find(v=>v.id===id)?.source_device_id;if(sim)rawOnMap?.(sim);};
-  const [editAsset,setEditAsset]=useState(null);
-  const staff=useStaff();
-  const [tab, setTab] = useState('overview');
-  const [missingSchedulesOnly,setMissingSchedulesOnly]=useState(false);
+  const [restored, setRestored] = useState(() => mapReturn && mapReturn.ownerId === access.owner_id && mapReturn.actorId === access.actor_id ? mapReturn : null);
+  const [tab, setTab] = useState(restored?.page || 'overview');
+  const [missingSchedulesOnly,setMissingSchedulesOnly]=useState(restored?.missingSchedulesOnly || false);
+  useEffect(() => { if (mapReturn) onMapReturnUsed?.(); }, [mapReturn, onMapReturnUsed]);
+  useEffect(() => { if (restored && restored.page !== tab) setRestored(null); }, [restored, tab]);
+  const openDetailMap = rawOnMap && ((sim, detail) => rawOnMap(sim, {
+    ...detail, page: tab, missingSchedulesOnly, ownerId: access.owner_id, actorId: access.actor_id,
+  }));
   const openVehicles=(missingOnly=false)=>{setMissingSchedulesOnly(missingOnly);setTab('vehicles');};
   const [sectionTabs,setSectionTabs] = useState({staff:'users',sites:'sites',settings:'company'});
   const changeSection = (page, value) => setSectionTabs(previous=>({...previous,[page]:value}));
@@ -111,7 +115,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   }
   const needsVehicles=tab!=='expense-categories';
   const vehicleNotice = terminalNotice || (terminalsReady && assets.error && <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>);
-  return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setMissingSchedulesOnly(false); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
+  return <BusinessWorkspace initialVehicleId={restored?.page==='overview' ? restored.vehicleId : null} renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onMap={openDetailMap} onReport={report} initialTab={restored?.detailTab}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setMissingSchedulesOnly(false); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     toolbar={toolbar} globalNavigation={globalNavigation} section={sectionTabs[tab]} sections={sectionNavigation} onSection={changeSection}
     headerNavigation={sectionNavigation[tab]&&<nav className="business-subnav no-print" aria-label={`${corporateTabs.find(item=>item.id===tab)?.label} 하위 메뉴`}>{sectionNavigation[tab].map(([id,label])=><button type="button" className="business-subnav-item" key={id} aria-current={sectionTabs[tab]===id?'page':undefined} onClick={()=>selectSection(id)}>{label}</button>)}</nav>}
     >
@@ -119,7 +123,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     {needsVehicles&&(!terminalsReady||!vehiclesReady) ? (vehicleNotice || <SkeletonList count={3} itemHeight={140}/>) : <>
     {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onMissingSchedules={()=>openVehicles(true)}
       setup={access.manage_vehicles && <details className="corporate-setup"><summary>회사 시작하기</summary><div className="fleet-onboarding" aria-label="회사 시작하기"><BusinessButton onClick={()=>setTab('settings')}>회사 정보</BusinessButton><BusinessButton onClick={()=>openVehicles()}>차량 등록·단말기 연결</BusinessButton><BusinessButton onClick={()=>setTab('staff')}>사용자 배정</BusinessButton></div></details>}/>}
-    {tab === 'vehicles' && <FleetAssets key={missingSchedulesOnly?'missing-schedules':'all'} initialMissingSchedules={missingSchedulesOnly} onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={rawOnMap} onChanged={assets.refetch} />}
+    {tab === 'vehicles' && <FleetAssets key={missingSchedulesOnly?'missing-schedules':'all'} initialMissingSchedules={missingSchedulesOnly} mapReturn={restored?.page==='vehicles' ? restored : null} onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={openDetailMap} onChanged={assets.refetch} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <><StaffTab activeTab={sectionTabs.staff} onTab={selectSection} hideNavigation />{access.manage_team&&<details className="corporate-admin-details"><summary>계정·단말기 연결 설정</summary><CompanySubjectMappings/></details>}</>}
     {tab === 'sites' && <FleetSites activeTab={sectionTabs.sites} onTab={selectSection} hideNavigation />}
@@ -130,7 +134,6 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
         : !subscription.data.active ? <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} report />
         : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} initialFilter={reportFilter} /> : <MonthlyReportTab devices={devices} />}</>}
     {tab === 'settings' && <BusinessSettings activeTab={sectionTabs.settings} onTab={selectSection} hideNavigation company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
-    {vehiclesReady&&editAsset&&<FleetAssetForm asset={editAsset} staff={staff.data||[]} onClose={()=>setEditAsset(null)} onSaved={()=>{setEditAsset(null);assets.refetch();}}/>}
     </>}
   </BusinessWorkspace>;
 }
@@ -147,17 +150,22 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
   const shown = showAll ? tasks : tasks.slice(0,6);
   const distanceHint = stats.loading ? '집계 조회 중' : stats.error ? '집계 조회 실패' : !devices.length ? '등록 차량 없음' : stats.measured ? `${stats.measured}/${devices.length}대 집계${stats.partial ? ' · 일부 집계' : ''}${stats.lastFixAt ? ` · 마지막 위치 ${kstDateTime(stats.lastFixAt)}` : ''}` : stats.pending ? `집계 대기 ${stats.pending}대${stats.noData ? ` · 오늘 위치 없음 ${stats.noData}대` : ''}` : '오늘 수신된 위치 없음';
   const vehicleMetrics = [
-    { label: '등록 차량', value: devices.length, unit: '대', hint: '차량 목록에 등록된 전체 차량', icon: 'list' },
-    { label: '사용 가능', value: devices.filter(d=>d.enabled !== false).length, unit: '대', hint: '차량 운영 상태 · 통신 상태와 별도', icon: 'check', tone: 'good' },
+    { label: '등록 차량', value: devices.length, unit: '대', icon: 'list' },
+    { label: '사용 가능', value: devices.filter(d=>d.enabled !== false).length, unit: '대', icon: 'check', tone: 'good' },
   ];
-  const distanceMetric = { label: '오늘 운행거리', value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', hint: distanceHint + ' · 연결 변경일은 합계 제외', icon: 'route' };
-  const maintenanceMetric = { label: '점검 예정', value: maintenance.length, unit: '건', hint: `30일 이내·기한 경과${missing.length ? ` · 일정 미등록 ${missing.length}대` : ' · 일정 등록 완료'}`, tone: maintenance.some(t=>t.overdue) ? 'urgent' : '', icon: 'wrench' };
+  const distanceMetric = {
+    label: stats.partial && !stats.loading && !stats.error ? '오늘 운행거리 (일부)' : '오늘 운행거리',
+    value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', icon: 'route',
+    emptyLabel: stats.error ? '조회 실패' : stats.loading ? '조회 중' : !devices.length ? '차량 없음' : stats.pending ? '집계 대기' : '수신 없음',
+    detail: distanceHint + ' · 연결 변경일은 합계 제외',
+  };
+  const maintenanceMetric = { label: '점검 예정', value: maintenance.length, unit: '건', detail: '30일 이내 예정 및 기한 경과', tone: maintenance.some(t=>t.overdue) ? 'urgent' : '', icon: 'wrench' };
   return <>{!phone && setup}<div className="business-overview">
     {phone && <header className="corporate-overview-heading"><h2>운영 현황</h2><time dateTime={period.day}>{period.day.replaceAll('-', '. ')}</time></header>}
     <BusinessMetrics items={phone ? [distanceMetric, ...vehicleMetrics, maintenanceMetric] : [...vehicleMetrics, distanceMetric, maintenanceMetric]}/>
     {stats.error && <BusinessError onRetry={stats.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
     <div className="business-overview-grid"><BusinessLocation devices={devices} />
-      <BusinessSection title="오늘 확인할 일" description={`통신·배터리·점검 ${tasks.length}건 · 미작성 운행 확인`}>
+      <BusinessSection title="오늘 확인할 일">
         {shown.map(t=><BusinessTask key={t.id} title={`${corporateVehicleName(t.device)} · ${terminalName(t.device)}`} description={`${t.description}${t.id.startsWith('signal-') && t.device.last_seen_at ? ` · 마지막 통신 ${ageString(t.device.last_seen_at)}` : ''}${t.id.startsWith('battery-') && (t.device.last_battery_at || t.device.last_seen_at) ? ` · ${kstDateTime(t.device.last_battery_at || t.device.last_seen_at)}` : ''}`} label={t.label} tone={t.tone} action="차량 확인" onClick={()=>openVehicle(t.device)} />)}
         {tasks.length > 6 && <div className="business-section-footer"><BusinessButton onClick={()=>setShowAll(v=>!v)}>{showAll ? '접기' : `나머지 ${tasks.length-6}건 보기`}</BusinessButton></div>}
         {missing.length > 0 && <BusinessTask title={`점검 일정 미등록 ${missing.length}대`} description="정비·보험·검사 중 등록하지 않은 일정이 있습니다." label="일정 미등록" action="미등록 차량 보기" onClick={onMissingSchedules} />}

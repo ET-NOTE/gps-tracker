@@ -111,7 +111,7 @@
   .business-workspace--corporate .business-content .business-overview>.business-metrics {
     grid-template-columns:repeat(2,minmax(0,1fr));
     align-items:stretch;
-    gap:10px;
+    gap:8px;
     border:0;
     border-radius:0;
     background:transparent;
@@ -120,9 +120,9 @@
   .business-workspace--corporate .business-content .business-overview .business-metric {
     min-width:0;
     border:1px solid var(--border);
-    border-radius:14px;
+    border-radius:10px;
     background:var(--surface);
-    padding:14px;
+    padding:10px 12px;
   }
   .business-workspace--corporate .business-content .business-overview .business-metric>div {font-size:16px;line-height:1.4}
   .business-workspace--corporate .business-overview .business-metric>div svg {display:block;flex:none}
@@ -130,24 +130,32 @@
   .corporate-overview-heading h2 {margin:0;font-size:21px;line-height:1.4;color:var(--text)}
   .corporate-overview-heading time {font-size:14px;color:var(--text-2)}
   .business-workspace--corporate .business-content .business-overview .business-metric strong {font-size:28px;line-height:1.25}
-  .business-workspace--corporate .business-content .business-overview .business-metric p {color:var(--text-2);font-size:14px;line-height:1.5}
   .business-workspace--corporate .business-overview>.business-metrics>.business-metric:first-child {
-    grid-column:1 / -1;
     background:#10375e;
     color:#fff;
     border:0;
-    padding:18px 20px;
   }
-  .business-workspace--corporate .business-overview>.business-metrics>.business-metric:first-child :is(div,p,small,svg) {color:#d6e7f7}
-  .business-workspace--corporate .business-overview>.business-metrics>.business-metric:first-child strong {color:#fff;font-size:30px}
-  .business-overview>.business-metrics>.business-metric:last-child {
+  .business-workspace--corporate .business-overview>.business-metrics>.business-metric:first-child :is(div,small,svg) {color:#d6e7f7}
+  .business-workspace--corporate .business-overview>.business-metrics>.business-metric:first-child strong {color:#fff}
+  .business-workspace--corporate .business-content .business-overview .business-metric strong.business-metric-status {font-size:20px;line-height:1.7}
+  .business-workspace:not(.business-workspace--corporate) .business-overview>.business-metrics>.business-metric:last-child {
     grid-column:1 / -1;
     display:grid;
     grid-template-columns:1fr auto;
     gap:0 10px;
     align-items:baseline;
   }
-  .business-overview>.business-metrics>.business-metric:last-child>div {justify-content:flex-start;gap:8px}
-  .business-overview>.business-metrics>.business-metric:last-child p {grid-column:1 / -1}
+  .business-workspace:not(.business-workspace--corporate) .business-overview>.business-metrics>.business-metric:last-child>div {justify-content:flex-start;gap:8px}
+  .business-workspace:not(.business-workspace--corporate) .business-overview>.business-metrics>.business-metric:last-child p {grid-column:1 / -1}
   .business-workspace--corporate .business-content .business-overview .business-section {border-radius:14px}
+  .business-workspace--corporate .business-overview .business-task:has(>button) {
+    display:grid;
+    grid-template-columns:7px minmax(0,1fr) auto;
+    gap:3px 8px;
+    align-items:center;
+  }
+  .business-workspace--corporate .business-overview .business-task-mark {grid-column:1;grid-row:1 / 3}
+  .business-workspace--corporate .business-overview .business-task-copy {grid-column:2;grid-row:1 / 3;overflow-wrap:anywhere}
+  .business-workspace--corporate .business-overview .business-task>.business-badge {grid-column:3;grid-row:1;justify-self:end;margin:0}
+  .business-workspace--corporate .business-overview .business-task>button {grid-column:3;grid-row:2;justify-self:end;margin:0}
 }

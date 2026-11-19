@@ -1,5 +1,8 @@
 .map-top-overlay { position: absolute; inset: 12px 12px auto; z-index: 13; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; pointer-events: none; }
 .map-top-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; max-width: 320px; }
+.map-vehicle-return-bar { flex: none; padding: 0 8px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.map-return-vehicle { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: var(--primary); font: inherit; font-weight: 600; cursor: pointer; }
+.map-return-vehicle:focus-visible { outline: 2px solid var(--primary); outline-offset: -3px; border-radius: var(--radius-md); }
 .map-device-card { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-2xl); background: var(--surface); box-shadow: var(--shadow-md); }
 .map-live-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 12px 12px; }
 .map-live-reading { display: flex; align-items: baseline; gap: 5px; font-size: var(--font-caption); color: var(--text-2); }

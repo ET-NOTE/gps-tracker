@@ -8,7 +8,7 @@ import SwipeableCard from '../components/SwipeableCard';
 import { authScope, assertSession } from '../authSession';
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../api';
+import { activeStorage, api } from '../api';
 import { useMe, useAccountType, useDevices } from '../state';
 import { EMPTY_DEVICES, loadDeviceSnapshot, cancelDeviceSnapshot, updateDeviceList } from '../state/devices';
 import { useLiveWS } from '../hooks/useLiveWS';
@@ -91,6 +91,17 @@ export default function Dashboard({ onLogout }) {
   const setView = useCallback((v) => {
     navigate(viewToPath(v));
   }, [navigate]);
+  // Only the map visit carries its origin. Browser Back returns to the original
+  // location key; a new visit to /corporate or / starts with its own state.
+  const sessionId = activeStorage()?.getItem('auth_session');
+  const mapVisit = location.state?.corporateVehicleMap;
+  const mapOrigin = sessionId && mapVisit?.sessionId === sessionId ? mapVisit : null;
+  const [pendingMapReturn, setPendingMapReturn] = useState(mapOrigin);
+  useEffect(() => {
+    if (view === 'home') setPendingMapReturn(mapOrigin);
+    else if (view !== 'corporate') setPendingMapReturn(null);
+  }, [view, mapOrigin]);
+  const consumeMapReturn = useCallback(() => setPendingMapReturn(null), []);
   const pinKey = 'gps_cache_pin:' + authScope();
   const [pinnedId, setPinnedId] = useState(() => Number(localStorage.getItem(pinKey)) || null);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('onboarding_v2'));
@@ -535,6 +546,14 @@ export default function Dashboard({ onLogout }) {
     }
   }, []);
 
+  const openCorporateMap = (deviceId, detail) => {
+    const origin = detail && sessionId ? { ...detail, sourceKey: location.key, sessionId } : null;
+    navigate('/', { state: origin ? { corporateVehicleMap: origin } : null });
+    persistFilterDevice(deviceId);
+  };
+  const returnToVehicle = view === 'home' && isCorporate && mapOrigin?.actorId === me?.id && mapOrigin
+    ? () => navigate(-1) : undefined;
+  const navigateDashboard = destination => destination === 'corporate' && returnToVehicle ? returnToVehicle() : setView(destination);
   const selectLinkedDevice = useCallback(id => {
     filterAppliedRef.current = true;
     persistFilterDevice(id);
@@ -914,7 +933,7 @@ export default function Dashboard({ onLogout }) {
       </div>}
 
       {/* 데스크톱 좌측 사이드 레일 */}
-      {isDesktop && <SideRail active={view} onChange={setView} isAdmin={isAdmin}
+      {isDesktop && <SideRail active={view} onChange={navigateDashboard} isAdmin={isAdmin}
         isCorporate={isCorporate} isRentcar={isRentcar} isDelivery={isDelivery} />}
 
       <main style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
@@ -938,8 +957,9 @@ export default function Dashboard({ onLogout }) {
             flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
           }}>
             <Suspense fallback={<LazyPanelFallback />}>
-              <CorporatePanel devices={devices} onNavigate={setView} globalNavigation={sideRailItems({isAdmin,isCorporate,isRentcar,isDelivery}).filter(item=>item.id!=='corporate')} meta={lastMetaRef.current} onMap={id => { setView('home'); persistFilterDevice(id); }}
-                onDevice={id => { setDetailId(id); setView('devices'); }} onVehiclesChange={reloadDevicesAfterMutation} />
+              <CorporatePanel devices={devices} onNavigate={setView} globalNavigation={sideRailItems({isAdmin,isCorporate,isRentcar,isDelivery}).filter(item=>item.id!=='corporate')} meta={lastMetaRef.current} onMap={openCorporateMap}
+                mapReturn={pendingMapReturn?.sourceKey === location.key && pendingMapReturn.sessionId === sessionId && pendingMapReturn.actorId === me?.id ? pendingMapReturn : null}
+                onMapReturnUsed={consumeMapReturn} onDevice={id => { setDetailId(id); setView('devices'); }} onVehiclesChange={reloadDevicesAfterMutation} />
             </Suspense>
           </div>
         )}
@@ -980,9 +1000,10 @@ export default function Dashboard({ onLogout }) {
             데스크톱은 항상, 모바일/태블릿은 home 일 때만 시각적 노출 */}
         <div style={{
           flex: 1, position: 'relative', minWidth: 0,
-          display: (routeProblem || specialized) ? 'none' : 'block',
+          display: (routeProblem || specialized) ? 'none' : 'flex', flexDirection: 'column',
         }}>
-          <div style={{ position: 'absolute', inset: 0, visibility: mapVisible ? 'visible' : 'hidden' }}>
+          {returnToVehicle && <nav className="map-vehicle-return-bar" aria-label="차량 지도 탐색"><button type="button" className="map-return-vehicle" onClick={returnToVehicle}><Icon name="chevron-left" size={16}/>차량 상세로 돌아가기</button></nav>}
+          <div style={{ position: 'relative', flex: 1, minHeight: 0, visibility: mapVisible ? 'visible' : 'hidden' }}>
             <KakaoMap ref={mapRef} onReady={handleMapReady}
               onRoadview={({ lat, lng }) => tryOpenRoadview(lat, lng)}
               // 지도 마커 클릭 → 모바일: 컴팩트 PointInfoSheet + 간이 시커 슬롯 동기화 동시.
@@ -1127,7 +1148,7 @@ export default function Dashboard({ onLogout }) {
       </main>
 
       {/* 모바일/태블릿 바텀 네비 */}
-      {!isDesktop && !(view === 'corporate' && isCorporate) && !(view === 'rentcar' && isRentcar) && <BottomNav active={view} onChange={setView} isAdmin={isAdmin}
+      {!isDesktop && !(view === 'corporate' && isCorporate) && !(view === 'rentcar' && isRentcar) && <BottomNav active={view} onChange={navigateDashboard} isAdmin={isAdmin}
         isCorporate={isCorporate} isRentcar={isRentcar} isDelivery={isDelivery} />}
 
       {/* 로드뷰 모달 — 호출 측이 probeRoadview() 로 panoId 확보 후에만 마운트 */}

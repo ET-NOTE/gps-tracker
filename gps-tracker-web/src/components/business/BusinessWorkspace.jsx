@@ -17,7 +17,7 @@ import './business.css';
 const VehicleContext = createContext(null);
 const SelectionContext = createContext(null);
 export const useBusinessVehicle = () => useContext(VehicleContext);
-export function BusinessWorkspace({ renderVehicleDetail, title, description, tabs, groups, tab, section, sections, onSection, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
+export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail, title, description, tabs, groups, tab, section, sections, onSection, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
   const workspaceRef = useRef(null);
   const phone = useCorporatePhone();
   // Mobile scrolls the persistent workspace; desktop's keyed content remounts
@@ -31,10 +31,10 @@ export function BusinessWorkspace({ renderVehicleDetail, title, description, tab
   const subnavLabel = navigation.find(item => item.id === subnavGroup)?.label;
   const [lastInGroup, setLastInGroup] = useState({});
   useEffect(() => { setLastInGroup(previous => previous[activeGroup] === tab ? previous : { ...previous, [activeGroup]: tab }); }, [activeGroup, tab]);
-  const [selectedId, setSelectedId] = useState(null), [more, setMore] = useState(false);
+  const [selectedId, setSelectedId] = useState(initialVehicleId), [more, setMore] = useState(false);
   const [accountMenu, setAccountMenu] = useState(false);
-  const [focusedId, setFocusedId] = useState(null);
-  useEffect(() => { if (!devices.some(d => String(d.id) === String(focusedId))) setFocusedId(null); }, [devices, focusedId]);
+  const [focusedId, setFocusedId] = useState(initialVehicleId);
+  useEffect(() => { if (devices.length && !devices.some(d => String(d.id) === String(focusedId))) setFocusedId(null); }, [devices, focusedId]);
   const selected = devices.find(d => String(d.id) === String(selectedId));
   const openVehicle = device => { setFocusedId(device.id); setSelectedId(device.id); };
   const schedule = tabs.find(t => ['schedule', 'reservations'].includes(t.id));
@@ -107,7 +107,7 @@ export function BusinessLocation({ devices }) {
   }
   return <BusinessSection title="차량 위치" description={`현재 수신 ${counts.current} · 오래된 위치 ${counts.old} · 위치 없음 ${counts.none}`}>
     <BusinessMap devices={devices} onSelect={selection?.focusVehicle || openVehicle} selectedId={selection?.focusedId} />
-    <p className="business-map-note">현재 수신: 최근 5분 내 위치 · 지도는 마지막 수신 위치를 표시합니다.</p>
+    {selection?.kind !== 'corporate' && <p className="business-map-note">현재 수신: 최근 5분 내 위치 · 지도는 마지막 수신 위치를 표시합니다.</p>}
     {selected && <div className="business-map-selection"><div><strong>{corporateVehicleName(selected)}</strong><p>{terminalName(selected)} · {selectedLocation}</p></div><BusinessButton onClick={() => openVehicle?.(selected)}>차량 상세</BusinessButton></div>}
   </BusinessSection>;
 }
@@ -124,8 +124,10 @@ export function BusinessSection({ title, description, action, children }) {
   return <section className="business-section"><div className="business-section-title"><div><h3>{title}</h3>{description && <p>{description}</p>}</div>{action}</div>{children}</section>;
 }
 export function BusinessMetrics({ items }) {
-  return <div className="business-metrics">{items.map(item => <div className={`business-metric ${item.tone || ''}`} key={item.label}>
-    <div><span>{item.label}</span><Icon name={item.icon || 'bar'} size={18} /></div><strong>{item.value ?? '—'}{item.value != null && <small>{item.unit}</small>}</strong><p>{item.hint}</p>
+  return <div className="business-metrics">{items.map(item => <div className={`business-metric ${item.tone || ''}`} key={item.label} title={item.detail}>
+    <div><span>{item.label}</span><Icon name={item.icon || 'bar'} size={18} /></div>
+    <strong className={item.value == null && item.emptyLabel ? 'business-metric-status' : undefined}>{item.value ?? item.emptyLabel ?? '—'}{item.value != null && <small>{item.unit}</small>}</strong>
+    {item.hint && <p>{item.hint}</p>}
   </div>)}</div>;
 }
 export function BusinessTask({ title, description, label, tone = '', action, onClick }) {

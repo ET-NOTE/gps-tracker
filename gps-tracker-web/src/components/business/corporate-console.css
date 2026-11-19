@@ -2,12 +2,19 @@
 @media screen {
  .business-workspace--corporate,.gps-business-modal,.business-drawer {--font-body:18px;--field-label-size:16px;--field-help-size:16px;--field-gap:10px;--control-font-size:18px;--control-min-height:48px;--touch-target:48px}
  .business-workspace--corporate {line-height:1.6}
- .business-workspace--corporate .business-overview-grid {gap:24px}
- .business-workspace--corporate .business-overview-grid>.business-section:last-child {max-height:600px}
+ .business-workspace--corporate .business-overview,.business-workspace--corporate .business-overview-grid {gap:16px}
+ .business-workspace--corporate .business-overview-grid>.business-section {height:auto}
+ .business-workspace--corporate .business-overview-grid>.business-section:last-child {max-height:530px}
  .business-workspace--corporate .business-map-wrap {min-height:340px}
+ .business-workspace--corporate .business-overview .business-map-wrap {min-height:clamp(224px,29vh,320px)}
+ .business-workspace--corporate .business-overview .business-section-title {padding:12px 18px;gap:10px}
+ .business-workspace--corporate .business-overview .business-section-title h3 {margin:0;font-size:20px;line-height:1.4}
+ .business-workspace--corporate .business-overview .business-section-title p {font-size:15px;line-height:1.45;margin-top:2px}
  .business-workspace--corporate :is(.business-map-note,.business-map-placeholder,.business-vehicle-name p,.business-connection small,.business-support-summary dt,.business-metric small) {font-size:16px}
  .business-workspace--corporate :is(.business-terminal-name,.business-list-filters,.business-reservation-summary,.business-support-message,.business-company-missing) {font-size:18px}
- .business-workspace--corporate .business-reservation-summary {padding:20px 24px}
+ .business-workspace--corporate .business-reservation-summary {padding:8px 18px;font-size:16px}
+ .business-workspace--corporate .business-content .business-overview .business-button {min-height:40px;padding:6px 12px;font-size:16px;line-height:1.4}
+ .business-workspace--corporate .business-overview .business-list-filters {padding:0 18px 12px;gap:12px;font-size:16px}
  .business-workspace--corporate .business-list-filters {gap:20px;padding:0 24px 24px}
  .business-workspace--corporate .business-content :is(input,select):not([type=checkbox]):not([type=radio]) {min-height:48px}
  .business-workspace--corporate .business-content textarea {font-size:18px;line-height:1.6}
@@ -49,17 +56,22 @@
  .business-workspace--corporate .corporate-setup,.business-workspace--corporate .corporate-admin-details {background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:16px;min-width:0}
  .business-workspace--corporate .corporate-admin-details {margin-top:16px;margin-bottom:0}
  .corporate-setup>summary,.corporate-admin-details>summary {padding:18px 24px;cursor:pointer;font-size:18px;color:var(--text-2)}
+ .business-workspace--corporate .corporate-setup>summary {padding:9px 18px;font-size:16px;line-height:1.5}
  .business-workspace--corporate .corporate-setup .fleet-onboarding {margin:0;padding:0 16px 14px;justify-content:flex-start}
  .business-workspace--corporate .corporate-setup .fleet-onboarding button {flex:0 1 auto}
  .business-workspace--corporate .business-overview>.business-metrics {gap:0;border:1px solid var(--border);border-radius:6px;background:var(--surface);overflow:hidden}
- .business-workspace--corporate .business-overview .business-metric {border:0;border-right:1px solid var(--border);border-radius:0;padding:22px 24px}
+ .business-workspace--corporate .business-overview .business-metric {border:0;border-right:1px solid var(--border);border-radius:0;padding:12px 18px}
  .business-workspace--corporate .business-overview .business-metric:last-child {border-right:0}
- .business-workspace--corporate .business-overview .business-metric strong {font-size:36px;margin:7px 0 4px}
- .business-workspace--corporate .business-overview .business-metric p {font-size:16px;line-height:1.5}
- .business-workspace--corporate .business-overview .business-metric>div {font-size:18px}
+ .business-workspace--corporate .business-overview .business-metric strong {font-size:30px;line-height:1.25;margin:3px 0 0;overflow-wrap:anywhere}
+ .business-workspace--corporate .business-overview .business-metric>div {font-size:16px;line-height:1.4}
+ .business-workspace--corporate .business-overview .business-metric strong.business-metric-status {font-size:21px;line-height:1.65}
  .business-workspace--corporate .business-task {padding:18px 24px;gap:10px}
  .business-workspace--corporate .business-task-copy strong {font-size:18px;font-weight:500}
  .business-workspace--corporate .business-task-copy p {font-size:16px;margin-top:4px}
+ .business-workspace--corporate .business-overview .business-task {padding:8px 18px;gap:8px;line-height:1.4}
+ .business-workspace--corporate .business-overview .business-task-copy strong {display:block;font-size:16px;font-weight:600}
+ .business-workspace--corporate .business-overview .business-task-copy p {font-size:14px;line-height:1.45;margin-top:2px}
+ .business-workspace--corporate .business-overview .business-task>.business-badge {font-size:14px;padding:3px 7px}
  .business-workspace--corporate .business-fleet-head,.business-workspace--corporate .business-vehicle {padding:18px 24px}
  .business-workspace--corporate .business-fleet-head {font-size:16px}
  .business-workspace--corporate .business-vehicle-title {font-size:18px}
@@ -132,9 +144,11 @@
  .business-workspace--corporate .business-overview,.business-workspace--corporate .business-overview-grid {gap:16px}
  .business-workspace--corporate .business-overview-grid>.business-section:last-child {max-height:none;height:auto;overflow:visible}
  .business-workspace--corporate .corporate-setup>summary {padding:12px 16px}
- .business-workspace--corporate .business-overview .business-section-title,.business-workspace--corporate .business-overview .business-task,.business-workspace--corporate .business-overview .business-vehicle {padding:16px}
- .business-workspace--corporate .business-task-copy {overflow-wrap:anywhere}
+ .business-workspace--corporate .business-overview .business-section-title,.business-workspace--corporate .business-overview .business-task {padding:10px 14px}
+ .business-workspace--corporate .business-overview .business-vehicle {padding:14px}
+ .business-workspace--corporate .business-content .business-overview .business-button {min-height:44px}
  .business-workspace--corporate .business-map-wrap {min-height:300px}
+ .business-workspace--corporate .business-task-copy {overflow-wrap:anywhere}
  .business-workspace--corporate .business-overview>.business-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
  .business-workspace--corporate .business-overview .business-metric {padding:12px;border-bottom:1px solid var(--border)}
  .business-workspace--corporate .business-overview .business-metric:nth-child(even) {border-right:0}

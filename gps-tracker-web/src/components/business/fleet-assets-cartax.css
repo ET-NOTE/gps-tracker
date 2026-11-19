@@ -60,34 +60,69 @@
 .fleet-assets-filter-footer>div{display:flex;gap:8px}
 .fleet-assets-filter-footer .business-button{min-width:64px;border-radius:4px}
 .fleet-assets-filter-error{margin:0;color:var(--danger,#b91c1c);font-size:16px}
-.business-drawer:has(.fleet-assets-detail){width:min(880px,100%)}
-.business-drawer:has(.fleet-assets-detail)>.business-drawer-body{padding:0 24px 20px}
-.fleet-assets-detail{display:flex;flex-direction:column;gap:28px;min-width:0;font-size:18px}
-.fleet-assets-detail .fleet-assets-detail-tabs{gap:0;margin:0 -24px;padding:0 24px;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
-.fleet-assets-detail .fleet-assets-detail-tabs button{flex:0 0 auto;min-height:56px;padding:16px 18px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--text-2);font-size:18px;white-space:nowrap}
-.fleet-assets-detail .fleet-assets-detail-tabs button[aria-pressed=true]{border-bottom-color:var(--primary);color:var(--primary);font-weight:600}
+.business-drawer:has(.fleet-assets-detail){width:min(800px,100%)}
+.business-drawer:has(.fleet-assets-detail)>header{padding:14px 22px}
+.business-drawer:has(.fleet-assets-detail)>header h2{font-size:21px;line-height:1.4}
+.business-drawer:has(.fleet-assets-detail)>header p{margin:2px 0 0;font-size:15px}
+.business-drawer:has(.fleet-assets-detail)>.business-drawer-body{padding:0 22px 16px}
+.fleet-assets-detail{display:flex;flex-direction:column;gap:18px;min-width:0;font-size:16px}
+.fleet-assets-detail .fleet-assets-detail-tabs{gap:0;margin:0 -22px;padding:0 22px;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
+.fleet-assets-detail .fleet-assets-detail-tabs button{flex:0 0 auto;min-height:46px;padding:10px 15px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--text-2);font-size:16px;white-space:nowrap}
+.fleet-assets-detail .fleet-assets-detail-tabs button[aria-pressed=true]{border-bottom-color:var(--primary);color:var(--primary);font-weight:650}
 .fleet-assets-detail-section{min-width:0}
-.fleet-assets-detail-section>header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}
-.fleet-assets-detail-section h3{margin:0;font-size:20px;font-weight:600}
-.fleet-assets-detail-meta{font-size:16px;color:var(--text-2)}
-.fleet-assets-detail .business-detail-facts{gap:0;border-top:1px solid var(--border)}
-.fleet-assets-detail .business-detail-facts>div{display:grid;grid-template-columns:190px minmax(0,1fr);gap:0;border-bottom:1px solid var(--border);font-size:18px;line-height:1.5}
-.fleet-assets-detail .business-detail-facts dt{padding:18px 20px;background:var(--surface-2);font-weight:400}
-.fleet-assets-detail .business-detail-facts dd{padding:18px 20px;min-width:0;text-align:left;font-weight:400;overflow-wrap:anywhere}
-.fleet-assets-detail .business-detail-facts dd.is-missing{color:var(--text-3)}
-.fleet-assets-detail .business-map-wrap{margin-top:14px;border:1px solid var(--border);border-radius:4px}
-.fleet-assets-detail-actions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:12px;position:sticky;bottom:-20px;z-index:1;padding:20px 0;background:var(--surface);border-top:1px solid var(--border)}
-.fleet-assets-detail .business-button{min-height:48px;border-radius:4px;font-size:18px}
+.fleet-assets-detail-section>header,.fleet-media-section>header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;margin-bottom:8px}
+.fleet-assets-detail-section h3,.fleet-media-section h3{margin:0;font-size:18px;line-height:1.4;font-weight:650}
+.fleet-assets-detail-meta,.fleet-media-section h3 small{font-size:14px;font-weight:500;color:var(--text-2)}
+.business-drawer .fleet-assets-detail .business-detail-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border-block:1px solid var(--border)}
+.fleet-assets-detail .business-detail-facts>div{display:grid;grid-template-columns:minmax(98px,.9fr) minmax(0,1.55fr);align-items:stretch;justify-content:stretch;gap:0;min-width:0;font-size:16px;line-height:1.45}
+.fleet-assets-detail .business-detail-facts>div:nth-child(n+3){border-top:1px solid var(--border)}
+.fleet-assets-detail .business-detail-facts :is(dt,dd){display:flex;align-items:center;min-width:0;padding:8px 12px;overflow-wrap:anywhere}
+.fleet-assets-detail .business-detail-facts dt{background:var(--surface-2);font-size:14px;font-weight:500;word-break:keep-all}
+.fleet-assets-detail .business-detail-facts dd{margin:0;text-align:left;font-weight:500}
+.fleet-assets-detail .business-detail-facts dd.is-missing{color:var(--text-2)}
+.business-drawer .fleet-assets-detail .business-map-wrap{margin-top:12px;min-height:clamp(160px,22vh,216px);border:1px solid var(--border);border-radius:6px}
+.fleet-assets-detail-section>.battery-status{margin-top:10px}
+.fleet-assets-detail-actions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:8px;position:sticky;bottom:-16px;z-index:1;padding:10px 0;background:var(--surface);border-top:1px solid var(--border)}
+.business-drawer .fleet-assets-detail .business-button{min-height:40px;padding:7px 12px;border-radius:5px;font-size:15px;line-height:1.4}
 .fleet-assets-detail .fleet-connection-list{gap:0;margin:0;border-top:1px solid var(--border)}
-.fleet-assets-detail .fleet-connection-list label{padding:18px 12px;border:0;border-bottom:1px solid var(--border);border-radius:0;font-size:18px}
-.fleet-assets-detail .fleet-connection-list small{font-size:16px;color:var(--text-3)}
+.fleet-assets-detail .fleet-connection-list label{padding:10px 12px;border:0;border-bottom:1px solid var(--border);border-radius:0;font-size:16px}
+.fleet-assets-detail .fleet-connection-list small{font-size:14px;color:var(--text-2)}
 .fleet-assets-detail .fleet-connection-list input{accent-color:var(--primary)}
-.fleet-assets-editor{font-size:18px}
-.fleet-assets-editor .fleet-asset-fields label{font-size:18px}
-.fleet-assets-editor .fleet-asset-fields :is(input,select){border-radius:4px;font-size:18px;min-height:48px}
-.fleet-assets-editor fieldset{padding:18px 0 0;border:0;border-top:1px solid var(--border);border-radius:0}
-.fleet-assets-editor legend{padding:0 8px 0 0;font-size:18px;font-weight:600}
-.fleet-assets-editor summary{font-size:18px}
+.gps-business-modal:has(.fleet-assets-editor){--modal-title-size:21px;--modal-subtitle-size:15px;--modal-padding:20px;--modal-gap:14px;--field-label-size:14px;--field-gap:5px;--font-body:16px;--control-font-size:16px;--touch-target:42px}
+.fleet-asset-form.fleet-assets-editor{min-width:0;gap:16px}
+.fleet-assets-editor .fleet-asset-fields{gap:10px 16px}
+.fleet-asset-form.fleet-assets-editor fieldset{padding:0;min-width:0;border:0;border-radius:0}
+.fleet-asset-form.fleet-assets-editor legend{width:100%;margin:0 0 10px;padding:0 0 6px;border-bottom:1px solid var(--border);font-size:16px;font-weight:650}
+.gps-modal .fleet-assets-editor .fleet-asset-fields :is(input,select){border-radius:5px;min-height:42px}
+.fleet-assets-editor details{min-width:0;padding:10px 12px;background:var(--surface-2);border-radius:6px}
+.fleet-asset-form.fleet-assets-editor summary{padding:0;font-size:15px}
+.fleet-assets-editor details[open]>.fleet-asset-fields{margin-top:10px}
+.fleet-editor-footer{display:flex;width:100%;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--border)}
+.fleet-editor-footer>button{min-width:76px}
+.fleet-assets-detail .fleet-asset-media{display:grid;gap:22px;min-width:0;margin:0;padding:0;border:0}
+.fleet-media-section{min-width:0}
+.fleet-media-hint{margin:6px 0 0;color:var(--text-2);font-size:14px;line-height:1.45}
+.fleet-media-empty,.fleet-media-photo{border:1px solid var(--border);border-radius:6px;background:var(--surface-2)}
+.fleet-media-empty{display:flex;align-items:center;justify-content:center;gap:8px;padding:18px 12px;color:var(--text-2);font-size:15px}
+.fleet-media-empty svg{flex:none}
+.fleet-media-photo{display:grid;place-items:center;min-height:96px;padding:8px}
+.fleet-media-photo img{display:block;max-width:100%;max-height:168px;object-fit:contain}
+.fleet-media-picker{position:relative;display:inline-flex;align-items:center;gap:6px;overflow:hidden;cursor:pointer}
+.fleet-media-picker input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.fleet-media-picker:focus-within{outline:2px solid var(--primary);outline-offset:2px}
+.fleet-media-picker:has(:disabled){opacity:.6;cursor:default}
+.fleet-media-section>header h3 small{margin-left:5px;white-space:nowrap}
+.fleet-media-attach:not([hidden]){display:grid;gap:12px;min-width:0;margin-bottom:10px;padding:14px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2)}
+.fleet-media-attach .fleet-asset-fields{grid-template-columns:minmax(126px,.7fr) minmax(0,1.3fr);gap:12px}
+.fleet-media-attach .fleet-asset-fields label{min-width:0;gap:4px;font-size:14px}
+.business-drawer .fleet-media-attach .fleet-asset-fields :is(input,select){min-height:40px;padding:6px 9px;font-size:16px}
+.fleet-media-picker-row,.fleet-media-document-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+.fleet-media-picker-row p{margin:0}
+.fleet-media-documents{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+.fleet-media-documents li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.fleet-media-document-info{flex:1 1 180px;min-width:0;display:grid;gap:2px;overflow-wrap:anywhere}
+.fleet-media-document-info strong{font-size:16px;line-height:1.4}
+.fleet-media-document-info :is(span,p){margin:0;color:var(--text-2);font-size:14px;line-height:1.45}
 @media screen and (min-width:1200px){
  .business-workspace--corporate .fleet-assets-controls{padding:0 0 16px;border:0;background:transparent}
  .business-workspace--corporate .fleet-assets-ledger{border:1px solid var(--border);border-radius:6px}
@@ -139,8 +174,17 @@
   white-space:normal;
   word-break:keep-all;
  }
- .fleet-assets-detail .business-detail-facts>div{grid-template-columns:40% minmax(0,1fr)}
- .fleet-assets-detail .business-detail-facts :is(dt,dd){min-width:0;padding:12px 10px;overflow-wrap:anywhere}
+ .business-drawer .fleet-assets-detail .business-detail-facts{grid-template-columns:minmax(0,1fr)}
+ .fleet-assets-detail .business-detail-facts>div{grid-template-columns:clamp(112px,41%,152px) minmax(0,1fr)}
+ .fleet-assets-detail .business-detail-facts>div:nth-child(2){border-top:1px solid var(--border)}
+ .fleet-assets-detail .business-detail-facts :is(dt,dd){padding:7px 10px}
+ .business-drawer .fleet-assets-detail .business-button{min-height:44px}
+ .fleet-media-attach .fleet-asset-fields{grid-template-columns:minmax(0,1fr)}
+ .fleet-media-document-info{flex-basis:100%}
+ .fleet-media-document-actions{margin-inline-start:auto}
+ .gps-modal .fleet-assets-editor .fleet-asset-fields :is(input,select){min-height:44px}
+ .gps-business-modal:has(.fleet-assets-editor){--modal-padding:16px;--modal-gap:10px;--touch-target:44px}
+ .fleet-editor-footer{padding-bottom:env(safe-area-inset-bottom,0px)}
  .fleet-assets-detail-actions{
   position:static;
   display:grid;
@@ -159,11 +203,6 @@
   word-break:keep-all;
  }
  .fleet-assets-detail .fleet-connection-list label{overflow-wrap:anywhere}
-}
-@media(max-width:900px){
- .fleet-assets-detail .fleet-asset-media{grid-template-columns:minmax(0,1fr)}
- .fleet-assets-detail .fleet-document-row{flex-wrap:wrap}
- .fleet-assets-detail .fleet-document-row>span{flex-basis:100%;overflow-wrap:anywhere;white-space:normal}
 }
 @media(max-height:500px) and (min-width:601px) and (max-width:900px){
  .business-drawer .fleet-assets-detail .fleet-assets-detail-tabs{margin-inline:0;padding-inline:0}
