@@ -134,8 +134,16 @@ try:
  # Reusing the SIM for the other account cannot expose the old account's events.
  foreign=connect(b,foreign,[d1],d1)
  check('new owner cannot inherit old telemetry',not call(b,'GET',f"/corporate/vehicles/{foreign['id']}"+suffix))
- # Stats include full primary days only, independent of current SIM ownership.
- sql("INSERT INTO daily_stats(device_id,user_id,date,fix_count,distance_m,last_fix_at) VALUES(%s,%s,'2026-10-07',3,600,'2026-10-07T02:00:00Z')",(d1,a))
+ # The trips/report above use an explicit historical range. The stats endpoint
+ # has no range parameter and always reads the database's current Korean month.
+ # Give the second SIM its own full-day binding so this also works on the 1st.
+ stats_day=sql("SELECT date_trunc('month', now() AT TIME ZONE 'Asia/Seoul')::date")
+ day_start=datetime.datetime.combine(stats_day,datetime.time(),datetime.timezone(datetime.timedelta(hours=9)))
+ day_end=day_start+datetime.timedelta(days=1)
+ sql("""INSERT INTO fleet_vehicle_bindings(vehicle_id,owner_id,device_id,terminal_name,is_primary,started_at,ended_at)
+        VALUES(%s,%s,%s,'Monthly stats fixture',true,%s,%s)""",(va['id'],a,d2,day_start,day_end))
+ sql("UPDATE devices SET owner_id=%s WHERE id=%s",(b,d2))
+ sql("INSERT INTO daily_stats(device_id,user_id,date,fix_count,distance_m,last_fix_at) VALUES(%s,%s,%s,3,600,%s)",(d2,a,stats_day,day_start))
  stat=call(a,'GET','/corporate/vehicle-stats')['per_device']
  check('statistics key is vehicle id',set(x['vehicle_id'] for x in stat)=={va['id'],vb['id']})
  check('historical full-day distance belongs only to old vehicle',next(x['total_distance_m'] for x in stat if x['vehicle_id']==va['id'])==600 and next(x['total_distance_m'] for x in stat if x['vehicle_id']==vb['id'])==0)
@@ -155,5 +163,6 @@ finally:
   cur.execute('DELETE FROM vehicle_reservations WHERE user_id=ANY(%s)',(users,))
   cur.execute('DELETE FROM fleet_vehicles WHERE owner_id=ANY(%s)',(users,))
   cur.execute('DELETE FROM devices WHERE id=ANY(%s)',(devices,))
+  cur.execute('DELETE FROM privacy_account_controls WHERE user_id=ANY(%s)',(users,))
   cur.execute('DELETE FROM users WHERE id=ANY(%s)',(users,))
  db.close()
