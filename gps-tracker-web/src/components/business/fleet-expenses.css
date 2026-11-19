@@ -232,3 +232,47 @@
  .business-workspace--corporate .expense-date-range{grid-template-columns:minmax(0,1fr)}
  .expense-date-range>label{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px}
 }
+@media screen and (max-width:600px){
+ .business-workspace--corporate .expense-controls{padding:0 14px 12px;gap:10px;border:0;border-bottom:1px solid var(--border);border-radius:0}
+ .business-workspace--corporate .expense-query-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+ .expense-mobile-period{
+   grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;
+   min-height:46px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);
+   font:inherit;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;
+ }
+ .business-workspace--corporate .expense-date-range[data-expanded=false]{display:none}
+ .business-workspace--corporate .expense-query-row .expense-search{grid-column:auto;min-width:0}
+ .business-workspace--corporate .expense-query-actions{gap:4px}
+ .business-workspace--corporate .expense-query-actions .business-button{min-width:44px;padding-inline:7px}
+ .business-workspace--corporate .expense-control-row{flex-wrap:wrap}
+ .business-workspace--corporate .business-content:has(.expense-mobile-create){padding-inline:0}
+ .business-workspace--corporate .expense-ledger:has(.expense-mobile-list){border:0;border-radius:0;min-height:0}
+ .fleet-expenses:has(.expense-mobile-create){gap:0;padding-bottom:76px;background:var(--surface)}
+ .expense-mobile-count{padding:12px 16px;font-size:15px;color:var(--text-2);border-bottom:1px solid var(--border)}
+ .expense-mobile-list{list-style:none;margin:0;padding:0;background:var(--surface);color:var(--text)}
+ .expense-mobile-list li{padding:13px 16px 8px}
+ .expense-mobile-list li+li{border-top:1px solid var(--border)}
+ .expense-mobile-record{
+   display:grid;align-items:center;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;width:100%;min-height:44px;padding:0;
+   border:0;background:transparent;color:inherit;font:inherit;font-size:16px;line-height:1.45;text-align:left;cursor:pointer;
+ }
+ .expense-mobile-person{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-width:0;overflow-wrap:anywhere}
+ .expense-mobile-person>strong{font-size:18px}.expense-mobile-person>span{color:var(--text-2)}
+ .expense-mobile-list .expense-mobile-person>.business-badge{display:inline-flex;align-items:center;border-radius:20px;padding:2px 8px;font-size:14px}
+ .expense-mobile-person .expense-status-approved{background:var(--status-success-bg);color:var(--status-success-text)}
+ .expense-mobile-person .expense-status-pending{background:var(--status-info-bg);color:var(--status-info-text)}
+ .expense-mobile-person .expense-status-rejected{background:var(--status-danger-bg);color:var(--status-danger-text)}
+ .expense-mobile-item{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+ .expense-mobile-item>span,.expense-mobile-meta{font-size:15px;color:var(--text-2)}
+ .expense-mobile-amount{display:inline-flex;align-items:baseline;justify-self:end;gap:2px;font-size:20px;line-height:1.4;font-variant-numeric:tabular-nums;white-space:nowrap}
+ .expense-mobile-amount small{font-size:15px}.expense-mobile-amount svg{align-self:center;flex-shrink:0;color:var(--text-2)}
+ .expense-mobile-meta{display:flex;align-items:center;flex-wrap:wrap;gap:0 4px;min-height:44px}
+ .expense-mobile-meta>span{margin-right:auto}
+ .expense-mobile-list .expense-mobile-meta .expense-mobile-shortcut{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:44px;min-height:44px;padding:3px;border:0;background:transparent;color:var(--text-2);font:inherit;cursor:pointer}
+ .business-workspace--corporate .fleet-expenses .expense-mobile-create{
+   position:fixed;z-index:19;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(var(--corporate-mobile-actions-bottom,14px) + env(safe-area-inset-bottom,0px));
+   display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:54px;min-height:54px;padding:0 16px;border:0;border-radius:28px;background:var(--primary);color:#fff;box-shadow:0 3px 12px #142f6833;cursor:pointer;font:inherit;font-size:16px;font-weight:600;
+ }
+ .expense-mobile-create:focus-visible,.expense-mobile-list button:focus-visible,.expense-mobile-period:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+}
+@media screen and (max-width:359px){.business-workspace--corporate .fleet-expenses .expense-mobile-create{padding:0}.expense-mobile-create span{display:none}}

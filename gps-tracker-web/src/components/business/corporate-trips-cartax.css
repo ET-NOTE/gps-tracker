@@ -305,3 +305,65 @@
  .business-workspace--corporate .corporate-report-control-row>button>svg,
  .business-workspace--corporate .corporate-report-control-row>.corporate-report-menu>summary>svg{display:none}
 }
+.corporate-trip-period,.corporate-trip-days{display:none}
+@media screen and (max-width:600px){
+ .business-workspace--corporate .corporate-report-page .corporate-report-control-row:first-child{
+   display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;
+ }
+ .business-workspace--corporate .corporate-report-page>.corporate-report-heading{display:none}
+ .business-workspace--corporate .corporate-report-page .corporate-report-controls{padding:12px;gap:8px}
+ .business-workspace--corporate .corporate-report-page .corporate-report-control-row:first-child>.corporate-trip-period{grid-row:1}
+ .business-workspace--corporate .corporate-report-page .corporate-report-control-row:first-child>.corporate-report-date-range{grid-column:1/-1;grid-row:2}
+ .business-workspace--corporate .corporate-report-page .corporate-report-control-row:first-child>button:not(.corporate-trip-period){min-width:44px;width:100%;min-height:44px;padding:6px 8px}
+ .business-workspace--corporate .corporate-report-page[data-tools-open=true] .corporate-report-control-row:first-child>.corporate-report-download{grid-column:2/-1}
+ .business-workspace--corporate .corporate-report-page .corporate-report-result-count{margin:0}
+ .business-workspace--corporate .corporate-trip-period{
+   grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+   min-height:46px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);
+   font:inherit;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;
+ }
+ .business-workspace--corporate .corporate-report-date-range[data-expanded=false]{display:none}
+ .business-workspace--corporate .corporate-report-page .corporate-report-control-row .corporate-report-vehicle{grid-column:auto;width:100%;min-height:44px;padding-inline:8px;font-size:16px!important}
+ .business-workspace--corporate .corporate-report-page>.report-area:has(.corporate-trip-days){
+   min-height:0;background:transparent!important;border:0!important;border-radius:0!important;overflow:visible;
+ }
+ .corporate-trip-days{display:grid;gap:14px;min-width:0;color:var(--text);font-size:16px;line-height:1.45}
+ .corporate-trip-days+.corporate-trip-table-scroll{display:none}
+ .trip-mobile-select-all,.trip-mobile-card>header>label{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;cursor:pointer}
+ .trip-mobile-select-all{justify-self:start;color:var(--text-2)}
+ .trip-mobile-day{display:grid;gap:10px;min-width:0}
+ .trip-mobile-day>header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
+ .trip-mobile-day h3{font-size:17px;margin:0}.trip-mobile-day>header>span{font-size:15px;color:var(--text-2)}
+ .trip-mobile-day>header strong{color:var(--text)}
+ .trip-mobile-card{display:grid;gap:12px;min-width:0;padding:14px 16px 0;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow-wrap:anywhere}
+ .trip-mobile-card>header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+ .trip-mobile-card>header>div{display:grid;gap:2px;min-width:0}
+ .trip-mobile-card>header strong{font-size:18px;line-height:1.4}
+ .trip-mobile-card>header span{color:var(--text-2)}
+ .trip-mobile-card>header>label{min-width:44px;flex-shrink:0}
+ .trip-mobile-card input,.trip-mobile-select-all input{margin:0}
+ .trip-mobile-route{display:grid;gap:12px;list-style:none;margin:0;padding:12px;background:var(--surface-2);border-radius:9px}
+ .trip-mobile-route li{position:relative;min-width:0;padding-left:18px}
+ .trip-mobile-route li::before{content:'';position:absolute;top:.52em;left:0;width:8px;height:8px;border-radius:50%;background:#148a84}
+ .trip-mobile-route li+li::before{background:#d5752e}
+ .trip-mobile-route li:first-child::after{content:'';position:absolute;left:3px;top:calc(.52em + 10px);bottom:-17px;border-left:2px dotted var(--border)}
+ .trip-mobile-route li>div{color:var(--text-2);font-size:15px;font-weight:600}
+ .trip-mobile-route time{font-variant-numeric:tabular-nums}
+ .trip-mobile-route p{margin:2px 0 0}.trip-mobile-route strong{display:block}
+ .trip-mobile-metrics{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 12px}
+ .trip-mobile-metrics>span{color:var(--text-2)}
+ .trip-mobile-metrics strong{font-size:24px;line-height:1.3;font-variant-numeric:tabular-nums}
+ .trip-mobile-metrics small{font-size:16px}
+ .trip-mobile-more{min-width:0;border-top:1px solid var(--border)}
+ .trip-mobile-more summary{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-height:48px;cursor:pointer;list-style:none}
+ .trip-mobile-more summary::-webkit-details-marker{display:none}
+ .trip-mobile-more summary>span:last-child{margin-left:auto;color:var(--text-2);font-size:15px}
+ .trip-mobile-more summary::after{content:'';width:7px;height:7px;margin:0 4px 4px 0;border:solid var(--text-2);border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+ .trip-mobile-more[open] summary::after{transform:rotate(225deg);margin-bottom:0}
+ .trip-mobile-more .fleet-quality-status{font-size:14px}
+ .trip-mobile-more dl{display:grid;gap:6px;margin:0}
+ .trip-mobile-more dl>div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px}
+ .trip-mobile-more dt{color:var(--text-2)}.trip-mobile-more dd{margin:0}
+ .trip-mobile-actions{display:flex;flex-wrap:wrap;gap:8px;padding:12px 0 14px}
+ .trip-mobile-actions .business-button{flex:1 1 auto;min-height:44px;justify-content:center}
+}

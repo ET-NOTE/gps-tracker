@@ -1,0 +1,153 @@
+@media screen and (max-width:600px) {
+  .business-workspace--corporate {
+    --corporate-mobile-actions-bottom:14px;
+  }
+  .corporate-phone-header {
+    display:flex;
+    align-items:center;
+    position:sticky;
+    inset-block-start:0;
+    z-index:8;
+    min-height:56px;
+    padding:0 8px;
+    padding-inline-start:max(8px,env(safe-area-inset-left));
+    padding-inline-end:max(8px,env(safe-area-inset-right));
+    color:var(--text);
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+  }
+  .corporate-phone-tool {
+    display:grid;
+    place-items:center;
+    flex:0 0 44px;
+    height:48px;
+    padding:0;
+    border:0;
+    border-radius:8px;
+    background:transparent;
+    color:var(--text-2);
+    cursor:pointer;
+  }
+  .corporate-phone-header button:last-child svg {transform:rotate(90deg)}
+  .corporate-phone-header h1 {
+    flex:1;
+    min-width:0;
+    margin:0 4px;
+    letter-spacing:-.03em;
+  }
+  .corporate-phone-brand {font-size:24px;font-weight:750}
+  .corporate-phone-brand span {color:var(--primary)}
+  .corporate-phone-location {
+    display:flex;
+    align-items:center;
+    gap:5px;
+    flex-wrap:wrap;
+    font-size:16px;
+    font-weight:500;
+    line-height:1.4;
+    color:var(--text-2);
+  }
+  .corporate-phone-location strong {color:var(--text);font-weight:650}
+  .corporate-phone-location svg {flex:none}
+  .business-workspace--corporate.has-mobile-nav .business-layout>.business-content {
+    padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  }
+  .corporate-phone-menu.business-drawer-backdrop {
+    align-items:stretch;
+    justify-content:flex-start;
+    background:#0c162c66;
+  }
+  .corporate-phone-menu .business-drawer {
+    background:#232e46;
+    color:#f6f8fc;
+    width:min(85%,330px);
+    height:100%;
+    max-height:100%;
+    border-radius:0;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .corporate-phone-menu .business-drawer>header {
+    min-height:64px;
+    padding:8px 16px 8px 20px;
+    border-color:#424e66;
+  }
+  .corporate-phone-menu .business-drawer>header h2 {font-size:20px;color:inherit}
+  .corporate-phone-menu .business-drawer>header .business-button {
+    color:#e9effb;
+    border:0;
+    background:transparent;
+  }
+  .corporate-phone-menu .business-drawer-body {padding:12px 10px 24px;gap:14px}
+  .corporate-phone-links,.corporate-phone-children {display:grid;gap:3px}
+  .corporate-phone-menu :is(.corporate-phone-links button,.corporate-phone-map) {
+    width:100%;
+    min-height:48px;
+    padding:10px 14px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    border:0;
+    border-radius:8px;
+    background:transparent;
+    color:#dce4f3;
+    font:inherit;
+    font-size:17px;
+    font-weight:550;
+    text-align:start;
+    cursor:pointer;
+  }
+  .corporate-phone-destination span {flex:1}
+  .corporate-phone-menu .corporate-phone-children button {padding-inline-start:46px;font-size:16px}
+  .corporate-phone-menu .corporate-phone-links button[aria-current=page],
+  .corporate-phone-menu .corporate-phone-destination[aria-expanded=true] {background:#162138;color:white}
+  .corporate-phone-menu .corporate-phone-children button[aria-current=page] {color:#9bd9ff}
+  .corporate-phone-menu .corporate-phone-map {border-top:1px solid #424e66;border-radius:0}
+  .corporate-phone-menu button:focus-visible {outline:2px solid #9bd9ff;outline-offset:-2px}
+  .corporate-phone-account {display:grid;gap:8px}
+  .corporate-phone-account .fleet-account-bar {display:grid;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .corporate-phone-account .fleet-company-picker {max-width:none;min-height:48px}
+  .corporate-phone-account .fleet-company-invite,
+  .corporate-phone-account .business-button {justify-content:flex-start;min-height:48px}
+  .business-workspace--corporate .business-content .business-overview>.business-metrics {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    align-items:stretch;
+    gap:10px;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    overflow:visible;
+  }
+  .business-workspace--corporate .business-content .business-overview .business-metric {
+    min-width:0;
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:var(--surface);
+    padding:14px;
+  }
+  .business-workspace--corporate .business-content .business-overview .business-metric>div {font-size:16px;line-height:1.4}
+  .business-workspace--corporate .business-overview .business-metric>div svg {display:block;flex:none}
+  .corporate-overview-heading {display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 12px}
+  .corporate-overview-heading h2 {margin:0;font-size:21px;line-height:1.4;color:var(--text)}
+  .corporate-overview-heading time {font-size:14px;color:var(--text-2)}
+  .business-workspace--corporate .business-content .business-overview .business-metric strong {font-size:28px;line-height:1.25}
+  .business-workspace--corporate .business-content .business-overview .business-metric p {color:var(--text-2);font-size:14px;line-height:1.5}
+  .business-workspace--corporate .business-overview>.business-metrics>.business-metric:first-child {
+    grid-column:1 / -1;
+    background:#10375e;
+    color:#fff;
+    border:0;
+    padding:18px 20px;
+  }
+  .business-workspace--corporate .business-overview>.business-metrics>.business-metric:first-child :is(div,p,small,svg) {color:#d6e7f7}
+  .business-workspace--corporate .business-overview>.business-metrics>.business-metric:first-child strong {color:#fff;font-size:30px}
+  .business-overview>.business-metrics>.business-metric:last-child {
+    grid-column:1 / -1;
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:0 10px;
+    align-items:baseline;
+  }
+  .business-overview>.business-metrics>.business-metric:last-child>div {justify-content:flex-start;gap:8px}
+  .business-overview>.business-metrics>.business-metric:last-child p {grid-column:1 / -1}
+  .business-workspace--corporate .business-content .business-overview .business-section {border-radius:14px}
+}

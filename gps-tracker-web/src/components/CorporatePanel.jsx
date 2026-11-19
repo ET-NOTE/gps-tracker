@@ -6,6 +6,7 @@ import TripQualitySummary from './business/TripQualitySummary';
 import {TripEvidence,TripCorrection,TripCorrectionHistory} from './business/FleetTripQuality';
 import {qualityLabel,reportIncluded,tripTimeRange} from '../lib/tripQuality';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import useCorporatePhone from '../useCorporatePhone';
 import { api } from '../api';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
@@ -85,7 +86,8 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const [missingSchedulesOnly,setMissingSchedulesOnly]=useState(false);
   const openVehicles=(missingOnly=false)=>{setMissingSchedulesOnly(missingOnly);setTab('vehicles');};
   const [sectionTabs,setSectionTabs] = useState({staff:'users',sites:'sites',settings:'company'});
-  const selectSection = value => setSectionTabs(previous=>({...previous,[tab]:value}));
+  const changeSection = (page, value) => setSectionTabs(previous=>({...previous,[page]:value}));
+  const selectSection = value => changeSection(tab, value);
   const sectionNavigation = {
     staff: [['users','사용자 목록'],['organization','부서·직책'],...(access.manage_team?[['audit','변경 이력']]:[])],
     sites: [['sites','지점 목록'],['visits','방문 기록'],...(access.manage_team?[['groups','그룹 관리']]:[])],
@@ -110,13 +112,13 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const needsVehicles=tab!=='expense-categories';
   const vehicleNotice = terminalNotice || (terminalsReady && assets.error && <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>);
   return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setMissingSchedulesOnly(false); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
-    toolbar={toolbar} globalNavigation={globalNavigation} section={sectionTabs[tab]}
+    toolbar={toolbar} globalNavigation={globalNavigation} section={sectionTabs[tab]} sections={sectionNavigation} onSection={changeSection}
     headerNavigation={sectionNavigation[tab]&&<nav className="business-subnav no-print" aria-label={`${corporateTabs.find(item=>item.id===tab)?.label} 하위 메뉴`}>{sectionNavigation[tab].map(([id,label])=><button type="button" className="business-subnav-item" key={id} aria-current={sectionTabs[tab]===id?'page':undefined} onClick={()=>selectSection(id)}>{label}</button>)}</nav>}
     >
     {subjectScoped && tab!=='report' && <p className="business-note" role="status">{subjectScopeNote}</p>}
     {needsVehicles&&(!terminalsReady||!vehiclesReady) ? (vehicleNotice || <SkeletonList count={3} itemHeight={140}/>) : <>
-    {tab === 'overview' && access.manage_vehicles && <details className="corporate-setup"><summary>회사 시작하기</summary><div className="fleet-onboarding" aria-label="회사 시작하기"><BusinessButton onClick={()=>setTab('settings')}>회사 정보</BusinessButton><BusinessButton onClick={()=>openVehicles()}>차량 등록·단말기 연결</BusinessButton><BusinessButton onClick={()=>setTab('staff')}>사용자 배정</BusinessButton></div></details>}
-    {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onMissingSchedules={()=>openVehicles(true)} />}
+    {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onMissingSchedules={()=>openVehicles(true)}
+      setup={access.manage_vehicles && <details className="corporate-setup"><summary>회사 시작하기</summary><div className="fleet-onboarding" aria-label="회사 시작하기"><BusinessButton onClick={()=>setTab('settings')}>회사 정보</BusinessButton><BusinessButton onClick={()=>openVehicles()}>차량 등록·단말기 연결</BusinessButton><BusinessButton onClick={()=>setTab('staff')}>사용자 배정</BusinessButton></div></details>}/>}
     {tab === 'vehicles' && <FleetAssets key={missingSchedulesOnly?'missing-schedules':'all'} initialMissingSchedules={missingSchedulesOnly} onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={rawOnMap} onChanged={assets.refetch} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <><StaffTab activeTab={sectionTabs.staff} onTab={selectSection} hideNavigation />{access.manage_team&&<details className="corporate-admin-details"><summary>계정·단말기 연결 설정</summary><CompanySubjectMappings/></details>}</>}
@@ -134,7 +136,8 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
 }
 export default function CorporateAccountPanel(props){return <FleetAccountScope>{toolbar=><CorporatePanel {...props} toolbar={toolbar}/>}</FleetAccountScope>;}
 
-function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSchedules }) {
+function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSchedules, setup }) {
+  const phone = useCorporatePhone();
   const now = useBusinessClock(), openVehicle = useBusinessVehicle(), [showAll, setShowAll] = useState(false);
   const period = businessPeriod(now), reservations = useReservations({ from: period.todayStart, to: period.todayEnd }, { refetchInterval: 60_000 });
   const stats = useFleetStats(devices);
@@ -143,13 +146,15 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
   const tasks = corporateAttention(devices, now, { classify: classifyDevice, battery: deviceBattery });
   const shown = showAll ? tasks : tasks.slice(0,6);
   const distanceHint = stats.loading ? '집계 조회 중' : stats.error ? '집계 조회 실패' : !devices.length ? '등록 차량 없음' : stats.measured ? `${stats.measured}/${devices.length}대 집계${stats.partial ? ' · 일부 집계' : ''}${stats.lastFixAt ? ` · 마지막 위치 ${kstDateTime(stats.lastFixAt)}` : ''}` : stats.pending ? `집계 대기 ${stats.pending}대${stats.noData ? ` · 오늘 위치 없음 ${stats.noData}대` : ''}` : '오늘 수신된 위치 없음';
-  return <div className="business-overview">
-    <BusinessMetrics items={[
-      { label: '등록 차량', value: devices.length, unit: '대', hint: '차량 목록에 등록된 전체 차량', icon: 'list' },
-      { label: '사용 가능', value: devices.filter(d=>d.enabled !== false).length, unit: '대', hint: '차량 운영 상태 · 통신 상태와 별도', icon: 'check', tone: 'good' },
-      { label: '오늘 운행거리', value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', hint: distanceHint + ' · 연결 변경일은 합계 제외', icon: 'route' },
-      { label: '점검 예정', value: maintenance.length, unit: '건', hint: `30일 이내·기한 경과${missing.length ? ` · 일정 미등록 ${missing.length}대` : ' · 일정 등록 완료'}`, tone: maintenance.some(t=>t.overdue) ? 'urgent' : '', icon: 'wrench' },
-    ]} />
+  const vehicleMetrics = [
+    { label: '등록 차량', value: devices.length, unit: '대', hint: '차량 목록에 등록된 전체 차량', icon: 'list' },
+    { label: '사용 가능', value: devices.filter(d=>d.enabled !== false).length, unit: '대', hint: '차량 운영 상태 · 통신 상태와 별도', icon: 'check', tone: 'good' },
+  ];
+  const distanceMetric = { label: '오늘 운행거리', value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', hint: distanceHint + ' · 연결 변경일은 합계 제외', icon: 'route' };
+  const maintenanceMetric = { label: '점검 예정', value: maintenance.length, unit: '건', hint: `30일 이내·기한 경과${missing.length ? ` · 일정 미등록 ${missing.length}대` : ' · 일정 등록 완료'}`, tone: maintenance.some(t=>t.overdue) ? 'urgent' : '', icon: 'wrench' };
+  return <>{!phone && setup}<div className="business-overview">
+    {phone && <header className="corporate-overview-heading"><h2>운영 현황</h2><time dateTime={period.day}>{period.day.replaceAll('-', '. ')}</time></header>}
+    <BusinessMetrics items={phone ? [distanceMetric, ...vehicleMetrics, maintenanceMetric] : [...vehicleMetrics, distanceMetric, maintenanceMetric]}/>
     {stats.error && <BusinessError onRetry={stats.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
     <div className="business-overview-grid"><BusinessLocation devices={devices} />
       <BusinessSection title="오늘 확인할 일" description={`통신·배터리·점검 ${tasks.length}건 · 미작성 운행 확인`}>
@@ -162,8 +167,9 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
     </div>
     <div className="business-reservation-summary"><span>오늘 예약 <strong>{reservations.error || !reservations.data ? '—' : active.length}건</strong></span><BusinessButton onClick={()=>onReserve({})}>예약 보기</BusinessButton></div>
     {reservations.error && <BusinessError onRetry={reservations.refetch}>오늘 예약 수를 불러오지 못했습니다.</BusinessError>}
+    {phone && setup}
     <BusinessVehicles separateTerminal localMap devices={devices} onMap={onMap} onDetail={onReport} detailLabel="운행 리포트" />
-  </div>;
+  </div></>;
 }
 
 // ════════════════════════════════════════════════════════
@@ -171,6 +177,9 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
 // ════════════════════════════════════════════════════════
 function ReportTab({ devices, initialDeviceId, initialFilter }) {
   const access=useFleetAccess();
+  const mobile=useCorporatePhone();
+  const [toolsOpen,setToolsOpen]=useState(false);
+  const showTools=!mobile||toolsOpen;
   const [selected,setSelected]=useState(new Set()),[assignment,setAssignment]=useState(null),[showRules,setShowRules]=useState(false),[showHistory,setShowHistory]=useState(false),[assignmentStatus,setAssignmentStatus]=useState('');
   const today = businessDate();
   const monthAgo = `${today.slice(0, 7)}-01`;
@@ -183,6 +192,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
   }, [devices, deviceId]);
   const [from, setFrom] = useState(initialFilter?.from||monthAgo);
   const [to,   setTo]   = useState(initialFilter?.to||today);
+  const [datesOpen,setDatesOpen]=useState(false);
   const [onlyIncomplete,setOnlyIncomplete]=useState(Boolean(initialFilter?.incomplete));
   const [trips, setTrips] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -297,7 +307,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
      <div className="fleet-directory-group-footer"><BusinessButton icon="download" disabled={!devices.length||!!periodError} onClick={()=>setXlsxRequest({month:from.slice(0,7),vehicleIds:devices.map(d=>d.id),from,to})}>전체 차량 엑셀</BusinessButton></div>
     </aside>
     <div className="fleet-directory-content">
-    <div className="corporate-report-page">
+    <div className="corporate-report-page" data-tools-open={toolsOpen}>
       <div className="corporate-report-heading no-print"><h2>{device?`${reportVehicleLabel(device)} 운행기록`:'운행기록부'}</h2><span>차량별 조회</span></div>
       <div className="corporate-report-controls no-print">
       <div className="corporate-report-control-row">
@@ -309,12 +319,16 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
             </option>
           ))}
         </select>
-        <div className="corporate-report-date-range">
+        {mobile&&<button type="button" className="corporate-trip-period" aria-label="운행 조회 기간 변경" aria-expanded={datesOpen} onClick={()=>setDatesOpen(!datesOpen)}>
+          <Icon name="clock" size={18}/><span>{from||'시작일'} ~ {to||'종료일'}</span><Icon name={datesOpen?'chevron-up':'chevron-down'} size={16}/>
+        </button>}
+        <div className="corporate-report-date-range" data-expanded={datesOpen}>
           <label><span>시작일</span><input aria-label="운행 조회 시작일" type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>
           <span aria-hidden="true">~</span>
           <label><span>종료일</span><input aria-label="운행 조회 종료일" type="date" value={to} onChange={e => setTo(e.target.value)} /></label>
         </div>
         <BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={!!filterDraft} onClick={openFilters}>필터{filterActive && <span className="corporate-report-dot" aria-label="필터 적용 중"/>}</BusinessButton>
+        {mobile&&<BusinessButton icon="settings" aria-label="운행 도구" aria-expanded={toolsOpen} onClick={()=>setToolsOpen(!toolsOpen)}>도구</BusinessButton>}
         {filterDraft&&<Modal open title="운행 필터" size={640} onClose={()=>setFilterDraft(null)} footer={<div className="corporate-report-filter-footer"><BusinessButton onClick={()=>setFilterDraft({driver:'all',purpose:'all',minHours:'',onlyIncomplete:false,onlyReview:false})}>초기화</BusinessButton><div><BusinessButton onClick={()=>setFilterDraft(null)}>취소</BusinessButton><BusinessButton primary disabled={draftHoursInvalid} onClick={applyFilters}>적용</BusinessButton></div></div>}>
           <div className="corporate-report-filter-dialog">
             <label>운전자<select aria-label="운전자 필터" value={filterDraft.driver} onChange={e => setFilterDraft(d=>({...d,driver:e.target.value}))}>
@@ -332,7 +346,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
             <BusinessButton disabled={!completeness?.missingDriver} onClick={() => setFilterDraft({driver:'unassigned',purpose:'all',minHours:'',onlyIncomplete:false,onlyReview:false})}>운전자 미지정</BusinessButton></div>
           </div>
         </Modal>}
-        <button onClick={load} style={st.btnGhost} disabled={loading || !!periodError}>
+        {showTools&&<><button onClick={load} style={st.btnGhost} disabled={loading || !!periodError}>
           <Icon name="refresh" size={12} /> 새로고침
         </button>
         <details className="corporate-report-menu corporate-report-download">
@@ -346,10 +360,10 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
           <Icon name="share" size={12} /> {printing ? '인쇄 준비 중...' : '화면 인쇄'}
         </button>
         </div>
-        </details>
+        </details></>}
       </div>
       <div className="corporate-report-control-row">
-        <div className="corporate-report-status-tabs" aria-label="운행 작성 상태">
+        {showTools&&<><div className="corporate-report-status-tabs" aria-label="운행 작성 상태">
           <button className="corporate-report-status-option" type="button" aria-pressed={!filterActive} onClick={resetFilters}>전체 ({trips?.length ?? '—'})</button>
           <button className="corporate-report-status-option" type="button" aria-pressed={onlyIncomplete} onClick={()=>{resetFilters();setOnlyIncomplete(true);}}>미작성 ({trips?.filter(tripNeedsDetails).length ?? '—'})</button>
         </div>
@@ -357,13 +371,13 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
           <span>기간 전체</span>
           <span>작성률 <strong>{completeness?.percent ?? '—'}%</strong></span>
           <span>입력 주유비 <strong>{completeness?.fuelEntries ? `${completeness.fuelCost.toLocaleString()}원` : '—'}</strong></span>
-        </div>
-        <span className="corporate-report-result-count">{filteredTrips ? `${filteredTrips.length}건 표시` : ''}</span>
+        </div></>}
+        <span className="corporate-report-result-count">{filteredTrips ? (mobile?`총 ${filteredTrips.length}건`:`${filteredTrips.length}건 표시`) : ''}</span>
       </div>
-      <TripQualitySummary trips={filteredTrips} loading={loading} error={error} vehicleSelected={Boolean(device)} onlyReview={onlyReview} onReviewChange={setOnlyReview}/>
+      {showTools&&<TripQualitySummary trips={filteredTrips} loading={loading} error={error} vehicleSelected={Boolean(device)} onlyReview={onlyReview} onReviewChange={setOnlyReview}/>}
       </div>
       {subjectScoped && <p className="business-note" role="status">{subjectScopeNote}</p>}
-      <div className="fleet-assignment-toolbar corporate-report-assignment no-print">
+      {showTools&&<div className="fleet-assignment-toolbar corporate-report-assignment no-print">
         <span role="status">{assignmentStatus || `${chosen.length}건 선택 · 한 번에 100건까지`}</span>
         <details className="corporate-report-menu corporate-report-management">
         <summary><Icon name="wrench" size={13}/> 운행 관리</summary>
@@ -374,7 +388,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
         {access.manage_reports&&<><BusinessButton disabled={chosen.length!==2||chosen.some(t=>t.correction_id)} onClick={()=>setCorrection(chosen)}>선택한 2건 병합</BusinessButton><BusinessButton disabled={!device||subjectScoped} onClick={()=>setQualityHistory(true)}>보정 이력</BusinessButton><BusinessButton disabled={!device||subjectScoped} onClick={()=>setShowHistory(true)}>지정 이력</BusinessButton></>}
         </div>
         </details>
-      </div>
+      </div>}
       {assignment&&<TripAssignmentModal mode={assignment} trips={chosen} vehicle={device} from={from} to={to} staff={staffAll||[]} onClose={()=>setAssignment(null)} onSaved={result=>{setAssignment(null);setAssignmentStatus(`${result.applied}건 변경 · ${result.skipped}건 제외`);load();}}/>}
       {showRules&&device&&<TripRulesModal vehicle={device} staff={staffAll||[]} onClose={()=>setShowRules(false)}/>}
       {showHistory&&device&&<TripAssignmentHistory vehicle={device} onClose={()=>setShowHistory(false)}/>}
@@ -393,7 +407,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
           <div style={st.muted}>필터 조건에 맞는 운행이 없습니다.</div>
         )}
         {filteredTrips && filteredTrips.length > 0 && (
-          <TripsTable trips={filteredTrips} dailyDistance={dailyDistance} selected={selected} onSelect={toggleTrip} eligible={eligible} onSelectAll={()=>{setAssignmentStatus('');setSelected(chosen.length===Math.min(100,eligible.length)?new Set():new Set(eligible.slice(0,100).map(tripAssignmentKey)));}}
+          <TripsTable trips={filteredTrips} mobile={mobile} selectionOpen={toolsOpen} vehicleLabel={reportVehicleLabel(device)} dailyDistance={dailyDistance} selected={selected} onSelect={toggleTrip} eligible={eligible} onSelectAll={()=>{setAssignmentStatus('');setSelected(chosen.length===Math.min(100,eligible.length)?new Set():new Set(eligible.slice(0,100).map(tripAssignmentKey)));}}
             onEvidence={subjectScoped?undefined:setEvidence} onEdit={subjectScoped?undefined:(t) => setEditing(t)} />
         )}
       </div>
@@ -438,15 +452,37 @@ function ReportHeader({ info, device, from, to }) {
   );
 }
 
-function TripsTable({ trips, dailyDistance, onEdit, onEvidence, selected, onSelect, eligible, onSelectAll }) {
+function TripsTable({ trips, mobile, selectionOpen, vehicleLabel, dailyDistance, onEdit, onEvidence, selected, onSelect, eligible, onSelectAll }) {
+  const byDay=useMemo(()=>{
+    const groups=new Map();
+    for(const trip of trips){
+      const day=kstDate(trip.started_at);
+      if(!groups.has(day))groups.set(day,[]);
+      groups.get(day).push(trip);
+    }
+    return groups;
+  },[trips]);
+  const dayKm=day=>dailyDistance.has(day)?`${tripDistance(dailyDistance.get(day))} km`:'—';
+  const row=(t,day,card=false)=><TripRow key={tripAssignmentKey(t)} t={t} card={card} selectionOpen={selectionOpen} vehicleLabel={vehicleLabel}
+    selected={selected.has(tripAssignmentKey(t))} onSelect={()=>onSelect(t)} selectionFull={selected.size>=100}
+    date={day} dailyKm={byDay.get(day)[0]===t?dayKm(day):''}
+    onEvidence={onEvidence?()=>onEvidence(t):undefined} onEdit={onEdit?()=>onEdit(t):undefined}/>;
+  const selectAll=<input className="fleet-trip-select" type="checkbox" aria-label="현재 운행 최대 100건 선택"
+    checked={eligible.length>0&&selected.size===Math.min(100,eligible.length)} disabled={!eligible.length} onChange={onSelectAll}/>;
   return (
-    // 모바일 — 운행 표가 좁은 폭을 넘김. 가로 스크롤 컨테이너로 감쌈.
-    // 인쇄 시 @media print 가 nav/sidebar 만 숨기고 reportArea 는 그대로 노출, 인쇄 페이지 폭에 맞춤.
+    <>
+    {mobile&&<section className="corporate-trip-days no-print" aria-label="운행 내역">
+      {selectionOpen&&<label className="trip-mobile-select-all">{selectAll} 전체 선택</label>}
+      {[...byDay].map(([day,items])=><section key={day} className="trip-mobile-day">
+        <header><h3><time dateTime={day}>{day}</time></h3><span>일별 누적 <strong>{dayKm(day)}</strong></span></header>
+        {items.map(t=>row(t,day,true))}
+      </section>)}
+    </section>}
     <div className="corporate-trip-table-scroll" role="region" aria-label="운행기록 목록 · 좌우 스크롤" tabIndex={0} style={st.tripsTableScroll}>
     <table className="corporate-trip-table" style={st.tripsTable}>
       <thead>
         <tr>
-          <th style={st.th} className="no-print"><input className="fleet-trip-select" type="checkbox" aria-label="현재 운행 최대 100건 선택" checked={eligible.length>0&&selected.size===Math.min(100,eligible.length)} disabled={!eligible.length} onChange={onSelectAll}/></th>
+          <th style={st.th} className="no-print">{selectAll}</th>
           <th style={st.th}>날짜</th>
           <th style={st.th}>시간</th><th style={st.th}>기록 상태</th>
           <th style={st.th}>용무</th>
@@ -460,34 +496,47 @@ function TripsTable({ trips, dailyDistance, onEdit, onEvidence, selected, onSele
         </tr>
       </thead>
       <tbody>
-        {trips.map((t, i) => {
-          const d = kstDate(t.started_at);
-          const dailyKm = dailyDistance.has(d) ? `${tripDistance(dailyDistance.get(d))} km` : '—';
-          const firstOfDay = !trips.slice(0, i).some(x => kstDate(x.started_at) === d);
-          return (
-            <TripRow key={tripAssignmentKey(t)} t={t} selected={selected.has(tripAssignmentKey(t))} onSelect={()=>onSelect(t)} selectionFull={selected.size>=100}
-              date={d} dailyKm={firstOfDay ? dailyKm : ''}
-              onEvidence={onEvidence?()=>onEvidence(t):undefined} onEdit={onEdit?() => onEdit(t):undefined} />
-          );
-        })}
+        {trips.map(t=>row(t,kstDate(t.started_at)))}
       </tbody>
     </table>
     </div>
+    </>
   );
 }
 
-function TripRow({ t, date, dailyKm, onEdit, onEvidence, selected, onSelect, selectionFull }) {
+function TripRow({ t, date, dailyKm, onEdit, onEvidence, selected, onSelect, selectionFull, card, selectionOpen, vehicleLabel }) {
   const access=useFleetAccess();
   const ann = t.annotation || {};
   const purpose = ann.purpose || 'unspecified';
   const km = tripDistance(t.distance_m);
   const time = tripTimeRange(t);
+  const checkbox=<input className="fleet-trip-select" type="checkbox" aria-label={`${date} ${time} 운행 선택`} checked={selected} disabled={!!t.quality?.subject_mapping_id||!canAssignTrip(t,access)||(!selected&&selectionFull)} onChange={onSelect}/>;
+  const editDisabled=!onEdit||t.allocation_status==='boundary_review'||(!access.manage_reports&&ann.driver_staff_id!=null&&ann.driver_staff_id!==access.staff_id);
+  const status=<span className="fleet-quality-status" data-state={t.quality?.status}>{qualityLabel(t)}{t.correction_id?' · 보정':''}</span>;
+  if(card){
+    const minutes=t.duration_min;
+    const fuel=[ann.fuel_liters!=null&&`${ann.fuel_liters}L`,ann.fuel_cost!=null&&`${ann.fuel_cost.toLocaleString()}원`].filter(Boolean).join(' / ');
+    return <article className="trip-mobile-card">
+      <header><div><strong>{vehicleLabel}</strong><span>{ann.driver_name||'운전자 미지정'}</span></div>{selectionOpen&&<label>{checkbox}</label>}</header>
+      <ol className="trip-mobile-route">
+        {[['출발',t.started_at,t.start_address,t.start_sites,t.start_lat,t.start_lng],['도착',t.ended_at,t.end_address,t.end_sites,t.end_lat,t.end_lng]].map(([label,instant,address,sites,lat,lng])=><li key={label}>
+          <div><span>{label}</span> <time dateTime={instant||undefined}>{instant?(kstDate(instant)===date?'':kstDate(instant)+' ')+kstTime(instant):'종료 미수신'}</time></div>
+          <p>{!!sites?.length&&<strong>{sites.map(s=>s.name).join(' · ')}</strong>}{address||(lat!=null&&lng!=null?`${lat.toFixed(5)}, ${lng.toFixed(5)}`:!sites?.length?'위치 정보 없음':'')}</p>
+        </li>)}
+      </ol>
+      <div className="trip-mobile-metrics"><span>{typeof minutes==='number'&&Number.isFinite(minutes)&&`${minutes}분 · `}{PURPOSE_LABEL[purpose]||'미지정'}</span><strong>{km}{km!=='—'&&<small> km</small>}</strong></div>
+      <details className="trip-mobile-more"><summary>{status}{!reportIncluded(t)&&<small>합계 제외</small>}<span>운행 상세</span></summary>
+        <dl>{[['용무 설명',purpose==='other'&&ann.purpose_note],['계기판',odometerSummary(ann)],['거리 배분',t.allocation_note],['유류',fuel],['출발 좌표',t.start_lat!=null&&t.start_lng!=null&&`${t.start_lat.toFixed(5)}, ${t.start_lng.toFixed(5)}`],['도착 좌표',t.end_lat!=null&&t.end_lng!=null&&`${t.end_lat.toFixed(5)}, ${t.end_lng.toFixed(5)}`]].filter(([,value])=>value).map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+        <div className="trip-mobile-actions"><BusinessButton disabled={!onEvidence} onClick={onEvidence}>근거</BusinessButton><BusinessButton icon="edit" disabled={editDisabled} onClick={onEdit}>용무·운전자 수정</BusinessButton></div>
+      </details>
+    </article>;
+  }
 
   return (
     <tr>
-      <td style={st.td} className="no-print"><input className="fleet-trip-select" type="checkbox" aria-label={`${date} ${time} 운행 선택`} checked={selected} disabled={!!t.quality?.subject_mapping_id||!canAssignTrip(t,access)||(!selected&&selectionFull)} onChange={onSelect}/></td>
+      <td style={st.td} className="no-print">{checkbox}</td>
       <td style={st.td}>{date}</td>
-      <td style={st.td}>{time}</td><td style={st.td}><span className="fleet-quality-status" data-state={t.quality?.status}>{qualityLabel(t)}{t.correction_id?" · 보정":""}</span>{!reportIncluded(t)&&<small style={{display:"block"}}>합계 제외</small>}</td>
+      <td style={st.td}>{time}</td><td style={st.td}>{status}{!reportIncluded(t)&&<small style={{display:"block"}}>합계 제외</small>}</td>
       <td style={st.td}>
         {PURPOSE_LABEL[purpose] || '미지정'}
         {purpose === 'other' && ann.purpose_note && (
@@ -524,7 +573,7 @@ function TripRow({ t, date, dailyKm, onEdit, onEvidence, selected, onSelect, sel
       </td>
       <td style={st.td}>{ann.driver_name || '—'}</td>
       <td style={{ ...st.td, padding: 4 }} className="no-print"><div className="fleet-quality-row-actions"><BusinessButton disabled={!onEvidence} onClick={onEvidence}>근거</BusinessButton>
-        <button className="corporate-trip-edit" onClick={onEdit} disabled={!onEdit||t.allocation_status==='boundary_review'||(!access.manage_reports&&t.annotation?.driver_staff_id!=null&&t.annotation.driver_staff_id!==access.staff_id)} style={{
+        <button className="corporate-trip-edit" onClick={onEdit} disabled={editDisabled} style={{
           width: 48, height: 48, borderRadius: 4,
           background: 'var(--surface-2)', color: 'var(--text-2)',
           border: '1px solid var(--border)', cursor: 'pointer',

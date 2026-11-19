@@ -182,3 +182,10 @@
   padding-inline:4px;
  }
 }
+.mobile-vehicle-row{min-height:104px}
+.mobile-vehicle-terminal{color:var(--text-2);font-size:15px;overflow-wrap:anywhere}
+.fleet-assets-detail-heading-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.mobile-vehicle-title{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-width:0}
+.mobile-vehicle-distance{color:var(--text-3);font-size:15px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mobile-vehicle-row>img{flex:none;width:54px;height:40px;border-radius:4px;object-fit:contain}
+.mobile-vehicle-schedule{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:0 16px 12px;color:var(--text-2);font-size:15px}

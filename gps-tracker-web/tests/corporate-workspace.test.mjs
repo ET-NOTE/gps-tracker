@@ -12,7 +12,7 @@ import {corporateVehicleName,terminalName,locationState,locationSummary} from '.
 
 // Exercise the production workspace interactions without maps, network or a
 // browser. Drawer contents stay real; only the portal/focus shell is replaced.
-async function modules(globals={}){
+async function modules(globals={},phone=false){
  const context=vm.createContext({console,...globals});
  const synthetic=exports=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value] of Object.entries(exports))this.setExport(key,value);},{context});
  const noop=()=>null;
@@ -20,10 +20,12 @@ async function modules(globals={}){
  async function load(file){
   const code=(await transform(await readFile(new URL(file,import.meta.url),'utf8'),{loader:'jsx',jsx:'automatic',format:'esm'})).code;
   const mod=new vm.SourceTextModule(code,{context});
-  await mod.link(name=>{
+  await mod.link(async name=>{
    if(name==='react')return synthetic(React);
    if(name==='react/jsx-runtime')return synthetic(jsx);
    if(name.endsWith('BusinessDrawer'))return synthetic({default:drawer});
+   if(name.endsWith('/useCorporatePhone'))return synthetic({default:()=>phone});
+   if(name==='./CorporateMobileHeader')return synthetic({default:(await load('../src/components/business/CorporateMobileHeader.jsx')).default});
    return synthetic({default:noop,classifyDevice:()=>({color:'#64748b',label:'수신 이력 없음'}),ageString:noop,vehicleName,
     corporateVehicleName,terminalName,locationState,locationSummary,kstDateTime:noop,useBusinessClock:()=>Date.parse('2026-11-17T03:00:00Z'),openPalette:noop});
   });
@@ -37,7 +39,7 @@ const classNode=(scope,className)=>scope.find(n=>typeof n.type==='string'&&n.pro
 const buttons=scope=>scope.findAllByType('button').map(n=>text(n.children));
 
 async function mount(t,props={},createNodeMock){
- const {workspace,rail}=await modules(),changes=[],destinations=[];
+ const {workspace,rail}=await modules({},props.phone),changes=[],destinations=[];
  function Harness(){
   const [tab,setTab]=React.useState(props.initialTab||'overview');
   return React.createElement(workspace.BusinessWorkspace,{title:'법인차 운영',kind:'corporate',tabs:corporateTabs,groups:corporateGroups,
@@ -233,6 +235,31 @@ test('mobile more keeps every corporate child and permitted account destination 
  await act(async()=>findButton(mobile(),'더보기').props.onClick());
  await act(async()=>findButton(r.root.findByType('aside'),'실시간 지도').props.onClick());
  assert.deepEqual(destinations,['profile','home','home']);assert.equal(r.root.findAllByType('aside').length,0);
+});
+
+test('phone menu opens the permitted company sections, reports, and account destinations',async t=>{
+ const selections=[];
+ const {renderer:r,changes,destinations}=await mount(t,{
+  phone:true, sections:{staff:[['users','사용자 목록'],['organization','부서·직책']]},
+  onSection:(page,id)=>selections.push([page,id]),
+  globalNavigation:[{id:'home',label:'지도',icon:'map'},{id:'profile',label:'내정보',icon:'user'}],
+ });
+ const open=async label=>{await act(async()=>r.root.findByProps({'aria-label':label}).props.onClick());return r.root.findByType('aside');};
+ let drawer=await open('전체 메뉴');
+ await act(async()=>findButton(drawer,'사용자').props.onClick());
+ assert.ok(!buttons(drawer).includes('변경 이력'));
+ await act(async()=>findButton(drawer,'부서·직책').props.onClick());
+ assert.deepEqual(changes,['staff']);assert.deepEqual(selections,[['staff','organization']]);
+ assert.equal(r.root.findAllByType('aside').length,0);
+ drawer=await open('전체 메뉴');
+ await act(async()=>findButton(drawer,'운행').props.onClick());
+ await act(async()=>findButton(drawer,'운행기록부').props.onClick());
+ assert.equal(changes.at(-1),'report');
+ drawer=await open('회사 및 계정 메뉴');
+ assert.ok(!buttons(drawer).includes('관리자'));
+ await act(async()=>findButton(drawer,'내정보').props.onClick());
+ await act(async()=>r.root.findByProps({'aria-label':'실시간 지도'}).props.onClick());
+ assert.deepEqual(destinations,['profile','home']);
 });
 
 test('rentcar keeps its own header, page title, schedule action and account links',async t=>{

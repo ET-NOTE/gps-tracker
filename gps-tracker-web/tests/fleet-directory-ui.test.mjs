@@ -28,7 +28,7 @@ const tableRows=r=>r.root.findByType('tbody').findAllByType('tr');
 const groupButton=(r,label)=>r.root.findAll(n=>n.type==='button'&&n.props.className==='fleet-directory-group'&&text(n.children[0])===label)[0];
 async function ready(check){for(let i=0;i<100;i++){if(check())return;await act(async()=>new Promise(resolve=>setTimeout(resolve,5)));}assert.ok(check(),'directory query did not settle');}
 
-async function mount(name,{access={manage_team:true,role:'owner'},props={},staffData=people,siteData=places,organization={},groupQuery,assetQuery={},siteServices={},apiOverrides={},waitForData=true}={}){
+async function mount(name,{access={manage_team:true,role:'owner'},phone=false,props={},staffData=people,siteData=places,organization={},groupQuery,assetQuery={},siteServices={},apiOverrides={},waitForData=true}={}){
  const calls={visits:[],updates:[],unlinks:[],revocations:[]};
  const qc=new query.QueryClient({defaultOptions:{queries:{retry:false,staleTime:Infinity,gcTime:Infinity}}});
  const api={fleetInvites:async()=>[],fleetTeamAudit:async()=>[],
@@ -55,6 +55,13 @@ async function mount(name,{access={manage_team:true,role:'owner'},props={},staff
  const directoryModule=new vm.SourceTextModule(directoryCode,{context});
  await directoryModule.link(name=>moduleOf(real[name]||{}));await directoryModule.evaluate();
  real['./DirectoryLayout']=directoryModule.namespace;
+ if(phone){
+  real['../../useCorporatePhone']={default:()=>true};
+  const mobileSource=await readFile(new URL('../src/components/business/MobileFleetDirectory.jsx',import.meta.url),'utf8');
+  const mobileDirectory=new vm.SourceTextModule((await transform(mobileSource,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
+  await mobileDirectory.link(name=>moduleOf(real[name]||common));await mobileDirectory.evaluate();
+  real['./MobileFleetDirectory']=mobileDirectory.namespace;
+ }
  await mod.link(name=>moduleOf(real[name]||common));await mod.evaluate();
  let r;
  const render=nextProps=>React.createElement(query.QueryClientProvider,{client:qc},React.createElement(mod.namespace.default,nextProps));
@@ -76,6 +83,18 @@ test('people search and department scope retain correct status counts and matchi
   assert.equal(tableRows(r).length,0);assert.match(text(r.toJSON()),/조건에 맞는 사용자가 없습니다/);
   await act(async()=>button(r,'활성 (1)').props.onClick());
   assert.equal(tableRows(r).length,1);assert.match(text(tableRows(r)[0].children),/김영업/);
+ }finally{await close();}
+});
+
+test('phone employee details keep contact information and restrict management actions to authorized roles',async()=>{
+ const {r,close}=await mount('FleetPeople',{phone:true,access:{role:'admin',manage_team:true}});
+ try{
+  assert.equal(r.root.findAllByType('table').length,0);
+  const employees=r.root.findAllByProps({className:'mobile-person'});
+  assert.equal(employees.length,3);
+  assert.match(text(employees[0].children),/010-1111-1111/);
+  assert.ok(employees[0].findAllByType('button').some(b=>text(b.children)==='수정'));
+  assert.equal(employees[2].findAllByType('button').length,0);
  }finally{await close();}
 });
 

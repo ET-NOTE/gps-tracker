@@ -21,7 +21,7 @@ const groupCount=(r,label)=>Number(text(groupButton(r,label).findAllByType('span
 const rowNames=r=>r.root.findByType('tbody').findAllByType('tr').map(n=>text(n.findAllByType('td')[0].children));
 const detailDrawers=r=>r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']);
 
-async function mount(t,{manage=true,data=vehicles,devices=[],saveVehicle,onChanged=()=>{},initialMissingSchedules=false}={}){
+async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVehicle,onChanged=()=>{},initialMissingSchedules=false}={}){
  const context=vm.createContext({console});
  const synthetic=exports=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value] of Object.entries(exports))this.setExport(key,value);},{context});
  const code=(await transform(await readFile(new URL('../src/components/business/FleetAssets.jsx',import.meta.url),'utf8'),{loader:'jsx',jsx:'automatic',format:'esm'})).code;
@@ -36,12 +36,19 @@ async function mount(t,{manage=true,data=vehicles,devices=[],saveVehicle,onChang
   Modal:({children,footer,title,onClose})=>React.createElement('section',{role:'dialog','aria-label':title},onClose&&React.createElement('button',{'aria-label':'창 닫기',onClick:onClose}),children,footer),
   FormField:tag('label'),Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
  const real={'react':React,'react/jsx-runtime':jsx,'../../lib/fleetAssetFilters':filters,'../../lib/fleetAssets':assetsLib,
+  '../../useCorporatePhone':{default:()=>phone},
   './FleetBatchBindings':{default:()=>React.createElement('button',{},'단말기 일괄 연결')},
   '../CarImage':{default:({vehicleId,version,fallback})=>React.createElement('span',{'data-vehicle-id':vehicleId,'data-photo-version':version},fallback)}};
  const directoryCode=(await transform(await readFile(new URL('../src/components/business/DirectoryLayout.jsx',import.meta.url),'utf8'),{loader:'jsx',jsx:'automatic',format:'esm'})).code;
  const directory=new vm.SourceTextModule(directoryCode,{context});
  await directory.link(name=>synthetic(real[name]||common));await directory.evaluate();
  real['./DirectoryLayout']=directory.namespace;
+ if(phone){
+  const mobileSource=await readFile(new URL('../src/components/business/MobileFleetDirectory.jsx',import.meta.url),'utf8');
+  const mobileDirectory=new vm.SourceTextModule((await transform(mobileSource,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
+  await mobileDirectory.link(name=>synthetic(real[name]||common));await mobileDirectory.evaluate();
+  real['./MobileFleetDirectory']=mobileDirectory.namespace;
+ }
  await mod.link(name=>synthetic(real[name]||(name==='./BusinessDrawer'?{default:({title,children,onClose})=>React.createElement('aside',{'aria-label':title},React.createElement('button',{'aria-label':'상세 닫기',onClick:onClose},'닫기'),children)}:common)));
  await mod.evaluate();
  const reports=[],maps=[];let r;
@@ -50,6 +57,19 @@ async function mount(t,{manage=true,data=vehicles,devices=[],saveVehicle,onChang
  t.after(async()=>{await act(async()=>r.unmount());});
  return {r,reports,maps,connections,vehicleUpdates,invalidations,refresh:assets=>act(async()=>r.update(render(assets)))};
 }
+
+test('phone rows identify the registered terminal even when its telemetry is missing',async t=>{
+ const pending={...vehicles[0],bindings:[{id:21,device_id:81,is_primary:true,terminal_name:'등록된 단말'}]};
+ const {r}=await mount(t,{manage:false,phone:true,data:[pending,vehicles[1]]});
+ const rows=r.root.findAllByProps({className:'mobile-fleet-row mobile-vehicle-row'});
+ assert.equal(r.root.findAllByType('table').length,0);
+ assert.match(text(rows[0].children),/단말 등록된 단말 · 통신 정보 확인 불가/);
+ assert.match(text(rows[1].children),/단말 미연결/);
+ assert.equal(r.root.findAllByProps({className:'mobile-fleet-create'}).length,0);
+ await act(async()=>rows[0].props.onClick());
+ assert.equal(detailDrawers(r).length,1);
+ assert.equal(r.root.findAllByProps({'aria-label':'차량·점검 정보 수정'}).length,0);
+});
 
 test('missing-schedule list edits only missing dates and drops completed vehicles on refresh',async t=>{
  const complete={next_service_date:'2028-02-01',insurance_expiry:'2028-07-03',inspection_expiry:'2028-07-31'};

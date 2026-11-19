@@ -110,3 +110,13 @@
  .business-workspace--corporate .fleet-org-table :is(th,td):nth-child(2){width:80px}
  .business-workspace--corporate .fleet-org-table :is(th,td):nth-child(3){width:84px}
 }
+.mobile-person>summary{min-height:82px;list-style:none}
+.mobile-person>summary::-webkit-details-marker{display:none}
+.mobile-person[open]>summary .mobile-fleet-row-chevron{transform:rotate(90deg)}
+.mobile-person-details{padding:0 16px 16px}
+.mobile-person-details dl{margin:0;padding:12px;border-radius:6px;background:var(--surface-2);font-size:16px}
+.mobile-person-details dl>div{display:grid;grid-template-columns:minmax(0,35%) minmax(0,1fr);gap:8px;padding:5px 0}
+.mobile-person-details dt{color:var(--text-2)}
+.mobile-person-details dd{min-width:0;margin:0;overflow-wrap:anywhere}
+.mobile-person-details .fleet-row-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.mobile-person-details .fleet-row-actions .business-button{flex:1 1 auto;min-width:0}

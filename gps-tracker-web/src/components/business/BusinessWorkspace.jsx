@@ -10,13 +10,16 @@ import { openPalette } from '../ui/CommandPalette';
 import BusinessDrawer from './BusinessDrawer';
 import BusinessMap from './BusinessMap';
 import BusinessVehicleDetail from './BusinessVehicleDetail';
+import useCorporatePhone from '../../useCorporatePhone';
+import CorporateMobileHeader from './CorporateMobileHeader';
 import './business.css';
 
 const VehicleContext = createContext(null);
 const SelectionContext = createContext(null);
 export const useBusinessVehicle = () => useContext(VehicleContext);
-export function BusinessWorkspace({ renderVehicleDetail, title, description, tabs, groups, tab, section, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
+export function BusinessWorkspace({ renderVehicleDetail, title, description, tabs, groups, tab, section, sections, onSection, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
   const workspaceRef = useRef(null);
+  const phone = useCorporatePhone();
   // Mobile scrolls the persistent workspace; desktop's keyed content remounts
   // below. Reset only on navigation so vehicle-map focus keeps its own scroll.
   useEffect(() => { if (kind === 'corporate') workspaceRef.current?.scrollTo({ top: 0 }); }, [kind, tab, section]);
@@ -55,7 +58,9 @@ export function BusinessWorkspace({ renderVehicleDetail, title, description, tab
         {onNavigate && mapNavigation && <button className="business-nav-item business-map-shortcut" type="button" title="내 계정 단말기의 전체 지도" onClick={() => onNavigate('home')}><Icon name="mapPin" size={18} /><span>실시간 지도</span></button>}
         {corporate && <div className="business-nav-tools"><button className="business-button business-global-search" type="button" onClick={openPalette}><Icon name="search" size={16} /><span>차량·메뉴 검색</span><kbd>Ctrl K</kbd></button>{action}{onNavigate && <button className="business-button" type="button" aria-expanded={accountMenu} onClick={() => setAccountMenu(true)}><Icon name="user" size={18} />계정 메뉴</button>}</div>}
       </nav>
-      {corporate ? <header className="business-topbar no-print">
+      {corporate && phone ? <CorporateMobileHeader active={active} groups={groups} tabs={tabs} section={section} sections={sections}
+        onSection={onSection} onTab={onTab} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation}/>
+      : corporate ? <header className="business-topbar no-print">
         <div className="business-topbar-navigation">{headerNavigation || subNavigation || <h2>{active.label}</h2>}</div>
         {toolbar && <div className="business-topbar-account">{toolbar}</div>}
       </header> : subNavigation}
@@ -64,7 +69,7 @@ export function BusinessWorkspace({ renderVehicleDetail, title, description, tab
         {children}
       </div>
     </div>
-    {onNavigate && <nav className="app-bottom-nav business-mobile-nav no-print" aria-label={`${title} 빠른 메뉴`}>
+    {onNavigate && !(corporate && phone) && <nav className="app-bottom-nav business-mobile-nav no-print" aria-label={`${title} 빠른 메뉴`}>
       <button className="business-mobile-item" aria-current={tab === tabs[0].id ? 'page' : undefined} onClick={() => choose(tabs[0].id)}><Icon name="home" size={22} />현황</button>
       <button className="business-mobile-item" aria-current={(kind === 'corporate' ? activeGroup === 'vehicles' : tab === schedule?.id) ? 'page' : undefined} onClick={() => choose(kind === 'corporate' ? lastInGroup.vehicles || 'vehicles' : schedule.id)}><Icon name={kind === 'corporate' ? 'list' : 'clock'} size={22} />{kind === 'rentcar' ? '배차표' : '차량'}</button>
       {corporate && tabs.some(item => item.id === 'staff')
