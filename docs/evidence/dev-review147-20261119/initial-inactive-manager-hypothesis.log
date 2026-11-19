@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/review/backend-extra.py", line 64, in <module>
+    ok('reproduced: schedule-only full PUT blocked by an unchanged inactive manager',code==400)
+  File "/review/backend-extra.py", line 21, in ok
+    assert cond,label
+AssertionError: reproduced: schedule-only full PUT blocked by an unchanged inactive manager

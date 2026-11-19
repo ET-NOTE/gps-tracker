@@ -144,3 +144,6 @@ docs/evidence/integration145-20261118/*.txt whitespace=-blank-at-eof,-blank-at-e
 # Round146 executed bytes and actual deployment evidence.
 docs/evidence/review146-20261118/* -text whitespace=-blank-at-eof,-blank-at-eol
 ops/review146*.py text eol=lf
+
+# Round147 dev review logs and screenshots preserve original evidence bytes.
+docs/evidence/dev-review147-20261119/* -text whitespace=-blank-at-eof,-blank-at-eol
