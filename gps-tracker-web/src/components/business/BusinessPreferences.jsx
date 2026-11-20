@@ -6,29 +6,38 @@ import { Modal, FormField, Input, Button, SkeletonList } from '../ui';
 import { BusinessSection, BusinessButton, BusinessError } from './BusinessWorkspace';
 import { kstDateTime } from '../../lib/businessExport';
 import Icon from '../Icon';
+import './fleet-administration.css';
 
 const fields = [['business_number', '사업자번호', '000-00-00000'], ['company_name', '상호 (회사명)', '회사명'], ['representative', '대표자', '대표자 이름'], ['address', '주소 (선택)', '사업장 주소']];
 export function BusinessCompanyInfo({readOnly=false}) {
   const result = useCorporateInfo(), qc = useQueryClient(), [draft, setDraft] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [saved, setSaved] = useState(false), lock = useRef(false);
-  const info = draft || result.data;
-  const missing = fields.slice(0, 3).filter(([key]) => !String(info?.[key] || '').trim()).map(([, label]) => label);
+  const info = result.data;
   async function save() {
-    if (lock.current || !info) return;
+    if (lock.current || !draft || readOnly) return;
     lock.current = true; setBusy(true); setError(''); setSaved(false);
-    try { const value = await api.putCorporateInfo(Object.fromEntries(fields.map(([key]) => [key, String(info[key] || '').trim() || null]))); qc.setQueryData(qk.corporateInfo(), value); setDraft(null); setSaved(true); }
+    try { const value = await api.putCorporateInfo(Object.fromEntries(fields.map(([key]) => [key, String(draft[key] || '').trim() || null]))); qc.setQueryData(qk.corporateInfo(), value); setDraft(null); setSaved(true); }
     catch { setError('회사 정보를 저장하지 못했습니다. 입력 내용을 유지했습니다. 다시 시도해 주세요.'); }
     finally { lock.current = false; setBusy(false); }
   }
   if (result.error && !draft) return <BusinessError onRetry={result.refetch}>회사 정보를 불러오지 못했습니다.</BusinessError>;
-  if (!info) return <SkeletonList count={3} itemHeight={70} />;
-  return <div className="business-support">
-    <BusinessSection title="회사 정보" description="운행기록부에 표시됩니다.">
-      {missing.length > 0 && <p className="business-company-missing">미입력: {missing.join(' · ')}</p>}
-      <div className="business-support-body"><div className="business-support-form">{fields.map(([key, label, placeholder]) => <FormField key={key} label={label}><Input value={info[key] || ''} onChange={e => { setSaved(false); setError(''); setDraft({ ...info, [key]: e.target.value }); }} disabled={busy||readOnly} placeholder={placeholder} /></FormField>)}</div>
-        {error && <BusinessError>{error}</BusinessError>}{saved && <p role="status" className="business-support-success">회사 정보를 저장했습니다.</p>}
-        <div className="business-support-actions"><span className="business-note">저장 후 보고서에 반영됩니다.</span>{!readOnly&&<Button busy={busy} onClick={save}>회사 정보 저장</Button>}</div>
-      </div>
+  if (!info && !draft) return <SkeletonList count={3} itemHeight={70} />;
+  function close() { if (!lock.current) { setDraft(null); setError(''); } }
+  return <div className="business-support fleet-company-profile">
+    <BusinessSection title="회사 정보" action={!readOnly&&<BusinessButton icon="edit" onClick={()=>{setDraft({...info});setError('');setSaved(false);}}>회사 정보 수정</BusinessButton>}>
+      <div className="fleet-company-line"><span><Icon name="office" size={25}/></span><strong>{info?.company_name||'회사명 미등록'}</strong></div>
+      <dl className="fleet-company-facts">
+        {[['business_number','사업자등록번호'],['representative','대표자'],['address','사업장 주소']].map(([key,label])=><div key={key}><dt>{label}</dt><dd>{info?.[key]||'미등록'}</dd></div>)}
+      </dl>
+      {saved&&<p role="status" className="business-support-success">회사 정보를 저장했습니다.</p>}
     </BusinessSection>
+    {draft&&!readOnly&&<Modal open title="회사 정보 수정" onClose={busy?undefined:close}>
+      <form className="fleet-company-form" onSubmit={e=>{e.preventDefault();save();}}>
+        <div className="business-support-form">{fields.map(([key,label,placeholder])=><FormField key={key} label={label}><Input value={draft[key]||''} placeholder={placeholder} disabled={busy} onChange={e=>{setError('');setDraft({...draft,[key]:e.target.value});}}/></FormField>)}</div>
+        {error&&<BusinessError>{error}</BusinessError>}
+        <span className="business-note">저장한 회사 정보는 운행기록부에 표시됩니다.</span>
+        <div className="business-dialog-actions"><Button type="button" variant="ghost" disabled={busy} onClick={close}>취소</Button><Button type="submit" busy={busy}>회사 정보 저장</Button></div>
+      </form>
+    </Modal>}
   </div>;
 }
 

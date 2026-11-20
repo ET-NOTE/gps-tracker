@@ -5,12 +5,15 @@ const phone = typeof window !== 'undefined' && window.matchMedia
   ? window.matchMedia('screen and (max-width: 600px)')
   : null;
 
-function subscribe(notify) {
-  phone?.addEventListener('change', notify);
-  return () => phone?.removeEventListener('change', notify);
+const compactNav = typeof window !== 'undefined' && window.matchMedia
+  ? window.matchMedia('screen and (max-width: 899px)') : null;
+function watch(query) {
+  return [notify => {
+    query?.addEventListener('change', notify);
+    return () => query?.removeEventListener('change', notify);
+  }, () => query?.matches ?? false];
 }
-
-const snapshot = () => phone?.matches ?? false;
-export default function useCorporatePhone() {
-  return useSyncExternalStore(subscribe, snapshot, () => false);
+const phoneStore = watch(phone), navStore = watch(compactNav);
+export default function useCorporatePhone(layout) {
+  return useSyncExternalStore(...(layout === 'navigation' ? navStore : phoneStore), () => false);
 }

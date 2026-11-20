@@ -12,14 +12,15 @@ import BusinessMap from './BusinessMap';
 import BusinessVehicleDetail from './BusinessVehicleDetail';
 import useCorporatePhone from '../../useCorporatePhone';
 import CorporateMobileHeader from './CorporateMobileHeader';
+import FleetQuickPanel from './FleetQuickPanel';
 import './business.css';
 
 const VehicleContext = createContext(null);
 const SelectionContext = createContext(null);
 export const useBusinessVehicle = () => useContext(VehicleContext);
-export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail, title, description, tabs, groups, tab, section, sections, onSection, onTab, action, mobileAction, toolbar, headerNavigation, globalNavigation, children, devices = [], kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
+export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail, title, description, tabs, groups, tab, section, sections, onSection, onTab, action, mobileAction, toolbar, globalNavigation, children, devices = [], vehicleStatus='ready', kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
   const workspaceRef = useRef(null);
-  const phone = useCorporatePhone();
+  const phone = useCorporatePhone('navigation');
   // Mobile scrolls the persistent workspace; desktop's keyed content remounts
   // below. Reset only on navigation so vehicle-map focus keeps its own scroll.
   useEffect(() => { if (kind === 'corporate') workspaceRef.current?.scrollTo({ top: 0 }); }, [kind, tab, section]);
@@ -30,6 +31,15 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
   const subTabs = groups ? tabs.filter(item => (item.subnavGroup || item.group) === subnavGroup) : [];
   const subnavLabel = navigation.find(item => item.id === subnavGroup)?.label;
   const [lastInGroup, setLastInGroup] = useState({});
+  const [expanded, setExpanded] = useState(activeGroup);
+  useEffect(() => { setExpanded(activeGroup); }, [activeGroup]);
+  const [wide,setWide] = useState(() => {
+    try { return localStorage.getItem('fleet.workArea.width') === 'wide'; } catch { return false; }
+  });
+  function chooseWidth(value) {
+    setWide(value);
+    try { localStorage.setItem('fleet.workArea.width', value ? 'wide' : 'normal'); } catch { /* storage may be unavailable */ }
+  }
   useEffect(() => { setLastInGroup(previous => previous[activeGroup] === tab ? previous : { ...previous, [activeGroup]: tab }); }, [activeGroup, tab]);
   const [selectedId, setSelectedId] = useState(initialVehicleId), [more, setMore] = useState(false);
   const [accountMenu, setAccountMenu] = useState(false);
@@ -40,31 +50,61 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
   const schedule = tabs.find(t => ['schedule', 'reservations'].includes(t.id));
   const choose = value => { setMore(false); onTab(value); };
   const corporate = kind === 'corporate';
+  const [quick,setQuick]=useState(null);
+  useEffect(()=>{
+    if (!corporate || typeof window==='undefined') return;
+    const shortcut=e=>{
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase()!=='k') return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (quick==='search') setQuick(null);
+      else if (!document.querySelector('[role="dialog"][aria-modal="true"]')) setQuick('search');
+    };
+    window.addEventListener('keydown',shortcut,true);
+    return ()=>window.removeEventListener('keydown',shortcut,true);
+  },[corporate,quick]);
   const accountNavigation = (globalNavigation || [{ id: 'home', label: '지도', icon: 'mapPin' }, { id: 'devices', label: '단말기 관리', icon: 'list' }, { id: 'profile', label: '내정보', icon: 'user' }])
     .map(item => corporate && item.id === 'home' ? { ...item, label: '실시간 지도', icon: 'mapPin' } : item);
   const mapNavigation = corporate && accountNavigation.find(item => item.id === 'home');
+  const groupLabel = navigation.find(item=>item.id===activeGroup)?.label || active.label;
+  const pageLabel = sections?.[active.id]?.find(([id])=>section===id)?.[1] || active.label;
   const subNavigation = subTabs.length > 1 && <nav className="business-subnav no-print" aria-label={`${subnavLabel} 하위 메뉴`}>{subTabs.map(item => <button className="business-subnav-item" key={item.id} type="button" aria-current={tab === item.id ? 'page' : undefined} onClick={() => onTab(item.id)}>{item.label}</button>)}</nav>;
-  return <SelectionContext.Provider value={{ focusedId, focusVehicle: d => setFocusedId(d.id), kind }}><VehicleContext.Provider value={openVehicle}><section ref={workspaceRef} className={`gps-user-panel gps-business-panel business-workspace${kind === 'corporate' ? ' business-workspace--corporate' : ''}${onNavigate ? ' has-mobile-nav' : ''}`}>
+  return <SelectionContext.Provider value={{ focusedId, focusVehicle: d => setFocusedId(d.id), kind }}><VehicleContext.Provider value={openVehicle}><section ref={workspaceRef} data-view-width={corporate ? (wide ? 'wide' : 'normal') : undefined} className={`gps-user-panel gps-business-panel business-workspace${kind === 'corporate' ? ' business-workspace--corporate' : ''}${onNavigate ? ' has-mobile-nav' : ''}`}>
     {!corporate && <header className="business-header no-print">
       <div><h1>{title}</h1>{description && <p>{description}</p>}</div>
       <div className="business-header-action"><button className="business-button business-global-search" onClick={openPalette}><Icon name="search" size={16} />차량·메뉴 검색 <kbd>Ctrl K</kbd></button>{action}</div>
     </header>}
     <div className={`business-layout${subTabs.length > 1 ? ' has-subnav' : ''}`}>
       <nav className="business-nav no-print" aria-label={`${title} 메뉴`}>
-        {corporate && <div className="business-brand"><span className="business-brand-name">Serial<span>Link</span></span><h1>{title}</h1></div>}
-        {navigation.map(item => <button className="business-nav-item" key={item.id} type="button" aria-current={(groups ? activeGroup : tab) === item.id ? 'page' : undefined} onClick={() => onTab(groups ? lastInGroup[item.id] || tabs.find(t => t.group === item.id).id : item.id)}>
+        {corporate && <button type="button" className="fleet-brand-home" aria-label="시리얼링크 운영 현황" onClick={()=>onTab('overview')}><span className="fleet-brand-symbol"><Icon name="car" size={19}/></span>시리얼링크</button>}
+        {corporate ? navigation.map(item=>{
+          const pages=tabs.filter(t=>(t.group || t.id)===item.id);
+          const links=pages.flatMap(p=>sections?.[p.id]?.length ? sections[p.id].map(([id,label])=>({page:p.id,id,label})) : [{page:p.id,label:p.label}]);
+          if (!links.length) return null;
+          const nested=links.length>1, open=expanded===item.id, current=activeGroup===item.id;
+          return <div className="fleet-nav-group" key={item.id}><button type="button" className="business-nav-item" aria-current={current?'page':undefined} aria-expanded={nested?open:undefined} onClick={()=>{
+            if (nested && current) {setExpanded(open?null:item.id);return;}
+            onTab(lastInGroup[item.id] && pages.some(p=>p.id===lastInGroup[item.id]) ? lastInGroup[item.id] : pages[0].id);
+            setExpanded(item.id);
+          }}><Icon name={item.icon} size={18}/><span>{item.label}</span>{nested&&<Icon name={open?'chevron-down':'chevron-right'} size={14}/>}</button>
+            {nested&&open&&<nav className="fleet-nav-children" aria-label={`${item.label} 하위 메뉴`}>{links.map(link=><button key={link.page+(link.id||'')} type="button" aria-current={tab===link.page&&(!link.id||section===link.id)?'page':undefined} onClick={()=>{onTab(link.page);if(link.id)onSection?.(link.page,link.id);}}>{link.label}</button>)}</nav>}
+          </div>;
+        }) : navigation.map(item => <button className="business-nav-item" key={item.id} type="button" aria-current={(groups ? activeGroup : tab) === item.id ? 'page' : undefined} onClick={() => onTab(groups ? lastInGroup[item.id] || tabs.find(t => t.group === item.id).id : item.id)}>
           <Icon name={item.icon} size={18} /><span>{item.label}</span>
         </button>)}
         {onNavigate && mapNavigation && <button className="business-nav-item business-map-shortcut" type="button" title="내 계정 단말기의 전체 지도" onClick={() => onNavigate('home')}><Icon name="mapPin" size={18} /><span>실시간 지도</span></button>}
-        {corporate && <div className="business-nav-tools"><button className="business-button business-global-search" type="button" onClick={openPalette}><Icon name="search" size={16} /><span>차량·메뉴 검색</span><kbd>Ctrl K</kbd></button>{action}{onNavigate && <button className="business-button" type="button" aria-expanded={accountMenu} onClick={() => setAccountMenu(true)}><Icon name="user" size={18} />계정 메뉴</button>}</div>}
+        {corporate && <div className="business-nav-tools">{action}{onNavigate && <button className="business-button" type="button" aria-expanded={accountMenu} onClick={() => setAccountMenu(true)}><Icon name="user" size={18} />계정 메뉴</button>}</div>}
       </nav>
       {corporate && phone ? <CorporateMobileHeader active={active} groups={groups} tabs={tabs} section={section} sections={sections}
-        onSection={onSection} onTab={onTab} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation}/>
+        onSection={onSection} onTab={onTab} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation} onQuick={setQuick}/>
       : corporate ? <header className="business-topbar no-print">
-        <div className="business-topbar-navigation">{headerNavigation || subNavigation || <h2>{active.label}</h2>}</div>
-        {toolbar && <div className="business-topbar-account">{toolbar}</div>}
+        <div className="fleet-topbar-inner"><div className="fleet-breadcrumb"><span>법인차 운영</span><Icon name="chevron-right" size={13}/><span>{groupLabel}</span>{groupLabel!==pageLabel&&<><Icon name="chevron-right" size={13}/><strong>{pageLabel}</strong></>}</div>
+        <div className="fleet-width" role="group" aria-label="화면 폭 선택">{[[false,'기본'],[true,'넓게']].map(([value,label])=><button key={label} type="button" aria-pressed={wide===value} onClick={()=>chooseWidth(value)}>{label}</button>)}</div>
+        <button className="fleet-top-search" type="button" onClick={()=>setQuick('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
+        <button className="fleet-top-search" type="button" onClick={()=>setQuick('alerts')} aria-label="운영 알림"><Icon name="bell" size={18}/></button>
+        {toolbar && <div className="business-topbar-account">{toolbar}</div>}</div>
       </header> : subNavigation}
       <div className="business-content" key={tab}>
+        {corporate && !phone && <header className="fleet-page-title no-print"><h1>{pageLabel}</h1></header>}
         {!corporate && <div className="business-page-heading no-print"><h2>{active.label}</h2>{active.description && <p>{active.description}</p>}</div>}
         {children}
       </div>
@@ -93,10 +133,11 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
       </div>
     </BusinessDrawer>}
     {accountMenu && onNavigate && <BusinessDrawer title="계정 메뉴" onClose={() => setAccountMenu(false)}><div className="business-more-menu">{accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setAccountMenu(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>)}</div></BusinessDrawer>}
+    {quick&&<FleetQuickPanel mode={quick} tabs={tabs} groups={navigation} sections={sections} devices={devices} vehicleStatus={vehicleStatus} onVehicle={openVehicle} onClose={()=>setQuick(null)} onVisit={(page,id)=>{onTab(page);if(id)onSection?.(page,id);}}/>}
     {selected && (renderVehicleDetail ? renderVehicleDetail(selected,()=>setSelectedId(null)) : <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} onUpdated={onVehiclesChange} />)}
   </section></VehicleContext.Provider></SelectionContext.Provider>;
 }
-export function BusinessLocation({ devices }) {
+export function BusinessLocation({ devices, onLive }) {
   const openVehicle = useContext(VehicleContext);
   const selection = useContext(SelectionContext), now = useBusinessClock();
   const counts = locationSummary(devices, now);
@@ -105,7 +146,7 @@ export function BusinessLocation({ devices }) {
   if (selected && locationState(selected, now) !== 'none') {
     selectedLocation = selected.last_fix_at ? `마지막 위치 ${kstDateTime(selected.last_fix_at)}` : '마지막 위치 수신 시각 없음';
   }
-  return <BusinessSection title="차량 위치" description={`현재 수신 ${counts.current} · 오래된 위치 ${counts.old} · 위치 없음 ${counts.none}`}>
+  return <BusinessSection title="차량 위치" description={`현재 수신 ${counts.current} · 오래된 위치 ${counts.old} · 위치 없음 ${counts.none}`} action={onLive&&<button className="fleet-dashboard-link" type="button" onClick={onLive}>실시간 관제 <Icon name="chevron-right" size={14}/></button>}>
     <BusinessMap devices={devices} onSelect={selection?.focusVehicle || openVehicle} selectedId={selection?.focusedId} />
     {selection?.kind !== 'corporate' && <p className="business-map-note">현재 수신: 최근 5분 내 위치 · 지도는 마지막 수신 위치를 표시합니다.</p>}
     {selected && <div className="business-map-selection"><div><strong>{corporateVehicleName(selected)}</strong><p>{terminalName(selected)} · {selectedLocation}</p></div><BusinessButton onClick={() => openVehicle?.(selected)}>차량 상세</BusinessButton></div>}

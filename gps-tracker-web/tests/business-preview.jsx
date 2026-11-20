@@ -111,6 +111,14 @@ if(params.has('feedback')) {
 let assets=devices.map((d,i)=>({id:100+i,owner_id:1,name:`업무 차량 ${i+1}`,license_plate:d.license_plate||d.car_plate,car_model:d.car_model,department:d.department,enabled:d.enabled,profile:{next_service_date:d.next_service_date,insurance_expiry:d.insurance_expiry},created_at:new Date(now-86400000).toISOString(),updated_at:new Date(now).toISOString(),bindings:[{id:i+1,device_id:d.id,terminal_name:d.display_name,is_primary:true,started_at:'2020-01-01T00:00:00Z'}]}));
 if(params.has('asset-filters')) assets=assets.map((v,i)=>({...v,profile:{...v.profile,odometer_km:[0,12000.5,null,75000][i]},created_at:['2026-10-01T15:00:00Z','2026-10-15T14:59:59Z','2026-10-15T15:00:00Z','2026-09-30T00:00:00Z'][i],...(i===0?{name:'차량 정보 미등록',license_plate:''}:{})}));
 let fleetBookings=reservations.map(r=>({...r,vehicle_id:99+r.device_id,vehicle_name:`업무 차량 ${r.device_id}`}));
+let reservationPolicy=params.has('reservation-approval');
+const reservationHistory=new Map();
+function recordBooking(row,action,note=''){
+  row.updated_at=new Date().toISOString();
+  const items=reservationHistory.get(row.id)||[];
+  items.unshift({id:items.length+1,status:row.status,action,note,actor_id:1,created_at:row.updated_at});
+  reservationHistory.set(row.id,items);
+}
 Object.assign(api,{
  listFleetVehicles:()=>read(assets.map(v=>({...v})))(),
  createFleetVehicle:async body=>{const v={...body,id:200+assets.length,owner_id:1,bindings:[],created_at:new Date().toISOString(),updated_at:new Date().toISOString()};assets=[...assets,v];return v;},
@@ -130,15 +138,47 @@ Object.assign(api,{
  listFleetVehicleTrips:async(id,p)=>(await api.listTrips(devices[id-100]?.id,p)).map(t=>({...t,source_device_id:devices[id-100]?.id,binding_id:id,vehicle_id:id,source_started_at:t.started_at,allocation_status:'assigned',annotation:assignmentAnnotations.get(`${id}:${t.started_at}`)||t.annotation})),
  fleetVehicleStats:async()=>{const rows=await api.fleetTripStats();return {per_device:rows.per_device.map(r=>({...r,device_id:99+r.device_id,vehicle_id:99+r.device_id}))};},
  listFleetDocuments:read([]),
- listFleetReservations:async p=>fleetBookings.filter(r=>(!p.from||new Date(r.ends_at)>=new Date(p.from))&&(!p.to||new Date(r.starts_at)<new Date(p.to))),
- createFleetReservation:async body=>{const v=assets.find(v=>v.id===body.vehicle_id);const r={...body,id:100+fleetBookings.length,vehicle_name:v.name,license_plate:v.license_plate};fleetBookings.push(r);return r;},
- updateFleetReservation:async(id,body)=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,...body}:r);return fleetBookings.find(r=>r.id===id);},cancelFleetReservation:async id=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,status:'cancelled'}:r);return {ok:true};},
+ listFleetReservations:async p=>fleetBookings.filter(r=>(!p.from||new Date(r.ends_at)>new Date(p.from))&&(!p.to||new Date(r.starts_at)<new Date(p.to))).map(r=>({...r})),
+ fleetReservationPolicy:async()=>({approval_required:reservationPolicy}),
+ setFleetReservationPolicy:async({approval_required})=>{reservationPolicy=approval_required;return {approval_required};},
+ createFleetReservation:async body=>{
+  const v=assets.find(v=>v.id===body.vehicle_id);
+  const r={...body,id:100+fleetBookings.length,vehicle_name:v.name,license_plate:v.license_plate,status:reservationPolicy?'pending':'planned',approval_required:reservationPolicy,can_review:reservationPolicy&&teamRole==='owner'};
+  const overlap=fleetBookings.some(other=>other.vehicle_id===r.vehicle_id&&['pending','planned','in_progress'].includes(other.status)&&Date.parse(other.starts_at)<Date.parse(r.ends_at)&&Date.parse(other.ends_at)>Date.parse(r.starts_at));
+  if(overlap)throw Error('이용 시간이 겹치는 예약이 있습니다.');
+  recordBooking(r,'reservation_change');fleetBookings.push(r);return {...r};
+ },
+ updateFleetReservation:async(id,body)=>{fleetBookings=fleetBookings.map(r=>r.id===id?{...r,...body}:r);const r=fleetBookings.find(r=>r.id===id);recordBooking(r,'reservation_change');return {...r};},
+ cancelFleetReservation:async id=>{const r=fleetBookings.find(r=>r.id===id);r.status='cancelled';recordBooking(r,'reservation_change');return {ok:true};},
+ reviewFleetReservation:async(id,body)=>{const r=fleetBookings.find(r=>r.id===id);if(!r.can_review||r.status!=='pending'||r.updated_at!==body.updated_at)throw Error('예약 상태가 변경되었습니다.');r.status=body.decision==='approve'?'planned':'rejected';recordBooking(r,'reservation_review',body.note);return {...r};},
+ fleetReservationHistory:async id=>reservationHistory.get(id)||[],
 });
 const assignmentAnnotations=new Map(),tripRules=[],tripAudit=[];
 const teamOrg=[{id:1,kind:'department',name:'영업팀',active:true,updated_at:new Date().toISOString()},{id:2,kind:'position',name:'팀장',active:true,updated_at:new Date().toISOString()}];
 const teamStaff=[{id:1,name:'김영업',role:'영업',department_id:1,department:'영업팀',position_id:2,position:'팀장',phone:'010-0000-0000',active:true,access_role:'member',all_vehicles:false,vehicle_ids:[100],created_at:new Date().toISOString(),updated_at:new Date().toISOString()}];
 const teamRole=params.get('role')||'owner';let teamInvites=[];
+const permissionGroups=[];
+let nextPermissionGroup=1;
 Object.assign(api,{
+ fleetPermissionGroups:async()=>permissionGroups.map(g=>({...g,members:teamStaff.filter(s=>s.permission_group_id===g.id).length})),
+ createFleetPermissionGroup:async body=>{
+   const g={...body,id:nextPermissionGroup++,updated_at:new Date().toISOString()};
+   permissionGroups.push(g);return {...g};
+ },
+ updateFleetPermissionGroup:async(id,body)=>{
+   const g=permissionGroups.find(g=>g.id===id);
+   Object.assign(g,body,{updated_at:new Date().toISOString()});return {...g};
+ },
+ assignFleetPermissionGroup:async({group_id,members})=>{
+   const selected=members.map(m=>teamStaff.find(s=>s.id===m.id));
+   if(selected.some(s=>!s))throw Error('팀 미리보기에서 등록한 사용자를 선택해 주세요.');
+   selected.forEach(s=>Object.assign(s,{permission_group_id:group_id,updated_at:new Date().toISOString()}));
+   return {count:selected.length};
+ },
+ deleteFleetPermissionGroup:async id=>{
+   if(teamStaff.some(s=>s.permission_group_id===id))throw Error('배정된 사용자가 있습니다.');
+   const index=permissionGroups.findIndex(g=>g.id===id);if(index>=0)permissionGroups.splice(index,1);
+ },
  fleetWorkspaces:read({own_id:1,memberships:[{owner_id:2,company_name:'검증용 회사',role:'member'}]}),
  fleetAccess:read({role:teamRole,owner_id:1,actor_id:1,staff_id:1,manage_team:['owner','admin'].includes(teamRole),manage_vehicles:['owner','admin'].includes(teamRole),manage_reports:teamRole!=='member',billing:teamRole==='owner'}),
  fleetOrganization:async()=>teamOrg.map(i=>({...i})),fleetTerminals:async()=>devices,

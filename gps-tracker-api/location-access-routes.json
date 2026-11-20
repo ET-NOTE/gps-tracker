@@ -483,6 +483,42 @@
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
+  "fleet_permission_groups.rs DELETE /corporate/permission-groups/:id": {
+    "class": "non_location",
+    "reason": "Company role configuration, staff assignment or mutation acknowledgement; no location records."
+  },
+  "fleet_permission_groups.rs GET /corporate/permission-groups": {
+    "class": "non_location",
+    "reason": "Company role configuration, staff assignment or mutation acknowledgement; no location records."
+  },
+  "fleet_permission_groups.rs POST /corporate/permission-groups": {
+    "class": "non_location",
+    "reason": "Company role configuration, staff assignment or mutation acknowledgement; no location records."
+  },
+  "fleet_permission_groups.rs PUT /corporate/permission-groups/:id": {
+    "class": "non_location",
+    "reason": "Company role configuration, staff assignment or mutation acknowledgement; no location records."
+  },
+  "fleet_permission_groups.rs PUT /corporate/permission-groups/assignment": {
+    "class": "non_location",
+    "reason": "Company role configuration, staff assignment or mutation acknowledgement; no location records."
+  },
+  "fleet_reservations.rs GET /corporate/reservation-policy": {
+    "class": "non_location",
+    "reason": "Company reservation settings; no location records."
+  },
+  "fleet_reservations.rs PUT /corporate/reservation-policy": {
+    "class": "non_location",
+    "reason": "Company reservation settings; no location records."
+  },
+  "fleet_reservations.rs GET /corporate/vehicle-reservations/:id/history": {
+    "class": "non_location",
+    "reason": "Reservation decision metadata and review history; no measured location or track response."
+  },
+  "fleet_reservations.rs POST /corporate/vehicle-reservations/:id/review": {
+    "class": "non_location",
+    "reason": "Reservation decision metadata and review history; no measured location or track response."
+  },
   "fleet_reservations.rs DELETE /corporate/vehicle-reservations/:id": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."

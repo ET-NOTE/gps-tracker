@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import Icon from '../Icon';
-import { openPalette } from '../ui/CommandPalette';
 import BusinessDrawer from './BusinessDrawer';
 import './corporate-mobile-shell.css';
 
-export default function CorporateMobileHeader({ active, groups, tabs, sections = {}, section, onSection, onTab, toolbar, destinations, onNavigate }) {
+export default function CorporateMobileHeader({ active, groups, tabs, sections = {}, section, onSection, onTab, toolbar, destinations, onNavigate, onQuick }) {
   const [panel, setPanel] = useState(null);
   const [expanded, setExpanded] = useState(null);
   const groupId = active.group || active.id;
@@ -31,10 +30,11 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
   return <>
     <header className="corporate-phone-header no-print">
       <button type="button" className="corporate-phone-tool" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'navigation'} onClick={openMenu}><Icon name="menu" size={22}/></button>
-      {active.id === 'overview' ? <h1 className="corporate-phone-brand">Serial<span>Link</span></h1>
+      {active.id === 'overview' ? <h1 className="corporate-phone-brand"><span className="fleet-brand-symbol"><Icon name="car" size={17}/></span>시리얼링크</h1>
         : <h1 className="corporate-phone-location"><Icon name={groupId === 'vehicles' ? 'car' : group.icon} size={17}/><span>{group.label}</span>
           {crumb !== group.label && <><Icon name="chevron-right" size={13}/><strong>{crumb}</strong></>}
         </h1>}
+      <button type="button" className="corporate-phone-tool" aria-label="차량·메뉴 검색" onClick={()=>onQuick('search')}><Icon name="search" size={19}/></button>
       {onNavigate && map && <button type="button" className="corporate-phone-tool" aria-label={map.label} onClick={() => leave(map.id)}><Icon name="map" size={21}/></button>}
       <button type="button" className="corporate-phone-tool" aria-label="회사 및 계정 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'account'} onClick={() => setPanel('account')}><Icon name="more" size={22}/></button>
     </header>
@@ -56,7 +56,7 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
               {nested && <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16}/>}
             </button>
             {nested && open && <div className="corporate-phone-children">
-              {links.map(link => <button type="button" className="corporate-phone-subpage" key={link.sectionId || link.pageId}
+              {links.map(link => <button type="button" className="corporate-phone-subpage" key={link.pageId+(link.sectionId||'')}
                 aria-current={active.id === link.pageId && (!link.sectionId || link.sectionId === section) ? 'page' : undefined}
                 onClick={() => visit(link.pageId, link.sectionId)}>{link.label}</button>)}
             </div>}
@@ -67,7 +67,7 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
     </BusinessDrawer>}
     {panel === 'account' && <BusinessDrawer title="회사 및 계정" onClose={close}>
       <div className="corporate-phone-account">{toolbar}
-        <button type="button" className="business-button" onClick={() => {close(); openPalette();}}><Icon name="search" size={18}/>차량·메뉴 검색</button>
+        <button type="button" className="business-button" onClick={() => {close(); onQuick('alerts');}}><Icon name="bell" size={18}/>운영 알림</button>
         {onNavigate && destinations.filter(item => item.id !== 'home').map(item =>
           <button type="button" className="business-button" key={item.id} onClick={() => leave(item.id)}><Icon name={item.icon} size={18}/>{item.label}</button>)}
       </div>

@@ -23,6 +23,7 @@ function FilePicker({label,accept,disabled,onFile,hintId}) {
 
 export default function FleetAssetMedia({asset,onChanged}) {
   const access=useFleetAccess();
+  const canWriteDocuments=access.manage_reports&&access.write_vehicle_documents!==false;
   const docs=useQuery({queryKey:['fleet-documents',asset.id],queryFn:()=>api.listFleetDocuments(asset.id)});
   const [kind,setKind]=useState('registration'),[note,setNote]=useState('');
   const [attach,setAttach]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -68,11 +69,11 @@ export default function FleetAssetMedia({asset,onChanged}) {
     </section>
     <section className="fleet-media-section" aria-label="차량 서류">
       <header><h3>차량 서류 {docs.data&&!docs.error&&<small>{docs.data.length}건</small>}</h3>
-        <button ref={attachButton} type="button" className="business-button" aria-expanded={attach} aria-controls={formId} onClick={()=>setAttach(!attach)}>
+        {canWriteDocuments&&<button ref={attachButton} type="button" className="business-button" aria-expanded={attach} aria-controls={formId} onClick={()=>setAttach(!attach)}>
           <Icon name={attach?'close':'paperclip'} size={16}/>{attach?'첨부 닫기':'서류 첨부'}
-        </button>
+        </button>}
       </header>
-      <div id={formId} hidden={!attach} className="fleet-media-attach">
+      {canWriteDocuments&&<div id={formId} hidden={!attach} className="fleet-media-attach">
         <div className="fleet-asset-fields">
           <label>서류 종류<select aria-label="서류 종류" value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(documentKinds).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
           <label>메모 (선택)<input maxLength={500} value={note} onChange={e=>setNote(e.target.value)}/></label>
@@ -81,7 +82,7 @@ export default function FleetAssetMedia({asset,onChanged}) {
           <FilePicker label="파일 선택" accept=".pdf,image/jpeg,image/png,image/webp,image/gif" hintId={documentHint} disabled={busy} onFile={attachDocument}/>
           <p id={documentHint} className="fleet-media-hint">PDF 또는 이미지 · 최대 10MB</p>
         </div>
-      </div>
+      </div>}
       {docs.error?<p role="alert" className="business-error">서류를 불러오지 못했습니다. <button className="business-button" type="button" onClick={()=>docs.refetch()}>다시 시도</button></p>:
        docs.isPending?<p role="status" className="fleet-media-hint">서류 조회 중…</p>:
        !docs.data?.length?<div className="fleet-media-empty"><Icon name="file" size={23}/><span>등록된 서류가 없습니다.</span></div>:
@@ -93,7 +94,7 @@ export default function FleetAssetMedia({asset,onChanged}) {
          </div>
          <div className="fleet-media-document-actions">
            <button type="button" className="business-button" disabled={busy} onClick={()=>run(async()=>{const {blob,filename}=await api.documentDownloadUrl(doc.id)();await saveBlob(blob,filename);})}>다운로드</button>
-           <button type="button" className="business-button" disabled={busy} onClick={async()=>{if(await confirmDialog({title:'서류 삭제',body:`${doc.filename}을 삭제할까요?`,danger:true}))run(async()=>{await api.deleteDocument(doc.id);await docs.refetch();});}}>삭제</button>
+           {canWriteDocuments&&<button type="button" className="business-button" disabled={busy} onClick={async()=>{if(await confirmDialog({title:'서류 삭제',body:`${doc.filename}을 삭제할까요?`,danger:true}))run(async()=>{await api.deleteDocument(doc.id);await docs.refetch();});}}>삭제</button>}
          </div>
        </li>)}</ul>}
     </section>

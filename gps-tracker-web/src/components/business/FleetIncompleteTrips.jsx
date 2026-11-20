@@ -5,15 +5,17 @@ import {BusinessButton,BusinessTask} from './BusinessWorkspace';
 import {useFleetAccess} from './FleetAccess';
 import {businessDate} from '../../lib/business';
 import {reportVehicleLabel} from '../../lib/ntsReport';
-import {inspectIncompleteTrips} from '../../lib/incompleteTrips';
+import {inspectIncompleteTrips,weeklyTripDistances} from '../../lib/incompleteTrips';
 
 const AUTO_VEHICLES=20;
 
-export default function FleetIncompleteTrips({devices,onReport,now}){
+export default function FleetIncompleteTrips({devices,onReport,now,onSummary}){
  const access=useFleetAccess(),qc=useQueryClient();
  const [open,setOpen]=useState(false),[scan,setScan]=useState(null),[state,setState]=useState(null);
  const to=businessDate(now),from=`${to.slice(0,7)}-01`,ids=devices.map(d=>d.id).join(',');
- const scope=JSON.stringify([access.owner_id,access.role,access.staff_id,access.manage_reports,from,to,ids]);
+ const weekFrom=businessDate(now-6*86400000);
+ const readFrom=onSummary&&weekFrom<from?weekFrom:from;
+ const scope=JSON.stringify([access.owner_id,access.role,access.staff_id,access.manage_reports,readFrom,to,ids]);
  const limit=scan?.scope===scope?scan.limit:AUTO_VEHICLES,revision=scan?.scope===scope?scan.revision:0;
  const current=state?.scope===scope&&state.revision===revision?state:null;
  const result=current?.rows||{},finished=current?.finished||!devices.length;
@@ -23,16 +25,22 @@ export default function FleetIncompleteTrips({devices,onReport,now}){
   // Extending a large fleet keeps completed results. A retry or scope change
   // starts over; old-company rows never render while the next effect starts.
   const rows=state?.scope===scope&&state.revision===revision?state.rows:{};
-  const permissionErrors=new Set(),queryKey=['fleet-incomplete',scope];
+  const permissionErrors=new Set(),weekly=new Map(),running=new Set(),queryKey=['fleet-incomplete',scope];
   const queue=(ids?ids.split(',').map(id=>({id:Number(id)})):[]).slice(0,limit).filter(d=>!rows[d.id]);
   setState({scope,revision,rows,finished:false});
   inspectIncompleteTrips(queue,d=>qc.fetchQuery({
    queryKey:[...queryKey,d.id],
-   queryFn:({signal})=>api.listFleetVehicleTrips(d.id,{from,to},{signal}),
+   queryFn:({signal})=>api.listFleetVehicleTrips(d.id,{from:readFrom,to},{signal}),
    staleTime:0,gcTime:60_000,retry:false,
+  }).then(trips=>{
+   if(onSummary){
+    weekly.set(d.id,weeklyTripDistances(trips,weekFrom,to));
+    if(trips.some(trip=>trip.quality?.status==='running'&&!trip.ended_at))running.add(d.id);
+   }
+   return readFrom===from?trips:trips.filter(trip=>Number.isFinite(Date.parse(trip.started_at))&&businessDate(trip.started_at)>=from);
   }).catch(error=>{if([401,403].includes(error.status))permissionErrors.add(d.id);throw error;}),
   row=>setState(previous=>previous?.scope===scope&&previous.revision===revision
-   ?{...previous,rows:{...previous.rows,[row.id]:{...row,permission:permissionErrors.has(row.id)}}}:previous),
+   ?{...previous,rows:{...previous.rows,[row.id]:{...row,weekly:weekly.get(row.id),running:running.has(row.id),permission:permissionErrors.has(row.id)}}}:previous),
   ()=>cancelled).then(()=>{if(!cancelled)setState(previous=>previous?.scope===scope&&previous.revision===revision?{...previous,finished:true}:previous);});
   return()=>{cancelled=true;qc.cancelQueries({queryKey});};
  },[scope,revision,limit,qc]); // A scan changes only with its scope, retry or explicit next batch.
@@ -41,6 +49,15 @@ export default function FleetIncompleteTrips({devices,onReport,now}){
  const permission=rows.some(r=>r.permission),count=rows.reduce((sum,r)=>sum+(r.missing||0),0);
  const remaining=Math.max(0,devices.length-Math.min(limit,devices.length));
  const partial=errors>0||remaining>0;
+ useEffect(()=>{
+  if(!onSummary)return;
+  const days={};
+  for(const row of Object.values(current?.rows||{})){
+   for(const [day,meters] of Object.entries(row.weekly||{})) days[day]=(days[day]||0)+meters;
+  }
+  const running=Object.values(current?.rows||{}).filter(row=>row.running).length;
+  onSummary({days,checked,total:devices.length,complete:finished&&!partial,finished,missing:count,running,day:to,ids});
+ },[current,checked,devices.length,finished,partial,count,to,ids,onSummary]);
  const title=!devices.length?'이번 달 미작성 운행 · 등록 차량 없음'
   :!finished?(count?`확인된 미작성 ${count}건`:'이번 달 미작성 운행 조회 중…')
   :!checked&&errors?'이번 달 미작성 운행 조회 실패'

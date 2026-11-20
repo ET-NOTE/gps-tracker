@@ -18,8 +18,8 @@ const button=(r,label)=>r.root.findAll(n=>n.type==='button'&&text(n.children)===
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
 async function settle(check){for(let i=0;i<100;i++){if(check())return;await act(async()=>new Promise(resolve=>setTimeout(resolve,2)));}assert.ok(check(),'overview did not settle');}
 
-async function mount(t,{fleet=devices(2),load=async()=>[],access:initialAccess={owner_id:1,role:'owner',manage_reports:true},time=now}={}){
- let access=initialAccess,props={devices:fleet,now:time,onReport:(...args)=>opened.push(args)},r,closed=false;
+async function mount(t,{fleet=devices(2),load=async()=>[],access:initialAccess={owner_id:1,role:'owner',manage_reports:true},time=now,onSummary}={}){
+ let access=initialAccess,props={devices:fleet,now:time,onReport:(...args)=>opened.push(args),onSummary},r,closed=false;
  const calls=[],opened=[];
  const qc=new query.QueryClient({defaultOptions:{queries:{retry:false,gcTime:Infinity}}});
  const source=await readFile(new URL('../src/components/business/FleetIncompleteTrips.jsx',import.meta.url),'utf8');
@@ -46,6 +46,22 @@ test('overview automatically shows confirmed missing counts and keeps the vehicl
  assert.equal(m.opened[0][0].id,1);
  assert.deepEqual(JSON.parse(JSON.stringify(m.opened[0][1])),{incomplete:true,from:'2026-11-01',to:'2026-11-17'});
  assert.equal(m.calls.length,2,'expansion does not refetch the month');
+});
+
+test('a cross-month weekly chart shares a single read while the missing count remains monthly',async t=>{
+ let summary;
+ const trip=(start,end,distance,quality)=>({started_at:start,ended_at:end,distance_m:distance,quality});
+ const m=await mount(t,{fleet:devices(1),time:Date.parse('2026-12-02T08:00:00Z'),onSummary:value=>{summary=value;},
+  load:async()=>[
+   trip('2026-11-30T12:00:00Z','2026-11-30T13:00:00Z',1200),
+   trip('2026-11-30T16:00:00Z','2026-11-30T17:00:00Z',3400),
+   trip('2026-12-01T07:00:00Z','2026-12-01T08:00:00Z',4000,{report_included:false}),
+  ]});
+ await settle(()=>summary?.complete);
+ assert.equal(m.calls.length,1);
+ assert.deepEqual({...m.calls[0].params},{from:'2026-11-26',to:'2026-12-02'});
+ assert.deepEqual({...summary.days},{'2026-11-30':1200,'2026-12-01':3400});
+ assert.equal(summary.missing,2);
 });
 
 test('initial loading and unreceived responses never appear as a confirmed zero',async t=>{

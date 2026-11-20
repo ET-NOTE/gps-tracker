@@ -19,9 +19,12 @@ use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
 #[path = "fleet_staff_import.rs"]
 mod staff_import;
+#[path = "fleet_permission_groups.rs"]
+mod permission_groups;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .merge(permission_groups::router())
         .route("/corporate/workspaces", get(workspaces))
         .route("/corporate/join", post(join))
         .route("/corporate/access", get(access))
@@ -61,7 +64,7 @@ async fn admin(
     scope: Option<Extension<FleetScope>>,
 ) -> AppResult<FleetScope> {
     let s = principal(state, user, scope).await?;
-    if !s.admin() {
+    if !s.permits("manage_team") {
         return Err(AppError::Forbidden);
     }
     Ok(s)
@@ -137,7 +140,13 @@ async fn access(
 ) -> AppResult<Json<Value>> {
     let s = principal(&state, user, scope).await?;
     Ok(Json(
-        json!({"owner_id":s.owner,"actor_id":s.actor,"staff_id":s.staff,"role":s.role,"department_id":s.department,"manage_team":s.admin(),"manage_vehicles":s.admin(),"manage_reports":s.manager(),"billing":s.owner==s.actor,"vehicle_ids":s.vehicles,"staff_ids":s.staff_ids}),
+        json!({"owner_id":s.owner,"actor_id":s.actor,"staff_id":s.staff,"role":s.role,"department_id":s.department,
+            "group_id":s.group_id,"manage_team":s.permits("manage_team"),"manage_vehicles":s.permits("manage_vehicles"),
+            "manage_reports":s.manager() && s.permits("write_trips"),"write_trips":s.permits("write_trips"),
+            "write_reservations":s.permits("write_reservations"),"review_reservations":s.permits("review_reservations"),
+            "write_expenses":s.permits("write_expenses"),"review_expenses":s.permits("review_expenses"),
+            "write_vehicle_documents":s.permits("write_vehicle_documents"),"billing":s.owner==s.actor,
+            "vehicle_ids":s.vehicles,"staff_ids":s.staff_ids}),
     ))
 }
 async fn workspaces(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<Value>> {

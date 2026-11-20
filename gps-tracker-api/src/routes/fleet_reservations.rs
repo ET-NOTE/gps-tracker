@@ -1,21 +1,34 @@
 //! Vehicle reservations do not depend on a current SIM connection.
 use crate::{
-    auth::AuthUser,
+    auth::{fleet::FleetScope, AuthUser},
     error::{AppError, AppResult},
     state::AppState,
 };
 use axum::{
     extract::{Path, Query, State},
-    routing::{get, put},
+    routing::{get, post, put},
     Extension, Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::Value;
+mod review;
 
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/corporate/vehicle-reservations", get(list).post(create))
+        .route(
+            "/corporate/reservation-policy",
+            get(review::policy).put(review::set_policy),
+        )
+        .route(
+            "/corporate/vehicle-reservations/:id/review",
+            post(review::decide),
+        )
+        .route(
+            "/corporate/vehicle-reservations/:id/history",
+            get(review::history),
+        )
         .route(
             "/corporate/vehicle-reservations/:id",
             put(update).delete(cancel),
@@ -38,12 +51,14 @@ struct Input {
     report_purpose: Option<String>,
     note: Option<String>,
     status: Option<String>,
+    updated_at: Option<DateTime<Utc>>,
 }
 const ROW:&str="SELECT to_jsonb(r)||jsonb_build_object('vehicle_name',v.name,'license_plate',v.license_plate,'driver_name',COALESCE(r.driver_name_snapshot,s.name),'vehicle_id',r.fleet_vehicle_id) FROM vehicle_reservations r JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id LEFT JOIN staff s ON s.id=r.driver_staff_id AND s.user_id=r.user_id";
 async fn list(
     State(state): State<AppState>,
     user: AuthUser,
     Query(q): Query<Filter>,
+    scope: Option<Extension<FleetScope>>,
 ) -> AppResult<Json<Vec<Value>>> {
     let from = q.from.unwrap_or(Utc::now() - chrono::Duration::days(7));
     let to = q.to.unwrap_or(Utc::now() + chrono::Duration::days(31));
@@ -55,8 +70,17 @@ async fn list(
     let statuses = q
         .status
         .map(|s| s.split(',').map(str::to_owned).collect::<Vec<_>>());
-    let rows=sqlx::query_scalar(&format!("{ROW} WHERE r.user_id=$1 AND r.starts_at<$3 AND r.ends_at>$2 AND ($4::bigint IS NULL OR r.fleet_vehicle_id=$4) AND ($5::text[] IS NULL OR r.status=ANY($5)) ORDER BY r.starts_at DESC,r.id DESC"))
+    let mut rows: Vec<Value>=sqlx::query_scalar(&format!("{ROW} WHERE r.user_id=$1 AND r.starts_at<$3 AND r.ends_at>$2 AND ($4::bigint IS NULL OR r.fleet_vehicle_id=$4) AND ($5::text[] IS NULL OR r.status=ANY($5)) ORDER BY r.starts_at DESC,r.id DESC"))
         .bind(user.user_id).bind(from).bind(to).bind(q.vehicle_id).bind(statuses).fetch_all(&state.db).await?;
+    for r in &mut rows {
+        let can_review = review::can_review(scope.as_ref().map(|s| &s.0), r);
+        let can_edit = scope.as_ref().is_none_or(|s| {
+            s.permits("write_reservations")
+                && (s.manager() || r["driver_staff_id"].as_i64() == s.staff)
+        });
+        r["can_edit"] = serde_json::json!(can_edit);
+        r["can_review"] = serde_json::json!(can_review);
+    }
     Ok(Json(rows))
 }
 async fn create(
@@ -112,8 +136,16 @@ async fn save(
     {
         return Err(AppError::BadRequest("운행 용무를 확인해 주세요.".into()));
     }
-    let status = input.status.unwrap_or_else(|| "planned".into());
-    if !["planned", "in_progress", "completed", "cancelled"].contains(&status.as_str()) {
+    let mut status = input.status.clone().unwrap_or_else(|| "planned".into());
+    if ![
+        "pending",
+        "planned",
+        "in_progress",
+        "completed",
+        "cancelled",
+    ]
+    .contains(&status.as_str())
+    {
         return Err(AppError::BadRequest("잘못된 예약 상태입니다.".into()));
     }
     let mut tx = state.db.begin().await?;
@@ -129,6 +161,9 @@ async fn save(
         None
     };
     if let Some(ref scope) = scope {
+        if !scope.permits("write_reservations") {
+            return Err(AppError::Forbidden);
+        }
         scope.vehicle(input.vehicle_id)?;
         if !scope.manager() && input.driver_staff_id != scope.staff {
             return Err(AppError::Forbidden);
@@ -144,6 +179,23 @@ async fn save(
             }
         }
     }
+    let actor = scope.as_ref().map_or(owner, |s| s.actor);
+    let guarded = before
+        .as_ref()
+        .is_some_and(|row| row["approval_required"] == true);
+    if let Some(row) = before.as_ref() {
+        if guarded || input.updated_at.is_some() {
+            review::check_version(row, input.updated_at)?;
+        }
+        if guarded {
+            status = review::edited_status(row, &input, &status)?.to_owned();
+        }
+    }
+    if status == "pending" && !guarded {
+        return Err(AppError::BadRequest(
+            "승인 대기는 회사 예약 정책에 따라 적용됩니다.".into(),
+        ));
+    }
     let enabled: bool = sqlx::query_scalar(
         "SELECT enabled FROM fleet_vehicles WHERE id=$1 AND owner_id=$2 FOR SHARE",
     )
@@ -152,7 +204,9 @@ async fn save(
     .fetch_optional(&mut *tx)
     .await?
     .ok_or(AppError::NotFound)?;
-    if !enabled && ["planned", "in_progress"].contains(&status.as_str()) {
+    if !enabled
+        && (id.is_none() || ["pending", "planned", "in_progress"].contains(&status.as_str()))
+    {
         return Err(AppError::BadRequest(
             "사용 정지 차량은 예약할 수 없습니다.".into(),
         ));
@@ -173,8 +227,8 @@ async fn save(
             ));
         }
     }
-    if ["planned", "in_progress"].contains(&status.as_str()) {
-        let overlap:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM vehicle_reservations WHERE fleet_vehicle_id=$1 AND status IN ('planned','in_progress') AND starts_at<$3 AND ends_at>$2 AND ($4::bigint IS NULL OR id<>$4))")
+    if ["pending", "planned", "in_progress"].contains(&status.as_str()) {
+        let overlap:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM vehicle_reservations WHERE fleet_vehicle_id=$1 AND status IN ('pending','planned','in_progress') AND starts_at<$3 AND ends_at>$2 AND ($4::bigint IS NULL OR id<>$4))")
             .bind(input.vehicle_id).bind(input.starts_at).bind(input.ends_at).bind(id).fetch_one(&mut *tx).await?;
         if overlap {
             return Err(AppError::Conflict(
@@ -186,14 +240,36 @@ async fn save(
         sqlx::query_scalar("UPDATE vehicle_reservations SET fleet_vehicle_id=$3,device_id=NULL,driver_staff_id=$4,starts_at=$5,ends_at=$6,purpose=$7,note=$8,status=$9,report_purpose=$10,alerted_at=CASE WHEN starts_at IS DISTINCT FROM $5 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,ended_alerted_at=CASE WHEN ends_at IS DISTINCT FROM $6 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,updated_at=clock_timestamp() WHERE id=$1 AND user_id=$2 RETURNING id")
             .bind(id).bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).fetch_one(&mut *tx).await.map_err(booking_error)?
     } else {
-        sqlx::query_scalar("INSERT INTO vehicle_reservations(user_id,fleet_vehicle_id,driver_staff_id,starts_at,ends_at,purpose,note,status,report_purpose) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id")
-            .bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).fetch_one(&mut *tx).await.map_err(booking_error)?
+        sqlx::query_scalar("INSERT INTO vehicle_reservations(user_id,fleet_vehicle_id,driver_staff_id,starts_at,ends_at,purpose,note,status,report_purpose,submitted_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id")
+            .bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).bind(actor).fetch_one(&mut *tx).await.map_err(booking_error)?
     };
-    let row: Value = sqlx::query_scalar(&format!("{ROW} WHERE r.id=$1 AND r.user_id=$2"))
+    let mut row: Value = sqlx::query_scalar(&format!("{ROW} WHERE r.id=$1 AND r.user_id=$2"))
         .bind(saved)
         .bind(owner)
         .fetch_one(&mut *tx)
         .await?;
+    if id.is_some() && row["approval_required"] == true {
+        review::audit(
+            &mut tx,
+            owner,
+            actor,
+            saved,
+            "reservation_change",
+            before.as_ref().and_then(|r| r["status"].as_str()),
+            row["status"].as_str().unwrap_or("pending"),
+            "",
+        )
+        .await?;
+        if row["status"] == "pending" {
+            sqlx::query("UPDATE vehicle_reservations SET submitted_by=$2 WHERE id=$1")
+                .bind(saved)
+                .bind(actor)
+                .execute(&mut *tx)
+                .await?;
+            row["submitted_by"] = serde_json::json!(actor);
+        }
+    }
+    row["can_review"] = serde_json::json!(review::can_review(scope.as_ref(), &row));
     sqlx::query("INSERT INTO fleet_vehicle_audit(owner_id,vehicle_id,action,before_value,after_value) VALUES($1,$2,'reservation',$3,$4)").bind(owner).bind(input.vehicle_id).bind(before).bind(&row).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(row)
@@ -211,7 +287,10 @@ async fn cancel(
         .execute(&mut *tx)
         .await?;
     let before:Value=sqlx::query_scalar("SELECT to_jsonb(r) FROM vehicle_reservations r WHERE id=$1 AND user_id=$2 AND fleet_vehicle_id IS NOT NULL FOR UPDATE").bind(id).bind(user.user_id).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
-    if let Some(Extension(scope)) = scope {
+    if let Some(Extension(ref scope)) = scope {
+        if !scope.permits("write_reservations") {
+            return Err(AppError::Forbidden);
+        }
         scope.vehicle(
             before["fleet_vehicle_id"]
                 .as_i64()
@@ -220,6 +299,25 @@ async fn cancel(
         if !scope.manager() && before["driver_staff_id"].as_i64() != scope.staff {
             return Err(AppError::Forbidden);
         }
+    }
+    if before["status"] == "cancelled" {
+        return Ok(Json(serde_json::json!({"ok":true})));
+    }
+    if before["approval_required"] == true {
+        if before["status"] == "rejected" {
+            return Err(AppError::Conflict("이미 반려된 예약입니다.".into()));
+        }
+        review::audit(
+            &mut tx,
+            user.user_id,
+            scope.as_ref().map_or(user.user_id, |s| s.actor),
+            id,
+            "reservation_change",
+            before["status"].as_str(),
+            "cancelled",
+            "",
+        )
+        .await?;
     }
     sqlx::query("UPDATE vehicle_reservations SET status='cancelled',updated_at=clock_timestamp() WHERE id=$1").bind(id).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO fleet_vehicle_audit(owner_id,vehicle_id,action,before_value,after_value) VALUES($1,$2,'reservation_cancel',$3,jsonb_build_object('reservation_id',$4::bigint))")

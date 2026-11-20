@@ -52,7 +52,7 @@ async function mount(t,{data=reservations,request}={}){
    BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:tag('button'),
    BusinessError:({children,onRetry})=>React.createElement('section',{role:'alert'},children,React.createElement('button',{onClick:onRetry},'다시 시도')),
    BusinessEmpty:({title,children})=>React.createElement('section',{},title,children),BusinessSection:body,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
-   BusinessCompanyInfo:noop,BusinessSubscription:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,useBusinessClock:noop,useBusinessSubscription:noop,
+   BusinessCompanyInfo:noop,BusinessSubscription:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,useBusinessClock:()=>fixedNow,useBusinessSubscription:noop,
    alertDialog:args=>calls.alerts.push(args),confirmDialog:async args=>{calls.confirm.push(args);return state.confirm;},StatCard:noop,StatCardGrid:noop,
    FleetAssets:noop,FleetAssetForm:noop,FleetAssetDetail:noop,useFleetAssets:noop,projectFleetAssets:noop,fleetAssetsKey:[],useAssetStats:noop,
    useFleetReservations:params=>{calls.query.push({...params});return {data:state.data,error:state.error,isLoading:state.isLoading,refetch:()=>{calls.retry++;}};},
@@ -89,6 +89,19 @@ test('reservation search, status counts and table rows share the same query scop
  assert.deepEqual(calls.query.at(-1),scope,'search and status do not change the date query');
  await act(async()=>r.root.findByProps({'aria-label':'예약 차량·사용자 검색'}).props.onChange({target:{value:'없는 차량'}}));
  assert.equal(rowIds(r).length,0);assert.match(text(r.toJSON()),/검색 결과가 없습니다/);assert.ok(button(r,'전체 (0)'));
+});
+
+test('weekly bookings use Monday KST, span midnight, and exclude the exclusive end day',async t=>{
+ const record={...reservations[0],starts_at:'2026-11-15T15:00:00Z',ends_at:'2026-11-17T15:00:00Z'};
+ const {r,calls}=await mount(t,{data:[record]});
+ await act(async()=>button(r,'주간 일정').props.onClick());
+ assert.equal(calls.query.at(-1).from,'2026-11-15T15:00:00.000Z');
+ assert.equal(calls.query.at(-1).to,'2026-11-22T15:00:00.000Z');
+ assert.equal(r.root.findAllByProps({className:'fleet-week-event'}).length,2);
+ await act(async()=>r.root.findByProps({'aria-label':'다음 주'}).props.onClick());
+ assert.equal(r.root.findAllByProps({className:'fleet-week-event'}).length,0);
+ await act(async()=>button(r,'이번 주').props.onClick());
+ assert.equal(r.root.findAllByProps({className:'fleet-week-event'}).length,2);
 });
 
 test('a reservation refresh error hides stale rows and counts in both list and calendar',async t=>{

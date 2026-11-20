@@ -1,0 +1,79 @@
+.business-workspace--corporate .fleet-record-metrics {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0;min-width:0;
+}
+.fleet-record-metrics>div {
+  min-width:0;padding:17px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;
+}
+.fleet-record-metrics dt {display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--text-2);font-size:15px;font-weight:600}
+.fleet-record-metrics dt svg {flex:none;color:var(--text-3)}
+.fleet-record-metrics dd {display:flex;align-items:baseline;flex-wrap:wrap;gap:4px;margin:10px 0 0;font-size:clamp(21px,2vw,28px);font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.fleet-record-metrics dd small {font-size:14px;font-weight:500;color:var(--text-2)}
+.fleet-record-metrics [data-tone="green"] dd {color:var(--accent)}
+.fleet-record-metrics [data-tone="blue"] dd {color:var(--primary)}
+.fleet-record-metrics [data-tone="amber"] dd {color:var(--warning)}
+.business-workspace--corporate .fleet-booking-filters {display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px 16px;padding:14px 0 0;border-top:1px solid var(--border)}
+.fleet-booking-filters label {display:grid;gap:5px;min-width:0;color:var(--text-2);font-size:14px}
+.business-workspace--corporate .fleet-booking-filters :is(input,select) {box-sizing:border-box;min-height:42px;max-width:100%;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:16px}
+.fleet-booking-week {min-width:0;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.fleet-booking-week>header {display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.fleet-booking-week>header strong {font-size:17px;font-variant-numeric:tabular-nums}
+.fleet-booking-week>header button:last-child {margin-inline-start:auto}
+.fleet-booking-week-days {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.fleet-booking-week-days>section {min-width:0;padding:8px;border:1px solid var(--border);border-radius:8px}
+.fleet-booking-week-days>section[data-today="true"] {border-color:var(--primary)}
+.fleet-booking-week-days h3 {margin:0;font-size:15px}
+.fleet-booking-week-days h3 button {display:flex;align-items:center;justify-content:space-between;gap:5px;min-height:40px;width:100%;padding:4px;border:0;background:none;color:var(--text);font:inherit;cursor:pointer}
+.fleet-booking-week-days h3 button>span {color:var(--text-2);font-size:12px}
+.fleet-booking-week-days p {margin:16px 4px;color:var(--text-3);font-size:14px}
+.fleet-week-event {display:grid;align-content:start;gap:3px;width:100%;margin:6px 0;padding:8px;border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:6px;background:var(--surface-2);color:var(--text);font:inherit;text-align:start;overflow-wrap:anywhere;cursor:pointer}
+.fleet-week-event strong {font-size:15px}
+.fleet-week-event small {font-size:13px;color:var(--text-2);word-break:keep-all}
+.fleet-week-event:hover {border-color:var(--primary)}
+.expense-batch-toolbar,.expense-batch-result {display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text-2);font-size:15px}
+.expense-batch-toolbar label,.expense-batch-pick {display:inline-flex;align-items:center;gap:7px}
+.expense-batch-toolbar input,.expense-batch-pick input,.expense-table td[data-label="선택"] input {width:18px;height:18px;accent-color:var(--primary)}
+.expense-batch-pick {padding:5px 0;color:var(--text-2);font-size:14px}
+.expense-batch-records {list-style:none;padding:0;margin:0;max-height:35vh;overflow:auto}
+.expense-batch-records li {display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;padding:9px 0;border-bottom:1px solid var(--border)}
+.fleet-policy-controls,.fleet-reservation-review,.fleet-approval-inbox {display:grid;gap:12px;min-width:0}
+.fleet-policy-controls :is(p,strong),.fleet-reservation-review>strong {margin:0}
+.fleet-policy-controls button,.fleet-reservation-review>button,.fleet-approval-inbox>.corporate-view-switch {justify-self:start}
+.fleet-reservation-review {margin-bottom:16px;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
+.business-workspace--corporate .corporate-reservations .corporate-reservation-tools,
+.business-workspace--corporate .fleet-expenses .expense-controls,
+.business-workspace--corporate .corporate-report-page .corporate-report-controls {gap:12px;padding:16px;border-radius:12px}
+.business-workspace--corporate .corporate-reservations .corporate-reservation-tool-row {gap:10px}
+.business-workspace--corporate .corporate-reservation-tool-row>.business-button {margin-inline-start:0}
+.business-workspace--corporate .corporate-reservation-tool-row>.business-export {margin-inline-start:auto}
+.business-workspace--corporate .corporate-reservation-tool-row:empty {display:none}
+.business-workspace--corporate :is(.corporate-report-status-tabs,.expense-status-tabs,.corporate-reservation-status,.corporate-view-switch) button[aria-pressed=true] {
+  background:var(--surface)!important;color:var(--primary)!important;box-shadow:0 1px 3px #17243a1c;border-radius:6px;
+}
+.business-workspace--corporate .corporate-reservations .corporate-reservation-table th,
+.business-workspace--corporate .corporate-reservations .corporate-reservation-table td {border-right:0;padding:12px 16px}
+.business-workspace--corporate .fleet-expenses .expense-status-summary {padding:4px}
+@media(max-width:1050px){.fleet-booking-week-days{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}}
+@media(max-width:900px){.business-workspace--corporate .fleet-record-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.fleet-record-metrics>div{padding:12px 14px}.fleet-record-metrics dd{margin-top:7px}}
+@media(max-width:650px){.fleet-booking-week-days{grid-template-columns:1fr}.fleet-booking-week{padding:10px}.fleet-booking-week-days p{margin:0 4px 6px}.fleet-booking-week>header strong{order:-1;width:100%}.business-workspace--corporate .fleet-booking-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.fleet-booking-filters label>*{width:100%}.fleet-record-metrics dt{font-size:14px}.fleet-record-metrics dd{font-size:21px}}
+@media print{.fleet-record-metrics.no-print{display:none!important}}
+@media(max-width:760px) {
+  .business-workspace--corporate .fleet-expenses>.fleet-record-metrics {margin-inline:12px}
+  .business-workspace--corporate .corporate-report-page .corporate-report-status-tabs,
+  .business-workspace--corporate .fleet-expenses .expense-status-tabs {display:flex;flex-wrap:wrap;overflow:visible;width:100%;min-width:0}
+  .business-workspace--corporate .corporate-report-page .corporate-report-status-option,
+  .business-workspace--corporate .fleet-expenses .expense-status-tab {flex:1 0 auto;min-height:40px;padding:6px 9px;font-size:15px}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table {display:block;min-width:0;width:100%}
+  .corporate-reservations .corporate-reservation-table thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .corporate-reservations .corporate-reservation-table tbody {display:block}
+  .corporate-reservations .corporate-reservation-table tr {display:grid;gap:5px;padding:12px;border-bottom:1px solid var(--border)}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table td {
+    display:block;padding:0;min-width:0;max-width:none;border:0;font-size:15px;white-space:normal;
+  }
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table td[data-label] {display:grid;grid-template-columns:72px minmax(0,1fr);gap:0 8px;align-items:baseline}
+  .corporate-reservation-table td[data-label]::before {content:attr(data-label);font-size:14px;color:var(--text-2);grid-row:1 / span 2}
+  .corporate-reservation-table .corporate-reservation-badge {justify-self:start}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table small {margin:0;font-size:14px}
+  .corporate-reservations .corporate-reservation-row-actions {justify-content:flex-end;flex-wrap:wrap;padding-top:5px}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-ledger {min-height:0}
+  .business-workspace--corporate .corporate-reservation-tool-row>.business-export {margin-inline-start:0}
+}

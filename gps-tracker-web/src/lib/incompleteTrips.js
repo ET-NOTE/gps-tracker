@@ -1,3 +1,16 @@
+import { businessDate } from './business.js';
+import { reportIncluded } from './tripQuality.js';
+
+export function weeklyTripDistances(trips, from, to) {
+ const days = {};
+ for (const trip of trips) {
+  if (!reportIncluded(trip)) continue;
+  const day = businessDate(trip.started_at);
+  if (day >= from && day <= to) days[day] = (days[day] || 0) + trip.distance_m;
+ }
+ return days;
+}
+
 export const tripNeedsDetails = t => !t.annotation?.purpose || t.annotation.purpose==='unspecified'
   || (t.annotation?.driver_staff_id==null && !t.annotation?.driver_name?.trim());
 

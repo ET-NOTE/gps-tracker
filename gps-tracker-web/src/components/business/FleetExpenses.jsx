@@ -12,6 +12,8 @@ import {useFleetAccess,useFleetOrganization} from './FleetAccess';
 import {useFleetAssets} from './FleetAssets';
 import {BusinessSection,BusinessButton,BusinessError,BusinessEmpty} from './BusinessWorkspace';
 import ExportButtons from './ExportButtons';
+import FleetRecordMetrics from './FleetRecordMetrics';
+import ExpenseBatchReview from './ExpenseBatchReview';
 import ExpenseCategorySettings from './ExpenseCategorySettings';
 import BusinessDrawer from './BusinessDrawer';
 import {ExpenseReceiptThumbnail,ExpenseInlineAttachments,ExpenseAttachmentViewer} from './ExpenseAttachments';
@@ -19,13 +21,29 @@ import Icon from '../Icon';
 import {Modal,FormField,Input,Select,Textarea,Button} from '../ui';
 import './fleet-expenses.css';
 
-export default function FleetExpenses({categoriesOnly=false,onOpenCategories}){
+export default function FleetExpenses(props){
+ const access=useFleetAccess();
+ const roleCanReview=['owner','admin','department_manager'].includes(access.role);
+ const canExpenses=access.review_expenses??roleCanReview,canReservations=access.review_reservations??roleCanReview;
+ const [kind,setKind]=useState('expense');
+ if(props.approvalsOnly&&props.reservationInbox){
+  if(!canExpenses&&!canReservations)return null;
+  const reservation=canReservations&&(!canExpenses||kind==='reservation');
+  return <div className="fleet-approval-inbox">
+   {canExpenses&&canReservations&&<div className="corporate-view-switch" role="group" aria-label="승인 요청 종류"><button type="button" className="corporate-view-option" aria-pressed={!reservation} onClick={()=>setKind('expense')}>지출 요청</button><button type="button" className="corporate-view-option" aria-pressed={reservation} onClick={()=>setKind('reservation')}>예약 요청</button></div>}
+   {reservation?props.reservationInbox:<ExpenseWorkspace approvalsOnly/>}
+  </div>;
+ }
+ return <ExpenseWorkspace key={props.approvalsOnly?'approval':props.categoriesOnly?'categories':'expenses'} {...props}/>;
+}
+function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCategories}){
  const mobile=useCorporatePhone(),[datesOpen,setDatesOpen]=useState(false);
  const [toolsOpen,setToolsOpen]=useState(false);
  const access=useFleetAccess(),qc=useQueryClient(),cats=useQuery({queryKey:['expense-categories'],queryFn:()=>api.expenseCategories()}),assets=useFleetAssets(),staff=useStaff(),org=useFleetOrganization();
  const today=businessDate(),[filters,setFilters]=useState({from:`${today.slice(0,7)}-01`,to:today}),[page,setPage]=useState(0),[groupBy,setGroupBy]=useState('month'),[edit,setEdit]=useState(null),[detail,setDetail]=useState(null),[category,setCategory]=useState(null);
- const [query,setQuery]=useState(''),[status,setStatus]=useState(''),[filtersOpen,setFiltersOpen]=useState(false),[draftFilters,setDraftFilters]=useState({}),[summaryOpen,setSummaryOpen]=useState(false),[downloadsOpen,setDownloadsOpen]=useState(false);
+ const [query,setQuery]=useState(''),[status,setStatus]=useState(approvalsOnly?'pending':''),[filtersOpen,setFiltersOpen]=useState(false),[draftFilters,setDraftFilters]=useState({}),[summaryOpen,setSummaryOpen]=useState(false),[downloadsOpen,setDownloadsOpen]=useState(false);
  const [memo,setMemo]=useState(null),[settingsOpen,setSettingsOpen]=useState(false);
+ const [picked,setPicked]=useState(new Map()),[batch,setBatch]=useState(null),[batchResult,setBatchResult]=useState(null);
  const outputRef=useRef(null),settingsRef=useRef(null),downloadRef=useRef(null);
  const filterId=useId(),summaryId=useId(),downloadId=useId(),settingsId=useId();
  useEffect(()=>{
@@ -44,7 +62,19 @@ export default function FleetExpenses({categoriesOnly=false,onOpenCategories}){
  const statusEntries=useQuery({queryKey:['fleet-expenses',statusFilters],queryFn:()=>api.listExpenses(statusFilters),enabled:!categoriesOnly&&!!valid&&!!limited&&!!status});
  const entries=limited&&status?statusEntries:allEntries;
  const ready=!!valid&&!!entries.data&&!entries.error&&!entries.isPending&&!entries.isFetching&&!allEntries.isFetching;
- const {rows,counts}=expenseList(ready?entries.data.items:[],{query,status}),total=expenseTotals(rows),groups=expenseGroups(rows,groupBy);
+ const visibleItems=ready?(approvalsOnly?entries.data.items.filter(r=>access.review_expenses!==false&&r.can_review):entries.data.items):[];
+ const {rows,counts}=expenseList(visibleItems,{query,status}),total=expenseTotals(rows),groups=expenseGroups(rows,groupBy);
+ const pageRows=rows.slice(page*25,(page+1)*25);
+ const selectable=approvalsOnly&&status==='pending'?pageRows.filter(r=>r.can_review&&r.status==='pending'&&r.updated_at):[];
+ const selected=selectable.filter(r=>picked.has(r.id)&&picked.get(r.id)===r.updated_at);
+ useEffect(()=>{setPicked(new Map());},[page,query,status,filters]);
+ useEffect(()=>{setBatchResult(null);},[query,status,filters]);
+ const pickOne=row=>setPicked(current=>{
+  const next=new Map(current);
+  if(next.get(row.id)===row.updated_at)next.delete(row.id);else next.set(row.id,row.updated_at);
+  return next;
+ });
+ const picker=r=><input type="checkbox" aria-label={`지출 ${r.id} 선택`} checked={selected.some(item=>item.id===r.id)} disabled={!r.can_review||!r.updated_at} onChange={()=>pickOne(r)}/>;
  const filter=(key,value)=>{setFilters(f=>{const next={...f,[key]:value};if(!value)delete next[key];return next;});setPage(0);setDownloadsOpen(false);};
  const advancedCount=['vehicle_id','staff_id','department_id','category_id'].filter(key=>filters[key]).length;
  const draftFilter=(key,value)=>setDraftFilters(f=>{const next={...f,[key]:value};if(!value)delete next[key];return next;});
@@ -66,6 +96,12 @@ export default function FleetExpenses({categoriesOnly=false,onOpenCategories}){
  const refreshButton=<BusinessButton icon="refresh" aria-label="지출 새로고침" title="새로고침" disabled={!valid||entries.isFetching} onClick={refresh}/>;
  const selectedNames=[assets.data.find(v=>String(v.id)===filters.vehicle_id)&&siteVehicleLabel(assets.data.find(v=>String(v.id)===filters.vehicle_id)),staff.data.find(s=>String(s.id)===filters.staff_id)?.name,departments.find(d=>String(d.id)===filters.department_id)?.name,cats.data.find(c=>String(c.id)===filters.category_id)?.name,expenseStatus[status],query.trim()&&`차량·사용자 검색: ${query.trim()}`].filter(Boolean).join(' · ')||'전체 조회';
  return <div className="fleet-expenses">
+ <FleetRecordMetrics label={approvalsOnly?'승인 관리 조회 요약':'조회된 지출 요약'} items={[
+  {name:'조회 지출 합계',value:ready?rows.reduce((sum,row)=>sum+row.amount_krw,0):null,unit:'원',icon:'bar'},
+  {name:'승인 금액',value:ready?total.amount:null,unit:'원',tone:'green'},
+  {name:'승인 대기',value:ready?total.pending:null,unit:'건',tone:'amber'},
+  {name:'반려',value:ready?total.rejected:null,unit:'건'},
+ ]}/>
  <section className="expense-controls" aria-label="지출 조회 조건">
   <div className="expense-query-row">
    {mobile&&<button type="button" className="expense-mobile-period" aria-label="지출 조회 기간 변경" aria-expanded={datesOpen} onClick={()=>setDatesOpen(!datesOpen)}>
@@ -81,28 +117,36 @@ export default function FleetExpenses({categoriesOnly=false,onOpenCategories}){
     <BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={openFilters}>필터{advancedCount>0&&<span className="expense-filter-count">{advancedCount}</span>}</BusinessButton>
     {mobile?<BusinessButton icon="settings" aria-label="지출 도구" aria-expanded={toolsOpen} onClick={()=>{setToolsOpen(!toolsOpen);setDownloadsOpen(false);setSettingsOpen(false);}}>도구</BusinessButton>:refreshButton}
    </div>
-   {!mobile&&<BusinessButton primary icon="plus" onClick={()=>setEdit({})}>지출 등록</BusinessButton>}
+   {!mobile&&!approvalsOnly&&access.write_expenses!==false&&<BusinessButton primary icon="plus" onClick={()=>setEdit({})}>지출 등록</BusinessButton>}
   </div>
-  {(!mobile||toolsOpen)&&<div className="expense-control-row">
+  <div className="expense-control-row">
    <div className="expense-status-summary">
-    <div className="expense-status-tabs" role="group" aria-label="지출 상태 필터">{[['','전체'],['approved','승인'],['pending','승인대기'],['rejected','반려'],['cancelled','취소']].map(([value,label])=><button className="expense-status-tab" key={value} type="button" aria-pressed={status===value} onClick={()=>{setStatus(value);setPage(0);setDownloadsOpen(false);}}>{label} <span>({ready&&(!limited||value===status)?counts[value||'all']:'—'})</span></button>)}</div>
-    <div className="expense-approved-total"><span>승인 합계</span><strong>{ready?expenseMoney(total.amount):'—'}<small>원</small></strong></div>
+    <div className="expense-status-tabs" role="group" aria-label="지출 상태 필터">{(approvalsOnly?[['pending','승인대기'],['approved','승인'],['rejected','반려']]:[['','전체'],['approved','승인'],['pending','승인대기'],['rejected','반려'],['cancelled','취소']]).map(([value,label])=><button className="expense-status-tab" key={value} type="button" aria-pressed={status===value} onClick={()=>{setStatus(value);setPage(0);setDownloadsOpen(false);}}>{label} <span>({ready&&(!limited||value===status)?counts[value||'all']:'—'})</span></button>)}</div>
    </div>
-   <div className="expense-output-actions" ref={outputRef}>
+   {(!mobile||toolsOpen)&&<div className="expense-output-actions" ref={outputRef}>
     {mobile&&refreshButton}
     <div className="expense-download" ref={downloadRef}><BusinessButton icon="download" disabled={!ready} aria-expanded={downloadsOpen} aria-controls={downloadId} onClick={()=>{setDownloadsOpen(open=>!open);setSettingsOpen(false);}}>다운로드</BusinessButton>{downloadsOpen&&<div className="expense-download-menu" id={downloadId}><ExportButtons disabled={!ready} report={ready?expenseReport(rows,{...filters,filterText:selectedNames}):null}/></div>}</div>
     <div className="expense-settings" ref={settingsRef}><BusinessButton icon="settings" aria-expanded={settingsOpen} aria-controls={settingsId} onClick={()=>{setSettingsOpen(open=>!open);setDownloadsOpen(false);}}>지출 설정<Icon name={settingsOpen?'chevron-up':'chevron-down'} size={14}/></BusinessButton>{settingsOpen&&<div className="expense-settings-menu" id={settingsId} role="group" aria-label="지출 설정 옵션">
      {onOpenCategories&&<BusinessButton icon="list" onClick={()=>{setSettingsOpen(false);onOpenCategories();}}>지출 항목 관리</BusinessButton>}
      <BusinessButton icon="bar" disabled={!ready} aria-pressed={summaryOpen} aria-controls={summaryId} onClick={()=>{setSummaryOpen(open=>!open);setSettingsOpen(false);}}>비용 집계{summaryOpen&&<Icon name="check" size={14}/>}</BusinessButton>
     </div>}</div>
-   </div>
-  </div>}
+   </div>}
+  </div>
   {limited&&<p className="expense-scope-note" role="status">{status?'전체 조회가 1,000건을 넘어 선택한 상태만 조회합니다. 다른 상태의 건수는 미집계(—)입니다.':'전체 조회가 1,000건을 넘습니다. 상태를 선택하거나 기간·필터를 좁혀 주세요.'}</p>}
  </section>
  <section className="expense-ledger" aria-label="지출 내역">
+ {approvalsOnly&&batchResult&&<div className="expense-batch-result" role="status">{batchResult.message}
+  {batchResult.failed.length>0&&<ul>{batchResult.failed.map(error=><li key={error}>{error}</li>)}</ul>}</div>}
+ {approvalsOnly&&status==='pending'&&ready&&<div className="expense-batch-toolbar">
+  <label><input type="checkbox" aria-label="현재 페이지 승인 대기 전체 선택" disabled={!selectable.length} checked={!!selectable.length&&selected.length===selectable.length} onChange={()=>setPicked(selected.length===selectable.length?new Map():new Map(selectable.map(r=>[r.id,r.updated_at])))}/>현재 페이지 선택</label>
+  <span>{selected.length}건 선택</span>
+  <BusinessButton disabled={!selected.length} onClick={()=>setBatch({decision:'approved',rows:selected})}>선택 승인</BusinessButton>
+  <BusinessButton disabled={!selected.length} onClick={()=>setBatch({decision:'rejected',rows:selected})}>선택 반려</BusinessButton>
+ </div>}
  {!valid?<p role="alert" className="expense-note">조회 기간을 확인해 주세요.</p>:entries.error?<BusinessError onRetry={entries.refetch}>{entries.error.message||'지출을 불러오지 못했습니다.'}</BusinessError>:entries.isPending||entries.isFetching||allEntries.isFetching?<p className="expense-note">지출 내역 불러오는 중…</p>:<>
  {mobile?<><div className="expense-mobile-count">{status&&`${expenseStatus[status]} · `}총 <strong>{rows.length.toLocaleString()}</strong>건</div>
- <ul className="expense-mobile-list" aria-label="지출 목록">{rows.slice(page*25,(page+1)*25).map(r=><li key={r.id}>
+ <ul className="expense-mobile-list" aria-label="지출 목록">{pageRows.map(r=><li key={r.id}>
+   {approvalsOnly&&status==='pending'&&<label className="expense-batch-pick">{picker(r)}선택</label>}
    <button className="expense-mobile-record" type="button" onClick={()=>setDetail(r.id)}>
      <span className="business-sr-only">지출 {r.id} 상세</span>
      <span className="expense-mobile-person"><strong>{r.staff_name||'미지정'}</strong><span>{r.department_name||'부서 미지정'}</span><span className={`business-badge expense-status-${r.status}`}>{expenseStatus[r.status]}</span></span>
@@ -113,17 +157,18 @@ export default function FleetExpenses({categoriesOnly=false,onOpenCategories}){
      {r.note?.trim()&&<button type="button" className="expense-mobile-shortcut" aria-label={`지출 ${r.id} 메모 보기`} onClick={()=>setMemo(r)}><Icon name="message" size={17}/></button>}
      {r.receipt_count>0&&<button type="button" className="expense-mobile-shortcut" aria-label={`지출 ${r.id} 첨부파일 ${r.receipt_count}개 보기`} onClick={()=>setDetail(r.id)}><Icon name="paperclip" size={17}/>{r.receipt_count}</button>}
    </div>
- </li>)}</ul></>:<div className="fleet-asset-table-wrap" role="region" aria-label="지출 목록 · 좌우 스크롤" tabIndex={0}><table className="fleet-asset-table expense-table"><thead><tr>{['지출일','상태','사용자 · 부서','차량','지출 항목','결제수단','금액','메모','첨부파일'].map(h=><th key={h} scope="col" className={h==='금액'?'number':''}>{h}</th>)}</tr></thead><tbody>{rows.slice(page*25,(page+1)*25).map(r=><tr key={r.id}>
+ </li>)}</ul></>:<div className="fleet-asset-table-wrap" role="region" aria-label="지출 목록 · 좌우 스크롤" tabIndex={0}><table className="fleet-asset-table expense-table"><thead><tr>{approvalsOnly&&status==='pending'&&<th scope="col">선택</th>}{['지출일','상태','사용자 · 부서','차량','지출 항목','결제수단','금액','메모','첨부파일'].map(h=><th key={h} scope="col" className={h==='금액'?'number':''}>{h}</th>)}</tr></thead><tbody>{pageRows.map(r=><tr key={r.id}>
+  {approvalsOnly&&status==='pending'&&<td data-label="선택">{picker(r)}</td>}
   <td data-label="지출일"><button type="button" className="expense-detail-link" title="지출 상세 보기" aria-label={`지출 ${r.id} 상세${r.receipt_count?` · 첨부 ${r.receipt_count}개`:''}`} onClick={()=>setDetail(r.id)}>{r.spent_on}</button></td>
   <td data-label="상태"><span className={`business-badge expense-status-${r.status}`}>{expenseStatus[r.status]}</span></td><td data-label="사용자 · 부서"><strong>{r.staff_name||'미지정'}</strong><small>{r.department_name||'부서 미지정'}</small></td><td data-label="차량">{r.vehicle_name}</td><td data-label="지출 항목">{r.category_name}<small>{r.group_name}{r.trip_started_at?' · 운행 연결':''}</small></td><td data-label="결제수단">{paymentMethods[r.payment_method]}</td><td data-label="금액" className="number">{expenseMoney(r.amount_krw)}원</td>
   <td data-label="메모" className="expense-memo-cell">{r.note?.trim()?<button type="button" className="expense-memo-button" title="메모 보기" aria-label={`지출 ${r.id} 메모 보기`} onClick={()=>setMemo(r)}><Icon name="message" size={16}/></button>:<span className="expense-muted" aria-label="메모 없음">—</span>}</td>
   <td data-label="첨부파일" className="expense-attachment-cell">{r.receipt_count>0?<ExpenseReceiptThumbnail expenseId={r.id} count={r.receipt_count} onOpen={()=>setDetail(r.id)}/>:<span className="expense-muted" aria-label="첨부파일 없음">—</span>}</td>
  </tr>)}</tbody></table></div>}
- {!rows.length&&<BusinessEmpty title="조회된 지출이 없습니다.">새 지출을 등록하거나 조회 조건을 변경하세요.</BusinessEmpty>}
+ {!rows.length&&<BusinessEmpty title={approvalsOnly?'조회된 승인 내역이 없습니다.':'조회된 지출이 없습니다.'}>{approvalsOnly?'조회 상태나 기간을 변경하세요.':'새 지출을 등록하거나 조회 조건을 변경하세요.'}</BusinessEmpty>}
  <div className="expense-pagination"><span>{rows.length}건</span><div className="expense-actions"><BusinessButton aria-label="이전 페이지" disabled={!page} onClick={()=>setPage(p=>p-1)}><Icon name="chevron-left" size={16}/></BusinessButton><span className="expense-page-number">{page+1} / {Math.max(1,Math.ceil(rows.length/25))}</span><BusinessButton aria-label="다음 페이지" disabled={(page+1)*25>=rows.length} onClick={()=>setPage(p=>p+1)}><Icon name="chevron-right" size={16}/></BusinessButton><span className="expense-page-size">25개씩 보기</span></div></div>
  </>}
  </section>
- {mobile&&<button type="button" className="expense-mobile-create" aria-label="지출 등록" title="지출 등록" onClick={()=>setEdit({})}><Icon name="plus" size={22}/><span>지출 등록</span></button>}
+ {mobile&&!approvalsOnly&&access.write_expenses!==false&&<button type="button" className="expense-mobile-create" aria-label="지출 등록" title="지출 등록" onClick={()=>setEdit({})}><Icon name="plus" size={22}/><span>지출 등록</span></button>}
  {ready&&summaryOpen&&<section className="expense-summary-panel" id={summaryId} aria-label="승인 비용 집계"><header><div><h3>승인 비용 집계</h3><p>현재 목록에 있는 승인 지출만 합산합니다.</p></div><Select aria-label="집계 기준" value={groupBy} onChange={e=>setGroupBy(e.target.value)}><option value="month">월별</option><option value="vehicle">차량별</option><option value="department">부서별</option></Select></header><div className="expense-summary">{groups.length?groups.map(g=><div key={g.key}><strong>{g.label}</strong><span>{g.count}건</span><b>{expenseMoney(g.amount)}원</b></div>):<BusinessEmpty compact title="승인된 지출이 없습니다."/>}</div></section>}
  {filtersOpen&&<Modal open title="지출 필터" onClose={()=>setFiltersOpen(false)} footer={<div className="expense-filter-footer"><BusinessButton disabled={!Object.keys(draftFilters).length} onClick={()=>setDraftFilters({})}>초기화</BusinessButton><div className="expense-actions"><BusinessButton onClick={()=>setFiltersOpen(false)}>취소</BusinessButton><BusinessButton primary onClick={applyFilters}>적용</BusinessButton></div></div>}><div className="expense-filter-dialog" id={filterId}>
   <FormField label="차량"><Select aria-label="지출 차량 필터" value={draftFilters.vehicle_id||''} onChange={e=>draftFilter('vehicle_id',e.target.value)}><option value="">전체 차량·일반 지출</option>{assets.data.map(v=><option key={v.id} value={v.id}>{siteVehicleLabel(v)}</option>)}</Select></FormField>
@@ -134,6 +179,7 @@ export default function FleetExpenses({categoriesOnly=false,onOpenCategories}){
  {edit&&<ExpenseForm initial={edit} categories={cats.data} vehicles={assets.data} staff={staff.data} access={access} onClose={()=>setEdit(null)} onSaved={r=>{setEdit(null);refresh();setDetail(r.id);}}/>}
  {memo&&<Modal open title="지출 메모" onClose={()=>setMemo(null)} footer={<BusinessButton onClick={()=>{setDetail(memo.id);setMemo(null);}}>지출 상세 보기</BusinessButton>}><div className="expense-memo-dialog"><p className="expense-memo-context">{memo.spent_on} · {memo.staff_name||'미지정'}</p><p className="expense-memo-content">{memo.note}</p></div></Modal>}
  {detail&&<ExpenseDetail id={detail} onClose={()=>setDetail(null)} onEdit={r=>{setDetail(null);setEdit(r);}} onChanged={refresh}/>}
+ {batch&&<ExpenseBatchReview {...batch} onClose={()=>setBatch(null)} onDone={(message,failed)=>{setBatch(null);setPicked(new Map());setBatchResult({message,failed});refresh();}}/>}
  </div>;
 }
 function CategoryForm({initial,onClose,onSaved}){
@@ -160,8 +206,11 @@ function ExpenseForm({initial,categories,vehicles,staff,access,onClose,onSaved})
  </form></Modal>;
 }
 function ExpenseDetail({id,onClose,onEdit,onChanged}){
+ const access=useFleetAccess();
  const q=useQuery({queryKey:['expense-detail',id],queryFn:()=>api.expenseDetail(id)}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[status,setStatus]=useState(''),[reason,setReason]=useState(''),[attachmentId,setAttachmentId]=useState(null);
- const busyRef=useRef(false),r=q.data?.expense;
+ const busyRef=useRef(false),source=q.data?.expense;
+ const r=source&&{...source,can_edit:source.can_edit&&access.write_expenses!==false,can_review:source.can_review&&access.review_expenses!==false,
+   can_cancel:source.can_cancel&&((source.can_edit&&access.write_expenses!==false)||(source.can_review&&access.review_expenses!==false))};
  const native=typeof window!=='undefined'&&!!(window.GpsNative||window.FlutterAppOpenUrl);
  async function action(fn){if(busyRef.current)return;busyRef.current=true;setBusy(true);setError('');try{await fn();setStatus('');setReason('');await q.refetch();onChanged();}catch(e){setError(e.message);await q.refetch();}finally{busyRef.current=false;setBusy(false);}}
  const chooseReview=value=>{setStatus(value);setReason('');setError('');};

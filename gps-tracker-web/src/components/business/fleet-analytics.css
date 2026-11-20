@@ -1,0 +1,55 @@
+.fleet-analytics {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  color: var(--text);
+}
+.fleet-analytics-toolbar, .fleet-analytics-tabs {display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.fleet-analytics-toolbar {justify-content:space-between}
+.fleet-analytics-tabs {gap:3px; padding:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px}
+.fleet-analytics-tabs button {background:transparent; color:var(--text-2); border:0; padding:8px 13px; border-radius:7px; font:inherit; font-size:14px; cursor:pointer}
+.fleet-analytics-tabs button[aria-pressed=true] {background:var(--surface); color:var(--text); font-weight:700; box-shadow:0 1px 4px #2436531c}
+.fleet-analytics-filters {display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; padding:15px 18px; background:var(--surface); border:1px solid var(--border); border-radius:14px}
+.fleet-analytics-filters label {display:grid; gap:5px; min-width:0; max-width:100%; color:var(--text-2); font-size:13px; font-weight:600}
+.fleet-analytics-filters :is(input,select) {width:100%; min-width:0; max-width:290px; min-height:38px; border:1px solid var(--border); border-radius:8px; padding:6px 10px; background:var(--surface); color:var(--text); font:inherit; font-size:15px}
+.fleet-analytics-note {margin:0; font-size:14px; color:var(--text-2)}
+.fleet-analytics-charts {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:16px}
+.fleet-analytics .business-section {min-width:0}
+.fleet-analytics .business-section-title {flex-wrap:wrap; gap:10px}
+.fleet-analytics-trend {padding:14px 20px 18px; color:var(--text-2); font-size:13px}
+.fleet-analytics-plot {position:relative; height:150px; margin-top:6px; color:#3676e5; border-bottom:1px solid var(--border); background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),var(--border) 25%)}
+.fleet-analytics-plot svg {width:100%; height:100%; display:block}
+.fleet-analytics-single {position:absolute; display:block; height:8px; width:8px; border-radius:50%; background:currentColor; transform:translate(-50%,-50%)}
+.fleet-analytics-axis {display:flex; justify-content:space-between; margin-top:4px}
+.fleet-analytics-trend details {margin-top:12px}
+.fleet-analytics-trend summary {cursor:pointer; width:fit-content; color:var(--text)}
+.fleet-analytics-trend dl {max-height:210px; overflow:auto; padding:0 8px 0 0}
+.fleet-analytics-trend dl>div {display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border)}
+.fleet-analytics-trend dd {margin:0; font-variant-numeric:tabular-nums}
+.fleet-analytics-bars {margin:0; padding:18px 20px; display:grid; gap:15px; list-style:none; max-height:340px; overflow:auto}
+.fleet-analytics-bars li>div {display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:6px; font-size:14px}
+.fleet-analytics-bars span {overflow-wrap:anywhere}
+.fleet-analytics-bars strong {white-space:nowrap; font-variant-numeric:tabular-nums}
+.fleet-analytics-bars i, .fleet-analytics-bars b {display:block; height:7px; border-radius:8px; background:var(--surface-2)}
+.fleet-analytics-bars b {background:#5689df}
+.fleet-analytics-table {overflow:auto}
+.fleet-analytics-table table {width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
+.fleet-analytics-table :is(th,td) {text-align:right; padding:12px 16px; border-top:1px solid var(--border); white-space:nowrap}
+.fleet-analytics-table thead th {background:var(--surface-2); font-weight:600; color:var(--text-2)}
+.fleet-analytics-table th:first-child {text-align:left}
+.fleet-analytics-table tbody th {font-weight:600}
+.fleet-analytics-table button {font:inherit; border:0; padding:3px 0; background:none; color:var(--accent); cursor:pointer}
+@media(max-width:860px) {
+  .fleet-analytics-charts {grid-template-columns:minmax(0,1fr)}
+  .fleet-analytics-filters {display:grid; grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fleet-analytics-filters :is(input,select) {max-width:none}
+}
+@media(max-width:480px) {
+  .fleet-analytics {gap:12px}
+  .fleet-analytics-filters {padding:12px; gap:10px}
+  .fleet-analytics-filters :is(input,select) {font-size:16px}
+  .fleet-analytics-toolbar {align-items:stretch}
+  .fleet-analytics-tabs button {padding:8px 10px}
+  .fleet-analytics-trend,.fleet-analytics-bars {padding:12px}
+  .fleet-analytics .business-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+}

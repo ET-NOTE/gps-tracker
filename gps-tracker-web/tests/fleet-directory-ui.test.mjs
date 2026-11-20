@@ -115,7 +115,7 @@ test('people administration remains unavailable to members and admin accounts re
  const member=await mount('FleetPeople',{access:{manage_team:false,role:'member'}});
  try{
   assert.equal(button(member.r,'+ 사용자 등록'),undefined);assert.equal(button(member.r,'CSV 일괄 등록'),undefined);
-  assert.equal(button(member.r,'변경 이력'),undefined);assert.equal(member.r.root.findAllByType('summary').length,0);
+  assert.equal(button(member.r,'변경 이력'),undefined);assert.equal(member.r.root.findAllByProps({className:'fleet-people-row-menu'}).length,0);
   await act(async()=>button(member.r,'부서·직책').props.onClick());assert.equal(button(member.r,'+ 추가'),undefined);
  }finally{await member.close();}
  const admin=await mount('FleetPeople',{access:{manage_team:true,role:'admin'}});

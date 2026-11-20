@@ -1,0 +1,84 @@
+.business-workspace--corporate .fleet-admin-directory.fleet-directory-layout {
+  display:grid; grid-template-columns:minmax(0,1fr); align-items:start; gap:12px;
+  min-block-size:0; background:none; border:0; border-radius:0; overflow:visible;
+}
+.business-workspace--corporate .fleet-admin-directory .fleet-directory-content,
+.business-workspace--corporate .fleet-admin-directory-filter,
+.fleet-role-list,.fleet-role-detail {
+  min-width:0; background:var(--surface); border:1px solid var(--border); border-radius:14px;
+}
+.business-workspace--corporate .fleet-admin-directory .fleet-directory-content {min-height:0; overflow:hidden}
+.fleet-admin-directory-filter summary {width:fit-content; padding:11px 16px; cursor:pointer; color:var(--text); font-size:14px; font-weight:600; overflow-wrap:anywhere}
+.fleet-admin-directory-filter .fleet-directory-groups {min-height:0; border-top:1px solid var(--border)}
+.fleet-admin-directory-filter .fleet-directory-heading {min-height:0; border:0; padding:10px 16px 2px}
+.fleet-admin-directory-filter .fleet-directory-heading h2 {font-size:15px}
+.fleet-admin-directory-filter .fleet-directory-group-list {display:flex; flex-direction:row; flex-wrap:wrap; gap:6px; padding:8px 12px; overflow:visible}
+.fleet-admin-directory-filter .fleet-directory-group,
+.fleet-admin-directory-filter .fleet-directory-footer-action {width:auto; min-height:36px; padding:6px 11px; font-size:14px; border-radius:7px}
+.fleet-admin-directory-filter .fleet-directory-group-count {min-width:20px; font-size:12px}
+.fleet-admin-directory-filter .fleet-directory-group-footer {margin:0; padding:6px 12px}
+.business-workspace--corporate .fleet-people-query {display:flex; align-items:center; flex-wrap:wrap; gap:8px}
+.fleet-people-role-filter {min-height:38px; max-width:100%; padding:6px 10px; font:inherit; font-size:14px; color:var(--text); border:1px solid var(--border); border-radius:8px; background:var(--surface)}
+.business-workspace--corporate .fleet-admin-directory .fleet-people-controls,
+.business-workspace--corporate .fleet-admin-directory .fleet-site-controls {padding:14px 16px; gap:10px}
+.business-workspace--corporate .fleet-admin-directory .fleet-people-ledger,
+.business-workspace--corporate .fleet-admin-directory .fleet-site-ledger {min-height:0}
+.business-workspace--corporate .fleet-admin-directory .fleet-asset-table :is(th,td) {padding-block:10px; font-size:15px; line-height:1.5}
+.business-workspace--corporate .fleet-admin-directory .fleet-asset-table thead th {background:var(--surface-2); font-size:14px}
+.business-workspace--corporate .fleet-admin-directory .fleet-asset-table small {font-size:13px}
+.business-workspace--corporate .fleet-admin-directory .fleet-asset-table {min-width:1000px; table-layout:auto}
+.business-workspace--corporate .fleet-admin-directory .fleet-directory-heading .business-button {min-height:34px!important; font-size:14px!important; padding:5px 10px!important}
+.business-workspace--corporate .fleet-admin-directory :is(.fleet-people-row-menu,.fleet-site-row-menu) summary {min-height:34px; padding:5px 9px; font-size:14px; border-radius:7px}
+.business-workspace--corporate .fleet-admin-directory :is(.fleet-site-pagination,.fleet-people-footer,.fleet-site-footer) {padding:12px 16px}
+.fleet-role-panel {display:grid; grid-template-columns:minmax(170px,240px) minmax(0,1fr); align-items:start; gap:16px; min-width:0}
+.fleet-role-list {display:grid; gap:3px; padding:8px}
+.fleet-role-list button {display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:42px; padding:9px 12px; border:0; border-radius:8px; font:inherit; font-size:15px; color:var(--text-2); background:transparent; cursor:pointer}
+.fleet-role-list button[aria-pressed=true] {background:color-mix(in srgb,var(--primary) 9%,var(--surface)); color:var(--primary); font-weight:600}
+.fleet-role-list small {font-size:12px}
+.fleet-role-detail {padding:20px}
+.fleet-role-detail header {display:flex; align-items:center; flex-wrap:wrap; justify-content:space-between; gap:10px}
+.fleet-role-detail h3 {margin:0; font-size:18px}
+.fleet-role-detail dl,.fleet-company-facts {margin:16px 0 0; min-width:0}
+.fleet-role-detail dl>div,.fleet-company-facts>div {display:grid; grid-template-columns:minmax(100px,1fr) minmax(0,1fr); align-items:baseline; gap:10px; padding:12px 0; border-top:1px solid var(--border); font-size:15px}
+.fleet-role-detail dt,.fleet-company-facts dt {color:var(--text-2)}
+.fleet-role-detail dd,.fleet-company-facts dd {margin:0; text-align:right; overflow-wrap:anywhere}
+.fleet-role-detail .allowed {color:var(--primary); font-weight:600}
+.fleet-group-note {margin:12px 18px; color:var(--text-2); font-size:14px; line-height:1.6; overflow-wrap:anywhere}
+.fleet-group-layout {display:grid; grid-template-columns:minmax(140px,210px) minmax(0,1fr); align-items:start; gap:16px; padding:0 18px 18px}
+.fleet-group-content {min-width:0}
+.fleet-group-content header,.fleet-group-actions,.fleet-group-permissions {display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+.fleet-group-content header {justify-content:space-between}
+.fleet-group-content :is(h3,h4) {margin:0; font-size:16px; overflow-wrap:anywhere}
+.fleet-group-permissions {margin:12px 0 18px}
+.fleet-group-permissions span {border-radius:6px; padding:4px 8px; font-size:13px; background:var(--surface-2)}
+.fleet-group-members {padding:0; margin:8px 0 0; list-style:none}
+.fleet-group-members li {display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; padding:9px 0; border-top:1px solid var(--border)}
+.fleet-group-members span,.fleet-group-selector small {font-size:13px; color:var(--text-2)}
+.fleet-group-form {display:grid; gap:14px; min-width:0}
+.fleet-group-form fieldset {border:1px solid var(--border); border-radius:10px; padding:12px; min-width:0}
+.fleet-group-form legend {font-size:14px; font-weight:600; padding:0 5px}
+.fleet-group-checks {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px}
+.fleet-group-checks label,.fleet-group-selector label {display:flex; align-items:center; gap:9px; min-height:40px; font-size:15px; cursor:pointer; overflow-wrap:anywhere}
+.fleet-group-selector {max-height:240px; overflow:auto}
+.fleet-group-selector span {display:grid; min-width:0}
+.fleet-group-form input[type=checkbox] {appearance:auto; inline-size:16px; block-size:16px; min-height:0; flex:none}
+.fleet-group-warning {margin:0; color:var(--text); background:var(--surface-2); padding:10px 12px; border-radius:8px; font-size:14px}
+.fleet-company-profile .business-section {max-width:860px}
+.fleet-company-line {display:flex; align-items:center; gap:14px; margin:18px 20px 12px; font-size:20px}
+.fleet-company-line span {flex:none; display:grid; place-items:center; width:46px; height:46px; border-radius:14px; background:color-mix(in srgb,var(--primary) 10%,var(--surface)); color:var(--primary)}
+.fleet-company-line strong {min-width:0; overflow-wrap:anywhere}
+.fleet-company-facts {margin:10px 20px}
+.fleet-company-profile .business-support-success {margin:0 20px 16px}
+.fleet-company-form {display:grid; gap:16px}
+.fleet-company-form .business-support-form {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+.fleet-company-form .business-support-form>* {min-width:0}
+@media(max-width:760px) {
+  .fleet-role-panel {grid-template-columns:minmax(0,1fr); gap:10px}
+  .fleet-role-list {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fleet-role-detail {padding:16px}
+  .fleet-group-layout,.fleet-group-checks {grid-template-columns:1fr}
+  .fleet-company-form .business-support-form {grid-template-columns:1fr}
+  .fleet-admin-directory-filter summary {min-height:42px}
+  .fleet-admin-directory-filter .fleet-directory-group {min-height:42px}
+  .fleet-company-profile .business-section-title {flex-wrap:wrap; gap:8px}
+}

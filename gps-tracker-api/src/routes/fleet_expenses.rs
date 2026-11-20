@@ -78,7 +78,7 @@ fn visible(s: &FleetScope, r: &Value) -> bool {
                 || s.staff.is_some() && r["staff_id"].as_i64() == s.staff))
 }
 fn editable(s: &FleetScope, r: &Value) -> bool {
-    visible(s, r)
+    s.permits("write_expenses") && visible(s, r)
         && matches!(r["status"].as_str(), Some("pending" | "rejected"))
         && (s.admin()
             || r["created_by"].as_i64() == Some(s.actor)
@@ -86,7 +86,7 @@ fn editable(s: &FleetScope, r: &Value) -> bool {
 }
 fn reviewer(s: &FleetScope, r: &Value) -> bool {
     visible(s, r)
-        && s.manager()
+        && s.permits("review_expenses")
         && (s.role == "owner"
             || (r["created_by"].as_i64() != Some(s.actor)
                 && (s.staff.is_none() || r["staff_id"].as_i64() != s.staff)))
@@ -344,6 +344,9 @@ async fn save(
     id: Option<i64>,
     p: ExpenseInput,
 ) -> AppResult<Json<Value>> {
+    if !s.permits("write_expenses") {
+        return Err(AppError::Forbidden);
+    }
     let note = text(&p.note, 2000, false)?;
     let today = (Utc::now() + Duration::hours(9)).date_naive();
     if !(1..=1_000_000_000).contains(&p.amount_krw)
@@ -784,6 +787,8 @@ mod tests {
             department: Some(3),
             vehicles: vec![5],
             staff_ids: vec![8],
+            group_id: None,
+            group_permissions: vec![],
         };
         let r = json!({"created_by":2,"staff_id":8,"vehicle_id":5,"status":"pending"});
         assert!(!reviewer(&s, &r));

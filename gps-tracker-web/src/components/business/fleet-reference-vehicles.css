@@ -1,0 +1,145 @@
+.fleet-dashboard-toolbar,.fleet-dashboard-toolbar>div,.fleet-dashboard-toolbar time,.fleet-dashboard-link,.fleet-dashboard-search-toggle,
+.fleet-assets-table-actions,.fleet-assets-table-heading,.fleet-operations-toolbar,.fleet-operations-filters,.fleet-operations-status,
+.fleet-operations-card header,.fleet-operations-card footer{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.fleet-dashboard-toolbar,.fleet-operations-toolbar{justify-content:space-between;gap:10px 16px}
+.fleet-dashboard-toolbar time,.fleet-dashboard-partial{color:var(--text-2);font-size:14px}
+.fleet-dashboard-toolbar h2,.fleet-assets-table-heading h2{margin:0;font-size:19px;line-height:1.4}
+.business-workspace--corporate .business-overview.fleet-dashboard{gap:16px}
+.fleet-dashboard-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:12px 0}
+.fleet-dashboard-metrics button{display:grid;min-width:0;gap:4px;border:0;border-right:1px solid var(--border);padding:2px 17px;border-radius:0;background:transparent;text-align:left;color:var(--text);font:inherit;cursor:pointer}
+.fleet-dashboard-metrics button:disabled{cursor:default;opacity:1}
+.fleet-dashboard-metrics button:last-child{border-right:0}
+.fleet-dashboard-metrics button>span{display:flex;align-items:center;gap:7px;color:var(--text-2);font-size:14px}
+.fleet-dashboard-metrics button>span>svg{margin-left:auto}
+.fleet-dashboard i,.fleet-operations-card header i,.fleet-operations-schedules article>i{display:inline-grid;place-items:center;flex:none;width:27px;height:27px;background:var(--surface-2);border-radius:8px;color:var(--primary);font-style:normal}
+.fleet-dashboard-metrics .green i{color:#26705f;background:#eaf5f0}
+.fleet-dashboard-metrics .amber i{color:#955c15;background:#fff3df}
+.fleet-dashboard-metrics strong{font-size:27px;font-weight:650;line-height:1.2;font-variant-numeric:tabular-nums}
+.fleet-dashboard-metrics strong small,.fleet-vehicle-hero dd small{margin-left:3px;font-weight:500;font-size:14px;color:var(--text-2)}
+.business-workspace--corporate .fleet-dashboard .fleet-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(330px,1fr);align-items:stretch;gap:16px}
+.business-workspace--corporate .fleet-dashboard .business-section{min-width:0;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
+.business-workspace--corporate .fleet-dashboard .business-section-title{padding:14px 17px 10px}
+.business-workspace--corporate .fleet-dashboard .business-section-title h3{font-size:18px;line-height:1.4}
+.business-workspace--corporate .fleet-dashboard .business-section-title p{font-size:14px;color:var(--text-2)}
+.business-workspace--corporate .fleet-dashboard .business-map-wrap{margin:0 12px 9px;min-height:210px;height:clamp(210px,24vh,270px);border-radius:9px;isolation:isolate;overflow:hidden}
+.fleet-dashboard-tasks{min-width:0}
+.fleet-dashboard-tasks>.business-section{height:100%}
+.fleet-dashboard-link,.fleet-dashboard-search-toggle{min-height:36px;padding:4px;border:0;background:transparent;color:var(--primary);font:inherit;font-weight:550;font-size:14px;cursor:pointer}
+.fleet-dashboard-search-toggle{margin:0 14px 6px}
+.fleet-dashboard-issues{border-top:1px solid var(--border)}
+.fleet-dashboard-issues summary,.fleet-vehicle-collapse summary{display:flex;align-items:center;gap:9px;list-style:none;cursor:pointer}
+.fleet-dashboard-issues summary::-webkit-details-marker,.fleet-vehicle-collapse summary::-webkit-details-marker{display:none}
+.fleet-dashboard-issues summary{padding:12px 18px;font-weight:600}
+.fleet-dashboard-issues summary>svg{color:var(--primary)}
+.fleet-dashboard-issues summary b{margin-left:auto;color:var(--text-2);font-size:14px}
+.fleet-dashboard-issues summary::after,.fleet-vehicle-collapse summary::after{content:'';display:block;width:7px;height:7px;flex:none;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin:0 3px 3px}
+.fleet-dashboard-issues[open] summary::after,.fleet-vehicle-collapse[open] summary::after{transform:rotate(225deg);margin-top:5px}
+.business-workspace--corporate .fleet-dashboard .business-task{padding:10px 16px;gap:7px;align-items:center}
+.business-workspace--corporate .fleet-dashboard .business-task-copy strong{font-size:15px}
+.business-workspace--corporate .fleet-dashboard .business-task-copy p{font-size:13px}
+.business-workspace--corporate .fleet-dashboard .business-task .business-button{min-height:34px;padding:5px 9px;font-size:14px;border-radius:7px}
+.business-workspace--corporate .fleet-dashboard .business-task>.business-badge{font-size:12px;max-width:100%}
+.fleet-dashboard-vehicles{border-top:1px solid var(--border)}
+.fleet-dashboard-vehicles button{width:100%;display:flex;align-items:center;gap:12px;border:0;border-bottom:1px solid var(--border);padding:10px 17px;background:transparent;text-align:left;cursor:pointer;color:var(--text);font:inherit}
+.fleet-dashboard-vehicles button:hover,.fleet-dashboard-metrics button:hover:not(:disabled){background:var(--surface-2)}
+.fleet-dashboard-vehicles button>span{display:grid;min-width:0;flex:1;overflow-wrap:anywhere}
+.fleet-dashboard-vehicles i{width:44px;height:35px;color:var(--text-2)}
+.fleet-dashboard-vehicles small{font-size:13px;color:var(--text-2)}
+.fleet-dashboard-vehicles .fleet-dashboard-availability{background:var(--surface-2);padding:3px 7px;border-radius:6px}
+.business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles :is(button,.fleet-dashboard-row-head){min-width:0;width:100%;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.95fr) minmax(0,1fr);align-items:center;gap:12px;padding:10px 14px;text-align:left}
+.business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles button{background:transparent;color:var(--text);border:0;border-radius:0;border-bottom:1px solid var(--border);font-size:14px;font-weight:450}
+.business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles button:hover{background:var(--surface-2)}
+.fleet-dashboard-row-head{background:var(--surface-2);color:var(--text-2);font-size:13px}
+.fleet-dashboard-vehicles button>.fleet-dashboard-vehicle-name{display:flex;align-items:center;gap:8px}
+.fleet-dashboard-vehicle-name>span{min-width:0;display:grid;overflow-wrap:anywhere}
+.fleet-dashboard-vehicles .fleet-dashboard-availability{width:fit-content}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-cartax-table td:nth-child(6){white-space:nowrap}
+@media(max-width:680px){
+ .business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles .fleet-dashboard-row-head,
+ .business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles button>:is(.fleet-dashboard-manager,.fleet-dashboard-km){display:none}
+ .business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles button{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.85fr);gap:6px}
+ .fleet-dashboard-vehicles i{width:25px}
+}
+.fleet-week-chart{padding:0 14px 10px}
+.fleet-week-chart svg{display:block;width:100%;height:88px}
+.fleet-week-chart ol{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;list-style:none;padding:0;margin:0;text-align:center}
+.fleet-week-chart li{display:grid;min-width:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.fleet-week-chart li strong,.fleet-week-chart time{font-size:12px}
+.fleet-week-chart li small{font-size:10px}
+.fleet-week-chart time{color:var(--text-2)}
+.fleet-dashboard-partial{margin:0 16px 8px}
+.fleet-dashboard-totals{display:flex;flex-wrap:wrap;gap:9px 20px;border-top:1px solid var(--border);padding:10px 16px;color:var(--text-2);font-size:14px}
+.fleet-dashboard-totals b{margin-left:6px;color:var(--text)}
+.fleet-assets-table-heading{padding:15px 17px;gap:8px;border-bottom:1px solid var(--border)}
+.fleet-assets-table-heading span,.fleet-operations-card p,.fleet-operations-card dl,.fleet-operations-schedules small{color:var(--text-2);font-size:14px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-ledger,.business-workspace--corporate .fleet-assets-list .fleet-directory-sidebar{border:1px solid var(--border);border-radius:14px}
+.business-workspace--corporate .fleet-assets-list .fleet-directory-heading{min-height:54px;padding:12px 16px}
+.business-workspace--corporate .fleet-assets-list .fleet-directory-group,.business-workspace--corporate .fleet-assets-list .fleet-assets-state-option{min-height:40px;padding:8px 10px;border-radius:8px;font-size:15px}
+.business-workspace--corporate .fleet-assets-list .fleet-directory-group-list{gap:3px;padding:8px}
+.business-workspace--corporate .fleet-assets-list .fleet-directory-group-count,.business-workspace--corporate .fleet-assets-list .fleet-assets-group-count{font-size:13px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-search,.business-workspace--corporate .fleet-assets-list .business-button{border-radius:8px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-cartax-table{min-width:880px;font-size:15px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-cartax-table :is(th,td){padding:10px 12px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-cartax-table th{font-size:13px;height:42px;background:var(--surface-2)}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-cartax-table td{height:56px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-cartax-table td small{font-size:13px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-thumbnail{width:47px;flex-basis:47px;height:36px;border-radius:8px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-footer{padding:8px 14px}
+.business-workspace--corporate .fleet-assets-list .fleet-assets-cartax-table :is(.business-link,.fleet-assets-connect-button){font-size:14px}
+.fleet-vehicle-hero{border:1px solid var(--border);border-radius:12px;background:linear-gradient(145deg,var(--surface-2),var(--surface));display:flex;align-items:center;gap:18px;padding:14px 18px}
+.fleet-vehicle-hero-image{display:grid;place-items:center;width:84px;min-height:60px;flex:none;color:var(--text-3)}
+.fleet-vehicle-hero-image img{max-width:100%;max-height:76px;object-fit:contain}
+.fleet-vehicle-hero dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;flex:1;min-width:0;margin:0}
+.fleet-vehicle-hero dt{color:var(--text-2);font-size:13px}
+.fleet-vehicle-hero dd{font-size:21px;line-height:1.35;font-weight:600;margin:3px 0 0;overflow-wrap:anywhere}
+.fleet-vehicle-collapse{border:1px solid var(--border);border-radius:10px;padding:0 12px}
+.fleet-vehicle-collapse summary{min-height:44px;font-weight:600}
+.fleet-vehicle-collapse summary::after{margin-left:auto}
+.fleet-vehicle-collapse[open]{padding-bottom:10px}
+.fleet-vehicle-note{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.fleet-operations{display:grid;gap:14px;min-width:0}
+.fleet-operations-status{padding:4px;border:1px solid var(--border);border-radius:10px;background:var(--surface);gap:2px}
+.fleet-operations-status button{min-height:36px;border:0;background:transparent;border-radius:7px;padding:6px 11px;color:var(--text-2);font:inherit;cursor:pointer}
+.fleet-operations-status button[aria-pressed=true]{color:var(--primary);background:color-mix(in srgb,var(--primary) 9%,var(--surface));font-weight:600}
+.fleet-operations-filters>label,.fleet-operations-filters select,.fleet-operations-vehicle-picker select{border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}
+.fleet-operations-filters>label{display:flex;align-items:center;gap:7px;padding:0 10px;min-width:0}
+.business-workspace--corporate .fleet-operations-filters label input{width:200px;max-width:100%;min-width:0;min-height:40px;border:0;background:transparent;box-shadow:none;padding:6px 0}
+.fleet-operations-filters select,.fleet-operations-vehicle-picker select{min-height:40px;max-width:100%;padding:6px 10px;font:inherit}
+.fleet-operations-vehicle-picker{display:grid;gap:6px}
+.fleet-operations-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:14px}
+.fleet-operations-card,.fleet-operations-schedules{border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
+.fleet-operations-card{padding:16px;min-width:0;overflow-wrap:anywhere}
+.fleet-operations-card header{justify-content:space-between}
+.fleet-operations-card h3{font-size:18px;margin:12px 0 2px}
+.fleet-operations-card p,.fleet-operations-card dd{margin:0}
+.fleet-operations-card dl>div,.fleet-operations-schedules article{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fleet-operations-card dl{padding:10px 0;margin:10px 0;border-block:1px solid var(--border)}
+.fleet-operations-card dl>div+div{margin-top:6px}
+.fleet-operations-schedules:empty{display:none}
+.fleet-operations-schedules article{flex-wrap:wrap;padding:12px 16px}
+.fleet-operations-schedules article+article{border-top:1px solid var(--border)}
+.fleet-operations-schedules article>div{min-width:140px;flex:1;display:grid}
+.fleet-operations-schedules article>div,.fleet-operations-schedules time{overflow-wrap:anywhere}
+@media(min-width:1100px){
+ .business-workspace--corporate .fleet-assets-list .fleet-directory-layout{grid-template-columns:190px minmax(0,1fr);gap:16px;border:0;background:transparent;overflow:visible}
+ .business-workspace--corporate .fleet-assets-list .fleet-directory-sidebar{align-self:start;min-height:0}
+ .business-workspace--corporate .fleet-assets-list .fleet-directory-groups{min-height:0}
+}
+@media(max-width:1050px){
+ .business-workspace--corporate .fleet-dashboard .fleet-dashboard-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:680px){
+ .fleet-dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr));padding:0}
+ .fleet-dashboard-metrics button{padding:10px 13px;min-height:76px}
+ .fleet-dashboard-metrics button:nth-child(even){border-right:0}
+ .fleet-dashboard-metrics button:nth-child(-n+2){border-bottom:1px solid var(--border)}
+ .fleet-dashboard-toolbar h2{font-size:20px}
+ .fleet-dashboard-toolbar>div{gap:6px}
+ .business-workspace--corporate .fleet-dashboard .business-task .business-button,.fleet-dashboard-issues summary,.fleet-dashboard-link,.fleet-operations-status button{min-height:44px}
+ .fleet-vehicle-hero{padding:12px;gap:8px}
+ .fleet-vehicle-hero-image{width:48px}
+ .fleet-vehicle-hero dd{font-size:18px}
+ .fleet-operations-status{gap:0}
+ .fleet-operations-status button{padding:6px 8px}
+ .fleet-operations-schedules article>div{min-width:100px}
+}

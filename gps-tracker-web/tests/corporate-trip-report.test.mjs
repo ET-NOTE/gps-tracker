@@ -69,13 +69,14 @@ test('dashboard missing-schedule shortcut opens filtered vehicles; normal naviga
   './business/FleetAccess':{FleetAccountScope:({children})=>children(null)},
   '../lib/corporateNavigation':navigation,
   '../lib/corporateOverview':{missingMaintenance,corporateAttention:()=>[]},
+  '../colors':{classifyDevice:()=>({label:'미연결'})},
   './business/useBusinessData':{useBusinessClock:()=>Date.parse('2026-11-18T00:00:00Z')},
   '@tanstack/react-query':{useQuery:()=>({data:[]})},
   './business/FleetAssets':{useFleetAssets:()=>({data:devices}),projectFleetAssets:rows=>rows,useAssetStats:()=>({}),useFleetReservations:()=>({data:[]}),FleetAssets:({initialMissingSchedules})=>React.createElement('output',{'data-missing':initialMissingSchedules})},
   './business/BusinessWorkspace':{
    BusinessWorkspace:({onTab,tabs,children})=>React.createElement('main',{},...tabs.map(item=>React.createElement('button',{key:item.id,onClick:()=>onTab(item.id)},item.label)),children),
    BusinessSection:({children})=>React.createElement('section',{},children),
-   BusinessTask:({title,action,onClick})=>React.createElement('button',{title,onClick},action),
+   BusinessTask:({title,label,action,onClick})=>React.createElement('button',{title:title+' '+label,onClick},action),
   },
  }});
  let r;await act(async()=>{r=create(React.createElement(panel.default));});
@@ -84,7 +85,7 @@ test('dashboard missing-schedule shortcut opens filtered vehicles; normal naviga
  assert.equal(shortcut.props.title,'점검 일정 미등록 1대');
  await act(async()=>shortcut.props.onClick());
  assert.equal(r.root.findByType('output').props['data-missing'],true);
- await act(async()=>button(r,'차량 관리').props.onClick());
+ await act(async()=>button(r,'차량 목록').props.onClick());
  assert.equal(r.root.findByType('output').props['data-missing'],false);
 });
 
@@ -116,7 +117,7 @@ test('expense categories remain reachable during vehicle and terminal outages wh
   await act(async()=>r.update(render()));
   assert.equal(r.root.findAllByType('expense-categories').length,1);
   assert.equal(r.root.findByType('main').props['data-vehicles'],0);
-  await act(async()=>button(r,'차량 관리').props.onClick());
+  await act(async()=>button(r,'차량 목록').props.onClick());
   assert.equal(r.root.findAllByType('vehicle-list').length,0);
   assert.match(text(r.toJSON()),/등록 차량을 불러오지 못했습니다/);
   await act(async()=>button(r,'다시 시도').props.onClick());
@@ -136,7 +137,7 @@ test('expense categories remain reachable during vehicle and terminal outages wh
     terminals.error=error;
     await act(async()=>r.update(render()));
     assert.equal(r.root.findAllByType('expense-categories').length,1);
-    await act(async()=>button(r,'차량 관리').props.onClick());
+    await act(async()=>button(r,'차량 목록').props.onClick());
     assert.equal(r.root.findAllByType('vehicle-list').length,0);
     assert.equal(r.root.findByType('main').props['data-vehicles'],0);
     assert.match(text(r.toJSON()),/단말기 상태를 불러오지 못했습니다/);

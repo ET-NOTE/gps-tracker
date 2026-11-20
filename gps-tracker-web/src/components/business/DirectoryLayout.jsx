@@ -1,7 +1,11 @@
 import React from 'react';
 import './directory-layout.css';
 
-export function DirectoryLayout({sidebar,children}){
+export function DirectoryLayout({sidebar,children,filterLabel}){
+ if (filterLabel) return <div className="fleet-admin-directory fleet-directory-layout">
+   <details className="fleet-admin-directory-filter"><summary>{filterLabel}</summary>{sidebar}</details>
+   <div className="fleet-directory-content">{children}</div>
+ </div>;
  return <div className="fleet-directory-layout"><aside className="fleet-directory-sidebar">{sidebar}</aside><div className="fleet-directory-content">{children}</div></div>;
 }
 

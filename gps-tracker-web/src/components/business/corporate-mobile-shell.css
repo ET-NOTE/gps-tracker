@@ -1,4 +1,4 @@
-@media screen and (max-width:600px) {
+@media screen and (max-width:899px) {
   .business-workspace--corporate {
     --corporate-mobile-actions-bottom:14px;
   }
@@ -108,6 +108,8 @@
   .corporate-phone-account .fleet-company-picker {max-width:none;min-height:48px}
   .corporate-phone-account .fleet-company-invite,
   .corporate-phone-account .business-button {justify-content:flex-start;min-height:48px}
+}
+@media screen and (max-width:600px) {
   .business-workspace--corporate .business-content .business-overview>.business-metrics {
     grid-template-columns:repeat(2,minmax(0,1fr));
     align-items:stretch;

@@ -31,8 +31,8 @@ async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVeh
  const save=async(id,body)=>{vehicleUpdates.push({id,body});return saveVehicle?.(id,body);};
  const common={default:noop,api:{connectFleetVehicle:async(...args)=>{connections.push(args);},updateFleetVehicle:save,createFleetVehicle:body=>save(undefined,body)},useFleetAccess:()=>({manage_vehicles:manage,manage_reports:manage}),useFleetOrganization:()=>({data:[]}),
   useStaff:()=>({data:[{id:1,name:'김영업',active:true},{id:2,name:'이관리',active:true}]}),
-  useQuery:()=>({data}),useMutation:noop,useQueryClient:()=>({invalidateQueries:options=>invalidations.push(options.queryKey)}),fleetDistance:noop,useBusinessClock:noop,kstDateTime:value=>value,
-  classifyDevice:device=>({label:device.source_device_id?'오프라인':'미연결'}),ageString:noop,deviceBattery:noop,
+  useQuery:({queryKey})=>queryKey.at(-1)==='stats'?{data:{per_device:[]}}:{data},useMutation:noop,useQueryClient:()=>({invalidateQueries:options=>invalidations.push(options.queryKey)}),fleetDistance:noop,useBusinessClock:noop,kstDateTime:value=>value,
+  downloadReport:noop,classifyDevice:device=>({label:device.source_device_id?'오프라인':'미연결'}),ageString:noop,deviceBattery:noop,
   Modal:({children,footer,title,onClose})=>React.createElement('section',{role:'dialog','aria-label':title},onClose&&React.createElement('button',{'aria-label':'창 닫기',onClick:onClose}),children,footer),
   FormField:tag('label'),Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
  const real={'react':React,'react/jsx-runtime':jsx,'../../lib/fleetAssetFilters':filters,'../../lib/fleetAssets':assetsLib,
@@ -114,7 +114,7 @@ test('missing-schedule list edits only missing dates and drops completed vehicle
  assert.equal(id,1);assert.equal(body.department,'영업팀');assert.equal(body.updated_at,data[0].updated_at);
  assert.deepEqual({...body.profile},{...data[0].profile,insurance_expiry:'2028-08-01'});
  await refresh([{...data[0],profile:body.profile},...data.slice(1)]);
- assert.deepEqual(rowNames(r),['관리 차량123다4567']);
+ assert.deepEqual(rowNames(r),['123다4567관리 차량']);
  await act(async()=>button(r,'필터 초기화').props.onClick());
  assert.equal(rowNames(r).length,3);
 });
@@ -185,7 +185,7 @@ test('vehicle status counts follow search scope and switching status preserves s
  await act(async()=>r.root.findByProps({'aria-label':'등록 차량 정렬'}).props.onChange({target:{value:'distanceDesc'}}));
  assert.match(rowNames(r)[0],/영업 2호/);
  await act(async()=>groupButton(r,'사용 정지').props.onClick());
- assert.deepEqual(rowNames(r),['영업 2호123나4567']);
+ assert.deepEqual(rowNames(r),['123나4567영업 2호']);
  assert.equal(r.root.findByProps({'aria-label':'등록 차량 검색'}).props.value,'김영업');
  await act(async()=>button(r,'필터 초기화').props.onClick());
  assert.equal(rowNames(r).length,3);assert.equal(r.root.findByProps({'aria-label':'등록 차량 정렬'}).props.value,'name');
@@ -202,7 +202,7 @@ test('vehicle department groups keep search-scoped counts and switch without los
  assert.equal(groupButton(r,'영업팀').props['aria-pressed'],true);
  await act(async()=>r.root.findByProps({'aria-label':'등록 차량 정렬'}).props.onChange({target:{value:'created'}}));
  await act(async()=>groupButton(r,'관리팀').props.onClick());
- assert.deepEqual(rowNames(r),['관리 차량123다4567']);
+ assert.deepEqual(rowNames(r),['123다4567관리 차량']);
  assert.equal(r.root.findByProps({'aria-label':'등록 차량 검색'}).props.value,'관리');
  assert.equal(r.root.findByProps({'aria-label':'등록 차량 정렬'}).props.value,'created');
  await act(async()=>groupButton(r,'사용 정지').props.onClick());
@@ -219,10 +219,10 @@ test('vehicle groups use registered departments and include vehicles without a d
  ]});
  assert.equal(groupCount(r,'영업팀'),2);assert.equal(groupCount(r,'미지정'),1);
  await act(async()=>groupButton(r,'미지정').props.onClick());
- assert.deepEqual(rowNames(r),['관리 차량123다4567']);
+ assert.deepEqual(rowNames(r),['123다4567관리 차량']);
  assert.match(text(r.root.findByType('tbody').children),/미연결/);
  await act(async()=>groupButton(r,'사용 정지').props.onClick());
- assert.deepEqual(rowNames(r),['영업 2호123나4567']);
+ assert.deepEqual(rowNames(r),['123나4567영업 2호']);
  await act(async()=>groupButton(r,'영업팀').props.onClick());
  assert.equal(rowNames(r).length,2);assert.equal(groupButton(r,'사용 정지').props['aria-pressed'],false);
  await act(async()=>button(r,'필터').props.onClick());
@@ -247,14 +247,14 @@ test('vehicle filter modal isolates drafts and validates before applying ranges'
  assert.equal(rowNames(r).length,3);
  await act(async()=>r.root.findByProps({'aria-label':'최소 거리'}).props.onChange({target:{value:'0'}}));
  await act(async()=>button(r,'적용').props.onClick());
- assert.equal(r.root.findAllByProps({role:'dialog'}).length,0);assert.deepEqual(rowNames(r),['영업 1호123가4567']);
+ assert.equal(r.root.findAllByProps({role:'dialog'}).length,0);assert.deepEqual(rowNames(r),['123가4567영업 1호']);
  assert.equal(groupCount(r,'전체'),1);assert.equal(groupCount(r,'사용 정지'),0);
  await act(async()=>button(r,'필터').props.onClick());
  await act(async()=>r.root.findByProps({'aria-label':'계기판 거리 등록 여부'}).props.onChange({target:{value:'missing'}}));
  assert.equal(r.root.findByProps({'aria-label':'최소 거리'}).props.disabled,true);
  assert.equal(r.root.findByProps({'aria-label':'최소 거리'}).props.value,'');
  await act(async()=>button(r,'적용').props.onClick());
- assert.deepEqual(rowNames(r),['관리 차량123다4567']);
+ assert.deepEqual(rowNames(r),['123다4567관리 차량']);
  await act(async()=>button(r,'필터').props.onClick());
  await act(async()=>button(r,'초기화').props.onClick());
  assert.equal(rowNames(r).length,1);
@@ -266,10 +266,10 @@ test('vehicle list keeps registration, editing and reporting permissions and cal
  const {r,reports}=await mount(t,{manage:false});
  assert.equal(r.root.findAll(n=>n.type==='button'&&['차량 등록','수정','단말기 일괄 연결'].includes(text(n.children))).length,0);
  await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 상세'}).props.onClick());
- assert.equal(r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']==='영업 1호').length,1);
+ assert.equal(r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']==='123가4567').length,1);
  assert.equal(r.root.findAll(n=>n.type==='button'&&text(n.children)==='단말기 연결').length,0);
  await act(async()=>button(r,'운행기록부 보기').props.onClick());
- assert.deepEqual(reports,[1]);assert.equal(r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']==='영업 1호').length,0);
+ assert.deepEqual(reports,[1]);assert.equal(r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']==='123가4567').length,0);
  const managed=await mount(t);
  assert.ok(button(managed.r,'단말기 일괄 연결'));
  await act(async()=>button(managed.r,'차량 등록').props.onClick());
@@ -284,14 +284,14 @@ test('vehicle rows open details by click, Enter and Space without hijacking nest
  await act(async()=>row().props.onClick({target:{closest:()=>({tagName:'BUTTON'})}}));
  assert.equal(detailDrawers(r).length,0);
  await act(async()=>row().props.onClick({target:{closest:()=>null}}));
- assert.equal(detailDrawers(r)[0].props['aria-label'],'영업 1호');
+ assert.equal(detailDrawers(r)[0].props['aria-label'],'123가4567');
  await close();
  const currentTarget={};let prevented=0;
  for(const key of ['Enter',' ']){
   await act(async()=>row().props.onKeyDown({key,target:{},currentTarget,preventDefault:()=>prevented++}));
   assert.equal(detailDrawers(r).length,0,'nested button keystrokes are left to that button');
   await act(async()=>row().props.onKeyDown({key,target:currentTarget,currentTarget,preventDefault:()=>prevented++}));
-  assert.equal(detailDrawers(r)[0].props['aria-label'],'영업 1호');
+  assert.equal(detailDrawers(r)[0].props['aria-label'],'123가4567');
   await close();
  }
  assert.equal(prevented,2);
@@ -327,7 +327,7 @@ test('vehicle detail keeps operational state, communication, missing schedules a
  const info=r.root.findByProps({'aria-label':'차량 기본 정보'});
  const terminal=r.root.findByProps({'aria-label':'단말기 통신과 위치'});
  const maintenance=r.root.findByProps({'aria-label':'차량 점검 일정'});
- assert.match(text(info.children),/사용 가능/);assert.match(text(info.children),/계기판 누적거리0 km/);
+ assert.match(text(info.children),/사용 가능/);assert.match(text(r.root.findByProps({className:'fleet-vehicle-hero'}).children),/계기판 누적거리0 km/);
  assert.match(text(info.children),/담당자김영업/);
  assert.match(text(terminal.children),/단말기 통신 상태오프라인/);
  assert.match(text(maintenance.children),/일정 미등록 2건/);
@@ -339,7 +339,7 @@ test('vehicle detail keeps operational state, communication, missing schedules a
  const [{deviceId,origin}]=maps;
  assert.equal(deviceId,9001);assert.equal(origin.vehicleId,71);assert.equal(origin.detailTab,'status');
  const back=await mount(t,{data:[asset],devices:[{id:9001,display_name:'대표 단말'}],mapReturn:origin});
- assert.equal(detailDrawers(back.r)[0].props['aria-label'],'영업 1호');
+ assert.equal(detailDrawers(back.r)[0].props['aria-label'],'123가4567');
  const revoked=await mount(t,{data:[],mapReturn:origin});
  assert.equal(detailDrawers(revoked.r).length,0);
 });

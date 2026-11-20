@@ -371,7 +371,7 @@ async fn assign(
     let from = p.from.and_hms_opt(0, 0, 0).unwrap().and_utc() - Duration::hours(9);
     let to = p.to.and_hms_opt(23, 59, 59).unwrap().and_utc() - Duration::hours(9);
     let trips = super::fleet_vehicles::allocated_trips(&state, s.owner, vehicle, from, to).await?;
-    let bookings:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(r) FROM vehicle_reservations r WHERE user_id=$1 AND fleet_vehicle_id=$2 AND starts_at<=$4 AND ends_at>=$3 AND status<>'cancelled' ORDER BY id").bind(s.owner).bind(vehicle).bind(from).bind(to).fetch_all(&mut *tx).await?;
+    let bookings:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(r) FROM vehicle_reservations r WHERE user_id=$1 AND fleet_vehicle_id=$2 AND starts_at<=$4 AND ends_at>=$3 AND status IN ('planned','in_progress','completed') ORDER BY id").bind(s.owner).bind(vehicle).bind(from).bind(to).fetch_all(&mut *tx).await?;
     let rules: Vec<Value> = sqlx::query_scalar(RULES)
         .bind(s.owner)
         .bind(vehicle)

@@ -41,7 +41,7 @@ export function filterFleetAssets(assets, { query = '', status = 'all', sort = '
     const km = assetOdometer(v), day = assetRegistrationDay(v.created_at);
     return (status === 'all' || v.enabled === (status === 'enabled'))
       && (!f.missingSchedulesOnly || missingScheduleFields(v.profile).length > 0)
-      && [v.name, v.license_plate, v.department, managers.get(v.manager_staff_id), ...(v.bindings || []).map(b => b.terminal_name)]
+      && [v.name, v.license_plate, v.car_model, v.department, managers.get(v.manager_staff_id), ...(v.bindings || []).filter(b=>!b.ended_at).map(b => b.terminal_name)]
         .some(s => String(s || '').toLocaleLowerCase('ko').includes(term))
       && (f.distance === 'missing' ? km === null : (f.distance !== 'recorded' && !hasRange || km !== null)
         && (f.minKm === '' || km >= Number(f.minKm)) && (f.maxKm === '' || km <= Number(f.maxKm)))

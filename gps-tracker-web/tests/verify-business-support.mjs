@@ -54,9 +54,9 @@ try {
     await page.getByRole('button',{name:'검증 운전자 비활성화',exact:true}).click();await capture(page,`staff-status-${width}`);await dialog.getByRole('button',{name:'비활성화 확인',exact:true}).click();
     await page.getByRole('button',{name:'검증 운전자 활성화',exact:true}).waitFor();await page.getByRole('button',{name:'검증 운전자 활성화',exact:true}).click();await dialog.getByRole('button',{name:'활성화 확인',exact:true}).click();await page.getByRole('button',{name:'검증 운전자 비활성화',exact:true}).waitFor();
     const updated=await page.evaluate(()=>window.__supportCalls.find(c=>c.action==='staff-update').body);assert.equal(updated.phone,'010-2222-3333');assert.equal(updated.active,true);
-    await tab(page,'설정');await page.getByLabel('상호 (회사명)',{exact:true}).waitFor();
+    await tab(page,'설정');await page.getByRole('button',{name:'회사 정보 수정',exact:true}).waitFor();
     await capture(page,`company-${width}`);
-    await page.getByLabel('상호 (회사명)',{exact:true}).fill('변경 검증 회사');await page.evaluate(()=>{window.__supportFailure=true;});await page.getByRole('button',{name:'회사 정보 저장',exact:true}).click();
+    await page.getByRole('button',{name:'회사 정보 수정',exact:true}).click();await page.getByLabel('상호 (회사명)',{exact:true}).fill('변경 검증 회사');await page.evaluate(()=>{window.__supportFailure=true;});await page.getByRole('button',{name:'회사 정보 저장',exact:true}).click();
     await page.getByText(/회사 정보를 저장하지 못했습니다/).waitFor();assert.equal(await page.getByLabel('상호 (회사명)',{exact:true}).inputValue(),'변경 검증 회사');
     await page.evaluate(()=>{window.__supportFailure=false;});await page.getByRole('button',{name:'회사 정보 저장',exact:true}).evaluate(el=>{el.click();el.click();});await page.getByText('회사 정보를 저장했습니다.',{exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>window.__supportCalls.filter(c=>c.action==='company-save').length),2);

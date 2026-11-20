@@ -21,7 +21,22 @@ const text=node=>typeof node==='string'||typeof node==='number'?String(node):Arr
 const button=(r,label)=>r.root.findAll(n=>n.type==='button'&&text(n.children).trim()===label)[0];
 const settle=()=>new Promise(resolve=>setTimeout(resolve,12));
 
-async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=false,assetQuery,detail={},api:apiOverrides={}}={}){
+test('approval inbox shows only reviewable requests and keeps the same scope on download',async()=>{
+ const data=[...rows.map(r=>({...r,can_review:true})),{...rows[1],id:4,can_review:false}];
+ const {r,close}=await mount(data,{approvalsOnly:true});
+ try{
+  assert.equal(button(r,'승인대기 (1)').props['aria-pressed'],true);
+  assert.equal(button(r,'지출 등록'),undefined);
+  assert.equal(r.root.findByType('tbody').findAllByType('tr').length,1);
+  await act(async()=>button(r,'다운로드').props.onClick());
+  assert.equal(r.root.findByType('export-preview').props.report.rows.length,1);
+  assert.equal(r.root.findByType('export-preview').props.report.rows[0].amount,80000);
+  await act(async()=>button(r,'반려 (1)').props.onClick());
+  assert.equal(r.root.findByProps({label:'승인 관리 조회 요약'}).props.items.find(item=>item.name==='반려').value,1);
+ }finally{await close();}
+});
+
+async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=false,approvalsOnly=false,assetQuery,detail={},api:apiOverrides={}}={}){
  const requests=[],state={fail:false,limit};
  const qc=new query.QueryClient({defaultOptions:{queries:{retry:false,staleTime:Infinity,gcTime:Infinity}}});
  const api={expenseCategories:async()=>[{id:1,kind:'group',name:'차량유지비'},{id:2,kind:'fuel',parent_id:1,name:'유류비'},{id:3,kind:'expense',parent_id:1,name:'숙박비'}],listExpenses:async filters=>{
@@ -51,7 +66,7 @@ async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=fals
  await mod.link(name=>moduleOf(real[name]||(name==='./ExportButtons'?{default:props=>React.createElement('export-preview',props)}:name==='./BusinessDrawer'?{default:({children,title,onClose})=>React.createElement('section',{role:'dialog','aria-label':title,'data-view':'drawer',onClose},children)}:common)));
  await mod.evaluate();
  let r;
- await act(async()=>{r=create(React.createElement(query.QueryClientProvider,{client:qc},React.createElement(mod.namespace.default,{onOpenCategories,categoriesOnly})));await settle();});
+ await act(async()=>{r=create(React.createElement(query.QueryClientProvider,{client:qc},React.createElement(mod.namespace.default,{onOpenCategories,categoriesOnly,approvalsOnly})));await settle();});
  await act(settle);
  return {r,requests,state,qc,close:async()=>{await act(async()=>r.unmount());qc.clear();}};
 }
@@ -77,7 +92,7 @@ test('expense status and search controls share the displayed rows with download 
   assert.equal(requests.length,1);assert.equal(requests[0].status,undefined);
   await act(async()=>button(r,'승인대기 (1)').props.onClick());
   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,1);
-  assert.match(text(r.root.findByProps({className:'expense-approved-total'}).children),/승인 합계0원/);
+  assert.equal(r.root.findByProps({label:'조회된 지출 요약'}).props.items.find(item=>item.name==='승인 금액').value,0);
   await act(async()=>button(r,'다운로드').props.onClick());
   assert.equal(r.root.findByType('export-preview').props.report.rows[0].status,'승인대기');
   await act(async()=>button(r,'지출 설정').props.onClick());
@@ -154,7 +169,7 @@ test('over-limit results can still be narrowed by server status without fabricat
   assert.equal(r.root.findByType('export-preview').props.report.rows.length,600);
   await act(async()=>{button(r,'승인대기 (—)').props.onClick();await settle();});await act(settle);
   assert.equal(requests.at(-1).status,'pending');assert.ok(button(r,'승인대기 (600)'));assert.ok(button(r,'승인 (—)'));
-  assert.match(text(r.root.findByProps({className:'expense-approved-total'}).children),/승인 합계0원/);
+  assert.equal(r.root.findByProps({label:'조회된 지출 요약'}).props.items.find(item=>item.name==='승인 금액').value,0);
   await act(async()=>button(r,'필터').props.onClick());
   await act(async()=>r.root.findByProps({'aria-label':'지출 차량 필터'}).props.onChange({target:{value:'100'}}));
   await act(async()=>{button(r,'적용').props.onClick();await settle();});await act(settle);

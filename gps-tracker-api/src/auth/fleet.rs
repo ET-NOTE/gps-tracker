@@ -13,6 +13,15 @@ use axum::{
 };
 use serde_json::{json, Value};
 
+pub const GROUP_PERMISSIONS: [&str; 6] = [
+    "manage_vehicles",
+    "write_reservations",
+    "review_reservations",
+    "write_trips",
+    "write_expenses",
+    "review_expenses",
+];
+
 #[derive(Clone, Debug)]
 pub struct FleetScope {
     pub owner: i64,
@@ -22,6 +31,8 @@ pub struct FleetScope {
     pub department: Option<i64>,
     pub vehicles: Vec<i64>,
     pub staff_ids: Vec<i64>,
+    pub group_id: Option<i64>,
+    pub group_permissions: Vec<String>,
 }
 impl FleetScope {
     pub fn admin(&self) -> bool {
@@ -29,6 +40,55 @@ impl FleetScope {
     }
     pub fn manager(&self) -> bool {
         self.admin() || self.role == "department_manager"
+    }
+    pub fn permits(&self, capability: &str) -> bool {
+        let upper_bound = match capability {
+            "manage_team" => return self.admin() && self.group_id.is_none(),
+            "manage_vehicles" => self.admin(),
+            "review_expenses" | "review_reservations" | "write_vehicle_documents" => self.manager(),
+            "write_reservations" | "write_trips" | "write_expenses" => true,
+            _ => false,
+        };
+        let key = if capability == "write_vehicle_documents" {
+            "manage_vehicles"
+        } else {
+            capability
+        };
+        upper_bound && (self.group_id.is_none() || self.group_permissions.iter().any(|p| p == key))
+    }
+    fn group_allows_request(&self, method: &Method, path: &[&str]) -> bool {
+        if self.group_id.is_none() {
+            return true;
+        }
+        if method == Method::GET {
+            return !matches!(
+                path,
+                [
+                    "corporate",
+                    "permission-groups" | "invites" | "subject-bindings" | "team-audit",
+                    ..
+                ]
+            );
+        }
+        match path {
+            ["corporate", "vehicles", _, "trips", "evidence"] => true, // POST for a location read.
+            ["corporate", "vehicles", _, "trips" | "trip-rules", ..] => self.permits("write_trips"),
+            ["corporate", "vehicles", _, "documents"] | ["documents", _] => {
+                self.permits("write_vehicle_documents")
+            }
+            ["corporate", "vehicles", ..] => self.permits("manage_vehicles"),
+            ["corporate", "vehicle-reservations", _, "review"] => {
+                self.permits("review_reservations")
+            }
+            ["corporate", "vehicle-reservations", ..] => self.permits("write_reservations"),
+            // The review handler checks the specific action and record again.
+            ["corporate", "expenses", _, "review"] => {
+                self.permits("review_expenses") || self.permits("write_expenses")
+            }
+            ["corporate", "expenses", ..] => self.permits("write_expenses"),
+            // No delegation of group management, staff access, invites, billing or policy.
+            _ => false,
+        }
     }
     pub fn vehicle(&self, id: i64) -> AppResult<()> {
         if self.vehicles.contains(&id) {
@@ -41,12 +101,12 @@ impl FleetScope {
 pub async fn load(state: &AppState, actor: i64, owner: i64) -> AppResult<FleetScope> {
     super::extractor::require_existing_account(state, actor).await?;
     super::extractor::require_existing_account(state, owner).await?;
-    let (staff, role, department) = if owner == actor {
-        (None, "owner".to_string(), None)
+    let (staff, role, department, group_id, group_permissions) = if owner == actor {
+        (None, "owner".to_string(), None, None, vec![])
     } else {
-        let (id,role,dep):(i64,String,Option<i64>)=sqlx::query_as("SELECT s.id,s.access_role,s.department_id FROM fleet_staff_accounts a JOIN staff s ON s.id=a.staff_id AND s.user_id=a.owner_id WHERE a.owner_id=$1 AND a.account_id=$2 AND s.active")
+        let (id,role,dep,group,permissions):(i64,String,Option<i64>,Option<i64>,Vec<String>)=sqlx::query_as("SELECT s.id,s.access_role,s.department_id,s.permission_group_id,COALESCE(g.permissions,'{}'::text[]) FROM fleet_staff_accounts a JOIN staff s ON s.id=a.staff_id AND s.user_id=a.owner_id LEFT JOIN fleet_permission_groups g ON g.owner_id=s.user_id AND g.id=s.permission_group_id WHERE a.owner_id=$1 AND a.account_id=$2 AND s.active")
    .bind(owner).bind(actor).fetch_optional(&state.db).await?.ok_or(AppError::Forbidden)?;
-        (Some(id), role, dep)
+        (Some(id), role, dep, group, permissions)
     };
     let admin = role == "owner" || role == "admin";
     let vehicles=sqlx::query_scalar("SELECT v.id FROM fleet_vehicles v WHERE v.owner_id=$1 AND ($2 OR ($3='department_manager' AND v.department_id=$4) OR ($3='member' AND EXISTS(SELECT 1 FROM staff s WHERE s.id=$5 AND s.user_id=$1 AND (s.all_vehicles OR v.manager_staff_id=s.id OR EXISTS(SELECT 1 FROM fleet_staff_vehicles x WHERE x.owner_id=$1 AND x.staff_id=s.id AND x.vehicle_id=v.id))))) ORDER BY v.id")
@@ -61,7 +121,47 @@ pub async fn load(state: &AppState, actor: i64, owner: i64) -> AppResult<FleetSc
         department,
         vehicles,
         staff_ids,
+        group_id,
+        group_permissions,
     })
+}
+
+#[cfg(test)]
+mod permission_tests {
+    use super::*;
+    fn scope(role: &str, allowed: &[&str]) -> FleetScope {
+        FleetScope {owner:1,actor:2,staff:Some(9),role:role.into(),department:Some(3),
+            vehicles:vec![8],staff_ids:vec![9],group_id:Some(4),group_permissions:allowed.iter().map(|key|key.to_string()).collect()}
+    }
+    #[test]
+    fn custom_groups_can_only_narrow_the_base_role() {
+        let mut member=scope("member",&GROUP_PERMISSIONS);
+        assert!(!member.permits("review_expenses")&&!member.permits("review_reservations"));
+        assert!(!member.permits("manage_vehicles")&&!member.permits("write_vehicle_documents"));
+        assert!(member.permits("write_expenses") && member.permits("write_reservations"));
+        assert!(member.vehicle(7).is_err());
+        member.role="admin".into();
+        assert!(!member.permits("manage_team"));
+        assert!(member.permits("review_expenses"));
+        member.group_id=None;
+        assert!(member.permits("manage_team"));
+    }
+    #[test]
+    fn assigned_groups_enforce_action_boundaries_even_for_base_admins() {
+        let read_only=scope("admin",&[]);
+        for route in ["corporate/staff","corporate/organization/items","corporate/invites","corporate/subject-mappings",
+            "corporate/permission-groups/assignment","corporate/subscription","corporate/vehicle-reservations",
+            "corporate/vehicles/8/trips/assign","corporate/vehicles/8/bindings","documents/18","corporate/expenses/1/review"] {
+            let parts:Vec<_>=route.split('/').collect();
+            assert!(!read_only.group_allows_request(&Method::POST,&parts),"{route}");
+        }
+        assert!(read_only.group_allows_request(&Method::POST,&["corporate","vehicles","8","trips","evidence"]));
+        let limited=scope("department_manager",&["review_reservations","review_expenses"]);
+        assert!(limited.group_allows_request(&Method::POST,&["corporate","vehicle-reservations","4","review"]));
+        assert!(!limited.group_allows_request(&Method::PUT,&["corporate","vehicle-reservations","4"]));
+        assert!(!limited.group_allows_request(&Method::POST,&["corporate","expenses","4","receipts"]));
+        assert!(limited.group_allows_request(&Method::POST,&["corporate","expenses","4","review"]));
+    }
 }
 pub async fn middleware(State(state): State<AppState>, req: Request, next: Next) -> Response {
     match scoped(state, req, next).await {
@@ -106,6 +206,9 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
     let admin = scope.admin();
     let manager = scope.manager();
     let pieces: Vec<&str> = path.trim_matches('/').split('/').collect();
+    if !scope.group_allows_request(&method, &pieces) {
+        return Err(AppError::Forbidden);
+    }
     let id = pieces.get(2).and_then(|s| s.parse::<i64>().ok());
     let mut booking_id = None;
     let allowed = match pieces.as_slice() {
@@ -149,6 +252,9 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
                 _ => false,
             }
         }
+        ["corporate", "reservation-policy"] => read,
+        ["corporate", "vehicle-reservations", _, "history"] => read,
+        ["corporate", "vehicle-reservations", _, "review"] => method == Method::POST && manager,
         ["corporate", "vehicle-reservations"] => read || method == Method::POST,
         ["corporate", "vehicle-reservations", _] => {
             let rid = id.ok_or(AppError::NotFound)?;
@@ -183,16 +289,16 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
     if !allowed {
         return Err(AppError::Forbidden);
     }
-    let json_write = !read
-        && (path.contains("vehicle-reservations") || path.ends_with("trips/annotation"))
-        && method != Method::DELETE;
+    let booking_write = path.contains("vehicle-reservations") && !path.ends_with("/review");
+    let json_write =
+        !read && (booking_write || path.ends_with("trips/annotation")) && method != Method::DELETE;
     let body = if json_write {
         let bytes = to_bytes(body, 1024 * 1024)
             .await
             .map_err(|_| AppError::BadRequest("요청이 너무 큽니다.".into()))?;
         let data: Value = serde_json::from_slice(&bytes)
             .map_err(|_| AppError::BadRequest("입력 내용을 확인해 주세요.".into()))?;
-        if path.contains("vehicle-reservations") {
+        if booking_write {
             scope.vehicle(data["vehicle_id"].as_i64().ok_or(AppError::NotFound)?)?;
         }
         let driver = data["driver_staff_id"].as_i64();

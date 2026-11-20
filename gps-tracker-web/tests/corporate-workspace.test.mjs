@@ -54,33 +54,35 @@ async function mount(t,props={},createNodeMock){
 test('corporate groups return to each last selected child without losing the active body',async t=>{
  const {renderer:r,changes}=await mount(t);
  const primary=()=>r.root.findByProps({'aria-label':'법인차 운영 메뉴'});
- await act(async()=>findButton(primary(),'운행').props.onClick());
+ await act(async()=>findButton(primary(),'운행일지').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'report');
- await act(async()=>findButton(r.root.findByProps({'aria-label':'운행 하위 메뉴'}),'월간 요약').props.onClick());
- await act(async()=>findButton(primary(),'지출').props.onClick());
- await act(async()=>findButton(r.root.findByProps({'aria-label':'지출 하위 메뉴'}),'항목 관리').props.onClick());
- await act(async()=>findButton(primary(),'운행').props.onClick());
+ await act(async()=>findButton(r.root.findByProps({'aria-label':'운행일지 하위 메뉴'}),'월간 요약').props.onClick());
+ await act(async()=>findButton(primary(),'지출 관리').props.onClick());
+ await act(async()=>findButton(r.root.findByProps({'aria-label':'지출 관리 하위 메뉴'}),'항목 관리').props.onClick());
+ await act(async()=>findButton(primary(),'운행일지').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'monthly');
- assert.equal(findButton(primary(),'운행').props['aria-current'],'page');
- assert.equal(findButton(r.root.findByProps({'aria-label':'운행 하위 메뉴'}),'월간 요약').props['aria-current'],'page');
- await act(async()=>findButton(primary(),'지출').props.onClick());
+ assert.equal(findButton(primary(),'운행일지').props['aria-current'],'page');
+ assert.equal(findButton(r.root.findByProps({'aria-label':'운행일지 하위 메뉴'}),'월간 요약').props['aria-current'],'page');
+ await act(async()=>findButton(primary(),'지출 관리').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'expense-categories');
  assert.deepEqual(changes,['report','monthly','expenses','expense-categories','monthly','expense-categories']);
 });
 
-test('reservations are fifth in the main menu and both entry points open the same vehicle booking page',async t=>{
+test('design navigation exposes live, vehicle tools, and booking as a direct destination',async t=>{
  const {renderer:r,changes}=await mount(t);
  const primary=()=>r.root.findByProps({'aria-label':'법인차 운영 메뉴'});
- const vehicleTabs=()=>r.root.findByProps({'aria-label':'차량 하위 메뉴'});
- assert.deepEqual(buttons(primary()).slice(0,8),['운영 현황','차량','사용자','지점','차량 예약','운행','지출','시스템 설정']);
+ const navGroups=primary().findAll(n=>n.type==='button' && n.props.className==='business-nav-item');
+ assert.deepEqual(navGroups.map(n=>text(n.children)),corporateGroups.map(g=>g.label));
+ await act(async()=>findButton(primary(),'차량 관리').props.onClick());
+ const vehicleTabs=()=>r.root.findByProps({'aria-label':'차량 관리 하위 메뉴'});
+ assert.deepEqual(buttons(vehicleTabs()),['차량 목록','단말기 관리','정비·보험']);
+ await act(async()=>findButton(vehicleTabs(),'정비·보험').props.onClick());
  await act(async()=>findButton(primary(),'차량 예약').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'reservations');
  assert.equal(findButton(primary(),'차량 예약').props['aria-current'],'page');
- assert.equal(findButton(vehicleTabs(),'차량 예약').props['aria-current'],'page');
- await act(async()=>findButton(primary(),'차량').props.onClick());
- assert.equal(findButton(vehicleTabs(),'차량 관리').props['aria-current'],'page');
- await act(async()=>findButton(vehicleTabs(),'차량 예약').props.onClick());
- assert.deepEqual(changes,['reservations','vehicles','reservations']);
+ await act(async()=>findButton(primary(),'차량 관리').props.onClick());
+ assert.equal(findButton(vehicleTabs(),'정비·보험').props['aria-current'],'page');
+ assert.deepEqual(changes,['vehicles','maintenance','reservations','maintenance']);
 });
 
 test('corporate tab navigation resets the persistent mobile scroll without resetting ordinary workspace interactions',async t=>{
@@ -91,18 +93,18 @@ test('corporate tab navigation resets the persistent mobile scroll without reset
  assert.equal(viewport.scrollTop,0);assert.deepEqual(resets,[0]);
  const previousContent=classNode(r.root,'business-content');
  viewport.scrollTop=240;
- await act(async()=>findButton(primary(),'차량').props.onClick());
+ await act(async()=>findButton(primary(),'차량 관리').props.onClick());
  assert.equal(viewport.scrollTop,0);assert.deepEqual(resets,[0,0]);
  assert.notEqual(classNode(r.root,'business-content'),previousContent,'the independent desktop content scroll region also starts with a new node');
  viewport.scrollTop=180;
- await act(async()=>findButton(primary(),'차량').props.onClick());
+ await act(async()=>findButton(primary(),'차량 관리').props.onClick());
  await act(async()=>findButton(classNode(r.root,'business-nav-tools'),'계정 메뉴').props.onClick());
  await act(async()=>findButton(r.root.findByType('aside'),'닫기').props.onClick());
  assert.equal(viewport.scrollTop,180);assert.deepEqual(resets,[0,0]);
- await act(async()=>findButton(primary(),'운행').props.onClick());
+ await act(async()=>findButton(primary(),'운행일지').props.onClick());
  assert.equal(viewport.scrollTop,0);
  viewport.scrollTop=90;
- await act(async()=>findButton(r.root.findByProps({'aria-label':'운행 하위 메뉴'}),'월간 요약').props.onClick());
+ await act(async()=>findButton(r.root.findByProps({'aria-label':'운행일지 하위 메뉴'}),'월간 요약').props.onClick());
  assert.equal(viewport.scrollTop,0);assert.deepEqual(resets,[0,0,0,0]);
 });
 
@@ -114,43 +116,45 @@ test('corporate company controls appear once above the body and remain interacti
  assert.equal(r.root.findAllByType('select').length,1);
  assert.equal(topbar.findAllByType('select').length,1);
  assert.equal(body.findAllByType('select').length,0);
- assert.equal(topbar.findByProps({'aria-label':'지출 하위 메뉴'}).type,'nav');
+ assert.equal(r.root.findByProps({'aria-label':'지출 관리 하위 메뉴'}).type,'nav');
+ assert.equal(text(classNode(r.root,'fleet-breadcrumb').children),'법인차 운영지출 관리지출 내역');
+ const width=topbar.findByProps({'aria-label':'화면 폭 선택'});
+ await act(async()=>findButton(width,'넓게').props.onClick());
+ assert.equal(classNode(r.root,'business-workspace').props['data-view-width'],'wide');
  assert.equal(r.root.findAll(n=>typeof n.type==='string'&&n.props.className?.includes('business-page-heading')).length,0);
  await act(async()=>topbar.findByType('select').props.onChange({target:{value:'2'}}));
  assert.deepEqual(companies,['2']);
 });
 
-test('custom section navigation switches settings in the topbar without duplicating company controls',async t=>{
+test('section navigation switches settings in the sidebar without duplicating company controls',async t=>{
  const {workspace}=await modules();
  const companies=[],changes=[];let r;
  const company=React.createElement('p',{'aria-label':'회사 정보 본문'},'등록된 회사 정보');
  const subscription=React.createElement('p',{'aria-label':'이용권 본문'},'현재 이용권');
  function Harness(){
   const [section,setSection]=React.useState('company');
-  const headerNavigation=React.createElement('nav',{'aria-label':'설정 상세 메뉴'},...[
-   ['company','회사 정보'],['subscription','이용권 관리'],
-  ].map(([id,label])=>React.createElement('button',{key:id,'aria-current':section===id?'page':undefined,onClick:()=>{changes.push(id);setSection(id);}},label)));
+  const sections={settings:[['company','회사 정보'],['subscription','이용권 관리']]};
   const toolbar=React.createElement('select',{'aria-label':'회사 선택',onChange:e=>companies.push(e.target.value)},React.createElement('option',{value:'1'},'첫 회사'),React.createElement('option',{value:'2'},'다른 회사'));
-  // Use a group with built-in tabs to verify custom navigation takes precedence.
-  return React.createElement(workspace.BusinessWorkspace,{title:'법인차 운영',kind:'corporate',tabs:corporateTabs,groups:corporateGroups,tab:'expenses',onTab(){},toolbar,headerNavigation},
+  return React.createElement(workspace.BusinessWorkspace,{title:'법인차 운영',kind:'corporate',tabs:corporateTabs,groups:corporateGroups,tab:'settings',onTab(){},toolbar,section,sections,onSection:(page,id)=>{assert.equal(page,'settings');changes.push(id);setSection(id);}},
    React.createElement(workspace.BusinessSettings,{company,subscription,activeTab:section,onTab:setSection,hideNavigation:true}));
  }
  await act(async()=>{r=create(React.createElement(Harness));});
  t.after(async()=>{await act(async()=>r.unmount());});
  const topbar=()=>classNode(r.root,'business-topbar'),body=()=>classNode(r.root,'business-content');
- assert.equal(r.root.findAllByProps({'aria-label':'설정 상세 메뉴'}).length,1);
- assert.equal(topbar().findByProps({'aria-label':'설정 상세 메뉴'}).type,'nav');
- assert.equal(r.root.findAllByProps({'aria-label':'지출 하위 메뉴'}).length,0);
+ assert.equal(r.root.findAllByProps({'aria-label':'관리 설정 하위 메뉴'}).length,1);
+ const nav=()=>r.root.findByProps({'aria-label':'관리 설정 하위 메뉴'});
+ assert.equal(nav().type,'nav');
+ assert.equal(r.root.findAllByProps({'aria-label':'지출 관리 하위 메뉴'}).length,0);
  assert.equal(r.root.findAllByType('select').length,1);assert.equal(body().findAllByType('select').length,0);
  assert.equal(body().findAllByType('button').length,0,'controlled body does not repeat the header tabs');
  assert.equal(body().findByProps({'aria-label':'회사 정보 본문'}).children[0],'등록된 회사 정보');
- await act(async()=>findButton(topbar(),'이용권 관리').props.onClick());
- assert.deepEqual(changes,['subscription']);assert.equal(findButton(topbar(),'이용권 관리').props['aria-current'],'page');
+ await act(async()=>findButton(nav(),'이용권 관리').props.onClick());
+ assert.deepEqual(changes,['subscription']);assert.equal(findButton(nav(),'이용권 관리').props['aria-current'],'page');
  assert.equal(body().findAllByProps({'aria-label':'회사 정보 본문'}).length,0);
  assert.equal(body().findByProps({'aria-label':'이용권 본문'}).children[0],'현재 이용권');
  await act(async()=>topbar().findByType('select').props.onChange({target:{value:'2'}}));
  assert.deepEqual(companies,['2']);assert.equal(r.root.findAllByType('select').length,1);
- await act(async()=>findButton(topbar(),'회사 정보').props.onClick());
+ await act(async()=>findButton(nav(),'회사 정보').props.onClick());
  assert.equal(body().findAllByProps({'aria-label':'이용권 본문'}).length,0);
  assert.equal(body().findAllByProps({'aria-label':'회사 정보 본문'}).length,1);
 });
@@ -246,13 +250,13 @@ test('phone menu opens the permitted company sections, reports, and account dest
  });
  const open=async label=>{await act(async()=>r.root.findByProps({'aria-label':label}).props.onClick());return r.root.findByType('aside');};
  let drawer=await open('전체 메뉴');
- await act(async()=>findButton(drawer,'사용자').props.onClick());
+ await act(async()=>findButton(drawer,'사용자 관리').props.onClick());
  assert.ok(!buttons(drawer).includes('변경 이력'));
  await act(async()=>findButton(drawer,'부서·직책').props.onClick());
  assert.deepEqual(changes,['staff']);assert.deepEqual(selections,[['staff','organization']]);
  assert.equal(r.root.findAllByType('aside').length,0);
  drawer=await open('전체 메뉴');
- await act(async()=>findButton(drawer,'운행').props.onClick());
+ await act(async()=>findButton(drawer,'운행일지').props.onClick());
  await act(async()=>findButton(drawer,'운행기록부').props.onClick());
  assert.equal(changes.at(-1),'report');
  drawer=await open('회사 및 계정 메뉴');
