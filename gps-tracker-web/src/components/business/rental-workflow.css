@@ -26,6 +26,7 @@
  .rental-workflow,.rental-detail{gap:12px}.rental-workflow-box{padding:13px}.rental-workflow-toolbar{align-items:flex-start}
  .rental-stage-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 0;padding:12px 0}.rental-stage-metrics>div{padding:0 13px}.rental-stage-metrics>div:nth-child(even){border:0}
  .rental-stage-metrics>div>span{font-size:13px}.rental-stage-metrics strong{font-size:21px}.rental-workflow-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .rental-workflow-filters > label:has(> input[type="search"]) { grid-column: 1 / -1; }
  .rental-workflow-desktop{display:none}.rental-workflow-mobile{display:grid;gap:8px}.rental-workflow-mobile>button{display:grid;gap:7px;text-align:start;min-width:0;padding:12px;border:1px solid var(--border,#e1e6eb);border-radius:8px;background:var(--surface,#fff);color:inherit;cursor:pointer;font:inherit;overflow-wrap:anywhere}
  .rental-workflow-mobile>button>span{font-size:13px;color:var(--text-2,#576579)}.rental-workflow-mobile>button>span:first-child{display:flex;align-items:center;justify-content:space-between;gap:8px}
  .rental-workflow-mobile small{font-size:13px}.rental-form-grid{grid-template-columns:minmax(0,1fr)}.rental-form-sections{gap:16px}

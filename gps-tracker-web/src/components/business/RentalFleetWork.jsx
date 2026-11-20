@@ -38,19 +38,21 @@ function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) 
   const title = incident ? '사고·고장 접수' : initial ? '작업 일정 수정' : '세차·정비 일정 등록';
   return <Modal open title={title} onClose={busy ? undefined : onClose} size="lg">
     <form className="rfl-form" onSubmit={save} aria-busy={busy}>
-      <label>차량<select required disabled={!!initial} value={form.device} onChange={e => change('device', e.target.value)}>
-        <option value="">차량 선택</option>{devices.map(d => <option key={d.id} value={d.id}>{rentalFleetLabel(d)}</option>)}
-      </select></label>
-      <label>작업 구분<select value={form.kind} onChange={e => change('kind', e.target.value)}>
-        {Object.entries(repairNames).filter(([key]) => isIncident(key) === incident).map(([key, label]) => <option value={key} key={key}>{label}</option>)}
-      </select></label>
-      {incident && <label className="rfl-wide">연결 계약<select value={form.contract} onChange={e => change('contract', e.target.value)}>
-        <option value="">계약 연결 안 함</option>{contracts.filter(c => sameId(c.device_id, form.device) && c.status !== 'cancelled').map(c => <option key={c.id} value={c.id}>#{c.id} · {c.renter_name} · {kstDateTime(c.starts_at)}</option>)}
-      </select></label>}
-      <label>{incident ? '발생 일시' : '시작 일시'}<input required type="datetime-local" value={form.from} onChange={e => change('from', e.target.value)} /></label>
-      {!incident && <label>종료 일시<input required type="datetime-local" value={form.to} onChange={e => change('to', e.target.value)} /></label>}
-      <label className="rfl-wide">{incident ? '접수 내용' : '작업 내용'}<textarea required={incident} maxLength={1000} value={form.note} onChange={e => change('note', e.target.value)} rows={3} /></label>
-      {error && <p role="alert" className="rfl-error rfl-wide">{error}</p>}
+      <div className="rfl-form-fields">
+        <label>차량<select required disabled={!!initial} value={form.device} onChange={e => change('device', e.target.value)}>
+          <option value="">차량 선택</option>{devices.map(d => <option key={d.id} value={d.id}>{rentalFleetLabel(d)}</option>)}
+        </select></label>
+        <label>작업 구분<select value={form.kind} onChange={e => change('kind', e.target.value)}>
+          {Object.entries(repairNames).filter(([key]) => isIncident(key) === incident).map(([key, label]) => <option value={key} key={key}>{label}</option>)}
+        </select></label>
+        {incident && <label className="rfl-wide">연결 계약<select value={form.contract} onChange={e => change('contract', e.target.value)}>
+          <option value="">계약 연결 안 함</option>{contracts.filter(c => sameId(c.device_id, form.device) && c.status !== 'cancelled').map(c => <option key={c.id} value={c.id}>#{c.id} · {c.renter_name} · {kstDateTime(c.starts_at)}</option>)}
+        </select></label>}
+        <label>{incident ? '발생 일시' : '시작 일시'}<input required type="datetime-local" value={form.from} onChange={e => change('from', e.target.value)} /></label>
+        {!incident && <label>종료 일시<input required type="datetime-local" value={form.to} onChange={e => change('to', e.target.value)} /></label>}
+        <label className="rfl-wide">{incident ? '접수 내용' : '작업 내용'}<textarea required={incident} maxLength={1000} value={form.note} onChange={e => change('note', e.target.value)} rows={3} /></label>
+        {error && <p role="alert" className="rfl-error rfl-wide">{error}</p>}
+      </div>
       <div className="rfl-form-actions rfl-wide"><BusinessButton disabled={busy} onClick={onClose}>닫기</BusinessButton><button type="submit" className="business-button is-primary" disabled={busy || !form.device}>{busy ? '저장 중…' : '저장'}</button></div>
     </form>
   </Modal>;
@@ -112,9 +114,11 @@ export default function RentalFleetWork({ incident, devices, contracts, work, no
     {edit && <WorkEditor devices={devices} contracts={contracts} incident={incident} initial={edit.id ? edit : null} onSave={saved} onClose={() => setEdit(null)} />}
     {closing && current && <Modal open title={action} onClose={busy ? undefined : () => setClosing(false)}>
       <form className="rfl-form" onSubmit={complete}>
-        <p className="rfl-wide">{names.get(current.device_id)} · {stage === 'review' ? '차량 점검을 완료하고 배차 보류를 해제합니다.' : kstDateTime(current.starts_at)}</p>
-        {incident && stage === 'open' && <label className="rfl-wide">처리 내용<textarea required maxLength={800} rows={3} value={note} onChange={e => setNote(e.target.value)} /></label>}
-        {error && <p role="alert" className="rfl-error rfl-wide">{error}</p>}
+        <div className="rfl-form-fields">
+          <p className="rfl-wide">{names.get(current.device_id)} · {stage === 'review' ? '차량 점검을 완료하고 배차 보류를 해제합니다.' : kstDateTime(current.starts_at)}</p>
+          {incident && stage === 'open' && <label className="rfl-wide">처리 내용<textarea required maxLength={800} rows={3} value={note} onChange={e => setNote(e.target.value)} /></label>}
+          {error && <p role="alert" className="rfl-error rfl-wide">{error}</p>}
+        </div>
         <div className="rfl-form-actions rfl-wide"><BusinessButton disabled={busy} onClick={() => setClosing(false)}>닫기</BusinessButton><button type="submit" className="business-button is-primary" disabled={busy}>{action}</button></div>
       </form>
     </Modal>}

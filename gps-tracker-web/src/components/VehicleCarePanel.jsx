@@ -55,31 +55,33 @@ export default function VehicleCarePanel({ device, onUpdated }) {
     } catch (e) { setStatus({ ok: false, text: e.message }); } finally { setBusy(false); }
   }
   return <form className="vehicle-care" onSubmit={save} aria-busy={busy}>
-    <p className="vehicle-care-hint">사진은 선택하면 바로 저장됩니다.</p>
-    <div className="vehicle-photo">
-      <div className="vehicle-photo-preview">
-        <CarImage deviceId={device.id} version={photo} alt="차량 대표 사진" fallback={<><Icon name="cam" size={26} /><span>대표 사진</span></>} />
+    <div className="vehicle-care-content">
+      <p className="vehicle-care-hint">사진은 선택하면 바로 저장됩니다.</p>
+      <div className="vehicle-photo">
+        <div className="vehicle-photo-preview">
+          <CarImage deviceId={device.id} version={photo} alt="차량 대표 사진" fallback={<><Icon name="cam" size={26} /><span>대표 사진</span></>} />
+        </div>
+        <div className="vehicle-photo-actions">
+          <Button variant="ghost" disabled={busy} onClick={() => picker.current?.click()} aria-describedby={helpId}>
+            <Icon name="upload" size={16} />{photo ? '사진 변경' : '사진 추가'}
+          </Button>
+          {photo && <Button variant="link" disabled={busy} onClick={removePhoto}>사진 해제</Button>}
+          <p id={helpId} className="vehicle-care-hint">JPG · PNG · WebP / 최대 5MB</p>
+          <input ref={picker} type="file" hidden accept="image/jpeg,image/png,image/webp" disabled={busy} aria-label="차량 대표 사진 선택"
+            onChange={e => { upload(e.target.files[0]); e.target.value = ''; }} />
+        </div>
       </div>
-      <div className="vehicle-photo-actions">
-        <Button variant="ghost" disabled={busy} onClick={() => picker.current?.click()} aria-describedby={helpId}>
-          <Icon name="upload" size={16} />{photo ? '사진 변경' : '사진 추가'}
-        </Button>
-        {photo && <Button variant="link" disabled={busy} onClick={removePhoto}>사진 해제</Button>}
-        <p id={helpId} className="vehicle-care-hint">JPG · PNG · WebP / 최대 5MB</p>
-        <input ref={picker} type="file" hidden accept="image/jpeg,image/png,image/webp" disabled={busy} aria-label="차량 대표 사진 선택"
-          onChange={e => { upload(e.target.files[0]); e.target.value = ''; }} />
-      </div>
+      {groups.map(group => <fieldset key={group.title} className="vehicle-care-group" disabled={busy}>
+        <legend>{group.title}</legend>
+        <div className="vehicle-care-fields">
+          {group.fields.map(([key, label, type, placeholder]) => <FormField key={key} label={label} hint={type === 'number' ? '차량의 누적 주행거리 기준 (km)' : undefined}>
+            <Input type={type} min={type === 'number' ? 0 : undefined} step={type === 'number' ? 1 : undefined}
+              maxLength={100} placeholder={placeholder} value={values[key]} inputMode={type === 'number' ? 'numeric' : undefined}
+              onChange={e => { setValues(v => ({ ...v, [key]: e.target.value })); setStatus(null); }} />
+          </FormField>)}
+        </div>
+      </fieldset>)}
     </div>
-    {groups.map(group => <fieldset key={group.title} className="vehicle-care-group" disabled={busy}>
-      <legend>{group.title}</legend>
-      <div className="vehicle-care-fields">
-        {group.fields.map(([key, label, type, placeholder]) => <FormField key={key} label={label} hint={type === 'number' ? '차량의 누적 주행거리 기준 (km)' : undefined}>
-          <Input type={type} min={type === 'number' ? 0 : undefined} step={type === 'number' ? 1 : undefined}
-            maxLength={100} placeholder={placeholder} value={values[key]} inputMode={type === 'number' ? 'numeric' : undefined}
-            onChange={e => { setValues(v => ({ ...v, [key]: e.target.value })); setStatus(null); }} />
-        </FormField>)}
-      </div>
-    </fieldset>)}
     <div className="vehicle-care-footer">
       <Button type="submit" busy={busy} full>{busy ? '처리 중…' : '차량 정보 저장'}</Button>
       {status && <p role={status.ok ? 'status' : 'alert'} className={'form-feedback ' + (status.ok ? 'success' : 'error')}>{status.text}</p>}
