@@ -3,6 +3,8 @@ pub mod admin_security;
 pub mod ai;
 pub mod arduino_shield;
 pub mod auth;
+pub mod cargo;
+pub mod cargo_team;
 pub mod chat;
 pub mod corporate;
 pub mod credits;
@@ -88,6 +90,8 @@ pub fn build_router(state: AppState) -> Router {
         .merge(rentcar::router())
         .merge(rentcar_office::router())
         .merge(rentcar_team::router())
+        .merge(cargo::router())
+        .merge(cargo_team::router())
         .merge(payments::router())
         .merge(phones::router())
         .merge(sim_requests::router_user())

@@ -933,6 +933,15 @@ export const api = {
     return req('GET', `/rentcar/contracts${qs ? '?' + qs : ''}`);
   },
   rentalOffice: (method, path, body) => req(method, '/rentcar/office' + path, body),
+  cargoWorkspace: () => req('GET','/cargo/workspace'),
+  saveCargoWorkspace: (revision,data) => req('PUT','/cargo/workspace',{revision,data}),
+  cargoTeam: (method,path,body) => req(method,'/cargo/team'+path,body),
+  uploadCargoProof: data => req('POST','/cargo/proof-images',{data}),
+  getCargoProofImage: async id => {
+    const r=await sessionFetch(`${BASE}/cargo/proof-images/${encodeURIComponent(id)}`);
+    if (!r.ok) throw Error('인수증 사진을 불러오지 못했습니다.');
+    return r.blob();
+  },
   rentalTeam: (method, path, body) => req(method, '/rentcar/team' + path, body),
   rentalOperatingPolicy: () => req('GET', '/rentcar/operating-policy'),
   saveRentalOperatingPolicy: body => req('PUT', '/rentcar/operating-policy', body),

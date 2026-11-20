@@ -1,172 +1,63 @@
-// (2026-07-28) 배달 계정 전용 대시보드 (Stage-2 shell).
-// CorporatePanel/RentcarPanel 과 동일 톤 — shared StatCard.
-//
-// 지금은 device 만 있으니:
-//  · 전체 차량      = devices.length
-//  · 배송 중        = last_event_kind === 'wake' 차량 수
-//  · 오늘 완료      = 0 (delivery_orders 없음)
-//  · 오늘 주행거리   = 병렬 listTrips 로 오늘 km
-// delivery_orders 도입 시 (Stage-3) 배송 건수/완료율 등 실 지표로 대체.
+import { useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../api';
+import { authScope } from '../authSession';
+import { freightMenu, freightPages } from '../lib/freightMenu';
+import RentalWorkspace from './business/RentalWorkspace';
+import RentalStaffDesk from './business/RentalStaffDesk';
+import RentalTeam from './business/RentalTeam';
+import FreightOffice from './business/FreightOffice';
+import FreightWorkflow from './business/FreightWorkflow';
+import FreightOverview from './business/FreightOverview';
+import FreightAlerts from './business/FreightAlerts';
+import FreightAdmin from './business/FreightAdmin';
+import FreightReports from './business/FreightReports';
+import FreightIncidents from './business/FreightIncidents';
+import { BusinessError } from './business/BusinessWorkspace';
 
-import React, { useMemo, useState } from 'react';
-import Icon from './Icon';
-import { StatCard, StatCardGrid } from './shared/StatCard';
-import { useFleetStats } from './shared/useFleetStats';
-import { panelPropsEqual } from './shared/memoPanel';
+const workflows = new Set(['cargo-orders','cargo-recurring','cargo-dispatch','cargo-schedule','cargo-shipments','cargo-proofs']);
+const office = new Set(['cargo-vehicles','cargo-drivers','cargo-maintenance','cargo-devices','cargo-shippers','cargo-carriers','cargo-locations','cargo-rates','cargo-billing','cargo-payables','cargo-charges']);
+const reports = new Set(['cargo-reports','cargo-utilization','cargo-profit']);
 
-function DeliveryPanel({ devices }) {
-  const [tab, setTab] = useState(() => localStorage.getItem('delivery_tab') || 'today');
-  const setTabPersist = (t) => { setTab(t); try { localStorage.setItem('delivery_tab', t); } catch {} };
-
-  const tabs = [
-    { id: 'today',   label: '오늘 배송', icon: 'mapPin' },
-    { id: 'route',   label: '경로 이력', icon: 'route' },
-    { id: 'perf',    label: '성과',     icon: 'bar' },
-  ];
-
-  return (
-    <div style={st.wrap}>
-      <div style={st.tabBar}>
-        {tabs.map(t => {
-          const on = tab === t.id;
-          return (
-            <button key={t.id} onClick={() => setTabPersist(t.id)}
-              style={{
-                ...st.tabBtn,
-                color: on ? 'var(--primary)' : 'var(--text-2)',
-                background: on ? 'var(--surface-2)' : 'transparent',
-                fontWeight: on ? 700 : 500,
-                borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
-              }}>
-              <Icon name={t.icon} size={14} />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={st.body}>
-        {tab === 'today' && <TodayTab devices={devices} />}
-        {tab === 'route' && <PlaceholderTab title="경로 이력"
-          hint="배송 경로 재생을 준비 중입니다." />}
-        {tab === 'perf'  && <PlaceholderTab title="배송 성과"
-          hint="배송 건수·완료율·평균 배송 시간 리포트를 준비 중입니다." />}
-      </div>
-    </div>
-  );
+function OwnerWorkspace({page,onPage,devices,onMap,onNavigate,destinations,onRegisterDevice}) {
+  const qc=useQueryClient(), key=['cargo-workspace',authScope()], lock=useRef(false);
+  const [epoch,reset]=useState(0), [message,setMessage]=useState('');
+  const q=useQuery({queryKey:key,queryFn:api.cargoWorkspace,staleTime:0,refetchOnWindowFocus:false,refetchOnReconnect:false,refetchInterval:(!page||page==='cargo-live'||page==='cargo-dashboard')?30000:false,retry:false});
+  const snapshot=q.data;
+  async function save(next){
+    if(lock.current) throw Error('이전 변경을 저장하고 있습니다.');
+    if(qc.getQueryData(key)?.revision!==snapshot.revision) throw Error('자료가 변경되었습니다. 화면을 다시 열어 주세요.');
+    lock.current=true;
+    try {
+      const {revision}=await api.saveCargoWorkspace(snapshot.revision,next);
+      qc.setQueryData(key,{revision,data:next});setMessage('');
+      if(page==='organization') await qc.invalidateQueries({queryKey:['cargo-team',authScope()]});
+    } catch(e) {
+      if(e.status===409){
+        const fresh=await api.cargoWorkspace();
+        if(fresh.revision!==snapshot.revision){
+          qc.setQueryData(key,fresh);reset(n=>n+1);
+          setMessage('다른 화면에서 먼저 저장해 최신 자료를 불러왔습니다. 변경할 내용을 다시 확인해 주세요.');
+        }
+      }
+      throw e;
+    } finally {lock.current=false;}
+  }
+  const id=freightPages.has(page)?page:'cargo-dashboard', props={page:id,data:snapshot?.data,save,onPage,devices,onMap,onRegisterDevice};
+  let body;
+  if(q.isPending) body=<p role="status">화물배차 정보를 불러오는 중…</p>;
+  else if(q.error) body=<BusinessError onRetry={q.refetch}>화물배차 정보를 불러올 수 없습니다.</BusinessError>;
+  else if(workflows.has(id)) body=<FreightWorkflow {...props}/>;
+  else if(office.has(id)) body=<FreightOffice {...props}/>;
+  else if(reports.has(id)) body=<FreightReports {...props}/>;
+  else if(id==='cargo-incidents') body=<FreightIncidents {...props}/>;
+  else if(id==='cargo-dashboard'||id==='cargo-live') body=<FreightOverview {...props}/>;
+  else if(id==='users'||id==='permissions') body=<RentalTeam cargo page={id==='users'?'staff':'groups'} onTab={p=>onPage(({branches:'organization',groups:'permissions',staff:'users'})[p])}/>;
+  else body=<FreightAdmin {...props}/>;
+  return <RentalWorkspace page={id} onTab={onPage} menu={freightMenu} headerAction={snapshot&&<FreightAlerts data={snapshot.data} devices={devices} onPage={onPage}/>} heading="화물배차" serviceLabel="화물배차" widthKey="cargo.area.width" devices={devices} onSearchDevice={d=>onMap(d.id)} onNavigate={onNavigate} destinations={destinations}>
+    {message&&<p role="alert" className="fr-note">{message}</p>}<div key={id+'-'+epoch}>{body}</div>
+  </RentalWorkspace>;
 }
-
-// (F3) devices lat/lng 만 변경 시 재렌더 skip.
-export default React.memo(DeliveryPanel, panelPropsEqual);
-
-function TodayTab({ devices }) {
-  const s = useFleetStats(devices);
-  const fmt = (n) => (n == null ? '–' : n.toLocaleString());
-
-  return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <StatCardGrid>
-        <StatCard icon="list"   label="전체 차량"     value={fmt(s.totalCount)}  unit="대"  tone="default" loading={s.loading} />
-        <StatCard icon="route"  label="배송 중"       value={fmt(s.activeCount)} unit="대"  tone="success" loading={s.loading} />
-        <StatCard icon="mapPin" label="오늘 주행"     value={fmt(s.todayKm)}     unit="km"  tone="primary" loading={s.loading} />
-        <StatCard icon="bar"    label="이번달 주행"   value={fmt(s.monthKm)}     unit="km"  tone="default" loading={s.loading}
-          hint="배송 건수/완료율은 준비 중" />
-      </StatCardGrid>
-
-      <ActiveList devices={devices} />
-    </div>
-  );
+export default function DeliveryPanel(props) {
+  return props.page==='staff-desk'?<RentalStaffDesk cargo onHome={()=>props.onNavigate('home')}/>:<OwnerWorkspace {...props}/>;
 }
-
-// 배송 중인 차량 우선 위 + 위치 요약.
-function ActiveList({ devices }) {
-  const rows = useMemo(() => (devices || []).map(d => ({
-    id: d.id,
-    label: d.display_name || d.device_uid,
-    active: d.last_event_kind === 'wake',
-    lastFixAt: d.last_fix_at,
-  })).sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0)), [devices]);
-
-  if (!rows.length) return <div style={st.muted}>차량이 없습니다.</div>;
-
-  return (
-    <div style={st.card}>
-      <div style={st.cardTitle}>배송 차량</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {rows.map(r => (
-          <div key={r.id} style={st.vehicleRow}>
-            <div style={{
-              ...st.vehicleIcon,
-              background: r.active
-                ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
-                : 'var(--surface)',
-              color: r.active ? 'var(--accent)' : 'var(--text-3)',
-            }}>
-              <Icon name={r.active ? 'route' : 'clock'} size={16} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div title={r.label} style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-                {r.lastFixAt ? formatAge(r.lastFixAt) : '위치 미확인'}
-              </div>
-            </div>
-            <span style={{
-              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
-              padding: '4px 10px', borderRadius: 999,
-              color: r.active ? 'var(--accent)' : 'var(--text-3)',
-              background: r.active
-                ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
-                : 'var(--surface-2)',
-            }}>
-              {r.active ? '배송 중' : '대기'}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function formatAge(iso) {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 60_000) return '방금';
-  const min = Math.floor(ms / 60_000);
-  if (min < 60) return `${min}분 전`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  const d = Math.floor(hr / 24);
-  return `${d}일 전`;
-}
-
-function PlaceholderTab({ title, hint }) {
-  return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', textAlign: 'center' }}>
-      <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface-2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)' }}>
-        <Icon name="clock" size={22} />
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{title}</div>
-      <div style={{ fontSize: 12, color: 'var(--text-2)', maxWidth: 360, lineHeight: 1.6 }}>{hint}</div>
-    </div>
-  );
-}
-
-const st = {
-  wrap:    { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 },
-  tabBar:  { display: 'flex', gap: 4, padding: '8px 12px 0', borderBottom: '1px solid var(--border)', overflowX: 'auto', flexShrink: 0 },
-  tabBtn:  { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap', transition: 'all .15s' },
-  body:    { flex: 1, overflowY: 'auto' },
-  card:    { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 16 },
-  cardTitle: { fontSize: 13, fontWeight: 700, marginBottom: 12, color: 'var(--text)' },
-  muted:   { padding: 16, color: 'var(--text-3)', fontSize: 13 },
-  vehicleRow: {
-    display: 'flex', alignItems: 'center', gap: 12,
-    padding: '10px 12px',
-    borderRadius: 10, background: 'var(--surface-2)',
-  },
-  vehicleIcon: {
-    width: 32, height: 32, borderRadius: 8,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-};

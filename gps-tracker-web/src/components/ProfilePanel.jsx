@@ -310,7 +310,7 @@ const TYPE_META = {
   unspecified:     { label: '기본 차량 관리', icon: 'mapPin', desc: '개인 차량의 위치와 단말기 상태를 확인해요.', menus: '홈 지도 · 단말기 · 내정보' },
   rentcar:         { label: '렌트카 운영', icon: 'route', desc: '대여 계약, 출고·반납, 임차인과 계약 사진을 관리해요.', menus: '운영 현황 · 계약 관리 · 배차·반납 일정 · 임차인' },
   corporate_fleet: { label: '법인차 운영', icon: 'list', desc: '차량·사용자·지점과 운행기록·지출을 관리해요.', menus: '운영 현황 · 차량 · 사용자 · 지점 · 운행 · 지출' },
-  delivery:        { label: '배달 운영', icon: 'mapPin', desc: '차량의 운행 현황을 확인해요. 배차·성과 기능은 준비 중이에요.', menus: '오늘 배송 · 경로·성과(준비 중)' },
+  delivery:        { label: '화물배차', icon: 'mapPin', desc: '운송 주문을 접수하고 차량과 기사를 배차합니다.', menus: '운송 주문 · 배차 · 인수증 · 운임 정산' },
 };
 
 // ─── 휴대폰 (다중 번호 + OTP 인증) ─────────────────────

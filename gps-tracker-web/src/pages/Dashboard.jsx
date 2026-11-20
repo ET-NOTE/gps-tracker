@@ -79,7 +79,7 @@ function isAnyDeviceInsideFence(fence, devices) {
 //   /profile*               → 'profile'
 // Supported dashboard paths are resolved exactly by dashboardRoutes.
 function viewToPath(v) {
-  return v === 'home' ? '/' : `/${v}`;
+  return v === 'home' ? '/' : v === 'delivery' ? '/cargo' : `/${v}`;
 }
 // (F6-a-3) 다음 helpers 는 lib/deviceLoader.js 로 이동:
 //   calcSpeedKmh · computeHomeSinceISO · POLYLINE_GAP_THRESHOLD_S · computeGapMap ·
@@ -96,6 +96,8 @@ export default function Dashboard({ onLogout }) {
   // location key; a new visit to /corporate or / starts with its own state.
   const sessionId = activeStorage()?.getItem('auth_session');
   const mapVisit = location.state?.corporateVehicleMap;
+  const cargoOrigin=location.state?.cargoMap;
+  const canReturnCargo=view==='home' && sessionId && cargoOrigin?.sessionId===sessionId;
   const mapOrigin = sessionId && mapVisit?.sessionId === sessionId ? mapVisit : null;
   const [pendingMapReturn, setPendingMapReturn] = useState(mapOrigin);
   useEffect(() => {
@@ -187,7 +189,8 @@ export default function Dashboard({ onLogout }) {
   const rentalMemberships=useQuery({queryKey:['rental-memberships',authScope()],queryFn:()=>api.rentalTeam('GET','/memberships'),enabled:!!me,staleTime:60000});
   const staffEntry = view==='rentcar'&&new URLSearchParams(location.search).get('page')==='staff-desk';
   const isRentcar = rentalOwner || !!rentalMemberships.data?.length;
-  const isDelivery  = accountType === 'delivery';
+  const isDelivery = accountType === 'delivery';
+  const cargoStaffEntry = view === 'delivery' && new URLSearchParams(location.search).get('page') === 'staff-desk';
 
   // ── 사용자 UI 환경설정 (계정 귀속) ────────────────────────
   // prefs.filter_device_id — 다른 PC 에서 로그인해도 마지막 선택 단말기 복원
@@ -793,7 +796,7 @@ export default function Dashboard({ onLogout }) {
   const accessQuery = view === 'admin' ? meQuery : view==='corporate'&&accountType!=='corporate_fleet'?memberships:view==='rentcar'&&!rentalOwner&&!staffEntry&&accountQuery.isSuccess?rentalMemberships:accountQuery;
   const routeProblem = !view ? 'missing' : specialized
     ? accessQuery.isPending ? 'loading' : accessQuery.isError ? 'error'
-      : !(view==='corporate'&&isCorporate)&&!(view==='rentcar'&&(isRentcar||staffEntry))&&!routeAccess(view, me, accountType) ? 'denied' : null
+      : !(view==='corporate'&&isCorporate)&&!(view==='rentcar'&&(isRentcar||staffEntry))&&!cargoStaffEntry&&!routeAccess(view, me, accountType) ? 'denied' : null
     : null;
   const mapVisible = !routeProblem && (isDesktop || view === 'home');
 
@@ -946,7 +949,7 @@ export default function Dashboard({ onLogout }) {
       </div>}
 
       {/* 데스크톱 좌측 사이드 레일 */}
-      {isDesktop && !(view === 'rentcar' && isRentcar) && <SideRail active={view} onChange={navigateDashboard} isAdmin={isAdmin}
+      {isDesktop && !(view === 'rentcar' && isRentcar) && !(view === 'delivery' && (isDelivery || cargoStaffEntry)) && <SideRail active={view} onChange={navigateDashboard} isAdmin={isAdmin}
         isCorporate={isCorporate} isRentcar={isRentcar} isDelivery={isDelivery} />}
 
       <main style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
@@ -993,10 +996,13 @@ export default function Dashboard({ onLogout }) {
         )}
 
         {/* 배송 본문 — 풀-화면. */}
-        {!routeProblem && view === 'delivery' && isDelivery && (
+        {!routeProblem && view === 'delivery' && (isDelivery || cargoStaffEntry) && (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <Suspense fallback={<LazyPanelFallback />}>
-              <DeliveryPanel devices={devices} />
+              <DeliveryPanel devices={devices} page={new URLSearchParams(location.search).get('page')}
+                onPage={page=>navigate({pathname:'/cargo',search:page==='cargo-dashboard'?'':'?page='+encodeURIComponent(page)})}
+                destinations={sideRailItems({isAdmin,isCorporate,isRentcar,isDelivery}).filter(item=>item.id!=='delivery')}
+                onRegisterDevice={()=>navigate('/devices/pair')} onNavigate={setView} onMap={id=>{persistFilterDevice(id ?? null);navigate('/',{state:{cargoMap:{sessionId,actor:me?.id,search:location.search}}});}} />
             </Suspense>
           </div>
         )}
@@ -1021,6 +1027,7 @@ export default function Dashboard({ onLogout }) {
           flex: 1, position: 'relative', minWidth: 0,
           display: (routeProblem || specialized) ? 'none' : 'flex', flexDirection: 'column',
         }}>
+          {canReturnCargo&&isDelivery&&cargoOrigin.actor===me?.id&&<nav className="map-vehicle-return-bar" aria-label="화물 지도 탐색"><button type="button" className="map-return-vehicle" onClick={()=>navigate({pathname:"/cargo",search:cargoOrigin.search},{replace:true})}><Icon name="chevron-left" size={16}/>화물배차로 돌아가기</button></nav>}
           {returnToVehicle && <nav className="map-vehicle-return-bar" aria-label="차량 지도 탐색"><button type="button" className="map-return-vehicle" onClick={returnToVehicle}><Icon name="chevron-left" size={16}/>차량 상세로 돌아가기</button></nav>}
           <div style={{ position: 'relative', flex: 1, minHeight: 0, visibility: mapVisible ? 'visible' : 'hidden' }}>
             <KakaoMap ref={mapRef} onReady={handleMapReady}
@@ -1167,7 +1174,7 @@ export default function Dashboard({ onLogout }) {
       </main>
 
       {/* 모바일/태블릿 바텀 네비 */}
-      {!isDesktop && !(view === 'corporate' && isCorporate) && !(view === 'rentcar' && isRentcar) && <BottomNav active={view} onChange={navigateDashboard} isAdmin={isAdmin}
+      {!isDesktop && !(view === 'corporate' && isCorporate) && !(view === 'rentcar' && isRentcar) && !(view === 'delivery' && (isDelivery || cargoStaffEntry)) && <BottomNav active={view} onChange={navigateDashboard} isAdmin={isAdmin}
         isCorporate={isCorporate} isRentcar={isRentcar} isDelivery={isDelivery} />}
 
       {/* 로드뷰 모달 — 호출 측이 probeRoadview() 로 panoId 확보 후에만 마운트 */}

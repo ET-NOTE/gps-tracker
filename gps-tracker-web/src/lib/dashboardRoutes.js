@@ -1,7 +1,7 @@
 const views = {
   '/': 'home', '/devices': 'devices', '/devices/pair': 'devices',
   '/profile': 'profile', '/admin': 'admin', '/corporate': 'corporate',
-  '/rentcar': 'rentcar', '/delivery': 'delivery',
+  '/rentcar': 'rentcar', '/delivery': 'delivery', '/cargo': 'delivery',
 };
 
 export function dashboardView(pathname) {

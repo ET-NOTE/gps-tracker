@@ -1,4 +1,20 @@
 {
+  "cargo.rs GET /cargo/workspace": {
+    "class": "non_location",
+    "reason": "Owner-scoped dispatch schedules, manually entered stops and accounting. No device telemetry."
+  },
+  "cargo.rs PUT /cargo/workspace": {
+    "class": "non_location",
+    "reason": "Version-checked owner-scoped dispatch mutation acknowledgement."
+  },
+  "cargo.rs POST /cargo/proof-images": {
+    "class": "non_location",
+    "reason": "Owner-scoped document upload acknowledgement."
+  },
+  "cargo.rs GET /cargo/proof-images/:id": {
+    "class": "non_location",
+    "reason": "Owner-supplied delivery receipt image, with no location-record lookup."
+  },
   "admin.rs GET /admin/devices": {
     "class": "ledger",
     "reason": "Location or derived record response; durable intent before handler."
@@ -1486,5 +1502,49 @@
   "workflow.rs PUT /rentcar/operating-policy": {
     "class": "non_location",
     "reason": "Rental policy, contractual handover, confirmation or settlement amounts. No telemetry or coordinates."
+  },
+  "cargo_team.rs GET /cargo/team/config": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs PUT /cargo/team/company": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs POST /cargo/team/groups": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs PUT /cargo/team/groups/:id": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs POST /cargo/team/staff": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs PUT /cargo/team/staff/:id": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs POST /cargo/team/staff/:id/invite": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs POST /cargo/team/join": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs GET /cargo/team/memberships": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs GET /cargo/team/desk/:owner": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "cargo_team.rs POST /cargo/team/desk/:owner/:shipment/notes": {
+    "class": "non_location",
+    "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
   }
 }
