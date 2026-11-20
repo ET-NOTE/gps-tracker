@@ -11,7 +11,9 @@ export function rentalSummary(contracts, devices, now = Date.now()) {
   const period = businessPeriod(now), month = period.day.slice(0, 7);
   const open = contracts.filter(c => ['active', 'overdue'].includes(rentalStatus(c, now)));
   const overdue = open.filter(c => rentalStatus(c, now) === 'overdue');
-  const occupied = new Set(open.filter(c => rentalStatus(c, now) === 'overdue' || new Date(c.starts_at).getTime() <= now).map(c => String(c.device_id)).filter(id => devices.some(d => String(d.id) === id)));
+  const occupied = new Set(open.filter(c => rentalStatus(c, now) === 'overdue'
+    || new Date(c.rental_terms?.checkout_at || c.starts_at).getTime() <= now)
+    .map(c => String(c.device_id)).filter(id => devices.some(d => String(d.id) === id)));
   // A draft is a request, not a dispatched vehicle. Disabled vehicles cannot be offered.
   const available = devices.filter(d => d.enabled !== false && !occupied.has(String(d.id)));
   const todayReturns = open.filter(c => businessDate(c.ends_at) === period.day);

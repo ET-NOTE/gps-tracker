@@ -18,6 +18,21 @@ import './business.css';
 const VehicleContext = createContext(null);
 const SelectionContext = createContext(null);
 export const useBusinessVehicle = () => useContext(VehicleContext);
+export function RentalVehicleScope({devices, meta, onMap, onVehicleAction, onManageVehicle, children}) {
+  const [focusedId, setFocusedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const selected = devices.find(d => String(d.id) === String(selectedId));
+  function openVehicle(device) {
+    setFocusedId(device.id);
+    setSelectedId(device.id);
+  }
+  return <SelectionContext.Provider value={{ focusedId, focusVehicle: d => setFocusedId(d.id), kind: 'rentcar' }}>
+    <VehicleContext.Provider value={openVehicle}>{children}
+      {selected && <BusinessVehicleDetail key={selected.id} device={selected} meta={meta?.[selected.id]} kind="rentcar"
+        onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle}/>}
+    </VehicleContext.Provider>
+  </SelectionContext.Provider>;
+}
 export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail, title, description, tabs, groups, tab, section, sections, onSection, onTab, action, mobileAction, toolbar, globalNavigation, children, devices = [], vehicleStatus='ready', kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
   const workspaceRef = useRef(null);
   const phone = useCorporatePhone('navigation');

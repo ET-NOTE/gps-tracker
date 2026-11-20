@@ -26,7 +26,8 @@ export function computeSettlementPreview(c, { returnOdometerKm, extraFeeKrw, ext
   const hourly = c.rate_type === 'hourly' ? rate
     : c.rate_type === 'monthly' ? Math.floor(rate / 720)
     : Math.floor(rate / 24);
-  const lateFee = lateHours > 0 ? Math.round(lateHours * hourly * 1.5) : 0;
+  const fixedRate = c.rental_terms?.late_hourly;
+  const lateFee = fixedRate != null ? lateHours * fixedRate : lateHours > 0 ? Math.round(lateHours * hourly * 1.5) : 0;
 
   const extra = Number(extraFeeKrw) || 0;
   const lines = [
@@ -38,7 +39,7 @@ export function computeSettlementPreview(c, { returnOdometerKm, extraFeeKrw, ext
   }
   if (lateHours > 0 && lateFee > 0) {
     lines.push({ kind: 'late',
-      label: `지연 반납 (${lateHours}시간 × ${hourly.toLocaleString()}원 × 1.5배)`, amount: lateFee });
+      label: fixedRate != null ? `지연 반납 (${lateHours}시간 × ${fixedRate.toLocaleString()}원)` : `지연 반납 (${lateHours}시간 × ${hourly.toLocaleString()}원 × 1.5배)`, amount: lateFee });
   }
   if (extra !== 0) {
     lines.push({ kind: 'extra', label: extraLabel, amount: extra });
@@ -49,10 +50,11 @@ export function computeSettlementPreview(c, { returnOdometerKm, extraFeeKrw, ext
 }
 
 export function validateReturn(contract, form, now = Date.now()) {
-  const at = Date.parse(form.returnedAt), start = Date.parse(contract.starts_at);
+  const at = Date.parse(form.returnedAt);
+  const start = contract.rental_terms?.checkout_at ? Math.floor(Date.parse(contract.rental_terms.checkout_at)/60000)*60000 : Date.parse(contract.starts_at);
   let information = '', charges = '';
   if (!Number.isFinite(at)) information = '실제 반납 시각을 입력해 주세요.';
-  else if (at < start) information = '반납 시각은 계약 시작보다 빠를 수 없습니다.';
+  else if (at < start) information = contract.rental_terms?.checkout_at ? '반납 시각은 실제 인도보다 빠를 수 없습니다.' : '반납 시각은 계약 시작보다 빠를 수 없습니다.';
   else if (at > now + 5 * 60000) information = '미래 시각으로 반납할 수 없습니다. 실제 반납 시각을 확인해 주세요.';
   const odometer = Number(form.odometer);
   if (form.odometer !== '' && (!Number.isInteger(odometer) || odometer < 0 || odometer > 2147483647)) information ||= '오도미터는 0 이상의 정수 km로 입력해 주세요.';

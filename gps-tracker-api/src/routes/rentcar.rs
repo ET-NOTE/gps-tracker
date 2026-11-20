@@ -8,6 +8,9 @@
 //   POST   /rentcar/contracts/:id/return                    반납 처리 (정산 자동)
 //   DELETE /rentcar/contracts/:id                           delete
 
+mod workflow;
+mod fleet_work;
+
 use axum::{
     extract::{DefaultBodyLimit, Path, Query, State},
     http::{header, HeaderMap, HeaderValue, StatusCode},
@@ -40,6 +43,8 @@ fn rentcar_sub_price() -> i64 {
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .merge(workflow::router())
+        .merge(fleet_work::router())
         .route(
             "/rentcar/contracts",
             get(list_contracts).post(create_contract),
@@ -178,7 +183,8 @@ async fn buy_subscription(
 pub struct Contract {
     pub id: i64,
     pub user_id: i64,
-    pub device_id: i64,
+    pub device_id: Option<i64>,
+    pub rental_terms: Option<Value>,
     pub device_name: Option<String>,
     pub license_plate: Option<String>,
     pub renter_name: String,
@@ -223,7 +229,8 @@ pub struct ContractQuery {
 
 #[derive(Debug, Deserialize)]
 pub struct ContractPayload {
-    pub device_id: i64,
+    pub device_id: Option<i64>,
+    pub rental_terms: Option<workflow::BookingTerms>,
     pub renter_name: String,
     pub renter_phone: Option<String>,
     pub renter_id_last4: Option<String>,
@@ -243,6 +250,7 @@ pub struct ContractPayload {
 
 #[derive(Debug, Deserialize)]
 pub struct ReturnPayload {
+    pub fuel_percent: Option<i32>,
     pub return_odometer_km: Option<i32>,
     pub return_location: Option<String>,
     pub extra_fee_krw: Option<i64>,
@@ -305,24 +313,31 @@ async fn check_contract_overlap(
     ends_at: DateTime<Utc>,
     exclude_id: Option<i64>,
 ) -> AppResult<()> {
+    let buffer_minutes:i32=sqlx::query_scalar("SELECT COALESCE((SELECT buffer_minutes FROM rental_operating_policies WHERE user_id=$1),0)")
+        .bind(user_id).fetch_one(&mut **tx).await?;
+    let prepared_until=ends_at.checked_add_signed(chrono::Duration::minutes(i64::from(buffer_minutes)))
+        .ok_or_else(||AppError::BadRequest("예약 종료 시각을 확인해 주세요.".into()))?;
+    fleet_work::assert_available(tx, user_id, device_id, starts_at, prepared_until).await?;
     let hit: Option<i64> = sqlx::query_scalar(
         r#"SELECT id FROM rental_contracts
             WHERE user_id = $1 AND device_id = $2
-              AND status IN ('active','overdue')
+              AND (status IN ('active','overdue') OR (status = 'draft' AND rental_terms IS NOT NULL))
               AND ($5::bigint IS NULL OR id <> $5)
-              AND starts_at < $4 AND ends_at > $3
+              AND ((status IN ('active','overdue') AND ends_at<=now()) OR
+                   (starts_at < $4::timestamptz AND ends_at + make_interval(mins => $6) > $3))
             LIMIT 1"#,
     )
     .bind(user_id)
     .bind(device_id)
     .bind(starts_at)
-    .bind(ends_at)
+    .bind(prepared_until)
     .bind(exclude_id)
+    .bind(buffer_minutes)
     .fetch_optional(&mut **tx)
     .await?;
     if let Some(eid) = hit {
         return Err(AppError::Conflict(format!(
-            "이 차량의 해당 기간에 겹치는 활성 계약이 있습니다 (id={eid})"
+            "예약 또는 준비 시간이 기존 대여 일정과 겹칩니다 (id={eid})"
         )));
     }
     Ok(())
@@ -434,14 +449,16 @@ async fn create_contract(
     if req.renter_name.trim().is_empty() {
         return Err(AppError::BadRequest("renter_name required".into()));
     }
-    verify_device_owner(&state, user.user_id, req.device_id).await?;
-    let rate_type = req.rate_type.unwrap_or_else(|| "daily".into());
+    if let Some(device_id) = req.device_id {
+        verify_device_owner(&state, user.user_id, device_id).await?;
+    }
+    let rate_type = req.rate_type.clone().unwrap_or_else(|| "daily".into());
     if !matches!(rate_type.as_str(), "hourly" | "daily" | "monthly") {
         return Err(AppError::BadRequest(format!(
             "invalid rate_type: {rate_type}"
         )));
     }
-    let status = req.status.unwrap_or_else(|| "draft".into());
+    let status = req.status.clone().unwrap_or_else(|| "draft".into());
     if !matches!(
         status.as_str(),
         "draft" | "active" | "returned" | "overdue" | "cancelled"
@@ -450,18 +467,7 @@ async fn create_contract(
     }
     // [뿌리 A] device 락 하에 겹침 검사 + INSERT 원자화 (동시 생성 double-booking 차단)
     let mut tx = state.db.begin().await?;
-    lock_device_rental(&mut tx, req.device_id).await?;
-    if matches!(status.as_str(), "active" | "overdue") {
-        check_contract_overlap(
-            &mut tx,
-            user.user_id,
-            req.device_id,
-            req.starts_at,
-            req.ends_at,
-            None,
-        )
-        .await?;
-    }
+    let terms = workflow::prepare_booking(&mut tx, user.user_id, &req, None, &status).await?;
     let row: Contract = sqlx::query_as(SQL_INSERT)
         .bind(user.user_id)
         .bind(req.device_id)
@@ -480,6 +486,7 @@ async fn create_contract(
         .bind(req.return_location.as_deref())
         .bind(&status)
         .bind(req.note.as_deref())
+        .bind(terms)
         .fetch_one(&mut *tx)
         .await?;
     tx.commit().await?;
@@ -501,15 +508,17 @@ async fn update_contract(
     // update_contract 에선 누락. 결과: 자기 계약을 PATCH 하여 device_id 를 임의 타인 device 로
     // 교체 가능 → handoff_view (인증 없음) 로 그 device 의 display_name/license_plate 노출
     // → device_id enumeration 으로 차량정보 leak. 여기서도 소유권 검증.
-    verify_device_owner(&state, user.user_id, req.device_id).await?;
-    let rate_type = req.rate_type.unwrap_or_else(|| "daily".into());
+    if let Some(device_id) = req.device_id {
+        verify_device_owner(&state, user.user_id, device_id).await?;
+    }
+    let rate_type = req.rate_type.clone().unwrap_or_else(|| "daily".into());
     // [뿌리 A 2026-08-14] create 와 동일 값 검증 이식 — 미검증 시 DB CHECK 위반이 400 대신 500.
     if !matches!(rate_type.as_str(), "hourly" | "daily" | "monthly") {
         return Err(AppError::BadRequest(format!(
             "invalid rate_type: {rate_type}"
         )));
     }
-    let status = req.status.unwrap_or_else(|| "draft".into());
+    let status = req.status.clone().unwrap_or_else(|| "draft".into());
     if !matches!(
         status.as_str(),
         "draft" | "active" | "returned" | "overdue" | "cancelled"
@@ -518,18 +527,7 @@ async fn update_contract(
     }
     // [뿌리 A] device 락 하에 겹침 검사(자기 자신 제외) + UPDATE 원자화
     let mut tx = state.db.begin().await?;
-    lock_device_rental(&mut tx, req.device_id).await?;
-    if matches!(status.as_str(), "active" | "overdue") {
-        check_contract_overlap(
-            &mut tx,
-            user.user_id,
-            req.device_id,
-            req.starts_at,
-            req.ends_at,
-            Some(id),
-        )
-        .await?;
-    }
+    let terms = workflow::prepare_booking(&mut tx, user.user_id, &req, Some(id), &status).await?;
     let row: Option<Contract> = sqlx::query_as(SQL_UPDATE)
         .bind(id)
         .bind(user.user_id)
@@ -549,6 +547,7 @@ async fn update_contract(
         .bind(req.return_location.as_deref())
         .bind(&status)
         .bind(req.note.as_deref())
+        .bind(terms)
         .fetch_optional(&mut *tx)
         .await?;
     let row = row.ok_or(AppError::NotFound)?;
@@ -565,6 +564,9 @@ async fn return_contract(
     #[derive(FromRow)]
     struct Cur {
         status: String,
+        device_id: Option<i64>,
+        return_location: Option<String>,
+        rental_terms: Option<Value>,
         rate_type: String,
         rate_amount_krw: i64,
         starts_at: DateTime<Utc>,
@@ -574,14 +576,16 @@ async fn return_contract(
         pickup_odometer_km: Option<i32>,
         deposit_krw: i64,
     }
+    let mut tx = state.db.begin().await?;
+    workflow::owner_lock(&mut tx,user.user_id).await?;
     let cur: Option<Cur> = sqlx::query_as(
-        r#"SELECT status, rate_type, rate_amount_krw, starts_at, ends_at,
+        r#"SELECT status, device_id, return_location, rental_terms, rate_type, rate_amount_krw, starts_at, ends_at,
                   included_km_per_day, over_km_price_krw, pickup_odometer_km, deposit_krw
-             FROM rental_contracts WHERE id = $1 AND user_id = $2"#,
+             FROM rental_contracts WHERE id = $1 AND user_id = $2 FOR UPDATE"#,
     )
     .bind(id)
     .bind(user.user_id)
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await?;
     let cur = cur.ok_or(AppError::NotFound)?;
     // [뿌리 A 2026-08-14] status 가드 — 취소·이미반납·draft 계약 반납 재처리 차단
@@ -593,93 +597,33 @@ async fn return_contract(
         )));
     }
 
-    // ── 1. 기본 요금 (계약 기간 × unit rate) ─────────────────────────
-    let dur = cur.ends_at - cur.starts_at;
-    let (units_raw, unit_label) = match cur.rate_type.as_str() {
-        "hourly" => ((dur.num_minutes() as f64 / 60.0).ceil() as i64, "시간"),
-        "monthly" => ((dur.num_days() as f64 / 30.0).ceil() as i64, "개월"),
-        _ => ((dur.num_hours() as f64 / 24.0).ceil() as i64, "일"),
-    };
-    let units = units_raw.max(1);
-    let base_fee = cur.rate_amount_krw * units;
-
-    // ── 2. 초과 주행 요금 ────────────────────────────────────────────
-    let mut over_km_val: i32 = 0;
-    let mut over_km_fee: i64 = 0;
-    if let (Some(ret_od), Some(pick_od), Some(included_per_day), Some(over_price)) = (
-        req.return_odometer_km,
-        cur.pickup_odometer_km,
-        cur.included_km_per_day,
-        cur.over_km_price_krw,
-    ) {
-        let driven = (ret_od - pick_od).max(0);
-        let days = ((dur.num_hours() as f64 / 24.0).ceil() as i32).max(1);
-        let allowed = included_per_day * days;
-        over_km_val = (driven - allowed).max(0);
-        over_km_fee = (over_km_val as i64) * (over_price as i64);
+    let returned = req.returned_at.unwrap_or_else(Utc::now);
+    let pickup_minute=cur.rental_terms.as_ref().and_then(|t|t["checkout_at"].as_str())
+        .and_then(|s|DateTime::parse_from_rfc3339(s).ok()).map(|v|v.timestamp().div_euclid(60));
+    if pickup_minute.map_or(returned<cur.starts_at,|m|returned.timestamp().div_euclid(60)<m) || returned > Utc::now() + chrono::Duration::minutes(5) ||
+        req.return_odometer_km.is_some_and(|v| v < cur.pickup_odometer_km.unwrap_or(0)) {
+        return Err(AppError::BadRequest("반납 일시와 주행거리를 확인해 주세요.".into()));
     }
-
-    // ── 3. 지연 반납 요금 ────────────────────────────────────────────
-    let returned_at = req.returned_at.unwrap_or_else(Utc::now);
-    let late_hours: i32 = if returned_at > cur.ends_at {
-        let d = returned_at - cur.ends_at;
-        ((d.num_minutes() as f64 / 60.0).ceil() as i32).max(0)
-    } else {
-        0
-    };
-    let hourly = hourly_rate(&cur.rate_type, cur.rate_amount_krw);
-    let late_fee: i64 = if late_hours > 0 {
-        ((late_hours as f64) * (hourly as f64) * LATE_FEE_MULTIPLIER).round() as i64
-    } else {
-        0
-    };
-
-    // ── 4. 기타 (수동 입력) ──────────────────────────────────────────
-    let extra_fee = req.extra_fee_krw.unwrap_or(0);
-    let extra_label = req.extra_fee_label.clone().unwrap_or_else(|| "기타".into());
-
-    // ── 5. 합계 · 환급 ───────────────────────────────────────────────
-    let subtotal = base_fee + over_km_fee + late_fee + extra_fee;
-    // refund > 0 = 임차인에게 환급, refund < 0 = 임차인이 추가 청구
-    let refund = cur.deposit_krw - subtotal;
-
-    // ── 6. line items JSON (invoice 재현용) ──────────────────────────
-    let mut lines: Vec<Value> = Vec::new();
-    lines.push(json!({
-        "kind": "base",
-        "label": format!("기본 요금 ({units}{unit_label} × {}원)", fmt_krw(cur.rate_amount_krw)),
-        "amount": base_fee,
-    }));
-    if over_km_val > 0 && over_km_fee > 0 {
-        let over_price = cur.over_km_price_krw.unwrap_or(0);
-        lines.push(json!({
-            "kind": "over_km",
-            "label": format!("초과 주행 ({over_km_val}km × {}원)", fmt_krw(over_price as i64)),
-            "amount": over_km_fee,
-        }));
+    if cur.rental_terms.is_some() && (!(-1_000_000_000..=1_000_000_000).contains(&req.extra_fee_krw.unwrap_or(0))
+       || (req.extra_fee_krw.unwrap_or(0)!=0 && req.extra_fee_label.as_deref().unwrap_or("").trim().is_empty())) {
+        return Err(AppError::BadRequest("기타 금액 범위와 사유를 확인해 주세요.".into()));
     }
-    if late_hours > 0 && late_fee > 0 {
-        lines.push(json!({
-            "kind": "late",
-            "label": format!("지연 반납 ({late_hours}시간 × {}원 × {}배)",
-                fmt_krw(hourly), LATE_FEE_MULTIPLIER),
-            "amount": late_fee,
-        }));
-    }
-    if extra_fee != 0 {
-        lines.push(json!({
-            "kind": "extra",
-            "label": extra_label,
-            "amount": extra_fee,
-        }));
-    }
-    let settlement = json!({
-        "lines": lines,
-        "subtotal": subtotal,
-        "deposit": cur.deposit_krw,
-        "balance": refund,
-    });
-
+    let (mut settlement, subtotal, base_fee, late_hours, late_fee, over_km_val, over_km_fee, refund, returned_at) =
+        compute_settlement(&cur.rate_type, cur.rate_amount_krw, cur.starts_at, cur.ends_at,
+            cur.included_km_per_day,cur.over_km_price_krw,cur.pickup_odometer_km,cur.deposit_krw,
+            req.return_odometer_km.unwrap_or(cur.pickup_odometer_km.unwrap_or(0)),req.extra_fee_krw,req.extra_fee_label.as_deref(),
+            Some(returned),cur.rental_terms.as_ref());
+    let refund=if cur.rental_terms.is_some() {
+        if req.return_odometer_km.is_none() || req.fuel_percent.is_some_and(|v| !(0..=100).contains(&v)) {
+            return Err(AppError::BadRequest("반납 계기판과 연료·충전량을 확인해 주세요.".into()));
+        }
+        let device=cur.device_id.ok_or(AppError::NotFound)?;
+        lock_device_rental(&mut tx,device).await?;
+        fleet_work::after_return(&mut tx,user.user_id,device,returned_at,req.return_odometer_km,req.fuel_percent,
+            req.return_location.as_deref().or(cur.return_location.as_deref()),id).await?;
+        workflow::return_balance(&mut tx,user.user_id,id,&mut settlement,subtotal).await?
+    } else { refund };
+    let extra_fee=req.extra_fee_krw.unwrap_or(0);
     let row: Contract = sqlx::query_as(
         r#"WITH upd AS (
             UPDATE rental_contracts
@@ -698,6 +642,7 @@ async fn return_contract(
                    refund_krw         = $13,
                    returned_at        = $14,
                    settlement_json    = $15,
+                   rental_terms = CASE WHEN rental_terms IS NULL THEN NULL ELSE rental_terms || jsonb_build_object('return_fuel',$16::integer) END,
                    updated_at         = NOW()
              WHERE id = $1 AND user_id = $2
              RETURNING *
@@ -712,7 +657,7 @@ async fn return_contract(
                upd.settled_amount_krw, upd.settled_at, upd.pickup_location, upd.return_location,
                upd.status, upd.note, upd.created_at,
                upd.base_fee_krw, upd.late_hours, upd.late_fee_krw, upd.over_km, upd.over_km_fee_krw,
-               upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json
+               upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json, upd.rental_terms
           FROM upd
      LEFT JOIN gps_read_devices d ON d.id = upd.device_id"#,
     )
@@ -731,8 +676,10 @@ async fn return_contract(
     .bind(refund)
     .bind(returned_at)
     .bind(&settlement)
-    .fetch_one(&state.db)
+    .bind(req.fuel_percent)
+    .fetch_one(&mut *tx)
     .await?;
+    tx.commit().await?;
     Ok(Json(row))
 }
 
@@ -745,7 +692,11 @@ async fn delete_contract(
         .bind(id)
         .bind(user.user_id)
         .execute(&state.db)
-        .await?
+        .await.map_err(|e| {
+            if e.as_database_error().and_then(|e| e.constraint()) == Some("rental_office_ledger_contract_id_fkey") {
+                AppError::Conflict("수납 또는 보증금 기록이 있는 계약은 삭제할 수 없습니다.".into())
+            } else { AppError::from(e) }
+        })?
         .rows_affected();
     if n == 0 {
         return Err(AppError::NotFound);
@@ -786,7 +737,7 @@ async fn invoice_xlsx(
     let plate = c
         .license_plate
         .clone()
-        .unwrap_or_else(|| c.device_id.to_string());
+        .unwrap_or_else(|| c.device_id.map(|id| id.to_string()).unwrap_or_else(|| "미배정".into()));
     let fname = format!(
         "청구서_{}_{}_{}.xlsx",
         plate,
@@ -1067,9 +1018,16 @@ fn build_invoice_xlsx(
     ws.merge_range(r, 1, r, 2, "소계", &total_l)?;
     ws.write_number_with_format(r, 3, subtotal as f64, &total_v)?;
     r += 1;
-    ws.merge_range(r, 1, r, 2, "보증금", &total_l)?;
+    ws.merge_range(r, 1, r, 2, if c.rental_terms.is_some() {"약정 보증금"} else {"보증금"}, &total_l)?;
     ws.write_number_with_format(r, 3, deposit as f64, &total_v)?;
     r += 1;
+    if c.rental_terms.is_some() {
+        for (key,name) in [("paid_krw","대여료 순수납"),("held_krw","별도 보관 보증금")] {
+            ws.merge_range(r,1,r,2,name,&total_l)?;
+            ws.write_number_with_format(r,3,c.settlement_json.as_ref().and_then(|v|v[key].as_i64()).unwrap_or(0) as f64,&total_v)?;
+            r+=1;
+        }
+    }
     if balance >= 0 {
         ws.merge_range(r, 1, r, 2, "환급액 (임차인 → 지급)", &refund_l)?;
         ws.write_number_with_format(r, 3, balance as f64, &refund_v)?;
@@ -1090,7 +1048,7 @@ const SQL_INVOICE_SELECT: &str =
     c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
     FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.id = $1 AND c.user_id = $2";
 
@@ -1102,11 +1060,11 @@ const SQL_LIST_OPERATIONS: &str =
     c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
     FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1
       AND ((c.starts_at < $3 AND c.ends_at > $2)
-           OR c.status IN ('active','overdue')
+           OR c.status IN ('active','overdue') OR (c.status = 'draft' AND c.rental_terms IS NOT NULL)
            OR (c.status = 'returned' AND c.settled_at >= $2 AND c.settled_at < $3))
       AND ($4::bigint IS NULL OR c.device_id = $4)
       AND ($5::text[] IS NULL OR c.status = ANY($5))
@@ -1120,7 +1078,7 @@ const SQL_LIST_ALL: &str =
     c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
     FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.starts_at < $3 AND c.ends_at > $2
     ORDER BY c.starts_at DESC";
@@ -1132,7 +1090,7 @@ const SQL_LIST_DEV: &str =
     c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
     FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.device_id = $2 AND c.starts_at < $4 AND c.ends_at > $3
     ORDER BY c.starts_at DESC";
@@ -1144,7 +1102,7 @@ const SQL_LIST_STATUS: &str =
     c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
     FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.starts_at < $3 AND c.ends_at > $2 AND c.status = ANY($4::TEXT[])
     ORDER BY c.starts_at DESC";
@@ -1156,7 +1114,7 @@ const SQL_LIST_DEV_STATUS: &str =
     c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
     FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
     WHERE c.user_id = $1 AND c.device_id = $2 AND c.starts_at < $4 AND c.ends_at > $3
       AND c.status = ANY($5::TEXT[])
@@ -1168,8 +1126,8 @@ const SQL_INSERT: &str = r#"WITH ins AS (
          starts_at, ends_at, rate_type, rate_amount_krw,
          included_km_per_day, over_km_price_krw, deposit_krw,
          pickup_odometer_km, pickup_location, return_location,
-         status, note)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+         status, note, rental_terms)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
     RETURNING *
 )
 SELECT ins.id, ins.user_id, ins.device_id,
@@ -1182,7 +1140,7 @@ SELECT ins.id, ins.user_id, ins.device_id,
        ins.settled_amount_krw, ins.settled_at, ins.pickup_location, ins.return_location,
        ins.status, ins.note, ins.created_at,
        ins.base_fee_krw, ins.late_hours, ins.late_fee_krw, ins.over_km, ins.over_km_fee_krw,
-       ins.extra_fee_krw, ins.refund_krw, ins.returned_at, ins.settlement_json
+       ins.extra_fee_krw, ins.refund_krw, ins.returned_at, ins.settlement_json, ins.rental_terms
   FROM ins
 LEFT JOIN gps_read_devices d ON d.id = ins.device_id"#;
 
@@ -1193,7 +1151,8 @@ const SQL_UPDATE: &str = r#"WITH upd AS (
         rate_type = $9, rate_amount_krw = $10,
         included_km_per_day = $11, over_km_price_krw = $12, deposit_krw = $13,
         pickup_odometer_km = $14, pickup_location = $15, return_location = $16,
-        status = $17, note = $18,
+        status = CASE WHEN $19::jsonb IS NOT NULL AND $17='overdue' AND $8>now() THEN 'active' ELSE $17 END,
+        note = $18, rental_terms = $19,
         ending_alerted_at = CASE WHEN ends_at IS DISTINCT FROM $8 OR device_id IS DISTINCT FROM $3 THEN NULL ELSE ending_alerted_at END,
         overdue_alerted_at = CASE WHEN ends_at IS DISTINCT FROM $8 OR device_id IS DISTINCT FROM $3 THEN NULL ELSE overdue_alerted_at END,
         updated_at = NOW()
@@ -1210,7 +1169,7 @@ SELECT upd.id, upd.user_id, upd.device_id,
        upd.settled_amount_krw, upd.settled_at, upd.pickup_location, upd.return_location,
        upd.status, upd.note, upd.created_at,
        upd.base_fee_krw, upd.late_hours, upd.late_fee_krw, upd.over_km, upd.over_km_fee_krw,
-       upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json
+       upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json, upd.rental_terms
   FROM upd
 LEFT JOIN gps_read_devices d ON d.id = upd.device_id"#;
 
@@ -1316,7 +1275,7 @@ async fn renter_detail(
                   c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
                   c.status, c.note, c.created_at,
                   c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-                  c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json
+                  c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
              FROM rental_contracts c LEFT JOIN gps_read_devices d ON d.id = c.device_id
             WHERE c.user_id = $1 AND c.renter_phone = $2
          ORDER BY c.starts_at DESC LIMIT 100"#,
@@ -1799,6 +1758,9 @@ async fn handoff_submit(
     // (R9-b) return purpose 시 자동 settlement 위해 계약 요약 미리 로드.
     #[derive(FromRow)]
     struct Cur {
+        rental_terms: Option<Value>,
+        device_id: Option<i64>,
+        return_location: Option<String>,
         rate_type: String,
         rate_amount_krw: i64,
         starts_at: DateTime<Utc>,
@@ -1808,16 +1770,18 @@ async fn handoff_submit(
         pickup_odometer_km: Option<i32>,
         deposit_krw: i64,
     }
+    let mut tx = state.db.begin().await?;
+    workflow::guard_handoff(&mut tx, tk.user_id, tk.contract_id, &tk.purpose, req.odometer_km).await?;
     let cur: Cur = sqlx::query_as(
-        r#"SELECT rate_type, rate_amount_krw, starts_at, ends_at,
+        r#"SELECT rental_terms,device_id,return_location, rate_type, rate_amount_krw, starts_at, ends_at,
                   included_km_per_day, over_km_price_krw, pickup_odometer_km, deposit_krw
              FROM rental_contracts WHERE id = $1"#,
     )
     .bind(tk.contract_id)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
-    let mut tx = state.db.begin().await?;
+
 
     let photo_kind = if tk.purpose == "pickup" {
         "pickup_odometer"
@@ -1860,12 +1824,16 @@ async fn handoff_submit(
     let mut settlement_out: Option<Value> = None;
 
     if tk.purpose == "pickup" {
+        if cur.rental_terms.is_some(){
+            fleet_work::after_checkout(&mut tx,tk.user_id,cur.device_id.ok_or(AppError::NotFound)?,req.odometer_km,None).await?;
+        }
         // 인수: pickup 정보 확정. draft → active.
         sqlx::query(
             r#"UPDATE rental_contracts SET
                 pickup_odometer_km    = $2,
                 pickup_signature_svg  = $3,
                 pickup_signed_at      = NOW(),
+                rental_terms = CASE WHEN rental_terms IS NULL THEN NULL ELSE rental_terms || jsonb_build_object('checkout_at',NOW()) END,
                 status                = CASE WHEN status = 'draft' THEN 'active' ELSE status END,
                 updated_at            = NOW()
               WHERE id = $1"#,
@@ -1879,7 +1847,7 @@ async fn handoff_submit(
         // (R9-b) 반납: 자동 settlement 실행. return_contract 와 동일 공식.
         // 임차인 self-return 은 extra_fee = 0 (파손비/세차비 등은 owner 가 별도 편집).
         let (
-            settled_json,
+            mut settled_json,
             subtotal,
             base_fee,
             late_hours,
@@ -1901,7 +1869,15 @@ async fn handoff_submit(
             None,
             None,
             None,
+            cur.rental_terms.as_ref(),
         );
+
+        let refund = if cur.rental_terms.is_some() {
+            let device=cur.device_id.ok_or(AppError::NotFound)?;
+            lock_device_rental(&mut tx,device).await?;
+            fleet_work::after_return(&mut tx,tk.user_id,device,returned_at,Some(req.odometer_km),None,cur.return_location.as_deref(),tk.contract_id).await?;
+            workflow::return_balance(&mut tx,tk.user_id,tk.contract_id,&mut settled_json,subtotal).await?
+        } else {refund};
 
         sqlx::query(
             r#"UPDATE rental_contracts SET
@@ -2026,6 +2002,7 @@ fn compute_settlement(
     extra_fee_override: Option<i64>,
     extra_label_override: Option<&str>,
     returned_at_override: Option<DateTime<Utc>>,
+    terms: Option<&Value>,
 ) -> (Value, i64, i64, i32, i64, i32, i64, i64, DateTime<Utc>) {
     let dur = ends_at - starts_at;
     let (units_raw, unit_label) = match rate_type {
@@ -2034,6 +2011,7 @@ fn compute_settlement(
         _ => ((dur.num_hours() as f64 / 24.0).ceil() as i64, "일"),
     };
     let units = units_raw.max(1);
+    let units = if terms.is_some() { workflow::charge_units(starts_at, ends_at, rate_type) } else { units };
     let base_fee = rate_amount_krw * units;
 
     let mut over_km_val: i32 = 0;
@@ -2043,8 +2021,8 @@ fn compute_settlement(
     {
         let driven = (return_odo_km - pick_od).max(0);
         let days = ((dur.num_hours() as f64 / 24.0).ceil() as i32).max(1);
-        let allowed = inc_per_day * days;
-        over_km_val = (driven - allowed).max(0);
+        let allowed = i64::from(inc_per_day) * i64::from(days);
+        over_km_val = (i64::from(driven) - allowed).clamp(0,i64::from(i32::MAX)) as i32;
         over_km_fee = (over_km_val as i64) * (over_price as i64);
     }
 
@@ -2056,7 +2034,8 @@ fn compute_settlement(
         0
     };
     let hourly = hourly_rate(rate_type, rate_amount_krw);
-    let late_fee: i64 = if late_hours > 0 {
+    let fixed_rate = terms.and_then(|t|t["late_hourly"].as_i64());
+    let late_fee: i64 = if let Some(rate) = fixed_rate { i64::from(late_hours) * rate } else if late_hours > 0 {
         ((late_hours as f64) * (hourly as f64) * LATE_FEE_MULTIPLIER).round() as i64
     } else {
         0
@@ -2085,8 +2064,7 @@ fn compute_settlement(
     if late_hours > 0 && late_fee > 0 {
         lines.push(json!({
             "kind": "late",
-            "label": format!("지연 반납 ({late_hours}시간 × {}원 × {}배)",
-                fmt_krw(hourly), LATE_FEE_MULTIPLIER),
+            "label": if let Some(rate)=fixed_rate { format!("지연 반납 ({late_hours}시간 × {}원)",fmt_krw(rate)) } else { format!("지연 반납 ({late_hours}시간 × {}원 × {}배)",fmt_krw(hourly),LATE_FEE_MULTIPLIER) },
             "amount": late_fee,
         }));
     }

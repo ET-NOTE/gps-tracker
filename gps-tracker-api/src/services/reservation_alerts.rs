@@ -233,7 +233,7 @@ async fn auto_transition_status(db: &PgPool) -> anyhow::Result<()> {
     //   draft → active: starts_at 이 지났고 아직 draft
     let r1 = sqlx::query(
         r#"UPDATE rental_contracts SET status = 'active', updated_at = NOW()
-            WHERE status = 'draft' AND starts_at <= NOW() AND ends_at > NOW()
+            WHERE status = 'draft' AND rental_terms IS NULL AND starts_at <= NOW() AND ends_at > NOW()
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=rental_contracts.user_id AND c.restricted)"#,
     )
     .execute(db)
@@ -241,7 +241,7 @@ async fn auto_transition_status(db: &PgPool) -> anyhow::Result<()> {
     .rows_affected();
     let r2 = sqlx::query(
         r#"UPDATE rental_contracts SET status = 'overdue', updated_at = NOW()
-            WHERE status IN ('draft','active') AND ends_at <= NOW()
+            WHERE (status = 'active' OR (status = 'draft' AND rental_terms IS NULL)) AND ends_at <= NOW()
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=rental_contracts.user_id AND c.restricted)"#,
     )
     .execute(db)
@@ -278,7 +278,8 @@ async fn run_rental_ending_alerts(db: &PgPool) -> anyhow::Result<()> {
                   d.display_name AS device_name, d.license_plate
              FROM rental_contracts r
         LEFT JOIN gps_read_devices d ON d.id = r.device_id
-            WHERE r.status IN ('draft','active')
+            WHERE (r.status='active' OR (r.status='draft' AND r.rental_terms IS NULL))
+              AND COALESCE((SELECT notify_return FROM rental_operating_policies p WHERE p.user_id=r.user_id),true)
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
               AND r.ending_alerted_at IS NULL
               AND r.ends_at BETWEEN $1 AND $2"#,
@@ -344,6 +345,7 @@ async fn run_rental_overdue_alerts(db: &PgPool) -> anyhow::Result<()> {
              FROM rental_contracts r
         LEFT JOIN gps_read_devices d ON d.id = r.device_id
             WHERE r.status = 'overdue' AND r.overdue_alerted_at IS NULL
+              AND COALESCE((SELECT notify_return FROM rental_operating_policies p WHERE p.user_id=r.user_id),true)
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)"#,
     )
     .fetch_all(db)

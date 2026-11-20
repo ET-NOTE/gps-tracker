@@ -46,7 +46,7 @@ async function calendar(file, name) {
     // hooks/components run while rendering a calendar.
     const exports = {tripNeedsDetails:noop,TripEvidence:noop,TripCorrection:noop,TripCorrectionHistory:noop,qualityLabel:noop,qualitySummary:noop,reportIncluded:noop,tripTimeRange:noop,TripAssignmentModal:noop,TripRulesModal:noop,TripAssignmentHistory:noop,tripAssignmentKey:noop,canAssignTrip:noop,default:noop,api:{},qk:{},useQuery:noop,useQueryClient:noop,FleetAccountScope:noop,useFleetAccess:noop,staffCanDrive:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,
       BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:noop,BusinessError:noop,BusinessEmpty:noop,BusinessSection:noop,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
-      useBusinessClock:noop,useRentalOperations:noop,useBusinessSubscription:noop,
+      rentalPages:new Map(),RentalVehicleScope:noop,useRentalTeamConfig:noop,useBusinessClock:noop,useRentalOperations:noop,useBusinessSubscription:noop,
       BusinessStaff:noop,BusinessRenters:noop,BusinessCompanyInfo:noop,BusinessSubscription:noop,
       alertDialog:noop,confirmDialog:noop,StatCard:noop,StatCardGrid:noop,useFleetStats:noop,FleetAssets:noop,FleetAssetForm:noop,FleetAssetDetail:noop,useFleetAssets:noop,projectFleetAssets:noop,fleetAssetsKey:[],useAssetStats:noop,useFleetReservations:noop,useCreateFleetReservation:noop,useUpdateFleetReservation:noop,useCancelFleetReservation:noop,
       Modal:noop,FormField:noop,Input:noop,Select:noop,Textarea:noop,Button:noop,Pill:noop,SkeletonList:noop,toast:noop};
@@ -65,9 +65,8 @@ for (const [file,name] of [['RentcarPanel','RentalCalendar'],['CorporatePanel','
     await act(async()=>{r=create(React.createElement(Calendar,props));});
     const corporate = name === 'ReservationCalendar';
     const days=()=>r.root.findAll(n=>n.type==='div' && n.props.style?.minHeight);
-    const dayButton=cell=>corporate ? cell.find(n=>n.type==='button' && n.props.className==='corporate-calendar-date') : cell;
-    let stopped=false;
-    const activate=target=>!target.props.disabled && target.props.onClick({currentTarget:{focus(){}},stopPropagation(){stopped=true;}});
+    const dayButton=cell=>cell.find(n=>n.type==='button' && n.props.className===(corporate?'corporate-calendar-date':'rnt-cal-day'));
+    const activate=target=>!target.props.disabled && target.props.onClick({currentTarget:{focus(){}},stopPropagation(){}});
     assert.equal(days().length,42);
     // October 1 is Thursday; index 12 is October 9, irrespective of host TZ.
     await act(async()=>activate(dayButton(days()[12])));
@@ -79,11 +78,17 @@ for (const [file,name] of [['RentcarPanel','RentalCalendar'],['CorporatePanel','
     const badge=days()[12].findAll(n=>n.props.title?.includes('TEST-009'));
     assert.equal(badge.length,1,'UTC October 8 event belongs in Korean October 9');
     assert.equal(days()[11].findAll(n=>n.props.title?.includes('TEST-009')).length,0);
-    if (corporate) assert.equal(days()[12].props.onClick, undefined, 'cell actions are independent buttons');
+    assert.equal(days()[12].props.onClick, undefined, 'cell actions are independent buttons');
     await act(async()=>activate(badge[0]));
-    if (!corporate) assert.equal(stopped,true,'rental badge stops the date-cell click');
     assert.equal(opened[0],entry);
     assert.equal(dates.length,1,'entry click must not also create an empty form');
+    if(!corporate){
+      const expanded=[];
+      await act(async()=>r.update(React.createElement(Calendar,{...props,list:[entry,{...entry,id:8},{...entry,id:9}],onMore:d=>expanded.push(d)})));
+      await act(async()=>activate(days()[12].find(n=>n.type==='button'&&n.props.className==='rnt-cal-more')));
+      assert.deepEqual(expanded,['2026-10-09']);
+      assert.equal(dates.length,1);
+    }
     await act(async()=>r.unmount());
   });
 }

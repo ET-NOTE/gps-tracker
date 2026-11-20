@@ -1,14 +1,20 @@
+import RentalBookingForm from './business/RentalBookingForm';
 import React, { useEffect, useMemo, useState } from 'react';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
-import { BusinessRenters as RentersTab } from './business/BusinessPeople';
+import RentalWorkspace, { rentalPages } from './business/RentalWorkspace';
+import RentalPolicy from './business/RentalPolicy';
+import RentalFleet from './business/RentalFleet';
+import RentalOffice from './business/RentalOffice';
+import RentalWorkflow from './business/RentalWorkflow';
+import RentalTeam, {useRentalTeamConfig} from './business/RentalTeam';
+import NotificationSettings from './NotificationSettings';
 import { BusinessSubscription as SubTab } from './business/BusinessPreferences';
 import { rentalReport, invoiceReport, rentalPeriod } from '../lib/businessExport';
-import { BusinessWorkspace, BusinessLocation, useBusinessVehicle, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
+import { RentalVehicleScope, BusinessButton, BusinessError, BusinessEmpty, BusinessSettings } from './business/BusinessWorkspace';
 import RentalBoard from './business/RentalBoard';
 import ReturnDialog from './business/ReturnWizard';
 import PhotoGalleryModal from './business/PhotoGalleryModal';
-import { rentalAttention } from '../lib/businessAttention';
 import { useBusinessClock, useRentalOperations, useBusinessSubscription } from './business/useBusinessData';
 import { calendarDate, businessDate, rentalSummary, rentalStatus, filterRentals } from '../lib/business';
 import { api } from '../api';
@@ -22,29 +28,38 @@ import {
 } from '../state';
 import { useQueryClient } from '@tanstack/react-query';
 
-function RentcarPanel({ devices, onMap, onNavigate, meta }) {
-  const [tab, setTab] = useState('fleet');
+function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, destinations, onManageVehicle, onDevicesChange }) {
+  const [localTab, setLocalTab] = useState('fleet');
+  const current = onPage ? page : localTab;
+  const tab = rentalPages.has(current) ? current : 'fleet';
   const [request, setRequest] = useState(null);
   const subscription = useBusinessSubscription('rentcar');
+  const company = useRentalTeamConfig(['vehicles','fleet','reservations','contracts','checkout','active','returns','schedule'].includes(tab));
+  const branches = company.data?.branches || [];
   const qc = useQueryClient();
-  const openContracts = value => { setRequest(value); setTab('rentals'); };
-  const tabs = [
-    { id: 'fleet', label: '운영 현황', icon: 'home' },
-    { id: 'rentals', label: '계약 관리', icon: 'route' },
-    { id: 'schedule', label: '배차·반납 일정', icon: 'clock' },
-    { id: 'renters', label: '임차인', icon: 'user' },
-    { id: 'settings', label: '설정', icon: 'wrench' },
-  ];
-  return <BusinessWorkspace title="렌트카 운영" tabs={tabs} tab={tab} onTab={value => { setRequest(null); setTab(value); }} devices={devices} kind="rentcar" onMap={onMap} onVehicleAction={d => openContracts({ deviceId: d.id })} onNavigate={onNavigate} meta={meta}
-    action={<BusinessButton primary icon="plus" onClick={() => openContracts({ new: true })}>새 계약</BusinessButton>}>
-    {tab === 'fleet' && <FleetTab devices={devices} onMap={onMap} onContracts={openContracts} />}
-    {tab === 'rentals' && <RentalsTab devices={devices} request={request} />}
-    {tab === 'schedule' && <ScheduleTab devices={devices} />}
-    {tab === 'renters' && <RentersTab />}
-    {tab === 'settings' && <BusinessSettings subscription={subscription.error
-      ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError>
-      : <SubTab kind="rentcar" sub={subscription.data} onChange={v => qc.setQueryData(qk.businessSubscription('rentcar'), v)} />} />}
-  </BusinessWorkspace>;
+  const setTab = onPage || setLocalTab;
+  function visit(id,workId) {setRequest(typeof workId==='number'?{stage:id,workId}:null);setTab(id);}
+  function openContracts(value) {
+    const stage = value.new ? 'reservations' : value.returning ? 'returns' : value.deviceId || value.status ? 'history' : 'contracts';
+    setRequest({...value, stage});setTab(stage);
+  }
+  useEffect(()=>{if(request && request.stage!==tab)setRequest(null);},[tab,request]);
+  const activeRequest = request?.stage === tab ? request : null;
+  return <RentalVehicleScope devices={devices} meta={meta} onMap={onMap} onManageVehicle={onManageVehicle} onVehicleAction={d=>openContracts({deviceId:d.id})}>
+    <RentalWorkspace page={tab} onTab={visit} devices={devices} onNavigate={onNavigate} destinations={destinations} onNew={()=>openContracts({new:true})}>
+      {['fleet','vehicles','service','incidents','devices','live'].includes(tab)&&<RentalFleet key={tab} view={tab} devices={devices} onMap={onMap} onContracts={openContracts} onTab={visit} onNavigate={onNavigate} onDevicesChange={onDevicesChange} branches={branches} initialWorkId={activeRequest?.workId}/>}
+      {['reservations','contracts','checkout','active','returns'].includes(tab)&&<RentalWorkflow key={tab} stage={tab} devices={devices} request={activeRequest} branches={branches}/>}
+      {tab==='schedule'&&<ScheduleTab devices={devices} onContracts={openContracts} branches={branches}/>}
+      {['staff','branches','groups'].includes(tab)&&<RentalTeam key={tab} page={tab} onTab={visit}/>}
+      {tab.startsWith('rent-')&&<RentalOffice key={tab} page={tab} devices={devices}/>}
+      {tab==='history'&&<RentalsTab devices={devices} request={activeRequest}/>}
+      {tab==='policy'&&<RentalPolicy/>}
+      {tab==='notifications'&&<NotificationSettings/>}
+      {tab==='settings'&&<BusinessSettings hideNavigation subscription={subscription.error
+        ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError>
+        : <SubTab kind="rentcar" sub={subscription.data} onChange={v=>qc.setQueryData(qk.businessSubscription('rentcar'),v)}/>} />}
+    </RentalWorkspace>
+  </RentalVehicleScope>;
 }
 
 // (F3) devices lat/lng 만 바뀌면 재렌더 skip — WS location fix 폭주 대응.
@@ -55,22 +70,20 @@ export default React.memo(RentcarPanel);
 // 각 셀: 그 날 진행중이거나 반납 예정인 계약. 반납 날짜 셀은 강조.
 // 셀 클릭 → 그 날 preset 신규 계약. 계약 pill 클릭 → 편집.
 // ═══════════════════════════════════════════════════════
-function ScheduleTab({ devices }) {
-  const [mode, setMode] = useState('board'), [editing, setEditing] = useState(null);
+function ScheduleTab({ devices, onContracts, branches }) {
+  const [mode, setMode] = useState('board');
   const now = useBusinessClock();
   return <div className="business-schedule">
-    <div className="business-switch"><button className="business-switch-item" aria-pressed={mode === 'board'} onClick={() => setMode('board')}>차량별 배차표</button><button className="business-switch-item" aria-pressed={mode === 'month'} onClick={() => setMode('month')}>월간 달력</button></div>
-    {mode === 'board' ? <RentalBoard devices={devices} now={now} onNew={(deviceId, day) => setEditing({ new: true, deviceId, day })} onEdit={setEditing} /> : <MonthScheduleTab devices={devices} />}
-    {editing && <RentalDialog init={editing.new ? null : editing} devices={devices} presetDate={editing.day} presetDeviceId={editing.deviceId} onClose={() => setEditing(null)} onSaved={() => setEditing(null)} />}
+    <div className="business-switch">{[['board','차량별 배차표'],['month','월간 달력'],['dispatch','배차 목록']].map(([id,label])=><button key={id} className="business-switch-item" aria-pressed={mode===id} onClick={()=>setMode(id)}>{label}</button>)}</div>
+    {mode === 'board' ? <RentalBoard devices={devices} now={now} onNew={(deviceId, day) => onContracts({ new: true, deviceId, day })} onEdit={contract=>onContracts({contract})} /> : mode==='month'?<MonthScheduleTab devices={devices} onContracts={onContracts}/>:<RentalWorkflow stage="dispatch" devices={devices} branches={branches}/>}
   </div>;
 }
-function MonthScheduleTab({ devices }) {
+function MonthScheduleTab({ devices, onContracts }) {
   const [ym, setYm] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [editing, setEditing] = useState(null);   // null | 'new' | contract | {new: 'YYYY-MM-DD'}
-  const [returning, setReturning] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(null);
 
   // (F2-b) useRentals hook — ym 변할 때만 params key 변경 (useMemo 로 identity 안정).
   const scheduleParams = useMemo(() => {
@@ -111,35 +124,24 @@ function MonthScheduleTab({ devices }) {
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
           날짜를 누르면 새 계약을, 계약을 누르면 상세 정보를 열 수 있습니다.
         </span>
-        <button onClick={() => setEditing('new')} style={{ marginLeft: 'auto', ...st.btnPrimary }}>
-          <Icon name="plus" size={13} /> 새 계약
-        </button>
       </div>
 
       {error && <BusinessError onRetry={refetch}>반납 일정을 불러오지 못했습니다.</BusinessError>}
       {loading && !list && <SkeletonList count={3} itemHeight={80} />}
 
       <RentalCalendar ym={ym} list={list}
-        onDayClick={(dateStr) => setEditing({ new: dateStr })}
-        onEventClick={(c) => setEditing(c)} />
-
-      {editing && (
-        <RentalDialog init={editing === 'new' || editing.new ? null : editing}
-          devices={devices}
-          presetDate={editing?.new || null}
-          onClose={() => setEditing(null)}
-          onSaved={() => setEditing(null)} />
-      )}
-      {returning && (
-        <ReturnDialog contract={returning}
-          onClose={() => setReturning(null)}
-          onDone={() => setReturning(null)} />
-      )}
+        onDayClick={(day) => onContracts({new:true,day})} onMore={setSelectedDay}
+        onEventClick={(contract) => onContracts({contract})} />
+      {selectedDay&&<Modal open title={selectedDay+' 배차 일정'} onClose={()=>setSelectedDay(null)}><div className="rnt-day-items">
+        {list.filter(c=>businessDate(c.starts_at)<=selectedDay&&businessDate(c.ends_at)>=selectedDay).map(c=>
+          <BusinessButton key={c.id} onClick={()=>onContracts({contract:c})}>{c.renter_name} · {c.license_plate||c.device_name||'미배차'}</BusinessButton>)}
+        <BusinessButton primary onClick={()=>onContracts({new:true,day:selectedDay})}>이 날짜에 예약 등록</BusinessButton>
+      </div></Modal>}
     </div>
   );
 }
 
-function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
+function RentalCalendar({ ym, list, onDayClick, onEventClick, onMore }) {
   const [y, m] = ym.split('-').map(Number);
   const monthStart = new Date(y, m - 1, 1);
   const monthEnd   = new Date(y, m, 0);
@@ -196,7 +198,7 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
           const hasReturn = dayContracts.some(c => isReturnDay(cell.date, c) && c.status !== 'returned' && c.status !== 'cancelled');
           const MAX_BADGES = 2;
           return (
-            <div key={i} onClick={() => cell.currentMonth && onDayClick(dStr)} style={{
+            <div key={i} style={{
               minHeight: 'clamp(60px, 13vw, 92px)',
               padding: 3,
               minWidth: 0,
@@ -213,7 +215,7 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
               overflow: 'hidden',
               position: 'relative',
             }}>
-              <div style={{
+              <button type="button" className="rnt-cal-day" disabled={!cell.currentMonth} aria-label={dStr+' 예약 등록'} onClick={()=>onDayClick(dStr)} style={{
                 fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 color: !cell.currentMonth ? 'var(--text-3)'
                      : isToday ? 'var(--primary)'
@@ -225,28 +227,28 @@ function RentalCalendar({ ym, list, onDayClick, onEventClick }) {
                 {hasReturn && cell.currentMonth && (
                   <span style={{ fontSize: 8, color: 'var(--warning)', fontWeight: 800 }}>반납</span>
                 )}
-              </div>
+              </button>
               {dayContracts.slice(0, MAX_BADGES).map(c => {
                 const s = RENTAL_STATUS[rentalStatus(c)] || RENTAL_STATUS.draft;
                 const returnHere = isReturnDay(cell.date, c);
                 return (
-                  <div key={c.id} onClick={(e) => { e.stopPropagation(); onEventClick(c); }} style={{
+                  <button type="button" key={c.id} onClick={() => onEventClick(c)} style={{
                     fontSize: 10, fontWeight: 600,
                     padding: '1px 3px', borderRadius: 3,
                     background: s.bg, color: s.color,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    cursor: 'pointer',
+                    cursor: 'pointer', border:0,
                     borderLeft: returnHere ? '3px solid var(--warning)' : 'none',
                     minWidth: 0,
                   }} title={`${c.renter_name} · ${c.license_plate || c.device_name || ''} · ${s.label}${returnHere ? ' · 오늘 반납' : ''}`}>
-                    {c.license_plate || c.device_name || `#${c.device_id}`}
-                  </div>
+                    {c.license_plate || c.device_name || (c.device_id ? '#'+c.device_id : '미배차')}
+                  </button>
                 );
               })}
               {dayContracts.length > MAX_BADGES && (
-                <div style={{ fontSize: 9, color: 'var(--text-3)', textAlign: 'center' }}>
+                <button type="button" className="rnt-cal-more" aria-label={dStr+' 일정 '+dayContracts.length+'건 모두 보기'} onClick={()=>onMore(dStr)}>
                   +{dayContracts.length - MAX_BADGES}
-                </div>
+                </button>
               )}
             </div>
           );
@@ -268,7 +270,7 @@ const RENTAL_STATUS = {
 };
 const RATE_TYPE_LABEL = { hourly: '시간', daily: '일', monthly: '월' };
 
-function RentalsTab({ devices, request }) {
+export function RentalsTab({ devices, request }) {
   const [statusFilter, setStatusFilter] = useState('active');   // active | overdue | returned | all
   const [editing, setEditing] = useState(null);       // null | 'new' | contract
   const [returning, setReturning] = useState(null);   // contract to return
@@ -466,7 +468,7 @@ function RentalCard({ c, onEdit, onReturn, onDelete, onHandoff, onPhotos }) {
 }
 
 // (R4) 정산 breakdown 표시 + 청구서 다운로드.
-function SettlementSummary({ c }) {
+export function SettlementSummary({ c }) {
   const lines = c.settlement_json?.lines || [];
   const refund = c.refund_krw ?? ((c.deposit_krw || 0) - (c.settled_amount_krw || 0));
   return (
@@ -491,7 +493,8 @@ function SettlementSummary({ c }) {
         <span>소계</span>
         <span style={{ color: 'var(--primary)' }}>{(c.settled_amount_krw || 0).toLocaleString()}원</span>
       </div>
-      {c.deposit_krw > 0 && (
+      {c.rental_terms && <><div>대여료 순수납 · {Number(c.settlement_json?.paid_krw || 0).toLocaleString()}원</div><div>별도 보관 보증금 · {Number(c.settlement_json?.held_krw || 0).toLocaleString()}원</div></>}
+      {(c.rental_terms || c.deposit_krw > 0) && (
         <div style={{
           display: 'flex', justifyContent: 'space-between',
           fontWeight: 800,
@@ -532,7 +535,11 @@ function isoToLocal(iso) {
 }
 function localToIso(v) { return v ? new Date(v).toISOString() : null; }
 
-function RentalDialog({ init, devices, presetDate, presetDeviceId, onClose, onSaved }) {
+export function RentalDialog(props) {
+  return !props.init || props.init.rental_terms ? <RentalBookingForm {...props} /> : <LegacyRentalDialog {...props} />;
+}
+
+function LegacyRentalDialog({ init, devices, presetDate, presetDeviceId, onClose, onSaved }) {
   // presetDate 'YYYY-MM-DD' 있으면 그 날 09:00 시작, 다음날 09:00 종료. 없으면 오늘 기준.
   const defaultStart = () => {
     const d = presetDate ? new Date(`${presetDate}T09:00:00`) : new Date();
@@ -756,42 +763,6 @@ function FilterChip({ active, onClick, label, count, tone = 'default' }) {
   );
 }
 
-// (2026-07-28 Stage-R8) 렌트카 홈 대시보드 — rental_contracts 통합 뷰.
-// 차량 fleet + 임대 사이드를 한 화면에서. 오늘/이번주 반납 임박, 활성 계약,
-// 이번달 매출·유휴 차량, 최근 반납.
-function FleetTab({ devices, onMap, onContracts }) {
-  const now = useBusinessClock();
-  const result = useRentalOperations(now);
-  const summary = rentalSummary(result.data || [], devices, now);
-  const ready = !!result.data && !result.error;
-  const openVehicle = useBusinessVehicle();
-  const [taskFilter, setTaskFilter] = useState('all');
-  const tasks = rentalAttention(ready ? result.data : [], devices, now);
-  const visibleTasks = tasks.filter(t => taskFilter === 'all' || t.category === taskFilter);
-  const filters = [['all', '전체'], ['return', '반납'], ['signal', '통신'], ['maintenance', '점검'], ['pickup', '출고']];
-  return <div className="business-overview">
-    <BusinessMetrics items={[
-      { label: '오늘 출고', value: ready ? summary.todayPickups.length : null, unit: '건', hint: '오늘 시작하는 계약', icon: 'route' },
-      { label: '오늘 반납', value: ready ? summary.todayReturns.length : null, unit: '건', hint: '예정 시간과 반납 상태 확인', icon: 'clock' },
-      { label: '반납 지연', value: ready ? summary.overdue.length : null, unit: '건', hint: '종료 시간을 지난 미반납 계약', tone: summary.overdue.length ? 'urgent' : '', icon: 'warn' },
-      { label: '미배차 차량', value: ready ? summary.available.length : null, unit: '대', hint: '신규 계약 전 예약·정비 확인', tone: 'good', icon: 'list' },
-    ]}/>
-    {result.error && <BusinessError onRetry={result.refetch}>계약 현황을 불러오지 못했습니다. 배차·반납 상태를 확인한 후 처리해 주세요.</BusinessError>}
-    <div className="business-overview-grid"><BusinessLocation devices={devices} />
-    <BusinessSection title={`오늘 처리할 일${ready ? ` · ${tasks.length}건` : ''}`} action={<BusinessButton onClick={() => onContracts({ status: 'all' })}>계약 전체 보기</BusinessButton>}>
-      {ready && <div className="business-task-filters" aria-label="할 일 필터">{filters.map(([key, label]) => <button className="business-task-filter" key={key} aria-pressed={taskFilter === key} onClick={() => setTaskFilter(key)}>{label} <span>{key === 'all' ? tasks.length : tasks.filter(t => t.category === key).length}</span></button>)}</div>}
-      {result.isLoading ? <SkeletonList count={3} itemHeight={72}/> : visibleTasks.length ? visibleTasks.map(task =>
-        <BusinessTask key={task.id} title={task.title} description={`${task.description}${task.date ? ` · ${new Date(task.date).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}`} label={task.label} tone={task.tone} action={task.action} onClick={() => task.device ? openVehicle(task.device) : onContracts(task.category === 'return' ? { returning: task.contract } : { contract: task.contract })}/>)
-        : !result.error && <BusinessEmpty compact title={taskFilter === 'all' ? '오늘 처리할 일이 없습니다.' : '이 항목에 처리할 일이 없습니다.'}>{taskFilter === 'all' ? '출고·반납 일정과 점검·통신 상태를 이곳에서 확인할 수 있습니다.' : '다른 항목을 선택해 전체 할 일을 확인하세요.'}</BusinessEmpty>}
-      {ready && tasks.some(t => t.category === 'signal') && <p className="business-task-note">통신 확인은 임대 중인 차량이 6시간 이상 응답하지 않았거나 수신 이력이 없을 때 표시합니다.</p>}
-    </BusinessSection>
-    </div>
-    <BusinessVehicles devices={devices} onMap={onMap} onDetail={d => onContracts({ deviceId: d.id })} detailLabel="계약 보기" statusUnknown={!ready}
-      availability={d => summary.overdue.some(c => String(c.device_id) === String(d.id)) ? { label: '반납 지연', tone: 'urgent' } : summary.occupied.has(String(d.id)) ? { label: '임대 중', tone: 'info' } : { label: '미배차', tone: 'good' }}/>
-    <p className="business-note">전체 {devices.length}대 · {ready ? `현재 임대 ${summary.occupied.size}대 · 이번 달 정산 ${summary.revenue.toLocaleString()}원` : '임대·정산 정보 확인 필요'}. 차량의 운영 상태와 단말기 통신 상태는 별도로 표시합니다.</p>
-  </div>;
-}
-
 const st = {
   wrap:    { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 },
   tabBar:  { display: 'flex', gap: 4, padding: '8px 12px 0', borderBottom: '1px solid var(--border)', overflowX: 'auto', flexShrink: 0 },
@@ -850,7 +821,7 @@ const st = {
 // ═══════════════════════════════════════════════════════════════
 // (2026-07-28) Stage-R9-a: 임차인 handoff (QR/링크) 발급 다이얼로그.
 // ═══════════════════════════════════════════════════════════════
-function HandoffTokenDialog({ contract, onClose }) {
+export function HandoffTokenDialog({ contract, onClose }) {
   const [purpose, setPurpose] = useState(contract.status === 'draft' ? 'pickup' : 'pickup');
   // (F2-b) useHandoffTokens + issue/revoke mutations. setTick 제거.
   const { data: tokens } = useHandoffTokens(contract.id);

@@ -1,0 +1,98 @@
+import React,{useState} from 'react';
+import {useQuery,useQueryClient} from '@tanstack/react-query';
+import {api} from '../../api';
+import {Button,Modal} from '../ui';
+import {BusinessRenters} from './BusinessPeople';
+import {Field,FormModal,Metrics,Options,PeriodFields,Search,Table,Toolbar} from './RentalOfficeKit';
+import {fillTemplate,initialPeriod,periodOk,templateKeys,won} from '../../lib/rentalOffice';
+import {officeBookKey,officeCatalogKey} from './rentalOfficeKeys';
+
+const titles={customers:'고객',accounts:'법인 거래처',rates:'요금표',templates:'계약서 양식'};
+const kinds={person:'개인',business:'법인 고객'}, billing={each:'건별',monthly:'월합산'};
+const blank={
+  customers:{kind:'person',phone:'',email:'',account_id:'',license_type:'',license_checked:false,memo:''},
+  accounts:{contact:'',phone:'',business_number:'',billing:'each',memo:''},
+  rates:{daily_krw:0,deposit_krw:0,coverage_krw:0},
+  templates:{body:'{{회사명}} 대여 계약서\n\n계약번호 {{계약번호}}\n고객 {{고객명}}\n차량 {{차량번호}}\n대여 {{대여시작}} ~ {{반납예정}}\n대여요금 {{대여요금}}\n보증금 {{보증금}}'},
+};
+function Editor({kind,catalog,row,close}) {
+  const qc=useQueryClient();
+  const [form,setForm]=useState(()=>({...blank[kind],name:'',active:true,...row}));
+  const update=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const txt=(key,label,props={})=><Field label={label}><input value={form[key]??''} onChange={e=>update(key,e.target.value)} maxLength={80} {...props}/></Field>;
+  const note=(key,label,max,required)=><Field label={label} wide><textarea rows={kind==='templates'?8:3} maxLength={max} value={form[key]||''} required={required} onChange={e=>update(key,e.target.value)}/></Field>;
+  const choice=(key,label,items)=><Field label={label}><select value={form[key]} onChange={e=>update(key,e.target.value)}><Options items={items}/></select></Field>;
+  async function save() {
+    const body={...form};
+    if (kind==='customers') body.account_id=form.account_id?Number(form.account_id):null;
+    if (kind==='rates') ['daily_krw','deposit_krw','coverage_krw'].forEach(k=>{body[k]=Number(form[k]);});
+    await api.rentalOffice(row?'PATCH':'POST','/catalog/'+kind+(row?'/'+row.id:''),body);
+    await qc.invalidateQueries({queryKey:officeCatalogKey()});
+  }
+  return <FormModal title={titles[kind]+(row?' 수정':' 등록')} onClose={close} save={save}>
+    {txt('name',({customers:'고객명',accounts:'거래처명',rates:'차종 이름',templates:'양식 이름'})[kind],{required:true})}
+    {kind==='customers' && <>
+      {choice('kind','고객 구분',kinds)}
+      {txt('phone','연락처',{type:'tel',required:true,maxLength:25})}{txt('email','이메일',{type:'email',maxLength:120})}
+      <Field label="법인 거래처"><select value={form.account_id??''} onChange={e=>update('account_id',e.target.value)}><option value="">미연결</option>{catalog.accounts.filter(a=>a.active||a.id===Number(form.account_id)).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>
+      {txt('license_type','운전면허 종류',{maxLength:40,required:form.license_checked})}
+      <label className="ro-check ro-wide"><input type="checkbox" checked={form.license_checked} onChange={e=>update('license_checked',e.target.checked)}/>운전면허 확인 완료</label>
+      {note('memo','메모',1000,false)}
+    </>}
+    {kind==='accounts' && <>{txt('contact','담당자',{required:true,maxLength:40})}{txt('phone','연락처',{type:'tel',required:true,maxLength:25})}
+      {txt('business_number','사업자등록번호',{maxLength:12})}{choice('billing','정산 방식',billing)}{note('memo','메모',1000,false)}</>}
+    {kind==='rates' && <>{[['daily_krw','1일 대여요금 (원)'],['deposit_krw','보증금 (원)'],['coverage_krw','1일 자차 보장료 (원)']].map(([k,l])=><React.Fragment key={k}>{txt(k,l,{type:'number',min:0,max:1000000000,step:1,required:true})}</React.Fragment>)}</>}
+    {kind==='templates' && <>{note('body','계약서 내용',20000,true)}<div className="ro-tokens ro-wide"><span>자동 입력 항목</span>{templateKeys.map(k=><code key={k}>{'{{'+k+'}}'}</code>)}</div></>}
+    <label className="ro-check ro-wide"><input type="checkbox" checked={form.active} onChange={e=>update('active',e.target.checked)}/>사용 중</label>
+  </FormModal>;
+}
+function Preview({row,devices,close}) {
+  const [period,setPeriod]=useState(initialPeriod), [id,setId]=useState('');
+  const q=useQuery({queryKey:officeBookKey(period),queryFn:()=>api.rentalOffice('GET','/book?'+new URLSearchParams(period)),enabled:periodOk(period)});
+  const contract=q.data?.contracts.find(c=>String(c.id)===id);
+  return <Modal open size="lg" onClose={close} title="계약서 미리보기" subtitle={row.name}>
+    <div className="ro-modal"><div className="ro-filters"><PeriodFields period={period} onChange={p=>{setId('');setPeriod(p);}}/>
+      <Field label="정보를 채울 계약"><select value={id} onChange={e=>setId(e.target.value)}><option value="">양식 원문</option>{q.data?.contracts.map(c=><option key={c.id} value={c.id}>#{c.id} · {c.renter_name}</option>)}</select></Field></div>
+      {!periodOk(period)&&<p role="alert">조회 기간을 1년 이내로 선택해 주세요.</p>}
+      {q.isError&&<p role="alert">계약을 불러오지 못했습니다. <button onClick={()=>q.refetch()}>다시 시도</button></p>}
+      <pre className="ro-paper">{fillTemplate(row.body,contract,q.data?.company_name,devices)}</pre>
+    </div></Modal>;
+}
+export default function RentalOfficeCatalog({kind,catalog,devices}) {
+  const [query,setQuery]=useState(''),[status,setStatus]=useState('all'),[type,setType]=useState('all'),[account,setAccount]=useState('all'),[license,setLicense]=useState('all');
+  const [edit,setEdit]=useState(undefined),[preview,setPreview]=useState(null),[history,setHistory]=useState(false);
+  const findAccount=c=>catalog.accounts.find(a=>a.id===c.account_id)?.name;
+  const rows=catalog[kind].filter(r=>(status==='all'||r.active===(status==='active')) &&
+    (type==='all'||r.kind===type||r.billing===type) && (account==='all'||String(r.account_id??'')===account) &&
+    (license==='all'||r.license_checked===(license==='yes')) &&
+    [r.name,r.phone,r.email,r.contact,r.body,r.business_number,findAccount(r)].some(v=>String(v??'').toLowerCase().includes(query.trim().toLowerCase())));
+  const editButton=r=><Button size="sm" variant="ghost" aria-label={r.name+' 수정'} onClick={()=>setEdit(r)}>수정</Button>;
+  const cols={
+    customers:[['고객명',c=><><strong>{c.name}</strong>{c.email&&<small className="ro-secondary">{c.email}</small>}</>],['구분',c=>kinds[c.kind]],['연락처',c=>c.phone],['거래처',findAccount],
+      ['운전면허',c=><span className={c.license_checked?'ro-status':'ro-status amber'}>{c.license_checked?'확인 완료':'확인 필요'}</span>],['대여 이력',c=>(c.contracts_count||0)+'건']],
+    accounts:[['거래처명',c=><><strong>{c.name}</strong>{c.business_number&&<small className="ro-secondary">{c.business_number}</small>}</>],['담당자',c=>c.contact],['연락처',c=>c.phone],['정산 방식',c=>billing[c.billing]],
+      ['연결 고객',c=>(c.customers_count||0)+'명'],['미수금',c=>won(c.outstanding_krw)]],
+    rates:[['차종',c=><strong>{c.name}</strong>],['1일 대여요금',c=>won(c.daily_krw)],['보증금',c=>won(c.deposit_krw)],['1일 자차 보장료',c=>won(c.coverage_krw)],['등록 차량',c=>(c.vehicles_count||0)+'대']],
+    templates:[['양식 이름',c=><strong>{c.name}</strong>],['내용',c=><span className="ro-excerpt">{c.body.slice(0,80)}</span>],['미리보기',c=><Button variant="ghost" size="sm" onClick={()=>setPreview(c)}>미리보기</Button>]]
+  }[kind];
+  const filter=(label,selected,onChange,items)=><Field label={label}><select value={selected} onChange={e=>onChange(e.target.value)}><Options items={items}/></select></Field>;
+  return <div className="rental-office">
+    {kind==='customers'&&<div className="ro-tabs"><button aria-pressed={!history} onClick={()=>setHistory(false)}>고객 명부</button><button aria-pressed={history} onClick={()=>setHistory(true)}>계약 이력·경고 관리</button></div>}
+    {history?<BusinessRenters/>:<>
+      {kind==='customers'&&<Metrics items={[['조회 고객',rows.length+'명'],['법인 고객',rows.filter(c=>c.kind==='business').length+'명'],['면허 확인 필요',rows.filter(c=>!c.license_checked).length+'명']]}/>}
+      <div className="ro-filters">
+        {kind==='customers'&&<>{filter('고객 구분',type,setType,{all:'전체',...kinds})}
+          {filter('거래처',account,setAccount,{all:'전체','':'미연결',...Object.fromEntries(catalog.accounts.map(a=>[a.id,a.name]))})}
+          {filter('면허 확인',license,setLicense,{all:'전체',yes:'확인 완료',no:'미확인'})}</>}
+        {kind==='accounts'&&filter('정산 방식',type,setType,{all:'전체',...billing})}
+        {filter('사용 여부',status,setStatus,{all:'전체',active:'사용 중',inactive:'사용 중지'})}
+        <Search value={query} setValue={setQuery} label={titles[kind]+' 검색'}/>
+        {(query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<Button variant="ghost" size="sm" onClick={()=>{setQuery('');setStatus('all');setType('all');setAccount('all');setLicense('all');}}>초기화</Button>}
+      </div>
+      <section className="ro-panel"><Toolbar count={rows.length}><Button onClick={()=>setEdit(null)}>{titles[kind]} 등록</Button></Toolbar>
+        <Table columns={[...cols,['상태',r=><span className={r.active?'ro-status':'ro-status off'}>{r.active?'사용 중':'사용 중지'}</span>],['관리',editButton]]} rows={rows} empty={'조회된 '+titles[kind]+' 항목이 없습니다.'}/></section>
+    </>}
+    {edit!==undefined&&<Editor row={edit} kind={kind} catalog={catalog} close={()=>setEdit(undefined)}/>}
+    {preview&&<Preview row={preview} devices={devices} close={()=>setPreview(null)}/>}
+  </div>;
+}

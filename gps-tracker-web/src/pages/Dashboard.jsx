@@ -37,6 +37,7 @@ import PointInfoSheet from '../components/PointInfoSheet';
 const AdminDashboard = lazy(() => import('../components/AdminDashboard'));
 const CorporatePanel = lazy(() => import('../components/CorporatePanel'));
 const RentcarPanel   = lazy(() => import('../components/RentcarPanel'));
+const RentalStaffDesk = lazy(() => import('../components/business/RentalStaffDesk'));
 const DeliveryPanel  = lazy(() => import('../components/DeliveryPanel'));
 const LazyPanelFallback = () => (
   <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
@@ -182,7 +183,10 @@ export default function Dashboard({ onLogout }) {
   const isAdmin     = me?.role === 'admin';
   const memberships=useQuery({queryKey:['fleet-memberships',authScope()],queryFn:()=>api.fleetWorkspaces(),enabled:!!me,refetchInterval:30000});
   const isCorporate = accountType === 'corporate_fleet'||!!memberships.data?.memberships?.length;
-  const isRentcar   = accountType === 'rentcar';
+  const rentalOwner = accountType === 'rentcar';
+  const rentalMemberships=useQuery({queryKey:['rental-memberships',authScope()],queryFn:()=>api.rentalTeam('GET','/memberships'),enabled:!!me,staleTime:60000});
+  const staffEntry = view==='rentcar'&&new URLSearchParams(location.search).get('page')==='staff-desk';
+  const isRentcar = rentalOwner || !!rentalMemberships.data?.length;
   const isDelivery  = accountType === 'delivery';
 
   // ── 사용자 UI 환경설정 (계정 귀속) ────────────────────────
@@ -786,10 +790,10 @@ export default function Dashboard({ onLogout }) {
   // 데스크톱은 좌측 SideRail + 중앙 Map + 우측 사이드 패널 (탭 활성 시)
   // 모바일/태블릿은 BottomNav + 풀스크린 오버레이 패널
   const specialized = ['admin', 'corporate', 'rentcar', 'delivery'].includes(view);
-  const accessQuery = view === 'admin' ? meQuery : view==='corporate'&&accountType!=='corporate_fleet'?memberships:accountQuery;
+  const accessQuery = view === 'admin' ? meQuery : view==='corporate'&&accountType!=='corporate_fleet'?memberships:view==='rentcar'&&!rentalOwner&&!staffEntry&&accountQuery.isSuccess?rentalMemberships:accountQuery;
   const routeProblem = !view ? 'missing' : specialized
     ? accessQuery.isPending ? 'loading' : accessQuery.isError ? 'error'
-      : !(view==='corporate'&&isCorporate)&&!routeAccess(view, me, accountType) ? 'denied' : null
+      : !(view==='corporate'&&isCorporate)&&!(view==='rentcar'&&(isRentcar||staffEntry))&&!routeAccess(view, me, accountType) ? 'denied' : null
     : null;
   const mapVisible = !routeProblem && (isDesktop || view === 'home');
 
@@ -942,7 +946,7 @@ export default function Dashboard({ onLogout }) {
       </div>}
 
       {/* 데스크톱 좌측 사이드 레일 */}
-      {isDesktop && <SideRail active={view} onChange={navigateDashboard} isAdmin={isAdmin}
+      {isDesktop && !(view === 'rentcar' && isRentcar) && <SideRail active={view} onChange={navigateDashboard} isAdmin={isAdmin}
         isCorporate={isCorporate} isRentcar={isRentcar} isDelivery={isDelivery} />}
 
       <main style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
@@ -974,10 +978,16 @@ export default function Dashboard({ onLogout }) {
         )}
 
         {/* 렌트카 본문 — 풀-화면. corporate 와 같은 shell. */}
-        {!routeProblem && view === 'rentcar' && isRentcar && (
+        {!routeProblem && view === 'rentcar' && (staffEntry||(!rentalOwner&&isRentcar)) && <Suspense fallback={<LazyPanelFallback/>}><RentalStaffDesk onHome={()=>setView('profile')}/></Suspense>}
+        {!routeProblem && view === 'rentcar' && rentalOwner && !staffEntry && (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <Suspense fallback={<LazyPanelFallback />}>
-              <RentcarPanel devices={devices} onNavigate={setView} meta={lastMetaRef.current} onMap={id => { setView('home'); persistFilterDevice(id); }} />
+              <RentcarPanel devices={devices} onNavigate={setView} meta={lastMetaRef.current}
+                page={new URLSearchParams(location.search).get('page')}
+                onPage={id=>navigate({pathname:'/rentcar',search:id==='fleet'?'':'?page='+encodeURIComponent(id)})}
+                destinations={sideRailItems({isAdmin,isCorporate,isRentcar,isDelivery}).filter(item=>item.id!=='rentcar')}
+                onDevicesChange={reloadDevicesAfterMutation} onManageVehicle={id=>{setDetailId(id);setView('devices');}}
+                onMap={id => { setView('home'); persistFilterDevice(id); }} />
             </Suspense>
           </div>
         )}

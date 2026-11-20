@@ -36,6 +36,8 @@ pub mod privacy_packages;
 pub mod privacy_redacted;
 pub mod profile_type;
 pub mod rentcar;
+pub mod rentcar_office;
+pub mod rentcar_team;
 pub mod share;
 pub mod sim_requests;
 pub mod stats;
@@ -84,6 +86,8 @@ pub fn build_router(state: AppState) -> Router {
         .merge(fleet_trip_assignment::router())
         .merge(fleet_trip_quality::router())
         .merge(rentcar::router())
+        .merge(rentcar_office::router())
+        .merge(rentcar_team::router())
         .merge(payments::router())
         .merge(phones::router())
         .merge(sim_requests::router_user())

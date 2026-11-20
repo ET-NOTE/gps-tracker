@@ -1370,5 +1370,121 @@
   "ws.rs GET /realtime": {
     "class": "outside_api",
     "reason": "WebSocket data sends instrumented per message."
+  },
+  "fleet_work.rs GET /rentcar/fleet-work": {
+    "class": "non_location",
+    "reason": "Owner rental vehicle profile or maintenance and incident records. No telemetry or coordinates."
+  },
+  "fleet_work.rs GET /rentcar/vehicle-profiles": {
+    "class": "non_location",
+    "reason": "Owner rental vehicle profile or maintenance and incident records. No telemetry or coordinates."
+  },
+  "fleet_work.rs POST /rentcar/fleet-work": {
+    "class": "non_location",
+    "reason": "Owner rental vehicle profile or maintenance and incident records. No telemetry or coordinates."
+  },
+  "fleet_work.rs POST /rentcar/fleet-work/:id/complete": {
+    "class": "non_location",
+    "reason": "Owner rental vehicle profile or maintenance and incident records. No telemetry or coordinates."
+  },
+  "fleet_work.rs PUT /rentcar/fleet-work/:id": {
+    "class": "non_location",
+    "reason": "Owner rental vehicle profile or maintenance and incident records. No telemetry or coordinates."
+  },
+  "fleet_work.rs PUT /rentcar/vehicle-profiles/:id": {
+    "class": "non_location",
+    "reason": "Owner rental vehicle profile or maintenance and incident records. No telemetry or coordinates."
+  },
+  "rentcar_office.rs GET /rentcar/office/book": {
+    "class": "non_location",
+    "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."
+  },
+  "rentcar_office.rs GET /rentcar/office/catalog": {
+    "class": "non_location",
+    "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."
+  },
+  "rentcar_office.rs PATCH /rentcar/office/catalog/:kind/:id": {
+    "class": "non_location",
+    "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."
+  },
+  "rentcar_office.rs PATCH /rentcar/office/costs/:id": {
+    "class": "non_location",
+    "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."
+  },
+  "rentcar_office.rs POST /rentcar/office/catalog/:kind": {
+    "class": "non_location",
+    "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."
+  },
+  "rentcar_office.rs POST /rentcar/office/costs": {
+    "class": "non_location",
+    "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."
+  },
+  "rentcar_office.rs POST /rentcar/office/ledger": {
+    "class": "non_location",
+    "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."
+  },
+  "rentcar_team.rs GET /rentcar/team/config": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs GET /rentcar/team/desk/:owner": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs GET /rentcar/team/memberships": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs POST /rentcar/team/branches": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs POST /rentcar/team/desk/:owner/:contract/notes": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs POST /rentcar/team/groups": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs POST /rentcar/team/join": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs POST /rentcar/team/staff": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs POST /rentcar/team/staff/:id/invite": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs PUT /rentcar/team/groups/:id": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "rentcar_team.rs PUT /rentcar/team/staff/:id": {
+    "class": "non_location",
+    "reason": "Rental staff, account invitation or branch-assigned contractual schedule and service records. No GPS positions or tracks."
+  },
+  "workflow.rs GET /rentcar/contracts/:id/balance": {
+    "class": "non_location",
+    "reason": "Rental policy, contractual handover, confirmation or settlement amounts. No telemetry or coordinates."
+  },
+  "workflow.rs GET /rentcar/operating-policy": {
+    "class": "non_location",
+    "reason": "Rental policy, contractual handover, confirmation or settlement amounts. No telemetry or coordinates."
+  },
+  "workflow.rs POST /rentcar/contracts/:id/checkout": {
+    "class": "non_location",
+    "reason": "Rental policy, contractual handover, confirmation or settlement amounts. No telemetry or coordinates."
+  },
+  "workflow.rs POST /rentcar/contracts/:id/review": {
+    "class": "non_location",
+    "reason": "Rental policy, contractual handover, confirmation or settlement amounts. No telemetry or coordinates."
+  },
+  "workflow.rs PUT /rentcar/operating-policy": {
+    "class": "non_location",
+    "reason": "Rental policy, contractual handover, confirmation or settlement amounts. No telemetry or coordinates."
   }
 }

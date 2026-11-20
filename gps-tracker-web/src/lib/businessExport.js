@@ -61,7 +61,7 @@ function coordinates(lat,lng) { return lat == null || lng == null ? '' : `${Numb
 export function rentalReport(contracts, { settlement = false, filterText = '', now = Date.now() } = {}) {
   const selected = settlement ? contracts.filter(c => c.status === 'returned') : contracts;
   const rows = selected.map(c => ({
-    id: c.id, vehicle: c.license_plate || c.device_name || `차량 ${c.device_id}`, renter: c.renter_name,
+    id: c.id, vehicle: c.license_plate || c.device_name || (c.device_id == null ? `미배정 · ${c.rental_terms?.requested_model || "차종 미지정"}` : `차량 ${c.device_id}`), renter: c.renter_name,
     start: kstDateTime(c.starts_at), end: kstDateTime(c.ends_at), status: statusLabel[rentalStatus(c, now)] || c.status,
     deposit: money(c.deposit_krw), amount: money(c.settled_amount_krw), settled: kstDateTime(c.settled_at),
     base: money(c.base_fee_krw), late: money(c.late_fee_krw), excess: money(c.over_km_fee_krw), extra: money(c.extra_fee_krw),
@@ -83,6 +83,7 @@ export function invoiceReport(c) {
     columns: [column('item','항목'),column('detail','내역'),column('amount','금액(원)',true)],
     rows: [...(c.settlement_json?.lines || []).map(l => ({ item: ({base:'기본료',late:'지연료',over_km:'초과 거리',extra:'기타'})[l.kind] || l.kind, detail:l.label || '', amount:money(l.amount) })),
       {item:'정산 합계',detail:'',amount:money(c.settled_amount_krw)}, {item:'보증금',detail:'',amount:money(c.deposit_krw)},
+      ...(c.rental_terms ? [{item:'대여료 순수납',detail:'반납 시점',amount:money(c.settlement_json?.paid_krw)}, {item:'별도 보관 보증금',detail:'반납 시점',amount:money(c.settlement_json?.held_krw)}] : []),
       {item:'환급 / 추가 청구',detail:'양수: 환급, 음수: 추가 청구',amount:report.rows[0]?.refund ?? ''}] };
 }
 

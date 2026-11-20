@@ -13,6 +13,7 @@ import { fleetRequestScope } from '../src/lib/fleetSession';
 import SideRail, { sideRailItems } from '../src/components/SideRail';
 import useBreakpoint from '../src/useBreakpoint';
 import { createPreviewExpenseReceipts } from './expense-receipt-fixture';
+import { installRentalOfficeFixture } from './rental-office-fixture';
 
 // Isolated visual fixture: all network methods are stubbed; return tests never write to a server.
 const params = new URLSearchParams(location.search);
@@ -38,7 +39,21 @@ const photoBytes = new Map();
 let nextPhotoId = 1000;
 for (const key of Object.keys(api)) api[key] = async () => { throw Error('미리보기에서는 서버 작업을 수행하지 않습니다.'); };
 const read = value => async () => { if (failed) throw Error('의도한 조회 오류'); return value; };
+let rentalProfiles = devices.map((d, i) => ({device_id:d.id, branch:i < 2 ? '서울' : '수원',class_name:d.car_model,readiness:'ready',fuel_level:null,odometer_km:null,revision:1}));
+let rentalWork = [];
 Object.assign(api, {
+  rentalFleetProfiles: async () => (await read(rentalProfiles)()).slice(), rentalFleetWork: async () => (await read(rentalWork)()).slice(),
+  saveRentalFleetProfile: async (device_id, data) => {
+    const row={...data,device_id,revision:data.revision+1}; rentalProfiles=[...rentalProfiles.filter(p=>p.device_id!==device_id),row];return row;
+  },
+  saveRentalFleetWork: async (id,data) => {
+    const row={...data,id:id??(1+Math.max(0,...rentalWork.map(r=>r.id))),closed_at:null,inspection_released_at:null};rentalWork=[...rentalWork.filter(r=>r.id!==id),row];return row;
+  },
+  completeRentalFleetWork: async (id,data) => {
+    const item=rentalWork.find(w=>w.id===id);if(!item) throw Error('내역이 없습니다.');
+    const row={...item,...(data.release?{inspection_released_at:new Date().toISOString()}:{closed_at:new Date().toISOString(),resolution:data.resolution})};
+    rentalWork=rentalWork.map(w=>w.id===id?row:w);return row;
+  },
   listRentals: read(rentals), listReservations: async (p = {}) => { if (failed) throw Error('의도한 조회 오류'); return reservations.filter(r => (!p.from || new Date(r.ends_at) >= new Date(p.from)) && (!p.to || new Date(r.starts_at) < new Date(p.to))); }, listStaff: read(empty ? [] : [{id:1,name:'미리보기 운전자',role:'영업',active:true}]),
   returnRental: async (id, body) => { window.__returnCalls.push({ id, body }); if (!params.has('return-success')) throw Error('미리보기 반납 저장 실패'); const c = rentals.find(r => r.id === id); c.status = 'returned'; return c; },
   getCorporateInfo: read({company_name:'미리보기 회사',business_number:'000-00-00000',representative:'미리보기'}),
@@ -78,6 +93,28 @@ if (params.has('people')) {
     getRentcarSubscription:async()=>supportRead({active:false,price_krw:30000,expires_at:null}),
     buyCorporateSubscription:async()=>{await supportWrite('corporate-buy',{});return {active:true,price_krw:30000,expires_at:new Date(now+50*86400000).toISOString()};},
     buyRentcarSubscription:async()=>{await supportWrite('rentcar-buy',{});return {active:true,price_krw:30000,expires_at:new Date(now+30*86400000).toISOString()};},
+  });
+}
+if ((params.get('kind') || 'rental') === 'rental' && !params.has('account')) {
+  const findRental = id => {
+    const item = rentals.find(c => c.id === Number(id));
+    if (!item) throw Error('예약을 찾을 수 없습니다.');
+    return item;
+  };
+  if (!empty) rentals[2].rental_terms = { requested_model:devices[2].car_model, driver_name:rentals[2].renter_name, channel:'전화' };
+  const writeRental = (c, body) => {
+    if (failed) throw Error('미리보기 저장 실패');
+    const d = devices.find(v => v.id === body.device_id);
+    Object.assign(c, body, {device_name:d?.display_name || null,license_plate:d?.license_plate || d?.car_plate || null});
+    return {...c};
+  };
+  Object.assign(api, {
+    listRentals:async()=>{if(failed)throw Error('미리보기 조회 실패');return rentals.map(c=>({...c}));},
+    createRental:async body=>{const next=writeRental({id:Math.max(0,...rentals.map(c=>c.id))+1},body);rentals.push(next);return next;},
+    updateRental:async (id,body)=>writeRental(findRental(id),body),
+    reviewRental:async (id,input)=>{const c=findRental(id);Object.assign(c.rental_terms,{license_checked:input.license_checked,confirmed_at:input.contract_confirmed?new Date().toISOString():null,template_body:input.template_body});return c.rental_terms;},
+    checkoutRental:async (id,input)=>{const c=findRental(id);if (!c.device_id || c.status!=='draft')throw Error('출고 대기 차량을 배정해 주세요.');c.status='active';c.pickup_odometer_km=input.odometer_km;c.rental_terms.pickup_fuel=input.fuel_percent;return {ok:true};},
+    rentalBalance:read({paid_krw:0,held_krw:0}),checkBlacklist:read({blacklisted:false,visits:0}),
   });
 }
 if (params.has('account')) {
@@ -425,6 +462,30 @@ if (params.has('incomplete-state')) {
   };
 }
 
+installRentalOfficeFixture(api,{rentals,devices,empty,failed,day});
+const rentalTeamFixture={branches:[],groups:[],staff:[],notes:[]};
+let rentalPolicyFixture={buffer_minutes:0,late_hourly:null,require_license:false,require_payment:false,require_contract:false,notify_return:true};
+api.rentalOperatingPolicy=async()=>({...rentalPolicyFixture});
+api.saveRentalOperatingPolicy=async value=>{rentalPolicyFixture={...value};return {...rentalPolicyFixture};};
+let notificationFixture={signal_loss_minutes:10,offline_minutes:1440,low_batt_threshold_mv:3500,rental_alert:true};
+api.getNotificationSettings=async()=>({...notificationFixture});
+api.updateNotificationSettings=async value=>{notificationFixture={...notificationFixture,...value};return {...notificationFixture};};
+api.rentalTeam=async(method,endpoint,body)=>{
+  if(failed)throw Error('미리보기 조회 실패');
+  if(method==='GET'&&endpoint==='/config')return structuredClone(rentalTeamFixture);
+  if(method==='GET'&&endpoint==='/memberships')return [];
+  const [,kind,id,action]=endpoint.split('/');
+  const records=rentalTeamFixture[kind];
+  if(records&&method==='POST'&&!id){
+    const item={...body,id:records.length+1,active:true,revision:1,joined:false};
+    records.push(item);
+    return kind==='staff'?{id:item.id,code:'preview-only-invitation'}:item;
+  }
+  const row=records?.find(item=>item.id===Number(id));
+  if(row&&method==='PUT'){Object.assign(row,body,{revision:row.revision+1});return {id:row.id};}
+  if(row&&method==='POST'&&action==='invite')return {id:row.id,code:'preview-only-invitation'};
+  throw Error('미리보기에서 지원하지 않는 사용자 요청입니다.');
+};
 initTheme(); applyTheme(params.has('dark') ? 'dark' : 'light', {syncServer:false,persist:false});
 function Preview() {
   const [kind,setKind] = useState(params.get('kind') || 'rental');
@@ -435,7 +496,7 @@ function Preview() {
   return <div style={{height:'100%',display:'flex',flexDirection:'column'}}>
     {!params.has('presentation') && <div style={{padding:8,display:'flex',gap:12,flexWrap:'wrap',flexShrink:0,fontSize:12}}><button onClick={()=>setKind('rental')}>렌트카 미리보기</button><button onClick={()=>setKind('corporate')}>법인차 미리보기</button><a href="?error=1">오류 상태</a><a href="?empty=1">빈 상태</a><span>{action}</span></div>}
     <div className={fullShell?'dashboard-layout':undefined} style={{flex:1,minHeight:0,minWidth:0,display:'flex',width:params.has('mobile')?390:'100%',maxWidth:'100%',margin:'0 auto'}}>
-      {fullShell&&desktop&&<SideRail active={kind==='corporate'?'corporate':'rentcar'} onChange={navigate} isCorporate={kind==='corporate'} isRentcar={kind==='rental'}/>}
+      {fullShell&&desktop&&kind==='corporate'&&<SideRail active="corporate" onChange={navigate} isCorporate/>}
       <div style={{flex:1,minWidth:0,minHeight:0}}>
         {kind==='rental'?<RentcarPanel devices={devices} onNavigate={navigate} onMap={id=>setAction(`지도 이동: ${id}`)}/>:<CorporatePanel devices={devices} onNavigate={navigate} globalNavigation={sideRailItems()} onMap={id=>setAction(`지도 이동: ${id}`)} onDevice={id=>setAction(`차량 상세: ${id}`)}/>}
       </div>

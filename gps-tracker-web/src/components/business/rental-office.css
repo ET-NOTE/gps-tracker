@@ -1,0 +1,77 @@
+.rental-office,.ro-modal{font-family:inherit;color:var(--text,#253347);min-width:0}
+.rental-office{display:grid;align-content:start;gap:16px;--control-font-size:14px;--control-min-height:38px}
+.rental-office *,.ro-modal *{box-sizing:border-box}
+.ro-panel,.ro-filters,.ro-metrics{border:1px solid var(--border,#dfe4ec);border-radius:12px;background:var(--surface,#fff);min-width:0}
+.ro-filters{padding:16px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;background:var(--surface-2,#f8f9fb)}
+.ro-filters>.ro-field,.ro-period>.ro-field{flex:1 1 130px;max-width:280px}
+.ro-period{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;min-width:0}
+.ro-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:14px;color:var(--text,#253347)}
+.ro-field>span,.ro-tokens>span{font-size:13px;font-weight:650;color:var(--text-2,#526278)}
+.ro-field input,.ro-field select,.ro-field textarea{font:inherit;width:100%;min-width:0;min-height:40px;padding:8px 11px;border:1px solid var(--border,#d7dee8);border-radius:7px;background:var(--surface,#fff);color:inherit}
+.ro-field small,.ro-note{color:var(--text-2,#526278);font-size:13px}
+.ro-field textarea{resize:vertical}
+.ro-field :is(input,select,textarea):focus-visible,.ro-tabs button:focus-visible{outline:2px solid var(--primary,#217bdc);outline-offset:2px}
+.ro-metrics{display:flex;flex-wrap:wrap;gap:0;margin:0;padding:4px 0}
+.ro-metrics>div{flex:1 1 130px;min-width:0;padding:13px 18px}
+.ro-finance-filters+.ro-metrics{order:-1}
+.ro-metrics dt{font-size:13px;color:var(--text-2,#526278);margin:0 0 6px}
+.ro-metrics dd{font-size:clamp(18px,1.6vw,24px);font-weight:730;line-height:1.3;letter-spacing:-.025em;margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.ro-toolbar,.ro-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ro-toolbar{padding:14px 18px;justify-content:space-between}
+.ro-toolbar>div{display:flex;gap:8px;align-items:center}
+.ro-toolbar>strong{font-size:15px}
+.ro-table-box{max-width:100%;overflow:auto;border-radius:0 0 12px 12px}
+.ro-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:auto}
+.ro-table th,.ro-table td{padding:12px 14px;text-align:left;line-height:1.6;border-top:1px solid var(--border,#e4e8ef);overflow-wrap:anywhere}
+.ro-table th{font-size:13px;color:var(--text-2,#536780);font-weight:650;background:var(--surface-2,#f6f8fb);white-space:nowrap}
+.ro-table td button{white-space:nowrap}
+.ro-table td strong{font-variant-numeric:tabular-nums}
+.ro-status{font-size:13px;font-weight:600;color:#17604a;background:#e9f7f1;border-radius:5px;padding:3px 8px;white-space:nowrap}
+.ro-status.off{color:#546171;background:#eef1f5}
+.ro-status.amber{color:#86540b;background:#fff3d9}
+.ro-secondary{display:block;color:var(--text-2,#526278);font-size:13px}
+.rnt-shell .ro-filters,.rnt-shell .ro-table th{background:color-mix(in srgb,var(--surface,#fff) 82%,var(--surface-2,#f5f7fb))}
+.rnt-shell .ro-metrics>div+div{border-inline-start:1px solid var(--border,#e7ebf0)}
+.ro-empty{padding:38px 16px;margin:0;text-align:center;color:var(--text-2,#617186);font-size:15px}
+.ro-tabs{display:flex;flex-wrap:wrap;gap:4px}
+.ro-tabs button{font:inherit;font-weight:650;font-size:14px;border-radius:8px;min-height:42px;border:1px solid transparent;background:transparent;color:var(--text-2,#617186);padding:7px 14px;cursor:pointer}
+.ro-tabs button[aria-pressed=true]{background:var(--surface,#fff);border-color:var(--border,#dfe4ec);color:var(--primary,#2476c7)}
+.ro-modal{display:grid;gap:16px;--control-font-size:15px}
+.ro-form-grid{border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.ro-wide{grid-column:1 / -1}
+.ro-check{display:flex;gap:10px;align-items:center;min-height:40px;font-size:15px}
+.ro-check input{width:18px;height:18px;accent-color:var(--primary,#2476c7);margin:0}
+.ro-actions{justify-content:flex-end}
+.ro-tokens{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ro-tokens code{background:var(--surface-2,#f5f7fa);border-radius:4px;padding:2px 5px;font-size:12px}
+.ro-note,.ro-error{margin:0;padding:10px 12px;border-radius:6px}
+.ro-note{background:var(--surface-2,#f5f7fa)}.ro-error{background:#fff1ef;color:#9c352c}
+.ro-paper{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.75;padding:18px;border:1px solid var(--border,#dfe4ec);border-radius:7px;margin:0;color:var(--text)}
+.ro-excerpt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ro-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ro-chart{min-width:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:16px}
+.ro-chart h3{font-size:16px;margin:0 0 14px}
+.ro-chart canvas{display:block;width:100%;height:170px;color:var(--text-2)}
+.ro-chart ul{display:grid;gap:10px;max-height:176px;overflow:auto;padding:0;margin:0;list-style:none}
+.ro-chart li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;font-size:14px}
+.ro-chart li span{overflow-wrap:anywhere}
+.ro-chart meter{grid-column:1/-1;width:100%;height:10px;border:0;accent-color:var(--primary)}
+.ro-chart meter::-webkit-meter-optimum-value{background:var(--primary)}
+@media(max-width:760px){
+  .rental-office{gap:12px}.ro-filters{padding:12px;gap:10px}
+  .ro-charts{grid-template-columns:minmax(0,1fr)}
+  .ro-period{width:100%;gap:8px}.ro-period>.ro-field{flex:1 1 100px}
+  .ro-filters>.ro-field{flex:1 1 130px;max-width:none}
+  .ro-field input,.ro-field select,.ro-field textarea{font-size:16px;min-height:44px}
+  .ro-table-box{overflow:visible}
+  .ro-table,.ro-table tbody{display:block}
+  .ro-table thead{position:absolute;width:1px;height:1px;margin:-1px;clip-path:inset(50%);overflow:hidden}
+  .ro-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:16px;border-top:1px solid var(--border,#e4e8ef)}
+  .ro-table td{display:block;border:0;padding:0;min-width:0;font-size:15px}
+  .ro-table td::before{content:attr(data-label);display:block;font-size:12px;line-height:1.5;margin-bottom:2px;color:var(--text-2,#596c83)}
+  .ro-table td button{min-height:42px!important}
+  .ro-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.ro-metrics>div{padding:10px 13px}
+  .ro-toolbar{padding:12px 14px}.ro-toolbar button{min-height:44px}
+  .ro-form-grid{gap:12px}.ro-tabs button{min-height:44px}
+}
+@media(max-width:460px){.ro-form-grid{grid-template-columns:minmax(0,1fr)}}

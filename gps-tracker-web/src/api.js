@@ -293,6 +293,11 @@ async function reportFetch(url) {
 }
 
 export const api = {
+  rentalFleetWork: () => req('GET', '/rentcar/fleet-work'),
+  rentalFleetProfiles: () => req('GET', '/rentcar/vehicle-profiles'),
+  saveRentalFleetProfile: (id, body) => req('PUT', `/rentcar/vehicle-profiles/${id}`, body),
+  saveRentalFleetWork: (id, body) => id == null ? req('POST', '/rentcar/fleet-work', body) : req('PUT', `/rentcar/fleet-work/${id}`, body),
+  completeRentalFleetWork: (id, body) => req('POST', `/rentcar/fleet-work/${id}/complete`, body),
   adminNoticeQueue: () => req('GET','/admin/security/notice-queue'),
   adminSecurity: () => req('GET','/admin/security/status'),
   adminUnattributed: (params, signal) => req('GET', '/admin/privacy/unattributed?' + new URLSearchParams(params), undefined, true, { signal }),
@@ -927,6 +932,13 @@ export const api = {
     const qs = q.toString();
     return req('GET', `/rentcar/contracts${qs ? '?' + qs : ''}`);
   },
+  rentalOffice: (method, path, body) => req(method, '/rentcar/office' + path, body),
+  rentalTeam: (method, path, body) => req(method, '/rentcar/team' + path, body),
+  rentalOperatingPolicy: () => req('GET', '/rentcar/operating-policy'),
+  saveRentalOperatingPolicy: body => req('PUT', '/rentcar/operating-policy', body),
+  rentalBalance: id => req('GET', `/rentcar/contracts/${id}/balance`),
+  reviewRental: (id,body) => req('POST', `/rentcar/contracts/${id}/review`,body),
+  checkoutRental: (id,body) => req('POST', `/rentcar/contracts/${id}/checkout`,body),
   createRental: (body)     => req('POST',  '/rentcar/contracts', body),
   updateRental: (id, body) => req('PATCH', `/rentcar/contracts/${id}`, body),
   returnRental: (id, body) => req('POST',  `/rentcar/contracts/${id}/return`, body),

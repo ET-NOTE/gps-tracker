@@ -1,0 +1,97 @@
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../api';
+import { classifyDevice } from '../../colors';
+import { businessDate, businessPeriod, rentalSummary } from '../../lib/business';
+import { addBusinessDays } from '../../lib/businessWorkspace';
+import { kstDateTime } from '../../lib/businessExport';
+import { terminalName } from '../../lib/corporateOverview';
+import { rentalFleetLabel, sameId, vehicleReadiness } from '../../lib/rentalFleet';
+import CarImage from '../CarImage';
+import Icon from '../Icon';
+import { SkeletonList } from '../ui';
+import BusinessMap from './BusinessMap';
+import { BusinessButton, BusinessEmpty, BusinessError, useBusinessVehicle } from './BusinessWorkspace';
+import { useBusinessClock, useRentalOperations } from './useBusinessData';
+import RentalDashboard from './RentalDashboard';
+import RentalFleetWork, { fleetWorkKey } from './RentalFleetWork';
+import RentalFleetProfileEditor, { useRentalProfiles } from './RentalFleetProfiles';
+import ExportButtons from './ExportButtons';
+import './rental-fleet.css';
+
+function terminalSignal(device, now) {
+  const state = classifyDevice(device, undefined, now);
+  const code = !device.last_seen_at ? 'unknown' : ['offline','lost','signal_loss'].includes(state.id) ? 'stale' : 'received';
+  return { code, label: state.label };
+}
+
+function Directory({ view, devices, work, contracts, now, onMap, onNavigate, onDevicesChange, onContracts, branches }) {
+  const [query, setQuery] = useState(''), [branch, setBranch] = useState(''), [vehicleClass, setClass] = useState('');
+  const [filter, setFilter] = useState(''), [connection, setConnection] = useState(''), [chosen, setChosen] = useState(null), [editing, setEditing] = useState(null);
+  const openVehicle = useBusinessVehicle(), live = view === 'live', terminals = view === 'devices';
+  const summary = rentalSummary(contracts, devices, now), needle = query.trim().toLowerCase();
+  const allRows = devices.map(device => ({
+    device, label: rentalFleetLabel(device), terminal: terminalName(device), state: vehicleReadiness(device, work, summary, now),
+    branch: device.rental_profile?.branch || '', className: device.rental_profile?.class_name || device.car_model || '',
+    signal: terminalSignal(device, now),
+  }));
+  const rows = allRows.filter(r => (!branch || r.branch === branch) && (!vehicleClass || r.className === vehicleClass)
+    && (!filter || r.state.code === filter) && (!connection || r.signal.code === connection)
+    && (!needle || [r.label, r.device.device_uid, r.terminal, r.className, r.device.car_model, r.device.car_plate].some(v => String(v || '').toLowerCase().includes(needle))));
+  const branchOptions = [...new Set(allRows.map(r => r.branch).filter(Boolean))].sort(), classes = [...new Set(allRows.map(r => r.className).filter(Boolean))].sort();
+  const selected = rows.find(r => sameId(r.device.id, chosen)) || rows[0];
+  const report = { filename: '렌트카_차량목록_' + businessDate(now), columns: [['label','차량'],['className','차종 등급'],['branch','지점'],['state','준비 상태'],['terminal','연결 단말기'],['signal','단말 수신'],['km','누적 거리(km)'],['fuel','잔량(%)']].map(([key,label])=>({key,label})),
+    rows: rows.map(r => ({ ...r, state:r.state.label, signal:r.signal.label, km:r.device.rental_profile?.odometer_km, fuel:r.device.rental_profile?.fuel_level })) };
+  const title = live ? '관제 차량' : terminals ? '등록 단말기' : '차량 목록';
+  const empty = devices.length ? '조건에 맞는 ' + (terminals ? '단말기가' : '차량이') + ' 없습니다.' : '연결된 렌트카 단말기가 없습니다.';
+  return <div className="rfl-page">
+    <div className="rfl-toolbar"><label className="rfl-search"><Icon name="search" size={17} /><input aria-label={title + ' 검색'} placeholder={terminals ? '단말기명, 차량번호 검색' : '차량번호, 모델 검색'} value={query} onChange={e => setQuery(e.target.value)} /></label>
+      <div className="rfl-buttons">{!live && !terminals && <ExportButtons csvOnly csvLabel="목록 다운로드" report={report} disabled={!rows.length}/>}
+        {!live && onNavigate && <BusinessButton icon="plus" primary onClick={() => onNavigate('devices')}>단말기 등록</BusinessButton>}</div></div>
+    <div className="rfl-filters">
+      <label>소속 지점<select value={branch} onChange={e => setBranch(e.target.value)}><option value="">전체 지점</option>{branchOptions.map(v=><option key={v}>{v}</option>)}</select></label>
+      {!terminals && <label>차종 등급<select value={vehicleClass} onChange={e => setClass(e.target.value)}><option value="">전체 차종</option>{classes.map(v=><option key={v}>{v}</option>)}</select></label>}
+      {!terminals && <label>차량 상태<select value={filter} onChange={e => setFilter(e.target.value)}><option value="">전체 상태</option>{[['ready','대여 가능'],['active','대여 중'],['service','세차·점검'],['hold','배차 보류']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>}
+      {(terminals || live) && <label>단말 수신<select value={connection} onChange={e => setConnection(e.target.value)}><option value="">전체 수신 상태</option>{[['received','수신'],['stale','지연·오프라인'],['unknown','수신 이력 없음']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>}
+      {(branch || vehicleClass || filter || connection || query) && <BusinessButton onClick={() => {setBranch(''); setClass(''); setFilter(''); setConnection(''); setQuery('');}}>초기화</BusinessButton>}
+    </div>
+    {live ? <div className="rfl-live"><section className="rfl-card"><header><h2>관제 차량</h2><span>{rows.length}대</span></header>
+      <div className="rfl-live-list">{rows.map(row=><button key={row.device.id} type="button" className="rfl-live-item" aria-pressed={selected === row} onClick={() => setChosen(row.device.id)}><strong>{row.label}</strong><small>{row.terminal} · {row.signal.label}</small></button>)}
+        {!rows.length && <BusinessEmpty title={empty} compact />}</div></section>
+      <section className="rfl-card rfl-map"><BusinessMap devices={rows.map(row=>row.device)} selectedId={selected?.device.id} onSelect={d=>setChosen(d.id)}/>
+        {selected && <footer><div><strong>{selected.label}</strong><small>{selected.device.last_fix_at ? '마지막 위치 ' + kstDateTime(selected.device.last_fix_at) : '수신된 위치 없음'}</small></div>
+          <div className="rfl-buttons"><BusinessButton onClick={() => openVehicle?.(selected.device)}>차량 상세</BusinessButton>{onMap && <BusinessButton icon="mapPin" onClick={() => onMap(selected.device.id)}>전체 지도</BusinessButton>}</div></footer>}</section></div>
+      : <section className="rfl-card"><header><h2>{title}</h2><span>{rows.length}대</span></header>
+        {!rows.length ? <BusinessEmpty title={empty} /> : terminals ? <div className="rfl-devices">{rows.map(row=><button key={row.device.id} type="button" className="rfl-device" onClick={() => openVehicle?.(row.device)}>
+          <i><Icon name="antenna" size={21}/></i><strong>{row.terminal}</strong><span className="rfl-badge" data-tone={row.signal.code === 'received' ? 'ready' : 'service'}>{row.signal.label}</span>
+          <dl><div><dt>차량</dt><dd>{row.label}</dd></div><div><dt>소속 지점</dt><dd>{row.branch || '미지정'}</dd></div><div><dt>마지막 통신</dt><dd>{kstDateTime(row.device.last_seen_at) || '수신 이력 없음'}</dd></div></dl>
+        </button>)}</div> : <table className="rfl-table"><thead><tr><th>차량</th><th>소속 지점</th><th>대여·준비 상태</th><th>누적 거리</th><th>잔량</th><th>단말기 수신</th><th>작업</th></tr></thead>
+          <tbody>{rows.map(row=><tr key={row.device.id}><td data-label="차량"><button type="button" className="rfl-car" onClick={() => openVehicle?.(row.device)}>
+            <span className="rfl-car-art"><CarImage deviceId={row.device.id} version={row.device.car_image_url} fallback={<Icon name="car" size={24}/>} /></span>
+            <span><strong>{row.label}</strong><small>{[...new Set([row.device.car_model,row.className].filter(Boolean))].join(' · ')}</small></span>
+          </button></td><td data-label="지점">{row.branch || '미지정'}</td><td data-label="상태"><span className="rfl-badge" data-tone={row.state.code}>{row.state.label}</span></td>
+          <td data-label="거리">{row.device.rental_profile?.odometer_km == null ? '—' : row.device.rental_profile.odometer_km.toLocaleString() + ' km'}</td>
+          <td data-label="잔량">{row.device.rental_profile?.fuel_level == null ? '—' : row.device.rental_profile.fuel_level + '%'}</td>
+          <td data-label="단말기">{row.signal.label}<small>{row.terminal}</small></td>
+          <td data-label="작업"><div className="rfl-buttons"><BusinessButton onClick={() => setEditing(row.device.id)}>정보 수정</BusinessButton><BusinessButton onClick={() => onContracts({ deviceId:row.device.id })}>계약 보기</BusinessButton></div></td></tr>)}</tbody></table>}
+      </section>}
+    {editing != null && devices.some(d => sameId(d.id, editing)) && <RentalFleetProfileEditor device={devices.find(d=>sameId(d.id, editing))} onDevicesChange={onDevicesChange} branches={branches} onClose={() => setEditing(null)} />}
+  </div>;
+}
+
+export default function RentalFleet({ view = 'fleet', devices = [], onMap, onNavigate, onDevicesChange, onTab, onContracts, initialWorkId, branches = [] }) {
+  const now = useBusinessClock(), period = businessPeriod(now), from = addBusinessDays(businessDate(now), -6) + 'T00:00:00+09:00';
+  const rentals = useRentalOperations(now, { from: Date.parse(from) < Date.parse(period.from) ? from : period.from });
+  const work = useQuery({ queryKey:fleetWorkKey(), queryFn:api.rentalFleetWork, staleTime:15000 }), profiles = useRentalProfiles();
+  const all = useMemo(() => {
+    const info = new Map((profiles.data || []).map(p=>[String(p.device_id),p]));
+    return devices.map(d=>({...d,rental_profile:info.get(String(d.id))}));
+  }, [devices,profiles.data]);
+  const failed = [work,rentals,profiles].filter(q=>q.isError);
+  if (failed.length) return <BusinessError onRetry={() => failed.forEach(q=>q.refetch())}>렌트카 운영 정보를 불러오지 못했습니다.</BusinessError>;
+  if ([work,rentals,profiles].some(q=>q.isLoading)) return <SkeletonList count={3} itemHeight={70}/>;
+  const data = { devices:all, work:work.data || [], contracts:rentals.data || [], now };
+  if (view === 'fleet') return <RentalDashboard {...data} onTab={onTab} onContracts={onContracts} onWork={onTab} />;
+  if (view === 'service' || view === 'incidents') return <RentalFleetWork key={view} {...data} incident={view === 'incidents'} initialId={initialWorkId} onNavigate={onNavigate}/>;
+  return <Directory key={view} view={view} {...data} onMap={onMap} onContracts={onContracts} onNavigate={onNavigate} onDevicesChange={onDevicesChange} branches={branches}/>;
+}
