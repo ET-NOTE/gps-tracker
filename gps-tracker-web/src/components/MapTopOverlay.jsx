@@ -47,6 +47,6 @@ export default function MapTopOverlay({ devices, selected, onSelect, mapRef, onO
       {notice && <div className="map-cache-notice" role="status">{notice}</div>}
       {children}
     </div>
-    <MapControls mapRef={mapRef} onOpenRoadview={onOpenRoadview} />
+    <MapControls mapRef={mapRef} selected={selected} onOpenRoadview={onOpenRoadview} />
   </div>;
 }

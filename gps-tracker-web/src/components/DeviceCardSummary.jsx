@@ -5,7 +5,7 @@ import './DeviceCardSummary.css';
 import BatteryStatus from './BatteryStatus';
 import { deviceBattery } from '../lib/battery';
 
-export default function DeviceCardSummary({ device, meta, status, color, pinned, detailOpen,
+export default function DeviceCardSummary({ device, meta, status, color, pinned, detailOpen, embedded = false,
   onView, onDetail, onPin, onReceive, onColor, onRename, onUnpair }) {
   const [open, setOpen] = useState(false);
   const root = useRef(null);
@@ -24,10 +24,10 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
   return <div ref={root} className="device-summary">
     <div className="device-summary-heading">
       <div className="device-summary-identity">
-        <h3>{device.display_name || device.device_uid}</h3>
-        <span className="device-status" style={{ color: status.color, background: status.background || 'var(--surface-2)' }}>
+        {embedded ? <strong>단말기 정보</strong> : <h3>{device.display_name || device.device_uid}</h3>}
+        {!embedded && <span className="device-status" style={{ color: status.color, background: status.background || 'var(--surface-2)' }}>
           <span aria-hidden="true" style={{ background: status.color }} />{status.label}
-        </span>
+        </span>}
         {pinned && <span className="device-pinned">홈에 고정됨</span>}
       </div>
       <div className="device-more-wrap">
@@ -41,7 +41,7 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
           <button onClick={() => run(onPin)}><Icon name="home" />{pinned ? '홈 고정 해제' : '홈에 고정'}</button>
           <button onClick={() => run(onReceive)}><Icon name="refresh" />수신 로그</button>
           <button onClick={() => run(onColor)}><span className="device-color-swatch" style={{ background: color }} />색상 변경</button>
-          <button onClick={() => run(onRename)}><Icon name="edit" />이름 변경</button>
+          <button onClick={() => run(onRename)}><Icon name="edit" />{embedded ? '이름·메모 수정' : '이름 변경'}</button>
           <button className="device-disconnect" onClick={() => run(onUnpair)}><Icon name="unlink" />연결 해제</button>
         </div>}
     {device.device_kind !== 'phone' && <BatteryStatus reading={battery} />}

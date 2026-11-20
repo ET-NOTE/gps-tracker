@@ -62,7 +62,7 @@ fn validate(d: &Details, now: DateTime<Utc>) -> AppResult<()> {
 }
 
 pub(super) async fn require_rentcar(state: &AppState, owner: i64) -> AppResult<()> {
-    let enabled: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM users WHERE id=$1 AND account_type='rentcar')")
+    let enabled: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM users WHERE id=$1 AND gps_owner_service(users,'rentcar'))")
         .bind(owner).fetch_one(&state.db).await?;
     if !enabled { return Err(AppError::Forbidden); }
     Ok(())

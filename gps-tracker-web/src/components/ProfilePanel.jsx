@@ -32,15 +32,20 @@ function initialProfileTab() {
 
 // (F2-b) accountType 은 backward-compat prop (부모 렌더 hints 용). AccountTypeCard 는
 // 이제 useAccountType/useSetAccountType 훅으로 자체 완결 — onAccountTypeChange 불필요.
-export default function ProfilePanel({ onLogout, accountType }) {
+export default function ProfilePanel({ onLogout, portalTab, onPortalTab }) {
   // (F2-a) useState+useEffect fetch → useMe hook (dedup, focus refetch).
   // 아래 setMe 호출은 qc.setQueryData(qk.me(), ...) 로 캐시 optimistic 갱신.
   const { data: me } = useMe();
   const qc = useQueryClient();
   const setMe = (next) => qc.setQueryData(qk.me(), next);
   const theme = useTheme();
-  const [tab, setTabRaw] = useState(initialProfileTab);
-  const setTab = (v) => { setTabRaw(v); try { localStorage.setItem('profile_tab', v); } catch {} };
+  const [localTab, setTabRaw] = useState(initialProfileTab);
+  const tab = portalTab || localTab;
+  const setTab = v => {
+    if (onPortalTab) return onPortalTab(v);
+    setTabRaw(v);
+    try { localStorage.setItem('profile_tab', v); } catch {}
+  };
   // (F2-c) useChatUnread hook — 10s refetchInterval + dedup 로 ChatPanel 과 하나의 fetch 공유.
   // admin 은 채팅 탭 자체가 없음 → 폴링 비활성.
   const { data: chatUnread = 0 } = useChatUnread(!!me && me.role !== 'admin');
@@ -63,8 +68,8 @@ export default function ProfilePanel({ onLogout, accountType }) {
   ];
 
   return (
-    <div className="gps-user-panel profile-panel" style={st.wrap}>
-      <nav className="profile-tabs" aria-label="내 정보 메뉴">
+    <div className={'gps-user-panel profile-panel' + (portalTab ? ' pt-profile-embedded' : '')} style={portalTab ? undefined : st.wrap}>
+      {!portalTab && <nav className="profile-tabs" aria-label="내 정보 메뉴">
         {tabs.map(t => {
           const on = tab === t.id;
           return (
@@ -78,10 +83,10 @@ export default function ProfilePanel({ onLogout, accountType }) {
             </button>
           );
         })}
-      </nav>
+      </nav>}
 
-      <div style={tab === 'chat' ? st.bodyFill : st.body}>
-        {tab === 'account' && <AccountTab me={me} setMe={setMe} onLogout={onLogout} onPrivacy={()=>setTab('privacy')} />}
+      <div style={portalTab ? undefined : tab === 'chat' ? st.bodyFill : st.body}>
+        {tab === 'account' && <AccountTab embedded={!!portalTab} me={me} setMe={setMe} onLogout={onLogout} onPrivacy={()=>setTab('privacy')} />}
         {tab === 'privacy' && <PrivacyRequests />}
         {tab === 'credit'  && <CreditTab />}
         {tab === 'chat'    && !isAdmin && <ChatTab onRead={() => setChatUnread(0)} />}
@@ -95,7 +100,7 @@ export default function ProfilePanel({ onLogout, accountType }) {
 
 // ─── 계정 (이메일/이름/비번/탈퇴) ─────────────────────────
 // (F2-b) accountType prop 제거 — AccountTypeCard 자체 완결.
-function AccountTab({ me, setMe, onLogout, onPrivacy }) {
+function AccountTab({ me, setMe, onLogout, onPrivacy, embedded }) {
   const navigate=useNavigate(),qc=useQueryClient();
   const [joinFleet,setJoinFleet]=useState(false);
   const [name, setName]     = useState(me.display_name || '');
@@ -129,21 +134,21 @@ function AccountTab({ me, setMe, onLogout, onPrivacy }) {
 
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className={embedded ? 'pt-account-fields' : undefined} style={embedded ? undefined : { display: 'flex', flexDirection: 'column', gap: 10 }}>
       <Card>
         <Field label="이메일" value={me.email} />
         <Field label="권한"   value={{ user: '일반 사용자', admin: '관리자' }[me.role] || me.role} />
       </Card>
 
-      <Card title="회사 초대 연결">
+      {!embedded && <Card title="회사 초대 연결">
         <p className="profile-help">초대 코드로 회사에 참여하세요.</p>
         <div className="profile-company-actions">
           <button style={st.btnSecondary} onClick={()=>setJoinFleet(true)}>초대 코드 입력</button>
           <button style={st.btnSecondary} onClick={()=>navigate('/corporate')}>회사 화면 열기</button>
         </div>
-      </Card>
+      </Card>}
       {joinFleet&&<FleetJoin onClose={()=>setJoinFleet(false)} onJoined={async id=>{rememberFleetOwner(id);await qc.invalidateQueries({queryKey:['fleet-memberships']});setJoinFleet(false);navigate('/corporate');}}/>}
-      <AccountTypeCard />
+      {!embedded && <AccountTypeCard />}
 
       <PhonesCard me={me} setMe={setMe} />
 

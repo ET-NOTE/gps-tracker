@@ -1,7 +1,7 @@
 import React,{createContext,useContext,useEffect,useId,useRef,useState} from 'react';
-import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
+import {QueryClient,QueryClientProvider,useQuery,useQueryClient} from '@tanstack/react-query';
 import {api} from '../../api';
-import {setFleetOwner,rememberFleetOwner,preferredFleetOwner} from '../../lib/fleetSession';
+import {setFleetOwner,rememberFleetOwner,preferredFleetOwner,resolveFleetOwner} from '../../lib/fleetSession';
 import {authScope,AUTH_CHANGED} from '../../authSession';
 import {Modal,Input,Button,FormField} from '../ui';
 import {BusinessError} from './BusinessWorkspace';
@@ -16,15 +16,33 @@ export function staffCanDrive(staff,vehicle){return staff.active&&(staff.all_veh
 
 // A separate query cache per company prevents personal/other company data from
 // being reused under identical legacy query keys. In-flight reads are guarded too.
-export function FleetAccountScope({children}) {
- const [owner,setOwner]=useState(preferredFleetOwner),[revision,setRevision]=useState(0),[ready,setReady]=useState(false);
- const [client,setClient]=useState(()=>new QueryClient({defaultOptions:{queries:{retry:false,refetchOnWindowFocus:true}}}));
- useEffect(()=>{setFleetOwner(owner);setReady(true);return()=>{setFleetOwner(null);client.cancelQueries();client.clear();};},[owner,revision,client]);
- useEffect(()=>{const previous=authScope();const clear=()=>{if(authScope()!==previous){setReady(false);client.cancelQueries();client.clear();setFleetOwner(null);}};window.addEventListener(AUTH_CHANGED,clear);return()=>window.removeEventListener(AUTH_CHANGED,clear);},[client]);
- function choose(value){rememberFleetOwner(value);setReady(false);setFleetOwner(value);client.cancelQueries();client.clear();setOwner(value);setRevision(v=>v+1);setClient(new QueryClient({defaultOptions:{queries:{retry:false}}}));}
- return ready?<QueryClientProvider client={client}><AccessGate key={`${owner}-${revision}`} owner={owner} onChoose={choose}>{children}</AccessGate></QueryClientProvider>:<p>회사 정보 확인 중…</p>;
+export function FleetAccountScope({children,defaultOwner,allowedMemberships}) {
+ const [preferred, setPreferred] = useState(preferredFleetOwner);
+ const [revision, setRevision] = useState(0);
+ const outer = useQueryClient();
+ const owner = resolveFleetOwner(preferred, defaultOwner, allowedMemberships);
+ const allowOwn = defaultOwner == null;
+ function choose(value) {
+   if (value == null && !allowOwn) return;
+   rememberFleetOwner(value);
+   setPreferred(value);
+   setRevision(n => n + 1);
+ }
+ async function joined(id) {
+   await outer.invalidateQueries({queryKey:['fleet-memberships']});
+   choose(id);
+ }
+ return <ScopedCompany key={String(owner) + '-' + revision} owner={owner} allowOwn={allowOwn}
+   onChoose={choose} onJoined={joined}>{children}</ScopedCompany>;
 }
-function AccessGate({owner,onChoose,children}) {
+function ScopedCompany({owner,allowOwn,onChoose,onJoined,children}) {
+ const [ready,setReady]=useState(false);
+ const [client]=useState(()=>new QueryClient({defaultOptions:{queries:{retry:false,refetchOnWindowFocus:true}}}));
+ useEffect(()=>{setFleetOwner(owner);setReady(true);return()=>{setFleetOwner(null);client.cancelQueries();client.clear();};},[owner,client]);
+ useEffect(()=>{const previous=authScope();const clear=()=>{if(authScope()!==previous){setReady(false);client.cancelQueries();client.clear();setFleetOwner(null);}};window.addEventListener(AUTH_CHANGED,clear);return()=>window.removeEventListener(AUTH_CHANGED,clear);},[client]);
+ return ready?<QueryClientProvider client={client}><AccessGate {...{owner,allowOwn,onChoose,onJoined}}>{children}</AccessGate></QueryClientProvider>:<p>회사 정보 확인 중…</p>;
+}
+function AccessGate({owner,allowOwn,onChoose,onJoined,children}) {
  const spaces=useQuery({queryKey:['fleet-workspaces'],queryFn:()=>api.fleetWorkspaces()});
  const access=useQuery({queryKey:['fleet-access'],queryFn:()=>api.fleetAccess(),refetchInterval:15000});
  const [join,setJoin]=useState(false);
@@ -47,7 +65,7 @@ function AccessGate({owner,onChoose,children}) {
        </span>
        <Icon name="chevron-down" size={16}/>
        <select aria-label="회사 선택" aria-describedby={roleName ? roleId : undefined} value={owner??''} onChange={e=>onChoose(e.target.value ? Number(e.target.value) : null)}>
-         <option value="">내 회사</option>
+         {allowOwn && <option value="">내 회사</option>}
          {owner!=null && !membership && <option value={owner} disabled>{companyName}</option>}
          {memberships.map(m=><option value={m.owner_id} key={m.owner_id}>{m.company_name?.trim() || '회사명 미등록'} · {fleetRoles[m.role]}</option>)}
        </select>
@@ -55,7 +73,7 @@ function AccessGate({owner,onChoose,children}) {
      <button type="button" className="fleet-company-invite" onClick={()=>setJoin(true)}>
        <Icon name="link" size={17}/>초대 코드로 연결
      </button>
-     {join && <FleetJoin onClose={()=>setJoin(false)} onJoined={id=>{setJoin(false);onChoose(id);}}/>}
+     {join && <FleetJoin onClose={()=>setJoin(false)} onJoined={id=>{setJoin(false);onJoined(id);}}/>}
    </div>
  );
  if(access.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={access.refetch}>회사에 접근할 수 없습니다. 초대·활성 상태를 확인하거나 다른 회사를 선택해 주세요.</BusinessError></div>;

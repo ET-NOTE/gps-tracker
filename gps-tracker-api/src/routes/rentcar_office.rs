@@ -32,7 +32,7 @@ impl FromRequestParts<AppState> for RentalOwner {
         }
         let auth = AuthUser::from_request_parts(parts, state).await?;
         let enabled: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT FROM users WHERE id=$1 AND account_type='rentcar')",
+            "SELECT EXISTS(SELECT FROM users WHERE id=$1 AND gps_owner_service(users,'rentcar'))",
         )
         .bind(auth.user_id)
         .fetch_one(&state.db)

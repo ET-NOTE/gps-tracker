@@ -774,6 +774,7 @@ export const api = {
   chatMarkReadUser:      () => req('POST', '/chat/read'),
   // 계정 유형 (rentcar/corporate_fleet/delivery/unspecified)
   getAccountType:        () => req('GET',  '/me/account-type'),
+  patchPlatformSettings: body => req('PATCH', '/me/account-type', body),
   setAccountType:        (account_type) => req('PATCH', '/me/account-type', { account_type }),
   setDeviceAccountType:  (deviceId, account_type) => req('PATCH', `/devices/${deviceId}/account-type`, { account_type }),
 

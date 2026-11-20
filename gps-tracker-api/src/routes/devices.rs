@@ -31,6 +31,7 @@ pub struct DeviceView {
 
     pub id: i64,
     pub device_uid: String,
+    pub account_type_override: Option<String>,
     pub display_name: Option<String>,
     pub color: Option<String>,
     pub icon: Option<String>,
@@ -133,6 +134,8 @@ pub struct UpdateRequest {
     pub car_model: Option<Option<String>>,
     #[serde(default, deserialize_with = "nullable_patch")]
     pub car_image_url: Option<Option<String>>,
+    #[serde(default, deserialize_with = "nullable_patch")]
+    pub note: Option<Option<String>>,
 
     #[validate(length(min = 1, max = 64))]
     pub display_name: Option<String>,
@@ -228,7 +231,7 @@ pub(super) async fn list(
 ) -> AppResult<Json<Vec<DeviceView>>> {
     let runtime_prefs = crate::services::device_settings::prefs(&state.db, user.user_id).await?;
     let mut rows = sqlx::query_as::<_, DeviceView>(
-        r#"SELECT d.id, d.device_uid, d.display_name, d.color, d.icon,
+        r#"SELECT d.id, d.device_uid, d.display_name, d.color, d.icon, d.account_type_override,
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,
@@ -673,6 +676,11 @@ async fn update(
             return Err(AppError::BadRequest("vehicle text too long".into()));
         }
     }
+    let note = req.note.as_ref().and_then(|v| v.as_deref())
+        .map(str::trim).filter(|text| !text.is_empty());
+    if note.is_some_and(|text| text.chars().count() > 500) {
+        return Err(AppError::BadRequest("메모는 500자 이내로 입력해 주세요.".into()));
+    }
     if let Some(Some(ref url)) = req.car_image_url {
         let prefix = format!("/uploads/car-images/dev_{id}_");
         if !url.starts_with(&prefix) || url.contains("..") || url[prefix.len()..].contains('/') {
@@ -687,7 +695,8 @@ async fn update(
           inspection_expiry=CASE WHEN $12 THEN $13 ELSE inspection_expiry END,
           car_plate=CASE WHEN $14 THEN $15 ELSE car_plate END,
           car_model=CASE WHEN $16 THEN $17 ELSE car_model END,
-          car_image_url=CASE WHEN $18 THEN $19 ELSE car_image_url END
+          car_image_url=CASE WHEN $18 THEN $19 ELSE car_image_url END,
+          note=CASE WHEN $20 THEN $21 ELSE note END
         WHERE id=$4 AND owner_id=$5")
         .bind(&req.display_name).bind(&req.color).bind(&req.icon).bind(id).bind(user.user_id)
         .bind(req.next_service_date.is_some()).bind(req.next_service_date.flatten())
@@ -697,6 +706,7 @@ async fn update(
         .bind(req.car_plate.is_some()).bind(req.car_plate.flatten())
         .bind(req.car_model.is_some()).bind(req.car_model.flatten())
         .bind(req.car_image_url.is_some()).bind(req.car_image_url.flatten())
+        .bind(req.note.is_some()).bind(note)
         .execute(&state.db).await?;
 
     if res.rows_affected() == 0 {
@@ -1675,7 +1685,7 @@ async fn log_audit(
 
 async fn fetch_device(state: &AppState, id: i64, user_id: i64) -> AppResult<Json<DeviceView>> {
     let mut row = sqlx::query_as::<_, DeviceView>(
-        r#"SELECT d.id, d.device_uid, d.display_name, d.color, d.icon,
+        r#"SELECT d.id, d.device_uid, d.display_name, d.color, d.icon, d.account_type_override,
                   d.iccid, d.imei, d.imsi, d.hw_version, d.fw_version,
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at, d.last_stationary,

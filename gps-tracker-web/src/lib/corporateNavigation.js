@@ -3,7 +3,7 @@ export const corporateTabs = [
   { id: 'overview', label: '운영 현황', icon: 'home', group: 'overview' },
   { id: 'live', label: '실시간 관제', icon: 'map', group: 'live' },
   { id: 'vehicles', label: '차량 목록', icon: 'car', group: 'vehicles' },
-  { id: 'devices', label: '단말기 관리', icon: 'link', group: 'vehicles' },
+  { id: 'devices', label: '차량·단말기 연결', icon: 'link', group: 'vehicles' },
   { id: 'maintenance', label: '정비·보험', icon: 'wrench', group: 'vehicles' },
   { id: 'staff', label: '사용자 목록', icon: 'user', group: 'staff' },
   { id: 'sites', label: '지점 관리', icon: 'mapPin', group: 'staff' },

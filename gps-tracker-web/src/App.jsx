@@ -29,7 +29,9 @@ import {
   ToastHost, CommandPaletteHost,
   togglePalette, registerCommands, registerDevices,
 } from './components/ui';
-import { useDevices } from './state';
+import { useDevices, useMe, useAccountType } from './state';
+import { useQuery } from '@tanstack/react-query';
+import { businessServices, internalDestination, ownerServices, requestedStart, startDestination } from './lib/platformNavigation';
 import { toggleTheme } from './theme';
 import { api, clearTokens } from './api';
 import { startPhoneTracker, stopPhoneTracker } from './lib/phoneTracker';
@@ -125,6 +127,7 @@ function PaletteBridge() {
   // Cmd+K / Ctrl+K global bind.
   useEffect(() => {
     const onKey = (e) => {
+      if (e.defaultPrevented || e.isComposing) return;
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         togglePalette();
@@ -181,9 +184,10 @@ function Shell() {
         {/* 로그인 */}
         <Route path="/login" element={
           authed
-            ? <Navigate to={readNext() || '/'} replace />
+            ? <Navigate to={readNext() || '/start'} replace />
             : <AuthRoute onLogin={() => setAuthed(true)} />
         } />
+        <Route path="/start" element={authed ? <PlatformStart /> : <Navigate to="/login" replace />} />
 
         {/* 14_* 진단 콘솔 — Dashboard 외부 풀스크린 */}
         <Route path="/device-diagnostics" element={
@@ -210,8 +214,12 @@ function Shell() {
 
 function DashboardRoute({ onLogout }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   if (!dashboardView(pathname)) return <div style={{ minHeight: '100dvh', display: 'flex' }}><RouteNotice /></div>;
-  return <Dashboard onLogout={onLogout} />;
+  return <Dashboard onLogout={() => {
+    navigate('/login', {replace:true});
+    onLogout();
+  }} />;
 }
 
 function HandoffRoute() {
@@ -234,7 +242,7 @@ function AuthRoute({ onLogin }) {
     <Auth
       onLogin={() => {
         onLogin();
-        navigate(next || '/', { replace: true });
+        navigate(next || '/start', { replace: true });
       }}
     />
   );
@@ -242,14 +250,33 @@ function AuthRoute({ onLogin }) {
 
 function RequireAuthRedirect() {
   const loc = useLocation();
-  const target = loc.pathname + loc.search;
-  return <Navigate to={`/login?next=${encodeURIComponent(target)}`} replace />;
+  const target = loc.pathname + loc.search + loc.hash;
+  return <Navigate to={target === '/' ? '/login' : `/login?next=${encodeURIComponent(target)}`} replace />;
 }
 
 function readNext() {
   const qs = new URLSearchParams(window.location.search);
   const next = qs.get('next');
   // 절대 URL/외부 도메인 차단 — 우리 base 안에서만 허용
-  if (!next || !next.startsWith('/') || next.startsWith('//')) return null;
-  return next;
+  return internalDestination(next);
+}
+
+function PlatformStart() {
+  const me = useMe();
+  const settings = useAccountType();
+  const path = requestedStart(settings.data, me.data?.id).split('?')[0];
+  const service = Object.keys(businessServices).find(key => businessServices[key] === path);
+  const delegated = settings.data?.start_route === 'last' && service && !ownerServices(settings.data).includes(service);
+  const query = useQuery({
+    queryKey:['platform-start-membership', authScope(), service],
+    enabled:!!delegated,
+    queryFn:async () => {
+      if (service === 'corporate_fleet') return (await api.fleetWorkspaces()).memberships?.length > 0;
+      const list = service === 'rentcar' ? await api.rentalTeam('GET','/memberships') : await api.cargoTeam('GET','/memberships');
+      return list.length > 0;
+    },
+    retry:false,
+  });
+  if (settings.isPending || me.isPending || delegated && query.isPending) return <LazyFallback />;
+  return <Navigate to={startDestination(settings.data, me.data?.id, delegated && query.data ? [service] : [])} replace />;
 }

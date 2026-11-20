@@ -94,7 +94,7 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
     let old_terms = current.as_ref().and_then(|c| c.rental_terms.as_ref());
     let modern = old_terms.is_some() || req.rental_terms.is_some();
     if modern {
-        let allowed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1 AND account_type='rentcar')").bind(owner).fetch_one(&mut **tx).await?;
+        let allowed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1 AND gps_owner_service(users,'rentcar'))").bind(owner).fetch_one(&mut **tx).await?;
         if !allowed {return Err(AppError::Forbidden);}
     }
     if !modern && req.device_id.is_none() { return Err(AppError::BadRequest("차량을 선택해 주세요.".into())); }

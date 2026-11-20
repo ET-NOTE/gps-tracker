@@ -75,7 +75,7 @@ test('design navigation exposes live, vehicle tools, and booking as a direct des
  assert.deepEqual(navGroups.map(n=>text(n.children)),corporateGroups.map(g=>g.label));
  await act(async()=>findButton(primary(),'차량 관리').props.onClick());
  const vehicleTabs=()=>r.root.findByProps({'aria-label':'차량 관리 하위 메뉴'});
- assert.deepEqual(buttons(vehicleTabs()),['차량 목록','단말기 관리','정비·보험']);
+ assert.deepEqual(buttons(vehicleTabs()),['차량 목록','차량·단말기 연결','정비·보험']);
  await act(async()=>findButton(vehicleTabs(),'정비·보험').props.onClick());
  await act(async()=>findButton(primary(),'차량 예약').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'reservations');

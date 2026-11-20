@@ -424,7 +424,7 @@ function dotImageCached(color, isStop, size, isGapEndpoint = false) {
   return img;
 }
 
-const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo, onUserPan, onViewChange }, ref) {
+const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo, onUserPan, onViewChange, visibleDeviceIds = null }, ref) {
   // onPointInfo 가 제공되면 마커 클릭 시 kakao InfoWindow 대신 그 콜백을 호출.
   // 부모(Dashboard) 가 React 기반 bottom-sheet 으로 표시 (모바일 친화적).
   // 콜백 시그니처: ({ kind: 'main'|'point', label, color, meta, addr, lat, lng }) => void
@@ -468,6 +468,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   // 현재 단말기 필터 — null = 전체. updateMarker/addHistoryPoint 가 새 마커/폴리라인 생성 시 이걸 참조해
   // 필터에 안 맞는 디바이스 데이터는 map=null 로 숨겨둠 (filterToDevice 가 명시 호출되지 않아도).
   const currentFilterIdRef = useRef(null);
+  const visibleIdsRef = useRef(visibleDeviceIds);
+  visibleIdsRef.current = visibleDeviceIds;
   // (2026-07-27) Seeker 모드 플래그 — true 면 live layer (main pin / arrow dot / cluster / polyline / gap)
   // 전부 map:null. WS/refresh 로 들어오는 새 fix 는 내부 state (markersRef/polyRef/pointsRef) 에만
   // 축적, map 에는 안 그려짐. 시커 종료 시 setSeekerMode(false) 로 필터 규칙에 따라 일괄 복원.
@@ -476,7 +478,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const seekerModeRef = useRef(false);
   // 새 live-layer element 를 map 에 올릴지 판정. seeker 모드거나 device 필터와 불일치 시 map:null.
   const isLiveVisible = (deviceId) => {
-    if (seekerModeRef.current) return false;
+    if (seekerModeRef.current || (visibleIdsRef.current && !visibleIdsRef.current.has(Number(deviceId)))) return false;
     const f = currentFilterIdRef.current;
     return f == null || f === deviceId;
   };
@@ -870,6 +872,10 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
     /** 현재 Kakao map zoom level (1=최대 확대 ~ 14=최대 축소). Dashboard 의 clickable dot 간격 계산용. */
     getZoomLevel() { return zoomLevelRef.current; },
+    zoomBy(levels) {
+      const map = mapRef.current;
+      if (map) map.setLevel(Math.max(1, Math.min(14, map.getLevel() + levels)));
+    },
 
     /**
      * 컨테이너 크기·display 가 바뀐 뒤 호출 — kakao Map 이 새 dimension 에 맞춰 다시 그림.
@@ -1233,8 +1239,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       }
       const useCluster = !!clustererRef.current;
       const applyMain = (deviceId) => {
-        const f = currentFilterIdRef.current;
-        return !seekerModeRef.current && (f == null || +f === +deviceId) ? mapRef.current : null;
+        return isLiveVisible(+deviceId) ? mapRef.current : null;
       };
       // (F4-a) clusterer 사용 시 main pin 은 clusterer 가 관리 — direct setMap 대신
       //         addMarker/removeMarker 로 토글. visible=null 이면 remove, else add.
@@ -1303,7 +1308,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
     fitToAllMarkers(padding = 50) {
       if (!mapRef.current) return;
-      const entries = Object.values(markersRef.current);
+      const entries = Object.entries(markersRef.current).filter(([id]) => !visibleIdsRef.current || visibleIdsRef.current.has(+id)).map(([, entry]) => entry);
       if (entries.length === 0) return;
       // (F10-fix) 진행 중 pin tween 을 모두 최종 위치로 스킵 후 fit — bounds 계산이 중간값
       // 아닌 실제 좌표 기준이 되도록.
@@ -1346,7 +1351,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
       // (F4-a) clusterer 있으면 addMarker/removeMarker 로 필터, marker.setMap 은 null.
       const useCluster = !!clustererRef.current;
       Object.entries(markersRef.current).forEach(([id, { marker }]) => {
-        const visible = (targetId === null || +id === targetId);
+        const visible = isLiveVisible(+id);
         if (useCluster) {
           if (visible) clustererRef.current.addMarker(marker);
           else         clustererRef.current.removeMarker(marker);
@@ -1356,12 +1361,12 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         }
       });
       Object.entries(polyRef.current).forEach(([id, entry]) => {
-        const vis = (targetId === null || +id === targetId);
+        const vis = isLiveVisible(+id);
         entry.segments.forEach(s => s.poly.setMap(vis ? all : null));
         entry.gaps.forEach(g => g.setMap(vis ? all : null));
       });
       Object.entries(pointsRef.current).forEach(([id, arr]) => {
-        const vis = (targetId === null || +id === targetId);
+        const vis = isLiveVisible(+id);
         refreshMarkerEntries(arr,vis);
       });
 
@@ -1388,7 +1393,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
         }
       } else {
         const bounds = new window.kakao.maps.LatLngBounds();
-        Object.values(markersRef.current).forEach(({ marker }) => bounds.extend(marker.getPosition()));
+        Object.entries(markersRef.current).forEach(([id, { marker }]) => { if (isLiveVisible(+id)) bounds.extend(marker.getPosition()); });
         if (!bounds.isEmpty()) {
           markProgrammatic();
           mapRef.current?.setBounds(bounds, 60, 60, 60, 60);

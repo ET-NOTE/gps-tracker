@@ -15,5 +15,5 @@ SELECT jsonb_build_object(
       JOIN gps_read_devices d ON d.id=w.device_id AND d.owner_id=w.owner_id
       WHERE w.owner_id=t.owner_id ORDER BY w.starts_at DESC,w.id DESC LIMIT 200) x) ELSE '[]'::jsonb END)
 FROM rental_staff t JOIN rental_branches b ON b.id=t.branch_id JOIN rental_staff_groups g ON g.id=t.group_id
-JOIN users o ON o.id=t.owner_id AND o.account_type='rentcar'
+JOIN users o ON o.id=t.owner_id AND gps_owner_service(o,'rentcar')
 WHERE t.account_id=$1 AND t.owner_id=$2 AND t.active

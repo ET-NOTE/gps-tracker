@@ -106,12 +106,12 @@ async fn join(State(s):State<AppState>,u:AuthUser,Json(v):Json<Code>)->AppResult
     let code=v.code.trim(); if code.len()!=32{return Err(invalid("초대 코드를 확인해 주세요."));}
     let hash=format!("{:x}",Sha256::digest(code.as_bytes()));
     let id:i64=sqlx::query_scalar("UPDATE cargo_staff t SET account_id=$1,invite_digest=NULL,expires_at=NULL,revision=revision+1 FROM users a,users o
-      WHERE a.id=$1 AND o.id=t.owner_id AND o.account_type='delivery' AND t.owner_id<>$1 AND lower(a.email)=t.email AND t.invite_digest=$2 AND t.account_id IS NULL AND t.active AND t.expires_at>now() RETURNING owner_id")
+      WHERE a.id=$1 AND o.id=t.owner_id AND gps_owner_service(o,'delivery') AND t.owner_id<>$1 AND lower(a.email)=t.email AND t.invite_digest=$2 AND t.account_id IS NULL AND t.active AND t.expires_at>now() RETURNING owner_id")
         .bind(u.user_id).bind(hash).fetch_optional(&s.db).await.map_err(db)?.ok_or(AppError::Forbidden)?;
     Ok(Json(json!({"owner_id":id})))
 }
 async fn memberships(State(s):State<AppState>,u:AuthUser)->AppResult<Json<Value>>{
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('owner_id',t.owner_id,'company',coalesce(c.name,o.display_name),'branch',b->>'name','group',g.name) FROM cargo_staff t JOIN users o ON o.id=t.owner_id AND o.account_type='delivery' JOIN cargo_workspaces w ON w.owner_id=t.owner_id JOIN LATERAL jsonb_array_elements(w.data->'branches') b ON b->>'id'=t.branch_id AND coalesce((b->>'active')::boolean,true) LEFT JOIN cargo_companies c ON c.owner_id=t.owner_id JOIN cargo_staff_groups g ON g.id=t.group_id WHERE t.account_id=$1 AND t.active ORDER BY o.display_name,t.owner_id")
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('owner_id',t.owner_id,'company',coalesce(c.name,o.display_name),'branch',b->>'name','group',g.name) FROM cargo_staff t JOIN users o ON o.id=t.owner_id AND gps_owner_service(o,'delivery') JOIN cargo_workspaces w ON w.owner_id=t.owner_id JOIN LATERAL jsonb_array_elements(w.data->'branches') b ON b->>'id'=t.branch_id AND coalesce((b->>'active')::boolean,true) LEFT JOIN cargo_companies c ON c.owner_id=t.owner_id JOIN cargo_staff_groups g ON g.id=t.group_id WHERE t.account_id=$1 AND t.active ORDER BY o.display_name,t.owner_id")
         .bind(u.user_id).fetch_all(&s.db).await?;
     Ok(Json(json!(rows)))
 }
@@ -122,7 +122,7 @@ async fn desk(State(s):State<AppState>,u:AuthUser,Path(id):Path<i64>)->AppResult
 #[derive(Deserialize)]struct Note{body:String}
 async fn note(State(s):State<AppState>,u:AuthUser,Path((id,shipment)):Path<(i64,String)>,Json(v):Json<Note>)->AppResult<Json<Value>>{
     let body=v.body.trim();if !(1..=500).contains(&body.chars().count()){return Err(invalid("메모를 1~500자로 입력해 주세요."));}
-    let id:i64=sqlx::query_scalar("INSERT INTO cargo_handover_notes(shipment_id,staff_id,branch_id,body) SELECT j->>'id',t.id,t.branch_id,$4 FROM cargo_staff t JOIN cargo_staff_groups g ON g.id=t.group_id JOIN users o ON o.id=t.owner_id AND o.account_type='delivery' JOIN cargo_workspaces w ON w.owner_id=t.owner_id CROSS JOIN LATERAL jsonb_array_elements(w.data->'shipments') j WHERE t.account_id=$1 AND t.owner_id=$2 AND t.active AND 'handover_note'=ANY(g.permissions) AND 'dispatch_read'=ANY(g.permissions) AND j->>'id'=$3 AND j->>'branchId'=t.branch_id AND EXISTS(SELECT FROM jsonb_array_elements(w.data->'branches') b WHERE b->>'id'=t.branch_id AND coalesce((b->>'active')::boolean,true)) FOR SHARE OF t,g,w RETURNING id")
+    let id:i64=sqlx::query_scalar("INSERT INTO cargo_handover_notes(shipment_id,staff_id,branch_id,body) SELECT j->>'id',t.id,t.branch_id,$4 FROM cargo_staff t JOIN cargo_staff_groups g ON g.id=t.group_id JOIN users o ON o.id=t.owner_id AND gps_owner_service(o,'delivery') JOIN cargo_workspaces w ON w.owner_id=t.owner_id CROSS JOIN LATERAL jsonb_array_elements(w.data->'shipments') j WHERE t.account_id=$1 AND t.owner_id=$2 AND t.active AND 'handover_note'=ANY(g.permissions) AND 'dispatch_read'=ANY(g.permissions) AND j->>'id'=$3 AND j->>'branchId'=t.branch_id AND EXISTS(SELECT FROM jsonb_array_elements(w.data->'branches') b WHERE b->>'id'=t.branch_id AND coalesce((b->>'active')::boolean,true)) FOR SHARE OF t,g,w RETURNING id")
         .bind(u.user_id).bind(id).bind(shipment).bind(body).fetch_optional(&s.db).await?.ok_or(AppError::Forbidden)?;
     Ok(Json(json!({"id":id})))
 }

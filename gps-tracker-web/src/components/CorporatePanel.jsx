@@ -91,7 +91,16 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const meta=Object.fromEntries(devices.map(d=>[d.id,rawMeta?.[d.source_device_id]]));
   const onMap=id=>{const sim=devices.find(v=>v.id===id)?.source_device_id;if(sim)rawOnMap?.(sim);};
   const [restored, setRestored] = useState(() => mapReturn && mapReturn.ownerId === access.owner_id && mapReturn.actorId === access.actor_id ? mapReturn : null);
-  const [tab, setTab] = useState(restored?.page || 'overview');
+  const managerRole=['owner','admin','department_manager'].includes(access.role);
+  const canReviewExpenses=access.review_expenses ?? managerRole;
+  const canReviewReservations=access.review_reservations ?? managerRole;
+  const canReview=canReviewExpenses || canReviewReservations;
+  const visibleTabs=canReview ? corporateTabs : corporateTabs.filter(t=>t.id!=='approvals');
+  const [tab, setTab] = useState(() => {
+    const search = globalThis.location?.search;
+    const requested = restored?.page || (search && new URLSearchParams(search).get('page'));
+    return visibleTabs.some(item => item.id === requested) ? requested : 'overview';
+  });
   const [missingSchedulesOnly,setMissingSchedulesOnly]=useState(restored?.missingSchedulesOnly || false);
   useEffect(() => { if (mapReturn) onMapReturnUsed?.(); }, [mapReturn, onMapReturnUsed]);
   useEffect(() => { if (restored && restored.page !== tab) setRestored(null); }, [restored, tab]);
@@ -128,11 +137,6 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   }
   const needsVehicles=tab!=='expense-categories';
   const vehicleNotice = terminalNotice || (terminalsReady && assets.error && <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>);
-  const managerRole=['owner','admin','department_manager'].includes(access.role);
-  const canReviewExpenses=access.review_expenses ?? managerRole;
-  const canReviewReservations=access.review_reservations ?? managerRole;
-  const canReview=canReviewExpenses || canReviewReservations;
-  const visibleTabs=canReview ? corporateTabs : corporateTabs.filter(t=>t.id!=='approvals');
   return <BusinessWorkspace initialVehicleId={(restored?.workspaceDetail || ['overview','live'].includes(restored?.page)) ? restored.vehicleId : null} renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onMap={openDetailMap && ((sim,detail)=>openDetailMap(sim,{...detail,workspaceDetail:true}))} onReport={report} onReserve={id=>reserve({new:true,vehicleId:id})} initialTab={device.id===restored?.vehicleId ? restored.detailTab : undefined}/>} title="법인차 운영" tabs={visibleTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setAnalyticsPeriod(null); setInitialCreate(false); setMissingSchedulesOnly(false); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
     vehicleStatus={vehiclesReady&&terminalsReady?'ready':vehicleNotice?'error':'loading'} toolbar={toolbar} globalNavigation={globalNavigation} section={sectionTabs[tab]} sections={sectionNavigation} onSection={changeSection}
     >
@@ -161,7 +165,11 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     </>}
   </BusinessWorkspace>;
 }
-export default function CorporateAccountPanel(props){return <FleetAccountScope>{toolbar=><CorporatePanel {...props} toolbar={toolbar}/>}</FleetAccountScope>;}
+export default function CorporateAccountPanel({defaultOwner,allowedMemberships,...props}){
+  return <FleetAccountScope defaultOwner={defaultOwner} allowedMemberships={allowedMemberships}>
+    {toolbar=><CorporatePanel {...props} toolbar={toolbar}/>}
+  </FleetAccountScope>;
+}
 
 function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSchedules, onVehicles, onExpenses, onLive, onWeeklyReport, onCreate, setup }) {
   const compactNavigation=useCorporatePhone('navigation'), now=useBusinessClock(), period=businessPeriod(now), openVehicle=useBusinessVehicle();

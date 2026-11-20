@@ -38,7 +38,7 @@ impl FromRequestParts<AppState> for CargoOwner {
         }
         let auth = AuthUser::from_request_parts(parts, state).await?;
         let enabled: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT FROM users WHERE id=$1 AND account_type='delivery')",
+            "SELECT EXISTS(SELECT FROM users WHERE id=$1 AND gps_owner_service(users,'delivery'))",
         )
         .bind(auth.user_id)
         .fetch_one(&state.db)
@@ -99,7 +99,7 @@ struct Save {
 
 async fn lock_owner(tx: &mut Transaction<'_, Postgres>, owner: i64) -> AppResult<()> {
     let found: Option<i64> = sqlx::query_scalar(
-        "SELECT id FROM users WHERE id=$1 AND account_type='delivery' FOR UPDATE",
+        "SELECT id FROM users WHERE id=$1 AND gps_owner_service(users,'delivery') FOR UPDATE",
     )
     .bind(owner)
     .fetch_optional(&mut **tx)

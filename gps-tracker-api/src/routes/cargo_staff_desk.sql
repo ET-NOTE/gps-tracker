@@ -9,7 +9,7 @@ SELECT jsonb_build_object(
     (SELECT coalesce(jsonb_agg(jsonb_build_object('id',v->>'id','plate',v->>'plate','type',v->>'type','readiness',v->>'readiness') ORDER BY v->>'plate'),'[]')
      FROM jsonb_array_elements(w.data->'vehicles') v WHERE v->>'branchId'=t.branch_id)
     ELSE '[]'::jsonb END)
-FROM cargo_staff t JOIN users o ON o.id=t.owner_id AND o.account_type='delivery'
+FROM cargo_staff t JOIN users o ON o.id=t.owner_id AND gps_owner_service(o,'delivery')
 JOIN cargo_staff_groups g ON g.id=t.group_id AND g.owner_id=t.owner_id
 JOIN cargo_workspaces w ON w.owner_id=t.owner_id
 JOIN LATERAL jsonb_array_elements(w.data->'branches') b ON b->>'id'=t.branch_id AND coalesce((b->>'active')::boolean,true)

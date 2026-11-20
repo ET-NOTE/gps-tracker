@@ -33,7 +33,7 @@ fn name(value:&str)->AppResult<&str>{
     if !(1..=80).contains(&s.chars().count()) {Err(invalid("이름은 1~80자로 입력해 주세요."))} else {Ok(s)}
 }
 async fn owner(s:&AppState,u:&AuthUser)->AppResult<i64>{
-    let yes:bool=sqlx::query_scalar("SELECT EXISTS(SELECT FROM users WHERE id=$1 AND account_type='rentcar')")
+    let yes:bool=sqlx::query_scalar("SELECT EXISTS(SELECT FROM users WHERE id=$1 AND gps_owner_service(users,'rentcar'))")
         .bind(u.user_id).fetch_one(&s.db).await?;
     if yes {Ok(u.user_id)} else {Err(AppError::Forbidden)}
 }
@@ -103,12 +103,12 @@ async fn join(State(s):State<AppState>,u:AuthUser,Json(v):Json<Code>)->AppResult
     let code=v.code.trim(); if code.len()!=32{return Err(invalid("초대 코드를 확인해 주세요."));}
     let hash=format!("{:x}",Sha256::digest(code.as_bytes()));
     let id:i64=sqlx::query_scalar("UPDATE rental_staff t SET account_id=$1,invite_digest=NULL,expires_at=NULL,revision=revision+1 FROM users a,users o
-      WHERE a.id=$1 AND o.id=t.owner_id AND o.account_type='rentcar' AND t.owner_id<>$1 AND lower(a.email)=t.email AND t.invite_digest=$2 AND t.account_id IS NULL AND t.active AND t.expires_at>now() RETURNING owner_id")
+      WHERE a.id=$1 AND o.id=t.owner_id AND gps_owner_service(o,'rentcar') AND t.owner_id<>$1 AND lower(a.email)=t.email AND t.invite_digest=$2 AND t.account_id IS NULL AND t.active AND t.expires_at>now() RETURNING owner_id")
         .bind(u.user_id).bind(hash).fetch_optional(&s.db).await.map_err(db)?.ok_or(AppError::Forbidden)?;
     Ok(Json(json!({"owner_id":id})))
 }
 async fn memberships(State(s):State<AppState>,u:AuthUser)->AppResult<Json<Value>>{
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('owner_id',t.owner_id,'company',o.display_name,'branch',b.name,'group',g.name) FROM rental_staff t JOIN users o ON o.id=t.owner_id AND o.account_type='rentcar' JOIN rental_branches b ON b.id=t.branch_id JOIN rental_staff_groups g ON g.id=t.group_id WHERE t.account_id=$1 AND t.active ORDER BY o.display_name,t.owner_id")
+    let rows:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('owner_id',t.owner_id,'company',o.display_name,'branch',b.name,'group',g.name) FROM rental_staff t JOIN users o ON o.id=t.owner_id AND gps_owner_service(o,'rentcar') JOIN rental_branches b ON b.id=t.branch_id JOIN rental_staff_groups g ON g.id=t.group_id WHERE t.account_id=$1 AND t.active ORDER BY o.display_name,t.owner_id")
         .bind(u.user_id).fetch_all(&s.db).await?;
     Ok(Json(json!(rows)))
 }
@@ -120,7 +120,7 @@ async fn desk(State(s):State<AppState>,u:AuthUser,Path(id):Path<i64>)->AppResult
 async fn note(State(s):State<AppState>,u:AuthUser,Path((id,contract)):Path<(i64,i64)>,Json(v):Json<Note>)->AppResult<Json<Value>>{
     let body=v.body.trim();if !(1..=500).contains(&body.chars().count()){return Err(invalid("메모를 1~500자로 입력해 주세요."));}
     let id:i64=sqlx::query_scalar("INSERT INTO rental_handover_notes(contract_id,staff_id,branch_id,body)
-      SELECT c.id,t.id,b.id,$4 FROM rental_staff t JOIN rental_branches b ON b.id=t.branch_id JOIN rental_staff_groups g ON g.id=t.group_id JOIN users o ON o.id=t.owner_id AND o.account_type='rentcar'
+      SELECT c.id,t.id,b.id,$4 FROM rental_staff t JOIN rental_branches b ON b.id=t.branch_id JOIN rental_staff_groups g ON g.id=t.group_id JOIN users o ON o.id=t.owner_id AND gps_owner_service(o,'rentcar')
       JOIN rental_contracts c ON c.user_id=t.owner_id AND c.id=$3
       WHERE t.account_id=$1 AND t.owner_id=$2 AND t.active AND 'handover_note'=ANY(g.permissions) AND 'dispatch_read'=ANY(g.permissions)
         AND b.name IN(c.pickup_location,c.return_location) FOR SHARE OF t,g,b,c RETURNING id")

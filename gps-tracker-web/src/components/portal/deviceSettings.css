@@ -1,0 +1,10 @@
+.pt-pair-form,.pt-device-assignment {display:grid;gap:12px;padding:14px;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+.pt-device-assignment {margin:12px 0}
+.pt-pair-form label,.pt-device-assignment label {display:grid;gap:5px;font-size:13px;font-weight:600}
+.pt-pair-form :is(input,textarea,select),.pt-device-assignment select {width:100%;min-width:0;max-width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;color:var(--text);background:var(--surface);font:inherit;box-sizing:border-box}
+.pt-pair-form textarea {resize:vertical}
+.pt-pair-form [role=alert],.pt-device-assignment [role=alert] {color:var(--danger);margin:0;font-size:13px}
+.pt-connection-links {display:flex;gap:8px 14px;flex-wrap:wrap}
+.pt-connection-links a {font-size:13px;color:var(--primary)}
+.pt-device-note {white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.pt-map-empty {display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-sm);pointer-events:auto;font-size:14px}

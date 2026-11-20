@@ -1,0 +1,36 @@
+import Icon from '../Icon';
+import {Link} from 'react-router-dom';
+import car from './login-vehicle.png';
+import './login.css';
+
+const services=[
+  {icon:'car',title:'법인차량',detail:'차량 예약·운행기록부'},
+  {icon:'clock',title:'렌트카',detail:'대여·반납 관리'},
+  {icon:'route',title:'화물배차',detail:'운송 주문·운임 정산'}
+];
+
+export default function LoginLayout({register, children}) {
+  return <div className="entry-scroll"><div className="entry-screen">
+    <header className="entry-header"><span className="entry-brand-icon"><Icon name="car" size={23}/></span><span>시리얼링크</span></header>
+    <main className="entry-main">
+      <section className="entry-intro" aria-label="제공 서비스">
+        <h2>차량 위치와<br/>운행 관리</h2>
+        <p>내 단말기의 위치와 운행 기록을 확인하고<br/>계정에 연결된 차량 업무를 관리하세요.</p>
+        <div className="entry-art" aria-hidden="true">
+          <div className="entry-orbit"/><div className="entry-orbit is-outer"/>
+          <img src={car} width="390" height="169" alt="" />
+          <div className="entry-route"><i/><i/><i/></div>
+        </div>
+        <ul className="entry-services">{services.map(s=><li key={s.title}><Icon name={s.icon} size={19}/><div><strong>{s.title}</strong><small>{s.detail}</small></div></li>)}</ul>
+      </section>
+      <section className="entry-panel" aria-labelledby="entry-title">
+        <h1 id="entry-title">{register?'회원가입':'로그인'}</h1>
+        <p className="entry-subtitle">{register?'단말기를 관리할 계정을 만들어 주세요.':'시리얼링크 계정으로 로그인해 주세요.'}</p>
+        {children}
+      </section>
+    </main>
+    <footer className="entry-footer"><span>© {new Date().getFullYear()} 시리얼링크</span>
+      <nav aria-label="서비스 정책"><Link to="/privacy" target="_blank" rel="noreferrer">개인정보 처리방침</Link><Link to="/terms" target="_blank" rel="noreferrer">이용약관</Link><Link to="/privacy/result">개인정보 요청 결과 확인</Link></nav>
+    </footer>
+  </div></div>;
+}
