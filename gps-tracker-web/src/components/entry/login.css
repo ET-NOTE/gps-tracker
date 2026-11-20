@@ -134,3 +134,7 @@
   .entry-panel { padding: 20px 14px 12px; }
   .entry-links button { padding: 0 7px; }
 }
+.entry-demo-link {display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:12px;
+  border:1px solid #cbdcf0;border-radius:8px;background:#eff4fa;color:#315c91;font-size:14px;font-weight:650;text-decoration:none}
+.entry-demo-link:hover {background:#e5effb;border-color:#a8c5e6}
+.entry-demo-link:focus-visible {outline:2px solid #3972ba;outline-offset:2px}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, setTokens } from '../api';
 import AccountRecovery from '../components/entry/AccountRecovery';
 import { AuthField, OtpField, PasswordField, useOtpChallenge } from '../components/entry/AuthFields';
@@ -15,7 +16,7 @@ function saveEmail(email) {
   } catch { /* Login also works when the browser disallows remembering an email. */ }
 }
 
-export default function Auth({ onLogin }) {
+export default function Auth({ onLogin, loginNext }) {
   const [register, setRegister] = useState(false);
   const [email, setEmail] = useState(rememberedEmail);
   const [rememberEmail, setRememberEmail] = useState(Boolean(email));
@@ -99,6 +100,7 @@ export default function Auth({ onLogin }) {
       {error && <p className="entry-error" role="alert">{error}</p>}
       <button type="submit" className="entry-primary" disabled={busy}>{busy ? '처리 중…' : register ? '가입하기' : '로그인'}</button>
     </form>
+    {!register && <Link className="entry-demo-link" to="/demo" state={{loginNext}}>데모 체험하기</Link>}
     <div className="entry-links">
       {register ? <button type="button" disabled={busy} onClick={() => switchForm(false)}>로그인으로 돌아가기</button> : <>
         <button type="button" disabled={busy} onClick={() => setRecovery('id')}>아이디 찾기</button>

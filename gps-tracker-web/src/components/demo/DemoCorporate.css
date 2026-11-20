@@ -1,0 +1,112 @@
+.demo-corp {
+  min-width: 0;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.demo-corp-nav {
+  display: flex;
+  gap: 4px;
+  padding-inline: clamp(8px, 2vw, 22px);
+  border-bottom: 1px solid var(--border);
+}
+.demo-corp-nav button {
+  padding: 14px clamp(10px, 1.8vw, 24px);
+  min-height: 48px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.demo-corp-nav button[aria-current="page"] { border-bottom-color: var(--primary); color: var(--primary) }
+.demo-corp-body { padding: clamp(12px, 2vw, 24px) }
+.demo-corp-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap }
+.demo-corp-search, .demo-corp-filter select {
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  box-sizing: border-box;
+}
+.demo-corp-search { display: flex; align-items: center; gap: 8px; padding: 0 10px; min-width: 0; width: min(100%, 250px) }
+.demo-corp-search > svg { flex: none; color: var(--text-2) }
+.demo-corp-search:focus-within { outline: 2px solid var(--primary); outline-offset: 1px }
+.demo-corp-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  padding: 7px 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+.demo-corp-filter { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font-size: 14px; color: var(--text-2) }
+.demo-corp-filter select { padding: 5px 7px; max-width: 100% }
+.demo-corp-summary { font-size: 14px; font-weight: 650; margin-inline-start: auto; color: var(--text-2); font-variant-numeric: tabular-nums }
+.demo-corp-results { margin-top: 20px }
+.demo-corp-result-count { margin-bottom: 9px; font-size: 13px; color: var(--text-2) }
+.demo-corp-result-count b { color: var(--text); margin-inline-start: 4px }
+.demo-corp-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; line-height: 1.45 }
+.demo-corp-table th, .demo-corp-table td { padding: 12px clamp(7px, 1.1vw, 16px); border-bottom: 1px solid var(--border); vertical-align: middle; overflow-wrap: anywhere }
+.demo-corp-table th { font-size: 13px; color: var(--text-2); font-weight: 650; background: var(--surface-2) }
+.demo-corp-table th:last-child, .demo-corp-table .demo-corp-row-action { text-align: right }
+.demo-corp-value { display: inline-grid; gap: 2px; min-width: 0 }
+.demo-corp-value strong { font-weight: 650 }
+.demo-corp-value small { font-size: 13px; color: var(--text-2) }
+.demo-corp-row-action button, .demo-corp-empty button, .demo-corp-map-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 7px 10px;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.demo-corp button:hover, .demo-corp-map-button:hover { background: var(--surface-2) }
+.demo-corp-map-button { margin-inline-start: auto; color: var(--primary) }
+.demo-corp-empty { padding: 30px 12px; text-align: center; color: var(--text-2) }
+.demo-corp-fields { margin: 0; font-size: 14px; line-height: 1.5 }
+.demo-corp-fields div { display: grid; grid-template-columns: minmax(5em, 28%) minmax(0, 1fr); gap: 15px; padding: 9px 0; border-bottom: 1px solid var(--border) }
+.demo-corp-fields dt { color: var(--text-2) }
+.demo-corp-fields dd { margin: 0; overflow-wrap: anywhere }
+
+@media (max-width: 760px) {
+  .demo-corp-nav { padding-inline: 5px; gap: 0 }
+  .demo-corp-nav button { flex: 1; padding-inline: 4px; font-size: 14px }
+  .demo-corp-toolbar { gap: 9px }
+  .demo-corp-search { width: 100% }
+  .demo-corp-filter { flex: 1; display: grid; gap: 4px }
+  .demo-corp-summary { width: 100%; margin-top: 4px }
+  .demo-corp-table, .demo-corp-table tbody { display: block }
+  .demo-corp-table thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden }
+  .demo-corp-table tr { display: grid; gap: 7px; padding: 13px 0; border-top: 1px solid var(--border) }
+  .demo-corp-table td {
+    display: grid;
+    grid-template-columns: minmax(70px, 34%) minmax(0, 1fr);
+    gap: 8px;
+    align-items: baseline;
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+  .demo-corp-table td[data-label]::before { content: attr(data-label); font-size: 13px; color: var(--text-2) }
+  .demo-corp-table td > span { justify-self: start }
+  .demo-corp-table .demo-corp-row-action { display: block; padding-top: 2px }
+  .demo-corp-row-action button { min-height: 40px }
+}

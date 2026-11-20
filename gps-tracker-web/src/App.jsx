@@ -19,7 +19,7 @@ import { authScope, AUTH_CHANGED } from './authSession';
 // 이중 base 지원: vite base = '/gps-tracker/app/' OR '/' (gps.serial.kr 빌드).
 // BrowserRouter basename 으로 흡수.
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 // Dashboard 는 홈이라 critical — sync import 유지.
 import Dashboard from './pages/Dashboard';
@@ -30,10 +30,11 @@ import {
   togglePalette, registerCommands, registerDevices,
 } from './components/ui';
 import { useDevices, useMe, useAccountType } from './state';
-import { useQuery } from '@tanstack/react-query';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { queryClient } from './state';
 import { businessServices, internalDestination, ownerServices, requestedStart, startDestination } from './lib/platformNavigation';
-import { toggleTheme } from './theme';
-import { api, clearTokens } from './api';
+import { initTheme, toggleTheme } from './theme';
+import { api, clearTokens, mountAccountRefresh } from './api';
 import { startPhoneTracker, stopPhoneTracker } from './lib/phoneTracker';
 
 // 나머지 라우트는 각자 진입할 때만 로드 — 초기 bundle 축소.
@@ -52,23 +53,24 @@ const LazyFallback = () => (
   </div>
 );
 
-const BASENAME = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+initTheme();
 
 export default function App() {
   const [scope, setScope] = useState(authScope);
+  useEffect(mountAccountRefresh, []);
   useEffect(() => {
     const sync = () => setScope(authScope());
     window.addEventListener(AUTH_CHANGED, sync);
     return () => window.removeEventListener(AUTH_CHANGED, sync);
   }, []);
   return (
-    <BrowserRouter key={scope} basename={BASENAME || undefined}>
+    <QueryClientProvider key={scope} client={queryClient}>
       <Shell />
       <DialogHost />
       <ToastHost />
       <PaletteBridge />
       <PhoneTrackerBootstrap />
-    </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
@@ -240,6 +242,7 @@ function AuthRoute({ onLogin }) {
   const next = readNext();
   return (
     <Auth
+      loginNext={next}
       onLogin={() => {
         onLogin();
         navigate(next || '/start', { replace: true });

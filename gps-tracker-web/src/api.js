@@ -84,6 +84,7 @@ function resetSession() {
 // 사용자가 활성으로 API 호출 안 하다가도 토큰을 사전에 갱신해두므로,
 // 만료 직후 401 → race 로 인한 logout 위험을 거의 제거.
 let refreshTimer = null;
+let refreshEnabled = true;
 
 function decodeExp(accessToken) {
   try {
@@ -103,6 +104,7 @@ export function isTokenExpiringSoon(accessToken, marginMs = 60_000) {
 function schedulePreemptiveRefresh(accessToken) {
   clearTimeout(refreshTimer);
   refreshTimer = null;
+  if (!refreshEnabled) return;
   const expMs = decodeExp(accessToken);
   if (!expMs) return;
   // 만료 60초 전. 이미 임박했으면 즉시.
@@ -115,6 +117,18 @@ const _bootStorage = activeStorage();
 if (_bootStorage && !_bootStorage.getItem('auth_session')) _bootStorage.setItem('auth_session', crypto.randomUUID());
 const _bootToken = getToken();
 if (_bootToken) schedulePreemptiveRefresh(_bootToken);
+
+// A public demo can be reached via browser history in a previously signed-in tab.
+// Stop the account timer for that visit and resume from the current token on return.
+export function mountAccountRefresh() {
+  refreshEnabled = true;
+  schedulePreemptiveRefresh(getToken());
+  return () => {
+    refreshEnabled = false;
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
+  };
+}
 
 // ── refresh 실행 ─────────────────────────────────────────────────────
 // 반환값:
