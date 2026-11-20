@@ -1,0 +1,18 @@
+{
+  "read_only": true,
+  "at": "2026-11-08T05:55:42.461140+00:00",
+  "schema": 99,
+  "bind_logging": [
+    "-1",
+    "0"
+  ],
+  "retention_jobs": 0,
+  "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "web": "/home/mmm/releases/privacy-facts-20261106-r1/web",
+  "service": [
+    "MainPID=218705",
+    "NRestarts=0",
+    "ExecMainStartTimestamp=Sat 2026-11-07 17:16:49 KST",
+    "ActiveState=active"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "cleaned_at": "2026-11-07T16:05:32.189818+00:00",
+  "test_containers_network_and_tmpfs_removed": true,
+  "test_uploads_removed": true,
+  "private_test_files_removed": [
+    "test-keys.json",
+    "test-runtime.json",
+    "regression.env"
+  ],
+  "sources_logs_candidate_preserved": true,
+  "production_changed": false
+}

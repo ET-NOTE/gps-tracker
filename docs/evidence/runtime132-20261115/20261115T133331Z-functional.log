@@ -1,0 +1,30 @@
+Traceback (most recent call last):
+  File "/opt/gps121/test_unattributed132.py", line 250, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_unattributed132.py", line 135, in main
+    officer, operator, handler, user, other = [account(n) for n in range(5)]
+  File "/opt/gps121/test_unattributed132.py", line 135, in <listcomp>
+    officer, operator, handler, user, other = [account(n) for n in range(5)]
+  File "/opt/gps121/test_unattributed132.py", line 98, in account
+    s, otp, _ = call('POST', '/auth/send-otp', {'phone': phone}); assert s == 200, (s, otp)
+  File "/opt/gps121/test_unattributed132.py", line 89, in call
+    c.request(method, BASE+path, json.dumps(body) if body is not None else None, {**headers(who), **(extra or {})})
+  File "/usr/lib/python3.10/http/client.py", line 1312, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1358, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1307, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1067, in _send_output
+    self.send(msg)
+  File "/usr/lib/python3.10/http/client.py", line 1005, in send
+    self.connect()
+  File "/usr/lib/python3.10/http/client.py", line 1477, in connect
+    super().connect()
+  File "/usr/lib/python3.10/http/client.py", line 971, in connect
+    self.sock = self._create_connection(
+  File "/usr/lib/python3.10/socket.py", line 845, in create_connection
+    raise err
+  File "/usr/lib/python3.10/socket.py", line 833, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused

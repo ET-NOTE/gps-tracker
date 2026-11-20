@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/opt/gps121/perf_after_backfill128.py", line 39, in <module>
+    assert db_before['compressed_chunks']==(0 if phase=='uncompressed' else 4),db_before
+AssertionError: {'schema': 114, 'compressed_chunks': 3, 'temp': {'files': 67, 'bytes': 135568114}, 'active': 0}

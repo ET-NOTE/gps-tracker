@@ -1,0 +1,96 @@
+{
+  "at": "2026-11-16T16:55:36+0900",
+  "passed": true,
+  "schema": 114,
+  "health": {
+    "db": true,
+    "environment": "development",
+    "ok": true,
+    "release": "review137-20261116-r3",
+    "service": "gps-tracker-api"
+  },
+  "api_sha256": "62f67f352bcdc677273a88caa7c44b4c409d760c97b9da9128f734da790f648d",
+  "migration_seconds": 9.16,
+  "cutover_seconds": 19.087,
+  "core_rows_unchanged": true,
+  "web": "/home/gps-dev/releases/dev-aligned-20261116-r1/web",
+  "source_branch": "codex/dev-aligned-20261116",
+  "production_unchanged": true,
+  "environment_unchanged": true,
+  "accounts_checked": 2,
+  "authenticated_checks": [
+    {
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/auth/me/prefs",
+      "status": 200
+    },
+    {
+      "path": "/devices",
+      "status": 200
+    },
+    {
+      "path": "/privacy/requests/page",
+      "status": 200
+    },
+    {
+      "path": "/privacy/collection",
+      "status": 200
+    },
+    {
+      "path": "/privacy/processing",
+      "status": 200
+    },
+    {
+      "path": "/privacy/subject-mappings",
+      "status": 200
+    },
+    {
+      "path": "/privacy/provision-notices",
+      "status": 200
+    },
+    {
+      "path": "/corporate/subject-bindings?limit=1",
+      "status": 200
+    },
+    {
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/auth/me/prefs",
+      "status": 200
+    },
+    {
+      "path": "/devices",
+      "status": 200
+    },
+    {
+      "path": "/privacy/requests/page",
+      "status": 200
+    },
+    {
+      "path": "/privacy/collection",
+      "status": 200
+    },
+    {
+      "path": "/privacy/processing",
+      "status": 200
+    },
+    {
+      "path": "/privacy/subject-mappings",
+      "status": 200
+    },
+    {
+      "path": "/privacy/provision-notices",
+      "status": 200
+    },
+    {
+      "path": "/corporate/subject-bindings?limit=1",
+      "status": 200
+    }
+  ],
+  "anonymous": 401
+}

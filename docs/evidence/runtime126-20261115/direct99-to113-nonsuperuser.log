@@ -1,0 +1,32 @@
+Starting gps121-migration.service...
+{"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2918"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+[2m2026-11-15T02:45:57.293848Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-15T02:45:57.299504Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_sqlx_migrations" already exists, skipping
+gps121-migration.service: Deactivated successfully.
+Finished gps121-migration.service.
+Starting gps121-migration.service...
+{"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2918"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+[2m2026-11-15T02:45:59.811611Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-15T02:45:59.816163Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_sqlx_migrations" already exists, skipping
+gps121-migration.service: Main process exited, code=exited, status=1/FAILURE
+Error: migration failed
+Caused by:
+    0: while executing migration 103: error returned from database: permission denied to create extension "pgcrypto"
+    1: error returned from database: permission denied to create extension "pgcrypto"
+    2: permission denied to create extension "pgcrypto"
+gps121-migration.service: Failed with result 'exit-code'.
+Failed to start gps121-migration.service.
+Starting gps121-migration.service...
+{"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2918"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+[2m2026-11-15T02:46:00.321005Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-15T02:46:00.325598Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_sqlx_migrations" already exists, skipping
+[2m2026-11-15T02:46:00.326364Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m extension "pgcrypto" already exists, skipping
+gps121-migration.service: Deactivated successfully.
+Finished gps121-migration.service.
+Starting gps121-migration.service...
+{"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2918"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+[2m2026-11-15T02:46:00.724292Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-15T02:46:00.728811Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_sqlx_migrations" already exists, skipping
+[2m2026-11-15T02:46:00.820798Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m extension "pgcrypto" already exists, skipping
+gps121-migration.service: Deactivated successfully.
+Finished gps121-migration.service.

@@ -1,0 +1,107 @@
+TAP version 13
+# (node:33696) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: new account never reuses previous account query cache
+ok 1 - new account never reuses previous account query cache
+  ---
+  duration_ms: 22.4368
+  ...
+# Subtest: company requests carry explicit scope; personal history remains unscoped
+ok 2 - company requests carry explicit scope; personal history remains unscoped
+  ---
+  duration_ms: 11.7422
+  ...
+# Subtest: company switch cancels late JSON and deferred private download before transmission
+ok 3 - company switch cancels late JSON and deferred private download before transmission
+  ---
+  duration_ms: 7.6361
+  ...
+# Subtest: late A refresh (200) cannot replace or log out B
+ok 4 - late A refresh (200) cannot replace or log out B
+  ---
+  duration_ms: 6.4034
+  ...
+# Subtest: late A refresh (401) cannot replace or log out B
+ok 5 - late A refresh (401) cannot replace or log out B
+  ---
+  duration_ms: 8.0492
+  ...
+# Subtest: late account data cannot complete after login changes
+ok 6 - late account data cannot complete after login changes
+  ---
+  duration_ms: 6.1173
+  ...
+# Subtest: logout prevents a pending refresh from resurrecting a session
+ok 7 - logout prevents a pending refresh from resurrecting a session
+  ---
+  duration_ms: 4.4844
+  ...
+# Subtest: CSV, XLSX and multipart use session login, and only retry rejected authentication
+ok 8 - CSV, XLSX and multipart use session login, and only retry rejected authentication
+  ---
+  duration_ms: 9.7371
+  ...
+# Subtest: deferred document download reads rotated token but rejects a different account
+ok 9 - deferred document download reads rotated token but rejects a different account
+  ---
+  duration_ms: 6.8676
+  ...
+# Subtest: report busy retry preserves company and stops after company/account changes
+ok 10 - report busy retry preserves company and stops after company/account changes
+  ---
+  duration_ms: 29.8102
+  ...
+# Subtest: a late file body is blocked after account switch; failed writes are not retried
+ok 11 - a late file body is blocked after account switch; failed writes are not retried
+  ---
+  duration_ms: 11.3134
+  ...
+# Subtest: shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+ok 12 - shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+  ---
+  duration_ms: 8.8833
+  ...
+# Subtest: device mutations cancel pre-write snapshots and offline provenance survives shared state
+ok 13 - device mutations cancel pre-write snapshots and offline provenance survives shared state
+  ---
+  duration_ms: 8.422
+  ...
+# Subtest: admin step-up never leaks to personal requests; sign-out clears elevated session
+ok 14 - admin step-up never leaks to personal requests; sign-out clears elevated session
+  ---
+  duration_ms: 5.8776
+  ...
+# Subtest: protected writes propose first; only explicit approved execution sends original mutation
+ok 15 - protected writes propose first; only explicit approved execution sends original mutation
+  ---
+  duration_ms: 5.2018
+  ...
+# Subtest: wrong MFA credentials are not retried through ordinary refresh
+ok 16 - wrong MFA credentials are not retried through ordinary refresh
+  ---
+  duration_ms: 5.0471
+  ...
+# Subtest: location history aborts the HTTP request on logout; saved data is not resurrected
+ok 17 - location history aborts the HTTP request on logout; saved data is not resurrected
+  ---
+  duration_ms: 6.4313
+  ...
+# Subtest: logout cancels a real 429 backoff before a replacement account can send it
+ok 18 - logout cancels a real 429 backoff before a replacement account can send it
+  ---
+  duration_ms: 7.5994
+  ...
+# Subtest: personal provision page filters and abort signal remain outside company scope
+ok 19 - personal provision page filters and abort signal remain outside company scope
+  ---
+  duration_ms: 7.4528
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 299.6652

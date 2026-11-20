@@ -1,0 +1,14 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+PASS all thirteen migration transactions roll back on injected failure; committed prefixes resume with real candidate
+PASS missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes
+PASS prepared restricted owner completes real single-pass99 to112 with original data preserved and defaults OFF
+PASS 99 to112 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred
+PASS other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected
+PASS conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes
+PASS restricted API and actual cleanup and closure units use same key/mode; policy, DDL and maintenance bypass rejected
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_cumulative.py", line 306, in <module>
+    n = db.execute("SELECT count(*) FROM location_history_points_between(%s,%s,'2026-10-01','2026-11-01')", (did, uid)).fetchone()[0]
+  File "/usr/local/lib/python3.10/dist-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.DiskFull: could not write to file "base/pgsql_tmp/pgsql_tmp1605.1": No space left on device

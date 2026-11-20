@@ -1,0 +1,45 @@
+GPS VPS SECURITY / LIVE READ-ONLY VERIFICATION
+=========================================================================================================
+Checked at (KST): 2026-11-11T15:10:24.779951+09:00
+Target: 210.114.18.16  |  Fresh SSH connection from the office
+
+[ OS FIREWALL ]  sudo ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), deny (routed)
+22/tcp                     ALLOW IN    221.159.164.177           
+IPv6 SSH allow rule: NONE
+UFW after netfilter-persistent: True
+Boot ordering configured; a real VPS reboot has NOT been tested.
+
+[ SSH AUTHENTICATION ]  sudo sshd -T (selected settings)
+port 22
+maxauthtries 6
+permitrootlogin yes
+pubkeyauthentication yes
+passwordauthentication no
+kbdinteractiveauthentication no
+
+[ SECURITY SERVICES ]  systemctl show / dpkg-query / nginx -T
+fail2ban.service           loaded     active     enabled
+clamav-daemon.service      not-found  inactive   -
+clamav-freshclam.service   not-found  inactive   -
+ModSecurity loaded directives: NONE
+Fail2ban sshd: 5 failures / 600 seconds; ban 3600 seconds.
+Office exemption configured: True
+
+[ PUBLIC TLS ]  verified Python/OpenSSL connections to gps.serial.kr:443
+Issuer: Let's Encrypt / YE2
+default     : TLSv1.3 | TLS_AES_256_GCM_SHA384 | certificate verified
+TLS1.2 only : TLSv1.2 | ECDHE-ECDSA-AES256-GCM-SHA384 | certificate verified
+
+[ SERVICE / RESOURCE CHECK ]
+{"db":true,"environment":"production","ok":true,"release":"privacy-log-20261107-r1","service":"gps-tracker-api"}
+Mem:            2967        1006         123         737        1837        1036
+/dev/mapper/ubuntu--vg-root   45G   34G  8.9G  80% /
+
+Scope limits: Cafe24 panel not changed; ClamAV / ModSecurity not installed.
+Legacy HTTP ingest on port 80 and office-only DB access on 5432 still exist.
+Other project ports remain open. This is NOT an all-requirements-passed report.
+=========================================================================================================
+Saved: live-inventory.json / live-tls.json / terminal-output.txt

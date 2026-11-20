@@ -1,0 +1,10 @@
+{
+  "label": "controlled-default",
+  "analyze": true,
+  "timeout_seconds": 60,
+  "api_timeout_seconds": 20,
+  "jit": "on",
+  "ok": false,
+  "error": "statement_timeout",
+  "seconds": 60.004925
+}

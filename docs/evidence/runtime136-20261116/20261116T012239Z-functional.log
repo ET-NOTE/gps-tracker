@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/opt/gps121/test_company_bindings136.py", line 167, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_company_bindings136.py", line 49, in main
+    binding=sql("INSERT INTO fleet_vehicle_bindings(owner_id,vehicle_id,device_id,terminal_name,started_at,ended_at) VALUES(%s,%s,%s,'Archive 100%_ unit',%s,%s) RETURNING id",(uid,vid,did,begin-timedelta(days=5),end+timedelta(hours=1)))[0][0]
+  File "/opt/gps121/test_unattributed132.py", line 33, in sql
+    c.execute(query, args or None)
+IndexError: tuple index out of range

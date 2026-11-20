@@ -1,0 +1,10 @@
+{
+  "container": "gps-runtime127-host",
+  "internal_network": true,
+  "published_ports": {},
+  "cpu_nanos": 2000000000,
+  "memory_bytes": 4294967296,
+  "memory_swap_bytes": 4294967296,
+  "production_modified": false,
+  "api_sha256": "5c6f4529207f9ab0d5d30598dbb4fe8a4e4b77dc4e5304a8736f311fdcdb7e52"
+}

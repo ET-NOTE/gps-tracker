@@ -1,0 +1,14 @@
+before-uncompressed {'route': 'month_aggregate', 'status': 200, 'seconds': 6.081898, 'bytes': 148204, 'sha256': '333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da', 'phase': 'before-uncompressed', 'temp_peak_bytes': 267264000, 'temp_cap_bytes': 268435456}
+before-uncompressed {'route': 'month_history', 'status': 200, 'seconds': 1.419817, 'bytes': 3260001, 'sha256': 'ea1b29c7edb68c6cc82c0bffaf42a708ce52fb8066eff1e4acb5962d5aad27f9', 'phase': 'before-uncompressed', 'temp_peak_bytes': 99487744, 'temp_cap_bytes': 268435456}
+before-uncompressed {'route': 'month_page', 'status': 200, 'seconds': 0.197385, 'bytes': 1630267, 'sha256': '4f6370ba7e1f42f43030c88aa51c6c5a902a468968fdb934db1aeb164162e262', 'phase': 'before-uncompressed', 'temp_peak_bytes': 0, 'temp_cap_bytes': 268435456}
+before-compressed {'route': 'month_aggregate', 'status': 200, 'seconds': 5.968948, 'bytes': 148204, 'sha256': '333b3a5cb6df7cbdf74e5dc69f14cbb32e042e4bf7945d74608f25c037bed6da', 'phase': 'before-compressed', 'temp_peak_bytes': 267272192, 'temp_cap_bytes': 268435456}
+before-compressed {'route': 'month_history', 'status': 200, 'seconds': 1.246865, 'bytes': 3260001, 'sha256': 'ea1b29c7edb68c6cc82c0bffaf42a708ce52fb8066eff1e4acb5962d5aad27f9', 'phase': 'before-compressed', 'temp_peak_bytes': 97898496, 'temp_cap_bytes': 268435456}
+before-compressed {'route': 'month_page', 'status': 200, 'seconds': 0.259424, 'bytes': 1630267, 'sha256': '4f6370ba7e1f42f43030c88aa51c6c5a902a468968fdb934db1aeb164162e262', 'phase': 'before-compressed', 'temp_peak_bytes': 0, 'temp_cap_bytes': 268435456}
+Traceback (most recent call last):
+  File "/opt/gps121/probe_runtime127.py", line 51, in <module>
+    with db.transaction():db.execute((v.ROOT/'prototype114.sql').read_text())
+  File "/usr/local/lib/python3.10/dist-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column r.query_bounds_ready does not exist
+LINE 10: ...ce_id=wanted_device AND r.user_id=wanted_user AND r.query_bo...
+                                                              ^

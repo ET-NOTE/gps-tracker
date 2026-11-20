@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-15T16:17:00.784Z",
+  "environment": "actual React history component; synthetic local API responses",
+  "checks": [
+    "lazy expansion and collapse",
+    "public status/message/historical deadline display",
+    "390px no document overflow",
+    "56 revisions25/25/6 and newer-update notice",
+    "error distinct from empty and retry succeeds",
+    "cancel visible and late results hidden"
+  ],
+  "errors": []
+}

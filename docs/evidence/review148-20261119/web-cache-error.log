@@ -1,0 +1,45 @@
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src/aat/AATLayoutEngine.js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src/aat'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/base.es5.js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/base.js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn cleanup Failed to remove some directories [
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/@foliojs-fork',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@foliojs-fork/pdfkit/js/data'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@foliojs-fork/pdfkit/js/data'
+npm warn cleanup     }
+npm warn cleanup   ]
+npm warn cleanup ]
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@foliojs-fork/fontkit/src'
+npm error code EACCES
+npm error syscall mkdir
+npm error path /.npm
+npm error errno -13
+npm error
+npm error Your cache folder contains root-owned files, due to a bug in
+npm error previous versions of npm which has since been addressed.
+npm error
+npm error To permanently fix this problem, please run:
+npm error   sudo chown -R 1000:1000 "/.npm"
+npm notice
+npm notice New major version of npm available! 10.9.7 -> 12.2.3
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.3
+npm notice To update run: npm install -g npm@12.2.3
+npm notice
+npm error Log files were not written due to an error writing to the directory: /.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal

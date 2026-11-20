@@ -1,0 +1,41 @@
+{
+  "groups": [
+    "ledger OFF: independent provision/use controls, existing share denied, self rights and other account preserved; stale revisions rejected",
+    "in-flight fence returns conflict without pretending pause succeeded; resume succeeds after drain",
+    "use pause suppresses automatic derived writes while collection remains independent",
+    "six calendar months, no inferred consent, original/event/AI erasure, other historical SIM owner preserved, replay and late derivation blocked",
+    "twelve months requires contract; expired contract removes remaining covered telemetry",
+    "offline checkpoint replays collection/account/use pause with fresh ACK epoch and deletion cutoff; incorrect hash/live restore rejected; no backup-erasure claim"
+  ],
+  "retention": {
+    "policy_enabled": true,
+    "accounts": [
+      {
+        "account_id": 1,
+        "cutoff": "2026-05-07T13:35:02.998997+00:00",
+        "execute": true,
+        "eligible": true,
+        "counts": {
+          "location_records": 1,
+          "events": 1,
+          "daily_stats": 0,
+          "fcm_outbox": 0,
+          "ai_analyses": 1
+        },
+        "review_reasons": [
+          "external_backups_and_exports_unverified",
+          "personal_files_and_audit_separate_policy"
+        ],
+        "external_copies_verified": false,
+        "covered_rows_erased": true
+      }
+    ],
+    "unconsented_accounts_untouched": true
+  },
+  "restore": {
+    "replayed_accounts": 1,
+    "paused_controls_replayed": true,
+    "external_copies_verified": false
+  },
+  "api_sha256": "f10f9e532c0a42b1a0e1887dfe36f09e1b4af2ed8a77acf5fd42c02243df0b16"
+}

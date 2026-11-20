@@ -1,0 +1,79 @@
+{
+  "release": "privacy-pdf-20261106-r1",
+  "environment": "production",
+  "schema": 98,
+  "api_runs_as": "gps-api",
+  "workers_run_as": {
+    "gps-privacy-accounts.service": "gps-api",
+    "gps-privacy-files.service": "gps-api"
+  },
+  "api_no_new_privileges": true,
+  "api_capabilities": 0,
+  "synthetic_account_ids": [
+    59,
+    60,
+    61
+  ],
+  "request_id": 33,
+  "delivery_id": 5,
+  "sign_in_refresh_and_wrong_password": true,
+  "ingest": {
+    "real_reports_in_the_10_minutes_before_restart": 27,
+    "real_reports_since_restart": 7
+  },
+  "file_written_by_api_owned_by": "gps-api",
+  "file_mode": "600",
+  "file_read_back_and_foreign_account_denied": true,
+  "orphaned_file_removed_by_timer_worker": true,
+  "pdf_pages_rendered_by_installed_processor": [
+    [
+      1,
+      1414,
+      707
+    ],
+    [
+      2,
+      1000,
+      1000
+    ]
+  ],
+  "renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+  "unreadable_pdf_refused_without_read_proof": true,
+  "delivery_download_and_source_change_purge": true,
+  "account_closures_processed_by_timer_worker": 3,
+  "synthetic_source_removed": true,
+  "synthetic_accounts_closed": true,
+  "real_accounts_and_sim_ownership_unchanged": true,
+  "external_messages_sent": false,
+  "_run": {
+    "started_at": "2026-11-06T15:35:17+09:00",
+    "finished_at": "2026-11-06T15:37:21+09:00",
+    "exit": 0
+  },
+  "_checked_afterwards": {
+    "at": "2026-11-06T15:38:01+09:00",
+    "api_user": "gps-api",
+    "api_restarts": 0,
+    "api_error_log_entries": 0,
+    "processor_processes_left": 0,
+    "upload_files_left": 0,
+    "synthetic_accounts_restricted": [
+      59,
+      60,
+      61
+    ],
+    "synthetic_receipts_expenses_vehicles_devices_left": 0,
+    "request_33": "cancelled",
+    "delivery_5_unavailable": true,
+    "temporary_image_payloads": 0,
+    "file_cleanup_jobs": {
+      "local_absent": 3
+    },
+    "pending_account_closures": 0,
+    "gps_path_5xx": 0,
+    "ingest": {
+      "200": 8
+    },
+    "worker_failures_since_change": 0
+  }
+}

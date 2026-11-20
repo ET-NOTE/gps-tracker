@@ -1,0 +1,16 @@
+{
+  "started": "2026-11-19T01:27:33.999215+00:00",
+  "verified": "2026-11-19T01:27:38.090418+00:00",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "review148-20261119-r1",
+    "service": "gps-tracker-api"
+  },
+  "public_files_verified": 23,
+  "migrations_verified": 115,
+  "api_sha256": "505f0db32306271560a7c1aa6037db0fe54936d85907f57005b14d59206ea0d7",
+  "previous_web": "/home/mmm/releases/review146-20261118-r1/web",
+  "backup": "/home/mmm/backups/review148-20261119-r1"
+}

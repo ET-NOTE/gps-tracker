@@ -1,0 +1,21 @@
+GPS119 protection {"profile": "controller", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3487"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3486"}], "dumpable": 0, "swap_max": 0, "memory_max": 1073741824}
+encrypted_production_requires_temp_setting PASS
+revoked_tablespace_blocks_reused_pool PASS
+missing_tablespace_blocks_existing_pool PASS
+prepare_lock_timeout_fail_closed PASS
+finish_timeout_fail_closed PASS
+runtime_tablespace PASS
+external_sort_uses_disk_spill PASS
+spill_success PASS
+per_process_temp_limit PASS
+full_tmpfs_no_disk_fallback PASS
+spill_recovery PASS
+fallback_mount_is_tmpfs PASS
+missing_directory_uses_protected_fallback PASS
+full_fallback_no_ordinary_disk PASS
+directory_restored PASS
+gps-runtime119-db_no_swap PASS
+gps-runtime119-api_no_swap PASS
+prepare_error_phase_observed PASS
+finish_error_phase_observed PASS
+diagnostics_exclude_identity_coordinates PASS

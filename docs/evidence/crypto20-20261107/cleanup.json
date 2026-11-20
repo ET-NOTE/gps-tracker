@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-07T10:49:33.643398+00:00",
+  "production_modified": false,
+  "round20_containers_and_networks_remaining": 0,
+  "synthetic_key_and_runtime_files_removed": [
+    "test-keys.json",
+    "test-runtime.json",
+    "tls-fixture"
+  ],
+  "artifacts_retained": [
+    "out/gps-tracker-api",
+    "fwsrc/idf_caltest/build/https-operating",
+    "out/crypto20-*.json",
+    "validation logs and source"
+  ],
+  "other_projects_changed": false
+}

@@ -1,0 +1,68 @@
+{
+  "synthetic": true,
+  "production_modified": false,
+  "schema": 103,
+  "passed": [
+    "OFF mode retains existing signed ingestion and original coordinates",
+    "key loading refuses database bind-parameter logging before transmitting keys",
+    "bounded conversion removes plaintext core fields and preserves exact decoded values",
+    "ON signed ingestion stores ciphertext; owner reads decrypt, other account/anonymous/replay/tamper/unsigned requests fail",
+    "new hardware authentication retains the same SIM device/history identity",
+    "ciphertext corruption, context substitution and missing key fail closed; timestamp binding survives session timezone",
+    "batched point expansion/history functions and explicit cached-location erasure work with encryption",
+    "partial interval erasure preserves the remaining batch point and removes original payload/anchor ciphertext",
+    "one-row rotation checkpoints preserve values; old key can be removed only after a complete decrypt scan",
+    "full Timescale pg_dump/pg_restore recovers exact core values only with separately retained keys; dumps contain no sample plaintext/keys",
+    "real Nginx TLS 1.2 succeeds; HTTP, direct spoofed proxy headers and invalid signatures fail",
+    "restricted runtime can ingest/read encrypted rows but cannot disable encryption, alter triggers or drop views"
+  ],
+  "conversion": {
+    "scope": "core fields only; derived stores/backups are not claimed encrypted",
+    "tables": {
+      "devices": {
+        "rows": 1,
+        "plaintext_rows": 0,
+        "converted": 1,
+        "decrypt_scan": "passed"
+      },
+      "events": {
+        "rows": 2,
+        "plaintext_rows": 0,
+        "converted": 2,
+        "decrypt_scan": "passed"
+      },
+      "location_records": {
+        "rows": 1,
+        "plaintext_rows": 0,
+        "converted": 1,
+        "decrypt_scan": "passed"
+      }
+    },
+    "enabled": true
+  },
+  "rotation": {
+    "scope": "core fields only; derived stores/backups are not claimed encrypted",
+    "tables": {
+      "devices": {
+        "rows": 1,
+        "plaintext_rows": 0,
+        "converted": 1,
+        "decrypt_scan": "passed"
+      },
+      "events": {
+        "rows": 6,
+        "plaintext_rows": 0,
+        "converted": 6,
+        "decrypt_scan": "passed"
+      },
+      "location_records": {
+        "rows": 4,
+        "plaintext_rows": 0,
+        "converted": 4,
+        "decrypt_scan": "passed"
+      }
+    },
+    "enabled": true
+  },
+  "api_sha256": "e3ff355248e129d85ae9aa8e7f87edb7cdba5038ca256cf8c4be10e61432fe4b"
+}

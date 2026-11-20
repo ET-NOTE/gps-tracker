@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query111/test_page111_snapshot.py", line 43, in <module>
+    main()
+  File "/home/etcom-hub/build/gps-provision22-20261111query111/test_page111_snapshot.py", line 23, in main
+    writer.execute('LOCK TABLE location_records IN ACCESS EXCLUSIVE MODE')
+  File "/home/etcom-hub/build/gps-provision22-20261108/python-deps/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.LockNotAvailable: canceling statement due to lock timeout

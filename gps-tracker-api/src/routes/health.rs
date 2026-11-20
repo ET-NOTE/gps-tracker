@@ -11,5 +11,7 @@ pub async fn health(State(state): State<AppState>) -> AppResult<Json<Value>> {
         "ok": true,
         "service": "gps-tracker-api",
         "db": row.0 == 1,
+        "environment": state.config.app_env,
+        "release": option_env!("GPS_RELEASE").unwrap_or("local"),
     })))
 }

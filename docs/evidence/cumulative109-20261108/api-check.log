@@ -1,0 +1,99 @@
+     Removed 487 files, 786.9MiB total
+    Checking gps-tracker-api v0.1.0 (/work/gps-tracker-api)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 11.01s
+   Compiling gps-tracker-api v0.1.0 (/work/gps-tracker-api)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.03s
+     Running unittests src/main.rs (/cache/target/debug/deps/gps_tracker_api-8f003424c2fedcc2)
+
+running 88 tests
+test routes::ai::reliability_tests::short_sleep_does_not_explain_an_hour_of_missing_data ... ok
+test routes::fleet_expenses::tests::receipt_type_from_bytes_not_extension ... ok
+test routes::ai::reliability_tests::sleep_is_not_a_connection_fault_and_missing_data_is_not_a_stop ... ok
+test routes::fleet_expenses::tests::review_does_not_allow_self_approval_except_owner ... ok
+test routes::fleet_team::staff_import::tests::import_fields_cannot_grant_privileges ... ok
+test routes::fleet_trip_assignment::tests::midnight_end_includes_last_valid_day ... ok
+test routes::fleet_team::staff_import::tests::import_normalizes_and_validates_contact ... ok
+test routes::fleet_trip_assignment::tests::weekly_uses_kst_and_conflicts_are_not_guessed ... ok
+test routes::fleet_trip_assignment::tests::reservations_require_unique_full_coverage ... ok
+test routes::ingest::batch_tests::retransmissions_do_not_drop_late_new_points_or_new_boots ... ok
+test routes::privacy_delivery::tests::export_window_is_bounded_and_review_required ... ok
+test routes::privacy_images::tests::fail_closed_bounds_size_and_empty ... ok
+test routes::ingest::batch_tests::broadcast_anchor_is_the_newest_accepted_fix_not_input_order ... ok
+test routes::fleet_trip_quality::tests::zero_and_gaps_require_review ... ok
+test routes::fleet_trip_quality::tests::complete_movement_is_confirmed ... ok
+test routes::fleet_trip_quality::tests::old_open_trip_is_not_driving ... ok
+test routes::privacy_redacted::tests::unicode_and_gaps ... ok
+test services::access_ledger::tests::external_intents_commit_before_mock_network_and_distinguish_outcomes ... ignored, requires disposable internal Docker DB; run via ops/18B verification
+test routes::privacy_redacted::tests::rejects_empty_overlap_unsorted_and_bounds ... ok
+test services::access_ledger::tests::nothing_that_locates_a_person_has_a_place_in_the_table ... ok
+test services::access_ledger::tests::a_requested_day_is_a_day_in_korean_time ... ok
+test routes::privacy_redacted::tests::preview_binds_notice_and_ranges ... ok
+test services::access_ledger::tests::a_read_is_recorded_for_whoever_really_received_it ... ok
+test routes::privacy_images::tests::only_selected_pixels_and_core_png_chunks ... ok
+test services::ai_requests::tests::analysis_purchase_is_atomic_and_replayable ... ignored, requires a disposable GPS_AI_TEST_DB
+test services::admin_security::tests::read_only_post_allowlist ... ok
+test services::admin_security::tests::encoding_and_password ... ok
+test routes::privacy_images::tests::preview_binds_reference_notice_company_and_output ... ok
+test services::admin_security::tests::bound_digest ... ok
+test services::admin_security::tests::proxy_boundary ... ok
+test services::admin_security::tests::rfc6238_sha256 ... ok
+test services::connection_alerts::heartbeat_tests::daily_heartbeat_has_grace_without_changing_legacy_deadlines ... ok
+test services::collection_control::tests::collection_boundary_and_wrap ... ok
+test services::battery::tests::charging_telemetry_stays_visible_with_an_inclusive_raw_ceiling ... ok
+test services::fcm::tests::durable_queue_recovers_without_cross_account_or_partial_success_replay ... ignored, requires GPS_FCM_TEST_DB on the isolated build runner
+test services::battery_runtime::tests::missing_sleeping_charging_and_stale_samples_do_not_predict_depletion ... ok
+test services::device_settings::tests::only_bounded_whole_minutes_are_accepted_and_preferences_are_device_scoped ... ok
+test services::fcm::tests::silence_copy_uses_readable_units ... ok
+test services::device_auth::tests::device_signature_binds_identity_counter_and_exact_body ... ok
+test services::fleet_sites::tests::circle_hysteresis ... ok
+test services::fcm::tests::retry_and_token_errors_are_distinct ... ok
+test services::fleet_sites::tests::polygon_validation_and_boundary ... ok
+test services::fcm::tests::copy_does_not_invent_movement_signal_strength_or_battery_percentage ... ok
+test services::fcm::tests::channel_data_and_unicode_body_are_preserved ... ok
+test services::battery_runtime::tests::timeline_interpolation_uses_physical_full_point_and_absolute_endpoint ... ok
+test services::privacy_lifecycle::tests::lifecycle_external_and_realtime_fences_without_ledger ... ignored, requires disposable internal Docker DB
+test services::privacy::tests::destructive_work_cannot_be_completed_by_intake ... ok
+test services::privacy_location_facts::tests::excluded_devices_are_named_by_the_alias_of_the_row ... ok
+test services::privacy_account_export::tests::nested_preferences_and_invalid_types_cannot_leak ... ok
+test services::privacy_account_export::tests::scope_must_be_explicit_known_and_unique ... ok
+test services::openai::tests::incomplete_or_empty_reports_are_not_billable ... ok
+test services::notification_policy::tests::truthful_kind_channels_and_bounded_unicode_preview ... ok
+test services::privacy_location_facts::tests::what_is_not_recorded_depends_on_whether_and_since_when_reads_are_recorded ... ok
+test services::privacy_location_facts::tests::the_period_exists_exactly_when_the_section_is_selected_and_is_bounded ... ok
+test services::location_storage::tests::keyring_is_bounded_and_validated ... ok
+test services::privacy_pdf::tests::only_the_documented_reply_layout_is_accepted ... ok
+test services::http_trace::tests::request_context_never_logs_url_headers_or_extension_method ... ok
+test services::privacy_raster::tests::exif_orientation_is_bounded_and_defaults_to_upright ... ok
+test services::privacy_raster::tests::one_large_reduction_at_a_time ... ok
+test services::privacy_raster::tests::orientation_maps_every_exif_case ... ok
+test services::privacy_raster::tests::pdf_pages_have_their_own_proof_domain_and_description ... ok
+test services::access_ledger::tests::an_unreviewed_route_is_denied ... ok
+test services::privacy_pdf::tests::the_service_gets_the_whole_request_and_only_a_complete_reply_counts ... ok
+test services::privacy_raster::tests::png_limits_apply_before_decoding ... ok
+test services::privacy_raster::tests::reducer_averages_by_exact_area ... ok
+test services::privacy_raster::tests::fit_is_identity_inside_and_maximal_outside ... ok
+test services::sim_identity::tests::full_sim_identity_ignores_only_printed_twentieth_digit ... ok
+test services::stats::tests::slow_continuous_travel_is_not_a_stop ... ok
+test services::stats::tests::stationary_jitter_and_unobserved_gaps_do_not_inflate_distance ... ok
+test services::privacy_raster::tests::small_png_variants_decode_directly ... ok
+test services::subject_provision::boundary22d::external_company_boundary22d ... ignored, requires disposable internal Docker DB; run in its own process
+test services::subject_provision::integration::subject_notice_retry_identity_and_lease_fences ... ignored, requires disposable internal Docker DB and loopback mock
+test services::privacy_raster::tests::small_jpeg_keeps_its_pixels_and_size ... ok
+test services::subject_projection::tests::month_is_half_open_kst_and_invalid_month_is_not_defaulted ... ok
+test services::subject_provision::tests::intervals_require_full_half_open_coverage ... ok
+test services::subject_queue_load::notice_queue_capacity_and_failure_recovery ... ignored, requires disposable internal Docker DB and loopback mock
+test services::subject_queue::tests::bounded_workers_and_alarm_edges ... ok
+test services::battery::tests::boundaries_missing_values_and_estimate_are_consistent ... ok
+test services::xlsx_report::nts_tests::commute_and_general_business_are_separate_columns ... ok
+test services::transport_security::tests::proxy_metadata_is_not_client_proof ... ok
+test services::xlsx_report::nts_tests::invalid_and_open_trips_do_not_enter_totals ... ok
+test services::privacy_location_facts::tests::nothing_that_is_exported_selects_a_coordinate_or_a_token ... ok
+test services::access_ledger::tests::every_recorded_route_is_registered_and_uses_a_stored_value ... ok
+test services::privacy_raster::tests::jpeg_limits_apply_before_decoding ... ok
+test services::privacy_raster::tests::color_jpeg_reduces_with_color_conversion ... ok
+test services::privacy_raster::tests::large_jpeg_is_reduced_inside_limits_with_stable_pixels ... ok
+test services::privacy_raster::tests::exif_rotation_is_applied_after_reduction ... ok
+test services::privacy_raster::tests::large_png_streams_rows_and_flattens_alpha ... ok
+
+test result: ok. 81 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 2.80s
+

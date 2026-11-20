@@ -1,0 +1,132 @@
+{
+  "label": "baseline-shared",
+  "planned": 2400,
+  "sent": 2314,
+  "missed": 86,
+  "unaccounted": 0,
+  "all_sent_stored": true,
+  "devices": [
+    {
+      "device": 0,
+      "device_id": 11,
+      "stored": 288,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "7433ffa34f6831002689af03b761c15b5fea229bd53105242750a10fd207d25f"
+    },
+    {
+      "device": 1,
+      "device_id": 12,
+      "stored": 291,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "c159afd97e9846cadedf985166947a1a8843de5a62f1043fe9ced519107f09f6"
+    },
+    {
+      "device": 2,
+      "device_id": 13,
+      "stored": 288,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "23b1b10bc4d635a94bf7ba00656a7f15f037f16709ae9e7b45c66f56e8b9b30e"
+    },
+    {
+      "device": 3,
+      "device_id": 14,
+      "stored": 291,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "4ce000eda9b9f75db6269aa83f4caaf98cde6f7c0c6c3ba9be617499557830c5"
+    },
+    {
+      "device": 4,
+      "device_id": 15,
+      "stored": 290,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "448964c15e019c1b48fa3876a1810fcf19624378e6c89f20749b0ab9c796f922"
+    },
+    {
+      "device": 5,
+      "device_id": 16,
+      "stored": 290,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "42c59ec73648383d2aae4f2d0358191020b14a308bd887c117766c71c015210c"
+    },
+    {
+      "device": 6,
+      "device_id": 17,
+      "stored": 287,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "79447598a089e9d5e2a2d9ab1880e49a3f521420c0702a648c150e830995fb22"
+    },
+    {
+      "device": 7,
+      "device_id": 18,
+      "stored": 289,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "fe8f272fb739816c685e4c34c3ffcba9f2a820efe18b74a9172970da2b969f85"
+    }
+  ],
+  "capacity_passed": false,
+  "original_acceptance_gate_unchanged": true,
+  "services_unchanged": true,
+  "memory_event_delta": {
+    "container": {
+      "low": 0,
+      "high": 0,
+      "max": 315,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "pdf": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "db": {
+      "low": 0,
+      "high": 0,
+      "max": 315,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "api": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "gps": {
+      "low": 0,
+      "high": 0,
+      "max": 315,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "other": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "av": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    }
+  },
+  "timing_capture_preserved": true,
+  "temp_peak_bytes": 78880768,
+  "health_pdf_cleanup_guards_passed": true,
+  "full_month_traversals": 2,
+  "production_modified": false
+}

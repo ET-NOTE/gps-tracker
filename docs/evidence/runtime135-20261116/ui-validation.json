@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-16T01:08:17.903Z",
+  "environment": "actual React company panel/queue; synthetic local API responses",
+  "checks": [
+    "207 mappings reached50/50/50/50/7",
+    "filter resets page and old binding remains selectable",
+    "390px no document overflow",
+    "filter change clears correction and aborts pending location response",
+    "reconsent locks identity and preserves exact timestamp/revision",
+    "correction and reconsent return to newest filtered list",
+    "error distinct from empty; explicit retry and cancel"
+  ],
+  "errors": []
+}

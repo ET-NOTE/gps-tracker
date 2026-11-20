@@ -1,0 +1,18 @@
+gps-query112-api
+API READY: schema111/112 restricted runtime, encrypted, ledger enabled
+docker: Error response from daemon: Conflict. The container name "/gps-query112-proxy" is already in use by container "24bc9fa5f740bcf8ecd9c964515c67f25d024faaedbd20b73bc670aefa9cf8a1". You have to remove (or rename) that container to be able to reuse that name.
+
+Run 'docker run --help' for more information
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/recover_baseline.py", line 13, in <module>
+    switch(112)
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/run_sustain112.py", line 44, in switch
+    sustain_location112.tls_setup()
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/sustain_location112.py", line 45, in tls_setup
+    run('docker','run','-d','--name',PROXY,'--network',NET,'--ip',address,
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/benchmark_location112.py", line 28, in run
+    return subprocess.run(args, check=True, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '('docker', 'run', '-d', '--name', 'gps-query112-proxy', '--network', 'gps-query112-test', '--ip', '172.27.0.10', '--cpus=.25', '--memory=64m', '--user', '1000:1000', '--cap-drop=ALL', '--security-opt=no-new-privileges', '-v', '/home/etcom-hub/build/gps-provision22-20261111query112/tls-fixture:/fixture:ro', 'nginx:stable-alpine', 'nginx', '-c', '/fixture/nginx.conf', '-g', 'daemon off;')' returned non-zero exit status 125.

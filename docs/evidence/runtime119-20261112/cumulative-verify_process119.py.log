@@ -1,0 +1,10 @@
+GPS119 protection {"profile": "controller", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3511"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3510"}], "dumpable": 0, "swap_max": 0, "memory_max": 1073741824}
+before-key guard rejects missing temporary mount True
+before-key guard rejects swap budget enabled True
+before-key guard rejects missing memory library True
+before-key guard rejects oversize temporary mount True
+before-key guard rejects executable temporary mount True
+gps-provision22-db-20261112cumulative119 protected process True
+gps-provision22-api-20261112cumulative119 protected process True
+actual static PDF renderer with empty environment True
+actual API restart repeats guard and returns healthy True

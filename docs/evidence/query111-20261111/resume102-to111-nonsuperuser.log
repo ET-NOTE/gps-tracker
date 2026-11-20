@@ -1,0 +1,3 @@
+[2m2026-11-11T04:12:24.474925Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-11T04:12:24.479337Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_sqlx_migrations" already exists, skipping
+[2m2026-11-11T04:12:24.480855Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m extension "pgcrypto" already exists, skipping

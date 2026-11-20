@@ -1,5 +1,8 @@
+#include "report_config.h"
+#include "collection_control.h"
 #include "telemetry.h"
 #include "config.h"
+#include "firmware_info.h"
 #include "gps.h"
 #include "motion.h"
 #include "lte.h"
@@ -54,7 +57,15 @@ const char* deviceUid() {
   return tmp;
 }
 
+static bool controlOnly(char *out,size_t cap) {
+  collection_control::syncSim(lte::iccid());
+  if(collection_control::allowed()) return false;
+  snprintf(out,cap,"{\"build_tag\":\"%s\",\"device_uid\":\"%s\",\"iccid\":\"%s\",\"imei\":\"%s\",\"imsi\":\"%s\"}",
+    FIRMWARE_BUILD_TAG,deviceUid(),lte::iccid(),lte::imei(),lte::imsi());
+  return true;
+}
 uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
+  if(controlOnly(out,cap)) return 0;
   uint32_t now  = millis();
   uint16_t vbat = readVbatMv();
   gps::Fix f;
@@ -77,8 +88,9 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
   else sim[0] = 0;
 
   int p = 0;
+  p = appendf(out, cap, p, "{\"build_tag\":\"%s\",", FIRMWARE_BUILD_TAG);
   p = appendf(out, cap, p,
-    "{\"device_uid\":\"%s\"%s,\"ts\":%lu,\"awake\":%u,\"csq\":%d,\"reg\":%d,\"vbat_mv\":%u,\"cbc_mv\":%d,\"at_ms\":%lu,",
+    "\"device_uid\":\"%s\"%s,\"ts\":%lu,\"awake\":%u,\"csq\":%d,\"reg\":%d,\"vbat_mv\":%u,\"cbc_mv\":%d,\"at_ms\":%lu,",
     deviceUid(), sim, (unsigned long)((now - bootMs) / 1000),
     (unsigned)lte::bringUpCount(), lte::csq(), lte::reg(), (unsigned)vbat,
     lte::modemVbatMv(), (unsigned long)lte::firstAtOkMs());
@@ -113,7 +125,10 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
       "\"stationary\":{\"active\":%s,\"held_s\":%lu,\"window_s\":%lu,\"sleep_in_s\":%lu,"
       "\"drift_m\":%.1f,\"threshold_m\":%.1f,\"fixes\":%d,\"gps_avail\":%s,\"motion_age_s\":%lu,"
       "\"lis_ok\":%s,\"lis_reinits\":%lu,"
-      "\"stay\":\"%s\",\"act_mg\":%lu,\"rst_act\":%u,\"rst_drift\":%u,\"rst_nogps\":%u},",
+      "\"stay\":\"%s\",\"act_mg\":%lu,\"rst_act\":%u,\"rst_drift\":%u,\"rst_nogps\":%u,"
+      "\"fw_version\":\"%s\",\"build_profile\":\"%s\",\"sleep_enabled\":%s,"
+      "\"timer_wake_enabled\":%s,\"timer_wake_s\":%lu,\"sleep_report_remote\":%s,\"sleep_report_saved\":%s,\"no_gps_grace_s\":%lu,"
+      "\"sleep_aborts\":%lu,\"shutdown_unconfirmed\":%lu},",
       active ? "true" : "false",
       (unsigned long)held_s, (unsigned long)window_s, (unsigned long)sleep_in,
       sleep_mgr::lastDriftM(), (double)GPS_DRIFT_THRESHOLD_M,
@@ -122,16 +137,23 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
       (unsigned long)motion::reinits(),
       sleep_mgr::stayCause(), (unsigned long)motion::activityMg(),
       (unsigned)sleep_mgr::resetsActive(), (unsigned)sleep_mgr::resetsDrift(),
-      (unsigned)sleep_mgr::resetsNoGps());
+      (unsigned)sleep_mgr::resetsNoGps(), FIRMWARE_VERSION, FIRMWARE_PROFILE,
+      SLEEP_DISABLED ? "false" : "true",
+      (!SLEEP_DISABLED && TIMER_WAKE_ENABLED) ? "true" : "false",
+      (unsigned long)report_config::intervalS(),
+      (SLEEP_DISABLED || GPS_HTTPS_SLEEP_TEST) ? "false" : "true", report_config::persisted() ? "true" : "false",
+      (unsigned long)(NO_GPS_SLEEP_GRACE_MS / 1000),
+      (unsigned long)sleep_mgr::sleepAborts(), (unsigned long)sleep_mgr::shutdownUnconfirmed());
   }
 
   // 식별/원인 (last_op = crash/stuck 위치 breadcrumb)
   p = appendf(out, cap, p,
     "\"wake\":\"%s\",\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\",\"band\":\"%s\"",
-    sleep_mgr::wakeReason(), sleep_mgr::resetCause(), bc::last(), gps::antennaStatus(), lte::band());
+    sleep_mgr::resumeReportPending() ? "sleep_abort" : sleep_mgr::wakeReason(),
+    sleep_mgr::resetCause(), bc::last(), gps::antennaStatus(), lte::band());
 
   // diag (wake 후 첫 POST 만)
-  if (diagPending) {
+  if (diagPending || sleep_mgr::resumeReportPending()) {
     p = appendf(out, cap, p,
       ",\"event\":\"wake\",\"diag\":{\"boots\":%lu,\"wakes\":%lu,\"motion_wakes\":%lu,\"brownouts\":%lu,"
       "\"post_ok\":%lu,\"post_fail\":%lu,\"cyc_fix\":%lu,\"cyc_no_fix\":%lu,\"last_sleep_uptime_s\":%lu}",
@@ -147,8 +169,9 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
   uint8_t written = 0;
   if (avail > 0) {
     p = appendf(out, cap, p, ",\"fixes\":[");
-    // SHCONF BODYLEN 4096 안전 여유(3800). 초과 fix 는 batch 에 남아 다음 cycle 에 전송.
-    for (uint8_t i = 0; i < avail && p < 3800; i++) {
+    // Reserve space for pairing/command ACK and the collection policy envelope.
+    // Excess fixes remain in the batch for the next cycle.
+    for (uint8_t i = 0; i < avail && p < 3400; i++) {
       float lat, lng; int sat; uint32_t atMs;
       if (!gps::batchGet(i, lat, lng, sat, atMs)) break;
       // [2026-08-29 up_ms] 포착 시점 uptime ms — 서버 재전송 dedup 의 정확 키 (age_ms 는 도착시각
@@ -165,6 +188,7 @@ uint8_t buildPayload(char *out, size_t cap, uint32_t bootMs, bool diagPending) {
 }
 
 void buildSleepPayload(char *out, size_t cap, uint32_t bootMs, const char *reason) {
+  if(controlOnly(out,cap)) return;
   uint16_t vbat = readVbatMv();
   uint32_t now  = millis();
   uint32_t motAge = motion::lastMs() ? (now - motion::lastMs()) / 1000 : 0;
@@ -176,12 +200,12 @@ void buildSleepPayload(char *out, size_t cap, uint32_t bootMs, const char *reaso
   else sim[0] = 0;
 
   snprintf(out, cap,
-    "{\"device_uid\":\"%s\"%s,\"ts\":%lu,\"csq\":%d,\"reg\":%d,\"vbat_mv\":%u,"
+    "{\"build_tag\":\"%s\",\"device_uid\":\"%s\"%s,\"ts\":%lu,\"csq\":%d,\"reg\":%d,\"vbat_mv\":%u,"
     "\"event\":\"sleep_enter\",\"sleep_reason\":\"%s\",\"stopped_offset_s\":%lu,"
     "\"reset_cause\":\"%s\",\"last_op\":\"%s\",\"antenna\":\"%s\","
-    "\"diag\":{\"boots\":%lu,\"wakes\":%lu,\"motion_wakes\":%lu,\"brownouts\":%lu,"
+    "\"diag\":{\"sleep_phase\":\"intent\",\"boots\":%lu,\"wakes\":%lu,\"motion_wakes\":%lu,\"brownouts\":%lu,"
     "\"post_ok\":%lu,\"post_fail\":%lu}}",
-    deviceUid(), sim, (unsigned long)((now - bootMs) / 1000),
+    FIRMWARE_BUILD_TAG, deviceUid(), sim, (unsigned long)((now - bootMs) / 1000),
     lte::csq(), lte::reg(), (unsigned)vbat,
     reason, (unsigned long)motAge,
     sleep_mgr::resetCause(), bc::last(), gps::antennaStatus(),

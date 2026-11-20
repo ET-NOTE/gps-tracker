@@ -1,0 +1,4065 @@
+{
+  "api_sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9",
+  "workers": 16,
+  "iterations": 50,
+  "duration_s": 71.65321849379689,
+  "requests": 800,
+  "errors": [],
+  "http": {
+    "latest": {
+      "count": 160,
+      "p50_s": 0.7793009742163122,
+      "p95_s": 1.5071273320354521,
+      "max_s": 2.2152974042110145
+    },
+    "day_page": {
+      "count": 160,
+      "p50_s": 1.001577603397891,
+      "p95_s": 1.6770111098885536,
+      "max_s": 2.2009784253314137
+    },
+    "day_aggregate": {
+      "count": 160,
+      "p50_s": 2.9835298359394073,
+      "p95_s": 3.5020400462672114,
+      "max_s": 4.089572673663497
+    },
+    "day_history": {
+      "count": 160,
+      "p50_s": 1.1969923512078822,
+      "p95_s": 2.002567050047219,
+      "max_s": 2.3903912119567394
+    },
+    "month_page": {
+      "count": 160,
+      "p50_s": 0.9793541729450226,
+      "p95_s": 1.506814202759415,
+      "max_s": 2.296835521236062
+    }
+  },
+  "health": {
+    "count": 160,
+    "p50_s": 0.19507870241068304,
+    "p95_s": 0.6034642341546714,
+    "max_s": 1.0856081387028098
+  },
+  "encrypted_writes": {
+    "count": 160,
+    "p50_s": 0.006762864766642451,
+    "p95_s": 0.0884115919470787,
+    "max_s": 0.09075668966397643
+  },
+  "raw": [
+    {
+      "route": "latest",
+      "seconds": 0.5164355649612844,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6008435809053481,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6038807719014585,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6062821918167174,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6096506481990218,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6122595397755504,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6164080779999495,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7135342913679779,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2015122920274734,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 1.2073957528918982,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 1.2090165708214045,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2104949802160263,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6053968509659171,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2121887858957052,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6989012309350073,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6082290248014033,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6985496082343161,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0996144148521125,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6107022012583911,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6091710017062724,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8921631262637675,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0987216299399734,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.3171957251615822,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.106831450946629,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1080257641151547,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7999520217999816,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.5850288872607052,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.989103585947305,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9153631827794015,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1030984157696366,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.5171790602616966,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8101066849194467,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 1.187294702976942,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8973756548948586,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8945303461514413,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.5808348134160042,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1988232140429318,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.5003986302763224,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.093987667001784,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.395891030319035,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.6770111098885536,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.504525686148554,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.6948405588045716,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.392186707817018,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2972525907680392,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.6858591316267848,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.6853714608587325,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0995438448153436,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3140221596695483,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.4204038348980248,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.000052771065384,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.407333032693714,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.413708311971277,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0037041287869215,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8932220758870244,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0955148530192673,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7100884625688195,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.091536186169833,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9158528172411025,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8011561739258468,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.193388955667615,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9922787840478122,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6910397242754698,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.219397768843919,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6964173796586692,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3814306729473174,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7980694617144763,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9014543807134032,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8102220501750708,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.803244274109602,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0928573291748762,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7907577753067017,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0981687395833433,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8754840809851885,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9875649493187666,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8888423037715256,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9909853818826377,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.884529747068882,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0088024409487844,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6962939249351621,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8895257730036974,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9919133223593235,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9893367099575698,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.901039137970656,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0863935318775475,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9114706399850547,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9073629071936011,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9114072280935943,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6041900091804564,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6968915518373251,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7019270029850304,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6099454779177904,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9124708436429501,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0022773551754653,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9127100161276758,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1188225848600268,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0799943869933486,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0892652687616646,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.4989760350435972,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.4178957771509886,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1047092759981751,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1098869750276208,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.1890435330569744,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.5012858510017395,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.617251276038587,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3851691796444356,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.910208410117775,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.318254698999226,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.315837918780744,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.6158800590783358,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8083397280424833,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 1.1019124980084598,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0923856771551073,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8902207002975047,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1844018120318651,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3878735699690878,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.109998106956482,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.5131190749816597,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 1.510412669274956,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1909521101042628,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.2079548500478268,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.6896020700223744,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.4912742213346064,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1051498837769032,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.202092298772186,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.195909753907472,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2013767478056252,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.091078083962202,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0895625543780625,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.4003630317747593,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.097350237891078,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.095159875229001,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8919988009147346,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8216347750276327,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.1852409509010613,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0073748752474785,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7089433241635561,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7936767628416419,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0885512842796743,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0964760449714959,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.993615922983736,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0833301111124456,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0893293689005077,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1000367421656847,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9810109920799732,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0912524880841374,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0965271200984716,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6967292092740536,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6039741360582411,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0103378328494728,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0176638960838318,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.181112450081855,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.603238268289715,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0959737659431994,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6039368859492242,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6077405731193721,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.094230807852,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9047069172374904,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0927120517008007,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0971032166853547,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1029102629981935,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0982582960277796,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5959137473255396,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6917864340357482,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9891897630877793,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6087863938882947,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7972088963724673,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8057358022779226,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9001133888959885,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5035495799966156,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5082766688428819,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.098661744967103,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7929585850797594,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0131738628260791,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.5863247830420732,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.592546901665628,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.2940976996906102,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2992880130186677,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1991373058408499,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.5112170418724418,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 1.3067164770327508,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.095684621948749,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 2.0021214648149908,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.801535383798182,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7857699058949947,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9006809666752815,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.6011047130450606,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.601149096619338,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.506814202759415,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.1138961175456643,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.2830497310496867,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.1162225669249892,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.4053539549931884,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9902532743290067,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.988716415129602,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9029847229830921,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3125823512673378,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6944142780266702,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.7890162682160735,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.7946579628624022,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1930640409700572,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.3029351071454585,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0798303401097655,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.790793376043439,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7997659537941217,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.102445407770574,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 1.4110896037891507,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.4939906657673419,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.4939516219310462,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.5918753640726209,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2948113582096994,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0948026771657169,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.5939047732390463,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0976481959223747,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6006467025727034,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.097804520279169,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0811016829684377,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 1.1022606380283833,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6025570151396096,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0857983171008527,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6041559022851288,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1196594540961087,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7798422127962112,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.204718817025423,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6977335573174059,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.8907855208963156,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8896641558967531,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.890155553817749,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6010314677841961,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9117159163579345,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.696032227948308,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6139545198529959,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6128959031775594,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.7141114380210638,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7050120201893151,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0925533110275865,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0929636559449136,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0916642439551651,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5883446303196251,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9020061222836375,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9009318952448666,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9049535929225385,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.29520862409845,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.294388437177986,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7085009119473398,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.793045764323324,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.1964813130907714,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.509360156953335,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.5071085188537836,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8061969671398401,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.8078919220715761,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.1047443100251257,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1060454146936536,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9989914721809328,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 1.1904405746608973,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.2031896389089525,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.482958794105798,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.190413939766586,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.189265612978488,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.891692377626896,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.8015429708175361,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.09507122496143,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.6131579908542335,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8031313810497522,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.205409189220518,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.312062497716397,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2118224990554154,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.5097571518272161,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2143892361782491,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.711947083938867,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9025167720392346,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9886168772354722,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1948525249026716,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.4053876041434705,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.404003381729126,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.4086893629282713,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6912824208848178,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9901313930749893,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7942571849562228,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2912351991981268,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1019060891121626,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9968078276142478,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7887399028986692,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8111499161459506,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.194677711930126,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.893623578827828,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.902645081281662,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0948483319953084,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8043340565636754,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9909923779778183,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9042605590075254,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1032346063293517,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.88947698706761,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.883689908310771,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8019728870131075,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8232954517006874,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7907672501169145,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.578001671936363,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8880001502111554,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.208807892166078,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7943138098344207,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.191258640959859,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7916838680393994,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5027475981041789,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.692351610865444,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9010931621305645,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9044282040558755,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5994560290127993,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9000667133368552,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9058109908364713,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9943752470426261,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9983490938320756,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7034384221769869,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7881315140984952,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7003852128982544,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0000527487136424,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0000073020346463,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.181419026106596,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.28883226076141,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3021849836222827,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.209439770784229,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7000094740651548,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8920732829719782,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.4178505223244429,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.192723159212619,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.984439758118242,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3061959599144757,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 1.3058190485462546,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3940480221062899,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0010732002556324,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.890199193265289,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.908779317047447,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8191042873077095,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8020560909062624,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.904126396868378,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.2968909908086061,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.723542768973857,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 1.003903190139681,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.1054211338050663,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2993816006928682,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.313650521915406,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8980097263120115,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9021272738464177,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.3009592769667506,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3054682430811226,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0031024580821395,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0835933820344508,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6913048778660595,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.098506719339639,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1043108189478517,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8027671952731907,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0946248453110456,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.1949525028467178,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.1859264029189944,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.697148483246565,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1123336548916996,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1932715000584722,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7024117731489241,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7922833948396146,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1930185123346746,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0943881548009813,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6028932998888195,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0966914012096822,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.089808403979987,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8991958638653159,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7981857066042721,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0977852242067456,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0024105194024742,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0963306985795498,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9951009270735085,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1916352701373398,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.785624055657536,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6029241583310068,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8852058090269566,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 1.09464265499264,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.193929058033973,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6888922043144703,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6095110047608614,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.904645315837115,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.699358070269227,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9093622462823987,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9053084128536284,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.4997942983172834,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7166262599639595,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1965480777435005,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1953353499993682,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.196100294124335,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7027680319733918,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9116658610291779,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9826199137605727,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7011838033795357,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1984456479549408,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0918391738086939,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.612779782153666,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1974366246722639,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6964688776060939,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2827206789515913,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.70343454182148,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 2.0070314020849764,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.4983682460151613,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7053158143535256,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7179752490483224,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 1.5071273320354521,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.781964146066457,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8869729270227253,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 2.2152974042110145,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.296835521236062,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.289991279132664,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.892812717705965,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9984309119172394,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 2.0979498247615993,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9995962609536946,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8896336485631764,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.009447778109461,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.308431839104742,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2982088569551706,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.807200484909117,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5022798199206591,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2985017490573227,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.41903573321178555,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.4228433771058917,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3156851190142334,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6058669267222285,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.7032649130560458,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0046600867062807,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0091589852236211,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0054314732551575,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0086256992071867,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6922372002154589,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7818465963937342,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7977539580315351,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.887436241377145,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.8902269559912384,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0844235559925437,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.4975074240937829,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0900033339858055,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0853873239830136,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6925748968496919,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6942219049669802,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.5968856532126665,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7949225958436728,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5971388071775436,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6117365886457264,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.789026671089232,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8036516029387712,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8954637348651886,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5959463282488286,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8200462753884494,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.016916767694056,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8192318477667868,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7189852227456868,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.790385973174125,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0945352399721742,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9903502957895398,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9969810261391103,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.995710579212755,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8991411821916699,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8167986972257495,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.2972392099909484,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9772117570973933,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9729867856949568,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9769093259237707,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9880179218016565,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9037557588890195,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9050326673313975,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9103427859954536,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.093669550959021,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1940112700685859,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.703687353990972,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7001036321744323,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.199023185763508,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0959272547625005,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 2.002844637259841,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.0002729538828135,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.271250998135656,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.5943640801124275,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.99430673988536,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9972317880019546,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 2.10387140000239,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 2.1962670916691422,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.911921891849488,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.916069156024605,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6992145986296237,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.6130483793094754,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9184694150462747,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9872429291717708,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.4996816511265934,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2953662811778486,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2087761433795094,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.214158286806196,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2088601510040462,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7018784550018609,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6864222241565585,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.311815365217626,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.7857664260081947,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0902012293227017,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0068670231848955,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0930293248966336,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0884576090611517,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5019582170061767,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.307108533103019,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0891960100270808,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0050610839389265,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0895746340975165,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0986114731058478,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1064799493178725,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.09861582191661,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9958108309656382,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.903428850695491,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9190452387556434,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6995283490978181,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8011063649319112,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9882422909140587,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9909480158239603,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.4054684811271727,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0856644557788968,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.4924254110082984,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.4954750551842153,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.5050123389810324,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.5951267760246992,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.5990476631559432,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6056293114088476,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7918682447634637,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.4135053837671876,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7886041151359677,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0828115618787706,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.603180609177798,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.787207562942058,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7008353327400982,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.799586224835366,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8872152329422534,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8940337277017534,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7909658816643059,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9943895768374205,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9931918778456748,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7043719571083784,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9184216000139713,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2020060941576958,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8975077890791,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2012888509780169,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.6851827520877123,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.6009277091361582,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.799726912751794,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.6063908492214978,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.202065042220056,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.1958147189579904,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9026382928714156,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.70564402686432,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 2.005225566215813,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.0880503500811756,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0014801509678364,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2929625171236694,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.409575846977532,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.020002136938274,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 2.002567050047219,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.208280324935913,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2852674750611186,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7006930019706488,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.6009884499944746,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7906154161319137,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.6965773063711822,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.8956779860891402,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.80265599116683,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3035626630298793,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2895935769192874,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6974913296289742,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.311241761315614,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3803257588297129,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.8006055038422346,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9132949728518724,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.010074221994728,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9159822128713131,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9933697087690234,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2020681318826973,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5898968460969627,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5892341858707368,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.303016202058643,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3085379698313773,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8072079620324075,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7139439419843256,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8029875587671995,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0823490130715072,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.6892735310830176,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0023812288418412,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9969110181555152,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2796873059123755,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0826780730858445,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5876099988818169,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5862597119994462,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5840952089056373,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5802216911688447,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.904335459228605,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8160890461876988,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8199314256198704,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6001278068870306,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.4891095901839435,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6013210969977081,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.009184231981635,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7357134921476245,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7394858091138303,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1403664499521255,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8003920088522136,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.800400569103658,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.807916424702853,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8096930268220603,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.795538682024926,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.4871497070416808,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9002321739681065,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7767083751969039,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9155006101354957,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1139319059439003,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.601500957272947,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.85117098223418,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.6018145489506423,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 1.5963224270381033,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.5032692942768335,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.5041022053919733,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.1059346101246774,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.087435567751527,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.095383212901652,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.6815365152433515,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.961150406859815,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 2.1065082172863185,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9038872509263456,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.2981646680273116,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8976862002164125,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9002719703130424,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.3043997809290886,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.1079071150161326,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.590049859136343,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.4942515292204916,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.593284992966801,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.5891691180877388,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.005822815001011,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0089684701524675,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0962417451664805,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0952758132480085,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2934220703318715,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.481537621933967,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2911463659256697,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2943732030689716,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6090886271558702,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6928836307488382,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7164543606340885,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7440502648241818,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.786482741124928,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.8791199568659067,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8041473780758679,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.98709273384884,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.196250685956329,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9897251203656197,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6166809112764895,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.009067484177649,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.013555621728301,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2073776703327894,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0223051588982344,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7818935732357204,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7436518128961325,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8929078597575426,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7067129919305444,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6132897431962192,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2071397523395717,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6924873539246619,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6962326308712363,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7017130902968347,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.00883306004107,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.700732059776783,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8057350660674274,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.891157359816134,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9993086149916053,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0127826761454344,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0173882548697293,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5109646711498499,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0208635828457773,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0764576797373593,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.5951058827340603,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6922223651781678,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8961165263317525,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 1.0841601216234267,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9798242743127048,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9108502417802811,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0966079267673194,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8966891947202384,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6901000700891018,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0977698019705713,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.7973176576197147,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.3001687726937234,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.3039683923125267,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.2083740127272904,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7847009911201894,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 1.6887796493247151,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 1.6039419989101589,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 2.105486305896193,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7851298176683486,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8902202351018786,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.7023635343648493,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.886810604017228,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8827316989190876,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.3026221194304526,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.1087902546860278,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.910115411039442,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0988842849619687,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6840927819721401,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2079343548975885,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.1964046633802354,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2124406681396067,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7250883667729795,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2144214226864278,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.213866677135229,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0951946410350502,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.4033935200423002,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.4073838777840137,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0922095300629735,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1801073518581688,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0937973451800644,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.0844578039832413,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2015513298101723,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 4.089572673663497,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8949130419641733,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.2851534988731146,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6999978683888912,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0980046270415187,
+      "bytes": 116151
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.999202546197921,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7043673316948116,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9974151654168963,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9846043749712408,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7969412878155708,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8919319226406515,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8832580773159862,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.1066463747993112,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5984639469534159,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.6040401682257652,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9041386023163795,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.7028179280459881,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.0142966420389712,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8961363439448178,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9074109452776611,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7088670390658081,
+      "bytes": 323
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7131419349461794,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8056309218518436,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.610899590421468,
+      "bytes": 323
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.914893900975585,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.6967403809539974,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.809760212432593,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.9032267811708152,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9018564238213003,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0912477518431842,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.9741039709188044,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8880246090702713,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8866445147432387,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8989448109641671,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.0978089491836727,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.091013628989458,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.211466311942786,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8864940810017288,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.000116574577987,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.1890457109548151,
+      "bytes": 324001
+    },
+    {
+      "route": "latest",
+      "seconds": 0.7110239588655531,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.702851116191596,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.9007758949883282,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.7884286581538618,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.5020400462672114,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 1.7179013867862523,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.998260856140405,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.9188715261407197,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.7941290019080043,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.8067469480447471,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.18699972005561,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.996635156683624,
+      "bytes": 116151
+    },
+    {
+      "route": "day_page",
+      "seconds": 2.2009784253314137,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.5005744700320065,
+      "bytes": 323
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.993506583850831,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 2.3903912119567394,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.0966817000880837,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9865923682227731,
+      "bytes": 324001
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 3.087541323620826,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.8950822190381587,
+      "bytes": 116151
+    },
+    {
+      "route": "latest",
+      "seconds": 0.8910082941874862,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.9896755050867796,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 1.2089164862409234,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 1.2917122729122639,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.8083731490187347,
+      "bytes": 324001
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.8087845062837005,
+      "bytes": 324001
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.8070074021816254,
+      "bytes": 162267
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.8138976832851768,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.8023629398085177,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.5950818518176675,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.6053656539879739,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.3901491048745811,
+      "bytes": 323
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.7037295619957149,
+      "bytes": 324001
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.7918304069899023,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.29495319398120046,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.49003669805824757,
+      "bytes": 162267
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.4868836193345487,
+      "bytes": 162267
+    },
+    {
+      "route": "latest",
+      "seconds": 0.2954726340249181,
+      "bytes": 323
+    },
+    {
+      "route": "month_page",
+      "seconds": 0.30246676877141,
+      "bytes": 162267
+    },
+    {
+      "route": "day_page",
+      "seconds": 0.3129403702914715,
+      "bytes": 162267
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 2.0643817503005266,
+      "bytes": 116151
+    },
+    {
+      "route": "day_aggregate",
+      "seconds": 1.6994147840887308,
+      "bytes": 116151
+    },
+    {
+      "route": "day_history",
+      "seconds": 0.1420707581564784,
+      "bytes": 324001
+    }
+  ],
+  "db_connection_settings": {
+    "max_connections": "50",
+    "superuser_reserved_connections": "3"
+  },
+  "api_pool_limits": {
+    "queries": 10,
+    "privacy_leases": 16
+  },
+  "storage": "disk-backed ext4/NVMe synthetic DB; DB 2 CPU/1500MiB, API 2 CPU/550MiB",
+  "external_delivery": false,
+  "production_modified": false
+}

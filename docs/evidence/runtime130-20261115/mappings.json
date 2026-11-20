@@ -1,0 +1,30 @@
+[
+  {
+    "device": 5,
+    "mapping": 1,
+    "subject": 3,
+    "owner": 2,
+    "vehicle": 1
+  },
+  {
+    "device": 6,
+    "mapping": 2,
+    "subject": 4,
+    "owner": 2,
+    "vehicle": 2
+  },
+  {
+    "device": 7,
+    "mapping": 3,
+    "subject": 5,
+    "owner": 2,
+    "vehicle": 3
+  },
+  {
+    "device": 8,
+    "mapping": 4,
+    "subject": 6,
+    "owner": 2,
+    "vehicle": 4
+  }
+]

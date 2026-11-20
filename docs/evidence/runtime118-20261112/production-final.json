@@ -1,0 +1,14 @@
+{
+  "utc": "2026-11-12T01:06:37.056249+00:00",
+  "read_only": true,
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-log-20261107-r1",
+    "service": "gps-tracker-api"
+  },
+  "schema": "99",
+  "units": "NRestarts=0\nActiveState=active\nActiveEnterTimestamp=Sat 2026-11-07 17:16:49 KST\n\nNRestarts=0\nActiveState=active\nActiveEnterTimestamp=Fri 2026-11-06 11:04:53 KST\n",
+  "disk": "Filesystem                    1B-blocks        Used  Available Use% Mounted on\n/dev/mapper/ubuntu--vg-root 47863853056 36354068480 9159315456  80% /\n"
+}

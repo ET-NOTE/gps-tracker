@@ -1,0 +1,17 @@
+{
+  "expected_own_candidate_alias_update": {
+    "gps-runtime140-20261118/out/gps-tracker-api": {
+      "before": {
+        "bytes": 18944216,
+        "sha256": "757df0432ddc61a2c510880157739b8b5b336a16e58278711f3c439cc89eb8e9"
+      },
+      "after": {
+        "bytes": 18944216,
+        "sha256": "e109bfc337168efe0f91ecd383690d05d8521e38782a7c9f671ea754a76035ff"
+      }
+    }
+  },
+  "other_prior_artifacts_unchanged": true,
+  "other_containers_unchanged": true,
+  "reason": "setup copied new build into own alias after taking protected snapshot; setup now stages before snapshot"
+}

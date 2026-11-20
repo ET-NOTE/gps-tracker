@@ -1,3 +1,4 @@
+import { authScope, assertSession, AUTH_CHANGED } from '../authSession';
 // (2026-07-29) 스마트폰 tracker — 연구소 토글에서 활성화.
 //
 // 흐름:
@@ -15,6 +16,8 @@
 
 import { api } from '../api';
 
+let trackingGeneration = 0;
+window.addEventListener(AUTH_CHANGED, () => stopPhoneTracker());
 const STORAGE_KEY = 'phone_tracker_uuid';
 const POST_MIN_INTERVAL_MS = 30_000;      // 30s throttle — POST /ingest 최소 간격
 // (F13-stationary) 정지 시 저장 낭비 방지 — 이전 fix 와 STATIONARY_RADIUS_M 이내이고
@@ -97,15 +100,7 @@ async function ingestPos(pos) {
     //   /ingest (root)         → backend /gps-tracker/ingest  ← firmware · phone 사용
     //   /gps-tracker/ingest    → 미등록 → 405 Method Not Allowed
     // 첫 번째 시도는 /api/v1/ingest (404), 두 번째는 /gps-tracker/ingest (405) 였음.
-    const res = await fetch(new URL('/ingest', window.location.origin), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      console.warn('phone tracker: ingest', res.status, await res.text().catch(() => ''));
-      return;
-    }
+    await api.ingestPhone(payload);
     // 성공 시에만 lastPostedPos 갱신 (실패 시 다음 fix 재시도 대상).
     lastPostedPos = { lat, lng, ts: pos.timestamp };
   } catch (e) {
@@ -190,16 +185,22 @@ export async function startPhoneTracker() {
   // (F13-fix) 이중 start 방어 — 기존 watcher/tween/queue 완전 정리 후 새로 시작.
   // 이전엔 watchId 덮어써서 이전 watcher clearWatch 절대 불가 → 자원 누수 + 매 fix 이중 POST.
   stopPhoneTracker();
+  const generation = trackingGeneration;
+  const scope = authScope();
+  const current = () => { assertSession(scope); if (generation !== trackingGeneration) throw new DOMException("Tracking stopped", "AbortError"); };
   // 1) permission — getPosition 이 flutter bridge / 브라우저 API 선택.
   const firstPos = await getPosition();
+  current();
 
   // 2) pair phone device — idempotent.
   const uuid = getOrCreateUuid();
   const device = await api.pairPhoneDevice(uuid, '내 스마트폰', detectPlatform());
+  current();
   deviceUid = device.device_uid;
 
   // 3) 첫 fix 즉시 전송.
   await ingestPos(firstPos);
+  current();
   lastPostMs = Date.now();
 
   // 4) 지속 갱신 — Flutter bridge 는 polling (30s 마다 getPosition), 브라우저는 watchPosition.
@@ -223,6 +224,7 @@ export async function startPhoneTracker() {
 
 /** 위치 tracking 중단. Device 는 살아있음 (unpair 는 별도). */
 export function stopPhoneTracker() {
+  trackingGeneration++;
   if (watchId != null) {
     // Flutter bridge = setInterval, 브라우저 = watchPosition
     if (hasFlutterBridge()) clearInterval(watchId);

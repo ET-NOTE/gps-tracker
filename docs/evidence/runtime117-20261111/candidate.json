@@ -1,0 +1,10 @@
+{
+  "path": "/home/etcom-hub/build/gps-provision22-20261111runtime117/candidate-runtime117-20261111-r1.tar.gz",
+  "sha256": "2898c87db1b1ad71e54f08d77dc4d5320a087c6d51c3ba930bbde28769790340",
+  "bytes": 8200718,
+  "file_count": 250,
+  "archive_verified": true,
+  "api_sha256": "f1e0d29ed9773f1279798021be511450003bc2239a73bc10c4204a853055ac3d",
+  "source_commit": "9f97de0b74ad8c4d0f9c98bfd86878bb50f307cb",
+  "activation_ready": false
+}

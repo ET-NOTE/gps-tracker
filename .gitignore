@@ -68,3 +68,14 @@ Thumbs.db
 # ===== build / cache =====
 .cache/
 *.log
+!docs/evidence/android139-20261118/logs/*.log
+!docs/evidence/runtime140-20261118/*.log
+!docs/evidence/runtime141-20261118/*.log
+__pycache__/
+*.pyc
+
+!docs/evidence/runtime142-20261118/*.log
+
+!docs/evidence/runtime143-20261118/*.log
+
+!docs/evidence/runtime144-20261118/*.log

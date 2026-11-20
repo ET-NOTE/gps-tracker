@@ -1,0 +1,44 @@
+{
+  "at": "2026-11-07T11:57:14.919026+00:00",
+  "synthetic": true,
+  "production_modified": false,
+  "schema": 104,
+  "registered_tables": 23,
+  "registered_fields": 55,
+  "disabled_business_triggers": 0,
+  "sample": {
+    "stored_lat": null,
+    "stored_lng": null,
+    "version": "1",
+    "key_id": "v2",
+    "cipher_prefix": "wyUECQACkYXvy87m6tlqrskCAvzkVHmM",
+    "decoded_lat": 37.12345678,
+    "decoded_lng": 127.87654321
+  },
+  "files": [
+    {
+      "header": "GPSFILE1",
+      "key_id": "v2",
+      "stored_bytes": 457,
+      "sha256": "977a84cd19b11c170f390956cb26bb40b6ce58e9046eeee42261343078977b8c"
+    },
+    {
+      "header": "GPSFILE1",
+      "key_id": "v2",
+      "stored_bytes": 469,
+      "sha256": "64360e89a7f1d42daab1985a0b87f7963571c1ae66f71f83f5b0265ab09f72b5"
+    },
+    {
+      "header": "GPSFILE1",
+      "key_id": "v2",
+      "stored_bytes": 507,
+      "sha256": "1fb1a86a7a4f8ead59dc71bbb8a61eeb45bcac519269ce36a6dff6e17879203d"
+    },
+    {
+      "header": "GPSFILE1",
+      "key_id": "v2",
+      "stored_bytes": 481,
+      "sha256": "dca132477a2b04daff408eb90fd8e61b8a5dae913bcf6cd1805821ee8ba398a9"
+    }
+  ]
+}

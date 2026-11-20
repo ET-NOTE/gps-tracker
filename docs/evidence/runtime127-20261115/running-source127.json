@@ -1,0 +1,14 @@
+{
+  "admin_db_roles.py": "738ffa7534697493ea2aaa970dbc36995884269c3aa5415762c1fe4c02241b34",
+  "crypto20b_transition.py": "e07865975d50af6a18eacf9ae42745aa2df13979fd7a2489bee2f668e5fa8d33",
+  "location_storage.py": "ad8b158136525d70a3f26a92eb8a26c1f8b3cf2e1559b15568046f136043b160",
+  "location_query_bounds.py": "8b7bc3a28c80a153b0ba5e0e26957b7c7f25d701bf2bb9c8947a022bb891fea2",
+  "location_query_statistics.py": "3ff0efa6e2509fb2334ad4880745c3c40cff9a4232ebf62f0b4e629a4e873d55",
+  "regress_runtime127.py": "94c636cc4304d846c6cb1644184678d4a7bb29001d635f4b5187b33667e18247",
+  "test_statistics127.py": "6459c97fb3971b7c7c5d5cd891ce02a96a268e8d58b0cb46e8e73650c85ac59b",
+  "verify_query127.py": "f6312a020019a2a5d62b9ec9aafcf8039636dd696545d985225858a9cd570ced",
+  "perf_runtime127.py": "cc91cdf11ecb049f68eba1b74f51b4bbae5e2de5561e554523aa995af8442296",
+  "restore_load127.py": "03d92d988d51b4463a5af4d2eb09878051e1a76f78dd61d50dafc6dad79d20f8",
+  "compressed_oracle127.py": "061ef4cbd4510868c91c744a8f41592d508948bdfb2582cbadb6f563bbcf0cf9",
+  "profile_runtime127.py": "bce428d4781d529774e862dc294a5a28f7f930b04d4d10287187cee733ab1d1f"
+}

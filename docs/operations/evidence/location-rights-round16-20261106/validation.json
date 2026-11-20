@@ -1,0 +1,72 @@
+{
+  "pdf_groups": 7,
+  "scaling_groups": 9,
+  "receipt_groups": 7,
+  "image_groups": 8,
+  "redacted_groups": 8,
+  "company_task_groups": 10,
+  "sections_groups": 5,
+  "package_groups": 9,
+  "company_groups": 10,
+  "delivery_groups": 11,
+  "closure_groups": 12,
+  "integration_groups_total": 96,
+  "schema": 98,
+  "api_sha256": "38a9bc1fc39719fa43cb4631948119304779b8d9d8ffff136b7cd1582e2c2974",
+  "renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+  "built_from": "working tree before the round 16 commit (development build, not a release build)",
+  "api_toolchain": "1.88.0",
+  "renderer_toolchain": "1.92.0 (x86_64-unknown-linux-musl, static)",
+  "rust_passed": 60,
+  "rust_ignored": 2,
+  "renderer_unit_tests_passed": 5,
+  "fmt_clippy_passed": true,
+  "web_tests_passed": 224,
+  "web_build_passed": true,
+  "renderer_selftest_in_api_container": {
+    "sandbox_holds": true,
+    "renders_inside_sandbox": true,
+    "open_file": {
+      "blocked": true,
+      "how": "signal 31"
+    },
+    "open_socket": {
+      "blocked": true,
+      "how": "signal 31"
+    },
+    "start_program": {
+      "blocked": true,
+      "how": "signal 31"
+    },
+    "start_process": {
+      "blocked": true,
+      "how": "signal 31"
+    },
+    "too_much_memory": {
+      "blocked": true,
+      "how": "refused"
+    },
+    "too_much_cpu": {
+      "blocked": true,
+      "how": "signal 9"
+    }
+  },
+  "concurrent_pdf_read_statuses": [
+    200,
+    200,
+    429,
+    429,
+    429,
+    429
+  ],
+  "pdf_groups_detail": [
+    "PDF listed in the confirmed scope; admin only; pages 1 and 2 drawn by the isolated renderer with exact pixels; read proof names page, pixels and renderer; missing pages refused; original unchanged",
+    "selection uses the page as drawn; forged browser pixels ignored; unselected area black; a proof for one page does not cover another; images never take a page; delivery equals preview; other account and wrong password refused; requester sees no source metadata",
+    "encrypted (user and owner-only), unreadable, empty, 201-page, oversized-page, and decompression-bomb documents are refused with no read proof; a document at the 5 MiB storage ceiling and one at the 200-page limit still work; later reads are unaffected",
+    "replaced bytes and expense edits block the delivery and purge its PNG; a replaced source needs a new read and selection; revoked and expired deliveries answer 410 and their PNG is removed; a removed source cannot be read",
+    "in the API container the renderer cannot open a file, open a socket, start a program or a process, or exceed its memory and CPU ceilings, and still renders; no renderer process outlives its request",
+    "simultaneous PDF pages answer 200 or 429 only and recover immediately",
+    "revoking the remaining deliveries removes every temporary PNG of this request"
+  ],
+  "production_deployed": false
+}

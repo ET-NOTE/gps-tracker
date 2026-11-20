@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-11-11T15:12:50.748349+09:00",
+  "scope": "production host hardening only; no application/schema/firmware release",
+  "new_office_ssh_confirmed": true,
+  "nat_raw_hashes_unchanged": true,
+  "six_service_identities_unchanged": true,
+  "isolated_tcp_cases_passed": 11,
+  "fail2ban_filter_and_ban_unban_passed": true,
+  "automatic_rollback_cancelled": true,
+  "firewall_layout_checks_passed": 9,
+  "public_tls_default": "TLSv1.3",
+  "public_tls12": true,
+  "capture": "actual-terminal-security.png",
+  "capture_method": "PrintWindow of the exact task-owned PowerShell window; original pixels unchanged",
+  "not_complete": [
+    "Cafe24 external firewall enablement",
+    "ClamAV deployment",
+    "ModSecurity/WAF deployment",
+    "remove office DB direct access",
+    "shared-service port minimization",
+    "real reboot verification",
+    "external non-office SSH denial check",
+    "fleet-wide TLS cutover",
+    "candidate schemas100-112 production deployment"
+  ],
+  "initial_findings_corrected": [
+    "incomplete UFW INPUT setup detected during prepare",
+    "Fail2ban socket startup readiness race fixed after automatic rollback",
+    "default publickey=nofail changed and filter retested"
+  ],
+  "evidence_secret_scan": "no private-key/Bearer/credential-URL patterns found; selected stdout only; manually reviewed"
+}

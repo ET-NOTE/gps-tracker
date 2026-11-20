@@ -351,7 +351,7 @@ function BuzzerPatternsBody() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 13, fontWeight: 700, letterSpacing: '.02em',
           }}>{p.beeps}</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
             {p.label}
             <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 500, color: 'var(--text-3, #888)' }}>{p.tone}</span>
           </div>

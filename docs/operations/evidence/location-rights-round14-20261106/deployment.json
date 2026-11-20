@@ -1,0 +1,16 @@
+{
+  "release": "privacy-receipts-20261106-r1",
+  "schema": 96,
+  "api_sha256": "65abe14ca7e8acd246a8aa5447f357da3a5956e99f2be202a4b9861841185b04",
+  "web": "/home/mmm/releases/privacy-receipts-20261106-r1/web",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-receipts-20261106-r1",
+    "service": "gps-tracker-api"
+  },
+  "neighbor_releases_unchanged": true,
+  "existing_collection_policies_unchanged": true,
+  "timer_active": true
+}

@@ -1,0 +1,24 @@
+# Candidate only. Do not install before the round-21 activation checklist.
+[Unit]
+Description=GPS reviewed personal-location retention
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=gps-retention
+Group=gps-retention
+WorkingDirectory=/home/mmm/gps-ops
+ExecStart=/opt/gps-ops/venv/bin/python /home/mmm/gps-ops/privacy_retention.py --config /etc/gps/privacy-retention.json --execute
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+TimeoutStartSec=15min

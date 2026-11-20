@@ -1,0 +1,11 @@
+{
+  "archive_sha256": "0b470b08e8442917879867e4c4c1b3cc398cfd864c0f1b68ea5b8b0e478f5339",
+  "file_count": 71,
+  "all_archive_bytes_match": true,
+  "changed_from22d": [
+    "ops/crypto20b_preflight.py",
+    "ops/crypto20b_transition.py"
+  ],
+  "api_web_migrations_unchanged": true,
+  "activation_ready": false
+}

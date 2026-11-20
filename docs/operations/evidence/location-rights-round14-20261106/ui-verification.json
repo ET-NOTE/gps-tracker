@@ -1,0 +1,19 @@
+{
+  "mode": "actual components with synthetic API",
+  "desktopWidth": 1280,
+  "mobileWidth": 390,
+  "horizontalOverflow": false,
+  "consoleErrors": 0,
+  "companyReceiptRead": true,
+  "sourceFieldsBound": true,
+  "selectedSubjectRegion": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 130
+  },
+  "previewAndTwoConfirmations": true,
+  "issueAndRequesterView": true,
+  "passwordErrorClearsField": true,
+  "productionAccountSessionChanged": false
+}

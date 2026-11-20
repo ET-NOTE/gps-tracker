@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "removed_containers": [
+    "gps-provision22-api-20261111query114",
+    "gps-provision22-db-20261111query114",
+    "gps-query114-proxy"
+  ],
+  "removed_network": "gps-provision22-test-20261111query114",
+  "database_tmpfs_removed": true,
+  "removed_private_files": [
+    "test-runtime.json",
+    "test-keys.json",
+    "proxy/key.pem"
+  ],
+  "other_projects_and_caches_untouched": true,
+  "free_gib": 25.34
+}

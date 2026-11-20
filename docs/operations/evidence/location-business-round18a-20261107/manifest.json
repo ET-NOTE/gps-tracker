@@ -1,0 +1,9 @@
+{
+  "release": "privacy-log-20261107-r1",
+  "schema": 99,
+  "source_commit": "ee295ece717eef7140171b289514bf1c62c007b5",
+  "source_sha256": "f08a8d3c90e32d261f8b6f9fe8e81c60d6d2e091082a79ac7ed8fe6d94f09b72",
+  "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "validation_sha256": "b7caece8b228d491c4385befb90c23de3dcc8897eabb2c22fb46a22c57a1bc60",
+  "release_script_sha256": "bbf12c30095a66f9a9c507bac738288697c562417bbb9581fae73f55dd769bf0"
+}

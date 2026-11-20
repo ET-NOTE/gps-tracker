@@ -5,21 +5,23 @@ import Icon from './Icon';
 const BASE_TABS = [
   { id: 'home',    label: '홈',     icon: 'home',   toggleable: false },
   { id: 'devices', label: '단말기', icon: 'list',   toggleable: true  },
-  // 운행 — 지도+패널 도구 (seeker / 지오펜스). 데스크톱은 home 처럼 지도 노출 +
-  // FAB 띄움. toggleable=false 라 같은 탭 두 번 눌러도 home 으로 안 빠짐.
-  { id: 'tools',   label: '운행',   icon: 'mapPin', toggleable: false },
   { id: 'profile', label: '내정보', icon: 'user',   toggleable: true  },
 ];
 
-export default function SideRail({ active, onChange, isAdmin, isCorporate, isRentcar, isDelivery }) {
+export function sideRailItems({ isAdmin, isCorporate, isRentcar, isDelivery } = {}) {
   const tabs = [...BASE_TABS];
   if (isCorporate) tabs.push({ id: 'corporate', label: '법인운행', icon: 'route',  toggleable: true });
   if (isRentcar)   tabs.push({ id: 'rentcar',   label: '렌트카',   icon: 'route',  toggleable: true });
   if (isDelivery)  tabs.push({ id: 'delivery',  label: '배송',     icon: 'mapPin', toggleable: true });
   if (isAdmin)     tabs.push({ id: 'admin',     label: '관리자',   icon: 'wrench', toggleable: true });
+  return tabs;
+}
+
+export default function SideRail({ active, onChange, ...access }) {
+  const tabs = sideRailItems(access);
 
   return (
-    <nav style={s.wrap}>
+    <nav className="dashboard-side-rail" style={s.wrap}>
       {tabs.map(t => {
         const on = t.id === active;
         return (

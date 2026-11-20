@@ -1,0 +1,103 @@
+{
+  "mode": "check",
+  "ready": true,
+  "changes_made": false,
+  "release": "privacy-pdf-20261106-r1",
+  "now": {
+    "units_run_as": {
+      "gps-tracker-api.service": "mmm",
+      "gps-privacy-accounts.service": "mmm",
+      "gps-privacy-files.service": "mmm"
+    },
+    "api_process": {
+      "user": "mmm",
+      "group": "mmm",
+      "supplementary_groups": [
+        "docker",
+        "sudo"
+      ],
+      "no_new_privileges": false,
+      "capabilities": {
+        "CapEff": 0,
+        "CapPrm": 0,
+        "CapBnd": 2199023255551,
+        "CapAmb": 0
+      },
+      "system_call_filter": false
+    },
+    "files": {
+      "/home/mmm/projects/gps-tracker-api/.env": "mmm:mmm 600",
+      "/etc/gps-tracker/fcm-service-account.json": "mmm:mmm 600"
+    },
+    "upload_entries": {
+      "/home/mmm/uploads": 6,
+      "/home/mmm/gps-private-uploads": 2
+    }
+  },
+  "would_change": {
+    "account": "create gps-api (system account, no login, no home, no groups)",
+    "files": {
+      "/home/mmm/projects/gps-tracker-api/.env": "root:gps-api 640",
+      "/etc/gps-tracker/fcm-service-account.json": "root:gps-api 640"
+    },
+    "upload_trees": {
+      "/home/mmm/uploads": "owner gps-api:gps-api, modes kept",
+      "/home/mmm/gps-private-uploads": "owner gps-api:gps-api, modes kept"
+    },
+    "drop_ins": {
+      "gps-tracker-api.service": [
+        "User=gps-api",
+        "Group=gps-api",
+        "SupplementaryGroups=",
+        "UMask=0077",
+        "NoNewPrivileges=yes",
+        "CapabilityBoundingSet=",
+        "AmbientCapabilities=",
+        "PrivateTmp=yes",
+        "ProtectSystem=strict",
+        "ProtectHome=read-only",
+        "ProtectControlGroups=yes",
+        "ReadWritePaths=/home/mmm/uploads /home/mmm/gps-private-uploads"
+      ],
+      "gps-privacy-accounts.service": [
+        "User=gps-api",
+        "Group=gps-api",
+        "SupplementaryGroups="
+      ],
+      "gps-privacy-files.service": [
+        "User=gps-api",
+        "Group=gps-api",
+        "SupplementaryGroups="
+      ]
+    },
+    "restart": "gps-tracker-api.service"
+  },
+  "not_changed": [
+    "unit files",
+    "binaries",
+    "file contents",
+    "database",
+    "firewall",
+    "other accounts",
+    "gps-tracker.service",
+    "pm2-mmm.service",
+    "gps-tracker-api-dev.service",
+    "shield-api.service",
+    "nginx.service",
+    "postgresql@14-main.service",
+    "docker.service"
+  ],
+  "_at": "2026-11-06 15:23 KST",
+  "_independent_verification_after_check": {
+    "account": "absent",
+    "drop_ins": 0,
+    "record_directory": "absent",
+    "api_restarts": 0,
+    "api_running_since": "2026-11-06 13:54:35 KST",
+    "env": "mmm:mmm 600",
+    "fcm": "mmm:mmm 600",
+    "uploads": "mmm:mmm 750",
+    "staged_files": 5,
+    "all_hashes_equal_to_build_host": true
+  }
+}

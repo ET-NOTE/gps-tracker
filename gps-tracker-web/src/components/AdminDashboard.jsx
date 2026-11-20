@@ -1,3 +1,5 @@
+import { AdminSecurityGate, AdminSecurityPanel } from './AdminSecurity';
+import { AdminPrivacyRequests } from './PrivacyRequests';
 // 관리자 대시보드 — role='admin' 전용. 본문 전체 차지 (지도 안 보임).
 // 서브탭: 사용자 / 장치 — 향후 통계·시스템 등 확장 예정.
 import { useEffect, useRef, useState } from 'react';
@@ -18,21 +20,25 @@ function openNcePortal() {
 }
 
 const SUBTABS = [
+  { id: 'security', label: '보안 관리', icon: 'user' },
   { id: 'users',       label: '사용자',     icon: 'user' },
   { id: 'devices',     label: '장치',       icon: 'list' },
   { id: 'credit_reqs', label: '포인트 요청', icon: 'coin' },
   { id: 'sim_reqs',    label: 'SIM 요청',   icon: 'spark' },
+  { id: 'privacy', label: '개인정보 요청', icon: 'user' },
   { id: 'payments',    label: '결제 내역',   icon: 'bar' },
   { id: 'chat',        label: '채팅',       icon: 'message' },
 ];
 
 function initialAdminSubTab() {
   if (typeof window === 'undefined') return 'users';
-  const v = localStorage.getItem('admin_subtab');
+  const v = new URLSearchParams(window.location.search).get('tab') || localStorage.getItem('admin_subtab');
   return SUBTABS.some(t => t.id === v) ? v : 'users';
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboard() { return <AdminSecurityGate><AdminDashboardContent /></AdminSecurityGate>; }
+
+function AdminDashboardContent() {
   const [subTab, setSubTabRaw] = useState(initialAdminSubTab);
   const setSubTab = (v) => { setSubTabRaw(v); try { localStorage.setItem('admin_subtab', v); } catch {} };
   // (2026-07-28) Stage-4I: 상단 stat 카드 — 관리 요약. mount 시 4개 병렬 fetch.
@@ -65,7 +71,7 @@ export default function AdminDashboard() {
           <Icon name="wrench" size={16} style={{ color: 'var(--primary)' }} />
           <span style={{ fontSize: 14, fontWeight: 700 }}>관리자 콘솔</span>
         </div>
-        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>god mode · audit logged</span>
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>권한별 관리 · 접근 기록</span>
       </header>
 
       {/* (2026-07-28 Stage-4I) Fleet 톤 통일 — 상단 4-stat card row */}
@@ -94,6 +100,8 @@ export default function AdminDashboard() {
       </div>
 
       <div style={s.body}>
+        {subTab === 'security' && <AdminSecurityPanel />}
+        {subTab === 'privacy' && <AdminPrivacyRequests />}
         {subTab === 'users'       && <UsersTab />}
         {subTab === 'devices'     && <DevicesTab />}
         {subTab === 'credit_reqs' && <CreditRequestsTab />}
@@ -1003,7 +1011,7 @@ function PaymentsTab() {
 // ════════════════════════════════════════════════════════════
 function ChatAdminTab() {
   const [threads, setThreads] = useState(null);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState(() => { const n = Number(new URLSearchParams(window.location.search).get('thread')); return Number.isSafeInteger(n) && n > 0 ? n : null; });
   const [error, setError] = useState(null);
 
   // 필터 — 사용자 검색 (스레드 목록에 즉시 반영, 클라이언트 사이드)

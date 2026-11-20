@@ -48,9 +48,9 @@ function DeliveryPanel({ devices }) {
       <div style={st.body}>
         {tab === 'today' && <TodayTab devices={devices} />}
         {tab === 'route' && <PlaceholderTab title="경로 이력"
-          hint="지난 배송 경로를 지도 위에 겹쳐 재생하는 기능은 준비 중입니다." />}
+          hint="배송 경로 재생을 준비 중입니다." />}
         {tab === 'perf'  && <PlaceholderTab title="배송 성과"
-          hint="일별/주별 배송 건수·완료율·평균 배송 시간 리포트는 준비 중입니다." />}
+          hint="배송 건수·완료율·평균 배송 시간 리포트를 준비 중입니다." />}
       </div>
     </div>
   );
@@ -91,7 +91,7 @@ function ActiveList({ devices }) {
 
   return (
     <div style={st.card}>
-      <div style={st.cardTitle}>배송 차량 (실시간)</div>
+      <div style={st.cardTitle}>배송 차량</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {rows.map(r => (
           <div key={r.id} style={st.vehicleRow}>
@@ -105,20 +105,20 @@ function ActiveList({ devices }) {
               <Icon name={r.active ? 'route' : 'clock'} size={16} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{r.label}</div>
+              <div title={r.label} style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
               <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
                 {r.lastFixAt ? formatAge(r.lastFixAt) : '위치 미확인'}
               </div>
             </div>
             <span style={{
-              fontSize: 11, fontWeight: 700,
+              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
               padding: '4px 10px', borderRadius: 999,
               color: r.active ? 'var(--accent)' : 'var(--text-3)',
               background: r.active
                 ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
                 : 'var(--surface-2)',
             }}>
-              {r.active ? '배송중' : '대기'}
+              {r.active ? '배송 중' : '대기'}
             </span>
           </div>
         ))}

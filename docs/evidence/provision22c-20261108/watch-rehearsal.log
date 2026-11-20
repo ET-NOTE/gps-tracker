@@ -1,0 +1,10 @@
+ok   healthy host for three cycles: no mail, the status page is told "alive" every cycle
+ok   one slow answer, two failures in a row and repeated single failures: no mail
+ok   outage: one mail at the third failure, a reminder each hour, a mail when another check fails and when it returns, one mail at recovery after two successes
+ok   error status, database down, wrong environment, a web page instead of the API, no answer, slow answer, no SSH banner: each is a failed check
+ok   the watching machine is offline for ten minutes: nothing is counted against the host, one notice of the gap afterwards; a two-minute gap is not reported
+ok   mail server unreachable, login refused, temporary refusal: the mail waits and goes out once, in order, when the server works again
+ok   mail goes out over STARTTLS and over implicit TLS with a login; an unencrypted login to another host and a configuration others can read are refused
+ok   run, status, check and test-mail work from the command line; check keeps no state and sends nothing; a second run at the same time steps aside; the two secrets are stored from a pipe without being shown and are refused on a command line; the mail password and the push address appear in no output, state file or mail
+ok   installer: copies the files and an empty configuration (600) without starting anything, refuses to start with an empty configuration, keeps a filled-in one, starts the timer, and removes everything but the configuration and the state
+{"passed": true, "steps": 9, "script_sha256": "634cb3ad5a726b3b5c811d9ae5eff9c3275b67b5c8614fe672393734d570b030"}

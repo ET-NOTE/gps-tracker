@@ -1,0 +1,64 @@
+{
+  "round": "19",
+  "at": "2026-11-07T09:52:57.664308+00:00",
+  "scope": "implementation_and_isolated_validation_only",
+  "candidate_schema": 102,
+  "api_sha256": "79e168d3ab81f7ece3a8a15f9d375b1aaa2b1832a75ed14a552d3350ee9b1f57",
+  "baseline_commit": "c7a6775f581485d20f29c662b6392700809e1830",
+  "source_verification": {
+    "files": 525,
+    "canonical_git_index_matches_build_source": true,
+    "mismatches": []
+  },
+  "checks": {
+    "rust": {
+      "passed": 76,
+      "ignored": 3,
+      "fmt": "passed",
+      "clippy_warnings_denied": "passed",
+      "release_build": "passed"
+    },
+    "web": {
+      "passed": 228,
+      "failed": 0,
+      "build": "passed",
+      "node": "22.22.2 Linux",
+      "warning": "existing PDF chunk size >500KB"
+    },
+    "admin_integration_groups": 12,
+    "admin_off_regression_groups": 3,
+    "privacy_facts_regression_groups": 6,
+    "route_inventory": 306,
+    "ledger_rules": 80,
+    "route_inventory_negative_checks": 3,
+    "actual_react_ui_checks": 4
+  },
+  "ui_evidence": "Actual React components with mock APIs and synthetic accounts/IP; not production proof. Three screenshots.",
+  "production_read_only": {
+    "at": "2026-11-07T18:45:19+09:00",
+    "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+    "active": true,
+    "active_since": "2026-11-07T17:16:49+09:00",
+    "n_restarts": 0,
+    "health_ok": true,
+    "health_db": true,
+    "health_environment": "development",
+    "health_release": "dev-20261021-190449-d541456",
+    "note": "Health strings are inherited environment metadata. Use binary hash and deployment records to identify 18A; schema99 is the prior documented baseline, not re-queried here.",
+    "changes": false
+  },
+  "cleanup": {
+    "isolated_containers_remaining": 0,
+    "isolated_networks_remaining": 0,
+    "runtime_credential_file_remaining": false,
+    "test_storage_removed": true
+  },
+  "pending": [
+    "production 99->102 rehearsal and deployment",
+    "named officers and dedicated admin public IP",
+    "real authenticator onboarding and emergency recovery rehearsal",
+    "security/approval/session retention policy",
+    "TLS fleet migration and location-at-rest encryption (round20)",
+    "consent/retention/purge, third-party notice, dedicated PC/AV/firewall evidence (round21-23)"
+  ]
+}

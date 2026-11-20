@@ -1,0 +1,284 @@
+TAP version 13
+# (node:12276) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: new account never reuses previous account query cache
+ok 1 - new account never reuses previous account query cache
+  ---
+  duration_ms: 30.6477
+  ...
+# Subtest: company requests carry explicit scope; personal history remains unscoped
+ok 2 - company requests carry explicit scope; personal history remains unscoped
+  ---
+  duration_ms: 14.826
+  ...
+# Subtest: company switch cancels late JSON and deferred private download before transmission
+ok 3 - company switch cancels late JSON and deferred private download before transmission
+  ---
+  duration_ms: 8.3414
+  ...
+# Subtest: late A refresh (200) cannot replace or log out B
+ok 4 - late A refresh (200) cannot replace or log out B
+  ---
+  duration_ms: 14.2276
+  ...
+# Subtest: late A refresh (401) cannot replace or log out B
+ok 5 - late A refresh (401) cannot replace or log out B
+  ---
+  duration_ms: 9.6889
+  ...
+# Subtest: late account data cannot complete after login changes
+ok 6 - late account data cannot complete after login changes
+  ---
+  duration_ms: 6.9845
+  ...
+# Subtest: logout prevents a pending refresh from resurrecting a session
+ok 7 - logout prevents a pending refresh from resurrecting a session
+  ---
+  duration_ms: 8.1089
+  ...
+# Subtest: CSV, XLSX and multipart use session login, and only retry rejected authentication
+ok 8 - CSV, XLSX and multipart use session login, and only retry rejected authentication
+  ---
+  duration_ms: 10.8739
+  ...
+# Subtest: deferred document download reads rotated token but rejects a different account
+ok 9 - deferred document download reads rotated token but rejects a different account
+  ---
+  duration_ms: 8.9555
+  ...
+# Subtest: report busy retry preserves company and stops after company/account changes
+ok 10 - report busy retry preserves company and stops after company/account changes
+  ---
+  duration_ms: 50.7337
+  ...
+# Subtest: a late file body is blocked after account switch; failed writes are not retried
+ok 11 - a late file body is blocked after account switch; failed writes are not retried
+  ---
+  duration_ms: 12.7526
+  ...
+# Subtest: shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+ok 12 - shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+  ---
+  duration_ms: 8.356
+  ...
+# Subtest: device mutations cancel pre-write snapshots and offline provenance survives shared state
+ok 13 - device mutations cancel pre-write snapshots and offline provenance survives shared state
+  ---
+  duration_ms: 8.9515
+  ...
+# Subtest: admin step-up never leaks to personal requests; sign-out clears elevated session
+ok 14 - admin step-up never leaks to personal requests; sign-out clears elevated session
+  ---
+  duration_ms: 6.8158
+  ...
+# Subtest: protected writes propose first; only explicit approved execution sends original mutation
+ok 15 - protected writes propose first; only explicit approved execution sends original mutation
+  ---
+  duration_ms: 6.6329
+  ...
+# Subtest: wrong MFA credentials are not retried through ordinary refresh
+ok 16 - wrong MFA credentials are not retried through ordinary refresh
+  ---
+  duration_ms: 6.7623
+  ...
+# Subtest: location history aborts the HTTP request on logout; saved data is not resurrected
+ok 17 - location history aborts the HTTP request on logout; saved data is not resurrected
+  ---
+  duration_ms: 6.0094
+  ...
+# Subtest: logout cancels a real 429 backoff before a replacement account can send it
+ok 18 - logout cancels a real 429 backoff before a replacement account can send it
+  ---
+  duration_ms: 7.2798
+  ...
+# Subtest: personal provision page filters and abort signal remain outside company scope
+ok 19 - personal provision page filters and abort signal remain outside company scope
+  ---
+  duration_ms: 8.6875
+  ...
+# Subtest: company task inbox/detail preserve personal scope and propagate cancellation
+ok 20 - company task inbox/detail preserve personal scope and propagate cancellation
+  ---
+  duration_ms: 8.445
+  ...
+# Subtest: admin company history forwards step-up session and cancellation without fleet delegation
+ok 21 - admin company history forwards step-up session and cancellation without fleet delegation
+  ---
+  duration_ms: 7.3875
+  ...
+# Subtest: admin candidate paging keeps step-up session, literal parameters and cancellation outside fleet scope
+ok 22 - admin candidate paging keeps step-up session, literal parameters and cancellation outside fleet scope
+  ---
+  duration_ms: 9.4766
+  ...
+# Subtest: admin review event pages carry step-up/cursor/filters and abort without company delegation
+ok 23 - admin review event pages carry step-up/cursor/filters and abort without company delegation
+  ---
+  duration_ms: 6.2222
+  ...
+# (node:44340) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Warning: Encountered two children with the same key, `12-3`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(5):51:32)
+#     at QueryClientProvider (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+# Warning: Encountered two children with the same key, `12-3`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(5):51:32)
+#     at QueryClientProvider (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+# Subtest: candidate pages use paired cursor, search/state reset first page and nested search never submits review
+not ok 24 - candidate pages use paired cursor, search/state reset first page and nested search never submits review
+  ---
+  duration_ms: 116.4956
+  location: 'C:\\Users\\msb\\.codex\\worktrees\\gps-app-fcm\\esp32c3-mini_gps\\gps-tracker-web\\tests\\company-review-candidates.test.mjs:25:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'props')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:17:125
+    file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:15:36
+    act (C:\Users\msb\.codex\worktrees\gps-app-fcm\esp32c3-mini_gps\gps-tracker-web\node_modules\react\cjs\react.development.js:2512:16)
+    run (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:15:22)
+    Object.click (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:17:105)
+    TestContext.<anonymous> (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:27:71)
+    async Test.run (node:internal/test_runner/test:935:9)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Warning: Encountered two children with the same key, `12-3`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(5):51:32)
+#     at QueryClientProvider (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+# Warning: Encountered two children with the same key, `12-3`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(5):51:32)
+#     at QueryClientProvider (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+# Subtest: search cancellation, errors and closing suppress stale choices; cancelled previous restarts
+not ok 25 - search cancellation, errors and closing suppress stale choices; cancelled previous restarts
+  ---
+  duration_ms: 74.4892
+  location: 'C:\\Users\\msb\\.codex\\worktrees\\gps-app-fcm\\esp32c3-mini_gps\\gps-tracker-web\\tests\\company-review-candidates.test.mjs:31:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'props')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:17:125
+    file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:15:36
+    act (C:\Users\msb\.codex\worktrees\gps-app-fcm\esp32c3-mini_gps\gps-tracker-web\node_modules\react\cjs\react.development.js:2512:16)
+    run (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:15:22)
+    Object.click (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:17:105)
+    TestContext.<anonymous> (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:32:117)
+    async Test.run (node:internal/test_runner/test:935:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Warning: Encountered two children with the same key, `12-3`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(5):51:32)
+#     at QueryClientProvider (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+# Warning: Encountered two children with the same key, `12-3`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(5):51:32)
+#     at QueryClientProvider (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+# Subtest: old candidate selection survives reopen/filter, posts inclusive KST scope and locks choices during submission
+not ok 26 - old candidate selection survives reopen/filter, posts inclusive KST scope and locks choices during submission
+  ---
+  duration_ms: 75.3286
+  location: 'C:\\Users\\msb\\.codex\\worktrees\\gps-app-fcm\\esp32c3-mini_gps\\gps-tracker-web\\tests\\company-review-candidates.test.mjs:37:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'props')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:17:125
+    file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:15:36
+    act (C:\Users\msb\.codex\worktrees\gps-app-fcm\esp32c3-mini_gps\gps-tracker-web\node_modules\react\cjs\react.development.js:2512:16)
+    run (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:15:22)
+    Object.click (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:17:105)
+    TestContext.<anonymous> (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:38:87)
+    async Test.run (node:internal/test_runner/test:935:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Warning: Encountered two children with the same key, `12-3`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(5):51:32)
+#     at QueryClientProvider (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+# Warning: Encountered two children with the same key, `12-3`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(5):51:32)
+#     at QueryClientProvider (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+# Subtest: switching requests discards selection and aborts old search; manual entry remains explicit
+not ok 27 - switching requests discards selection and aborts old search; manual entry remains explicit
+  ---
+  duration_ms: 74.9213
+  location: 'C:\\Users\\msb\\.codex\\worktrees\\gps-app-fcm\\esp32c3-mini_gps\\gps-tracker-web\\tests\\company-review-candidates.test.mjs:44:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'props')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:17:125
+    file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:15:36
+    act (C:\Users\msb\.codex\worktrees\gps-app-fcm\esp32c3-mini_gps\gps-tracker-web\node_modules\react\cjs\react.development.js:2512:16)
+    run (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:15:22)
+    Object.click (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:17:105)
+    TestContext.<anonymous> (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-review-candidates.test.mjs:45:87)
+    async Test.run (node:internal/test_runner/test:935:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# (node:34712) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history opens lazily; pages retain action/task filters; close aborts and reopen starts fresh
+ok 28 - history opens lazily; pages retain action/task filters; close aborts and reopen starts fresh
+  ---
+  duration_ms: 470.9184
+  ...
+# Subtest: cancel removes stale rows, back from cancelled page restarts; failed refresh is not empty
+ok 29 - cancel removes stale rows, back from cancelled page restarts; failed refresh is not empty
+  ---
+  duration_ms: 345.997
+  ...
+# Subtest: different review cancels old request and clears filters; a late response cannot cross scopes
+ok 30 - different review cancels old request and clears filters; a late response cannot cross scopes
+  ---
+  duration_ms: 182.9393
+  ...
+# Subtest: recorded decisions are text snapshots, never actionable completion or raw inventory
+ok 31 - recorded decisions are text snapshots, never actionable completion or raw inventory
+  ---
+  duration_ms: 60.8598
+  ...
+# (node:48452) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company completion requires explicit attestation; changing evidence resets it and sends both revisions
+ok 32 - company completion requires explicit attestation; changing evidence resets it and sends both revisions
+  ---
+  duration_ms: 49.4127
+  ...
+# Subtest: public summary cannot render internal evidence or counts; result does not claim total deletion
+ok 33 - public summary cannot render internal evidence or counts; result does not claim total deletion
+  ---
+  duration_ms: 25.5617
+  ...
+# Warning: Encountered two children with the same key, `7-4`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+#     at section
+#     at AdminCompanyReviews (vm:module(0):51:32)
+# Subtest: scope dates use Korean inclusive days; historical links stay candidates, not identity proof
+ok 34 - scope dates use Korean inclusive days; historical links stay candidates, not identity proof
+  ---
+  duration_ms: 10.313
+  ...
+# Subtest: server revision conflict stays visible without reporting success
+ok 35 - server revision conflict stays visible without reporting success
+  ---
+  duration_ms: 6.5631
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 31
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1270.7384

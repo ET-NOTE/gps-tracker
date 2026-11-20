@@ -1,0 +1,9 @@
+PASS source options omit bodies; admin review is account-scoped and required before preview
+PASS Unicode selection, gaps, bounds and exact preview/attestation/revision binding
+PASS concurrent issue is single, password/ownership enforced, public metadata and file contain only approved text
+PASS issued selections and audit cannot be edited; raw body and SIM ownership unchanged
+PASS replacement revokes previous grant; source changes and explicit revocation stop download
+PASS AI follows stored account, never current SIM owner; deleted source fails closed
+PASS expiry and parent cancellation block further review and download; revocation remains available
+PASS closed subject account blocks raw review and downloads; existing audit retained without body copies
+{"integration_groups": 8, "groups": ["source options omit bodies; admin review is account-scoped and required before preview", "Unicode selection, gaps, bounds and exact preview/attestation/revision binding", "concurrent issue is single, password/ownership enforced, public metadata and file contain only approved text", "issued selections and audit cannot be edited; raw body and SIM ownership unchanged", "replacement revokes previous grant; source changes and explicit revocation stop download", "AI follows stored account, never current SIM owner; deleted source fails closed", "expiry and parent cancellation block further review and download; revocation remains available", "closed subject account blocks raw review and downloads; existing audit retained without body copies"], "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0", "schema": 108}

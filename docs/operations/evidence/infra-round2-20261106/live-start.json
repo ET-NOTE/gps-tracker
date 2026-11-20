@@ -1,0 +1,45 @@
+{
+  "watching_host": "etcom-hub (office build host, user timer gps-watch.timer, lingering on)",
+  "script_sha256": "48ef88aa8b8816f2756542c7956cab4f627595b170fdf89d06ac5bd01ea1e3da",
+  "commit": "7356503",
+  "mail": {
+    "server": "smtp.gmail.com:587 STARTTLS (serial.kr is Google Workspace)",
+    "password_entered_by": "operator, with `secret password`, 2026-11-06 17:21 KST",
+    "test_mail": {
+      "at": "2026-11-06 17:22:12 KST",
+      "result": "accepted by the server (exit 0)",
+      "inbox_arrival": "confirmed by the operator, 2026-11-06"
+    }
+  },
+  "timer_started": {
+    "at": "2026-11-06 17:22:21 KST",
+    "state": "enabled/active",
+    "started_by": "agent, at the operator's request"
+  },
+  "first_cycles": [
+    "2026-11-06T17:23:14+09:00 ok | health=ok(89ms) ingest=ok(75ms) ssh=ok(47ms) status=ok(83ms) | events=- sent=0",
+    "2026-11-06T17:24:14+09:00 ok | health=ok(78ms) ingest=ok(67ms) ssh=ok(48ms) status=ok(84ms) | events=- sent=0",
+    "2026-11-06T17:25:14+09:00 ok | health=ok(85ms) ingest=ok(73ms) ssh=ok(42ms) status=ok(83ms) | events=- sent=0"
+  ],
+  "status_after": {
+    "incident": null,
+    "mail_waiting": 0,
+    "mail_error": null,
+    "heartbeat_configured": false,
+    "heartbeat_ok": null
+  },
+  "seen_on_the_watched_host": {
+    "per_minute_from_the_office_address": [
+      "GET /health 200",
+      "GET /ingest 405",
+      "GET / 302 (status page)",
+      "sshd: Connection closed by … [preauth]"
+    ],
+    "api_errors_since_start": 0,
+    "device_reports_since_start": "POST /ingest 200 continues"
+  },
+  "not_yet": [
+    "Uptime Kuma notification and push monitor (operator)",
+    "a real outage or recovery mail"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "passed": [
+    {
+      "route": "month_aggregate",
+      "cancel_seconds": 0.008706814143806696,
+      "retry_after_respected": true,
+      "slot_reused": true
+    },
+    {
+      "route": "month_history",
+      "cancel_seconds": 0.009109482169151306,
+      "retry_after_respected": true,
+      "slot_reused": true
+    },
+    {
+      "route": "month_page",
+      "cancel_seconds": 0.008214316330850124,
+      "retry_after_respected": true,
+      "slot_reused": true
+    }
+  ],
+  "remaining_queries": 0
+}

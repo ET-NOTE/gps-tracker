@@ -1,0 +1,202 @@
+{
+  "api_sha256": "1052de1ee68e700b6565e73124e727ef45ee26527c7eb9f196c71efcdd0221f5",
+  "queries": [
+    {
+      "device": 1,
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 1.4980263472534716,
+      "semantic_sha256": "4de689f0907f2e7e013eddea60cf947d65bf852e5215d9612f8c2a075c6442d2"
+    },
+    {
+      "device": 1,
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.4723014449700713,
+      "semantic_sha256": "80c6dd29a29b38c360e4181191befe7ef5c4adac57d28cc461c8c4c43808d5c4"
+    },
+    {
+      "device": 1,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.18159721605479717,
+      "semantic_sha256": "579b780bb097485f43636d98a049e41096c8868e9c0b31ed41047a8d69267784"
+    },
+    {
+      "device": 2,
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 1.4754497427493334,
+      "semantic_sha256": "ca2042a0cbea9661a755f30c11e267c959d0b4901070dd0751b5c762151dbf3e"
+    },
+    {
+      "device": 2,
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.5056012133136392,
+      "semantic_sha256": "dcebaa70cd65df6fbcba567e6bec3ffcc7d5c1f64315234ca6b058fd58a4b487"
+    },
+    {
+      "device": 2,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.14342817896977067,
+      "semantic_sha256": "3a8472491ecb3f70b721141da8b365f5d43405319f7679a1297646760f680ef1"
+    },
+    {
+      "device": 3,
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 1.4671894968487322,
+      "semantic_sha256": "65fbf5106c02a6e2ab35852d68a37ae581fde864c083a51878838bfcd1ffa386"
+    },
+    {
+      "device": 3,
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.471051663160324,
+      "semantic_sha256": "474515f936f6a12503db4ffef19d9237f4bbd4a356854e6f5019ed036496cf93"
+    },
+    {
+      "device": 3,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.1379198469221592,
+      "semantic_sha256": "8c61db7feddc7f0c69337579c72a251761ceb865d08d94db7cb0d6764b5baff1"
+    },
+    {
+      "device": 4,
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 1.4958231816999614,
+      "semantic_sha256": "e264c9101748a0c9ce882a774e39973cfb57ec35b92708a1d8b792014690c845"
+    },
+    {
+      "device": 4,
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.4678952950052917,
+      "semantic_sha256": "ccc62c837b037b5a2baa259a75119342d51646b2106701875cc74c72c9a16743"
+    },
+    {
+      "device": 4,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.13992736395448446,
+      "semantic_sha256": "d3000164237fef9db57fd6e506ce1c73af061626cbef9bcac4005d3c313b2089"
+    },
+    {
+      "device": 5,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.13952338183298707,
+      "semantic_sha256": "12147142d8bcd5648d91e0e766e42985622c1d30d64815b2b65624132d557209"
+    },
+    {
+      "device": 5,
+      "route": "fleet_trips",
+      "status": 200,
+      "seconds": 1.5165758999064565,
+      "semantic_sha256": "71ae93d395a50378dbd109d3bc9f9c73141585801db0c8e8cf85d199b8f9a220"
+    },
+    {
+      "device": 5,
+      "route": "fleet_csv",
+      "status": 200,
+      "seconds": 1.5107684331014752,
+      "semantic_sha256": "d88e2b772abb10d945d4df60ee302f1cf52e16c5c646c8df3c2d99e7869dc0aa"
+    },
+    {
+      "device": 5,
+      "route": "fleet_xlsx",
+      "status": 200,
+      "seconds": 6.027435097843409,
+      "semantic_sha256": "6fbce33053b556cadf7d27df5801bf5397abb943f6a3a7bcc6ffd1a3d52be751"
+    },
+    {
+      "device": 6,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.13695986522361636,
+      "semantic_sha256": "5c3354b7d7ffd3630f772609a3ca3ed8237a4f9c07ed087dc8d2931cf99bcb4a"
+    },
+    {
+      "device": 6,
+      "route": "fleet_trips",
+      "status": 200,
+      "seconds": 1.5290824160911143,
+      "semantic_sha256": "6d58a280dc48fd263a798b3026f6a144f41ebbc612a40e3e67cfc5cc25acf8bd"
+    },
+    {
+      "device": 6,
+      "route": "fleet_csv",
+      "status": 200,
+      "seconds": 1.5157082742080092,
+      "semantic_sha256": "27b92e611ccf3fd5c697f738a456ef8a830cc02e7f8a697e8fd67d727e300460"
+    },
+    {
+      "device": 6,
+      "route": "fleet_xlsx",
+      "status": 200,
+      "seconds": 6.026201670989394,
+      "semantic_sha256": "6fbce33053b556cadf7d27df5801bf5397abb943f6a3a7bcc6ffd1a3d52be751"
+    },
+    {
+      "device": 7,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.13698550313711166,
+      "semantic_sha256": "86dd3dec58840f02622621054b96d3938288711c998037bf20861a858469ff09"
+    },
+    {
+      "device": 7,
+      "route": "fleet_trips",
+      "status": 200,
+      "seconds": 1.5155926612205803,
+      "semantic_sha256": "4e8d277cdf83b1b791fb7f36aaab6b8984c79035cc2b1222271da1925aeb336c"
+    },
+    {
+      "device": 7,
+      "route": "fleet_csv",
+      "status": 200,
+      "seconds": 1.5126217450015247,
+      "semantic_sha256": "c80e87dd6b992e9c5db31aac187f8fc3039de9935d768b3a7e83718299a5052f"
+    },
+    {
+      "device": 7,
+      "route": "fleet_xlsx",
+      "status": 200,
+      "seconds": 6.019829782191664,
+      "semantic_sha256": "6fbce33053b556cadf7d27df5801bf5397abb943f6a3a7bcc6ffd1a3d52be751"
+    },
+    {
+      "device": 8,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.13824515882879496,
+      "semantic_sha256": "588f33a8de97a02b23e67fda33b7e980ca322fb0c55b257ed8530b71ea71413a"
+    },
+    {
+      "device": 8,
+      "route": "fleet_trips",
+      "status": 200,
+      "seconds": 1.5131478207185864,
+      "semantic_sha256": "431899432d50df230591b105a28a4939ad25c9ef7d575da617ac0500f8803b85"
+    },
+    {
+      "device": 8,
+      "route": "fleet_csv",
+      "status": 200,
+      "seconds": 1.5136392167769372,
+      "semantic_sha256": "23e8f7f6ba3a334e9a959b9d4951cb91655bfbf17b719b02c61a155001351b45"
+    },
+    {
+      "device": 8,
+      "route": "fleet_xlsx",
+      "status": 200,
+      "seconds": 6.000878904946148,
+      "semantic_sha256": "6fbce33053b556cadf7d27df5801bf5397abb943f6a3a7bcc6ffd1a3d52be751"
+    }
+  ],
+  "xlsx_excluded": "docProps/core.xml creation metadata only"
+}

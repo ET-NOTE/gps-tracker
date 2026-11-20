@@ -1,0 +1,39 @@
+{
+  "at": "2026-11-15T15:42:27Z",
+  "schema": 114,
+  "passed": [
+    "personal login and existing admin MFA/role boundary; handler and ordinary accounts denied global list",
+    "110 personal rows reached across50/50/10 pages with exact IDs; other-account exclusion; legacy100-array compatible; no internal evidence",
+    "admin kind/status/overdue/undated/mine/unassigned filters; exact due boundary and closed-request exclusion;115 rows paginated",
+    "invalid/owner override filters rejected; processing pause still permits personal rights lookup; IP restriction retained; source rows unchanged",
+    "single blocked TLS read cancels SQL and releases slot; retry succeeds; immutable requests/events",
+    "owner-only request cancellation, stale revision409 and single history row; refreshed admin filter removes completed work"
+  ],
+  "api_sha256": "9086054b5549d861adbbcdf691c33c33605008ebcf6f59214c4cadc69e4fc282",
+  "fixture": {
+    "accounts": 5,
+    "requests": 115,
+    "personal_page_lengths": [
+      50,
+      50,
+      10
+    ]
+  },
+  "read_only_source_hashes": {
+    "privacy_requests": "bc34f2641e8b44556cd51aea2175b664",
+    "privacy_request_events": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "environment": "internal TLS1.2; PostgreSQL14/Timescale; separated gps_runtime; synthetic only",
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false
+}

@@ -1,0 +1,104 @@
+{
+  "checked_at": "2026-11-08T01:05:31.243901+09:00",
+  "environment": "isolated internal Docker network; tmpfs databases; synthetic fixtures; no production mutation or real FCM delivery",
+  "candidate_schema": 106,
+  "last_documented_production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "20ff720ec3659e0edb3084cbb173b88e686f88e9e832e71dae0175889c9d037f",
+  "source_files": 774,
+  "rust": {
+    "unit_passed": 79,
+    "ignored_executed_separately": 5,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "forced_debug_and_release_recompile": true
+  },
+  "web": {
+    "passed": 233,
+    "failed": 0,
+    "root_and_legacy_base_builds": true,
+    "chunk_size_warning": true
+  },
+  "integration_groups": {
+    "plaintext": 7,
+    "encrypted_runtime": 7,
+    "existing_business_and_privacy_suites": 8
+  },
+  "checks": {
+    "changed_vehicle_binding_fails_closed": true,
+    "checkpoint": {
+      "revocation_replayed": true,
+      "provider_acceptance_not_read": true,
+      "restore_send_disabled": true,
+      "unresolved_queue_review": true,
+      "old_format_rejected": true,
+      "identity_collision_atomic": true,
+      "former_staff_retention_hold": true,
+      "external_backup_erasure_verified": false
+    },
+    "database_permissions": {
+      "encryption_enabled": true,
+      "raw_coordinates_null": true,
+      "decrypted_read_passed": true,
+      "nonowner_api_integration_passed": true,
+      "five_privilege_denials": true,
+      "no_external_send": true
+    },
+    "upgrade": {
+      "schema_path": [
+        105,
+        106
+      ],
+      "identity_sim_records_unchanged": true,
+      "failed_106_transaction_atomic": true,
+      "subject_policy_default_off": true,
+      "no_inferred_consent": true,
+      "migration_checksums_match": true,
+      "api_sha256": "20ff720ec3659e0edb3084cbb173b88e686f88e9e832e71dae0175889c9d037f"
+    },
+    "ui": {
+      "environment": "isolated actual React with synthetic API; not production",
+      "desktop": 1280,
+      "mobile": 390,
+      "overflow": false,
+      "errors": [],
+      "confirmation": true,
+      "revocation": true,
+      "manualAcknowledgement": true,
+      "apiMocked": true,
+      "captured_at": "2026-11-08T01:03:09.463962+09:00",
+      "candidate_schema": 106
+    }
+  },
+  "limits": [
+    "22B required before activating normal company map/report/export workflows; current pilot blocks unbounded paths",
+    "Subject login declaration is not PASS identity proof or proof of physical driver",
+    "FCM exercised through loopback mock only; provider acceptance is not handset delivery or read",
+    "At-least-once retries may repeat an alert after send/settlement interruption",
+    "Production policy, actual notification channel, queue capacity/alerts, cumulative 99 to 106 sized rehearsal remain open"
+  ],
+  "resolved_validation_issue": "Archive mtimes reused stale Cargo release binary. Cleaned first-party debug/release outputs, rebuilt, and reran complete checks on final API hash.",
+  "cleanup": {
+    "cleaned_at": "2026-11-07T16:05:32.189818+00:00",
+    "test_containers_network_and_tmpfs_removed": true,
+    "test_uploads_removed": true,
+    "private_test_files_removed": [
+      "test-keys.json",
+      "test-runtime.json",
+      "regression.env"
+    ],
+    "sources_logs_candidate_preserved": true,
+    "production_changed": false
+  },
+  "build_input_integrity": "774 source files verified; text line endings normalized, PNG/ICO/TTF bytes preserved; final web rebuilt as build-host UID1000",
+  "package": {
+    "candidate_files_verified": 65,
+    "archive_sha256": "a01c4f14bf4f2540249dee3d3a57abd0f3315d167b930963d4494c6b47d66fa3",
+    "source_commit": "0c3bd6bc42492e402963247191997a3006ac164c",
+    "source_files_verified": 774,
+    "source_archive_sha256": "5fa681f2c935ce12b5aae371cd3e099bd8ab876e3f0db56b54a09790eee72190",
+    "source_archive_replaced_with_verified_inputs": true,
+    "production_modified": false
+  }
+}

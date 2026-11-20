@@ -1,0 +1,30 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+PASS all ten migration transactions roll back on injected failure; committed prefixes resume with real candidate
+PASS missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes
+PASS prepared restricted owner completes real single-pass99 to109 with original data preserved and defaults OFF
+PASS 99 to109 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred
+PASS other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected
+PASS conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes
+PASS restricted API and both cleanup worker paths use same key/mode; policy, DDL and maintenance bypass rejected
+PASS all original location values survive encryption; physical columns NULL; 623000 raw samples yield283001 deduplicated in-range history points
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   hypertable
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   chunk
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   continuous_agg
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: NOTICE:  hypertable data are in the chunks, no data will be copied
+DETAIL:  Data for hypertables are stored in the chunks of a hypertable so COPY TO of a hypertable will not copy any data.
+HINT:  Use "COPY (SELECT * FROM <hypertable>) TO ..." to copy all data in hypertable, or copy each chunk individually.
+pg_dump: NOTICE:  hypertable data are in the chunks, no data will be copied
+DETAIL:  Data for hypertables are stored in the chunks of a hypertable so COPY TO of a hypertable will not copy any data.
+HINT:  Use "COPY (SELECT * FROM <hypertable>) TO ..." to copy all data in hypertable, or copy each chunk individually.
+NOTICE:  extension "timescaledb" already exists, skipping
+PASS full Timescale DB plus encrypted files restore while fenced; separately held key required; all location/file hashes equal
+PASS cumulative rehearsal complete; isolated encrypted API ready for business/privacy regression

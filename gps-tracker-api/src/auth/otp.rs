@@ -57,11 +57,7 @@ pub async fn verify_and_consume(
 
     // constant-time 비교 — bytes 길이가 달라도 ct_eq 가 false 를 반환 (constant-time 적용).
     let submitted = submitted_code.trim();
-    let matches: bool = code
-        .as_bytes()
-        .ct_eq(submitted.as_bytes())
-        .unwrap_u8()
-        == 1;
+    let matches: bool = code.as_bytes().ct_eq(submitted.as_bytes()).unwrap_u8() == 1;
 
     if !matches {
         sqlx::query("UPDATE otp_codes SET attempts = attempts + 1 WHERE id = $1")

@@ -1,0 +1,22 @@
+{
+  "reviewed_schema": 113,
+  "runtime_roles_check": true,
+  "core_scan": true,
+  "query_bounds": {
+    "schema": 113,
+    "apply": true,
+    "encrypted": true,
+    "updated": 0,
+    "batches": 0,
+    "pending_before": 0,
+    "pending_after": 0,
+    "complete": true
+  },
+  "ciphertext_unchanged": true,
+  "unreviewed114_rejected": [
+    "roles",
+    "transition",
+    "storage",
+    "query_bounds"
+  ]
+}

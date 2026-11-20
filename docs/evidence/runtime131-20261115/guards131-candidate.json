@@ -1,0 +1,42 @@
+{
+  "variant": "candidate",
+  "injected_stats_failure_status": 500,
+  "remaining_location_rows_after_failure": 0,
+  "latest_after_failure": false,
+  "auth_counter_rolled_back": true,
+  "retry_accepted": true,
+  "replay_status": 409,
+  "bad_signature_status": 401,
+  "paused_stored_false": true,
+  "health_during_lock": 200,
+  "device_lock_phase_observed": true,
+  "additional_source_paths": [
+    {
+      "source": "lte",
+      "status": 200,
+      "added_rows": 1,
+      "signed_response_verified": true
+    },
+    {
+      "source": "no-fix",
+      "status": 200,
+      "added_rows": 1,
+      "signed_response_verified": true
+    },
+    {
+      "source": "batch",
+      "status": 200,
+      "added_rows": 1,
+      "signed_response_verified": true
+    },
+    {
+      "source": "phone",
+      "status": 200,
+      "added_rows": 1,
+      "owner_token_verified": true,
+      "hardware_phone_rejected": 403
+    }
+  ],
+  "no_unacknowledged_location_partial_commit": true,
+  "production_modified": false
+}

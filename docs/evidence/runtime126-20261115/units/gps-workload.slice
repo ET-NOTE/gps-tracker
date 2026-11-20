@@ -1,0 +1,8 @@
+# /etc/systemd/system/gps-workload.slice
+[Unit]
+Description=GPS total workload budget (candidate; capacity acceptance required)
+[Slice]
+MemoryAccounting=yes
+MemoryMax=4096M
+MemorySwapMax=0
+TasksMax=256

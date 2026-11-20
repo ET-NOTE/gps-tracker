@@ -1,0 +1,4 @@
+{'range': 'one_day', 'query': 'old', 'seconds': 0.21156282909214497, 'points': 2880, 'sha256': 'a408cb5cddac6fb741358b74a8bc6287d218dbe6817ab3cda865cfd2463042ea'}
+{'range': 'one_day', 'query': 'materialized', 'seconds': 0.10122882528230548, 'points': 2880, 'sha256': 'a408cb5cddac6fb741358b74a8bc6287d218dbe6817ab3cda865cfd2463042ea'}
+{'range': 'full_month', 'query': 'old', 'seconds': 120.02135549578816, 'error': 'QueryCanceled', 'detail': 'canceling statement due to statement timeout\n'}
+{'range': 'full_month', 'query': 'materialized', 'seconds': 1.2960775438696146, 'points': 89280, 'sha256': 'd4df9601a90668095813830d4d2e6b01a9a6fc7240e6b9bd3b9ace8de1e39aed'}

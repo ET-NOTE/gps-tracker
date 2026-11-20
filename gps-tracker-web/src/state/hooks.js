@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import { qk } from './keys';
 import { chatBus } from '../lib/chatBus';
+import { deviceQueryOptions } from './devices';
 
 // ═══════════════════════════════════════════════════════════
 // 사용자 · 계정 정보
@@ -66,9 +67,7 @@ export function useSetAccountType() {
 
 export function useDevices(opts = {}) {
   return useQuery({
-    queryKey: qk.devices(),
-    queryFn: () => api.listDevices(),
-    staleTime: 30_000,   // 30s
+    ...deviceQueryOptions(),
     ...opts,
   });
 }

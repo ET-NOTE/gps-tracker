@@ -1,0 +1,22 @@
+{
+  "label": "baseline109",
+  "production_modified": false,
+  "queries": {
+    "month_history": {
+      "seconds": 13.786164603661746,
+      "count": 283001
+    },
+    "day_history": {
+      "seconds": 4.6691683367826045,
+      "count": 8641
+    },
+    "month_keys": {
+      "seconds": 6.399644993711263,
+      "count": 283001
+    },
+    "small_history": {
+      "seconds": 4.145920048933476,
+      "count": 61
+    }
+  }
+}

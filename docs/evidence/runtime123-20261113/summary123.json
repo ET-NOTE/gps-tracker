@@ -1,0 +1,530 @@
+{
+  "results": {
+    "baseline-4g": {
+      "seconds": 300,
+      "elapsed": 305.0141858169809,
+      "statuses": {
+        "200": 301,
+        "429": 193
+      },
+      "attempt_statuses": {
+        "429": 787,
+        "200": 301
+      },
+      "final_429_fraction": 0.39068825910931176,
+      "successful_reads_per_second": 0.9868393471397768,
+      "per_route": {
+        "month_page": {
+          "statuses": {
+            "200": 122,
+            "429": 73
+          },
+          "latency": {
+            "count": 122,
+            "p50": 2.549054483883083,
+            "p95": 5.6949980282224715,
+            "max": 9.03360857302323
+          }
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 45,
+            "429": 22
+          },
+          "latency": {
+            "count": 45,
+            "p50": 4.152369903866202,
+            "p95": 8.734377302695066,
+            "max": 10.144368605222553
+          }
+        },
+        "month_history": {
+          "statuses": {
+            "200": 46,
+            "429": 20
+          },
+          "latency": {
+            "count": 46,
+            "p50": 1.815992551855743,
+            "p95": 17.06695740390569,
+            "max": 23.21165081905201
+          }
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 34,
+            "429": 23
+          },
+          "latency": {
+            "count": 34,
+            "p50": 4.022858050186187,
+            "p95": 7.546207242179662,
+            "max": 9.458143175579607
+          }
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 40,
+            "429": 15
+          },
+          "latency": {
+            "count": 40,
+            "p50": 1.6750696520321071,
+            "p95": 6.92437176592648,
+            "max": 9.723489772062749
+          }
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 40,
+            "200": 14
+          },
+          "latency": {
+            "count": 14,
+            "p50": 6.640193908941001,
+            "p95": 11.480937237851322,
+            "max": 11.653204517439008
+          }
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 250
+        },
+        "latency": {
+          "count": 250,
+          "p50": 0.032011792063713074,
+          "p95": 0.5223111920058727,
+          "max": 4.392541988752782
+        }
+      },
+      "saved_ingest": 250,
+      "health": {
+        "statuses": {
+          "200": 250
+        },
+        "latency": {
+          "count": 250,
+          "p50": 0.0013733911328017712,
+          "p95": 0.0019955458119511604,
+          "max": 0.03931790916249156
+        }
+      },
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.051956533920019865,
+          "p95": 0.07280903682112694,
+          "max": 0.09529005968943238
+        }
+      },
+      "cleanup": {
+        "completed": 56,
+        "latency": {
+          "count": 56,
+          "p50": 0.1919125309213996,
+          "p95": 0.4355776091106236,
+          "max": 0.6194078871048987
+        },
+        "deferred": 0
+      },
+      "full_month_traversals": 2,
+      "memory": {
+        "container": {
+          "samples": 30,
+          "max_mib": 1805.5,
+          "first_quarter_median_mib": 1615.62109375,
+          "last_quarter_median_mib": 1755.8046875,
+          "end_mib": 1698.13671875
+        },
+        "gps": {
+          "samples": 30,
+          "max_mib": 1606.96875,
+          "first_quarter_median_mib": 1426.234375,
+          "last_quarter_median_mib": 1556.953125,
+          "end_mib": 1499.078125
+        },
+        "db": {
+          "samples": 30,
+          "max_mib": 1346.19921875,
+          "first_quarter_median_mib": 1251.98046875,
+          "last_quarter_median_mib": 1294.4296875,
+          "end_mib": 1236.5703125
+        },
+        "api": {
+          "samples": 30,
+          "max_mib": 276.78515625,
+          "first_quarter_median_mib": 171.640625,
+          "last_quarter_median_mib": 258.3359375,
+          "end_mib": 258.078125
+        },
+        "pdf": {
+          "samples": 30,
+          "max_mib": 0.94921875,
+          "first_quarter_median_mib": 0.421875,
+          "last_quarter_median_mib": 0.69921875,
+          "end_mib": 0.7265625
+        }
+      },
+      "errors": []
+    },
+    "dedicated-123": {
+      "seconds": 900,
+      "elapsed": 910.4993976568803,
+      "statuses": {
+        "200": 780,
+        "429": 712
+      },
+      "attempt_statuses": {
+        "429": 2651,
+        "200": 780
+      },
+      "final_429_fraction": 0.4772117962466488,
+      "successful_reads_per_second": 0.8566727248884367,
+      "per_route": {
+        "month_page": {
+          "statuses": {
+            "200": 316,
+            "429": 261
+          },
+          "latency": {
+            "count": 316,
+            "p50": 2.661192996893078,
+            "p95": 5.6399569432251155,
+            "max": 6.173837893176824
+          }
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 102,
+            "429": 79
+          },
+          "latency": {
+            "count": 102,
+            "p50": 1.9690153999254107,
+            "p95": 6.883415464777499,
+            "max": 7.161299901083112
+          }
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 101,
+            "429": 84
+          },
+          "latency": {
+            "count": 101,
+            "p50": 1.895690802950412,
+            "p95": 6.874189918860793,
+            "max": 7.188136555720121
+          }
+        },
+        "month_history": {
+          "statuses": {
+            "200": 80,
+            "429": 101
+          },
+          "latency": {
+            "count": 80,
+            "p50": 4.397509864997119,
+            "p95": 19.90704416995868,
+            "max": 22.10486184619367
+          }
+        },
+        "fleet_csv": {
+          "statuses": {
+            "429": 61,
+            "200": 124
+          },
+          "latency": {
+            "count": 124,
+            "p50": 1.6925182649865746,
+            "p95": 6.87884562369436,
+            "max": 7.422106054145843
+          }
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 126,
+            "200": 57
+          },
+          "latency": {
+            "count": 57,
+            "p50": 6.909802247770131,
+            "p95": 14.255087855737656,
+            "max": 18.285395628307015
+          }
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 819
+        },
+        "latency": {
+          "count": 819,
+          "p50": 0.030472110956907272,
+          "p95": 0.5095591740682721,
+          "max": 0.8087547412142158
+        }
+      },
+      "saved_ingest": 819,
+      "health": {
+        "statuses": {
+          "200": 819
+        },
+        "latency": {
+          "count": 819,
+          "p50": 0.0013690721243619919,
+          "p95": 0.005097094923257828,
+          "max": 0.0407312479801476
+        }
+      },
+      "pdf": {
+        "completed": 295,
+        "latency": {
+          "count": 295,
+          "p50": 0.0527234124019742,
+          "p95": 0.07206626702100039,
+          "max": 0.13061033422127366
+        }
+      },
+      "cleanup": {
+        "completed": 167,
+        "latency": {
+          "count": 167,
+          "p50": 0.2099280939437449,
+          "p95": 0.5122011359781027,
+          "max": 1.183117055799812
+        },
+        "deferred": 0
+      },
+      "full_month_traversals": 5,
+      "memory": {
+        "container": {
+          "samples": 90,
+          "max_mib": 1722.734375,
+          "first_quarter_median_mib": 1566.181640625,
+          "last_quarter_median_mib": 1681.81640625,
+          "end_mib": 1557.22265625
+        },
+        "gps": {
+          "samples": 90,
+          "max_mib": 1506.33203125,
+          "first_quarter_median_mib": 1358.763671875,
+          "last_quarter_median_mib": 1469.6796875,
+          "end_mib": 1344.31640625
+        },
+        "db": {
+          "samples": 90,
+          "max_mib": 1189.69921875,
+          "first_quarter_median_mib": 1043.63671875,
+          "last_quarter_median_mib": 1151.3046875,
+          "end_mib": 1091.30078125
+        },
+        "api": {
+          "samples": 90,
+          "max_mib": 329.81640625,
+          "first_quarter_median_mib": 309.583984375,
+          "last_quarter_median_mib": 309.775390625,
+          "end_mib": 245.8671875
+        },
+        "pdf": {
+          "samples": 90,
+          "max_mib": 3.6484375,
+          "first_quarter_median_mib": 2.6328125,
+          "last_quarter_median_mib": 3.47265625,
+          "end_mib": 3.5703125
+        }
+      },
+      "errors": []
+    },
+    "shared-123": {
+      "seconds": 900,
+      "elapsed": 901.5207886439748,
+      "statuses": {
+        "200": 748,
+        "429": 685
+      },
+      "attempt_statuses": {
+        "429": 2599,
+        "200": 748
+      },
+      "final_429_fraction": 0.47801814375436147,
+      "successful_reads_per_second": 0.8297090975851,
+      "per_route": {
+        "month_aggregate": {
+          "statuses": {
+            "200": 101,
+            "429": 74
+          },
+          "latency": {
+            "count": 101,
+            "p50": 2.0791304484009743,
+            "p95": 7.215462138876319,
+            "max": 7.977148511912674
+          }
+        },
+        "month_page": {
+          "statuses": {
+            "200": 304,
+            "429": 259
+          },
+          "latency": {
+            "count": 304,
+            "p50": 2.7531161308288574,
+            "p95": 5.652089456561953,
+            "max": 6.389207762200385
+          }
+        },
+        "month_history": {
+          "statuses": {
+            "200": 81,
+            "429": 93
+          },
+          "latency": {
+            "count": 81,
+            "p50": 4.499538234900683,
+            "p95": 19.935538516845554,
+            "max": 22.39509916631505
+          }
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 100,
+            "429": 75
+          },
+          "latency": {
+            "count": 100,
+            "p50": 4.348149133846164,
+            "p95": 7.206522366963327,
+            "max": 7.419812246225774
+          }
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 121,
+            "429": 53
+          },
+          "latency": {
+            "count": 121,
+            "p50": 1.8926353990100324,
+            "p95": 7.010446520987898,
+            "max": 7.568385486956686
+          }
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 131,
+            "200": 41
+          },
+          "latency": {
+            "count": 41,
+            "p50": 6.854003383778036,
+            "p95": 13.388060349039733,
+            "max": 15.205369136296213
+          }
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 787
+        },
+        "latency": {
+          "count": 787,
+          "p50": 0.04944758815690875,
+          "p95": 0.615216133184731,
+          "max": 1.2319030058570206
+        }
+      },
+      "saved_ingest": 787,
+      "health": {
+        "statuses": {
+          "200": 787
+        },
+        "latency": {
+          "count": 787,
+          "p50": 0.001430165022611618,
+          "p95": 0.0021547148935496807,
+          "max": 0.038526639342308044
+        }
+      },
+      "pdf": {
+        "completed": 295,
+        "latency": {
+          "count": 295,
+          "p50": 0.053744038101285696,
+          "p95": 0.07333286479115486,
+          "max": 0.12158588599413633
+        }
+      },
+      "cleanup": {
+        "completed": 164,
+        "latency": {
+          "count": 164,
+          "p50": 0.331463401671499,
+          "p95": 0.5776714691892266,
+          "max": 1.2480739601887763
+        },
+        "deferred": 0
+      },
+      "full_month_traversals": 5,
+      "memory": {
+        "container": {
+          "samples": 90,
+          "max_mib": 3168.90234375,
+          "first_quarter_median_mib": 2993.416015625,
+          "last_quarter_median_mib": 3098.8359375,
+          "end_mib": 3047.71875
+        },
+        "gps": {
+          "samples": 90,
+          "max_mib": 1545.12109375,
+          "first_quarter_median_mib": 1382.294921875,
+          "last_quarter_median_mib": 1479.38671875,
+          "end_mib": 1429.4765625
+        },
+        "db": {
+          "samples": 90,
+          "max_mib": 1246.0703125,
+          "first_quarter_median_mib": 1096.876953125,
+          "last_quarter_median_mib": 1199.0703125,
+          "end_mib": 1131.8046875
+        },
+        "api": {
+          "samples": 90,
+          "max_mib": 322.88671875,
+          "first_quarter_median_mib": 260.345703125,
+          "last_quarter_median_mib": 266.498046875,
+          "end_mib": 289.2578125
+        },
+        "pdf": {
+          "samples": 90,
+          "max_mib": 5.37890625,
+          "first_quarter_median_mib": 3.798828125,
+          "last_quarter_median_mib": 4.65625,
+          "end_mib": 4.8203125
+        },
+        "other": {
+          "samples": 90,
+          "max_mib": 787.390625,
+          "first_quarter_median_mib": 787.375,
+          "last_quarter_median_mib": 787.37890625,
+          "end_mib": 787.37890625
+        },
+        "av": {
+          "samples": 90,
+          "max_mib": 614.7265625,
+          "first_quarter_median_mib": 614.7265625,
+          "last_quarter_median_mib": 614.7265625,
+          "end_mib": 614.7265625
+        }
+      },
+      "errors": []
+    }
+  },
+  "interpretation_limits": [
+    "One sequential run per configuration, baseline300s and candidate900s; not a controlled repeated statistical estimate",
+    "Warm database, synthetic other services and small PDF; not production qualification",
+    "Quarter medians and peaks describe observed memory, do not prove absence of long-term leaks"
+  ]
+}

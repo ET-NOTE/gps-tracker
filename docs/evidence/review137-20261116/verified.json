@@ -1,0 +1,42 @@
+{
+  "at": "2026-11-16T11:09:18+0900",
+  "passed": true,
+  "state": {
+    "schema": 114,
+    "users": 42,
+    "devices": 18,
+    "api": "c6475670005ce79718d452ce882165f48a9e549249b97aad010f9247a0747cf8",
+    "env": "fab21aeaaef7a00f1283530e1136690c28d416d5d4d62b9968d4a6a6cdb3df55",
+    "web": "/home/mmm/releases/review137-20261116-r1/web",
+    "neighbors": {
+      "dev_api": "35323e272cccc81843fa33442fb27dfa08f0f01b3f5133b15d4f9bbf28abd62b",
+      "dev_web": "/home/gps-dev/releases/dev-design-cleanup-20261028-7e42f90/web",
+      "shield": "/srv/shield/releases/shield-20261102-142702-b9babe2",
+      "services": "MainPID=13071\nId=gps-tracker-api-dev.service\nActiveEnterTimestamp=Fri 2026-11-06 11:39:32 KST\n\nMainPID=15160\nId=shield-api.service\nActiveEnterTimestamp=Fri 2026-11-06 11:45:30 KST\n\nId=gps-pdf-render.socket\nActiveEnterTimestamp=Fri 2026-11-06 16:48:34 KST\n",
+      "nginx": "1fc4ef8d1b9e036321c9faf31cc6edf20823360f778b5cad6f614e28e9d60cb7"
+    }
+  },
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "runtime136-20261116-r1",
+    "service": "gps-tracker-api"
+  },
+  "public_files_verified": 22,
+  "policies": {
+    "location_storage_policy": false,
+    "privacy_retention_policy": false,
+    "location_subject_policy": false
+  },
+  "feature_flags": {
+    "GPS_ADMIN_SECURITY": "<unset/off>",
+    "GPS_LOCATION_ENCRYPTION": "<unset/off>",
+    "GPS_LOCATION_ACCESS_LOG": "<unset/off>",
+    "GPS_SUBJECT_PROVISION": "<unset/off>",
+    "GPS_INGEST_TLS_REQUIRED": "<unset/off>"
+  },
+  "pdf_socket": "/run/gps-pdf-render/render.sock",
+  "timers_active": true,
+  "disk_available_bytes": 8230551552
+}

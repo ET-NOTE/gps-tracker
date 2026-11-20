@@ -1,0 +1,33 @@
+{
+  "kind": "synthetic protection kit; NOT an installer or cumulative release",
+  "production_applied": false,
+  "activation_ready": false,
+  "checks_passed": 21,
+  "api_unchanged_sha256": "f1e0d29ed9773f1279798021be511450003bc2239a73bc10c4204a853055ac3d",
+  "required_cumulative_base_sha256": "b0ad2eb25f993df683ccbcda76f0d0533e469132eca22798c23bc766a14c128f",
+  "source_input_sha256": "840318f4210deac4277420836aa03c1721302b9f18f3fc6223c5e8b0714d1f48",
+  "open_gates": [
+    "bounded shared RAM/connection budgets",
+    "corrected production shared_buffers stress rerun",
+    "actual API/PDF/maintenance process preload integration",
+    "116 migration/restore + 117 API + protection profile combined rehearsal",
+    "production host deployment window/policy/keys/rights checkpoint and existing handoff gates"
+  ],
+  "files": {
+    "budget_runtime118.py": "d0b2fa67a9cc47cb881aadd0467be768819ab4e4f28f569bef11b7e7acedf95a",
+    "gps-nodump.so": "4576c005efe147b8f085d67e256b99b16155d44da23f865db5df81c185d4aa74",
+    "observe_runtime118.py": "2d7ca4b8f51f9256ad3c0999020e5b17dded397a5087631a8e6e73d6c85b22e3",
+    "rehearsal.json": "1d16b64f6dee727b58d882cd12e05fd088f787fb2131f45c7bf30350ab6277dd",
+    "rehearse_runtime118.py": "378cb415121a50f4721e78bd6cf6c07b56643194dd54cbbd5b49b1038bceff82",
+    "runtime118.Dockerfile": "4679678867c2113121f48968d94f5b8a35374dfdb31a5c6c26d50d3a1943b367",
+    "runtime118_guard.py": "a0776e84254def28378ba66acd81f1c5b93c751fcc211ccdd2efd0bde1c5f98d",
+    "runtime118_nodump.c": "b9c1c45d0ba14c5343afd0954e8db4cbe42bc0e78277c38b5b2e18091de6e9bd",
+    "stage_runtime118.py": "0f78f96561a9bee05b89203153fd98c30439dad3d13dcd07b4b6bf4c64b28333",
+    "synthetic-profile/etc/gps118/plan.json": "7d8fcc1cfcb5e0a4fe02fb543bc273d677dd74f7cd9aa7a23cfa0a4aaafdff8e",
+    "synthetic-profile/etc/systemd/system/gps118-db.service": "613720bb953d9a303717ce706203191e9d519cd9a808c32379a4a6b2f4b94209",
+    "synthetic-profile/etc/systemd/system/gps118-temp-ready.service": "3f871825d01ed01c8638deb4a20f6cae7bf2e6338b0e96e65b42e65b786b17ae",
+    "synthetic-profile/etc/systemd/system/run-gps118-fallback.mount": "72a75fc9206fca8596e439c39ac6c05eb261c0cf023c503a94db35211503ee06",
+    "synthetic-profile/etc/systemd/system/run-gps118-sort.mount": "027aae40fa32954ac0fb7e37f2d4a0f25585b9e5092b0fd4ab964d7d93e9eff7",
+    "synthetic-profile/usr/local/lib/gps118_probe.py": "bf7ff1cdd267db05f849005637f5d05b0bde36967909de20f89da1f7d47a9bc5"
+  }
+}

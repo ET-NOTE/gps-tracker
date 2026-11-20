@@ -1,0 +1,13 @@
+stopped (exit 0)
+api ready at 172.28.0.3 (ledger off)
+api ready at 172.28.0.3 (ledger on)
+api ready at 172.28.0.3 (ledger off)
+api ready at 172.28.0.3 (ledger on)
+PASS correction suspends old reads, preserves notices and requires fresh exact-subject consent; duplicate/stale/cross-subject requests denied
+PASS reconsent restores only withdrawn subject and interval; new roots or other subjects cannot bypass withdrawal across multiple revisions
+PASS unlinked staff is excluded from both readers and reported ineffective
+PASS read/correction fence, tenant checks, shape validation and immutable DB identity prevent silent rewrites
+PASS public sharing cannot reuse company consent or exploit an unmapped company SIM; create and extend denied before charging
+PASS stale or pre-108 checkpoint cannot restore revoked consent; conflicting lineage rejected atomically; replay disables delivery
+{"passed": 6, "schema": 108}
+{"encryption_enabled": true, "raw_coordinates_null": true, "decrypted_read_passed": true, "nonowner_api_integration_passed": true, "five_privilege_denials": true, "no_external_send": true}

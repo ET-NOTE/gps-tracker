@@ -1,0 +1,119 @@
+{
+  "observed_at": "2026-11-13T08:33:59.518567+00:00",
+  "read_only": true,
+  "production_admission": false,
+  "production": {
+    "physical_mib": 2967.70703125,
+    "cpu": "6",
+    "shared_buffers_mib": 741.9296875,
+    "other_service_snapshot_mib": 699.4296875,
+    "other_clients_peak": 18,
+    "role_observed_peaks": {
+      "bbb": 15,
+      "gps_tracker_app": 5,
+      "gps_tracker_dev_app": 2,
+      "shield_app": 1
+    },
+    "server_connections": 50,
+    "superuser_reserved": 3,
+    "remaining_for_others_with_api28_and_ops4": 15,
+    "uncapped_roles": [
+      "aaa",
+      "bbb",
+      "gps_tracker_app",
+      "gps_tracker_dev_app"
+    ],
+    "uncapped_other_services": [
+      "accounts-daemon.service",
+      "atd.service",
+      "containerd.service",
+      "cron.service",
+      "dbus.service",
+      "docker.service",
+      "fail2ban.service",
+      "getty@tty1.service",
+      "gps-modsecurity.service",
+      "gps-nginx-log.service",
+      "gps-tracker.service",
+      "irqbalance.service",
+      "mosquitto.service",
+      "networkd-dispatcher.service",
+      "nginx.service",
+      "packagekit.service",
+      "pm2-mmm.service",
+      "polkit.service",
+      "redis-server.service",
+      "rsyslog.service",
+      "snapd.service",
+      "ssh.service",
+      "systemd-journald.service",
+      "systemd-logind.service",
+      "systemd-resolved.service",
+      "systemd-timesyncd.service",
+      "systemd-udevd.service",
+      "unattended-upgrades.service",
+      "user@0.service",
+      "user@1000.service",
+      "wpa_supplicant.service"
+    ],
+    "current_shortfall_mib": 2246.72265625,
+    "observation_is_not_peak_or_reservation": true
+  },
+  "profiles": {
+    "dedicated_gps_4g": {
+      "nominal_host_mib": 4096,
+      "experiment_container_mib": 3584,
+      "gps_aggregate_mib": 3328,
+      "other_projects_mib": 0,
+      "av_pressure_cap_mib": 0,
+      "os_reserve_mib": 512,
+      "reserved_mib": 3840,
+      "unassigned_mib": 256,
+      "finite_arithmetic_fits": true,
+      "production_approved": false
+    },
+    "bounded_shared_6g": {
+      "nominal_host_mib": 6144,
+      "experiment_container_mib": 5632,
+      "gps_aggregate_mib": 3328,
+      "other_projects_mib": 1024,
+      "av_pressure_cap_mib": 675,
+      "os_reserve_mib": 512,
+      "reserved_mib": 5539,
+      "unassigned_mib": 605,
+      "finite_arithmetic_fits": true,
+      "production_approved": false
+    }
+  },
+  "trial_gps_components_mib": {
+    "db": 1408,
+    "api": 640,
+    "pdf": 896,
+    "one_cleanup": 128,
+    "tls_proxy": 64,
+    "sum": 3136,
+    "aggregate": 3328
+  },
+  "trial_connections": {
+    "server": 64,
+    "admin_reserved": 3,
+    "single_api": 28,
+    "cleanup": 2,
+    "operations": 2,
+    "shared_other": 24,
+    "unassigned": 5
+  },
+  "trial_io": {
+    "cpu_quota_cores": 2,
+    "read_write_bps_each": 8388608,
+    "read_write_iops_each": 200,
+    "build_host_nvme_not_vps_disk": true
+  },
+  "constraints": [
+    "Do not apply either future profile to the current3GiB shared server.",
+    "Dedicated profile excludes AV scanning alongside normal workload; schedule an exclusive maintenance window or add its675MiB budget.",
+    "Shared profile requires all other services jointly bounded to1024MiB and DB clients jointly24; simulator does not prove their real workload fits.",
+    "Recovery/migration jobs are exclusive maintenance workloads;128MiB cleanup proof does not qualify full restore at that cap.",
+    "Finite caps, no swap and clean synthetic tests do not replace host-specific long-duration acceptance."
+  ]
+}

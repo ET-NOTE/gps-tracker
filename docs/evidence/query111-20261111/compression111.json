@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "initially_encrypted": false,
+      "compressed_chunks": 1,
+      "points_preserved": 20,
+      "backfill": {
+        "schema": 111,
+        "apply": true,
+        "encrypted": false,
+        "updated": 0,
+        "batches": 0,
+        "pending_before": 0,
+        "pending_after": 0,
+        "complete": true
+      }
+    },
+    {
+      "initially_encrypted": true,
+      "compressed_chunks": 1,
+      "points_preserved": 20,
+      "backfill": {
+        "schema": 111,
+        "apply": true,
+        "encrypted": true,
+        "updated": 0,
+        "batches": 0,
+        "pending_before": 0,
+        "pending_after": 0,
+        "complete": true
+      }
+    }
+  ],
+  "synthetic_databases_removed": true,
+  "production_modified": false
+}

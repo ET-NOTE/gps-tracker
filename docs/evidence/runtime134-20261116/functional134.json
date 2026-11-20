@@ -1,0 +1,40 @@
+{
+  "at": "2026-11-15T16:19:13Z",
+  "schema": 114,
+  "passed": [
+    "real request creation; owner-only history, anonymous401 and foreign/missing/admin404; no-store",
+    "real administrator review3 transitions after officer approval and operator execution; historical messages/deadlines; exact public projection excludes internal evidence and actor IDs",
+    "56 historical revisions25/25/6 exact and read-only; frozen upper revision excludes later append; refresh sees57; legacy empty stays empty",
+    "invalid/unknown/oversized cursors rejected; use/provision pause does not prevent own rights history",
+    "one blocked TLS history read cancels SQL and releases query capacity; retry200 and source hash unchanged; no sustained load",
+    "owner cancellation adds exactly one public history transition; foreign denial and stale revision409 retained",
+    "restricted account session cannot query new route; existing password-only result portal retains scoped public history without session restoration"
+  ],
+  "api_sha256": "fe48aa6fc508e43458948532a8af1573dba3944bfe4fc9ba350e214cc80967eb",
+  "fixture": {
+    "accounts": 5,
+    "requests": 4,
+    "history_page_lengths": [
+      25,
+      25,
+      6
+    ]
+  },
+  "read_only_source_hashes": {
+    "privacy_requests": "0fcd548b6f139aa49b20e9b72d087b4a",
+    "privacy_request_events": "b7d98c85126026605efeeae722a542f9"
+  },
+  "environment": "internal TLS1.2; PostgreSQL14/Timescale; separated gps_runtime; synthetic only",
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false
+}

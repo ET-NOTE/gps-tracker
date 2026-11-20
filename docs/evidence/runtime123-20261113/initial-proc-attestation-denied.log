@@ -1,0 +1,15 @@
+sha256sum: /proc/1576/exe: Permission denied
+Traceback (most recent call last):
+  File "/opt/gps121/verify_runtime123.py", line 107, in <module>
+    if action=='before':equivalence(True)
+  File "/opt/gps121/verify_runtime123.py", line 21, in equivalence
+    select(previous)
+  File "/opt/gps121/load_runtime123.py", line 23, in select
+    assert load.command('sha256sum','/proc/'+pid+'/exe').split()[0] == digest
+  File "/opt/gps121/load_runtime122.py", line 48, in command
+    return subprocess.check_output(args, text=True).strip()
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '('sha256sum', '/proc/1576/exe')' returned non-zero exit status 1.

@@ -1,0 +1,45 @@
+
+> gps-tracker-web@0.1.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 285 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /work/gps-tracker-web/src/components/PrivacyDelivery.jsx is dynamically imported by /work/gps-tracker-web/src/App.jsx but also statically imported by /work/gps-tracker-web/src/components/PrivacyAccountPackage.jsx, /work/gps-tracker-web/src/components/PrivacyRequests.jsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist-root/index.html                                   5.36 kB │ gzip:   2.60 kB
+dist-root/assets/NanumGothic-Regular-xHXjSUfO.ttf  2,054.74 kB
+dist-root/assets/NanumGothic-Bold-DvrrFc7E.ttf     2,073.87 kB
+dist-root/assets/FleetDashboard-Cq4MBq6b.css           1.81 kB │ gzip:   0.65 kB
+dist-root/assets/CorporatePanel-DqcK_dsY.css          11.19 kB │ gzip:   2.45 kB
+dist-root/assets/index-D90cCmU7.css                   74.07 kB │ gzip:  12.80 kB
+dist-root/assets/StatCard-CxdToFZ2.js                  2.06 kB │ gzip:   0.87 kB
+dist-root/assets/LegalPage-BH1RJFPO.js                 3.88 kB │ gzip:   2.82 kB
+dist-root/assets/PaymentResult-DlM80ZV4.js             4.42 kB │ gzip:   1.83 kB
+dist-root/assets/DeliveryPanel-DXRIhPfF.js             6.00 kB │ gzip:   2.49 kB
+dist-root/assets/BusinessPreferences-CrC1LX-5.js      10.19 kB │ gzip:   4.96 kB
+dist-root/assets/SharePage-Dm4ziO0L.js                12.13 kB │ gzip:   4.57 kB
+dist-root/assets/HandoffPage-DtJY2HlN.js              13.91 kB │ gzip:   5.22 kB
+dist-root/assets/Auth-DMolYNTc.js                     16.08 kB │ gzip:   4.78 kB
+dist-root/assets/FleetDashboard-DYm3Hswe.js           29.64 kB │ gzip:   9.57 kB
+dist-root/assets/DiagnosticPage-EoFwda0M.js           31.25 kB │ gzip:  10.78 kB
+dist-root/assets/RentcarPanel-B_POsVf_.js             54.41 kB │ gzip:  18.03 kB
+dist-root/assets/AdminDashboard-B1JGHN_A.js           60.11 kB │ gzip:  15.34 kB
+dist-root/assets/CorporatePanel-BwTNLg89.js          159.76 kB │ gzip:  48.97 kB
+dist-root/assets/vendor-DRBT1dSS.js                  214.54 kB │ gzip:  68.27 kB
+dist-root/assets/index-CdjIXXXJ.js                   506.76 kB │ gzip: 160.99 kB
+dist-root/assets/pdf-engine-DjOoUrRi.js            1,221.27 kB │ gzip: 584.79 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.17s
+npm notice
+npm notice New major version of npm available! 10.9.7 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice

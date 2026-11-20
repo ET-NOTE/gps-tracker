@@ -1,0 +1,71 @@
+{
+  "checked_at": "2026-11-11T15:10:24.374633+09:00",
+  "certificate": {
+    "subject": [
+      [
+        [
+          "commonName",
+          "gps.serial.kr"
+        ]
+      ]
+    ],
+    "issuer": [
+      [
+        [
+          "countryName",
+          "US"
+        ]
+      ],
+      [
+        [
+          "organizationName",
+          "Let's Encrypt"
+        ]
+      ],
+      [
+        [
+          "commonName",
+          "YE2"
+        ]
+      ]
+    ],
+    "version": 3,
+    "serialNumber": "055A62EDCFF07413A4738EB8CBFEF31319F6",
+    "notBefore": "Nov  1 08:13:51 2026 GMT",
+    "notAfter": "Jan 30 08:13:50 2027 GMT",
+    "subjectAltName": [
+      [
+        "DNS",
+        "gps.serial.kr"
+      ]
+    ],
+    "caIssuers": [
+      "http://ye2.i.lencr.org/"
+    ],
+    "crlDistributionPoints": [
+      "http://ye2.c.lencr.org/119.crl"
+    ]
+  },
+  "handshakes": [
+    {
+      "mode": "default",
+      "version": "TLSv1.3",
+      "cipher": "TLS_AES_256_GCM_SHA384",
+      "peer": [
+        "210.114.18.16",
+        443
+      ],
+      "verified": true
+    },
+    {
+      "mode": "TLS1.2 only",
+      "version": "TLSv1.2",
+      "cipher": "ECDHE-ECDSA-AES256-GCM-SHA384",
+      "peer": [
+        "210.114.18.16",
+        443
+      ],
+      "verified": true
+    }
+  ]
+}

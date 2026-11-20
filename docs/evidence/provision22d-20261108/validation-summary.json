@@ -1,0 +1,324 @@
+{
+  "checked_at": "2026-11-08T13:30:32.345852+09:00",
+  "environment": "internal Docker network; tmpfs DB; synthetic users; mock provider; actual React with synthetic API",
+  "production_applied": false,
+  "production_schema_requeried_this_round": false,
+  "last_documented_production_schema": 99,
+  "candidate_schema": 108,
+  "activation_ready": false,
+  "source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+  "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+  "source_files": 806,
+  "build": {
+    "rust_unit_passed": 81,
+    "rust_ignored_executed_separately": 7,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "web_passed": 241,
+    "root_and_legacy_builds": true,
+    "existing_chunk_size_warning": true
+  },
+  "new22d": {
+    "plain": {
+      "suite": "22D correction and reconsent",
+      "passed": [
+        "correction suspends old reads, preserves notices and requires fresh exact-subject consent; duplicate/stale/cross-subject requests denied",
+        "reconsent restores only withdrawn subject and interval; new roots or other subjects cannot bypass withdrawal across multiple revisions",
+        "unlinked staff is excluded from both readers and reported ineffective",
+        "read/correction fence, tenant checks, shape validation and immutable DB identity prevent silent rewrites",
+        "public sharing cannot reuse company consent or exploit an unmapped company SIM; create and extend denied before charging",
+        "stale or pre-108 checkpoint cannot restore revoked consent; conflicting lineage rejected atomically; replay disables delivery"
+      ],
+      "schema": 108,
+      "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+      "encrypted": false,
+      "fixture": {
+        "owner": 7,
+        "device": 2
+      },
+      "production_modified": false,
+      "external_messages": 0
+    },
+    "encrypted": {
+      "suite": "22D correction and reconsent",
+      "passed": [
+        "correction suspends old reads, preserves notices and requires fresh exact-subject consent; duplicate/stale/cross-subject requests denied",
+        "reconsent restores only withdrawn subject and interval; new roots or other subjects cannot bypass withdrawal across multiple revisions",
+        "unlinked staff is excluded from both readers and reported ineffective",
+        "read/correction fence, tenant checks, shape validation and immutable DB identity prevent silent rewrites",
+        "public sharing cannot reuse company consent or exploit an unmapped company SIM; create and extend denied before charging",
+        "stale or pre-108 checkpoint cannot restore revoked consent; conflicting lineage rejected atomically; replay disables delivery"
+      ],
+      "schema": 108,
+      "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+      "encrypted": true,
+      "fixture": {
+        "owner": 27,
+        "device": 8
+      },
+      "production_modified": false,
+      "external_messages": 0
+    },
+    "runtime_roles": {
+      "encryption_enabled": true,
+      "raw_coordinates_null": true,
+      "decrypted_read_passed": true,
+      "nonowner_api_integration_passed": true,
+      "five_privilege_denials": true,
+      "no_external_send": true
+    }
+  },
+  "retained22": {
+    "plain": {
+      "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+      "suite": "round22",
+      "passed": [
+        "subject-only confirmation, company roles, tenant denial, idempotent proposals and stale revisions",
+        "same-SIM overlapping confirmed driver rejected atomically; explicit rejection retained",
+        "bounded actual location response; ignored widening query; changed vehicle binding blocked; one durable subject notice and account-isolated acknowledgement",
+        "in-flight revocation fence; former staff pause/revocation persists with feature and ledger OFF; rights inbox remains available",
+        "SIM identity remains the telemetry key across changed hardware auth identity",
+        "review queue retry is explicit, audited, subject-only and idempotent by state",
+        "cursor pagination retains access to old revocations and never changes subject scope"
+      ],
+      "schema": 108,
+      "fixture": {
+        "owner": 11,
+        "subject": 12,
+        "vehicle": 4,
+        "device": 4,
+        "mapping": 9,
+        "notice": 1207
+      },
+      "production_modified": false,
+      "external_messages": 0
+    },
+    "encrypted": {
+      "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+      "suite": "round22",
+      "passed": [
+        "subject-only confirmation, company roles, tenant denial, idempotent proposals and stale revisions",
+        "same-SIM overlapping confirmed driver rejected atomically; explicit rejection retained",
+        "bounded actual location response; ignored widening query; changed vehicle binding blocked; one durable subject notice and account-isolated acknowledgement",
+        "in-flight revocation fence; former staff pause/revocation persists with feature and ledger OFF; rights inbox remains available",
+        "SIM identity remains the telemetry key across changed hardware auth identity",
+        "review queue retry is explicit, audited, subject-only and idempotent by state",
+        "cursor pagination retains access to old revocations and never changes subject scope"
+      ],
+      "schema": 108,
+      "fixture": {
+        "owner": 19,
+        "subject": 20,
+        "vehicle": 6,
+        "device": 6,
+        "mapping": 214,
+        "notice": 1236
+      },
+      "production_modified": false,
+      "external_messages": 0
+    },
+    "restore": {
+      "revocation_replayed": true,
+      "provider_acceptance_not_read": true,
+      "restore_send_disabled": true,
+      "unresolved_queue_review": true,
+      "old_format_rejected": true,
+      "identity_collision_atomic": true,
+      "former_staff_retention_hold": true,
+      "external_backup_erasure_verified": false
+    }
+  },
+  "retained22b": {
+    "plain": {
+      "suite": "22B company readers",
+      "passed": [
+        "existing map ignores cached/unconfirmed positions; trips split at two confirmed subjects; notices match returned mappings",
+        "legacy and vehicle reports, CSV, browser-export intents, monthly point stats and both XLSX scope modes obey the same projection",
+        "cross-subject/gap correction overlay cannot reintroduce excluded evidence",
+        "empty period emits no notice; outsider/unassigned member denied; self interval is not third-party provision",
+        "subject pause filters only that subject; revoked final interval removes map/trips/stats without zero-km fallback",
+        "notice storage failure discards the prepared response; recovery resumes durable notices",
+        "hardware auth replacement keeps SIM history; changed binding clips coverage and cannot restore excluded location"
+      ],
+      "schema": 108,
+      "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+      "encrypted": false,
+      "fixture": {
+        "owner": 15,
+        "device": 5
+      },
+      "production_modified": false,
+      "external_messages": 0
+    },
+    "encrypted": {
+      "suite": "22B company readers",
+      "passed": [
+        "existing map ignores cached/unconfirmed positions; trips split at two confirmed subjects; notices match returned mappings",
+        "legacy and vehicle reports, CSV, browser-export intents, monthly point stats and both XLSX scope modes obey the same projection",
+        "cross-subject/gap correction overlay cannot reintroduce excluded evidence",
+        "empty period emits no notice; outsider/unassigned member denied; self interval is not third-party provision",
+        "subject pause filters only that subject; revoked final interval removes map/trips/stats without zero-km fallback",
+        "notice storage failure discards the prepared response; recovery resumes durable notices",
+        "hardware auth replacement keeps SIM history; changed binding clips coverage and cannot restore excluded location"
+      ],
+      "schema": 108,
+      "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+      "encrypted": true,
+      "fixture": {
+        "owner": 23,
+        "device": 7
+      },
+      "production_modified": false,
+      "external_messages": 0
+    }
+  },
+  "upgrade": {
+    "schema_path": [
+      107,
+      108
+    ],
+    "identity_sim_records_and_pending_attempts_unchanged": true,
+    "failed_108_transaction_atomic": true,
+    "subject_policy_default_off": true,
+    "no_inferred_consent": true,
+    "migration_checksums_match": true,
+    "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0"
+  },
+  "queue_load": {
+    "accepted_per_second": 9.19239020193819,
+    "cooldown_429_503_shared": true,
+    "crash_replay_at_least_once": true,
+    "database_pools": 2,
+    "full_50s_deadline": true,
+    "max_http_starts_in_one_second": 10,
+    "mock_latency_ms": 200,
+    "no_external_send": true,
+    "notice_count": 1200,
+    "parallel_worker_loops": 8,
+    "peak_http_inflight": 3,
+    "policy_off_and_revoked_token_blocked": true,
+    "seconds": 130.54276131,
+    "stale_settlement_cannot_change_cooldown": true,
+    "synthetic_only": true,
+    "unique_settlements": 1200,
+    "worker_backlog_review_alarms": true,
+    "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+    "api_health_samples": 912,
+    "api_health_failures": 0,
+    "api_health_p95_ms": 0.9857090190052986,
+    "api_health_max_ms": 10.63580997288227
+  },
+  "queue_health": {
+    "schema": 108,
+    "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+    "passed": [
+      "anonymous/user/password-only/handler/wrong-IP denied; officer/operator MFA accepted on encrypted runtime",
+      "read-only independent probe detects stopped worker/missing provider/query failure; private output and runtime grants checked"
+    ],
+    "no_external_send": true,
+    "production_modified": false
+  },
+  "business_regressions": [
+    {
+      "suite": "test_fleet_sites.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_fleet_trip_quality.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_fleet_expenses.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_fleet_assets.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_privacy_receipt_pdf.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_privacy_company_tasks.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_privacy_images.py",
+      "exit": 0
+    },
+    {
+      "suite": "test_privacy_redacted.py",
+      "exit": 0
+    }
+  ],
+  "route_inventory": {
+    "routes": 317,
+    "ledger_routes": 80,
+    "manifest_sha256": "0e5100553bde70b9b3d6db68ce3179bc4d7d165e62312d61b9d71adb6d33696b"
+  },
+  "ui": {
+    "actualComponents": [
+      "CompanySubjectMappings",
+      "SubjectMappings"
+    ],
+    "syntheticOnly": true,
+    "productionEvidence": false,
+    "viewports": [
+      1280,
+      390
+    ],
+    "overflow": false,
+    "errors": [],
+    "exactReconsentPeriodLocked": true,
+    "consentRevisionVerified": true,
+    "externalRequestsBlocked": true
+  },
+  "build_sources": {
+    "source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+    "compiled_source_files_checked_before_archive_update": 550,
+    "mismatches": []
+  },
+  "package": {
+    "source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+    "source_files": 806,
+    "source_mismatches": [],
+    "candidate_files": 71,
+    "all_archive_hashes_match": true,
+    "source_archive_sha256": "847c573158b9517827f783b27cbaa15106c68d9ebc32bb26cd37dcd0740b559d",
+    "archive_sha256": "a4fc3a66b1ca0c9c410cfb811f720e74c3759a482edf8e057bd480801e58b8cc",
+    "production_applied": false,
+    "activation_ready": false
+  },
+  "cleanup": {
+    "checked_at": "2026-11-08T04:29:55.975784+00:00",
+    "test_containers_removed": [
+      "gps-provision22-api-20261108d",
+      "gps-provision22-db-20261108d"
+    ],
+    "internal_network_removed": "gps-provision22-test-20261108d",
+    "test_storage_removed": true,
+    "private_fixture_files_removed": [
+      "test-keys.json",
+      "test-runtime.json",
+      "regression.env"
+    ],
+    "candidate_preserved": true,
+    "production_modified": false
+  },
+  "local_ui_server_stopped": true,
+  "external_boundary": {
+    "denied_before_transport": 9,
+    "independent_personal_account_allowed": true,
+    "actual_provider_send": false
+  },
+  "limits": [
+    "Not deployed to production; no real push or external company provision enabled",
+    "Company mapping list remains capped at latest 200; broader historic administrative paging is not added in 22D",
+    "Recursive ancestry performance still needs production-sized history validation",
+    "Reconsent requires the same subject, binding and exact period; multi-subject withdrawal conflicts are deliberately not auto-resolved",
+    "Queue load uses 2 database pools and 8 tasks in one test process, not two OS API instances",
+    "No real FCM handset arrival or actual queue alarm mail acceptance",
+    "Cumulative 99 to 108 protected transition, policy, key/checkpoint custody, administrator PC/IP and actual-device acceptance remain pending"
+  ]
+}

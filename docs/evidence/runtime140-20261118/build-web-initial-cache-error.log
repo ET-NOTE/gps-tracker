@@ -1,0 +1,163 @@
+v22.22.2
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@tanstack/react-query/src/useSuspenseQuery.ts'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@babel/runtime/helpers/esm/classPrivateFieldSet.js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@tanstack/react-query/build/query-codemods/vite.config.ts'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@babel/helpers/lib/helpers/classNameTDZError.js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@babel/generator/lib/generators/jsx.js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers/esm'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/caniuse-lite/data/features/run-in.js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib/generators'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data/regions'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open '/src/gps-tracker-web/node_modules/@babel/core/lib/config/files/import.cjs.map'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/unicode-trie/node_modules/pako/dist'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/types/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/core/lib/config'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/unicode-trie/node_modules/pako/dist'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/types/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/core/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/types/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/core/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/types/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/core/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/types/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/core/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm warn cleanup Failed to remove some directories [
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@babel/code-frame'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@babel/code-frame'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/@babel/generator',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@babel/generator/lib/generators'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@babel/generator/lib/generators'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/@babel/helpers',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@babel/helpers/lib/helpers'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@babel/helpers/lib/helpers'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/caniuse-lite',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/caniuse-lite/data/features'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/caniuse-lite/data/features'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/@babel/types',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@babel/types/lib/definitions'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@babel/types/lib/definitions'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/@babel',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@babel/code-frame'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@babel/code-frame'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/@babel/core',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@babel/core/lib/config/files'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@babel/core/lib/config/files'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/@tanstack/react-query',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@tanstack/react-query'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@tanstack/react-query'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/src/gps-tracker-web/node_modules/@tanstack',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/src/gps-tracker-web/node_modules/@tanstack/react-query'] {
+npm warn cleanup       errno: -39,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/src/gps-tracker-web/node_modules/@tanstack/react-query'
+npm warn cleanup     }
+npm warn cleanup   ]
+npm warn cleanup ]
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/types/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/core/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/runtime/helpers'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/types/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/core/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/caniuse-lite/data'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/helpers/lib'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/src/gps-tracker-web/node_modules/@babel/generator/lib'
+npm error code EACCES
+npm error syscall mkdir
+npm error path /.npm
+npm error errno -13
+npm error
+npm error Your cache folder contains root-owned files, due to a bug in
+npm error previous versions of npm which has since been addressed.
+npm error
+npm error To permanently fix this problem, please run:
+npm error   sudo chown -R 1000:1000 "/.npm"
+npm notice
+npm notice New major version of npm available! 10.9.7 -> 12.2.3
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.3
+npm notice To update run: npm install -g npm@12.2.3
+npm notice
+npm error Log files were not written due to an error writing to the directory: /.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal

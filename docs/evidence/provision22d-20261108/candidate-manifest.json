@@ -1,0 +1,31 @@
+{
+  "source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+  "candidate_schema": 108,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+  "verified_source_files": 806,
+  "source_manifest_sha256": "5483cde2ca5a2ebe86fad5703bb07a593d9281aba0ad6411159e5ff60f4d2406",
+  "excluded": [
+    "credentials",
+    "keyring",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "real FCM handset arrival/entry; external company sharing requires separately reviewed recipient and consent policy",
+    "real subject declaration and reviewed provision/notice policy",
+    "cumulative 99 to 108 production-sized protected rehearsal",
+    "reviewed policy and explicit subject consent; no inferred historic consent",
+    "runtime and maintenance role separation; dedicated worker and key custody",
+    "latest external checkpoint custody and offline restore procedure",
+    "company/unattributed records, files, audit and backups remain separate review scopes",
+    "dedicated SELECT-only forced-command monitoring account/key and live alarm acceptance; real-device buffered pause/resume",
+    "20B encryption/parameter-log/backup/rollback prerequisites still apply"
+  ],
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261108d/candidate-provision22d-20261108-r1.tar.gz",
+  "artifact_sha256": "a4fc3a66b1ca0c9c410cfb811f720e74c3759a482edf8e057bd480801e58b8cc",
+  "file_count": 71
+}

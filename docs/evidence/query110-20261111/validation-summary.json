@@ -1,0 +1,424 @@
+{
+  "verified": true,
+  "environment": "isolated synthetic; no production deployment",
+  "date_kst": "2026-11-11",
+  "schema_path": [
+    99,
+    110
+  ],
+  "production_applied": false,
+  "last_production_observation": "2026-11-08 17:26:29 KST, schema99; not refreshed this round",
+  "source_commit": "020844bfce8ecb26adc67a9188cd29e18c76f929",
+  "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d",
+  "candidate_archive_sha256": "02df050a4f624ec47943bdfd414328083bc191afc5a726ee54e437fed5441fc7",
+  "candidate_file_count": 74,
+  "activation_ready": false,
+  "equivalence": {
+    "passed": true,
+    "checks": 585,
+    "oracle": "schema109 complete logical rows",
+    "scope": [
+      "five SQL functions",
+      "latest",
+      "null/reversed/exact windows",
+      "far batch anchors",
+      "duplicates",
+      "source and row owner isolation",
+      "mixed/backfilled ciphertext",
+      "late writes/delete",
+      "Asia/Seoul",
+      "metadata tamper",
+      "cipher tamper/context",
+      "keyless rejection",
+      "resumable backfill"
+    ],
+    "fixture_rolled_back": true,
+    "production_modified": false
+  },
+  "dataset": {
+    "passed": true,
+    "full_history": {
+      "schema109": {
+        "rows": 283001,
+        "sha256": "382ec3b07f6a69c59e58a021f9bd87fd787b1ebbfa01d4707a92e01777560488",
+        "elapsed_s": 15.19329986628145
+      },
+      "schema110": {
+        "rows": 283001,
+        "sha256": "382ec3b07f6a69c59e58a021f9bd87fd787b1ebbfa01d4707a92e01777560488",
+        "elapsed_s": 11.25042364699766
+      }
+    },
+    "empty_latest": {
+      "status": 200,
+      "seconds": 0.02528930688276887
+    },
+    "existing_other_account_status": 404,
+    "production_modified": false
+  },
+  "compression": {
+    "passed": true,
+    "cases": [
+      {
+        "initially_encrypted": false,
+        "compressed_chunks": 1,
+        "points_preserved": 20,
+        "backfill": {
+          "schema": 110,
+          "apply": true,
+          "encrypted": false,
+          "updated": 20,
+          "batches": 3,
+          "pending_before": 20,
+          "pending_after": 0,
+          "complete": true
+        }
+      },
+      {
+        "initially_encrypted": true,
+        "compressed_chunks": 1,
+        "points_preserved": 20,
+        "backfill": {
+          "schema": 110,
+          "apply": true,
+          "encrypted": true,
+          "updated": 20,
+          "batches": 3,
+          "pending_before": 20,
+          "pending_after": 0,
+          "complete": true
+        }
+      }
+    ],
+    "synthetic_databases_removed": true,
+    "production_modified": false
+  },
+  "sql_before": {
+    "label": "baseline109",
+    "production_modified": false,
+    "queries": {
+      "month_history": {
+        "seconds": 13.786164603661746,
+        "count": 283001
+      },
+      "day_history": {
+        "seconds": 4.6691683367826045,
+        "count": 8641
+      },
+      "month_keys": {
+        "seconds": 6.399644993711263,
+        "count": 283001
+      },
+      "small_history": {
+        "seconds": 4.145920048933476,
+        "count": 61
+      }
+    }
+  },
+  "sql_after": {
+    "label": "final110",
+    "production_modified": false,
+    "queries": {
+      "month_history": {
+        "seconds": 8.99642278905958,
+        "count": 283001
+      },
+      "day_history": {
+        "seconds": 0.4061596426181495,
+        "count": 8641
+      },
+      "month_keys": {
+        "seconds": 1.8378993826918304,
+        "count": 283001
+      },
+      "small_history": {
+        "seconds": 0.04172862507402897,
+        "count": 61
+      }
+    }
+  },
+  "concurrency": [
+    {
+      "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d",
+      "workers": 4,
+      "iterations": 10,
+      "duration_s": 12.482588056940585,
+      "requests": 40,
+      "errors": [],
+      "http": {
+        "latest": {
+          "count": 8,
+          "p50_s": 0.14973267912864685,
+          "p95_s": 0.17219429090619087,
+          "max_s": 0.17219429090619087
+        },
+        "day_page": {
+          "count": 8,
+          "p50_s": 0.24094623746350408,
+          "p95_s": 0.3668964961543679,
+          "max_s": 0.3668964961543679
+        },
+        "day_aggregate": {
+          "count": 8,
+          "p50_s": 0.9839406805112958,
+          "p95_s": 1.2182626347057521,
+          "max_s": 1.2182626347057521
+        },
+        "day_history": {
+          "count": 8,
+          "p50_s": 0.31050595245324075,
+          "p95_s": 0.4015753101557493,
+          "max_s": 0.4015753101557493
+        },
+        "month_page": {
+          "count": 8,
+          "p50_s": 4.385740913683549,
+          "p95_s": 4.971770147792995,
+          "max_s": 4.971770147792995
+        }
+      },
+      "health": {
+        "count": 59,
+        "p50_s": 0.000744903925806284,
+        "p95_s": 0.0009922799654304981,
+        "max_s": 0.0013182652182877064
+      },
+      "encrypted_writes": {
+        "count": 59,
+        "p50_s": 0.006906678434461355,
+        "p95_s": 0.058096813037991524,
+        "max_s": 0.06316770194098353
+      },
+      "storage": "disk-backed ext4/NVMe synthetic DB; DB 2 CPU/1500MiB, API 2 CPU/550MiB",
+      "external_delivery": false,
+      "production_modified": false
+    },
+    {
+      "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d",
+      "workers": 8,
+      "iterations": 25,
+      "duration_s": 59.421825415920466,
+      "requests": 200,
+      "errors": [],
+      "http": {
+        "latest": {
+          "count": 40,
+          "p50_s": 0.29573024599812925,
+          "p95_s": 0.37805602326989174,
+          "max_s": 0.3810132499784231
+        },
+        "day_page": {
+          "count": 40,
+          "p50_s": 0.48847270221449435,
+          "p95_s": 0.5850361790508032,
+          "max_s": 0.6041590119712055
+        },
+        "day_aggregate": {
+          "count": 40,
+          "p50_s": 1.913860207889229,
+          "p95_s": 2.010304670315236,
+          "max_s": 2.0763605502434075
+        },
+        "day_history": {
+          "count": 40,
+          "p50_s": 0.5923753234092146,
+          "p95_s": 0.6108605582267046,
+          "max_s": 0.6785297240130603
+        },
+        "month_page": {
+          "count": 40,
+          "p50_s": 8.504067725269124,
+          "p95_s": 9.217917636968195,
+          "max_s": 9.790164567995816
+        }
+      },
+      "health": {
+        "count": 263,
+        "p50_s": 0.0007148571312427521,
+        "p95_s": 0.0010122079402208328,
+        "max_s": 0.07507943315431476
+      },
+      "encrypted_writes": {
+        "count": 263,
+        "p50_s": 0.007062641903758049,
+        "p95_s": 0.0822754567489028,
+        "max_s": 0.0855993595905602
+      },
+      "storage": "disk-backed ext4/NVMe synthetic DB; DB 2 CPU/1500MiB, API 2 CPU/550MiB",
+      "external_delivery": false,
+      "production_modified": false
+    }
+  ],
+  "cumulative_timings": {
+    "resume-after-per-migration-interruptions": 0.343,
+    "resume102-to110-nonsuperuser": 0.558,
+    "direct99-to110-nonsuperuser": 0.553,
+    "initial_db_conversion_seconds": 216.726,
+    "history_points_count_seconds": 8.726,
+    "full_dump_seconds": 4.066,
+    "full_restore_seconds": 2.522
+  },
+  "mapping": {
+    "environment": "isolated synthetic; DB 2 CPU tmpfs",
+    "schema": 110,
+    "production_modified": false,
+    "external_messages": 0,
+    "synthetic_mapping_rows": 32000,
+    "queries": [
+      {
+        "name": "subject_list_200",
+        "rows": 200,
+        "source_sql_sha256": "fda53db1dbd045fd72458559e67411848528203e1fd42e3094d8cfb22bcb5591",
+        "seconds": [
+          0.8846,
+          0.9,
+          0.9157
+        ],
+        "budget_seconds": 5
+      },
+      {
+        "name": "company_list_200",
+        "rows": 200,
+        "source_sql_sha256": "4b124f2818583d6a772b94649f74b3a91e05f7c43e139388c6e84914cc03ea0b",
+        "seconds": [
+          0.8947,
+          0.8951,
+          0.8926
+        ],
+        "budget_seconds": 5
+      },
+      {
+        "name": "company_projection_1000",
+        "rows": 1000,
+        "source_sql_sha256": "f6200c32f1b3925bd485eb604b8bcba72bd74fd22130bcd3d2fb63924dfaa038",
+        "seconds": [
+          0.8859,
+          0.9073,
+          0.8878
+        ],
+        "budget_seconds": 5
+      },
+      {
+        "name": "company_projection_one",
+        "rows": 1,
+        "source_sql_sha256": "f6200c32f1b3925bd485eb604b8bcba72bd74fd22130bcd3d2fb63924dfaa038",
+        "seconds": [
+          0.0143,
+          0.0136,
+          0.0136
+        ],
+        "budget_seconds": 2
+      }
+    ],
+    "all_passed": true
+  },
+  "ancestry": {
+    "environment": "isolated synthetic",
+    "production_modified": false,
+    "external_messages": 0,
+    "cases": [
+      {
+        "case": "before migration: explicit consent/withdrawal/interval/tenant matrix",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 7
+      },
+      {
+        "case": "before migration: deterministic mixed histories",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 23
+      },
+      {
+        "case": "populated108->110: identity, view owner/grants, all rows and effective decisions preserved",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 23
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 6",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 22
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 10",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 21
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 12",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 21
+      },
+      {
+        "case": "inactive staff removes all affected mappings",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 14
+      },
+      {
+        "case": "unlinked staff removes all affected mappings",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 14
+      }
+    ],
+    "schema_path": [
+      108,
+      110
+    ],
+    "synthetic_mapping_rows": 941,
+    "failed109_transaction_atomic": true,
+    "view_identity_owner_grants_preserved": true,
+    "no_identity_or_consent_rewrite": true,
+    "runtime_select_preserved": true,
+    "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d"
+  },
+  "protected_restore": {
+    "stale_full_backup_bytes": 129467424,
+    "checkpoint_hash_checked": true,
+    "old_erased_rows_removed": true,
+    "old_consent_not_revived": true,
+    "pause_reapplied": true,
+    "accepted_notice_not_resent": true,
+    "sim_identity_preserved": true,
+    "old_resend_denied": true,
+    "replay": {
+      "replayed_accounts": 1,
+      "paused_controls_replayed": true,
+      "external_copies_verified": false
+    },
+    "external_checkpoint_custody_verified": false
+  },
+  "file_owner": {
+    "maintenance_uid": 0,
+    "api_uid": 65534,
+    "owner_group_preserved": true,
+    "mode": "0600",
+    "api_identity_can_read": true,
+    "plaintext_roundtrip_preserved": true,
+    "external_files_modified": false
+  },
+  "rust": {
+    "unit_passed": 81,
+    "ignored_run_separately": 7,
+    "fmt": true,
+    "clippy": true
+  },
+  "regression_groups": {
+    "privacy_and_reset": 8,
+    "business": 8,
+    "additional": 4
+  },
+  "limits": [
+    "warm-cache synthetic SQL, one sample per version",
+    "not live VPS I/O acceptance",
+    "8-worker monthly HTTP p95 9.218s remains open",
+    "parallel DB INSERT is not LTE/auth ingest capacity",
+    "no actual notification delivery or physical device acceptance"
+  ],
+  "evidence_capture": "verification-report.png"
+}

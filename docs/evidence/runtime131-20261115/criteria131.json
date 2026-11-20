@@ -1,0 +1,24 @@
+{
+  "schema": 114,
+  "production_modified": false,
+  "api_sha256": "42d3e8768c66d280bc623fe7c3eb9a1a24bd63cddf635413a339886ec5e8bb59",
+  "query_workers": 8,
+  "telemetry_devices": 8,
+  "hz_per_device": 1,
+  "target_seconds": 300,
+  "planned_reports_300s": 2400,
+  "required": [
+    "all planned slots sent once and stored per device/counter",
+    "all ingress/health200; query responses only200 or explicit429",
+    "no new OOM/swap or plaintext; no stranded reads/transactions/images/files",
+    "monthly response equivalence including XLSX cells; full pagination completes",
+    "same2CPU/8MiBps/200IOPS and GPS3328MiB budget"
+  ],
+  "measured_not_admitted": [
+    "429 ratio and retry latency",
+    "real3GiB shared VPS capacity",
+    "real other-project and antivirus workload",
+    "cold host cache and physical modem/network"
+  ],
+  "user_scope": "User removed load expansion: existing300 seconds only, functional implementation and regressions first; larger VPS migration considered."
+}

@@ -1,0 +1,18 @@
+{
+  "receipt_groups": 7,
+  "image_groups": 8,
+  "redacted_groups": 8,
+  "company_task_groups": 10,
+  "sections_groups": 5,
+  "schema": 96,
+  "package_groups": 9,
+  "api_sha256": "65abe14ca7e8acd246a8aa5447f357da3a5956e99f2be202a4b9861841185b04",
+  "delivery_groups": 11,
+  "closure_groups": 12,
+  "company_groups": 10,
+  "rust_passed": 45,
+  "rust_ignored": 2,
+  "fmt_clippy_passed": true,
+  "web_build_passed": true,
+  "web_delivery_tests_passed": 24
+}

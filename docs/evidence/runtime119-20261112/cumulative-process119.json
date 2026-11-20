@@ -1,0 +1,92 @@
+{
+  "production_modified": false,
+  "checks": [
+    {
+      "name": "before-key guard rejects missing temporary mount",
+      "passed": true,
+      "error": "GPS119 startup refused: protected temporary mount missing"
+    },
+    {
+      "name": "before-key guard rejects swap budget enabled",
+      "passed": true,
+      "error": "GPS119 startup refused: service swap is not disabled"
+    },
+    {
+      "name": "before-key guard rejects missing memory library",
+      "passed": true,
+      "error": "GPS119 startup refused: memory-protection library not selected"
+    },
+    {
+      "name": "before-key guard rejects oversize temporary mount",
+      "passed": true,
+      "error": "GPS119 startup refused: temporary mount exceeds budget"
+    },
+    {
+      "name": "before-key guard rejects executable temporary mount",
+      "passed": true,
+      "error": "GPS119 startup refused: temporary mount has unsafe type/options"
+    },
+    {
+      "name": "gps-provision22-db-20261112cumulative119 protected process",
+      "passed": true,
+      "cgroup": {
+        "memory.max": "4294967296",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      },
+      "exec_probe_dumpable": 0
+    },
+    {
+      "name": "gps-provision22-api-20261112cumulative119 protected process",
+      "passed": true,
+      "cgroup": {
+        "memory.max": "576716800",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      },
+      "exec_probe_dumpable": 0
+    },
+    {
+      "name": "actual static PDF renderer with empty environment",
+      "passed": true,
+      "selftest": {
+        "sandbox_holds": true,
+        "renders_inside_sandbox": true,
+        "open_file": {
+          "blocked": true,
+          "how": "signal 31; no core"
+        },
+        "open_socket": {
+          "blocked": true,
+          "how": "signal 31; no core"
+        },
+        "start_program": {
+          "blocked": true,
+          "how": "signal 31; no core"
+        },
+        "start_process": {
+          "blocked": true,
+          "how": "signal 31; no core"
+        },
+        "enable_dumping": {
+          "blocked": true,
+          "how": "signal 31; no core"
+        },
+        "too_much_memory": {
+          "blocked": true,
+          "how": "refused"
+        },
+        "too_much_cpu": {
+          "blocked": true,
+          "how": "signal 9; no core"
+        }
+      }
+    },
+    {
+      "name": "actual API restart repeats guard and returns healthy",
+      "passed": true
+    }
+  ]
+}

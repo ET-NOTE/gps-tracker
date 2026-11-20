@@ -1,0 +1,15 @@
+{
+  "archive_sha256": "8b4d5b3884a6bf522738a5c77c75be965e78159eab1e7d15a303d7851eda7ff6",
+  "file_count": 76,
+  "all_archive_bytes_match": true,
+  "changed_from111": [
+    "gps-tracker-api",
+    "migrations/0112_location_window_pipeline.sql",
+    "ops/admin_db_roles.py",
+    "ops/crypto20b_transition.py",
+    "ops/location_query_bounds.py",
+    "ops/location_storage.py"
+  ],
+  "historic_migrations_and_web_unchanged": true,
+  "activation_ready": false
+}

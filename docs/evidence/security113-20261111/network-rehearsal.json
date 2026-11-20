@@ -1,0 +1,83 @@
+{
+  "scope": "two isolated network namespaces; real TCP; no packets sent to external hosts",
+  "pass": true,
+  "cases": [
+    {
+      "source": "221.159.164.177",
+      "port": 22,
+      "expected_allowed": true,
+      "actual_allowed": true,
+      "detail": "connected"
+    },
+    {
+      "source": "192.0.2.20",
+      "port": 22,
+      "expected_allowed": false,
+      "actual_allowed": false,
+      "detail": "timed out (DROP)"
+    },
+    {
+      "source": "221.159.164.177",
+      "port": 80,
+      "expected_allowed": true,
+      "actual_allowed": true,
+      "detail": "connected"
+    },
+    {
+      "source": "192.0.2.20",
+      "port": 80,
+      "expected_allowed": true,
+      "actual_allowed": true,
+      "detail": "connected"
+    },
+    {
+      "source": "221.159.164.177",
+      "port": 443,
+      "expected_allowed": true,
+      "actual_allowed": true,
+      "detail": "connected"
+    },
+    {
+      "source": "192.0.2.20",
+      "port": 443,
+      "expected_allowed": true,
+      "actual_allowed": true,
+      "detail": "connected"
+    },
+    {
+      "source": "221.159.164.177",
+      "port": 5432,
+      "expected_allowed": true,
+      "actual_allowed": true,
+      "detail": "connected"
+    },
+    {
+      "source": "192.0.2.20",
+      "port": 5432,
+      "expected_allowed": false,
+      "actual_allowed": false,
+      "detail": "timed out (DROP)"
+    },
+    {
+      "source": "2001:db8:113::2",
+      "port": 22,
+      "expected_allowed": false,
+      "actual_allowed": false,
+      "detail": "timed out (DROP)"
+    },
+    {
+      "source": "2001:db8:113::2",
+      "port": 443,
+      "expected_allowed": true,
+      "actual_allowed": true,
+      "detail": "connected"
+    },
+    {
+      "source": "2001:db8:113::2",
+      "port": 5432,
+      "expected_allowed": false,
+      "actual_allowed": false,
+      "detail": "timed out (DROP)"
+    }
+  ]
+}

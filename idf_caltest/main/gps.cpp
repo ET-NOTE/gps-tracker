@@ -1,4 +1,5 @@
 #include "gps.h"
+#include "collection_control.h"
 #include "config.h"
 #include <TinyGPSPlus.h>
 #include <HardwareSerial.h>
@@ -33,6 +34,16 @@ static uint32_t lastHistPushMs = 0;
 struct BatchFix { float lat; float lng; int8_t sat; uint32_t at_ms; };
 static BatchFix batch[BATCH_BUF_N];
 static uint8_t  batchN = 0;
+static char nmeaLine[200];
+static uint16_t nmeaLen = 0;
+
+void resetCollection() {
+  batchN=histHead=0; histFull=false; lastHistPushMs=0;
+  firstFixMs_=lastFixMs_=0; firstFixEvent_=false; nmeaLen=0;
+  memset(batch,0,sizeof(batch));memset(hist,0,sizeof(hist));memset(nmeaLine,0,sizeof(nmeaLine));
+  tgps=TinyGPSPlus();
+  while(serial.available()) serial.read();
+}
 
 // -----------------------------------------------------------------
 static void sendNmea(const char *body) {
@@ -134,8 +145,11 @@ void init(uint32_t bootRefMs) {
 }
 
 void feed() {
-  static char     nmeaLine[200];
-  static uint16_t nmeaLen = 0;
+  if(!collection_control::allowed()) {
+    while(serial.available()) serial.read();
+    nmeaLen=0;
+    return;
+  }
   // [2026-07-14] live 안테나 탈착 감지 — L86 은 부팅시 ANTSTATUS 1회만 emit → 주기(ANT_REQUERY_MS) 재쿼리로
   //   재emit 유도. parseAntenna 가 변화를 잡아 antenna_ 갱신 → 다음 POST 에 반영. (LC86G 는 PQTM 자체주기, 무시됨)
   static uint32_t lastAntReq_ = 0;
@@ -204,6 +218,7 @@ void feed() {
 
 // -----------------------------------------------------------------
 bool hasFix() {
+  if(!collection_control::allowed()) return false;
   uint32_t h = tgps.hdop.value();
   return tgps.location.isValid()
       && tgps.location.age() < GPS_FIX_MAX_AGE_MS

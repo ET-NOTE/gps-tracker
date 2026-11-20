@@ -1,0 +1,8 @@
+PASS company owner/admin authorized; anonymous401, member/department/foreign-delegation403; unrelated company has no rows or options
+PASS 207 mappings50/50/50/50/7 exact; default200 compatibility; old binding beyond recent200 retained; delegate same owner scope; read-only hashes
+PASS all five statuses with exact filtered pagination; empty confirmed/last-page has no false continuation; invalid/owner override400
+PASS single blocked TLS list cancels SQL and returns read slot; retry200 and source unchanged; no sustained load
+PASS old-page correction uses owned historical binding; old access stops immediately; duplicate/stale guards; exact subject fresh consent required
+PASS withdrawal cannot be corrected away; exact reconsent required; three scoped provision notices retained; staff unlink marks ineffective and blocks locations
+PASS feature OFF retains historical list and existing subject withdrawal; no consent auto-restoration or new proposal enablement
+PASS all 7 functional groups

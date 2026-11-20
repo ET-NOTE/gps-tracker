@@ -1,0 +1,14 @@
+# /etc/systemd/system/gps-workload.slice
+[Unit]
+Description=GPS total workload budget (candidate; capacity acceptance required)
+[Slice]
+MemoryAccounting=yes
+MemoryMax=3328M
+MemorySwapMax=0
+TasksMax=256
+
+# /run/systemd/system.control/gps-workload.slice.d/50-MemoryMax.conf
+# This is a drop-in unit file extension, created via "systemctl set-property"
+# or an equivalent operation. Do not edit.
+[Slice]
+MemoryMax=3489660928

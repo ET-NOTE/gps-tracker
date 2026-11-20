@@ -1,0 +1,44 @@
+TAP version 13
+# (node:10824) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: request retries preserve idempotency key and never describe acceptance as deletion
+ok 1 - request retries preserve idempotency key and never describe acceptance as deletion
+  ---
+  duration_ms: 38.6902
+  ...
+# Subtest: administrator cannot select completion for erasure or closure; normal access can complete
+ok 2 - administrator cannot select completion for erasure or closure; normal access can complete
+  ---
+  duration_ms: 5.9004
+  ...
+# Subtest: closed requests keep their event history without an edit form
+ok 3 - closed requests keep their event history without an edit form
+  ---
+  duration_ms: 16.1787
+  ...
+# (node:36112) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: personal page navigation keeps time, refresh returns to first and filters reset cursor
+ok 4 - personal page navigation keeps time, refresh returns to first and filters reset cursor
+  ---
+  duration_ms: 196.4974
+  ...
+# Subtest: admin due filter includes all open statuses and combines assignment; errors never show stale rows
+ok 5 - admin due filter includes all open statuses and combines assignment; errors never show stale rows
+  ---
+  duration_ms: 121.7503
+  ...
+# Subtest: cancel aborts active request, ignores late result, and can restart explicitly
+ok 6 - cancel aborts active request, ignores late result, and can restart explicitly
+  ---
+  duration_ms: 75.902
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 545.3188

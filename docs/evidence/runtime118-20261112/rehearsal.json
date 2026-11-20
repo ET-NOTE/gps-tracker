@@ -1,0 +1,146 @@
+{
+  "utc": "2026-11-12T01:02:41.885087+00:00",
+  "scope": "isolated real systemd + PostgreSQL14; synthetic data only",
+  "production_changed": false,
+  "checks": [
+    {
+      "name": "guarded database starts",
+      "passed": true,
+      "version": "14.24 (Ubuntu 14.24-0ubuntu0.22.04.1)"
+    },
+    {
+      "name": "real SQL spills to protected sort",
+      "passed": true,
+      "explain": "[\n  {\n    \"Plan\": {\n      \"Node Type\": \"Aggregate\",\n      \"Strategy\": \"Plain\",\n      \"Partial Mode\": \"Simple\",\n      \"Parallel Aware\": false,\n      \"Async Capable\": false,\n      \"Startup Cost\": 18986.82,\n      \"Total Cost\": 18986.83,\n      \"Plan Rows\": 1,\n      \"Plan Width\": 8,\n      \"Actual Startup Time\": 97.163,\n      \"Actual Total Time\": 97.164,\n      \"Actual Rows\": 1,\n      \"Actual Loops\": 1,\n      \"Plans\": [\n        {\n          \"Node Type\": \"Sort\",\n          \"Parent Relationship\": \"Outer\",\n          \"Parallel Aware\": false,\n          \"Async Capable\": false,\n          \"Startup Cost\": 17486.82,\n          \"Total Cost\": 17736.82,\n          \"Plan Rows\": 100000,\n          \"Plan Width\": 32,\n          \"Actual Startup Time\": 86.234,\n          \"Actual Total Time\": 94.867,\n          \"Actual Rows\": 100000,\n          \"Actual Loops\": 1,\n          \"Sort Key\": [\"(repeat(md5((g.g)::text), 4))\"],\n          \"Sort Method\": \"external merge\",\n          \"Sort Space Used\": 13928,\n          \"Sort Space Type\": \"Disk\",\n          \"Plans\": [\n            {\n              \"Node Type\": \"Function Scan\",\n              \"Parent Relationship\": \"Outer\",\n              \"Parallel Aware\": false,\n              \"Async Capable\": false,\n              \"Function Name\": \"generate_series\",\n              \"Alias\": \"g\",\n              \"Startup Cost\": 0.00,\n              \"Total Cost\": 2000.00,\n              \"Plan Rows\": 100000,\n              \"Plan Width\": 32,\n              \"Actual Startup Time\": 2.464,\n              \"Actual Total Time\": 37.543,\n              \"Actual Rows\": 100000,\n              \"Actual Loops\": 1\n            }\n          ]\n        }\n      ]\n    },\n    \"Planning Time\": 2.124,\n    \"Triggers\": [\n    ],\n    \"Execution Time\": 97.652\n  }\n]\n"
+    },
+    {
+      "name": "startup rejects library_sha256",
+      "passed": true
+    },
+    {
+      "name": "startup rejects memory_max_bytes",
+      "passed": true
+    },
+    {
+      "name": "startup rejects unbounded service swap",
+      "passed": true
+    },
+    {
+      "name": "startup rejects unsafe mount options",
+      "passed": true
+    },
+    {
+      "name": "mount loss stops DB and underlay denies writes: sort",
+      "passed": true,
+      "database_state": "inactive",
+      "underlay": "0 0 555"
+    },
+    {
+      "name": "missing mount refuses DB startup: sort",
+      "passed": true
+    },
+    {
+      "name": "mount restored and persistent data retained: sort",
+      "passed": true
+    },
+    {
+      "name": "mount loss stops DB and underlay denies writes: fallback",
+      "passed": true,
+      "database_state": "inactive",
+      "underlay": "0 0 555"
+    },
+    {
+      "name": "missing mount refuses DB startup: fallback",
+      "passed": true
+    },
+    {
+      "name": "mount restored and persistent data retained: fallback",
+      "passed": true
+    },
+    {
+      "name": "external unmount detected",
+      "passed": true
+    },
+    {
+      "name": "missing selected directory uses protected fallback",
+      "passed": true,
+      "fallback_target": "/run/gps118/fallback/pgsql_tmp",
+      "previous_temp_bytes": "46986816"
+    },
+    {
+      "name": "full fallback rejects sort instead of disk bypass",
+      "passed": true,
+      "expected_error": "ERROR:  could not write to file \"base/pgsql_tmp/pgsql_tmp1172.1\": No space left on device"
+    },
+    {
+      "name": "capacity recovery",
+      "passed": true
+    },
+    {
+      "name": "non-dumpable after exec and fork crash",
+      "passed": true,
+      "result": {
+        "dumpable": 0,
+        "exec_dumpable": 0,
+        "fork_abort_signal": 6,
+        "core_dumped": false
+      },
+      "core_pattern": "|/usr/share/apport/apport -p%p -s%s -c%c -d%d -P%P -u%u -g%g -F%F -- %E"
+    },
+    {
+      "name": "PG backend crash recovers data and protected sort",
+      "passed": true,
+      "crash_logged": true,
+      "log": "Nov 12 01:02:45 2f52d3537bf9 postgres[1047]: 2026-11-12 01:02:45.136 UTC [1047] LOG:  database system was shut down at 2026-11-12 01:02:44 UTC\nNov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.140 UTC [1040] LOG:  database system is ready to accept connections\nNov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.334 UTC [1040] LOG:  received fast shutdown request\nNov 12 01:02:45 2f52d3537bf9 systemd[1]: Stopping GPS118 isolated PostgreSQL...\nNov 12 01:02:45 2f52d3537bf9 postgres[1060]: 2026-11-12 01:02:45.334 UTC [1060] ERROR:  canceling statement due to user request\nNov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.336 UTC [1040] LOG:  aborting any active transactions\nNov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.336 UTC [1040] LOG:  background worker \"logical replication launcher\" (PID 1060) exited with exit code 1\nNov 12 01:02:45 2f52d3537bf9 postgres[1054]: 2026-11-12 01:02:45.337 UTC [1054] LOG:  shutting down\nNov 12 01:02:45 2f52d3537bf9 postgres[1040]: 2026-11-12 01:02:45.361 UTC [1040] LOG:  database system is shut down\nNov 12 01:02:45 2f52d3537bf9 systemd[1]: gps118-db.service: Deactivated successfully.\nNov 12 01:02:45 2f52d3537bf9 systemd[1]: Stopped GPS118 isolated PostgreSQL.\nNov 12 01:02:45 2f52d3537bf9 systemd[1]: Starting GPS118 isolated PostgreSQL...\nNov 12 01:02:45 2f52d3537bf9 python3[1107]: {\"passed\": true, \"mounts\": [{\"path\": \"/run/gps118/sort\", \"capacity\": 268435456, \"type\": \"tmpfs\", \"mount_id\": \"2416\"}, {\"path\": \"/run/gps118/fallback\", \"capacity\": 67108864, \"type\": \"tmpfs\", \"mount_id\": \"2415\"}], \"dumpable\": 0, \"swap_max\": 0, \"memory_max\": 1572864000}\nNov 12 01:02:45 2f52d3537bf9 systemd[1]: Started GPS118 isolated PostgreSQL.\nNov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.425 UTC [1108] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit\nNov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.425 UTC [1108] LOG:  listening on IPv6 address \"::1\", port 5432\nNov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.425 UTC [1108] LOG:  listening on IPv4 address \"127.0.0.1\", port 5432\nNov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.427 UTC [1108] LOG:  listening on Unix socket \"/var/run/postgresql/.s.PGSQL.5432\"\nNov 12 01:02:45 2f52d3537bf9 postgres[1121]: 2026-11-12 01:02:45.433 UTC [1121] LOG:  database system was shut down at 2026-11-12 01:02:45 UTC\nNov 12 01:02:45 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:45.437 UTC [1108] LOG:  database system is ready to accept connections\nNov 12 01:02:45 2f52d3537bf9 postgres[1172]: 2026-11-12 01:02:45.754 UTC [1172] postgres@postgres ERROR:  could not write to file \"base/pgsql_tmp/pgsql_tmp1172.1\": No space left on device\nNov 12 01:02:45 2f52d3537bf9 postgres[1172]: 2026-11-12 01:02:45.754 UTC [1172] postgres@postgres STATEMENT:  SET temp_tablespaces='gps118_sort'; SET work_mem='64kB'; EXPLAIN (ANALYZE,FORMAT JSON) SELECT count(*) FROM (SELECT repeat(md5(g::text),4) s FROM generate_series(1,100000) g ORDER BY s) q\nNov 12 01:02:46 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:46.107 UTC [1108] LOG:  server process (PID 1240) was terminated by signal 6: Aborted\nNov 12 01:02:46 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:46.107 UTC [1108] DETAIL:  Failed process was running: SELECT pg_sleep(30)\nNov 12 01:02:46 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:46.107 UTC [1108] LOG:  terminating any other active server processes\nNov 12 01:02:46 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:46.108 UTC [1108] LOG:  all server processes terminated; reinitializing\nNov 12 01:02:46 2f52d3537bf9 postgres[1248]: 2026-11-12 01:02:46.114 UTC [1248] LOG:  database system was interrupted; last known up at 2026-11-12 01:02:45 UTC\nNov 12 01:02:46 2f52d3537bf9 postgres[1256]: 2026-11-12 01:02:46.135 UTC [1256] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:46 2f52d3537bf9 postgres[1264]: 2026-11-12 01:02:46.383 UTC [1264] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:46 2f52d3537bf9 postgres[1272]: 2026-11-12 01:02:46.628 UTC [1272] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:46 2f52d3537bf9 postgres[1280]: 2026-11-12 01:02:46.869 UTC [1280] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:47 2f52d3537bf9 postgres[1288]: 2026-11-12 01:02:47.108 UTC [1288] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:47 2f52d3537bf9 postgres[1296]: 2026-11-12 01:02:47.356 UTC [1296] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:47 2f52d3537bf9 postgres[1304]: 2026-11-12 01:02:47.597 UTC [1304] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:47 2f52d3537bf9 postgres[1312]: 2026-11-12 01:02:47.833 UTC [1312] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:48 2f52d3537bf9 postgres[1320]: 2026-11-12 01:02:48.075 UTC [1320] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:48 2f52d3537bf9 postgres[1328]: 2026-11-12 01:02:48.318 UTC [1328] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:48 2f52d3537bf9 postgres[1336]: 2026-11-12 01:02:48.560 UTC [1336] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:48 2f52d3537bf9 postgres[1344]: 2026-11-12 01:02:48.799 UTC [1344] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:49 2f52d3537bf9 postgres[1352]: 2026-11-12 01:02:49.033 UTC [1352] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:49 2f52d3537bf9 postgres[1360]: 2026-11-12 01:02:49.278 UTC [1360] postgres@postgres FATAL:  the database system is in recovery mode\nNov 12 01:02:49 2f52d3537bf9 postgres[1248]: 2026-11-12 01:02:49.367 UTC [1248] LOG:  database system was not properly shut down; automatic recovery in progress\nNov 12 01:02:49 2f52d3537bf9 postgres[1248]: 2026-11-12 01:02:49.371 UTC [1248] LOG:  invalid record length at 0/171DD28: wanted 24, got 0\nNov 12 01:02:49 2f52d3537bf9 postgres[1248]: 2026-11-12 01:02:49.371 UTC [1248] LOG:  redo is not required\nNov 12 01:02:49 2f52d3537bf9 postgres[1108]: 2026-11-12 01:02:49.389 UTC [1108] LOG:  database system is ready to accept connections\n"
+    },
+    {
+      "name": "cold service boot reconstructs protected mounts",
+      "passed": true,
+      "service": "MemoryCurrent=18018304\nMemoryMax=1572864000\nMemorySwapMax=0\nLimitCORE=0\n"
+    },
+    {
+      "name": "bounded role connections preserve reserved access",
+      "passed": true,
+      "result": {
+        "gps_26_plus_2_cancel_connections": true,
+        "role_cap": true,
+        "non_superuser_connections": 47,
+        "reserved_superuser_slots": true,
+        "emergency_admin_connects": true
+      }
+    },
+    {
+      "name": "connection exhaustion cleanup",
+      "passed": true,
+      "remaining": "0",
+      "cgroup": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+      "swap": "0"
+    }
+  ],
+  "plan": {
+    "library": "/usr/local/lib/gps-nodump.so",
+    "library_sha256": "4576c005efe147b8f085d67e256b99b16155d44da23f865db5df81c185d4aa74",
+    "mounts": [
+      {
+        "path": "/run/gps118/sort",
+        "max_bytes": 268435456
+      },
+      {
+        "path": "/run/gps118/fallback",
+        "max_bytes": 67108864
+      }
+    ],
+    "fallback_link": "/var/lib/postgresql/14/main/base/pgsql_tmp",
+    "fallback_target": "/run/gps118/fallback/pgsql_tmp",
+    "memory_max_bytes": 1572864000
+  },
+  "finished_utc": "2026-11-12T01:02:50.982330+00:00",
+  "all_passed": true,
+  "activation_ready": false,
+  "limitations": [
+    "Shared production memory/connection budgets unbounded; no operational approval",
+    "Isolated DB shared_buffers=128MB; not production performance test",
+    "No production service restart, whole VPS reboot or host-wide core policy change",
+    "Full cumulative116/117 API migration integration remains separate"
+  ]
+}

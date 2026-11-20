@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-11-07T08:16:20.145240+00:00",
+  "environment": "isolated build host",
+  "fmt_clippy_passed": true,
+  "rust_passed": 65,
+  "rust_ignored": 2,
+  "facts_groups": 6,
+  "schema": 99,
+  "release_control_tests": 4,
+  "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "facts_result_sha256": "eff5412651c312d8c6f352f606841f030628c25a8b89087e9eb1ce2319355c93",
+  "build_log_sha256": "c8cd056905497fa94ecdcb763f789918104041fd97beb2431113ad56f34f139f",
+  "release_test_log_sha256": "dcf0a7fc200cab9ab36e5d3037278eb791f53b95cc73af6040c74a0a911416bc"
+}

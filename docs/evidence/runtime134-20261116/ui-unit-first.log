@@ -1,0 +1,49 @@
+TAP version 13
+# (node:34144) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: request retries preserve idempotency key and never describe acceptance as deletion
+ok 1 - request retries preserve idempotency key and never describe acceptance as deletion
+  ---
+  duration_ms: 36.9844
+  ...
+# Subtest: administrator cannot select completion for erasure or closure; normal access can complete
+ok 2 - administrator cannot select completion for erasure or closure; normal access can complete
+  ---
+  duration_ms: 5.8186
+  ...
+# Subtest: closed requests keep their event history without an edit form
+ok 3 - closed requests keep their event history without an edit form
+  ---
+  duration_ms: 16.5609
+  ...
+# (node:31768) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history is lazy; collapse aborts and discards cached data; reopening starts fresh
+ok 4 - history is lazy; collapse aborts and discards cached data; reopening starts fresh
+  ---
+  duration_ms: 151.7644
+  ...
+# Subtest: history navigation freezes upper revision, shows newer update and refresh resets pagination
+ok 5 - history navigation freezes upper revision, shows newer update and refresh resets pagination
+  ---
+  duration_ms: 136.0336
+  ...
+# Subtest: history errors hide stale rows and do not masquerade as empty history; explicit retry succeeds
+ok 6 - history errors hide stale rows and do not masquerade as empty history; explicit retry succeeds
+  ---
+  duration_ms: 122.1685
+  ...
+# Subtest: cancel hides late results and unmount aborts active history query
+ok 7 - cancel hides late results and unmount aborts active history query
+  ---
+  duration_ms: 76.0521
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 637.1186

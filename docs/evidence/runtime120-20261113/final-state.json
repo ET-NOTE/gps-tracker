@@ -1,0 +1,27 @@
+{
+  "gps-runtime120-host": {
+    "image": "sha256:c9eb4bf48c9b2470b7a8eb58350a565cb159e12da1508f55f2c0cda5f07425c0",
+    "memory": 2516582400,
+    "memory_swap": 2516582400,
+    "cgroup_parent": "gps120.slice",
+    "restarts": 0,
+    "oom_killed": true
+  },
+  "gps-runtime120-db": {
+    "image": "sha256:a406259db573e6637bea4f7eb07d85462936d0330b23d0803de93898151720ba",
+    "memory": 1572864000,
+    "memory_swap": 1572864000,
+    "cgroup_parent": "gps120.slice",
+    "restarts": 0,
+    "oom_killed": false
+  },
+  "db_state": {
+    "schema": 112,
+    "temporary_images": 0,
+    "active_other_queries": 0,
+    "idle_in_transaction": 0
+  },
+  "remaining_renderers": [],
+  "units": "NRestarts=0\nMemoryMax=576716800\nMemorySwapMax=0\nLimitCORE=0\nId=gps120-api@one.service\nActiveState=active\n\nNRestarts=0\nMemoryMax=576716800\nMemorySwapMax=0\nLimitCORE=0\nId=gps120-api@two.service\nActiveState=active\n\nMemoryMax=infinity\nMemorySwapMax=infinity\nLimitCORE=0\nId=gps-pdf-render.socket\nActiveState=active\n\nNRestarts=0\nMemoryMax=33554432\nMemorySwapMax=0\nLimitCORE=0\nId=gps-pdf-budget.service\nActiveState=active\n",
+  "production_changed": false
+}

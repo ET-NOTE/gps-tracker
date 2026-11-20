@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/review/test_fleet_assets.py", line 141, in <module>
+    check('historical full-day distance belongs only to old vehicle',next(x['total_distance_m'] for x in stat if x['vehicle_id']==va['id'])==600 and next(x['total_distance_m'] for x in stat if x['vehicle_id']==vb['id'])==0)
+  File "/review/test_fleet_assets.py", line 37, in check
+    def check(label,condition=True):assert condition,label;checks.append(label)
+AssertionError: historical full-day distance belongs only to old vehicle
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/review/test_fleet_assets.py", line 158, in <module>
+    cur.execute('DELETE FROM users WHERE id=ANY(%s)',(users,))
+psycopg2.errors.ForeignKeyViolation: update or delete on table "users" violates foreign key constraint "privacy_account_controls_user_id_fkey" on table "privacy_account_controls"
+DETAIL:  Key (id)=(1) is still referenced from table "privacy_account_controls".
+

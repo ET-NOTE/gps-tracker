@@ -4,8 +4,6 @@ import Icon from './Icon';
 const BASE_TABS = [
   { id: 'home',    label: '홈',     icon: 'home' },
   { id: 'devices', label: '단말기', icon: 'list' },
-  // 운행 — seeker(패널형) / 지오펜스 등 지도-도구 패널 모음. 홈에서 분리 → 지도 가림 방지.
-  { id: 'tools',   label: '운행',   icon: 'mapPin' },
   { id: 'profile', label: '내정보', icon: 'user' },
 ];
 
@@ -17,7 +15,7 @@ export default function BottomNav({ active, onChange, isAdmin, isCorporate, isRe
   if (isAdmin)     tabs.push({ id: 'admin',     label: '관리자', icon: 'wrench' });
 
   return (
-    <nav style={s.wrap}>
+    <nav className="app-bottom-nav" style={s.wrap}>
       <div style={s.inner}>
         {tabs.map(t => {
           const on = t.id === active;
@@ -55,7 +53,7 @@ const s = {
   inner: {
     maxWidth: 540,
     margin: '0 auto',
-    height: BOTTOM_NAV_HEIGHT,
+    height: 'var(--bottom-nav-content-height)',
     display: 'flex',
     alignItems: 'center',
   },

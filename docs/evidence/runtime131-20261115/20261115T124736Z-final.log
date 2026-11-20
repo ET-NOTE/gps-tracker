@@ -1,0 +1,9 @@
+PASS22/22B/22D encrypted consent/pause/withdrawal/correction/checkpoint suites
+PASS TLS cancel/429/slot reuse for2 encrypted paths
+PASS history fairness, queued/active cancellation and regular read429
+PASS131 XLSX429 JSON/Retry-After, cancel/reuse, retry equality, foreign data excluded
+PASS both worker adapters: lock deferral, rollback, durable job, retry, unrelated errors
+PASS reference added during contention survives; deleted only after final reference removed
+PASS13128 semantic responses final
+PASS28 queries,8 foreign denials,TLS/auth gates,encrypted DB and drained queues
+PASS131 rights/cleanup/28responses/TLS/cancellation and final state

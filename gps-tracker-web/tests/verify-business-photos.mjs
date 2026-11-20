@@ -1,0 +1,122 @@
+// All mutations stay inside the isolated fixture; no customer photos or records are changed.
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const { chromium } = await import(pathToFileURL(process.env.PLAYWRIGHT_PATH));
+const base=process.env.PREVIEW_URL || 'http://127.0.0.1:8025', output=process.env.QA_OUTPUT;
+if(output)await fs.mkdir(output,{recursive:true});
+const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH});
+const checks=[],errors=[];
+async function capture(page,name) {
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,name);
+  assert.equal(await page.getByRole('dialog').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,`${name} dialog overflow`);
+  if(output)await page.screenshot({path:path.join(output,`${name}.png`)});checks.push(name);
+}
+async function openReturn(page,params='') {
+  await page.goto(`${base}/tests/business-preview.html?photo-write=1&${params}`);
+  await page.getByRole('button',{name:'반납 처리',exact:true}).first().click();
+  await page.getByRole('button',{name:'다음 단계',exact:true}).click();
+  await page.getByText('인수·반납 사진 확인 및 추가',{exact:true}).click();
+}
+try {
+  for(const width of [1440,390,320]) {
+    const page=await browser.newPage({viewport:{width,height:width===320?568:900}});page.on('pageerror',e=>errors.push(e.message));
+    await page.route('**/*',r=>r.request().url().startsWith(base)||r.request().url().startsWith('blob:')?r.continue():r.abort());
+    await page.goto(`${base}/tests/business-preview.html`);
+    const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=2000;c.height=1000;const x=c.getContext('2d');x.fillStyle='#2463eb';x.fillRect(100,100,1800,800);return c.toDataURL('image/png').split(',')[1];});
+    const file={name:'vehicle-test.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')};
+    await page.getByRole('button',{name:'123가 4567 차량 상세',exact:true}).click();
+    await page.getByRole('button',{name:'계약·사진 이력',exact:true}).click();
+    const dialog=page.getByRole('dialog');
+    await dialog.locator('.business-history-photo').first().scrollIntoViewIfNeeded();
+    await dialog.locator('img').first().waitFor();
+    assert.equal(await dialog.locator('.business-photo-timeline-item').count(),2);
+    assert.ok((await dialog.locator('figcaption').first().textContent()).includes('등록'));
+    await capture(page,`photo-history-${width}`);
+    await dialog.getByLabel('계약 검색',{exact:true}).fill('고객 4');
+    assert.equal(await dialog.locator('.business-photo-timeline-item').count(),1);
+    await dialog.locator('.business-photo-timeline-heading').click();
+    await dialog.locator('.business-history-photo').first().scrollIntoViewIfNeeded();
+    await dialog.locator('img').first().waitFor();
+    assert.equal(await dialog.getByRole('button',{name:'사진 저장',exact:true}).count(),0);
+    await capture(page,`photo-history-search-${width}`);
+    await openReturn(page,`upload-error=1${width===320?'&dark=1':''}`);
+    assert.equal(await dialog.getByLabel('저장할 사진 종류',{exact:true}).inputValue(),'return_damage');
+    assert.equal(await dialog.getByLabel('사진 촬영 파일',{exact:true}).getAttribute('capture'),'environment');
+    await dialog.getByLabel('사진 파일 선택',{exact:true}).setInputFiles(file);
+    await dialog.getByAltText('저장 전 사진 미리보기',{exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>window.__photoCalls.length),0);
+    assert.equal(await dialog.getByRole('button',{name:'다음 단계',exact:true}).isDisabled(),true);
+    await page.keyboard.press('Escape');assert.equal(await dialog.count(),1);
+    await dialog.getByRole('button',{name:'선택 취소',exact:true}).click();
+    await page.waitForFunction(()=>![...document.querySelectorAll('[role="dialog"] button')].find(el=>el.textContent==='다음 단계')?.disabled);
+    assert.equal(await dialog.getByRole('button',{name:'다음 단계',exact:true}).isEnabled(),true);
+    assert.equal(await page.evaluate(()=>window.__photoCalls.length),0);
+    await dialog.getByLabel('사진 파일 선택',{exact:true}).setInputFiles(file);
+    await dialog.getByAltText('저장 전 사진 미리보기',{exact:true}).waitFor();
+    await capture(page,`photo-preview-${width}`);
+    await dialog.getByRole('button',{name:'사진 저장',exact:true}).click();
+    await dialog.getByText(/사진을 저장하지 못했습니다/).waitFor();
+    assert.equal(await dialog.getByAltText('저장 전 사진 미리보기',{exact:true}).count(),1);
+    await capture(page,`photo-save-error-${width}`);
+    await page.evaluate(()=>{window.__photoFailure=false;});
+    await dialog.getByRole('button',{name:'사진 저장',exact:true}).evaluate(el=>{el.click();el.click();});
+    await dialog.getByText('반납 외관 사진을 저장했습니다.',{exact:true}).waitFor();
+    const calls=await page.evaluate(()=>window.__photoCalls);
+    assert.equal(calls.length,2);assert.equal(calls[1].body.kind,'return_damage');assert.ok(calls[1].body.data_url.startsWith('data:image/jpeg;base64,'));
+    const size=await page.evaluate(async url=>{const i=new Image();await new Promise((ok,no)=>{i.onload=ok;i.onerror=no;i.src=url;});const c=document.createElement('canvas');c.width=1;c.height=1;const x=c.getContext('2d');x.drawImage(i,0,0);return {width:i.naturalWidth,height:i.naturalHeight,pixel:[...x.getImageData(0,0,1,1).data]};},calls[1].body.data_url);
+    assert.deepEqual(size,{width:1600,height:800,pixel:[255,255,255,255]});
+    assert.equal(await page.evaluate(()=>window.__returnCalls.length),0);
+    await dialog.getByRole('button',{name:'반납 외관 사진 삭제',exact:true}).last().click();
+    assert.equal(await page.evaluate(()=>window.__photoCalls.filter(c=>c.action==='delete').length),0);
+    await dialog.getByRole('button',{name:'유지',exact:true}).click();
+    await dialog.getByRole('button',{name:'반납 외관 사진 삭제',exact:true}).last().click();
+    await dialog.getByRole('button',{name:'삭제 확인',exact:true}).click();
+    await page.waitForFunction(()=>window.__photoCalls.filter(c=>c.action==='delete').length===1);
+    await dialog.getByRole('button',{name:'삭제 확인',exact:true}).waitFor({state:'detached'});
+    await dialog.getByRole('button',{name:'연료 0',exact:true}).click();
+    await dialog.getByText('이 종류에 등록된 사진이 없습니다.',{exact:true}).waitFor();
+    await capture(page,`photo-type-empty-${width}`);
+    await dialog.getByRole('button',{name:'전체 2',exact:true}).click();
+    await dialog.locator('.business-history-photo').first().scrollIntoViewIfNeeded();await dialog.locator('img').first().waitFor();
+    await capture(page,`photo-compare-${width}`);
+    await dialog.getByRole('button',{name:'다음 단계',exact:true}).click();
+    await dialog.getByRole('heading',{name:'3. 최종 확인',exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>window.__returnCalls.length),0);
+    await page.close();
+  }
+  const page=await browser.newPage({viewport:{width:390,height:844}});page.on('pageerror',e=>errors.push(e.message));
+  await openReturn(page);
+  for(const file of [{name:'invalid.svg',mimeType:'image/svg+xml',buffer:Buffer.from('<svg/>')},{name:'broken.jpg',mimeType:'image/jpeg',buffer:Buffer.from('not-a-jpeg')},{name:'large.jpg',mimeType:'image/jpeg',buffer:Buffer.alloc(10*1024*1024+1)}]) {
+    await page.getByLabel('사진 파일 선택',{exact:true}).setInputFiles(file);
+    await page.locator('.business-photo-upload').getByRole('alert').waitFor();
+    assert.equal(await page.evaluate(()=>window.__photoCalls.length),0);
+  }
+  await capture(page,'photo-invalid-files');
+  await openReturn(page,'photo-list-error=1');
+  await page.getByText('사진 목록을 불러오지 못했습니다.',{exact:false}).waitFor();
+  await page.evaluate(()=>{window.__photoListError=false;});await page.getByRole('button',{name:'다시 시도',exact:true}).click();
+  await page.getByRole('button',{name:'전체 2',exact:true}).waitFor();checks.push('photo-list-retry');
+  await page.goto(`${base}/tests/business-preview.html?photo-write=1`);
+  await page.getByRole('button',{name:'더보기',exact:true}).click();
+  await page.getByRole('dialog').getByRole('button',{name:'계약 관리',exact:true}).click();
+  await page.getByTitle('사진 (오도미터/파손/연료)',{exact:true}).first().click();
+  const gallery=page.getByRole('dialog');
+  await gallery.getByText('계약 사진',{exact:true}).waitFor();
+  await gallery.getByRole('button',{name:'전체 2',exact:true}).waitFor();
+  await gallery.getByRole('button',{name:'인수 외관 사진 삭제',exact:true}).click();
+  await page.evaluate(()=>{window.__photoFailure=true;});
+  await gallery.getByRole('button',{name:'삭제 확인',exact:true}).click();
+  await gallery.getByText('사진을 삭제하지 못했습니다. 다시 시도해 주세요.',{exact:true}).waitFor();
+  assert.equal(await gallery.locator('.business-history-photo').count(),2);
+  await capture(page,'photo-delete-error');
+  await page.evaluate(()=>{window.__photoFailure=false;});
+  await gallery.getByRole('button',{name:'삭제 확인',exact:true}).click();
+  await gallery.getByRole('button',{name:'전체 1',exact:true}).waitFor();
+  assert.equal(await page.evaluate(()=>window.__photoCalls.filter(c=>c.action==='delete').length),2);
+  await capture(page,'photo-gallery');
+  await page.keyboard.press('Escape');
+  assert.equal(await gallery.count(),0);checks.push('photo-gallery-close');
+  assert.deepEqual(errors,[]);const result={checks,errors};console.log(JSON.stringify(result));if(output)await fs.writeFile(path.join(output,'photos-verification.json'),JSON.stringify(result,null,2));
+}finally{await browser.close();}

@@ -1,0 +1,104 @@
+{
+  "at": "2026-11-18T18:17:47+0900",
+  "passed": true,
+  "script_sha256": "59b3bedb1fe284b8c8ea84bbc407607f277ec35f5912235dcc43d2d2bef1b420",
+  "helper_sha256": "a601953b6f21ae9e4029be53573ba80b9a73c3a0e1b42aa8b907634191b1cfdd",
+  "source_schema": 114,
+  "target_schema": 115,
+  "source_copy_pause_seconds": 49.811,
+  "migration_seconds": 0.172,
+  "backup_restore_verified": {
+    "bytes": 14593615,
+    "sha256": "798b47e5f469bce049f5425fbd1d2c3e1181dbc0dc1c040ca33fa2914da8cac7"
+  },
+  "decompressed_copy_chunks": 25,
+  "original_annotations_preserved": true,
+  "rollback_blocked_with_entered_values": true,
+  "rollback_empty_columns_114_smoke": {
+    "user@user.com": {
+      "/auth/me": 200,
+      "/auth/me/prefs": 200,
+      "/me/account-type": 200,
+      "/devices": 200,
+      "/corporate/info": 200,
+      "/corporate/vehicles": 200,
+      "/corporate/staff": 200,
+      "/corporate/subscription": 200,
+      "/rentcar/subscription": 200,
+      "/privacy/requests/page": 200
+    },
+    "user@user4.com": {
+      "/auth/me": 200,
+      "/auth/me/prefs": 200,
+      "/me/account-type": 200,
+      "/devices": 200,
+      "/corporate/info": 200,
+      "/corporate/vehicles": 200,
+      "/corporate/staff": 200,
+      "/corporate/subscription": 200,
+      "/rentcar/subscription": 200,
+      "/privacy/requests/page": 200
+    },
+    "anonymous_private_request": 401
+  },
+  "candidate_smoke": {
+    "user@user.com": {
+      "/auth/me": 200,
+      "/auth/me/prefs": 200,
+      "/me/account-type": 200,
+      "/devices": 200,
+      "/corporate/info": 200,
+      "/corporate/vehicles": 200,
+      "/corporate/staff": 200,
+      "/corporate/subscription": 200,
+      "/rentcar/subscription": 200,
+      "/privacy/requests/page": 200,
+      "/privacy/company-tasks": 200
+    },
+    "user@user4.com": {
+      "/auth/me": 200,
+      "/auth/me/prefs": 200,
+      "/me/account-type": 200,
+      "/devices": 200,
+      "/corporate/info": 200,
+      "/corporate/vehicles": 200,
+      "/corporate/staff": 200,
+      "/corporate/subscription": 200,
+      "/rentcar/subscription": 200,
+      "/privacy/requests/page": 200,
+      "/privacy/company-tasks": 200
+    },
+    "anonymous_private_request": 401
+  },
+  "reupgrade_smoke": {
+    "user@user.com": {
+      "/auth/me": 200,
+      "/auth/me/prefs": 200,
+      "/me/account-type": 200,
+      "/devices": 200,
+      "/corporate/info": 200,
+      "/corporate/vehicles": 200,
+      "/corporate/staff": 200,
+      "/corporate/subscription": 200,
+      "/rentcar/subscription": 200,
+      "/privacy/requests/page": 200,
+      "/privacy/company-tasks": 200
+    },
+    "user@user4.com": {
+      "/auth/me": 200,
+      "/auth/me/prefs": 200,
+      "/me/account-type": 200,
+      "/devices": 200,
+      "/corporate/info": 200,
+      "/corporate/vehicles": 200,
+      "/corporate/staff": 200,
+      "/corporate/subscription": 200,
+      "/rentcar/subscription": 200,
+      "/privacy/requests/page": 200,
+      "/privacy/company-tasks": 200
+    },
+    "anonymous_private_request": 401
+  },
+  "production_schema_unchanged": true,
+  "external_credentials": "absent; localhost-only transient unit"
+}

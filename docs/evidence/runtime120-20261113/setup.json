@@ -1,0 +1,9 @@
+{
+  "production_changed": false,
+  "host_ip": "172.27.0.3",
+  "parent_budget_mib": 4096,
+  "api_unit_budget_mib": 550,
+  "db_budget_mib": 1500,
+  "pdf_aggregate_mib": 896,
+  "pdf_selftest": "Starting GPS PDF processor: proof of its confinement in the environment it is served from...\n{\"sandbox_holds\":true,\"renders_inside_sandbox\":true,\"open_file\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"open_socket\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"start_program\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"start_process\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"enable_dumping\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"too_much_memory\":{\"blocked\":true,\"how\":\"refused\"},\"too_much_cpu\":{\"blocked\":true,\"how\":\"signal 9; no core\"}}\nFinished GPS PDF processor: proof of its confinement in the environment it is served from.\n"
+}

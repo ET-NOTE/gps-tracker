@@ -1,0 +1,2 @@
+PASS failure after raw deletion rolls back the whole account; no success tombstone
+PASS SIM transfer preserves new owner and cache; exact cutoff accepted, earlier replay rejected

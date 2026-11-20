@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-11-11T11:31:26.261757+00:00",
+  "production_modified": false,
+  "schema": 112,
+  "encrypted_records": 744,
+  "plaintext_coordinate_rows": 0,
+  "active_location_queries": 0,
+  "idle_in_transaction": 0,
+  "api_restarts": 0,
+  "api_oom": false,
+  "completed_ledger_outcomes": {
+    "denied": 40,
+    "prepared": 65,
+    "response_ready": 64
+  },
+  "ledger_note": "Canceled/limited requests did not add response_ready. Prepared intents are not proof of delivery."
+}

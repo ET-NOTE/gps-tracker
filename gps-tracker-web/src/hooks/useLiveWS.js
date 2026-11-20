@@ -11,7 +11,7 @@
 //   });
 //   useEffect(() => { subscribe(devices.map(d => d.id)); }, [devices]);
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { TrackerWS } from '../ws';
 
 export function useLiveWS({ onEvent, enabled = true }) {
@@ -37,9 +37,9 @@ export function useLiveWS({ onEvent, enabled = true }) {
     };
   }, [enabled]);
 
-  const subscribe = (deviceIds) => {
+  const subscribe = useCallback((deviceIds) => {
     wsRef.current?.subscribe(deviceIds || []);
-  };
+  }, []);
 
   return { status, subscribe };
 }

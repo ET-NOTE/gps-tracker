@@ -1,0 +1,192 @@
+{
+  "status": "functional_pass_performance_blocked",
+  "environment": "isolated synthetic rehearsal; report is not a production screen",
+  "production_applied": false,
+  "production_schema": 99,
+  "production_read_only_check_at": "2026-11-08T05:55:42.461140+00:00",
+  "production_api_web_service_unchanged": true,
+  "source_commit": "14078606670820c2582e34938ea22cf19da8552c",
+  "api_source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+  "baseline_api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "candidate_api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+  "actual_baseline_schema_path": [
+    99,
+    108
+  ],
+  "migration_transaction_failures_recovered": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108
+  ],
+  "functional_checks": [
+    {
+      "check": "actual schema99 binary and historical migration checksums; synthetic workload seeded"
+    },
+    {
+      "check": "all nine migration transactions roll back on injected failure; committed prefixes resume with real candidate",
+      "versions": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108
+      ]
+    },
+    {
+      "check": "missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes"
+    },
+    {
+      "check": "prepared restricted owner completes real single-pass99 to108 with original data preserved and defaults OFF"
+    },
+    {
+      "check": "99 to108 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred"
+    },
+    {
+      "check": "other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected"
+    },
+    {
+      "check": "conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes"
+    },
+    {
+      "check": "restricted API and both cleanup worker paths use same key/mode; policy, DDL and maintenance bypass rejected"
+    },
+    {
+      "check": "all original location values survive encryption; physical columns NULL; 623000 raw samples yield283001 deduplicated in-range history points"
+    },
+    {
+      "check": "full Timescale DB plus encrypted files restore while fenced; separately held key required; all location/file hashes equal"
+    },
+    {
+      "check": "cumulative rehearsal complete; isolated encrypted API ready for business/privacy regression"
+    }
+  ],
+  "synthetic_workload": {
+    "rows": 130000,
+    "batched_rows": 17000,
+    "expanded_points": 623000,
+    "deduplicated_history_points": 283001
+  },
+  "encrypted_regression_groups": {
+    "round22-encrypted-integration.json": 7,
+    "round22b-encrypted.json": 7,
+    "round22d-encrypted.json": 6
+  },
+  "business_suites_passed": 8,
+  "file_owner": {
+    "maintenance_uid": 0,
+    "api_uid": 65534,
+    "owner_group_preserved": true,
+    "mode": "0600",
+    "api_identity_can_read": true,
+    "plaintext_roundtrip_preserved": true,
+    "external_files_modified": false
+  },
+  "stale_backup_checkpoint": {
+    "stale_full_backup_bytes": 128364708,
+    "checkpoint_hash_checked": true,
+    "old_erased_rows_removed": true,
+    "old_consent_not_revived": true,
+    "pause_reapplied": true,
+    "accepted_notice_not_resent": true,
+    "sim_identity_preserved": true,
+    "old_resend_denied": true,
+    "replay": {
+      "replayed_accounts": 1,
+      "paused_controls_replayed": true,
+      "external_copies_verified": false
+    },
+    "external_checkpoint_custody_verified": false
+  },
+  "timings": {
+    "resume-after-per-migration-interruptions": 0.317,
+    "resume102-to108-nonsuperuser": 0.47,
+    "direct99-to108-nonsuperuser": 0.512,
+    "initial_db_conversion_seconds": 199.45,
+    "history_points_count_seconds": 13.846,
+    "full_dump_seconds": 4.027,
+    "full_restore_seconds": 2.344
+  },
+  "mapping_load": {
+    "synthetic_rows": 32000,
+    "independent_chains": 1000,
+    "max_depth": 32,
+    "confirmed_leaves": 1000,
+    "owner_count_seconds": [
+      23.931,
+      24.7838,
+      24.286
+    ],
+    "point_query_execution_ms": 171.786,
+    "db_cpu_limit": 2,
+    "production_distribution_reproduced": false
+  },
+  "mapping_acceptance": {
+    "owner_query_budget_seconds": 5,
+    "point_query_budget_ms": 2000,
+    "owner_query_passed": false,
+    "point_query_passed": true,
+    "failure_exit_recorded": true
+  },
+  "read_only_optimization_probe": {
+    "read_only": true,
+    "schema_changed": false,
+    "proposal_implemented": false,
+    "scope": "one synthetic history shape; consent/revocation regression still required",
+    "existing_seconds": 23.9534,
+    "confirmed_seed_proposal_seconds": 0.8798,
+    "same_effective_ids": true,
+    "count": 1000,
+    "ids_sha256": "02a350b6167fbad66631db47a1ba9803d8a740d0fbc0cb1a7507f04e7cc56e98"
+  },
+  "patched_helpers": [
+    "ops/crypto20b_preflight.py",
+    "ops/crypto20b_transition.py"
+  ],
+  "package": {
+    "archive_sha256": "0b470b08e8442917879867e4c4c1b3cc398cfd864c0f1b68ea5b8b0e478f5339",
+    "file_count": 71,
+    "all_archive_bytes_match": true,
+    "changed_from22d": [
+      "ops/crypto20b_preflight.py",
+      "ops/crypto20b_transition.py"
+    ],
+    "api_web_migrations_unchanged": true,
+    "activation_ready": false
+  },
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261108cumulative/candidate-cumulative108-20261108-r2.tar.gz",
+  "cleanup": {
+    "at": "2026-11-08T05:52:51.285013+00:00",
+    "removed_resources": [
+      "gps-provision22-db-20261108cumulative",
+      "gps-provision22-test-20261108cumulative"
+    ],
+    "private_fixture_paths_absent": true,
+    "other_projects_modified": false,
+    "production_modified": false
+  },
+  "external_messages": 0,
+  "tests_reused_not_rerun": "22D Rust81 + separate7 and web241; unchanged API/web verified by hashes",
+  "limitations": [
+    "Owner mapping query exceeds5-second gate; new migration candidate109 and full consent/revocation regression required before cumulative rerun.",
+    "Read-only optimization probe is not implemented and covers only one history shape.",
+    "Synthetic row/sample counts exceed snapshot totals but not a clone of production distribution or concurrent traffic.",
+    "DB tmpfs timing does not guarantee production SSD latency; full-period decrypted history count13.846seconds remains a performance review item.",
+    "Production bind parameter logging remains -1; must protect before real key use.",
+    "Current production retention jobs0; legacy Timescale policy may appear on old-baseline rebuild or restore.",
+    "Actual key/checkpoint external custody, company policy/consent, dedicated administrator PC/IP/MFA, handset FCM/queue alarms and physical TLS/sleep acceptance remain open.",
+    "Historical WAL/snapshots/backups and external/company/unclassified copies not erased or certified by this conversion.",
+    "No automated downgrade to99 after encryption/new writes; forward fix or protected restore required.",
+    "Prepare wrapper syntax/existing-directory refusal checked; initial preparation used equivalent manual steps, not full wrapper execution."
+  ],
+  "evidence_capture": "verification-report.png"
+}

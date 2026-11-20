@@ -1,0 +1,1 @@
+{"iptables": {"original_fingerprint_reconstructed": true, "change": "UFW CLI reconciled stale broad DB user-chain allow to persisted rules; earlier INPUT DB allow/drop unchanged"}, "ip6tables": {"original_fingerprint_reconstructed": true, "change": "UFW CLI reconciled stale broad DB user-chain allow to persisted rules; earlier INPUT DB allow/drop unchanged"}}

@@ -1,0 +1,11 @@
+{
+  "checked_at": "2026-11-07T22:43:57+09:00",
+  "read_only": true,
+  "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "active": true,
+  "NRestarts": 0,
+  "started_at": "2026-11-07T17:16:49+09:00",
+  "web": "/home/mmm/releases/privacy-facts-20261106-r1/web",
+  "schema_requeried": false,
+  "last_known_schema": 99
+}

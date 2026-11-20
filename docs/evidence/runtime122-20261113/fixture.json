@@ -1,0 +1,60 @@
+{
+  "devices": [
+    {
+      "device_id": 1,
+      "user_id": 1,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 2,
+      "user_id": 1,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 3,
+      "user_id": 1,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 4,
+      "user_id": 1,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 5,
+      "user_id": 2,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 6,
+      "user_id": 2,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 7,
+      "user_id": 2,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 8,
+      "user_id": 2,
+      "rows": 14880,
+      "unique_points": 89280
+    }
+  ],
+  "users": [
+    1,
+    2
+  ],
+  "rows": 119040,
+  "unique_points": 714240,
+  "schema": 112,
+  "api_sha256": "56912e102bd55db65f253d7f19c409a04e239b8e993f60baead577e51efbf536"
+}

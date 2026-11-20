@@ -1,3 +1,4 @@
+import { vehicleName } from '../../lib/business';
 // (2026-07-28) Phase F4-b — Fleet dashboard 우측 event feed panel.
 // 참고 이미지 스타일: 운행 시작/종료 · 지오펜스 진입/이탈 · 알림 색상 코딩.
 //
@@ -8,8 +9,8 @@ import { PageHeader } from '../ui';
 import Icon from '../Icon';
 
 const EVENT_META = {
-  wake:                    { label: '운행 시작', icon: 'route',  color: 'var(--accent)' },
-  sleep_enter:             { label: '운행 종료', icon: 'moon',   color: 'var(--text-2)' },
+  wake:                    { label: '단말기 깨어남', icon: 'route',  color: 'var(--accent)' },
+  sleep_enter:             { label: '절전 진입', icon: 'moon',   color: 'var(--text-2)' },
   geofence_enter:          { label: '지점 진입', icon: 'mapPin', color: 'var(--primary)' },
   geofence_exit:           { label: '지점 이탈', icon: 'mapPin', color: 'var(--warning)' },
   rental_ending:           { label: '반납 임박', icon: 'clock',  color: 'var(--warning)' },
@@ -32,7 +33,7 @@ export default function EventFeedPanel({ events, selectedDevice, loading }) {
       }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>
           {selectedDevice
-            ? `${selectedDevice.license_plate || selectedDevice.display_name || '#' + selectedDevice.id} 이벤트`
+            ? `${vehicleName(selectedDevice)} 이벤트`
             : '실시간 이벤트'}
         </div>
         <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
@@ -47,7 +48,7 @@ export default function EventFeedPanel({ events, selectedDevice, loading }) {
             color: 'var(--text-3)', fontSize: 12, lineHeight: 1.6,
           }}>
             좌측 목록에서 차량을 선택하면<br/>
-            운행 시작/종료 · 지점 진입/이탈 등<br/>
+            단말기 깨어남·절전 · 지점 진입/이탈 등<br/>
             최근 이벤트가 여기 표시됩니다.
           </div>
         )}

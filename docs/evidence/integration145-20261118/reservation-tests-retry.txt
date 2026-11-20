@@ -1,0 +1,21 @@
+TAP version 13
+# Subtest: tests\\corporate-reservations.test.mjs
+not ok 1 - tests\\corporate-reservations.test.mjs
+  ---
+  duration_ms: 163.0941
+  location: 'C:\\Users\\msb\\.codex\\worktrees\\gps-app-fcm\\esp32c3-mini_gps\\output\\notion-dev-review-20261118\\deployed-source\\gps-tracker-web\\tests\\corporate-reservations.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 3221225477
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 168.2157

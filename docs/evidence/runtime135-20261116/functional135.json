@@ -1,0 +1,45 @@
+{
+  "at": "2026-11-16T01:06:40Z",
+  "schema": 114,
+  "passed": [
+    "company owner/admin authorized; anonymous401, member/department/foreign-delegation403; unrelated company has no rows or options",
+    "207 mappings50/50/50/50/7 exact; default200 compatibility; old binding beyond recent200 retained; delegate same owner scope; read-only hashes",
+    "all five statuses with exact filtered pagination; empty confirmed/last-page has no false continuation; invalid/owner override400",
+    "single blocked TLS list cancels SQL and returns read slot; retry200 and source unchanged; no sustained load",
+    "old-page correction uses owned historical binding; old access stops immediately; duplicate/stale guards; exact subject fresh consent required",
+    "withdrawal cannot be corrected away; exact reconsent required; three scoped provision notices retained; staff unlink marks ineffective and blocks locations",
+    "feature OFF retains historical list and existing subject withdrawal; no consent auto-restoration or new proposal enablement"
+  ],
+  "api_sha256": "6e34afd530b40770d6f7f261bff48e7e3b4adabdf1e2144f0cb850e0196df530",
+  "fixture": {
+    "accounts": 6,
+    "initial_mappings": 207,
+    "bindings": 206,
+    "page_lengths": [
+      50,
+      50,
+      50,
+      50,
+      7
+    ]
+  },
+  "read_only_source_hashes": {
+    "location_subject_mappings": "4fad597e5ad26216c0504b37d600ee45",
+    "location_subject_actions": "d906fde77d4cf0a2db00e81cf8bc656e",
+    "fleet_vehicle_bindings": "08cf6a09964a9fb4c53197444791cd96",
+    "location_records": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false,
+  "environment": "internal TLS1.2; PostgreSQL14/Timescale; separated gps_runtime; synthetic only"
+}

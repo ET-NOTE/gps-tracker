@@ -1,0 +1,10 @@
+{
+  "at": "2026-11-11T02:02:24.166814+00:00",
+  "removed_resources": [
+    "gps-provision22-db-20261111cumulative110",
+    "gps-provision22-test-20261111cumulative110"
+  ],
+  "private_fixture_paths_absent": true,
+  "other_projects_modified": false,
+  "production_modified": false
+}

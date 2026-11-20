@@ -6,25 +6,13 @@
 //   filter: 'all' | 'active' | 'idle' | 'offline'
 //   onChange: (next) => void
 
-const OFFLINE_STALE_MS = 15 * 60_000;   // 15분 무통신 = offline
+import { FLEET_GROUPS, fleetStatusGroup } from '../../lib/fleetStatus';
 
-function classify(d) {
-  if (d.last_event_kind === 'wake') return 'active';
-  const t = d.last_seen_at ? new Date(d.last_seen_at).getTime() : 0;
-  if (!t || Date.now() - t > OFFLINE_STALE_MS) return 'offline';
-  return 'idle';
-}
-
-export default function SummaryChips({ devices = [], filter, onChange }) {
-  const counts = { all: devices.length, active: 0, idle: 0, offline: 0 };
-  for (const d of devices) counts[classify(d)]++;
-
-  const chips = [
-    { id: 'all',     label: '전체',    count: counts.all,     tone: 'default' },
-    { id: 'active',  label: '운행',    count: counts.active,  tone: 'success' },
-    { id: 'idle',    label: '대기',    count: counts.idle,    tone: 'primary' },
-    { id: 'offline', label: '오프라인', count: counts.offline, tone: 'muted'   },
-  ];
+export default function SummaryChips({ devices = [], filter, onChange, now = Date.now() }) {
+  const counts = Object.fromEntries(FLEET_GROUPS.map(group => [group.id, 0]));
+  counts.all = devices.length;
+  for (const d of devices) counts[fleetStatusGroup(d, now)]++;
+  const chips = FLEET_GROUPS.map(group => ({...group, count: counts[group.id]}));
   return (
     <div style={{
       display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap',
@@ -37,16 +25,17 @@ export default function SummaryChips({ devices = [], filter, onChange }) {
         const toneColor = c.tone === 'success' ? 'var(--accent)' :
                           c.tone === 'primary' ? 'var(--primary)' :
                           c.tone === 'muted'   ? 'var(--text-3)' :
+                          c.tone === 'warning' ? 'var(--status-warning-text)' :
                                                   'var(--text-2)';
         return (
-          <button key={c.id} onClick={() => onChange?.(c.id)}
+          <button key={c.id} aria-pressed={active} onClick={() => onChange?.(c.id)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: 'var(--space-2) var(--space-3)',
               background: active ? toneColor : 'var(--surface-2)',
               color:      active ? '#FFF' : 'var(--text)',
               border: 'none', borderRadius: 'var(--radius-pill)',
-              cursor: 'pointer', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', fontSize: 12, fontWeight: 700, minHeight: 44,
               transition: 'all .15s',
             }}>
             <span style={{ fontWeight: 600, opacity: active ? 0.9 : 0.7 }}>{c.label}</span>
@@ -62,5 +51,3 @@ export default function SummaryChips({ devices = [], filter, onChange }) {
     </div>
   );
 }
-
-export { classify as classifyDevice };

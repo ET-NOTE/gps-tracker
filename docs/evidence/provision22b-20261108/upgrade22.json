@@ -1,0 +1,12 @@
+{
+  "schema_path": [
+    105,
+    106
+  ],
+  "identity_sim_records_unchanged": true,
+  "failed_106_transaction_atomic": true,
+  "subject_policy_default_off": true,
+  "no_inferred_consent": true,
+  "migration_checksums_match": true,
+  "api_sha256": "f6ba49c12896d2ea99a13a32e13f901760c1f98d754b0d4ffc319d98c1069754"
+}

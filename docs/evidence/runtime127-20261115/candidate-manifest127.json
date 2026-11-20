@@ -1,0 +1,15 @@
+{
+  "archive": "/home/etcom-hub/build/gps-runtime127-20261115/candidate-runtime127-20261115-r1.tar.gz",
+  "bytes": 9117684,
+  "sha256": "2d4975611671b93eca2b47dec2fc3824ca7f511a0fa1aa5f95ab76ace02fdf3e",
+  "files": 691,
+  "source_commit": "1cb2a3482424c78594cf8310675e29def71f5a56",
+  "api_sha256": "5c6f4529207f9ab0d5d30598dbb4fe8a4e4b77dc4e5304a8736f311fdcdb7e52",
+  "schema": 114,
+  "activation_ready": false,
+  "archive_readback_verified": true,
+  "dependencies": {
+    "recovery-kit-runtime125-20261114-r1.tar.gz": "f469828ce877ffffa555fe9b168200c7e423c0e1228f9a858df5218f67ec6c73",
+    "candidate-runtime124-20261114-r1.tar.gz": "353c16488c7f4aa0fb6cbc264ab0a30f9330ec0fe875ae59208c8be9ec195649"
+  }
+}

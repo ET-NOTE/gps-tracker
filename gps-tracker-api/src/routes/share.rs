@@ -24,7 +24,7 @@ use crate::{
 // 공유 링크 1시간당 차감 포인트.
 // 24h = 120, 7일 = 840, 30일 = 3,600. AI(20/회), SIM 100MB(100원) 와 형평.
 pub const CREDITS_PER_HOUR: i64 = 5;
-pub const MAX_TTL_HOURS:    i64 = 720;   // 30일
+pub const MAX_TTL_HOURS: i64 = 720; // 30일
 
 pub fn router_authed() -> Router<AppState> {
     Router::new()
@@ -35,9 +35,9 @@ pub fn router_authed() -> Router<AppState> {
 
 pub fn router_public() -> Router<AppState> {
     Router::new()
-        .route("/share/:token",              get(public_view))
-        .route("/share/:token/locations",    get(public_locations))
-        .route("/share/:token/daily_stats",  get(public_daily_stats))
+        .route("/share/:token", get(public_view))
+        .route("/share/:token/locations", get(public_locations))
+        .route("/share/:token/daily_stats", get(public_daily_stats))
 }
 
 // ==========================================================================
@@ -67,30 +67,56 @@ pub struct ShareView {
     pub credits_spent: i32,
 }
 
+async fn allow_personal_share(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    device: i64,
+) -> AppResult<()> {
+    if !crate::services::subject_provision::enabled() {
+        return Ok(());
+    }
+    let company:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fleet_vehicle_bindings WHERE device_id=$1) OR EXISTS(SELECT 1 FROM location_subject_mappings WHERE device_id=$1)")
+        .bind(device).fetch_one(&mut **tx).await?;
+    if company {
+        return Err(AppError::Conflict("회사 위치정보의 공개 공유는 별도 제공 동의가 필요하여 현재 지원하지 않습니다. 포인트는 차감되지 않습니다.".into()));
+    }
+    Ok(())
+}
+
 async fn create_share(
     State(state): State<AppState>,
     user: AuthUser,
     Path(device_id): Path<i64>,
     Json(req): Json<CreateShareRequest>,
 ) -> AppResult<Json<ShareView>> {
-    req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    req.validate()
+        .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
 
+    let mut tx = state.db.begin().await?;
     // 본인 소유 확인
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(device_id).fetch_optional(&state.db).await?.flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1 FOR SHARE")
+            .bind(device_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
 
+    allow_personal_share(&mut tx, device_id).await?;
     let ttl = req.ttl_hours.unwrap_or(24);
     let cost = ttl * CREDITS_PER_HOUR;
 
     // 포인트 먼저 차감 — 부족하면 BadRequest 로 실패. 토큰 미생성.
-    credits::charge(
-        &state.db, user.user_id, cost,
-        "share_create", Some(device_id),
+    credits::charge_tx(
+        &mut tx,
+        user.user_id,
+        cost,
+        "share_create",
+        Some(device_id),
         Some(&format!("share token, {ttl}h")),
-    ).await?;
+    )
+    .await?;
 
     let expires_at = Utc::now() + Duration::hours(ttl);
     let token = generate_token();
@@ -107,9 +133,10 @@ async fn create_share(
     .bind(expires_at)
     .bind(&req.note)
     .bind(cost as i32)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
+    tx.commit().await?;
     Ok(Json(row))
 }
 
@@ -126,21 +153,29 @@ async fn extend_share(
     Path(share_id): Path<i64>,
     Json(req): Json<ExtendShareRequest>,
 ) -> AppResult<Json<ShareView>> {
-    req.validate().map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
+    req.validate()
+        .map_err(|e| AppError::BadRequest(format!("invalid: {e}")))?;
 
+    let mut tx = state.db.begin().await?;
     // 본인 디바이스의 (revoke 안 된) 토큰만
-    let cur: Option<(i64, DateTime<Utc>)> = sqlx::query_as(
-        r#"SELECT s.id, s.expires_at
+    let cur: Option<(i64, DateTime<Utc>, i64)> = sqlx::query_as(
+        r#"SELECT s.id, s.expires_at, s.device_id
              FROM share_tokens s
-             JOIN devices d ON d.id = s.device_id
-            WHERE s.id = $1 AND d.owner_id = $2 AND s.revoked_at IS NULL"#,
-    ).bind(share_id).bind(user.user_id)
-    .fetch_optional(&state.db).await?;
-    let (_, cur_expires) = cur.ok_or(AppError::NotFound)?;
+             JOIN gps_read_devices d ON d.id = s.device_id
+            WHERE s.id = $1 AND d.owner_id = $2 AND s.created_by = $2 AND s.revoked_at IS NULL FOR UPDATE OF s FOR SHARE OF d"#,
+    )
+    .bind(share_id)
+    .bind(user.user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+    let (_, cur_expires, device_id) = cur.ok_or(AppError::NotFound)?;
+    allow_personal_share(&mut tx, device_id).await?;
 
     // 만료된 링크는 연장 불가 (revoke 와 사실상 동일 처리; 새로 만드세요).
     if cur_expires < Utc::now() {
-        return Err(AppError::BadRequest("이미 만료된 링크입니다 — 새 링크를 생성하세요.".into()));
+        return Err(AppError::BadRequest(
+            "이미 만료된 링크입니다 — 새 링크를 생성하세요.".into(),
+        ));
     }
     // 누적 만료 30일 cap
     let new_expires = cur_expires + Duration::hours(req.extra_hours);
@@ -152,11 +187,15 @@ async fn extend_share(
     }
 
     let cost = req.extra_hours * CREDITS_PER_HOUR;
-    credits::charge(
-        &state.db, user.user_id, cost,
-        "share_extend", Some(share_id),
+    credits::charge_tx(
+        &mut tx,
+        user.user_id,
+        cost,
+        "share_extend",
+        Some(share_id),
         Some(&format!("share extend +{}h", req.extra_hours)),
-    ).await?;
+    )
+    .await?;
 
     let row: ShareView = sqlx::query_as(
         r#"UPDATE share_tokens
@@ -169,8 +208,10 @@ async fn extend_share(
     .bind(share_id)
     .bind(new_expires)
     .bind(cost as i32)
-    .fetch_one(&state.db).await?;
+    .fetch_one(&mut *tx)
+    .await?;
 
+    tx.commit().await?;
     Ok(Json(row))
 }
 
@@ -179,8 +220,12 @@ async fn list_shares(
     user: AuthUser,
     Path(device_id): Path<i64>,
 ) -> AppResult<Json<Vec<ShareView>>> {
-    let owner: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM devices WHERE id = $1")
-        .bind(device_id).fetch_optional(&state.db).await?.flatten();
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM gps_read_devices WHERE id = $1")
+            .bind(device_id)
+            .fetch_optional(&state.db)
+            .await?
+            .flatten();
     if owner != Some(user.user_id) {
         return Err(AppError::NotFound);
     }
@@ -189,11 +234,12 @@ async fn list_shares(
         r#"SELECT id, token, device_id, expires_at, revoked_at,
                   view_count, last_viewed_at, note, created_at, credits_spent
              FROM share_tokens
-            WHERE device_id = $1
+            WHERE device_id = $1 AND created_by = $2
             ORDER BY created_at DESC
             LIMIT 50"#,
     )
     .bind(device_id)
+    .bind(user.user_id)
     .fetch_all(&state.db)
     .await?;
     Ok(Json(rows))
@@ -210,7 +256,7 @@ async fn revoke_share(
               SET revoked_at = now()
             WHERE id = $1
               AND revoked_at IS NULL
-              AND device_id IN (SELECT id FROM devices WHERE owner_id = $2)"#,
+              AND device_id IN (SELECT id FROM gps_read_devices WHERE owner_id = $2)"#,
     )
     .bind(share_id)
     .bind(user.user_id)
@@ -245,12 +291,13 @@ async fn public_view(
 ) -> AppResult<Json<PublicShareView>> {
     let (device_id, expires_at, note) = resolve_token(&state, &token).await?;
 
-    let row: Option<(Option<String>, Option<String>, Option<String>,
-                     Option<DateTime<Utc>>, Option<f64>, Option<f64>)> = sqlx::query_as(
+    let row: SharedDeviceRow = sqlx::query_as(
         r#"SELECT display_name, color, icon, last_seen_at, last_lat, last_lng
-             FROM devices WHERE id = $1"#,
+             FROM gps_read_devices WHERE id = $1 AND EXISTS (
+               SELECT 1 FROM share_tokens s WHERE s.token=$2 AND s.device_id=gps_read_devices.id
+                 AND s.created_by=gps_read_devices.owner_id AND s.revoked_at IS NULL AND s.expires_at>now())"#,
     )
-    .bind(device_id)
+    .bind(device_id).bind(&token)
     .fetch_optional(&state.db)
     .await?;
     let (name, color, icon, last_seen, last_lat, last_lng) = row.ok_or(AppError::NotFound)?;
@@ -279,18 +326,20 @@ async fn public_view(
 
 #[derive(Debug, Deserialize)]
 pub struct PublicLocQuery {
-    pub limit:    Option<i64>,
-    pub since:    Option<DateTime<Utc>>,
-    pub until:    Option<DateTime<Utc>>,
+    pub limit: Option<i64>,
+    pub since: Option<DateTime<Utc>>,
+    pub until: Option<DateTime<Utc>>,
     pub fix_only: Option<bool>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct PublicLocationRow {
+    pub speed_kmh: Option<f32>,
+    pub speed_source: String,
     pub recorded_at: DateTime<Utc>,
-    pub fix:         bool,
-    pub lat:         Option<f64>,
-    pub lng:         Option<f64>,
+    pub fix: bool,
+    pub lat: Option<f64>,
+    pub lng: Option<f64>,
 }
 
 async fn public_locations(
@@ -303,20 +352,26 @@ async fn public_locations(
     let limit = q.limit.unwrap_or(500).clamp(1, 10000);
 
     let rows = sqlx::query_as::<_, PublicLocationRow>(
-        r#"SELECT recorded_at, fix, lat, lng
-             FROM location_records
-            WHERE device_id = $1
+        r#"WITH scoped AS MATERIALIZED (SELECT recorded_at, fix, lat, lng, anchor_at, source, speed_kmh, speed_source
+             FROM location_speed_points_between($1,(SELECT owner_id FROM gps_read_devices WHERE id=$1),$2,$3) p
+            WHERE device_id = $1 AND EXISTS (
+              SELECT 1 FROM share_tokens s JOIN gps_read_devices d ON d.id=s.device_id
+              WHERE s.token=$6 AND s.device_id=p.device_id AND s.created_by=p.user_id
+                AND d.owner_id=p.user_id AND s.revoked_at IS NULL AND s.expires_at>now())
               AND ($2::timestamptz IS NULL OR recorded_at >= $2)
               AND ($3::timestamptz IS NULL OR recorded_at <= $3)
               AND ($4::bool        IS NULL OR fix = $4)
-            ORDER BY recorded_at DESC
-            LIMIT $5"#,
+          ), anchors AS (
+             SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $5
+          ) SELECT recorded_at,fix,lat,lng,speed_kmh,speed_source FROM scoped JOIN anchors USING(anchor_at,source)
+            ORDER BY recorded_at DESC"#,
     )
     .bind(device_id)
     .bind(q.since)
     .bind(q.until)
     .bind(q.fix_only)
     .bind(limit)
+    .bind(&token)
     .fetch_all(&state.db)
     .await?;
 
@@ -330,7 +385,7 @@ pub struct PublicStatsQuery {
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct PublicDayRow {
-    pub date:      chrono::NaiveDate,
+    pub date: chrono::NaiveDate,
     pub fix_count: i32,
 }
 
@@ -345,13 +400,19 @@ async fn public_daily_stats(
 
     let rows = sqlx::query_as::<_, PublicDayRow>(
         r#"SELECT date, fix_count
-             FROM daily_stats
-            WHERE device_id = $1 AND fix_count > 0
+             FROM daily_stats ds
+            WHERE device_id = $1 AND fix_count > 0 AND EXISTS (
+              SELECT 1 FROM share_tokens s JOIN gps_read_devices d ON d.id=s.device_id
+              WHERE s.token=$3 AND s.device_id=ds.device_id AND s.created_by=ds.user_id
+                AND d.owner_id=ds.user_id AND s.revoked_at IS NULL AND s.expires_at>now())
             ORDER BY date DESC
             LIMIT $2"#,
     )
-    .bind(device_id).bind(limit)
-    .fetch_all(&state.db).await?;
+    .bind(device_id)
+    .bind(limit)
+    .bind(&token)
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
@@ -363,15 +424,14 @@ async fn resolve_token(
     state: &AppState,
     token: &str,
 ) -> AppResult<(i64, DateTime<Utc>, Option<String>)> {
-    let row: Option<(i64, DateTime<Utc>, Option<DateTime<Utc>>, Option<String>)> =
-        sqlx::query_as(
-            r#"SELECT device_id, expires_at, revoked_at, note
-                 FROM share_tokens
-                WHERE token = $1"#,
-        )
-        .bind(token)
-        .fetch_optional(&state.db)
-        .await?;
+    let row: SharePolicyRow = sqlx::query_as(
+        r#"SELECT s.device_id, s.expires_at, s.revoked_at, s.note
+                 FROM share_tokens s JOIN gps_read_devices d ON d.id=s.device_id
+                WHERE s.token = $1 AND s.created_by=d.owner_id"#,
+    )
+    .bind(token)
+    .fetch_optional(&state.db)
+    .await?;
 
     let (device_id, expires_at, revoked_at, note) = row.ok_or(AppError::NotFound)?;
     if revoked_at.is_some() {
@@ -391,9 +451,8 @@ fn generate_token() -> String {
 }
 
 fn url_safe_base64(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    let mut out = String::with_capacity((bytes.len() * 4 + 2) / 3);
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    let mut out = String::with_capacity((bytes.len() * 4).div_ceil(3));
     let mut buf: u32 = 0;
     let mut bits: u32 = 0;
     for &b in bytes {
@@ -411,3 +470,14 @@ fn url_safe_base64(bytes: &[u8]) -> String {
     }
     out
 }
+
+type SharedDeviceRow = Option<(
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<DateTime<Utc>>,
+    Option<f64>,
+    Option<f64>,
+)>;
+
+type SharePolicyRow = Option<(i64, DateTime<Utc>, Option<DateTime<Utc>>, Option<String>)>;

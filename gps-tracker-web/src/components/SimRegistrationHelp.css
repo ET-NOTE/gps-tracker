@@ -1,0 +1,7 @@
+.sim-registration-label { position: relative; display: flex; align-items: center; gap: 4px; font-size: 13px; margin-top: 4px; }
+.sim-registration-info { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; color: var(--text-2); background: transparent; cursor: pointer; }
+.sim-registration-info:hover, .sim-registration-info[aria-expanded="true"] { color: var(--primary); background: var(--surface-2); }
+.sim-registration-info:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.sim-registration-help { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; width: min(340px, calc(100vw - 48px)); max-width: 100%; box-sizing: border-box; max-height: min(440px, 55dvh); overflow-y: auto; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text-2); box-shadow: var(--shadow-lg, 0 8px 24px #10203924); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.sim-registration-help strong { color: var(--text); }
+.sim-registration-help p { margin: 8px 0 0; }

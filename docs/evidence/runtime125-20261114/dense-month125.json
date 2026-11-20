@@ -1,0 +1,8 @@
+{
+  "status": 200,
+  "seconds": 6.092634380795062,
+  "period": "since=2026-09-30T15:00:00Z&until=2026-10-31T15:00:00Z",
+  "api_budget_seconds": 20,
+  "performance_accepted": false,
+  "restore_probe_previously_timed_out": true
+}

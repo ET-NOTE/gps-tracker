@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/opt/gps121/test_statistics127.py", line 27, in <module>
+    assert db.execute('SELECT maintenance FROM location_storage_policy').fetchone()==(True,)
+AssertionError

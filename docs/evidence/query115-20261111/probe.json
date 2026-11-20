@@ -1,0 +1,226 @@
+[
+  {
+    "device": 1,
+    "route": "month_aggregate",
+    "status": 200,
+    "seconds": 1.7433467763476074,
+    "bytes": 96411,
+    "sha256": "4de689f0907f2e7e013eddea60cf947d65bf852e5215d9612f8c2a075c6442d2"
+  },
+  {
+    "device": 1,
+    "route": "month_history",
+    "status": 200,
+    "seconds": 1.7073810268193483,
+    "bytes": 19729237,
+    "sha256": "80c6dd29a29b38c360e4181191befe7ef5c4adac57d28cc461c8c4c43808d5c4"
+  },
+  {
+    "device": 1,
+    "route": "month_page",
+    "status": 200,
+    "seconds": 0.19994261674582958,
+    "bytes": 1644359,
+    "sha256": "579b780bb097485f43636d98a049e41096c8868e9c0b31ed41047a8d69267784"
+  },
+  {
+    "device": 2,
+    "route": "month_aggregate",
+    "status": 200,
+    "seconds": 1.736157365143299,
+    "bytes": 95729,
+    "sha256": "ca2042a0cbea9661a755f30c11e267c959d0b4901070dd0751b5c762151dbf3e"
+  },
+  {
+    "device": 2,
+    "route": "month_history",
+    "status": 200,
+    "seconds": 1.731344302650541,
+    "bytes": 19729257,
+    "sha256": "dcebaa70cd65df6fbcba567e6bec3ffcc7d5c1f64315234ca6b058fd58a4b487"
+  },
+  {
+    "device": 2,
+    "route": "month_page",
+    "status": 200,
+    "seconds": 0.1679266169667244,
+    "bytes": 1644360,
+    "sha256": "3a8472491ecb3f70b721141da8b365f5d43405319f7679a1297646760f680ef1"
+  },
+  {
+    "device": 3,
+    "route": "month_aggregate",
+    "status": 200,
+    "seconds": 1.6812756941653788,
+    "bytes": 95977,
+    "sha256": "65fbf5106c02a6e2ab35852d68a37ae581fde864c083a51878838bfcd1ffa386"
+  },
+  {
+    "device": 3,
+    "route": "month_history",
+    "status": 200,
+    "seconds": 1.7111157230101526,
+    "bytes": 19729257,
+    "sha256": "474515f936f6a12503db4ffef19d9237f4bbd4a356854e6f5019ed036496cf93"
+  },
+  {
+    "device": 3,
+    "route": "month_page",
+    "status": 200,
+    "seconds": 0.16007882868871093,
+    "bytes": 1644360,
+    "sha256": "8c61db7feddc7f0c69337579c72a251761ceb865d08d94db7cb0d6764b5baff1"
+  },
+  {
+    "device": 4,
+    "route": "month_aggregate",
+    "status": 200,
+    "seconds": 1.6983919348567724,
+    "bytes": 95977,
+    "sha256": "e264c9101748a0c9ce882a774e39973cfb57ec35b92708a1d8b792014690c845"
+  },
+  {
+    "device": 4,
+    "route": "month_history",
+    "status": 200,
+    "seconds": 1.700975676998496,
+    "bytes": 19729257,
+    "sha256": "ccc62c837b037b5a2baa259a75119342d51646b2106701875cc74c72c9a16743"
+  },
+  {
+    "device": 4,
+    "route": "month_page",
+    "status": 200,
+    "seconds": 0.16427839500829577,
+    "bytes": 1644360,
+    "sha256": "d3000164237fef9db57fd6e506ce1c73af061626cbef9bcac4005d3c313b2089"
+  },
+  {
+    "device": 5,
+    "route": "month_page",
+    "status": 200,
+    "seconds": 0.16833235882222652,
+    "bytes": 1644360,
+    "sha256": "12147142d8bcd5648d91e0e766e42985622c1d30d64815b2b65624132d557209"
+  },
+  {
+    "device": 5,
+    "route": "fleet_trips",
+    "status": 200,
+    "seconds": 1.9681409196928144,
+    "bytes": 25824,
+    "sha256": "f0089e806cc08a3563e32acb68f2f2809b8c7de4326cecad1867d9e23c9199b3"
+  },
+  {
+    "device": 5,
+    "route": "fleet_csv",
+    "status": 200,
+    "seconds": 1.9466609372757375,
+    "bytes": 3189,
+    "sha256": "dbc92b6fe7e297fca48b8b4d0a149c9760085f0746d278a4bd8d7dfb4eae98ac"
+  },
+  {
+    "device": 5,
+    "route": "fleet_xlsx",
+    "status": 200,
+    "seconds": 7.598453514277935,
+    "bytes": 13434,
+    "sha256": "6d68f075e8ffc02dfb915ac2d771a4afe35556c3b4f906c0fb30a4918810018c"
+  },
+  {
+    "device": 6,
+    "route": "month_page",
+    "status": 200,
+    "seconds": 0.1653116289526224,
+    "bytes": 1644360,
+    "sha256": "5c3354b7d7ffd3630f772609a3ca3ed8237a4f9c07ed087dc8d2931cf99bcb4a"
+  },
+  {
+    "device": 6,
+    "route": "fleet_trips",
+    "status": 200,
+    "seconds": 1.9161259019747376,
+    "bytes": 25824,
+    "sha256": "a2f12a48a3da64fec5715faa0c68433f2108d591c409614a1119c8d5ad2fb410"
+  },
+  {
+    "device": 6,
+    "route": "fleet_csv",
+    "status": 200,
+    "seconds": 1.9324615583755076,
+    "bytes": 3189,
+    "sha256": "bebb724fc591c73fb474b384e4bc17c6cd03a08ce9fdc506f33508fc52ff6649"
+  },
+  {
+    "device": 6,
+    "route": "fleet_xlsx",
+    "status": 200,
+    "seconds": 7.655882315710187,
+    "bytes": 13434,
+    "sha256": "80526d615d4cc88632bc939923c5ea8028dbf9c7246f1f1558c384f423a8a7ce"
+  },
+  {
+    "device": 7,
+    "route": "month_page",
+    "status": 200,
+    "seconds": 0.1596825998276472,
+    "bytes": 1644360,
+    "sha256": "86dd3dec58840f02622621054b96d3938288711c998037bf20861a858469ff09"
+  },
+  {
+    "device": 7,
+    "route": "fleet_trips",
+    "status": 200,
+    "seconds": 1.9625619403086603,
+    "bytes": 25793,
+    "sha256": "47a795ccc00d9f1e484f13b206eea1c4e63af6de5ab954b7f5e941709a2314b6"
+  },
+  {
+    "device": 7,
+    "route": "fleet_csv",
+    "status": 200,
+    "seconds": 1.9693918661214411,
+    "bytes": 3189,
+    "sha256": "ab8fc43ee14bc342dfbbe01e0073532f23fb3ef45f0d87975ed0e588b79a34ae"
+  },
+  {
+    "device": 7,
+    "route": "fleet_xlsx",
+    "status": 200,
+    "seconds": 7.652673598844558,
+    "bytes": 13434,
+    "sha256": "1bdf5368209b783b100c3135fb570e6ba568b6496a17e2b68927b9dad7498fc9"
+  },
+  {
+    "device": 8,
+    "route": "month_page",
+    "status": 200,
+    "seconds": 0.16017016489058733,
+    "bytes": 1644360,
+    "sha256": "588f33a8de97a02b23e67fda33b7e980ca322fb0c55b257ed8530b71ea71413a"
+  },
+  {
+    "device": 8,
+    "route": "fleet_trips",
+    "status": 200,
+    "seconds": 1.933315389789641,
+    "bytes": 25824,
+    "sha256": "2b387fa461f97e6da1dec9c351c071af857285cfd72acfc4ae3df5aa5e759259"
+  },
+  {
+    "device": 8,
+    "route": "fleet_csv",
+    "status": 200,
+    "seconds": 1.871600073762238,
+    "bytes": 3189,
+    "sha256": "44901627651a2c1faef2b71f9a3634aabed57a430e60ff00ffc66c5faed8c652"
+  },
+  {
+    "device": 8,
+    "route": "fleet_xlsx",
+    "status": 200,
+    "seconds": 7.672595289070159,
+    "bytes": 13434,
+    "sha256": "c82830dc6930709735063f2edcd6b761c3d4120b11947ecb706bff2dbcd3ccc9"
+  }
+]

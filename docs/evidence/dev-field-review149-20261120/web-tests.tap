@@ -1,0 +1,324 @@
+TAP version 13
+# (node:12) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: dashboard missing-schedule shortcut opens filtered vehicles; normal navigation opens all
+ok 1 - dashboard missing-schedule shortcut opens filtered vehicles; normal navigation opens all
+  ---
+  duration_ms: 40.404856
+  type: 'test'
+  ...
+# Subtest: expense categories remain reachable during vehicle and terminal outages while terminal access denials close the workspace
+ok 2 - expense categories remain reachable during vehicle and terminal outages while terminal access denials close the workspace
+  ---
+  duration_ms: 14.658383
+  type: 'test'
+  ...
+# Subtest: report filter drafts leave results unchanged until applied and cancel restores applied values
+ok 3 - report filter drafts leave results unchanged until applied and cancel restores applied values
+  ---
+  duration_ms: 36.048003
+  type: 'test'
+  ...
+# Subtest: reset only changes a report filter draft until the user applies it
+ok 4 - reset only changes a report filter draft until the user applies it
+  ---
+  duration_ms: 25.908367
+  type: 'test'
+  ...
+# Subtest: invalid minimum driving time cannot apply or discard a report filter draft
+ok 5 - invalid minimum driving time cannot apply or discard a report filter draft
+  ---
+  duration_ms: 21.370174
+  type: 'test'
+  ...
+# Subtest: report vehicle search matches vehicle identity and department without changing selection until clicked
+ok 6 - report vehicle search matches vehicle identity and department without changing selection until clicked
+  ---
+  duration_ms: 20.740074
+  type: 'test'
+  ...
+# Subtest: all-vehicle monthly XLSX includes every available vehicle despite vehicle search and report filters
+ok 7 - all-vehicle monthly XLSX includes every available vehicle despite vehicle search and report filters
+  ---
+  duration_ms: 22.78915
+  type: 'test'
+  ...
+# Subtest: XLSX identifies actual missing company and vehicle fields within the selected department intersection
+ok 8 - XLSX identifies actual missing company and vehicle fields within the selected department intersection
+  ---
+  duration_ms: 13.96751
+  type: 'test'
+  ...
+# Subtest: XLSX has no metadata all-clear until company loading finishes, including a cached refresh
+ok 9 - XLSX has no metadata all-clear until company loading finishes, including a cached refresh
+  ---
+  duration_ms: 24.303053
+  type: 'test'
+  ...
+# Subtest: XLSX distinguishes failed company lookup from blank fields and offers a retry without blocking the file
+ok 10 - XLSX distinguishes failed company lookup from blank fields and offers a retry without blocking the file
+  ---
+  duration_ms: 13.11823
+  type: 'test'
+  ...
+# Subtest: XLSX empty selection does not claim complete metadata and retains manual odometer and user guidance
+ok 11 - XLSX empty selection does not claim complete metadata and retains manual odometer and user guidance
+  ---
+  duration_ms: 14.414035
+  type: 'test'
+  ...
+# Subtest: compact report status selection resets conflicting filters and selected rows
+ok 12 - compact report status selection resets conflicting filters and selected rows
+  ---
+  duration_ms: 19.951429
+  type: 'test'
+  ...
+# Subtest: monthly table retains short/zero/unknown distances, recorded costs and edit permissions
+ok 13 - monthly table retains short/zero/unknown distances, recorded costs and edit permissions
+  ---
+  duration_ms: 40.327221
+  type: 'test'
+  ...
+# Subtest: trip rows, daily total and editor preserve short/zero/unknown distance
+ok 14 - trip rows, daily total and editor preserve short/zero/unknown distance
+  ---
+  duration_ms: 13.792252
+  type: 'test'
+  ...
+# Subtest: report XLSX opens with selected vehicle/start month and an explicit independent monthly scope
+ok 15 - report XLSX opens with selected vehicle/start month and an explicit independent monthly scope
+  ---
+  duration_ms: 17.160295
+  type: 'test'
+  ...
+# Subtest: XLSX month changes preserve explicit vehicle scope, including a single-vehicle company
+ok 16 - XLSX month changes preserve explicit vehicle scope, including a single-vehicle company
+  ---
+  duration_ms: 13.29938
+  type: 'test'
+  ...
+# Subtest: existing monthly XLSX keeps all vehicles and inherited department filters
+ok 17 - existing monthly XLSX keeps all vehicles and inherited department filters
+  ---
+  duration_ms: 12.611763
+  type: 'test'
+  ...
+# Subtest: a stale print success or failure cannot erase newer date/filter results
+ok 18 - a stale print success or failure cannot erase newer date/filter results
+  ---
+  duration_ms: 70.321956
+  type: 'test'
+  ...
+# Subtest: print preparation blocks duplicate clicks and unlocks after both success and failure
+ok 19 - print preparation blocks duplicate clicks and unlocks after both success and failure
+  ---
+  duration_ms: 19.19859
+  type: 'test'
+  ...
+# Subtest: report range validation matches inclusive Korean 366-day API limits and blocks requests
+ok 20 - report range validation matches inclusive Korean 366-day API limits and blocks requests
+  ---
+  duration_ms: 15.251643
+  type: 'test'
+  ...
+# Subtest: report fetch failure remains distinct from empty results and retries the same period
+ok 21 - report fetch failure remains distinct from empty results and retries the same period
+  ---
+  duration_ms: 14.876521
+  type: 'test'
+  ...
+# Subtest: XLSX locks its inputs, blocks duplicate clicks and retries with preserved selections in its footer
+ok 22 - XLSX locks its inputs, blocks duplicate clicks and retries with preserved selections in its footer
+  ---
+  duration_ms: 18.976564
+  type: 'test'
+  ...
+# Subtest: XLSX allows month editing but rejects blank/out-of-range months before the API
+ok 23 - XLSX allows month editing but rejects blank/out-of-range months before the API
+  ---
+  duration_ms: 14.082565
+  type: 'test'
+  ...
+# Subtest: XLSX blocks missing vehicles, empty selections and empty department intersections
+ok 24 - XLSX blocks missing vehicles, empty selections and empty department intersections
+  ---
+  duration_ms: 13.554066
+  type: 'test'
+  ...
+# Subtest: XLSX counts vehicle/department intersection and preserves all explicitly selected department values
+ok 25 - XLSX counts vehicle/department intersection and preserves all explicitly selected department values
+  ---
+  duration_ms: 14.333855
+  type: 'test'
+  ...
+# Subtest: selecting all four trip purposes remains an unfiltered purpose export
+ok 26 - selecting all four trip purposes remains an unfiltered purpose export
+  ---
+  duration_ms: 14.207188
+  type: 'test'
+  ...
+# Subtest: leaving an XLSX dialog prevents late file saves and stale error prompts
+ok 27 - leaving an XLSX dialog prevents late file saves and stale error prompts
+  ---
+  duration_ms: 24.124117
+  type: 'test'
+  ...
+# Subtest: visit filter distinguishes unnamed vehicles without replacing vehicle identity
+ok 28 - visit filter distinguishes unnamed vehicles without replacing vehicle identity
+  ---
+  duration_ms: 0.389999
+  type: 'test'
+  ...
+# Subtest: visit copy separates observed presence, gaps and configuration changes
+ok 29 - visit copy separates observed presence, gaps and configuration changes
+  ---
+  duration_ms: 0.12311
+  type: 'test'
+  ...
+# Subtest: address search resolves road address and coordinates, falls back only for zero results
+ok 30 - address search resolves road address and coordinates, falls back only for zero results
+  ---
+  duration_ms: 1.279955
+  type: 'test'
+  ...
+# Subtest: print form retains filtered CSV totals, excluded rows and actual zero without invented odometers
+ok 31 - print form retains filtered CSV totals, excluded rows and actual zero without invented odometers
+  ---
+  duration_ms: 16.659868
+  type: 'test'
+  ...
+# Subtest: long and multiline notes have stable row references and all original text in the appendix
+ok 32 - long and multiline notes have stable row references and all original text in the appendix
+  ---
+  duration_ms: 0.419695
+  type: 'test'
+  ...
+# Subtest: empty and missing metadata print honestly with repeatable grouped headers and no ratio
+ok 33 - empty and missing metadata print honestly with repeatable grouped headers and no ratio
+  ---
+  duration_ms: 0.272049
+  type: 'test'
+  ...
+# Subtest: generic rental and expense PDF layout remains separate from the driving form
+ok 34 - generic rental and expense PDF layout remains separate from the driving form
+  ---
+  duration_ms: 0.202239
+  type: 'test'
+  ...
+# Subtest: PDF and CSV preserve measured values, mixed distance basis, zero and excluded totals consistently
+ok 35 - PDF and CSV preserve measured values, mixed distance basis, zero and excluded totals consistently
+  ---
+  duration_ms: 0.596166
+  type: 'test'
+  ...
+# Subtest: report uses captured driver department, never current vehicle department
+ok 36 - report uses captured driver department, never current vehicle department
+  ---
+  duration_ms: 1.312987
+  type: 'test'
+  ...
+# Subtest: attached template columns, KST dates and vehicle filename; no invented odometer or staff department
+ok 37 - attached template columns, KST dates and vehicle filename; no invented odometer or staff department
+  ---
+  duration_ms: 0.66296
+  type: 'test'
+  ...
+# Subtest: commute and business stay separate and both feed the template business-distance total
+ok 38 - commute and business stay separate and both feed the template business-distance total
+  ---
+  duration_ms: 0.216996
+  type: 'test'
+  ...
+# Subtest: CSV and print filenames use the registered vehicle name without changing the official model field
+ok 39 - CSV and print filenames use the registered vehicle name without changing the official model field
+  ---
+  duration_ms: 0.166081
+  type: 'test'
+  ...
+# Subtest: long Unicode vehicle names leave room for the plate and both dates in the saved stem
+ok 40 - long Unicode vehicle names leave room for the plate and both dates in the saved stem
+  ---
+  duration_ms: 0.236252
+  type: 'test'
+  ...
+# Subtest: open/invalid trips remain marked in rows but do not inflate totals or produce a percentage
+ok 41 - open/invalid trips remain marked in rows but do not inflate totals or produce a percentage
+  ---
+  duration_ms: 0.258564
+  type: 'test'
+  ...
+# Subtest: unknown purpose is not classified as personal or business, and zero/empty have no percentage
+ok 42 - unknown purpose is not classified as personal or business, and zero/empty have no percentage
+  ---
+  duration_ms: 0.590155
+  type: 'test'
+  ...
+# Subtest: visible precision matches totals; filter scope cannot silently become full period
+ok 43 - visible precision matches totals; filter scope cannot silently become full period
+  ---
+  duration_ms: 0.158146
+  type: 'test'
+  ...
+# Subtest: metadata and free text are escaped, missing company and registration are shown before download
+ok 44 - metadata and free text are escaped, missing company and registration are shown before download
+  ---
+  duration_ms: 0.384119
+  type: 'test'
+  ...
+# Subtest: measured odometer pairs populate the official fields and use after minus before without changing GPS
+ok 45 - measured odometer pairs populate the official fields and use after minus before without changing GPS
+  ---
+  duration_ms: 0.413103
+  type: 'test'
+  ...
+# Subtest: invalid, partial and out-of-contract readings never become measured report distance
+ok 46 - invalid, partial and out-of-contract readings never become measured report distance
+  ---
+  duration_ms: 0.33643
+  type: 'test'
+  ...
+# Subtest: odometer entry does not confirm excluded, open or invalid-GPS trips
+ok 47 - odometer entry does not confirm excluded, open or invalid-GPS trips
+  ---
+  duration_ms: 0.148107
+  type: 'test'
+  ...
+# Subtest: manual and merged correction distances are identified as trip records, not asserted as raw GPS
+ok 48 - manual and merged correction distances are identified as trip records, not asserted as raw GPS
+  ---
+  duration_ms: 10.683804
+  type: 'test'
+  ...
+# Subtest: login keeps internal device and employee links, including query and hash
+ok 49 - login keeps internal device and employee links, including query and hash
+  ---
+  duration_ms: 1.008908
+  type: 'test'
+  ...
+# Subtest: legacy type is the default only until explicit activation preferences exist
+ok 50 - legacy type is the default only until explicit activation preferences exist
+  ---
+  duration_ms: 0.751657
+  type: 'test'
+  ...
+# Subtest: last page is account-specific and only stores navigation, including active staff pages
+ok 51 - last page is account-specific and only stores navigation, including active staff pages
+  ---
+  duration_ms: 0.248415
+  type: 'test'
+  ...
+# Subtest: only owned device rows appear, with active vehicle bindings and device overrides
+ok 52 - only owned device rows appear, with active vehicle bindings and device overrides
+  ---
+  duration_ms: 0.644246
+  type: 'test'
+  ...
+1..52
+# tests 52
+# suites 0
+# pass 52
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 650.568572

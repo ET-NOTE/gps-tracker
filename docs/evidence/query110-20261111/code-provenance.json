@@ -1,0 +1,21 @@
+{
+  "source_commit": "020844bfce8ecb26adc67a9188cd29e18c76f929",
+  "source_files": 512,
+  "api_sha256": "4fa945a268facc48c355ddfb53367bf0b34ba76db893dde0511aff4df619c89d",
+  "all_compiled_api_migration_inputs_match_git": true,
+  "runtime_ops_inputs_unchanged": true,
+  "added_operational_scripts": [
+    "ops/run_query110_regressions.py",
+    "ops/stage_query110.py",
+    "ops/test_location110_compression.py",
+    "ops/verify_location110_dataset.py"
+  ],
+  "updated_operational_scripts": [
+    "ops/benchmark_location110.py",
+    "ops/load_location110.py",
+    "ops/prepare_query110.py"
+  ],
+  "build_input_manifest_sha256": "3fda030cf16f2281f6751e126b8350e277a53c751f85dbc8dde92c54b5d50475",
+  "committed_manifest_sha256": "74531ce85e65eec46d21be2f498145da020f7b436e58b06253f52823ac116307",
+  "production_modified": false
+}

@@ -1,0 +1,12 @@
+gps-query112-proxy
+gps-query112-api
+API READY: schema111/112 restricted runtime, encrypted, ledger enabled
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/run_sustain112.py", line 72, in <module>
+    main(a.version,a.seconds,a.workers,a.label)
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/run_sustain112.py", line 65, in main
+    sustain_location112.load(label,seconds,workers)
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/sustain_location112.py", line 209, in load
+    save(label+'-sustained.json',report)
+           ^^^^^^^^^^
+AssertionError: [{'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'background': 'AssertionError', 'detail': 'ingest HTTP 500'}, {'route': 'month_history', 'error': 'AssertionError', 'detail': 'HTTP 500'}, {'route': 'day_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 503'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}]

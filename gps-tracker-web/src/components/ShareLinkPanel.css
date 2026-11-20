@@ -1,0 +1,13 @@
+.share-panel { display: grid; gap: 14px; min-width: 0; }
+.share-help { font-size: 12px; line-height: 1.65; color: var(--text-3); overflow-wrap: anywhere; }
+.share-empty { padding: 18px 12px; text-align: center; border: 1px dashed var(--border); border-radius: var(--radius-md); color: var(--text-3); font-size: 13px; }
+.share-card, .share-form { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); min-width: 0; font-size: 14px; }
+.share-card strong { overflow-wrap: anywhere; }
+.share-actions, .share-duration { display: flex; flex-wrap: wrap; gap: 8px; }
+.share-actions > button { flex: 1 0 auto; }
+.share-duration > button { flex: 1 0 56px; }
+.share-form { background: var(--surface-2); }
+.share-cost { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 0; font-size: 13px; }
+.share-cost strong { color: var(--primary); margin-left: auto; font-size: 18px; }
+.share-cost span { color: var(--text-3); font-size: 12px; }
+.share-error { display: grid; gap: 10px; padding: 12px; border-radius: var(--radius-md); color: var(--status-danger-text); background: var(--status-danger-bg); font-size: 13px; overflow-wrap: anywhere; }

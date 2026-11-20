@@ -1,0 +1,58 @@
+{
+  "cases": [
+    {
+      "name": "normal write half-close renders exact red and white pixels",
+      "size": [
+        1414,
+        707
+      ]
+    },
+    {
+      "name": "global lock rejects six independent requests; worker has stricter seccomp",
+      "worker": {
+        "ppid": 2455,
+        "state": "S (sleeping)",
+        "seccomp": 2,
+        "filters": 35,
+        "caps": "0000000000000000"
+      },
+      "max_busy_seconds": 0.014
+    },
+    {
+      "name": "disconnect during request read kills and reaps worker",
+      "seconds": 0.02
+    },
+    {
+      "name": "disconnect with pending page kills a stopped worker and permits recovery",
+      "seconds": 0.092
+    },
+    {
+      "name": "slow open peer is terminated by 13-second deadline",
+      "seconds": 12.996
+    },
+    {
+      "name": "supervisor SIGKILL kills stopped child; inherited lock cannot leak"
+    },
+    {
+      "name": "socket stop cancels whole unit; restart preserves lock inode"
+    },
+    {
+      "name": "budget restart terminates active work without replacing live lock"
+    },
+    {
+      "name": "writable lock is rejected; safe permissions restore service"
+    },
+    {
+      "name": "all lifetime cases finish without residual renderers",
+      "resources": {
+        "memory.max": "939524096",
+        "memory.peak": "137572352",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "memory.swap.max": "0",
+        "memory.swap.current": "0",
+        "pids.max": "48"
+      }
+    }
+  ],
+  "renderer_sha256": "f73150c48d4a4507547ae5f63f01f3f7a817e820e87c49492a08948059b662d2"
+}

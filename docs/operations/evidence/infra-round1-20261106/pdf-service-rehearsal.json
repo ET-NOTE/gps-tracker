@@ -1,0 +1,195 @@
+{
+  "passed": true,
+  "name": "pdf-service-20261106",
+  "release": "pdf-service-20261106-r1",
+  "commit": "4a3814c108430bdc53882000bfec25c068bac38f",
+  "api_sha256": "0d28667f3c21af82a43b987a12eec2836547d3717c69ae304688c6e5363ce826",
+  "renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+  "release_script_sha256": "e43460d0ea839f64a09782dbe11833c92874bd9e71e3f8eebf36db147ce0d6a0",
+  "service_script_sha256": "3dbbe5a9e5d6eab7bf757b070623236f5c14155ce33c4f3cfc4addcd1e172df5",
+  "smoke_sha256": "09dc86c8ce5a6949edd45833ccfff4264e1b6ec06d6daf16c406a55d5936d901",
+  "previous": {
+    "release": "privacy-pdf-20261106-r1",
+    "api_sha256": "b6ac9edb5bacae749db3c2561f95763860599abc7de7099dcf50bc63a427bba7"
+  },
+  "host": {
+    "image": "ubuntu:22.04 with systemd as PID 1",
+    "kernel": "6.8.0-142-generic",
+    "systemd": "systemd 249 (249.11-0ubuntu3.23)"
+  },
+  "steps": [
+    {
+      "step": "start: production as it is today (round 16 release, API and workers as gps-api, the API starts the processor itself)"
+    },
+    {
+      "step": "the processor service is refused while the API is still the previous release"
+    },
+    {
+      "step": "release check passes and changes nothing",
+      "pdf_processor": {
+        "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+        "self_test_as_service_account": {
+          "open_file": "signal 31",
+          "open_socket": "signal 31",
+          "start_program": "signal 31",
+          "start_process": "signal 31",
+          "too_much_memory": "refused",
+          "too_much_cpu": "signal 9"
+        },
+        "run_as": "gps-api",
+        "reached_through": "child of the API",
+        "api_no_new_privileges": true,
+        "api_system_call_filter": false
+      }
+    },
+    {
+      "step": "new API does not become healthy -> automatic return to the previous binary"
+    },
+    {
+      "step": "release apply: new API healthy, schema, web and processor file untouched; it still starts the processor itself",
+      "pdf_processor": {
+        "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+        "self_test_as_service_account": {
+          "open_file": "signal 31",
+          "open_socket": "signal 31",
+          "start_program": "signal 31",
+          "start_process": "signal 31",
+          "too_much_memory": "refused",
+          "too_much_cpu": "signal 9"
+        },
+        "run_as": "gps-api",
+        "reached_through": "child of the API",
+        "api_no_new_privileges": true,
+        "api_system_call_filter": false
+      },
+      "smoke": {
+        "processor_reached_through": "child of the API",
+        "requests_served_by_the_service": 0,
+        "pdf_pages_rendered": [
+          [
+            1,
+            1414,
+            707
+          ],
+          [
+            2,
+            1000,
+            1000
+          ]
+        ]
+      }
+    },
+    {
+      "step": "release rollback: previous binary and a clean check; apply again"
+    },
+    {
+      "step": "service check passes and changes nothing",
+      "would_change": {
+        "account": "create gps-pdf (system account, no login, no home, no groups)",
+        "files": [
+          "/etc/systemd/system/gps-pdf-render-selftest.service",
+          "/etc/systemd/system/gps-pdf-render.socket",
+          "/etc/systemd/system/gps-pdf-render@.service",
+          "/etc/systemd/system/gps-tracker-api.service.d/20-pdf-socket.conf"
+        ],
+        "socket": "/run/gps-pdf-render/render.sock (root:gps-api 660)",
+        "restart": "gps-tracker-api.service"
+      }
+    },
+    {
+      "step": "processor cannot be proven in the service environment -> account, units and API put back by themselves"
+    },
+    {
+      "step": "last check fails after the API already used the service -> account, units and API put back by themselves"
+    },
+    {
+      "step": "service apply: the processor runs as gps-pdf with no network, no group, its own memory limit and only its own file in view; only the API account can connect",
+      "processor_instance": {
+        "unit": "gps-pdf-render@3-1265-999.service",
+        "user": "gps-pdf",
+        "no_new_privileges": true,
+        "system_call_filter": true,
+        "capabilities": 0,
+        "files_it_can_see": [
+          "/home/mmm/projects/gps-tracker-api/bin/gps-pdf-render"
+        ],
+        "network_interfaces": [
+          "lo"
+        ],
+        "memory_max": 872415232,
+        "swap_max": "0"
+      },
+      "self_test_in_service": {
+        "open_file": "signal 31",
+        "open_socket": "signal 31",
+        "start_program": "signal 31",
+        "start_process": "signal 31",
+        "too_much_memory": "refused",
+        "too_much_cpu": "signal 9"
+      },
+      "account": {
+        "uid": 998,
+        "shell": "/usr/sbin/nologin",
+        "home": "/nonexistent",
+        "groups": []
+      },
+      "smoke": {
+        "processor_reached_through": "separate service",
+        "requests_served_by_the_service": 9,
+        "pdf_pages_rendered": [
+          [
+            1,
+            1414,
+            707
+          ],
+          [
+            2,
+            1000,
+            1000
+          ]
+        ]
+      }
+    },
+    {
+      "step": "going back to the previous API is refused while the API uses the processor service"
+    },
+    {
+      "step": "service rollback while a page is being drawn: that processor is ended; account, units and socket gone, account files as before; the API starts the processor itself again",
+      "smoke": {
+        "processor_reached_through": "child of the API",
+        "requests_served_by_the_service": 0,
+        "pdf_pages_rendered": [
+          [
+            1,
+            1414,
+            707
+          ],
+          [
+            2,
+            1000,
+            1000
+          ]
+        ]
+      }
+    },
+    {
+      "step": "apply again, then a reboot of the host: API, timers and the processor service come back by themselves, no ordering cycle",
+      "smoke": {
+        "processor_reached_through": "separate service",
+        "requests_served_by_the_service": 9,
+        "pdf_pages_rendered": [
+          [
+            1,
+            1414,
+            707
+          ],
+          [
+            2,
+            1000,
+            1000
+          ]
+        ]
+      }
+    }
+  ]
+}

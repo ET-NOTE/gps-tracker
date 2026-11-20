@@ -1,0 +1,2 @@
+PASS only labelled122 synthetic container, database, keys and internal network removed
+PASS final environment and preserved artifacts

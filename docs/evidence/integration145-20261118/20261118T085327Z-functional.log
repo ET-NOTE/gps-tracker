@@ -1,0 +1,9 @@
+PASS actual114->115 SQLx migration preserves existing annotation and leaves new readings NULL
+Traceback (most recent call last):
+  File "/opt/gps121/test_notion_integration145.py", line 149, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_notion_integration145.py", line 77, in main
+    roles=separate(DSN,True,ROOT/'test-runtime.json')
+  File "/opt/gps121/admin_db_roles.py", line 18, in run
+    if version not in (102,103,104,105,106,107,108,109,110,111,112,113,114):raise RuntimeError('reviewed schema 102/103/104/105/106/107/108/109/110/111/112/113/114 required')
+RuntimeError: reviewed schema 102/103/104/105/106/107/108/109/110/111/112/113/114 required

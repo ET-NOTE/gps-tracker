@@ -1,0 +1,31 @@
+{
+  "source_commit": "d4a16f830b3c809a99971d096a98cebb0e21103a",
+  "candidate_schema": 106,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "f6ba49c12896d2ea99a13a32e13f901760c1f98d754b0d4ffc319d98c1069754",
+  "verified_source_files": 783,
+  "source_manifest_sha256": "af190acb9d0c0f6f7a65a3fe46588a4a2bb255c640738d2c42939966676e3428",
+  "excluded": [
+    "credentials",
+    "keyring",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "real notification delivery, queue throughput/alerting and explicitly deferred mutation/external routes",
+    "real subject declaration and reviewed provision/notice policy",
+    "cumulative 99 to 106 production-sized protected rehearsal",
+    "reviewed policy and explicit subject consent; no inferred historic consent",
+    "runtime and maintenance role separation; dedicated worker and key custody",
+    "latest external checkpoint custody and offline restore procedure",
+    "company/unattributed records, files, audit and backups remain separate review scopes",
+    "worker health alerts and real-device buffered pause/resume verification",
+    "20B encryption/parameter-log/backup/rollback prerequisites still apply"
+  ],
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261108b/candidate-provision22b-20261108-r1.tar.gz",
+  "artifact_sha256": "2263ce4cd5aaba5d0ee38ab405184bb608c7063f0cf5dd6e974a9572a624e8a7",
+  "file_count": 65
+}

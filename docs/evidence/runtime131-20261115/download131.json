@@ -1,0 +1,13 @@
+{
+  "rejected_status": 429,
+  "retry_after_seconds": 2,
+  "rejected_workbook": false,
+  "cancelled_slot_reused_seconds": 0.009098092094063759,
+  "remaining_queries": 0,
+  "retry_status": 200,
+  "workbook_matches_baseline": true,
+  "foreign_status": 200,
+  "foreign_matches_empty_scope": true,
+  "foreign_workbook_sha256": "2256a7ca680e601935a8002a478dddf3e68a4166ef0c298e1767e78c6a4d9e75",
+  "production_modified": false
+}

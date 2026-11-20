@@ -1,0 +1,1 @@
+{"release": "privacy-log-20261107-r1", "schema": 99, "health": {"db": true, "environment": "production", "ok": true, "release": "privacy-log-20261107-r1", "service": "gps-tracker-api"}, "unchanged_settings_web_pdf": true, "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe", "rollback_binary": "/home/mmm/backups/privacy-log-20261107-r1/api.previous"}

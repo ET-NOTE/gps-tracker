@@ -1,0 +1,51 @@
+{
+  "source_commit": "ebc01b5892bc75664ff189c449b9501ebe70e3bc",
+  "candidate_schema": 109,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "b20be1f8b71c05e5658b78d439934b772641c54617f2044f269830f3634a653c",
+  "excluded": [
+    "credentials",
+    "keyring",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "full-period location decryption and concurrent VPS I/O remain separate performance acceptance",
+    "production maintenance window, live I/O/headroom and all GPS writers inventory",
+    "bind logging disabled before keys; pgcrypto provisioned for restricted migration owner",
+    "legacy Timescale retention jobs reviewed, paused and drained before conversion/restore",
+    "separate runtime/maintenance identity, real key custody and protected backup restore",
+    "latest external privacy checkpoint custody and offline replay before reopening",
+    "reviewed retention/notice policy, explicit subject consent and administrator PC/IP/MFA",
+    "real FCM handset arrival, notification entry and dedicated queue alarm acceptance",
+    "physical TLS promotion, buffered pause/resume and 24-hour sleep acceptance",
+    "legacy WAL, snapshots, backups and unclassified/company files separately governed"
+  ],
+  "binary_source_commit": "ebc01b5892bc75664ff189c449b9501ebe70e3bc",
+  "base_artifact_sha256": "0b470b08e8442917879867e4c4c1b3cc398cfd864c0f1b68ea5b8b0e478f5339",
+  "verification_status": "functional_and_mapping_performance_pass",
+  "mapping_performance_gate_passed": true,
+  "mapping_owner_count_seconds": [
+    0.8913,
+    0.8836,
+    0.8831
+  ],
+  "changed_files": [
+    "gps-tracker-api",
+    "migrations/0109_subject_effective_ancestry.sql",
+    "ops/admin_db_roles.py",
+    "ops/crypto20b_transition.py",
+    "ops/location_storage.py"
+  ],
+  "rehearsal": "actual99 to109; populated108 to109 consent oracle; encrypted full recovery; synthetic tmpfs workload",
+  "source_manifest_sha256": "c915086984ea9f5b30b111a44e67c39e0e97d1b73e95633fc0143b828067bad2",
+  "verified_source_files": 502,
+  "web_source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+  "web_unchanged": true,
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261108cumulative109/candidate-cumulative109-20261108-r1.tar.gz",
+  "artifact_sha256": "19b20e2670b281576a0170f1a94a383d7600a4fe0bd277c119b56bb4f2c12f1a",
+  "file_count": 72
+}

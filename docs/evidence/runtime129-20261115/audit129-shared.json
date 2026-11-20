@@ -1,0 +1,132 @@
+{
+  "label": "shared",
+  "planned": 2400,
+  "sent": 2372,
+  "missed": 28,
+  "unaccounted": 0,
+  "all_sent_stored": true,
+  "devices": [
+    {
+      "device": 0,
+      "device_id": 17,
+      "stored": 296,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "1aed6e92fb61ae7031dc212f35ea8ce97ddef8279c4787e65e76dca9f280ad34"
+    },
+    {
+      "device": 1,
+      "device_id": 18,
+      "stored": 296,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "db6b4bd6b71c42764f6141de1c3ac138ac42a0c3a6afd05d2a2677cd8b982016"
+    },
+    {
+      "device": 2,
+      "device_id": 19,
+      "stored": 297,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "6f0badd91e2343f5a595763a9774304af6b6dd9104f4204f2110640367c1d011"
+    },
+    {
+      "device": 3,
+      "device_id": 20,
+      "stored": 296,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "1aed6e92fb61ae7031dc212f35ea8ce97ddef8279c4787e65e76dca9f280ad34"
+    },
+    {
+      "device": 4,
+      "device_id": 21,
+      "stored": 297,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "9b32846ab7f69f52e838cf035b3f215e777cbe85b80ad1ac633dd3b076eb490c"
+    },
+    {
+      "device": 5,
+      "device_id": 22,
+      "stored": 297,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "d21bf8a28bc553dcff1a862dfbfc44f074da6ee99d34eb958400a4e802d48cba"
+    },
+    {
+      "device": 6,
+      "device_id": 23,
+      "stored": 297,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "d21bf8a28bc553dcff1a862dfbfc44f074da6ee99d34eb958400a4e802d48cba"
+    },
+    {
+      "device": 7,
+      "device_id": 24,
+      "stored": 296,
+      "exact_sent_counter_set_matches": true,
+      "counter_sha256": "b0eae256b9090ea83d1f5fff98f6101622d2e7dd6588948de6d9662a53ef47a7"
+    }
+  ],
+  "capacity_passed": false,
+  "original_acceptance_gate_unchanged": true,
+  "services_unchanged": true,
+  "memory_event_delta": {
+    "db": {
+      "low": 0,
+      "high": 0,
+      "max": 111,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "other": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "api": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "av": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "container": {
+      "low": 0,
+      "high": 0,
+      "max": 111,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "gps": {
+      "low": 0,
+      "high": 0,
+      "max": 111,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "pdf": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    }
+  },
+  "timing_capture_preserved": true,
+  "temp_peak_bytes": 77807616,
+  "health_pdf_cleanup_guards_passed": true,
+  "full_month_traversals": 2,
+  "production_modified": false
+}

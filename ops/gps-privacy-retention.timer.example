@@ -1,0 +1,10 @@
+# Candidate only: automatic cleanup is not enabled by this repository file.
+[Unit]
+Description=Hourly GPS reviewed personal-location retention
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=300
+Unit=gps-privacy-retention.service
+[Install]
+WantedBy=timers.target

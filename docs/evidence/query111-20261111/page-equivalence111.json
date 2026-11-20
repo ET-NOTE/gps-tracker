@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "comparisons": 2230,
+  "fixture_rolled_back": true,
+  "oracle": "unchanged110 full-range page selector and all projected fields",
+  "scope": [
+    "source/fix/cursor/window ties",
+    "far batch anchors",
+    "unbackfilled/mixed ciphertext",
+    "row owners/SIM transfer",
+    "late update/delete",
+    "all cursor pages",
+    "timezone",
+    "input bounds"
+  ],
+  "production_modified": false
+}

@@ -1,0 +1,1823 @@
+{
+  "loads": [
+    {
+      "label": "baseline-1",
+      "seconds": 300,
+      "elapsed": 305.0461633419618,
+      "success": 337,
+      "exhausted429": 209,
+      "exhausted429_percent": 38.27838827838828,
+      "routes": {
+        "month_page": {
+          "statuses": {
+            "200": 141,
+            "429": 76
+          },
+          "latency": {
+            "count": 141,
+            "p50": 0.4040733929723501,
+            "p95": 5.517420589923859,
+            "max": 6.650381449144334
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 141,
+              "p50": 0.39984449418261647,
+              "p95": 0.9883639020845294,
+              "max": 4.3759410246275365
+            },
+            "retry_wait_seconds": {
+              "count": 141,
+              "p50": 0.0,
+              "p95": 4.610370442271233,
+              "max": 4.925889213569462
+            }
+          },
+          "attempts": 456,
+          "retry_wait_total": 533.6213054917753
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 50,
+            "429": 21
+          },
+          "latency": {
+            "count": 50,
+            "p50": 3.976178844925016,
+            "p95": 7.063898905180395,
+            "max": 7.184811988845468
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 50,
+              "p50": 1.927258593030274,
+              "p95": 2.377097629942,
+              "max": 4.827686281874776
+            },
+            "retry_wait_seconds": {
+              "count": 50,
+              "p50": 2.0442608622834086,
+              "p95": 4.660879758186638,
+              "max": 4.87163904402405
+            }
+          },
+          "attempts": 149,
+          "retry_wait_total": 177.52868496021256
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 40,
+            "429": 23
+          },
+          "latency": {
+            "count": 40,
+            "p50": 1.8667977298609912,
+            "p95": 6.8901407341472805,
+            "max": 7.866107913199812
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 40,
+              "p50": 1.7984142019413412,
+              "p95": 2.5129220662638545,
+              "max": 5.601796451956034
+            },
+            "retry_wait_seconds": {
+              "count": 40,
+              "p50": 0.0,
+              "p95": 4.492371926084161,
+              "max": 4.581261740997434
+            }
+          },
+          "attempts": 134,
+          "retry_wait_total": 158.92775300890207
+        },
+        "month_history": {
+          "statuses": {
+            "200": 43,
+            "429": 26
+          },
+          "latency": {
+            "count": 43,
+            "p50": 4.247906077187508,
+            "p95": 16.669916082639247,
+            "max": 22.156911043915898
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 43,
+              "p50": 2.0056806192733347,
+              "p95": 16.669832133688033,
+              "max": 17.73645345494151
+            },
+            "retry_wait_seconds": {
+              "count": 43,
+              "p50": 0.0,
+              "p95": 4.57048489106819,
+              "max": 4.801275481004268
+            }
+          },
+          "attempts": 151,
+          "retry_wait_total": 185.36231706291437
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 46,
+            "429": 17
+          },
+          "latency": {
+            "count": 46,
+            "p50": 1.7241969197057188,
+            "p95": 6.783195849973708,
+            "max": 7.240488364361227
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 46,
+              "p50": 1.724090457893908,
+              "p95": 2.3725587357766926,
+              "max": 2.917235731612891
+            },
+            "retry_wait_seconds": {
+              "count": 46,
+              "p50": 0.0,
+              "p95": 4.546046795323491,
+              "max": 4.717680078931153
+            }
+          },
+          "attempts": 120,
+          "retry_wait_total": 128.22059100260958
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 46,
+            "200": 17
+          },
+          "latency": {
+            "count": 17,
+            "p50": 6.40209602471441,
+            "p95": 13.127086231019348,
+            "max": 14.25112513685599
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 17,
+              "p50": 6.401998771820217,
+              "p95": 9.035149071365595,
+              "max": 9.922239104285836
+            },
+            "retry_wait_seconds": {
+              "count": 17,
+              "p50": 0.0,
+              "p95": 4.268659722991288,
+              "max": 4.328591906931251
+            }
+          },
+          "attempts": 164,
+          "retry_wait_total": 226.191902494058
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 274
+        },
+        "latency": {
+          "count": 274,
+          "p50": 0.030615422874689102,
+          "p95": 0.357000675983727,
+          "max": 4.229031632188708
+        }
+      },
+      "saved_ingest": 274,
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.05316362017765641,
+          "p95": 0.07392641576007009,
+          "max": 0.11111335968598723
+        }
+      },
+      "cleanup": {
+        "completed": 57,
+        "latency": {
+          "count": 57,
+          "p50": 0.20206200703978539,
+          "p95": 0.5190323363058269,
+          "max": 1.210384075064212
+        },
+        "deferred": 0
+      },
+      "walks": 2,
+      "db_io_delta": {
+        "temp_bytes": 32384844872,
+        "temp_files": 16843,
+        "read_ms": 3.763,
+        "write_ms": 0.0
+      }
+    },
+    {
+      "label": "baseline-2",
+      "seconds": 300,
+      "elapsed": 315.82983407378197,
+      "success": 334,
+      "exhausted429": 200,
+      "exhausted429_percent": 37.453183520599254,
+      "routes": {
+        "month_page": {
+          "statuses": {
+            "200": 138,
+            "429": 72
+          },
+          "latency": {
+            "count": 138,
+            "p50": 2.659777583088726,
+            "p95": 5.506497578229755,
+            "max": 5.785772078670561
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 138,
+              "p50": 0.5034481631591916,
+              "p95": 0.9860644326545298,
+              "max": 1.1328875804319978
+            },
+            "retry_wait_seconds": {
+              "count": 138,
+              "p50": 2.0839996868744493,
+              "p95": 4.60767389787361,
+              "max": 4.826339850202203
+            }
+          },
+          "attempts": 464,
+          "retry_wait_total": 570.0106200827286
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 51,
+            "429": 20
+          },
+          "latency": {
+            "count": 51,
+            "p50": 3.970997598953545,
+            "p95": 6.910278297029436,
+            "max": 6.979167823679745
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 51,
+              "p50": 1.9205336887389421,
+              "p95": 2.425975596997887,
+              "max": 2.573450638912618
+            },
+            "retry_wait_seconds": {
+              "count": 51,
+              "p50": 2.045459631830454,
+              "p95": 4.535135163925588,
+              "max": 4.659070053137839
+            }
+          },
+          "attempts": 151,
+          "retry_wait_total": 180.16103679547086
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 36,
+            "429": 25
+          },
+          "latency": {
+            "count": 36,
+            "p50": 3.9721559821628034,
+            "p95": 7.027466448955238,
+            "max": 7.232308124192059
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 36,
+              "p50": 1.89401617879048,
+              "p95": 2.365430422127247,
+              "max": 2.5607927455566823
+            },
+            "retry_wait_seconds": {
+              "count": 36,
+              "p50": 2.057971131056547,
+              "p95": 4.640143404249102,
+              "max": 4.793153405189514
+            }
+          },
+          "attempts": 141,
+          "retry_wait_total": 179.4325935402885
+        },
+        "month_history": {
+          "statuses": {
+            "200": 49,
+            "429": 22
+          },
+          "latency": {
+            "count": 49,
+            "p50": 4.1519671282731,
+            "p95": 17.374336653854698,
+            "max": 21.760059519205242
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 49,
+              "p50": 1.9682072550058365,
+              "p95": 16.819552658125758,
+              "max": 17.43965214723721
+            },
+            "retry_wait_seconds": {
+              "count": 49,
+              "p50": 0.0,
+              "p95": 4.570478985086083,
+              "max": 4.8600031468085945
+            }
+          },
+          "attempts": 154,
+          "retry_wait_total": 186.36550166551024
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 45,
+            "429": 16
+          },
+          "latency": {
+            "count": 45,
+            "p50": 1.6640757150016725,
+            "p95": 6.782923814840615,
+            "max": 7.043085888028145
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 45,
+              "p50": 1.6639860346913338,
+              "p95": 2.2578738830052316,
+              "max": 2.52897906024009
+            },
+            "retry_wait_seconds": {
+              "count": 45,
+              "p50": 0.0,
+              "p95": 4.634170837700367,
+              "max": 4.851628039963543
+            }
+          },
+          "attempts": 118,
+          "retry_wait_total": 128.5048068827018
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "200": 15,
+            "429": 45
+          },
+          "latency": {
+            "count": 15,
+            "p50": 6.534607402049005,
+            "p95": 12.424418604001403,
+            "max": 16.986518909223378
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 15,
+              "p50": 6.534511690959334,
+              "p95": 10.260656025726348,
+              "max": 12.604422345757484
+            },
+            "retry_wait_seconds": {
+              "count": 15,
+              "p50": 0.0,
+              "p95": 2.393876974005252,
+              "max": 4.381789413746446
+            }
+          },
+          "attempts": 154,
+          "retry_wait_total": 210.6658104811795
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 276
+        },
+        "latency": {
+          "count": 276,
+          "p50": 0.03037885669618845,
+          "p95": 0.44836758403107524,
+          "max": 1.224493392277509
+        }
+      },
+      "saved_ingest": 276,
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.05284889880567789,
+          "p95": 0.07263990817591548,
+          "max": 0.10507909767329693
+        }
+      },
+      "cleanup": {
+        "completed": 56,
+        "latency": {
+          "count": 56,
+          "p50": 0.22461569774895906,
+          "p95": 0.5341695114038885,
+          "max": 1.1816058410331607
+        },
+        "deferred": 0
+      },
+      "walks": 3,
+      "db_io_delta": {
+        "temp_bytes": 33837080094,
+        "temp_files": 17401,
+        "read_ms": 0.18200000000000038,
+        "write_ms": 0.0
+      }
+    },
+    {
+      "label": "shared-before",
+      "seconds": 300,
+      "elapsed": 300.9376171599142,
+      "success": 310,
+      "exhausted429": 209,
+      "exhausted429_percent": 40.26974951830443,
+      "routes": {
+        "month_page": {
+          "statuses": {
+            "200": 129,
+            "429": 79
+          },
+          "latency": {
+            "count": 129,
+            "p50": 2.627650281880051,
+            "p95": 5.537847781088203,
+            "max": 6.00830676080659
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 129,
+              "p50": 0.50779153034091,
+              "p95": 0.9998138230293989,
+              "max": 1.3968627462163568
+            },
+            "retry_wait_seconds": {
+              "count": 129,
+              "p50": 2.066566588357091,
+              "p95": 4.599623627029359,
+              "max": 4.841967064421624
+            }
+          },
+          "attempts": 459,
+          "retry_wait_total": 561.6746642063372
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 42,
+            "429": 26
+          },
+          "latency": {
+            "count": 42,
+            "p50": 2.0662531489506364,
+            "p95": 7.099125336389989,
+            "max": 7.313581522088498
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 42,
+              "p50": 1.959573294967413,
+              "p95": 2.5775374602526426,
+              "max": 2.762252855114639
+            },
+            "retry_wait_seconds": {
+              "count": 42,
+              "p50": 0.0,
+              "p95": 4.574373636394739,
+              "max": 4.801249396987259
+            }
+          },
+          "attempts": 151,
+          "retry_wait_total": 187.55707681179047
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 38,
+            "429": 22
+          },
+          "latency": {
+            "count": 38,
+            "p50": 3.9703464820049703,
+            "p95": 7.091156912967563,
+            "max": 7.3480892311781645
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 38,
+              "p50": 1.9645582400262356,
+              "p95": 2.582930775359273,
+              "max": 2.7434342112392187
+            },
+            "retry_wait_seconds": {
+              "count": 38,
+              "p50": 2.01105681899935,
+              "p95": 4.663731320761144,
+              "max": 4.698963765986264
+            }
+          },
+          "attempts": 134,
+          "retry_wait_total": 163.3598290286027
+        },
+        "month_history": {
+          "statuses": {
+            "200": 44,
+            "429": 22
+          },
+          "latency": {
+            "count": 44,
+            "p50": 4.168252173811197,
+            "p95": 17.936381000094116,
+            "max": 22.949494344182312
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 44,
+              "p50": 1.997396050952375,
+              "p95": 17.88304564356804,
+              "max": 18.43408329738304
+            },
+            "retry_wait_seconds": {
+              "count": 44,
+              "p50": 0.0,
+              "p95": 4.465572725050151,
+              "max": 4.660888860933483
+            }
+          },
+          "attempts": 140,
+          "retry_wait_total": 166.0126978061162
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 42,
+            "429": 17
+          },
+          "latency": {
+            "count": 42,
+            "p50": 1.8716283547692,
+            "p95": 6.797227441798896,
+            "max": 7.586121900938451
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 42,
+              "p50": 1.871562338899821,
+              "p95": 2.4262871178798378,
+              "max": 2.8945688656531274
+            },
+            "retry_wait_seconds": {
+              "count": 42,
+              "p50": 0.0,
+              "p95": 4.456590692978352,
+              "max": 4.762469284236431
+            }
+          },
+          "attempts": 119,
+          "retry_wait_total": 136.01525620929897
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "200": 15,
+            "429": 43
+          },
+          "latency": {
+            "count": 15,
+            "p50": 7.113012017216533,
+            "p95": 13.221009873319417,
+            "max": 16.260219749063253
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 15,
+              "p50": 6.876013593748212,
+              "p95": 8.809143846388906,
+              "max": 12.140751586295664
+            },
+            "retry_wait_seconds": {
+              "count": 15,
+              "p50": 0.0,
+              "p95": 4.119185068178922,
+              "max": 4.411601006984711
+            }
+          },
+          "attempts": 153,
+          "retry_wait_total": 214.17141975695267
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 272
+        },
+        "latency": {
+          "count": 272,
+          "p50": 0.04953367495909333,
+          "p95": 0.41026270668953657,
+          "max": 0.8969234260730445
+        }
+      },
+      "saved_ingest": 272,
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.0536564770154655,
+          "p95": 0.07366829412057996,
+          "max": 0.0928611890412867
+        }
+      },
+      "cleanup": {
+        "completed": 56,
+        "latency": {
+          "count": 56,
+          "p50": 0.24658517027273774,
+          "p95": 0.48324265982955694,
+          "max": 0.7114736796356738
+        },
+        "deferred": 0
+      },
+      "walks": 2,
+      "db_io_delta": {
+        "temp_bytes": 30305671880,
+        "temp_files": 15688,
+        "read_ms": 0.0,
+        "write_ms": 0.0
+      }
+    },
+    {
+      "label": "candidate-1",
+      "seconds": 300,
+      "elapsed": 302.8013720177114,
+      "success": 386,
+      "exhausted429": 193,
+      "exhausted429_percent": 33.333333333333336,
+      "routes": {
+        "month_aggregate": {
+          "statuses": {
+            "200": 47,
+            "429": 32
+          },
+          "latency": {
+            "count": 47,
+            "p50": 3.9623459368012846,
+            "p95": 6.89403176587075,
+            "max": 7.361046205274761
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 47,
+              "p50": 1.8691200888715684,
+              "p95": 2.2693977798335254,
+              "max": 2.8332673627883196
+            },
+            "retry_wait_seconds": {
+              "count": 47,
+              "p50": 2.0934886070899665,
+              "p95": 4.5352742820978165,
+              "max": 4.7655637296848
+            }
+          },
+          "attempts": 176,
+          "retry_wait_total": 219.97501082066447
+        },
+        "month_page": {
+          "statuses": {
+            "200": 163,
+            "429": 66
+          },
+          "latency": {
+            "count": 163,
+            "p50": 2.713050762657076,
+            "p95": 5.463726743124425,
+            "max": 6.021670396905392
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 163,
+              "p50": 0.4920428949408233,
+              "p95": 1.0033337683416903,
+              "max": 1.4377332692965865
+            },
+            "retry_wait_seconds": {
+              "count": 163,
+              "p50": 2.1258959188126028,
+              "p95": 4.526097747962922,
+              "max": 4.899399316404015
+            }
+          },
+          "attempts": 479,
+          "retry_wait_total": 562.5995811359026
+        },
+        "month_history": {
+          "statuses": {
+            "200": 51,
+            "429": 27
+          },
+          "latency": {
+            "count": 51,
+            "p50": 1.855270407628268,
+            "p95": 7.137151463888586,
+            "max": 7.356335794087499
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 51,
+              "p50": 1.855177883990109,
+              "p95": 2.5896968455053866,
+              "max": 2.7857959656976163
+            },
+            "retry_wait_seconds": {
+              "count": 51,
+              "p50": 0.0,
+              "p95": 4.575673909857869,
+              "max": 4.762037890963256
+            }
+          },
+          "attempts": 165,
+          "retry_wait_total": 194.71436058543622
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 50,
+            "429": 15
+          },
+          "latency": {
+            "count": 50,
+            "p50": 1.905019338708371,
+            "p95": 6.692643298767507,
+            "max": 7.746211786288768
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 50,
+              "p50": 1.889012272004038,
+              "p95": 2.46404436416924,
+              "max": 2.952630083076656
+            },
+            "retry_wait_seconds": {
+              "count": 50,
+              "p50": 0.0,
+              "p95": 4.394595192279667,
+              "max": 4.79317666310817
+            }
+          },
+          "attempts": 127,
+          "retry_wait_total": 138.260660903994
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 54,
+            "429": 11
+          },
+          "latency": {
+            "count": 54,
+            "p50": 1.6389821539632976,
+            "p95": 6.439979020040482,
+            "max": 7.1340077593922615
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 54,
+              "p50": 1.638869701884687,
+              "p95": 2.305088543333113,
+              "max": 2.6412005512975156
+            },
+            "retry_wait_seconds": {
+              "count": 54,
+              "p50": 0.0,
+              "p95": 4.310852680820972,
+              "max": 4.495405082125217
+            }
+          },
+          "attempts": 106,
+          "retry_wait_total": 90.98892325535417
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 42,
+            "200": 21
+          },
+          "latency": {
+            "count": 21,
+            "p50": 6.751802687998861,
+            "p95": 14.62278401106596,
+            "max": 16.656327836681157
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 21,
+              "p50": 6.751707087736577,
+              "p95": 10.444476958364248,
+              "max": 11.992489146534353
+            },
+            "retry_wait_seconds": {
+              "count": 21,
+              "p50": 0.0,
+              "p95": 4.414488035719842,
+              "max": 4.6634943331591785
+            }
+          },
+          "attempts": 160,
+          "retry_wait_total": 217.11099165305495
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 274
+        },
+        "latency": {
+          "count": 274,
+          "p50": 0.031039802357554436,
+          "p95": 0.5254912073723972,
+          "max": 1.1009994549676776
+        }
+      },
+      "saved_ingest": 274,
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.05227735824882984,
+          "p95": 0.07192348083481193,
+          "max": 0.12612455990165472
+        }
+      },
+      "cleanup": {
+        "completed": 57,
+        "latency": {
+          "count": 57,
+          "p50": 0.19699362106621265,
+          "p95": 0.41621625144034624,
+          "max": 0.5438985200598836
+        },
+        "deferred": 0
+      },
+      "walks": 3,
+      "db_io_delta": {
+        "temp_bytes": 22608789334,
+        "temp_files": 3441,
+        "read_ms": 0.0,
+        "write_ms": 0.0
+      }
+    },
+    {
+      "label": "candidate-2",
+      "seconds": 300,
+      "elapsed": 305.80932398093864,
+      "success": 392,
+      "exhausted429": 201,
+      "exhausted429_percent": 33.895446880269816,
+      "routes": {
+        "month_aggregate": {
+          "statuses": {
+            "200": 62,
+            "429": 26
+          },
+          "latency": {
+            "count": 62,
+            "p50": 1.7950651231221855,
+            "p95": 6.7833541627041996,
+            "max": 7.241459167096764
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 62,
+              "p50": 1.79498080490157,
+              "p95": 2.281266690697521,
+              "max": 2.498390343040228
+            },
+            "retry_wait_seconds": {
+              "count": 62,
+              "p50": 0.0,
+              "p95": 4.473956015892327,
+              "max": 4.758754518348724
+            }
+          },
+          "attempts": 174,
+          "retry_wait_total": 194.42949148640037
+        },
+        "month_history": {
+          "statuses": {
+            "200": 61,
+            "429": 25
+          },
+          "latency": {
+            "count": 61,
+            "p50": 1.8907815399579704,
+            "p95": 7.074540700763464,
+            "max": 7.347801067866385
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 61,
+              "p50": 1.8830067329108715,
+              "p95": 2.5484169349074364,
+              "max": 2.8187376954592764
+            },
+            "retry_wait_seconds": {
+              "count": 61,
+              "p50": 0.0,
+              "p95": 4.558633364271373,
+              "max": 4.767911069095135
+            }
+          },
+          "attempts": 167,
+          "retry_wait_total": 184.1447162143886
+        },
+        "month_page": {
+          "statuses": {
+            "200": 152,
+            "429": 78
+          },
+          "latency": {
+            "count": 152,
+            "p50": 0.49884599493816495,
+            "p95": 5.7093687313608825,
+            "max": 6.066687235608697
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 152,
+              "p50": 0.4179178308695555,
+              "p95": 1.032304473221302,
+              "max": 1.5090233338996768
+            },
+            "retry_wait_seconds": {
+              "count": 152,
+              "p50": 0.0,
+              "p95": 4.587752096354961,
+              "max": 4.881979436613619
+            }
+          },
+          "attempts": 484,
+          "retry_wait_total": 566.7593309772201
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 45,
+            "429": 19
+          },
+          "latency": {
+            "count": 45,
+            "p50": 1.7886017700657248,
+            "p95": 6.846992248203605,
+            "max": 7.254007531795651
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 45,
+              "p50": 1.7885007611475885,
+              "p95": 2.4050084282644093,
+              "max": 2.727543772663921
+            },
+            "retry_wait_seconds": {
+              "count": 45,
+              "p50": 0.0,
+              "p95": 4.212098485324532,
+              "max": 4.882590780965984
+            }
+          },
+          "attempts": 125,
+          "retry_wait_total": 135.240570562426
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 52,
+            "429": 12
+          },
+          "latency": {
+            "count": 52,
+            "p50": 1.9004446207545698,
+            "p95": 6.622893963940442,
+            "max": 7.026880383957177
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 52,
+              "p50": 1.8756532361730933,
+              "p95": 2.3646429614163935,
+              "max": 2.5410651238635182
+            },
+            "retry_wait_seconds": {
+              "count": 52,
+              "p50": 0.0,
+              "p95": 4.381783575750887,
+              "max": 4.85284233558923
+            }
+          },
+          "attempts": 120,
+          "retry_wait_total": 126.17142502823845
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 41,
+            "200": 20
+          },
+          "latency": {
+            "count": 20,
+            "p50": 8.699214708991349,
+            "p95": 13.104564120061696,
+            "max": 16.63036230718717
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 20,
+              "p50": 6.7378743421286345,
+              "p95": 9.078776915557683,
+              "max": 12.347445802297443
+            },
+            "retry_wait_seconds": {
+              "count": 20,
+              "p50": 2.0795455179177225,
+              "p95": 4.57489865180105,
+              "max": 4.6414083880372345
+            }
+          },
+          "attempts": 158,
+          "retry_wait_total": 220.01479194313288
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 278
+        },
+        "latency": {
+          "count": 278,
+          "p50": 0.03080741362646222,
+          "p95": 0.45153451804071665,
+          "max": 0.7926400229334831
+        }
+      },
+      "saved_ingest": 278,
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.05249013798311353,
+          "p95": 0.0755512798205018,
+          "max": 0.15033041685819626
+        }
+      },
+      "cleanup": {
+        "completed": 57,
+        "latency": {
+          "count": 57,
+          "p50": 0.20227776328101754,
+          "p95": 0.32958416175097227,
+          "max": 0.42318418668583035
+        },
+        "deferred": 0
+      },
+      "walks": 2,
+      "db_io_delta": {
+        "temp_bytes": 22825057432,
+        "temp_files": 3483,
+        "read_ms": 0.018000000000000682,
+        "write_ms": 0.0
+      }
+    },
+    {
+      "label": "shared-after",
+      "seconds": 300,
+      "elapsed": 303.53847098955885,
+      "success": 374,
+      "exhausted429": 198,
+      "exhausted429_percent": 34.61538461538461,
+      "routes": {
+        "month_page": {
+          "statuses": {
+            "200": 153,
+            "429": 73
+          },
+          "latency": {
+            "count": 153,
+            "p50": 2.6331012691371143,
+            "p95": 5.570760047994554,
+            "max": 6.276812017895281
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 153,
+              "p50": 0.5104420576244593,
+              "p95": 1.1714921370148659,
+              "max": 1.641631401143968
+            },
+            "retry_wait_seconds": {
+              "count": 153,
+              "p50": 2.0330764930695295,
+              "p95": 4.452601231634617,
+              "max": 4.86003306414932
+            }
+          },
+          "attempts": 468,
+          "retry_wait_total": 544.3557979464531
+        },
+        "month_aggregate": {
+          "statuses": {
+            "200": 52,
+            "429": 28
+          },
+          "latency": {
+            "count": 52,
+            "p50": 2.0972367571666837,
+            "p95": 7.238450626842678,
+            "max": 7.4299180479720235
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 52,
+              "p50": 1.951517968904227,
+              "p95": 2.525661198887974,
+              "max": 2.9909282731823623
+            },
+            "retry_wait_seconds": {
+              "count": 52,
+              "p50": 0.0,
+              "p95": 4.573781399056315,
+              "max": 4.841991610825062
+            }
+          },
+          "attempts": 173,
+          "retry_wait_total": 209.04550809785724
+        },
+        "month_history": {
+          "statuses": {
+            "200": 48,
+            "429": 31
+          },
+          "latency": {
+            "count": 48,
+            "p50": 1.9339859881438315,
+            "p95": 6.793065496254712,
+            "max": 7.2424984239041805
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 48,
+              "p50": 1.9339123801328242,
+              "p95": 2.5093958568759263,
+              "max": 2.6045636772178113
+            },
+            "retry_wait_seconds": {
+              "count": 48,
+              "p50": 0.0,
+              "p95": 4.379773540887982,
+              "max": 4.70720932027325
+            }
+          },
+          "attempts": 166,
+          "retry_wait_total": 196.52533006342128
+        },
+        "fleet_trips": {
+          "statuses": {
+            "200": 48,
+            "429": 15
+          },
+          "latency": {
+            "count": 48,
+            "p50": 2.075519401114434,
+            "p95": 7.176154183223844,
+            "max": 7.278267684858292
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 48,
+              "p50": 1.963635812047869,
+              "p95": 2.5412340061739087,
+              "max": 2.7571371239610016
+            },
+            "retry_wait_seconds": {
+              "count": 48,
+              "p50": 0.0,
+              "p95": 4.6744057410396636,
+              "max": 4.921873869840056
+            }
+          },
+          "attempts": 124,
+          "retry_wait_total": 138.19816200481728
+        },
+        "fleet_csv": {
+          "statuses": {
+            "200": 51,
+            "429": 11
+          },
+          "latency": {
+            "count": 51,
+            "p50": 1.8728741677477956,
+            "p95": 6.5752826002426445,
+            "max": 7.092393093276769
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 51,
+              "p50": 1.872784299775958,
+              "p95": 2.4744871710427105,
+              "max": 2.639113692101091
+            },
+            "retry_wait_seconds": {
+              "count": 51,
+              "p50": 0.0,
+              "p95": 4.3518635937944055,
+              "max": 4.668531467206776
+            }
+          },
+          "attempts": 110,
+          "retry_wait_total": 107.34786795265973
+        },
+        "fleet_xlsx": {
+          "statuses": {
+            "429": 40,
+            "200": 22
+          },
+          "latency": {
+            "count": 22,
+            "p50": 6.954313140828162,
+            "p95": 13.590364505071193,
+            "max": 14.008425525389612
+          },
+          "phases": {
+            "request_seconds": {
+              "count": 22,
+              "p50": 6.9375074580311775,
+              "p95": 9.216697571333498,
+              "max": 11.780997052788734
+            },
+            "retry_wait_seconds": {
+              "count": 22,
+              "p50": 0.0,
+              "p95": 4.295550648588687,
+              "max": 4.8528163260780275
+            }
+          },
+          "attempts": 155,
+          "retry_wait_total": 207.31506484141573
+        }
+      },
+      "ingest": {
+        "statuses": {
+          "200": 261
+        },
+        "latency": {
+          "count": 261,
+          "p50": 0.04975317884236574,
+          "p95": 0.763562398031354,
+          "max": 0.9830582407303154
+        }
+      },
+      "saved_ingest": 261,
+      "pdf": {
+        "completed": 99,
+        "latency": {
+          "count": 99,
+          "p50": 0.05385676305741072,
+          "p95": 0.08290042076259851,
+          "max": 0.12505298107862473
+        }
+      },
+      "cleanup": {
+        "completed": 56,
+        "latency": {
+          "count": 56,
+          "p50": 0.20783708523958921,
+          "p95": 0.4130480890162289,
+          "max": 0.4525539679452777
+        },
+        "deferred": 0
+      },
+      "walks": 2,
+      "db_io_delta": {
+        "temp_bytes": 21807450424,
+        "temp_files": 3291,
+        "read_ms": 0.0,
+        "write_ms": 0.0
+      }
+    }
+  ],
+  "sql": [
+    {
+      "label": "before",
+      "route": "history",
+      "mode": "force_custom_plan",
+      "repeats": 3,
+      "sql_ms_median": 1349.301,
+      "open_cell_ms_median": 337.217497,
+      "open_cell_calls": [
+        44883
+      ],
+      "pgp_ms_median": 146.104023,
+      "temp_read_blocks_median": 10668,
+      "temp_written_blocks_median": 15347
+    },
+    {
+      "label": "before",
+      "route": "history",
+      "mode": "force_generic_plan",
+      "repeats": 3,
+      "sql_ms_median": 35894.105,
+      "open_cell_ms_median": 338.957853,
+      "open_cell_calls": [
+        44883
+      ],
+      "pgp_ms_median": 146.120694,
+      "temp_read_blocks_median": 2284,
+      "temp_written_blocks_median": 6963
+    },
+    {
+      "label": "before",
+      "route": "page",
+      "mode": "force_custom_plan",
+      "repeats": 3,
+      "sql_ms_median": 119.034,
+      "open_cell_ms_median": 26.010542,
+      "open_cell_calls": [
+        3466
+      ],
+      "pgp_ms_median": 11.205675,
+      "temp_read_blocks_median": 0,
+      "temp_written_blocks_median": 0
+    },
+    {
+      "label": "before",
+      "route": "page",
+      "mode": "force_generic_plan",
+      "repeats": 3,
+      "sql_ms_median": 124.032,
+      "open_cell_ms_median": 26.237854,
+      "open_cell_calls": [
+        3466
+      ],
+      "pgp_ms_median": 11.280269,
+      "temp_read_blocks_median": 0,
+      "temp_written_blocks_median": 0
+    },
+    {
+      "label": "before",
+      "route": "aggregate",
+      "mode": "force_custom_plan",
+      "repeats": 3,
+      "sql_ms_median": 1548.701,
+      "open_cell_ms_median": 298.031477,
+      "open_cell_calls": [
+        44640
+      ],
+      "pgp_ms_median": 137.450065,
+      "temp_read_blocks_median": 15923,
+      "temp_written_blocks_median": 21990
+    },
+    {
+      "label": "before",
+      "route": "aggregate",
+      "mode": "force_generic_plan",
+      "repeats": 3,
+      "sql_ms_median": 1500.723,
+      "open_cell_ms_median": 301.290753,
+      "open_cell_calls": [
+        44640
+      ],
+      "pgp_ms_median": 137.361622,
+      "temp_read_blocks_median": 1622,
+      "temp_written_blocks_median": 7689
+    },
+    {
+      "label": "before",
+      "route": "fleet_points",
+      "mode": "force_custom_plan",
+      "repeats": 3,
+      "sql_ms_median": 606.531,
+      "open_cell_ms_median": 295.511121,
+      "open_cell_calls": [
+        44640
+      ],
+      "pgp_ms_median": 136.231174,
+      "temp_read_blocks_median": 16474,
+      "temp_written_blocks_median": 17383
+    },
+    {
+      "label": "before",
+      "route": "fleet_points",
+      "mode": "force_generic_plan",
+      "repeats": 3,
+      "sql_ms_median": 561.502,
+      "open_cell_ms_median": 299.278299,
+      "open_cell_calls": [
+        44640
+      ],
+      "pgp_ms_median": 136.72001,
+      "temp_read_blocks_median": 2173,
+      "temp_written_blocks_median": 3082
+    },
+    {
+      "label": "after",
+      "route": "history",
+      "mode": "force_custom_plan",
+      "repeats": 3,
+      "sql_ms_median": 1324.286,
+      "open_cell_ms_median": 339.188751,
+      "open_cell_calls": [
+        44883
+      ],
+      "pgp_ms_median": 146.396415,
+      "temp_read_blocks_median": 3039,
+      "temp_written_blocks_median": 7718
+    },
+    {
+      "label": "after",
+      "route": "history",
+      "mode": "force_generic_plan",
+      "repeats": 3,
+      "sql_ms_median": 33649.433,
+      "open_cell_ms_median": 339.737234,
+      "open_cell_calls": [
+        44883
+      ],
+      "pgp_ms_median": 145.977613,
+      "temp_read_blocks_median": 2284,
+      "temp_written_blocks_median": 6963
+    },
+    {
+      "label": "after",
+      "route": "page",
+      "mode": "force_custom_plan",
+      "repeats": 3,
+      "sql_ms_median": 120.457,
+      "open_cell_ms_median": 26.576993,
+      "open_cell_calls": [
+        3466
+      ],
+      "pgp_ms_median": 11.365682,
+      "temp_read_blocks_median": 0,
+      "temp_written_blocks_median": 0
+    },
+    {
+      "label": "after",
+      "route": "page",
+      "mode": "force_generic_plan",
+      "repeats": 3,
+      "sql_ms_median": 125.159,
+      "open_cell_ms_median": 26.306647,
+      "open_cell_calls": [
+        3466
+      ],
+      "pgp_ms_median": 11.221654,
+      "temp_read_blocks_median": 0,
+      "temp_written_blocks_median": 0
+    },
+    {
+      "label": "after",
+      "route": "aggregate",
+      "mode": "force_custom_plan",
+      "repeats": 3,
+      "sql_ms_median": 1495.522,
+      "open_cell_ms_median": 301.985054,
+      "open_cell_calls": [
+        44640
+      ],
+      "pgp_ms_median": 137.460033,
+      "temp_read_blocks_median": 1622,
+      "temp_written_blocks_median": 7689
+    },
+    {
+      "label": "after",
+      "route": "aggregate",
+      "mode": "force_generic_plan",
+      "repeats": 3,
+      "sql_ms_median": 1493.368,
+      "open_cell_ms_median": 300.44175,
+      "open_cell_calls": [
+        44640
+      ],
+      "pgp_ms_median": 136.713535,
+      "temp_read_blocks_median": 1622,
+      "temp_written_blocks_median": 7689
+    },
+    {
+      "label": "after",
+      "route": "fleet_points",
+      "mode": "force_custom_plan",
+      "repeats": 3,
+      "sql_ms_median": 565.27,
+      "open_cell_ms_median": 301.412262,
+      "open_cell_calls": [
+        44640
+      ],
+      "pgp_ms_median": 137.814755,
+      "temp_read_blocks_median": 2173,
+      "temp_written_blocks_median": 3082
+    },
+    {
+      "label": "after",
+      "route": "fleet_points",
+      "mode": "force_generic_plan",
+      "repeats": 3,
+      "sql_ms_median": 562.24,
+      "open_cell_ms_median": 300.073219,
+      "open_cell_calls": [
+        44640
+      ],
+      "pgp_ms_median": 136.960721,
+      "temp_read_blocks_median": 2173,
+      "temp_written_blocks_median": 3082
+    }
+  ],
+  "api": [
+    {
+      "label": "candidate-1",
+      "kind": "regular",
+      "outcome": "busy",
+      "count": 719,
+      "phases": {
+        "admission_ms": {
+          "median": 251.07826599999999,
+          "p95": 251.949863
+        },
+        "pool_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "setup_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "scope_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        }
+      }
+    },
+    {
+      "label": "candidate-1",
+      "kind": "regular",
+      "outcome": "completed",
+      "count": 476,
+      "phases": {
+        "admission_ms": {
+          "median": 19.9739985,
+          "p95": 230.500231
+        },
+        "pool_ms": {
+          "median": 0.161649,
+          "p95": 0.258936
+        },
+        "setup_ms": {
+          "median": 0.1500625,
+          "p95": 0.225383
+        },
+        "scope_ms": {
+          "median": 1501.0511784999999,
+          "p95": 1622.491078
+        }
+      }
+    },
+    {
+      "label": "candidate-1",
+      "kind": "history",
+      "outcome": "busy",
+      "count": 116,
+      "phases": {
+        "admission_ms": {
+          "median": 251.0217055,
+          "p95": 251.882414
+        },
+        "pool_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "setup_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "scope_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        }
+      }
+    },
+    {
+      "label": "candidate-1",
+      "kind": "history",
+      "outcome": "completed",
+      "count": 51,
+      "phases": {
+        "admission_ms": {
+          "median": 9.998584,
+          "p95": 227.212031
+        },
+        "pool_ms": {
+          "median": 0.162215,
+          "p95": 0.237035
+        },
+        "setup_ms": {
+          "median": 0.161473,
+          "p95": 0.22278900000000001
+        },
+        "scope_ms": {
+          "median": 1371.411393,
+          "p95": 1446.015664
+        }
+      }
+    },
+    {
+      "label": "candidate-2",
+      "kind": "regular",
+      "outcome": "busy",
+      "count": 736,
+      "phases": {
+        "admission_ms": {
+          "median": 251.0666005,
+          "p95": 251.858774
+        },
+        "pool_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "setup_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "scope_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        }
+      }
+    },
+    {
+      "label": "candidate-2",
+      "kind": "regular",
+      "outcome": "completed",
+      "count": 458,
+      "phases": {
+        "admission_ms": {
+          "median": 49.2211785,
+          "p95": 229.20185500000002
+        },
+        "pool_ms": {
+          "median": 0.1558185,
+          "p95": 0.28401400000000004
+        },
+        "setup_ms": {
+          "median": 0.1490255,
+          "p95": 0.224051
+        },
+        "scope_ms": {
+          "median": 1504.330418,
+          "p95": 1627.949101
+        }
+      }
+    },
+    {
+      "label": "candidate-2",
+      "kind": "history",
+      "outcome": "busy",
+      "count": 107,
+      "phases": {
+        "admission_ms": {
+          "median": 251.03282399999998,
+          "p95": 251.80462599999998
+        },
+        "pool_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "setup_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "scope_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        }
+      }
+    },
+    {
+      "label": "candidate-2",
+      "kind": "history",
+      "outcome": "completed",
+      "count": 61,
+      "phases": {
+        "admission_ms": {
+          "median": 75.068329,
+          "p95": 236.25701700000002
+        },
+        "pool_ms": {
+          "median": 0.171082,
+          "p95": 0.239842
+        },
+        "setup_ms": {
+          "median": 0.157697,
+          "p95": 0.231336
+        },
+        "scope_ms": {
+          "median": 1357.322561,
+          "p95": 1458.594745
+        }
+      }
+    },
+    {
+      "label": "shared-after",
+      "kind": "regular",
+      "outcome": "completed",
+      "count": 456,
+      "phases": {
+        "admission_ms": {
+          "median": 26.267589,
+          "p95": 222.497473
+        },
+        "pool_ms": {
+          "median": 0.159731,
+          "p95": 0.264187
+        },
+        "setup_ms": {
+          "median": 0.150764,
+          "p95": 0.246454
+        },
+        "scope_ms": {
+          "median": 1544.446231,
+          "p95": 1650.82433
+        }
+      }
+    },
+    {
+      "label": "shared-after",
+      "kind": "regular",
+      "outcome": "busy",
+      "count": 711,
+      "phases": {
+        "admission_ms": {
+          "median": 251.06538299999997,
+          "p95": 251.90046500000003
+        },
+        "pool_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "setup_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "scope_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        }
+      }
+    },
+    {
+      "label": "shared-after",
+      "kind": "history",
+      "outcome": "busy",
+      "count": 119,
+      "phases": {
+        "admission_ms": {
+          "median": 251.07715400000004,
+          "p95": 251.974086
+        },
+        "pool_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "setup_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "scope_ms": {
+          "median": 0.0,
+          "p95": 0.0
+        }
+      }
+    },
+    {
+      "label": "shared-after",
+      "kind": "history",
+      "outcome": "completed",
+      "count": 48,
+      "phases": {
+        "admission_ms": {
+          "median": 8.4861905,
+          "p95": 184.7336
+        },
+        "pool_ms": {
+          "median": 0.15629949999999998,
+          "p95": 0.264057
+        },
+        "setup_ms": {
+          "median": 0.150248,
+          "p95": 0.21595699999999998
+        },
+        "scope_ms": {
+          "median": 1396.1455995000001,
+          "p95": 1476.5352579999999
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "SQL execution includes decryption; function time is not added to SQL time.",
+    "API scope includes SQL, transfer and application work, not background cancellation cleanup.",
+    "Client successful latency includes HTTP attempts and retry waits; p95 components are not additive.",
+    "Two sequential300-second runs per dedicated variant; one shared pair, not statistical confidence.",
+    "Warm synthetic DB on a shared build host; not current3GiB production capacity acceptance."
+  ]
+}

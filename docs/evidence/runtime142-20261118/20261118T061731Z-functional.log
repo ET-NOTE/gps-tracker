@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/opt/gps121/test_company_tasks142.py", line 134, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_company_tasks142.py", line 44, in main
+    scope,other_scope,empty_scope=[review(n) for n in range(3)]
+  File "/opt/gps121/test_company_tasks142.py", line 44, in <listcomp>
+    scope,other_scope,empty_scope=[review(n) for n in range(3)]
+  File "/opt/gps121/test_company_tasks142.py", line 43, in review
+    def review(n):return sql("INSERT INTO privacy_company_reviews(request_id,company_owner_id,staff_id,category,from_at,until_at,status,identity,identity_evidence,internal_reason,updated_by) VALUES(%s,%s,%s,'files',%s,%s,'awaiting_company','confirmed','PRIVATE-IDENTITY','PRIVATE-REASON',%s) RETURNING id",(rid,owner['user_id'],staff,start+timedelta(seconds=n),end+timedelta(seconds=n),operator['user_id']))[0][0]
+  File "/opt/gps121/test_unattributed132.py", line 33, in sql
+    c.execute(query, args or None)
+psycopg2.errors.NotNullViolation: null value in column "due_at" of relation "privacy_company_reviews" violates not-null constraint
+DETAIL:  Failing row contains (1, 1, 5, 1, files, 2026-11-16 06:17:34.524113+00, 2026-11-17 06:17:34.524113+00, awaiting_company, confirmed, PRIVATE-IDENTITY, , , PRIVATE-REASON, 회사 자료의 본인 범위와 처리 방법을 확인하고 ..., null, {}, 1, 2, 2026-11-18 06:17:34.527833+00, 2026-11-18 06:17:34.527833+00).
+

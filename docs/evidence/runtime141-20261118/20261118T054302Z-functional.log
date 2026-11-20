@@ -1,0 +1,8 @@
+PASS 107 available tasks traverse50/50/7 in publication order; strict projection/no-store; owner-only; expired/revoked/unconfirmed/foreign excluded; GET writes nothing
+PASS 24 status/category combinations, exact100 filtered final cursor, legacy after0, invalid/identity override400 and empty page verified
+PASS one held inbox read cancelled over TLS; SQL ended, next request200, no mutation and no sustained load
+PASS old page opens fresh detail; foreign404/delegation403/stale409/attestation400; submission leaves requested filter, does not auto-complete, file stored sealed
+PASS operator must download exact latest proof and attest; company download insufficient; changes requested/resubmit/new proof/accept preserves whole-request status and immutable earlier submission
+PASS revoke/expiry/unconfirmed identity/cancelled parent deny company detail/submission/proof; reviewed evidence remains available to operator
+PASS restricted company cannot use saved task/proof routes; evidence and parent history remain intact; schema114/no automatic erasure
+PASS all 7 functional groups

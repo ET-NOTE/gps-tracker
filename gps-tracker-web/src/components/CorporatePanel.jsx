@@ -1,23 +1,47 @@
-// 법인차 운영 패널 — 4개 서브탭: 회사정보 / 직원 / 운행 리포트 / 구독.
-// 운행 리포트는 디바이스 + 날짜 범위 선택 → 운행 목록 + 주석 편집 + 인쇄.
-//
-// 인쇄: 브라우저 window.print() 호출. @media print 로 nav/사이드 다 숨기고 리포트만.
-
+import {saveBlob} from '../lib/fileDownload';
+import { subjectReport, subjectScopeNote } from '../lib/subjectReport';
+import {summarizeMonthlyTrips,monthlyDistance,monthlyPercentages,monthlyStatus} from '../lib/monthlySummary';
+import FleetIncompleteTrips from './business/FleetIncompleteTrips';
+import {tripNeedsDetails} from '../lib/incompleteTrips';
+import TripQualitySummary from './business/TripQualitySummary';
+import {TripEvidence,TripCorrection,TripCorrectionHistory} from './business/FleetTripQuality';
+import {qualityLabel,reportIncluded,tripTimeRange} from '../lib/tripQuality';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Icon from './Icon';
+import ExportButtons from './business/ExportButtons';
+import StaffTab from './business/FleetPeople';
+import {CompanySubjectMappings} from './SubjectProvision';
+import FleetSites from './business/FleetSites';
+import FleetExpenses from './business/FleetExpenses';
+import {TripAssignmentModal,TripRulesModal,TripAssignmentHistory} from './business/FleetTripAssignments';
+import {tripAssignmentKey,canAssignTrip} from '../lib/tripAssignments';
+import {FleetAccountScope,useFleetAccess,staffCanDrive} from './business/FleetAccess';
+import { BusinessCompanyInfo as InfoTab, BusinessSubscription as SubTab } from './business/BusinessPreferences';
+import { filterTrips, tripReport, tripDistance, monthlyReport, monthDateBounds, purposeLabel } from '../lib/businessExport';
+import { BusinessWorkspace, BusinessLocation, useBusinessVehicle, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
+import { tripCompleteness } from '../lib/businessWorkspace';
+import { corporateAttention, corporateVehicleName, terminalName, missingMaintenance } from '../lib/corporateOverview';
+import { corporateGroups, corporateTabs } from '../lib/corporateNavigation';
+import { ntsTripReport, reportVehicleLabel } from '../lib/ntsReport';
+import { validateOdometerInput, odometerSummary } from '../lib/tripOdometer';
+import { classifyDevice, ageString } from '../colors';
+import { deviceBattery } from '../lib/battery';
+import { kstDateTime } from '../lib/businessExport';
+import { useBusinessClock, useBusinessSubscription } from './business/useBusinessData';
+import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleName } from '../lib/business';
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
-import { useFleetStats } from './shared/useFleetStats';
-import { panelPropsEqual } from './shared/memoPanel';
-import { Modal, Button, SkeletonList, toast } from './ui';
+import {FleetAssets,FleetAssetForm,FleetAssetDetail,useFleetAssets,projectFleetAssets,fleetAssetsKey,useAssetStats as useFleetStats,useFleetReservations as useReservations,useCreateFleetReservation as useCreateReservation,useUpdateFleetReservation as useUpdateReservation,useCancelFleetReservation as useDeleteReservation} from './business/FleetAssets';
+import { Modal, FormField, Input, Select, Textarea, Button, SkeletonList } from './ui';
 import {
-  useCorporateInfo, useStaff, useReservations, useDocuments,
-  useCreateReservation, useUpdateReservation, useDeleteReservation,
-  useCreateStaff, useUpdateStaff, useRemoveStaff,
-  useUploadDocument, useDeleteDocument, qk,
+  useCorporateInfo, useStaff,
+  qk,
 } from '../state';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery,useQueryClient } from '@tanstack/react-query';
+import './business/corporate-console.css';
+import './business/corporate-trips-cartax.css';
+import './business/directory-layout.css';
 
 const PURPOSE_LABEL = {
   commute:     '출퇴근',
@@ -26,554 +50,343 @@ const PURPOSE_LABEL = {
   unspecified: '미지정',
 };
 
-function CorporatePanel({ devices }) {
-  const [tab, setTab] = useState(() => localStorage.getItem('corporate_tab') || 'report');
-  const setTabPersist = (t) => { setTab(t); try { localStorage.setItem('corporate_tab', t); } catch {} };
-
-  const [sub, setSub] = useState(null);
-
-  useEffect(() => {
-    api.getCorporateSubscription().then(setSub).catch(() => {});
-  }, []);
-
-  const tabs = [
-    { id: 'report',       label: '운행 리포트', icon: 'route' },
-    { id: 'monthly',      label: '월간 리포트', icon: 'bar' },   // (2026-07-28) Stage-3A
-    { id: 'vehicles',     label: '차량 관리',   icon: 'list' },  // (2026-07-28) Stage-4C-1
-    { id: 'reservations', label: '차량 예약',   icon: 'clock' }, // (2026-07-28) Stage-4F-1
-    { id: 'staff',        label: '직원',       icon: 'user' },
-    { id: 'info',         label: '회사 정보',   icon: 'list' },
-    { id: 'sub',          label: '구독',       icon: 'coin' },
-  ];
-
-  return (
-    <div style={st.wrap}>
-      <div style={st.tabBar} className="no-print">
-        {tabs.map(t => {
-          const on = tab === t.id;
-          return (
-            <button key={t.id} onClick={() => setTabPersist(t.id)}
-              style={{
-                ...st.tabBtn,
-                color: on ? 'var(--primary)' : 'var(--text-2)',
-                background: on ? 'var(--surface-2)' : 'transparent',
-                fontWeight: on ? 700 : 500,
-                borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
-              }}>
-              <Icon name={t.icon} size={14} />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={st.body}>
-        {tab === 'report'       && <ReportTab devices={devices} sub={sub} onSubChange={setSub} />}
-        {tab === 'monthly'      && <MonthlyReportTab devices={devices} sub={sub} />}
-        {tab === 'vehicles'     && <VehiclesTab devices={devices} />}
-        {tab === 'reservations' && <ReservationsTab devices={devices} />}
-        {tab === 'staff'        && <StaffTab />}
-        {tab === 'info'         && <InfoTab />}
-        {tab === 'sub'          && <SubTab sub={sub} onChange={setSub} />}
-      </div>
-    </div>
-  );
+function reportPeriodError(from, to) {
+  const dayStart = value => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return NaN;
+    const time = Date.parse(`${value}T00:00:00+09:00`);
+    return Number.isFinite(time) && new Date(time + 9 * 3600000).toISOString().slice(0, 10) === value ? time : NaN;
+  };
+  const start = dayStart(from), lastDay = dayStart(to);
+  if (!Number.isFinite(start) || !Number.isFinite(lastDay) || lastDay < start) return '조회 시작일과 종료일을 올바르게 선택해 주세요.';
+  // The API includes the final Korean date through 23:59:59, up to 366 days.
+  if (lastDay + 86400000 - 1000 - start > 366 * 86400000) return '조회 기간은 시작일과 종료일을 포함해 최대 366일입니다. 기간을 줄여 주세요.';
+  return '';
 }
 
-// (F3) devices lat/lng 만 변경 시 재렌더 skip.
-export default React.memo(CorporatePanel, panelPropsEqual);
+function reportMonthError(month) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '')) return '다운로드할 월을 선택해 주세요.';
+  const year = Number(month.slice(0, 4));
+  return year < 2000 || year > 2100 ? '다운로드 월은 2000년 1월부터 2100년 12월까지 선택할 수 있습니다.' : '';
+}
 
-// ════════════════════════════════════════════════════════
-// 회사 정보 — 국세청 운행기록부 헤더 정보. (2026-07-28 재디자인)
-// 국세청 양식 (별지 제73호 서식) 헤더 필수: 사업자번호 · 상호 · 대표자.
-// ════════════════════════════════════════════════════════
-function InfoTab() {
-  // (F2-c) useCorporateInfo hook. setInfo(local) 는 캐시로 optimistic.
-  const { data: serverInfo } = useCorporateInfo();
+function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice, onVehiclesChange, onNavigate, globalNavigation, meta: personalMeta, toolbar }) {
+  const access=useFleetAccess();
+  const terminals=useQuery({queryKey:['fleet-terminals'],queryFn:()=>api.fleetTerminals(),refetchInterval:30000,structuralSharing:false});
+  const subjectScoped=Boolean(terminals.data?.subjectScope);
+  const rawDevices=terminals.data||[],rawMeta=access.billing&&!subjectScoped?personalMeta:{},rawOnMap=access.billing&&!subjectScoped?personalMap:undefined;
+  const assets=useFleetAssets();
+  const terminalsReady=!terminals.isPending&&!terminals.error;
+  const vehiclesReady=!assets.isPending&&!assets.error;
+  const devices=useMemo(()=>vehiclesReady&&terminalsReady?projectFleetAssets(assets.data||[],rawDevices):[],[vehiclesReady,terminalsReady,assets.data,rawDevices]);
+  const meta=Object.fromEntries(devices.map(d=>[d.id,rawMeta?.[d.source_device_id]]));
+  const onMap=id=>{const sim=devices.find(v=>v.id===id)?.source_device_id;if(sim)rawOnMap?.(sim);};
+  const [editAsset,setEditAsset]=useState(null);
+  const staff=useStaff();
+  const [tab, setTab] = useState('overview');
+  const [missingSchedulesOnly,setMissingSchedulesOnly]=useState(false);
+  const openVehicles=(missingOnly=false)=>{setMissingSchedulesOnly(missingOnly);setTab('vehicles');};
+  const [sectionTabs,setSectionTabs] = useState({staff:'users',sites:'sites',settings:'company'});
+  const selectSection = value => setSectionTabs(previous=>({...previous,[tab]:value}));
+  const sectionNavigation = {
+    staff: [['users','사용자 목록'],['organization','부서·직책'],...(access.manage_team?[['audit','변경 이력']]:[])],
+    sites: [['sites','지점 목록'],['visits','방문 기록'],...(access.manage_team?[['groups','그룹 관리']]:[])],
+    settings: [['company','회사 정보'],['subscription','이용권 관리']],
+  };
+  const [request, setRequest] = useState(null);
+  const [reportDevice, setReportDevice] = useState(null);
+  const [reportFilter,setReportFilter]=useState(null);
+  const subscription = useBusinessSubscription('corporate');
   const qc = useQueryClient();
-  const [local, setLocal] = useState(null);
-  // 서버 값이 들어오면 local 초기화 (편집 중이 아닐 때만)
-  useEffect(() => { if (serverInfo && !local) setLocal(serverInfo); }, [serverInfo, local]);
-  const info = local || serverInfo;
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    setBusy(true);
-    try {
-      const r = await api.putCorporateInfo({
-        business_number: info.business_number || null,
-        company_name:    info.company_name    || null,
-        address:         info.address         || null,
-        representative:  info.representative   || null,
-      });
-      qc.setQueryData(qk.corporateInfo(), r);
-      setLocal(r);
-      toast.success({ title: '저장 완료', body: '운행기록부 헤더에 반영됩니다.' });
-    } catch (e) { await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' }); }
-    finally { setBusy(false); }
+  const updateSub = value => qc.setQueryData(qk.businessSubscription('corporate'), value);
+  const reserve = value => { setRequest(value); setTab('reservations'); };
+  const report = (device,filter=null) => { setReportDevice(device.id); setReportFilter(filter); setTab('report'); };
+  const terminalError = terminals.error;
+  const terminalNotice = terminalError && <BusinessError onRetry={terminals.refetch}>단말기 상태를 불러오지 못했습니다.</BusinessError>;
+  if (terminalError) {
+    const {status, name} = terminalError;
+    const unavailable = status == null ? name === 'TypeError' : [0, 408, 429].includes(status) || status >= 500;
+    // Keep the company access gate on denied or unrecognized responses.
+    if (!unavailable) return <div className="fleet-access-error">{toolbar}{terminalNotice}{access.manage_team&&<CompanySubjectMappings/>}</div>;
   }
-
-  if (!info) return <div style={st.muted}>로딩...</div>;
-  const set = (k, v) => setLocal(prev => ({ ...(prev || info), [k]: v }));
-  const required = ['business_number', 'company_name', 'representative'];
-  const missing = required.filter(k => !info[k]);
-  const complete = missing.length === 0;
-
-  return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* 안내 배너 — 국세청 양식 매핑 안내 */}
-      <div style={{
-        background: complete
-          ? 'color-mix(in srgb, var(--accent) 8%, transparent)'
-          : 'color-mix(in srgb, var(--warning) 10%, transparent)',
-        border: '1px solid var(--border)', borderRadius: 12,
-        padding: 14, display: 'flex', gap: 12, alignItems: 'flex-start',
-      }}>
-        <div style={{
-          width: 30, height: 30, borderRadius: 10,
-          background: complete ? 'var(--accent)' : 'var(--warning)',
-          color: 'var(--primary-fg)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <Icon name={complete ? 'target' : 'warn'} size={16} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-            {complete ? '운행기록부 헤더 준비 완료' : `필수 정보 ${missing.length}개 남음`}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
-            국세청 별지 제73호 (업무용승용차 운행기록부) 서식 헤더에 사용됩니다.
-            사업자번호·상호·대표자 3개는 필수 (경비 인정 근거).
-          </div>
-        </div>
-      </div>
-
-      <div style={st.sectionCard}>
-        <div style={st.sectionCardHeader}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Icon name="list" size={14} />
-            <span>회사 정보</span>
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, padding: 16 }}>
-          <TrendyField label="사업자번호" required value={info.business_number || ''}
-            placeholder="000-00-00000" onChange={v => set('business_number', v)} />
-          <TrendyField label="상호 (회사명)" required value={info.company_name || ''}
-            placeholder="○○ 주식회사" onChange={v => set('company_name', v)} />
-          <TrendyField label="대표자" required value={info.representative || ''}
-            placeholder="홍길동" onChange={v => set('representative', v)} />
-          <TrendyField label="주소" value={info.address || ''}
-            placeholder="서울특별시 ..." onChange={v => set('address', v)} />
-        </div>
-        <div style={{ padding: '0 16px 16px', display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={save} disabled={busy} style={st.btnPrimary}>
-            {busy ? '저장 중...' : '저장'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const needsVehicles=tab!=='expense-categories';
+  const vehicleNotice = terminalNotice || (terminalsReady && assets.error && <BusinessError onRetry={assets.refetch}>등록 차량을 불러오지 못했습니다.</BusinessError>);
+  return <BusinessWorkspace renderVehicleDetail={(device,close)=><FleetAssetDetail meta={meta[device.id]} asset={device.asset} devices={rawDevices} onClose={close} onChanged={assets.refetch} onEdit={()=>{close();setEditAsset(device.asset);}} onMap={rawOnMap} onReport={report}/>} title="법인차 운영" tabs={corporateTabs} groups={corporateGroups} tab={tab} onTab={value => { setRequest(null); setReportFilter(null); setMissingSchedulesOnly(false); setTab(value); }} devices={devices} kind="corporate" onMap={onMap} onVehicleAction={report} onManageVehicle={onDevice} onNavigate={onNavigate} onVehiclesChange={onVehiclesChange} meta={meta}
+    toolbar={toolbar} globalNavigation={globalNavigation} section={sectionTabs[tab]}
+    headerNavigation={sectionNavigation[tab]&&<nav className="business-subnav no-print" aria-label={`${corporateTabs.find(item=>item.id===tab)?.label} 하위 메뉴`}>{sectionNavigation[tab].map(([id,label])=><button type="button" className="business-subnav-item" key={id} aria-current={sectionTabs[tab]===id?'page':undefined} onClick={()=>selectSection(id)}>{label}</button>)}</nav>}
+    >
+    {subjectScoped && tab!=='report' && <p className="business-note" role="status">{subjectScopeNote}</p>}
+    {needsVehicles&&(!terminalsReady||!vehiclesReady) ? (vehicleNotice || <SkeletonList count={3} itemHeight={140}/>) : <>
+    {tab === 'overview' && access.manage_vehicles && <details className="corporate-setup"><summary>회사 시작하기</summary><div className="fleet-onboarding" aria-label="회사 시작하기"><BusinessButton onClick={()=>setTab('settings')}>회사 정보</BusinessButton><BusinessButton onClick={()=>openVehicles()}>차량 등록·단말기 연결</BusinessButton><BusinessButton onClick={()=>setTab('staff')}>사용자 배정</BusinessButton></div></details>}
+    {tab === 'overview' && <CorporateOverview devices={devices} onMap={onMap} onDevice={onDevice} onReport={report} onReserve={reserve} onMissingSchedules={()=>openVehicles(true)} />}
+    {tab === 'vehicles' && <FleetAssets key={missingSchedulesOnly?'missing-schedules':'all'} initialMissingSchedules={missingSchedulesOnly} onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={rawOnMap} onChanged={assets.refetch} />}
+    {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
+    {tab === 'staff' && <><StaffTab activeTab={sectionTabs.staff} onTab={selectSection} hideNavigation />{access.manage_team&&<details className="corporate-admin-details"><summary>계정·단말기 연결 설정</summary><CompanySubjectMappings/></details>}</>}
+    {tab === 'sites' && <FleetSites activeTab={sectionTabs.sites} onTab={selectSection} hideNavigation />}
+    {['expenses','expense-categories'].includes(tab) && <FleetExpenses categoriesOnly={tab==='expense-categories'} onOpenCategories={()=>setTab('expense-categories')}/>}
+    {['report','monthly'].includes(tab) && <>
+      {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
+        : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
+        : !subscription.data.active ? <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} report />
+        : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} initialFilter={reportFilter} /> : <MonthlyReportTab devices={devices} />}</>}
+    {tab === 'settings' && <BusinessSettings activeTab={sectionTabs.settings} onTab={selectSection} hideNavigation company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
+    {vehiclesReady&&editAsset&&<FleetAssetForm asset={editAsset} staff={staff.data||[]} onClose={()=>setEditAsset(null)} onSaved={()=>{setEditAsset(null);assets.refetch();}}/>}
+    </>}
+  </BusinessWorkspace>;
 }
+export default function CorporateAccountPanel(props){return <FleetAccountScope>{toolbar=><CorporatePanel {...props} toolbar={toolbar}/>}</FleetAccountScope>;}
 
-// 트렌디 필드 — 라벨 우측에 필수 뱃지, 인풋에 hover 효과. 스타일은 st.input 재사용.
-function TrendyField({ label, required, value, onChange, placeholder }) {
-  return (
-    <div>
-      <div style={{
-        fontSize: 11, fontWeight: 600, marginBottom: 6,
-        display: 'flex', alignItems: 'center', gap: 6,
-        color: 'var(--text-2)',
-      }}>
-        <span>{label}</span>
-        {required && (
-          <span style={{
-            fontSize: 9, padding: '2px 6px', borderRadius: 4,
-            background: 'color-mix(in srgb, var(--danger) 15%, transparent)',
-            color: 'var(--danger)', fontWeight: 700,
-          }}>필수</span>
-        )}
-      </div>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={st.input} />
+function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSchedules }) {
+  const now = useBusinessClock(), openVehicle = useBusinessVehicle(), [showAll, setShowAll] = useState(false);
+  const period = businessPeriod(now), reservations = useReservations({ from: period.todayStart, to: period.todayEnd }, { refetchInterval: 60_000 });
+  const stats = useFleetStats(devices);
+  const active = (reservations.data || []).filter(r => ['planned', 'in_progress'].includes(r.status)).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
+  const maintenance = maintenanceTasks(devices, now), missing = missingMaintenance(devices);
+  const tasks = corporateAttention(devices, now, { classify: classifyDevice, battery: deviceBattery });
+  const shown = showAll ? tasks : tasks.slice(0,6);
+  const distanceHint = stats.loading ? '집계 조회 중' : stats.error ? '집계 조회 실패' : !devices.length ? '등록 차량 없음' : stats.measured ? `${stats.measured}/${devices.length}대 집계${stats.partial ? ' · 일부 집계' : ''}${stats.lastFixAt ? ` · 마지막 위치 ${kstDateTime(stats.lastFixAt)}` : ''}` : stats.pending ? `집계 대기 ${stats.pending}대${stats.noData ? ` · 오늘 위치 없음 ${stats.noData}대` : ''}` : '오늘 수신된 위치 없음';
+  return <div className="business-overview">
+    <BusinessMetrics items={[
+      { label: '등록 차량', value: devices.length, unit: '대', hint: '차량 목록에 등록된 전체 차량', icon: 'list' },
+      { label: '사용 가능', value: devices.filter(d=>d.enabled !== false).length, unit: '대', hint: '차량 운영 상태 · 통신 상태와 별도', icon: 'check', tone: 'good' },
+      { label: '오늘 운행거리', value: stats.error || stats.loading ? null : stats.todayKm, unit: 'km', hint: distanceHint + ' · 연결 변경일은 합계 제외', icon: 'route' },
+      { label: '점검 예정', value: maintenance.length, unit: '건', hint: devices.length ? `30일 이내·기한 경과${missing.length ? ` · 일정 미등록 ${missing.length}대` : ' · 일정 등록 완료'}` : '등록 차량이 없습니다', tone: maintenance.some(t=>t.overdue) ? 'urgent' : '', icon: 'wrench' },
+    ]} />
+    {stats.error && <BusinessError onRetry={stats.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
+    <div className="business-overview-grid"><BusinessLocation devices={devices} />
+      <BusinessSection title="오늘 확인할 일" description={`통신·배터리·점검 ${tasks.length}건 · 미작성 운행 확인`}>
+        {shown.map(t=><BusinessTask key={t.id} title={`${corporateVehicleName(t.device)} · ${terminalName(t.device)}`} description={`${t.description}${t.id.startsWith('signal-') && t.device.last_seen_at ? ` · 마지막 통신 ${ageString(t.device.last_seen_at)}` : ''}${t.id.startsWith('battery-') && (t.device.last_battery_at || t.device.last_seen_at) ? ` · ${kstDateTime(t.device.last_battery_at || t.device.last_seen_at)}` : ''}`} label={t.label} tone={t.tone} action="차량 확인" onClick={()=>openVehicle(t.device)} />)}
+        {tasks.length > 6 && <div className="business-section-footer"><BusinessButton onClick={()=>setShowAll(v=>!v)}>{showAll ? '접기' : `나머지 ${tasks.length-6}건 보기`}</BusinessButton></div>}
+        {missing.length > 0 && <BusinessTask title={`점검 일정 미등록 ${missing.length}대`} description="정비·보험·검사 중 등록하지 않은 일정이 있습니다." label="일정 미등록" action="미등록 차량 보기" onClick={onMissingSchedules} />}
+        {!tasks.length && !missing.length && <BusinessEmpty compact title="현재 확인할 통신·배터리·점검 항목이 없습니다." />}
+        <FleetIncompleteTrips devices={devices} onReport={onReport} now={now}/>
+      </BusinessSection>
     </div>
-  );
+    <div className="business-reservation-summary"><span>오늘 예약 <strong>{reservations.error || !reservations.data ? '—' : active.length}건</strong></span><BusinessButton onClick={()=>onReserve({})}>예약 보기</BusinessButton></div>
+    {reservations.error && <BusinessError onRetry={reservations.refetch}>오늘 예약 수를 불러오지 못했습니다.</BusinessError>}
+    <BusinessVehicles separateTerminal localMap devices={devices} onMap={onMap} onDetail={onReport} detailLabel="운행 리포트" />
+  </div>;
 }
 
 // ════════════════════════════════════════════════════════
-// 직원 — 운전자 후보. (2026-07-28 재디자인 — 카드형 + stat + 검색 + 접힘 폼)
+// 운행 리포트 — 차량별 운행기록과 내보내기.
 // ════════════════════════════════════════════════════════
-function StaffTab() {
-  // (F2-c) useStaff hook + mutations. load() 불필요 — mutation onSuccess 이 자동 invalidate.
-  const { data: list } = useStaff();
-  const createMut = useCreateStaff();
-  const updateMut = useUpdateStaff();
-  const removeMut = useRemoveStaff();
-  const [query, setQuery] = useState('');
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('');
-  const [phone, setPhone] = useState('');
-  const busy = createMut.isPending || updateMut.isPending || removeMut.isPending;
+function ReportTab({ devices, initialDeviceId, initialFilter }) {
+  const access=useFleetAccess();
+  const [selected,setSelected]=useState(new Set()),[assignment,setAssignment]=useState(null),[showRules,setShowRules]=useState(false),[showHistory,setShowHistory]=useState(false),[assignmentStatus,setAssignmentStatus]=useState('');
+  const today = businessDate();
+  const monthAgo = `${today.slice(0, 7)}-01`;
 
-  async function add() {
-    if (!name.trim()) return;
-    try {
-      await createMut.mutateAsync({ name: name.trim(), role: role || null, phone: phone || null });
-      setName(''); setRole(''); setPhone(''); setAdding(false);
-    } catch (e) { await alertDialog({ title: '실패', body: e.message, tone: 'danger' }); }
-  }
-
-  async function toggle(s) {
-    try {
-      await updateMut.mutateAsync({ id: s.id, body: { name: s.name, role: s.role, phone: s.phone, active: !s.active } });
-    } catch (e) { await alertDialog({ title: '실패', body: e.message, tone: 'danger' }); }
-  }
-
-  async function remove(s) {
-    const ok = await confirmDialog({
-      title: '직원 비활성화',
-      body: `${s.name} — 비활성화 합니다. 과거 운행일지 기록은 유지됩니다.`,
-      danger: true,
-    });
-    if (!ok) return;
-    try { await removeMut.mutateAsync(s.id); }
-    catch (e) { await alertDialog({ title: '실패', body: e.message, tone: 'danger' }); }
-  }
-
-  const totalCount    = list?.length ?? 0;
-  const activeCount   = list?.filter(s => s.active).length ?? 0;
-  const inactiveCount = totalCount - activeCount;
-  const filtered = useMemo(() => {
-    if (!list) return [];
-    const q = query.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(s =>
-      (s.name || '').toLowerCase().includes(q) ||
-      (s.role || '').toLowerCase().includes(q) ||
-      (s.phone || '').toLowerCase().includes(q));
-  }, [list, query]);
-
-  if (!list) return <div style={st.muted}>로딩...</div>;
-
-  return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <StatCardGrid>
-        <StatCard icon="user" label="전체 직원" value={totalCount}    unit="명" tone="default" />
-        <StatCard icon="user" label="활성"     value={activeCount}    unit="명" tone="success" />
-        <StatCard icon="user" label="비활성"   value={inactiveCount}  unit="명" tone="default" />
-      </StatCardGrid>
-
-      {/* 검색 + 추가 버튼 나란히 */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <input value={query} onChange={e => setQuery(e.target.value)}
-            placeholder="이름 · 역할 · 연락처 검색"
-            style={{ ...st.input, paddingLeft: 34 }} />
-          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }}>
-            <Icon name="filter" size={14} />
-          </div>
-        </div>
-        <button onClick={() => setAdding(v => !v)} style={{
-          ...st.btnPrimary, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6,
-        }}>
-          <Icon name={adding ? 'close' : 'plus'} size={13} />
-          {adding ? '닫기' : '직원 추가'}
-        </button>
-      </div>
-
-      {/* 접힘 추가 폼 */}
-      {adding && (
-        <div style={st.sectionCard}>
-          <div style={st.sectionCardHeader}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon name="plus" size={14} />
-              <span>새 직원</span>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, padding: 16 }}>
-            <TrendyField label="이름"   required value={name}  onChange={setName}  placeholder="이름" />
-            <TrendyField label="역할"            value={role}  onChange={setRole}  placeholder="영업 / 사무 / 배차 ..." />
-            <TrendyField label="연락처"          value={phone} onChange={setPhone} placeholder="010-..." />
-          </div>
-          <div style={{ padding: '0 16px 16px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <button onClick={() => { setAdding(false); setName(''); setRole(''); setPhone(''); }}
-              style={st.btnGhost}>취소</button>
-            <button onClick={add} disabled={busy || !name.trim()} style={st.btnPrimary}>
-              {busy ? '...' : '추가'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 직원 카드 리스트 */}
-      {filtered.length === 0 && (
-        <div style={st.muted}>
-          {list.length === 0 ? '아직 등록된 직원이 없습니다.' : '검색 결과가 없습니다.'}
-        </div>
-      )}
-      {filtered.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 8 }}>
-          {filtered.map(s => <StaffCard key={s.id} s={s} onToggle={() => toggle(s)} onRemove={() => remove(s)} />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// 아바타 이니셜 색상 — 이름 해시로 6가지 팔레트 배정 (직원 간 시각 구분).
-const AVATAR_PALETTE = ['#5B7CFF', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-function avatarColor(name) {
-  let h = 0;
-  for (const ch of name || '') h = (h * 31 + ch.charCodeAt(0)) | 0;
-  return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
-}
-function initials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2);
-  return (parts[0][0] || '') + (parts[parts.length - 1][0] || '');
-}
-
-function StaffCard({ s, onToggle, onRemove }) {
-  const color = avatarColor(s.name);
-  return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 12, padding: 14,
-      display: 'flex', alignItems: 'center', gap: 12,
-      opacity: s.active ? 1 : 0.55,
-    }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: '50%',
-        background: color, color: '#fff',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 700, fontSize: 14, flexShrink: 0,
-        letterSpacing: '-0.02em',
-      }}>{initials(s.name)}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{s.name}</span>
-          {s.role && (
-            <span style={{
-              fontSize: 10, padding: '2px 6px', borderRadius: 4,
-              background: 'var(--surface-2)', color: 'var(--text-2)', fontWeight: 600,
-            }}>{s.role}</span>
-          )}
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          {s.phone || '연락처 없음'}
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        <button onClick={onToggle} style={{ ...st.btnGhost, padding: '6px 10px' }} title={s.active ? '비활성화' : '활성화'}>
-          {s.active ? '비활성' : '활성'}
-        </button>
-        {s.active && (
-          <button onClick={onRemove} style={{ ...st.btnGhost, padding: '6px 8px', color: 'var(--danger)' }} title="삭제">
-            <Icon name="trash2" size={12} />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════
-// 운행 리포트 — 본 메인 기능
-// ════════════════════════════════════════════════════════
-function ReportTab({ devices, sub, onSubChange }) {
-  const today = new Date().toISOString().slice(0, 10);
-  const monthAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
-
-  const [deviceId, setDeviceId] = useState(devices[0]?.id || null);
+  const [deviceId, setDeviceId] = useState(initialDeviceId || devices[0]?.id || null);
   // hard refresh 시 useState 초기값은 첫 렌더의 devices(=[])를 캡처해서 deviceId=null 로 박힘.
   // devices 가 나중에 도착하면 deviceId 자동 채움 (사용자가 직접 안 골라도 첫 디바이스 선택).
   useEffect(() => {
     if (deviceId == null && devices.length > 0) setDeviceId(devices[0].id);
   }, [devices, deviceId]);
-  const [from, setFrom] = useState(monthAgo);
-  const [to,   setTo]   = useState(today);
+  const [from, setFrom] = useState(initialFilter?.from||monthAgo);
+  const [to,   setTo]   = useState(initialFilter?.to||today);
+  const [onlyIncomplete,setOnlyIncomplete]=useState(Boolean(initialFilter?.incomplete));
   const [trips, setTrips] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [evidence,setEvidence]=useState(null),[correction,setCorrection]=useState(null),[qualityHistory,setQualityHistory]=useState(false),[onlyReview,setOnlyReview]=useState(false);
   const [editing, setEditing] = useState(null);   // 편집 중인 trip {trip, deviceId}
-  const [downloading, setDownloading] = useState(false);
+  const [xlsxRequest, setXlsxRequest] = useState(null);
+  const [printing, setPrinting] = useState(false);
+  const printRequest = useRef(false);
   // 추가 필터 — 운전자별 / 용무별 / 최소 운행 시간(시간). all/'' 이면 미적용. AND.
   const [driverFilter,  setDriverFilter]  = useState('all');
   const [purposeFilter, setPurposeFilter] = useState('all');
   const [minHours,      setMinHours]      = useState('');
+  const [vehicleSearch,setVehicleSearch]=useState('');
+  const [filterDraft,setFilterDraft]=useState(null);
+  const draftHoursInvalid=filterDraft&&filterDraft.minHours!==''&&(!Number.isFinite(Number(filterDraft.minHours))||Number(filterDraft.minHours)<0);
+  const visibleVehicles=devices.filter(d=>`${reportVehicleLabel(d)} ${d.department||''}`.toLocaleLowerCase().includes(vehicleSearch.trim().toLocaleLowerCase()));
+  const openFilters=()=>setFilterDraft({driver:driverFilter,purpose:purposeFilter,minHours,onlyIncomplete,onlyReview});
+  const applyFilters=()=>{if(draftHoursInvalid)return;setDriverFilter(filterDraft.driver);setPurposeFilter(filterDraft.purpose);setMinHours(filterDraft.minHours);setOnlyIncomplete(filterDraft.onlyIncomplete);setOnlyReview(filterDraft.onlyReview);setFilterDraft(null);};
 
   const device = devices.find(d => d.id === deviceId);
-  // (F2-c) 훅으로 이전. staff active-filter 는 로컬.
+  // 과거 기록 조회에는 비활성 운전자도 포함한다. 신규 배정은 별도 권한/활성 검증을 유지한다.
   const { data: staffAll } = useStaff();
-  const staff = useMemo(() => (staffAll || []).filter(x => x.active), [staffAll]);
+  const staff = staffAll || [];
   const { data: info } = useCorporateInfo();
+  const periodError = reportPeriodError(from, to);
 
+  const loadId = useRef(0);
   async function load() {
     if (!deviceId) return;
-    setLoading(true); setError(null);
+    const id = ++loadId.current;
+    setSelected(new Set());setAssignment(null);setEvidence(null);setCorrection(null);
+    if (periodError) { setTrips(null); setLoading(false); setError(periodError); return; }
+    setLoading(true); setError(null); setTrips(null);
     try {
-      const t = await api.listTrips(deviceId, { from, to });
-      setTrips(t || []);
-    } catch (e) {
-      setError(e.message);
-      setTrips([]);
-    } finally { setLoading(false); }
+      const t = await api.listFleetVehicleTrips(deviceId, { from, to });
+      if (id === loadId.current) setTrips(t || []);
+    } catch {
+      if (id === loadId.current) setError('운행기록을 불러오지 못했습니다. 다시 시도해 주세요.');
+    } finally { if (id === loadId.current) setLoading(false); }
   }
-  useEffect(() => { load(); }, [deviceId, from, to]);  // eslint-disable-line
+  useEffect(() => { load(); return () => { loadId.current++; }; }, [deviceId, from, to]);  // eslint-disable-line
 
   // 추가 필터 적용된 trip 목록 — 운전자/용무/최소시간 AND.
-  const filteredTrips = useMemo(() => {
-    if (!trips) return null;
-    const minH = parseFloat(minHours);
-    const minMin = !isNaN(minH) && minH > 0 ? minH * 60 : 0;
-    return trips.filter(t => {
-      if (driverFilter !== 'all') {
-        if (driverFilter === 'unassigned') {
-          if (t.annotation?.driver_staff_id != null) return false;
-        } else {
-          if (t.annotation?.driver_staff_id !== Number(driverFilter)) return false;
-        }
-      }
-      if (purposeFilter !== 'all') {
-        const p = t.annotation?.purpose || 'unspecified';
-        if (p !== purposeFilter) return false;
-      }
-      if (minMin > 0 && (t.duration_min || 0) < minMin) return false;
-      return true;
-    });
-  }, [trips, driverFilter, purposeFilter, minHours]);
+  const filteredTrips = useMemo(() => trips ? filterTrips(trips, {driver:driverFilter,purpose:purposeFilter,minHours}).filter(t=>!onlyReview||!reportIncluded(t)).filter(t=>!onlyIncomplete||tripNeedsDetails(t)) : null, [trips, driverFilter, purposeFilter, minHours,onlyReview,onlyIncomplete]);
+  useEffect(()=>{setSelected(new Set());setAssignment(null);setAssignmentStatus('');},[deviceId,from,to,driverFilter,purposeFilter,minHours,onlyReview,onlyIncomplete]);
+  const subjectScoped=Boolean(trips?.subjectScope);
+  const eligible=subjectScoped?[]:(filteredTrips||[]).filter(t=>canAssignTrip(t,access));
+  const chosen=eligible.filter(t=>selected.has(tripAssignmentKey(t)));
+  const toggleTrip=t=>{setAssignmentStatus('');setSelected(previous=>{const next=new Set(previous),key=tripAssignmentKey(t);if(next.has(key))next.delete(key);else if(next.size<100)next.add(key);return next;});};
+  const completeness = trips ? tripCompleteness(trips) : null;
+  const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
+    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}${onlyIncomplete?' · 미작성만':''}`,
+  }) : null;
+  const csvData = filteredTrips ? ntsTripReport(filteredTrips, {device,info,from,to,
+    filtered: onlyIncomplete || onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || Number(minHours) > 0,
+  }) : null;
 
+  const exportConditions=JSON.stringify([deviceId,from,to,driverFilter,purposeFilter,minHours,onlyReview,onlyIncomplete]);
+  const exportConditionsRef=useRef(exportConditions);
+  exportConditionsRef.current=exportConditions;
+  async function freshTrips(format) {
+    const generation=loadId.current;
+    const fresh=await api.listFleetVehicleTrips(deviceId,{from,to,download:format});
+    if(generation!==loadId.current || exportConditions!==exportConditionsRef.current) throw new Error('조회 조건이 바뀌었습니다. 다시 내려받아 주세요.');
+    setTrips(fresh||[]);
+    return fresh||[];
+  }
+  async function prepareExport(format) {
+    const fresh=await freshTrips(format);
+    const selected=filterTrips(fresh,{driver:driverFilter,purpose:purposeFilter,minHours}).filter(t=>!onlyReview||!reportIncluded(t)).filter(t=>!onlyIncomplete||tripNeedsDetails(t));
+    return subjectReport(ntsTripReport(selected,{device,info,from,to,filtered:filterActive}),fresh.subjectScope);
+  }
+  async function printFresh() {
+    if (printRequest.current) return;
+    printRequest.current = true;
+    setPrinting(true);
+    const generation=loadId.current;
+    try { await freshTrips('print'); await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))); if(generation!==loadId.current || exportConditions!==exportConditionsRef.current) return; window.print(); }
+    catch(e) {
+      if(generation!==loadId.current || exportConditions!==exportConditionsRef.current) return;
+      setError(e.message);setTrips(null);
+    }
+    finally { printRequest.current = false; setPrinting(false); }
+  }
   // 일자별 누적거리 — 화면에 보이는(필터된) 운행 기준으로 계산.
   const dailyDistance = useMemo(() => {
     if (!filteredTrips) return new Map();
     const m = new Map();
     for (const t of filteredTrips) {
       const d = kstDate(t.started_at);
-      m.set(d, (m.get(d) || 0) + (t.distance_m || 0));
+      if (reportIncluded(t)) m.set(d, (m.get(d) || 0) + t.distance_m);
     }
     return m;
   }, [filteredTrips]);
 
-  const filterActive = driverFilter !== 'all' || purposeFilter !== 'all' || (parseFloat(minHours) > 0);
+  const filterActive = onlyIncomplete || onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || (parseFloat(minHours) > 0);
   function resetFilters() {
+    setOnlyReview(false); setOnlyIncomplete(false);
     setDriverFilter('all');
     setPurposeFilter('all');
     setMinHours('');
   }
 
-  if (!sub) {
-    return <div style={st.muted}>구독 상태 로딩 중...</div>;
-  }
-  if (!sub.active) {
-    return (
-      <Card title="법인운행 리포트 — 구독 필요">
-        <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, lineHeight: 1.6 }}>
-          법인운행 리포트는 월 구독제로 제공됩니다.<br/>
-          포인트 <b>{sub.price_krw.toLocaleString()}원</b> 으로 30일간 이용 가능.<br/>
-          <span style={{ color: 'var(--text-3)', fontSize: 11 }}>
-            * 보유 포인트가 부족하면 내정보 → 포인트 탭에서 충전 요청을 먼저 진행하세요.
-          </span>
-        </div>
-        <button onClick={async () => {
-          const ok = await confirmDialog({
-            title: '법인운행 리포트 구독',
-            body: `30일 구독을 시작합니다. ${sub.price_krw.toLocaleString()}원이 포인트에서 차감됩니다.`,
-            confirmLabel: `${sub.price_krw.toLocaleString()}원 결제`,
-            tone: 'success',
-          });
-          if (!ok) return;
-          try {
-            const r = await api.buyCorporateSubscription();
-            onSubChange(r);
-            await alertDialog({ title: '구독 시작', body: `${new Date(r.expires_at).toLocaleDateString('ko-KR')} 까지 사용 가능합니다.`, tone: 'success' });
-          } catch (e) { await alertDialog({ title: '결제 실패', body: e.message, tone: 'danger' }); }
-        }} style={st.btnPrimary}>구독 시작</button>
-      </Card>
-    );
-  }
-
   return (
-    <>
-      {/* (2026-07-28) Fleet 요약 — 상단 stat card 4개 (첨부 이미지 스타일).
-          fleet-wide 지표 (총 차량 / 운행중 / 오늘 km / 이번달 km) 로 device drill-down 위에 배치.
-          운행중 판정: devices.last_event_kind === 'wake'. km: 병렬 listTrips 집계. */}
-      <FleetSummary devices={devices} />
-
-      {/* 컨트롤 — 인쇄 시 숨김 */}
-      <div className="no-print" style={st.controls}>
-        <select value={deviceId || ''} onChange={e => setDeviceId(parseInt(e.target.value, 10) || null)}
-          style={st.select}>
+    <div className="fleet-directory-layout corporate-report-layout">
+    <aside className="fleet-directory-sidebar corporate-report-vehicle-sidebar no-print" aria-label="운행 차량 목록">
+     <div className="fleet-directory-heading"><h2>운행 차량</h2><span className="fleet-directory-group-count">{devices.length}대</span></div>
+     <label className="corporate-report-vehicle-search"><Icon name="search" size={16}/><input type="search" aria-label="운행 차량 검색" placeholder="차량명·번호 검색" value={vehicleSearch} onChange={e=>setVehicleSearch(e.target.value)}/></label>
+     <div className="corporate-report-vehicle-list">{visibleVehicles.map(d=><button className="corporate-report-vehicle-option" type="button" key={d.id} aria-label={`${reportVehicleLabel(d)} 운행 조회`} aria-pressed={d.id===deviceId} onClick={()=>setDeviceId(d.id)}><strong>{d.license_plate||d.car_plate||'번호 미등록'}</strong><span>{d.vehicle_name||d.asset?.name||d.car_model||d.display_name||`차량 ${d.id}`}</span>{d.department&&<small>{d.department}</small>}</button>)}</div>
+     {!visibleVehicles.length&&<p className="business-note">{devices.length?'검색된 차량이 없습니다.':'등록된 차량이 없습니다.'}</p>}
+     <div className="fleet-directory-group-footer"><BusinessButton icon="download" disabled={!devices.length||!!periodError} onClick={()=>setXlsxRequest({month:from.slice(0,7),vehicleIds:devices.map(d=>d.id),from,to})}>전체 차량 엑셀</BusinessButton></div>
+    </aside>
+    <div className="fleet-directory-content">
+    <div className="corporate-report-page">
+      <div className="corporate-report-heading no-print"><h2>{device?`${reportVehicleLabel(device)} 운행기록`:'운행기록부'}</h2><span>차량별 조회</span></div>
+      <div className="corporate-report-controls no-print">
+      <div className="corporate-report-control-row">
+        <select aria-label="운행 차량" value={deviceId || ''} onChange={e => setDeviceId(parseInt(e.target.value, 10) || null)}
+          className="corporate-report-vehicle">
           {devices.map(d => (
             <option key={d.id} value={d.id}>
-              {d.display_name || d.device_uid}
+              {reportVehicleLabel(d)}
             </option>
           ))}
         </select>
-        <input type="date" value={from} onChange={e => setFrom(e.target.value)} style={st.dateInput} />
-        <span style={{ color: 'var(--text-3)' }}>~</span>
-        <input type="date" value={to} onChange={e => setTo(e.target.value)} style={st.dateInput} />
-        <button onClick={load} style={st.btnGhost} disabled={loading}>
+        <div className="corporate-report-date-range">
+          <label><span>시작일</span><input aria-label="운행 조회 시작일" type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>
+          <span aria-hidden="true">~</span>
+          <label><span>종료일</span><input aria-label="운행 조회 종료일" type="date" value={to} onChange={e => setTo(e.target.value)} /></label>
+        </div>
+        <BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={!!filterDraft} onClick={openFilters}>필터{filterActive && <span className="corporate-report-dot" aria-label="필터 적용 중"/>}</BusinessButton>
+        {filterDraft&&<Modal open title="운행 필터" size={640} onClose={()=>setFilterDraft(null)} footer={<div className="corporate-report-filter-footer"><BusinessButton onClick={()=>setFilterDraft({driver:'all',purpose:'all',minHours:'',onlyIncomplete:false,onlyReview:false})}>초기화</BusinessButton><div><BusinessButton onClick={()=>setFilterDraft(null)}>취소</BusinessButton><BusinessButton primary disabled={draftHoursInvalid} onClick={applyFilters}>적용</BusinessButton></div></div>}>
+          <div className="corporate-report-filter-dialog">
+            <label>운전자<select aria-label="운전자 필터" value={filterDraft.driver} onChange={e => setFilterDraft(d=>({...d,driver:e.target.value}))}>
+              <option value="all">운전자 전체</option><option value="unassigned">미지정</option>
+              {staff.map(s => <option key={s.id} value={String(s.id)}>{s.name}{s.active === false ? ' (비활성)' : ''}</option>)}
+            </select></label>
+            <label>용무<select aria-label="용무 필터" value={filterDraft.purpose} onChange={e => setFilterDraft(d=>({...d,purpose:e.target.value}))}>
+              <option value="all">용무 전체</option><option value="commute">출퇴근</option><option value="business">업무</option><option value="other">기타</option><option value="unspecified">미지정</option>
+            </select></label>
+            <label>최소 운행시간 (시간)<input aria-label="최소 운행시간" type="number" placeholder="제한 없음" value={filterDraft.minHours} step="0.5" min="0" onChange={e => setFilterDraft(d=>({...d,minHours:e.target.value}))}/></label>
+            {draftHoursInvalid&&<p role="alert">최소 운행시간은 0 이상의 숫자로 입력해 주세요.</p>}
+            <div className="corporate-report-filter-checks"><label className="corporate-report-check"><input type="checkbox" checked={filterDraft.onlyIncomplete} onChange={e=>setFilterDraft(d=>({...d,onlyIncomplete:e.target.checked}))}/>미작성만 보기</label><label className="corporate-report-check"><input type="checkbox" checked={filterDraft.onlyReview} onChange={e=>setFilterDraft(d=>({...d,onlyReview:e.target.checked}))}/>미확정만 보기</label></div>
+            <small className="corporate-report-filter-counts">조회 기간 전체 · 용무 미지정 {completeness?.missingPurpose ?? '—'}건 / 운전자 미지정 {completeness?.missingDriver ?? '—'}건</small>
+            <div className="corporate-report-filter-shortcuts"><BusinessButton disabled={!completeness?.missingPurpose} onClick={() => setFilterDraft({driver:'all',purpose:'unspecified',minHours:'',onlyIncomplete:false,onlyReview:false})}>용무 미지정</BusinessButton>
+            <BusinessButton disabled={!completeness?.missingDriver} onClick={() => setFilterDraft({driver:'unassigned',purpose:'all',minHours:'',onlyIncomplete:false,onlyReview:false})}>운전자 미지정</BusinessButton></div>
+          </div>
+        </Modal>}
+        <button onClick={load} style={st.btnGhost} disabled={loading || !!periodError}>
           <Icon name="refresh" size={12} /> 새로고침
         </button>
-        <button onClick={async () => {
-          setDownloading(true);
-          try {
-            const { blob, filename } = await api.tripsCsv(deviceId, { from, to });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename; a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-          } catch (e) { await alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' }); }
-          finally { setDownloading(false); }
-        }} style={st.btnGhost} disabled={downloading || !deviceId}>
-          <Icon name="share" size={12} /> CSV (엑셀)
+        <details className="corporate-report-menu corporate-report-download">
+        <summary><Icon name="download" size={13}/> 다운로드</summary>
+        <div className="corporate-report-menu-body">
+        <ExportButtons report={exportData} csvReport={csvData} pdfReport={csvData} prepareExport={prepareExport} csvLabel="운행기록부 CSV" pdfLabel="인쇄용 PDF" disabled={loading || !!error || !!periodError || !deviceId} />
+        <BusinessButton icon="download" disabled={loading || !!error || !!periodError || !device}
+          onClick={() => setXlsxRequest({month:from.slice(0,7),vehicleIds:[deviceId],from,to})}>월간 엑셀(XLSX)</BusinessButton>
+          <BusinessButton icon="download" disabled={!devices.length||!!periodError} onClick={()=>setXlsxRequest({month:from.slice(0,7),vehicleIds:devices.map(d=>d.id),from,to})}>전체 차량 월간 엑셀</BusinessButton>
+        <button onClick={printFresh} style={st.btnGhost} disabled={printing || loading || !!error || !!periodError || !trips}>
+          <Icon name="share" size={12} /> {printing ? '인쇄 준비 중...' : '화면 인쇄'}
         </button>
-        <button onClick={() => window.print()} style={st.btnPrimary}>
-          <Icon name="share" size={12} /> 인쇄 / PDF
-        </button>
+        </div>
+        </details>
       </div>
-
-      {/* 추가 필터 row — 운전자 / 용무 / 최소시간. AND, 초기화 버튼. */}
-      <div className="no-print" style={st.filters}>
-        <select value={driverFilter} onChange={e => setDriverFilter(e.target.value)} style={st.select}>
-          <option value="all">운전자 전체</option>
-          <option value="unassigned">미지정</option>
-          {staff.map(s => (
-            <option key={s.id} value={String(s.id)}>{s.name}</option>
-          ))}
-        </select>
-        <select value={purposeFilter} onChange={e => setPurposeFilter(e.target.value)} style={st.select}>
-          <option value="all">용무 전체</option>
-          <option value="commute">출퇴근</option>
-          <option value="business">업무</option>
-          <option value="other">기타</option>
-          <option value="unspecified">미지정</option>
-        </select>
-        <input type="number" placeholder="최소 시간(h)"
-          value={minHours} step="0.5" min="0"
-          onChange={e => setMinHours(e.target.value)}
-          style={{ ...st.dateInput, minWidth: 110 }} />
-        {filterActive && (
-          <button onClick={resetFilters} style={st.btnGhost}>
-            <Icon name="close" size={12} /> 필터 초기화
-          </button>
-        )}
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>
-          {trips && filteredTrips
-            ? (filterActive
-                ? `${filteredTrips.length} / ${trips.length}건`
-                : `${trips.length}건`)
-            : ''}
-        </span>
+      <div className="corporate-report-control-row">
+        <div className="corporate-report-status-tabs" aria-label="운행 작성 상태">
+          <button className="corporate-report-status-option" type="button" aria-pressed={!filterActive} onClick={resetFilters}>전체 ({trips?.length ?? '—'})</button>
+          <button className="corporate-report-status-option" type="button" aria-pressed={onlyIncomplete} onClick={()=>{resetFilters();setOnlyIncomplete(true);}}>미작성 ({trips?.filter(tripNeedsDetails).length ?? '—'})</button>
+        </div>
+        <div className="corporate-report-counts" aria-label="조회 기간 전체 작성 현황">
+          <span>기간 전체</span>
+          <span>작성률 <strong>{completeness?.percent ?? '—'}%</strong></span>
+          <span>입력 주유비 <strong>{completeness?.fuelEntries ? `${completeness.fuelCost.toLocaleString()}원` : '—'}</strong></span>
+        </div>
+        <span className="corporate-report-result-count">{filteredTrips ? `${filteredTrips.length}건 표시` : ''}</span>
       </div>
-
+      <TripQualitySummary trips={filteredTrips} loading={loading} error={error} vehicleSelected={Boolean(device)} onlyReview={onlyReview} onReviewChange={setOnlyReview}/>
+      </div>
+      {subjectScoped && <p className="business-note" role="status">{subjectScopeNote}</p>}
+      <div className="fleet-assignment-toolbar corporate-report-assignment no-print">
+        <span role="status">{assignmentStatus || `${chosen.length}건 선택 · 한 번에 100건까지`}</span>
+        <details className="corporate-report-menu corporate-report-management">
+        <summary><Icon name="wrench" size={13}/> 운행 관리</summary>
+        <div className="corporate-report-menu-body">
+        <BusinessButton disabled={!chosen.length||loading} onClick={()=>setAssignment('manual')}>일괄 지정</BusinessButton>
+        <BusinessButton disabled={!chosen.length||loading} onClick={()=>setAssignment('suggest')}>예약·규칙 적용</BusinessButton>
+        <BusinessButton disabled={!device} onClick={()=>setShowRules(true)}>기본 운전자·반복 규칙</BusinessButton>
+        {access.manage_reports&&<><BusinessButton disabled={chosen.length!==2||chosen.some(t=>t.correction_id)} onClick={()=>setCorrection(chosen)}>선택한 2건 병합</BusinessButton><BusinessButton disabled={!device||subjectScoped} onClick={()=>setQualityHistory(true)}>보정 이력</BusinessButton><BusinessButton disabled={!device||subjectScoped} onClick={()=>setShowHistory(true)}>지정 이력</BusinessButton></>}
+        </div>
+        </details>
+      </div>
+      {assignment&&<TripAssignmentModal mode={assignment} trips={chosen} vehicle={device} from={from} to={to} staff={staffAll||[]} onClose={()=>setAssignment(null)} onSaved={result=>{setAssignment(null);setAssignmentStatus(`${result.applied}건 변경 · ${result.skipped}건 제외`);load();}}/>}
+      {showRules&&device&&<TripRulesModal vehicle={device} staff={staffAll||[]} onClose={()=>setShowRules(false)}/>}
+      {showHistory&&device&&<TripAssignmentHistory vehicle={device} onClose={()=>setShowHistory(false)}/>}
+      {evidence&&<TripEvidence vehicle={device} trip={evidence} from={from} to={to} canManage={access.manage_reports} onClose={()=>setEvidence(null)} onCorrect={()=>{setCorrection([evidence]);setEvidence(null);}}/>}
+      {correction&&<TripCorrection vehicle={device} trips={correction} from={from} to={to} onClose={()=>setCorrection(null)} onSaved={()=>{setCorrection(null);load();}}/>}
+      {qualityHistory&&device&&<TripCorrectionHistory vehicle={device} onClose={()=>setQualityHistory(false)} onRestored={load}/>}
       {/* 리포트 본문 — 인쇄 영역 */}
       <div className="report-area" style={st.reportArea}>
         <ReportHeader info={info} device={device} from={from} to={to} />
         {loading && <div style={st.muted}>운행 데이터 로딩 중...</div>}
-        {error   && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
+        {error && <BusinessError onRetry={periodError ? undefined : load}>{error}</BusinessError>}
         {trips && trips.length === 0 && !loading && (
           <div style={st.muted}>이 기간에 운행 기록이 없습니다.</div>
         )}
@@ -581,26 +394,30 @@ function ReportTab({ devices, sub, onSubChange }) {
           <div style={st.muted}>필터 조건에 맞는 운행이 없습니다.</div>
         )}
         {filteredTrips && filteredTrips.length > 0 && (
-          <TripsTable trips={filteredTrips} dailyDistance={dailyDistance}
-            onEdit={(t) => setEditing(t)} />
+          <TripsTable trips={filteredTrips} dailyDistance={dailyDistance} selected={selected} onSelect={toggleTrip} eligible={eligible} onSelectAll={()=>{setAssignmentStatus('');setSelected(chosen.length===Math.min(100,eligible.length)?new Set():new Set(eligible.slice(0,100).map(tripAssignmentKey)));}}
+            onEvidence={subjectScoped?undefined:setEvidence} onEdit={subjectScoped?undefined:(t) => setEditing(t)} />
         )}
       </div>
 
       {editing && (
-        <TripEditorModal trip={editing} staff={staff} deviceId={deviceId}
+        <TripEditorModal trip={editing} staff={(staffAll||[]).filter(s=>staffCanDrive(s,device)||s.id===editing.annotation?.driver_staff_id)} deviceId={deviceId}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load(); }} />
       )}
-    </>
+      {xlsxRequest && <DownloadDialog ym={xlsxRequest.month} devices={devices} initialVehicleIds={xlsxRequest.vehicleIds}
+        sourcePeriod={xlsxRequest} onClose={() => setXlsxRequest(null)} />}
+    </div>
+    </div>
+    </div>
   );
 }
 
 function ReportHeader({ info, device, from, to }) {
   const company = info?.company_name || '—';
   const biznum  = info?.business_number || '—';
-  const dev     = device?.display_name || device?.device_uid || '—';
+  const dev     = reportVehicleLabel(device);
   return (
-    <div style={st.reportHead}>
+    <div className="corporate-report-print-heading" style={st.reportHead}>
       <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>법인 차량 운행 일지</div>
       <table style={st.headerTable}>
         <tbody>
@@ -609,8 +426,8 @@ function ReportHeader({ info, device, from, to }) {
             <th style={st.th}>사업자번호</th><td style={st.td}>{biznum}</td>
           </tr>
           <tr>
-            <th style={st.th}>단말기</th><td style={st.td}>{dev}</td>
-            <th style={st.th}>차량번호</th><td style={st.td}>{device?.display_name || '—'}</td>
+            <th style={st.th}>차량</th><td style={st.td}>{dev}</td>
+            <th style={st.th}>차량번호</th><td style={st.td}>{device?.license_plate || device?.car_plate || '—'}</td>
           </tr>
           <tr>
             <th style={st.th}>기간</th>
@@ -622,35 +439,36 @@ function ReportHeader({ info, device, from, to }) {
   );
 }
 
-function TripsTable({ trips, dailyDistance, onEdit }) {
+function TripsTable({ trips, dailyDistance, onEdit, onEvidence, selected, onSelect, eligible, onSelectAll }) {
   return (
-    // 모바일 — 9열 표가 좁은 폭을 넘김. 가로 스크롤 컨테이너로 감쌈.
+    // 모바일 — 운행 표가 좁은 폭을 넘김. 가로 스크롤 컨테이너로 감쌈.
     // 인쇄 시 @media print 가 nav/sidebar 만 숨기고 reportArea 는 그대로 노출, 인쇄 페이지 폭에 맞춤.
-    <div style={st.tripsTableScroll}>
-    <table style={st.tripsTable}>
+    <div className="corporate-trip-table-scroll" role="region" aria-label="운행기록 목록 · 좌우 스크롤" tabIndex={0} style={st.tripsTableScroll}>
+    <table className="corporate-trip-table" style={st.tripsTable}>
       <thead>
         <tr>
+          <th style={st.th} className="no-print"><input className="fleet-trip-select" type="checkbox" aria-label="현재 운행 최대 100건 선택" checked={eligible.length>0&&selected.size===Math.min(100,eligible.length)} disabled={!eligible.length} onChange={onSelectAll}/></th>
           <th style={st.th}>날짜</th>
-          <th style={st.th}>시간</th>
+          <th style={st.th}>시간</th><th style={st.th}>기록 상태</th>
           <th style={st.th}>용무</th>
           <th style={st.th}>출발지</th>
           <th style={st.th}>도착지</th>
-          <th style={st.th}>주행거리</th>
-          <th style={st.th}>일별 누적</th>
+          <th style={st.th} className="trip-number">주행거리</th>
+          <th style={st.th} className="trip-number">일별 누적</th>
           <th style={st.th}>유류</th>
           <th style={st.th}>운전자</th>
-          <th style={{ ...st.th, width: 36 }} className="no-print"></th>
+          <th style={{ ...st.th, width: 36 }} className="no-print">작업</th>
         </tr>
       </thead>
       <tbody>
         {trips.map((t, i) => {
           const d = kstDate(t.started_at);
-          const dailyKm = ((dailyDistance.get(d) || 0) / 1000).toFixed(1);
+          const dailyKm = dailyDistance.has(d) ? `${tripDistance(dailyDistance.get(d))} km` : '—';
           const firstOfDay = !trips.slice(0, i).some(x => kstDate(x.started_at) === d);
           return (
-            <TripRow key={t.started_at} t={t}
-              date={d} dailyKm={firstOfDay ? `${dailyKm} km` : ''}
-              onEdit={() => onEdit(t)} />
+            <TripRow key={tripAssignmentKey(t)} t={t} selected={selected.has(tripAssignmentKey(t))} onSelect={()=>onSelect(t)} selectionFull={selected.size>=100}
+              date={d} dailyKm={firstOfDay ? dailyKm : ''}
+              onEvidence={onEvidence?()=>onEvidence(t):undefined} onEdit={onEdit?() => onEdit(t):undefined} />
           );
         })}
       </tbody>
@@ -659,54 +477,62 @@ function TripsTable({ trips, dailyDistance, onEdit }) {
   );
 }
 
-function TripRow({ t, date, dailyKm, onEdit }) {
+function TripRow({ t, date, dailyKm, onEdit, onEvidence, selected, onSelect, selectionFull }) {
+  const access=useFleetAccess();
   const ann = t.annotation || {};
   const purpose = ann.purpose || 'unspecified';
-  const km = (t.distance_m / 1000).toFixed(1);
-  const time = `${kstTime(t.started_at)}~${t.ended_at ? kstTime(t.ended_at) : '—'}`;
+  const km = tripDistance(t.distance_m);
+  const time = tripTimeRange(t);
 
   return (
     <tr>
+      <td style={st.td} className="no-print"><input className="fleet-trip-select" type="checkbox" aria-label={`${date} ${time} 운행 선택`} checked={selected} disabled={!!t.quality?.subject_mapping_id||!canAssignTrip(t,access)||(!selected&&selectionFull)} onChange={onSelect}/></td>
       <td style={st.td}>{date}</td>
-      <td style={st.td}>{time}</td>
+      <td style={st.td}>{time}</td><td style={st.td}><span className="fleet-quality-status" data-state={t.quality?.status}>{qualityLabel(t)}{t.correction_id?" · 보정":""}</span>{!reportIncluded(t)&&<small style={{display:"block"}}>합계 제외</small>}</td>
       <td style={st.td}>
         {PURPOSE_LABEL[purpose] || '미지정'}
         {purpose === 'other' && ann.purpose_note && (
-          <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{ann.purpose_note}</div>
+          <div className="corporate-trip-note" style={{ fontSize: 10, color: 'var(--text-3)' }}>{ann.purpose_note}</div>
         )}
       </td>
       <td style={st.td}>
+        {!!t.start_sites?.length&&<strong>{t.start_sites.map(s=>s.name).join(' · ')}</strong>}
         <div>{t.start_address || '—'}</div>
         {t.start_lat != null && (
-          <div style={{ fontSize: 9, color: 'var(--text-3)' }}>
+          <div className="corporate-trip-coordinates" style={{ fontSize: 9, color: 'var(--text-3)' }}>
             {t.start_lat.toFixed(5)}, {t.start_lng.toFixed(5)}
           </div>
         )}
       </td>
       <td style={st.td}>
+        {!!t.end_sites?.length&&<strong>{t.end_sites.map(s=>s.name).join(' · ')}</strong>}
         <div>{t.end_address || '—'}</div>
         {t.end_lat != null && (
-          <div style={{ fontSize: 9, color: 'var(--text-3)' }}>
+          <div className="corporate-trip-coordinates" style={{ fontSize: 9, color: 'var(--text-3)' }}>
             {t.end_lat.toFixed(5)}, {t.end_lng.toFixed(5)}
           </div>
         )}
       </td>
-      <td style={{ ...st.td, textAlign: 'right' }}>{km} km</td>
+      <td style={{ ...st.td, textAlign: 'right' }}>
+        <span className="corporate-trip-distance">{km}{km !== '—' ? ' km' : ''}</span>
+        {(ann.odometer_before_km != null || ann.odometer_after_km != null) && <small className="corporate-trip-odometer">{odometerSummary(ann)}</small>}
+        {t.allocation_note && <small className="corporate-trip-distance-note">{t.allocation_note}</small>}
+      </td>
       <td style={{ ...st.td, textAlign: 'right' }}>{dailyKm}</td>
       <td style={st.td}>
         {ann.fuel_liters ? `${ann.fuel_liters}L` : '—'}
         {ann.fuel_cost ? ` / ${ann.fuel_cost.toLocaleString()}원` : ''}
       </td>
       <td style={st.td}>{ann.driver_name || '—'}</td>
-      <td style={{ ...st.td, padding: 4 }} className="no-print">
-        <button onClick={onEdit} style={{
-          width: 26, height: 26, borderRadius: 6,
+      <td style={{ ...st.td, padding: 4 }} className="no-print"><div className="fleet-quality-row-actions"><BusinessButton disabled={!onEvidence} onClick={onEvidence}>근거</BusinessButton>
+        <button className="corporate-trip-edit" onClick={onEdit} disabled={!onEdit||t.allocation_status==='boundary_review'||(!access.manage_reports&&t.annotation?.driver_staff_id!=null&&t.annotation.driver_staff_id!==access.staff_id)} style={{
+          width: 48, height: 48, borderRadius: 4,
           background: 'var(--surface-2)', color: 'var(--text-2)',
           border: '1px solid var(--border)', cursor: 'pointer',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        }} title="편집">
-          <Icon name="edit" size={12} />
-        </button>
+        }} title="용무·운전자 수정" aria-label="용무·운전자 수정">
+          <Icon name="edit" size={16} />
+        </button></div>
       </td>
     </tr>
   );
@@ -717,53 +543,70 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
   const ann = trip.annotation || {};
   const [purpose, setPurpose]      = useState(ann.purpose || 'unspecified');
   const [purposeNote, setPurposeNote] = useState(ann.purpose_note || '');
-  const [driverId, setDriverId]    = useState(ann.driver_staff_id || '');
+  const access=useFleetAccess();
+  const [driverId, setDriverId]    = useState(ann.driver_staff_id || (!access.manage_reports?access.staff_id:''));
   const [fuelLiters, setFuelLiters] = useState(ann.fuel_liters != null ? String(ann.fuel_liters) : '');
   const [fuelCost, setFuelCost]    = useState(ann.fuel_cost != null ? String(ann.fuel_cost) : '');
   const [note, setNote]            = useState(ann.note || '');
+  const [odometerBefore, setOdometerBefore] = useState(ann.odometer_before_km != null ? String(ann.odometer_before_km) : '');
+  const [odometerAfter, setOdometerAfter] = useState(ann.odometer_after_km != null ? String(ann.odometer_after_km) : '');
+  const odometerLocked = !!trip.correction_id;
+  const odometer = validateOdometerInput(odometerBefore, odometerAfter);
+  const odometerChanged = odometerBefore !== String(ann.odometer_before_km ?? '') || odometerAfter !== String(ann.odometer_after_km ?? '');
   const [busy, setBusy] = useState(false);
+  const saving = useRef(false), mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const close = () => { if (!saving.current) onClose(); };
 
   async function save() {
+    if (saving.current || !mounted.current) return;
+    if (!odometerLocked && odometer.error) return;
+    saving.current = true;
     setBusy(true);
     try {
-      await api.upsertTripAnnotation(deviceId, {
-        trip_started_at: trip.started_at,
+      await api.annotateFleetVehicleTrip(deviceId, {
+        binding_id:trip.binding_id, source_device_id:trip.source_device_id,
+        trip_started_at: trip.source_started_at || trip.started_at,
+        expected_version: ann.updated_at || "new",
         purpose,
         purpose_note: purpose === 'other' ? (purposeNote.trim() || null) : null,
         driver_staff_id: driverId ? parseInt(driverId, 10) : null,
         fuel_liters: fuelLiters.trim() ? parseFloat(fuelLiters) : null,
-        fuel_cost:   fuelCost.trim()   ? parseInt(fuelCost, 10) : null,
+        fuel_cost:   ann.fuel_expense_id ? null : fuelCost.trim() ? parseInt(fuelCost, 10) : null,
         note: note.trim() || null,
+        ...(!odometerLocked && odometerChanged ? odometer.payload : {}),
       });
-      onSaved?.();
+      if (mounted.current) onSaved?.();
     } catch (e) {
-      await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
-    } finally { setBusy(false); }
+      if (mounted.current) await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
+    } finally { saving.current = false; if (mounted.current) setBusy(false); }
   }
 
-  const km = (trip.distance_m / 1000).toFixed(1);
+  const km = tripDistance(trip.distance_m);
 
   return (
     // 외부 클릭으로 닫히지 않음 — 편집 중 데이터 손실 방지. X / 취소 버튼만 닫기.
-    <div style={mst.backdrop}>
-      <div style={mst.modal}>
+    <Modal open title="운행 기록 수정" size={820} onClose={busy ? undefined : close} closeOnBackdrop={false} footer={<div className="corporate-editor-footer">
+      <BusinessButton onClick={close} disabled={busy}>취소</BusinessButton>
+      <BusinessButton primary onClick={save} disabled={busy || (!odometerLocked && !!odometer.error)}>{busy ? '저장 중...' : '저장'}</BusinessButton>
+    </div>}>
         {/* 헤더 — 운행 요약 */}
-        <div style={mst.header}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>
-              {kstDate(trip.started_at)} · {kstTime(trip.started_at)}~{trip.ended_at ? kstTime(trip.ended_at) : '진행 중'}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-              {trip.start_address || '—'} → {trip.end_address || '—'} · {km} km
-            </div>
+        <div className="corporate-trip-editor-summary">
+          <div>
+            <strong>
+              {kstDate(trip.started_at)} · {tripTimeRange(trip)}
+            </strong>
+            <p>
+              {trip.start_address || '—'} → {trip.end_address || '—'} · {km}{km !== '—' ? ' km' : ''}
+            </p>
           </div>
-          <button onClick={onClose} style={mst.closeBtn}><Icon name="close" size={14} /></button>
+
         </div>
 
-        <div style={mst.body}>
+        <fieldset className="corporate-editor-fields" disabled={busy} aria-busy={busy}>
           {/* 용무 */}
           <Field label="용무">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 6 }}>
+            <div className="corporate-editor-options">
               {[
                 ['unspecified', '미지정'],
                 ['commute',     '출퇴근'],
@@ -772,34 +615,26 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
               ].map(([id, label]) => {
                 const on = purpose === id;
                 return (
-                  <button key={id} onClick={() => setPurpose(id)}
-                    style={{
-                      padding: '8px 4px',
-                      background: on ? 'var(--primary)' : 'var(--surface-2)',
-                      color:      on ? 'white' : 'var(--text)',
-                      border: '1px solid ' + (on ? 'var(--primary)' : 'var(--border)'),
-                      borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: on ? 700 : 500,
-                    }}>{label}</button>
+                  <button className="corporate-editor-option" type="button" key={id} onClick={() => setPurpose(id)} aria-pressed={on}>{label}</button>
                 );
               })}
             </div>
             {purpose === 'other' && (
               <input value={purposeNote} onChange={e => setPurposeNote(e.target.value)}
                 placeholder="예: 거래처 미팅, 외근, 출장..."
-                style={{ ...mst.input, marginTop: 6 }} autoFocus />
+                autoFocus />
             )}
           </Field>
 
           {/* 운전자 */}
           <Field label="운전자">
             {staff.length === 0 ? (
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                직원 탭에서 운전자 후보를 먼저 등록하세요.
-              </div>
+              <p className="corporate-editor-help">
+                사용자 메뉴에서 등록할 수 있습니다.
+              </p>
             ) : (
-              <select value={driverId} onChange={e => setDriverId(e.target.value)}
-                style={mst.input}>
-                <option value="">— 미지정 —</option>
+              <select value={driverId} onChange={e => setDriverId(e.target.value)}>
+                {access.manage_reports&&<option value="">— 미지정 —</option>}
                 {staff.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name}{s.role ? ` (${s.role})` : ''}
@@ -809,20 +644,40 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
             )}
           </Field>
 
+          <section className="corporate-editor-odometer" aria-label="계기판 거리">
+            <h3>계기판 거리 <span>(선택)</span></h3>
+            <div className="corporate-editor-odometer-fields">
+              <FormField label="주행 전 계기판 (km)">
+                <Input type="text" inputMode="decimal" maxLength={10} value={odometerBefore} disabled={odometerLocked}
+                  aria-label="주행 전 계기판 (km)" aria-invalid={!odometerLocked && !!odometer.error} aria-describedby="trip-odometer-help"
+                  onChange={e=>setOdometerBefore(e.target.value)} placeholder="예: 12500" />
+              </FormField>
+              <FormField label="주행 후 계기판 (km)">
+                <Input type="text" inputMode="decimal" maxLength={10} value={odometerAfter} disabled={odometerLocked}
+                  aria-label="주행 후 계기판 (km)" aria-invalid={!odometerLocked && !!odometer.error} aria-describedby="trip-odometer-help"
+                  onChange={e=>setOdometerAfter(e.target.value)} placeholder="예: 12512.5" />
+              </FormField>
+            </div>
+            <p className="corporate-editor-help" id="trip-odometer-help">실제 차량의 누적 계기판 값을 입력하세요. 입력하면 국세청 형식 보고서의 주행거리에 전·후 차이를 반영하며, GPS 원본 거리는 유지합니다.</p>
+            {!odometerLocked && odometer.error ? <p className="corporate-editor-odometer-error" role="alert">{odometer.error}</p> : odometer.distanceKm != null && <p className="corporate-editor-odometer-result" role="status">계기판 기준 주행거리 <strong>{odometer.distanceKm.toLocaleString('ko-KR', {maximumFractionDigits:2})} km</strong><span>운행기록 거리 {km}{km !== '—' ? ' km' : ''}</span></p>}
+            {odometerLocked&&<p className="corporate-editor-help">보정된 운행은 보정 이력에서 원본으로 복원한 뒤 계기판 값을 수정할 수 있습니다.</p>}
+          </section>
+
           {/* 유류 */}
           <Field label="유류">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6 }}>
+            <div className="corporate-editor-fuel-fields">
               <div>
                 <input type="number" step="0.1" value={fuelLiters}
                   onChange={e => setFuelLiters(e.target.value)}
-                  placeholder="리터 (L)" style={mst.input} />
-                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>리터</div>
+                  placeholder="리터 (L)" aria-label="유류량 (리터)" />
+                <div className="corporate-editor-help">리터</div>
               </div>
               <div>
-                <input type="number" value={fuelCost}
+                <input type="number" value={fuelCost} disabled={!!ann.fuel_expense_id}
                   onChange={e => setFuelCost(e.target.value)}
-                  placeholder="비용 (원)" style={mst.input} />
-                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>원</div>
+                  placeholder="비용 (원)" aria-label="유류비 (원)" />
+                <div className="corporate-editor-help">원</div>
+                {ann.fuel_expense_id&&<p className="business-note">지출 #{ann.fuel_expense_id}에서 관리 · 승인된 금액만 반영</p>}
               </div>
             </div>
           </Field>
@@ -830,220 +685,17 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
           {/* 비고 */}
           <Field label="비고 (선택)">
             <input value={note} onChange={e => setNote(e.target.value)}
-              placeholder="메모"
-              style={mst.input} />
+              placeholder="메모" />
           </Field>
-        </div>
+        </fieldset>
 
-        <div style={mst.actions}>
-          <button onClick={onClose} style={mst.btnSecondary}>취소</button>
-          <button onClick={save} disabled={busy} style={mst.btnPrimary}>
-            {busy ? '저장 중...' : '저장'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
 // ════════════════════════════════════════════════════════
-// 구독
+// 차량 관리
 // ════════════════════════════════════════════════════════
-function SubTab({ sub, onChange }) {
-  const [busy, setBusy] = useState(false);
-
-  async function buy() {
-    const ok = await confirmDialog({
-      title: '구독 결제',
-      body: `${sub.price_krw.toLocaleString()}원 — 포인트에서 차감되며 30일 추가됩니다.`,
-      confirmLabel: '결제',
-      tone: 'success',
-    });
-    if (!ok) return;
-    setBusy(true);
-    try {
-      const r = await api.buyCorporateSubscription();
-      onChange(r);
-    } catch (e) { await alertDialog({ title: '결제 실패', body: e.message, tone: 'danger' }); }
-    finally { setBusy(false); }
-  }
-
-  if (!sub) return <div style={st.muted}>로딩...</div>;
-
-  const daysLeft = sub.expires_at
-    ? Math.max(0, Math.ceil((new Date(sub.expires_at).getTime() - Date.now()) / 86400_000))
-    : null;
-
-  return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* 상태 요약 카드 — 큰 뱃지 + 만료일 + 남은 일수 */}
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 14, padding: 20, display: 'flex', gap: 16, alignItems: 'center',
-      }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: 12,
-          background: sub.active
-            ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
-            : 'var(--surface-2)',
-          color: sub.active ? 'var(--accent)' : 'var(--text-3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <Icon name={sub.active ? 'coin' : 'warn'} size={22} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>
-            법인운행 리포트 구독
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>
-            {sub.active
-              ? <>활성 · <b>{new Date(sub.expires_at).toLocaleDateString('ko-KR')}</b> 까지
-                  {daysLeft != null && <span style={{ color: daysLeft <= 7 ? 'var(--warning)' : 'var(--text-3)' }}> ({daysLeft}일 남음)</span>}</>
-              : '비활성 — 결제하면 30일 이용 가능'}
-          </div>
-        </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.02em' }}>
-            {sub.price_krw.toLocaleString()}<span style={{ fontSize: 13, color: 'var(--text-3)', marginLeft: 2 }}>원 / 30일</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 결제 액션 */}
-      <button onClick={buy} disabled={busy} style={{
-        ...st.btnPrimary, padding: '14px 20px', fontSize: 14, alignSelf: 'flex-start',
-      }}>
-        {busy ? '...' : (sub.active ? '30일 추가 결제' : '구독 시작')}
-      </button>
-
-      {/* 안내 — 구독으로 이용 가능한 기능 목록 */}
-      <div style={st.sectionCard}>
-        <div style={st.sectionCardHeader}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Icon name="info" size={14} />
-            <span>구독으로 이용 가능한 기능</span>
-          </div>
-        </div>
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[
-            { icon: 'route',  title: '운행 리포트',     desc: '기간별 · 차량별 운행 목록 조회 · 용무 / 운전자 / 유류 주석' },
-            { icon: 'bar',    title: '월간 리포트',     desc: '업무 / 개인 자동 분리 · 유류비 자동 추정 · 차량별 stacked bar' },
-            { icon: 'share',  title: 'PDF / 엑셀 출력', desc: '국세청 별지 제73호 서식 헤더 · 인쇄 최적화 (Stage-4B 서버 PDF 준비 중)' },
-            { icon: 'user',   title: '직원 관리',       desc: '운전자 후보 등록 · 운행별 배정 · 활성/비활성 토글' },
-          ].map(f => (
-            <div key={f.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 8,
-                background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
-                color: 'var(--primary)', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Icon name={f.icon} size={14} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{f.title}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>{f.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════
-// (2026-07-28 Stage-4C-1) 차량 관리 — cartax.biz 스타일 참조.
-// 필터 chips + 검색 + 카드 리스트 + 상세 편집 (기존 VehicleInfoDialog 재사용).
-// ═══════════════════════════════════════════════════════
-function VehiclesTab({ devices }) {
-  const [filter, setFilter] = useState('all');   // all | enabled | disabled
-  const [query,  setQuery]  = useState('');
-  const [editing, setEditing] = useState(null);
-  const [tick, setTick] = useState(0);
-  const stats = useFleetStats(devices);   // 이번달 km — device 별로는 라이브 계산 X (요약만)
-
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return (devices || [])
-      .filter(d => {
-        // enabled 는 새 컬럼이라 옛 record 는 undefined → true 로 간주
-        const active = d.enabled !== false;
-        if (filter === 'enabled'  && !active) return false;
-        if (filter === 'disabled' &&  active) return false;
-        if (!q) return true;
-        return [d.display_name, d.device_uid, d.license_plate, d.department]
-          .some(v => (v || '').toLowerCase().includes(q));
-      });
-  }, [devices, filter, query, tick]);
-
-  const enabledCount  = (devices || []).filter(d => d.enabled !== false).length;
-  const disabledCount = (devices || []).length - enabledCount;
-
-  return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <StatCardGrid>
-        <StatCard icon="list"  label="전체 차량" value={devices?.length ?? 0} unit="대" tone="default" />
-        <StatCard icon="route" label="사용가능"   value={enabledCount}         unit="대" tone="success" />
-        <StatCard icon="warn"  label="사용정지"   value={disabledCount}        unit="대" tone={disabledCount > 0 ? 'warn' : 'default'} />
-      </StatCardGrid>
-
-      {/* 필터 chips + 검색 */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <FilterChip active={filter==='all'}      onClick={() => setFilter('all')}      label="전체"     count={devices?.length ?? 0} />
-        <FilterChip active={filter==='enabled'}  onClick={() => setFilter('enabled')}  label="사용가능" count={enabledCount} tone="success" />
-        <FilterChip active={filter==='disabled'} onClick={() => setFilter('disabled')} label="사용정지" count={disabledCount} tone="warn" />
-        <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
-          <input value={query} onChange={e => setQuery(e.target.value)}
-            placeholder="차량번호 · 차명 · 부서 검색"
-            style={{ ...st.input, paddingLeft: 34 }} />
-          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }}>
-            <Icon name="filter" size={14} />
-          </div>
-        </div>
-      </div>
-
-      {rows.length === 0 && (
-        <div style={st.muted}>
-          {devices?.length === 0 ? '아직 등록된 차량이 없습니다.' : '조건에 맞는 차량이 없습니다.'}
-        </div>
-      )}
-
-      {rows.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 8 }}>
-          {rows.map(d => <VehicleCard key={d.id} d={d} onEdit={() => setEditing(d)} />)}
-        </div>
-      )}
-
-      {editing && (
-        <FuelInfoDialog device={vehicleToRowShape(editing)}
-          onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
-      )}
-    </div>
-  );
-}
-
-// FuelInfoDialog 는 MonthlyReport 의 row shape (label 필드) 을 기대. device 를 그 shape 으로 변환.
-function vehicleToRowShape(d) {
-  return {
-    id: d.id,
-    label: d.display_name || d.device_uid,
-    fuel_efficiency_kmpl: d.fuel_efficiency_kmpl,
-    fuel_type: d.fuel_type,
-    license_plate: d.license_plate,
-    model_year: d.model_year,
-    engine_cc: d.engine_cc,
-    purchase_price_krw: d.purchase_price_krw,
-    acquired_at: d.acquired_at,
-    department: d.department,
-    vehicle_type: d.vehicle_type,
-    enabled: d.enabled,
-    note: d.note,
-  };
-}
-
 function FilterChip({ active, onClick, label, count, tone = 'default' }) {
   const c = tone === 'success' ? 'var(--accent)' : tone === 'warn' ? 'var(--warning)' : 'var(--primary)';
   return (
@@ -1066,77 +718,6 @@ function FilterChip({ active, onClick, label, count, tone = 'default' }) {
   );
 }
 
-function VehicleCard({ d, onEdit }) {
-  const active = d.enabled !== false;
-  const km = d.last_fix_at ? '' : '';   // 개별 lifetime 은 별도 API 필요 — 지금은 skip
-  return (
-    <div onClick={onEdit} style={{
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 12, padding: 14,
-      display: 'flex', gap: 12, alignItems: 'center',
-      cursor: 'pointer', transition: 'transform .1s, box-shadow .1s',
-      opacity: active ? 1 : 0.6,
-    }}
-    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'}
-    onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
-      <div style={{
-        width: 42, height: 42, borderRadius: 10,
-        background: active
-          ? 'color-mix(in srgb, var(--primary) 12%, transparent)'
-          : 'var(--surface-2)',
-        color: active ? 'var(--primary)' : 'var(--text-3)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <Icon name="route" size={20} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: '-0.01em' }}>
-            {d.license_plate || <span style={{ color: 'var(--text-3)' }}>번호 미입력</span>}
-          </span>
-          <span style={{ fontSize: 13, color: 'var(--text-2)' }}>
-            {d.display_name || d.device_uid}
-          </span>
-          <StateBadge active={active} />
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {d.department && <span>👥 {d.department}</span>}
-          {d.model_year && <span>{d.model_year}년식</span>}
-          {d.fuel_type && <span>{FUEL_LABEL[d.fuel_type]}</span>}
-          {d.fuel_efficiency_kmpl && <span>{d.fuel_efficiency_kmpl}km/L</span>}
-        </div>
-        {d.note && (
-          <div style={{
-            fontSize: 11, color: 'var(--text-2)', marginTop: 6,
-            padding: '4px 8px', background: 'var(--surface-2)', borderRadius: 6,
-          }}>
-            📝 {d.note}
-          </div>
-        )}
-      </div>
-      <div style={{ flexShrink: 0, textAlign: 'right', color: 'var(--text-3)' }}>
-        <Icon name="chevron-right" size={16} />
-      </div>
-    </div>
-  );
-}
-
-function StateBadge({ active }) {
-  return (
-    <span style={{
-      fontSize: 10, padding: '2px 8px', borderRadius: 999,
-      background: active
-        ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
-        : 'var(--surface-2)',
-      color: active ? 'var(--accent)' : 'var(--text-3)',
-      fontWeight: 700,
-    }}>
-      {active ? '사용가능' : '사용정지'}
-    </span>
-  );
-}
-
 // ═══════════════════════════════════════════════════════
 // (2026-07-28 Stage-4F-1) 차량 예약 — cartax 스타일.
 // 리스트 + 상태 chip 필터 + 생성/편집 다이얼로그.
@@ -1148,16 +729,16 @@ const RESV_STATUS = {
   cancelled:   { label: '취소',   color: 'var(--danger)',  bg: 'color-mix(in srgb, var(--danger) 12%, transparent)' },
 };
 
-function ReservationsTab({ devices }) {
+function ReservationsTab({ devices, request }) {
   const [statusFilter, setStatusFilter] = useState('active');   // active | all | completed | cancelled
+  const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(null);   // null | 'new' | {id, ...} | {new: 'YYYY-MM-DD'}
+  useEffect(() => { if (request?.new) setEditing('new'); else if (request?.reservation) setEditing(request.reservation); }, [request]);
   // (2026-07-28) Stage-4F-2: 뷰 모드 (리스트 / 캘린더).
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('resv_view') || 'list');
   const setViewPersist = (v) => { setViewMode(v); try { localStorage.setItem('resv_view', v); } catch {} };
-  const [calYm, setCalYm] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const reservationDay = businessDate(useBusinessClock());
+  const [calYm, setCalYm] = useState(() => businessDate().slice(0, 7));
 
   // (F2-c) useStaff hook — active 만 필터.
   const { data: staffAll } = useStaff();
@@ -1169,115 +750,81 @@ function ReservationsTab({ devices }) {
     let from, to;
     if (viewMode === 'calendar') {
       const [y, m] = calYm.split('-').map(Number);
-      const start = new Date(y, m - 1, 1);
-      const end   = new Date(y, m, 1);
-      from = new Date(start.getTime() - 7 * 86400_000).toISOString();
-      to   = new Date(end.getTime()   + 7 * 86400_000).toISOString();
+      const start = Date.UTC(y, m - 1, 1) - 9 * 3600_000;
+      const end   = Date.UTC(y, m, 1) - 9 * 3600_000;
+      from = new Date(start - 7 * 86400_000).toISOString();
+      to   = new Date(end   + 7 * 86400_000).toISOString();
     } else {
-      const now = new Date();
-      from = new Date(now.getTime() - 7 * 86400_000).toISOString();
-      to   = new Date(now.getTime() + 60 * 86400_000).toISOString();
+      const start = Date.parse(`${reservationDay}T00:00:00+09:00`);
+      from = new Date(start - 7 * 86400_000).toISOString();
+      to   = new Date(start + 61 * 86400_000).toISOString();
     }
-    const params = { from, to };
-    if (viewMode !== 'calendar') {
-      if (statusFilter === 'active') params.status = ['planned', 'in_progress'];
-      else if (statusFilter !== 'all') params.status = [statusFilter];
-    }
-    return params;
-  }, [statusFilter, viewMode, calYm]);
-  const { data: list, isLoading: loading, error: qError } = useReservations(resvParams);
+    return { from, to };
+  }, [viewMode, calYm, reservationDay]);
+  const { data: allReservations, isLoading: loading, error: qError, refetch } = useReservations(resvParams, {refetchInterval: 60_000});
+  const searched = allReservations?.filter(r => [r.vehicle_name,r.device_name,r.license_plate,r.driver_name].join(' ').toLocaleLowerCase('ko-KR').includes(query.trim().toLocaleLowerCase('ko-KR')));
+  const list = searched?.filter(r => viewMode === 'calendar' || statusFilter === 'all' || (statusFilter === 'active' ? ['planned', 'in_progress'].includes(r.status) : r.status === statusFilter));
   const error = qError?.message || null;
 
-  const activeCount    = (list || []).filter(r => r.status === 'planned' || r.status === 'in_progress').length;
-  const completedCount = (list || []).filter(r => r.status === 'completed').length;
-  const cancelledCount = (list || []).filter(r => r.status === 'cancelled').length;
+  const activeCount    = (searched || []).filter(r => r.status === 'planned' || r.status === 'in_progress').length;
+  const completedCount = (searched || []).filter(r => r.status === 'completed').length;
+  const cancelledCount = (searched || []).filter(r => r.status === 'cancelled').length;
 
+  const known = !qError && !!allReservations;
   return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <StatCardGrid>
-        <StatCard icon="clock" label="예정/진행중"  value={activeCount}    unit="건" tone="primary" />
-        <StatCard icon="route" label="완료"         value={completedCount} unit="건" tone="success" />
-        <StatCard icon="close" label="취소"         value={cancelledCount} unit="건" tone="default" />
-        <StatCard icon="list"  label="전체 차량"    value={devices?.length ?? 0} unit="대" tone="default" />
-      </StatCardGrid>
-
-      {/* 뷰 mode 토글 + 필터/추가 */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{
-          display: 'flex', gap: 0, padding: 3,
-          background: 'var(--surface-2)', borderRadius: 999,
-        }}>
-          <ViewToggleBtn active={viewMode==='list'}     onClick={() => setViewPersist('list')}     label="리스트" icon="list" />
-          <ViewToggleBtn active={viewMode==='calendar'} onClick={() => setViewPersist('calendar')} label="캘린더" icon="clock" />
+    <div className="corporate-reservations">
+      <div className="corporate-reservation-tools">
+        <div className="corporate-reservation-tool-row">
+          <div className="corporate-view-switch" role="group" aria-label="예약 보기 방식">
+            <button type="button" className="corporate-view-option" aria-pressed={viewMode==='list'} onClick={()=>setViewPersist('list')}><Icon name="list" size={16}/>목록</button>
+            <button type="button" className="corporate-view-option" aria-pressed={viewMode==='calendar'} onClick={()=>setViewPersist('calendar')}><Icon name="clock" size={16}/>캘린더</button>
+          </div>
+          <label className="corporate-reservation-search"><Icon name="search" size={16}/><input type="search" aria-label="예약 차량·사용자 검색" placeholder="차량·사용자 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+          {viewMode==='calendar' && <input className="corporate-reservation-month" type="month" aria-label="예약 조회 월" value={calYm} onChange={e=>setCalYm(e.target.value||calYm)}/>}
+          <BusinessButton primary icon="plus" onClick={()=>setEditing('new')}>새 예약</BusinessButton>
         </div>
-        {viewMode === 'list' && (
-          <>
-            <FilterChip active={statusFilter==='active'}    onClick={() => setStatusFilter('active')}    label="예정+진행" count={activeCount} tone="primary" />
-            <FilterChip active={statusFilter==='completed'} onClick={() => setStatusFilter('completed')} label="완료"     count={completedCount} tone="success" />
-            <FilterChip active={statusFilter==='cancelled'} onClick={() => setStatusFilter('cancelled')} label="취소"     count={cancelledCount} tone="warn" />
-            <FilterChip active={statusFilter==='all'}       onClick={() => setStatusFilter('all')}       label="전체"     count={(list || []).length} />
-          </>
-        )}
-        {viewMode === 'calendar' && (
-          <input type="month" value={calYm} onChange={e => setCalYm(e.target.value || calYm)}
-            style={{ ...st.dateInput, minWidth: 130 }} />
-        )}
-        <button onClick={() => setEditing('new')} style={{
-          marginLeft: 'auto', ...st.btnPrimary, display: 'flex', alignItems: 'center', gap: 6,
-        }}>
-          <Icon name="plus" size={13} /> 새 예약
-        </button>
+        <div className="corporate-reservation-tool-row">
+          {viewMode==='list' ? <div className="corporate-reservation-status" role="group" aria-label="예약 상태 필터">
+            {[['all','전체',searched?.length],['active','예정·진행',activeCount],['completed','완료',completedCount],['cancelled','취소',cancelledCount]].map(([value,label,count])=><button type="button" className="corporate-status-option" key={value} aria-pressed={statusFilter===value} onClick={()=>setStatusFilter(value)}>{label} <span>({known?count:'—'})</span></button>)}
+          </div> : <span className="corporate-reservation-hint">날짜를 선택해 예약하고, 예약을 선택해 상세 내용을 확인하세요.</span>}
+          <span className="corporate-reservation-hint">{viewMode==='list'?'최근 7일 ~ 향후 60일':'선택한 달과 전후 7일'} · 등록 차량 {devices.length}대</span>
+        </div>
       </div>
-
-      {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
-      {loading && !list && <SkeletonList count={3} itemHeight={80} />}
-      {list && list.length === 0 && viewMode === 'list' && <div style={st.muted}>예약이 없습니다.</div>}
-
-      {viewMode === 'list' && list && list.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 8 }}>
-          {list.map(r => (
-            <ReservationCard key={r.id} r={r} onEdit={() => setEditing(r)}
-              onDelete={async () => {
-                const ok = await confirmDialog({ title: '예약 삭제', body: '삭제하시겠습니까? (되돌릴 수 없음)', danger: true });
-                if (!ok) return;
-                try { await deleteResvMut.mutateAsync(r.id); }
-                catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
-              }} />
-          ))}
+      {error && <BusinessError onRetry={refetch}>예약 정보를 불러오지 못했습니다.</BusinessError>}
+      {loading && !list && <SkeletonList count={3} itemHeight={64}/>}
+      {!error && viewMode==='list' && list && <section className="corporate-reservation-ledger">
+        <div className="corporate-reservation-scroll" role="region" aria-label="차량 예약 목록 · 좌우 스크롤" tabIndex={0}>
+          <table className="corporate-reservation-table"><thead><tr><th scope="col">상태</th><th scope="col">차량</th><th scope="col">사용자</th><th scope="col">시작 일시</th><th scope="col">종료 일시</th><th scope="col">목적·메모</th><th scope="col">관리</th></tr></thead>
+            <tbody>{list.map(r=><ReservationRow key={r.id} r={r} onEdit={()=>setEditing(r)} onDelete={async()=>{
+              const ok=await confirmDialog({title:'예약 취소',body:'예약을 취소할까요? 기존 내역은 유지됩니다.',danger:true});
+              if(!ok)return;
+              try{await deleteResvMut.mutateAsync(r.id);}catch(e){await alertDialog({title:'예약 취소 실패',body:e.message,tone:'danger'});}
+            }}/>)}</tbody>
+          </table>
+          {!list.length&&<BusinessEmpty title={query?'검색 결과가 없습니다.':'예약이 없습니다.'}>{query?'검색어나 상태를 변경해 주세요.':'새 예약을 등록하거나 조회 상태를 변경해 주세요.'}</BusinessEmpty>}
         </div>
-      )}
-
-      {viewMode === 'calendar' && (
-        <ReservationCalendar ym={calYm} list={list || []}
-          onDayClick={(dateStr) => setEditing({ new: dateStr })}
-          onEventClick={(r) => setEditing(r)} />
-      )}
-
-      {editing && (
-        <ReservationDialog init={editing === 'new' ? null : editing} devices={devices} staff={staff}
-          presetDate={editing?.new || null}
-          onClose={() => setEditing(null)}
-          onSaved={() => setEditing(null)} />
-      )}
+        <footer className="corporate-reservation-footer">{list.length}건</footer>
+      </section>}
+      {!error && viewMode==='calendar' && <ReservationCalendar ym={calYm} list={list||[]} onDayClick={dateStr=>setEditing({new:dateStr})} onEventClick={r=>setEditing(r)}/>}
+      {editing && <ReservationDialog init={editing==='new'||editing?.new?null:editing} devices={devices} staff={staff} presetDate={editing?.new||null} onClose={()=>setEditing(null)} onSaved={()=>setEditing(null)}/>}
     </div>
   );
 }
 
-function ViewToggleBtn({ active, onClick, label, icon }) {
-  return (
-    <button onClick={onClick} style={{
-      padding: '6px 12px', borderRadius: 999, border: 'none', cursor: 'pointer',
-      background: active ? 'var(--surface)' : 'transparent',
-      color: active ? 'var(--text)' : 'var(--text-3)',
-      fontSize: 12, fontWeight: 700,
-      boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-      display: 'flex', alignItems: 'center', gap: 5,
-      transition: 'all .15s',
-    }}>
-      <Icon name={icon} size={12} /> {label}
-    </button>
-  );
+function ReservationRow({r,onEdit,onDelete}) {
+  const state=RESV_STATUS[r.status]||RESV_STATUS.planned;
+  const untilStart=Math.round((Date.parse(r.starts_at)-Date.now())/60000),untilEnd=Math.round((Date.parse(r.ends_at)-Date.now())/60000);
+  const imminent=r.status==='planned'&&untilStart>=0&&untilStart<=60;
+  const returning=r.status==='in_progress'&&untilEnd>=0&&untilEnd<=60;
+  return <tr>
+    <td><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>
+    <td><strong>{r.vehicle_name||r.device_name||'차량'}</strong>{r.license_plate&&<small>{r.license_plate}</small>}</td>
+    <td>{r.driver_name||'미지정'}</td><td>{kstDateTime(r.starts_at)}</td><td>{kstDateTime(r.ends_at)}</td>
+    <td><span>{r.purpose||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
+    <td><div className="corporate-reservation-row-actions"><BusinessButton onClick={onEdit} aria-label={`예약 ${r.id} 상세·수정`}>상세·수정</BusinessButton>{r.status!=='cancelled'&&<BusinessButton onClick={onDelete} aria-label={`예약 ${r.id} 취소`}>취소</BusinessButton>}</div></td>
+  </tr>;
 }
+
 
 // (2026-07-28) Stage-4F-2: 월 캘린더 뷰. 7x6 grid, 각 셀 = 하루.
 // 예약은 그 날 시간대에 걸치는 것들 (status 색으로 구분). 최대 3개 표시 + "N+ more".
@@ -1287,7 +834,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
   const monthEnd   = new Date(y, m, 0);   // 마지막날
   const startDay   = monthStart.getDay(); // 0=Sun
   const daysInMonth = monthEnd.getDate();
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = businessDate();
 
   // 셀 구성 — 이전달 잔여 + 이번달 + 다음달 첫주 padding. 7x6 = 42 cells.
   const cells = [];
@@ -1304,10 +851,10 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
   }
 
   function reservationsOn(date) {
-    const dStr = date.toISOString().slice(0, 10);
+    const dStr = calendarDate(date);
     return (list || []).filter(r => {
-      const s = new Date(r.starts_at).toISOString().slice(0, 10);
-      const e = new Date(r.ends_at  ).toISOString().slice(0, 10);
+      const s = businessDate(r.starts_at);
+      const e = businessDate(r.ends_at);
       return dStr >= s && dStr <= e;
     });
   }
@@ -1315,44 +862,33 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
   return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 12, padding: 8,
-    }}>
+    <div className="corporate-reservation-calendar" role="region" aria-label="월간 차량 예약 · 좌우 스크롤" tabIndex={0}>
       {/* DoW header */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+      <div className="corporate-calendar-weekdays">
         {DOW.map((d, i) => (
           <div key={d} style={{
-            fontSize: 11, fontWeight: 700, padding: '6px 2px',
-            textAlign: 'center',
             color: i === 0 ? 'var(--danger)' : i === 6 ? 'var(--primary)' : 'var(--text-2)',
           }}>{d}</div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+      <div className="corporate-calendar-days">
         {cells.map((c, i) => {
-          const dStr = c.date.toISOString().slice(0, 10);
+          const dStr = calendarDate(c.date);
           const dayResv = reservationsOn(c.date);
           const isToday = dStr === todayStr;
           const dow = c.date.getDay();
           const MAX_BADGES = 2;   // 모바일 대응: 셀 폭 좁을 때 3개는 넘침
           return (
-            <div key={i} onClick={() => c.currentMonth && onDayClick(dStr)} style={{
-              minHeight: 'clamp(56px, 12vw, 84px)',
-              padding: 3,
+            <div className="corporate-calendar-day" key={i} onClick={() => c.currentMonth && onDayClick(dStr)} style={{
+              minHeight: 'clamp(128px, 12vw, 160px)',
               background: isToday
                 ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
                 : c.currentMonth ? 'var(--surface)' : 'var(--surface-2)',
               border: '1px solid ' + (isToday ? 'var(--primary)' : 'var(--border)'),
-              borderRadius: 6,
               opacity: c.currentMonth ? 1 : 0.4,
               cursor: c.currentMonth ? 'pointer' : 'default',
-              display: 'flex', flexDirection: 'column', gap: 2,
-              overflow: 'hidden',
-              minWidth: 0,
             }}>
-              <div style={{
-                fontSize: 11, fontWeight: 700,
+              <div className="corporate-calendar-date" style={{
                 color: !c.currentMonth ? 'var(--text-3)'
                      : isToday ? 'var(--primary)'
                      : dow === 0 ? 'var(--danger)'
@@ -1364,20 +900,15 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
               {dayResv.slice(0, MAX_BADGES).map(r => {
                 const s = RESV_STATUS[r.status] || RESV_STATUS.planned;
                 return (
-                  <div key={r.id} onClick={(e) => { e.stopPropagation(); onEventClick(r); }} style={{
-                    fontSize: 10, fontWeight: 600,
-                    padding: '1px 3px', borderRadius: 3,
+                  <div className="corporate-calendar-event" key={r.id} onClick={(e) => { e.stopPropagation(); onEventClick(r); }} style={{
                     background: s.bg, color: s.color,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    cursor: 'pointer',
-                    minWidth: 0,
                   }} title={`${r.license_plate || r.device_name || ''} · ${r.purpose || ''} · ${s.label}`}>
-                    {r.license_plate || r.device_name || `#${r.device_id}`}
+                    {[r.license_plate,r.vehicle_name].filter(Boolean).join(' · ') || '차량'}
                   </div>
                 );
               })}
               {dayResv.length > MAX_BADGES && (
-                <div style={{ fontSize: 9, color: 'var(--text-3)', textAlign: 'center' }}>
+                <div className="corporate-calendar-more">
                   +{dayResv.length - MAX_BADGES}
                 </div>
               )}
@@ -1389,204 +920,135 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
   );
 }
 
-function ReservationCard({ r, onEdit, onDelete }) {
-  const s = RESV_STATUS[r.status] || RESV_STATUS.planned;
-  const start = new Date(r.starts_at);
-  const end   = new Date(r.ends_at);
-  const fmtDT = d => d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-  const sameDay = start.toDateString() === end.toDateString();
-  // (2026-07-28) Stage-4H-1/2: 임박 표시.
-  const minsUntilStart = Math.round((start.getTime() - Date.now()) / 60_000);
-  const minsUntilEnd   = Math.round((end.getTime()   - Date.now()) / 60_000);
-  const isImminent  = r.status === 'planned'     && minsUntilStart >= 0 && minsUntilStart <= 60;
-  const isReturning = r.status === 'in_progress' && minsUntilEnd   >= 0 && minsUntilEnd   <= 60;
-  return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 8,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{
-          fontSize: 10, padding: '3px 8px', borderRadius: 999,
-          background: s.bg, color: s.color, fontWeight: 700,
-        }}>{s.label}</span>
-        {isImminent && (
-          <span style={{
-            fontSize: 10, padding: '3px 8px', borderRadius: 999,
-            background: 'color-mix(in srgb, var(--warning) 20%, transparent)',
-            color: 'var(--warning)', fontWeight: 800,
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-          }} title={`${minsUntilStart}분 후 시작 — 백엔드 워커가 30분 전 FCM 알림 발송`}>
-            🔔 {minsUntilStart === 0 ? '지금 시작' : `${minsUntilStart}분 후 시작`}
-          </span>
-        )}
-        {isReturning && (
-          <span style={{
-            fontSize: 10, padding: '3px 8px', borderRadius: 999,
-            background: 'color-mix(in srgb, var(--danger) 20%, transparent)',
-            color: 'var(--danger)', fontWeight: 800,
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-          }} title={`${minsUntilEnd}분 후 반납 — 30분 전 FCM 알림`}>
-            🔔 {minsUntilEnd === 0 ? '지금 반납' : `${minsUntilEnd}분 후 반납`}
-          </span>
-        )}
-        <span style={{ fontWeight: 700, fontSize: 14 }}>
-          {r.license_plate || r.device_name || `#${r.device_id}`}
-        </span>
-        {r.driver_name && (
-          <span style={{
-            fontSize: 10, padding: '2px 8px', borderRadius: 4,
-            background: 'var(--surface-2)', color: 'var(--text-2)', fontWeight: 600,
-          }}>👤 {r.driver_name}</span>
-        )}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-          <button onClick={onEdit} style={{ ...st.btnGhost, padding: '4px 8px' }} title="편집">
-            <Icon name="edit" size={12} />
-          </button>
-          <button onClick={onDelete} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제">
-            <Icon name="trash2" size={12} />
-          </button>
-        </div>
-      </div>
-      <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Icon name="clock" size={12} />
-        {sameDay
-          ? `${start.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })} ${start.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} ~ ${end.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`
-          : `${fmtDT(start)} ~ ${fmtDT(end)}`}
-      </div>
-      {r.purpose && (
-        <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
-          <span style={{ color: 'var(--text-3)' }}>목적</span>
-          <span style={{ marginLeft: 6 }}>{r.purpose}</span>
-        </div>
-      )}
-      {r.note && (
-        <div style={{
-          fontSize: 11, color: 'var(--text-2)',
-          padding: '6px 10px', background: 'var(--surface-2)', borderRadius: 6,
-        }}>📝 {r.note}</div>
-      )}
-    </div>
-  );
-}
 
-// datetime-local input value 는 'YYYY-MM-DDTHH:MM' 로컬 시간 문자열.
-// ISO 로 변환 (Date 는 로컬 문자열을 로컬 시간으로 파싱 → toISOString 은 UTC).
-function localToIso(v) { return v ? new Date(v).toISOString() : null; }
+// Reservation inputs and list dates share Korean time, independent of browser timezone.
+function localToIso(value) {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value || '')) return null;
+  const at = Date.parse(`${value}+09:00`);
+  return Number.isFinite(at) && isoToLocal(new Date(at).toISOString()) === value ? new Date(at).toISOString() : null;
+}
 function isoToLocal(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return kstDateTime(iso).replace(' ', 'T');
 }
 
 function ReservationDialog({ init, presetDate, devices, staff, onClose, onSaved }) {
+  const access=useFleetAccess();
   // init null = 신규. presetDate 'YYYY-MM-DD' 있으면 그 날 09:00~10:00 기본.
   // 아니면 다음 정시부터 +1h.
   const defaultStart = () => {
-    if (presetDate) return new Date(`${presetDate}T09:00:00`);
-    const d = new Date(); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); return d;
+    if (presetDate) return new Date(`${presetDate}T09:00:00+09:00`);
+    return new Date((Math.floor(Date.now() / 3600_000) + 1) * 3600_000);
   };
-  const [deviceId, setDeviceId] = useState(init?.device_id ?? devices?.[0]?.id ?? '');
-  const [driverId, setDriverId] = useState(init?.driver_staff_id ?? '');
+  const [deviceId, setDeviceId] = useState(init?.vehicle_id ?? devices?.[0]?.id ?? '');
+  const [driverId, setDriverId] = useState(init?.driver_staff_id ?? (!access.manage_reports?access.staff_id:''));
   const [startsAt, setStartsAt] = useState(init ? isoToLocal(init.starts_at) : isoToLocal(defaultStart().toISOString()));
   const [endsAt,   setEndsAt]   = useState(init ? isoToLocal(init.ends_at)   : isoToLocal(new Date(defaultStart().getTime() + 3600_000).toISOString()));
   const [purpose,  setPurpose]  = useState(init?.purpose ?? '');
+  const [reportPurpose,setReportPurpose]=useState(init?.report_purpose || '');
   const [note,     setNote]     = useState(init?.note ?? '');
   const [status,   setStatus]   = useState(init?.status ?? 'planned');
   // (F2-c) mutations — 성공 시 자동 invalidate.
   const createMut = useCreateReservation();
   const updateMut = useUpdateReservation();
-  const busy = createMut.isPending || updateMut.isPending;
+  const [submitting, setSubmitting] = useState(false);
+  const saving = useRef(false), mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const busy = submitting || createMut.isPending || updateMut.isPending;
+  const close = () => { if (!saving.current) onClose(); };
 
   async function save() {
+    if (saving.current || busy || !mounted.current) return;
     if (!deviceId) { alertDialog({ title: '차량 선택 필요', body: '', tone: 'danger' }); return; }
     if (!startsAt || !endsAt) { alertDialog({ title: '시간 입력 필요', body: '', tone: 'danger' }); return; }
+    const start = localToIso(startsAt), end = localToIso(endsAt);
+    if (!start || !end || Date.parse(end) <= Date.parse(start) || Date.parse(end) - Date.parse(start) > 366 * 86400_000) {
+      alertDialog({ title: '예약 시간 확인', body: '종료 시간을 시작 시간 이후로 선택해 주세요. 최대 1년까지 예약할 수 있습니다.', tone: 'danger' });
+      return;
+    }
+    saving.current = true;
+    setSubmitting(true);
     const body = {
-      device_id:       Number(deviceId),
+      vehicle_id:      Number(deviceId),
       driver_staff_id: driverId ? Number(driverId) : null,
-      starts_at:       localToIso(startsAt),
-      ends_at:         localToIso(endsAt),
+      starts_at:       start,
+      ends_at:         end,
       purpose:         purpose.trim() || null,
+      report_purpose: reportPurpose || null,
       note:            note.trim() || null,
       status,
     };
     try {
       if (init?.id) await updateMut.mutateAsync({ id: init.id, body });
       else          await createMut.mutateAsync(body);
-      onSaved();
+      if (mounted.current) onSaved();
     } catch (e) {
-      alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
-    }
+      if (mounted.current) await alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
+    } finally { saving.current = false; if (mounted.current) setSubmitting(false); }
   }
 
   return (
-    <Modal open onClose={onClose} size="md" title={init?.id ? '예약 편집' : '새 예약'}>
-
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량</div>
-          <select value={deviceId} onChange={e => setDeviceId(e.target.value)} style={st.input}>
+    <Modal open onClose={busy ? undefined : close} size={720} title={init?.id ? '예약 편집' : '새 예약'} footer={<div className="corporate-editor-footer">
+      <Button onClick={close} disabled={busy} variant="ghost" size="lg">취소</Button>
+      <Button onClick={save} busy={busy} disabled={busy} variant="primary" size="lg">
+        {busy ? '저장 중...' : '저장'}
+      </Button>
+    </div>}>
+        <fieldset className="corporate-editor-fields" disabled={busy} aria-busy={busy}>
+        <FormField label="차량">
+          <select value={deviceId} onChange={e => {setDeviceId(e.target.value);setDriverId(access.manage_reports?'':access.staff_id);}}>
             {(devices || []).map(d => (
               <option key={d.id} value={d.id}>
-                {d.license_plate ? `${d.license_plate} · ` : ''}{d.display_name || d.device_uid}
+                {reportVehicleLabel(d)}
               </option>
             ))}
           </select>
-        </div>
+        </FormField>
 
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>운전자 (선택)</div>
-          <select value={driverId} onChange={e => setDriverId(e.target.value)} style={st.input}>
-            <option value="">— 미지정 —</option>
-            {staff.map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` (${s.role})` : ''}</option>)}
+        <FormField label="운전자 (선택)">
+          <select value={driverId} onChange={e => setDriverId(e.target.value)}>
+            {access.manage_reports&&<option value="">— 미지정 —</option>}
+            {staff.filter(s=>staffCanDrive(s,devices.find(d=>d.id===Number(deviceId)))).map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` (${s.role})` : ''}</option>)}
           </select>
+        </FormField>
+
+        <p className="business-note">예약 일시는 한국시간(KST) 기준입니다.</p>
+        <div className="business-datetime-fields">
+          <FormField label="시작">
+            <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} />
+          </FormField>
+          <FormField label="종료">
+            <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} />
+          </FormField>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>시작</div>
-            <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={st.input} />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>종료</div>
-            <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} style={st.input} />
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>목적</div>
+        <FormField label="운행기록부 용무 (선택)">
+          <Select value={reportPurpose} onChange={e=>setReportPurpose(e.target.value)}><option value="">미지정</option><option value="commute">출퇴근</option><option value="business">업무</option><option value="other">기타</option></Select>
+        </FormField>
+        <FormField label="예약 목적">
           <input value={purpose} onChange={e => setPurpose(e.target.value)}
-            placeholder="거래처 방문, 외근..." style={st.input} />
-        </div>
+            placeholder="거래처 방문, 외근..." />
+        </FormField>
 
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>메모 (선택)</div>
+        <FormField label="메모 (선택)">
           <textarea value={note} onChange={e => setNote(e.target.value)}
-            placeholder="..." style={{ ...st.input, minHeight: 50, resize: 'vertical', fontFamily: 'inherit' }} />
-        </div>
+            placeholder="예약 관련 내용을 입력하세요." />
+        </FormField>
 
         {init?.id && (
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>상태</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 4 }}>
+          <div className="corporate-editor-field">
+            <div className="corporate-editor-label">상태</div>
+            <div className="corporate-editor-options">
               {Object.entries(RESV_STATUS).map(([id, meta]) => (
-                <button key={id} onClick={() => setStatus(id)} style={{
-                  padding: '8px 4px', fontSize: 11, borderRadius: 8, cursor: 'pointer',
+                <button className="corporate-editor-option" type="button" key={id} onClick={() => setStatus(id)} aria-pressed={status === id} style={{
                   background: status === id ? meta.color : 'var(--surface-2)',
                   color:      status === id ? 'white'    : 'var(--text)',
-                  border: 'none', fontWeight: status === id ? 700 : 500,
+                  borderColor: status === id ? meta.color : 'var(--border)',
                 }}>{meta.label}</button>
               ))}
             </div>
           </div>
         )}
-
-        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
-          <Button onClick={onClose} disabled={busy} variant="ghost" style={{ flex: 1 }}>취소</Button>
-          <Button onClick={save} busy={busy} variant="primary" size="lg" style={{ flex: 2 }}>
-            {busy ? '저장 중...' : '저장'}
-          </Button>
-        </div>
+        </fieldset>
     </Modal>
   );
 }
@@ -1609,22 +1071,19 @@ let FUEL_PRICE_KRW = { ...DEFAULT_FUEL_PRICE_KRW };
 const FUEL_LABEL = {
   gasoline: '휘발유', diesel: '경유', lpg: 'LPG', ev: '전기',
 };
-const BUSINESS_PURPOSES = new Set(['business']);
 
 function ymKST(d = new Date()) {
   const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
   return kst.toISOString().slice(0, 7);
 }
 function monthBounds(ym) {
-  const [y, m] = ym.split('-').map(Number);
-  const from = `${ym}-01`;
-  const ny = m === 12 ? y + 1 : y;
-  const nm = m === 12 ? 1 : m + 1;
-  const to = `${ny}-${String(nm).padStart(2, '0')}-01`;
-  return { from, to };
+  return monthDateBounds(ym);
 }
 
-function MonthlyReportTab({ devices, sub }) {
+function MonthlyReportTab({ devices }) {
+  const qc=useQueryClient(), {data:staff=[]}=useStaff();
+  const reportKey = JSON.stringify(devices.map(d => [d.id, d.vehicle_name, d.car_model, d.asset?.updated_at, d.display_name, d.license_plate, d.fuel_efficiency_kmpl, d.fuel_type, d.model_year, d.engine_cc, d.purchase_price_krw, d.acquired_at, d.department, d.vehicle_type]));
+  const reportDevices = useMemo(() => devices, [reportKey]);
   const [ym, setYm] = useState(ymKST());
   const [rows, setRows] = useState(null);   // per-device aggregate
   const [loading, setLoading] = useState(false);
@@ -1650,31 +1109,19 @@ function MonthlyReportTab({ devices, sub }) {
 
   useEffect(() => {
     let cancelled = false;
-    if (!devices || devices.length === 0) { setRows([]); return; }
-    setLoading(true); setError(null);
+    if (!reportDevices.length) { setRows([]); setLoading(false); setError(null); return; }
+    setLoading(true); setError(null); setRows(null);
     const { from, to } = monthBounds(ym);
-    Promise.all(devices.map(d =>
-      api.listTrips(d.id, { from, to }).catch(() => [])
+    Promise.all(reportDevices.map(d =>
+      api.listFleetVehicleTrips(d.id, { from, to })
     )).then(perDevice => {
       if (cancelled) return;
-      const out = devices.map((d, i) => {
+      const out = reportDevices.map((d, i) => {
         const trips = perDevice[i] || [];
-        let totalM = 0, businessM = 0, personalM = 0;
-        let annCostSum = 0, annCostCount = 0;
-        for (const t of trips) {
-          const dist = t.distance_m || 0;
-          totalM += dist;
-          const purpose = t.annotation?.purpose || 'unspecified';
-          if (BUSINESS_PURPOSES.has(purpose)) businessM += dist;
-          else personalM += dist;
-          if (typeof t.annotation?.fuel_cost === 'number') {
-            annCostSum += t.annotation.fuel_cost;
-            annCostCount++;
-          }
-        }
         return {
           id: d.id,
-          label: d.display_name || d.device_uid,
+          label: reportVehicleLabel(d),
+          asset: d.asset,
           fuel_efficiency_kmpl: d.fuel_efficiency_kmpl,
           fuel_type: d.fuel_type,
           // (2026-07-28) Stage-4B-1 국세청 + 우리 전용 필드 (편집 다이얼로그 전달용)
@@ -1685,11 +1132,7 @@ function MonthlyReportTab({ devices, sub }) {
           acquired_at:        d.acquired_at,
           department:         d.department,
           vehicle_type:       d.vehicle_type,
-          totalKm:    totalM / 1000,
-          businessKm: businessM / 1000,
-          personalKm: personalM / 1000,
-          annotationCost: annCostSum,           // 사용자가 직접 입력한 비용 합계 (있으면 우선)
-          annotationCount: annCostCount,
+          ...summarizeMonthlyTrips(trips),
         };
       });
       setRows(out); setLoading(false);
@@ -1698,7 +1141,7 @@ function MonthlyReportTab({ devices, sub }) {
       setError(e.message); setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [devices, ym, tick]);
+  }, [reportDevices, ym, tick]);
 
   // (2026-07-28) Stage-4G 부서 목록 (rows 에서 자동 발견) + 부서 필터 적용된 row.
   const departments = useMemo(() => {
@@ -1712,99 +1155,94 @@ function MonthlyReportTab({ devices, sub }) {
     return rows.filter(r => depFilter.has(r.department || '(부서없음)'));
   }, [rows, depFilter]);
 
-  // fleet 총계 — stat card 5개. (부서 필터 적용된 filteredRows 사용)
+  // 월간 합계는 부서 필터를 적용한 차량만 포함한다.
   const totals = useMemo(() => {
     const use = filteredRows || rows;
-    if (!use) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0, depreciation: 0 };
-    let totalKm = 0, businessKm = 0, personalKm = 0, fuelCost = 0, depreciation = 0;
+    if (!use) return { totalKm: 0, businessKm: 0, personalKm: 0, fuelCost: 0, depreciation: 0, includedCount: 0, excludedCount: 0 };
+    let totalKm = 0, businessKm = 0, personalKm = 0, fuelCost = 0, depreciation = 0, includedCount = 0, excludedCount = 0;
     for (const r of use) {
+      includedCount += r.includedCount; excludedCount += r.excludedCount;
       totalKm    += r.totalKm;
       businessKm += r.businessKm;
       personalKm += r.personalKm;
       fuelCost   += estimateFuelCost(r);
       depreciation += estimateDepreciation(r);
     }
-    return { totalKm, businessKm, personalKm, fuelCost, depreciation };
+    return { totalKm, businessKm, personalKm, fuelCost, depreciation, includedCount, excludedCount };
   }, [rows, filteredRows]);
 
-  if (!sub) return <div style={st.muted}>구독 상태 로딩 중...</div>;
-  if (!sub.active) {
-    return (
-      <Card title="월간 리포트 — 구독 필요">
-        <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
-          운행 리포트 구독을 활성화하면 월간 리포트도 함께 이용 가능합니다.
-        </div>
-      </Card>
-    );
+  const exportGeneration=useRef(0);
+  useEffect(()=>{exportGeneration.current++;return ()=>{exportGeneration.current++;};},[reportDevices,ym,depFilter]);
+  async function prepareMonthlyExport(format) {
+    const generation=exportGeneration.current;
+    const {from,to}=monthBounds(ym);
+    const selected=reportDevices.filter(d=>!depFilter?.size||depFilter.has(d.department||'(부서없음)'));
+    const perVehicle=await Promise.all(selected.map(d=>api.listFleetVehicleTrips(d.id,{from,to,download:format})));
+    if(generation!==exportGeneration.current)throw new Error('조회 조건이 바뀌었습니다. 다시 내려받아 주세요.');
+    const fresh=selected.map((d,i)=>({...d,label:reportVehicleLabel(d),...summarizeMonthlyTrips(perVehicle[i]||[])}));
+    return subjectReport(monthlyReport(fresh,{month:ym,estimateFuelCost,estimateDepreciation}),perVehicle.some(t=>t.subjectScope));
   }
-
-  const fmtKm  = (n) => n < 1 ? '0' : n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString();
+  const fmtKm = n => monthlyDistance(n, totals.includedCount);
   const fmtWon = (n) => n.toLocaleString() + '원';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div className="no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <input type="month" value={ym} onChange={e => setYm(e.target.value || ymKST())}
-          style={{ ...st.dateInput, minWidth: 130 }} />
-        <button onClick={() => setDlOpen(true)} style={{
-          ...st.btnPrimary, display: 'flex', alignItems: 'center', gap: 6,
-        }}>
-          <Icon name="share" size={13} /> 운행일지 다운로드
-        </button>
+    <div className="corporate-monthly-page">
+      <div className="corporate-report-controls no-print">
+      <div className="corporate-report-control-row">
+        <input aria-label="월간 조회월" type="month" value={ym} onChange={e => setYm(e.target.value || ymKST())}/>
+        <details className="corporate-report-menu corporate-monthly-departments">
+          <summary><Icon name="filter" size={13}/> 부서{depFilter?.size ? ` (${depFilter.size})` : ' 전체'}</summary>
+          <div className="corporate-report-menu-body">
+            <label className="corporate-report-check"><input type="checkbox" checked={!depFilter?.size} onChange={()=>setDepFilter(null)}/>전체 부서</label>
+            {departments.map(dep=><label className="corporate-report-check" key={dep}><input type="checkbox" checked={!!depFilter?.has(dep)} onChange={()=>setDepFilter(prev=>{const next=new Set(prev??[]);if(next.has(dep))next.delete(dep);else next.add(dep);return next.size?next:null;})}/>{dep} ({(rows||[]).filter(r=>(r.department||'(부서없음)')===dep).length})</label>)}
+          </div>
+        </details>
         <FuelPriceBadge prices={fuelPrices} />
+        <details className="corporate-report-menu corporate-report-download">
+        <summary><Icon name="download" size={13}/> 다운로드</summary>
+        <div className="corporate-report-menu-body">
+        <BusinessButton icon="download" onClick={() => setDlOpen(true)}>운행기록부 엑셀(XLSX)</BusinessButton>
+        <ExportButtons prepareExport={prepareMonthlyExport} report={filteredRows ? monthlyReport(filteredRows,{month:ym,estimateFuelCost,estimateDepreciation}) : null} disabled={loading || !!error} />
+        </div>
+        </details>
+      </div>
+      <div className="corporate-monthly-totals" aria-label="월간 운행 합계">
+        <span>총 주행거리<strong>{loading || error ? '—' : fmtKm(totals.totalKm)}<small>km</small></strong></span>
+        <span>업무거리<strong>{loading || error ? '—' : fmtKm(totals.businessKm)}<small>km</small></strong></span>
+        <span>기타·미분류 거리<strong>{loading || error ? '—' : fmtKm(totals.personalKm)}<small>km</small></strong></span>
+        <span>유류비 추정<strong>{loading || error ? '—' : fmtWon(Math.round(totals.fuelCost))}</strong></span>
+        <span>감가상각 인정<strong>{loading || error ? '—' : fmtWon(Math.round(totals.depreciation))}</strong></span>
+      </div>
+      </div>
+      <div className="corporate-monthly-notes">
+        <span>{!loading && !error ? `차량 ${filteredRows?.length ?? 0}대 · 확정 ${totals.includedCount}건 · 합계 제외 ${totals.excludedCount}건` : '월간 운행 집계'}</span>
+        <details><summary>계산 기준</summary><p>미확정 거리는 합계에서 제외하며 입력한 주유비는 유지합니다. 유류비 추정은 연비 미입력 차량을 제외합니다. 감가상각 인정액은 5년 정액법 × 업무비율 기준이며 연 800만원 한도를 표시합니다.</p></details>
       </div>
 
-      <StatCardGrid>
-        <StatCard icon="bar"    label="총 주행거리"   value={fmtKm(totals.totalKm)}    unit="km" tone="default" loading={loading} />
-        <StatCard icon="route"  label="업무거리"     value={fmtKm(totals.businessKm)} unit="km" tone="primary" loading={loading} />
-        <StatCard icon="mapPin" label="개인거리"     value={fmtKm(totals.personalKm)} unit="km" tone="default" loading={loading} />
-        <StatCard icon="coin"   label="유류비 추정"   value={fmtWon(Math.round(totals.fuelCost))} tone="warn" loading={loading}
-          hint="연비 미입력 차량은 제외" />
-        <StatCard icon="bar"    label="감가상각 인정" value={fmtWon(Math.round(totals.depreciation))} tone="primary" loading={loading}
-          hint="5년 정액법 × 업무비율 · 한도 800만/년" />
-      </StatCardGrid>
-
-      {/* (Stage-4G) 부서 필터 chips — 부서가 2개 이상일 때만 표시 */}
-      {departments.length >= 2 && (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 700, marginRight: 4 }}>부서</span>
-          <FilterChip active={!depFilter || depFilter.size === 0} onClick={() => setDepFilter(null)}
-            label="전체" count={rows?.length ?? 0} />
-          {departments.map(dep => {
-            const cnt = (rows || []).filter(r => (r.department || '(부서없음)') === dep).length;
-            const on = depFilter?.has(dep);
-            return (
-              <FilterChip key={dep} active={on}
-                onClick={() => setDepFilter(prev => {
-                  const s = new Set(prev ?? []);
-                  if (s.has(dep)) s.delete(dep); else s.add(dep);
-                  return s.size === 0 ? null : s;
-                })}
-                label={dep} count={cnt} tone={on ? 'success' : 'default'} />
-            );
-          })}
-        </div>
-      )}
-
-      {error && <div style={{ ...st.muted, color: 'var(--danger)' }}>{error}</div>}
+      <>{error && <BusinessError onRetry={() => setTick(t => t + 1)}>일부 차량의 운행기록을 불러오지 못해 월간 합계를 표시하지 않았습니다.</BusinessError>}</>
       {loading && !rows && <div style={st.muted}>월간 데이터 로딩 중...</div>}
       {rows && rows.length === 0 && <div style={st.muted}>차량이 없습니다.</div>}
 
       {rows && rows.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="corporate-monthly-ledger">
           {(filteredRows || rows).length === 0 && (
             <div style={st.muted}>선택한 부서에 차량이 없습니다.</div>
           )}
+          <div className="corporate-monthly-table-scroll" role="region" aria-label="월간 운행 요약 목록 · 좌우 스크롤" tabIndex={0}>
+          <table className="corporate-monthly-table"><thead><tr><th>차량</th><th>부서</th><th>운행 상태</th><th>총 주행거리</th><th>업무거리 · 비율</th><th>기타·미분류</th><th>유류비 추정</th><th>감가상각 인정</th><th>관리</th></tr></thead><tbody>
           {(filteredRows || rows).map(r => (
             <MonthlyDeviceRow key={r.id} row={r} onEdit={() => setEditing(r)} />
           ))}
+          </tbody></table>
+          </div>
+          <div className="corporate-monthly-footer">{(filteredRows || rows).length}대 · {ym} 월간 운행 요약</div>
         </div>
       )}
 
       {editing && (
-        <FuelInfoDialog device={editing}
+        <FleetAssetForm asset={editing.asset} staff={staff}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); setTick(t => t + 1); }} />
+          onSaved={() => { setEditing(null); qc.invalidateQueries({queryKey:fleetAssetsKey}); setTick(t => t + 1); }} />
       )}
 
       {dlOpen && (
@@ -1821,7 +1259,7 @@ function FuelPriceBadge({ prices }) {
   const isLive = prices?.source === 'opinet';
   const at = prices?.updated_at ? new Date(prices.updated_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }) : '';
   return (
-    <div style={{
+    <div className="corporate-monthly-fuel-prices" style={{
       marginLeft: 'auto',
       display: 'flex', alignItems: 'center', gap: 6,
       padding: '4px 10px', borderRadius: 8,
@@ -1830,7 +1268,7 @@ function FuelPriceBadge({ prices }) {
         : 'var(--surface-2)',
       fontSize: 10, color: 'var(--text-2)',
     }}
-    title={isLive ? `오피넷 실시간 (${at})` : '오피넷 KEY 미설정 — 기본값 사용'}>
+    title={isLive ? `오피넷 실시간 (${at})` : '기준 유가 적용'}>
       <span style={{
         width: 6, height: 6, borderRadius: '50%',
         background: isLive ? 'var(--accent)' : 'var(--text-3)',
@@ -1860,15 +1298,22 @@ const PURPOSE_ALL = [
   { id: 'unspecified', label: '미지정' },
 ];
 
-function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
+function DownloadDialog({ ym, devices, initialDepartments, initialVehicleIds, sourcePeriod, onClose }) {
+  const companyInfo = useCorporateInfo({refetchOnMount:'always'});
+  const access = useFleetAccess();
   const [kind, setKind] = useState('nts');
+  const [exportMonth, setExportMonth] = useState(ym);
   // null = 전체. Set<number> = 선택 차량 id.
-  const [selectedDevs, setSelectedDevs] = useState(null);
+  const [selectedDevs, setSelectedDevs] = useState(() => initialVehicleIds ? new Set(initialVehicleIds) : null);
   // null = 전체. Set<string> = 선택 목적.
   const [selectedPurps, setSelectedPurps] = useState(null);
   // null = 전체. Set<string> = 선택 부서. (Stage-4G, MonthlyReport 부서 필터 초기값 승계)
   const [selectedDeps, setSelectedDeps] = useState(initialDepartments ? new Set(initialDepartments) : null);
   const [busy, setBusy] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
+  const busyRef = useRef(false), mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => { setDownloadError(''); }, [kind, exportMonth, selectedDevs, selectedDeps, selectedPurps]);
 
   const departmentOptions = useMemo(() => {
     const s = new Set();
@@ -1876,8 +1321,26 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
     return Array.from(s).sort();
   }, [devices]);
 
-  const allDevIds = useMemo(() => new Set((devices || []).map(d => d.id)), [devices]);
-  const isAllDev = !selectedDevs || selectedDevs.size === allDevIds.size;
+  const isAllDev = selectedDevs == null;
+  const applicableVehicles = (devices || []).filter(d => (selectedDevs == null || selectedDevs.has(d.id))
+    && (selectedDeps == null || selectedDeps.has(d.department || '(부서없음)')));
+  const entered = value => typeof value === 'string' && value.trim().length > 0;
+  const companyChecking = Boolean(companyInfo.isPending || companyInfo.isFetching || (!companyInfo.error && companyInfo.data === undefined));
+  const companyFailed = !companyChecking && Boolean(companyInfo.error);
+  const missingCompany = companyChecking || companyFailed ? [] : [['company_name','회사명'],['business_number','사업자등록번호']]
+    .filter(([key])=>!entered(companyInfo.data?.[key])).map(([,label])=>label);
+  const missingVehicles = applicableVehicles.map(d=>({id:d.id,label:reportVehicleLabel(d),missing:[
+    !entered(d.car_model ?? d.asset?.car_model) && '차종',
+    ![d.car_plate,d.license_plate,d.asset?.license_plate].some(entered) && '차량번호',
+  ].filter(Boolean)})).filter(d=>d.missing.length);
+  const metadataMissing = missingCompany.length > 0 || missingVehicles.length > 0;
+  const monthError = reportMonthError(exportMonth);
+  const validationError = monthError
+    || (!devices?.length ? '다운로드할 차량이 없습니다. 차량을 등록한 뒤 다시 시도해 주세요.' : '')
+    || (selectedDevs?.size === 0 ? '차량을 하나 이상 선택해 주세요.' : '')
+    || (selectedDeps?.size === 0 ? '부서를 하나 이상 선택해 주세요.' : '')
+    || (selectedPurps?.size === 0 ? '운행목적을 하나 이상 선택해 주세요.' : '')
+    || (!applicableVehicles.length ? '선택한 차량과 부서에 함께 해당하는 차량이 없습니다. 차량 또는 부서 선택을 확인해 주세요.' : '');
 
   function toggleDev(id) {
     setSelectedDevs(prev => {
@@ -1895,62 +1358,79 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
   }
 
   async function download() {
+    if (busyRef.current || validationError) return;
+    busyRef.current = true;
     setBusy(true);
+    setDownloadError('');
     try {
-      const params = { type: kind, month: ym };
-      if (selectedDevs && !isAllDev) params.device_ids = Array.from(selectedDevs);
-      if (selectedPurps && selectedPurps.size > 0 && selectedPurps.size < PURPOSE_ALL.length) {
+      const params = { type: kind, month: exportMonth };
+      params.scope='vehicles';
+      if (selectedDevs) params.vehicle_ids = Array.from(selectedDevs);
+      if (selectedPurps && selectedPurps.size < PURPOSE_ALL.length) {
         params.purposes = Array.from(selectedPurps);
       }
-      if (selectedDeps && selectedDeps.size > 0 && selectedDeps.size < departmentOptions.length) {
+      if (selectedDeps) {
         params.departments = Array.from(selectedDeps);
       }
       const { blob, filename } = await api.reportXlsx(params);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (!mounted.current) return;
+      const result = await saveBlob(blob, filename);
+      if (!mounted.current || result.status === 'cancelled') return;
       onClose();
     } catch (e) {
-      alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' });
-    } finally { setBusy(false); }
+      if (mounted.current) setDownloadError(e.message || '파일을 생성하지 못했습니다. 다시 시도해 주세요.');
+    } finally {
+      busyRef.current = false;
+      if (mounted.current) setBusy(false);
+    }
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--surface)', borderRadius: 14, padding: 20,
-        width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 14,
-      }}>
+    <Modal open title="운행기록부 XLSX 다운로드" size={900} onClose={busy ? undefined : onClose} footer={
+      <div className="corporate-export-footer">
+        <p className="corporate-export-summary" role="status">{exportMonth || '월 미선택'} · 적용 차량 {applicableVehicles.length}대 · {kind === 'nts' ? '업무용승용차 운행기록부' : '우리 양식'}</p>
+        {(validationError || downloadError) && <p className="corporate-export-error" role="alert">{validationError || downloadError}</p>}
+        {downloadError && !validationError && <p className="business-note">선택한 조건을 유지했습니다. 연결 상태를 확인한 뒤 다시 다운로드해 주세요.</p>}
+        <div className="corporate-export-actions">
+          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
+          <button onClick={download} disabled={busy || !!validationError} style={{ ...st.btnPrimary, flex: 2, padding: '12px', fontSize: 18, gap: 8 }}>
+            <Icon name="share" size={14} />{busy ? '생성 중...' : downloadError ? '다시 다운로드' : 'XLSX 다운로드'}
+          </button>
+        </div>
+      </div>
+    }>
+      <div className="corporate-export-dialog">
         <div>
-          <div style={{ fontSize: 16, fontWeight: 800 }}>운행일지 다운로드</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>
-            {ym} · {devices?.length || 0}대 차량 · XLSX
+          <div style={{ fontSize: 22, fontWeight: 800 }}>운행일지 다운로드</div>
+          <div style={{ fontSize: 16, color: 'var(--text-3)', marginTop: 3 }}>
+            {exportMonth || '월 미선택'} · 적용 차량 {applicableVehicles.length}대 · XLSX
           </div>
         </div>
 
+        {sourcePeriod && <div className="business-note" role="note">
+          <p>화면 조회기간({sourcePeriod.from} ~ {sourcePeriod.to})과 별도로, 선택한 월의 전체 기간을 엑셀로 내보냅니다.</p>
+          <p>운전자·최소 운행시간·미작성·미확정 필터는 적용하지 않습니다. 차량·부서·운행목적은 아래 선택을 사용합니다.</p>
+        </div>}
+
+        <fieldset className="corporate-export-fields" aria-label="엑셀 다운로드 조건" disabled={busy} aria-busy={busy}>
         {/* 양식 */}
         <FieldSection label="양식">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,240px), 1fr))', gap: 8 }}>
             {[
-              { id: 'nts',  title: '국세청 운행기록부', hint: '별지 제73호 · 세무 신고' },
+              { id: 'nts',  title: '업무용승용차 운행기록부', hint: '첨부 서식 항목 · 저장된 계기판 거리 반영' },
               { id: 'ours', title: '우리 양식',         hint: '요약 + 차량별 상세 · 실무용' },
             ].map(o => {
               const on = kind === o.id;
               return (
                 <button key={o.id} onClick={() => setKind(o.id)} style={{
-                  padding: '12px', borderRadius: 10, cursor: 'pointer',
+                  padding: '18px', borderRadius: 4, cursor: 'pointer',
                   textAlign: 'left', border: '2px solid ' + (on ? 'var(--primary)' : 'var(--border)'),
                   background: on ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--surface)',
                 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: on ? 'var(--primary)' : 'var(--text)' }}>
+                  <div style={{ fontWeight: 700, fontSize: 18, color: on ? 'var(--primary)' : 'var(--text)' }}>
                     {o.title}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>{o.hint}</div>
+                  <div style={{ fontSize: 16, color: 'var(--text-3)', marginTop: 3 }}>{o.hint}</div>
                 </button>
               );
             })}
@@ -1960,83 +1440,88 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
         {/* 차량 */}
         <FieldSection label="차량" trailing={
           <button onClick={() => setSelectedDevs(isAllDev ? new Set() : null)}
-            style={{ ...st.btnGhost, fontSize: 11 }}>
+            style={{ ...st.btnGhost, fontSize: 16 }}>
             {isAllDev ? '개별 선택' : '전체'}
           </button>
         }>
           {isAllDev ? (
             <div style={{
-              padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8,
-              fontSize: 12, color: 'var(--text-2)',
+              padding: '14px 16px', background: 'var(--surface-2)', borderRadius: 8,
+              fontSize: 18, color: 'var(--text-2)',
             }}>
               전체 {devices?.length || 0}대
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 260, overflowY: 'auto' }}>
               {(devices || []).map(d => {
                 const on = selectedDevs?.has(d.id);
                 return (
-                  <label key={d.id} style={{
+                  <label className="corporate-export-choice" key={d.id} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                    padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
                     background: on ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--surface-2)',
                   }}>
                     <input type="checkbox" checked={!!on} onChange={() => toggleDev(d.id)} />
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>
-                      {d.license_plate || d.display_name || d.device_uid}
+                    <span style={{ fontSize: 18, fontWeight: 600 }}>
+                      {reportVehicleLabel(d)}
                     </span>
                     {d.department && (
-                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>· {d.department}</span>
+                      <span style={{ fontSize: 16, color: 'var(--text-3)' }}>· {d.department}</span>
                     )}
                   </label>
                 );
               })}
-              <div style={{ fontSize: 11, color: 'var(--text-3)', paddingLeft: 12 }}>
+              <div style={{ fontSize: 16, color: 'var(--text-3)', paddingLeft: 12 }}>
                 {selectedDevs?.size || 0} / {devices?.length || 0} 선택
               </div>
             </div>
           )}
         </FieldSection>
 
-        {/* 기간 (readonly, 상단 month picker 로 조정) */}
+        {/* 운행기록부에서는 시작월을 기본으로 선택하고, 월간 요약에서는 조회월을 유지. */}
         <FieldSection label="기간">
+          {sourcePeriod ? <label style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+            <span>다운로드 월</span><input aria-label="엑셀 다운로드 월" type="month" min="2000-01" max="2100-12" value={exportMonth} aria-invalid={!!monthError}
+              onChange={e => setExportMonth(e.target.value)} style={st.dateInput} />
+            <span className="business-note">선택한 월의 1일부터 말일까지</span>
+          </label> :
           <div style={{
-            padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8,
-            fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 8,
+            padding: '14px 16px', background: 'var(--surface-2)', borderRadius: 8,
+            fontSize: 18, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 8,
           }}>
             <Icon name="clock" size={12} />
-            {ym} (한 달)
-            <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-3)' }}>
+            {exportMonth} (한 달)
+            <span style={{ marginLeft: 'auto', fontSize: 16, color: 'var(--text-3)' }}>
               다른 달은 리포트 상단 월 선택으로 변경
             </span>
-          </div>
+          </div>}
         </FieldSection>
 
         {/* (Stage-4G) 부서 — 부서 옵션이 2개 이상일 때만 표시 */}
-        {departmentOptions.length >= 2 && (
+        {(departmentOptions.length >= 2 || selectedDeps != null) && (
           <FieldSection label="부서" trailing={
             <button onClick={() => setSelectedDeps(prev => prev == null ? new Set() : null)}
-              style={{ ...st.btnGhost, fontSize: 11 }}>
+              style={{ ...st.btnGhost, fontSize: 16 }}>
               {selectedDeps == null ? '개별 선택' : '전체'}
             </button>
           }>
             {selectedDeps == null ? (
               <div style={{
-                padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8,
-                fontSize: 12, color: 'var(--text-2)',
+                padding: '14px 16px', background: 'var(--surface-2)', borderRadius: 8,
+                fontSize: 18, color: 'var(--text-2)',
               }}>
                 전체 {departmentOptions.length}개 부서
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,180px), 1fr))', gap: 4 }}>
                 {departmentOptions.map(dep => {
                   const on = selectedDeps?.has(dep);
                   return (
-                    <label key={dep} style={{
+                    <label className="corporate-export-choice" key={dep} style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                      padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
                       background: on ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--surface-2)',
-                      fontSize: 12, fontWeight: 600,
+                      fontSize: 18, fontWeight: 600,
                     }}>
                       <input type="checkbox" checked={!!on} onChange={() => setSelectedDeps(prev => {
                         const s = new Set(prev ?? []);
@@ -2055,27 +1540,27 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
         {/* 운행목적 */}
         <FieldSection label="운행목적" trailing={
           <button onClick={() => setSelectedPurps(prev => prev == null ? new Set() : null)}
-            style={{ ...st.btnGhost, fontSize: 11 }}>
+            style={{ ...st.btnGhost, fontSize: 16 }}>
             {selectedPurps == null ? '개별 선택' : '전체'}
           </button>
         }>
           {selectedPurps == null ? (
             <div style={{
-              padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8,
-              fontSize: 12, color: 'var(--text-2)',
+              padding: '14px 16px', background: 'var(--surface-2)', borderRadius: 8,
+              fontSize: 18, color: 'var(--text-2)',
             }}>
               전체 (업무·출퇴근·기타·미지정)
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 }}>
               {PURPOSE_ALL.map(p => {
                 const on = selectedPurps?.has(p.id);
                 return (
-                  <label key={p.id} style={{
+                  <label className="corporate-export-choice" key={p.id} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                    padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
                     background: on ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--surface-2)',
-                    fontSize: 12, fontWeight: 600,
+                    fontSize: 18, fontWeight: 600,
                   }}>
                     <input type="checkbox" checked={!!on} onChange={() => togglePurp(p.id)} />
                     {p.label}
@@ -2086,27 +1571,32 @@ function DownloadDialog({ ym, devices, initialDepartments, onClose }) {
           )}
         </FieldSection>
 
-        {/* 액션 */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
-          <button onClick={download} disabled={busy} style={{
-            ...st.btnPrimary, flex: 2, padding: '12px', fontSize: 13, gap: 8,
-          }}>
-            <Icon name="share" size={14} />
-            {busy ? '생성 중...' : 'XLSX 다운로드'}
-          </button>
-        </div>
+        {kind === 'nts' && <p className="business-note">저장된 주행 전·후 계기판 거리의 차이를 우선 사용합니다. 계기판이 미입력된 운행은 GPS 계산 또는 검토·보정된 운행기록 거리를 사용하며 파일에 기준을 표시합니다. 계기판 값은 운행 기록 수정에서 입력할 수 있습니다. 사용자 부서는 운전자 배정 당시 기록을 사용하므로 실제 차량 이용자가 다르면 파일의 사용자 성명·부서를 보완해 주세요. 과세기간도 확인해 주세요. 종료 미수신 등 미확정 운행은 합계에서 제외됩니다.</p>}
+        </fieldset>
+        <section className="corporate-export-readiness" aria-label="다운로드 전 정보 확인" aria-busy={companyChecking}>
+          <header><h3>다운로드 전 정보 확인</h3><span>선택 차량 {applicableVehicles.length}대 기준</span></header>
+          {!applicableVehicles.length ? <p>차량을 선택하면 회사·차량의 누락 정보를 확인할 수 있습니다.</p> : <>
+            {companyChecking ? <p role="status">회사 정보를 확인하는 중입니다. 아직 회사 정보의 누락 여부를 확인하지 못했습니다.</p>
+              : companyFailed ? <div className="corporate-export-company-error" role="alert"><p>회사 정보를 불러오지 못해 회사명·사업자등록번호의 누락 여부를 확인하지 못했습니다.</p>{companyInfo.refetch&&<BusinessButton disabled={busy} onClick={()=>companyInfo.refetch()}>회사 정보 다시 조회</BusinessButton>}</div>
+              : missingCompany.length > 0 && <p className="corporate-export-missing-company"><strong>회사 정보 미입력</strong><span>{missingCompany.join(' · ')}</span></p>}
+            {missingVehicles.length > 0 && <div className="corporate-export-missing-vehicles" role="region" aria-label="선택 차량의 미입력 항목" tabIndex={0}><table><thead><tr><th scope="col">차량</th><th scope="col">미입력 항목</th></tr></thead><tbody>{missingVehicles.map(d=><tr key={d.id}><td>{d.label}</td><td>{d.missing.join(' · ')}</td></tr>)}</tbody></table></div>}
+            {!companyChecking&&!companyFailed&&!metadataMissing&&<p role="status">회사명·사업자등록번호와 선택한 차량의 차종·차량번호가 입력되어 있습니다.</p>}
+            {(metadataMissing||companyChecking||companyFailed)&&<p className="corporate-export-readiness-note">다운로드는 가능합니다. 미입력 정보는 비어 있을 수 있으니 파일을 사용하기 전에 확인·보완해 주세요.</p>}
+            {(missingCompany.length>0||companyFailed)&&<p className="corporate-export-repair-guide">회사 정보는 <strong>시스템 설정 → 회사 정보</strong>에서 보완하세요.{!access.manage_team&&' 수정 권한이 있는 회사 관리자에게 요청할 수 있습니다.'}</p>}
+            {missingVehicles.length>0&&<p className="corporate-export-repair-guide">차량 정보는 <strong>차량 → 차량 관리 → 차량 선택 → 차량·점검 정보 수정</strong>에서 보완하세요.{!access.manage_vehicles&&' 수정 권한이 있는 회사 관리자에게 요청할 수 있습니다.'}</p>}
+          </>}
+        </section>
       </div>
-    </div>
+    </Modal>
   );
 }
 
 function FieldSection({ label, trailing, children }) {
   return (
-    <div>
+    <div className="corporate-export-section">
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6,
+        fontSize: 16, fontWeight: 600, color: 'var(--text-2)', marginBottom: 10, gap: 12, flexWrap: 'wrap',
         letterSpacing: '0.04em', textTransform: 'uppercase',
       }}>
         <span>{label}</span>
@@ -2141,108 +1631,27 @@ function estimateDepreciation(r) {
 }
 
 function MonthlyDeviceRow({ row, onEdit }) {
-  const cost = estimateFuelCost(row);
-  const dep  = estimateDepreciation(row);
-  const total = row.totalKm || 1;   // divide-by-zero 방지
-  const bizPct = Math.round((row.businessKm / total) * 100);
-  const perPct = 100 - bizPct;
-  const fmtKm = (n) => n < 1 ? '0' : n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString();
-  // 감가상각 연 800만 한도 초과 여부 힌트 (월 66.7만 초과 = 연 800만 override)
-  const overLimit = dep > (YEARLY_BIZ_LIMIT_KRW / 12);
-
-  return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>{row.label}</span>
-            {row.license_plate && (
-              <span style={{
-                fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                background: 'var(--surface-2)', color: 'var(--text-2)', fontWeight: 700,
-                letterSpacing: '0.02em',
-              }}>{row.license_plate}</span>
-            )}
-            {row.department && (
-              <span style={{
-                fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                background: 'color-mix(in srgb, var(--primary) 12%, transparent)',
-                color: 'var(--primary)', fontWeight: 600,
-              }}>{row.department}</span>
-            )}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-            {row.fuel_efficiency_kmpl
-              ? `${FUEL_LABEL[row.fuel_type] || '?'} · ${row.fuel_efficiency_kmpl}km/L`
-              : <span style={{ color: 'var(--warning)' }}>연비 미입력</span>}
-            {row.model_year && ` · ${row.model_year}년식`}
-            {row.engine_cc  && ` · ${row.engine_cc.toLocaleString()}cc`}
-            {row.annotationCount > 0 && ' · 실 입력비 반영'}
-          </div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>
-            {fmtKm(row.totalKm)}<span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 3 }}>km</span>
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-            {cost > 0 ? Math.round(cost).toLocaleString() + '원' : '–'}
-          </div>
-        </div>
-        <button onClick={onEdit} style={{
-          fontSize: 11, padding: '6px 10px', borderRadius: 8,
-          background: 'var(--surface-2)', border: '1px solid var(--border)',
-          color: 'var(--text-2)', cursor: 'pointer', fontWeight: 600,
-        }}>
-          정보 편집
-        </button>
-      </div>
-
-      {/* stacked bar: business (primary) + personal (accent muted) */}
-      <div style={{ height: 8, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden', display: 'flex' }}>
-        {row.businessKm > 0 && (
-          <div style={{ width: `${bizPct}%`, background: 'var(--primary)' }} title={`업무 ${fmtKm(row.businessKm)}km`} />
-        )}
-        {row.personalKm > 0 && (
-          <div style={{ width: `${perPct}%`, background: 'var(--accent)', opacity: 0.6 }} title={`개인 ${fmtKm(row.personalKm)}km`} />
-        )}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-3)' }}>
-        <span>업무 {fmtKm(row.businessKm)}km · {bizPct}%</span>
-        <span>개인 {fmtKm(row.personalKm)}km · {perPct}%</span>
-      </div>
-
-      {/* (2026-07-28) Stage-4E 감가상각 인정액 (취득가액 입력된 경우만) */}
-      {row.purchase_price_krw > 0 && (
-        <div style={{
-          fontSize: 11, color: 'var(--text-2)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '6px 10px', background: 'var(--surface-2)', borderRadius: 6, marginTop: 2,
-        }}>
-          <span>
-            <span style={{ color: 'var(--text-3)' }}>감가상각 인정</span>
-            <span style={{ marginLeft: 6, fontWeight: 700, color: 'var(--primary)' }}>
-              {Math.round(dep).toLocaleString()}원
-            </span>
-            <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 4 }}>
-              (월 {Math.round(row.purchase_price_krw / 60).toLocaleString()} × {bizPct}%)
-            </span>
-          </span>
-          {overLimit && (
-            <span style={{
-              fontSize: 10, padding: '2px 6px', borderRadius: 4,
-              background: 'color-mix(in srgb, var(--warning) 15%, transparent)',
-              color: 'var(--warning)', fontWeight: 700,
-            }} title="연 800만원 한도 초과분은 이월 처리 (세법 개정 2020)">
-              한도 초과
-            </span>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  const access=useFleetAccess();
+  const cost=estimateFuelCost(row),dep=estimateDepreciation(row);
+  const {business:bizPct,other:perPct}=monthlyPercentages(row);
+  const fmtKm=n=>monthlyDistance(n,row.includedCount);
+  const overLimit=dep>(YEARLY_BIZ_LIMIT_KRW/12);
+  return <tr>
+    <td><strong>{row.label}</strong><details className="corporate-monthly-vehicle-info"><summary>차량 정보</summary><div>
+      {row.license_plate&&<span>{row.license_plate}</span>}
+      <span>{row.fuel_efficiency_kmpl?`${FUEL_LABEL[row.fuel_type]||'?'} · ${row.fuel_efficiency_kmpl}km/L`:'연비 미입력'}</span>
+      {row.model_year&&<span>{row.model_year}년식</span>}{row.engine_cc>0&&<span>{row.engine_cc.toLocaleString()}cc</span>}
+      {row.annotationCount>0&&<span>실 입력비 반영</span>}
+    </div></details></td>
+    <td>{row.department||'—'}</td>
+    <td><span className="corporate-monthly-record-status">{monthlyStatus(row)}</span></td>
+    <td className="number">{fmtKm(row.totalKm)} km</td>
+    <td className="number">{fmtKm(row.businessKm)} km<small>{bizPct==null?'확정 거리 없음':bizPct+'%'}</small></td>
+    <td className="number">{fmtKm(row.personalKm)} km<small>{perPct==null?'비율 산정 제외':perPct+'%'}</small></td>
+    <td className="number">{cost>0?Math.round(cost).toLocaleString()+'원':'—'}{row.annotationCount>0&&<small>실 입력비 반영</small>}</td>
+    <td className="number">{row.purchase_price_krw>0?<><span>{Math.round(dep).toLocaleString()}원</span><small>{bizPct==null?'확정 거리 없음':'월 '+Math.round(row.purchase_price_krw/60).toLocaleString()+' × '+bizPct+'%'}</small>{overLimit&&<small className="corporate-monthly-limit" title="연 800만원 한도 초과분은 이월 처리">한도 초과</small>}</>:'—'}</td>
+    <td><BusinessButton disabled={!access.manage_vehicles} onClick={onEdit}>정보 편집</BusinessButton></td>
+  </tr>;
 }
 
 // (2026-07-28) Stage-4B-1: FuelInfoDialog → VehicleInfoDialog 로 확장.
@@ -2251,388 +1660,6 @@ function MonthlyDeviceRow({ row, onEdit }) {
 // 를 병렬 호출 (별개 트랜잭션이지만 UX 는 한 번의 저장).
 const VEHICLE_TYPE_LABEL = { sedan: '승용', van: '승합', truck: '화물', special: '특수', ev: '전기' };
 
-function FuelInfoDialog({ device, onClose, onSaved }) {
-  // 연비/연료 (fuel-info)
-  const [eff,  setEff]  = useState(device.fuel_efficiency_kmpl ?? '');
-  const [type, setType] = useState(device.fuel_type ?? 'gasoline');
-  // 국세청 헤더 (vehicle-info)
-  const [plate,       setPlate]       = useState(device.license_plate      ?? '');
-  const [modelYear,   setModelYear]   = useState(device.model_year         ?? '');
-  const [engineCc,    setEngineCc]    = useState(device.engine_cc          ?? '');
-  const [purchase,    setPurchase]    = useState(device.purchase_price_krw ?? '');
-  const [acquiredAt,  setAcquiredAt]  = useState(device.acquired_at        ?? '');
-  const [department,  setDepartment]  = useState(device.department         ?? '');
-  const [vehicleType, setVehicleType] = useState(device.vehicle_type       ?? 'sedan');
-  // (2026-07-28) Stage-4C-1: 사용가능 + 메모
-  const [enabled,     setEnabled]     = useState(device.enabled !== false);
-  const [note,        setNote]        = useState(device.note ?? '');
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    const eN = eff === '' ? null : Number(eff);
-    if (eN !== null && (isNaN(eN) || eN < 1 || eN > 100)) {
-      alertDialog({ title: '연비 범위 오류', body: '1 ~ 100 km/L 범위로 입력하세요.', tone: 'danger' });
-      return;
-    }
-    const myN = modelYear === '' ? null : parseInt(modelYear, 10);
-    if (myN !== null && (isNaN(myN) || myN < 1990 || myN > 2100)) {
-      alertDialog({ title: '연식 범위 오류', body: '1990 ~ 2100 범위로 입력하세요.', tone: 'danger' });
-      return;
-    }
-    const ccN = engineCc === '' ? null : parseInt(engineCc, 10);
-    const pN  = purchase === '' ? null : parseInt(purchase, 10);
-    setBusy(true);
-    try {
-      await Promise.all([
-        api.setFuelInfo(device.id, {
-          fuel_efficiency_kmpl: eN,
-          fuel_type: eN === null ? null : type,
-        }),
-        api.setVehicleInfo(device.id, {
-          license_plate:      plate.trim()      || null,
-          model_year:         myN,
-          engine_cc:          ccN,
-          purchase_price_krw: pN,
-          acquired_at:        acquiredAt || null,
-          department:         department.trim() || null,
-          vehicle_type:       vehicleType || null,
-          enabled:            enabled,
-          note:               note.trim() || null,
-        }),
-      ]);
-      onSaved();
-    } catch (e) {
-      alertDialog({ title: '저장 실패', body: e.message, tone: 'danger' });
-    } finally { setBusy(false); }
-  }
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--surface)', borderRadius: 14, padding: 20,
-        width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 14,
-      }}>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>{device.label} — 차량 정보</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-            국세청 별지 제73호 헤더 + 우리 전용 필드. 미입력 항목은 비어둬도 됩니다.
-          </div>
-        </div>
-
-        {/* ─── 국세청 헤더 ───────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            국세청 별지 제73호 헤더
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량번호</div>
-              <input value={plate} onChange={e => setPlate(e.target.value)} placeholder="12가3456" style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연식</div>
-              <input type="number" min="1990" max="2100" value={modelYear}
-                onChange={e => setModelYear(e.target.value)} placeholder="예: 2023" style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>배기량 (cc)</div>
-              <input type="number" value={engineCc}
-                onChange={e => setEngineCc(e.target.value)} placeholder="예: 1998" style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>취득가액 (원)</div>
-              <input type="number" value={purchase}
-                onChange={e => setPurchase(e.target.value)} placeholder="예: 35000000" style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>취득일</div>
-              <input type="date" value={acquiredAt || ''}
-                onChange={e => setAcquiredAt(e.target.value)} style={st.input} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>차량 유형</div>
-              <select value={vehicleType} onChange={e => setVehicleType(e.target.value)} style={st.input}>
-                {Object.entries(VEHICLE_TYPE_LABEL).map(([id, label]) => (
-                  <option key={id} value={id}>{label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* ─── 우리 전용 ─────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            우리 전용
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>부서/그룹</div>
-            <input value={department} onChange={e => setDepartment(e.target.value)}
-              placeholder="영업 1팀, 본사 임원차..." style={st.input} />
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>메모</div>
-            <textarea value={note} onChange={e => setNote(e.target.value)}
-              placeholder="정비 이력·특이사항..." maxLength={500}
-              style={{ ...st.input, minHeight: 60, resize: 'vertical', fontFamily: 'inherit' }} />
-          </div>
-          {/* 사용가능 toggle (2026-07-28 Stage-4C-1) */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 8,
-          }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700 }}>사용가능</div>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
-                사용정지 시 차량 목록에서 흐리게 표시. 리포트에는 계속 반영 (과거 데이터 유지).
-              </div>
-            </div>
-            <button onClick={() => setEnabled(v => !v)} style={{
-              width: 44, height: 24, borderRadius: 999,
-              background: enabled ? 'var(--accent)' : 'var(--text-3)',
-              border: 'none', cursor: 'pointer', position: 'relative',
-              transition: 'background .15s',
-            }}>
-              <div style={{
-                position: 'absolute', top: 2, left: enabled ? 22 : 2,
-                width: 20, height: 20, borderRadius: '50%', background: 'white',
-                transition: 'left .15s',
-              }} />
-            </button>
-          </div>
-        </div>
-
-        {/* ─── 연비 / 연료 ───────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            연비 · 유류비 추정
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연료</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 4 }}>
-              {['gasoline', 'diesel', 'lpg', 'ev'].map(f => (
-                <button key={f} onClick={() => setType(f)} style={{
-                  padding: '8px 4px', fontSize: 12, borderRadius: 8, cursor: 'pointer',
-                  background: type === f ? 'var(--primary)' : 'var(--surface-2)',
-                  color:      type === f ? 'var(--primary-fg)' : 'var(--text)',
-                  border: 'none', fontWeight: type === f ? 700 : 500,
-                }}>{FUEL_LABEL[f]}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>연비 (km/L)</div>
-            <input type="number" step="0.1" min="1" max="100"
-              value={eff} onChange={e => setEff(e.target.value)} placeholder="예: 12.5" style={st.input} />
-            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>
-              비워두면 유류비 자동 추정 skip.
-            </div>
-          </div>
-        </div>
-
-        {/* ─── 서류 (2026-07-28 Stage-4C-3) ─────────── */}
-        {device.id && <DocumentsSection deviceId={device.id} />}
-
-        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-          <button onClick={onClose} disabled={busy} style={{ ...st.btnGhost, flex: 1 }}>취소</button>
-          <button onClick={save} disabled={busy} style={{ ...st.btnPrimary, flex: 1 }}>
-            {busy ? '저장 중...' : '저장'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// (2026-07-28) Stage-4C-3: 차량 서류 (등록증/보험/정비영수증) 업로드 섹션.
-// VehicleInfoDialog 내부. 리스트 + 파일 선택 (kind + optional note) + 다운로드/삭제.
-const DOC_KIND_LABEL = {
-  registration: '등록증',
-  insurance:    '보험',
-  inspection:   '검사',
-  receipt:      '영수증',
-  other:        '기타',
-};
-
-function DocumentsSection({ deviceId }) {
-  // (F2-c) useDocuments hook + upload/delete mutations. load() 제거.
-  const { data: docs } = useDocuments(deviceId);
-  const uploadMut = useUploadDocument();
-  const deleteMut = useDeleteDocument();
-  const [kind, setKind] = useState('registration');
-  const [note, setNote] = useState('');
-  const [preview, setPreview] = useState(null);   // { doc, url, mime } | null
-  const fileRef = useRef(null);
-  const busy = uploadMut.isPending || deleteMut.isPending;
-
-  async function upload(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      alertDialog({ title: '파일 크기 초과', body: '최대 10MB', tone: 'danger' });
-      e.target.value = '';
-      return;
-    }
-    try {
-      await uploadMut.mutateAsync({ deviceId, body: { file, kind, note: note.trim() || null } });
-      setNote(''); e.target.value = '';
-    } catch (err) {
-      alertDialog({ title: '업로드 실패', body: err.message, tone: 'danger' });
-    }
-  }
-
-  async function download(d) {
-    try {
-      const { blob, filename } = await api.documentDownloadUrl(d.id)();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (e) {
-      alertDialog({ title: '다운로드 실패', body: e.message, tone: 'danger' });
-    }
-  }
-
-  async function del(d) {
-    const ok = await confirmDialog({ title: '서류 삭제', body: `${d.filename} 을(를) 삭제하시겠습니까?`, danger: true });
-    if (!ok) return;
-    try { await deleteMut.mutateAsync({ id: d.id, deviceId }); }
-    catch (e) { await alertDialog({ title: '삭제 실패', body: e.message, tone: 'danger' }); }
-  }
-
-  async function openPreview(d) {
-    try {
-      const { url, mime } = await api.fetchDocumentPreview(d.id);
-      setPreview({ doc: d, url, mime });
-    } catch (e) {
-      alertDialog({ title: '프리뷰 실패', body: e.message, tone: 'danger' });
-    }
-  }
-  function closePreview() {
-    if (preview?.url) URL.revokeObjectURL(preview.url);
-    setPreview(null);
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        서류 (PDF/이미지 · 10MB · 20개)
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 6 }}>
-        <select value={kind} onChange={e => setKind(e.target.value)} style={st.input}>
-          {Object.entries(DOC_KIND_LABEL).map(([id, label]) => (
-            <option key={id} value={id}>{label}</option>
-          ))}
-        </select>
-        <input value={note} onChange={e => setNote(e.target.value)}
-          placeholder="메모 (선택)" style={st.input} />
-      </div>
-      <div>
-        <input ref={fileRef} type="file" accept=".pdf,image/*" onChange={upload} disabled={busy}
-          style={{ display: 'none' }} />
-        <button onClick={() => fileRef.current?.click()} disabled={busy} style={{
-          ...st.btnGhost, width: '100%', padding: '10px', fontSize: 12,
-        }}>
-          <Icon name="plus" size={12} /> {busy ? '업로드 중...' : '파일 선택'}
-        </button>
-      </div>
-
-      {docs && docs.length === 0 && (
-        <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', padding: 8 }}>
-          등록된 서류 없음
-        </div>
-      )}
-      {docs && docs.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {docs.map(d => (
-            <div key={d.id} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 6,
-              fontSize: 11,
-            }}>
-              <span style={{
-                fontSize: 9, padding: '2px 6px', borderRadius: 3,
-                background: 'var(--surface)', color: 'var(--text-2)', fontWeight: 700,
-              }}>{DOC_KIND_LABEL[d.kind] || d.kind}</span>
-              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                title={d.filename}>{d.filename}</span>
-              <span style={{ color: 'var(--text-3)', fontSize: 10 }}>{Math.round(d.size_bytes / 1024).toLocaleString()}KB</span>
-              <button onClick={() => openPreview(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="바로보기">
-                <Icon name="eye" size={11} />
-              </button>
-              <button onClick={() => download(d)} style={{ ...st.btnGhost, padding: '4px 8px' }} title="다운로드">
-                <Icon name="download" size={11} />
-              </button>
-              <button onClick={() => del(d)} style={{ ...st.btnGhost, padding: '4px 8px', color: 'var(--danger)' }} title="삭제">
-                <Icon name="trash2" size={11} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {preview && <DocPreviewModal preview={preview} onClose={closePreview} onDownload={() => download(preview.doc)} />}
-    </div>
-  );
-}
-
-function DocPreviewModal({ preview, onClose, onDownload }) {
-  const { doc, url, mime } = preview;
-  const isImage = mime?.startsWith('image/');
-  const isPdf   = mime === 'application/pdf';
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 950,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--surface)', borderRadius: 12, padding: 12,
-        width: '100%', maxWidth: 900, maxHeight: '95vh',
-        display: 'flex', flexDirection: 'column', gap: 8, boxSizing: 'border-box',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            title={doc.filename}>{doc.filename}</div>
-          <button onClick={onDownload} style={{ ...st.btnGhost, padding: '6px 10px' }} title="다운로드">
-            <Icon name="download" size={12} />
-          </button>
-          <button onClick={onClose} style={{ ...st.btnGhost, padding: '6px 10px' }}>
-            <Icon name="close" size={12} />
-          </button>
-        </div>
-        <div style={{
-          flex: 1, minHeight: 0, background: '#000',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderRadius: 8, overflow: 'hidden',
-        }}>
-          {isImage && (
-            <img src={url} alt={doc.filename}
-              style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
-          )}
-          {isPdf && (
-            <iframe src={url} title={doc.filename}
-              style={{ width: '100%', height: '80vh', border: 'none', background: '#FFF' }} />
-          )}
-          {!isImage && !isPdf && (
-            <div style={{ color: '#AAA', padding: 40, textAlign: 'center' }}>
-              이 형식은 인라인 프리뷰 미지원 — 다운로드 후 확인해주세요.
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Fleet 요약 상단 (2026-07-28) ──────────────────────
-// device drill-down 위에 얹는 4-card row. 첨부 이미지 스타일 (아이콘 + 큰 숫자).
-// tone 은 정보 성격별 색 구분: 운행중=success (초록), km=primary (파랑).
 function FleetSummary({ devices }) {
   const s = useFleetStats(devices);
   const fmt = (n) => (n == null ? '–' : n.toLocaleString());
@@ -2640,10 +1667,11 @@ function FleetSummary({ devices }) {
     <div className="no-print">
       <StatCardGrid>
         <StatCard icon="list"   label="전체 차량"       value={fmt(s.totalCount)} unit="대" tone="default" loading={s.loading} />
-        <StatCard icon="route"  label="운행 중"         value={fmt(s.activeCount)} unit="대" tone="success" loading={s.loading} />
-        <StatCard icon="mapPin" label="오늘 운행거리"   value={fmt(s.todayKm)} unit="km" tone="primary" loading={s.loading} />
-        <StatCard icon="bar"    label="이번달 운행거리" value={fmt(s.monthKm)} unit="km" tone="default" loading={s.loading} />
+        <StatCard icon="route"  label="최근 통신"       value={fmt(s.connectedCount)} unit="대" tone="success" loading={s.loading} />
+        <StatCard icon="mapPin" label="오늘 운행거리"   value={s.error ? '—' : fmt(s.todayKm)} unit="km" tone="primary" loading={s.loading} />
+        <StatCard icon="bar"    label="이번달 운행거리" value={s.error ? '—' : fmt(s.monthKm)} unit="km" tone="default" loading={s.loading} />
       </StatCardGrid>
+      {s.error && <BusinessError onRetry={s.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
     </div>
   );
 }
@@ -2663,8 +1691,8 @@ function Card({ title, children }) {
 //  2) children 받으면 children 그대로 (TripEditorModal 의 복합 필드용)
 function Field({ label, value, onChange, placeholder, children }) {
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4, fontWeight: 600 }}>{label}</div>
+    <div className="corporate-editor-field">
+      <div className="corporate-editor-label">{label}</div>
       {children != null ? children : (
         <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
           style={st.input} />
@@ -2672,63 +1700,6 @@ function Field({ label, value, onChange, placeholder, children }) {
     </div>
   );
 }
-
-// ─── TripEditorModal 전용 스타일 ─────────────────────
-const mst = {
-  backdrop: {
-    position: 'fixed', inset: 0, zIndex: 900,
-    background: 'rgba(0,0,0,0.5)',
-    backdropFilter: 'blur(4px)',
-    WebkitBackdropFilter: 'blur(4px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 16,
-    animation: 'fadeInUp .15s ease-out',
-  },
-  modal: {
-    background: 'var(--surface)', color: 'var(--text)',
-    border: '1px solid var(--border)', borderRadius: 14,
-    width: '100%', maxWidth: 460, overflow: 'hidden',
-    boxShadow: '0 20px 60px rgba(0,0,0,.4)',
-    animation: 'fadeInUp .18s ease-out',
-    display: 'flex', flexDirection: 'column',
-    maxHeight: '90vh',
-  },
-  header: {
-    display: 'flex', alignItems: 'flex-start', gap: 8,
-    padding: '14px 16px', borderBottom: '1px solid var(--border)',
-  },
-  closeBtn: {
-    width: 28, height: 28, borderRadius: 6,
-    background: 'transparent', color: 'var(--text-3)',
-    border: 'none', cursor: 'pointer',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  },
-  body: {
-    padding: 16, overflowY: 'auto', flex: 1,
-  },
-  input: {
-    display: 'block', width: '100%', padding: '8px 10px',
-    background: 'var(--surface-2)', color: 'var(--text)',
-    border: '1px solid var(--border)', borderRadius: 6,
-    fontSize: 13, boxSizing: 'border-box', outline: 'none',
-  },
-  actions: {
-    display: 'flex', gap: 8, padding: '12px 16px',
-    borderTop: '1px solid var(--border)',
-  },
-  btnPrimary: {
-    flex: 1, padding: '10px 16px',
-    background: 'var(--primary)', color: 'white',
-    border: 'none', borderRadius: 8,
-    fontSize: 13, fontWeight: 600, cursor: 'pointer',
-  },
-  btnSecondary: {
-    flex: 1, padding: '10px 16px',
-    background: 'transparent', color: 'var(--text-2)',
-    border: '1px solid var(--border)', borderRadius: 8,
-    fontSize: 13, cursor: 'pointer',
-  },
-};
 
 function kstDate(iso) {
   const d = new Date(new Date(iso).getTime() + 9 * 3600 * 1000);

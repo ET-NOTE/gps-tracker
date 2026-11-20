@@ -1,0 +1,3 @@
+PASS new restore 1 [('month_aggregate', 6.084627), ('month_history', 1.421679), ('month_page', 0.194912)]
+PASS new restore 2 [('month_aggregate', 6.063696), ('month_history', 1.413659), ('month_page', 0.199612)]
+PASS new restore 3 [('month_aggregate', 6.059334), ('month_history', 1.419377), ('month_page', 0.194397)]

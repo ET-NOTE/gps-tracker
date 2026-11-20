@@ -1,0 +1,36 @@
+{
+  "mode": "check",
+  "ready": true,
+  "changes_made": false,
+  "release": "pdf-service-20261106-r1",
+  "now": {
+    "api_runs_as": "gps-api",
+    "api_starts_the_processor_itself": true
+  },
+  "would_change": {
+    "account": "create gps-pdf (system account, no login, no home, no groups)",
+    "files": [
+      "/etc/systemd/system/gps-pdf-render-selftest.service",
+      "/etc/systemd/system/gps-pdf-render.socket",
+      "/etc/systemd/system/gps-pdf-render@.service",
+      "/etc/systemd/system/gps-tracker-api.service.d/20-pdf-socket.conf"
+    ],
+    "socket": "/run/gps-pdf-render/render.sock (root:gps-api 660)",
+    "restart": "gps-tracker-api.service"
+  },
+  "not_changed": [
+    "binaries",
+    "database",
+    "firewall",
+    "other accounts",
+    "gps-tracker.service",
+    "pm2-mmm.service",
+    "gps-tracker-api-dev.service",
+    "shield-api.service",
+    "nginx.service",
+    "postgresql@14-main.service",
+    "docker.service",
+    "gps-privacy-accounts.timer",
+    "gps-privacy-files.timer"
+  ]
+}

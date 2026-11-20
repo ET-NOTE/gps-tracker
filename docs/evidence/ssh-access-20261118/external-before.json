@@ -1,0 +1,1 @@
+{"checked_at": "2026-11-18T11:24:43.557969+09:00", "target": "dev-gps.serial.kr", "resolved_ipv4": "210.114.18.16", "port": 22, "scope": "external TCP/SSH banner only; no account or key authentication", "reachable": false, "error": "TimeoutError"}

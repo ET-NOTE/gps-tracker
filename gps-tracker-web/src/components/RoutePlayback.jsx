@@ -4,12 +4,16 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { api } from '../api';
 import { getDeviceColor } from '../colors';
 import Icon from './Icon';
+import { historyError } from '../lib/historyError';
+import { analyzePath } from '../lib/stops';
 
 export default function RoutePlayback({ devices }) {
   const [deviceId, setDeviceId] = useState(devices[0]?.id ?? null);
   const [date, setDate]         = useState(todayStr());
   const [points, setPoints]     = useState([]);
   const [loading, setLoading]   = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [reload, setReload] = useState(0);
   const [idx, setIdx]           = useState(0);
   const [playing, setPlaying]   = useState(false);
   const [speed, setSpeed]       = useState(60);   // 60x: 1초 실시간 = 1분 재생
@@ -19,6 +23,9 @@ export default function RoutePlayback({ devices }) {
   const [aiError, setAiError]   = useState(null);
   const [aiUsage, setAiUsage]   = useState(null);   // { used_today, limit, unlimited }
 
+  const aiViewRef = useRef(null);
+  aiViewRef.current = `${deviceId}:${date}`;
+  useEffect(() => () => { aiViewRef.current = null; }, []);
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
   const polyRef      = useRef(null);
@@ -31,6 +38,11 @@ export default function RoutePlayback({ devices }) {
   // 데이터 로드 (날짜 변경 / 디바이스 변경 시)
   useEffect(() => {
     if (!deviceId) return;
+    const controller = new AbortController();
+    const active = () => !controller.signal.aborted;
+    setPoints([]);
+    setStats(null);
+    setLoadError(null);
     setLoading(true);
     setPlaying(false);
     setIdx(0);
@@ -38,7 +50,8 @@ export default function RoutePlayback({ devices }) {
     const end   = `${date}T23:59:59+09:00`;
     api.listLocationsGrouped(deviceId, {
       since: start, until: end, fix_only: true, limit: 1000,
-    }).then(groups => {
+    }, { signal: controller.signal }).then(groups => {
+      if (!active()) return;
       const rows = api.flattenGrouped(groups);
       // recorded_at 오름차순으로 정렬
       const sorted = rows
@@ -47,14 +60,16 @@ export default function RoutePlayback({ devices }) {
         .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
       setPoints(sorted);
       // 통계도 같이
-      api.getDailyStats(deviceId, { from: date, to: date, limit: 1 })
-        .then(s => setStats(s[0] || null))
-        .catch(() => setStats(null));
-    }).catch(() => setPoints([])).finally(() => setLoading(false));
+      api.getDailyStats(deviceId, { from: date, to: date, limit: 1 }, { signal: controller.signal })
+        .then(s => { if (active()) setStats(s[0] || null); })
+        .catch(() => { if (active()) setStats(null); });
+    }).catch(e => { if (active()) { setPoints([]); setLoadError(historyError(e, '운행 경로를 불러오지 못했습니다.')); } }).finally(() => { if (active()) setLoading(false); });
     // 같은 날짜/디바이스로 다시 불러올 때 이전 분석 비움.
     setAiText(null);
     setAiError(null);
-  }, [deviceId, date]);
+    setAiBusy(false);
+    return () => controller.abort();
+  }, [deviceId, date, reload]);
 
   // AI 사용량 한 번 조회
   useEffect(() => {
@@ -63,17 +78,19 @@ export default function RoutePlayback({ devices }) {
 
   async function handleAnalyze() {
     if (!deviceId) return;
+    const view = aiViewRef.current;
     setAiBusy(true);
     setAiError(null);
     setAiText(null);
     try {
       const r = await api.analyzeRoute(deviceId, date);
+      if (aiViewRef.current !== view) return;
       setAiText(r.analysis);
       setAiUsage({ used_today: r.used_today, limit: r.limit, unlimited: r.unlimited });
     } catch (e) {
-      setAiError(e.message || 'AI 분석 실패');
+      if (aiViewRef.current === view) setAiError(e.message || '분석 결과를 확인하지 못했습니다. 다시 시도해 주세요.');
     } finally {
-      setAiBusy(false);
+      if (aiViewRef.current === view) setAiBusy(false);
     }
   }
 
@@ -152,18 +169,7 @@ export default function RoutePlayback({ devices }) {
 
   // 슬라이더 + 통계 표시용 데이터
   const cur = points[idx];
-  const totalKm = useMemo(() => {
-    if (points.length < 2) return 0;
-    let m = 0;
-    const R = 6371000, r = Math.PI / 180;
-    for (let i = 1; i < points.length; i++) {
-      const a = points[i - 1], b = points[i];
-      const dLa = (b.lat - a.lat) * r, dLo = (b.lng - a.lng) * r;
-      const v = Math.sin(dLa/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;
-      m += 2 * R * Math.asin(Math.sqrt(v));
-    }
-    return m / 1000;
-  }, [points]);
+  const totalKm = useMemo(() => analyzePath(points).distanceM / 1000, [points]);
 
   return (
     <div style={s.wrap}>
@@ -194,7 +200,8 @@ export default function RoutePlayback({ devices }) {
       {/* 지도 */}
       <div ref={containerRef} style={s.map}>
         {loading && <div style={s.overlayMsg}>로딩...</div>}
-        {!loading && points.length === 0 && <div style={s.overlayMsg}>이 날짜의 fix 데이터가 없습니다</div>}
+        {!loading && loadError && <div style={s.overlayMsg} role="alert">{loadError} <button onClick={() => setReload(n => n + 1)}>다시 시도</button></div>}
+        {!loading && !loadError && points.length === 0 && <div style={s.overlayMsg}>이 날짜의 위치 기록이 없습니다.</div>}
       </div>
 
       {/* 슬라이더 + 재생 + AI 분석 */}

@@ -1,0 +1,34 @@
+{
+  "mode": "check",
+  "release": "privacy-facts-20261106-r1",
+  "ready": true,
+  "found": {
+    "database": "previous",
+    "health_release": "pdf-service-20261106-r1",
+    "api_sha256": "0d28667f3c21af82a43b987a12eec2836547d3717c69ae304688c6e5363ce826",
+    "web": "/home/mmm/releases/privacy-pdf-20261106-r1/web"
+  },
+  "artifact_api_sha256": "1fc16f783259d18898456318ff2ad14eb7caa9278e3739609f077e967f115a4d",
+  "artifact_web_sha256": "96fb79aba378da13457252c030f593027bc315927c46b153ec9d1fdae02b9f83",
+  "existing_grants": 2,
+  "pdf_processor_service": {
+    "file_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+    "socket": {
+      "ActiveState": "active",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 16:48:34 KST"
+    },
+    "proof": {
+      "Result": "success",
+      "ActiveState": "active",
+      "ActiveEnterTimestamp": "Fri 2026-11-06 16:48:34 KST"
+    },
+    "socket_file": [
+      "root",
+      "gps-api",
+      "0o660"
+    ]
+  },
+  "commit": "682ab5df2b10a871e6576901e756d0f535034272",
+  "changes_made": false
+}

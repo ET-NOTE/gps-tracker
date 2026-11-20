@@ -1,0 +1,11 @@
+PASS personal MFA required; anonymous, ordinary user, handler and delegated scope denied; officer allowed
+PASS encrypted physical rows grouped without coordinates, source free-text or owners; exact KST boundaries and NULL-only counts; no-store
+PASS six keyset pages equal full result; filter-bound cursor, 31-day/size/device bounds, empty and event categories verified
+Traceback (most recent call last):
+  File "/opt/gps121/test_unattributed132.py", line 258, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_unattributed132.py", line 204, in main
+    routines=sql("SELECT oid::regprocedure::text FROM pg_proc WHERE proname LIKE 'gps_open_%' AND pronamespace='public'::regnamespace")
+  File "/opt/gps121/test_unattributed132.py", line 33, in sql
+    c.execute(query, args)
+IndexError: tuple index out of range

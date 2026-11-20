@@ -1,0 +1,1 @@
+PASS actual bridge JS: v2 capabilities, file request/result, auth clearing, foreign origin and subframe exclusion. Native sourceOrigin/isMainFrame checks remain a separate boundary.

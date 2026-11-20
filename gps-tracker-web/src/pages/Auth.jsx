@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, setTokens } from '../api';
+import {Link} from 'react-router-dom';
 
 export default function Auth({ onLogin }) {
   const [tab, setTab]           = useState('login');
@@ -195,6 +196,7 @@ export default function Auth({ onLogin }) {
             </div>
           )}
         </form>
+        {tab==='login'&&<p style={{textAlign:'center',fontSize:13}}><Link to="/privacy/result">개인정보 요청 결과 확인</Link></p>}
 
         <div style={st.legal}>
           <a href={`${import.meta.env.BASE_URL}privacy`} target="_blank" rel="noreferrer" style={st.legalLink}>개인정보 처리방침</a>

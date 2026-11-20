@@ -1,5 +1,7 @@
 # GPS 트래커 프로젝트 진행 상태
 
+> **2026-11-06 최신 작업 인계:** [HANDOFF](docs/operations/HANDOFF.md)를 먼저 확인하세요. 현재 API/웹은 `privacy-receipts-20261106-r1`, DB schema 96이며 최신 기능 커밋은 `d37f1d7`입니다. 아래는 7월 30일 기준의 과거 현황입니다. 특히 ‘모든 엔드포인트 HTTPS’는 현재 전체 운영 단말기 전환 완료를 뜻하지 않습니다. TLS는 파일럿 검증 상태이며 미전환 단말기의 HTTP 경로는 남아 있습니다.
+
 **최종 갱신**: 2026-07-30
 **도메인**: https://gps.serial.kr (모든 엔드포인트 HTTPS)
 **서버 SSH**: `deploy@<VPS_HOST>` (Ubuntu 22.04, PostgreSQL 14.18, nginx 1.18)

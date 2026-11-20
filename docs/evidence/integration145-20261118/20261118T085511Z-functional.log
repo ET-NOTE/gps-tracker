@@ -1,0 +1,20 @@
+PASS actual114->115 SQLx migration preserves existing annotation and leaves new readings NULL
+PASS restricted runtime role saves/readbacks readings; omitted old-client fields preserve, invalid values and other tenant denied
+PASS actual XLSX contains entered before/after readings and their12.5km difference; original GPS distance unchanged
+PASS split omits derived readings, original survives, corrected edit409, restore recovers, explicit NULL clears, raw GPS hash unchanged
+PASS XLSX template order, vehicle metadata, blank odometer/staff department, separate commute/business, zero, open-trip exclusion, ratio, filters, tenant isolation, legacy ours workbook
+Traceback (most recent call last):
+  File "/opt/gps121/adapted145-test_corporate_template.py", line 91, in <module>
+    if users:sql('DELETE FROM users WHERE id=ANY(%s)',(users,))
+  File "/opt/gps121/adapted145-test_corporate_template.py", line 10, in sql
+    cur.execute(q,args);return cur.fetchone()[0] if cur.description else None
+psycopg2.errors.ForeignKeyViolation: update or delete on table "users" violates foreign key constraint "privacy_account_controls_user_id_fkey" on table "privacy_account_controls"
+DETAIL:  Key (id)=(3) is still referenced from table "privacy_account_controls".
+
+
+Traceback (most recent call last):
+  File "/opt/gps121/test_notion_integration145.py", line 149, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_notion_integration145.py", line 140, in main
+    assert result.returncode==0,name
+AssertionError: test_corporate_template.py

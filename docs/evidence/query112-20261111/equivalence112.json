@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "checks": 585,
+  "oracle": "schema111 complete logical rows",
+  "scope": [
+    "five SQL functions",
+    "latest",
+    "null/reversed/exact windows",
+    "far batch anchors",
+    "duplicates",
+    "source and row owner isolation",
+    "mixed/backfilled ciphertext",
+    "late writes/delete",
+    "Asia/Seoul",
+    "metadata tamper",
+    "cipher tamper/context",
+    "keyless rejection",
+    "resumable backfill"
+  ],
+  "fixture_rolled_back": true,
+  "production_modified": false
+}

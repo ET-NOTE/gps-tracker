@@ -1,0 +1,24 @@
+{
+  "mode": "actual components with synthetic API; receipt reads are real responses saved from the isolated test API, preview and issue are imitated in the browser",
+  "desktopWidth": 1280,
+  "mobileWidth": 390,
+  "horizontalOverflow": false,
+  "consoleErrors": 0,
+  "serverSourceTurned": {
+    "source": [4000, 3000],
+    "shown": [865, 1154],
+    "status": "서버 원본 연결 · 변경 시 제공 중단 · 865 × 1154px · 원본 4000 × 3000px 축소 · 촬영 방향 보정(시계 방향 90° 회전) · 공개 영역 0/30개",
+    "cornerGrays": {"topLeft": 160, "topRight": 10, "bottomLeft": 240, "bottomRight": 80}
+  },
+  "serverSourceUprightMobile": {"shownPixels": [1154, 865], "displayed": [338, 254], "coordinateColumns": 2},
+  "selectedRegion": {"x": 700, "y": 50, "width": 100, "height": 100},
+  "previewInsideGray": 10,
+  "previewOutsideBlack": true,
+  "previewAndTwoConfirmations": true,
+  "issueHistoryLine": "지출 #87 / 영수증 #85 · 서버 원본 연결 · 원본 4000 × 3000px 축소 · 촬영 방향 보정(시계 방향 90° 회전) · 회사 검토 #9",
+  "manualBrowserReduction": {
+    "turnedFile": {"shown": [865, 1154], "status": "수동 준비 원본 · 865 × 1154px · 원본 3000 × 4000px 축소 · 공개 영역 0/30개", "sameCornersAsServer": true},
+    "uprightFile": {"shown": [1154, 865], "status": "수동 준비 원본 · 1154 × 865px · 원본 4000 × 3000px 축소 · 공개 영역 0/30개"}
+  },
+  "productionAccountSessionChanged": false
+}

@@ -1,0 +1,40 @@
+
+> gps-tracker-web@0.1.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 295 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/src/components/PrivacyDelivery.jsx is dynamically imported by C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/src/App.jsx but also statically imported by C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/src/components/PrivacyAccountPackage.jsx, C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/src/components/PrivacyRequests.jsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                   5.36 kB │ gzip:   2.60 kB
+dist/assets/NanumGothic-Regular-xHXjSUfO.ttf  2,054.74 kB
+dist/assets/NanumGothic-Bold-DvrrFc7E.ttf     2,073.87 kB
+dist/assets/FleetDashboard-Cq4MBq6b.css           1.81 kB │ gzip:   0.65 kB
+dist/assets/CorporatePanel-DqcK_dsY.css          11.19 kB │ gzip:   2.45 kB
+dist/assets/index-Cc_kRhBz.css                   74.56 kB │ gzip:  12.88 kB
+dist/assets/StatCard-C-XCWqLc.js                  2.06 kB │ gzip:   0.87 kB
+dist/assets/LegalPage-BH1RJFPO.js                 3.88 kB │ gzip:   2.82 kB
+dist/assets/PaymentResult-DyQReXJH.js             4.42 kB │ gzip:   1.83 kB
+dist/assets/DeliveryPanel-dNhwyn4U.js             6.00 kB │ gzip:   2.49 kB
+dist/assets/BusinessPreferences-DriYyNFB.js      10.32 kB │ gzip:   5.03 kB
+dist/assets/SharePage-DYROZy41.js                12.13 kB │ gzip:   4.57 kB
+dist/assets/HandoffPage-DeUYpUvZ.js              13.91 kB │ gzip:   5.22 kB
+dist/assets/Auth-BK5uVx9L.js                     16.08 kB │ gzip:   4.78 kB
+dist/assets/FleetDashboard-C4i8ogg4.js           29.84 kB │ gzip:   9.64 kB
+dist/assets/DiagnosticPage-DgCjIOIM.js           31.35 kB │ gzip:  10.83 kB
+dist/assets/RentcarPanel-BQd7bgzs.js             54.32 kB │ gzip:  18.00 kB
+dist/assets/AdminDashboard-9UY2Bcfh.js           67.05 kB │ gzip:  18.11 kB
+dist/assets/CorporatePanel-CxauFvp8.js          161.66 kB │ gzip:  49.69 kB
+dist/assets/vendor-DRBT1dSS.js                  214.54 kB │ gzip:  68.27 kB
+dist/assets/index-DugD4Pog.js                   531.96 kB │ gzip: 168.30 kB
+dist/assets/pdf-engine-DjOoUrRi.js            1,221.27 kB │ gzip: 584.79 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.22s

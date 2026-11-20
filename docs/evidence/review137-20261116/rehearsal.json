@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-16T11:06:47+0900",
+  "passed": true,
+  "script_sha256": "038e43b8c41c6e86ed7a49195116bf982c0917d8edf6c0878a5c223d4dc0b069",
+  "api_sha256": "c6475670005ce79718d452ce882165f48a9e549249b97aad010f9247a0747cf8",
+  "source_schema": 99,
+  "target_schema": 114,
+  "migration_seconds": 6.359,
+  "backup_restore_verified": {
+    "bytes": 13997720,
+    "sha256": "f3f8fd5b3538f618cc1d375ac64e79609641731cc68456f2da299ba4fdbf4ad9"
+  },
+  "original_row_hashes_unchanged": true,
+  "compressed_snapshot_migrated": true,
+  "backup_snapshot_decompressed_chunks": 25,
+  "policies": {
+    "location_storage_policy": false,
+    "privacy_retention_policy": false,
+    "location_subject_policy": false
+  },
+  "production_unchanged": true,
+  "load_test_added": false
+}

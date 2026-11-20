@@ -1,0 +1,274 @@
+{
+  "candidate": "candidate-query115-20261111-r1",
+  "created_at": "2026-11-11T13:07:51.379877+00:00",
+  "schema": 112,
+  "new_migration": false,
+  "activation_ready": false,
+  "source_commit": "897892337f6d1c79151a1416314f7b64af3d5231",
+  "base_commit": "f82b2fdb01e7689282b77c79b8235be8852c1885",
+  "type": "API and web overlay for cumulative112; NOT a schema99 deployment bundle",
+  "stress_assessment": {
+    "single": {
+      "performance_gate_passed": true,
+      "completed_statuses": {
+        "200": 536,
+        "429": 815
+      },
+      "errors": []
+    },
+    "dual": {
+      "performance_gate_passed": false,
+      "completed_statuses": {
+        "200": 282,
+        "429": 556,
+        "408": 10
+      },
+      "errors": []
+    },
+    "io-limited": {
+      "performance_gate_passed": false,
+      "completed_statuses": {
+        "200": 185,
+        "429": 165,
+        "503": 21
+      },
+      "errors": [
+        {
+          "device": 6,
+          "route": "fleet_xlsx",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 7,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 1,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 8,
+          "route": "fleet_csv",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 7,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 1,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 5,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 3,
+          "route": "month_aggregate",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 7,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 8,
+          "route": "fleet_csv",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 2,
+          "route": "month_aggregate",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 1,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 3,
+          "route": "month_aggregate",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 4,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 5,
+          "route": "fleet_csv",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 6,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 3,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 6,
+          "route": "fleet_trips",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 5,
+          "route": "fleet_xlsx",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 8,
+          "route": "month_page",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        },
+        {
+          "device": 8,
+          "route": "fleet_xlsx",
+          "status": 503,
+          "body": "{\"error\":\"기록 저장을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.\"}"
+        }
+      ]
+    }
+  },
+  "deployment_restrictions": [
+    "No multi-API approval: monthly raw reads timed out.",
+    "No constrained-I/O approval: access-ledger persistence failures blocked responses.",
+    "Actual VPS I/O, plaintext temporary files/swap, total DB connection budget and cumulative transition require review."
+  ],
+  "files": {
+    "build_query115_web.sh": "6525410545d48fd18c687447ffeef8d35bbac72753b5c0e2816375eb8dc792af",
+    "dev22.sh": "17c0fe605782a50460ce4334233d746b35f57f60a3826762b3ed490e880114d4",
+    "gps-tracker-api.bin": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10",
+    "package_query115.py": "8c21379e11e5ff55f75d08181669ec31ea8e1d9c1dbeba6be5995a268ec8f1d5",
+    "source/gps-tracker-api/src/routes/corporate.rs": "64977d63330e32edf4f84c299943db940537b1547b93db4b73fa6c58fffe19c5",
+    "source/gps-tracker-api/src/routes/fleet_subject_readers.rs": "98dca25cfc8e23b0bedfb41ae4dfdad7e71bc5ede26dd231a2d1ea8138ddca38",
+    "source/gps-tracker-web/src/api.js": "134b5e149f517833aebc473f44321c13c0a57e6cd01f6e386f62e1a31e460a95",
+    "source/gps-tracker-web/src/lib/locationRetry.js": "da7a3e1aa887eea01c16e4cdf6a22e499226473b5b96269edaeaca3f79a9c7c7",
+    "source/gps-tracker-web/tests/auth-isolation.test.mjs": "6d3f78451e19a12da08cbdb7d030830161bc3d64ca9af10760a8e93aa6adf384",
+    "source/gps-tracker-web/tests/location-retry.test.mjs": "daab4fade4469c1ea8b83b9352647211183cab0150fcf4c8c12adc9329785ffe",
+    "source/ops/benchmark_location115.py": "20d0afd95abbded083997c360f757d46f75e5a41f80d08b46fa180fb8390b5b2",
+    "source/ops/continue_query115.py": "5824340ea80fca9f3c7e43abed81966720d8c9966d5c37bad702f4d95cdddf8b",
+    "source/ops/oracle_location115.py": "91f104de1860b65d48a3049bf46c8b0dc2b5a4069f5dd1ce326a73c4b2df97a9",
+    "source/ops/probe_location115_sql.py": "1c0879492c2a737fe8f33df520206d0ccd461c88e5a7eee6860e2fde4db98608",
+    "source/ops/recover_query115.py": "4c49ab35a4ce4d42706e9854b2e957630ab01728248c773cce1f9e3100189f76",
+    "source/ops/test_query115_business.py": "e4907634ce2d29b18621a3b54123fbcc715f394635afb4f646bf2917c49bcff1",
+    "source-manifest.json": "94048edaf16cc54c2a00150869eaebadfeb50bf7d98a9a019d5d2b88ea46c158",
+    "verify_query115_source.py": "11e58b370ab7813bacf3839604c762e84c7adea931a4b3feddc6623d9eec3695",
+    "web-root/apple-touch-icon.png": "e901014c9121b606a54ebbd168e4790033a8623bd12051b2e4ede38e4ae9a4c7",
+    "web-root/assets/AdminDashboard-C_eCiK__.js": "5534f2eb293f3d89cb624c9719e495b6fe5a1e005d6554e775cfcb0c9db1c427",
+    "web-root/assets/Auth-Dm-mszPt.js": "cde4d5b0a8b198b6899c458ebecd6f66e90e20942d9692eb5c08bd80e1244730",
+    "web-root/assets/BusinessPreferences-CseHAJXD.js": "95dc09a264c8b19c1f7aff91d16e78bfd079e5748494f1ade3c4494974d08ac0",
+    "web-root/assets/CorporatePanel-DmK306qp.js": "5f71519be012e784ff32aa8f1f2bfa03270102b1b7b237a68358edbeb0369336",
+    "web-root/assets/CorporatePanel-DqcK_dsY.css": "fe466a21dce5079aecd0344362a7ad4367fd3e519be95b8405654899181afa68",
+    "web-root/assets/DeliveryPanel-D_f9ep06.js": "aac61ebbe44353c8242d3c85ec9c5e93487640da12aba497c15c56240e7997e8",
+    "web-root/assets/DiagnosticPage-BGKHCXcs.js": "1794afa7d1b520cccbf4692545ec26ea445615a45bc1c8c899b40c476d455c52",
+    "web-root/assets/FleetDashboard-Ba29FpEZ.js": "55bd46248fde4fde93c6b91b2a737e5705122d624394423ca34c8302e056d371",
+    "web-root/assets/FleetDashboard-Cq4MBq6b.css": "c7e525d00d1b31208d485abfeb001fded4101eb5417b79b8e6e3d38e83cb6892",
+    "web-root/assets/HandoffPage-B_uqKur5.js": "bc4cc408604b42779c5021fbee3bb70e841ad3f2b1f540eac5147f2b1ee87636",
+    "web-root/assets/LegalPage-BH1RJFPO.js": "d40a952c194e578bce9c2f9bcdff5d85cece88d7c50bfb9704e15713902b159d",
+    "web-root/assets/NanumGothic-Bold-DvrrFc7E.ttf": "f96298f9fb18e364d2370f4c3ce948ac67a2b61af992d7234bc15c42b033c674",
+    "web-root/assets/NanumGothic-Regular-xHXjSUfO.ttf": "76f45ef4a6bcff344c837c95a7dcc26e017e38b5846d5ae0cdcb5b86be2e2d31",
+    "web-root/assets/PaymentResult-B1zdKbda.js": "5b159d9bb7d40d351e12bfa5ca5e83074f576dc69033fc58ea3e0cdeaf9b3ed8",
+    "web-root/assets/RentcarPanel-iGUub5Lv.js": "228a71352dfa96a3f7158cddad8654c4f127c6c5e76191af890678eefc9dc0f0",
+    "web-root/assets/SharePage-C3UPwdS8.js": "f837d81448efe895038eeb669536f32d364e1b21a55aaa59567611abda41e7d7",
+    "web-root/assets/StatCard-DMqkEour.js": "c621b83d4989bc902493ee6ff11ed03d3a3bf368fff761a3c679662e815131f4",
+    "web-root/assets/index-D1lYxhGs.css": "e75dae6c3edbf5e113495eed6cfd4a580465a87494e343bc0177d828e0af3565",
+    "web-root/assets/index-DX9e08IE.js": "704652aff7b476c3d5dcf80ad5cc664aefa30cd3da519e14651d3ff5cfeb60dc",
+    "web-root/assets/pdf-engine-DjOoUrRi.js": "480906ae35dd43c36669bd680964976417cb984cf56a5a4c68cf6cdada77c867",
+    "web-root/assets/vendor-DRBT1dSS.js": "1345fe1110c1745f94011e5d7f9e0988b305c4d7a564dd6c88f68fa7a5c424ed",
+    "web-root/favicon.ico": "22a2bf1b8598776a12cf2db23d9ee02acc5b9427b6f597429fe6f016155605ac",
+    "web-root/fonts/OFL-NanumGothic.txt": "90f6a909ffb2af7f6422ea20042a26180fe5520cba80bbbf75a5e660320d7924",
+    "web-root/icon-128.png": "c0448e8db0afefa63a40815b866bbf532c89e64d6c02a57676c3f0b2781fd1ea",
+    "web-root/icon-16.png": "04f5a2025dd0db86d81fc65179c7dccb0882d18f49d27f4fa8c932f4752acf9b",
+    "web-root/icon-192.png": "06315395ef5126db54d9121734c96dfaed9033692e836bde2a5dad80d60fa190",
+    "web-root/icon-256.png": "02a06df94ed710e132c785203d67d109e3f32cf073e51444d09a335fe733f08e",
+    "web-root/icon-32.png": "76985470687274257a72096d529679ea1f51e8374ddd929c94012a1bf5fa67d1",
+    "web-root/icon-384.png": "c0ceeb510b6a7326e8c9b16cd1fc676f285fbe2e550cba6455e32fb76a08f01a",
+    "web-root/icon-48.png": "33b0456a2abe6cffc68a2a8fec8d235b66e22573ac77890bedc5258a4188c67d",
+    "web-root/icon-512.png": "54419ff9865df7e587be17e322b8c8068210e5583833ee36d7e792b2119653ca",
+    "web-root/icon-64.png": "7ed9f188cdd6039740af80899976467e483344809ebd15c6f01a14f22c539665",
+    "web-root/icon-96.png": "3435c3bc52bda5b7b323fea8b68c15287dff58b671b729507218f44aa7dc6b7b",
+    "web-root/index.html": "03338a17e23b24d70888162bf60bc8ae4b0689ef77b7743683c958a0b1c17df7",
+    "web-root/logo.png": "54419ff9865df7e587be17e322b8c8068210e5583833ee36d7e792b2119653ca",
+    "web-root/manifest.webmanifest": "231367a686029fe003ca921534a715cf05bc7df0698d2148f096cd194f027747",
+    "web-root/og-image.png": "e7dd760dec42dca309dcaae803a1ada199b87ca4e5039090bdac5dc86525b01f",
+    "web-root/robots.txt": "dd85842400573337cc70e0e04485a31a5f6ae2c2d107c2911bc8f1d99695a9bf",
+    "web-root/sitemap.xml": "c1cbcb87bf6fffdeed6c46aac81e152d03637950ed3f2e33dcbc15b1d931f979",
+    "web-root/sw.js": "f5a8eed7533ba6aea9823e001647ba6f383166bc38cfaeecf7e82a38968b4bc0",
+    "web-subpath/apple-touch-icon.png": "e901014c9121b606a54ebbd168e4790033a8623bd12051b2e4ede38e4ae9a4c7",
+    "web-subpath/assets/AdminDashboard-CRaZvFE8.js": "2d56d518540352ea3a391b8cda12edbe7d109a3202208becec779d3b374e1512",
+    "web-subpath/assets/Auth-CL3lLeFH.js": "9a0ba7f479972572f5a5bfaeb4d8fe7376cedc481cb866c84790fa6cabc4262f",
+    "web-subpath/assets/BusinessPreferences-C2gZTVWp.js": "d3c0cea60ed7b24adc32ce418b2fe72066b927a1471b514b0a2826240bde51c7",
+    "web-subpath/assets/CorporatePanel-DQlQCZmL.js": "0ed05fff70b364bff4af693636f76e3cba20d58e0d85ee25fc1da4dbfc14f55e",
+    "web-subpath/assets/CorporatePanel-DqcK_dsY.css": "fe466a21dce5079aecd0344362a7ad4367fd3e519be95b8405654899181afa68",
+    "web-subpath/assets/DeliveryPanel-DJame9lh.js": "3bcaa128f64af138cfa49fc10ecc172b1d6fec08c2d0a3978f2ee7d5d24e5f59",
+    "web-subpath/assets/DiagnosticPage-BWnQZnvq.js": "fc7c4ba05f3f75c64482295a860d8e81f4817a8b23c9404fba09161ab7bcb7e8",
+    "web-subpath/assets/FleetDashboard-Bn4-AmtT.js": "dc4eb9b92cb253dd6f2037f51ae32927cc3a68e608a2e28d96742461dd902923",
+    "web-subpath/assets/FleetDashboard-Cq4MBq6b.css": "c7e525d00d1b31208d485abfeb001fded4101eb5417b79b8e6e3d38e83cb6892",
+    "web-subpath/assets/HandoffPage-ou5tCN87.js": "f598170a35ad66f52f7ff350c73932edc60b63eae8923775f1b73d6b07e017cf",
+    "web-subpath/assets/LegalPage-Ak13cI4-.js": "7e14dade9f142d71e6632359b7c76b46cfc5b72de8067a2e1ac409e921f8d10e",
+    "web-subpath/assets/NanumGothic-Bold-DvrrFc7E.ttf": "f96298f9fb18e364d2370f4c3ce948ac67a2b61af992d7234bc15c42b033c674",
+    "web-subpath/assets/NanumGothic-Regular-xHXjSUfO.ttf": "76f45ef4a6bcff344c837c95a7dcc26e017e38b5846d5ae0cdcb5b86be2e2d31",
+    "web-subpath/assets/PaymentResult-hTSiCnUD.js": "28d895dd4f115c1b4967d49af2d9e105e10831203060b1876457730876d3b474",
+    "web-subpath/assets/RentcarPanel-F1MNiGTM.js": "18ade868efcfa2f6b9ae117755421ba6931b50cc7116cdc574825df0040accba",
+    "web-subpath/assets/SharePage-y5wlwFKi.js": "cf164faf25adf33b5b2025e0816ef5a08651b2be07815dc006cac691b5c6114c",
+    "web-subpath/assets/StatCard-DL3iLZxS.js": "c57edc302a0700246bb504cd5a4dc9e80151ec787477989fdf0dcd6cafc67e04",
+    "web-subpath/assets/index-Bu8H5D6i.js": "1c6e46b46d9cab544d8cb3fb93bd6c814981fd7bee9260c774b4f343ef8224f8",
+    "web-subpath/assets/index-D1lYxhGs.css": "e75dae6c3edbf5e113495eed6cfd4a580465a87494e343bc0177d828e0af3565",
+    "web-subpath/assets/pdf-engine-DjOoUrRi.js": "480906ae35dd43c36669bd680964976417cb984cf56a5a4c68cf6cdada77c867",
+    "web-subpath/assets/vendor-DRBT1dSS.js": "1345fe1110c1745f94011e5d7f9e0988b305c4d7a564dd6c88f68fa7a5c424ed",
+    "web-subpath/favicon.ico": "22a2bf1b8598776a12cf2db23d9ee02acc5b9427b6f597429fe6f016155605ac",
+    "web-subpath/fonts/OFL-NanumGothic.txt": "90f6a909ffb2af7f6422ea20042a26180fe5520cba80bbbf75a5e660320d7924",
+    "web-subpath/icon-128.png": "c0448e8db0afefa63a40815b866bbf532c89e64d6c02a57676c3f0b2781fd1ea",
+    "web-subpath/icon-16.png": "04f5a2025dd0db86d81fc65179c7dccb0882d18f49d27f4fa8c932f4752acf9b",
+    "web-subpath/icon-192.png": "06315395ef5126db54d9121734c96dfaed9033692e836bde2a5dad80d60fa190",
+    "web-subpath/icon-256.png": "02a06df94ed710e132c785203d67d109e3f32cf073e51444d09a335fe733f08e",
+    "web-subpath/icon-32.png": "76985470687274257a72096d529679ea1f51e8374ddd929c94012a1bf5fa67d1",
+    "web-subpath/icon-384.png": "c0ceeb510b6a7326e8c9b16cd1fc676f285fbe2e550cba6455e32fb76a08f01a",
+    "web-subpath/icon-48.png": "33b0456a2abe6cffc68a2a8fec8d235b66e22573ac77890bedc5258a4188c67d",
+    "web-subpath/icon-512.png": "54419ff9865df7e587be17e322b8c8068210e5583833ee36d7e792b2119653ca",
+    "web-subpath/icon-64.png": "7ed9f188cdd6039740af80899976467e483344809ebd15c6f01a14f22c539665",
+    "web-subpath/icon-96.png": "3435c3bc52bda5b7b323fea8b68c15287dff58b671b729507218f44aa7dc6b7b",
+    "web-subpath/index.html": "0a1b1d498fe66a07ee58948be853536b651cf4c2b7f2e3c06d73f1e1bfc289a6",
+    "web-subpath/logo.png": "54419ff9865df7e587be17e322b8c8068210e5583833ee36d7e792b2119653ca",
+    "web-subpath/manifest.webmanifest": "231367a686029fe003ca921534a715cf05bc7df0698d2148f096cd194f027747",
+    "web-subpath/og-image.png": "e7dd760dec42dca309dcaae803a1ada199b87ca4e5039090bdac5dc86525b01f",
+    "web-subpath/robots.txt": "dd85842400573337cc70e0e04485a31a5f6ae2c2d107c2911bc8f1d99695a9bf",
+    "web-subpath/sitemap.xml": "c1cbcb87bf6fffdeed6c46aac81e152d03637950ed3f2e33dcbc15b1d931f979",
+    "web-subpath/sw.js": "f5a8eed7533ba6aea9823e001647ba6f383166bc38cfaeecf7e82a38968b4bc0"
+  },
+  "archive_sha256": "bc9edcf72f961a20f4053074b3f8b69cc9421766bda4ba94963abec573522a7e",
+  "archive_bytes": 15394841
+}

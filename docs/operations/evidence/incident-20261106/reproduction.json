@@ -1,0 +1,63 @@
+{
+  "question": "what can happen when ufw and netfilter-persistent start unordered at boot",
+  "relation_to_the_2026_11_06_outage": "not established. The hosting company attributed the outage to its emergency update. This is a separate configuration risk found while investigating; the boot log lines below are observations only.",
+  "environment": {
+    "where": "build host, one fresh container per case, own network namespace (--network none, NET_ADMIN), no effect on the host filter",
+    "image": "ubuntu:22.04 with ufw 0.36.1-4ubuntu0.1, iptables 1.8.7-1ubuntu5.2 (nf_tables), iptables-persistent 1.0.16",
+    "production_versions_equal": true,
+    "configuration": "MANAGE_BUILTINS=no, default input policy DROP, allow 22/80/443, /etc/iptables/rules.v4 with the production structure (no ufw chains, three 5432 rules), documentation addresses",
+    "method": "ufw-init start calls iptables-restore 10 times; the netfilter-persistent ip4tables plugin was run just before call K for K=1..10, and before/after the whole start"
+  },
+  "cases": [
+    {
+      "order": "netfilter-persistent, then ufw",
+      "result": "correct",
+      "state": "INPUT policy DROP, 6 ufw jumps, ufw-init exit 0"
+    },
+    {
+      "order": "inside ufw start, before restore 1",
+      "result": "correct",
+      "state": "INPUT policy DROP, 6 ufw jumps, ufw-init exit 0"
+    },
+    {
+      "order": "inside ufw start, before restore 2",
+      "result": "blocked",
+      "state": "INPUT policy DROP, 0 ufw jumps, ufw-init exit 1"
+    },
+    {
+      "order": "inside ufw start, before restore 3",
+      "result": "blocked",
+      "state": "INPUT policy DROP, 0 ufw jumps, ufw-init exit 0 (chains and user rules present)"
+    },
+    {
+      "order": "inside ufw start, before restore 4..9",
+      "result": "blocked",
+      "state": "INPUT policy DROP, 0 ufw jumps, ufw-init exit 1 (RULE_APPEND failed)"
+    },
+    {
+      "order": "inside ufw start, before restore 10",
+      "result": "blocked",
+      "state": "INPUT policy DROP, 0 ufw jumps, ufw-init exit 0"
+    },
+    {
+      "order": "ufw, then netfilter-persistent",
+      "result": "open",
+      "state": "INPUT policy ACCEPT, no ufw chains: nothing but the 5432 rules is filtered"
+    }
+  ],
+  "production_observations": {
+    "iptables_persistent_installed": "2026-05-15",
+    "units_ordered": false,
+    "boot_00_48": "ufw-init: RULE_APPEND failed (No such file or directory): rule in chain ufw-track-output; ufw.service failed",
+    "boot_11_04": "ufw.service finished, netfilter-persistent ran during its start; INPUT had no ufw jumps until one was added by hand at about 11:39",
+    "rules_v4": "saved 2026-05-15; filter table without ufw chains; restore flushes the table (no NOFLUSH configured)",
+    "state_now": "INPUT policy DROP; hand-added: accept tcp/22, jump to ufw-before-input (1 of 6 jumps); not persistent; IPv6 has all 6"
+  },
+  "repair_tests_in_isolation": {
+    "ufw_reload_from_the_hand_patched_state": "fails (problem running ufw-init), state unchanged",
+    "stop_ufw_then_netfilter_persistent_then_start_ufw": "standard layout (6 jumps); the filter is open between the stop and the start"
+  },
+  "fix": "ufw.service drop-in After=netfilter-persistent.service (ops/fix_firewall_boot_order.sh); not applied by the agent",
+  "check": "ops/check_firewall_layout.sh (read-only); on production it reports the missing ordering and 1 of 6 IPv4 jumps",
+  "production_changed": false
+}

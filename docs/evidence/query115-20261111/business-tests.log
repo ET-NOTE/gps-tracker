@@ -1,0 +1,16 @@
+{'test': 'fleet_trips response', 'status': 200, 'seconds': 1.9313756781630218, 'bytes': 25824}
+{'test': 'fleet_trips shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.020020837895572186}
+{'test': 'fleet_csv response', 'status': 200, 'seconds': 1.92116370331496, 'bytes': 3189}
+{'test': 'fleet_csv shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.020738965831696987}
+{'test': 'fleet_xlsx response', 'status': 200, 'seconds': 7.78474851930514, 'bytes': 13434}
+{'test': 'fleet_xlsx shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.020251452922821045}
+{'test': 'fleet_stats response', 'status': 200, 'seconds': 3.010394202079624, 'bytes': 1009}
+{'test': 'fleet_stats shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.020814357325434685}
+{'test': 'vehicle_stats response', 'status': 200, 'seconds': 2.9361472842283547, 'bytes': 997}
+{'test': 'vehicle_stats shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.020314369816333055}
+{'test': 'terminals response', 'status': 200, 'seconds': 2.7407552669756114, 'bytes': 1141}
+{'test': 'terminals shared admission and TLS disconnect', 'status': 429, 'cancel_seconds': 0.019181566312909126}
+{'test': 'owner use pause', 'statuses': [423, 423, 423, 423, 423, 423]}
+{'test': 'withdrawn subject excluded', 'trips_empty': True, 'stats_excluded': True}
+{'test': 'fixture restored', 'trips': 31}
+{'test': 'no residual reads or transactions', 'passed': True}

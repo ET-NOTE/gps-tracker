@@ -1,0 +1,6 @@
+PASS schema99 recovery and artifact corruption rejected before service mutation
+PASS compatible112 recovery after startup
+PASS compatible112 recovery after after-api
+PASS compatible112 recovery after after-web
+PASS final115 API/web and encrypted location read restored
+PASS no residual location queries or idle transactions

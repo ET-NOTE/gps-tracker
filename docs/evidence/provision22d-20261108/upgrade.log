@@ -1,0 +1,7 @@
+[2m2026-11-08T04:25:14.492785Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-08T04:25:14.518700Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "role" of relation "users" already exists, skipping
+[2m2026-11-08T04:25:14.599570Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m extension "timescaledb" already exists, skipping
+[2m2026-11-08T04:25:14.619388Z[0m [33m WARN[0m [2msqlx::postgres::notice[0m[2m:[0m column "source" should be used for segmenting or ordering
+[2m2026-11-08T04:25:15.320708Z[0m [32m INFO[0m [2mgps_tracker_api[0m[2m:[0m starting gps-tracker-api [3mbind[0m[2m=[0m127.0.0.1:3040
+[2m2026-11-08T04:25:15.325319Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_sqlx_migrations" already exists, skipping
+{"schema_path": [107, 108], "identity_sim_records_and_pending_attempts_unchanged": true, "failed_108_transaction_atomic": true, "subject_policy_default_off": true, "no_inferred_consent": true, "migration_checksums_match": true, "api_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0"}

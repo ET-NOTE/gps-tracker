@@ -1,0 +1,16 @@
+.fleet-assignment{display:grid;gap:16px;min-width:0}
+.fleet-assignment p{margin:0}
+.fleet-assignment-fields{margin:0;padding:0;border:0;display:grid;gap:12px;min-width:0}
+.fleet-assignment-fields .ui-field{margin:0}
+.fleet-check{display:flex;gap:9px;align-items:center;font-size:13px;line-height:1.5}
+.fleet-check input,.fleet-weekdays input,.fleet-trip-select{width:18px;height:18px;accent-color:var(--primary,#2563eb);flex-shrink:0}
+.fleet-assignment-preview{display:grid;gap:10px}
+.fleet-assignment-preview article{border:1px solid var(--border);border-radius:12px;padding:14px;display:grid;gap:8px;min-width:0;overflow-wrap:anywhere}
+.fleet-assignment-preview header{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;font-size:13px}
+.fleet-assignment-preview header span{color:var(--text-2);font-size:12px}
+.fleet-assignment-actions,.fleet-assignment-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fleet-assignment-toolbar{margin:12px 0;font-size:13px}
+.fleet-assignment-toolbar [role=status]{margin-right:auto;color:var(--text-2)}
+.fleet-weekdays{display:flex;gap:10px;flex-wrap:wrap}
+.fleet-weekdays label{display:flex;align-items:center;gap:4px;font-size:13px}
+@media(max-width:480px){.fleet-assignment-preview article{padding:12px}.fleet-assignment-toolbar>span{width:100%}.fleet-assignment-toolbar button{flex:1 1 auto}.fleet-assignment-actions button{flex:1}}

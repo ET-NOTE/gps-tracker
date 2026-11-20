@@ -1,0 +1,9 @@
+{
+  "history_max_one": true,
+  "global_max_two": true,
+  "history_waiter_borrows_no_read_connection": true,
+  "page_progresses_while_history_queued": true,
+  "queued_cancel_releases_capacity": true,
+  "active_cancel_reuses_slot_seconds": 0.01401770394295454,
+  "remaining_queries": 0
+}

@@ -2,10 +2,17 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
-use crate::{config::Config, events::Event, services::{fcm::FcmClient, opinet::OpinetCache}};
+use crate::{
+    config::Config,
+    events::Event,
+    services::{fcm::FcmClient, opinet::OpinetCache},
+};
 
 #[derive(Clone)]
 pub struct AppState {
+    /// An ingest holds an advisory-lock connection while its SQL uses another.
+    /// Bound concurrency so it cannot reserve all ten pool connections.
+    pub ingest_limit: Arc<tokio::sync::Semaphore>,
     pub db: PgPool,
     pub config: Arc<Config>,
     pub events: broadcast::Sender<Event>,

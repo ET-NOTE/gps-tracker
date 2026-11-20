@@ -21,6 +21,7 @@ ESP32-C3 + L80-R GPS + SIM7080G 트래커 — Rust(axum) API + React(Vite) 웹 +
 
 | 보고 싶은 것 | 어디로 |
 |---|---|
+| **다른 PC에서 최신 작업 이어받기 (2026-11-06)** | [작업 인계 · 운영 버전 · 남은 항목](docs/operations/HANDOFF.md) |
 | **지금 어디까지 만들어졌는지** | [STATUS.md](STATUS.md) |
 | **로컬에서 돌려보고 싶다** | [docs/SETUP.md](docs/SETUP.md) · [docs/local-dev-setup.md](docs/local-dev-setup.md) |
 | **API 스펙 (REST + WebSocket)** | [docs/API_CONTRACT.md](docs/API_CONTRACT.md) |

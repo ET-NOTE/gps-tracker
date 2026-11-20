@@ -1,0 +1,27 @@
+{
+  "databases": [
+    {
+      "database": "gps_closure_test",
+      "schema": 114,
+      "plaintext_locations": 0,
+      "idle_transactions": 0,
+      "images": 0,
+      "pending_cleanup": 0
+    },
+    {
+      "database": "gps_cumulative_restore",
+      "schema": 114,
+      "plaintext_locations": 0,
+      "idle_transactions": 0,
+      "images": 0,
+      "pending_cleanup": 0
+    }
+  ],
+  "foreign_denied": 404,
+  "api_sha256": "5c6f4529207f9ab0d5d30598dbb4fe8a4e4b77dc4e5304a8736f311fdcdb7e52",
+  "production_modified": false,
+  "external_messages": 0,
+  "activation_ready": false,
+  "performance_accepted": true,
+  "scope": "synthetic127; production shared capacity and cumulative deployment gates remain separate"
+}

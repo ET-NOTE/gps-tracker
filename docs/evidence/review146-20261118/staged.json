@@ -1,0 +1,24 @@
+{
+  "at": "2026-11-18T18:13:46+0900",
+  "baseline": {
+    "schema": 114,
+    "users": 43,
+    "devices": 18,
+    "api": "62f67f352bcdc677273a88caa7c44b4c409d760c97b9da9128f734da790f648d",
+    "env": "fab21aeaaef7a00f1283530e1136690c28d416d5d4d62b9968d4a6a6cdb3df55",
+    "web": "/home/mmm/releases/android139-web-20261118-r1/web",
+    "neighbors": {
+      "dev_api": "d12f65d2ece880855df8ef8a202d143980a1c5c7ea5b9538ad3473d73c5c964b",
+      "dev_web": "/home/gps-dev/gps-tracker-web-dev/releases/dev-20261118-notion-followup-fb705249/web",
+      "shield": "/srv/shield/releases/shield-20261102-142702-b9babe2",
+      "services": "MainPID=2276664\nId=gps-tracker-api-dev.service\nActiveEnterTimestamp=Wed 2026-11-18 12:41:19 KST\n\nMainPID=15160\nId=shield-api.service\nActiveEnterTimestamp=Fri 2026-11-06 11:45:30 KST\n\nId=gps-pdf-render.socket\nActiveEnterTimestamp=Fri 2026-11-06 16:48:34 KST\n",
+      "nginx": "c3b420dca0e3426fc50503b5781d6ac0a417d30dd883c3e133a82749946b869f"
+    }
+  },
+  "api_release": "runtime145-20261118-r1",
+  "source_schema": 114,
+  "target_schema": 115,
+  "script_sha256": "59b3bedb1fe284b8c8ea84bbc407607f277ec35f5912235dcc43d2d2bef1b420",
+  "helper_sha256": "a601953b6f21ae9e4029be53573ba80b9a73c3a0e1b42aa8b907634191b1cfdd",
+  "candidate_sha256": "ee0e3eb34cb29a7d572e44575989037446fe00ecf2a7c859e25637a7b26f4c72"
+}

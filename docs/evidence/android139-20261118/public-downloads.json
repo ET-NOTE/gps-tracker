@@ -1,0 +1,16 @@
+{
+  "apk": {
+    "url": "https://gps.serial.kr/gps-tracker-1.0.8-14.apk",
+    "sha256": "cef467a459a55eb07f8ce2bd0d905793de00c10f390711bc44d2bad4b30ec016",
+    "bytes": 85030302,
+    "content_type": "application/vnd.android.package-archive",
+    "content_disposition": "attachment; filename=\"gps-tracker-1.0.8-14.apk\""
+  },
+  "zip": {
+    "url": "https://gps.serial.kr/gps-tracker-1.0.8-14.zip",
+    "sha256": "9f48653d0114c910e74d990b0ef9ad0bb30a32e7d1de09fd03c27db9dcf1168b",
+    "bytes": 38177919,
+    "content_type": "application/zip",
+    "content_disposition": "attachment; filename=\"gps-tracker-1.0.8-14.zip\""
+  }
+}

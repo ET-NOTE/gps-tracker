@@ -1,0 +1,12 @@
+{
+  "containers_removed": [
+    "gps-runtime117-api",
+    "gps-runtime117-db",
+    "gps-runtime117-proxy"
+  ],
+  "network_removed": "gps-runtime117-test",
+  "volume_removed": "gps-runtime117-data",
+  "private_files_removed": true,
+  "other_projects_modified": false,
+  "free_gib": 18.533061981201172
+}

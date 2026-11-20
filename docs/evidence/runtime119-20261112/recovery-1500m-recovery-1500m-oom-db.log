@@ -1,0 +1,309 @@
+GPS119 protection {"profile": "db-memory", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2603"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "2602"}, {"path": "/var/lib/postgresql/data", "capacity": 1677721600, "type": "tmpfs", "mount_id": "2607"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.utf8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /var/lib/postgresql/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... UTC
+creating configuration files ... ok
+running bootstrap script ... ok
+sh: locale: not found
+2026-11-12 07:55:28.637 UTC [42] WARNING:  no usable system locales were found
+performing post-bootstrap initialization ... ok
+initdb: warning: enabling "trust" authentication for local connections
+syncing data to disk ... ok
+
+
+Success. You can now start the database server using:
+
+    pg_ctl -D /var/lib/postgresql/data -l logfile start
+
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+waiting for server to start....2026-11-12 07:55:28.804 UTC [48] LOG:  starting PostgreSQL 14.17 on x86_64-pc-linux-musl, compiled by gcc (Alpine 13.2.1_git20240309) 13.2.1 20240309, 64-bit
+2026-11-12 07:55:28.810 UTC [48] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-12 07:55:28.810 UTC [49] LOG:  database system was shut down at 2026-11-12 07:55:28 UTC
+2026-11-12 07:55:28.812 UTC [48] LOG:  database system is ready to accept connections
+2026-11-12 07:55:28.812 UTC [55] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+ done
+server started
+CREATE DATABASE
+
+
+/usr/local/bin/docker-entrypoint.sh: sourcing /docker-entrypoint-initdb.d/000_install_timescaledb.sh
+CREATE EXTENSION
+2026-11-12 07:55:29.075 UTC [73] ERROR:  background worker "TimescaleDB Background Worker Scheduler for database 1" trying to connect to template database, exiting
+CREATE EXTENSION
+CREATE EXTENSION
+
+/usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/001_timescaledb_tune.sh
+[37;1mUsing postgresql.conf at this path:
+[0m/var/lib/postgresql/data/postgresql.conf
+
+[37;1mWriting backup to:
+[0m/tmp/timescaledb_tune.backup202611120755
+
+[37;1mRecommendations based on 1.46 GB of available memory and 2 CPUs for PostgreSQL 14
+shared_buffers = 375MB
+effective_cache_size = 1125MB
+maintenance_work_mem = 192000kB
+work_mem = 7680kB
+timescaledb.max_background_workers = 16
+max_worker_processes = 21
+max_parallel_workers_per_gather = 1
+max_parallel_workers = 2
+wal_buffers = 11519kB
+min_wal_size = 512MB
+default_statistics_target = 100
+random_page_cost = 1.1
+checkpoint_completion_target = 0.9
+max_connections = 25
+max_locks_per_transaction = 128
+autovacuum_max_workers = 10
+autovacuum_naptime = 10
+default_toast_compression = lz4
+jit = off
+effective_io_concurrency = 256
+timescaledb.last_tuned = '2026-11-12T07:55:29Z'
+timescaledb.last_tuned_version = '0.18.0'
+[0m[37;1mSaving changes to: /var/lib/postgresql/data/postgresql.conf
+
+waiting for server to shut down....2026-11-12 07:55:29.164 UTC [48] LOG:  received fast shutdown request
+2026-11-12 07:55:29.164 UTC [48] LOG:  aborting any active transactions
+2026-11-12 07:55:29.164 UTC [76] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-12 07:55:29.164 UTC [67] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-12 07:55:29.164 UTC [55] FATAL:  terminating background worker "TimescaleDB Background Worker Launcher" due to administrator command
+2026-11-12 07:55:29.165 UTC [48] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 55) exited with exit code 1
+2026-11-12 07:55:29.165 UTC [48] LOG:  background worker "logical replication launcher" (PID 56) exited with exit code 1
+2026-11-12 07:55:29.165 UTC [48] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 67) exited with exit code 1
+2026-11-12 07:55:29.165 UTC [48] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 76) exited with exit code 1
+2026-11-12 07:55:29.592 UTC [105] FATAL:  the database system is shutting down
+.2026-11-12 07:55:30.639 UTC [112] FATAL:  the database system is shutting down
+.2026-11-12 07:55:31.691 UTC [119] FATAL:  the database system is shutting down
+.2026-11-12 07:55:32.738 UTC [126] FATAL:  the database system is shutting down
+.2026-11-12 07:55:33.787 UTC [133] FATAL:  the database system is shutting down
+2026-11-12 07:55:34.006 UTC [71] FATAL:  terminating background worker "Telemetry Reporter [1]" due to administrator command
+2026-11-12 07:55:34.007 UTC [48] LOG:  background worker "Telemetry Reporter [1]" (PID 71) exited with exit code 1
+2026-11-12 07:55:34.167 UTC [50] LOG:  shutting down
+.2026-11-12 07:55:34.174 UTC [48] LOG:  database system is shut down
+ done
+server stopped
+
+PostgreSQL init process complete; ready for start up.
+
+[0m2026-11-12 07:55:34.281 UTC [1] LOG:  starting PostgreSQL 14.17 on x86_64-pc-linux-musl, compiled by gcc (Alpine 13.2.1_git20240309) 13.2.1 20240309, 64-bit
+2026-11-12 07:55:34.281 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-11-12 07:55:34.281 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-11-12 07:55:34.286 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-12 07:55:34.287 UTC [135] LOG:  database system was shut down at 2026-11-12 07:55:34 UTC
+2026-11-12 07:55:34.290 UTC [1] LOG:  database system is ready to accept connections
+2026-11-12 07:55:34.291 UTC [141] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-12 07:55:37.167 UTC [152] WARNING:  column "source" should be used for segmenting or ordering
+2026-11-12 07:55:37.181 UTC [155] LOG:  continuous aggregate refresh (individual invalidation) on "location_1hour" in window [ 2026-10-13 08:00:00+00, 2026-11-12 06:00:00+00 ]
+2026-11-12 07:55:37.182 UTC [156] LOG:  continuous aggregate refresh (individual invalidation) on "location_5min" in window [ 2026-10-29 08:00:00+00, 2026-11-12 07:50:00+00 ]
+2026-11-12 07:55:37.182 UTC [155] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_4"
+2026-11-12 07:55:37.182 UTC [157] LOG:  continuous aggregate refresh (individual invalidation) on "location_1min" in window [ 2026-11-05 07:56:00+00, 2026-11-12 07:54:00+00 ]
+2026-11-12 07:55:37.183 UTC [157] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_3"
+2026-11-12 07:55:37.183 UTC [156] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_5"
+2026-11-12 07:55:37.183 UTC [155] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_4"
+2026-11-12 07:55:37.184 UTC [157] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_3"
+2026-11-12 07:55:37.184 UTC [156] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_5"
+2026-11-12 07:56:02.394 UTC [144] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-12 07:56:02.395 UTC [1] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 144) exited with exit code 1
+2026-11-12 07:56:02.462 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:02.462 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:03.201 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:03.201 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:03.881 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:03.881 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:04.570 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:04.570 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:05.356 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:05.356 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:06.215 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:06.215 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:06.967 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:06.967 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:07.705 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:07.705 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:08.445 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:08.445 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:09.175 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:09.175 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:09.920 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:09.920 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:10.674 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:10.674 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:11.419 UTC [182] ERROR:  division by zero
+2026-11-12 07:56:11.419 UTC [182] STATEMENT:  SELECT 1/0
+2026-11-12 07:56:12.913 UTC [201] LOG:  TimescaleDB background worker scheduler for database 22294 will be stopped
+2026-11-12 07:56:12.913 UTC [201] STATEMENT:  DROP DATABASE gps_cumulative_faults WITH (FORCE);
+2026-11-12 07:56:12.913 UTC [184] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-12 07:56:12.914 UTC [1] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 184) exited with exit code 1
+2026-11-12 07:56:13.145 UTC [181] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-12 07:56:13.146 UTC [1] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 181) exited with exit code 1
+2026-11-12 07:56:13.146 UTC [193] FATAL:  terminating autovacuum process due to administrator command
+2026-11-12 07:56:13.146 UTC [193] CONTEXT:  SQL function "location_point_bound" statement 1
+2026-11-12 07:56:13.591 UTC [211] ERROR:  permission denied to create extension "pgcrypto"
+2026-11-12 07:56:13.591 UTC [211] HINT:  Must have CREATE privilege on current database to create this extension.
+2026-11-12 07:56:13.591 UTC [211] STATEMENT:  -- Additive pilot: no existing row conversion or production enablement at startup.
+	-- Keys are connection-local, loaded from a private file outside the database.
+	CREATE EXTENSION IF NOT EXISTS pgcrypto;
+	CREATE TABLE location_storage_policy (
+	 singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
+	 enabled boolean NOT NULL DEFAULT false,
+	 activated_at timestamptz
+	);
+	INSERT INTO location_storage_policy(singleton) VALUES(true);
+	
+	CREATE FUNCTION gps_seal_cell(value jsonb, context text) RETURNS jsonb
+	LANGUAGE plpgsql SET search_path=pg_catalog,public AS $$
+	DECLARE ring jsonb; kid text; secret text;
+	BEGIN
+	 IF value IS NULL OR value='null'::jsonb THEN RETURN NULL; END IF;
+	 ring:=nullif(current_setting('gps.storage_keys',true),'')::jsonb;
+	 kid:=ring->>'active'; secret:=ring->'keys'->>kid;
+	 IF secret IS NULL OR octet_length(decode(secret,'base64'))<>32 THEN
+	  RAISE EXCEPTION 'location encryption key unavailable'; END IF;
+	 RETURN jsonb_build_object('v',1,'kid',kid,'cipher',encode(public.pgp_sym_encrypt(
+	  jsonb_build_object('context',context,'kid',kid,'value',value)::text,secret,
+	  'cipher-algo=aes256,sess-key=1,s2k-mode=0,compress-algo=0,disable-mdc=0'),'base64'));
+	END $$;
+	
+	CREATE FUNCTION gps_open_cell(envelope jsonb, context text) RETURNS jsonb
+	LANGUAGE plpgsql STABLE PARALLEL RESTRICTED SET search_path=pg_catalog,public AS $$
+	DECLARE ring jsonb; secret text; plain jsonb;
+	BEGIN
+	 IF envelope IS NULL THEN RETURN NULL; END IF;
+	 ring:=nullif(current_setting('gps.storage_keys',true),'')::jsonb;
+	 secret:=ring->'keys'->>(envelope->>'kid');
+	 IF envelope->>'v' IS DISTINCT FROM '1' OR secret IS NULL OR octet_length(decode(secret,'base64'))<>32 THEN
+	  RAISE EXCEPTION 'location decryption key unavailable'; END IF;
+	 BEGIN
+	  plain:=public.pgp_sym_decrypt(decode(envelope->>'cipher','base64'),secret)::jsonb;
+	  IF plain->>'context' IS DISTINCT FROM context OR plain->>'kid' IS DISTINCT FROM envelope->>'kid'
+	    OR NOT plain ? 'value' THEN RAISE EXCEPTION 'invalid envelope'; END IF;
+	 EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'location ciphertext authentication failed'; END;
+	 RETURN plain->'value';
+	END $$;
+	
+	CREATE FUNCTION gps_cell_context(table_name text, row_data jsonb, identity_columns text[], field_name text)
+	RETURNS text LANGUAGE sql IMMUTABLE AS $$
+	 SELECT jsonb_build_array('gps-location-v1',table_name,field_name,
+	   (SELECT jsonb_object_agg(k,CASE WHEN k='recorded_at' THEN to_jsonb((row_data->>k)::timestamptz AT TIME ZONE 'UTC') ELSE row_data->k END) FROM unnest(identity_columns) k))::text
+	$$;
+	
+	CREATE FUNCTION gps_encrypt_location_field() RETURNS trigger LANGUAGE plpgsql
+	SET search_path=pg_catalog,public SET timezone='UTC' AS $$
+	DECLARE doc jsonb; field_name text:=TG_ARGV[0]; encrypted_name text:=TG_ARGV[0]||'_sealed';
+	BEGIN
+	 IF NOT (SELECT enabled FROM public.location_storage_policy WHERE singleton) THEN RETURN NEW; END IF;
+	 doc:=to_jsonb(NEW);
+	 NEW:=jsonb_populate_record(NEW,jsonb_build_object(encrypted_name,
+	  public.gps_seal_cell(doc->field_name,public.gps_cell_context(TG_ARGV[2],doc,string_to_array(TG_ARGV[1],','),field_name)),
+	  field_name,NULL));
+	 RETURN NEW;
+	END $$;
+	
+	-- Immutable primary identities bind ciphertext to a table/row/field. SIM owner
+	-- changes are deliberately not part of the binding; historical owner is retained.
+	CREATE TABLE location_storage_fields (
+	 table_name text PRIMARY KEY, identity_columns text[] NOT NULL, fields text[] NOT NULL
+	);
+	INSERT INTO location_storage_fields VALUES
+	 ('location_records',ARRAY['device_id','recorded_at','source'],ARRAY['lat','lng','raw','fixes_jsonb']),
+	 ('devices',ARRAY['id'],ARRAY['last_lat','last_lng','last_stationary']),
+	 ('events',ARRAY['id'],ARRAY['data']);
+	
+	DO $$
+	DECLARE target record; f text; column_info record; projection text; expression text;
+	BEGIN
+	 FOR target IN SELECT * FROM location_storage_fields ORDER BY table_name LOOP
+	  FOREACH f IN ARRAY target.fields LOOP
+	   EXECUTE format('ALTER TABLE public.%I ADD COLUMN %I jsonb',target.table_name,f||'_sealed');
+	   EXECUTE format('CREATE TRIGGER %I BEFORE INSERT OR UPDATE OF %I ON public.%I FOR EACH ROW EXECUTE FUNCTION gps_encrypt_location_field(%L,%L,%L)',
+	     'seal_'||f,f,target.table_name,f,array_to_string(target.identity_columns,','),target.table_name);
+	  END LOOP;
+	  projection:='';
+	  FOR column_info IN SELECT attname,format_type(atttypid,atttypmod) typ FROM pg_attribute
+	   WHERE attrelid=format('public.%I',target.table_name)::regclass AND attnum>0 AND NOT attisdropped ORDER BY attnum LOOP
+	   IF column_info.attname LIKE '%\_sealed' ESCAPE '\' THEN CONTINUE; END IF;
+	   expression:=format('t.%I',column_info.attname);
+	   IF column_info.attname=ANY(target.fields) THEN
+	    expression:=format('CASE WHEN t.%I IS NULL THEN t.%I ELSE (jsonb_populate_record(NULL::public.%I,jsonb_build_object(%L,public.gps_open_cell(t.%I,public.gps_cell_context(%L,to_jsonb(t),%L::text[],%L))))).%I END',
+	      column_info.attname||'_sealed',column_info.attname,target.table_name,column_info.attname,
+	      column_info.attname||'_sealed',target.table_name,target.identity_columns,column_info.attname,column_info.attname);
+	   END IF;
+	   projection:=projection||CASE WHEN projection='' THEN '' ELSE ',' END||expression||format(' AS %I',column_info.attname);
+	  END LOOP;
+	  EXECUTE format('CREATE VIEW public.gps_read_%I AS SELECT %s FROM public.%I t',target.table_name,projection,target.table_name);
+	 END LOOP;
+	END $$;
+	
+	-- Existing canonical projection and bounded SQL functions must decrypt before
+	-- coordinates are expanded/aggregated. DML targets remain the physical tables.
+	DO $$
+	DECLARE r record; definition text; changed text; t text;
+	BEGIN
+	 definition:=pg_get_viewdef('location_points'::regclass,true);
+	 definition:=regexp_replace(definition,'FROM location_records\M','FROM gps_read_location_records','g');
+	 EXECUTE 'CREATE OR REPLACE VIEW location_points AS '||definition;
+	 FOR r IN SELECT p.oid,p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+	   WHERE n.nspname='public' AND p.prokind='f' AND p.proname NOT LIKE 'gps_%'
+	     AND NOT EXISTS(SELECT 1 FROM pg_depend d WHERE d.classid='pg_proc'::regclass AND d.objid=p.oid AND d.deptype='e') LOOP
+	  definition:=pg_get_functiondef(r.oid); changed:=definition;
+	  -- Session key access belongs on the leader. Do not preserve an older SAFE
+	  -- declaration on wrappers which now read decrypted projections.
+	  IF r.proname LIKE 'location_%' THEN
+	   changed:=replace(changed,'PARALLEL SAFE','PARALLEL RESTRICTED');
+	  END IF;
+	  FOREACH t IN ARRAY ARRAY['location_records','devices','events'] LOOP
+	   -- DELETE FROM must never become a delete through a computed view.
+	   changed:=regexp_replace(changed,'(DELETE\s+FROM\s+)'||t||'\M','\1__gps_delete_'||t,'gi');
+	   changed:=regexp_replace(changed,'((FROM|JOIN)\s+)'||t||'\M','\1gps_read_'||t,'gi');
+	   changed:=replace(changed,'__gps_delete_'||t,t);
+	  END LOOP;
+	  IF changed<>definition THEN EXECUTE changed; END IF;
+	 END LOOP;
+	END $$;
+	
+2026-11-12 07:56:13.591 UTC [211] LOG:  could not send data to client: Broken pipe
+2026-11-12 07:56:13.591 UTC [211] FATAL:  connection to client lost
+2026-11-12 07:56:19.811 UTC [231] LOG:  TimescaleDB background worker scheduler for database 24078 will be stopped
+2026-11-12 07:56:19.811 UTC [231] STATEMENT:  DROP DATABASE gps_cumulative_direct WITH (FORCE);
+2026-11-12 07:56:19.811 UTC [214] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2026-11-12 07:56:19.812 UTC [1] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 214) exited with exit code 1
+2026-11-12 08:00:40.029 UTC [345] ERROR:  must be owner of table devices
+2026-11-12 08:00:40.029 UTC [345] STATEMENT:  ALTER TABLE devices DISABLE TRIGGER ALL
+2026-11-12 08:00:40.030 UTC [345] ERROR:  permission denied for table location_storage_policy
+2026-11-12 08:00:40.030 UTC [345] STATEMENT:  UPDATE location_storage_policy SET maintenance=false
+2026-11-12 08:00:40.030 UTC [345] ERROR:  permission denied for table location_notice_attempts
+2026-11-12 08:00:40.030 UTC [345] STATEMENT:  DELETE FROM location_notice_attempts
+2026-11-12 08:00:40.031 UTC [345] ERROR:  permission denied for table privacy_retention_policy
+2026-11-12 08:00:40.031 UTC [345] STATEMENT:  UPDATE privacy_retention_policy SET enabled=true
+2026-11-12 08:00:40.032 UTC [345] ERROR:  location storage maintenance
+2026-11-12 08:00:40.032 UTC [345] CONTEXT:  PL/pgSQL function gps_storage_write_fence() line 5 at RAISE
+2026-11-12 08:00:40.032 UTC [345] STATEMENT:  UPDATE users SET display_name=display_name
+2026-11-12 08:00:44.056 UTC [350] LOG:  could not receive data from client: Connection reset by peer
+2026-11-12 08:01:22.397 UTC [454] ERROR:  location decryption key unavailable
+2026-11-12 08:01:22.397 UTC [454] CONTEXT:  PL/pgSQL function gps_open_cell(jsonb,text) line 8 at RAISE
+2026-11-12 08:01:22.397 UTC [454] STATEMENT:  SELECT lat FROM gps_read_location_records LIMIT 1
+2026-11-12 08:01:22.600 UTC [1] LOG:  checkpointer process (PID 136) was terminated by signal 9: Killed
+2026-11-12 08:01:22.600 UTC [1] LOG:  terminating any other active server processes
+2026-11-12 08:01:22.605 UTC [1] LOG:  all server processes terminated; reinitializing
+2026-11-12 08:01:22.628 UTC [459] LOG:  database system was interrupted; last known up at 2026-11-12 08:01:19 UTC
+2026-11-12 08:01:22.636 UTC [459] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-11-12 08:01:22.637 UTC [459] LOG:  redo starts at 0/2144BAC8
+2026-11-12 08:01:22.782 UTC [459] LOG:  unexpected pageaddr 0/12598000 in log segment 000000010000000000000030, offset 5865472
+2026-11-12 08:01:22.782 UTC [459] LOG:  redo done at 0/305978A8 system usage: CPU: user: 0.07 s, system: 0.06 s, elapsed: 0.14 s
+2026-11-12 08:01:22.834 UTC [1] LOG:  database system is ready to accept connections
+2026-11-12 08:01:22.835 UTC [465] LOG:  TimescaleDB background worker launcher connected to shared catalogs

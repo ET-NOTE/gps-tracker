@@ -1,5 +1,5 @@
 // /api/v1/admin/* — 관리자 전용 엔드포인트.
-// users.role = 'admin' 만 접근 가능 (AdminUser extractor 가 403 처리).
+// AdminUser plus the enforced administrator gate: MFA, IP, role and approval.
 //
 // 기능:
 //   - 사용자 목록 + 디바이스 카운트
@@ -25,39 +25,39 @@ use crate::{
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/admin/users",                          get(list_users))
-        .route("/admin/users/:id",                      get(user_detail))
-        .route("/admin/users/:id/devices",              get(user_devices))
-        .route("/admin/users/:id/impersonate",          post(impersonate_user))
-        .route("/admin/devices",                        get(list_all_devices))
-        .route("/admin/devices/:id",                    get(device_detail))
-        .route("/admin/devices/:id/recompute-stats",    post(recompute_stats))
-        .route("/admin/sims/:iccid/topup",              post(topup_sim))
-        .route("/admin/payments",                       get(list_payments))
+        .route("/admin/users", get(list_users))
+        .route("/admin/users/:id", get(user_detail))
+        .route("/admin/users/:id/devices", get(user_devices))
+        .route("/admin/users/:id/impersonate", post(impersonate_user))
+        .route("/admin/devices", get(list_all_devices))
+        .route("/admin/devices/:id", get(device_detail))
+        .route("/admin/devices/:id/recompute-stats", post(recompute_stats))
+        .route("/admin/sims/:iccid/topup", post(topup_sim))
+        .route("/admin/payments", get(list_payments))
 }
 
 // ─── 결제 내역 (모든 사용자) ─────────────────────────────
 #[derive(Debug, Deserialize)]
 struct PaymentsQuery {
     user_id: Option<i64>,
-    status:  Option<String>,            // pending/done/failed/cancelled
-    q:       Option<String>,            // 이메일/이름 부분일치
-    limit:   Option<i64>,
+    status: Option<String>, // pending/done/failed/cancelled
+    q: Option<String>,      // 이메일/이름 부분일치
+    limit: Option<i64>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
 struct AdminPaymentRow {
-    id:           i64,
-    order_id:     String,
-    user_id:      i64,
-    user_email:   Option<String>,
+    id: i64,
+    order_id: String,
+    user_id: i64,
+    user_email: Option<String>,
     user_display: Option<String>,
-    amount:       i64,
-    status:       String,
-    method:       Option<String>,
-    receipt_url:  Option<String>,
-    fail_reason:  Option<String>,
-    created_at:   DateTime<Utc>,
+    amount: i64,
+    status: String,
+    method: Option<String>,
+    receipt_url: Option<String>,
+    fail_reason: Option<String>,
+    created_at: DateTime<Utc>,
     confirmed_at: Option<DateTime<Utc>>,
 }
 
@@ -68,7 +68,7 @@ async fn list_payments(
 ) -> AppResult<Json<Vec<AdminPaymentRow>>> {
     let limit = q.limit.unwrap_or(200).clamp(1, 1000);
     // Postgres positional 바인딩 — None 일 땐 fallback 으로 모두 매칭.
-    let user_filter: i64 = q.user_id.unwrap_or(-1);  // -1 = no-op (BIGSERIAL >= 1)
+    let user_filter: i64 = q.user_id.unwrap_or(-1); // -1 = no-op (BIGSERIAL >= 1)
     let status_filter = q.status.unwrap_or_default();
     let search = q.q.unwrap_or_default();
     let search_pat = format!("%{}%", search.trim().to_lowercase());
@@ -101,13 +101,13 @@ async fn list_payments(
 // ─── 사용자 목록 ─────────────────────────────────────────
 #[derive(Debug, Serialize, FromRow)]
 pub struct AdminUserRow {
-    pub id:               i64,
-    pub email:            String,
-    pub display_name:     Option<String>,
-    pub role:             String,
-    pub device_count:     i64,
-    pub last_seen_at:     Option<DateTime<Utc>>,
-    pub created_at:       DateTime<Utc>,
+    pub id: i64,
+    pub email: String,
+    pub display_name: Option<String>,
+    pub role: String,
+    pub device_count: i64,
+    pub last_seen_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
 }
 
 async fn list_users(
@@ -116,8 +116,8 @@ async fn list_users(
 ) -> AppResult<Json<Vec<AdminUserRow>>> {
     let rows = sqlx::query_as::<_, AdminUserRow>(
         r#"SELECT u.id, u.email, u.display_name, u.role,
-                  (SELECT count(*) FROM devices  WHERE owner_id = u.id) AS device_count,
-                  (SELECT max(last_seen_at) FROM devices WHERE owner_id = u.id) AS last_seen_at,
+                  (SELECT count(*) FROM gps_read_devices  WHERE owner_id = u.id) AS device_count,
+                  (SELECT max(last_seen_at) FROM gps_read_devices WHERE owner_id = u.id) AS last_seen_at,
                   u.created_at
              FROM users u
             ORDER BY u.created_at DESC"#,
@@ -130,13 +130,13 @@ async fn list_users(
 // ─── 사용자 상세 (메타) ──────────────────────────────────
 #[derive(Debug, Serialize, FromRow)]
 pub struct AdminUserDetail {
-    pub id:               i64,
-    pub email:            String,
-    pub display_name:     Option<String>,
-    pub secondary_phone:  Option<String>,
-    pub role:             String,
-    pub device_count:     i64,
-    pub created_at:       DateTime<Utc>,
+    pub id: i64,
+    pub email: String,
+    pub display_name: Option<String>,
+    pub secondary_phone: Option<String>,
+    pub role: String,
+    pub device_count: i64,
+    pub created_at: DateTime<Utc>,
 }
 
 async fn user_detail(
@@ -146,7 +146,7 @@ async fn user_detail(
 ) -> AppResult<Json<AdminUserDetail>> {
     let row: AdminUserDetail = sqlx::query_as(
         r#"SELECT u.id, u.email, u.display_name, u.secondary_phone, u.role,
-                  (SELECT count(*) FROM devices WHERE owner_id = u.id) AS device_count,
+                  (SELECT count(*) FROM gps_read_devices WHERE owner_id = u.id) AS device_count,
                   u.created_at
              FROM users u
             WHERE u.id = $1"#,
@@ -161,16 +161,16 @@ async fn user_detail(
 // ─── 사용자의 디바이스 목록 (god 권한) ────────────────────
 #[derive(Debug, Serialize, FromRow)]
 pub struct AdminDeviceRow {
-    pub id:            i64,
-    pub device_uid:    String,
-    pub display_name:  Option<String>,
-    pub iccid:         Option<String>,
-    pub imei:          Option<String>,
-    pub last_seen_at:  Option<DateTime<Utc>>,
-    pub last_lat:      Option<f64>,
-    pub last_lng:      Option<f64>,
-    pub paired_at:     Option<DateTime<Utc>>,
-    pub created_at:    DateTime<Utc>,
+    pub id: i64,
+    pub device_uid: String,
+    pub display_name: Option<String>,
+    pub iccid: Option<String>,
+    pub imei: Option<String>,
+    pub last_seen_at: Option<DateTime<Utc>>,
+    pub last_lat: Option<f64>,
+    pub last_lng: Option<f64>,
+    pub paired_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
 }
 
 async fn user_devices(
@@ -181,7 +181,7 @@ async fn user_devices(
     let rows = sqlx::query_as::<_, AdminDeviceRow>(
         r#"SELECT id, device_uid, display_name, iccid, imei,
                   last_seen_at, last_lat, last_lng, paired_at, created_at
-             FROM devices
+             FROM gps_read_devices
             WHERE owner_id = $1
             ORDER BY COALESCE(last_seen_at, created_at) DESC"#,
     )
@@ -194,18 +194,18 @@ async fn user_devices(
 // ─── 전체 디바이스 목록 (사용자 무관 — 관리자 전용) ─────
 #[derive(Debug, Serialize, FromRow)]
 pub struct AdminDeviceListRow {
-    pub id:             i64,
-    pub device_uid:     String,
-    pub display_name:   Option<String>,
-    pub iccid:          Option<String>,
-    pub imei:           Option<String>,
-    pub owner_id:       Option<i64>,
-    pub owner_email:    Option<String>,
-    pub last_seen_at:   Option<DateTime<Utc>>,
-    pub last_lat:       Option<f64>,
-    pub last_lng:       Option<f64>,
-    pub paired_at:      Option<DateTime<Utc>>,
-    pub created_at:     DateTime<Utc>,
+    pub id: i64,
+    pub device_uid: String,
+    pub display_name: Option<String>,
+    pub iccid: Option<String>,
+    pub imei: Option<String>,
+    pub owner_id: Option<i64>,
+    pub owner_email: Option<String>,
+    pub last_seen_at: Option<DateTime<Utc>>,
+    pub last_lat: Option<f64>,
+    pub last_lng: Option<f64>,
+    pub paired_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
 }
 
 async fn list_all_devices(
@@ -216,35 +216,36 @@ async fn list_all_devices(
         r#"SELECT d.id, d.device_uid, d.display_name, d.iccid, d.imei,
                   d.owner_id, u.email AS owner_email,
                   d.last_seen_at, d.last_lat, d.last_lng, d.paired_at, d.created_at
-             FROM devices d
+             FROM gps_read_devices d
         LEFT JOIN users u ON u.id = d.owner_id
             ORDER BY COALESCE(d.last_seen_at, d.created_at) DESC"#,
     )
-    .fetch_all(&state.db).await?;
+    .fetch_all(&state.db)
+    .await?;
     Ok(Json(rows))
 }
 
 // ─── 디바이스 상세 (전체 메타 + 최근 이벤트) ─────────────
 #[derive(Debug, Serialize, FromRow)]
 pub struct AdminDeviceFull {
-    pub id:                 i64,
-    pub device_uid:         String,
-    pub display_name:       Option<String>,
-    pub iccid:              Option<String>,
-    pub imei:               Option<String>,
-    pub imsi:               Option<String>,
-    pub hw_version:         Option<String>,
-    pub fw_version:         Option<String>,
-    pub owner_id:           Option<i64>,
-    pub owner_email:        Option<String>,
-    pub last_seen_at:       Option<DateTime<Utc>>,
-    pub last_lat:           Option<f64>,
-    pub last_lng:           Option<f64>,
-    pub last_fix_at:        Option<DateTime<Utc>>,
-    pub paired_at:          Option<DateTime<Utc>>,
-    pub created_at:         DateTime<Utc>,
-    pub rtc_brownouts:      i32,
-    pub rtc_no_fix_cycles:  i32,
+    pub id: i64,
+    pub device_uid: String,
+    pub display_name: Option<String>,
+    pub iccid: Option<String>,
+    pub imei: Option<String>,
+    pub imsi: Option<String>,
+    pub hw_version: Option<String>,
+    pub fw_version: Option<String>,
+    pub owner_id: Option<i64>,
+    pub owner_email: Option<String>,
+    pub last_seen_at: Option<DateTime<Utc>>,
+    pub last_lat: Option<f64>,
+    pub last_lng: Option<f64>,
+    pub last_fix_at: Option<DateTime<Utc>>,
+    pub paired_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub rtc_brownouts: i32,
+    pub rtc_no_fix_cycles: i32,
 }
 
 async fn device_detail(
@@ -259,24 +260,27 @@ async fn device_detail(
                   d.last_seen_at, d.last_lat, d.last_lng, d.last_fix_at,
                   d.paired_at, d.created_at,
                   d.rtc_brownouts, d.rtc_no_fix_cycles
-             FROM devices d
+             FROM gps_read_devices d
         LEFT JOIN users u ON u.id = d.owner_id
             WHERE d.id = $1"#,
     )
     .bind(id)
-    .fetch_optional(&state.db).await?
+    .fetch_optional(&state.db)
+    .await?
     .ok_or(AppError::NotFound)?;
 
     // 최근 이벤트
     let events: Vec<serde_json::Value> = sqlx::query_scalar(
         r#"SELECT json_build_object(
               'id', id, 'kind', kind, 'data', data, 'occurred_at', occurred_at
-            ) FROM events
+            ) FROM gps_read_events
             WHERE device_id = $1
             ORDER BY occurred_at DESC LIMIT 30"#,
     )
     .bind(id)
-    .fetch_all(&state.db).await.unwrap_or_default();
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
 
     Ok(Json(json!({
         "device": dev,
@@ -295,13 +299,28 @@ async fn impersonate_user(
 ) -> AppResult<Json<Value>> {
     // 대상 사용자 존재 확인
     let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM users WHERE id = $1")
-        .bind(id).fetch_optional(&state.db).await?;
-    if exists.is_none() { return Err(AppError::NotFound); }
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?;
+    if exists.is_none() {
+        return Err(AppError::NotFound);
+    }
 
-    let access  = jwt::issue_access(id, &state.config.jwt_secret, state.config.jwt_access_ttl_min)
-        .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt: {e}")))?;
-    let refresh = jwt::issue_refresh(id, &state.config.jwt_secret, state.config.jwt_refresh_ttl_days)
-        .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt: {e}")))?;
+    // The tokens name the administrator, so what is read with them is recorded as the administrator's.
+    let access = jwt::issue_access_as(
+        id,
+        Some(admin.user_id),
+        &state.config.jwt_secret,
+        state.config.jwt_access_ttl_min,
+    )
+    .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt: {e}")))?;
+    let refresh = jwt::issue_refresh_as(
+        id,
+        Some(admin.user_id),
+        &state.config.jwt_secret,
+        state.config.jwt_refresh_ttl_days,
+    )
+    .map_err(|e| AppError::Internal(anyhow::anyhow!("jwt: {e}")))?;
 
     // 영구 감사 — 토큰 발급 자체가 실패한 경우 audit 기록 안 됨 (정상).
     let _ = sqlx::query(
@@ -317,7 +336,11 @@ async fn impersonate_user(
     .execute(&state.db)
     .await;
 
-    tracing::warn!(admin_id = admin.user_id, target_user = id, "ADMIN IMPERSONATION");
+    tracing::warn!(
+        admin_id = admin.user_id,
+        target_user = id,
+        "ADMIN IMPERSONATION"
+    );
     Ok(Json(json!({
         "access_token":  access,
         "refresh_token": refresh,
@@ -349,17 +372,23 @@ async fn recompute_stats(
     use chrono::NaiveDate;
 
     // device 존재 확인
-    let exists: Option<i64> = sqlx::query_scalar(
-        "SELECT id FROM devices WHERE id = $1",
-    ).bind(id).fetch_optional(&state.db).await?;
-    if exists.is_none() { return Err(AppError::NotFound); }
+    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?;
+    if exists.is_none() {
+        return Err(AppError::NotFound);
+    }
 
     let dates: Vec<NaiveDate> = sqlx::query_scalar(
-        r#"SELECT DISTINCT (recorded_at AT TIME ZONE 'Asia/Seoul')::date
-             FROM location_records
-            WHERE device_id = $1 AND fix = TRUE
+        r#"SELECT DISTINCT unnest(location_fix_dates(recorded_at,fixes_jsonb,fix)) AS date
+             FROM gps_read_location_records
+            WHERE device_id = $1
             ORDER BY 1 DESC"#,
-    ).bind(id).fetch_all(&state.db).await?;
+    )
+    .bind(id)
+    .fetch_all(&state.db)
+    .await?;
 
     let mut ok = 0u32;
     let mut failed = 0u32;
@@ -372,7 +401,13 @@ async fn recompute_stats(
             }
         }
     }
-    tracing::info!(actor = admin.user_id, device_id = id, ok, failed, "recompute_stats");
+    tracing::info!(
+        actor = admin.user_id,
+        device_id = id,
+        ok,
+        failed,
+        "recompute_stats"
+    );
     Ok(Json(json!({
         "device_id": id,
         "dates_processed": ok,
@@ -391,14 +426,16 @@ async fn topup_sim(
 
     // 1NCE 호출
     let api_result = match crate::services::nce::refill_sim(&iccid, mb).await {
-        Ok(v)  => v,
+        Ok(v) => v,
         Err(e) => json!({ "ok": false, "error": format!("{e:#}") }),
     };
 
     // 디바이스 찾기 + audit
-    let device_id: Option<i64> = sqlx::query_scalar(
-        "SELECT id FROM devices WHERE iccid = $1 LIMIT 1"
-    ).bind(&iccid).fetch_optional(&state.db).await?;
+    let device_id: Option<i64> =
+        sqlx::query_scalar("SELECT id FROM gps_read_devices WHERE iccid = $1 LIMIT 1")
+            .bind(&iccid)
+            .fetch_optional(&state.db)
+            .await?;
 
     if let Some(did) = device_id {
         let _ = sqlx::query(
@@ -412,7 +449,8 @@ async fn topup_sim(
             "mb_requested": mb,
             "api_result": api_result.clone(),
         }))
-        .execute(&state.db).await;
+        .execute(&state.db)
+        .await;
     }
 
     Ok(Json(json!({

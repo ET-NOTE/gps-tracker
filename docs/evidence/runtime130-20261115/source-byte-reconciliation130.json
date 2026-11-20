@@ -1,0 +1,7 @@
+{
+  "observation": "First collection rejected a CRLF source archive versus LF executed harness. Canonical git -c core.autocrlf=false archive restores exact bytes.",
+  "noncanonical_source_sha256": "f4702d26c273b12208f22adf8677947682e82a2dec59eb3879bc06946666693e",
+  "executed_sha256": "250b9b19b9700560e64405a910995fa38779540fbce52d27719e942d4f52952f",
+  "content_equal_after_line_endings": true,
+  "production_modified": false
+}

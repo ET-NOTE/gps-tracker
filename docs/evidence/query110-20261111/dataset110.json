@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "full_history": {
+    "schema109": {
+      "rows": 283001,
+      "sha256": "382ec3b07f6a69c59e58a021f9bd87fd787b1ebbfa01d4707a92e01777560488",
+      "elapsed_s": 15.19329986628145
+    },
+    "schema110": {
+      "rows": 283001,
+      "sha256": "382ec3b07f6a69c59e58a021f9bd87fd787b1ebbfa01d4707a92e01777560488",
+      "elapsed_s": 11.25042364699766
+    }
+  },
+  "empty_latest": {
+    "status": 200,
+    "seconds": 0.02528930688276887
+  },
+  "existing_other_account_status": 404,
+  "production_modified": false
+}

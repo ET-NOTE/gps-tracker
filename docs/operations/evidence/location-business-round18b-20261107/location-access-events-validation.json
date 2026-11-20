@@ -1,0 +1,26 @@
+{
+  "mode": "isolated-on",
+  "schema": 101,
+  "api_sha256": "36522dd395e2d0c024198ad00ec12147c291bf2373ba64ae8607846e4b349712",
+  "integration_groups": 10,
+  "groups": [
+    "each HTTP operation commits a separate intent/outcome; aggregation is a view; refusal is not a successful disclosure",
+    "SIM owner transfer and vehicle binding end do not rewrite earlier account context, recipient or binding snapshot; driver remains unconfirmed",
+    "share deletion leaves immutable ID-only evidence; no coordinates, link token, e-mail or JWT; arbitrary update/delete/truncate refused",
+    "DB insert/completion failure returns 503 without location; committed prepared intent survives failed completion; recovery works",
+    "SIGKILL during blocked location SELECT preserves precommitted intent with unknown outcome; restart cannot turn it into successful delivery",
+    "WebSocket subscribe alone is not recorded as delivery; two real signed synthetic ingest messages have per-message socket_sent evidence",
+    "reviewed withdrawal can erase recent unambiguous account events; disabled/ordinary user/stale revision/unconfirmed/replay refused; company/share/other account retained for separate review; restart does not resurrect",
+    "erasure/intent race is serialized; old in-flight request cannot resurrect a deleted-period event; genuinely later requests remain usable",
+    "120 concurrent reads produce exactly 120 durable events; no hourly coalescing or dropped queue",
+    "administrator read is audited; event/legacy, account scope/actual subject and delivery outcome are explicit"
+  ],
+  "concurrent_reads": 120,
+  "parallelism": 12,
+  "latency_ms": {
+    "median": 6.44,
+    "p95": 15.82
+  },
+  "production_changed": false,
+  "external_messages": 0
+}

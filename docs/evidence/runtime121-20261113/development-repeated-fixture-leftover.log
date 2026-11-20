@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "/opt/gps121/test_runtime121.py", line 46, in <module>
+    transition(DSN,ring,str(ROOT/'test-storage/uploads'),str(ROOT/'test-storage/private'),'resume')
+  File "/opt/gps121/runtime121_control.py", line 64, in transition
+    return job('transition', dsn=dsn, ring=ring, mode=mode,
+  File "/opt/gps121/runtime121_control.py", line 57, in job
+    raise RuntimeError(journal(unit))
+RuntimeError: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2619"}], "dumpable": 0, "swap_max": 0, "memory_max": 576716800}
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_job.py", line 61, in <module>
+    result = c.run(local(cfg['dsn']), cfg['ring'], str(ROOT/'test-storage/uploads'),
+  File "/opt/gps121/crypto20b_transition.py", line 117, in run
+    file_report=convert_files(db,uploads,private,ring)
+  File "/opt/gps121/crypto20b_transition.py", line 76, in convert_files
+    stored=path.read_bytes();raw=open_bytes(c,ctx,stored)
+  File "/opt/gps121/crypto20b_transition.py", line 60, in open_bytes
+    envelope=json.loads(stored[len(MAGIC):])
+  File "/usr/lib/python3.10/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+  File "/usr/lib/python3.10/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "/usr/lib/python3.10/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+

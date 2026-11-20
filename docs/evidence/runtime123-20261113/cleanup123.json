@@ -1,0 +1,11 @@
+{
+  "at": "2026-11-13T15:51:47.312731+00:00",
+  "unrelated_containers": 32,
+  "unchanged_since": "2026-11-13T14:38:33.481324+00:00",
+  "prior_artifacts_verified": 5,
+  "free_bytes": 19642228736,
+  "removed_only_labelled_synthetic_container_and_network": true,
+  "keys_and_database_removed": true,
+  "automatic_retention_added": false,
+  "production_modified": false
+}

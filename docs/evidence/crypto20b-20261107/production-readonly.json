@@ -1,0 +1,515 @@
+{
+  "read_only": true,
+  "at": "2026-11-07T11:27:25.272107+00:00",
+  "schema": 99,
+  "database_bytes": 128615203,
+  "tables": [
+    {
+      "table": "_sqlx_migrations",
+      "estimated_rows": 3,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "admin_audit_log",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "ai_analyses",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "ai_analysis_requests",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "ai_usage_log",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "chat_messages",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "chat_threads",
+      "estimated_rows": 0,
+      "relation_bytes": 98304
+    },
+    {
+      "table": "collection_control_events",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "connection_alert_episodes",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "corporate_info",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "credit_log",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "credit_topup_requests",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "daily_stats",
+      "estimated_rows": 227,
+      "relation_bytes": 114688
+    },
+    {
+      "table": "device_audit_log",
+      "estimated_rows": 0,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "device_commands",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "device_credentials",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "device_data_controls",
+      "estimated_rows": 18,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "device_data_erasure_jobs",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "device_documents",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "device_pair_attempts",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "devices",
+      "estimated_rows": 18,
+      "relation_bytes": 466944
+    },
+    {
+      "table": "diag_dht",
+      "estimated_rows": 0,
+      "relation_bytes": 3252224
+    },
+    {
+      "table": "events",
+      "estimated_rows": 4,
+      "relation_bytes": 4284416
+    },
+    {
+      "table": "fcm_outbox",
+      "estimated_rows": 6,
+      "relation_bytes": 909312
+    },
+    {
+      "table": "fcm_revocations",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "fcm_tokens",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "fleet_expense_audit",
+      "estimated_rows": 0,
+      "relation_bytes": 16384
+    },
+    {
+      "table": "fleet_expense_categories",
+      "estimated_rows": 378,
+      "relation_bytes": 163840
+    },
+    {
+      "table": "fleet_expense_receipts",
+      "estimated_rows": 0,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "fleet_expenses",
+      "estimated_rows": 0,
+      "relation_bytes": 98304
+    },
+    {
+      "table": "fleet_invites",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "fleet_org_items",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "fleet_site_cursors",
+      "estimated_rows": 0,
+      "relation_bytes": 8192
+    },
+    {
+      "table": "fleet_site_groups",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "fleet_site_states",
+      "estimated_rows": 0,
+      "relation_bytes": 8192
+    },
+    {
+      "table": "fleet_site_versions",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "fleet_site_visits",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "fleet_sites",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "fleet_staff_accounts",
+      "estimated_rows": 0,
+      "relation_bytes": 40960
+    },
+    {
+      "table": "fleet_staff_vehicles",
+      "estimated_rows": 0,
+      "relation_bytes": 8192
+    },
+    {
+      "table": "fleet_team_audit",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "fleet_trip_assignment_audit",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "fleet_trip_corrections",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "fleet_trip_rules",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "fleet_vehicle_audit",
+      "estimated_rows": 0,
+      "relation_bytes": 16384
+    },
+    {
+      "table": "fleet_vehicle_bindings",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "fleet_vehicles",
+      "estimated_rows": 0,
+      "relation_bytes": 73728
+    },
+    {
+      "table": "geocode_cache",
+      "estimated_rows": 0,
+      "relation_bytes": 352256
+    },
+    {
+      "table": "geofence_states",
+      "estimated_rows": 0,
+      "relation_bytes": 57344
+    },
+    {
+      "table": "geofences",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "hardware_credentials",
+      "estimated_rows": 2,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "location_1hour",
+      "estimated_rows": 0,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "location_1min",
+      "estimated_rows": 0,
+      "relation_bytes": 1171456
+    },
+    {
+      "table": "location_5min",
+      "estimated_rows": 0,
+      "relation_bytes": 360448
+    },
+    {
+      "table": "location_aggregate_archives",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "location_records",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "login_attempts",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "notification_settings",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "otp_codes",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "payment_orders",
+      "estimated_rows": 0,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "privacy_account_closures",
+      "estimated_rows": 18,
+      "relation_bytes": 90112
+    },
+    {
+      "table": "privacy_account_controls",
+      "estimated_rows": 18,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "privacy_account_package_events",
+      "estimated_rows": 7,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_account_packages",
+      "estimated_rows": 2,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_company_link_history",
+      "estimated_rows": 4,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_company_review_events",
+      "estimated_rows": 10,
+      "relation_bytes": 90112
+    },
+    {
+      "table": "privacy_company_reviews",
+      "estimated_rows": 5,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_company_submissions",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_company_task_events",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_company_tasks",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "privacy_deliveries",
+      "estimated_rows": 0,
+      "relation_bytes": 24576
+    },
+    {
+      "table": "privacy_delivery_events",
+      "estimated_rows": 0,
+      "relation_bytes": 16384
+    },
+    {
+      "table": "privacy_file_cleanup",
+      "estimated_rows": 1,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "privacy_file_cleanup_events",
+      "estimated_rows": 1,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "privacy_file_cleanup_sources",
+      "estimated_rows": 1,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_image_deliveries",
+      "estimated_rows": 5,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "privacy_image_events",
+      "estimated_rows": 20,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_image_payloads",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "privacy_receipt_reads",
+      "estimated_rows": 9,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_redacted_deliveries",
+      "estimated_rows": 0,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "privacy_redacted_events",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "privacy_request_events",
+      "estimated_rows": 178,
+      "relation_bytes": 139264
+    },
+    {
+      "table": "privacy_requests",
+      "estimated_rows": 50,
+      "relation_bytes": 131072
+    },
+    {
+      "table": "privacy_result_limits",
+      "estimated_rows": 21,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "refresh_tokens",
+      "estimated_rows": 22,
+      "relation_bytes": 2899968
+    },
+    {
+      "table": "rental_contracts",
+      "estimated_rows": 0,
+      "relation_bytes": 122880
+    },
+    {
+      "table": "rental_handoff_tokens",
+      "estimated_rows": 0,
+      "relation_bytes": 40960
+    },
+    {
+      "table": "rental_photos",
+      "estimated_rows": 0,
+      "relation_bytes": 32768
+    },
+    {
+      "table": "renter_blacklist",
+      "estimated_rows": 0,
+      "relation_bytes": 40960
+    },
+    {
+      "table": "share_tokens",
+      "estimated_rows": 0,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "sim_topup_requests",
+      "estimated_rows": 0,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "staff",
+      "estimated_rows": 5,
+      "relation_bytes": 65536
+    },
+    {
+      "table": "stats_rebuild_queue",
+      "estimated_rows": 0,
+      "relation_bytes": 106496
+    },
+    {
+      "table": "subscriptions",
+      "estimated_rows": 0,
+      "relation_bytes": 49152
+    },
+    {
+      "table": "trip_annotations",
+      "estimated_rows": 0,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "user_phones",
+      "estimated_rows": 0,
+      "relation_bytes": 81920
+    },
+    {
+      "table": "users",
+      "estimated_rows": 18,
+      "relation_bytes": 114688
+    },
+    {
+      "table": "vehicle_reservations",
+      "estimated_rows": 0,
+      "relation_bytes": 147456
+    }
+  ],
+  "location_hypertable_bytes": 91512832,
+  "bind_logging": [
+    "-1",
+    "0",
+    "off"
+  ],
+  "other_gps_connections": 4,
+  "uploads": {
+    "files": 0,
+    "bytes": 0,
+    "largest_bytes": 0,
+    "unsafe_entries": 0,
+    "over_10mib": 0
+  },
+  "filesystem_free_bytes": 9378840576,
+  "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "approval_to_activate": false
+}

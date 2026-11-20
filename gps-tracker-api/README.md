@@ -53,18 +53,17 @@ cargo build --release
 # → target/release/gps-tracker-api
 ```
 
-## 배포 (server)
+## 빌드와 dev 배포
 
-```bash
-# WSL2에서 빌드한 binary scp
-scp target/release/gps-tracker-api root@<VPS_HOST>:/home/deploy/projects/gps-tracker-api/bin/
+Windows에서 프로젝트 루트를 기준으로 실행한다. 빌드는 `ssh etcom-hub`의 제한된 컨테이너에서 수행하며 VPS에는 검증한 산출물만 전달한다.
 
-# 서버에서 systemd 등록 (한 번만)
-sudo systemctl enable --now gps-tracker-api
-
-# 업데이트 시
-ssh root@<VPS_HOST> 'systemctl restart gps-tracker-api'
+```powershell
+.\ops\Build-HubRelease.ps1
+.\ops\Deploy-DevArtifact.ps1 -ArtifactDirectory <빌드가 반환한 디렉터리>
 ```
+
+기존 `deploy.sh`의 VPS 빌드는 비활성화했다. prod 배포는 사용자의 명시적 허가가 필요하다.
+환경/DB/백업/사전 검사 절차는 [Hub 빌드 러너](../docs/reviews/hub-build-runner-2026-09-24.md)를 따른다.
 
 ## 마이그레이션
 

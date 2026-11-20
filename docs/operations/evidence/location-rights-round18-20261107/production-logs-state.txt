@@ -1,0 +1,26 @@
+== time 2026-11-07 00:18:02 KST
+== nginx access/error logs
+   files: 67, oldest shield.error.log.5.gz, size 20M
+   oldest entry kept: [24/Oct/2026:00:00:07 +0900]
+   rotation: /var/log/nginx/*.log { 	daily 	missingok 	rotate 14 	compress 	delaycompress 	notifempty 	create 0640 www-data adm 	sharedscripts 	prerotate 		if [ -d /etc/logrotate.d/httpd-prerotate ]; then \ 			run-parts /etc/logrotate.d/httpd-prerotate; \ 		fi \ 	endscript
+   log format lines in nginx config:      14  access_log off;;      6 	access_log /var/log/nginx/access.log;;      1  access_log /var/log/nginx/shield.access.log;;
+bash: line 11: /var/log/nginx/access.log: Permission denied
+   request lines that carry a share link token today: 0 of 
+   request lines with lat= or lng= in the query today: 0
+   realtime connections with the access token in the query today: 1
+== journald
+   usage: 576.1M, oldest entry: 2026-10-27T05:53:56+0900 
+   settings: [Journal] SystemMaxUse=500M SystemMaxFileSize=64M 
+   API log lines with a coordinate-looking pair in the last day: 0
+== other logs under /var/log by size
+   577M	/var/log/journal
+   24M	/var/log/syslog
+   24M	/var/log/btmp.1
+   20M	/var/log/nginx
+   15M	/var/log/syslog.1
+   14M	/var/log/auth.log.1
+== existing audit tables: rows and oldest row
+   admin_audit_log: 6 rows, oldest 2026-06-01
+   device_audit_log: 51 rows, oldest 2026-05-06
+   fleet_team_audit: 0 rows, oldest -
+   admin_audit_log actions: impersonate x6

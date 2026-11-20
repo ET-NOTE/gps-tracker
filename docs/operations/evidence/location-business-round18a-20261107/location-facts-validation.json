@@ -1,0 +1,13 @@
+{
+  "integration_groups": 6,
+  "groups": [
+    "a grant without the section has no period and stays basic; the section needs a past period of at most 366 days, an end in the future is cut at the moment of issue; the database enforces the same; non-admin refused",
+    "collection: reports and points per Korean day, device and method with the first and last time; a report without a position is counted apart; the account at receipt decides, so a SIM that moved keeps the earlier days only; a company-bound device is left out and counted; no coordinate, payload, token or name appears in the file",
+    "use: zone entries and exits and the first position of a cycle with the time the notification was processed, nothing of other kinds, other accounts or company-bound devices; AI analyses once each, including one whose report was deleted and one from before receipts were kept",
+    "provision: the subject's own share links that were open in the period with view count and last view but no token, the charges that outlive deleted links, location files given to the subject with their downloads, and company link changes without naming the company; what the system does not record is listed",
+    "the other account sees its own facts only, including the later days of the SIM that moved; a later change of ownership does not change what the earlier account receives; a revoked grant answers 410",
+    "more than 4,000 daily rows or 2,000 events stop the download with 409 and no prepared-file record, and a narrower period works; reaching the statement time limit also answers 409, and the next download works"
+  ],
+  "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "schema": 99
+}

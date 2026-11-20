@@ -1,0 +1,9 @@
+{
+  "maintenance_uid": 0,
+  "api_uid": 65534,
+  "owner_group_preserved": true,
+  "mode": "0600",
+  "api_identity_can_read": true,
+  "plaintext_roundtrip_preserved": true,
+  "external_files_modified": false
+}

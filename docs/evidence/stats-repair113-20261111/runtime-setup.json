@@ -1,0 +1,10 @@
+{
+  "database": "gps_closure_test",
+  "schema": 112,
+  "public_objects": 229,
+  "apply": true,
+  "roles": [
+    "gps_schema_owner",
+    "gps_runtime"
+  ]
+}

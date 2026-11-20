@@ -1,0 +1,20 @@
+{
+  "image": "sha256:9999fed568fce0cc1cb3dcf13ba9faecb9f7ad95c38a06df024980560d44bb65",
+  "memory": 4294967296,
+  "memory_and_swap": 4294967296,
+  "binds": null,
+  "ports": {},
+  "cap_add": [
+    "CAP_SYS_ADMIN"
+  ],
+  "security_opt": [
+    "seccomp=unconfined",
+    "apparmor=unconfined"
+  ],
+  "tmpfs": {
+    "/run": "",
+    "/run/lock": "",
+    "/tmp": ""
+  },
+  "network_internal": true
+}

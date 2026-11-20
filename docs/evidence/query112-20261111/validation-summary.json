@@ -1,0 +1,466 @@
+{
+  "verified": true,
+  "date_kst": "2026-11-11",
+  "production_applied": false,
+  "activation_ready": false,
+  "environment": "synthetic isolated build-host NVMe; measured production settings and explicit resource limits",
+  "schema_path": [
+    99,
+    112
+  ],
+  "source_commit": "31b573b94254e1c3c589db365c855807bead921e",
+  "api_sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a",
+  "candidate_archive_sha256": "8b4d5b3884a6bf522738a5c77c75be965e78159eab1e7d15a303d7851eda7ff6",
+  "candidate_file_count": 76,
+  "sql_baseline": {
+    "label": "baseline111",
+    "production_modified": false,
+    "queries": {
+      "location_history_points_between": [
+        {
+          "seconds": 10.41231896309182,
+          "rows": 283001,
+          "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+        },
+        {
+          "seconds": 10.43367681093514,
+          "rows": 283001,
+          "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+        },
+        {
+          "seconds": 10.454976425971836,
+          "rows": 283001,
+          "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+        }
+      ],
+      "location_speed_metrics_between": [
+        {
+          "seconds": 13.026076687965542,
+          "rows": 283001,
+          "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+        },
+        {
+          "seconds": 12.956607542932034,
+          "rows": 283001,
+          "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+        },
+        {
+          "seconds": 12.908948364667594,
+          "rows": 283001,
+          "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+        }
+      ]
+    },
+    "settings": {
+      "effective_cache_size": "284800",
+      "jit": "off",
+      "max_connections": "50",
+      "max_parallel_workers_per_gather": "3",
+      "shared_buffers": "94976",
+      "work_mem": "2532"
+    }
+  },
+  "sql_final": {
+    "label": "final112",
+    "production_modified": false,
+    "queries": {
+      "location_history_points_between": [
+        {
+          "seconds": 8.297911556903273,
+          "rows": 283001,
+          "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+        },
+        {
+          "seconds": 8.502557051368058,
+          "rows": 283001,
+          "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+        },
+        {
+          "seconds": 8.602566121146083,
+          "rows": 283001,
+          "sha256": "095aa6e6164129c158c556312b49fa38a0d3b363fa901fc61a93bbd289502128"
+        }
+      ],
+      "location_speed_metrics_between": [
+        {
+          "seconds": 8.310236866120249,
+          "rows": 283001,
+          "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+        },
+        {
+          "seconds": 8.552061446011066,
+          "rows": 283001,
+          "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+        },
+        {
+          "seconds": 8.39011042471975,
+          "rows": 283001,
+          "sha256": "8a9065392e7670d539d1d8f6c42d5cdd32b07451a298662baf9f05a04afccdc7"
+        }
+      ]
+    },
+    "settings": {
+      "effective_cache_size": "284800",
+      "jit": "off",
+      "max_connections": "50",
+      "max_parallel_workers_per_gather": "3",
+      "shared_buffers": "94976",
+      "work_mem": "2532"
+    }
+  },
+  "equivalence": {
+    "passed": true,
+    "checks": 585,
+    "oracle": "schema111 complete logical rows",
+    "scope": [
+      "five SQL functions",
+      "latest",
+      "null/reversed/exact windows",
+      "far batch anchors",
+      "duplicates",
+      "source and row owner isolation",
+      "mixed/backfilled ciphertext",
+      "late writes/delete",
+      "Asia/Seoul",
+      "metadata tamper",
+      "cipher tamper/context",
+      "keyless rejection",
+      "resumable backfill"
+    ],
+    "fixture_rolled_back": true,
+    "production_modified": false
+  },
+  "projection": {
+    "passed": true,
+    "checks": 42,
+    "oracle": "unchanged111 view definition + authenticated context bytes",
+    "cases": [
+      "mixed plaintext/ciphertext",
+      "NULL/JSON null",
+      "JSON array/object/scalar",
+      "coordinate boundaries and float bits",
+      "microseconds",
+      "four timezones",
+      "two DateStyles",
+      "missing key denied"
+    ],
+    "fixture_rolled_back": true,
+    "production_modified": false
+  },
+  "compression": {
+    "passed": true,
+    "cases": [
+      {
+        "initially_encrypted": false,
+        "compressed_chunks": 1,
+        "points_preserved": 20,
+        "backfill": {
+          "schema": 112,
+          "apply": true,
+          "encrypted": false,
+          "updated": 0,
+          "batches": 0,
+          "pending_before": 0,
+          "pending_after": 0,
+          "complete": true
+        }
+      },
+      {
+        "initially_encrypted": true,
+        "compressed_chunks": 1,
+        "points_preserved": 20,
+        "backfill": {
+          "schema": 112,
+          "apply": true,
+          "encrypted": true,
+          "updated": 0,
+          "batches": 0,
+          "pending_before": 0,
+          "pending_after": 0,
+          "complete": true
+        }
+      }
+    ],
+    "synthetic_databases_removed": true,
+    "production_modified": false
+  },
+  "sustained": [
+    {
+      "label": "final112",
+      "api_sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a",
+      "target_duration_s": 900,
+      "duration_s": 906.1449482101016,
+      "workers": 8,
+      "http": {
+        "month_aggregate": {
+          "count": 138,
+          "p50_s": 8.557650158414617,
+          "p95_s": 8.85515815904364,
+          "max_s": 9.049946853891015
+        },
+        "month_history": {
+          "count": 137,
+          "p50_s": 5.219344194047153,
+          "p95_s": 5.521650488022715,
+          "max_s": 5.713627114892006
+        },
+        "day_aggregate": {
+          "count": 137,
+          "p50_s": 0.47366085508838296,
+          "p95_s": 0.6246272572316229,
+          "max_s": 0.651960289105773
+        },
+        "latest": {
+          "count": 139,
+          "p50_s": 0.0872545288875699,
+          "p95_s": 0.11652108980342746,
+          "max_s": 0.15920667489990592
+        },
+        "month_page": {
+          "count": 78,
+          "p50_s": 0.4657064138446003,
+          "p95_s": 0.6495323576964438,
+          "max_s": 0.6833793800324202
+        }
+      },
+      "requests": 629,
+      "errors": [],
+      "health": {
+        "count": 821,
+        "p50_s": 0.0003712358884513378,
+        "p95_s": 0.0004894412122666836,
+        "max_s": 0.00789918890222907
+      },
+      "signed_tls12_ingest": {
+        "count": 821,
+        "p50_s": 0.10039932699874043,
+        "p95_s": 0.11825473699718714,
+        "max_s": 0.1946160728111863
+      },
+      "physical_ciphertext_rows": 822,
+      "physical_plaintext_rows": 0,
+      "daily_stats_rows": 2,
+      "traversals": [
+        {
+          "pages": 57,
+          "points": 283001,
+          "seconds": 481.01359301805496
+        }
+      ],
+      "pg_settings": {
+        "jit": "off",
+        "max_connections": "50",
+        "shared_buffers": "94976",
+        "work_mem": "2532"
+      },
+      "temp_bytes_delta": 53275319456,
+      "temp_files_delta": 2945,
+      "security_preflight": [
+        "direct HTTP denied",
+        "spoofed TLS header denied",
+        "TLS1.2 signed request accepted",
+        "replay denied",
+        "tamper denied"
+      ],
+      "scope": "synthetic private Docker network on build-host NVMe, production DB settings and explicit CPU/memory budgets; not LTE nor production storage IO",
+      "production_modified": false,
+      "external_delivery": false,
+      "busy429_count": 4483
+    },
+    {
+      "label": "stress112",
+      "api_sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a",
+      "target_duration_s": 300,
+      "duration_s": 305.43792266910896,
+      "workers": 16,
+      "http": {
+        "month_aggregate": {
+          "count": 51,
+          "p50_s": 8.582932185847312,
+          "p95_s": 8.778107699006796,
+          "max_s": 8.851054053753614
+        },
+        "month_history": {
+          "count": 51,
+          "p50_s": 2.4151296853087842,
+          "p95_s": 5.4524958417750895,
+          "max_s": 5.6108578001149
+        },
+        "day_aggregate": {
+          "count": 50,
+          "p50_s": 0.5397412774618715,
+          "p95_s": 0.631916806101799,
+          "max_s": 0.6808227482251823
+        },
+        "latest": {
+          "count": 54,
+          "p50_s": 0.0922571700066328,
+          "p95_s": 0.3132847808301449,
+          "max_s": 0.4067515507340431
+        },
+        "month_page": {
+          "count": 12,
+          "p50_s": 0.4771577955689281,
+          "p95_s": 0.5758615471422672,
+          "max_s": 0.5758615471422672
+        }
+      },
+      "requests": 218,
+      "errors": [],
+      "health": {
+        "count": 275,
+        "p50_s": 0.000364706851541996,
+        "p95_s": 0.0004983777180314064,
+        "max_s": 0.0026813079603016376
+      },
+      "signed_tls12_ingest": {
+        "count": 275,
+        "p50_s": 0.10010696994140744,
+        "p95_s": 0.11636868305504322,
+        "max_s": 0.40694951405748725
+      },
+      "physical_ciphertext_rows": 276,
+      "physical_plaintext_rows": 0,
+      "daily_stats_rows": 2,
+      "traversals": [],
+      "pg_settings": {
+        "jit": "off",
+        "max_connections": "50",
+        "shared_buffers": "94976",
+        "work_mem": "2532"
+      },
+      "temp_bytes_delta": 20089095400,
+      "temp_files_delta": 1364,
+      "security_preflight": [
+        "direct HTTP denied",
+        "spoofed TLS header denied",
+        "TLS1.2 signed request accepted",
+        "replay denied",
+        "tamper denied"
+      ],
+      "scope": "synthetic private Docker network on build-host NVMe, production DB settings and explicit CPU/memory budgets; not LTE nor production storage IO",
+      "production_modified": false,
+      "external_delivery": false,
+      "busy429_count": 3378
+    }
+  ],
+  "catchup": {
+    "days": 16,
+    "seconds": 10.038413464091718,
+    "production_modified": false
+  },
+  "protected_restore": {
+    "stale_full_backup_bytes": 129470715,
+    "checkpoint_hash_checked": true,
+    "old_erased_rows_removed": true,
+    "old_consent_not_revived": true,
+    "pause_reapplied": true,
+    "accepted_notice_not_resent": true,
+    "sim_identity_preserved": true,
+    "old_resend_denied": true,
+    "replay": {
+      "replayed_accounts": 1,
+      "paused_controls_replayed": true,
+      "external_copies_verified": false
+    },
+    "external_checkpoint_custody_verified": false
+  },
+  "file_owner": {
+    "maintenance_uid": 0,
+    "api_uid": 65534,
+    "owner_group_preserved": true,
+    "mode": "0600",
+    "api_identity_can_read": true,
+    "plaintext_roundtrip_preserved": true,
+    "external_files_modified": false
+  },
+  "consent_oracle": {
+    "environment": "isolated synthetic",
+    "production_modified": false,
+    "external_messages": 0,
+    "cases": [
+      {
+        "case": "before migration: explicit consent/withdrawal/interval/tenant matrix",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 7
+      },
+      {
+        "case": "before migration: deterministic mixed histories",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 23
+      },
+      {
+        "case": "populated108->112: identity, view owner/grants, all rows and effective decisions preserved",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 23
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 6",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 22
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 10",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 21
+      },
+      {
+        "case": "later withdrawal revision invalidates descendant 12",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 21
+      },
+      {
+        "case": "inactive staff removes all affected mappings",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 14
+      },
+      {
+        "case": "unlinked staff removes all affected mappings",
+        "same_effective_ids": true,
+        "oracle_equal": true,
+        "effective_count": 14
+      }
+    ],
+    "schema_path": [
+      108,
+      112
+    ],
+    "synthetic_mapping_rows": 941,
+    "failed109_transaction_atomic": true,
+    "view_identity_owner_grants_preserved": true,
+    "no_identity_or_consent_rewrite": true,
+    "runtime_select_preserved": true,
+    "api_sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a"
+  },
+  "rust": {
+    "passed": 83,
+    "ignored_executed_separately": 7,
+    "fmt": true,
+    "clippy": true
+  },
+  "regressions": {
+    "integration": 8,
+    "business": 8,
+    "additional": 4
+  },
+  "limits": [
+    "fixture has16 populated days inside31-day requested period; not dense31-day or many-device distribution",
+    "429 is a rejected request with explicit retry, not successful throughput; client auto-retry is not implemented in this round",
+    "HTTP history retains10000-anchor cap; full283001 results checked separately with SQL and57-page traversal",
+    "API budget is process-local and covers three location routes, not fleet/export or all workers",
+    "NVMe/shared build host is not VPS disk latency or contention with its other projects",
+    "temporary decrypted sort files and swap require separate infrastructure protection",
+    "legacy partially interrupted catchup needs explicit durable rebuild queue; automatic missing-day resume remains open",
+    "policy, key/checkpoint custody, PC/IP, actualFCM and physicalTLS/sleep remain separate acceptance",
+    "successful-response p95 excludes prior429 retries; user-visible end-to-end completion time and production capacity not qualified",
+    "request cancellation returns API budget; termination of the underlying DB query still requires acceptance verification"
+  ],
+  "capture": "verification-report.png"
+}

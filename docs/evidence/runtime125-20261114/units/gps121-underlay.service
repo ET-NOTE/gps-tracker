@@ -1,0 +1,10 @@
+# /etc/systemd/system/gps121-underlay.service
+[Unit]
+DefaultDependencies=no
+After=systemd-remount-fs.service
+Before=local-fs.target shutdown.target
+Conflicts=shutdown.target
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/install -d -o root -g root -m 0555 /run/gps121 /run/gps121/tmp /run/gps121/sort /run/gps121/fallback

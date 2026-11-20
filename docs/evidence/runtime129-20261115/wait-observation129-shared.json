@@ -1,0 +1,3477 @@
+{
+  "samples": [
+    {
+      "utc": "2026-11-15T09:49:33Z",
+      "last_progress_seconds": 89.93104053894058,
+      "waits": [
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          5
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "LWLock",
+          "WALWrite",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          11
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "checkpointer",
+          null,
+          null,
+          "LWLock",
+          "WALWrite",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          1
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33783,
+          0,
+          69504,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=7.56 avg60=8.56 avg300=12.28 total=226633849\nfull avg10=7.27 avg60=8.28 avg300=12.06 total=225462156\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2616553472 rios=59 wios=76407 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 900286031\nuser_usec 869881448\nsystem_usec 30404583\ncore_sched.force_idle_usec 0\nnr_periods 6885\nnr_throttled 3333\nthrottled_usec 101836455\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:34Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          9
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          6
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33786,
+          0,
+          69506,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=7.56 avg60=8.56 avg300=12.28 total=226814358\nfull avg10=7.27 avg60=8.28 avg300=12.06 total=225640754\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2619633664 rios=59 wios=76587 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 901971332\nuser_usec 871478308\nsystem_usec 30493023\ncore_sched.force_idle_usec 0\nnr_periods 6896\nnr_throttled 3338\nthrottled_usec 102304909\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:35Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          4
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          13
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33794,
+          0,
+          69508,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=8.55 avg60=8.71 avg300=12.28 total=226917605\nfull avg10=8.31 avg60=8.43 avg300=12.06 total=225741303\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2623418368 rios=59 wios=76743 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 904022800\nuser_usec 873493032\nsystem_usec 30529767\ncore_sched.force_idle_usec 0\nnr_periods 6906\nnr_throttled 3348\nthrottled_usec 102599188\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:36Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          2
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          17
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33805,
+          0,
+          69513,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=8.55 avg60=8.71 avg300=12.28 total=226951350\nfull avg10=8.31 avg60=8.43 avg300=12.06 total=225775012\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2627096576 rios=59 wios=76885 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 905873620\nuser_usec 875289508\nsystem_usec 30584112\ncore_sched.force_idle_usec 0\nnr_periods 6916\nnr_throttled 3356\nthrottled_usec 102812190\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:37Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          4
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          15
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33815,
+          0,
+          69516,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=7.90 avg60=8.59 avg300=12.23 total=227007811\nfull avg10=7.53 avg60=8.29 avg300=12.01 total=225804943\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2631880704 rios=59 wios=77045 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 907944412\nuser_usec 877298449\nsystem_usec 30645962\ncore_sched.force_idle_usec 0\nnr_periods 6927\nnr_throttled 3367\nthrottled_usec 103150019\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:38Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          6
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "LWLock",
+          "WALWrite",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          9
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33825,
+          0,
+          69519,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=7.90 avg60=8.59 avg300=12.23 total=227055358\nfull avg10=7.53 avg60=8.29 avg300=12.01 total=225850347\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2635788288 rios=59 wios=77226 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 910003126\nuser_usec 879319885\nsystem_usec 30683240\ncore_sched.force_idle_usec 0\nnr_periods 6937\nnr_throttled 3377\nthrottled_usec 103767892\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:39Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          6
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          11
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33836,
+          0,
+          69526,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=8.10 avg60=8.60 avg300=12.21 total=227248004\nfull avg10=7.79 avg60=8.31 avg300=11.99 total=226041917\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2638761984 rios=59 wios=77412 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 912127239\nuser_usec 881354340\nsystem_usec 30772898\ncore_sched.force_idle_usec 0\nnr_periods 6948\nnr_throttled 3386\nthrottled_usec 104172652\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:41Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          5
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          12
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33846,
+          0,
+          69529,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=8.10 avg60=8.60 avg300=12.21 total=227307132\nfull avg10=7.79 avg60=8.31 avg300=11.99 total=226100006\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2643529728 rios=59 wios=77568 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 914178963\nuser_usec 883343754\nsystem_usec 30835208\ncore_sched.force_idle_usec 0\nnr_periods 6958\nnr_throttled 3396\nthrottled_usec 104582856\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:42Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          19
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          1
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33857,
+          0,
+          69531,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=7.54 avg60=8.48 avg300=12.16 total=227351905\nfull avg10=7.29 avg60=8.20 avg300=11.94 total=226139378\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2647199744 rios=59 wios=77710 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 916136114\nuser_usec 885223398\nsystem_usec 30912715\ncore_sched.force_idle_usec 0\nnr_periods 6968\nnr_throttled 3404\nthrottled_usec 104813160\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:43Z",
+      "last_progress_seconds": 99.96536928322166,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          16
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33864,
+          0,
+          69555,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=7.54 avg60=8.48 avg300=12.16 total=227401762\nfull avg10=7.29 avg60=8.20 avg300=11.94 total=226188589\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2652794880 rios=59 wios=77876 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 918160706\nuser_usec 887190796\nsystem_usec 30969909\ncore_sched.force_idle_usec 0\nnr_periods 6979\nnr_throttled 3413\nthrottled_usec 105077298\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:44Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          2
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          17
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33877,
+          0,
+          69555,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=6.90 avg60=8.34 avg300=12.10 total=227425587\nfull avg10=6.69 avg60=8.06 avg300=11.88 total=226212292\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2657546240 rios=59 wios=78015 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 920224769\nuser_usec 889203704\nsystem_usec 31021065\ncore_sched.force_idle_usec 0\nnr_periods 6989\nnr_throttled 3423\nthrottled_usec 105411610\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:45Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "Lock",
+          "transactionid",
+          1
+        ],
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "Lock",
+          "advisory",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          8
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "LWLock",
+          "WALWrite",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          6
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          1
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33888,
+          0,
+          69556,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=6.90 avg60=8.34 avg300=12.10 total=227862067\nfull avg10=6.69 avg60=8.06 avg300=11.88 total=226528827\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2660630528 rios=59 wios=78223 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 921168324\nuser_usec 890120781\nsystem_usec 31047542\ncore_sched.force_idle_usec 0\nnr_periods 6999\nnr_throttled 3425\nthrottled_usec 105472877\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:46Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          5
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          13
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33898,
+          0,
+          69556,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.18 avg60=8.88 avg300=12.19 total=228028787\nfull avg10=8.92 avg60=8.42 avg300=11.93 total=226692850\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2663395328 rios=59 wios=78374 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 923250274\nuser_usec 892129591\nsystem_usec 31120683\ncore_sched.force_idle_usec 0\nnr_periods 7010\nnr_throttled 3436\nthrottled_usec 105921241\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:47Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          16
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33908,
+          0,
+          69556,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.18 avg60=8.88 avg300=12.19 total=228095994\nfull avg10=8.92 avg60=8.42 avg300=11.93 total=226758130\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2668195840 rios=59 wios=78540 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 925190558\nuser_usec 893994570\nsystem_usec 31195988\ncore_sched.force_idle_usec 0\nnr_periods 7020\nnr_throttled 3443\nthrottled_usec 106399011\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:48Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          4
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          15
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33919,
+          0,
+          69556,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.14 avg60=8.92 avg300=12.18 total=228142714\nfull avg10=8.93 avg60=8.44 avg300=11.91 total=226804040\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2671890432 rios=59 wios=78684 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 927260251\nuser_usec 895997145\nsystem_usec 31263105\ncore_sched.force_idle_usec 0\nnr_periods 7030\nnr_throttled 3453\nthrottled_usec 106710759\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:49Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          4
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          14
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33929,
+          0,
+          69556,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.14 avg60=8.92 avg300=12.18 total=228213412\nfull avg10=8.93 avg60=8.44 avg300=11.91 total=226845616\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2676633600 rios=59 wios=78834 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 929318363\nuser_usec 898019341\nsystem_usec 31299021\ncore_sched.force_idle_usec 0\nnr_periods 7041\nnr_throttled 3464\nthrottled_usec 107056568\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:50Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          5
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          16
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33939,
+          0,
+          69562,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=9.93 avg60=8.92 avg300=12.16 total=228498599\nfull avg10=8.58 avg60=8.39 avg300=11.88 total=227127496\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2678657024 rios=59 wios=79033 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 930964791\nuser_usec 899616467\nsystem_usec 31348323\ncore_sched.force_idle_usec 0\nnr_periods 7051\nnr_throttled 3469\nthrottled_usec 107161541\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:51Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          16
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33949,
+          0,
+          69570,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=9.93 avg60=8.92 avg300=12.16 total=228574567\nfull avg10=8.58 avg60=8.39 avg300=11.88 total=227203251\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2682445824 rios=59 wios=79194 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 933043104\nuser_usec 901590647\nsystem_usec 31452457\ncore_sched.force_idle_usec 0\nnr_periods 7061\nnr_throttled 3479\nthrottled_usec 107665339\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:52Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          17
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          1
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33960,
+          0,
+          69570,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.49 avg60=9.06 avg300=12.16 total=228600086\nfull avg10=9.38 avg60=8.54 avg300=11.89 total=227228020\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2687148032 rios=59 wios=79336 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 935130184\nuser_usec 903621728\nsystem_usec 31508455\ncore_sched.force_idle_usec 0\nnr_periods 7072\nnr_throttled 3490\nthrottled_usec 108006141\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:53Z",
+      "last_progress_seconds": 110.01247253082693,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          16
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33970,
+          0,
+          69573,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.49 avg60=9.06 avg300=12.16 total=228637948\nfull avg10=9.38 avg60=8.54 avg300=11.89 total=227265816\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2691899392 rios=59 wios=79490 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 937108670\nuser_usec 905525041\nsystem_usec 31583629\ncore_sched.force_idle_usec 0\nnr_periods 7082\nnr_throttled 3498\nthrottled_usec 108168021\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:54Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          6
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          11
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33981,
+          0,
+          69576,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=9.86 avg60=8.99 avg300=12.13 total=228867785\nfull avg10=8.77 avg60=8.46 avg300=11.85 total=227482526\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2696499200 rios=59 wios=79668 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 939171833\nuser_usec 907526691\nsystem_usec 31645142\ncore_sched.force_idle_usec 0\nnr_periods 7092\nnr_throttled 3508\nthrottled_usec 108476416\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:55Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          2
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          2
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          14
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          33991,
+          0,
+          69576,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=9.86 avg60=8.99 avg300=12.13 total=229135671\nfull avg10=8.77 avg60=8.46 avg300=11.85 total=227738753\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2698575872 rios=59 wios=79878 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 941268550\nuser_usec 909559772\nsystem_usec 31708777\ncore_sched.force_idle_usec 0\nnr_periods 7103\nnr_throttled 3519\nthrottled_usec 108729150\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:56Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          4
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          14
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          3
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          34001,
+          0,
+          69579,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=12.06 avg60=9.41 avg300=12.19 total=229263420\nfull avg10=10.98 avg60=8.87 avg300=11.91 total=227865928\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2702331904 rios=59 wios=80033 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 943331843\nuser_usec 911501855\nsystem_usec 31829988\ncore_sched.force_idle_usec 0\nnr_periods 7113\nnr_throttled 3529\nthrottled_usec 109269808\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:57Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          16
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          34012,
+          0,
+          69583,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=12.06 avg60=9.41 avg300=12.19 total=229303718\nfull avg10=10.98 avg60=8.87 avg300=11.91 total=227903850\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2706034688 rios=59 wios=80177 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 945408923\nuser_usec 913507401\nsystem_usec 31901522\ncore_sched.force_idle_usec 0\nnr_periods 7124\nnr_throttled 3540\nthrottled_usec 109733248\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:58Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          2
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          17
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          34022,
+          0,
+          69584,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.96 avg60=9.30 avg300=12.15 total=229320757\nfull avg10=10.08 avg60=8.78 avg300=11.87 total=227920551\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2711769088 rios=59 wios=80323 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 947496814\nuser_usec 915542476\nsystem_usec 31954338\ncore_sched.force_idle_usec 0\nnr_periods 7134\nnr_throttled 3550\nthrottled_usec 109958696\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:49:59Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          4
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          14
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          34032,
+          0,
+          69587,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.96 avg60=9.30 avg300=12.15 total=229349189\nfull avg10=10.08 avg60=8.78 avg300=11.87 total=227947620\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2715406336 rios=59 wios=80455 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 949562225\nuser_usec 917541048\nsystem_usec 32021176\ncore_sched.force_idle_usec 0\nnr_periods 7144\nnr_throttled 3560\nthrottled_usec 110270064\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:50:00Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "LWLock",
+          "WALWrite",
+          4
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          8
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          6
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          34043,
+          0,
+          69589,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=9.70 avg60=9.13 avg300=12.10 total=229621093\nfull avg10=8.98 avg60=8.62 avg300=11.81 total=228194109\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2717433856 rios=59 wios=80652 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 951643238\nuser_usec 919572315\nsystem_usec 32070923\ncore_sched.force_idle_usec 0\nnr_periods 7155\nnr_throttled 3571\nthrottled_usec 110559816\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:50:01Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          "IO",
+          "WALSync",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          4
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          14
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterHibernate",
+          1
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          34053,
+          0,
+          69593,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.47 avg60=9.29 avg300=12.11 total=229692367\nfull avg10=9.70 avg60=8.76 avg300=11.82 total=228264477\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2722304000 rios=59 wios=80829 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 953646085\nuser_usec 921486789\nsystem_usec 32159296\ncore_sched.force_idle_usec 0\nnr_periods 7165\nnr_throttled 3580\nthrottled_usec 111017421\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:50:02Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          16
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          34063,
+          0,
+          69594,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=10.47 avg60=9.29 avg300=12.11 total=229709230\nfull avg10=9.70 avg60=8.76 avg300=11.82 total=228281246\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2727022592 rios=59 wios=80977 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 955710769\nuser_usec 923481719\nsystem_usec 32229049\ncore_sched.force_idle_usec 0\nnr_periods 7175\nnr_throttled 3590\nthrottled_usec 111321810\nnr_bursts 0\nburst_usec 0\n"
+    },
+    {
+      "utc": "2026-11-15T09:50:03Z",
+      "last_progress_seconds": 120.04727897793055,
+      "waits": [
+        [
+          "checkpointer",
+          null,
+          null,
+          "Timeout",
+          "CheckpointWriteDelay",
+          1
+        ],
+        [
+          "client backend",
+          "other122",
+          "idle",
+          "Client",
+          "ClientRead",
+          24
+        ],
+        [
+          "logical replication launcher",
+          "postgres",
+          null,
+          "Activity",
+          "LogicalLauncherMain",
+          1
+        ],
+        [
+          "background writer",
+          null,
+          null,
+          "Activity",
+          "BgWriterMain",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Scheduler",
+          "postgres",
+          "idle",
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "TimescaleDB Background Worker Launcher",
+          "postgres",
+          null,
+          "Extension",
+          "Extension",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle in transaction",
+          "Client",
+          "ClientRead",
+          3
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "idle",
+          "Client",
+          "ClientRead",
+          16
+        ],
+        [
+          "walwriter",
+          null,
+          null,
+          "Activity",
+          "WalWriterMain",
+          1
+        ],
+        [
+          "client backend",
+          "gps_runtime",
+          "active",
+          null,
+          null,
+          2
+        ],
+        [
+          "autovacuum launcher",
+          null,
+          null,
+          "Activity",
+          "AutoVacuumMain",
+          1
+        ]
+      ],
+      "bgwriter": [
+        [
+          3,
+          2,
+          539188.0,
+          21711.0,
+          34074,
+          0,
+          69595,
+          0
+        ]
+      ],
+      "io_pressure": "some avg10=8.76 avg60=9.02 avg300=12.03 total=229730184\nfull avg10=8.13 avg60=8.51 avg300=11.75 total=228301517\n",
+      "io_stats": "259:0 rbytes=438272 wbytes=2731782144 rios=59 wios=81133 dbytes=0 dios=0\n",
+      "cpu_stats": "usage_usec 957801083\nuser_usec 925496144\nsystem_usec 32304938\ncore_sched.force_idle_usec 0\nnr_periods 7186\nnr_throttled 3601\nthrottled_usec 112051983\nnr_bursts 0\nburst_usec 0\n"
+    }
+  ],
+  "interval_seconds": 1,
+  "scope": "Thirty point samples during shared load; observational, not a causal isolation experiment",
+  "production_modified": false
+}

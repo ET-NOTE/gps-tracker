@@ -1,0 +1,7 @@
+API READY: schema110/111 restricted runtime, encrypted, ledger enabled
+gps-query111-api
+gps-query111-api
+API READY: schema110/111 restricted runtime, encrypted, ledger enabled
+baseline110-http8.json 200 [] {'latest': 0.3868, 'day_page': 0.5891, 'day_aggregate': 2.3158, 'day_history': 0.6856, 'month_page': 9.137}
+load111-8.json 200 [] {'latest': 0.3028, 'day_page': 0.497, 'day_aggregate': 2.0798, 'day_history': 0.6021, 'month_page': 0.484}
+load111-16.json 800 [] {'latest': 1.5071, 'day_page': 1.677, 'day_aggregate': 3.502, 'day_history': 2.0026, 'month_page': 1.5068}

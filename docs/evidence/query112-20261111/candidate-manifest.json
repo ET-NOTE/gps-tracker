@@ -1,0 +1,58 @@
+{
+  "source_commit": "31b573b94254e1c3c589db365c855807bead921e",
+  "candidate_schema": 112,
+  "production_schema": 99,
+  "production_applied": false,
+  "activation_ready": false,
+  "api_sha256": "099eb53b26f8853469aa28acbb35320daa76c5778bc96e23735c61a46b06e21a",
+  "excluded": [
+    "credentials",
+    "keyring",
+    "uploads",
+    "database snapshots",
+    "PDF service replacement"
+  ],
+  "activation_gates": [
+    "actual VPS I/O and other projects contention, dense31-day/multi-device distributions and larger-scale acceptance; bounded synthetic sustained load only",
+    "keyed resumable query-bound backfill and pending=0 verification before enabling the fast-path acceptance",
+    "DB connection budget: queries10 plus privacy leases16 per API, workers, reserved slots and other projects; isolated DB50 only was tested",
+    "decrypted PostgreSQL temporary sort/spill files and swap need infrastructure protection; field encryption is not whole-disk encryption",
+    "per-process read budget covers location history/page/aggregate only; fleet/export and multi-process fairness plus client429 retry UX require operating acceptance",
+    "DB connection budget: queries10 plus privacy leases16 per API, workers, reserved slots and other projects; isolated DB50 only was tested",
+    "production maintenance window, live I/O/headroom and all GPS writers inventory",
+    "bind logging disabled before keys; pgcrypto provisioned for restricted migration owner",
+    "legacy Timescale retention jobs reviewed, paused and drained before conversion/restore",
+    "separate runtime/maintenance identity, real key custody and protected backup restore",
+    "latest external privacy checkpoint custody and offline replay before reopening",
+    "reviewed retention/notice policy, explicit subject consent and administrator PC/IP/MFA",
+    "real FCM handset arrival, notification entry and dedicated queue alarm acceptance",
+    "physical TLS promotion, buffered pause/resume and 24-hour sleep acceptance",
+    "legacy WAL, snapshots, backups and unclassified/company files separately governed"
+  ],
+  "binary_source_commit": "31b573b94254e1c3c589db365c855807bead921e",
+  "base_artifact_sha256": "2b22794ef68bd50f8214d208cd7d40a8618de6160278bca79e0a869cae46b7b2",
+  "verification_status": "full_month_equivalence_and_sustained_signed_ingest_pass",
+  "mapping_performance_gate_passed": true,
+  "mapping_owner_count_seconds": [
+    0.8913,
+    0.8836,
+    0.8831
+  ],
+  "changed_files": [
+    "gps-tracker-api",
+    "migrations/0112_location_window_pipeline.sql",
+    "ops/admin_db_roles.py",
+    "ops/crypto20b_transition.py",
+    "ops/location_query_bounds.py",
+    "ops/location_storage.py"
+  ],
+  "rehearsal": "actual99 to112; disk-backed HTTP8/900s and16/300s with TLS1.2 signed ingest; tmpfs cumulative recovery/consent",
+  "source_manifest_sha256": "32b3c7a7b4fd05396a7cdac9860fcd8ab3275c8468a4d2cdeed2fc89ef989962",
+  "verified_source_files": 539,
+  "web_source_commit": "73f8f133a3935269ff49ad748fbf62238c4e86b2",
+  "web_unchanged": true,
+  "source_working_changes": [],
+  "artifact": "/home/etcom-hub/build/gps-provision22-20261111cumulative112/candidate-cumulative112-20261111-r1.tar.gz",
+  "artifact_sha256": "8b4d5b3884a6bf522738a5c77c75be965e78159eab1e7d15a303d7851eda7ff6",
+  "file_count": 76
+}

@@ -1,0 +1,14 @@
+PASS actual114->115 SQLx migration preserves existing annotation and leaves new readings NULL
+PASS restricted runtime role saves/readbacks readings; omitted old-client fields preserve, invalid values and other tenant denied
+PASS actual XLSX contains entered before/after readings and their12.5km difference; original GPS distance unchanged
+Traceback (most recent call last):
+  File "/opt/gps121/test_notion_integration145.py", line 149, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_notion_integration145.py", line 113, in main
+    source_hash=sql("SELECT md5(string_agg(to_jsonb(t)::text,',' ORDER BY id)) FROM location_records t WHERE device_id=%s",(device,))[0][0]
+  File "/opt/gps121/test_notion_integration145.py", line 24, in sql
+    c.execute(query, args or None)
+psycopg2.errors.UndefinedColumn: column "id" does not exist
+LINE 1: ...ECT md5(string_agg(to_jsonb(t)::text,',' ORDER BY id)) FROM ...
+                                                             ^
+

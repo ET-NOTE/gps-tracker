@@ -1,0 +1,13 @@
+{
+  "environment": "isolated actual React with synthetic API; not production",
+  "desktop": 1280,
+  "mobile": 390,
+  "overflow": false,
+  "errors": [],
+  "confirmation": true,
+  "revocation": true,
+  "manualAcknowledgement": true,
+  "apiMocked": true,
+  "captured_at": "2026-11-08T01:03:09.463962+09:00",
+  "candidate_schema": 106
+}

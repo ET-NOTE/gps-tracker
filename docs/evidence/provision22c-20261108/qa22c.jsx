@@ -1,0 +1,2 @@
+import React from 'react';import{createRoot}from'react-dom/client';import NoticeQueuePanel from './src/components/NoticeQueuePanel';import './src/index.css';
+createRoot(document.getElementById('root')).render(<main style={{maxWidth:1080,margin:'auto',padding:20}}><div style={{padding:16,background:'#e8efff',fontWeight:700}}>22C 격리 검증 · 합성 데이터 · 운영 증빙 아님</div><h1>관리자 보안</h1><NoticeQueuePanel/></main>);

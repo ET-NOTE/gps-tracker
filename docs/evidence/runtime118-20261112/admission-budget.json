@@ -1,0 +1,71 @@
+{
+  "read_only": true,
+  "production_admission_passed": false,
+  "connections": {
+    "server_max": 50,
+    "superuser_reserved": 3,
+    "single_api_max": 28,
+    "maintenance_proposed": 4,
+    "remaining_other_budget": 15,
+    "other_clients_observed_peak": 16,
+    "uncapped_other_login_roles": [
+      "aaa",
+      "bbb",
+      "gps_tracker_dev_app"
+    ],
+    "observed_clients_are_not_maxima": true
+  },
+  "memory": {
+    "physical_bytes": 3111866368,
+    "db_proposed_cap": 1572864000,
+    "api_proposed_cap": 576716800,
+    "other_running_service_observed_bytes": 699658240,
+    "os_proposed_margin": 536870912,
+    "proposed_plan_bytes": 3386109952,
+    "plan_shortfall_bytes": 274243584,
+    "unbounded_other_units": [
+      "accounts-daemon.service",
+      "atd.service",
+      "containerd.service",
+      "cron.service",
+      "dbus.service",
+      "docker.service",
+      "fail2ban.service",
+      "getty@tty1.service",
+      "gps-modsecurity.service",
+      "gps-nginx-log.service",
+      "gps-tracker.service",
+      "irqbalance.service",
+      "mosquitto.service",
+      "networkd-dispatcher.service",
+      "nginx.service",
+      "packagekit.service",
+      "pm2-mmm.service",
+      "polkit.service",
+      "redis-server.service",
+      "rsyslog.service",
+      "snapd.service",
+      "ssh.service",
+      "systemd-journald.service",
+      "systemd-logind.service",
+      "systemd-resolved.service",
+      "systemd-timesyncd.service",
+      "systemd-udevd.service",
+      "unattended-upgrades.service",
+      "user@0.service",
+      "user@1000.service",
+      "wpa_supplicant.service"
+    ],
+    "tmpfs_included_in_db_cap": true,
+    "observed_other_memory_is_not_reserved_or_peak": true,
+    "antivirus_scan_extra_not_reserved": 707788800,
+    "production_shared_buffers_bytes": 777969664
+  },
+  "decision": "Keep single API; do not activate protected candidate on current shared host without bounded budgets and combined rehearsal.",
+  "alternatives": {
+    "bounded_tmpfs": "rehearsed filesystem choice, conditional on RAM budget; never swap-backed",
+    "ephemeral_encrypted_disk": "not selected or installed; would still require swap/core protection, encrypted fallback, key lifecycle and storage-I/O rehearsal",
+    "host_isolation_or_capacity": "recommended if other projects cannot commit finite caps; sizing requires full shared workload, not this snapshot"
+  },
+  "production_changes": false
+}

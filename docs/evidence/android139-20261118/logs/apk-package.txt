@@ -1,0 +1,6 @@
+
+package: name='com.etcompany.gpstracker' versionCode='14' versionName='1.0.8' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+sdkVersion:'23'
+targetSdkVersion:'35'
+application-label:'시리얼링크 위치추적기'
+

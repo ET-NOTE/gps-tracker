@@ -1,0 +1,242 @@
+{
+  "environment": "isolated synthetic; not production evidence",
+  "production_modified": false,
+  "baseline_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "candidate_sha256": "36d89e4f0d0b0c6a1bcf73954fe019a2e29f3a761001a339f7cfc86b62b91cd0",
+  "schema_path": [
+    99,
+    108
+  ],
+  "external_messages": 0,
+  "checks": [
+    {
+      "check": "actual schema99 binary and historical migration checksums; synthetic workload seeded"
+    },
+    {
+      "check": "all nine migration transactions roll back on injected failure; committed prefixes resume with real candidate",
+      "versions": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108
+      ]
+    },
+    {
+      "check": "missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes"
+    },
+    {
+      "check": "prepared restricted owner completes real single-pass99 to108 with original data preserved and defaults OFF"
+    },
+    {
+      "check": "99 to108 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred"
+    },
+    {
+      "check": "other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected"
+    },
+    {
+      "check": "conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes"
+    },
+    {
+      "check": "restricted API and both cleanup worker paths use same key/mode; policy, DDL and maintenance bypass rejected"
+    },
+    {
+      "check": "all original location values survive encryption; physical columns NULL; 623000 raw samples yield283001 deduplicated in-range history points"
+    },
+    {
+      "check": "full Timescale DB plus encrypted files restore while fenced; separately held key required; all location/file hashes equal"
+    },
+    {
+      "check": "cumulative rehearsal complete; isolated encrypted API ready for business/privacy regression"
+    }
+  ],
+  "timings": {
+    "resume-after-per-migration-interruptions": 0.317,
+    "resume102-to108-nonsuperuser": 0.47,
+    "direct99-to108-nonsuperuser": 0.512,
+    "initial_db_conversion_seconds": 199.45,
+    "history_points_count_seconds": 13.846,
+    "full_dump_seconds": 4.027,
+    "full_restore_seconds": 2.344
+  },
+  "synthetic": {
+    "rows": 130000,
+    "batched_rows": 17000,
+    "expanded_points": 623000,
+    "deduplicated_history_points": 283001
+  },
+  "database_bytes_before": 91202051,
+  "legacy_retention": {
+    "scheduled_job_rejected": true,
+    "paused_in_disposable_db_only": true
+  },
+  "conversion": {
+    "mode": "convert",
+    "ready_to_start_key_configured_api": true,
+    "database": {
+      "scope": "registered location fields; old WAL/backups need separate retirement",
+      "tables": {
+        "ai_analyses": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "device_audit_log": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "devices": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "events": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fcm_outbox": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_expense_audit": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_expense_receipts": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_site_versions": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_site_visits": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_sites": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_team_audit": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_trip_assignment_audit": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_trip_corrections": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_vehicle_audit": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "geocode_cache": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "geofences": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "location_1hour": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "location_1min": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "location_5min": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "location_records": {
+          "rows": 130000,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "privacy_company_submissions": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "privacy_image_payloads": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "rental_photos": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        }
+      },
+      "enabled": true
+    },
+    "files": {
+      "files": 3,
+      "converted": 3,
+      "plaintext_files": 0,
+      "bytes": 1572864,
+      "content_hashes": [
+        "78082ca7582702c4ba1ff7484ca9d12f1a160995e1418d39b2ce743da3b89e80",
+        "d508e9ea246d557786c420e4c7e0396aad708ade577b5f718d82e30dd25ba23e",
+        "460e3c61ece8757c246e3f310a1c9eb06fccc9de0d3b04d904d6f3be5af8ef91"
+      ]
+    },
+    "old_wal_snapshots_backups_erased": false,
+    "production_services_changed": false
+  },
+  "database_bytes_after": 287122211,
+  "wal_bytes_since_cluster_start": 492008008,
+  "full_dump_bytes": 116857783,
+  "runtime_ready_for_regressions": true
+}

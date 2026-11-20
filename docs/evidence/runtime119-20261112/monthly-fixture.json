@@ -1,0 +1,65 @@
+{
+  "devices": [
+    {
+      "device_id": 1,
+      "user_id": 1,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 2,
+      "user_id": 1,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 3,
+      "user_id": 1,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 4,
+      "user_id": 1,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 5,
+      "user_id": 2,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 6,
+      "user_id": 2,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 7,
+      "user_id": 2,
+      "rows": 14880,
+      "unique_points": 89280
+    },
+    {
+      "device_id": 8,
+      "user_id": 2,
+      "rows": 14880,
+      "unique_points": 89280
+    }
+  ],
+  "users": [
+    1,
+    2
+  ],
+  "rows": 119040,
+  "unique_points": 714240,
+  "schema": 112,
+  "api_sha256": "a4435f248d1ec1307ba7beec62da084bdf2899fb26e0d1e2b16d4507d7765f23",
+  "storage": "Build-host NVMe named volume; not VPS disk",
+  "db_cpu": 2,
+  "db_memory_mib": 1500,
+  "api_cpu": 2,
+  "api_memory_mib": 550
+}

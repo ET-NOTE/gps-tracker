@@ -1,0 +1,62 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Aggregate",
+      "Strategy": "Plain",
+      "Partial Mode": "Simple",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Startup Cost": 1543.35,
+      "Total Cost": 1543.36,
+      "Plan Rows": 1,
+      "Plan Width": 8,
+      "Actual Startup Time": 106.004,
+      "Actual Total Time": 106.005,
+      "Actual Rows": 1,
+      "Actual Loops": 1,
+      "Plans": [
+        {
+          "Node Type": "Sort",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 1363.35,
+          "Total Cost": 1393.35,
+          "Plan Rows": 12000,
+          "Plan Width": 32,
+          "Actual Startup Time": 88.487,
+          "Actual Total Time": 105.73,
+          "Actual Rows": 12000,
+          "Actual Loops": 1,
+          "Sort Key": [
+            "(('RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_RUNTIME117_SYNTHETIC_CANARY_'::text || (i.i)::text))"
+          ],
+          "Sort Method": "external merge",
+          "Sort Space Used": 13384,
+          "Sort Space Type": "Disk",
+          "Plans": [
+            {
+              "Node Type": "Function Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Function Name": "generate_series",
+              "Alias": "i",
+              "Startup Cost": 0.0,
+              "Total Cost": 210.0,
+              "Plan Rows": 12000,
+              "Plan Width": 32,
+              "Actual Startup Time": 0.629,
+              "Actual Total Time": 2.344,
+              "Actual Rows": 12000,
+              "Actual Loops": 1
+            }
+          ]
+        }
+      ]
+    },
+    "Planning Time": 0.203,
+    "Triggers": [],
+    "Execution Time": 106.567
+  }
+]

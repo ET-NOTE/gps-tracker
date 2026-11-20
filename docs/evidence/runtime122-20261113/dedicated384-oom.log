@@ -1,0 +1,17 @@
+dedicated-4g 0 reads 0 ingest 0 PDF 0 cleanup 0 errors 0
+dedicated-4g 10 reads 21 ingest 10 PDF 4 cleanup 2 errors 0
+dedicated-4g 20 reads 40 ingest 19 PDF 7 cleanup 4 errors 0
+dedicated-4g 30 reads 59 ingest 29 PDF 10 cleanup 6 errors 0
+dedicated-4g 40 reads 80 ingest 38 PDF 14 cleanup 8 errors 0
+dedicated-4g 50 reads 103 ingest 48 PDF 17 cleanup 10 errors 0
+dedicated-4g 60 reads 122 ingest 57 PDF 20 cleanup 12 errors 0
+dedicated-4g 70 reads 143 ingest 67 PDF 24 cleanup 14 errors 0
+dedicated-4g 80 reads 160 ingest 76 PDF 27 cleanup 16 errors 0
+dedicated-4g 90 reads 179 ingest 86 PDF 30 cleanup 18 errors 0
+dedicated-4g 100 reads 456 ingest 96 PDF 33 cleanup 20 errors 271
+Traceback (most recent call last):
+  File "/opt/gps121/load_runtime122.py", line 353, in <module>
+    elif action=='dedicated':load('dedicated-4g')
+  File "/opt/gps121/load_runtime122.py", line 338, in load
+    assert not errors,errors[:5]
+AssertionError: [{'reader': 5, 'error': "AssertionError(('fleet_csv', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"}, {'reader': 4, 'error': "AssertionError(('fleet_xlsx', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"}, {'reader': 3, 'error': "AssertionError(('month_history', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"}, {'reader': 2, 'error': 'IncompleteRead(962934 bytes read, 681426 more expected)'}, {'reader': 4, 'error': "AssertionError(('month_page', 502, b'<html>\\r\\n<head><title>502 Bad Gateway</title></head>\\r\\n<body>\\r\\n<center><h1>502 Bad Gateway</h1></cente'))"}]

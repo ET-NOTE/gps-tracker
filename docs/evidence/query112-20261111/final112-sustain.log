@@ -1,0 +1,50 @@
+gps-query112-proxy
+gps-query112-api
+API READY: schema111/112 restricted runtime, encrypted, ledger enabled
+PROGRESS final112 seconds 5 queries 6 ingest 5 errors 0
+PROGRESS final112 seconds 25 queries 19 ingest 23 errors 0
+PROGRESS final112 seconds 45 queries 35 ingest 41 errors 0
+PROGRESS final112 seconds 65 queries 57 ingest 59 errors 0
+PROGRESS final112 seconds 85 queries 67 ingest 77 errors 0
+PROGRESS final112 seconds 105 queries 90 ingest 96 errors 0
+PROGRESS final112 seconds 125 queries 107 ingest 114 errors 0
+PROGRESS final112 seconds 145 queries 124 ingest 132 errors 0
+PROGRESS final112 seconds 165 queries 140 ingest 150 errors 0
+PROGRESS final112 seconds 185 queries 149 ingest 168 errors 0
+PROGRESS final112 seconds 205 queries 164 ingest 186 errors 0
+PROGRESS final112 seconds 225 queries 177 ingest 204 errors 0
+PROGRESS final112 seconds 245 queries 195 ingest 222 errors 0
+PROGRESS final112 seconds 265 queries 211 ingest 241 errors 0
+PROGRESS final112 seconds 285 queries 220 ingest 259 errors 0
+PROGRESS final112 seconds 305 queries 238 ingest 277 errors 0
+PROGRESS final112 seconds 325 queries 246 ingest 295 errors 0
+PROGRESS final112 seconds 345 queries 266 ingest 313 errors 0
+PROGRESS final112 seconds 365 queries 279 ingest 331 errors 0
+PROGRESS final112 seconds 385 queries 295 ingest 349 errors 0
+PROGRESS final112 seconds 406 queries 315 ingest 367 errors 0
+PROGRESS final112 seconds 426 queries 324 ingest 386 errors 0
+PROGRESS final112 seconds 446 queries 337 ingest 404 errors 0
+PROGRESS final112 seconds 466 queries 349 ingest 422 errors 0
+PROGRESS final112 seconds 486 queries 366 ingest 440 errors 0
+PROGRESS final112 seconds 506 queries 379 ingest 458 errors 0
+PROGRESS final112 seconds 526 queries 392 ingest 476 errors 0
+PROGRESS final112 seconds 546 queries 410 ingest 495 errors 0
+PROGRESS final112 seconds 566 queries 419 ingest 513 errors 0
+PROGRESS final112 seconds 586 queries 428 ingest 531 errors 0
+PROGRESS final112 seconds 606 queries 441 ingest 549 errors 0
+PROGRESS final112 seconds 626 queries 453 ingest 567 errors 0
+PROGRESS final112 seconds 646 queries 467 ingest 585 errors 0
+PROGRESS final112 seconds 666 queries 477 ingest 603 errors 0
+PROGRESS final112 seconds 686 queries 488 ingest 622 errors 0
+PROGRESS final112 seconds 706 queries 501 ingest 640 errors 0
+PROGRESS final112 seconds 726 queries 510 ingest 658 errors 0
+PROGRESS final112 seconds 746 queries 529 ingest 676 errors 0
+PROGRESS final112 seconds 766 queries 541 ingest 694 errors 0
+PROGRESS final112 seconds 786 queries 556 ingest 712 errors 0
+PROGRESS final112 seconds 806 queries 571 ingest 731 errors 0
+PROGRESS final112 seconds 826 queries 581 ingest 749 errors 0
+PROGRESS final112 seconds 846 queries 593 ingest 767 errors 0
+PROGRESS final112 seconds 866 queries 605 ingest 785 errors 0
+PROGRESS final112 seconds 886 queries 619 ingest 803 errors 0
+PROGRESS final112 seconds 906 queries 629 ingest 821 errors 0
+SUSTAIN PASS final112 requests 629 ingest 821 traversals 1

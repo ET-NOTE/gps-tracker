@@ -1,0 +1,595 @@
+TAP version 13
+# Subtest: fresh GPS is not inferred from current telemetry or stale coordinates
+ok 1 - fresh GPS is not inferred from current telemetry or stale coordinates
+  ---
+  duration_ms: 2.1636
+  ...
+# Subtest: unreceived, pending and measured zero distance stay distinct
+ok 2 - unreceived, pending and measured zero distance stay distinct
+  ---
+  duration_ms: 0.9051
+  ...
+# Subtest: partial totals exclude other workspaces and never fabricate missing vehicles
+ok 3 - partial totals exclude other workspaces and never fabricate missing vehicles
+  ---
+  duration_ms: 0.4005
+  ...
+# Subtest: today coverage respects KST midnight and excludes future fixes
+ok 4 - today coverage respects KST midnight and excludes future fixes
+  ---
+  duration_ms: 0.2027
+  ...
+# Subtest: coincident map positions are selectable as one group, distant points stay separate
+ok 5 - coincident map positions are selectable as one group, distant points stay separate
+  ---
+  duration_ms: 16.3911
+  ...
+# Subtest: unregistered schedules and vehicle names cannot masquerade as healthy or terminal names
+ok 6 - unregistered schedules and vehicle names cannot masquerade as healthy or terminal names
+  ---
+  duration_ms: 1.7967
+  ...
+# Subtest: sleeping within its reporting window is not a long communication warning
+ok 7 - sleeping within its reporting window is not a long communication warning
+  ---
+  duration_ms: 0.7529
+  ...
+# Subtest: registered vehicles without current primary terminals keep maintenance, not communication alerts
+ok 8 - registered vehicles without current primary terminals keep maintenance, not communication alerts
+  ---
+  duration_ms: 0.7171
+  ...
+# Subtest: a current primary binding still needs communication checks when its telemetry is absent
+ok 9 - a current primary binding still needs communication checks when its telemetry is absent
+  ---
+  duration_ms: 0.437
+  ...
+# Subtest: tests\\corporate-reservations.test.mjs
+not ok 2 - tests\\corporate-reservations.test.mjs
+  ---
+  duration_ms: 336.6581
+  location: 'C:\\Users\\msb\\.codex\\worktrees\\gps-app-fcm\\esp32c3-mini_gps\\output\\notion-dev-review-20261118\\deployed-source\\gps-tracker-web\\tests\\corporate-reservations.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 3221225477
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# (node:8792) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: expense categories remain reachable during vehicle and terminal outages while terminal access denials close the workspace
+ok 11 - expense categories remain reachable during vehicle and terminal outages while terminal access denials close the workspace
+  ---
+  duration_ms: 84.0891
+  ...
+# Subtest: report filter drafts leave results unchanged until applied and cancel restores applied values
+ok 12 - report filter drafts leave results unchanged until applied and cancel restores applied values
+  ---
+  duration_ms: 67.1378
+  ...
+# Subtest: reset only changes a report filter draft until the user applies it
+ok 13 - reset only changes a report filter draft until the user applies it
+  ---
+  duration_ms: 50.6466
+  ...
+# Subtest: invalid minimum driving time cannot apply or discard a report filter draft
+ok 14 - invalid minimum driving time cannot apply or discard a report filter draft
+  ---
+  duration_ms: 45.0275
+  ...
+# Subtest: report vehicle search matches vehicle identity and department without changing selection until clicked
+ok 15 - report vehicle search matches vehicle identity and department without changing selection until clicked
+  ---
+  duration_ms: 36.0997
+  ...
+# Subtest: all-vehicle monthly XLSX includes every available vehicle despite vehicle search and report filters
+ok 16 - all-vehicle monthly XLSX includes every available vehicle despite vehicle search and report filters
+  ---
+  duration_ms: 31.9178
+  ...
+# Subtest: XLSX identifies actual missing company and vehicle fields within the selected department intersection
+ok 17 - XLSX identifies actual missing company and vehicle fields within the selected department intersection
+  ---
+  duration_ms: 22.4576
+  ...
+# Subtest: XLSX has no metadata all-clear until company loading finishes, including a cached refresh
+ok 18 - XLSX has no metadata all-clear until company loading finishes, including a cached refresh
+  ---
+  duration_ms: 34.0884
+  ...
+# Subtest: XLSX distinguishes failed company lookup from blank fields and offers a retry without blocking the file
+ok 19 - XLSX distinguishes failed company lookup from blank fields and offers a retry without blocking the file
+  ---
+  duration_ms: 17.3872
+  ...
+# Subtest: XLSX empty selection does not claim complete metadata and retains manual odometer and user guidance
+ok 20 - XLSX empty selection does not claim complete metadata and retains manual odometer and user guidance
+  ---
+  duration_ms: 14.5872
+  ...
+# Subtest: compact report status selection resets conflicting filters and selected rows
+ok 21 - compact report status selection resets conflicting filters and selected rows
+  ---
+  duration_ms: 31.6924
+  ...
+# Subtest: monthly table retains short/zero/unknown distances, recorded costs and edit permissions
+ok 22 - monthly table retains short/zero/unknown distances, recorded costs and edit permissions
+  ---
+  duration_ms: 40.9001
+  ...
+# Subtest: trip rows, daily total and editor preserve short/zero/unknown distance
+ok 23 - trip rows, daily total and editor preserve short/zero/unknown distance
+  ---
+  duration_ms: 15.9591
+  ...
+# Subtest: report XLSX opens with selected vehicle/start month and an explicit independent monthly scope
+ok 24 - report XLSX opens with selected vehicle/start month and an explicit independent monthly scope
+  ---
+  duration_ms: 22.3231
+  ...
+# Subtest: XLSX month changes preserve explicit vehicle scope, including a single-vehicle company
+ok 25 - XLSX month changes preserve explicit vehicle scope, including a single-vehicle company
+  ---
+  duration_ms: 16.9734
+  ...
+# Subtest: existing monthly XLSX keeps all vehicles and inherited department filters
+ok 26 - existing monthly XLSX keeps all vehicles and inherited department filters
+  ---
+  duration_ms: 15.5729
+  ...
+# Subtest: a stale print success or failure cannot erase newer date/filter results
+ok 27 - a stale print success or failure cannot erase newer date/filter results
+  ---
+  duration_ms: 89.3404
+  ...
+# Subtest: print preparation blocks duplicate clicks and unlocks after both success and failure
+ok 28 - print preparation blocks duplicate clicks and unlocks after both success and failure
+  ---
+  duration_ms: 27.0513
+  ...
+# Subtest: report range validation matches inclusive Korean 366-day API limits and blocks requests
+ok 29 - report range validation matches inclusive Korean 366-day API limits and blocks requests
+  ---
+  duration_ms: 18.4295
+  ...
+# Subtest: report fetch failure remains distinct from empty results and retries the same period
+ok 30 - report fetch failure remains distinct from empty results and retries the same period
+  ---
+  duration_ms: 16.6014
+  ...
+# Subtest: XLSX locks its inputs, blocks duplicate clicks and retries with preserved selections in its footer
+ok 31 - XLSX locks its inputs, blocks duplicate clicks and retries with preserved selections in its footer
+  ---
+  duration_ms: 23.4538
+  ...
+# Subtest: XLSX allows month editing but rejects blank/out-of-range months before the API
+ok 32 - XLSX allows month editing but rejects blank/out-of-range months before the API
+  ---
+  duration_ms: 17.7783
+  ...
+# Subtest: XLSX blocks missing vehicles, empty selections and empty department intersections
+ok 33 - XLSX blocks missing vehicles, empty selections and empty department intersections
+  ---
+  duration_ms: 16.6274
+  ...
+# Subtest: XLSX counts vehicle/department intersection and preserves all explicitly selected department values
+ok 34 - XLSX counts vehicle/department intersection and preserves all explicitly selected department values
+  ---
+  duration_ms: 17.2981
+  ...
+# Subtest: selecting all four trip purposes remains an unfiltered purpose export
+ok 35 - selecting all four trip purposes remains an unfiltered purpose export
+  ---
+  duration_ms: 22.0354
+  ...
+# Subtest: leaving an XLSX dialog prevents late file saves and stale error prompts
+ok 36 - leaving an XLSX dialog prevents late file saves and stale error prompts
+  ---
+  duration_ms: 36.8279
+  ...
+# (node:35168) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: corporate groups return to each last selected child without losing the active body
+ok 37 - corporate groups return to each last selected child without losing the active body
+  ---
+  duration_ms: 106.2832
+  ...
+# Subtest: reservations are fifth in the main menu and both entry points open the same vehicle booking page
+ok 38 - reservations are fifth in the main menu and both entry points open the same vehicle booking page
+  ---
+  duration_ms: 17.3392
+  ...
+# Subtest: corporate tab navigation resets the persistent mobile scroll without resetting ordinary workspace interactions
+ok 39 - corporate tab navigation resets the persistent mobile scroll without resetting ordinary workspace interactions
+  ---
+  duration_ms: 19.4718
+  ...
+# Subtest: corporate company controls appear once above the body and remain interactive
+ok 40 - corporate company controls appear once above the body and remain interactive
+  ---
+  duration_ms: 10.6788
+  ...
+# Subtest: custom section navigation switches settings in the topbar without duplicating company controls
+ok 41 - custom section navigation switches settings in the topbar without duplicating company controls
+  ---
+  duration_ms: 12.6069
+  ...
+# Subtest: settings selection calls its parent and waits for controlled updates while legacy mode stays usable
+ok 42 - settings selection calls its parent and waits for controlled updates while legacy mode stays usable
+  ---
+  duration_ms: 8.8957
+  ...
+# Subtest: account drawer uses the same allowed destinations as the application rail
+ok 43 - account drawer uses the same allowed destinations as the application rail
+  ---
+  duration_ms: 19.1263
+  ...
+# Subtest: corporate map shortcut uses only an allowed home destination without changing the account navigation input
+ok 44 - corporate map shortcut uses only an allowed home destination without changing the account navigation input
+  ---
+  duration_ms: 42.9566
+  ...
+# Subtest: mobile more keeps every corporate child and permitted account destination reachable
+ok 45 - mobile more keeps every corporate child and permitted account destination reachable
+  ---
+  duration_ms: 21.0891
+  ...
+# Subtest: rentcar keeps its own header, page title, schedule action and account links
+ok 46 - rentcar keeps its own header, page title, schedule action and account links
+  ---
+  duration_ms: 12.8044
+  ...
+# Subtest: local vehicle location selects and scrolls to its map even before a position is received
+ok 47 - local vehicle location selects and scrolls to its map even before a position is received
+  ---
+  duration_ms: 30.4739
+  ...
+# Subtest: nonlocal vehicle map actions retain their device destination regardless of position availability
+ok 48 - nonlocal vehicle map actions retain their device destination regardless of position availability
+  ---
+  duration_ms: 15.0954
+  ...
+# Subtest: empty corporate vehicle lists guide registration before terminal connection while legacy hints stay unchanged
+ok 49 - empty corporate vehicle lists guide registration before terminal connection while legacy hints stay unchanged
+  ---
+  duration_ms: 12.2109
+  ...
+# (node:46772) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: receipt thumbnails defer authenticated requests until visible and revoke their object URL
+ok 50 - receipt thumbnails defer authenticated requests until visible and revoke their object URL
+  ---
+  duration_ms: 189.1392
+  ...
+# Subtest: attachment navigation clears image URLs and PDF content is fetched only on download
+ok 51 - attachment navigation clears image URLs and PDF content is fetched only on download
+  ---
+  duration_ms: 77.8878
+  ...
+# Subtest: failed metadata can be retried and unsupported response content is never embedded
+ok 52 - failed metadata can be retried and unsupported response content is never embedded
+  ---
+  duration_ms: 130.6447
+  ...
+# Subtest: native image downloads keep the existing image-to-PDF bridge behavior
+ok 53 - native image downloads keep the existing image-to-PDF bridge behavior
+  ---
+  duration_ms: 75.4867
+  ...
+# Subtest: attachment file choices open the requested receipt and preserve selection across a refreshed order
+ok 54 - attachment file choices open the requested receipt and preserve selection across a refreshed order
+  ---
+  duration_ms: 150.0655
+  ...
+# Subtest: attachment download locks file choices and cannot start twice before state renders
+ok 55 - attachment download locks file choices and cannot start twice before state renders
+  ---
+  duration_ms: 73.9736
+  ...
+# Subtest: drawer image and thumbnail choices share authenticated blobs and expand the selected file
+ok 56 - drawer image and thumbnail choices share authenticated blobs and expand the selected file
+  ---
+  duration_ms: 75.9104
+  ...
+# Subtest: a failed attachment download preserves the selected file and permits a clean retry
+ok 57 - a failed attachment download preserves the selected file and permits a clean retry
+  ---
+  duration_ms: 90.4608
+  ...
+# (node:49060) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: expense categories show only the selected group and distinguish fuel and inactive children
+ok 58 - expense categories show only the selected group and distinguish fuel and inactive children
+  ---
+  duration_ms: 55.1928
+  ...
+# Subtest: inactive parent prevents child creation and makes active children effectively inactive
+ok 59 - inactive parent prevents child creation and makes active children effectively inactive
+  ---
+  duration_ms: 12.0604
+  ...
+# Subtest: read-only category browsing exposes no create or edit actions
+ok 60 - read-only category browsing exposes no create or edit actions
+  ---
+  duration_ms: 6.8721
+  ...
+# Subtest: category actions preserve IDs, fuel kind and parent relationships without mutating source records
+ok 61 - category actions preserve IDs, fuel kind and parent relationships without mutating source records
+  ---
+  duration_ms: 7.547
+  ...
+# Subtest: category refresh keeps the selected group by ID and falls back safely when removed
+ok 62 - category refresh keeps the selected group by ID and falls back safely when removed
+  ---
+  duration_ms: 6.9287
+  ...
+# (node:48180) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: saving a vehicle keeps unset profile numbers blank and preserves actual zero readings
+ok 63 - saving a vehicle keeps unset profile numbers blank and preserves actual zero readings
+  ---
+  duration_ms: 74.8586
+  ...
+# Subtest: a pending vehicle registration accepts one submission, protects the draft and permits retry on failure
+ok 64 - a pending vehicle registration accepts one submission, protects the draft and permits retry on failure
+  ---
+  duration_ms: 43.9825
+  ...
+# Subtest: a vehicle update that finishes after leaving the screen refreshes the list without calling the old dialog
+ok 65 - a vehicle update that finishes after leaving the screen refreshes the list without calling the old dialog
+  ---
+  duration_ms: 17.2653
+  ...
+# Subtest: vehicle status counts follow search scope and switching status preserves search and sort
+ok 66 - vehicle status counts follow search scope and switching status preserves search and sort
+  ---
+  duration_ms: 17.2241
+  ...
+# Subtest: vehicle department groups keep search-scoped counts and switch without losing query or sort
+ok 67 - vehicle department groups keep search-scoped counts and switch without losing query or sort
+  ---
+  duration_ms: 25.7128
+  ...
+# Subtest: vehicle groups use registered departments and include vehicles without a department or a terminal
+ok 68 - vehicle groups use registered departments and include vehicles without a department or a terminal
+  ---
+  duration_ms: 22.2935
+  ...
+# Subtest: vehicle filter modal isolates drafts and validates before applying ranges
+ok 69 - vehicle filter modal isolates drafts and validates before applying ranges
+  ---
+  duration_ms: 29.9991
+  ...
+# Subtest: vehicle list keeps registration, editing and reporting permissions and callbacks
+ok 70 - vehicle list keeps registration, editing and reporting permissions and callbacks
+  ---
+  duration_ms: 38.4379
+  ...
+# Subtest: vehicle rows open details by click, Enter and Space without hijacking nested controls
+ok 71 - vehicle rows open details by click, Enter and Space without hijacking nested controls
+  ---
+  duration_ms: 25.7938
+  ...
+# Subtest: connection shortcut opens the correct tab and keeps vehicle and terminal identifiers independent
+ok 72 - connection shortcut opens the correct tab and keeps vehicle and terminal identifiers independent
+  ---
+  duration_ms: 23.3907
+  ...
+# Subtest: vehicle detail keeps operational state, communication, missing schedules and measured zero distinct
+ok 73 - vehicle detail keeps operational state, communication, missing schedules and measured zero distinct
+  ---
+  duration_ms: 15.8122
+  ...
+# (node:42892) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: people search and department scope retain correct status counts and matching rows
+ok 74 - people search and department scope retain correct status counts and matching rows
+  ---
+  duration_ms: 66.547
+  ...
+# Subtest: compact people management preserves confirmations and optimistic concurrency values
+ok 75 - compact people management preserves confirmations and optimistic concurrency values
+  ---
+  duration_ms: 26.9554
+  ...
+# Subtest: people administration remains unavailable to members and admin accounts retain owner-only editing
+ok 76 - people administration remains unavailable to members and admin accounts retain owner-only editing
+  ---
+  duration_ms: 33.7924
+  ...
+# Subtest: site group and search scope preserve active defaults and status counts
+ok 77 - site group and search scope preserve active defaults and status counts
+  ---
+  duration_ms: 27.7606
+  ...
+# Subtest: site visit entry passes its site and changing date or vehicle resets cursor pagination
+ok 78 - site visit entry passes its site and changing date or vehicle resets cursor pagination
+  ---
+  duration_ms: 71.4248
+  ...
+# Subtest: site viewers can search and inspect visits without site or group management actions
+ok 79 - site viewers can search and inspect visits without site or group management actions
+  ---
+  duration_ms: 15.8692
+  ...
+# Subtest: external directory tabs replace internal navigation and preserve site-to-visit selection
+ok 80 - external directory tabs replace internal navigation and preserve site-to-visit selection
+  ---
+  duration_ms: 46.2857
+  ...
+# Subtest: directory groups expose unassigned records and counts follow search and status scope
+ok 81 - directory groups expose unassigned records and counts follow search and status scope
+  ---
+  duration_ms: 29.7864
+  ...
+# Subtest: inactive directory shortcuts reset group scope and all view restores the full list
+ok 82 - inactive directory shortcuts reset group scope and all view restores the full list
+  ---
+  duration_ms: 30.3037
+  ...
+# Subtest: directory manage actions select the controlled organization or group tab
+ok 83 - directory manage actions select the controlled organization or group tab
+  ---
+  duration_ms: 29.7864
+  ...
+# Subtest: pending or failed site groups do not produce a misleading empty directory
+ok 84 - pending or failed site groups do not produce a misleading empty directory
+  ---
+  duration_ms: 28.8936
+  ...
+# Subtest: multiple assigned vehicles remain readable without expanding the default person row
+ok 85 - multiple assigned vehicles remain readable without expanding the default person row
+  ---
+  duration_ms: 24.3847
+  ...
+# Subtest: organization tables keep inactive items visible and hide editing from members
+ok 86 - organization tables keep inactive items visible and hide editing from members
+  ---
+  duration_ms: 16.4363
+  ...
+# Subtest: opening a user by name preserves values after save errors and retries with the version
+ok 87 - opening a user by name preserves values after save errors and retries with the version
+  ---
+  duration_ms: 17.8059
+  ...
+# Subtest: site details expose aligned facts, preserve visit navigation and restrict editing
+ok 88 - site details expose aligned facts, preserve visit navigation and restrict editing
+  ---
+  duration_ms: 46.6202
+  ...
+# Subtest: site address search and saving recover from failures without discarding the form
+ok 89 - site address search and saving recover from failures without discarding the form
+  ---
+  duration_ms: 25.8192
+  ...
+# (node:25684) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: expense category management remains available when vehicles cannot be loaded
+ok 90 - expense category management remains available when vehicles cannot be loaded
+  ---
+  duration_ms: 87.2595
+  ...
+# Subtest: expense status and search controls share the displayed rows with download and summary
+ok 91 - expense status and search controls share the displayed rows with download and summary
+  ---
+  duration_ms: 82.6286
+  ...
+# Subtest: advanced filters remain drafts until applied, cancelling and resetting preserve scope
+ok 92 - advanced filters remain drafts until applied, cancelling and resetting preserve scope
+  ---
+  duration_ms: 123.4296
+  ...
+# Subtest: a failed refresh or invalid range hides cached rows, counts, totals and summary
+ok 93 - a failed refresh or invalid range hides cached rows, counts, totals and summary
+  ---
+  duration_ms: 77.6017
+  ...
+# Subtest: over-limit results can still be narrowed by server status without fabricated total counts
+ok 94 - over-limit results can still be narrowed by server status without fabricated total counts
+  ---
+  duration_ms: 192.0586
+  ...
+# Subtest: search and status changes reset pagination and exports include the full filtered set
+ok 95 - search and status changes reset pagination and exports include the full filtered set
+  ---
+  duration_ms: 55.2245
+  ...
+# Subtest: memo and receipt controls open the correct record while the date retains detail access
+ok 96 - memo and receipt controls open the correct record while the date retains detail access
+  ---
+  duration_ms: 109.534
+  ...
+# Subtest: expense settings route to categories and never overlap the download menu
+ok 97 - expense settings route to categories and never overlap the download menu
+  ---
+  duration_ms: 48.4143
+  ...
+# Subtest: manual refresh invalidates receipt metadata together with the expense count
+ok 98 - manual refresh invalidates receipt metadata together with the expense count
+  ---
+  duration_ms: 58.2594
+  ...
+# Subtest: read-only expense detail keeps ledger context and opens the selected receipt without edit controls
+ok 99 - read-only expense detail keeps ledger context and opens the selected receipt without edit controls
+  ---
+  duration_ms: 74.9911
+  ...
+# Subtest: drawer review retains required reasons and blocks duplicate mutations until settled
+ok 100 - drawer review retains required reasons and blocks duplicate mutations until settled
+  ---
+  duration_ms: 106.0024
+  ...
+# Subtest: report uses captured driver department, never current vehicle department
+ok 101 - report uses captured driver department, never current vehicle department
+  ---
+  duration_ms: 3.0896
+  ...
+# Subtest: attached template columns, KST dates and vehicle filename; no invented odometer or staff department
+ok 102 - attached template columns, KST dates and vehicle filename; no invented odometer or staff department
+  ---
+  duration_ms: 1.0109
+  ...
+# Subtest: commute and business stay separate and both feed the template business-distance total
+ok 103 - commute and business stay separate and both feed the template business-distance total
+  ---
+  duration_ms: 0.404
+  ...
+# Subtest: open/invalid trips remain marked in rows but do not inflate totals or produce a percentage
+ok 104 - open/invalid trips remain marked in rows but do not inflate totals or produce a percentage
+  ---
+  duration_ms: 2.523
+  ...
+# Subtest: unknown purpose is not classified as personal or business, and zero/empty have no percentage
+ok 105 - unknown purpose is not classified as personal or business, and zero/empty have no percentage
+  ---
+  duration_ms: 0.9625
+  ...
+# Subtest: visible precision matches totals; filter scope cannot silently become full period
+ok 106 - visible precision matches totals; filter scope cannot silently become full period
+  ---
+  duration_ms: 0.5347
+  ...
+# Subtest: metadata and free text are escaped, missing company and registration are shown before download
+ok 107 - metadata and free text are escaped, missing company and registration are shown before download
+  ---
+  duration_ms: 0.8606
+  ...
+# Subtest: measured odometer pairs populate the official fields and use after minus before without changing GPS
+ok 108 - measured odometer pairs populate the official fields and use after minus before without changing GPS
+  ---
+  duration_ms: 0.7824
+  ...
+# Subtest: invalid, partial and out-of-contract readings never become measured report distance
+ok 109 - invalid, partial and out-of-contract readings never become measured report distance
+  ---
+  duration_ms: 1.22
+  ...
+# Subtest: odometer entry does not confirm excluded, open or invalid-GPS trips
+ok 110 - odometer entry does not confirm excluded, open or invalid-GPS trips
+  ---
+  duration_ms: 0.6795
+  ...
+# Subtest: manual and merged correction distances are identified as trip records, not asserted as raw GPS
+ok 111 - manual and merged correction distances are identified as trip records, not asserted as raw GPS
+  ---
+  duration_ms: 24.0012
+  ...
+# Subtest: missing odometer readings remain unknown and measured zero remains zero
+ok 112 - missing odometer readings remain unknown and measured zero remains zero
+  ---
+  duration_ms: 36.4473
+  ...
+# Subtest: invalid, partial, negative, out of range, reversed and overprecision readings are rejected
+ok 113 - invalid, partial, negative, out of range, reversed and overprecision readings are rejected
+  ---
+  duration_ms: 0.3965
+  ...
+1..113
+# tests 113
+# suites 0
+# pass 112
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1419.8179

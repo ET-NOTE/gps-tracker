@@ -1,0 +1,25 @@
+{
+  "at": "2026-11-18T18:19:04+0900",
+  "passed": true,
+  "started_epoch": 1794993497.930233,
+  "ended_epoch": 1794993544.395308,
+  "elapsed_seconds": 46.465,
+  "migration_seconds": 0.039,
+  "schema": 115,
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "runtime145-20261118-r1",
+    "service": "gps-tracker-api"
+  },
+  "api_sha256": "b0765d1d8e0fd44188cb6856468cd15926b75635e4597cafbfc20371816a060d",
+  "web": "/home/mmm/releases/review146-20261118-r1/web",
+  "original_annotations_unchanged": true,
+  "subscriptions_unchanged": true,
+  "backup_directory": "/home/mmm/backups/review146-20261118-r1",
+  "physical_backup": "gps_tracker_review146_backup114",
+  "configuration_unchanged": true,
+  "neighbors_unchanged": true,
+  "rollback": "after new fields are used: forward repair; never overwrite live writes"
+}

@@ -1,0 +1,9 @@
+{
+  "two_api_busy": [
+    429,
+    429
+  ],
+  "http_disconnect_seconds": 0.013,
+  "prompt_http_cancel": true,
+  "api_recovery": true
+}

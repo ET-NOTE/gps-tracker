@@ -22,23 +22,24 @@ const TONE = {
   danger:  { valueColor: 'var(--danger)',  iconBg: 'color-mix(in srgb, var(--danger) 12%, transparent)',  iconColor: 'var(--danger)' },
 };
 
-export function StatCard({ icon, label, value, unit, tone = 'default', loading = false, hint }) {
+export function StatCard({ icon, label, value, unit, tone = 'default', loading = false, hint, compact = false }) {
   const t = TONE[tone] || TONE.default;
   return (
     <div style={{
       background: 'var(--surface)',
       border: '1px solid var(--border)',
       borderRadius: 14,
-      padding: '16px 18px',
+      padding: compact ? '14px 10px' : '16px 18px',
       display: 'flex',
       flexDirection: 'column',
       gap: 10,
-      minHeight: 96,
+      minHeight: compact ? 76 : 96,
+      minWidth: 0,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {icon && (
           <div style={{
-            width: 30, height: 30,
+            width: 30, height: 30, flexShrink: 0,
             borderRadius: 10,
             background: t.iconBg,
             color: t.iconColor,
@@ -47,13 +48,13 @@ export function StatCard({ icon, label, value, unit, tone = 'default', loading =
             <Icon name={icon} size={16} />
           </div>
         )}
-        <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>
+        <div style={{ fontSize: compact ? 12 : 13, color: 'var(--text-2)', fontWeight: 600, whiteSpace: compact ? 'nowrap' : undefined }}>
           {label}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
         <span style={{
-          fontSize: 28, fontWeight: 800, lineHeight: 1,
+          fontSize: compact ? 24 : 28, fontWeight: 800, lineHeight: 1,
           color: t.valueColor,
           fontVariantNumeric: 'tabular-nums',
           letterSpacing: '-0.02em',
@@ -77,12 +78,12 @@ export function StatCard({ icon, label, value, unit, tone = 'default', loading =
 
 // 반응형 그리드 — 데스크톱 4열, 태블릿 2열, 모바일 2열.
 // auto-fit + minmax(140px, 1fr) 로 컨테이너 폭에 자연 적응.
-export function StatCardGrid({ children }) {
+export function StatCardGrid({ children, columns }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-      gap: 12,
+      gridTemplateColumns: columns ? `repeat(${columns}, minmax(0, 1fr))` : 'repeat(auto-fit, minmax(150px, 1fr))',
+      gap: columns ? 8 : 12,
       marginBottom: 12,
     }}>
       {children}

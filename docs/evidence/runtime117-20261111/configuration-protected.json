@@ -1,0 +1,30 @@
+{
+  "limited": true,
+  "protected": true,
+  "containers": {
+    "gps-runtime117-db": {
+      "swap_max": "0",
+      "swap_current": "0",
+      "core_limit": [
+        {
+          "Name": "core",
+          "Hard": 0,
+          "Soft": 0
+        }
+      ]
+    },
+    "gps-runtime117-api": {
+      "swap_max": "0",
+      "swap_current": "0",
+      "core_limit": [
+        {
+          "Name": "core",
+          "Hard": 0,
+          "Soft": 0
+        }
+      ]
+    }
+  },
+  "io_max": "259:0 rbps=8388608 wbps=8388608 riops=200 wiops=200\n",
+  "mounts": "overlay / overlay rw,relatime,lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5885/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3188/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3187/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3186/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3185/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3184/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3183/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3182/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3181/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3180/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3179/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3178/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3177/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3176/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3175/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3174/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3173/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3172/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3171/fs,upperdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5886/fs,workdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5886/work,nouserxattr 0 0\nproc /proc proc rw,nosuid,nodev,noexec,relatime 0 0\ntmpfs /dev tmpfs rw,nosuid,size=65536k,mode=755,inode64 0 0\ndevpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=666 0 0\nsysfs /sys sysfs ro,nosuid,nodev,noexec,relatime 0 0\ncgroup /sys/fs/cgroup cgroup2 ro,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot 0 0\nmqueue /dev/mqueue mqueue rw,nosuid,nodev,noexec,relatime 0 0\nshm /dev/shm tmpfs rw,nosuid,nodev,noexec,relatime,size=65536k,inode64 0 0\ntmpfs /gps-temp tmpfs rw,nosuid,nodev,noexec,relatime,size=262144k,inode64 0 0\n/dev/nvme0n1p5 /etc/resolv.conf ext4 rw,relatime 0 0\n/dev/nvme0n1p5 /etc/hostname ext4 rw,relatime 0 0\n/dev/nvme0n1p5 /etc/hosts ext4 rw,relatime 0 0\n/dev/nvme0n1p5 /var/lib/postgresql/data ext4 rw,relatime 0 0\ntmpfs /var/lib/postgresql/data/base/pgsql_tmp tmpfs rw,nosuid,nodev,noexec,relatime,size=65536k,inode64 0 0\nproc /proc/bus proc ro,nosuid,nodev,noexec,relatime 0 0\nproc /proc/fs proc ro,nosuid,nodev,noexec,relatime 0 0\nproc /proc/irq proc ro,nosuid,nodev,noexec,relatime 0 0\nproc /proc/sys proc ro,nosuid,nodev,noexec,relatime 0 0\nproc /proc/sysrq-trigger proc ro,nosuid,nodev,noexec,relatime 0 0\ntmpfs /proc/acpi tmpfs ro,relatime,inode64 0 0\ntmpfs /proc/asound tmpfs ro,relatime,inode64 0 0\ntmpfs /proc/interrupts tmpfs rw,nosuid,size=65536k,mode=755,inode64 0 0\ntmpfs /proc/kcore tmpfs rw,nosuid,size=65536k,mode=755,inode64 0 0\ntmpfs /proc/keys tmpfs rw,nosuid,size=65536k,mode=755,inode64 0 0\ntmpfs /proc/latency_stats tmpfs rw,nosuid,size=65536k,mode=755,inode64 0 0\ntmpfs /proc/scsi tmpfs ro,relatime,inode64 0 0\ntmpfs /proc/timer_list tmpfs rw,nosuid,size=65536k,mode=755,inode64 0 0\ntmpfs /sys/devices/virtual/powercap tmpfs ro,relatime,inode64 0 0\ntmpfs /sys/firmware tmpfs ro,relatime,inode64 0 0\n"
+}

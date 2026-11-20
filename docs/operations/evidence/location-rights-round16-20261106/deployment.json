@@ -1,0 +1,94 @@
+{
+  "release": "privacy-pdf-20261106-r1",
+  "commit": "9ac432292080ba10b35d8ae05a03ac84bc81ac0d",
+  "schema": 98,
+  "api_sha256": "b6ac9edb5bacae749db3c2561f95763860599abc7de7099dcf50bc63a427bba7",
+  "renderer_sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+  "renderer": "/home/mmm/projects/gps-tracker-api/bin/gps-pdf-render",
+  "pdf_processor": {
+    "self_test": "passed",
+    "run_as": "mmm",
+    "blocked": {
+      "open_file": "signal 31",
+      "open_socket": "signal 31",
+      "start_program": "signal 31",
+      "start_process": "signal 31",
+      "too_much_memory": "refused",
+      "too_much_cpu": "signal 9"
+    },
+    "api_service_system_call_filter": false,
+    "api_service_memory_max": "max",
+    "host_memory_and_swap_available_mib": 5614,
+    "processor_memory_ceiling_mib": 768
+  },
+  "web": "/home/mmm/releases/privacy-pdf-20261106-r1/web",
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "privacy-pdf-20261106-r1",
+    "service": "gps-tracker-api"
+  },
+  "previous_release": "privacy-raster-20261106-r1",
+  "backup": "/home/mmm/backups/privacy-pdf-20261106-r1",
+  "neighbor_releases_unchanged": true,
+  "existing_collection_policies_unchanged": true,
+  "timer_active": true,
+  "apply_started_at": "2026-11-06T13:54:30.812+09:00",
+  "apply_finished_at": "2026-11-06T13:54:46.752+09:00",
+  "independent_verification": {
+    "at": "2026-11-06T13:55:15+09:00",
+    "public_health_release_from_pc_and_server": "privacy-pdf-20261106-r1",
+    "api_restarts_since_release": 0,
+    "api_log": "migrations up to date; listening on 127.0.0.1:3040; no ERROR lines",
+    "api_stop_to_listening_seconds": 0.045,
+    "running_executable_sha256": "b6ac9edb5bacae749db3c2561f95763860599abc7de7099dcf50bc63a427bba7",
+    "renderer_installed": {
+      "owner": "root",
+      "mode": "755",
+      "sha256": "3eaaf5535c01c58e1c4f3eae5e3a4799c59b916233960897581d5ee7707d4ffb",
+      "processes_left": 0
+    },
+    "migration_rows": 98,
+    "all_migrations_successful": true,
+    "migration_98_recorded_sha384": "a567edf16379ffa696401f070d056030c1b13fd0371a850cc354bd145299cfa5bd6003442e2f6331d39bd708cdfcea7b",
+    "migration_98_checksum_matches_source": true,
+    "new_columns_nullable": [
+      "privacy_receipt_reads.page",
+      "privacy_image_deliveries.source_page"
+    ],
+    "pdf_in_receipt_scope": true,
+    "rows_using_new_columns": 0,
+    "existing_read_proofs": 2,
+    "existing_deliveries": 3,
+    "temporary_payloads": 0,
+    "backup_contents": [
+      "api.previous",
+      "baseline.json",
+      "receipt_scope.previous.sql"
+    ],
+    "backup_api_previous_sha256": "9acd61b3e21a6c188fe9140a764d67ea65b9ee83c18edef2404de78387691250",
+    "device_ingest_after_restart": {
+      "200": 4,
+      "5xx": 0
+    },
+    "gps_path_5xx_since_apply": {
+      "/health during the restart": 1
+    },
+    "nginx_postgresql_dev_shield_restarted": false,
+    "cleanup_timers": {
+      "gps-privacy-accounts": "active, last run success",
+      "gps-privacy-files": "active, last run success"
+    },
+    "firewall_rules_file_changed": false,
+    "disk_free": "4.8G"
+  },
+  "production_smoke_run": true,
+  "unrelated_observations": [
+    "nginx 502 on /notify/ws (another service, notion-notify at 127.0.0.1:8050, nothing listening): every request since at least 2026-11-05, one client retrying; not touched",
+    "one transient DNS resolution timeout for gps.serial.kr on the host after the release; 5 ms on the next tries"
+  ],
+  "production_smoke": "production-smoke.json (2026-11-06 14:01:24-14:01:41 KST, passed)",
+  "scripted_rollback_available": false,
+  "verified_by_smoke": "the production API started the installed processor inside its service and drew PDF pages 1 and 2"
+}

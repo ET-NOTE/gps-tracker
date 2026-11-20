@@ -1,0 +1,65 @@
+{
+  "passed": true,
+  "release": "privacy-facts-20261106-r1",
+  "commit": "682ab5df2b10a871e6576901e756d0f535034272",
+  "api_sha256": "1fc16f783259d18898456318ff2ad14eb7caa9278e3739609f077e967f115a4d",
+  "web_sha256": "96fb79aba378da13457252c030f593027bc315927c46b153ec9d1fdae02b9f83",
+  "release_script_sha256": "70f77a59727435bf2f3217ebb6dd8e7ffef0f1179e1569f0d3fd60a51e13ed30",
+  "smoke_sha256": "c53e3c353328ac81a01160235cbe2bd83b0a8e680f68c37e659e17d9adf5f94a",
+  "previous": {
+    "release": "pdf-service-20261106-r1",
+    "api_sha256": "0d28667f3c21af82a43b987a12eec2836547d3717c69ae304688c6e5363ce826"
+  },
+  "host": {
+    "image": "ubuntu:22.04 with systemd as PID 1",
+    "kernel": "6.8.0-142-generic",
+    "systemd": "systemd 249 (249.11-0ubuntu3.23)"
+  },
+  "steps": [
+    {
+      "step": "start: production as it is today (previous API release on schema 98, API as gps-api, PDF processor as its own service) with a grant issued by that release"
+    },
+    {
+      "step": "check passes and changes nothing",
+      "found": {
+        "database": "previous",
+        "health_release": "pdf-service-20261106-r1",
+        "api_sha256": "0d28667f3c21af82a43b987a12eec2836547d3717c69ae304688c6e5363ce826",
+        "web": "/home/mmm/releases/privacy-pdf-20261106-r1/web"
+      }
+    },
+    {
+      "step": "the migration cannot take its lock -> nothing is changed, the attempt is set aside"
+    },
+    {
+      "step": "new API does not become healthy -> automatic return: previous binary, schema 98, web link as before"
+    },
+    {
+      "step": "new API healthy but the processor service fails its check -> automatic return"
+    },
+    {
+      "step": "apply: schema 99, new API healthy, web switched; the processor service was not touched or restarted; the earlier grant still downloads",
+      "health": {
+        "db": true,
+        "environment": "test",
+        "ok": true,
+        "release": "privacy-facts-20261106-r1",
+        "service": "gps-tracker-api"
+      },
+      "pdf_processor_service": {
+        "unchanged_and_not_restarted": true,
+        "socket": "active",
+        "proof": "success"
+      }
+    },
+    {
+      "step": "rollback: previous binary and web, schema 98 with both rules as before; the earlier grant still downloads; check passes again"
+    },
+    {
+      "step": "apply again; the production smoke script completes against the rehearsal host"
+    },
+    {
+      "step": "going back is refused once a grant uses the new section"
+    }
+  ]
+}

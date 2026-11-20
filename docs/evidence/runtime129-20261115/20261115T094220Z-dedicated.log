@@ -1,0 +1,38 @@
+dedicated-129 0 reads 0 ingest 0 PDF 0 cleanup 0 errors 0
+dedicated-129 10 reads 20 ingest 77 PDF 4 cleanup 2 errors 0
+dedicated-129 20 reads 40 ingest 157 PDF 7 cleanup 4 errors 0
+dedicated-129 30 reads 56 ingest 238 PDF 10 cleanup 6 errors 0
+dedicated-129 40 reads 72 ingest 318 PDF 14 cleanup 8 errors 0
+dedicated-129 50 reads 94 ingest 398 PDF 17 cleanup 10 errors 0
+dedicated-129 60 reads 115 ingest 479 PDF 20 cleanup 12 errors 0
+dedicated-129 70 reads 131 ingest 559 PDF 23 cleanup 14 errors 0
+dedicated-129 80 reads 149 ingest 634 PDF 27 cleanup 15 errors 0
+dedicated-129 90 reads 160 ingest 718 PDF 30 cleanup 17 errors 0
+dedicated-129 100 reads 179 ingest 800 PDF 33 cleanup 19 errors 0
+dedicated-129 110 reads 199 ingest 880 PDF 37 cleanup 21 errors 0
+dedicated-129 120 reads 214 ingest 952 PDF 40 cleanup 23 errors 0
+dedicated-129 130 reads 232 ingest 1041 PDF 43 cleanup 25 errors 0
+dedicated-129 140 reads 247 ingest 1121 PDF 46 cleanup 27 errors 0
+dedicated-129 150 reads 265 ingest 1201 PDF 50 cleanup 28 errors 0
+dedicated-129 160 reads 280 ingest 1280 PDF 53 cleanup 30 errors 0
+dedicated-129 170 reads 300 ingest 1362 PDF 56 cleanup 32 errors 0
+dedicated-129 180 reads 314 ingest 1442 PDF 60 cleanup 34 errors 0
+dedicated-129 190 reads 332 ingest 1523 PDF 63 cleanup 36 errors 0
+dedicated-129 200 reads 349 ingest 1603 PDF 66 cleanup 38 errors 0
+dedicated-129 210 reads 363 ingest 1655 PDF 69 cleanup 39 errors 0
+dedicated-129 220 reads 380 ingest 1764 PDF 73 cleanup 41 errors 0
+dedicated-129 230 reads 398 ingest 1844 PDF 76 cleanup 43 errors 0
+dedicated-129 241 reads 408 ingest 1895 PDF 79 cleanup 44 errors 0
+dedicated-129 251 reads 428 ingest 2004 PDF 83 cleanup 46 errors 0
+dedicated-129 261 reads 447 ingest 2085 PDF 86 cleanup 48 errors 0
+dedicated-129 271 reads 457 ingest 2165 PDF 89 cleanup 50 errors 0
+dedicated-129 281 reads 474 ingest 2246 PDF 92 cleanup 52 errors 0
+dedicated-129 291 reads 493 ingest 2326 PDF 96 cleanup 54 errors 0
+Traceback (most recent call last):
+  File "/opt/gps121/run_runtime129.py", line 124, in <module>
+    elif action in ('dedicated','shared','shared-low'):load(action,2 if action=='shared-low' else 8)
+  File "/opt/gps121/run_runtime129.py", line 91, in load
+    try:l.load(label+'-129',300,readers)
+  File "/opt/gps121/load_runtime129.py", line 382, in load
+    assert len(ingest)==seconds*8 and not result['ingest']['missed_slots'] and all(x['status']==200 for x in ingest)
+AssertionError

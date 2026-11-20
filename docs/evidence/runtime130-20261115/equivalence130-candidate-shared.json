@@ -1,0 +1,202 @@
+{
+  "queries": [
+    {
+      "device": 1,
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 1.8606363600119948,
+      "semantic_sha256": "4de689f0907f2e7e013eddea60cf947d65bf852e5215d9612f8c2a075c6442d2"
+    },
+    {
+      "device": 1,
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.7285643280483782,
+      "semantic_sha256": "80c6dd29a29b38c360e4181191befe7ef5c4adac57d28cc461c8c4c43808d5c4"
+    },
+    {
+      "device": 1,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.16655259067192674,
+      "semantic_sha256": "579b780bb097485f43636d98a049e41096c8868e9c0b31ed41047a8d69267784"
+    },
+    {
+      "device": 2,
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 1.8818781916052103,
+      "semantic_sha256": "ca2042a0cbea9661a755f30c11e267c959d0b4901070dd0751b5c762151dbf3e"
+    },
+    {
+      "device": 2,
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.6978604588657618,
+      "semantic_sha256": "dcebaa70cd65df6fbcba567e6bec3ffcc7d5c1f64315234ca6b058fd58a4b487"
+    },
+    {
+      "device": 2,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.2439240557141602,
+      "semantic_sha256": "3a8472491ecb3f70b721141da8b365f5d43405319f7679a1297646760f680ef1"
+    },
+    {
+      "device": 3,
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 1.8646608400158584,
+      "semantic_sha256": "65fbf5106c02a6e2ab35852d68a37ae581fde864c083a51878838bfcd1ffa386"
+    },
+    {
+      "device": 3,
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.705161347053945,
+      "semantic_sha256": "474515f936f6a12503db4ffef19d9237f4bbd4a356854e6f5019ed036496cf93"
+    },
+    {
+      "device": 3,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.29380140407010913,
+      "semantic_sha256": "8c61db7feddc7f0c69337579c72a251761ceb865d08d94db7cb0d6764b5baff1"
+    },
+    {
+      "device": 4,
+      "route": "month_aggregate",
+      "status": 200,
+      "seconds": 1.9619666496291757,
+      "semantic_sha256": "e264c9101748a0c9ce882a774e39973cfb57ec35b92708a1d8b792014690c845"
+    },
+    {
+      "device": 4,
+      "route": "month_history",
+      "status": 200,
+      "seconds": 1.72879352979362,
+      "semantic_sha256": "ccc62c837b037b5a2baa259a75119342d51646b2106701875cc74c72c9a16743"
+    },
+    {
+      "device": 4,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.165847301017493,
+      "semantic_sha256": "d3000164237fef9db57fd6e506ce1c73af061626cbef9bcac4005d3c313b2089"
+    },
+    {
+      "device": 5,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.1651624790392816,
+      "semantic_sha256": "12147142d8bcd5648d91e0e766e42985622c1d30d64815b2b65624132d557209"
+    },
+    {
+      "device": 5,
+      "route": "fleet_trips",
+      "status": 200,
+      "seconds": 1.4740076810121536,
+      "semantic_sha256": "71ae93d395a50378dbd109d3bc9f9c73141585801db0c8e8cf85d199b8f9a220"
+    },
+    {
+      "device": 5,
+      "route": "fleet_csv",
+      "status": 200,
+      "seconds": 1.412307646125555,
+      "semantic_sha256": "d88e2b772abb10d945d4df60ee302f1cf52e16c5c646c8df3c2d99e7869dc0aa"
+    },
+    {
+      "device": 5,
+      "route": "fleet_xlsx",
+      "status": 200,
+      "seconds": 5.606833965983242,
+      "semantic_sha256": "6fbce33053b556cadf7d27df5801bf5397abb943f6a3a7bcc6ffd1a3d52be751"
+    },
+    {
+      "device": 6,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.20317141385748982,
+      "semantic_sha256": "5c3354b7d7ffd3630f772609a3ca3ed8237a4f9c07ed087dc8d2931cf99bcb4a"
+    },
+    {
+      "device": 6,
+      "route": "fleet_trips",
+      "status": 200,
+      "seconds": 1.5809351368807256,
+      "semantic_sha256": "6d58a280dc48fd263a798b3026f6a144f41ebbc612a40e3e67cfc5cc25acf8bd"
+    },
+    {
+      "device": 6,
+      "route": "fleet_csv",
+      "status": 200,
+      "seconds": 1.4170979289337993,
+      "semantic_sha256": "27b92e611ccf3fd5c697f738a456ef8a830cc02e7f8a697e8fd67d727e300460"
+    },
+    {
+      "device": 6,
+      "route": "fleet_xlsx",
+      "status": 200,
+      "seconds": 5.6011251849122345,
+      "semantic_sha256": "6fbce33053b556cadf7d27df5801bf5397abb943f6a3a7bcc6ffd1a3d52be751"
+    },
+    {
+      "device": 7,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.16297615505754948,
+      "semantic_sha256": "86dd3dec58840f02622621054b96d3938288711c998037bf20861a858469ff09"
+    },
+    {
+      "device": 7,
+      "route": "fleet_trips",
+      "status": 200,
+      "seconds": 1.40111393481493,
+      "semantic_sha256": "4e8d277cdf83b1b791fb7f36aaab6b8984c79035cc2b1222271da1925aeb336c"
+    },
+    {
+      "device": 7,
+      "route": "fleet_csv",
+      "status": 200,
+      "seconds": 1.4636490656994283,
+      "semantic_sha256": "c80e87dd6b992e9c5db31aac187f8fc3039de9935d768b3a7e83718299a5052f"
+    },
+    {
+      "device": 7,
+      "route": "fleet_xlsx",
+      "status": 200,
+      "seconds": 5.67204300314188,
+      "semantic_sha256": "6fbce33053b556cadf7d27df5801bf5397abb943f6a3a7bcc6ffd1a3d52be751"
+    },
+    {
+      "device": 8,
+      "route": "month_page",
+      "status": 200,
+      "seconds": 0.16517225932329893,
+      "semantic_sha256": "588f33a8de97a02b23e67fda33b7e980ca322fb0c55b257ed8530b71ea71413a"
+    },
+    {
+      "device": 8,
+      "route": "fleet_trips",
+      "status": 200,
+      "seconds": 1.4240599642507732,
+      "semantic_sha256": "431899432d50df230591b105a28a4939ad25c9ef7d575da617ac0500f8803b85"
+    },
+    {
+      "device": 8,
+      "route": "fleet_csv",
+      "status": 200,
+      "seconds": 1.3952299281954765,
+      "semantic_sha256": "23e8f7f6ba3a334e9a959b9d4951cb91655bfbf17b719b02c61a155001351b45"
+    },
+    {
+      "device": 8,
+      "route": "fleet_xlsx",
+      "status": 200,
+      "seconds": 5.651056034024805,
+      "semantic_sha256": "6fbce33053b556cadf7d27df5801bf5397abb943f6a3a7bcc6ffd1a3d52be751"
+    }
+  ],
+  "api_sha256": "42d3e8768c66d280bc623fe7c3eb9a1a24bd63cddf635413a339886ec5e8bb59",
+  "xlsx_excluded": "docProps/core.xml creation metadata only"
+}

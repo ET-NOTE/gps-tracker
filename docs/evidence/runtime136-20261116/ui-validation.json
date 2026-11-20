@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-16T01:25:26.361Z",
+  "environment": "actual React company panel/binding picker; synthetic local responses",
+  "checks": [
+    "lazy search;207 bindings50/50/50/50/7",
+    "literal name filter resets page",
+    "390px no overflow; no nested forms",
+    "historical selection keeps option and dates; no automatic proposal",
+    "explicit first request preserves chosen binding/staff and consent notice",
+    "error distinct from empty; retry and cancel",
+    "feature OFF disables choice; close removes picker"
+  ],
+  "errors": []
+}

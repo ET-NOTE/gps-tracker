@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/opt/gps121/test_request_history134.py", line 132, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_request_history134.py", line 46, in main
+    assert history(who,target)[0]==404,(who['user_id'],target)
+AssertionError: (2, 1)

@@ -1,0 +1,21 @@
+{
+  "round": "20B",
+  "status": "implemented and verified; production transition candidate prepared",
+  "production_applied": false,
+  "candidate_schema": 104,
+  "production_schema": 99,
+  "source_commit": "3e41d866295b9c51ce3d671b1f5dad39f50e4da1",
+  "api_sha256": "2651194a349d5f9b9c61eb9c77f87bc2124ee36909d963332574721645b3b766",
+  "rust_passed": 78,
+  "external_tests_passed": 3,
+  "conversion_groups": 5,
+  "recovery_groups": 7,
+  "business_suites": 8,
+  "api_inputs_verified": 208,
+  "web_inputs_verified": 308,
+  "source_normalization": "CRLF normalized to LF except migration files compared byte-for-byte",
+  "synthetic_points": 150000,
+  "production_scale_rehearsal": false,
+  "screenshot": "encryption-validation-report.png",
+  "screenshot_type": "actual isolated validation results report; not production UI"
+}

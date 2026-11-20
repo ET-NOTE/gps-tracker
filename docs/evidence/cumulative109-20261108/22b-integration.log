@@ -1,0 +1,9 @@
+api ready at 172.28.0.3 (ledger on)
+PASS existing map ignores cached/unconfirmed positions; trips split at two confirmed subjects; notices match returned mappings
+PASS legacy and vehicle reports, CSV, browser-export intents, monthly point stats and both XLSX scope modes obey the same projection
+PASS cross-subject/gap correction overlay cannot reintroduce excluded evidence
+PASS empty period emits no notice; outsider/unassigned member denied; self interval is not third-party provision
+PASS subject pause filters only that subject; revoked final interval removes map/trips/stats without zero-km fallback
+PASS notice storage failure discards the prepared response; recovery resumes durable notices
+PASS hardware auth replacement keeps SIM history; changed binding clips coverage and cannot restore excluded location
+{"passed": 7, "schema": 109}

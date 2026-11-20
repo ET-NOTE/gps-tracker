@@ -1,0 +1,262 @@
+{
+  "dedicated-4g": {
+    "seconds": 300,
+    "elapsed": 304.76677853194997,
+    "statuses": {
+      "200": 287,
+      "429": 233
+    },
+    "attempts": {
+      "429": 887,
+      "200": 287
+    },
+    "ingest": {
+      "statuses": {
+        "200": 275
+      },
+      "latency": {
+        "count": 275,
+        "p50": 0.030402608681470156,
+        "p95": 0.5053161643445492,
+        "max": 1.017456708010286
+      }
+    },
+    "health": {
+      "statuses": {
+        "200": 275
+      },
+      "latency": {
+        "count": 275,
+        "p50": 0.0014149518683552742,
+        "p95": 0.00645153084769845,
+        "max": 0.0429465021006763
+      }
+    },
+    "pdf": {
+      "completed": 99,
+      "latency": {
+        "count": 99,
+        "p50": 0.052465740125626326,
+        "p95": 0.07473395904526114,
+        "max": 0.09934419905766845
+      }
+    },
+    "cleanup": {
+      "completed": 56,
+      "latency": {
+        "count": 56,
+        "p50": 0.20463190507143736,
+        "p95": 0.6162548181600869,
+        "max": 1.2014015042223036
+      },
+      "deferred": 0
+    },
+    "full_month_traversals": [
+      {
+        "points": 89280,
+        "pages": 18,
+        "seconds": 93.70337829971686
+      },
+      {
+        "points": 89280,
+        "pages": 18,
+        "seconds": 187.28507678210735
+      }
+    ],
+    "db_io_delta": {
+      "temp_bytes": 30022737028,
+      "temp_files": 15978,
+      "read_ms": 0.022999999999999687,
+      "write_ms": 0.0
+    },
+    "saved_ingest": 275,
+    "errors": [],
+    "memory": {
+      "gps": {
+        "sampled_current_max_mib": 1663.62109375,
+        "cgroup_lifetime_peak_mib": 1734.44921875,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "db": {
+        "sampled_current_max_mib": 1355.359375,
+        "cgroup_lifetime_peak_mib": 1408.00390625,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "api": {
+        "sampled_current_max_mib": 337.640625,
+        "cgroup_lifetime_peak_mib": 402.30859375,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "pdf": {
+        "sampled_current_max_mib": 5.57421875,
+        "cgroup_lifetime_peak_mib": 9.96875,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "container": {
+        "sampled_current_max_mib": 1843.9375,
+        "cgroup_lifetime_peak_mib": 1916.14453125,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      }
+    },
+    "successful_month_history_p95": 17.018715145997703
+  },
+  "shared-6g": {
+    "seconds": 300,
+    "elapsed": 302.31420046882704,
+    "statuses": {
+      "200": 326,
+      "429": 207
+    },
+    "attempts": {
+      "429": 842,
+      "200": 326
+    },
+    "ingest": {
+      "statuses": {
+        "200": 268
+      },
+      "latency": {
+        "count": 268,
+        "p50": 0.04837060533463955,
+        "p95": 0.466418890748173,
+        "max": 0.6504528010264039
+      }
+    },
+    "health": {
+      "statuses": {
+        "200": 268
+      },
+      "latency": {
+        "count": 268,
+        "p50": 0.0014999127015471458,
+        "p95": 0.003975452855229378,
+        "max": 0.02583857299759984
+      }
+    },
+    "pdf": {
+      "completed": 99,
+      "latency": {
+        "count": 99,
+        "p50": 0.05369188683107495,
+        "p95": 0.07967905979603529,
+        "max": 0.13949670735746622
+      }
+    },
+    "cleanup": {
+      "completed": 56,
+      "latency": {
+        "count": 56,
+        "p50": 0.20347480196505785,
+        "p95": 0.44394068606197834,
+        "max": 0.5469629657454789
+      },
+      "deferred": 0
+    },
+    "full_month_traversals": [
+      {
+        "points": 89280,
+        "pages": 18,
+        "seconds": 141.2834268831648
+      },
+      {
+        "points": 89280,
+        "pages": 18,
+        "seconds": 117.5865264092572
+      }
+    ],
+    "db_io_delta": {
+      "temp_bytes": 30942395168,
+      "temp_files": 16464,
+      "read_ms": 0.020999999999999908,
+      "write_ms": 0.0
+    },
+    "saved_ingest": 268,
+    "errors": [],
+    "memory": {
+      "gps": {
+        "sampled_current_max_mib": 1590.203125,
+        "cgroup_lifetime_peak_mib": 1734.44921875,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "db": {
+        "sampled_current_max_mib": 1336.48828125,
+        "cgroup_lifetime_peak_mib": 1408.00390625,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "api": {
+        "sampled_current_max_mib": 314.19921875,
+        "cgroup_lifetime_peak_mib": 399.203125,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "pdf": {
+        "sampled_current_max_mib": 1.4375,
+        "cgroup_lifetime_peak_mib": 10.15625,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "other": {
+        "sampled_current_max_mib": 787.38671875,
+        "cgroup_lifetime_peak_mib": 788.015625,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "av": {
+        "sampled_current_max_mib": 614.71875,
+        "cgroup_lifetime_peak_mib": 615.12890625,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      },
+      "container": {
+        "sampled_current_max_mib": 3178.10546875,
+        "cgroup_lifetime_peak_mib": 3259.44921875,
+        "final_swap_bytes": 0,
+        "event_delta": {
+          "oom": 0,
+          "oom_kill": 0
+        }
+      }
+    },
+    "successful_month_history_p95": 17.70432221889496
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "version": "520211-continuous-runtime-20261014-v1",
+  "reference_start": "2026-10-12T10:45:00+09:00",
+  "reference_end": "2026-10-14T13:48:00+09:00",
+  "reference_seconds": 183780,
+  "reference_label": "MEGACANON 2개 병렬 · 절전 해제·연속 통신 기준",
+  "note": "충전하지 않고 측정 당시와 같은 부하로 사용할 때의 예상입니다. 배터리 용량·온도·통신·절전에 따라 달라집니다. 최초 포트 분리 시각은 미확인이며, 종료는 사용자가 지정한 저전압 재부팅 구간으로 안전 방전 한계가 아닙니다.",
+  "external_power_above_mv": 4200,
+  "stale_after_seconds": 300,
+  "source_sha256": "64237d6d97c3b5ed7076f27ae34f694170bb6aecf2e9593b1392dd189452c6a2",
+  "method": "Linear interpolation of calibrated voltage and seconds until the observed endpoint; no rounded-SOC multiplication.",
+  "curve": [
+    [
+      2600,
+      0
+    ],
+    [
+      2720,
+      1838
+    ],
+    [
+      2770,
+      3676
+    ],
+    [
+      2785,
+      5513
+    ],
+    [
+      2860,
+      9189
+    ],
+    [
+      3055,
+      18378
+    ],
+    [
+      3215,
+      27567
+    ],
+    [
+      3315,
+      36756
+    ],
+    [
+      3400,
+      45945
+    ],
+    [
+      3475,
+      73512
+    ],
+    [
+      3655,
+      91890
+    ],
+    [
+      3775,
+      110268
+    ],
+    [
+      3895,
+      137835
+    ],
+    [
+      3945,
+      147024
+    ],
+    [
+      4030,
+      165402
+    ],
+    [
+      4060,
+      174591
+    ],
+    [
+      4113,
+      183780
+    ]
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "checked_at": "2026-11-18T18:23:15.208591+09:00",
+  "target": "2027-11-18T18:23:15.208591+09:00",
+  "accounts": [
+    {
+      "email": "user@user.com",
+      "role": "user",
+      "account_type": "corporate_fleet",
+      "subscriptions": {
+        "corporate_report": {
+          "continuous_until": "2027-12-05T19:56:15.958288+09:00",
+          "at_least_one_year": true
+        },
+        "rentcar_report": {
+          "continuous_until": "2027-11-22T18:43:18.162228+09:00",
+          "at_least_one_year": true
+        }
+      }
+    },
+    {
+      "email": "user@user4.com",
+      "role": "user",
+      "account_type": "corporate_fleet",
+      "subscriptions": {
+        "corporate_report": {
+          "continuous_until": "2027-11-22T19:04:07.659994+09:00",
+          "at_least_one_year": true
+        },
+        "rentcar_report": {
+          "continuous_until": "2027-11-22T19:04:07.659994+09:00",
+          "at_least_one_year": true
+        }
+      }
+    }
+  ],
+  "database_changes": 0
+}

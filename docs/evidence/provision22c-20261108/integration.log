@@ -1,0 +1,10 @@
+api ready at 172.28.0.3 (ledger on)
+PASS subject-only confirmation, company roles, tenant denial, idempotent proposals and stale revisions
+PASS same-SIM overlapping confirmed driver rejected atomically; explicit rejection retained
+PASS bounded actual location response; ignored widening query; changed vehicle binding blocked; one durable subject notice and account-isolated acknowledgement
+api ready at 172.28.0.3 (ledger off)
+PASS in-flight revocation fence; former staff pause/revocation persists with feature and ledger OFF; rights inbox remains available
+PASS SIM identity remains the telemetry key across changed hardware auth identity
+PASS review queue retry is explicit, audited, subject-only and idempotent by state
+PASS cursor pagination retains access to old revocations and never changes subject scope
+{"passed": 7, "schema": 107}

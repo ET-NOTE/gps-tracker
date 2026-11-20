@@ -1,0 +1,45 @@
+{
+  "at": "2026-11-18T08:24:17Z",
+  "passed": [
+    "admin security ON: anonymous/user/unverified admin/handler/delegation denied; enrolled officer and operator allowed",
+    "107 recorded decisions traverse50/50/7, strict projection/no-store, historical vs current state, other request excluded and source hashes unchanged",
+    "21 status/review filters; exactly100 in_review decisions end50/50; invalid conditions400, foreign review empty, unknown request404",
+    "history GET leaves admin access/response evidence, never creates a new review decision; audit-write failure fails closed and recovers",
+    "one blocked history SELECT cancelled by TLS disconnect, SQL ends and next read200; no sustained/concurrent load",
+    "IP restriction ignores spoofed forwarding, disabled principal and revoked step-up session deny saved endpoint without changing evidence",
+    "legacy latest100 and public redacted summary unchanged; cancelled parent remains auditable; schema114 preserved"
+  ],
+  "schema": 114,
+  "api_sha256": "88b6077ef50a736b7b087126c812974573f6282046c30d0257abfe1f5ed4b031",
+  "fixture": {
+    "accounts": 6,
+    "events": 107,
+    "foreign_events": 1,
+    "reviews": 3,
+    "page_lengths": [
+      50,
+      50,
+      7
+    ]
+  },
+  "read_only_hashes": {
+    "privacy_requests": "fb88bb4270c15be5f4a5a44559465e3b",
+    "privacy_company_reviews": "fa3545bc520e78106a530186cbff2718",
+    "privacy_company_review_events": "901bb8924d7380a0dc482d1c40b54685",
+    "staff": "24e0b688b0d8fca77eeed99c57b648ce",
+    "fleet_staff_accounts": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false,
+  "environment": "internal TLS1.2; PostgreSQL14/Timescale; separated gps_runtime; encryption ON; admin security ON with TOTP and IP"
+}

@@ -1,0 +1,20 @@
+{
+  "source_commit": "ebc01b5892bc75664ff189c449b9501ebe70e3bc",
+  "all_git_and_build_host_input_hashes_match": true,
+  "verified_source_files": 502,
+  "source_manifest_sha256": "c915086984ea9f5b30b111a44e67c39e0e97d1b73e95633fc0143b828067bad2",
+  "api_sha256": "b20be1f8b71c05e5658b78d439934b772641c54617f2044f269830f3634a653c",
+  "web_reused_unchanged_from22d": true,
+  "historic_migrations_unchanged": true,
+  "input_method": "Git archive export plus raw Git blob overlays; differences are CRLF/LF only for ops scripts",
+  "raw_blob_overlay_files": [
+    "ops/admin_db_roles.py",
+    "ops/crypto20b_transition.py",
+    "ops/location_storage.py",
+    "ops/prepare_cumulative109.py",
+    "ops/test_subject_ancestry109.py",
+    "ops/benchmark_subject_queries109.py",
+    "ops/run_extra_cumulative109.py",
+    "ops/stage_cumulative109.py"
+  ]
+}

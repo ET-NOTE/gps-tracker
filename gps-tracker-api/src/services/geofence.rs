@@ -3,8 +3,8 @@
 // check_after_ingest: 위치 ingest 직후 호출. 해당 디바이스가 모든 활성 지오펜스에
 //   대해 in/out 인지 판정 → 상태 변화 시 events 테이블에 'geofence_in'/'geofence_out' 삽입.
 //
-// spawn_offline_worker: 30초 주기로 실행. 사용자별 offline_minutes 임계 넘긴 디바이스에
-//   'offline' 이벤트를 한 번만 (직전 events 가 'offline' 아닐 때만) 삽입. FCM 워커가 발송.
+// spawn_offline_worker: 30초마다 미수신 상태를 검사한다.
+// connection_alerts가 마지막 실제 수신 시각별로 한 번만 이벤트를 기록한다.
 
 use std::time::Duration;
 
@@ -31,12 +31,22 @@ pub fn haversine_m(lat1: f64, lng1: f64, lat2: f64, lng2: f64) -> f64 {
 
 /// ingest 직후 호출. 이 디바이스에 적용되는 모든 활성 지오펜스를 검사하고
 /// in/out 트랜지션 발생 시 events 삽입.
-pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f64) -> anyhow::Result<()> {
+pub async fn check_after_ingest(
+    pool: &PgPool,
+    device_id: i64,
+    lat: f64,
+    lng: f64,
+) -> anyhow::Result<()> {
+    let _privacy = super::privacy_lifecycle::background(
+        super::access_ledger::Target::Device(device_id),
+        false,
+    )
+    .await?;
     // owner의 활성 지오펜스 중 device_id 일치하거나 NULL(전체 적용)
     let fences: Vec<(i64, f64, f64, i32, String)> = sqlx::query_as(
         r#"SELECT g.id, g.center_lat, g.center_lng, g.radius_m, g.name
-             FROM geofences g
-             JOIN devices  d ON d.owner_id = g.owner_id
+             FROM gps_read_geofences g
+             JOIN gps_read_devices  d ON d.owner_id = g.owner_id
             WHERE d.id = $1
               AND g.active
               AND (g.device_id IS NULL OR g.device_id = $1)"#,
@@ -72,8 +82,8 @@ pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f6
         //   반경의 30% 와 10m 중 작은 값 → 소형 펜스도 진입 가능하고 대형은 기존 10m 유지.
         let hyst = (radius_f * 0.3).min(GEOFENCE_HYSTERESIS_M);
         let inside_now = match prev {
-            None        => dist <= radius_f,
-            Some(true)  => dist <= radius_f + hyst,
+            None => dist <= radius_f,
+            Some(true) => dist <= radius_f + hyst,
             Some(false) => dist <= radius_f - hyst,
         };
 
@@ -96,11 +106,15 @@ pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f6
 
         // 트랜지션 발생 — 이벤트 + 상태 갱신 한 트랜잭션 안에.
         if prev != Some(inside_now) {
-            let kind = if inside_now { "geofence_in" } else { "geofence_out" };
+            let kind = if inside_now {
+                "geofence_in"
+            } else {
+                "geofence_out"
+            };
             sqlx::query(
                 r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
                    VALUES ($1, $2, now(), $3,
-                           (SELECT owner_id FROM devices WHERE id = $1))"#,
+                           (SELECT owner_id FROM gps_read_devices WHERE id = $1))"#,
             )
             .bind(device_id)
             .bind(kind)
@@ -125,7 +139,13 @@ pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f6
             .execute(&mut *tx)
             .await?;
 
-            tracing::info!(device_id, gid, kind, dist_m=dist as i64, "geofence transition");
+            tracing::info!(
+                device_id,
+                gid,
+                kind,
+                dist_m = dist as i64,
+                "geofence transition"
+            );
         }
 
         tx.commit().await?;
@@ -134,182 +154,15 @@ pub async fn check_after_ingest(pool: &PgPool, device_id: i64, lat: f64, lng: f6
 }
 
 /// 통신 두절 워커. 사용자 설정 offline_minutes 보다 오래 무소식인 디바이스에
-/// 'offline' 이벤트를 한 번만 삽입 (직전 미통보 이벤트 중 동일 kind 있으면 skip).
+/// 실제 수신이 재개되기 전까지 일일 반복 알림을 만들지 않는다.
 pub fn spawn_offline_worker(pool: PgPool) {
     tokio::spawn(async move {
         tracing::info!("offline worker: started (poll every 30s)");
         loop {
-            if let Err(e) = scan_offline(&pool).await {
+            if let Err(e) = super::connection_alerts::scan(&pool).await {
                 tracing::warn!("offline worker error: {e:#}");
             }
             sleep(OFFLINE_POLL_INTERVAL).await;
         }
     });
-}
-
-async fn scan_offline(pool: &PgPool) -> anyhow::Result<()> {
-    // 페어링된 디바이스 + 사용자 설정 (signal_loss_minutes / offline_minutes) join.
-    // signal_loss_minutes (default 5) 보다 오래 무소식인 모든 디바이스를 가져와서
-    // 두 임계점 (signal_loss / offline) 을 한 루프에서 평가.
-    let candidates: Vec<(i64, i32, i32, i64)> = sqlx::query_as(
-        r#"SELECT d.id,
-                  COALESCE(ns.signal_loss_minutes, 5)  AS signal_min,
-                  COALESCE(ns.offline_minutes, 30)     AS offline_min,
-                  EXTRACT(EPOCH FROM (now() - d.last_seen_at))::BIGINT AS silence_sec
-             FROM devices d
-             JOIN users u ON u.id = d.owner_id
-        LEFT JOIN notification_settings ns ON ns.user_id = d.owner_id
-            WHERE d.last_seen_at IS NOT NULL
-              AND d.last_seen_at < now() - (COALESCE(ns.signal_loss_minutes, 5) || ' minutes')::interval"#,
-    )
-    .fetch_all(pool)
-    .await?;
-
-    for (device_id, signal_min, offline_min, silence_sec) in candidates {
-        let silence_min = silence_sec / 60;
-
-        // 의도적 sleep 상태이면 통신 알림 스킵 — 'lost' 워커가 24h 후 처리
-        // user_id 격리: 현재 owner 의 이벤트만 봄 (이전 owner 의 sleep_enter 가
-        // 새 owner 의 통신 알림을 막지 않도록)
-        let last_event: Option<String> = sqlx::query_scalar(
-            r#"SELECT kind FROM events
-                WHERE device_id = $1
-                  AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
-                ORDER BY occurred_at DESC LIMIT 1"#,
-        ).bind(device_id).fetch_optional(pool).await?;
-        if last_event.as_deref() == Some("sleep_enter") { continue; }
-
-        // ── 'stuck' 단계 (1분+, 활성 상태에서 갑자기 무응답) ─────────
-        // 운영 중 LTE module hang / SHCONN 누락 등 — signal_loss (5분) 전에 빠른 가시화.
-        // 24h 내 stuck 없을 때만 한 번. signal_loss/offline 으로 넘어가면 stuck 은 자동 만료.
-        if silence_min >= 1 {
-            // [2026-08-14] dedup 경계 = GREATEST(24h 전, 마지막 online 복구시각).
-            //   기존 "24h 고정창" 은 두절→복구→재두절 시 재두절을 24h 내내 무통보시킴.
-            //   복구(online) 이후 발생한 stuck 만 세면 재두절은 즉시 통보되고, 연속 두절 중엔
-            //   1회만(스팸 방지), 24h 넘게 계속 두절이면 리마인더로 재발행.
-            let recent_stuck: Option<bool> = sqlx::query_scalar(
-                r#"SELECT TRUE FROM events
-                    WHERE device_id = $1
-                      AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
-                      AND kind = 'stuck'
-                      AND occurred_at > GREATEST(
-                            now() - interval '24 hours',
-                            COALESCE((SELECT MAX(occurred_at) FROM events
-                                       WHERE device_id = $1
-                                         AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
-                                         AND kind = 'online'), '-infinity'::timestamptz))
-                    ORDER BY occurred_at DESC LIMIT 1"#,
-            )
-            .bind(device_id).fetch_optional(pool).await?;
-            if recent_stuck.is_none() {
-                sqlx::query(
-                    r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
-                       VALUES ($1, 'stuck', now(), $2,
-                               (SELECT owner_id FROM devices WHERE id = $1))"#,
-                )
-                .bind(device_id)
-                .bind(json!({ "silence_min": silence_min, "last_event": last_event }))
-                .execute(pool).await?;
-                tracing::info!(device_id, silence_min, ?last_event, "stuck event inserted (active state silent)");
-            }
-        }
-
-        // 어떤 단계 알림을 발사할지 결정
-        if silence_min >= offline_min as i64 {
-            // OFFLINE 단계 (30분+) — 복구(online) 이후 offline 없을 때만 발사 (24h 리마인더 유지).
-            //   재두절 무통보 버그 수정: 경계를 GREATEST(24h 전, 마지막 online).
-            let recent_offline: Option<bool> = sqlx::query_scalar(
-                r#"SELECT TRUE FROM events
-                    WHERE device_id = $1
-                      AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
-                      AND kind = 'offline'
-                      AND occurred_at > GREATEST(
-                            now() - interval '24 hours',
-                            COALESCE((SELECT MAX(occurred_at) FROM events
-                                       WHERE device_id = $1
-                                         AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
-                                         AND kind = 'online'), '-infinity'::timestamptz))
-                    ORDER BY occurred_at DESC LIMIT 1"#,
-            )
-            .bind(device_id).fetch_optional(pool).await?;
-            if recent_offline.is_some() { continue; }
-
-            sqlx::query(
-                r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
-                   VALUES ($1, 'offline', now(), $2,
-                           (SELECT owner_id FROM devices WHERE id = $1))"#,
-            )
-            .bind(device_id)
-            .bind(json!({ "reason": "no_data_received", "silence_min": silence_min }))
-            .execute(pool).await?;
-            tracing::info!(device_id, silence_min, "offline event inserted");
-        } else if silence_min >= signal_min as i64 {
-            // SIGNAL_LOSS 단계 (5~30분) — 복구(online) 이후 signal_loss/offline 없을 때만 (24h 리마인더 유지)
-            let recent_either: Option<bool> = sqlx::query_scalar(
-                r#"SELECT TRUE FROM events
-                    WHERE device_id = $1
-                      AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
-                      AND kind IN ('signal_loss', 'offline')
-                      AND occurred_at > GREATEST(
-                            now() - interval '24 hours',
-                            COALESCE((SELECT MAX(occurred_at) FROM events
-                                       WHERE device_id = $1
-                                         AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
-                                         AND kind = 'online'), '-infinity'::timestamptz))
-                    ORDER BY occurred_at DESC LIMIT 1"#,
-            )
-            .bind(device_id).fetch_optional(pool).await?;
-            if recent_either.is_some() { continue; }
-
-            sqlx::query(
-                r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
-                   VALUES ($1, 'signal_loss', now(), $2,
-                           (SELECT owner_id FROM devices WHERE id = $1))"#,
-            )
-            .bind(device_id)
-            .bind(json!({ "silence_min": silence_min }))
-            .execute(pool).await?;
-            tracing::info!(device_id, silence_min, "signal_loss event inserted");
-        }
-    }
-
-    // ── 'lost' 디바이스 — 마지막 이벤트가 sleep_enter 이고 24h 넘게 무응답 ──
-    // last_event_kind = 'sleep_enter' AND occurred_at < now() - 24h AND last_seen_at < now() - 24h
-    let lost_candidates: Vec<(i64, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
-        r#"SELECT d.id, le.occurred_at
-             FROM devices d
-        JOIN LATERAL (
-              SELECT kind, occurred_at
-                FROM events
-               WHERE device_id = d.id AND user_id = d.owner_id
-            ORDER BY occurred_at DESC LIMIT 1
-        ) le ON le.kind = 'sleep_enter'
-            WHERE le.occurred_at < now() - interval '24 hours'
-              AND d.last_seen_at < now() - interval '24 hours'"#,
-    ).fetch_all(pool).await.unwrap_or_default();
-
-    for (device_id, sleep_at) in lost_candidates {
-        // 이미 lost 이벤트가 있고 그게 sleep_at 보다 최신이면 스킵
-        let recent_lost: Option<chrono::DateTime<chrono::Utc>> = sqlx::query_scalar(
-            r#"SELECT occurred_at FROM events
-                WHERE device_id = $1 AND kind = 'lost'
-                  AND user_id = (SELECT owner_id FROM devices WHERE id = $1)
-                ORDER BY occurred_at DESC LIMIT 1"#,
-        ).bind(device_id).fetch_optional(pool).await?;
-        if let Some(t) = recent_lost {
-            if t > sleep_at { continue; }
-        }
-
-        let hours = (chrono::Utc::now() - sleep_at).num_hours().max(24);
-        sqlx::query(
-            r#"INSERT INTO events (device_id, kind, occurred_at, data, user_id)
-               VALUES ($1, 'lost', now(), $2,
-                       (SELECT owner_id FROM devices WHERE id = $1))"#,
-        )
-        .bind(device_id)
-        .bind(json!({ "hours_since_sleep": hours, "sleep_at": sleep_at }))
-        .execute(pool).await?;
-        tracing::warn!(device_id, hours, "lost event inserted");
-    }
-    Ok(())
 }

@@ -1,0 +1,38 @@
+{
+  "checks": [
+    {
+      "case": "encrypted112_to113",
+      "comparisons": 80,
+      "equal": true
+    },
+    {
+      "case": "late_insert_delete112_to113",
+      "comparisons": 80,
+      "equal": true
+    },
+    {
+      "case": "no_stale_cache_after_insert_delete_rollback",
+      "equal": true
+    },
+    {
+      "case": "missing-key",
+      "rejected": true,
+      "sqlstate": "P0001",
+      "reason": "location decryption key unavailable"
+    },
+    {
+      "case": "wrong-context",
+      "rejected": true,
+      "sqlstate": "P0001",
+      "reason": "location ciphertext authentication failed"
+    }
+  ],
+  "fixture_rows": 90,
+  "pending_envelope_fallback": true,
+  "other_SIM_same_owner": true,
+  "receiving_owner_isolation": true,
+  "raw_payload_bytes": 5000,
+  "DDL_without_keys": true,
+  "rolled_back": true,
+  "production_modified": false
+}

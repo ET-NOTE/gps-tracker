@@ -1,0 +1,147 @@
+/* Shared corporate screens: generous spacing with readable list and form text. */
+@media screen {
+ .business-workspace--corporate,.gps-business-modal,.business-drawer {--font-body:18px;--field-label-size:16px;--field-help-size:16px;--field-gap:10px;--control-font-size:18px;--control-min-height:48px;--touch-target:48px}
+ .business-workspace--corporate {line-height:1.6}
+ .business-workspace--corporate .business-overview-grid {gap:24px}
+ .business-workspace--corporate .business-overview-grid>.business-section:last-child {max-height:600px}
+ .business-workspace--corporate .business-map-wrap {min-height:340px}
+ .business-workspace--corporate :is(.business-map-note,.business-map-placeholder,.business-vehicle-name p,.business-connection small,.business-support-summary dt,.business-metric small) {font-size:16px}
+ .business-workspace--corporate :is(.business-terminal-name,.business-list-filters,.business-reservation-summary,.business-support-message,.business-company-missing) {font-size:18px}
+ .business-workspace--corporate .business-reservation-summary {padding:20px 24px}
+ .business-workspace--corporate .business-list-filters {gap:20px;padding:0 24px 24px}
+ .business-workspace--corporate .business-content :is(input,select):not([type=checkbox]):not([type=radio]) {min-height:48px}
+ .business-workspace--corporate .business-content textarea {font-size:18px;line-height:1.6}
+ .business-workspace--corporate .business-content .business-search input {min-height:48px}
+ .business-workspace--corporate .business-feature-grid svg {flex-shrink:0}
+ .business-workspace--corporate .business-support-form {gap:24px}
+ .business-workspace--corporate .business-support-field {font-size:16px;gap:10px}
+ .business-workspace--corporate .business-support-title {font-size:22px}
+ .business-workspace--corporate .business-empty {padding:40px 24px;gap:14px}
+ .business-workspace--corporate .business-empty p {font-size:16px}
+ .gps-business-modal {--modal-title-size:22px;--modal-subtitle-size:16px;--modal-padding:24px;--modal-gap:20px}
+ .gps-business-modal .gps-modal {font-size:18px;line-height:1.6}
+ .gps-business-modal .business-button,.business-drawer .business-button {font-size:18px;min-height:48px;padding:10px 16px}
+ .gps-business-modal .business-note,.business-drawer .business-note {font-size:16px}
+ .gps-business-modal .fleet-asset-fields :is(input,select),.business-drawer .fleet-asset-fields :is(input,select) {min-height:48px;font-size:18px}
+ .gps-business-modal .business-form-section h3 {font-size:20px}
+ .gps-business-modal .business-form-section h3 small {font-size:16px}
+ .business-drawer {font-size:18px;line-height:1.6}
+ .business-drawer>header {padding:24px;gap:16px}
+ .business-drawer>header p {font-size:16px}
+ .business-drawer-body {padding:24px;gap:24px}
+ .business-drawer .business-detail-facts {gap:18px}
+ .business-drawer .fleet-file-label,.business-drawer .fleet-file-label input {font-size:16px}
+ .business-drawer .fleet-document-row>span {font-size:16px}
+ .business-drawer .business-menu-group h3 {font-size:16px}
+ .business-drawer .business-switch {flex-wrap:wrap;gap:12px}
+ .business-drawer .business-switch button {font-size:18px}
+ .business-workspace--corporate {font-size:18px}
+ .business-workspace--corporate .business-content {font-size:18px}
+ .business-workspace--corporate .business-nav button,.business-workspace--corporate .business-subnav button {font-size:18px}
+ .business-workspace--corporate .business-nav .business-map-shortcut {margin-top:12px;border-top:1px solid #3c475d;border-radius:0;padding-top:16px}
+ .business-workspace--corporate .business-topbar-navigation>h2 {font-size:24px}
+ .business-workspace--corporate .business-section h3 {font-size:22px}
+ .business-workspace--corporate .business-section-title p,.business-workspace--corporate .business-note {font-size:16px}
+ .business-workspace--corporate .business-content .business-button {font-size:18px;min-height:48px}
+ .business-workspace--corporate .business-content input,.business-workspace--corporate .business-content select {font-size:18px}
+ .business-workspace--corporate .business-badge {font-size:16px;border-radius:4px}
+ .business-workspace--corporate .business-empty strong,.business-workspace--corporate .business-error {font-size:18px}
+ .business-workspace--corporate .corporate-setup,.business-workspace--corporate .corporate-admin-details {background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:16px;min-width:0}
+ .business-workspace--corporate .corporate-admin-details {margin-top:16px;margin-bottom:0}
+ .corporate-setup>summary,.corporate-admin-details>summary {padding:18px 24px;cursor:pointer;font-size:18px;color:var(--text-2)}
+ .business-workspace--corporate .corporate-setup .fleet-onboarding {margin:0;padding:0 16px 14px;justify-content:flex-start}
+ .business-workspace--corporate .corporate-setup .fleet-onboarding button {flex:0 1 auto}
+ .business-workspace--corporate .business-overview>.business-metrics {gap:0;border:1px solid var(--border);border-radius:6px;background:var(--surface);overflow:hidden}
+ .business-workspace--corporate .business-overview .business-metric {border:0;border-right:1px solid var(--border);border-radius:0;padding:22px 24px}
+ .business-workspace--corporate .business-overview .business-metric:last-child {border-right:0}
+ .business-workspace--corporate .business-overview .business-metric strong {font-size:36px;margin:7px 0 4px}
+ .business-workspace--corporate .business-overview .business-metric p {font-size:16px;line-height:1.5}
+ .business-workspace--corporate .business-overview .business-metric>div {font-size:18px}
+ .business-workspace--corporate .business-task {padding:18px 24px;gap:10px}
+ .business-workspace--corporate .business-task-copy strong {font-size:18px;font-weight:500}
+ .business-workspace--corporate .business-task-copy p {font-size:16px;margin-top:4px}
+ .business-workspace--corporate .business-fleet-head,.business-workspace--corporate .business-vehicle {padding:18px 24px}
+ .business-workspace--corporate .business-fleet-head {font-size:16px}
+ .business-workspace--corporate .business-vehicle-title {font-size:18px}
+ .business-workspace--corporate .business-connection {font-size:18px}
+ .business-workspace--corporate .business-settings {max-width:1100px}
+ .business-workspace--corporate .business-settings>.business-switch {gap:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0 16px}
+ .business-workspace--corporate .business-settings>.business-switch button {border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;font-size:18px;min-height:56px}
+ .business-workspace--corporate .business-settings>.business-switch button[aria-pressed=true] {border-bottom-color:var(--primary)}
+ .business-workspace--corporate .business-support-body {padding:18px}
+ .business-workspace--corporate .business-support-summary {font-size:18px}
+ .business-workspace--corporate .business-support-summary dd {font-size:22px}
+ .business-workspace--corporate .business-feature-grid {gap:0;grid-template-columns:repeat(2,minmax(0,1fr));padding:0}
+ .business-workspace--corporate .business-feature-grid>div {padding:22px 24px;border-bottom:1px solid var(--border);border-radius:0}
+ .business-workspace--corporate .business-feature-grid strong {font-size:18px}
+ .business-workspace--corporate .business-feature-grid p {font-size:16px}
+
+ .corporate-reservations {display:grid;gap:24px;min-width:0}
+ .corporate-reservation-tools,.corporate-reservation-ledger {min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px}
+ .corporate-reservation-tools {display:grid;gap:20px;padding:24px}
+ .corporate-reservation-tool-row {display:flex;align-items:center;gap:16px;flex-wrap:wrap;min-width:0}
+ .corporate-reservation-tool-row>.business-button {margin-left:auto}
+ .corporate-view-switch,.corporate-reservation-status {display:flex;align-items:center;gap:3px;background:var(--surface-2);padding:4px;border-radius:4px;max-width:100%;overflow-x:auto}
+ .business-workspace--corporate .corporate-view-option,.business-workspace--corporate .corporate-status-option {display:flex;align-items:center;gap:6px;min-height:48px;padding:6px 12px;font-size:18px;border:0;background:transparent;color:var(--text-2);border-radius:3px;white-space:nowrap;cursor:pointer}
+ .corporate-view-option[aria-pressed=true],.corporate-status-option[aria-pressed=true] {background:#4a586d!important;color:#fff!important}
+ .corporate-reservation-search {display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid var(--border);border-radius:4px;min-width:240px;max-width:380px;flex:1;color:var(--text-2)}
+ .corporate-reservation-search input {width:100%;min-width:0;background:transparent;border:0;color:var(--text);padding:6px 0;outline-offset:1px}
+ .corporate-reservation-month {border:1px solid var(--border);background:var(--surface);color:var(--text);padding:6px 10px}
+ .corporate-reservation-hint {font-size:16px;color:var(--text-2);line-height:1.6}
+ .corporate-reservation-tool-row>.corporate-reservation-hint:last-child {margin-left:auto}
+ .corporate-reservation-ledger {overflow:hidden;display:flex;flex-direction:column;min-height:min(520px,60vh)}
+ .corporate-reservation-scroll {overflow:auto;min-width:0}
+ .corporate-reservation-scroll:focus-visible {outline:2px solid var(--primary);outline-offset:-2px}
+ .corporate-reservation-table {width:100%;min-width:1200px;border-collapse:collapse;font-size:18px}
+ .corporate-reservation-table th {font-size:16px;color:var(--text-2);font-weight:500;background:color-mix(in srgb,var(--surface) 91%,#426b94);white-space:nowrap}
+ .corporate-reservation-table :is(th,td) {text-align:left;padding:18px 20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);vertical-align:middle;line-height:1.5}
+ .corporate-reservation-table :is(th,td):last-child {border-right:0}
+ .corporate-reservation-table tbody tr:hover {background:var(--surface-2)}
+ .corporate-reservation-table td {min-width:90px;max-width:260px;overflow-wrap:anywhere}
+ .corporate-reservation-table td:nth-child(2) {min-width:150px}
+ .corporate-reservation-table td:nth-child(4),.corporate-reservation-table td:nth-child(5) {white-space:nowrap;min-width:145px}
+ .corporate-reservation-table strong {font-size:18px;font-weight:500}
+ .corporate-reservation-table small {display:block;margin-top:4px;color:var(--text-2);font-size:16px;line-height:1.5}
+ .corporate-reservation-badge {display:inline-flex;padding:3px 8px;border-radius:3px;white-space:nowrap;font-size:16px}
+ .corporate-reservation-table small.corporate-reservation-alert {color:var(--status-warning-text)}
+ .corporate-reservation-row-actions {display:flex;gap:6px;white-space:nowrap}
+ .business-workspace--corporate .corporate-reservation-row-actions .business-button {font-size:16px;min-height:48px;padding:5px 8px}
+ .corporate-reservation-footer {margin-top:auto;padding:18px 20px;font-size:16px;color:var(--text-2);border-top:1px solid var(--border)}
+
+
+}
+@media screen and (max-width:700px) {
+ .business-workspace--corporate .business-topbar {padding-inline:12px;min-height:0}
+ .business-workspace--corporate .business-topbar-navigation>h2 {padding:10px 2px;font-size:22px}
+ .business-workspace--corporate .business-subnav button {min-height:48px;padding-inline:14px}
+ .business-workspace--corporate .business-topbar-account {padding-block:2px}
+ .business-workspace--corporate .business-mobile-nav {--bottom-nav-content-height:60px}
+ .business-workspace--corporate .business-mobile-nav>button {font-size:15px;line-height:1.15;gap:4px}
+ .business-workspace--corporate .business-mobile-nav>button[aria-current=page] {box-shadow:inset 0 3px var(--primary)}
+ .business-workspace--corporate .business-content {padding:14px 12px}
+ .business-workspace--corporate.has-mobile-nav .business-content {padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+ .business-drawer .business-more-menu--corporate {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .business-more-menu--corporate .business-menu-group {grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
+ .business-more-menu--corporate .business-menu-group h3 {grid-column:1/-1;margin:4px 0 0}
+ .business-more-menu--corporate>hr {grid-column:1/-1;border:0;border-top:1px solid var(--border);margin:4px 0}
+ .business-drawer .business-more-menu--corporate .business-button {min-width:0;min-height:48px;padding:9px 10px;gap:8px;white-space:normal;text-align:left;word-break:keep-all;overflow-wrap:anywhere;font-size:16px}
+ .business-more-menu--corporate .business-button svg {flex-shrink:0}
+ .gps-business-modal {--modal-padding:20px;--modal-gap:20px}
+ .business-drawer>header,.business-drawer-body {padding:20px}
+ .business-workspace--corporate .business-list-filters {padding:0 20px 20px;gap:16px}
+ .business-workspace--corporate .business-overview,.business-workspace--corporate .business-overview-grid {gap:16px}
+ .business-workspace--corporate .business-overview-grid>.business-section:last-child {max-height:none;height:auto;overflow:visible}
+ .business-workspace--corporate .corporate-setup>summary {padding:12px 16px}
+ .business-workspace--corporate .business-overview .business-section-title,.business-workspace--corporate .business-overview .business-task,.business-workspace--corporate .business-overview .business-vehicle {padding:16px}
+ .business-workspace--corporate .business-task-copy {overflow-wrap:anywhere}
+ .business-workspace--corporate .business-map-wrap {min-height:300px}
+ .business-workspace--corporate .business-overview>.business-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+ .business-workspace--corporate .business-overview .business-metric {padding:12px;border-bottom:1px solid var(--border)}
+ .business-workspace--corporate .business-overview .business-metric:nth-child(even) {border-right:0}
+ .business-workspace--corporate .business-overview .business-metric:nth-child(n+3) {border-bottom:0}
+ .business-workspace--corporate .business-feature-grid {grid-template-columns:minmax(0,1fr)}
+ .corporate-reservation-tools {padding:12px;gap:16px}
+ .corporate-reservation-search {max-width:none;flex:1 1 100%}
+ .corporate-reservation-tool-row>.corporate-reservation-hint:last-child {margin-left:0}
+ .business-workspace--corporate .corporate-status-option {padding:6px 9px;font-size:16px}
+}

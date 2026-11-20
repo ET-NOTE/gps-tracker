@@ -1,0 +1,10 @@
+PASS owner/admin only, foreign/no-SIM excluded, explicit metadata fields;207 bindings50/50/50/50/7; old unrequested binding beyond200 is reachable without writes
+PASS literal case-insensitive name/Korean/SIM search, wildcard and injection text remain literal; exact last-page and input/owner override rejection
+PASS one blocked TLS search cancels SQL and releases read slot; retry200 and source unchanged; no sustained load
+PASS old never-requested binding creates first pending request via delegated admin; idempotent retry, exact interval, subject-only fresh consent before encrypted location and notice
+Traceback (most recent call last):
+  File "/opt/gps121/test_company_bindings136.py", line 167, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_company_bindings136.py", line 135, in main
+    assert t.call('POST',MAPPINGS,proposal(),owner)[0]==409
+AssertionError

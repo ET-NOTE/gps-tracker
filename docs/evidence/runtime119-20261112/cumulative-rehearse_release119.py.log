@@ -1,0 +1,8 @@
+GPS119 protection {"profile": "controller", "passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "3427"}, {"path": "/dev/shm", "capacity": 67108864, "type": "tmpfs", "mount_id": "3426"}], "dumpable": 0, "swap_max": 0, "memory_max": 1073741824}
+Error response from daemon: No such container: gps-provision22-api-20261112cumulative119
+PASS schema99 recovery and artifact corruption rejected before service mutation
+PASS compatible112 recovery after startup
+PASS compatible112 recovery after after-api
+PASS compatible112 recovery after after-web
+PASS final115 API/web and encrypted location read restored
+PASS no residual location queries or idle transactions

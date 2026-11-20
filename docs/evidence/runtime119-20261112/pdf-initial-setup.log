@@ -1,0 +1,10 @@
+gps-pdf-render-selftest.service: Attaching egress BPF program to cgroup /sys/fs/cgroup/system.slice/gps-pdf-render-selftest.service failed: Invalid argument
+Starting GPS PDF processor: proof of its confinement in the environment it is served from...
+Failed to configure loopback device: Operation not permitted
+{"sandbox_holds":true,"renders_inside_sandbox":true,"open_file":{"blocked":true,"how":"signal 31; no core"},"open_socket":{"blocked":true,"how":"signal 31; no core"},"start_program":{"blocked":true,"how":"signal 31; no core"},"start_process":{"blocked":true,"how":"signal 31; no core"},"enable_dumping":{"blocked":true,"how":"signal 31; no core"},"too_much_memory":{"blocked":true,"how":"refused"},"too_much_cpu":{"blocked":true,"how":"signal 9; no core"}}
+Finished GPS PDF processor: proof of its confinement in the environment it is served from.
+Starting GPS PDF processor: page requests from the API...
+gps-pdf-render.socket: Failed to resolve group 1000: No such process
+gps-pdf-render.socket: Control process exited, code=exited, status=216/GROUP
+gps-pdf-render.socket: Failed with result 'exit-code'.
+Failed to listen on GPS PDF processor: page requests from the API.

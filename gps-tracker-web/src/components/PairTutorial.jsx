@@ -1,6 +1,6 @@
-// 신규 사용자 페어링 가이드 — /devices/pair 진입 + (디바이스 0개 OR ?tutorial=1) 시 표시.
+// 신규 사용자 연결 가이드 — /devices/pair 진입 + (단말기 0개 OR ?tutorial=1) 시 표시.
 // 상태 (userPrefs.pair_tutorial_seen sync) 로직은 pairTutorialSeen.js 로 분리.
-// 2 step: 환영 → 입력하기 (입력하기 누르면 닫고 페어링 모달 포커스).
+// 2 step: 환영 → 입력하기 (입력하기 누르면 닫고 연결 모달 포커스).
 
 import { useState } from 'react';
 import { markPairTutorialSeen } from '../pairTutorialSeen';

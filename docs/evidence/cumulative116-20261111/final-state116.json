@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-11T13:43:03.564527+00:00",
+  "production_modified": false,
+  "source_commit": "7ba85b167d21f8076ae9ff0c71551500f7f7fd3b",
+  "source_files_verified": 894,
+  "api_sha256": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10",
+  "schema": 112,
+  "raw_rows": 130020,
+  "plaintext_location_rows": 0,
+  "query_bounds_pending": 0,
+  "encrypted_api_restart": true,
+  "api_db_health": true,
+  "residual_queries_or_transactions": 0
+}

@@ -1,0 +1,11 @@
+{
+  "production_modified": false,
+  "kind": "isolated real systemd service",
+  "selftest": "Starting GPS PDF processor: proof of its confinement in the environment it is served from...\n{\"sandbox_holds\":true,\"renders_inside_sandbox\":true,\"open_file\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"open_socket\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"start_program\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"start_process\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"enable_dumping\":{\"blocked\":true,\"how\":\"signal 31; no core\"},\"too_much_memory\":{\"blocked\":true,\"how\":\"refused\"},\"too_much_cpu\":{\"blocked\":true,\"how\":\"signal 9; no core\"}}\nFinished GPS PDF processor: proof of its confinement in the environment it is served from.\n",
+  "socket": "active",
+  "accepted_api_requests": 34,
+  "service_limits": "MemoryMax=872415232\nMemorySwapMax=0\nUser=gps-pdf\n",
+  "proof_failure_blocks_socket": true,
+  "service_recovery": true,
+  "passed": true
+}

@@ -1,0 +1,269 @@
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Received SIGRTMIN+3.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Removed slice Slice /system/modprobe.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Graphical Interface.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Multi-User System.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Timer Units.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: dpkg-db-backup.timer: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Daily dpkg database backup timer.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-tmpfiles-clean.timer: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Daily Cleanup of Temporary Directories.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps-pdf-render.socket: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Closed GPS PDF processor: page requests from the API.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Docker Application Container Engine.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Network is Online.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopping containerd container runtime...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps-pdf-budget.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped GPS PDF stable admission lock.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps-pdf-render-selftest.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped GPS PDF processor: proof of its confinement in the environment it is served from.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps-pdf-render-selftest.service: Consumed 1.015s CPU time.
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.326230087Z" level=info msg="Stop CRI service"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.326296302Z" level=info msg="Stop CRI service"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.326321960Z" level=info msg="Event monitor stopped"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.326324696Z" level=info msg="Stream server stopped"
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.326 UTC [84] LOG:  received fast shutdown request
+Nov 13 04:14:06 1c8bb8671d25 active-api[179]: 2026-11-13T04:14:06.326340Z  INFO gps_tracker_api: shutdown: SIGTERM received
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Removed slice GPS PDF aggregate budget, including supervisors and self-test.
+Nov 13 04:14:06 1c8bb8671d25 postgres[145]: 2026-11-13 04:14:06.326 UTC [145] ERROR:  canceling statement due to user request
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps-workload-pdf.slice: Consumed 1.043s CPU time.
+Nov 13 04:14:06 1c8bb8671d25 postgres[147]: 2026-11-13 04:14:06.326 UTC [147] ERROR:  canceling statement due to user request
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopping gps121-api.service...
+Nov 13 04:14:06 1c8bb8671d25 postgres[146]: 2026-11-13 04:14:06.326 UTC [146] ERROR:  canceling statement due to user request
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopping gps121-db.service...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopping Permit User Sessions...
+Nov 13 04:14:06 1c8bb8671d25 postgres[222]: 2026-11-13 04:14:06.328 UTC [222] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 postgres[221]: 2026-11-13 04:14:06.328 UTC [221] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps121-api.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 postgres[219]: 2026-11-13 04:14:06.328 UTC [219] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped gps121-api.service.
+Nov 13 04:14:06 1c8bb8671d25 postgres[220]: 2026-11-13 04:14:06.328 UTC [220] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 postgres[218]: 2026-11-13 04:14:06.328 UTC [218] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-user-sessions.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 postgres[217]: 2026-11-13 04:14:06.328 UTC [217] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 postgres[216]: 2026-11-13 04:14:06.328 UTC [216] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Permit User Sessions.
+Nov 13 04:14:06 1c8bb8671d25 postgres[215]: 2026-11-13 04:14:06.328 UTC [215] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Remote File Systems.
+Nov 13 04:14:06 1c8bb8671d25 postgres[214]: 2026-11-13 04:14:06.328 UTC [214] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.328 UTC [84] LOG:  aborting any active transactions
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.328 UTC [84] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 145) exited with exit code 1
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.328 UTC [84] LOG:  background worker "logical replication launcher" (PID 146) exited with exit code 1
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.328 UTC [84] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 147) exited with exit code 1
+Nov 13 04:14:06 1c8bb8671d25 postgres[138]: 2026-11-13 04:14:06.330 UTC [138] LOG:  shutting down
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: containerd.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped containerd container runtime.
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.356 UTC [84] LOG:  database system is shut down
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps121-db.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped gps121-db.service.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Removed slice GPS total workload budget (candidate; capacity acceptance required).
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps-workload.slice: Consumed 1.384s CPU time.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Removed slice Slice /gps.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps.slice: Consumed 1.384s CPU time.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps121-temp-ready.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped gps121-temp-ready.service.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Basic System.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Path Units.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Slice Units.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Socket Units.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: docker.socket: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Closed Docker Socket for the API.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target System Initialization.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Local Encrypted Volumes.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-ask-password-console.path: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Dispatch Password Requests to Console Directory Watch.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-ask-password-wall.path: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Forward Password Requests to Wall Directory Watch.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Local Verity Protected Volumes.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-tmpfiles-setup-dev.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Create Static Device Nodes in /dev.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopping Record System Boot/Shutdown in UTMP...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-update-utmp.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Record System Boot/Shutdown in UTMP.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-tmpfiles-setup.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Create Volatile Files and Directories.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Local File Systems.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounting /etc/hostname...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounting /etc/hosts...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounting /etc/resolv.conf...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounting /run/gps121/fallback...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounting /run/gps121/sort...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounting /run/gps121/tmp...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounting /tmp...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-sysusers.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped Create System Users.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: etc-hostname.mount: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounted /etc/hostname.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: etc-hosts.mount: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounted /etc/hosts.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: etc-resolv.conf.mount: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounted /etc/resolv.conf.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: run-gps121-sort.mount: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounted /run/gps121/sort.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: run-gps121-fallback.mount: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounted /run/gps121/fallback.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: run-gps121-tmp.mount: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounted /run/gps121/tmp.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: tmp.mount: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Unmounted /tmp.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped target Swaps.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target Unmount All Filesystems.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: gps121-underlay.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Stopped gps121-underlay.service.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target System Shutdown.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target Late Shutdown Services.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting System Halt...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Shutting down.
+Nov 13 04:14:06 1c8bb8671d25 systemd-journald[31]: Journal stopped
+Nov 13 04:14:06 1c8bb8671d25 systemd-journald[31]: Journal started
+Nov 13 04:14:06 1c8bb8671d25 systemd-journald[31]: Runtime Journal (/run/log/journal/28eb54152ef04d34a2432be3e3197b55) is 8.0M, max 1.5G, 1.5G free.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting Flush Journal to Persistent Storage...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Finished Create Static Device Nodes in /dev.
+Nov 13 04:14:06 1c8bb8671d25 systemd-journald[31]: Time spent on flushing to /var/log/journal/28eb54152ef04d34a2432be3e3197b55 is 679us for 4 entries.
+Nov 13 04:14:06 1c8bb8671d25 systemd-journald[31]: System Journal (/var/log/journal/28eb54152ef04d34a2432be3e3197b55) is 24.0M, max 2.9G, 2.9G free.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Finished Flush Journal to Persistent Storage.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting Create Volatile Files and Directories...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Finished Create Volatile Files and Directories.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting Record System Boot/Shutdown in UTMP...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Finished Record System Boot/Shutdown in UTMP.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target System Initialization.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Started Daily dpkg database backup timer.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Started Daily Cleanup of Temporary Directories.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target Timer Units.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Listening on D-Bus System Message Bus Socket.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting Docker Socket for the API...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Listening on Docker Socket for the API.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target Socket Units.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target Basic System.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Started D-Bus System Message Bus.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting containerd container runtime...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Condition check resulted in Remove Stale Online ext4 Metadata Check Snapshots being skipped.
+Nov 13 04:14:06 1c8bb8671d25 systemd[46]: containerd.service: Executable /sbin/modprobe missing, skipping: No such file or directory
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting gps121-temp-ready.service...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting Permit User Sessions...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Finished gps121-temp-ready.service.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting gps121-db.service...
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Finished Permit User Sessions.
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.675702869Z" level=info msg="starting containerd" revision= version=2.2.1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.679930829Z" level=info msg="loading plugin" id=io.containerd.content.v1.content type=io.containerd.content.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.679965956Z" level=info msg="loading plugin" id=io.containerd.image-verifier.v1.bindir type=io.containerd.image-verifier.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.679972408Z" level=info msg="loading plugin" id=io.containerd.internal.v1.opt type=io.containerd.internal.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.679987206Z" level=info msg="loading plugin" id=io.containerd.warning.v1.deprecations type=io.containerd.warning.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.679997355Z" level=info msg="loading plugin" id=io.containerd.mount-handler.v1.erofs type=io.containerd.mount-handler.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680004228Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.blockfile type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680015359Z" level=info msg="skip loading plugin" error="no scratch file generator: skip plugin" id=io.containerd.snapshotter.v1.blockfile type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680019066Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.btrfs type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680088587Z" level=info msg="skip loading plugin" error="path /var/lib/containerd/io.containerd.snapshotter.v1.btrfs (overlay) must be a btrfs filesystem to be used with the btrfs snapshotter: skip plugin" id=io.containerd.snapshotter.v1.btrfs type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680093777Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.devmapper type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680098686Z" level=info msg="skip loading plugin" error="devmapper not configured: skip plugin" id=io.containerd.snapshotter.v1.devmapper type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680102092Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.erofs type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680202932Z" level=info msg="skip loading plugin" error="EROFS unsupported, please `modprobe erofs`: skip plugin" id=io.containerd.snapshotter.v1.erofs type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680207421Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.native type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680218522Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.overlayfs type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680256944Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.zfs type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680266112Z" level=info msg="skip loading plugin" error="lstat /var/lib/containerd/io.containerd.snapshotter.v1.zfs: no such file or directory: skip plugin" id=io.containerd.snapshotter.v1.zfs type=io.containerd.snapshotter.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680270370Z" level=info msg="loading plugin" id=io.containerd.event.v1.exchange type=io.containerd.event.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680280619Z" level=info msg="loading plugin" id=io.containerd.monitor.task.v1.cgroups type=io.containerd.monitor.task.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680365429Z" level=info msg="loading plugin" id=io.containerd.metadata.v1.bolt type=io.containerd.metadata.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680373464Z" level=info msg="metadata content store policy set" policy=shared
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680434880Z" level=info msg="loading plugin" id=io.containerd.gc.v1.scheduler type=io.containerd.gc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680447173Z" level=info msg="loading plugin" id=io.containerd.nri.v1.nri type=io.containerd.nri.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680460768Z" level=info msg="built-in NRI default validator is disabled"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680463944Z" level=info msg="runtime interface created"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680466078Z" level=info msg="created NRI interface"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680469715Z" level=info msg="loading plugin" id=io.containerd.differ.v1.erofs type=io.containerd.differ.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680486056Z" level=info msg="skip loading plugin" error="failed to check mkfs.erofs availability: failed to run mkfs.erofs --help: exec: \"mkfs.erofs\": executable file not found in $PATH: skip plugin" id=io.containerd.differ.v1.erofs type=io.containerd.differ.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680490244Z" level=info msg="loading plugin" id=io.containerd.differ.v1.walking type=io.containerd.differ.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680495434Z" level=info msg="loading plugin" id=io.containerd.lease.v1.manager type=io.containerd.lease.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680503669Z" level=info msg="loading plugin" id=io.containerd.mount-manager.v1.bolt type=io.containerd.mount-manager.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680544075Z" level=info msg="loading plugin" id=io.containerd.service.v1.containers-service type=io.containerd.service.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680550297Z" level=info msg="loading plugin" id=io.containerd.service.v1.content-service type=io.containerd.service.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680555868Z" level=info msg="loading plugin" id=io.containerd.service.v1.diff-service type=io.containerd.service.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680561428Z" level=info msg="loading plugin" id=io.containerd.service.v1.images-service type=io.containerd.service.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680566498Z" level=info msg="loading plugin" id=io.containerd.service.v1.introspection-service type=io.containerd.service.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680570375Z" level=info msg="loading plugin" id=io.containerd.service.v1.namespaces-service type=io.containerd.service.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680574012Z" level=info msg="loading plugin" id=io.containerd.service.v1.snapshots-service type=io.containerd.service.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680577118Z" level=info msg="loading plugin" id=io.containerd.shim.v1.manager type=io.containerd.shim.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680581306Z" level=info msg="loading plugin" id=io.containerd.runtime.v2.task type=io.containerd.runtime.v2
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680598238Z" level=info msg="loading plugin" id=io.containerd.service.v1.tasks-service type=io.containerd.service.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680605151Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.containers type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680610060Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.content type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680613897Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.diff type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680617524Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.events type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680621381Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.images type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680625759Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.introspection type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680629567Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.leases type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680633364Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.mounts type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680637111Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.namespaces type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680641189Z" level=info msg="loading plugin" id=io.containerd.sandbox.store.v1.local type=io.containerd.sandbox.store.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680644865Z" level=info msg="loading plugin" id=io.containerd.transfer.v1.local type=io.containerd.transfer.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680655826Z" level=info msg="loading plugin" id=io.containerd.cri.v1.images type=io.containerd.cri.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680676475Z" level=info msg="Get image filesystem path \"/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs\" for snapshotter \"overlayfs\""
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680684841Z" level=info msg="Start snapshots syncer"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680695020Z" level=info msg="loading plugin" id=io.containerd.cri.v1.runtime type=io.containerd.cri.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680788406Z" level=info msg="starting cri plugin" config="{\"containerd\":{\"defaultRuntimeName\":\"runc\",\"runtimes\":{\"runc\":{\"runtimeType\":\"io.containerd.runc.v2\",\"runtimePath\":\"\",\"PodAnnotations\":null,\"ContainerAnnotations\":null,\"options\":{\"BinaryName\":\"\",\"CriuImagePath\":\"\",\"CriuWorkPath\":\"\",\"IoGid\":0,\"IoUid\":0,\"NoNewKeyring\":false,\"Root\":\"\",\"ShimCgroup\":\"\",\"SystemdCgroup\":false},\"privileged_without_host_devices\":false,\"privileged_without_host_devices_all_devices_allowed\":false,\"cgroupWritable\":false,\"baseRuntimeSpec\":\"\",\"cniConfDir\":\"\",\"cniMaxConfNum\":0,\"snapshotter\":\"\",\"sandboxer\":\"podsandbox\",\"io_type\":\"\"}},\"ignoreBlockIONotEnabledErrors\":false,\"ignoreRdtNotEnabledErrors\":false},\"cni\":{\"binDir\":\"\",\"binDirs\":[\"/opt/cni/bin\"],\"confDir\":\"/etc/cni/net.d\",\"maxConfNum\":1,\"setupSerially\":false,\"confTemplate\":\"\",\"ipPref\":\"\",\"useInternalLoopback\":false},\"enableSelinux\":false,\"selinuxCategoryRange\":1024,\"maxContainerLogLineSize\":16384,\"disableApparmor\":false,\"restrictOOMScoreAdj\":false,\"disableProcMount\":false,\"unsetSeccompProfile\":\"\",\"tolerateMissingHugetlbController\":true,\"disableHugetlbController\":true,\"device_ownership_from_security_context\":false,\"ignoreImageDefinedVolumes\":false,\"netnsMountsUnderStateDir\":false,\"enableUnprivilegedPorts\":true,\"enableUnprivilegedICMP\":true,\"enableCDI\":true,\"cdiSpecDirs\":[\"/etc/cdi\",\"/var/run/cdi\"],\"drainExecSyncIOTimeout\":\"0s\",\"ignoreDeprecationWarnings\":null,\"containerdRootDir\":\"/var/lib/containerd\",\"containerdEndpoint\":\"/run/containerd/containerd.sock\",\"rootDir\":\"/var/lib/containerd/io.containerd.grpc.v1.cri\",\"stateDir\":\"/run/containerd/io.containerd.grpc.v1.cri\"}"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680808905Z" level=info msg="loading plugin" id=io.containerd.podsandbox.controller.v1.podsandbox type=io.containerd.podsandbox.controller.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680828181Z" level=info msg="loading plugin" id=io.containerd.sandbox.controller.v1.shim type=io.containerd.sandbox.controller.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680844662Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.sandbox-controllers type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680851124Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.sandboxes type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680854431Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.snapshots type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680858468Z" level=info msg="loading plugin" id=io.containerd.streaming.v1.manager type=io.containerd.streaming.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680864660Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.streaming type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680870140Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.tasks type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680874248Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.transfer type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680878806Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.version type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680882333Z" level=info msg="loading plugin" id=io.containerd.monitor.container.v1.restart type=io.containerd.monitor.container.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680894987Z" level=info msg="loading plugin" id=io.containerd.tracing.processor.v1.otlp type=io.containerd.tracing.processor.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680900648Z" level=info msg="skip loading plugin" error="skip plugin: tracing endpoint not configured" id=io.containerd.tracing.processor.v1.otlp type=io.containerd.tracing.processor.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680903313Z" level=info msg="loading plugin" id=io.containerd.internal.v1.tracing type=io.containerd.internal.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680906699Z" level=info msg="skip loading plugin" error="skip plugin: tracing endpoint not configured" id=io.containerd.internal.v1.tracing type=io.containerd.internal.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680909224Z" level=info msg="loading plugin" id=io.containerd.ttrpc.v1.otelttrpc type=io.containerd.ttrpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680912921Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.healthcheck type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680916908Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.cri type=io.containerd.grpc.v1
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680926947Z" level=info msg="Connect containerd service"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.680937798Z" level=info msg="using experimental NRI integration - disable nri plugin to prevent this"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.681128026Z" level=error msg="failed to load cni during init, please check CRI plugin status before setting up network for pods" error="cni config load failed: no network config found in /etc/cni/net.d: cni plugin not initialized: failed to load cni config"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.684978515Z" level=info msg="Start subscribing containerd event"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685009373Z" level=info msg="Start recovering state"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685023720Z" level=info msg=serving... address=/run/containerd/containerd.sock.ttrpc
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685039510Z" level=info msg=serving... address=/run/containerd/containerd.sock
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685051442Z" level=info msg="Start event monitor"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685056602Z" level=info msg="Start cni network conf syncer for default"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685064788Z" level=info msg="Start streaming server"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685072182Z" level=info msg="Registered namespace \"k8s.io\" with NRI"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685075568Z" level=info msg="runtime interface starting up..."
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685079225Z" level=info msg="starting plugins..."
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685082912Z" level=info msg="Synchronizing NRI (plugin) with current runtime state"
+Nov 13 04:14:06 1c8bb8671d25 containerd[49]: time="2026-11-13T04:14:06.685137164Z" level=info msg="containerd successfully booted in 0.009580s"
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Started containerd container runtime.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting Docker Application Container Engine...
+Nov 13 04:14:06 1c8bb8671d25 python3[50]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2438"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2433"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2432"}], "dumpable": 0, "swap_max": 0, "memory_max": 1572864000}
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Started gps121-db.service.
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.698449981Z" level=info msg="Starting up"
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.698675696Z" level=info msg="OTEL tracing is not configured, using no-op tracer provider"
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.698720120Z" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/var/run/cdi
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.698725189Z" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/etc/cdi
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.702248842Z" level=info msg="Creating a containerd client" address=/run/containerd/containerd.sock timeout=1m0s
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.710 UTC [84] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.710 UTC [84] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.711632591Z" level=info msg="Loading containers: start."
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.711647790Z" level=info msg="Starting daemon with containerd snapshotter integration enabled"
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.712440414Z" level=info msg="Restoring containers: start."
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.712580128Z" level=info msg="Deleting nftables IPv4 rules" error="exec: \"nft\": executable file not found in $PATH"
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.712588513Z" level=info msg="Deleting nftables IPv6 rules" error="exec: \"nft\": executable file not found in $PATH"
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.713 UTC [84] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+Nov 13 04:14:06 1c8bb8671d25 postgres[135]: 2026-11-13 04:14:06.719 UTC [135] LOG:  database system was shut down at 2026-11-13 04:14:06 UTC
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: time="2026-11-13T04:14:06.721410113Z" level=info msg="stopping event stream following graceful shutdown" error="<nil>" module=libcontainerd namespace=moby
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]: failed to start daemon: Error initializing network controller: error obtaining controller instance: failed to register "bridge" driver: failed to create NAT chain DOCKER: iptables failed: iptables --wait -t nat -N DOCKER: iptables v1.8.7 (nf_tables): Could not fetch rule set generation id: Permission denied (you must be root)
+Nov 13 04:14:06 1c8bb8671d25 dockerd[79]:  (exit status 4)
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: docker.service: Main process exited, code=exited, status=1/FAILURE
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: docker.service: Failed with result 'exit-code'.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Failed to start Docker Application Container Engine.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target Multi-User System.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Reached target Graphical Interface.
+Nov 13 04:14:06 1c8bb8671d25 postgres[84]: 2026-11-13 04:14:06.723 UTC [84] LOG:  database system is ready to accept connections
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Starting Record Runlevel Change in UTMP...
+Nov 13 04:14:06 1c8bb8671d25 postgres[148]: 2026-11-13 04:14:06.724 UTC [148] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: systemd-update-utmp-runlevel.service: Deactivated successfully.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Finished Record Runlevel Change in UTMP.
+Nov 13 04:14:06 1c8bb8671d25 systemd[1]: Startup finished in 116ms.
+Nov 13 04:14:06 1c8bb8671d25 postgres[159]: 2026-11-13 04:14:06.888 UTC [159] root@root FATAL:  role "root" does not exist

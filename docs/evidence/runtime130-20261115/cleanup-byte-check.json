@@ -1,0 +1,10 @@
+{
+  "source": "/home/etcom-hub/build/gps-runtime130-20261115/out/host-after.json",
+  "files": {
+    "host-after.json": {
+      "bytes": 168,
+      "sha256": "3041af5faf99ad2bc62562abb6b16d2eec998d35d5dd296d8f280f0670cdddcb"
+    }
+  },
+  "production_modified": false
+}

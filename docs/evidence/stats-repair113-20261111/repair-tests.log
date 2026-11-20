@@ -1,0 +1,20 @@
+   Compiling gps-tracker-api v0.1.0 (/work/gps-tracker-api)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.10s
+     Running unittests src/main.rs (/cache/target/debug/deps/gps_tracker_api-334527d1f31e7d88)
+
+running 1 test
+PASS partial31 restart/durable/metrics/no-rewrite encrypted=false
+PASS bounded1000/source-tie/KST-batch encrypted=false
+PASS owner-change/unlinked/no-cross-owner encrypted=false
+PASS partial31 restart/durable/metrics/no-rewrite encrypted=true
+PASS bounded1000/source-tie/KST-batch encrypted=true
+PASS owner-change/unlinked/no-cross-owner encrypted=true
+PASS use-pause/resume/no-zero/backoff-preserved
+PASS lock-timeout/device-rotation/no-starvation
+PASS new-generation-survives-old-ack
+PASS collection-pause-retained-history-only
+PASS no-fix/empty-batch/no-invented-days; runtime restriction verified; schema112 unchanged
+test services::stats::repair_tests::missing_daily_repair113 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 3.24s
+

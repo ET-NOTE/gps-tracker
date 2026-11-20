@@ -1,0 +1,1 @@
+{"passed": false, "stage": "compressed logical restore", "version": "TimescaleDB 2.19.3", "error": "NULL-compressed heading cannot round-trip text COPY (Bg==)", "production_data_changed": false, "reference": "https://github.com/timescale/timescaledb/issues/8893"}

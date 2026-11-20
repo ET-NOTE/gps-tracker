@@ -1,0 +1,26 @@
+{
+  "captured_at": "2026-11-07T17:55:37.047415+09:00",
+  "production_changed": false,
+  "production_health": {
+    "ok": true,
+    "db": true,
+    "release": "privacy-log-20261107-r1"
+  },
+  "production_api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+  "production_api_active_since": "2026-11-07T17:16:49+09:00",
+  "production_api_nrestarts": 0,
+  "production_web_target": "/home/mmm/releases/privacy-facts-20261106-r1/web",
+  "candidate_api_sha256": "36522dd395e2d0c024198ad00ec12147c291bf2373ba64ae8607846e4b349712",
+  "unit_tests_passed": 71,
+  "unit_tests_ignored": 3,
+  "ignored_external_test_explicitly_passed": 1,
+  "fmt_clippy": "passed",
+  "production_ledger_enabled": false,
+  "validation_finished_at": "2026-11-07T18:06:05.090124+09:00",
+  "source_files_match": 214,
+  "isolated_containers_removed": true,
+  "screenshot": {
+    "status": "not_captured",
+    "reason": "Browser security policy rejects local file URL; no alternate path attempted"
+  }
+}

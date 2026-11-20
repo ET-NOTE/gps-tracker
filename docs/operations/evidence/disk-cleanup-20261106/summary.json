@@ -1,0 +1,126 @@
+{
+  "date": "2026-11-06 23:45-24:00 KST",
+  "production": {
+    "host": "seriallog",
+    "filesystem_size": "45G",
+    "before": {
+      "used": "38G",
+      "available": "4.7G",
+      "use": "90%"
+    },
+    "after": {
+      "used": "34G",
+      "available": "8.8G",
+      "use": "80%"
+    },
+    "removed": {
+      "total_gib": 4.34,
+      "items": 364,
+      "by_category_mib": {
+        "web builds of superseded releases": [
+          78,
+          2153.5
+        ],
+        "binaries in superseded staging directories": [
+          66,
+          912.3
+        ],
+        "source, web and artifact archives in superseded staging directories": [
+          163,
+          755.2
+        ],
+        "copies identical to served downloads": [
+          8,
+          426.8
+        ],
+        "node_modules of the old on-server web build": [
+          2,
+          101.4
+        ],
+        "source archives in release directories": [
+          30,
+          96.0
+        ],
+        "python caches": [
+          16,
+          0.2
+        ],
+        "one-time credential": [
+          1,
+          0.0
+        ]
+      }
+    },
+    "directories": {
+      "/home/mmm/releases": [
+        "2.1G",
+        "36M"
+      ],
+      "/home/mmm/gps-artifacts": [
+        "2.7G",
+        "625M"
+      ]
+    },
+    "kept": [
+      "releases: privacy-facts-20261106-r1 (live), privacy-pdf-20261106-r1 (previous)",
+      "staging: privacy-facts-20261106-r1, privacy-facts-20261106-r1-smoke, pdf-service-20261106, runtime-account-20261106, privacy-pdf-20261106-r1, dev-20261021-190449-d541456 (what dev runs)",
+      "every json record and script, every file named backup/rollback/previous/before",
+      "/home/mmm/backups 1.3G and /home/mmm/backup 1.9G (same size after)"
+    ],
+    "checked_after": {
+      "health": "ok, db true, release privacy-facts-20261106-r1",
+      "served_index_equals_release": true,
+      "http_200": [
+        "/",
+        "/downloads/",
+        "dev-gps"
+      ],
+      "served_downloads_present": 4,
+      "units_active": 5,
+      "failed_units": 0
+    }
+  },
+  "build_host": {
+    "host": "etcom-hub",
+    "filesystem_size": "218G",
+    "before": {
+      "used": "191G",
+      "available": "16G",
+      "use": "93%"
+    },
+    "after": {
+      "used": "177G",
+      "available": "30G",
+      "use": "86%"
+    },
+    "removed": {
+      "total_gib": 14.53,
+      "items": 95,
+      "by_category_mib": {
+        "compiler output (cargo target, target-pdf)": [
+          2,
+          8021.6
+        ],
+        "installed web dependencies (node_modules)": [
+          93,
+          6853.8
+        ]
+      }
+    },
+    "gps_build_area": [
+      "28G",
+      "13G"
+    ],
+    "kept": [
+      "cargo registry cache 346M, npm cache 61M, pinned Python environment, every out/, source archive and log, 4 pinned build images",
+      "binaries of the current chain unchanged: 1fc16f78 (live), 0d28667f (previous), 3eaaf553 (PDF processor), dfae8bcd (dev build)"
+    ],
+    "note": "the next API build compiles from scratch once"
+  },
+  "not_touched": [
+    "databases, uploads, logs, backups, docker, other projects, /home/gps-dev",
+    "production ~/.rustup 2.0G and ~/.cargo 252M (installed tools, not caches)",
+    "build host firmware build trees about 4.9G",
+    "build host gps-tracker/incoming and old out/ directories"
+  ]
+}

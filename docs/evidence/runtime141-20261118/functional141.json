@@ -1,0 +1,45 @@
+{
+  "at": "2026-11-18T05:43:06Z",
+  "passed": [
+    "107 available tasks traverse50/50/7 in publication order; strict projection/no-store; owner-only; expired/revoked/unconfirmed/foreign excluded; GET writes nothing",
+    "24 status/category combinations, exact100 filtered final cursor, legacy after0, invalid/identity override400 and empty page verified",
+    "one held inbox read cancelled over TLS; SQL ended, next request200, no mutation and no sustained load",
+    "old page opens fresh detail; foreign404/delegation403/stale409/attestation400; submission leaves requested filter, does not auto-complete, file stored sealed",
+    "operator must download exact latest proof and attest; company download insufficient; changes requested/resubmit/new proof/accept preserves whole-request status and immutable earlier submission",
+    "revoke/expiry/unconfirmed identity/cancelled parent deny company detail/submission/proof; reviewed evidence remains available to operator",
+    "restricted company cannot use saved task/proof routes; evidence and parent history remain intact; schema114/no automatic erasure"
+  ],
+  "schema": 114,
+  "api_sha256": "df544907fb0f668b7ac3d6ee41aeca15db45532c0c5ba62a923aa046a345f6a0",
+  "fixture": {
+    "accounts": 4,
+    "visible_tasks": 107,
+    "excluded_tasks": 4,
+    "page_lengths": [
+      50,
+      50,
+      7
+    ],
+    "proofs": 2
+  },
+  "read_only_hashes": {
+    "privacy_requests": "61f9f14c607b917bff407c270a8f7aaf",
+    "privacy_company_reviews": "3597b669a1468930a33a1ab15c1f55e6",
+    "privacy_company_tasks": "cf7a99b97a94cd8b3f6397fb23f51128",
+    "privacy_company_submissions": "d41d8cd98f00b204e9800998ecf8427e",
+    "privacy_company_task_events": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "db_role_report": {
+    "database": "gps_closure_test",
+    "schema": 114,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "production_accessed": false,
+  "sustained_load_executed": false,
+  "environment": "internal TLS1.2; PostgreSQL14/Timescale; separated gps_runtime; encryption ON; existing admin-security OFF for scoped workflow fixture"
+}

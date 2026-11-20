@@ -1,0 +1,28 @@
+stopped (exit 0)
+PASS encrypted location chunks compressed before conversion
+PASS API startup refuses active maintenance fence
+PASS interruption after committed DB batches retains fence and readable files; both keys preserved
+PASS all registered rows and files rekeyed; old key removed; business revisions and file hashes unchanged
+PASS conversion is restartable and idempotent after completed checkpoints
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   hypertable
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   chunk
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: warning: there are circular foreign-key constraints on this table:
+pg_dump:   continuous_agg
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: NOTICE:  hypertable data are in the chunks, no data will be copied
+DETAIL:  Data for hypertables are stored in the chunks of a hypertable so COPY TO of a hypertable will not copy any data.
+HINT:  Use "COPY (SELECT * FROM <hypertable>) TO ..." to copy all data in hypertable, or copy each chunk individually.
+pg_dump: NOTICE:  hypertable data are in the chunks, no data will be copied
+DETAIL:  Data for hypertables are stored in the chunks of a hypertable so COPY TO of a hypertable will not copy any data.
+HINT:  Use "COPY (SELECT * FROM <hypertable>) TO ..." to copy all data in hypertable, or copy each chunk individually.
+NOTICE:  extension "timescaledb" already exists, skipping
+PASS full Timescale backup restored without supplying keys to pg_restore; separate key recovers all logical fingerprints
+api ready at 172.28.0.3 (ledger off)
+PASS restricted runtime API starts; worker decrypts safely; missing mode, maintenance, policy changes and DDL bypass fail

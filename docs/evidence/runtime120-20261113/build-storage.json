@@ -1,0 +1,362 @@
+{
+  "captured_at": "2026-11-13T03:00:59.294084+00:00",
+  "read_only": true,
+  "disk_free_bytes": 3461185536,
+  "directories": [
+    {
+      "name": "gps-tracker",
+      "allocated_bytes": 10677530624
+    },
+    {
+      "name": "gps-awake-pilot-ae664c1.1mKrQz",
+      "allocated_bytes": 1222352896
+    },
+    {
+      "name": "gps-firmware-profiles-sleep",
+      "allocated_bytes": 840716288
+    },
+    {
+      "name": "gps-battery-ccb6132-source",
+      "allocated_bytes": 832774144
+    },
+    {
+      "name": "gps-crypto20-20261107",
+      "allocated_bytes": 591568896
+    },
+    {
+      "name": "gps-daily-20261021",
+      "allocated_bytes": 569593856
+    },
+    {
+      "name": "gps-remote-report-20261021",
+      "allocated_bytes": 560447488
+    },
+    {
+      "name": "gps-remediation-134e44a",
+      "allocated_bytes": 556470272
+    },
+    {
+      "name": "gps-location-pilot-20261104.D6MWGE",
+      "allocated_bytes": 518311936
+    },
+    {
+      "name": "gps-location-rights-20261105",
+      "allocated_bytes": 268984320
+    },
+    {
+      "name": "gps-provision22-20261108cumulative",
+      "allocated_bytes": 267571200
+    },
+    {
+      "name": "gps-location-erasure-20261105",
+      "allocated_bytes": 266477568
+    },
+    {
+      "name": "gps-provision22-20261111query114",
+      "allocated_bytes": 266080256
+    },
+    {
+      "name": "gps-provision22-20261112cumulative119",
+      "allocated_bytes": 248619008
+    },
+    {
+      "name": "gps-provision22-20261108cumulative109",
+      "allocated_bytes": 247922688
+    },
+    {
+      "name": "gps-lifecycle21-20261107",
+      "allocated_bytes": 237703168
+    },
+    {
+      "name": "gps-provision22-20261108",
+      "allocated_bytes": 234684416
+    },
+    {
+      "name": "gps-provision22-20261111query115",
+      "allocated_bytes": 226344960
+    },
+    {
+      "name": "gps-fleet-trip-quality-20261030",
+      "allocated_bytes": 166064128
+    },
+    {
+      "name": "gps-admin19-20261107",
+      "allocated_bytes": 145960960
+    },
+    {
+      "name": "gps-provision22-20261112cumulative119-recovery-1500m-oom",
+      "allocated_bytes": 139509760
+    },
+    {
+      "name": "gps-provision22-20261112cumulative119-checksum-rejected",
+      "allocated_bytes": 139419648
+    },
+    {
+      "name": "gps-provision22-20261111cumulative116",
+      "allocated_bytes": 136908800
+    },
+    {
+      "name": "gps-provision22-20261111query112",
+      "allocated_bytes": 135307264
+    },
+    {
+      "name": "gps-fleet-sites-20261029",
+      "allocated_bytes": 128000000
+    },
+    {
+      "name": "gps-provision22-20261108b",
+      "allocated_bytes": 125366272
+    },
+    {
+      "name": "gps-runtime119-20261112",
+      "allocated_bytes": 124952576
+    },
+    {
+      "name": "gps-provision22-20261111cumulative112",
+      "allocated_bytes": 114003968
+    },
+    {
+      "name": "gps-provision22-20261111cumulative111",
+      "allocated_bytes": 112578560
+    },
+    {
+      "name": "gps-crypto20b-20261107",
+      "allocated_bytes": 112062464
+    },
+    {
+      "name": "gps-fleet-expenses-20261029",
+      "allocated_bytes": 111620096
+    },
+    {
+      "name": "gps-provision22-20261111cumulative110",
+      "allocated_bytes": 111075328
+    },
+    {
+      "name": "gps-provision22-20261108d",
+      "allocated_bytes": 108236800
+    },
+    {
+      "name": "gps-provision22-20261108c",
+      "allocated_bytes": 107061248
+    },
+    {
+      "name": "gps-fleet-assets-20261029",
+      "allocated_bytes": 104366080
+    },
+    {
+      "name": "gps-provision22-20261111repair113",
+      "allocated_bytes": 104112128
+    },
+    {
+      "name": "gps-fleet-query-expenses-20261031",
+      "allocated_bytes": 101752832
+    },
+    {
+      "name": "gps-provision22-20261111runtime117",
+      "allocated_bytes": 101232640
+    },
+    {
+      "name": "gps-fleet-trip-assignment-20261029",
+      "allocated_bytes": 98197504
+    },
+    {
+      "name": "gps-fleet-completion-20261031",
+      "allocated_bytes": 84656128
+    },
+    {
+      "name": "gps-provision22-20261111query111",
+      "allocated_bytes": 77963264
+    },
+    {
+      "name": "gps-fleet-team-20261029",
+      "allocated_bytes": 77131776
+    },
+    {
+      "name": "gps-corporate-feedback-20261029",
+      "allocated_bytes": 76029952
+    },
+    {
+      "name": "gps-ledger18b-20261107",
+      "allocated_bytes": 75517952
+    },
+    {
+      "name": "gps-location-storage-20261031",
+      "allocated_bytes": 66662400
+    },
+    {
+      "name": "gps-privacy-pdf-20261106-r1",
+      "allocated_bytes": 62701568
+    },
+    {
+      "name": "gps-privacy-pdf-20261106",
+      "allocated_bytes": 54489088
+    },
+    {
+      "name": "gps-privacy-facts-20261106-r1",
+      "allocated_bytes": 52797440
+    },
+    {
+      "name": "gps-privacy-facts-20261106",
+      "allocated_bytes": 51396608
+    },
+    {
+      "name": "gps-privacy-raster-20261106-r1",
+      "allocated_bytes": 51200000
+    },
+    {
+      "name": "gps-final-20261031",
+      "allocated_bytes": 51027968
+    },
+    {
+      "name": "gps-fleet-print-20261031",
+      "allocated_bytes": 50921472
+    },
+    {
+      "name": "gps-fleet-filters-20261031",
+      "allocated_bytes": 50876416
+    },
+    {
+      "name": "gps-corporate-reference-20261029",
+      "allocated_bytes": 50479104
+    },
+    {
+      "name": "gps-runtime120-20261113",
+      "allocated_bytes": 49610752
+    },
+    {
+      "name": "gps-privacy-receipts-20261106",
+      "allocated_bytes": 49446912
+    },
+    {
+      "name": "gps-privacy-images-20261105",
+      "allocated_bytes": 49094656
+    },
+    {
+      "name": "gps-privacy-redacted-20261105",
+      "allocated_bytes": 48685056
+    },
+    {
+      "name": "gps-privacy-company-tasks-20261105",
+      "allocated_bytes": 48328704
+    },
+    {
+      "name": "gps-privacy-sections-20261105",
+      "allocated_bytes": 47988736
+    },
+    {
+      "name": "gps-privacy-account-20261105",
+      "allocated_bytes": 47976448
+    },
+    {
+      "name": "gps-privacy-company-20261105",
+      "allocated_bytes": 47538176
+    },
+    {
+      "name": "gps-provision22-20261111query110",
+      "allocated_bytes": 47374336
+    },
+    {
+      "name": "gps-privacy-delivery-20261105",
+      "allocated_bytes": 46178304
+    },
+    {
+      "name": "gps-collection-control-20261105",
+      "allocated_bytes": 45891584
+    },
+    {
+      "name": "gps-account-closure-20261105",
+      "allocated_bytes": 45793280
+    },
+    {
+      "name": "gps-privacy-raster-20261106",
+      "allocated_bytes": 42807296
+    },
+    {
+      "name": "gps-location-aggregate-20261105",
+      "allocated_bytes": 41631744
+    },
+    {
+      "name": "gps-pdf-service-20261106-r1",
+      "allocated_bytes": 40177664
+    },
+    {
+      "name": "gps-access-ledger-20261107",
+      "allocated_bytes": 34942976
+    },
+    {
+      "name": "gps-location-month-20261031",
+      "allocated_bytes": 31350784
+    },
+    {
+      "name": "gps-location-query-20261031",
+      "allocated_bytes": 31338496
+    },
+    {
+      "name": "gps-directions-20261022",
+      "allocated_bytes": 24875008
+    },
+    {
+      "name": "gps-design-cleanup-20261027",
+      "allocated_bytes": 23113728
+    },
+    {
+      "name": "gps-report-design-20261023",
+      "allocated_bytes": 23097344
+    },
+    {
+      "name": "gps-provision22-20261112runtime119",
+      "allocated_bytes": 22282240
+    },
+    {
+      "name": "gps-pdf-eval-20261106",
+      "allocated_bytes": 19333120
+    },
+    {
+      "name": "gps-provision22-20261112runtime119-seed-dependency-failed",
+      "allocated_bytes": 18944000
+    },
+    {
+      "name": "gps-location-files-20261105",
+      "allocated_bytes": 18034688
+    },
+    {
+      "name": "gps-operating-20261014-98bf4a6",
+      "allocated_bytes": 10104832
+    },
+    {
+      "name": "gps-cumulative109-input-20261108",
+      "allocated_bytes": 5324800
+    },
+    {
+      "name": "gps-runtime-account-20261106",
+      "allocated_bytes": 2048000
+    },
+    {
+      "name": "gps-sim-review",
+      "allocated_bytes": 1449984
+    },
+    {
+      "name": "gps-runtime118-20261112",
+      "allocated_bytes": 425984
+    },
+    {
+      "name": "gps-firmware-tests",
+      "allocated_bytes": 290816
+    },
+    {
+      "name": "gps-runtime-format-20261014",
+      "allocated_bytes": 245760
+    },
+    {
+      "name": "gps-watch-20261106",
+      "allocated_bytes": 81920
+    }
+  ],
+  "cache": {
+    "target": 3266916352,
+    "cargo": 362643456,
+    "target-pdf": 1433272320,
+    "npm": 63881216
+  },
+  "action": "inventory only; no deletion or retention policy activation"
+}

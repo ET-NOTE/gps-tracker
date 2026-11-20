@@ -1,0 +1,8 @@
+# /etc/systemd/system/gps121-temp-ready.service
+[Unit]
+BindsTo=run-gps121-sort.mount run-gps121-fallback.mount run-gps121-tmp.mount
+After=run-gps121-sort.mount run-gps121-fallback.mount run-gps121-tmp.mount
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/install -d -o postgres -g postgres -m 0700 /run/gps121/sort/work /run/gps121/sort/work/PG_14_202107181 /run/gps121/fallback/pgsql_tmp /run/postgresql/14-main.pg_stat_tmp

@@ -1,0 +1,37 @@
+{
+  "environment": "isolated synthetic fixture; NOT production",
+  "at": "2026-11-07T10:36:54.344796+00:00",
+  "schema": 103,
+  "encrypted_fields": {
+    "devices": [
+      "last_lat",
+      "last_lng",
+      "last_stationary"
+    ],
+    "events": [
+      "data"
+    ],
+    "location_records": [
+      "lat",
+      "lng",
+      "raw",
+      "fixes_jsonb"
+    ]
+  },
+  "sample": {
+    "stored_lat": null,
+    "stored_lng": null,
+    "stored_raw": null,
+    "stored_fixes": null,
+    "envelope_version": "1",
+    "key_id": "v2",
+    "ciphertext_prefix": "wyUECQACjMDMEe5mjCL5cDp+",
+    "decoded_lat": 37.12345678,
+    "decoded_lng": 127.87654321
+  },
+  "db_parameter_logging_limits": [
+    "0",
+    "0"
+  ],
+  "api_sha256": "e3ff355248e129d85ae9aa8e7f87edb7cdba5038ca256cf8c4be10e61432fe4b"
+}

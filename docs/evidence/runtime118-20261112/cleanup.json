@@ -1,0 +1,8 @@
+{
+  "utc": "2026-11-12T01:12:02.182349+00:00",
+  "remaining_containers": [],
+  "remaining_networks": [],
+  "synthetic_database_removed_with_container": true,
+  "image_and_reproduction_artifacts_retained": true,
+  "disk": "Filesystem        1B-blocks         Used   Available Use% Mounted on\n/dev/nvme0n1p5 233092624384 209554276352 11623378944  95% /"
+}

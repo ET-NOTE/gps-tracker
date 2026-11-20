@@ -1,0 +1,17 @@
+{
+  "rust_unit_passed": 80,
+  "rust_ignored_executed_separately": 5,
+  "web_passed": 237,
+  "fmt": true,
+  "clippy_warnings_denied": true,
+  "root_and_legacy_builds": true,
+  "api_sha256": "f6ba49c12896d2ea99a13a32e13f901760c1f98d754b0d4ffc319d98c1069754",
+  "logs": {
+    "logs/api-check.log": "560a650189d7b1846d361013189166347f4e27f63640345d45f8451fb536bfec",
+    "logs/api-release.log": "74fd4afc861658cd621ef356f1cda9a99077ad822347bde63e1352675225a6d4",
+    "out/external-all.log": "868d3a1cadefd3784eb71232de43774ae889adc3d339ef17da6fa5ae87c0df9e",
+    "src/web-tests.log": "046980296a9e04f7ba229748578a26a385d705a32859fbcfff5fe366dbc8aa9a",
+    "src/web-root.log": "5ab7cb383f2c6d21033c4ab4d4f81d53942b8706100581a53b0d6350a4b2e30f",
+    "src/web-legacy.log": "dabd7493093908b216f252931d98873b980ebf33d714d1b9d1573fe87708561e"
+  }
+}

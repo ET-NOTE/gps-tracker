@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/test_projection112.py", line 57, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/test_projection112.py", line 40, in main
+    assert db.execute(query.format('before_location_records'),(did,)).fetchall()==db.execute(query.format('gps_read_location_records'),(did,)).fetchall();checks+=1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

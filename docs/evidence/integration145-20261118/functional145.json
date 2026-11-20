@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "actual114->115 SQLx migration preserves existing annotation and leaves new readings NULL",
+    "restricted runtime role saves/readbacks readings; omitted old-client fields preserve, invalid values and other tenant denied",
+    "actual XLSX contains entered before/after readings and their12.5km difference; original GPS distance unchanged",
+    "split omits derived readings, original survives, corrected edit409, restore recovers, explicit NULL clears, raw GPS hash unchanged",
+    "test_corporate_template.py changed assertions pass on restricted runtime API",
+    "test_fleet_trip_quality.py changed assertions pass on restricted runtime API"
+  ],
+  "schema": 115,
+  "production_accessed": false,
+  "load_expanded": false,
+  "api_sha256": "b0765d1d8e0fd44188cb6856468cd15926b75635e4597cafbfc20371816a060d",
+  "db_roles": {
+    "database": "gps_closure_test",
+    "schema": 115,
+    "public_objects": 229,
+    "apply": true,
+    "roles": [
+      "gps_schema_owner",
+      "gps_runtime"
+    ]
+  },
+  "flags": "same as team-review: encryption/ledger/subject-provision/admin-security OFF; no activation claim"
+}

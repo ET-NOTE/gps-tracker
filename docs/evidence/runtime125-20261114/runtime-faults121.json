@@ -1,0 +1,137 @@
+[
+  {
+    "check": "all native data-processing units share memory, no-swap, no-core and mount dependencies",
+    "units": {
+      "db": {
+        "Slice": "gps-workload.slice",
+        "MemoryMax": "1572864000",
+        "MemorySwapMax": "0",
+        "LimitCORE": "0",
+        "CapabilityBoundingSet": "",
+        "User": "postgres",
+        "NoNewPrivileges": "yes",
+        "BindPaths": "/run/gps121/tmp:/tmp:rbind /run/gps121/tmp:/var/tmp:rbind",
+        "BindsTo": "run-gps121-sort.mount run-gps121-tmp.mount run-gps121-fallback.mount"
+      },
+      "api": {
+        "Slice": "gps-workload.slice",
+        "MemoryMax": "576716800",
+        "MemorySwapMax": "0",
+        "LimitCORE": "0",
+        "CapabilityBoundingSet": "",
+        "User": "gps-api",
+        "NoNewPrivileges": "yes",
+        "BindPaths": "/run/gps121/tmp:/tmp:rbind /run/gps121/tmp:/var/tmp:rbind",
+        "BindsTo": "run-gps121-sort.mount run-gps121-tmp.mount run-gps121-fallback.mount"
+      },
+      "migration": {
+        "Slice": "gps-workload.slice",
+        "MemoryMax": "576716800",
+        "MemorySwapMax": "0",
+        "LimitCORE": "0",
+        "CapabilityBoundingSet": "",
+        "User": "gps-api",
+        "NoNewPrivileges": "yes",
+        "BindPaths": "/run/gps121/tmp:/tmp:rbind /run/gps121/tmp:/var/tmp:rbind",
+        "BindsTo": "run-gps121-tmp.mount run-gps121-sort.mount run-gps121-fallback.mount"
+      },
+      "transition": {
+        "Slice": "gps-workload.slice",
+        "MemoryMax": "576716800",
+        "MemorySwapMax": "0",
+        "LimitCORE": "0",
+        "CapabilityBoundingSet": "cap_chown cap_dac_override",
+        "User": "root",
+        "NoNewPrivileges": "yes",
+        "BindPaths": "/run/gps121/tmp:/tmp:rbind /run/gps121/tmp:/var/tmp:rbind",
+        "BindsTo": "run-gps121-fallback.mount run-gps121-sort.mount run-gps121-tmp.mount"
+      },
+      "cleanup": {
+        "Slice": "gps-workload.slice",
+        "MemoryMax": "576716800",
+        "MemorySwapMax": "0",
+        "LimitCORE": "0",
+        "CapabilityBoundingSet": "",
+        "User": "gps-api",
+        "NoNewPrivileges": "yes",
+        "BindPaths": "/run/gps121/tmp:/tmp:rbind /run/gps121/tmp:/var/tmp:rbind",
+        "BindsTo": "run-gps121-tmp.mount run-gps121-sort.mount run-gps121-fallback.mount"
+      },
+      "closure": {
+        "Slice": "gps-workload.slice",
+        "MemoryMax": "576716800",
+        "MemorySwapMax": "0",
+        "LimitCORE": "0",
+        "CapabilityBoundingSet": "",
+        "User": "gps-api",
+        "NoNewPrivileges": "yes",
+        "BindPaths": "/run/gps121/tmp:/tmp:rbind /run/gps121/tmp:/var/tmp:rbind",
+        "BindsTo": "run-gps121-tmp.mount run-gps121-sort.mount run-gps121-fallback.mount"
+      },
+      "recovery": {
+        "Slice": "gps-workload.slice",
+        "MemoryMax": "576716800",
+        "MemorySwapMax": "0",
+        "LimitCORE": "0",
+        "CapabilityBoundingSet": "",
+        "User": "postgres",
+        "NoNewPrivileges": "yes",
+        "BindPaths": "/run/gps121/tmp:/tmp:rbind /run/gps121/tmp:/var/tmp:rbind",
+        "BindsTo": "run-gps121-sort.mount run-gps121-fallback.mount run-gps121-tmp.mount"
+      },
+      "checkpoint": {
+        "Slice": "gps-workload.slice",
+        "MemoryMax": "576716800",
+        "MemorySwapMax": "0",
+        "LimitCORE": "0",
+        "CapabilityBoundingSet": "",
+        "User": "postgres",
+        "NoNewPrivileges": "yes",
+        "BindPaths": "/run/gps121/tmp:/tmp:rbind /run/gps121/tmp:/var/tmp:rbind",
+        "BindsTo": "run-gps121-tmp.mount run-gps121-fallback.mount run-gps121-sort.mount"
+      }
+    }
+  },
+  {
+    "check": "non-root cleanup unit removes only queued synthetic file and records local absence",
+    "result": {
+      "processed": {
+        "job_id": 1,
+        "state": "local_absent",
+        "reason": "unlinked"
+      }
+    }
+  },
+  {
+    "check": "recovery job refuses an invalid protection library hash"
+  },
+  {
+    "check": "mount loss stops API/DB and missing mount prevents restart: sort"
+  },
+  {
+    "check": "mount loss stops API/DB and missing mount prevents restart: fallback"
+  },
+  {
+    "check": "mount loss stops API/DB and missing mount prevents restart: tmp"
+  },
+  {
+    "check": "protected cleanup and closure units recover after temporary mount reconstruction"
+  },
+  {
+    "check": "normal fault suite completed without uncontrolled disk fallback",
+    "resource_snapshot": {
+      "all": {
+        "memory.current": "787382272",
+        "memory.peak": "1514475520",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      },
+      "pdf": {
+        "memory.current": "495616",
+        "memory.peak": "137572352",
+        "memory.swap.current": "0",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      }
+    }
+  }
+]

@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/opt/gps121/profile_trial124.py", line 43, in <module>
+    if __name__=='__main__':run()
+  File "/opt/gps121/profile_trial124.py", line 16, in run
+    verify()
+  File "/opt/gps121/verify_query124.py", line 59, in verify
+    q.execute('ALTER TABLE location_records DISABLE TRIGGER zz_location_query_bounds')
+psycopg2.errors.FeatureNotSupported: operation not supported on hypertables that have compression enabled
+

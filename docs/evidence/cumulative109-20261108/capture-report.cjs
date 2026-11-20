@@ -1,0 +1,20 @@
+// Screenshot of measured evidence, never represented as a production UI.
+const fs = require('fs'), path = require('path');
+const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'C:/Users/msb/AppData/Local/Temp/gps-admin19-qa/node_modules/playwright');
+const read = n => JSON.parse(fs.readFileSync(path.join(__dirname,n),'utf8'));
+const s=read('validation-summary.json'), q=read('mapping109-queries.json');
+if(s.status!=='functional_and_mapping_performance_pass'||!q.all_passed) throw Error('verification incomplete');
+const escape=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const labels={subject_list_200:'본인 매핑 목록 200건',company_list_200:'회사 매핑 목록 200건',company_projection_1000:'회사 조회 범위 1,000건',company_projection_one:'단말 1대 조회 범위'};
+const rows=q.queries.map(x=>`<tr><th>${labels[x.name]}</th><td>${x.seconds.join(' / ')}초</td><td>${x.budget_seconds}초</td><td class="pass">통과</td></tr>`).join('');
+const html=`<!doctype html><html lang="ko"><meta charset="utf-8"><title>109 매핑 성능 · 누적 검증</title><style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f8;color:#172c46;font:16px/1.7 'Malgun Gothic',sans-serif}main{width:1180px;margin:30px auto}.label{display:inline-block;background:#fff0ca;color:#735500;padding:6px 14px;border-radius:6px;font-weight:bold}h1{font-size:34px;margin:14px 0 4px}p{color:#53687d;margin:6px 0}h2{font-size:22px;margin:0 0 12px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:22px 0}.card,section{background:#fff;border:1px solid #d7e1ed;border-radius:12px;padding:22px}section{margin-top:18px}.card strong{display:block;font-size:30px;color:#006e77}.card span{color:#64758b;font-size:14px}table{width:100%;border-collapse:collapse}th,td{text-align:left;border-top:1px solid #e3e9ef;padding:12px 8px;font-size:15px}.pass{color:#157349;font-weight:bold}.alert{background:#fffaf0;border-color:#e4cc8d}ul{padding-left:24px;margin:4px 0}.hash{font-size:12px;word-break:break-all;color:#62758a;margin-top:20px}
+</style><main><div class="label">격리·합성 데이터 검증 — 운영 배포 / 운영 화면 증빙 아님</div>
+<h1>109차 매핑 조회 개선 · 누적 99 → 109</h1><p>2026-11-08 · 기존 108 SQL 보존 · 철회 조상과 정확한 재동의 revision 검사 유지</p>
+<div class="cards"><div class="card"><span>32,000행 / 1,000개 이력 / 깊이 32</span><strong>${Math.max(...s.mapping_load.owner_count_seconds).toFixed(3)}초</strong><span>전체 조회 최대값 · 이전 23.931~24.7838초</span></div><div class="card"><span>실제 구 바이너리에서 전환</span><strong>99 → 109</strong><span>100~109 실패 주입 · 원복 · 재개 통과</span></div><div class="card"><span>읽기 전용 운영 확인</span><strong>스키마 99 유지</strong><span>API·웹·서비스 PID 유지 / 외부 발송 0건</span></div></div>
+<section><h2>실제 화면 SQL 측정</h2><table><thead><tr><th>조회 경로</th><th>3회 측정</th><th>기준</th><th>결과</th></tr></thead><tbody>${rows}</tbody></table><p>DB 2 CPU · tmpfs · 단독 실행. 운영 SSD·동시 부하의 응답 보장은 아닙니다.</p></section>
+<section><h2>동의·철회와 보호 복원</h2><ul><li>108/109/독립 판정기 비교 ${s.ancestry.cases.length}묶음 · ${s.ancestry.synthetic_mapping_rows}개 혼합 이력 행</li><li>다단계 재동의·이후 철회 revision 변경·다른 사람·회사·기간 경계·직원 연결 해제</li><li>암호화 runtime: 22차 7묶음 · 22B 7묶음 · 22D 6묶음 · 기존 업무 8시험군</li><li>13만 위치 행·파일 전환, 중단·재개, 전체 DB·파일 복구, 최신 중지·철회·파기 checkpoint 재적용</li><li>Rust 81건 + 별도 외부 경계 7건 통과 · 운영 통보/자동 파기 활성화 없음</li></ul></section>
+<section class="alert"><h2>남은 운영 인수 조건</h2><p>매핑 성능 기준은 통과했습니다. 전체 월 이력 복호화 ${s.timings.history_points_count_seconds.toFixed(2)}초와 운영 동시 부하는 별도 성능 항목입니다.</p><p>실제 키·checkpoint 보관, 정책·동의, 관리자 PC/IP/MFA, 실제 FCM·대기열 경보, 실물 TLS·절전 인수가 남아 있습니다. 후보 activation_ready=false.</p></section>
+<p class="hash">후보 API SHA-256: ${escape(s.candidate_api_sha256)}<br>근거: validation-summary.json · mapping109-queries.json · ancestry109-regression.json · SHA256SUMS</p></main></html>`;
+fs.writeFileSync(path.join(__dirname,'verification-report.html'),html);
+(async()=>{const b=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHANNEL||'chrome'});try{const p=await b.newPage({viewport:{width:1280,height:1100},deviceScaleFactor:1});await p.setContent(html);await p.screenshot({path:path.join(__dirname,'verification-report.png'),fullPage:true});}finally{await b.close();}})();

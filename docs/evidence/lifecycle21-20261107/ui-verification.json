@@ -1,0 +1,8 @@
+{
+  "environment": "isolated actual React components with synthetic API",
+  "desktop": 1280,
+  "mobile": 390,
+  "overflow": false,
+  "errors": [],
+  "provisionToggle": true
+}

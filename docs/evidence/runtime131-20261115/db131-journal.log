@@ -1,0 +1,1116 @@
+2026-11-15T12:25:19+0000 6021bcc320d2 systemd[1]: Starting gps121-db.service...
+2026-11-15T12:25:19+0000 6021bcc320d2 python3[808]: {"passed": true, "mounts": [{"path": "/tmp", "capacity": 67108864, "type": "tmpfs", "mount_id": "2716"}, {"path": "/run/gps121/sort", "capacity": 268435456, "type": "tmpfs", "mount_id": "2711"}, {"path": "/run/gps121/fallback", "capacity": 67108864, "type": "tmpfs", "mount_id": "2710"}], "dumpable": 0, "swap_max": 0, "memory_max": 1476395008}
+2026-11-15T12:25:19+0000 6021bcc320d2 systemd[1]: Started gps121-db.service.
+2026-11-15T12:25:19+0000 6021bcc320d2 postgres[809]: 2026-11-15 12:25:19.688 UTC [809] LOG:  starting PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit
+2026-11-15T12:25:19+0000 6021bcc320d2 postgres[809]: 2026-11-15 12:25:19.688 UTC [809] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-11-15T12:25:19+0000 6021bcc320d2 postgres[809]: 2026-11-15 12:25:19.690 UTC [809] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-15T12:25:19+0000 6021bcc320d2 postgres[817]: 2026-11-15 12:25:19.695 UTC [817] LOG:  database system was shut down at 2026-11-12 00:57:54 UTC
+2026-11-15T12:25:19+0000 6021bcc320d2 postgres[825]: 2026-11-15 12:25:19.936 UTC [825] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:20+0000 6021bcc320d2 postgres[833]: 2026-11-15 12:25:20.175 UTC [833] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:20+0000 6021bcc320d2 postgres[841]: 2026-11-15 12:25:20.414 UTC [841] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:20+0000 6021bcc320d2 postgres[849]: 2026-11-15 12:25:20.656 UTC [849] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:20+0000 6021bcc320d2 postgres[857]: 2026-11-15 12:25:20.905 UTC [857] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:21+0000 6021bcc320d2 postgres[865]: 2026-11-15 12:25:21.145 UTC [865] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:21+0000 6021bcc320d2 postgres[873]: 2026-11-15 12:25:21.389 UTC [873] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:21+0000 6021bcc320d2 postgres[881]: 2026-11-15 12:25:21.646 UTC [881] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:21+0000 6021bcc320d2 postgres[916]: 2026-11-15 12:25:21.896 UTC [916] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:22+0000 6021bcc320d2 postgres[924]: 2026-11-15 12:25:22.143 UTC [924] postgres@postgres FATAL:  the database system is starting up
+2026-11-15T12:25:22+0000 6021bcc320d2 postgres[809]: 2026-11-15 12:25:22.287 UTC [809] LOG:  database system is ready to accept connections
+2026-11-15T12:25:22+0000 6021bcc320d2 postgres[948]: 2026-11-15 12:25:22.287 UTC [948] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2026-11-15T12:25:27+0000 6021bcc320d2 postgres[1099]: 2026-11-15 12:25:27.924 UTC [1099] postgres@gps_closure_test WARNING:  column "source" should be used for segmenting or ordering
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1163]: 2026-11-15 12:25:28.823 UTC [1163] LOG:  continuous aggregate refresh (individual invalidation) on "location_1hour" in window [ 2026-10-16 13:00:00+00, 2026-11-15 11:00:00+00 ]
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1163]: 2026-11-15 12:25:28.823 UTC [1163] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_4"
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1163]: 2026-11-15 12:25:28.824 UTC [1163] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_4"
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1164]: 2026-11-15 12:25:28.828 UTC [1164] LOG:  continuous aggregate refresh (individual invalidation) on "location_5min" in window [ 2026-11-01 12:30:00+00, 2026-11-15 12:20:00+00 ]
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1164]: 2026-11-15 12:25:28.829 UTC [1164] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_5"
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1164]: 2026-11-15 12:25:28.829 UTC [1164] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_5"
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1165]: 2026-11-15 12:25:28.918 UTC [1165] LOG:  continuous aggregate refresh (individual invalidation) on "location_1min" in window [ 2026-11-08 12:26:00+00, 2026-11-15 12:24:00+00 ]
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1165]: 2026-11-15 12:25:28.918 UTC [1165] LOG:  deleted 0 row(s) from materialization table "_timescaledb_internal._materialized_hypertable_3"
+2026-11-15T12:25:28+0000 6021bcc320d2 postgres[1165]: 2026-11-15 12:25:28.919 UTC [1165] LOG:  inserted 0 row(s) into materialization table "_timescaledb_internal._materialized_hypertable_3"
+2026-11-15T12:25:36+0000 6021bcc320d2 postgres[1099]: 2026-11-15 12:25:36.340 UTC [1099] postgres@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1493]: 2026-11-15 12:29:32.415 UTC [1493] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1528]: 2026-11-15 12:29:32.415 UTC [1528] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1503]: 2026-11-15 12:29:32.415 UTC [1503] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1502]: 2026-11-15 12:29:32.415 UTC [1502] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1501]: 2026-11-15 12:29:32.415 UTC [1501] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1500]: 2026-11-15 12:29:32.415 UTC [1500] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1499]: 2026-11-15 12:29:32.415 UTC [1499] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1498]: 2026-11-15 12:29:32.415 UTC [1498] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1497]: 2026-11-15 12:29:32.415 UTC [1497] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1496]: 2026-11-15 12:29:32.415 UTC [1496] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1495]: 2026-11-15 12:29:32.415 UTC [1495] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1494]: 2026-11-15 12:29:32.416 UTC [1494] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1561]: 2026-11-15 12:29:32.717 UTC [1561] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1571]: 2026-11-15 12:29:32.717 UTC [1571] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1570]: 2026-11-15 12:29:32.717 UTC [1570] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1569]: 2026-11-15 12:29:32.717 UTC [1569] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1560]: 2026-11-15 12:29:32.717 UTC [1560] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1568]: 2026-11-15 12:29:32.717 UTC [1568] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1566]: 2026-11-15 12:29:32.717 UTC [1566] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1563]: 2026-11-15 12:29:32.717 UTC [1563] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1564]: 2026-11-15 12:29:32.717 UTC [1564] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1567]: 2026-11-15 12:29:32.717 UTC [1567] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1562]: 2026-11-15 12:29:32.717 UTC [1562] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:29:32+0000 6021bcc320d2 postgres[1565]: 2026-11-15 12:29:32.718 UTC [1565] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1593]: 2026-11-15 12:30:25.174 UTC [1593] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1597]: 2026-11-15 12:30:25.181 UTC [1597] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1596]: 2026-11-15 12:30:25.181 UTC [1596] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1592]: 2026-11-15 12:30:25.181 UTC [1592] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1590]: 2026-11-15 12:30:25.181 UTC [1590] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1591]: 2026-11-15 12:30:25.181 UTC [1591] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1594]: 2026-11-15 12:30:25.181 UTC [1594] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1588]: 2026-11-15 12:30:25.181 UTC [1588] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1595]: 2026-11-15 12:30:25.181 UTC [1595] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1589]: 2026-11-15 12:30:25.181 UTC [1589] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1587]: 2026-11-15 12:30:25.181 UTC [1587] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1585]: 2026-11-15 12:30:25.181 UTC [1585] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:30:25+0000 6021bcc320d2 postgres[1586]: 2026-11-15 12:30:25.181 UTC [1586] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1663]: 2026-11-15 12:33:53.504 UTC [1663] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1668]: 2026-11-15 12:33:53.508 UTC [1668] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1669]: 2026-11-15 12:33:53.508 UTC [1669] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1670]: 2026-11-15 12:33:53.508 UTC [1670] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1666]: 2026-11-15 12:33:53.508 UTC [1666] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1665]: 2026-11-15 12:33:53.508 UTC [1665] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1667]: 2026-11-15 12:33:53.508 UTC [1667] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1662]: 2026-11-15 12:33:53.508 UTC [1662] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1660]: 2026-11-15 12:33:53.508 UTC [1660] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1659]: 2026-11-15 12:33:53.508 UTC [1659] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1661]: 2026-11-15 12:33:53.508 UTC [1661] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:53+0000 6021bcc320d2 postgres[1664]: 2026-11-15 12:33:53.508 UTC [1664] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:33:54+0000 6021bcc320d2 postgres[1776]: 2026-11-15 12:33:54.875 UTC [1776] other122@gps_closure_test FATAL:  too many connections for role "other122"
+2026-11-15T12:33:55+0000 6021bcc320d2 postgres[1847]: 2026-11-15 12:33:55.371 UTC [1847] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:00+0000 6021bcc320d2 postgres[1858]: 2026-11-15 12:34:00.673 UTC [1858] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:05+0000 6021bcc320d2 postgres[1879]: 2026-11-15 12:34:05.935 UTC [1879] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:11+0000 6021bcc320d2 postgres[1892]: 2026-11-15 12:34:11.167 UTC [1892] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:16+0000 6021bcc320d2 postgres[1910]: 2026-11-15 12:34:16.545 UTC [1910] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:21+0000 6021bcc320d2 postgres[1923]: 2026-11-15 12:34:21.776 UTC [1923] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:27+0000 6021bcc320d2 postgres[1945]: 2026-11-15 12:34:27.074 UTC [1945] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:32+0000 6021bcc320d2 postgres[1958]: 2026-11-15 12:34:32.380 UTC [1958] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:37+0000 6021bcc320d2 postgres[1976]: 2026-11-15 12:34:37.727 UTC [1976] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:42+0000 6021bcc320d2 postgres[1989]: 2026-11-15 12:34:42.978 UTC [1989] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:48+0000 6021bcc320d2 postgres[2010]: 2026-11-15 12:34:48.270 UTC [2010] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:53+0000 6021bcc320d2 postgres[2028]: 2026-11-15 12:34:53.457 UTC [2028] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:34:58+0000 6021bcc320d2 postgres[2053]: 2026-11-15 12:34:58.761 UTC [2053] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:04+0000 6021bcc320d2 postgres[2066]: 2026-11-15 12:35:04.181 UTC [2066] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:09+0000 6021bcc320d2 postgres[2092]: 2026-11-15 12:35:09.776 UTC [2092] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:15+0000 6021bcc320d2 postgres[2111]: 2026-11-15 12:35:15.365 UTC [2111] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:20+0000 6021bcc320d2 postgres[2131]: 2026-11-15 12:35:20.839 UTC [2131] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:26+0000 6021bcc320d2 postgres[2157]: 2026-11-15 12:35:26.124 UTC [2157] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:32+0000 6021bcc320d2 postgres[2173]: 2026-11-15 12:35:32.907 UTC [2173] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:38+0000 6021bcc320d2 postgres[2194]: 2026-11-15 12:35:38.283 UTC [2194] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:43+0000 6021bcc320d2 postgres[2218]: 2026-11-15 12:35:43.572 UTC [2218] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:48+0000 6021bcc320d2 postgres[2239]: 2026-11-15 12:35:48.850 UTC [2239] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:54+0000 6021bcc320d2 postgres[2249]: 2026-11-15 12:35:54.083 UTC [2249] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:35:59+0000 6021bcc320d2 postgres[2271]: 2026-11-15 12:35:59.467 UTC [2271] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:04+0000 6021bcc320d2 postgres[2284]: 2026-11-15 12:36:04.725 UTC [2284] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:09+0000 6021bcc320d2 postgres[2305]: 2026-11-15 12:36:09.953 UTC [2305] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:15+0000 6021bcc320d2 postgres[2315]: 2026-11-15 12:36:15.260 UTC [2315] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:20+0000 6021bcc320d2 postgres[2336]: 2026-11-15 12:36:20.566 UTC [2336] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:25+0000 6021bcc320d2 postgres[2349]: 2026-11-15 12:36:25.838 UTC [2349] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:31+0000 6021bcc320d2 postgres[2368]: 2026-11-15 12:36:31.061 UTC [2368] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:36+0000 6021bcc320d2 postgres[2394]: 2026-11-15 12:36:36.260 UTC [2394] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:41+0000 6021bcc320d2 postgres[2407]: 2026-11-15 12:36:41.555 UTC [2407] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:46+0000 6021bcc320d2 postgres[2433]: 2026-11-15 12:36:46.843 UTC [2433] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:52+0000 6021bcc320d2 postgres[2443]: 2026-11-15 12:36:52.072 UTC [2443] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:57+0000 6021bcc320d2 postgres[2465]: 2026-11-15 12:36:57.347 UTC [2465] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:36:58+0000 6021bcc320d2 postgres[2459]: 2026-11-15 12:36:58.355 UTC [2459] ERROR:  canceling autovacuum task
+2026-11-15T12:36:58+0000 6021bcc320d2 postgres[2459]: 2026-11-15 12:36:58.355 UTC [2459] CONTEXT:  while truncating relation "public.devices" to 55 blocks
+2026-11-15T12:36:58+0000 6021bcc320d2 postgres[2459]:         automatic vacuum of table "gps_closure_test.public.devices"
+2026-11-15T12:37:05+0000 6021bcc320d2 postgres[2481]: 2026-11-15 12:37:05.077 UTC [2481] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:10+0000 6021bcc320d2 postgres[2499]: 2026-11-15 12:37:10.345 UTC [2499] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:15+0000 6021bcc320d2 postgres[2518]: 2026-11-15 12:37:15.563 UTC [2518] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:20+0000 6021bcc320d2 postgres[2539]: 2026-11-15 12:37:20.865 UTC [2539] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:26+0000 6021bcc320d2 postgres[2562]: 2026-11-15 12:37:26.226 UTC [2562] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:31+0000 6021bcc320d2 postgres[2581]: 2026-11-15 12:37:31.555 UTC [2581] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:36+0000 6021bcc320d2 postgres[2602]: 2026-11-15 12:37:36.775 UTC [2602] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:42+0000 6021bcc320d2 postgres[2615]: 2026-11-15 12:37:42.066 UTC [2615] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:47+0000 6021bcc320d2 postgres[2638]: 2026-11-15 12:37:47.353 UTC [2638] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:52+0000 6021bcc320d2 postgres[2651]: 2026-11-15 12:37:52.645 UTC [2651] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:37:57+0000 6021bcc320d2 postgres[2673]: 2026-11-15 12:37:57.859 UTC [2673] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:00+0000 6021bcc320d2 postgres[1722]: 2026-11-15 12:38:00.298 UTC [1722] gps_runtime@gps_closure_test ERROR:  canceling statement due to lock timeout
+2026-11-15T12:38:00+0000 6021bcc320d2 postgres[1722]: 2026-11-15 12:38:00.298 UTC [1722] gps_runtime@gps_closure_test CONTEXT:  while updating tuple (0,71) in relation "location_notice_worker"
+2026-11-15T12:38:00+0000 6021bcc320d2 postgres[1722]: 2026-11-15 12:38:00.298 UTC [1722] gps_runtime@gps_closure_test STATEMENT:  UPDATE location_notice_worker SET seen_at=clock_timestamp() WHERE singleton AND (seen_at IS NULL OR seen_at<now()-interval '5 seconds')
+2026-11-15T12:38:03+0000 6021bcc320d2 postgres[2691]: 2026-11-15 12:38:03.071 UTC [2691] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:08+0000 6021bcc320d2 postgres[2715]: 2026-11-15 12:38:08.350 UTC [2715] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:13+0000 6021bcc320d2 postgres[2728]: 2026-11-15 12:38:13.531 UTC [2728] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:18+0000 6021bcc320d2 postgres[2749]: 2026-11-15 12:38:18.785 UTC [2749] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:24+0000 6021bcc320d2 postgres[2787]: 2026-11-15 12:38:24.041 UTC [2787] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:29+0000 6021bcc320d2 postgres[2809]: 2026-11-15 12:38:29.255 UTC [2809] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:34+0000 6021bcc320d2 postgres[2828]: 2026-11-15 12:38:34.551 UTC [2828] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:39+0000 6021bcc320d2 postgres[2854]: 2026-11-15 12:38:39.872 UTC [2854] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:45+0000 6021bcc320d2 postgres[2864]: 2026-11-15 12:38:45.152 UTC [2864] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:50+0000 6021bcc320d2 postgres[2885]: 2026-11-15 12:38:50.333 UTC [2885] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:38:55+0000 6021bcc320d2 postgres[2903]: 2026-11-15 12:38:55.574 UTC [2903] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1770]: 2026-11-15 12:39:52.640 UTC [1770] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1774]: 2026-11-15 12:39:52.640 UTC [1774] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1772]: 2026-11-15 12:39:52.640 UTC [1772] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1773]: 2026-11-15 12:39:52.640 UTC [1773] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1771]: 2026-11-15 12:39:52.640 UTC [1771] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1763]: 2026-11-15 12:39:52.640 UTC [1763] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1765]: 2026-11-15 12:39:52.640 UTC [1765] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1769]: 2026-11-15 12:39:52.640 UTC [1769] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1764]: 2026-11-15 12:39:52.640 UTC [1764] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1768]: 2026-11-15 12:39:52.640 UTC [1768] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1762]: 2026-11-15 12:39:52.640 UTC [1762] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1767]: 2026-11-15 12:39:52.640 UTC [1767] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1761]: 2026-11-15 12:39:52.640 UTC [1761] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1766]: 2026-11-15 12:39:52.640 UTC [1766] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1756]: 2026-11-15 12:39:52.640 UTC [1756] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1755]: 2026-11-15 12:39:52.640 UTC [1755] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1760]: 2026-11-15 12:39:52.641 UTC [1760] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1754]: 2026-11-15 12:39:52.641 UTC [1754] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1752]: 2026-11-15 12:39:52.641 UTC [1752] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1753]: 2026-11-15 12:39:52.643 UTC [1753] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1759]: 2026-11-15 12:39:52.643 UTC [1759] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1758]: 2026-11-15 12:39:52.643 UTC [1758] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1751]: 2026-11-15 12:39:52.644 UTC [1751] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1757]: 2026-11-15 12:39:52.644 UTC [1757] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1722]: 2026-11-15 12:39:52.661 UTC [1722] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[2167]: 2026-11-15 12:39:52.668 UTC [2167] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1833]: 2026-11-15 12:39:52.668 UTC [1833] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1831]: 2026-11-15 12:39:52.668 UTC [1831] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1832]: 2026-11-15 12:39:52.668 UTC [1832] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1830]: 2026-11-15 12:39:52.668 UTC [1830] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[2166]: 2026-11-15 12:39:52.668 UTC [2166] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1828]: 2026-11-15 12:39:52.668 UTC [1828] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1725]: 2026-11-15 12:39:52.668 UTC [1725] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1723]: 2026-11-15 12:39:52.669 UTC [1723] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1721]: 2026-11-15 12:39:52.669 UTC [1721] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1720]: 2026-11-15 12:39:52.669 UTC [1720] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1719]: 2026-11-15 12:39:52.669 UTC [1719] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1829]: 2026-11-15 12:39:52.669 UTC [1829] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1724]: 2026-11-15 12:39:52.669 UTC [1724] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1716]: 2026-11-15 12:39:52.669 UTC [1716] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1717]: 2026-11-15 12:39:52.669 UTC [1717] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1718]: 2026-11-15 12:39:52.672 UTC [1718] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1715]: 2026-11-15 12:39:52.672 UTC [1715] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:39:52+0000 6021bcc320d2 postgres[1714]: 2026-11-15 12:39:52.672 UTC [1714] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:02+0000 6021bcc320d2 postgres[3057]: 2026-11-15 12:40:02.638 UTC [3057] gps_runtime@gps_closure_test ERROR:  synthetic131 stats failure
+2026-11-15T12:40:02+0000 6021bcc320d2 postgres[3057]: 2026-11-15 12:40:02.638 UTC [3057] gps_runtime@gps_closure_test CONTEXT:  PL/pgSQL function runtime131_reject_stats() line 1 at RAISE
+2026-11-15T12:40:02+0000 6021bcc320d2 postgres[3057]: 2026-11-15 12:40:02.638 UTC [3057] gps_runtime@gps_closure_test STATEMENT:  INSERT INTO stats_rebuild_queue(device_id,date)
+2026-11-15T12:40:02+0000 6021bcc320d2 postgres[3057]:                   SELECT $1, d FROM (SELECT DISTINCT unnest(ARRAY[
+2026-11-15T12:40:02+0000 6021bcc320d2 postgres[3057]:                     ($2::timestamptz AT TIME ZONE 'Asia/Seoul')::date,
+2026-11-15T12:40:02+0000 6021bcc320d2 postgres[3057]:                     (($2::timestamptz+interval '65 seconds') AT TIME ZONE 'Asia/Seoul')::date]) AS d) days
+2026-11-15T12:40:02+0000 6021bcc320d2 postgres[3057]:                   ON CONFLICT(device_id,date) DO UPDATE SET generation=stats_rebuild_queue.generation+1
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3057]: 2026-11-15 12:40:03.595 UTC [3057] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3059]: 2026-11-15 12:40:03.595 UTC [3059] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3060]: 2026-11-15 12:40:03.595 UTC [3060] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3062]: 2026-11-15 12:40:03.595 UTC [3062] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3056]: 2026-11-15 12:40:03.595 UTC [3056] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3061]: 2026-11-15 12:40:03.595 UTC [3061] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3058]: 2026-11-15 12:40:03.595 UTC [3058] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3051]: 2026-11-15 12:40:03.595 UTC [3051] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3052]: 2026-11-15 12:40:03.595 UTC [3052] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3055]: 2026-11-15 12:40:03.595 UTC [3055] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3054]: 2026-11-15 12:40:03.595 UTC [3054] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:03+0000 6021bcc320d2 postgres[3053]: 2026-11-15 12:40:03.595 UTC [3053] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:40:04+0000 6021bcc320d2 postgres[3167]: 2026-11-15 12:40:04.952 UTC [3167] other122@gps_closure_test FATAL:  too many connections for role "other122"
+2026-11-15T12:40:05+0000 6021bcc320d2 postgres[3238]: 2026-11-15 12:40:05.386 UTC [3238] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:10+0000 6021bcc320d2 postgres[3250]: 2026-11-15 12:40:10.637 UTC [3250] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:15+0000 6021bcc320d2 postgres[3271]: 2026-11-15 12:40:15.881 UTC [3271] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:21+0000 6021bcc320d2 postgres[3292]: 2026-11-15 12:40:21.098 UTC [3292] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:26+0000 6021bcc320d2 postgres[3310]: 2026-11-15 12:40:26.353 UTC [3310] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:31+0000 6021bcc320d2 postgres[3330]: 2026-11-15 12:40:31.560 UTC [3330] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:36+0000 6021bcc320d2 postgres[3356]: 2026-11-15 12:40:36.848 UTC [3356] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:42+0000 6021bcc320d2 postgres[3369]: 2026-11-15 12:40:42.055 UTC [3369] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:47+0000 6021bcc320d2 postgres[3387]: 2026-11-15 12:40:47.260 UTC [3387] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:52+0000 6021bcc320d2 postgres[3410]: 2026-11-15 12:40:52.546 UTC [3410] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:40:57+0000 6021bcc320d2 postgres[3432]: 2026-11-15 12:40:57.857 UTC [3432] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:03+0000 6021bcc320d2 postgres[3442]: 2026-11-15 12:41:03.055 UTC [3442] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:08+0000 6021bcc320d2 postgres[3468]: 2026-11-15 12:41:08.246 UTC [3468] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:13+0000 6021bcc320d2 postgres[3481]: 2026-11-15 12:41:13.456 UTC [3481] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:18+0000 6021bcc320d2 postgres[3507]: 2026-11-15 12:41:18.757 UTC [3507] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:23+0000 6021bcc320d2 postgres[3517]: 2026-11-15 12:41:23.970 UTC [3517] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:29+0000 6021bcc320d2 postgres[3539]: 2026-11-15 12:41:29.251 UTC [3539] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:34+0000 6021bcc320d2 postgres[3558]: 2026-11-15 12:41:34.458 UTC [3558] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:39+0000 6021bcc320d2 postgres[3576]: 2026-11-15 12:41:39.647 UTC [3576] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:45+0000 6021bcc320d2 postgres[3589]: 2026-11-15 12:41:45.058 UTC [3589] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:50+0000 6021bcc320d2 postgres[3610]: 2026-11-15 12:41:50.351 UTC [3610] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:41:55+0000 6021bcc320d2 postgres[3623]: 2026-11-15 12:41:55.654 UTC [3623] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:00+0000 6021bcc320d2 postgres[3642]: 2026-11-15 12:42:00.858 UTC [3642] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:06+0000 6021bcc320d2 postgres[3668]: 2026-11-15 12:42:06.050 UTC [3668] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:11+0000 6021bcc320d2 postgres[3681]: 2026-11-15 12:42:11.244 UTC [3681] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:16+0000 6021bcc320d2 postgres[3699]: 2026-11-15 12:42:16.440 UTC [3699] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:21+0000 6021bcc320d2 postgres[3712]: 2026-11-15 12:42:21.657 UTC [3712] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:26+0000 6021bcc320d2 postgres[3739]: 2026-11-15 12:42:26.957 UTC [3739] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:32+0000 6021bcc320d2 postgres[3752]: 2026-11-15 12:42:32.160 UTC [3752] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:37+0000 6021bcc320d2 postgres[3770]: 2026-11-15 12:42:37.553 UTC [3770] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:42+0000 6021bcc320d2 postgres[3783]: 2026-11-15 12:42:42.825 UTC [3783] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:48+0000 6021bcc320d2 postgres[3804]: 2026-11-15 12:42:48.266 UTC [3804] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:53+0000 6021bcc320d2 postgres[3817]: 2026-11-15 12:42:53.560 UTC [3817] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:42:58+0000 6021bcc320d2 postgres[3836]: 2026-11-15 12:42:58.861 UTC [3836] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:04+0000 6021bcc320d2 postgres[3849]: 2026-11-15 12:43:04.249 UTC [3849] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:09+0000 6021bcc320d2 postgres[3870]: 2026-11-15 12:43:09.863 UTC [3870] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:15+0000 6021bcc320d2 postgres[3889]: 2026-11-15 12:43:15.163 UTC [3889] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:20+0000 6021bcc320d2 postgres[3907]: 2026-11-15 12:43:20.432 UTC [3907] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:25+0000 6021bcc320d2 postgres[3920]: 2026-11-15 12:43:25.655 UTC [3920] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:30+0000 6021bcc320d2 postgres[3942]: 2026-11-15 12:43:30.976 UTC [3942] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:36+0000 6021bcc320d2 postgres[3960]: 2026-11-15 12:43:36.245 UTC [3960] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:41+0000 6021bcc320d2 postgres[3973]: 2026-11-15 12:43:41.473 UTC [3973] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:46+0000 6021bcc320d2 postgres[3994]: 2026-11-15 12:43:46.750 UTC [3994] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:52+0000 6021bcc320d2 postgres[4012]: 2026-11-15 12:43:52.030 UTC [4012] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:43:57+0000 6021bcc320d2 postgres[4031]: 2026-11-15 12:43:57.270 UTC [4031] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:02+0000 6021bcc320d2 postgres[4044]: 2026-11-15 12:44:02.638 UTC [4044] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:07+0000 6021bcc320d2 postgres[4070]: 2026-11-15 12:44:07.872 UTC [4070] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:13+0000 6021bcc320d2 postgres[4083]: 2026-11-15 12:44:13.329 UTC [4083] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:18+0000 6021bcc320d2 postgres[4101]: 2026-11-15 12:44:18.559 UTC [4101] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:23+0000 6021bcc320d2 postgres[4114]: 2026-11-15 12:44:23.844 UTC [4114] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:29+0000 6021bcc320d2 postgres[4136]: 2026-11-15 12:44:29.050 UTC [4136] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:34+0000 6021bcc320d2 postgres[4152]: 2026-11-15 12:44:34.268 UTC [4152] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:39+0000 6021bcc320d2 postgres[4173]: 2026-11-15 12:44:39.667 UTC [4173] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:45+0000 6021bcc320d2 postgres[4196]: 2026-11-15 12:44:45.160 UTC [4196] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:50+0000 6021bcc320d2 postgres[4217]: 2026-11-15 12:44:50.561 UTC [4217] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:44:55+0000 6021bcc320d2 postgres[4232]: 2026-11-15 12:44:55.851 UTC [4232] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:45:01+0000 6021bcc320d2 postgres[4254]: 2026-11-15 12:45:01.043 UTC [4254] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3164]: 2026-11-15 12:45:54.608 UTC [3164] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3163]: 2026-11-15 12:45:54.608 UTC [3163] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3162]: 2026-11-15 12:45:54.608 UTC [3162] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3165]: 2026-11-15 12:45:54.608 UTC [3165] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3161]: 2026-11-15 12:45:54.608 UTC [3161] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3160]: 2026-11-15 12:45:54.608 UTC [3160] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3159]: 2026-11-15 12:45:54.608 UTC [3159] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3156]: 2026-11-15 12:45:54.608 UTC [3156] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3154]: 2026-11-15 12:45:54.608 UTC [3154] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3158]: 2026-11-15 12:45:54.608 UTC [3158] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3153]: 2026-11-15 12:45:54.608 UTC [3153] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3152]: 2026-11-15 12:45:54.608 UTC [3152] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3155]: 2026-11-15 12:45:54.608 UTC [3155] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3157]: 2026-11-15 12:45:54.608 UTC [3157] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3151]: 2026-11-15 12:45:54.608 UTC [3151] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3150]: 2026-11-15 12:45:54.608 UTC [3150] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3149]: 2026-11-15 12:45:54.608 UTC [3149] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3147]: 2026-11-15 12:45:54.609 UTC [3147] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3146]: 2026-11-15 12:45:54.609 UTC [3146] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3144]: 2026-11-15 12:45:54.611 UTC [3144] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3145]: 2026-11-15 12:45:54.611 UTC [3145] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3148]: 2026-11-15 12:45:54.611 UTC [3148] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3142]: 2026-11-15 12:45:54.611 UTC [3142] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3143]: 2026-11-15 12:45:54.612 UTC [3143] other122@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3114]: 2026-11-15 12:45:54.628 UTC [3114] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3241]: 2026-11-15 12:45:54.633 UTC [3241] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3223]: 2026-11-15 12:45:54.633 UTC [3223] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3221]: 2026-11-15 12:45:54.633 UTC [3221] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3224]: 2026-11-15 12:45:54.633 UTC [3224] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3222]: 2026-11-15 12:45:54.633 UTC [3222] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3219]: 2026-11-15 12:45:54.633 UTC [3219] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3244]: 2026-11-15 12:45:54.633 UTC [3244] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3220]: 2026-11-15 12:45:54.633 UTC [3220] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3117]: 2026-11-15 12:45:54.633 UTC [3117] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3115]: 2026-11-15 12:45:54.633 UTC [3115] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3116]: 2026-11-15 12:45:54.633 UTC [3116] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3113]: 2026-11-15 12:45:54.633 UTC [3113] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3111]: 2026-11-15 12:45:54.633 UTC [3111] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3109]: 2026-11-15 12:45:54.633 UTC [3109] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3107]: 2026-11-15 12:45:54.633 UTC [3107] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3106]: 2026-11-15 12:45:54.634 UTC [3106] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3112]: 2026-11-15 12:45:54.634 UTC [3112] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3108]: 2026-11-15 12:45:54.635 UTC [3108] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:45:54+0000 6021bcc320d2 postgres[3110]: 2026-11-15 12:45:54.637 UTC [3110] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:05+0000 6021bcc320d2 postgres[4363]: 2026-11-15 12:46:05.090 UTC [4363] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:05+0000 6021bcc320d2 postgres[4364]: 2026-11-15 12:46:05.090 UTC [4364] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:05+0000 6021bcc320d2 postgres[4368]: 2026-11-15 12:46:05.090 UTC [4368] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:05+0000 6021bcc320d2 postgres[4366]: 2026-11-15 12:46:05.090 UTC [4366] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:05+0000 6021bcc320d2 postgres[4362]: 2026-11-15 12:46:05.090 UTC [4362] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:05+0000 6021bcc320d2 postgres[4367]: 2026-11-15 12:46:05.090 UTC [4367] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:05+0000 6021bcc320d2 postgres[4365]: 2026-11-15 12:46:05.090 UTC [4365] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:05+0000 6021bcc320d2 postgres[4361]: 2026-11-15 12:46:05.090 UTC [4361] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4390]: 2026-11-15 12:46:06.782 UTC [4390] gps_runtime@gps_closure_test ERROR:  conflicting key value violates exclusion constraint "location_subject_mappings_int8range_tstzrange_excl"
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4390]: 2026-11-15 12:46:06.782 UTC [4390] gps_runtime@gps_closure_test DETAIL:  Key (int8range(device_id, device_id, '[]'::text), tstzrange(starts_at, ends_at, '[)'::text))=([28,29), ["2026-11-15 11:46:05+00","2026-11-15 13:46:05+00")) conflicts with existing key (int8range(device_id, device_id, '[]'::text), tstzrange(starts_at, ends_at, '[)'::text))=([28,29), ["2026-11-15 11:46:05+00","2026-11-15 13:46:05+00")).
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4390]: 2026-11-15 12:46:06.782 UTC [4390] gps_runtime@gps_closure_test STATEMENT:  UPDATE location_subject_mappings SET status=$2,revision=revision+1,decided_at=clock_timestamp() WHERE id=$1
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4390]: 2026-11-15 12:46:06.901 UTC [4390] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4393]: 2026-11-15 12:46:06.901 UTC [4393] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4392]: 2026-11-15 12:46:06.901 UTC [4392] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4389]: 2026-11-15 12:46:06.901 UTC [4389] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4391]: 2026-11-15 12:46:06.901 UTC [4391] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4394]: 2026-11-15 12:46:06.901 UTC [4394] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4388]: 2026-11-15 12:46:06.901 UTC [4388] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4386]: 2026-11-15 12:46:06.901 UTC [4386] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4384]: 2026-11-15 12:46:06.901 UTC [4384] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4385]: 2026-11-15 12:46:06.901 UTC [4385] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4383]: 2026-11-15 12:46:06.901 UTC [4383] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:06+0000 6021bcc320d2 postgres[4387]: 2026-11-15 12:46:06.901 UTC [4387] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:11+0000 6021bcc320d2 postgres[4413]: 2026-11-15 12:46:11.234 UTC [4413] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:11+0000 6021bcc320d2 postgres[4415]: 2026-11-15 12:46:11.234 UTC [4415] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:11+0000 6021bcc320d2 postgres[4414]: 2026-11-15 12:46:11.234 UTC [4414] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:11+0000 6021bcc320d2 postgres[4412]: 2026-11-15 12:46:11.234 UTC [4412] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:11+0000 6021bcc320d2 postgres[4408]: 2026-11-15 12:46:11.234 UTC [4408] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:11+0000 6021bcc320d2 postgres[4410]: 2026-11-15 12:46:11.234 UTC [4410] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:11+0000 6021bcc320d2 postgres[4411]: 2026-11-15 12:46:11.234 UTC [4411] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:11+0000 6021bcc320d2 postgres[4409]: 2026-11-15 12:46:11.234 UTC [4409] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4436]: 2026-11-15 12:46:13.193 UTC [4436] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4435]: 2026-11-15 12:46:13.193 UTC [4435] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4434]: 2026-11-15 12:46:13.193 UTC [4434] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4432]: 2026-11-15 12:46:13.193 UTC [4432] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4433]: 2026-11-15 12:46:13.193 UTC [4433] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4430]: 2026-11-15 12:46:13.193 UTC [4430] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4431]: 2026-11-15 12:46:13.193 UTC [4431] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4429]: 2026-11-15 12:46:13.193 UTC [4429] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:13+0000 6021bcc320d2 postgres[4428]: 2026-11-15 12:46:13.193 UTC [4428] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4458]: 2026-11-15 12:46:15.601 UTC [4458] gps_runtime@gps_closure_test ERROR:  synthetic notice failure
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4458]: 2026-11-15 12:46:15.601 UTC [4458] gps_runtime@gps_closure_test CONTEXT:  PL/pgSQL function fail22b_notice() line 1 at RAISE
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4458]: 2026-11-15 12:46:15.601 UTC [4458] gps_runtime@gps_closure_test STATEMENT:  INSERT INTO location_provision_notices(event_id,mapping_id,subject_id,owner_id,actor_id,device_id,vehicle_id,purpose,consent_version,policy_reference,range_from,range_until,started_at) SELECT $1,$2,$3,$4,$5,$6,$7,'fleet_operations','fleet-subject-v1',$8,$9,$10,started_at FROM location_access_events WHERE id=$1
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4455]: 2026-11-15 12:46:15.799 UTC [4455] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4462]: 2026-11-15 12:46:15.800 UTC [4462] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4461]: 2026-11-15 12:46:15.800 UTC [4461] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4458]: 2026-11-15 12:46:15.800 UTC [4458] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4459]: 2026-11-15 12:46:15.800 UTC [4459] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4460]: 2026-11-15 12:46:15.800 UTC [4460] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4457]: 2026-11-15 12:46:15.800 UTC [4457] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4456]: 2026-11-15 12:46:15.800 UTC [4456] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4452]: 2026-11-15 12:46:15.800 UTC [4452] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4451]: 2026-11-15 12:46:15.800 UTC [4451] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4454]: 2026-11-15 12:46:15.800 UTC [4454] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:15+0000 6021bcc320d2 postgres[4453]: 2026-11-15 12:46:15.800 UTC [4453] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4491]: 2026-11-15 12:46:17.765 UTC [4491] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4488]: 2026-11-15 12:46:17.765 UTC [4488] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4490]: 2026-11-15 12:46:17.765 UTC [4490] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4489]: 2026-11-15 12:46:17.765 UTC [4489] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4487]: 2026-11-15 12:46:17.765 UTC [4487] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4483]: 2026-11-15 12:46:17.765 UTC [4483] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4486]: 2026-11-15 12:46:17.765 UTC [4486] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4484]: 2026-11-15 12:46:17.765 UTC [4484] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:17+0000 6021bcc320d2 postgres[4485]: 2026-11-15 12:46:17.765 UTC [4485] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4516]: 2026-11-15 12:46:19.646 UTC [4516] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4517]: 2026-11-15 12:46:19.646 UTC [4517] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4515]: 2026-11-15 12:46:19.646 UTC [4515] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4514]: 2026-11-15 12:46:19.646 UTC [4514] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4510]: 2026-11-15 12:46:19.646 UTC [4510] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4513]: 2026-11-15 12:46:19.646 UTC [4513] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4508]: 2026-11-15 12:46:19.646 UTC [4508] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4509]: 2026-11-15 12:46:19.646 UTC [4509] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4507]: 2026-11-15 12:46:19.646 UTC [4507] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4511]: 2026-11-15 12:46:19.646 UTC [4511] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4506]: 2026-11-15 12:46:19.646 UTC [4506] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:19+0000 6021bcc320d2 postgres[4512]: 2026-11-15 12:46:19.646 UTC [4512] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:21+0000 6021bcc320d2 postgres[4532]: 2026-11-15 12:46:21.320 UTC [4532] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:21+0000 6021bcc320d2 postgres[4533]: 2026-11-15 12:46:21.320 UTC [4533] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:21+0000 6021bcc320d2 postgres[4535]: 2026-11-15 12:46:21.320 UTC [4535] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:21+0000 6021bcc320d2 postgres[4536]: 2026-11-15 12:46:21.320 UTC [4536] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:21+0000 6021bcc320d2 postgres[4537]: 2026-11-15 12:46:21.320 UTC [4537] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:21+0000 6021bcc320d2 postgres[4534]: 2026-11-15 12:46:21.320 UTC [4534] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:21+0000 6021bcc320d2 postgres[4531]: 2026-11-15 12:46:21.320 UTC [4531] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:21+0000 6021bcc320d2 postgres[4530]: 2026-11-15 12:46:21.320 UTC [4530] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4496]: 2026-11-15 12:46:24.023 UTC [4496] postgres@gps_closure_test ERROR:  subject identity is immutable
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4496]: 2026-11-15 12:46:24.023 UTC [4496] postgres@gps_closure_test CONTEXT:  PL/pgSQL function protect_subject_identity() line 5 at RAISE
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4496]: 2026-11-15 12:46:24.023 UTC [4496] postgres@gps_closure_test STATEMENT:  UPDATE location_subject_mappings SET subject_id=$1 WHERE id=$2
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4557]: 2026-11-15 12:46:24.245 UTC [4557] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4561]: 2026-11-15 12:46:24.245 UTC [4561] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4566]: 2026-11-15 12:46:24.245 UTC [4566] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4562]: 2026-11-15 12:46:24.245 UTC [4562] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4556]: 2026-11-15 12:46:24.245 UTC [4556] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4555]: 2026-11-15 12:46:24.245 UTC [4555] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4560]: 2026-11-15 12:46:24.245 UTC [4560] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4558]: 2026-11-15 12:46:24.245 UTC [4558] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4559]: 2026-11-15 12:46:24.245 UTC [4559] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4552]: 2026-11-15 12:46:24.245 UTC [4552] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4551]: 2026-11-15 12:46:24.245 UTC [4551] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4550]: 2026-11-15 12:46:24.246 UTC [4550] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4587]: 2026-11-15 12:46:24.514 UTC [4587] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4581]: 2026-11-15 12:46:24.514 UTC [4581] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4587]: 2026-11-15 12:46:24.514 UTC [4587] gps_runtime@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4586]: 2026-11-15 12:46:24.515 UTC [4586] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4579]: 2026-11-15 12:46:24.515 UTC [4579] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4585]: 2026-11-15 12:46:24.515 UTC [4585] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4580]: 2026-11-15 12:46:24.515 UTC [4580] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4578]: 2026-11-15 12:46:24.515 UTC [4578] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4583]: 2026-11-15 12:46:24.515 UTC [4583] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4584]: 2026-11-15 12:46:24.515 UTC [4584] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4577]: 2026-11-15 12:46:24.515 UTC [4577] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4576]: 2026-11-15 12:46:24.515 UTC [4576] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4582]: 2026-11-15 12:46:24.515 UTC [4582] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4582]: 2026-11-15 12:46:24.515 UTC [4582] gps_runtime@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]: 2026-11-15 12:46:24.934 UTC [4602] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]: 2026-11-15 12:46:24.934 UTC [4602] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]: 2026-11-15 12:46:24.934 UTC [4602] gps_runtime@gps_closure_test STATEMENT:  WITH scoped AS MATERIALIZED (
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                   SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                   WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                     AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                 ), anchors AS MATERIALIZED (
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                   SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                 ), bounds AS (
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                   SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM scoped JOIN anchors USING(anchor_at,source)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                 ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                 JOIN anchors a USING(anchor_at,source)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                 WHERE b.first IS NOT NULL AND ($3::timestamptz IS NULL OR p.recorded_at >= $3)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                   AND ($4::timestamptz IS NULL OR p.recorded_at <= $4)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                   AND ($6::bool IS NULL OR p.fix=$6)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4602]:                 ORDER BY p.recorded_at DESC,p.source
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]: 2026-11-15 12:46:24.944 UTC [4604] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]: 2026-11-15 12:46:24.944 UTC [4604] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]: 2026-11-15 12:46:24.944 UTC [4604] gps_runtime@gps_closure_test STATEMENT:  WITH scoped AS MATERIALIZED (
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                   SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                   WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                     AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                 ), anchors AS MATERIALIZED (
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                   SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                 ), bounds AS (
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                   SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM scoped JOIN anchors USING(anchor_at,source)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                 ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                 JOIN anchors a USING(anchor_at,source)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                 WHERE b.first IS NOT NULL AND ($3::timestamptz IS NULL OR p.recorded_at >= $3)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                   AND ($4::timestamptz IS NULL OR p.recorded_at <= $4)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                   AND ($6::bool IS NULL OR p.fix=$6)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4604]:                 ORDER BY p.recorded_at DESC,p.source
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]: 2026-11-15 12:46:24.948 UTC [4595] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]: 2026-11-15 12:46:24.948 UTC [4595] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]: 2026-11-15 12:46:24.948 UTC [4595] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                 WHERE b.first IS NOT NULL
+2026-11-15T12:46:24+0000 6021bcc320d2 postgres[4595]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]: 2026-11-15 12:46:25.460 UTC [4605] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]: 2026-11-15 12:46:25.460 UTC [4605] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]: 2026-11-15 12:46:25.460 UTC [4605] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                  )
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                  FROM speed
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4605]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]: 2026-11-15 12:46:25.478 UTC [4601] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]: 2026-11-15 12:46:25.478 UTC [4601] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]: 2026-11-15 12:46:25.478 UTC [4601] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                  )
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                  FROM speed
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4601]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]: 2026-11-15 12:46:25.478 UTC [4599] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]: 2026-11-15 12:46:25.478 UTC [4599] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]: 2026-11-15 12:46:25.478 UTC [4599] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                  )
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                  FROM speed
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:46:25+0000 6021bcc320d2 postgres[4599]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]: 2026-11-15 12:46:28.126 UTC [4600] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]: 2026-11-15 12:46:28.126 UTC [4600] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]: 2026-11-15 12:46:28.126 UTC [4600] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                 WHERE b.first IS NOT NULL
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4600]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]: 2026-11-15 12:46:28.143 UTC [4603] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]: 2026-11-15 12:46:28.143 UTC [4603] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]: 2026-11-15 12:46:28.143 UTC [4603] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                 WHERE b.first IS NOT NULL
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4603]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]: 2026-11-15 12:46:28.143 UTC [4596] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]: 2026-11-15 12:46:28.143 UTC [4596] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]: 2026-11-15 12:46:28.143 UTC [4596] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                 WHERE b.first IS NOT NULL
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4596]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4647]: 2026-11-15 12:46:28.358 UTC [4647] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4606]: 2026-11-15 12:46:28.360 UTC [4606] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4611]: 2026-11-15 12:46:28.360 UTC [4611] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4620]: 2026-11-15 12:46:28.360 UTC [4620] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4614]: 2026-11-15 12:46:28.360 UTC [4614] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4623]: 2026-11-15 12:46:28.360 UTC [4623] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4597]: 2026-11-15 12:46:28.360 UTC [4597] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4598]: 2026-11-15 12:46:28.360 UTC [4598] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]: 2026-11-15 12:46:28.930 UTC [4662] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]: 2026-11-15 12:46:28.930 UTC [4662] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]: 2026-11-15 12:46:28.930 UTC [4662] gps_runtime@gps_closure_test STATEMENT:
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                 WITH t AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                     SELECT idx, s_at, e_at FROM
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                     UNNEST($2::TIMESTAMPTZ[], $3::TIMESTAMPTZ[])
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                         WITH ORDINALITY AS u(s_at, e_at, idx)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                 ), bounds AS (SELECT min(s_at) AS first,max(e_at) AS last FROM t),
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                 points AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                     SELECT recorded_at,lat,lng FROM bounds b
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                     CROSS JOIN LATERAL location_points_between($1,$4,b.first,b.last) p
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                     WHERE p.fix = TRUE
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                 )
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                 SELECT t.idx::INT4 AS idx,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                        first_fix.lat AS start_lat, first_fix.lng AS start_lng,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                        last_fix.lat AS end_lat, last_fix.lng AS end_lng
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                   FROM t
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                   LEFT JOIN LATERAL (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                      ORDER BY lr.recorded_at ASC LIMIT 1
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                   ) first_fix ON true
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                   LEFT JOIN LATERAL (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                      ORDER BY lr.recorded_at DESC LIMIT 1
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                   ) last_fix ON true
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                   ORDER BY t.idx
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4662]:                 
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]: 2026-11-15 12:46:28.970 UTC [4660] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]: 2026-11-15 12:46:28.970 UTC [4660] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]: 2026-11-15 12:46:28.970 UTC [4660] gps_runtime@gps_closure_test STATEMENT:
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                 WITH t AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                     SELECT idx, s_at, e_at FROM
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                     UNNEST($2::TIMESTAMPTZ[], $3::TIMESTAMPTZ[])
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                         WITH ORDINALITY AS u(s_at, e_at, idx)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                 ), bounds AS (SELECT min(s_at) AS first,max(e_at) AS last FROM t),
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                 points AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                     SELECT recorded_at,lat,lng FROM bounds b
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                     CROSS JOIN LATERAL location_points_between($1,$4,b.first,b.last) p
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                     WHERE p.fix = TRUE
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                 )
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                 SELECT t.idx::INT4 AS idx,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                        first_fix.lat AS start_lat, first_fix.lng AS start_lng,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                        last_fix.lat AS end_lat, last_fix.lng AS end_lng
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                   FROM t
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                   LEFT JOIN LATERAL (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                      ORDER BY lr.recorded_at ASC LIMIT 1
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                   ) first_fix ON true
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                   LEFT JOIN LATERAL (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                      ORDER BY lr.recorded_at DESC LIMIT 1
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                   ) last_fix ON true
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                   ORDER BY t.idx
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4660]:                 
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]: 2026-11-15 12:46:28.974 UTC [4663] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]: 2026-11-15 12:46:28.974 UTC [4663] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]: 2026-11-15 12:46:28.974 UTC [4663] gps_runtime@gps_closure_test STATEMENT:
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                 WITH t AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                     SELECT idx, s_at, e_at FROM
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                     UNNEST($2::TIMESTAMPTZ[], $3::TIMESTAMPTZ[])
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                         WITH ORDINALITY AS u(s_at, e_at, idx)
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                 ), bounds AS (SELECT min(s_at) AS first,max(e_at) AS last FROM t),
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                 points AS MATERIALIZED (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                     SELECT recorded_at,lat,lng FROM bounds b
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                     CROSS JOIN LATERAL location_points_between($1,$4,b.first,b.last) p
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                     WHERE p.fix = TRUE
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                 )
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                 SELECT t.idx::INT4 AS idx,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                        first_fix.lat AS start_lat, first_fix.lng AS start_lng,
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                        last_fix.lat AS end_lat, last_fix.lng AS end_lng
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                   FROM t
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                   LEFT JOIN LATERAL (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                      ORDER BY lr.recorded_at ASC LIMIT 1
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                   ) first_fix ON true
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                   LEFT JOIN LATERAL (
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                      ORDER BY lr.recorded_at DESC LIMIT 1
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                   ) last_fix ON true
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                   ORDER BY t.idx
+2026-11-15T12:46:28+0000 6021bcc320d2 postgres[4663]:                 
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4657]: 2026-11-15 12:47:36.593 UTC [4657] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4673]: 2026-11-15 12:47:36.594 UTC [4673] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4675]: 2026-11-15 12:47:36.594 UTC [4675] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4670]: 2026-11-15 12:47:36.594 UTC [4670] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4665]: 2026-11-15 12:47:36.594 UTC [4665] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4667]: 2026-11-15 12:47:36.594 UTC [4667] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4666]: 2026-11-15 12:47:36.594 UTC [4666] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4679]: 2026-11-15 12:47:36.594 UTC [4679] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4664]: 2026-11-15 12:47:36.594 UTC [4664] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4658]: 2026-11-15 12:47:36.594 UTC [4658] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4661]: 2026-11-15 12:47:36.594 UTC [4661] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4656]: 2026-11-15 12:47:36.594 UTC [4656] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:36+0000 6021bcc320d2 postgres[4659]: 2026-11-15 12:47:36.594 UTC [4659] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:38+0000 6021bcc320d2 postgres[4733]: 2026-11-15 12:47:38.563 UTC [4733] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:38+0000 6021bcc320d2 postgres[4732]: 2026-11-15 12:47:38.563 UTC [4732] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:38+0000 6021bcc320d2 postgres[4731]: 2026-11-15 12:47:38.563 UTC [4731] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:38+0000 6021bcc320d2 postgres[4730]: 2026-11-15 12:47:38.563 UTC [4730] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:38+0000 6021bcc320d2 postgres[4729]: 2026-11-15 12:47:38.563 UTC [4729] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:38+0000 6021bcc320d2 postgres[4728]: 2026-11-15 12:47:38.563 UTC [4728] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:38+0000 6021bcc320d2 postgres[4726]: 2026-11-15 12:47:38.563 UTC [4726] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:38+0000 6021bcc320d2 postgres[4727]: 2026-11-15 12:47:38.563 UTC [4727] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4749]: 2026-11-15 12:47:40.363 UTC [4749] gps_runtime@gps_closure_test ERROR:  conflicting key value violates exclusion constraint "location_subject_mappings_int8range_tstzrange_excl"
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4749]: 2026-11-15 12:47:40.363 UTC [4749] gps_runtime@gps_closure_test DETAIL:  Key (int8range(device_id, device_id, '[]'::text), tstzrange(starts_at, ends_at, '[)'::text))=([32,33), ["2026-11-15 11:47:38+00","2026-11-15 13:47:38+00")) conflicts with existing key (int8range(device_id, device_id, '[]'::text), tstzrange(starts_at, ends_at, '[)'::text))=([32,33), ["2026-11-15 11:47:38+00","2026-11-15 13:47:38+00")).
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4749]: 2026-11-15 12:47:40.363 UTC [4749] gps_runtime@gps_closure_test STATEMENT:  UPDATE location_subject_mappings SET status=$2,revision=revision+1,decided_at=clock_timestamp() WHERE id=$1
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4749]: 2026-11-15 12:47:40.481 UTC [4749] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4758]: 2026-11-15 12:47:40.481 UTC [4758] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4757]: 2026-11-15 12:47:40.481 UTC [4757] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4759]: 2026-11-15 12:47:40.481 UTC [4759] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4753]: 2026-11-15 12:47:40.481 UTC [4753] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4754]: 2026-11-15 12:47:40.481 UTC [4754] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4752]: 2026-11-15 12:47:40.481 UTC [4752] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4750]: 2026-11-15 12:47:40.481 UTC [4750] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4751]: 2026-11-15 12:47:40.481 UTC [4751] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4756]: 2026-11-15 12:47:40.481 UTC [4756] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4755]: 2026-11-15 12:47:40.481 UTC [4755] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:40+0000 6021bcc320d2 postgres[4748]: 2026-11-15 12:47:40.481 UTC [4748] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:44+0000 6021bcc320d2 postgres[4780]: 2026-11-15 12:47:44.934 UTC [4780] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:44+0000 6021bcc320d2 postgres[4778]: 2026-11-15 12:47:44.934 UTC [4778] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:44+0000 6021bcc320d2 postgres[4777]: 2026-11-15 12:47:44.934 UTC [4777] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:44+0000 6021bcc320d2 postgres[4775]: 2026-11-15 12:47:44.934 UTC [4775] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:44+0000 6021bcc320d2 postgres[4776]: 2026-11-15 12:47:44.934 UTC [4776] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:44+0000 6021bcc320d2 postgres[4779]: 2026-11-15 12:47:44.934 UTC [4779] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:44+0000 6021bcc320d2 postgres[4774]: 2026-11-15 12:47:44.934 UTC [4774] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:44+0000 6021bcc320d2 postgres[4773]: 2026-11-15 12:47:44.934 UTC [4773] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4800]: 2026-11-15 12:47:46.915 UTC [4800] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4801]: 2026-11-15 12:47:46.915 UTC [4801] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4799]: 2026-11-15 12:47:46.915 UTC [4799] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4795]: 2026-11-15 12:47:46.915 UTC [4795] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4798]: 2026-11-15 12:47:46.915 UTC [4798] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4797]: 2026-11-15 12:47:46.915 UTC [4797] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4796]: 2026-11-15 12:47:46.915 UTC [4796] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4793]: 2026-11-15 12:47:46.915 UTC [4793] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:46+0000 6021bcc320d2 postgres[4794]: 2026-11-15 12:47:46.915 UTC [4794] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4820]: 2026-11-15 12:47:50.133 UTC [4820] gps_runtime@gps_closure_test ERROR:  synthetic notice failure
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4820]: 2026-11-15 12:47:50.133 UTC [4820] gps_runtime@gps_closure_test CONTEXT:  PL/pgSQL function fail22b_notice() line 1 at RAISE
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4820]: 2026-11-15 12:47:50.133 UTC [4820] gps_runtime@gps_closure_test STATEMENT:  INSERT INTO location_provision_notices(event_id,mapping_id,subject_id,owner_id,actor_id,device_id,vehicle_id,purpose,consent_version,policy_reference,range_from,range_until,started_at) SELECT $1,$2,$3,$4,$5,$6,$7,'fleet_operations','fleet-subject-v1',$8,$9,$10,started_at FROM location_access_events WHERE id=$1
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4821]: 2026-11-15 12:47:50.508 UTC [4821] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4827]: 2026-11-15 12:47:50.509 UTC [4827] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4822]: 2026-11-15 12:47:50.509 UTC [4822] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4824]: 2026-11-15 12:47:50.509 UTC [4824] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4826]: 2026-11-15 12:47:50.509 UTC [4826] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4820]: 2026-11-15 12:47:50.509 UTC [4820] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4825]: 2026-11-15 12:47:50.509 UTC [4825] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4816]: 2026-11-15 12:47:50.509 UTC [4816] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4817]: 2026-11-15 12:47:50.509 UTC [4817] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4819]: 2026-11-15 12:47:50.509 UTC [4819] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4818]: 2026-11-15 12:47:50.509 UTC [4818] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:50+0000 6021bcc320d2 postgres[4823]: 2026-11-15 12:47:50.509 UTC [4823] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:53+0000 6021bcc320d2 postgres[4853]: 2026-11-15 12:47:53.266 UTC [4853] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:53+0000 6021bcc320d2 postgres[4854]: 2026-11-15 12:47:53.266 UTC [4854] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:53+0000 6021bcc320d2 postgres[4855]: 2026-11-15 12:47:53.266 UTC [4855] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:53+0000 6021bcc320d2 postgres[4851]: 2026-11-15 12:47:53.266 UTC [4851] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:53+0000 6021bcc320d2 postgres[4848]: 2026-11-15 12:47:53.266 UTC [4848] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:53+0000 6021bcc320d2 postgres[4850]: 2026-11-15 12:47:53.266 UTC [4850] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:53+0000 6021bcc320d2 postgres[4852]: 2026-11-15 12:47:53.266 UTC [4852] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:53+0000 6021bcc320d2 postgres[4849]: 2026-11-15 12:47:53.266 UTC [4849] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4873]: 2026-11-15 12:47:55.142 UTC [4873] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4881]: 2026-11-15 12:47:55.143 UTC [4881] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4878]: 2026-11-15 12:47:55.143 UTC [4878] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4879]: 2026-11-15 12:47:55.143 UTC [4879] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4875]: 2026-11-15 12:47:55.143 UTC [4875] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4874]: 2026-11-15 12:47:55.143 UTC [4874] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4880]: 2026-11-15 12:47:55.143 UTC [4880] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4871]: 2026-11-15 12:47:55.143 UTC [4871] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4877]: 2026-11-15 12:47:55.143 UTC [4877] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4876]: 2026-11-15 12:47:55.143 UTC [4876] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4870]: 2026-11-15 12:47:55.143 UTC [4870] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:55+0000 6021bcc320d2 postgres[4872]: 2026-11-15 12:47:55.143 UTC [4872] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:56+0000 6021bcc320d2 postgres[4901]: 2026-11-15 12:47:56.824 UTC [4901] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:56+0000 6021bcc320d2 postgres[4899]: 2026-11-15 12:47:56.824 UTC [4899] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:56+0000 6021bcc320d2 postgres[4898]: 2026-11-15 12:47:56.824 UTC [4898] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:56+0000 6021bcc320d2 postgres[4897]: 2026-11-15 12:47:56.824 UTC [4897] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:56+0000 6021bcc320d2 postgres[4900]: 2026-11-15 12:47:56.824 UTC [4900] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:56+0000 6021bcc320d2 postgres[4896]: 2026-11-15 12:47:56.824 UTC [4896] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:56+0000 6021bcc320d2 postgres[4894]: 2026-11-15 12:47:56.824 UTC [4894] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:56+0000 6021bcc320d2 postgres[4895]: 2026-11-15 12:47:56.824 UTC [4895] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4860]: 2026-11-15 12:47:59.327 UTC [4860] postgres@gps_closure_test ERROR:  subject identity is immutable
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4860]: 2026-11-15 12:47:59.327 UTC [4860] postgres@gps_closure_test CONTEXT:  PL/pgSQL function protect_subject_identity() line 5 at RAISE
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4860]: 2026-11-15 12:47:59.327 UTC [4860] postgres@gps_closure_test STATEMENT:  UPDATE location_subject_mappings SET subject_id=$1 WHERE id=$2
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4922]: 2026-11-15 12:47:59.675 UTC [4922] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4923]: 2026-11-15 12:47:59.676 UTC [4923] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4926]: 2026-11-15 12:47:59.676 UTC [4926] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4924]: 2026-11-15 12:47:59.676 UTC [4924] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4925]: 2026-11-15 12:47:59.676 UTC [4925] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4920]: 2026-11-15 12:47:59.676 UTC [4920] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4921]: 2026-11-15 12:47:59.676 UTC [4921] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4919]: 2026-11-15 12:47:59.676 UTC [4919] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4916]: 2026-11-15 12:47:59.676 UTC [4916] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4918]: 2026-11-15 12:47:59.676 UTC [4918] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4915]: 2026-11-15 12:47:59.676 UTC [4915] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4917]: 2026-11-15 12:47:59.676 UTC [4917] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4950]: 2026-11-15 12:47:59.946 UTC [4950] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4942]: 2026-11-15 12:47:59.946 UTC [4942] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4950]: 2026-11-15 12:47:59.946 UTC [4950] gps_runtime@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4949]: 2026-11-15 12:47:59.947 UTC [4949] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4948]: 2026-11-15 12:47:59.947 UTC [4948] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4941]: 2026-11-15 12:47:59.947 UTC [4941] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4947]: 2026-11-15 12:47:59.947 UTC [4947] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4944]: 2026-11-15 12:47:59.947 UTC [4944] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4943]: 2026-11-15 12:47:59.947 UTC [4943] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4946]: 2026-11-15 12:47:59.947 UTC [4946] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4940]: 2026-11-15 12:47:59.947 UTC [4940] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4939]: 2026-11-15 12:47:59.947 UTC [4939] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:47:59+0000 6021bcc320d2 postgres[4945]: 2026-11-15 12:47:59.948 UTC [4945] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]: 2026-11-15 12:48:00.371 UTC [4968] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]: 2026-11-15 12:48:00.371 UTC [4968] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]: 2026-11-15 12:48:00.371 UTC [4968] gps_runtime@gps_closure_test STATEMENT:  WITH scoped AS MATERIALIZED (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                   SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                   WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                     AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                 ), anchors AS MATERIALIZED (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                   SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                 ), bounds AS (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                   SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM scoped JOIN anchors USING(anchor_at,source)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                 ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                 JOIN anchors a USING(anchor_at,source)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                 WHERE b.first IS NOT NULL AND ($3::timestamptz IS NULL OR p.recorded_at >= $3)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                   AND ($4::timestamptz IS NULL OR p.recorded_at <= $4)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                   AND ($6::bool IS NULL OR p.fix=$6)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4968]:                 ORDER BY p.recorded_at DESC,p.source
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]: 2026-11-15 12:48:00.381 UTC [4961] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]: 2026-11-15 12:48:00.381 UTC [4961] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]: 2026-11-15 12:48:00.381 UTC [4961] gps_runtime@gps_closure_test STATEMENT:  WITH scoped AS MATERIALIZED (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                   SELECT recorded_at,anchor_at,source FROM location_sample_keys_between($1,$2,$3,$4)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                   WHERE ($5::text IS NULL OR source=$5) AND ($6::bool IS NULL OR fix=$6)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                     AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                 ), anchors AS MATERIALIZED (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                   SELECT DISTINCT anchor_at,source FROM scoped ORDER BY anchor_at DESC,source LIMIT $7
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                 ), bounds AS (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                   SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM scoped JOIN anchors USING(anchor_at,source)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                 ) SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                 JOIN anchors a USING(anchor_at,source)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                 WHERE b.first IS NOT NULL AND ($3::timestamptz IS NULL OR p.recorded_at >= $3)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                   AND ($4::timestamptz IS NULL OR p.recorded_at <= $4)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                   AND ($6::bool IS NULL OR p.fix=$6)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4961]:                 ORDER BY p.recorded_at DESC,p.source
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]: 2026-11-15 12:48:00.385 UTC [4964] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]: 2026-11-15 12:48:00.385 UTC [4964] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]: 2026-11-15 12:48:00.385 UTC [4964] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                 WHERE b.first IS NOT NULL
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4964]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]: 2026-11-15 12:48:00.940 UTC [4959] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]: 2026-11-15 12:48:00.940 UTC [4959] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]: 2026-11-15 12:48:00.940 UTC [4959] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                  )
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                  FROM speed
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4959]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]: 2026-11-15 12:48:00.959 UTC [4967] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]: 2026-11-15 12:48:00.959 UTC [4967] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]: 2026-11-15 12:48:00.959 UTC [4967] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                  )
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                  FROM speed
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4967]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]: 2026-11-15 12:48:00.959 UTC [4965] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]: 2026-11-15 12:48:00.959 UTC [4965] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]: 2026-11-15 12:48:00.959 UTC [4965] gps_runtime@gps_closure_test STATEMENT:  WITH speed AS MATERIALIZED (
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   SELECT device_id,user_id,fix,recorded_at,lat,lng,sat,vbat_mv,
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                     speed_kmh,reported_speed_kmh,speed_interval_s,speed_reason
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   FROM location_speed_metrics_between($1,$5,$2,$3)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                  )
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                  SELECT jsonb_build_object('bucket',time_bucket($4::text::interval,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   'lat_avg',avg(lat),'lng_avg',avg(lng),'lat_last',last(lat,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   'lng_last',last(lng,recorded_at),'recorded_at_last',max(recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   'sat_avg',avg(sat),'vbat_avg',avg(vbat_mv)::int,'fix_count',count(*),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   'speed_kmh',last(speed_kmh,recorded_at),'speed_avg_kmh',avg(speed_kmh),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   'speed_max_kmh',max(speed_kmh),'speed_sample_count',count(speed_kmh),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   'reported_speed_kmh',last(reported_speed_kmh,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   'speed_interval_s',last(speed_interval_s,recorded_at),
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                   'speed_reason',last(speed_reason,recorded_at),'speed_source','server_coordinate_v1')
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                  FROM speed
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                  WHERE device_id=$1 AND user_id=$5 AND fix=true
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                    AND recorded_at >= $2 AND recorded_at <= $3
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                    AND (NOT $6 OR recorded_at < $3)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                    AND EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$5)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                  GROUP BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:48:00+0000 6021bcc320d2 postgres[4965]:                  ORDER BY time_bucket($4::text::interval,recorded_at)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]: 2026-11-15 12:48:03.111 UTC [4963] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]: 2026-11-15 12:48:03.111 UTC [4963] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]: 2026-11-15 12:48:03.111 UTC [4963] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                 WHERE b.first IS NOT NULL
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4963]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]: 2026-11-15 12:48:03.130 UTC [4966] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]: 2026-11-15 12:48:03.130 UTC [4966] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]: 2026-11-15 12:48:03.130 UTC [4966] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                 WHERE b.first IS NOT NULL
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4966]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]: 2026-11-15 12:48:03.130 UTC [4958] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]: 2026-11-15 12:48:03.130 UTC [4958] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]: 2026-11-15 12:48:03.130 UTC [4958] gps_runtime@gps_closure_test STATEMENT:  WITH selected AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                  SELECT recorded_at,source FROM location_page_sample_keys($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                  WHERE EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                 ), bounds AS (SELECT min(recorded_at) AS first,max(recorded_at) AS last FROM selected)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                 SELECT p.recorded_at,p.source,p.fix,p.lat,p.lng,p.sat,p.ttff_s,p.csq,p.reg,p.vbat_mv,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                   p.cbc_mv,p.device_uptime_s,p.heading,p.speed_kmh,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                   p.reported_speed_kmh,p.speed_interval_s,p.speed_reason,p.speed_source,p.anchor_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                 FROM bounds b CROSS JOIN LATERAL location_history_points_between($1,$2,b.first,b.last) p
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                 JOIN selected s USING(recorded_at,source)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                 WHERE b.first IS NOT NULL
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4958]:                 ORDER BY p.recorded_at DESC,p.source DESC
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5001]: 2026-11-15 12:48:03.343 UTC [5001] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4977]: 2026-11-15 12:48:03.344 UTC [4977] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4962]: 2026-11-15 12:48:03.344 UTC [4962] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4969]: 2026-11-15 12:48:03.344 UTC [4969] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4974]: 2026-11-15 12:48:03.344 UTC [4974] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4983]: 2026-11-15 12:48:03.344 UTC [4983] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4986]: 2026-11-15 12:48:03.344 UTC [4986] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[4960]: 2026-11-15 12:48:03.344 UTC [4960] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]: 2026-11-15 12:48:03.929 UTC [5013] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]: 2026-11-15 12:48:03.929 UTC [5013] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]: 2026-11-15 12:48:03.929 UTC [5013] gps_runtime@gps_closure_test STATEMENT:
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                 WITH t AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                     SELECT idx, s_at, e_at FROM
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                     UNNEST($2::TIMESTAMPTZ[], $3::TIMESTAMPTZ[])
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                         WITH ORDINALITY AS u(s_at, e_at, idx)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                 ), bounds AS (SELECT min(s_at) AS first,max(e_at) AS last FROM t),
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                 points AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                     SELECT recorded_at,lat,lng FROM bounds b
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                     CROSS JOIN LATERAL location_points_between($1,$4,b.first,b.last) p
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                     WHERE p.fix = TRUE
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                 )
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                 SELECT t.idx::INT4 AS idx,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                        first_fix.lat AS start_lat, first_fix.lng AS start_lng,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                        last_fix.lat AS end_lat, last_fix.lng AS end_lng
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                   FROM t
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                   LEFT JOIN LATERAL (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                      ORDER BY lr.recorded_at ASC LIMIT 1
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                   ) first_fix ON true
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                   LEFT JOIN LATERAL (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                      ORDER BY lr.recorded_at DESC LIMIT 1
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                   ) last_fix ON true
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                   ORDER BY t.idx
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5013]:                 
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]: 2026-11-15 12:48:03.968 UTC [5017] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]: 2026-11-15 12:48:03.968 UTC [5017] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]: 2026-11-15 12:48:03.968 UTC [5017] gps_runtime@gps_closure_test STATEMENT:
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                 WITH t AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                     SELECT idx, s_at, e_at FROM
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                     UNNEST($2::TIMESTAMPTZ[], $3::TIMESTAMPTZ[])
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                         WITH ORDINALITY AS u(s_at, e_at, idx)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                 ), bounds AS (SELECT min(s_at) AS first,max(e_at) AS last FROM t),
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                 points AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                     SELECT recorded_at,lat,lng FROM bounds b
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                     CROSS JOIN LATERAL location_points_between($1,$4,b.first,b.last) p
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                     WHERE p.fix = TRUE
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                 )
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                 SELECT t.idx::INT4 AS idx,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                        first_fix.lat AS start_lat, first_fix.lng AS start_lng,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                        last_fix.lat AS end_lat, last_fix.lng AS end_lng
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                   FROM t
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                   LEFT JOIN LATERAL (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                      ORDER BY lr.recorded_at ASC LIMIT 1
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                   ) first_fix ON true
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                   LEFT JOIN LATERAL (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                      ORDER BY lr.recorded_at DESC LIMIT 1
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                   ) last_fix ON true
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                   ORDER BY t.idx
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5017]:                 
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]: 2026-11-15 12:48:03.973 UTC [5019] gps_runtime@gps_closure_test ERROR:  canceling statement due to user request
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]: 2026-11-15 12:48:03.973 UTC [5019] gps_runtime@gps_closure_test CONTEXT:  SQL function "location_query_records_between" during inlining
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]: 2026-11-15 12:48:03.973 UTC [5019] gps_runtime@gps_closure_test STATEMENT:
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                 WITH t AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                     SELECT idx, s_at, e_at FROM
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                     UNNEST($2::TIMESTAMPTZ[], $3::TIMESTAMPTZ[])
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                         WITH ORDINALITY AS u(s_at, e_at, idx)
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                 ), bounds AS (SELECT min(s_at) AS first,max(e_at) AS last FROM t),
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                 points AS MATERIALIZED (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                     SELECT recorded_at,lat,lng FROM bounds b
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                     CROSS JOIN LATERAL location_points_between($1,$4,b.first,b.last) p
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                     WHERE p.fix = TRUE
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                 )
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                 SELECT t.idx::INT4 AS idx,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                        first_fix.lat AS start_lat, first_fix.lng AS start_lng,
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                        last_fix.lat AS end_lat, last_fix.lng AS end_lng
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                   FROM t
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                   LEFT JOIN LATERAL (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                      ORDER BY lr.recorded_at ASC LIMIT 1
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                   ) first_fix ON true
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                   LEFT JOIN LATERAL (
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                     SELECT lat,lng FROM points lr
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                      WHERE lr.recorded_at >= t.s_at AND lr.recorded_at <= t.e_at
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                      ORDER BY lr.recorded_at DESC LIMIT 1
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                   ) last_fix ON true
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                   ORDER BY t.idx
+2026-11-15T12:48:03+0000 6021bcc320d2 postgres[5019]:                 
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5016]: 2026-11-15 12:48:10.955 UTC [5016] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5027]: 2026-11-15 12:48:10.956 UTC [5027] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5021]: 2026-11-15 12:48:10.956 UTC [5021] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5020]: 2026-11-15 12:48:10.956 UTC [5020] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5024]: 2026-11-15 12:48:10.956 UTC [5024] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5015]: 2026-11-15 12:48:10.956 UTC [5015] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5014]: 2026-11-15 12:48:10.956 UTC [5014] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5018]: 2026-11-15 12:48:10.956 UTC [5018] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5028]: 2026-11-15 12:48:10.956 UTC [5028] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5012]: 2026-11-15 12:48:10.956 UTC [5012] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5033]: 2026-11-15 12:48:10.956 UTC [5033] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5010]: 2026-11-15 12:48:10.956 UTC [5010] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:10+0000 6021bcc320d2 postgres[5011]: 2026-11-15 12:48:10.956 UTC [5011] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:11+0000 6021bcc320d2 postgres[5048]: 2026-11-15 12:48:11.053 UTC [5048] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:48:13+0000 6021bcc320d2 postgres[5052]: 2026-11-15 12:48:13.108 UTC [5052] gps_runtime@gps_closure_test ERROR:  canceling statement due to lock timeout
+2026-11-15T12:48:13+0000 6021bcc320d2 postgres[5052]: 2026-11-15 12:48:13.108 UTC [5052] gps_runtime@gps_closure_test STATEMENT:  LOCK TABLE device_documents,devices,fleet_vehicles IN SHARE MODE
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5058]: 2026-11-15 12:48:15.166 UTC [5058] gps_runtime@gps_closure_test ERROR:  canceling statement due to lock timeout
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5058]: 2026-11-15 12:48:15.166 UTC [5058] gps_runtime@gps_closure_test STATEMENT:  LOCK TABLE device_documents,devices,fleet_vehicles IN SHARE MODE
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5073]: 2026-11-15 12:48:15.452 UTC [5073] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5072]: 2026-11-15 12:48:15.452 UTC [5072] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5072]: 2026-11-15 12:48:15.452 UTC [5072] gps_runtime@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5081]: 2026-11-15 12:48:15.453 UTC [5081] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5079]: 2026-11-15 12:48:15.453 UTC [5079] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5080]: 2026-11-15 12:48:15.453 UTC [5080] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5078]: 2026-11-15 12:48:15.453 UTC [5078] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5077]: 2026-11-15 12:48:15.453 UTC [5077] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5075]: 2026-11-15 12:48:15.453 UTC [5075] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5076]: 2026-11-15 12:48:15.453 UTC [5076] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5074]: 2026-11-15 12:48:15.453 UTC [5074] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5071]: 2026-11-15 12:48:15.453 UTC [5071] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5070]: 2026-11-15 12:48:15.454 UTC [5070] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5070]: 2026-11-15 12:48:15.454 UTC [5070] gps_runtime@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T12:48:15+0000 6021bcc320d2 postgres[5087]: 2026-11-15 12:48:15.552 UTC [5087] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5092]: 2026-11-15 12:48:17.605 UTC [5092] gps_runtime@gps_closure_test ERROR:  canceling statement due to lock timeout
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5092]: 2026-11-15 12:48:17.605 UTC [5092] gps_runtime@gps_closure_test STATEMENT:  LOCK TABLE device_documents,devices,fleet_vehicles IN SHARE MODE
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5109]: 2026-11-15 12:48:17.910 UTC [5109] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5114]: 2026-11-15 12:48:17.910 UTC [5114] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5114]: 2026-11-15 12:48:17.910 UTC [5114] gps_runtime@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5105]: 2026-11-15 12:48:17.911 UTC [5105] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5113]: 2026-11-15 12:48:17.911 UTC [5113] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5112]: 2026-11-15 12:48:17.911 UTC [5112] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5104]: 2026-11-15 12:48:17.911 UTC [5104] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5110]: 2026-11-15 12:48:17.911 UTC [5110] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5111]: 2026-11-15 12:48:17.911 UTC [5111] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5107]: 2026-11-15 12:48:17.911 UTC [5107] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5106]: 2026-11-15 12:48:17.911 UTC [5106] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5103]: 2026-11-15 12:48:17.911 UTC [5103] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5108]: 2026-11-15 12:48:17.911 UTC [5108] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:48:17+0000 6021bcc320d2 postgres[5108]: 2026-11-15 12:48:17.911 UTC [5108] gps_runtime@gps_closure_test LOG:  unexpected EOF on client connection with an open transaction
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5122]: 2026-11-15 12:49:49.561 UTC [5122] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5133]: 2026-11-15 12:49:49.566 UTC [5133] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5132]: 2026-11-15 12:49:49.566 UTC [5132] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5131]: 2026-11-15 12:49:49.566 UTC [5131] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5130]: 2026-11-15 12:49:49.566 UTC [5130] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5129]: 2026-11-15 12:49:49.566 UTC [5129] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5134]: 2026-11-15 12:49:49.566 UTC [5134] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5126]: 2026-11-15 12:49:49.566 UTC [5126] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5125]: 2026-11-15 12:49:49.566 UTC [5125] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5127]: 2026-11-15 12:49:49.566 UTC [5127] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5124]: 2026-11-15 12:49:49.566 UTC [5124] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5128]: 2026-11-15 12:49:49.566 UTC [5128] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5123]: 2026-11-15 12:49:49.566 UTC [5123] gps_runtime@gps_closure_test LOG:  could not receive data from client: Connection reset by peer
+2026-11-15T12:49:49+0000 6021bcc320d2 postgres[5197]: 2026-11-15 12:49:49.668 UTC [5197] [unknown]@[unknown] LOG:  could not accept SSL connection: EOF detected

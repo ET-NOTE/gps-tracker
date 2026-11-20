@@ -1,0 +1,85 @@
+TAP version 13
+# Subtest: binding search is lazy; search aborts old results, resets cursor and preserves literal text across pages
+ok 1 - binding search is lazy; search aborts old results, resets cursor and preserves literal text across pages
+  ---
+  duration_ms: 369.0685
+  ...
+# Subtest: choosing an old binding keeps its option, does not change requested dates or submit without user action
+ok 2 - choosing an old binding keeps its option, does not change requested dates or submit without user action
+  ---
+  duration_ms: 196.1381
+  ...
+# Subtest: reconsent cannot change identity through the binding picker
+ok 3 - reconsent cannot change identity through the binding picker
+  ---
+  duration_ms: 59.7553
+  ...
+# Subtest: binding errors are not empty results; cancel/retry/feature OFF and close discard pending or late rows
+ok 4 - binding errors are not empty results; cancel/retry/feature OFF and close discard pending or late rows
+  ---
+  duration_ms: 334.8626
+  ...
+# Subtest: mapping filter change closes the picker and discards old company selection
+ok 5 - mapping filter change closes the picker and discards old company selection
+  ---
+  duration_ms: 120.4273
+  ...
+# Subtest: company pages preserve filter, go back and reset to newest without stale rows
+ok 6 - company pages preserve filter, go back and reset to newest without stale rows
+  ---
+  duration_ms: 207.3644
+  ...
+# Subtest: filter navigation aborts location read and clears pending correction; late coordinates never return
+ok 7 - filter navigation aborts location read and clears pending correction; late coordinates never return
+  ---
+  duration_ms: 121.4752
+  ...
+# Subtest: refresh closes displayed coordinates; failed mapping refresh cannot retain authority or show empty state
+ok 8 - refresh closes displayed coordinates; failed mapping refresh cannot retain authority or show empty state
+  ---
+  duration_ms: 151.7896
+  ...
+# Subtest: cancel aborts list and discards late data; explicit retry and unmount clear queries
+ok 9 - cancel aborts list and discards late data; explicit retry and unmount clear queries
+  ---
+  duration_ms: 106.0599
+  ...
+# Subtest: subject confirms exact revision and consent version; conflict remains unconfirmed and visible
+ok 10 - subject confirms exact revision and consent version; conflict remains unconfirmed and visible
+  ---
+  duration_ms: 53.078
+  ...
+# Subtest: feature OFF cannot disable existing consent revocation
+ok 11 - feature OFF cannot disable existing consent revocation
+  ---
+  duration_ms: 6.7812
+  ...
+# Subtest: provider acceptance does not auto-acknowledge inbox; retry errors stay visible
+ok 12 - provider acceptance does not auto-acknowledge inbox; retry errors stay visible
+  ---
+  duration_ms: 6.1987
+  ...
+# Subtest: company correction posts lineage revision and clears displayed location on submit
+ok 13 - company correction posts lineage revision and clears displayed location on submit
+  ---
+  duration_ms: 9.6814
+  ...
+# Subtest: reconsent locks identity and exact interval, ineffective mapping cannot show locations
+ok 14 - reconsent locks identity and exact interval, ineffective mapping cannot show locations
+  ---
+  duration_ms: 6.6606
+  ...
+# Subtest: subject sees replacement and external scope limits before confirming
+ok 15 - subject sees replacement and external scope limits before confirming
+  ---
+  duration_ms: 4.4412
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1248.2974

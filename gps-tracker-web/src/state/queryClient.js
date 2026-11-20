@@ -12,6 +12,7 @@
 //   - refetchOnReconnect true (오프라인 → 온라인 자동)
 //   - throwOnError false (에러는 각 훅에서 처리)
 
+import { retryQuery } from '../lib/locationRetry';
 import { QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
@@ -19,7 +20,7 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,          // 30s — 이 안엔 캐시된 값 그대로 씀
       gcTime:    5 * 60_000,      // 5분 후 unmounted 캐시 gc
-      retry: 1,
+      retry: retryQuery,
       retryDelay: (attempt) => Math.min(30_000, 1000 * Math.pow(2, attempt)),
       refetchOnWindowFocus: true,
       refetchOnReconnect:   true,

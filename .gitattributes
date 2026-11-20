@@ -4,6 +4,148 @@
 # bash heredoc 안에 임베드되는 SQL 도 LF
 *.sql text eol=lf
 
+# Already deployed with CRLF; preserve exact SQLx checksum in archives/checkouts.
+# Do not edit applied migration bytes. New migrations still use LF above.
+gps-tracker-api/migrations/0085_preserve_legacy_aggregates.sql -text !eol whitespace=trailing-space,space-before-tab,cr-at-eol
+
 # Windows 전용은 CRLF
 *.bat text eol=crlf
 *.ps1 text eol=crlf
+
+# Preserve reproducible 18A evidence and Linux deployment script hashes on Windows.
+docs/operations/evidence/location-business-round18a-20261107/* text eol=lf
+ops/nginx-privacy/* text eol=lf
+
+# Exact review evidence; screenshots are binary.
+docs/operations/evidence/location-business-round18b-20261107/*.json text eol=lf
+docs/operations/evidence/location-business-round18b-20261107/*.log text eol=lf whitespace=-blank-at-eof
+docs/operations/evidence/location-business-round18b-20261107/*.html text eol=lf
+docs/operations/evidence/location-business-round18b-20261107/*.txt text eol=lf
+
+# Round 19 evidence hashes must survive Windows checkout.
+docs/evidence/admin-security-20261107/*.json text eol=lf
+docs/evidence/admin-security-20261107/*.txt text eol=lf
+docs/evidence/admin-security-20261107/*.png -text
+
+# Round 20 evidence must keep identical bytes across Windows/Linux checkouts.
+docs/evidence/crypto20-20261107/* -text
+docs/evidence/crypto20-20261107/*.log whitespace=-blank-at-eof
+
+# Round 20B source evidence must remain byte-identical across checkouts.
+docs/evidence/crypto20b-20261107/* -text
+docs/evidence/crypto20b-20261107/*.log whitespace=-blank-at-eof
+
+# Round 21 evidence must keep identical bytes across Windows/Linux checkouts.
+docs/evidence/lifecycle21-20261107/* -text
+docs/evidence/lifecycle21-20261107/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Round 22 exact verification evidence.
+docs/evidence/provision22-20261108/* -text
+docs/evidence/provision22-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Round 22B screenshots, generated exports and evidence hashes are exact bytes.
+docs/evidence/provision22b-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+
+# Round 22C captures and verification evidence retain exact bytes.
+docs/evidence/provision22c-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/provision22c-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Round 22D actual-component captures and isolated evidence retain exact bytes.
+docs/evidence/provision22d-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/provision22d-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Cumulative 99-to-108 rehearsal evidence is byte-identical on every checkout.
+docs/evidence/cumulative108-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/cumulative108-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Cumulative109 evidence preserves captured bytes on all hosts.
+docs/evidence/cumulative109-20261108/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/cumulative109-20261108/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Query110 captures and raw verification records preserve their original bytes.
+docs/evidence/query110-20261111/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/query110-20261111/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Query111 measurements and report captures preserve exact evidence bytes.
+docs/evidence/query111-20261111/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/query111-20261111/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Query112 raw measurements and captures preserve exact evidence bytes.
+docs/evidence/query112-20261111/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/query112-20261111/*.log whitespace=-blank-at-eof,-blank-at-eol
+
+# Live infrastructure evidence preserves original captured bytes.
+docs/evidence/security113-20261111/* -text whitespace=-blank-at-eof,-blank-at-eol
+
+# Query115 measurements and failed stress cases preserve original evidence bytes.
+docs/evidence/query115-20261111/* -text whitespace=-blank-at-eof,-blank-at-eol
+
+# Cumulative116 captures preserve original execution evidence bytes.
+docs/evidence/cumulative116-20261111/* -text whitespace=-blank-at-eof,-blank-at-eol
+
+# Runtime118 original inventories, execution logs and hashes are byte-identical.
+docs/evidence/runtime118-20261112/* -text whitespace=-blank-at-eof,-blank-at-eol
+
+# Runtime119 original successes and failures retain exact evidence bytes.
+docs/evidence/runtime119-20261112/* -text whitespace=-blank-at-eof,-blank-at-eol
+
+# Team-review137 deployment evidence and executed script hashes are exact bytes.
+docs/evidence/review137-20261116/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/review137_*.py text eol=lf
+
+# Dev alignment captures preserve exact verification bytes.
+docs/evidence/dev138-20261116/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/align_dev_20261116.py text eol=lf
+
+docs/evidence/ssh-access-20261118/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/ssh_access_20261118.py text eol=lf
+
+# Android139 evidence includes original Windows/Linux output: preserve exact bytes.
+docs/evidence/android139-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*android139*.py text eol=lf
+
+# Round140 raw functional evidence retains original bytes.
+docs/evidence/runtime140-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime140*.py text eol=lf
+ops/*provision140*.py text eol=lf
+
+# Round141 original evidence and Linux runners.
+docs/evidence/runtime141-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime141*.py text eol=lf
+ops/*tasks141*.py text eol=lf
+# Rustfmt rewrote this source with LF; keep archive/checkouts identical to the tested file.
+gps-tracker-api/src/routes/privacy_company_tasks.rs text eol=lf
+ops/check-company-tasks141-ui.mjs text eol=lf
+
+# Round142 original functional evidence and Linux runners.
+docs/evidence/runtime142-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime142*.py text eol=lf
+ops/*tasks142*.py text eol=lf
+ops/check-company-tasks142-ui.mjs text eol=lf
+
+# Round143 exact evidence and source/build line endings.
+docs/evidence/runtime143-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime143*.py text eol=lf
+ops/*tasks143*.py text eol=lf
+ops/check-company-tasks143-ui.mjs text eol=lf
+gps-tracker-api/src/routes/privacy_company.rs text eol=lf
+
+# Round144 evidence and repeatable runner sources.
+docs/evidence/runtime144-20261118/** -text whitespace=-blank-at-eof,-blank-at-eol
+ops/*runtime144*.py text eol=lf
+ops/*tasks144*.py text eol=lf
+ops/check-company-tasks144-ui.mjs text eol=lf
+
+# Round145 original logs, captures and manifests preserve exact bytes.
+docs/evidence/integration145-20261118/* -text whitespace=trailing-space,space-before-tab,cr-at-eol
+docs/evidence/integration145-20261118/*.log whitespace=-blank-at-eof,-blank-at-eol
+docs/evidence/integration145-20261118/*.txt whitespace=-blank-at-eof,-blank-at-eol
+
+# Round146 executed bytes and actual deployment evidence.
+docs/evidence/review146-20261118/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/review146*.py text eol=lf
+
+# Round147 dev review logs and screenshots preserve original evidence bytes.
+docs/evidence/dev-review147-20261119/* -text whitespace=-blank-at-eof,-blank-at-eol
+docs/evidence/review148-20261119/* -text whitespace=-blank-at-eof,-blank-at-eol
+ops/review148_deploy.py text eol=lf

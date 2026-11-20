@@ -1,0 +1,16 @@
+PASS company owner/admin authorized; anonymous401, member/department/foreign-delegation403; unrelated company has no rows or options
+Traceback (most recent call last):
+  File "/opt/gps121/test_company_mappings135.py", line 166, in <module>
+    if __name__=='__main__':main()
+  File "/opt/gps121/test_company_mappings135.py", line 73, in main
+    before=fingerprint();ids=[];lengths=[];params={'limit':50}
+  File "/opt/gps121/test_company_mappings135.py", line 14, in fingerprint
+    return {name:sql(f"SELECT md5(coalesce(string_agg(to_jsonb(x)::text,',' ORDER BY id),'')) FROM {name} x")[0][0] for name in ('location_subject_mappings','location_subject_actions','fleet_vehicle_bindings','location_records')}
+  File "/opt/gps121/test_company_mappings135.py", line 14, in <dictcomp>
+    return {name:sql(f"SELECT md5(coalesce(string_agg(to_jsonb(x)::text,',' ORDER BY id),'')) FROM {name} x")[0][0] for name in ('location_subject_mappings','location_subject_actions','fleet_vehicle_bindings','location_records')}
+  File "/opt/gps121/test_unattributed132.py", line 33, in sql
+    c.execute(query, args or None)
+psycopg2.errors.UndefinedColumn: column "id" does not exist
+LINE 1: ...oalesce(string_agg(to_jsonb(x)::text,',' ORDER BY id),'')) F...
+                                                             ^
+

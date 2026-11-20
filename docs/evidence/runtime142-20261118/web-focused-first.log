@@ -1,0 +1,213 @@
+TAP version 13
+# (node:48696) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: new account never reuses previous account query cache
+ok 1 - new account never reuses previous account query cache
+  ---
+  duration_ms: 29.7244
+  ...
+# Subtest: company requests carry explicit scope; personal history remains unscoped
+ok 2 - company requests carry explicit scope; personal history remains unscoped
+  ---
+  duration_ms: 14.3398
+  ...
+# Subtest: company switch cancels late JSON and deferred private download before transmission
+ok 3 - company switch cancels late JSON and deferred private download before transmission
+  ---
+  duration_ms: 8.691
+  ...
+# Subtest: late A refresh (200) cannot replace or log out B
+ok 4 - late A refresh (200) cannot replace or log out B
+  ---
+  duration_ms: 8.711
+  ...
+# Subtest: late A refresh (401) cannot replace or log out B
+ok 5 - late A refresh (401) cannot replace or log out B
+  ---
+  duration_ms: 16.4197
+  ...
+# Subtest: late account data cannot complete after login changes
+ok 6 - late account data cannot complete after login changes
+  ---
+  duration_ms: 7.7386
+  ...
+# Subtest: logout prevents a pending refresh from resurrecting a session
+ok 7 - logout prevents a pending refresh from resurrecting a session
+  ---
+  duration_ms: 7.8599
+  ...
+# Subtest: CSV, XLSX and multipart use session login, and only retry rejected authentication
+ok 8 - CSV, XLSX and multipart use session login, and only retry rejected authentication
+  ---
+  duration_ms: 10.3767
+  ...
+# Subtest: deferred document download reads rotated token but rejects a different account
+ok 9 - deferred document download reads rotated token but rejects a different account
+  ---
+  duration_ms: 10.5178
+  ...
+# Subtest: report busy retry preserves company and stops after company/account changes
+ok 10 - report busy retry preserves company and stops after company/account changes
+  ---
+  duration_ms: 52.9468
+  ...
+# Subtest: a late file body is blocked after account switch; failed writes are not retried
+ok 11 - a late file body is blocked after account switch; failed writes are not retried
+  ---
+  duration_ms: 13.4865
+  ...
+# Subtest: shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+ok 12 - shared device reads deduplicate, preserve in-flight live updates, and accept authoritative wipes
+  ---
+  duration_ms: 8.0916
+  ...
+# Subtest: device mutations cancel pre-write snapshots and offline provenance survives shared state
+ok 13 - device mutations cancel pre-write snapshots and offline provenance survives shared state
+  ---
+  duration_ms: 8.6231
+  ...
+# Subtest: admin step-up never leaks to personal requests; sign-out clears elevated session
+ok 14 - admin step-up never leaks to personal requests; sign-out clears elevated session
+  ---
+  duration_ms: 7.2026
+  ...
+# Subtest: protected writes propose first; only explicit approved execution sends original mutation
+ok 15 - protected writes propose first; only explicit approved execution sends original mutation
+  ---
+  duration_ms: 7.2087
+  ...
+# Subtest: wrong MFA credentials are not retried through ordinary refresh
+ok 16 - wrong MFA credentials are not retried through ordinary refresh
+  ---
+  duration_ms: 5.6063
+  ...
+# Subtest: location history aborts the HTTP request on logout; saved data is not resurrected
+ok 17 - location history aborts the HTTP request on logout; saved data is not resurrected
+  ---
+  duration_ms: 6.4103
+  ...
+# Subtest: logout cancels a real 429 backoff before a replacement account can send it
+ok 18 - logout cancels a real 429 backoff before a replacement account can send it
+  ---
+  duration_ms: 7.4908
+  ...
+# Subtest: personal provision page filters and abort signal remain outside company scope
+ok 19 - personal provision page filters and abort signal remain outside company scope
+  ---
+  duration_ms: 6.9155
+  ...
+# Subtest: company task inbox/detail preserve personal scope and propagate cancellation
+ok 20 - company task inbox/detail preserve personal scope and propagate cancellation
+  ---
+  duration_ms: 9.1209
+  ...
+# Subtest: admin company history forwards step-up session and cancellation without fleet delegation
+ok 21 - admin company history forwards step-up session and cancellation without fleet delegation
+  ---
+  duration_ms: 7.7228
+  ...
+# (node:38296) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history opens lazily; pages retain action/task filters; close aborts and reopen starts fresh
+ok 22 - history opens lazily; pages retain action/task filters; close aborts and reopen starts fresh
+  ---
+  duration_ms: 464.6658
+  ...
+# Subtest: cancel removes stale rows, back from cancelled page restarts; failed refresh is not empty
+ok 23 - cancel removes stale rows, back from cancelled page restarts; failed refresh is not empty
+  ---
+  duration_ms: 346.5838
+  ...
+# Subtest: different review cancels old request and clears filters; a late response cannot cross scopes
+ok 24 - different review cancels old request and clears filters; a late response cannot cross scopes
+  ---
+  duration_ms: 181.1507
+  ...
+# Subtest: audit detail is text; response creation never claims delivery and no mutations are offered
+ok 25 - audit detail is text; response creation never claims delivery and no mutations are offered
+  ---
+  duration_ms: 60.3421
+  ...
+# (node:41184) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company task next/previous/first keep status/category filters and accurate last page
+ok 26 - company task next/previous/first keep status/category filters and accurate last page
+  ---
+  duration_ms: 412.0387
+  ...
+# Subtest: filter and close abort lazy detail; late instructions never revive the old form
+ok 27 - filter and close abort lazy detail; late instructions never revive the old form
+  ---
+  duration_ms: 224.096
+  ...
+# Subtest: list cancel/retry and failed refresh hide previous details and distinguish empty results
+ok 28 - list cancel/retry and failed refresh hide previous details and distinguish empty results
+  ---
+  duration_ms: 303.4335
+  ...
+# Subtest: submission locks navigation; conflict revalidates detail and removes stale form on access loss
+ok 29 - submission locks navigation; conflict revalidates detail and removes stale form on access loss
+  ---
+  duration_ms: 240.3205
+  ...
+# (node:8832) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company publication requires disclosure confirmation, resets on changes and sends both revisions
+ok 30 - company publication requires disclosure confirmation, resets on changes and sends both revisions
+  ---
+  duration_ms: 53.8217
+  ...
+# Subtest: decision requires latest downloaded proof and renewed attestation after feedback changes
+ok 31 - decision requires latest downloaded proof and renewed attestation after feedback changes
+  ---
+  duration_ms: 31.5397
+  ...
+# Subtest: submission requires explicit file confirmation and shows server failure without success refresh
+ok 32 - submission requires explicit file confirmation and shows server failure without success refresh
+  ---
+  duration_ms: 7.5007
+  ...
+# Subtest: proof result cancelled never silently approves review
+ok 33 - proof result cancelled never silently approves review
+  ---
+  duration_ms: 7.9909
+  ...
+# Subtest: proof result saved never silently approves review
+ok 34 - proof result saved never silently approves review
+  ---
+  duration_ms: 6.237
+  ...
+# Subtest: proof result share_opened never silently approves review
+ok 35 - proof result share_opened never silently approves review
+  ---
+  duration_ms: 8.1418
+  ...
+# Subtest: proof result browser_started never silently approves review
+ok 36 - proof result browser_started never silently approves review
+  ---
+  duration_ms: 7.7449
+  ...
+# Subtest: proof result unknown never silently approves review
+ok 37 - proof result unknown never silently approves review
+  ---
+  duration_ms: 7.4751
+  ...
+# Subtest: new cancelled or failed download clears earlier proof permission; pending file work blocks review
+ok 38 - new cancelled or failed download clears earlier proof permission; pending file work blocks review
+  ---
+  duration_ms: 8.6614
+  ...
+# Subtest: replacing a submission invalidates an in-flight save result
+ok 39 - replacing a submission invalidates an in-flight save result
+  ---
+  duration_ms: 8.0232
+  ...
+1..39
+# tests 39
+# suites 0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1400.5186

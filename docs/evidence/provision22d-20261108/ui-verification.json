@@ -1,0 +1,17 @@
+{
+  "actualComponents": [
+    "CompanySubjectMappings",
+    "SubjectMappings"
+  ],
+  "syntheticOnly": true,
+  "productionEvidence": false,
+  "viewports": [
+    1280,
+    390
+  ],
+  "overflow": false,
+  "errors": [],
+  "exactReconsentPeriodLocked": true,
+  "consentRevisionVerified": true,
+  "externalRequestsBlocked": true
+}

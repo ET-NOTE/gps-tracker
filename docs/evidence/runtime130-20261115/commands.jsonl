@@ -1,0 +1,11 @@
+{"started_utc": "20261115T113005Z", "action": "seed", "seconds": 471.991, "exit": 0, "log": "20261115T113005Z-seed.log", "free_bytes": 30910640128}
+{"started_utc": "20261115T113849Z", "action": "guards-baseline", "seconds": 0.476, "exit": 1, "log": "20261115T113849Z-guards-baseline.log", "free_bytes": 30889607168}
+{"started_utc": "20261115T113913Z", "action": "guards-baseline", "seconds": 0.92, "exit": 0, "log": "20261115T113913Z-guards-baseline.log", "free_bytes": 30888669184}
+{"started_utc": "20261115T113914Z", "action": "baseline-shared", "seconds": 358.256, "exit": 1, "log": "20261115T113914Z-baseline-shared.log", "free_bytes": 30853070848}
+{"started_utc": "20261115T114554Z", "action": "guards-candidate", "seconds": 0.48, "exit": 1, "log": "20261115T114554Z-guards-candidate.log", "free_bytes": 30832324608}
+{"started_utc": "20261115T114835Z", "action": "guards-candidate", "seconds": 1.116, "exit": 1, "log": "20261115T114835Z-guards-candidate.log", "free_bytes": 30809014272}
+{"started_utc": "20261115T114936Z", "action": "guards-candidate", "seconds": 1.148, "exit": 1, "log": "20261115T114936Z-guards-candidate.log", "free_bytes": 30778691584}
+{"started_utc": "20261115T114957Z", "action": "guards-candidate", "seconds": 1.252, "exit": 0, "log": "20261115T114957Z-guards-candidate.log", "free_bytes": 30777856000}
+{"started_utc": "20261115T114959Z", "action": "candidate-dedicated", "seconds": 355.705, "exit": 0, "log": "20261115T114959Z-candidate-dedicated.log", "free_bytes": 30746591232}
+{"started_utc": "20261115T115611Z", "action": "candidate-shared", "seconds": 357.767, "exit": 0, "log": "20261115T115611Z-candidate-shared.log", "free_bytes": 30715523072}
+{"started_utc": "20261115T120244Z", "action": "final", "seconds": 137.362, "exit": 0, "log": "20261115T120244Z-final.log", "free_bytes": 30720389120}

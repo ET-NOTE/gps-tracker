@@ -1,0 +1,22 @@
+gps-query112-proxy
+gps-query112-api
+API READY: schema111/112 restricted runtime, encrypted, ledger enabled
+PROGRESS candidate112-preflight seconds 5 queries 10 ingest 4 errors 0
+PROGRESS candidate112-preflight seconds 25 queries 33 ingest 18 errors 0
+PROGRESS candidate112-preflight seconds 45 queries 50 ingest 26 errors 7
+PROGRESS candidate112-preflight seconds 65 queries 73 ingest 39 errors 7
+PROGRESS candidate112-preflight seconds 85 queries 84 ingest 46 errors 14
+PROGRESS candidate112-preflight seconds 105 queries 116 ingest 58 errors 14
+PROGRESS candidate112-preflight seconds 125 queries 131 ingest 68 errors 21
+PROGRESS candidate112-preflight seconds 145 queries 161 ingest 78 errors 21
+PROGRESS candidate112-preflight seconds 165 queries 170 ingest 89 errors 24
+PROGRESS candidate112-preflight seconds 185 queries 189 ingest 99 errors 28
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/run_sustain112.py", line 72, in <module>
+    main(a.version,a.seconds,a.workers,a.label)
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/run_sustain112.py", line 65, in main
+    sustain_location112.load(label,seconds,workers)
+  File "/home/etcom-hub/build/gps-provision22-20261111query112/sustain_location112.py", line 210, in load
+    'temp_bytes_delta':after[0]-before[0],'temp_files_delta':after[1]-before[1],
+         ^^^^^^^^^^
+AssertionError: [{'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}, {'route': 'month_aggregate', 'error': 'AssertionError', 'detail': 'HTTP 408'}]

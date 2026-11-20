@@ -1,0 +1,18 @@
+PASS actual schema99 binary and historical migration checksums; synthetic workload seeded
+PASS all fourteen migration transactions roll back on injected failure; committed prefixes resume with real candidate
+PASS missing pgcrypto stops at102 without corrupting data; DB administrator provisions extension and restricted migration resumes
+PASS prepared restricted owner completes real single-pass99 to113 with original data preserved and defaults OFF
+PASS 99 to113 non-superuser owner migration and OFF API boot; identities, SIM, locations preserved; no consent inferred
+PASS other writers, unsafe bind logging, legacy retention, premature resume and maintenance startup are rejected
+PASS conversion interrupted after DB commits stays fenced; retry only converts files; subsequent retry makes no writes
+PASS restricted API and actual cleanup and closure units use same key/mode; policy, DDL and maintenance bypass rejected
+PASS all original location values survive encryption; physical columns NULL; 623000 raw samples yield283001 deduplicated in-range history points
+PASS full Timescale DB plus encrypted files restore while fenced; separately held key required; all location/file hashes equal
+Traceback (most recent call last):
+  File "/opt/gps121/runtime121_cumulative.py", line 349, in <module>
+    restored(restore_dsn, runtime.rsplit('/',1)[0]+'/gps_cumulative_restore', uid, did, ring)
+  File "/opt/gps121/verify_runtime125_reads.py", line 40, in restored
+    rows=read(uid,did)
+  File "/opt/gps121/verify_runtime125_reads.py", line 24, in read
+    assert status==200,(name,status,body[:160])
+AssertionError: ('month_aggregate', 408, b'{"error":"\xec\xa1\xb0\xed\x9a\x8c \xec\x8b\x9c\xea\xb0\x84\xec\x9d\xb4 \xec\xb4\x88\xea\xb3\xbc\xeb\x90\x98\xec\x97\x88\xec\x8a\xb5\xeb\x8b\x88\xeb\x8b\xa4. \xea\xb8\xb0\xea\xb0\x84\xec\x9d\x84 \xec\xa4\x84\xec\x97\xac \xeb\x8b\xa4\xec\x8b\x9c \xec\xa1\xb0\xed\x9a\x8c\xed\x95\xb4 \xec\xa3\xbc\xec\x84\xb8\xec\x9a\x94."}')

@@ -1,0 +1,12 @@
+{
+  "containers_removed": [
+    "gps-query115-api",
+    "gps-query115-db",
+    "gps-query115-proxy"
+  ],
+  "network_removed": "gps-query115-test",
+  "volume_removed": "gps-query115-data",
+  "private_files_removed": true,
+  "other_projects_modified": false,
+  "free_gib": 19.862239837646484
+}

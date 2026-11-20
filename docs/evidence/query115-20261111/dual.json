@@ -1,0 +1,1172 @@
+{
+  "label": "dual",
+  "production_modified": false,
+  "requested_seconds": 300,
+  "elapsed": 304.7742497539148,
+  "workers": 16,
+  "workload": "8 SIMs, 31 dense KST days; personal reads and mapped Fleet reports; dual adds Fleet stats/terminals",
+  "dual_api": true,
+  "api_sha256": "a433b9a114131e235068cc0359b8535aaf9529d396b47785c8eb6c4c6ca17d10",
+  "completed": {
+    "200": 282,
+    "429": 556,
+    "408": 10
+  },
+  "attempts": {
+    "429": 1866,
+    "200": 282,
+    "408": 10
+  },
+  "per_device": {
+    "1": {
+      "429": 81,
+      "200": 32,
+      "408": 2
+    },
+    "2": {
+      "200": 46,
+      "429": 80
+    },
+    "3": {
+      "429": 64,
+      "200": 34,
+      "408": 7
+    },
+    "4": {
+      "429": 77,
+      "200": 39,
+      "408": 1
+    },
+    "5": {
+      "429": 70,
+      "200": 27
+    },
+    "6": {
+      "200": 42,
+      "429": 53
+    },
+    "7": {
+      "200": 27,
+      "429": 72
+    },
+    "8": {
+      "429": 59,
+      "200": 35
+    }
+  },
+  "per_route": {
+    "month_page": {
+      "statuses": {
+        "200": 110,
+        "429": 194
+      },
+      "end_to_end": {
+        "count": 110,
+        "p50": 0.5906539717689157,
+        "p95": 5.733305773232132,
+        "max": 5.861410617828369
+      }
+    },
+    "month_aggregate": {
+      "statuses": {
+        "200": 34,
+        "429": 79
+      },
+      "end_to_end": {
+        "count": 34,
+        "p50": 3.76627144170925,
+        "p95": 8.446998605970293,
+        "max": 8.784030601847917
+      }
+    },
+    "fleet_trips": {
+      "statuses": {
+        "200": 25,
+        "429": 40
+      },
+      "end_to_end": {
+        "count": 25,
+        "p50": 4.355806855019182,
+        "p95": 9.182451725006104,
+        "max": 9.558032501023263
+      }
+    },
+    "fleet_csv": {
+      "statuses": {
+        "429": 36,
+        "200": 29
+      },
+      "end_to_end": {
+        "count": 29,
+        "p50": 4.286966294981539,
+        "p95": 9.099931038916111,
+        "max": 9.744911438319832
+      }
+    },
+    "fleet_terminals": {
+      "statuses": {
+        "429": 42,
+        "200": 21
+      },
+      "end_to_end": {
+        "count": 21,
+        "p50": 6.078525667078793,
+        "p95": 8.620064956136048,
+        "max": 10.59726815065369
+      }
+    },
+    "fleet_xlsx": {
+      "statuses": {
+        "429": 62,
+        "200": 3
+      },
+      "end_to_end": {
+        "count": 3,
+        "p50": 21.644318292383105,
+        "p95": 21.644318292383105,
+        "max": 21.898435043171048
+      }
+    },
+    "month_history": {
+      "statuses": {
+        "429": 66,
+        "200": 35,
+        "408": 10
+      },
+      "end_to_end": {
+        "count": 35,
+        "p50": 3.596142624039203,
+        "p95": 8.603965240996331,
+        "max": 8.721500317100435
+      }
+    },
+    "fleet_stats": {
+      "statuses": {
+        "200": 25,
+        "429": 37
+      },
+      "end_to_end": {
+        "count": 25,
+        "p50": 8.828623155131936,
+        "p95": 11.560192537028342,
+        "max": 11.706967656034976
+      }
+    }
+  },
+  "ingest": {
+    "statuses": {
+      "200": 281
+    },
+    "latency": {
+      "count": 281,
+      "p50": 0.08147912798449397,
+      "p95": 0.09776798821985722,
+      "max": 0.15961838187649846
+    }
+  },
+  "health": {
+    "statuses": {
+      "200": 281
+    },
+    "latency": {
+      "count": 281,
+      "p50": 0.0013380059972405434,
+      "p95": 0.0017082858830690384,
+      "max": 0.06367443688213825
+    }
+  },
+  "db_delta": {
+    "temp_bytes": 17388477008,
+    "temp_files": 2672,
+    "read_ms": 0.0,
+    "write_ms": 0.0
+  },
+  "resources": [
+    {
+      "elapsed": 2.0536909881047904,
+      "db_connections": 41,
+      "db_active": 18,
+      "idle_transactions": 11,
+      "containers": [
+        {
+          "BlockIO": "205kB / 4.63GB",
+          "CPUPerc": "200.88%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "49.16%",
+          "MemUsage": "737.4MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "50MB / 2.97GB",
+          "PIDs": "49"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "2.98%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.65GB / 2.31GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.38%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.68%",
+          "MemUsage": "2.996MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.29GB / 2.3GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "3.51%",
+          "MemUsage": "19.32MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "1.5MB / 1.84MB",
+          "PIDs": "11"
+        }
+      ],
+      "free_gib": 19.86062240600586
+    },
+    {
+      "elapsed": 19.08993039606139,
+      "db_connections": 41,
+      "db_active": 6,
+      "idle_transactions": 6,
+      "containers": [
+        {
+          "BlockIO": "205kB / 4.92GB",
+          "CPUPerc": "199.25%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "51.39%",
+          "MemUsage": "770.9MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "51.2MB / 3.04GB",
+          "PIDs": "49"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.42%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.67GB / 2.32GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.39%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.75%",
+          "MemUsage": "3.039MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.29GB / 2.3GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.45%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "35.63%",
+          "MemUsage": "196MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "39.4MB / 66.9MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.831768035888672
+    },
+    {
+      "elapsed": 36.15182228991762,
+      "db_connections": 40,
+      "db_active": 5,
+      "idle_transactions": 5,
+      "containers": [
+        {
+          "BlockIO": "205kB / 5.14GB",
+          "CPUPerc": "199.26%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "49.37%",
+          "MemUsage": "740.6MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "52.2MB / 3.08GB",
+          "PIDs": "48"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.52%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.68GB / 2.32GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.62%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.77%",
+          "MemUsage": "3.051MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.29GB / 2.3GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.12%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "35.63%",
+          "MemUsage": "196MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "78.3MB / 92.4MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.851322174072266
+    },
+    {
+      "elapsed": 53.1880233339034,
+      "db_connections": 39,
+      "db_active": 6,
+      "idle_transactions": 6,
+      "containers": [
+        {
+          "BlockIO": "205kB / 5.36GB",
+          "CPUPerc": "199.65%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "48.66%",
+          "MemUsage": "729.9MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "53.2MB / 3.13GB",
+          "PIDs": "47"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.31%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.69GB / 2.32GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.32%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.68%",
+          "MemUsage": "2.996MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.3GB / 2.31GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "4.67%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.49%",
+          "MemUsage": "261.2MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "113MB / 143MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.839946746826172
+    },
+    {
+      "elapsed": 70.25485124718398,
+      "db_connections": 38,
+      "db_active": 5,
+      "idle_transactions": 5,
+      "containers": [
+        {
+          "BlockIO": "205kB / 5.45GB",
+          "CPUPerc": "200.64%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "47.92%",
+          "MemUsage": "718.8MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "54.3MB / 3.18GB",
+          "PIDs": "46"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "3.17%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.39%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.7GB / 2.32GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.36%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.74%",
+          "MemUsage": "3.035MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.3GB / 2.31GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.27%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.49%",
+          "MemUsage": "261.2MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "145MB / 168MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.823680877685547
+    },
+    {
+      "elapsed": 87.29086821014062,
+      "db_connections": 37,
+      "db_active": 5,
+      "idle_transactions": 5,
+      "containers": [
+        {
+          "BlockIO": "205kB / 5.5GB",
+          "CPUPerc": "199.75%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "46.17%",
+          "MemUsage": "692.5MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "55.7MB / 3.27GB",
+          "PIDs": "45"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "1.69%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.73GB / 2.34GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.57%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.79%",
+          "MemUsage": "3.062MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.31GB / 2.32GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.21%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.53%",
+          "MemUsage": "261.4MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "206MB / 192MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.827735900878906
+    },
+    {
+      "elapsed": 104.35576465306804,
+      "db_connections": 37,
+      "db_active": 5,
+      "idle_transactions": 4,
+      "containers": [
+        {
+          "BlockIO": "205kB / 5.69GB",
+          "CPUPerc": "200.44%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "47.23%",
+          "MemUsage": "708.5MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "56.6MB / 3.31GB",
+          "PIDs": "45"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.49%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.47%",
+          "MemUsage": "266.6MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.74GB / 2.34GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.51%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.79%",
+          "MemUsage": "3.066MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.31GB / 2.32GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.43%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.49%",
+          "MemUsage": "261.2MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "242MB / 237MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.787811279296875
+    },
+    {
+      "elapsed": 121.39128717081621,
+      "db_connections": 37,
+      "db_active": 5,
+      "idle_transactions": 6,
+      "containers": [
+        {
+          "BlockIO": "205kB / 5.78GB",
+          "CPUPerc": "199.66%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "47.83%",
+          "MemUsage": "717.4MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "57.7MB / 3.36GB",
+          "PIDs": "45"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.29%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.77GB / 2.34GB",
+          "PIDs": "4"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.36%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.78%",
+          "MemUsage": "3.059MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.31GB / 2.32GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.24%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.49%",
+          "MemUsage": "261.2MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "271MB / 249MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.726463317871094
+    },
+    {
+      "elapsed": 138.45582105126232,
+      "db_connections": 38,
+      "db_active": 5,
+      "idle_transactions": 7,
+      "containers": [
+        {
+          "BlockIO": "205kB / 5.95GB",
+          "CPUPerc": "200.82%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "46.03%",
+          "MemUsage": "690.5MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "59.1MB / 3.46GB",
+          "PIDs": "46"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "3.25%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.81GB / 2.35GB",
+          "PIDs": "4"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.55%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.75%",
+          "MemUsage": "3.043MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.32GB / 2.33GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "2.97%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.49%",
+          "MemUsage": "261.2MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "318MB / 316MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.76972198486328
+    },
+    {
+      "elapsed": 155.49067651527002,
+      "db_connections": 38,
+      "db_active": 5,
+      "idle_transactions": 9,
+      "containers": [
+        {
+          "BlockIO": "205kB / 6.09GB",
+          "CPUPerc": "199.59%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "47.43%",
+          "MemUsage": "711.4MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "60.2MB / 3.52GB",
+          "PIDs": "46"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.38%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.83GB / 2.37GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.76%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.80%",
+          "MemUsage": "3.074MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.34GB / 2.35GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "4.39%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.49%",
+          "MemUsage": "261.2MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "364MB / 358MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.730175018310547
+    },
+    {
+      "elapsed": 172.55619556317106,
+      "db_connections": 38,
+      "db_active": 5,
+      "idle_transactions": 6,
+      "containers": [
+        {
+          "BlockIO": "205kB / 6.15GB",
+          "CPUPerc": "200.85%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "46.02%",
+          "MemUsage": "690.3MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "61.4MB / 3.59GB",
+          "PIDs": "46"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "3.04%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.88GB / 2.4GB",
+          "PIDs": "4"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.37%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.74%",
+          "MemUsage": "3.035MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.37GB / 2.38GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "1.76%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.49%",
+          "MemUsage": "261.2MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "382MB / 364MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.758472442626953
+    },
+    {
+      "elapsed": 189.5914436201565,
+      "db_connections": 38,
+      "db_active": 5,
+      "idle_transactions": 5,
+      "containers": [
+        {
+          "BlockIO": "205kB / 6.31GB",
+          "CPUPerc": "199.06%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "47.85%",
+          "MemUsage": "717.7MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "62.7MB / 3.7GB",
+          "PIDs": "46"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.14%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.93GB / 2.45GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.17%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.82%",
+          "MemUsage": "3.082MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.42GB / 2.43GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "3.11%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.53%",
+          "MemUsage": "261.4MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "426MB / 407MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.678199768066406
+    },
+    {
+      "elapsed": 206.656198205892,
+      "db_connections": 39,
+      "db_active": 7,
+      "idle_transactions": 6,
+      "containers": [
+        {
+          "BlockIO": "205kB / 6.59GB",
+          "CPUPerc": "200.13%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "48.16%",
+          "MemUsage": "722.3MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "64MB / 3.78GB",
+          "PIDs": "47"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.30%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.96GB / 2.47GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.33%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "5.19%",
+          "MemUsage": "3.32MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.44GB / 2.45GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.25%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.58%",
+          "MemUsage": "261.7MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "483MB / 471MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.683521270751953
+    },
+    {
+      "elapsed": 223.74866439402103,
+      "db_connections": 37,
+      "db_active": 6,
+      "idle_transactions": 5,
+      "containers": [
+        {
+          "BlockIO": "205kB / 6.65GB",
+          "CPUPerc": "200.66%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "46.53%",
+          "MemUsage": "697.9MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "65.3MB / 3.86GB",
+          "PIDs": "45"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.49%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "2.99GB / 2.48GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.50%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.94%",
+          "MemUsage": "3.164MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.45GB / 2.46GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "3.06%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "49.33%",
+          "MemUsage": "271.3MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "546MB / 516MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.660736083984375
+    },
+    {
+      "elapsed": 240.78396666282788,
+      "db_connections": 37,
+      "db_active": 6,
+      "idle_transactions": 6,
+      "containers": [
+        {
+          "BlockIO": "205kB / 6.79GB",
+          "CPUPerc": "200.78%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "47.67%",
+          "MemUsage": "715.1MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "66.4MB / 3.93GB",
+          "PIDs": "45"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.48%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "3.01GB / 2.51GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 27.6MB",
+          "CPUPerc": "0.33%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.75%",
+          "MemUsage": "3.043MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.48GB / 2.49GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "4.97%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "49.34%",
+          "MemUsage": "271.3MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "591MB / 521MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.605884552001953
+    },
+    {
+      "elapsed": 257.85458620404825,
+      "db_connections": 38,
+      "db_active": 5,
+      "idle_transactions": 7,
+      "containers": [
+        {
+          "BlockIO": "205kB / 6.83GB",
+          "CPUPerc": "200.60%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "46.57%",
+          "MemUsage": "698.5MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "67.6MB / 4GB",
+          "PIDs": "46"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.22%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "3.05GB / 2.53GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 37.4MB",
+          "CPUPerc": "0.19%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.74%",
+          "MemUsage": "3.035MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.5GB / 2.51GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.12%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.53%",
+          "MemUsage": "261.4MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "623MB / 548MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.65737533569336
+    },
+    {
+      "elapsed": 274.88966081896797,
+      "db_connections": 38,
+      "db_active": 5,
+      "idle_transactions": 7,
+      "containers": [
+        {
+          "BlockIO": "205kB / 6.97GB",
+          "CPUPerc": "200.11%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "47.72%",
+          "MemUsage": "715.7MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "69MB / 4.09GB",
+          "PIDs": "46"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "0.73%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "3.08GB / 2.56GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 37.4MB",
+          "CPUPerc": "0.29%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "4.82%",
+          "MemUsage": "3.082MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.53GB / 2.54GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "3.07%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.49%",
+          "MemUsage": "261.2MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "685MB / 574MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.605960845947266
+    },
+    {
+      "elapsed": 291.9520726520568,
+      "db_connections": 38,
+      "db_active": 5,
+      "idle_transactions": 5,
+      "containers": [
+        {
+          "BlockIO": "205kB / 7.05GB",
+          "CPUPerc": "201.47%",
+          "Container": "gps-query115-db",
+          "ID": "c78fb43fef1e",
+          "MemPerc": "48.80%",
+          "MemUsage": "731.9MiB / 1.465GiB",
+          "Name": "gps-query115-db",
+          "NetIO": "70.3MB / 4.18GB",
+          "PIDs": "46"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "25.36%",
+          "Container": "gps-query115-api",
+          "ID": "1d90bcac0950",
+          "MemPerc": "48.38%",
+          "MemUsage": "266.1MiB / 550MiB",
+          "Name": "gps-query115-api",
+          "NetIO": "3.13GB / 2.58GB",
+          "PIDs": "3"
+        },
+        {
+          "BlockIO": "0B / 37.4MB",
+          "CPUPerc": "1.61%",
+          "Container": "gps-query115-proxy",
+          "ID": "ca4fd5738e17",
+          "MemPerc": "5.22%",
+          "MemUsage": "3.34MiB / 64MiB",
+          "Name": "gps-query115-proxy",
+          "NetIO": "2.55GB / 2.56GB",
+          "PIDs": "2"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "3.09%",
+          "Container": "gps-query115-api2",
+          "ID": "eb4d5f94c103",
+          "MemPerc": "47.53%",
+          "MemUsage": "261.4MiB / 550MiB",
+          "Name": "gps-query115-api2",
+          "NetIO": "725MB / 601MB",
+          "PIDs": "3"
+        }
+      ],
+      "free_gib": 19.602134704589844
+    }
+  ],
+  "errors": [],
+  "full_month_traversals": [
+    {
+      "device": 2,
+      "points": 89280,
+      "pages": 18,
+      "seconds": 208.24028999684379
+    }
+  ],
+  "containers_final": {
+    "gps-query115-db": {
+      "Running": true,
+      "OOMKilled": false,
+      "ExitCode": 0
+    },
+    "gps-query115-api": {
+      "Running": true,
+      "OOMKilled": false,
+      "ExitCode": 0
+    },
+    "gps-query115-proxy": {
+      "Running": true,
+      "OOMKilled": false,
+      "ExitCode": 0
+    },
+    "gps-query115-api2": {
+      "Running": true,
+      "OOMKilled": false,
+      "ExitCode": 0
+    }
+  },
+  "ingest_saved_rows": 281
+}

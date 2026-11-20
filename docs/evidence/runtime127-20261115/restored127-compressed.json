@@ -1,0 +1,47 @@
+{
+  "source_schema": 113,
+  "schema": 114,
+  "statistics": {
+    "completed": true,
+    "columns": [
+      "device_id",
+      "user_id",
+      "recorded_at",
+      "source",
+      "fix",
+      "query_bounds_ready",
+      "query_first_at",
+      "query_last_at"
+    ],
+    "relations": [
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_1_chunk",
+        "seconds": 0.037019
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_2_chunk",
+        "seconds": 0.03378
+      },
+      {
+        "schema": "_timescaledb_internal",
+        "table": "_hyper_1_3_chunk",
+        "seconds": 0.005532
+      },
+      {
+        "schema": "public",
+        "table": "location_records",
+        "seconds": 0.101594
+      }
+    ],
+    "seconds": 0.179963,
+    "decrypted": false,
+    "location_rows_written": 0,
+    "automatic_statistics_required": false
+  },
+  "compression_scheduled": true,
+  "forced_full_compression_for_coverage": true,
+  "autovacuum": "on",
+  "production_policy_changed": false
+}

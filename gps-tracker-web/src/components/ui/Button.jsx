@@ -22,12 +22,12 @@ const VARIANT = {
   },
   danger: {
     background: 'var(--danger)',
-    color:      '#FFF',
+    color:      'var(--danger-fg)',
     border:     'none',
   },
   success: {
     background: 'var(--accent)',
-    color:      '#FFF',
+    color:      'var(--accent-fg)',
     border:     'none',
   },
   link: {
@@ -39,10 +39,10 @@ const VARIANT = {
 };
 
 const SIZE = {
-  xs: { fontSize: 10, padding: 'var(--space-1) var(--space-2)' },
-  sm: { fontSize: 11, padding: 'var(--space-2) var(--space-3)' },
-  md: { fontSize: 13, padding: 'var(--space-2) var(--space-4)' },
-  lg: { fontSize: 14, padding: 'var(--space-3) var(--space-5)' },
+  xs: { fontSize: 'var(--control-font-size, 10px)', padding: 'var(--space-1) var(--space-2)' },
+  sm: { fontSize: 'var(--control-font-size, 11px)', padding: 'var(--space-2) var(--space-3)' },
+  md: { fontSize: 'var(--control-font-size, 13px)', padding: 'var(--space-2) var(--space-4)' },
+  lg: { fontSize: 'var(--control-font-size, 14px)', padding: 'var(--space-3) var(--space-5)' },
 };
 
 export default function Button({
@@ -60,10 +60,13 @@ export default function Button({
   const s = SIZE[size] || SIZE.md;
   return (
     <button
+      type="button"
+      aria-busy={busy || undefined}
       disabled={disabled || busy}
       {...rest}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        minHeight: size === 'xs' ? 'var(--control-min-height, 32px)' : 'var(--touch-target)',
         borderRadius: 'var(--radius-sm)',
         fontWeight: 700,
         cursor: (disabled || busy) ? 'not-allowed' : 'pointer',

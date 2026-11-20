@@ -1,0 +1,8 @@
+# /etc/systemd/system/gps-workload-pdf.slice
+[Unit]
+Description=GPS PDF aggregate budget, including supervisors and self-test
+[Slice]
+MemoryAccounting=yes
+MemoryMax=939524096
+MemorySwapMax=0
+TasksMax=48

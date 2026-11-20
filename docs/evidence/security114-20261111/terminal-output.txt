@@ -1,0 +1,46 @@
+GPS VPS SECURITY - ACTUAL SERVER OUTPUT
+==============================================================================================================
+Checked (KST): 2026-11-11T16:17:18.833323+09:00
+Server: 210.114.18.16 | gps.serial.kr | Read-only live SSH / TLS checks
+
+[ FIREWALL ]  sudo ufw status verbose (selected GPS / management rules)
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), deny (routed)
+22/tcp                     ALLOW IN    221.159.164.177
+80/tcp                     ALLOW IN    Anywhere
+443/tcp                    ALLOW IN    Anywhere
+5432/tcp                   ALLOW IN    221.159.164.177
+Other project rules are retained; this is not the full firewall rule list.
+
+[ SECURITY SERVICES ]  systemctl show / fail2ban-client / nginx -t
+UFW                      : active / exited / enabled
+Fail2ban                 : active / running / enabled
+ModSecurity (GPS API)     : active / running / enabled
+WAF engine               : SecRuleEngine DetectionOnly
+WAF configuration test   : PASS
+WAF resources            : gps-modsecurity114 | RAM 44.52MiB / 256MiB | CPU 0.00%
+Blocking activation pending large-photo JSON compatibility verification.
+
+[ ANTIVIRUS ]  clamscan --version / systemctl show / saved test result
+ClamAV 1.5.4/28180/Wed Nov 11 15:24:27 2026
+Signature update timer   : active / waiting / enabled
+Daily scan timer         : inactive / dead / disabled
+Harmless EICAR test      : DETECTED / PASS
+EICAR completed (KST)    : 2026-11-11T15:54:48.576361+09:00
+GPS scope scan           : incomplete (practical validation deferred)
+Mode: on-demand scanning; no resident clamav-daemon / no real-time blocking.
+
+[ PUBLIC CERTIFICATE / TRANSPORT ]  fresh verified TLS connections
+Issuer: Let's Encrypt / YE2 | Subject: gps.serial.kr
+Certificate validity: Nov  1 08:13:51 2026 GMT -> Jan 30 08:13:50 2027 GMT
+Default      : TLSv1.3 | TLS_AES_256_GCM_SHA384 | chain / hostname verified
+TLS 1.2 only : TLSv1.2 | ECDHE-ECDSA-AES256-GCM-SHA384 | chain / hostname verified
+
+[ LIVE SERVICE ]  loopback WAF -> GPS API
+GPS health: {"db":true,"environment":"production","ok":true,"release":"privacy-log-20261107-r1","service":"gps-tracker-api"}
+
+Scope: Cafe24 firewall / administrator PC antivirus not checked here.
+Legacy HTTP ingest remains; TLS checks above cover the public HTTPS endpoint.
+==============================================================================================================
+Saved: live-status.json / live-tls.json / terminal-output.txt

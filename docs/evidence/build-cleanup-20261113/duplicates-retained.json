@@ -1,0 +1,105 @@
+{
+  "duplicate_groups": 11,
+  "redundant_bytes": 38955648.0,
+  "groups": [
+    {
+      "sha256": "167839eee008f3f47d987bf4d585d342f46a940e48ce1b64030cc80863628241",
+      "bytes": 1743457,
+      "paths": [
+        "gps-tracker/incoming/gps-web-20261006-210059-dede6c6/source.tar.gz",
+        "gps-tracker/incoming/gps-web-20261006-210059-dede6c6/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "18b3e47b9f65c30f8db3adbe6b66d95cb69b7f47f8cc1cf706ab4de15270fed1",
+      "bytes": 4160059,
+      "paths": [
+        "gps-pdf-service-20261106-r1/source.tar.gz",
+        "gps-pdf-service-20261106-r1/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "2f20998df7d8c74aa5634d9e69954accfe0f591e9e46dafd951616df777dfc64",
+      "bytes": 3679042,
+      "paths": [
+        "gps-tracker/incoming/dev-20261021-183207-4eccbaa/source.tar.gz",
+        "gps-tracker/incoming/dev-20261021-183207-4eccbaa/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "57f7b662eacea109ebcb77aad0d6a29b367ede38e0eee145d2542f919f665743",
+      "bytes": 4212614,
+      "paths": [
+        "gps-privacy-facts-20261106-r1/source.tar.gz",
+        "gps-privacy-facts-20261106-r1/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "5bce70ebff6211ae997b1d63063ff87e98ba8711c1e91c09040176646575642a",
+      "bytes": 1750009,
+      "paths": [
+        "gps-tracker/incoming/gps-web-20261006-221245-3cb7de9/source.tar.gz",
+        "gps-tracker/incoming/gps-web-20261006-221245-3cb7de9/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "74df858a0ba4a49b9a6912fff7755e2c820bf2252161cbb29c0d7f064a7d5017",
+      "bytes": 4103699,
+      "paths": [
+        "gps-privacy-pdf-20261106-r1/source.tar.gz",
+        "gps-privacy-pdf-20261106-r1/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "7b0f2eab52fc4ddad3638270054f666bec30e1973adf8376fe0cd1823bccb6ab",
+      "bytes": 3685907,
+      "paths": [
+        "gps-tracker/incoming/dev-20261021-190449-d541456/source.tar.gz",
+        "gps-tracker/incoming/dev-20261021-190449-d541456/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "847c573158b9517827f783b27cbaa15106c68d9ebc32bb26cd37dcd0740b559d",
+      "bytes": 4365442,
+      "paths": [
+        "gps-provision22-20261108d/source.tar.gz",
+        "gps-provision22-20261108d/source-final.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "caf07e6c7b6552081866f30a96f1c9113e54438ad405d992c8c0cea99ea0d314",
+      "bytes": 4057313,
+      "paths": [
+        "gps-privacy-raster-20261106-r1/source.tar.gz",
+        "gps-privacy-raster-20261106-r1/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "d406262e797d47735e3e8eeb9c5f01c73ef06e9f7dd01f80788fdebe69c73f75",
+      "bytes": 3603297,
+      "paths": [
+        "gps-tracker/incoming/dev-20261014-180945-120a144/source.tar.gz",
+        "gps-tracker/security-rollback-20261020/predecessor.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    },
+    {
+      "sha256": "f782cbd43244348731637fea0e928911587f56c11eff5653955d07884b62d876",
+      "bytes": 3594809,
+      "paths": [
+        "gps-tracker/incoming/gps-web-20261014-145212-2539220/source.tar.gz",
+        "gps-tracker/incoming/gps-web-20261014-145212-2539220/out/source.tar.gz"
+      ],
+      "action": "retained: deployment/recovery paths are preserved; identical bytes do not prove a path is unused"
+    }
+  ]
+}

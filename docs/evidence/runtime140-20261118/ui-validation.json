@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-18T05:22:51.459Z",
+  "environment": "actual React panels and React Query; local synthetic API, Edge headless",
+  "checks": [
+    "207 mappings reached50/50/50/50/7 and back",
+    "status filter resets page",
+    "390px no document overflow",
+    "consent revision3 preserved and pending row disappears",
+    "100 unread notices have exact second-page end",
+    "mark read removes current page row; retry resets review",
+    "error not empty; explicit retry and cancellation"
+  ],
+  "errors": []
+}

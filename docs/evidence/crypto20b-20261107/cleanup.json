@@ -1,0 +1,12 @@
+{
+  "at": "2026-11-07T11:59:30.878702+00:00",
+  "synthetic_containers_removed": [
+    "gps-crypto20b-upgrade-api",
+    "gps-crypto20b-api-20261105",
+    "gps-crypto20b-db-20261105"
+  ],
+  "internal_network_removed": true,
+  "temporary_keys_and_storage_absent": true,
+  "candidate_archive_hashes_verified": 58,
+  "production_changed": false
+}

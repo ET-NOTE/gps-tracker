@@ -1,0 +1,100 @@
+TAP version 13
+# (node:10284) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company task next/previous/first keep status/category filters and accurate last page
+ok 1 - company task next/previous/first keep status/category filters and accurate last page
+  ---
+  duration_ms: 396.9464
+  ...
+# Subtest: filter and close abort lazy detail; late instructions never revive the old form
+ok 2 - filter and close abort lazy detail; late instructions never revive the old form
+  ---
+  duration_ms: 211.314
+  ...
+# Subtest: list cancel/retry and failed refresh hide previous details and distinguish empty results
+not ok 3 - list cancel/retry and failed refresh hide previous details and distinguish empty results
+  ---
+  duration_ms: 61.1379
+  location: 'C:\\Users\\msb\\.codex\\worktrees\\gps-app-fcm\\esp32c3-mini_gps\\gps-tracker-web\\tests\\company-task-queue.test.mjs:48:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /처리 보고 요청/. Input:
+    
+    '{"type":"section","props":{"className":"rights-card"},"children":[{"type":"h2","props":{},"children":["회사 자료 처리 요청"]},{"type":"p","props":{},"children":["회사 소유 계정에 지정된 범위입니다. 제출한 보고서와 증빙은 플랫폼 담당자가 검토합니다."]},{"type":"div","props":{"className":"rights-queue-filters"},"children":[{"type":"label","props":{},"children":["회사 요청 상태",{"type":"select","props":{"disabled":false,"value":""},"children":[{"type":"option","props":{"value":""},"children":["전체"]},{"type":"option","props":{"value":"requested"},"children":["처리 보고 요청"]},{"type":"option","props":{"value":"submitted"},"children":["담당자 검토 중"]},{"type":"option","props":{"value":"changes_requested"},"children":["보완 요청"]},{"type":"option","props":{"value":"accepted"},"children":["담당자 확인"]}]}]},{"type":"label","props":{},"children":["회사 자료 종류",{"type":"select","props":{"disabled":false,"value":""},"children":[{"type":"option","props":{"value":""},"children":["전체"]},{"type":"option","props":{"value":"staff"},"children":["직원 명단"]},{"type":"option","props":{"value":"trips"},"children":["운행 기록"]},{"type":"option","props":{"value":"reservations"},"children":["예약"]},{"type":"option","props":{"value":"expenses"},"children":["지출"]},{"type":"option","props":{"value":"files"},"children":["첨부자료"]},{"type":"option","props":{"value":"snapshots"},"children":["스냅샷·기타"]}]}]}]},{"type":"div","props":{"className":"rights-actions"},"children":[{"type":"button","props":{"disabled":false},"children":["회사 요청 처음 / 새로고침"]},{"type":"button","props":{"disabled":true},"children":["회사 요청 이전 페이지"]},{"type":"button","props":{"disabled":true},"children":["회사 요청 다음 페이지"]}]},{"type":"p","props":{"role":"status"},"children":["회사 요청 조회를 취소했습니다. 새로고침으로 다시 조회하세요."]},{"type":"p","props":{},"children":["기한 내 유효한 요청을 게시 순서로 표시합니다. 회수·기한 만료·상위 요청 종료 또는 본인 범위 확인 해제 시 목록에서 제외됩니다."]}]}'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '{"type":"section","props":{"className":"rights-card"},"children":[{"type":"h2","props":{},"children":["회사 자료 처리 요청"]},{"type":"p","props":{},"children":["회사 소유 계정에 지정된 범위입니다. 제출한 보고서와 증빙은 플랫폼 담당자가 검토합니다."]},{"type":"div","props":{"className":"rights-queue-filters"},"children":[{"type":"label","props":{},"children":["회사 요청 상태",{"type":"select","props":{"disabled":false,"value":""},"children":[{"type":"option","props":{"value":""},"children":["전체"]},{"type":"option","props":{"value":"requested"},"children":["처리 보고 요청"]},{"type":"option","props":{"value":"submitted"},"children":["담당자 검토 중"]},{"type":"option","props":{"value":"changes_requested"},"children":["보완 요청"]},{"type":"option","props":{"value":"accepted"},"children":["담당자 확인"]}]}]},{"type":"label","props":{},"children":["회사 자료 종류",{"type":"select","props":{"disabled":false,"value":""},"children":[{"type":"option","props":{"value":""},"children":["전체"]},{"type":"option","props":{"value":"staff"},"children":["직원 명단"]},{"type":"option","props":{"value":"trips"},"children":["운행 기록"]},{"type":"option","props":{"value":"reservations"},"children":["예약"]},{"type":"option","props":{"value":"expenses"},"children":["지출"]},{"type":"option","props":{"value":"files"},"children":["첨부자료"]},{"type":"option","props":{"value":"snapshots"},"children":["스냅샷·기타"]}]}]}]},{"type":"div","props":{"className":"rights-actions"},"children":[{"type":"button","props":{"disabled":false},"children":["회사 요청 처음 / 새로고침"]},{"type":"button","props":{"disabled":true},"children":["회사 요청 이전 페이지"]},{"type":"button","props":{"disabled":true},"children":["회사 요청 다음 페이지"]}]},{"type":"p","props":{"role":"status"},"children":["회사 요청 조회를 취소했습니다. 새로고침으로 다시 조회하세요."]},{"type":"p","props":{},"children":["기한 내 유효한 요청을 게시 순서로 표시합니다. 회수·기한 만료·상위 요청 종료 또는 본인 범위 확인 해제 시 목록에서 제외됩니다."]}]}'
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/Users/msb/.codex/worktrees/gps-app-fcm/esp32c3-mini_gps/gps-tracker-web/tests/company-task-queue.test.mjs:49:120)
+    async Test.run (node:internal/test_runner/test:935:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: submission locks navigation; conflict revalidates detail and removes stale form on access loss
+ok 4 - submission locks navigation; conflict revalidates detail and removes stale form on access loss
+  ---
+  duration_ms: 240.6903
+  ...
+# (node:27568) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: company publication requires disclosure confirmation, resets on changes and sends both revisions
+ok 5 - company publication requires disclosure confirmation, resets on changes and sends both revisions
+  ---
+  duration_ms: 35.1472
+  ...
+# Subtest: decision requires latest downloaded proof and renewed attestation after feedback changes
+ok 6 - decision requires latest downloaded proof and renewed attestation after feedback changes
+  ---
+  duration_ms: 25.6728
+  ...
+# Subtest: submission requires explicit file confirmation and shows server failure without success refresh
+ok 7 - submission requires explicit file confirmation and shows server failure without success refresh
+  ---
+  duration_ms: 6.9401
+  ...
+# Subtest: proof result cancelled never silently approves review
+ok 8 - proof result cancelled never silently approves review
+  ---
+  duration_ms: 5.9099
+  ...
+# Subtest: proof result saved never silently approves review
+ok 9 - proof result saved never silently approves review
+  ---
+  duration_ms: 6.8862
+  ...
+# Subtest: proof result share_opened never silently approves review
+ok 10 - proof result share_opened never silently approves review
+  ---
+  duration_ms: 6.9149
+  ...
+# Subtest: proof result browser_started never silently approves review
+ok 11 - proof result browser_started never silently approves review
+  ---
+  duration_ms: 7.8344
+  ...
+# Subtest: proof result unknown never silently approves review
+ok 12 - proof result unknown never silently approves review
+  ---
+  duration_ms: 5.6725
+  ...
+# Subtest: new cancelled or failed download clears earlier proof permission; pending file work blocks review
+ok 13 - new cancelled or failed download clears earlier proof permission; pending file work blocks review
+  ---
+  duration_ms: 9.1329
+  ...
+# Subtest: replacing a submission invalidates an in-flight save result
+ok 14 - replacing a submission invalidates an in-flight save result
+  ---
+  duration_ms: 6.2489
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 13
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1068.6499

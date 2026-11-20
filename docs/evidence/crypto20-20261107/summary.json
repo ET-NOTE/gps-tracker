@@ -1,0 +1,35 @@
+{
+  "scope": "20A core-field and TLS isolated validation; full round20 and production encryption are NOT complete",
+  "source_commit": "bd00dfbc77889cfc2623fde8741c1db919729707",
+  "api_sha256": "e3ff355248e129d85ae9aa8e7f87edb7cdba5038ca256cf8c4be10e61432fe4b",
+  "rust": {
+    "unit_passed": 78,
+    "external_ignored_tests_run_separately": 3,
+    "fmt": "passed",
+    "clippy_warnings_denied": "passed"
+  },
+  "integration_groups_passed": 12,
+  "bootstrap_schema103": "passed",
+  "firmware_profile_checks": 232,
+  "actual_mbedtls_host_checks": 13,
+  "firmware_flashed": false,
+  "web_changed": false,
+  "production_modified": false,
+  "production_readonly_observation": {
+    "at": "2026-11-07T19:42:33+09:00",
+    "api_active": true,
+    "api_restarts": 0,
+    "api_started_at": "2026-11-07T17:16:49+09:00",
+    "api_sha256": "fa1e51e3d39473ca2852ac6b2899790547fa6667bb7337c646d29258a3e1c0fe",
+    "web_link": "/home/mmm/releases/privacy-facts-20261106-r1/web",
+    "schema": 99,
+    "schema_source": "earlier round20 read-only schema check; unchanged, no migration executed"
+  },
+  "open_items": [
+    "derived tables/caches/files encryption",
+    "key and backup lifecycle and all-writers transition control",
+    "production-scale 99 to successor migration/restore/performance rehearsal",
+    "physical firmware installation, outdoor and 24-hour sleep verification",
+    "fleet TLS promotion and retirement of legacy ingress"
+  ]
+}

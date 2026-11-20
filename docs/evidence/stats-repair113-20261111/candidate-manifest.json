@@ -1,0 +1,28 @@
+{
+  "candidate": "stats-repair113-20261111-r1",
+  "created_at": "2026-11-11T08:54:20.849290+00:00",
+  "schema": 112,
+  "new_migration": false,
+  "activation_ready": false,
+  "type": "API overlay requiring reviewed cumulative112 installation; NOT a schema99 deployment bundle",
+  "base_source": "93da88dedba7ed391c443ac7fd3de70e507c3140",
+  "files": {
+    "gps-tracker-api.bin": "36cf858d9f8f5ef08168f32e8a2c1d0349b2a0893650f7eeba36f8fe4f7f9287",
+    "ops/dev_provision22d.sh": "e7555a5d125f3618c50c3cf300d97ed84ed28185aaaf89d395431ea565ab616d",
+    "ops/restart_stats_repair113.py": "fcbe750e058356753f12ca53a706d6d5dbf37fe3f2d0c98ac7c348acced1adc1",
+    "ops/run_stats_repair113.py": "c5c7f92efee5ecc99182e12868dc362f7c3e9290bca7f93325c7e0ccf549aeca",
+    "ops/prepare_stats_repair113.py": "6bb3d14b711f9d333dc00bd5d067c856c7fce006dd086463a1c811384679aef4",
+    "gps-tracker-api/src/services/stats.rs": "71b751bf5f4257bc760f06145f697f49ba69f56006c2b49bc3f1033541d85570",
+    "gps-tracker-api/src/services/stats_repair_tests.rs": "d9c5329041d4d0a14738bcf58a97890e03868ef4f0322dd28e407e7d06eee3ee"
+  },
+  "proof": {
+    "baseline112_partial_stays3": true,
+    "sigkill_committed4_pending27": true,
+    "restart_completed31": true,
+    "fixes93": true,
+    "encrypted_original_unchanged": true,
+    "existing3_not_rewritten": true
+  },
+  "archive_sha256": "346b3e17925b66bf749aa4543a17c8aa7c0c4f52ccad7f904c4066b0234854aa",
+  "archive_bytes": 7659111
+}

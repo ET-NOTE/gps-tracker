@@ -1,0 +1,12 @@
+{
+  "source_commit": "a223ff04ab948da69ef95179cd9d6185433992fc",
+  "source_files": 524,
+  "api_sha256": "37de345292ebb75e8ef733192155dad1cec0b0744cbbd59dc12fe432b720b3e9",
+  "all_compiled_api_migration_inputs_match_git": true,
+  "runtime_ops_inputs_unchanged": true,
+  "post_build_change_scope": "verification and packaging scripts only",
+  "post_rehearsal_preparation_change": [
+    "ops/stage_query111.py"
+  ],
+  "production_modified": false
+}

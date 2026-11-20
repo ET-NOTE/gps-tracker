@@ -1,0 +1,19 @@
+PASS normal write half-close renders exact red and white pixels
+PASS global lock rejects six independent requests; worker has stricter seccomp
+PASS disconnect during request read kills and reaps worker
+PASS disconnect with pending page kills a stopped worker and permits recovery
+PASS slow open peer is terminated by 13-second deadline
+Traceback (most recent call last):
+  File "/opt/gps121/test_runtime120_service.py", line 159, in <module>
+    if __name__=='__main__':run()
+  File "/opt/gps121/test_runtime120_service.py", line 141, in run
+    wait(lambda:child not in processes());s.close();idle();page()
+  File "/opt/gps121/test_runtime120_service.py", line 40, in wait
+    value=predicate()
+  File "/opt/gps121/test_runtime120_service.py", line 141, in <lambda>
+    wait(lambda:child not in processes());s.close();idle();page()
+  File "/opt/gps121/test_runtime120_service.py", line 28, in processes
+    if (p/'comm').read_text().strip()!='gps-pdf-render':continue
+  File "/usr/lib/python3.10/pathlib.py", line 1135, in read_text
+    return f.read()
+ProcessLookupError: [Errno 3] No such process

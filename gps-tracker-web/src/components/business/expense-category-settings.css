@@ -1,0 +1,25 @@
+.expense-category-settings{display:grid;gap:20px;min-width:0;font-size:18px}
+.expense-category-intro{display:grid;gap:8px}.expense-category-intro h2{margin:0;font-size:22px;font-weight:600}.expense-category-intro p{margin:0;color:var(--text-2);font-size:16px;line-height:1.6}
+.expense-category-columns{display:grid;grid-template-columns:minmax(220px,28%) minmax(0,1fr);border:1px solid var(--border);border-radius:6px;background:var(--surface);min-height:460px;overflow:hidden}
+.expense-category-columns>section{min-width:0}.expense-category-columns>section>header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 20px;border-bottom:1px solid var(--border);min-height:80px;box-sizing:border-box;background:var(--surface)}
+.expense-category-columns h3{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0;min-width:0;max-width:100%;overflow-wrap:anywhere;font-size:20px;font-weight:600}.expense-category-columns header>div{display:flex;gap:12px;flex-wrap:wrap;min-width:0;max-width:100%}.expense-category-columns header .business-button,.expense-category-columns h3>.business-badge{flex-shrink:0}
+.expense-category-groups{border-right:1px solid var(--border)}.expense-category-group-list{display:grid}
+.expense-category-group-list>button.expense-category-group-option{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:72px;padding:18px 20px;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;color:var(--text-2);font:inherit;text-align:left;cursor:pointer}
+.expense-category-group-list>button[aria-pressed=true]{background:color-mix(in srgb,var(--primary) 8%,var(--surface));color:var(--primary);font-weight:600;box-shadow:inset 3px 0 var(--primary)}
+.expense-category-group-list>button:hover{background:var(--surface-2)}.expense-category-group-list>button:focus-visible{outline:2px solid var(--primary);outline-offset:-3px}
+.expense-category-group-list>button>span:first-child{min-width:0;overflow-wrap:anywhere}.expense-category-table-scroll td:first-child{overflow-wrap:anywhere;max-width:360px}
+.expense-category-group-list small{display:block;margin-top:5px;color:var(--text-3);font-size:16px;font-weight:400}.expense-category-count{flex-shrink:0;min-width:28px;text-align:center;padding:4px 7px;border-radius:3px;background:var(--surface-2);font-size:16px;font-weight:500}
+.expense-category-table-scroll{overflow-x:auto;min-width:0}.expense-category-table-scroll:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+.expense-category-table-scroll table{border-collapse:collapse;width:100%;min-width:560px;font-size:18px}.expense-category-table-scroll :is(th,td){padding:18px 20px;border-bottom:1px solid var(--border);text-align:left;line-height:1.6}
+.expense-category-table-scroll th{background:color-mix(in srgb,var(--surface) 91%,#426b94);font-size:16px;font-weight:600;color:var(--text-2)}.expense-category-table-scroll td:first-child{width:45%}.expense-category-table-scroll small{display:block;color:var(--text-2);font-size:16px;margin-top:4px}
+.expense-category-table-scroll :is(th,td):last-child{text-align:center;white-space:nowrap}.expense-category-table-scroll tbody tr:hover{background:var(--surface-2)}
+.expense-category-settings .business-button{min-height:48px;border-radius:4px;font-size:18px;padding:10px 14px;white-space:nowrap}
+.expense-category-table-scroll :is(th,td){box-sizing:border-box;border-right:1px solid var(--border)}
+.expense-category-table-scroll :is(th,td):last-child{border-right:0}
+.expense-category-table-scroll th{height:60px;padding:16px 20px}
+.expense-category-table-scroll td{height:80px;padding:18px 20px;vertical-align:middle}
+.expense-category-table-scroll :is(th,td):nth-child(2){min-width:100px}
+.expense-category-table-scroll :is(th,td):nth-child(3){text-align:center;min-width:100px;white-space:nowrap}
+.expense-category-table-scroll .business-badge{font-size:16px;border-radius:3px;padding:5px 10px}
+.expense-category-table-scroll td:last-child .business-button{font-size:16px;min-height:48px}
+@media(max-width:800px){.expense-category-columns{grid-template-columns:minmax(0,1fr)}.expense-category-groups{border-right:0}.expense-category-group-list{display:flex;overflow-x:auto}.expense-category-group-list>button.expense-category-group-option{flex-shrink:0;max-width:min(300px,100%);gap:14px;min-height:64px;padding:16px}.expense-category-group-list>button[aria-pressed=true]{box-shadow:inset 0 -3px var(--primary)}.expense-category-columns>section>header{padding:16px;min-height:76px}.expense-category-columns{min-height:360px}}

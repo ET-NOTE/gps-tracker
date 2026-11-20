@@ -1,0 +1,48 @@
+{
+  "at": "2026-11-16T11:26:10+0900",
+  "passed": true,
+  "health": {
+    "db": true,
+    "environment": "production",
+    "ok": true,
+    "release": "review137-20261116-r3",
+    "service": "gps-tracker-api"
+  },
+  "api_sha256": "62f67f352bcdc677273a88caa7c44b4c409d760c97b9da9128f734da790f648d",
+  "elapsed_seconds": 1.707,
+  "checks": [
+    {
+      "url": "http://gps.serial.kr/ingest",
+      "method": "GET",
+      "status": 405,
+      "allow": "POST"
+    },
+    {
+      "url": "http://gps.serial.kr/ingest",
+      "method": "HEAD",
+      "status": 405,
+      "allow": "POST"
+    },
+    {
+      "url": "https://gps.serial.kr/ingest",
+      "method": "GET",
+      "status": 405,
+      "allow": "POST"
+    },
+    {
+      "url": "https://gps.serial.kr/ingest",
+      "method": "HEAD",
+      "status": 405,
+      "allow": "POST"
+    },
+    {
+      "url": "https://gps.serial.kr/ingest",
+      "method": "POST malformed JSON",
+      "status": 400
+    }
+  ],
+  "schema_changed": false,
+  "configuration_changed": false,
+  "monitor_configuration_changed": false,
+  "user_data_mutated_by_probes": false
+}

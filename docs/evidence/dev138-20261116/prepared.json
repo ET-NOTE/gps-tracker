@@ -1,0 +1,33 @@
+{
+  "at": "2026-11-16T16:54:11+0900",
+  "passed": true,
+  "schema_before": 72,
+  "schema_target": 114,
+  "source": "a4c6cb0801c9aeac10a0bd8343a01c9bdd592f06",
+  "dev_data": {
+    "users": [
+      6,
+      "d88beee0ea266a0d6ee20355b766e6d5"
+    ],
+    "devices": [
+      10,
+      "4ba595fe45f9064f55c3c7204f89f5a2"
+    ],
+    "location_records": [
+      47823,
+      "853498e0e7f73e46a64da0ccdca653a3"
+    ]
+  },
+  "production": {
+    "files": {
+      "/home/mmm/projects/gps-tracker-api/bin/gps-tracker-api": "62f67f352bcdc677273a88caa7c44b4c409d760c97b9da9128f734da790f648d",
+      "/home/mmm/projects/gps-tracker-api/.env": "fab21aeaaef7a00f1283530e1136690c28d416d5d4d62b9968d4a6a6cdb3df55",
+      "/etc/nginx/sites-available/gps.serial.kr": "1fc4ef8d1b9e036321c9faf31cc6edf20823360f778b5cad6f614e28e9d60cb7",
+      "/etc/nginx/sites-available/dev-gps.serial.kr.conf": "f9f48e24b5d6da1473f73033d74c92bded8ff2e27952cf08b190d7f11ce51e6d",
+      "/home/mmm/releases/review137-20261116-r2/web/index.html": "faeb956c20e538ff1f536f29a4fd5865a48eabceb529d1fa36060c37f8a0d2ee",
+      "/home/mmm/releases/review137-20261116-r2/web/version.json": "54dcfc4c93c28b8de0096a2737d8afea835355a8e8ab36f61294fc2c6988056d"
+    },
+    "prod_web": "/home/mmm/releases/review137-20261116-r2/web",
+    "services": "MainPID=1833697\nId=gps-tracker-api.service\nActiveEnterTimestamp=Mon 2026-11-16 11:26:09 KST\n\nMainPID=15160\nId=shield-api.service\nActiveEnterTimestamp=Fri 2026-11-06 11:45:30 KST\n\nMainPID=893\nId=nginx.service\nActiveEnterTimestamp=Fri 2026-11-06 11:04:47 KST\n\nId=gps-pdf-render.socket\nActiveEnterTimestamp=Fri 2026-11-06 16:48:34 KST"
+  }
+}

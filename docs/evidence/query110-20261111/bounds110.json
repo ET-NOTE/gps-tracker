@@ -1,0 +1,22 @@
+{
+  "label": "bounds110",
+  "production_modified": false,
+  "queries": {
+    "month_history": {
+      "seconds": 8.894348001107574,
+      "count": 283001
+    },
+    "day_history": {
+      "seconds": 0.4242193028330803,
+      "count": 8641
+    },
+    "month_keys": {
+      "seconds": 1.8554330300539732,
+      "count": 283001
+    },
+    "small_history": {
+      "seconds": 0.06498172925785184,
+      "count": 61
+    }
+  }
+}

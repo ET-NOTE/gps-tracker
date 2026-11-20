@@ -1,0 +1,1 @@
+{"read_only": true, "extensions": [["btree_gist", "1.6"], ["citext", "1.6"], ["plpgsql", "1.0"], ["timescaledb", "2.19.3"]], "migration_role_capabilities": ["gps_tracker_app", true, false]}

@@ -1,0 +1,21 @@
+PASS 22-integration
+PASS reset-before22b
+PASS 22b-integration
+PASS reset-before22d
+PASS 22d-integration
+PASS reset-before-business
+PASS business-regressions
+PASS stop-before-recovery
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111cumulative110/test_transition_file_owner.py", line 13, in <module>
+    from crypto20b_transition import connect, convert_files
+ModuleNotFoundError: No module named 'crypto20b_transition'
+Traceback (most recent call last):
+  File "/home/etcom-hub/build/gps-provision22-20261111cumulative110/check_cumulative110.py", line 75, in <module>
+    command('docker', 'run', '--rm', '--network', NET, '--cap-drop=ALL',
+  File "/home/etcom-hub/build/gps-provision22-20261111cumulative110/check_cumulative110.py", line 70, in command
+    return subprocess.run(list(args), check=True, stdout=subprocess.DEVNULL, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['docker', 'run', '--rm', '--network', 'gps-provision22-test-20261111cumulative110', '--cap-drop=ALL', '--cap-add=CHOWN', '--cap-add=DAC_OVERRIDE', '--cap-add=SETUID', '--cap-add=SETGID', '--security-opt=no-new-privileges', '--memory=256m', '-v', '/home/etcom-hub/build/gps-provision22-20261111cumulative110:/home/etcom-hub/build/gps-provision22-20261111cumulative110', '-v', '/home/etcom-hub/build/gps-provision22-20261108/python-deps:/deps:ro', '-e', 'PYTHONPATH=/deps:/home/etcom-hub/build/gps-provision22-20261111cumulative110/src/ops', '-w', '/home/etcom-hub/build/gps-provision22-20261111cumulative110', 'gps-build:rust1.88-node22.22.2', 'python3', '/home/etcom-hub/build/gps-provision22-20261111cumulative110/test_transition_file_owner.py']' returned non-zero exit status 1.

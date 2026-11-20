@@ -1,0 +1,2 @@
+stopped (exit 0)
+{"revocation_replayed": true, "provider_acceptance_not_read": true, "restore_send_disabled": true, "unresolved_queue_review": true, "old_format_rejected": true, "identity_collision_atomic": true, "former_staff_retention_hold": true, "external_backup_erasure_verified": false}

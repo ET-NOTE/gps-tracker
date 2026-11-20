@@ -1,0 +1,7 @@
+PASS128 old seven-row update fails at unchanged100k limit {"sqlstate": "53400", "detail": "current limit: 100000, tuples decompressed: 130000"}
+PASS128 uncompressed pending rows do not decompress unrelated130k rows {"result": {"schema": 114, "apply": true, "encrypted": true, "updated": 7, "batches": 1, "pending_before": 7, "decompressed_tuple_limit_per_statement": 5000, "statements": 7, "pending_after": 0, "complete": true}, "seconds": 1.107491821050644}
+PASS128 lower500 limit honored; original SQLSTATE and outer transaction/lock preserved {"earlier_keys_rolled_back": 1}
+PASS128 row lock fails promptly, not skipped or declared complete {}
+PASS128 three committed keys survive interruption;2004 pending remain {"compressed_rows_remaining": 127528}
+PASS128 non-superuser partial batch and resume complete; all ciphertext unchanged {"partial": {"schema": 114, "apply": true, "encrypted": true, "updated": 7, "batches": 1, "pending_before": 2004, "decompressed_tuple_limit_per_statement": 5000, "statements": 7, "pending_after": 1997, "complete": false}, "result": {"schema": 114, "apply": true, "encrypted": true, "updated": 1997, "batches": 1, "pending_before": 1997, "decompressed_tuple_limit_per_statement": 5000, "statements": 1997, "pending_after": 0, "complete": true}, "seconds": 9.167454168200493, "compression_limit_after": "100000", "compressed_rows_remaining": 121487, "prepared_update": true}
+PASS128 compressed correction complete without raising decompression limit

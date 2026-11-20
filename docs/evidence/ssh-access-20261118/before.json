@@ -1,0 +1,64 @@
+{
+  "at": "2026-11-18T11:25:53.735311+09:00",
+  "rules": {
+    "iptables": [
+      "-A ufw-user-input -s 221.159.164.177/32 -p tcp -m tcp --dport 22 -j ACCEPT"
+    ],
+    "ip6tables": []
+  },
+  "ufw": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n8080/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n22/tcp                     ALLOW IN    221.159.164.177           \n80/tcp                     ALLOW IN    Anywhere                   # listening-inventory-20261007\n443/tcp                    ALLOW IN    Anywhere                   # listening-inventory-20261007\n1883/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n1884/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n1935/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n3010/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5175/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5177/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n5180/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8001/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8070/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8081/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8443/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8554/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8883/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n8889/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n9996/tcp                   ALLOW IN    Anywhere                   # listening-inventory-20261007\n18080/tcp                  ALLOW IN    Anywhere                   # listening-inventory-20261007\n8000/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n8001/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n8189/udp                   ALLOW IN    Anywhere                   # mediamtx-20261007\n5432/tcp                   ALLOW IN    221.159.164.177           \n8080/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1883/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1884/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n1935/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n3010/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5175/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5177/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n5180/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8001/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8070/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8081/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8443/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8554/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8883/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8889/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n9996/tcp (v6)              ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n18080/tcp (v6)             ALLOW IN    Anywhere (v6)              # listening-inventory-20261007\n8000/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007\n8001/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007\n8189/udp (v6)              ALLOW IN    Anywhere (v6)              # mediamtx-20261007",
+  "protected": {
+    "files": {
+      "/etc/iptables/rules.v4": "582b665f4c5cbd1eb4f71f7744b0e7ce8388d9ef59bc52a3c8b29cf3d2af1f72",
+      "/etc/iptables/rules.v6": "75541cd963bd10bdbdc032c610edb6057752be9bc508d3fc126fe51cd4728f4c",
+      "/etc/default/ufw": "07db07bb07e5ac1388707b7c59dabfbce8ad06d5001236248fbf3f93b79c2ed7",
+      "/etc/ufw/ufw.conf": "254cb3ad232ca318498ed64ffaee96e2659e0e67228602b644b6357cd26c7e58",
+      "/etc/systemd/system/ufw.service.d/10-after-netfilter-persistent.conf": "c34b1a6c30501dfebf3df8fdb40ba39770ca21db2c2897ba9138fe4aff19cd46",
+      "/home/gps-dev/.ssh/authorized_keys": "ed467e6a600c2fc8f99b0a9207ecae69f5c6e03001d26e976f86770e28e234ed",
+      "/home/mmm/projects/gps-tracker-api/.env": "fab21aeaaef7a00f1283530e1136690c28d416d5d4d62b9968d4a6a6cdb3df55",
+      "/home/gps-dev/projects/gps-tracker-api/.env.dev": "9cd39266e935b927e300377ee8ebbbb40b843e990004fd15a50aeeb309150a0a",
+      "/etc/ssh/sshd_config": "efa601058a6c8e6553b213c13b12ff53b2d2927569cca4e54f1b3feaadde08a0",
+      "/etc/ssh/sshd_config.d/sshd_config.bak.20261106": "efa601058a6c8e6553b213c13b12ff53b2d2927569cca4e54f1b3feaadde08a0",
+      "/etc/ssh/sshd_config.d/sshd_config.bak.20260515-144639": "ab0d02156b1a8d266437a423c90c6da818e1afc80a1286af564ba43c0cc09e3d",
+      "/etc/ssh/sshd_config.d/sshd_config": "6d72c52bc822f726fbf18342a424759fc6c5c6260f51c1e94ab430957e08cec7"
+    },
+    "network": {
+      "iptables": "dfee2071de82d672051f1f81c4c9911c4a109f33af998fd3fca73258276b3be6",
+      "iptables:nat": "b6f19eb708981c6b754a7d7692ca3226f5e1283674d78977892c286228e475bf",
+      "iptables:raw": "c19715d3db8b75987de8c1e88adbcdd3becc66e1082837d7251d5f45b3896896",
+      "iptables:mangle": "75d8bd08a6b93000b85bdabab05e2ffdbd4a376842455a824061b0bb88060cb2",
+      "ip6tables": "a0db55de4a1fa3f8742ab32b476337e7ab117d74af2ba1e6d97005f603f1814b",
+      "ip6tables:nat": "c8eadf88e082c0dc0632e2471add801ea79c3176f925d53656b919a467fe3460",
+      "ip6tables:raw": "f2698129b5e71305974c4083a2a413dd28742665bde6bd706f122e6adbf9475e",
+      "ip6tables:mangle": "75d8bd08a6b93000b85bdabab05e2ffdbd4a376842455a824061b0bb88060cb2"
+    },
+    "sshd": {
+      "221.159.164.177": {
+        "port": "22",
+        "permitrootlogin": "yes",
+        "pubkeyauthentication": "yes",
+        "passwordauthentication": "no",
+        "kbdinteractiveauthentication": "no",
+        "authenticationmethods": "any"
+      },
+      "198.51.100.24": {
+        "port": "22",
+        "permitrootlogin": "yes",
+        "pubkeyauthentication": "yes",
+        "passwordauthentication": "no",
+        "kbdinteractiveauthentication": "no",
+        "authenticationmethods": "any"
+      }
+    },
+    "services": "MainPID=15410\nId=ssh.service\nActiveEnterTimestamp=Fri 2026-11-06 11:47:14 KST\n\nMainPID=816710\nId=fail2ban.service\nActiveEnterTimestamp=Wed 2026-11-11 14:59:47 KST\n\nMainPID=1833697\nId=gps-tracker-api.service\nActiveEnterTimestamp=Mon 2026-11-16 11:26:09 KST\n\nMainPID=1881726\nId=gps-tracker-api-dev.service\nActiveEnterTimestamp=Mon 2026-11-16 16:55:27 KST\n\nMainPID=15160\nId=shield-api.service\nActiveEnterTimestamp=Fri 2026-11-06 11:45:30 KST\n\nMainPID=893\nId=nginx.service\nActiveEnterTimestamp=Fri 2026-11-06 11:04:47 KST",
+    "ban_policy": {
+      "maxretry": "5",
+      "findtime": "600",
+      "bantime": "3600",
+      "ignoreip": "These IP addresses/networks are ignored:\n|- 127.0.0.0/8\n|- ::1\n`- 221.159.164.177"
+    }
+  },
+  "dev_authorized_keys": 6,
+  "dev_key_source_restrictions": 0,
+  "fail2ban_active": true
+}

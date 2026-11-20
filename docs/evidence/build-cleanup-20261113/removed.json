@@ -1,0 +1,68 @@
+[
+  {
+    "path": "gps-admin19-20261107/src/gps-tracker-web/node_modules",
+    "bytes": 87568384,
+    "inode": 3018939,
+    "device": 66309
+  },
+  {
+    "path": "gps-lifecycle21-20261107/src/gps-tracker-web/node_modules",
+    "bytes": 111849472,
+    "inode": 3035398,
+    "device": 66309
+  },
+  {
+    "path": "gps-provision22-20261108/src/gps-tracker-web/node_modules",
+    "bytes": 111845376,
+    "inode": 3043675,
+    "device": 66309
+  },
+  {
+    "path": "gps-provision22-20261108b/src/gps-tracker-web/node_modules",
+    "bytes": 4096,
+    "inode": 3045535,
+    "device": 66309
+  },
+  {
+    "path": "gps-provision22-20261108c/src/gps-tracker-web/node_modules",
+    "bytes": 4096,
+    "inode": 3046636,
+    "device": 66309
+  },
+  {
+    "path": "gps-provision22-20261108cumulative/src/gps-tracker-web/node_modules",
+    "bytes": 112001024,
+    "inode": 3048248,
+    "device": 66309
+  },
+  {
+    "path": "gps-provision22-20261108cumulative109/src/gps-tracker-web/node_modules",
+    "bytes": 112001024,
+    "inode": 3055261,
+    "device": 66309
+  },
+  {
+    "path": "gps-provision22-20261111query114/src/gps-tracker-web/node_modules",
+    "bytes": 87572480,
+    "inode": 3073865,
+    "device": 66309
+  },
+  {
+    "path": "gps-provision22-20261111query115/src/gps-tracker-web/node_modules",
+    "bytes": 87572480,
+    "inode": 3152756,
+    "device": 66309
+  },
+  {
+    "path": "gps-tracker/cache/target",
+    "bytes": 3264995328,
+    "inode": 2884356,
+    "device": 66309
+  },
+  {
+    "path": "gps-tracker/cache/target-pdf",
+    "bytes": 1433165824,
+    "inode": 2910555,
+    "device": 66309
+  }
+]

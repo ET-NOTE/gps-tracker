@@ -1,0 +1,8 @@
+{
+  "phase": "candidate",
+  "source": "/home/etcom-hub/build/gps-runtime126-20261115/src/ops",
+  "sha256": {
+    "crypto20b_transition.py": "a0cb5c0127b62b821f6a45f001a275d4db71cb2cb952374f95a1137ed40dbe19",
+    "location_query_statistics.py": "efd18eb0f8ff0c35e52577fb36b96445fe88554e498064ed2f1af131f62b598f"
+  }
+}

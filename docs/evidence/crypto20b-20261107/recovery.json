@@ -1,0 +1,181 @@
+{
+  "environment": "isolated synthetic only",
+  "schema": 104,
+  "groups": [
+    "encrypted location chunks compressed before conversion",
+    "API startup refuses active maintenance fence",
+    "interruption after committed DB batches retains fence and readable files; both keys preserved",
+    "all registered rows and files rekeyed; old key removed; business revisions and file hashes unchanged",
+    "conversion is restartable and idempotent after completed checkpoints",
+    "full Timescale backup restored without supplying keys to pg_restore; separate key recovers all logical fingerprints",
+    "restricted runtime API starts; worker decrypts safely; missing mode, maintenance, policy changes and DDL bypass fail"
+  ],
+  "rotation_seconds": 0.197,
+  "compressed_chunks": 3,
+  "rotation": {
+    "mode": "convert",
+    "ready_to_start_key_configured_api": true,
+    "database": {
+      "scope": "registered location fields; old WAL/backups need separate retirement",
+      "tables": {
+        "ai_analyses": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "device_audit_log": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "devices": {
+          "rows": 3,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "events": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fcm_outbox": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_expense_audit": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_expense_receipts": {
+          "rows": 13,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_site_versions": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_site_visits": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_sites": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_team_audit": {
+          "rows": 59,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_trip_assignment_audit": {
+          "rows": 7,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_trip_corrections": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "fleet_vehicle_audit": {
+          "rows": 3,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "geocode_cache": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "geofences": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "location_1hour": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "location_1min": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "location_5min": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "location_records": {
+          "rows": 1,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "privacy_company_submissions": {
+          "rows": 4,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "privacy_image_payloads": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        },
+        "rental_photos": {
+          "rows": 0,
+          "plaintext_rows": 0,
+          "converted": 0,
+          "decrypt_scan": "passed"
+        }
+      },
+      "enabled": true
+    },
+    "files": {
+      "files": 4,
+      "converted": 4,
+      "plaintext_files": 0,
+      "bytes": 224,
+      "content_hashes": [
+        "c86d117a2015e704a04ba1fc4a88b0728bd3815ee86d7be0d8fddbd7e5fdc92f",
+        "08d45aaafe87a8c097f817c2b15e264e7949e6f207314df247df8f564edfff59",
+        "1bb88d75bf4f20dfa60330763f9623414763204d70ff68f85006a723330a54cc",
+        "1bb88d75bf4f20dfa60330763f9623414763204d70ff68f85006a723330a54cc"
+      ]
+    },
+    "old_wal_snapshots_backups_erased": false,
+    "production_services_changed": false
+  },
+  "full_restore_fingerprints_equal": true,
+  "backup_bytes": 12193499,
+  "old_wal_backups_erased": false,
+  "api_sha256": "2651194a349d5f9b9c61eb9c77f87bc2124ee36909d963332574721645b3b766"
+}

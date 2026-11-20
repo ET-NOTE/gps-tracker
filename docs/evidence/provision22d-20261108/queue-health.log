@@ -1,0 +1,4 @@
+api ready at 172.28.0.3 (ledger on)
+PASS anonymous/user/password-only/handler/wrong-IP denied; officer/operator MFA accepted on encrypted runtime
+stopped (exit 0)
+PASS read-only independent probe detects stopped worker/missing provider/query failure; private output and runtime grants checked

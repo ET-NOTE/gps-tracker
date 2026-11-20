@@ -1,0 +1,50 @@
+{
+  "at": "2026-11-16T02:26:51.813Z",
+  "origin": "https://gps.serial.kr",
+  "checks": [
+    {
+      "path": "/auth/login",
+      "status": 200
+    },
+    {
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/auth/me/prefs",
+      "status": 200
+    },
+    {
+      "path": "/devices",
+      "status": 200
+    },
+    {
+      "path": "/privacy/requests/page",
+      "status": 200
+    },
+    {
+      "path": "/privacy/processing",
+      "status": 200
+    },
+    {
+      "path": "/privacy/collection",
+      "status": 200
+    },
+    {
+      "path": "/privacy/subject-mappings",
+      "status": 200
+    },
+    {
+      "path": "/privacy/provision-notices",
+      "status": 200
+    },
+    {
+      "path": "/corporate/subject-bindings?limit=1",
+      "status": 200
+    }
+  ],
+  "page_errors": [],
+  "api_failures": [],
+  "page_errors_count": 0,
+  "passed": true
+}

@@ -1,0 +1,53 @@
+{
+  "production_modified": false,
+  "schema": 112,
+  "checks": [
+    {
+      "name": "all three encrypted response shapes match113; other-account/auth rejection unchanged"
+    },
+    {
+      "name": "429, disconnect cancels DB, slot reuse, recovery",
+      "proxy_tls": false,
+      "route": "/gps-tracker/api/v1/devices/1/locations",
+      "cancel_seconds": 0.017725700978189707
+    },
+    {
+      "name": "429, disconnect cancels DB, slot reuse, recovery",
+      "proxy_tls": false,
+      "route": "/gps-tracker/api/v1/devices/1/locations/page",
+      "cancel_seconds": 0.018529072869569063
+    },
+    {
+      "name": "429, disconnect cancels DB, slot reuse, recovery",
+      "proxy_tls": false,
+      "route": "/gps-tracker/api/v1/devices/1/locations/aggregated",
+      "cancel_seconds": 0.018669086042791605
+    },
+    {
+      "name": "429, disconnect cancels DB, slot reuse, recovery",
+      "proxy_tls": true,
+      "route": "/gps-tracker/api/v1/devices/1/locations",
+      "cancel_seconds": 0.018642866984009743
+    },
+    {
+      "name": "429, disconnect cancels DB, slot reuse, recovery",
+      "proxy_tls": true,
+      "route": "/gps-tracker/api/v1/devices/1/locations/page",
+      "cancel_seconds": 0.01782394526526332
+    },
+    {
+      "name": "429, disconnect cancels DB, slot reuse, recovery",
+      "proxy_tls": true,
+      "route": "/gps-tracker/api/v1/devices/1/locations/aggregated",
+      "cancel_seconds": 0.019009186886250973
+    },
+    {
+      "name": "DB 20 second deadline returns408 and releases connection",
+      "seconds": 20.00767026282847
+    },
+    {
+      "name": "10 cancel/success cycles, no stale cancel or idle transaction"
+    }
+  ],
+  "passed": true
+}

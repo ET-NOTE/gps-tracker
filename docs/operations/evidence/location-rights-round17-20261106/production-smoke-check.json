@@ -1,0 +1,165 @@
+{
+  "run": {
+    "start": "2026-11-06 22:32:33 KST",
+    "end": "2026-11-06 22:32:35 KST",
+    "exit": 0,
+    "script": "ops/smoke_privacy_facts.py",
+    "script_sha256": "7405738254e53d9589d6266466dbca1b60dcb7a2ceaee74f859d9bb730d90e2e",
+    "script_commit": "08beb94869b84d21779ced834d0fc9caa8047f1c",
+    "run_from": "/home/mmm/gps-artifacts/privacy-facts-20261106-r1-smoke",
+    "staged_release_files_still_as_the_manifest_lists": true
+  },
+  "before_and_after": {
+    "before": "2026-11-06 22:32:19 KST",
+    "after": "2026-11-06 22:33:27 KST",
+    "compared": 29,
+    "identical": true,
+    "what": [
+      "accounts_upto_bound",
+      "credits_upto_bound",
+      "devices_and_sim_ownership",
+      "collection_policies",
+      "earlier_grants_1_2",
+      "company_links_and_staff",
+      "rows_fcm_outbox",
+      "rows_fcm_tokens",
+      "rows_fcm_revocations",
+      "rows_otp_codes",
+      "rows_payment_orders",
+      "rows_sim_topup_requests",
+      "rows_notification_settings",
+      "rows_subscriptions",
+      "rows_share_tokens",
+      "api",
+      "schema",
+      "unit_gps-pdf-render.socket",
+      "unit_gps-pdf-render-selftest.service",
+      "unit_gps-tracker",
+      "unit_pm2-mmm",
+      "unit_gps-tracker-api-dev",
+      "unit_shield-api",
+      "unit_nginx",
+      "unit_postgresql@14-main",
+      "unit_docker",
+      "timers",
+      "neighbours",
+      "uploads"
+    ],
+    "accounts_compared": "all 39 accounts that existed before (id <= 67): email, password hash, role, name, phones, account type, restriction",
+    "devices_compared": "all 18 devices: owner, device id, ICCID, IMSI, IMEI, enabled, authentication values",
+    "values": {
+      "company_links_and_staff": "0 links 11 staff",
+      "rows_fcm_outbox": "90",
+      "rows_fcm_tokens": "24",
+      "rows_fcm_revocations": "2",
+      "rows_otp_codes": "14",
+      "rows_payment_orders": "16",
+      "rows_sim_topup_requests": "5",
+      "rows_notification_settings": "6",
+      "rows_subscriptions": "13",
+      "rows_share_tokens": "0",
+      "schema": "99 web=/home/mmm/releases/privacy-facts-20261106-r1/web env=fab21aeaaef7",
+      "timers": "active active failed_units=[]"
+    },
+    "after_cleanup": "2026-11-06 22:37:15 KST (identical again; device reports 200 x13 since the start, cleanup timers ran successfully at 22:36)"
+  },
+  "device_reception": {
+    "reports_since_start": "200 x2 (one device reporting, about three a minute)",
+    "gps_5xx": 0,
+    "last_location_stored": "22:33:10 KST",
+    "api_error_lines": 0,
+    "api_lines_about_push_sms_or_mail": 0
+  },
+  "requests_made_by_the_smoke": {
+    "200": 22,
+    "202": 4,
+    "400": 4,
+    "401": 2,
+    "403": 1,
+    "404": 1,
+    "410": 3,
+    "5xx": 0
+  },
+  "left_as_the_record": {
+    "synthetic_accounts": {
+      "ids": [
+        68,
+        69,
+        70
+      ],
+      "closed": true,
+      "devices": 0,
+      "location_records": 0,
+      "share_links": 0,
+      "push_tokens": 0,
+      "orders": 0
+    },
+    "access_request": {
+      "id": 45,
+      "status": "cancelled",
+      "events": 5
+    },
+    "closure_requests": {
+      "ids": [
+        46,
+        47,
+        48
+      ],
+      "status": "in_review (closure executed; the request is not completed automatically)"
+    },
+    "grants": [
+      {
+        "id": 3,
+        "sections": [
+          "location_facts"
+        ],
+        "revoked": true,
+        "valid_for": "1 day"
+      },
+      {
+        "id": 4,
+        "sections": [],
+        "revoked": true,
+        "valid_for": "1 day",
+        "times_moved_for_the_expiry_check_and_put_back": true
+      }
+    ],
+    "grant_events_in_order": [
+      "3:issued",
+      "3:account_prepared",
+      "3:revoked",
+      "4:issued",
+      "4:account_prepared",
+      "4:account_prepared",
+      "4:revoked"
+    ],
+    "company_link_history": {
+      "68": [
+        "linked",
+        "unlinked"
+      ],
+      "69": [
+        "linked",
+        "unlinked"
+      ]
+    }
+  },
+  "removed": {
+    "synthetic_company_links": 2,
+    "synthetic_staff": 2,
+    "one_time_credential": "production staged directory and both build-host copies",
+    "build_host_rehearsal_copy": "/home/etcom-hub/build/gps-privacy-facts-20261106-r1-smoke2",
+    "records_removed_to_make_rollback_possible": 0
+  },
+  "kept_on_production": "/home/mmm/gps-artifacts/privacy-facts-20261106-r1-smoke: the script, its rehearsal record, smoke-checkpoint.json (identifiers of the run, no credential)",
+  "after_this": {
+    "scripted_rollback": "refused (1 grant uses the section)",
+    "previous_binary_on_schema_99": "does not start (rehearsed)",
+    "recovery": "keep schema 99: operator action, web only, or a corrected API build"
+  },
+  "not_covered": [
+    "download of the two earlier grants by their subjects (their accounts are closed; both grants were already expired and revoked)",
+    "the daily summary for an account with many included rows: the only account reporting in the last week has its device excluded, so the 0.39 s is for 0 rows",
+    "a PDF page through the processor service with this binary (isolation only)"
+  ]
+}
