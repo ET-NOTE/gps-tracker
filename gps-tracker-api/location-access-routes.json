@@ -499,9 +499,49 @@
     "class": "non_location",
     "reason": "Company role configuration, staff assignment or mutation acknowledgement; no location records."
   },
+  "fleet_notifications.rs GET /corporate/notification-results": {
+    "class": "non_location",
+    "reason": "Recent reservation and expense business status decisions; no coordinates, measurements or device telemetry."
+  },
+  "fleet_notifications.rs GET /corporate/notification-mail-preview": {
+    "class": "non_location",
+    "reason": "Development-only mail receipts for the authenticated recipient in the selected company; category and receipt date only."
+  },
   "fleet_permission_groups.rs PUT /corporate/permission-groups/assignment": {
     "class": "non_location",
     "reason": "Company role configuration, staff assignment or mutation acknowledgement; no location records."
+  },
+  "fleet_notifications.rs GET /corporate/notification-policy": {
+    "class": "non_location",
+    "reason": "Company notification preferences and delivery availability; no location data."
+  },
+  "fleet_notifications.rs PUT /corporate/notification-policy": {
+    "class": "non_location",
+    "reason": "Company notification preferences and delivery availability; no location data."
+  },
+  "fleet_reservations.rs GET /corporate/booking-hours": {
+    "class": "non_location",
+    "reason": "Company booking weekday and time limits; no location data."
+  },
+  "fleet_reservations.rs PUT /corporate/booking-hours": {
+    "class": "non_location",
+    "reason": "Company booking weekday and time limits; no location data."
+  },
+  "fleet_trip_purposes.rs GET /corporate/trip-purposes": {
+    "class": "non_location",
+    "reason": "Company-defined purpose labels and administrative usage counts; no recorded locations."
+  },
+  "fleet_trip_purposes.rs POST /corporate/trip-purposes": {
+    "class": "non_location",
+    "reason": "Company-defined purpose labels and administrative usage counts; no recorded locations."
+  },
+  "fleet_trip_purposes.rs PUT /corporate/trip-purposes/:id": {
+    "class": "non_location",
+    "reason": "Company purpose configuration; no recorded locations."
+  },
+  "fleet_trip_purposes.rs DELETE /corporate/trip-purposes/:id": {
+    "class": "non_location",
+    "reason": "Company purpose configuration; no recorded locations."
   },
   "fleet_reservations.rs GET /corporate/reservation-policy": {
     "class": "non_location",
@@ -667,6 +707,10 @@
     "class": "ledger",
     "reason": "Location or derived record response; durable intent before handler."
   },
+  "fleet_vehicles.rs GET /corporate/maintenance-history": {
+    "class": "non_location",
+    "reason": "Vehicle maintenance dates, types and notes scoped to the selected company and permitted vehicles."
+  },
   "fleet_vehicles.rs GET /corporate/vehicle-stats": {
     "class": "ledger",
     "reason": "Location or derived record response; durable intent before handler."
@@ -698,6 +742,10 @@
   "fleet_vehicles.rs POST /corporate/vehicles": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
+  },
+  "fleet_vehicles.rs POST /corporate/vehicles/:id/maintenance-history": {
+    "class": "non_location",
+    "reason": "Administrative registration of a completed maintenance event. No telemetry access."
   },
   "fleet_vehicles.rs PUT /corporate/vehicles/:id": {
     "class": "non_location",

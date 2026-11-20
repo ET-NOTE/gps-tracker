@@ -43,7 +43,8 @@ async function components({save=async()=>{},view='list'}={}) {
   useBusinessClock:()=>now,useStaff:()=>({data:[{id:3,name:'김운전자',active:true}]}),
   alertDialog:async args=>{alerts.push(args);},
  };
- const real={react:React,'react/jsx-runtime':jsx,'../api':{api:{annotateFleetVehicleTrip:(id,payload)=>write('trip',{id,...payload})}},
+ const companyPicker=({value,onChange})=>React.createElement('select',{'aria-label':'회사 운행 목적',value,onChange:e=>onChange(e.target.value)});
+ const real={react:React,'react/jsx-runtime':jsx,'./business/CompanyPurposePicker':{default:companyPicker},'../api':{api:{annotateFleetVehicleTrip:(id,payload)=>write('trip',{id,...payload})}},
   '../lib/business':{...business,businessDate:(value=now)=>business.businessDate(value)},'../lib/businessExport':businessExport,'../lib/ntsReport':ntsReport,'../lib/tripQuality':tripQuality,'../lib/tripOdometer':tripOdometer};
  const imports=new Map();
  for(const match of source.matchAll(/import\s+([^;]+?)\s+from\s+['"]([^'"]+)['"]/g)) {
@@ -61,6 +62,28 @@ function props(kind,onSaved=()=>{},onClose=()=>{}) {
  return kind==='trip'?{trip,staff:[{id:3,name:'김운전자'}],deviceId:2,onSaved,onClose}:
   {init:kind==='update'?booking:null,presetDate:'2026-11-17',devices:[vehicle],staff:[{id:3,name:'김운전자',active:true}],onSaved,onClose};
 }
+
+test('booking and trip editors persist and clear the company purpose independently from the tax purpose',async()=>{
+ for (const kind of ['trip','update']) {
+  const c=await components();
+  const original=props(kind);
+  if(kind==='trip') original.trip={...trip,annotation:{...trip.annotation,company_purpose_id:4}};
+  else original.init={...booking,company_purpose_id:4,report_purpose:'commute'};
+  for (const [selection,expected] of [['17',17],['',null]]) {
+   let view;
+   await act(async()=>{view=create(React.createElement(kind==='trip'?c.TripEditorModal:c.ReservationDialog,original));});
+   const picker=view.root.findByProps({'aria-label':'회사 운행 목적'});
+   assert.equal(picker.props.value,4);
+   await act(async()=>picker.props.onChange({target:{value:selection}}));
+   await act(async()=>button(view,'저장').props.onClick());
+   const call=c.calls.at(-1);
+   assert.equal((call.payload.body ?? call.payload).company_purpose_id,expected);
+   if(kind==='trip') assert.equal(call.payload.purpose,'business');
+   else assert.equal(call.payload.body.report_purpose,'commute');
+   await act(async()=>view.unmount());
+  }
+ }
+});
 
 for(const kind of ['trip','create','update']) {
  test(`${kind}: one write per rapid double click, with close and form locked until completion`,async()=>{

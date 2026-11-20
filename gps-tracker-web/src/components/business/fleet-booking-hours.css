@@ -1,0 +1,19 @@
+.fleet-operating-policy {display:grid;gap:16px;min-width:0}
+.fleet-operating-policy .fleet-policy-controls,.fleet-hours {padding:4px 20px 20px}
+.fleet-hours > p {margin:0 0 16px;color:var(--text-2)}
+.fleet-hours-form {display:grid;gap:16px}
+.fleet-hours-form fieldset {min-width:0;margin:0;padding:0;border:0}
+.fleet-hours-form legend {margin-bottom:8px;font-weight:650}
+.fleet-hours-presets,.fleet-hours-days,.fleet-hours-time {display:flex;flex-wrap:wrap;gap:8px}
+.fleet-hours-presets {margin-bottom:10px}
+.fleet-hours-presets button,.fleet-hours-days label {padding:7px 12px;border:1px solid var(--border,#dce2ea);border-radius:7px;background:var(--surface,#fff)}
+.fleet-hours .fleet-hours-presets button {font:inherit;font-size:14px;font-weight:600}
+.fleet-hours .fleet-hours-presets button[aria-pressed=true] {background:#eaf2ff;color:#245bae;border-color:#9cbfee}
+.fleet-hours-form label {display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.fleet-hours-form input[type=checkbox] {width:16px;height:16px;margin:0;accent-color:#326acb}
+.fleet-hours-time {margin-top:10px}
+.fleet-hours-time label {flex-direction:column;align-items:flex-start;font-size:14px}
+.fleet-hours-time input {min-width:112px;padding:7px;border:1px solid var(--border,#dce2ea);border-radius:6px}
+.fleet-hours-save {display:flex;justify-content:flex-end}
+.business-note.fleet-hours-warning {color:#934a0c}
+@media(max-width:599px){.fleet-operating-policy{gap:12px}.fleet-operating-policy .fleet-policy-controls,.fleet-hours{padding:4px 14px 14px}.fleet-hours-days label{padding:8px}.fleet-hours-form{gap:14px}}

@@ -12,6 +12,7 @@ pub mod device_commands;
 pub mod device_settings;
 pub mod fcm;
 pub mod fleet_sites;
+pub mod fleet_mail;
 pub mod geofence;
 pub mod hardware_auth;
 pub mod housekeeping;

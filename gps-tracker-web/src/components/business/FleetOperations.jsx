@@ -1,4 +1,5 @@
 import React,{useMemo,useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import Icon from '../Icon';
 import {Modal} from '../ui';
 import {ageString,classifyDevice} from '../../colors';
@@ -7,9 +8,12 @@ import {deviceBattery} from '../../lib/battery';
 import {fleetAssetLabel} from '../../lib/fleetAssets';
 import {maintenanceScheduleFields} from '../../lib/fleetAssetFilters';
 import {useBusinessClock} from './useBusinessData';
+import {CompletionEditor,MaintenanceHistory} from './FleetMaintenanceHistory';
 
-export default function FleetOperations({mode,assets,devices,canManage,openDetail,editSchedule}){
+export default function FleetOperations({mode,assets,devices,canManage,openDetail,editSchedule,refreshAssets}){
   const now=useBusinessClock(),today=businessDate(now),terminals=mode==='devices';
+  const client=useQueryClient();
+  const [completion,setCompletion]=useState(null),[historyRevision,setHistoryRevision]=useState(0);
   const [query,setQuery]=useState(''),[status,setStatus]=useState('all'),[vehicle,setVehicle]=useState('');
   const [picker,setPicker]=useState(null),[chosen,setChosen]=useState('');
   const current=useMemo(()=>{
@@ -36,7 +40,16 @@ export default function FleetOperations({mode,assets,devices,canManage,openDetai
     .filter(r=>matchingAsset(r.asset)&&contains(r.asset.name,r.asset.license_plate,r.asset.car_model,r.asset.department,r.label)
       &&(status==='all'&&r.date||status==='overdue'&&r.date&&r.date<today||status==='missing'&&!r.date))
     .sort((a,b)=>a.date.localeCompare(b.date)||fleetAssetLabel(a.asset).localeCompare(fleetAssetLabel(b.asset),'ko',{numeric:true}));
-  const options=terminals?[['all','전체'],['linked','연결'],['check','수신 확인'],['unlinked','미연결']]:[['all','등록 일정'],['overdue','기한 경과'],['missing','미등록']];
+  const options=terminals?[['all','전체'],['linked','연결'],['check','수신 확인'],['unlinked','미연결']]:[['all','등록 일정'],['overdue','기한 경과'],['missing','미등록'],['completed','완료 이력']];
+  const showHistory=!terminals&&status==='completed';
+  function savedCompletion(id){
+    setCompletion(null);
+    setVehicle(String(id));
+    setHistoryRevision(value=>value+1);
+    setStatus('completed');
+    client.invalidateQueries({queryKey:['fleet-maintenance-history']});
+    refreshAssets();
+  }
   function chooseVehicle(action){setPicker(action);setChosen(vehicle||String(assets[0]?.id||''));}
   function confirm(){
     const asset=assets.find(a=>String(a.id)===chosen);
@@ -47,7 +60,11 @@ export default function FleetOperations({mode,assets,devices,canManage,openDetai
   }
   return <div className="fleet-operations">
     <div className="fleet-operations-toolbar"><div className="fleet-operations-status" aria-label={terminals?'단말 상태':'일정 상태'}>{options.map(([id,label])=><button type="button" key={id} aria-pressed={status===id} onClick={()=>setStatus(id)}>{label}</button>)}</div>
-    {!terminals&&canManage&&assets.length>0&&<button type="button" className="business-button is-primary" onClick={()=>chooseVehicle('schedule')}><Icon name="plus" size={16}/>일정 등록</button>}</div>
+    {!terminals&&canManage&&assets.length>0&&<div className="fleet-maintenance-actions">
+      <button type="button" className={showHistory?'business-button':'business-button is-primary'} onClick={()=>chooseVehicle('schedule')}><Icon name="plus" size={16}/>일정 등록</button>
+      <button type="button" className={showHistory?'business-button is-primary':'business-button'} onClick={()=>setCompletion({})}>완료 이력 등록</button>
+    </div>}</div>
+    {showHistory?<MaintenanceHistory key={historyRevision} assets={assets} vehicle={vehicle} setVehicle={setVehicle}/>:<>
     <div className="fleet-operations-filters"><label><Icon name="search" size={16}/><input type="search" aria-label={terminals?'단말기 검색':'정비·보험 일정 검색'} placeholder={terminals?'단말기·차량 검색':'차량·일정 검색'} value={query} onChange={e=>setQuery(e.target.value)}/></label>
     <select aria-label="차량 선택" value={vehicle} onChange={e=>setVehicle(e.target.value)}><option value="">전체 차량</option>{assets.map(a=><option key={a.id} value={a.id}>{fleetAssetLabel(a)}</option>)}</select>
     {(vehicle||query||status!=='all')&&<button type="button" className="business-button" onClick={()=>{setVehicle('');setQuery('');setStatus('all');}}>초기화</button>}</div>
@@ -63,8 +80,11 @@ export default function FleetOperations({mode,assets,devices,canManage,openDetai
       <i><Icon name="clock" size={20}/></i><div><strong>{label}</strong><small>{asset.license_plate||asset.name||'차량 정보 미등록'}{asset.department?' · '+asset.department:''}</small></div>
       <time dateTime={date||undefined}>{date||'일정 미등록'}</time>{date&&<span className={'business-badge '+(date<today?'urgent':'info')}>{date<today?'기한 경과':'예정'}</span>}
       <button type="button" className="business-button" onClick={()=>canManage?editSchedule(asset):openDetail(asset.id)}>{canManage?'일정 수정':'차량 상세'}</button>
+      {date&&canManage&&<button type="button" className="business-button" onClick={()=>setCompletion({schedule:{asset,key,label,date}})}>완료 처리</button>}
     </article>)}</div>}
     {!(terminals?visibleTerminals:schedules).length&&<div className="business-empty"><strong>{terminals?'표시할 단말기가 없습니다.':'해당하는 일정이 없습니다.'}</strong></div>}
+    </>}
+    {completion&&<CompletionEditor assets={assets} initialVehicle={vehicle} schedule={completion.schedule} today={today} onClose={()=>setCompletion(null)} onSaved={savedCompletion} onConflict={refreshAssets}/>}
     {picker&&<Modal open title={picker==='schedule'?'일정을 등록할 차량':'단말기를 연결할 차량'} onClose={()=>setPicker(null)} footer={<div className="fleet-assets-filter-footer"><button type="button" className="business-button" onClick={()=>setPicker(null)}>취소</button><button type="button" className="business-button is-primary" disabled={!chosen} onClick={confirm}>다음</button></div>}>
       <label className="fleet-operations-vehicle-picker">차량<select value={chosen} onChange={e=>setChosen(e.target.value)}>{assets.map(a=><option key={a.id} value={a.id}>{fleetAssetLabel(a)}</option>)}</select></label>
     </Modal>}

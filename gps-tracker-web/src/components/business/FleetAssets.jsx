@@ -95,7 +95,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   const sortOptions=<><option value="name">차량 이름순</option><option value="created">최근 등록순</option><option value="distanceAsc">계기판 거리 낮은순</option><option value="distanceDesc">계기판 거리 높은순</option></>;
   const empty=!rows.length&&<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>{assets.length?'검색어나 필터를 변경해 주세요.':'단말기는 나중에 연결할 수 있습니다.'}</p></div>;
   return <div className="fleet-assets-list">
-    {mode!=='vehicles'?<FleetOperations mode={mode} assets={assets} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={setScheduleAsset}/>:mobile?<MobileFleetDirectory label="차량 목록" filterLabel="그룹" filterActive={advancedActive||group!=='all'||sort!=='name'}
+    {mode!=='vehicles'?<FleetOperations mode={mode} assets={assets} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={setScheduleAsset} refreshAssets={onChanged}/>:mobile?<MobileFleetDirectory label="차량 목록" filterLabel="그룹" filterActive={advancedActive||group!=='all'||sort!=='name'}
       searchLabel="등록 차량 검색" placeholder="차량·단말기 검색" query={query} onQuery={setQuery}
       count={countLabel} createLabel="차량 등록" onCreate={access.manage_vehicles?()=>setEdit({}):null}
       filters={<>

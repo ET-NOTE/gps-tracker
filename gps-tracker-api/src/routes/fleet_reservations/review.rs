@@ -64,6 +64,7 @@ pub(super) fn edited_status<'a>(
         || timestamp(&row["starts_at"]) != Some(input.starts_at)
         || timestamp(&row["ends_at"]) != Some(input.ends_at)
         || row["purpose"].as_str() != input.purpose.as_deref()
+        || input.company_purpose_id.is_some_and(|id| id != row["company_purpose_id"].as_i64())
         || row["report_purpose"].as_str() != input.report_purpose.as_deref()
         || row["note"].as_str() != input.note.as_deref();
     match (previous, requested) {
@@ -78,7 +79,7 @@ pub(super) fn edited_status<'a>(
         )),
     }
 }
-async fn company_lock(tx: &mut Transaction<'_, Postgres>, owner: i64) -> AppResult<()> {
+pub(super) async fn company_lock(tx: &mut Transaction<'_, Postgres>, owner: i64) -> AppResult<()> {
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
         .bind(format!("fleet-reservations:{owner}"))
         .execute(&mut **tx)

@@ -67,7 +67,7 @@ export function ntsTripReport(trips, { device, info, from, to, filtered = false 
     const basisNote = reading ? `계기판 차이 적용${recorded !== null && recorded !== reading.km ? ` · 운행기록 거리 참고 ${recorded.toFixed(2)} km` : ''}`
       : `계기판 미입력·확인 필요 · ${recorded === null ? '운행기록 거리 확인 필요' : '운행기록 거리 기준'}`;
     const note = [!valid && '미확정·종료·거리·일자 확인 필요 · 합계 제외', basisNote, !text(t.annotation?.driver_name) && '성명 미지정', !['business','commute','other'].includes(purpose) && '용무 미지정',
-      t.allocation_note, t.correction_id && `보정 #${t.correction_id}`, t.quality && qualityLabel(t), t.annotation?.purpose_note, t.annotation?.note, started && tripTimeRange(t)].filter(Boolean).join(' / ');
+      t.allocation_note, t.correction_id && `보정 #${t.correction_id}`, t.quality && qualityLabel(t), t.annotation?.company_purpose_name, t.annotation?.purpose_note, t.annotation?.note, started && tripTimeRange(t)].filter(Boolean).join(' / ');
     return {date: day ? `${day} (${'일월화수목금토'[new Date(`${day}T00:00:00Z`).getUTCDay()]})` : '', department:text(t.annotation?.driver_department), driver:text(t.annotation?.driver_name), before:reading?.before ?? '', after:reading?.after ?? '',
       km:value ?? '', commute:classified ? (purpose==='commute' ? value : 0) : '',
       business:classified ? (purpose==='business' ? value : 0) : '', note};

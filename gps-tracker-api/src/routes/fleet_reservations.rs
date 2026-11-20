@@ -13,9 +13,11 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::Value;
 mod review;
+mod hours;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/corporate/booking-hours", get(hours::get).put(hours::save))
         .route("/corporate/vehicle-reservations", get(list).post(create))
         .route(
             "/corporate/reservation-policy",
@@ -48,12 +50,14 @@ struct Input {
     starts_at: DateTime<Utc>,
     ends_at: DateTime<Utc>,
     purpose: Option<String>,
+    #[serde(default, deserialize_with = "super::corporate::trip_purposes::read_link")]
+    company_purpose_id: Option<Option<i64>>,
     report_purpose: Option<String>,
     note: Option<String>,
     status: Option<String>,
     updated_at: Option<DateTime<Utc>>,
 }
-const ROW:&str="SELECT to_jsonb(r)||jsonb_build_object('vehicle_name',v.name,'license_plate',v.license_plate,'driver_name',COALESCE(r.driver_name_snapshot,s.name),'vehicle_id',r.fleet_vehicle_id) FROM vehicle_reservations r JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id LEFT JOIN staff s ON s.id=r.driver_staff_id AND s.user_id=r.user_id";
+const ROW:&str="SELECT to_jsonb(r)||jsonb_build_object('vehicle_name',v.name,'license_plate',v.license_plate,'driver_name',COALESCE(r.driver_name_snapshot,s.name),'vehicle_id',r.fleet_vehicle_id,'company_purpose_name',p.name) FROM vehicle_reservations r JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id LEFT JOIN staff s ON s.id=r.driver_staff_id AND s.user_id=r.user_id LEFT JOIN fleet_trip_purposes p ON p.id=r.company_purpose_id AND p.owner_id=r.user_id";
 async fn list(
     State(state): State<AppState>,
     user: AuthUser,
@@ -180,6 +184,9 @@ async fn save(
         }
     }
     let actor = scope.as_ref().map_or(owner, |s| s.actor);
+    let previous_purpose = before.as_ref().and_then(|row| row["company_purpose_id"].as_i64());
+    let company_purpose_id = input.company_purpose_id.unwrap_or(previous_purpose);
+    super::corporate::trip_purposes::validate_link(&mut tx,owner,company_purpose_id,previous_purpose).await?;
     let guarded = before
         .as_ref()
         .is_some_and(|row| row["approval_required"] == true);
@@ -237,11 +244,11 @@ async fn save(
         }
     }
     let saved: i64 = if let Some(id) = id {
-        sqlx::query_scalar("UPDATE vehicle_reservations SET fleet_vehicle_id=$3,device_id=NULL,driver_staff_id=$4,starts_at=$5,ends_at=$6,purpose=$7,note=$8,status=$9,report_purpose=$10,alerted_at=CASE WHEN starts_at IS DISTINCT FROM $5 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,ended_alerted_at=CASE WHEN ends_at IS DISTINCT FROM $6 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,updated_at=clock_timestamp() WHERE id=$1 AND user_id=$2 RETURNING id")
-            .bind(id).bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).fetch_one(&mut *tx).await.map_err(booking_error)?
+        sqlx::query_scalar("UPDATE vehicle_reservations SET fleet_vehicle_id=$3,device_id=NULL,driver_staff_id=$4,starts_at=$5,ends_at=$6,purpose=$7,note=$8,status=$9,report_purpose=$10,company_purpose_id=$11,alerted_at=CASE WHEN starts_at IS DISTINCT FROM $5 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,ended_alerted_at=CASE WHEN ends_at IS DISTINCT FROM $6 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,updated_at=clock_timestamp() WHERE id=$1 AND user_id=$2 RETURNING id")
+            .bind(id).bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).bind(company_purpose_id).fetch_one(&mut *tx).await.map_err(booking_error)?
     } else {
-        sqlx::query_scalar("INSERT INTO vehicle_reservations(user_id,fleet_vehicle_id,driver_staff_id,starts_at,ends_at,purpose,note,status,report_purpose,submitted_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id")
-            .bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).bind(actor).fetch_one(&mut *tx).await.map_err(booking_error)?
+        sqlx::query_scalar("INSERT INTO vehicle_reservations(user_id,fleet_vehicle_id,driver_staff_id,starts_at,ends_at,purpose,note,status,report_purpose,submitted_by,company_purpose_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id")
+            .bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).bind(actor).bind(company_purpose_id).fetch_one(&mut *tx).await.map_err(booking_error)?
     };
     let mut row: Value = sqlx::query_scalar(&format!("{ROW} WHERE r.id=$1 AND r.user_id=$2"))
         .bind(saved)

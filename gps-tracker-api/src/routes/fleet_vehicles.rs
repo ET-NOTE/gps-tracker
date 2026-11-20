@@ -13,6 +13,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::{FromRow, Postgres, Transaction};
+mod maintenance;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -27,6 +28,8 @@ pub fn router() -> Router<AppState> {
             get(history).put(connect),
         )
         .route("/corporate/vehicles/:id/audit", get(audit))
+        .route("/corporate/maintenance-history", get(maintenance::list))
+        .route("/corporate/vehicles/:id/maintenance-history", axum::routing::post(maintenance::complete))
         .route("/corporate/vehicles/:id/trips", get(trips))
         .route(
             "/corporate/vehicles/:id/trips/annotation",

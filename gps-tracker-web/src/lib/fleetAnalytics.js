@@ -30,7 +30,8 @@ export function tripAnalyticsRows(trips, device) {
       date:businessDate(trip.started_at), amount:trip.distance_m / 1000,
       minutes:Number.isFinite(trip.duration_min) ? trip.duration_min : (Date.parse(trip.ended_at) - Date.parse(trip.started_at)) / 60000,
       vehicle, vehicleLabel, driver:String(annotation.driver_staff_id ?? (annotation.driver_name ? 'name:' + driverLabel : 'unassigned')), driverLabel,
-      category, categoryLabel:purposeLabel[category] || '미분류',
+      category:annotation.company_purpose_id==null?category:'company:'+annotation.company_purpose_id,
+      categoryLabel:annotation.company_purpose_name || purposeLabel[category] || '미분류',
       department:String(device.asset?.department_id ?? device.department ?? 'unassigned'), departmentLabel:device.department || '부서 미지정',
     };
   });

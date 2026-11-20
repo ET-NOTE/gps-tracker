@@ -215,6 +215,7 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
         ["corporate", "access"] | ["corporate", "organization"] => read,
         ["corporate", "organization", ..] => admin,
         ["corporate", "team-audit"] => read && admin,
+        ["corporate", "notification-policy" | "notification-results" | "notification-mail-preview"] => read,
         ["corporate", "sites"] | ["corporate", "site-groups"] => read || admin,
         ["corporate", "sites", _] | ["corporate", "site-groups", _] => admin,
         ["corporate", "site-visits"] => read,
@@ -233,6 +234,7 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
         ["corporate", "vehicles"] => read || admin,
         ["corporate", "vehicles", "bindings", "batch"] => method == Method::PUT && admin,
         ["corporate", "terminals"]
+        | ["corporate", "maintenance-history"]
         | ["corporate", "vehicle-stats"]
         | ["corporate", "report.xlsx"] => read,
         ["corporate", "vehicles", _, rest @ ..] => {
@@ -241,6 +243,7 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
                 [] => read || admin,
                 ["bindings"] | ["audit"] => admin,
                 ["trips"] => read,
+                ["maintenance-history"] => method == Method::POST && scope.permits("manage_vehicles"),
                 ["trip-rules", ..] => read || admin,
                 ["trips", "assign"] => method == Method::POST,
                 ["trips", "evidence"] => method == Method::POST,
@@ -252,7 +255,8 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
                 _ => false,
             }
         }
-        ["corporate", "reservation-policy"] => read,
+        ["corporate", "reservation-policy" | "booking-hours"] => read,
+        ["corporate", "trip-purposes", ..] => read || scope.permits("manage_team"),
         ["corporate", "vehicle-reservations", _, "history"] => read,
         ["corporate", "vehicle-reservations", _, "review"] => method == Method::POST && manager,
         ["corporate", "vehicle-reservations"] => read || method == Method::POST,

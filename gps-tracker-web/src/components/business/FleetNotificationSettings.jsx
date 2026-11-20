@@ -1,0 +1,72 @@
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../api';
+import { kstDateTime } from '../../lib/businessExport';
+import { notificationTopics } from '../../lib/fleetNotifications';
+import Icon from '../Icon';
+import { BusinessError, BusinessSection } from './BusinessWorkspace';
+import { useFleetAccess } from './FleetAccess';
+import './fleet-notifications.css';
+
+export const notificationPolicyKey = ['fleet-notification-policy'];
+export const notificationResultsKey = ['fleet-notification-results'];
+export function useNotificationPolicy(){
+  return useQuery({queryKey: notificationPolicyKey, queryFn: api.fleetNotificationPolicy});
+}
+
+function Switch({label,hint,icon,checked,onChange,disabled}) {
+  return <label className="fleet-notification-row">
+    {icon && <span aria-hidden="true" className="fleet-notification-symbol"><Icon name={icon} size={19}/></span>}
+    <span className="fleet-notification-label"><strong>{label}</strong><small>{hint}</small></span>
+    <input role="switch" aria-label={label} type="checkbox" checked={checked} disabled={disabled} onChange={e=>onChange(e.target.checked)} />
+  </label>;
+}
+
+function Mailbox() {
+  const mail=useQuery({queryKey:['fleet-notification-mail-preview'],queryFn:api.fleetNotificationMailbox,refetchInterval:5000});
+  return <BusinessSection title="개발 메일함" description="내 계정에 생성된 최근 이메일 5건">
+    {mail.isError ? <BusinessError onRetry={mail.refetch}>개발 메일함을 불러오지 못했습니다.</BusinessError>
+      : !mail.data?.length ? <p className="fleet-notification-empty" role="status">{mail.isPending?'불러오는 중…':'수신한 개발 메일이 없습니다.'}</p>
+      : <ul className="fleet-mail-preview">{mail.data.map(item=><li key={item.id}><strong>{notificationTopics.find(t=>t.key===item.category)?.label} 알림</strong><time dateTime={item.at}>{kstDateTime(item.at)}</time></li>)}</ul>}
+  </BusinessSection>;
+}
+
+export default function FleetNotificationSettings() {
+  const q=useNotificationPolicy(),cache=useQueryClient(),access=useFleetAccess();
+  const [message,setMessage]=useState('');
+  const save=useMutation({mutationFn:api.setFleetNotificationPolicy,
+    onSuccess:async (data,change)=>{
+      cache.setQueryData(notificationPolicyKey,data);
+      await cache.invalidateQueries({queryKey:notificationResultsKey});
+      const label = notificationTopics.find(t=>t.key===change.key)?.label || (change.key==='email'?'이메일':'앱 알림');
+      setMessage(label+' 수신을 '+(change.enabled?'켰습니다.':'껐습니다.'));
+    },
+    onError:async error=>{setMessage(error.message||'알림 설정을 저장하지 못했습니다.');await q.refetch();},
+  });
+  if(q.isError && !q.data) return <BusinessError onRetry={q.refetch}>회사 알림 설정을 불러오지 못했습니다.</BusinessError>;
+  if(!q.data) return <p role="status">회사 알림 설정을 불러오는 중…</p>;
+  const p=q.data,canEdit=access.role==='owner';
+  const configure=key=>({checked:p[key]===true,disabled:!canEdit||save.isPending,
+    onChange:enabled=>{setMessage('');save.mutate({key,enabled,revision:p.revision});}});
+  const selected=notificationTopics.filter(t=>p[t.key]).length;
+  return <div className="fleet-notification-settings">
+    <div className="fleet-notification-grid">
+      <BusinessSection title="업무 알림" description={canEdit?'변경 즉시 회사 전체에 적용됩니다.':'회사 소유자가 수신 항목을 설정합니다.'}>
+        {notificationTopics.map(({key,...topic})=><Switch key={key} {...topic} {...configure(key)}/>)}
+      </BusinessSection>
+      <div className="fleet-notification-side">
+        <BusinessSection title="수신 방법">
+          <Switch label="앱 알림" hint="상단의 운영 알림에서 확인합니다." {...configure('in_app')}/>
+          <Switch label="이메일" hint={p.email_mode==='preview'?'개발 메일함에서 확인합니다. 운행 메일은 예약 상태 변경 시 생성됩니다.':p.email_available?'등록 이메일로 보냅니다. 운행 메일은 예약 상태 변경 시 생성됩니다.':'메일 발송 서버 연결이 필요합니다.'}
+            {...configure('email')} disabled={!canEdit||save.isPending||(!p.email_available&&!p.email)}/>
+        </BusinessSection>
+        <BusinessSection title="현재 설정">
+          <dl className="fleet-notification-summary"><div><dt>선택한 업무 알림</dt><dd>{selected}개</dd></div>
+            <div><dt>수신 방법</dt><dd>{[p.in_app&&'앱 알림',p.email&&'이메일'].filter(Boolean).join(' · ')||'선택 없음'}</dd></div></dl>
+        </BusinessSection>
+        {p.email_mode==='preview'&&p.email&&<Mailbox/>}
+      </div>
+    </div>
+    {message&&<p className="fleet-notification-feedback" role={save.isError?'alert':'status'}>{message}</p>}
+  </div>;
+}

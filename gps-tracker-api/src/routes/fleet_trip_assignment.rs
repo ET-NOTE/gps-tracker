@@ -371,7 +371,7 @@ async fn assign(
     let from = p.from.and_hms_opt(0, 0, 0).unwrap().and_utc() - Duration::hours(9);
     let to = p.to.and_hms_opt(23, 59, 59).unwrap().and_utc() - Duration::hours(9);
     let trips = super::fleet_vehicles::allocated_trips(&state, s.owner, vehicle, from, to).await?;
-    let bookings:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(r) FROM vehicle_reservations r WHERE user_id=$1 AND fleet_vehicle_id=$2 AND starts_at<=$4 AND ends_at>=$3 AND status IN ('planned','in_progress','completed') ORDER BY id").bind(s.owner).bind(vehicle).bind(from).bind(to).fetch_all(&mut *tx).await?;
+    let bookings:Vec<Value>=sqlx::query_scalar("SELECT to_jsonb(r)||jsonb_build_object('available_purpose_id',p.id,'available_purpose_name',p.name) FROM vehicle_reservations r LEFT JOIN fleet_trip_purposes p ON p.id=r.company_purpose_id AND p.owner_id=r.user_id AND p.active WHERE r.user_id=$1 AND r.fleet_vehicle_id=$2 AND r.starts_at<=$4 AND r.ends_at>=$3 AND r.status IN ('planned','in_progress','completed') ORDER BY r.id").bind(s.owner).bind(vehicle).bind(from).bind(to).fetch_all(&mut *tx).await?;
     let rules: Vec<Value> = sqlx::query_scalar(RULES)
         .bind(s.owner)
         .bind(vehicle)
@@ -433,6 +433,12 @@ async fn assign(
             || p.mode == "manual" && p.change_driver)
             && (replace || old_driver.is_none());
         let old_purpose = t["annotation"]["purpose"].as_str().unwrap_or("unspecified");
+        let suggested = (choice.source["kind"] == "reservation")
+            .then(|| bookings.iter().find(|row| row["id"] == choice.source["id"])).flatten();
+        let company_id = t["annotation"]["company_purpose_id"].as_i64()
+            .or_else(|| suggested.and_then(|r| r["available_purpose_id"].as_i64()));
+        let company_name = t["annotation"]["company_purpose_name"].as_str()
+            .or_else(|| suggested.and_then(|r| r["available_purpose_name"].as_str()));
         let set_purpose = (p.mode == "suggest" && choice.purpose.is_some()
             || p.mode == "manual" && p.change_purpose)
             && (replace || old_purpose == "unspecified");
@@ -474,6 +480,7 @@ async fn assign(
         };
         if driver == old_driver
             && purpose == old_purpose
+            && company_id == t["annotation"]["company_purpose_id"].as_i64()
             && note == t["annotation"]["purpose_note"].as_str()
         {
             row["reason"] = json!("이미 입력됨 · 변경 없음");
@@ -493,7 +500,7 @@ async fn assign(
         };
         row["status"] = json!("ready");
         row["source"] = choice.source;
-        row["after"] = json!({"driver_staff_id":driver,"driver_name":name,"purpose":purpose,"purpose_note":note});
+        row["after"] = json!({"driver_staff_id":driver,"driver_name":name,"purpose":purpose,"purpose_note":note,"company_purpose_id":company_id,"company_purpose_name":company_name});
         plan.push(row);
     }
     let token = p.preview_token.take();
@@ -515,8 +522,10 @@ async fn assign(
             let k = &row["key"];
             let after = &row["after"];
             let source = json!({"vehicle_id":vehicle,"source":row["source"],"driver_staff_id":after["driver_staff_id"],"purpose":after["purpose"]});
-            sqlx::query("INSERT INTO trip_annotations(device_id,user_id,trip_started_at,driver_staff_id,purpose,purpose_note,assignment_source) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(device_id,user_id,trip_started_at) DO UPDATE SET driver_staff_id=EXCLUDED.driver_staff_id,purpose=EXCLUDED.purpose,purpose_note=EXCLUDED.purpose_note,assignment_source=EXCLUDED.assignment_source,updated_at=clock_timestamp()")
-    .bind(k["source_device_id"].as_i64()).bind(s.owner).bind(date(&k["trip_started_at"])).bind(after["driver_staff_id"].as_i64()).bind(after["purpose"].as_str()).bind(after["purpose_note"].as_str()).bind(source).execute(&mut *tx).await?;
+            let company_id = after["company_purpose_id"].as_i64();
+            super::corporate::trip_purposes::validate_link(&mut tx,s.owner,company_id,row["before"]["company_purpose_id"].as_i64()).await?;
+            sqlx::query("INSERT INTO trip_annotations(device_id,user_id,trip_started_at,driver_staff_id,purpose,purpose_note,assignment_source,company_purpose_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(device_id,user_id,trip_started_at) DO UPDATE SET driver_staff_id=EXCLUDED.driver_staff_id,purpose=EXCLUDED.purpose,purpose_note=EXCLUDED.purpose_note,assignment_source=EXCLUDED.assignment_source,company_purpose_id=EXCLUDED.company_purpose_id,updated_at=clock_timestamp()")
+    .bind(k["source_device_id"].as_i64()).bind(s.owner).bind(date(&k["trip_started_at"])).bind(after["driver_staff_id"].as_i64()).bind(after["purpose"].as_str()).bind(after["purpose_note"].as_str()).bind(source).bind(company_id).execute(&mut *tx).await?;
         }
         tx.commit().await?;
         Ok(Json(json!({"applied":ready,"skipped":plan.len()-ready})))

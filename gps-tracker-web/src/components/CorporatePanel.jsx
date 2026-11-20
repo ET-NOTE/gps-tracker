@@ -12,6 +12,7 @@ import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
 import FleetRecordMetrics from './business/FleetRecordMetrics';
 import ReservationApproval from './business/ReservationApproval';
+import CompanyPurposePicker from './business/CompanyPurposePicker';
 import StaffTab from './business/FleetPeople';
 import {CompanySubjectMappings} from './SubjectProvision';
 import FleetSites from './business/FleetSites';
@@ -19,6 +20,9 @@ import FleetExpenses from './business/FleetExpenses';
 import FleetAnalytics from './business/FleetAnalytics';
 import FleetLive from './business/FleetLive';
 import FleetReservationPolicy from './business/FleetReservationPolicy';
+import FleetTripPurposes from './business/FleetTripPurposes';
+import FleetNotificationSettings from './business/FleetNotificationSettings';
+import FleetBookingHours from './business/FleetBookingHours';
 import {TripAssignmentModal,TripRulesModal,TripAssignmentHistory} from './business/FleetTripAssignments';
 import {tripAssignmentKey,canAssignTrip} from '../lib/tripAssignments';
 import {FleetAccountScope,useFleetAccess,staffCanDrive} from './business/FleetAccess';
@@ -102,7 +106,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const sectionNavigation = {
     staff: [['users','사용자 목록'],['organization','부서·직책'],['permissions','권한 관리'],...(access.manage_team?[['audit','변경 이력']]:[])],
     sites: [['sites','지점 목록'],['visits','방문 기록'],...(access.manage_team?[['groups','그룹 관리']]:[])],
-    settings: [['policy','운영 정책'],['company','회사 정보'],['subscription','이용권 관리']],
+    settings: [['purposes','운행 목적'],['policy','운영 정책'],['notifications','알림 설정'],['company','회사 정보'],['subscription','이용권 관리']],
     analytics: [['trips','운행 통계'],['costs','지출 통계']],
   };
   const [request, setRequest] = useState(null);
@@ -150,8 +154,10 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
         : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
         : !subscription.data.active ? <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} report />
         : tab==='analytics' ? <FleetAnalytics key="trips" section="trips" initialPeriod={analyticsPeriod} devices={devices} onReport={report}/> : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} initialFilter={reportFilter} /> : <MonthlyReportTab devices={devices} />}</>}
-    {tab==='settings' && sectionTabs.settings==='policy' && <FleetReservationPolicy/>}
-    {tab === 'settings' && sectionTabs.settings!=='policy' && <BusinessSettings activeTab={sectionTabs.settings} onTab={selectSection} hideNavigation company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
+    {tab==='settings' && sectionTabs.settings==='policy' && <div className="fleet-operating-policy"><FleetReservationPolicy/><FleetBookingHours/></div>}
+    {tab==='settings' && sectionTabs.settings==='purposes' && <FleetTripPurposes access={access}/>}
+    {tab==='settings' && sectionTabs.settings==='notifications' && <FleetNotificationSettings/>}
+    {tab === 'settings' && ['company','subscription'].includes(sectionTabs.settings) && <BusinessSettings activeTab={sectionTabs.settings} onTab={selectSection} hideNavigation company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
     </>}
   </BusinessWorkspace>;
 }
@@ -309,6 +315,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
 
   // 추가 필터 적용된 trip 목록 — 운전자/용무/최소시간 AND.
   const currentTripView=tripViews.find(v=>v.id===tripView);
+  const companyPurposes=new Map((trips||[]).filter(t=>t.annotation?.company_purpose_id!=null).map(t=>['company:'+t.annotation.company_purpose_id,t.annotation.company_purpose_name]));
   const selectTrips=React.useCallback(rows=>filterTrips(rows,{driver:driverFilter,purpose:purposeFilter,minHours})
     .filter(t=>(!onlyReview||!reportIncluded(t))&&(!onlyIncomplete||tripNeedsDetails(t))&&(!currentTripView||currentTripView.matches(t))),
   [driverFilter,purposeFilter,minHours,onlyReview,onlyIncomplete,currentTripView]);
@@ -320,7 +327,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
   const toggleTrip=t=>{setAssignmentStatus('');setSelected(previous=>{const next=new Set(previous),key=tripAssignmentKey(t);if(next.has(key))next.delete(key);else if(next.size<100)next.add(key);return next;});};
   const completeness = trips ? tripCompleteness(trips) : null;
   const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
-    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}${onlyIncomplete?' · 미작성만':''}${currentTripView?' · '+currentTripView.label:''}`,
+    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${companyPurposes.get(purposeFilter) || purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}${onlyIncomplete?' · 미작성만':''}${currentTripView?' · '+currentTripView.label:''}`,
   }) : null;
   const csvData = filteredTrips ? ntsTripReport(filteredTrips, {device,info,from,to,
     filtered: tripView!=='all' || onlyIncomplete || onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || Number(minHours) > 0,
@@ -418,6 +425,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
             </select></label>
             <label>용무<select aria-label="용무 필터" value={filterDraft.purpose} onChange={e => setFilterDraft(d=>({...d,purpose:e.target.value}))}>
               <option value="all">용무 전체</option><option value="commute">출퇴근</option><option value="business">업무</option><option value="other">기타</option><option value="unspecified">미지정</option>
+              {companyPurposes.size>0&&<optgroup label="회사 운행 목적">{Array.from(companyPurposes,([id,name])=><option key={id} value={id}>{name}</option>)}</optgroup>}
             </select></label>
             <label>최소 운행시간 (시간)<input aria-label="최소 운행시간" type="number" placeholder="제한 없음" value={filterDraft.minHours} step="0.5" min="0" onChange={e => setFilterDraft(d=>({...d,minHours:e.target.value}))}/></label>
             {draftHoursInvalid&&<p role="alert">최소 운행시간은 0 이상의 숫자로 입력해 주세요.</p>}
@@ -606,7 +614,7 @@ function TripRow({ t, date, dailyKm, onEdit, onEvidence, selected, onSelect, sel
           <p>{!!sites?.length&&<strong>{sites.map(s=>s.name).join(' · ')}</strong>}{address||(lat!=null&&lng!=null?`${lat.toFixed(5)}, ${lng.toFixed(5)}`:!sites?.length?'위치 정보 없음':'')}</p>
         </li>)}
       </ol>
-      <div className="trip-mobile-metrics"><span>{typeof minutes==='number'&&Number.isFinite(minutes)&&`${minutes}분 · `}{PURPOSE_LABEL[purpose]||'미지정'}</span><strong>{km}{km!=='—'&&<small> km</small>}</strong></div>
+      <div className="trip-mobile-metrics"><span>{typeof minutes==='number'&&Number.isFinite(minutes)&&`${minutes}분 · `}{[PURPOSE_LABEL[purpose]||'미지정',ann.company_purpose_name].filter(Boolean).join(' · ')}</span><strong>{km}{km!=='—'&&<small> km</small>}</strong></div>
       <details className="trip-mobile-more"><summary>{status}{!reportIncluded(t)&&<small>합계 제외</small>}<span>운행 상세</span></summary>
         <dl>{[['용무 설명',purpose==='other'&&ann.purpose_note],['계기판',odometerSummary(ann)],['거리 배분',t.allocation_note],['유류',fuel],['출발 좌표',t.start_lat!=null&&t.start_lng!=null&&`${t.start_lat.toFixed(5)}, ${t.start_lng.toFixed(5)}`],['도착 좌표',t.end_lat!=null&&t.end_lng!=null&&`${t.end_lat.toFixed(5)}, ${t.end_lng.toFixed(5)}`]].filter(([,value])=>value).map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
         <div className="trip-mobile-actions"><BusinessButton disabled={!onEvidence} onClick={onEvidence}>근거</BusinessButton><BusinessButton icon="edit" disabled={editDisabled} onClick={onEdit}>용무·운전자 수정</BusinessButton></div>
@@ -621,6 +629,7 @@ function TripRow({ t, date, dailyKm, onEdit, onEvidence, selected, onSelect, sel
       <td style={st.td}>{time}</td><td style={st.td}>{status}{!reportIncluded(t)&&<small style={{display:"block"}}>합계 제외</small>}</td>
       <td style={st.td}>
         {PURPOSE_LABEL[purpose] || '미지정'}
+        {ann.company_purpose_name&&<div className="corporate-trip-note">{ann.company_purpose_name}</div>}
         {purpose === 'other' && ann.purpose_note && (
           <div className="corporate-trip-note" style={{ fontSize: 10, color: 'var(--text-3)' }}>{ann.purpose_note}</div>
         )}
@@ -673,6 +682,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
   const ann = trip.annotation || {};
   const [purpose, setPurpose]      = useState(ann.purpose || 'unspecified');
   const [purposeNote, setPurposeNote] = useState(ann.purpose_note || '');
+  const [companyPurposeId,setCompanyPurposeId]=useState(ann.company_purpose_id??'');
   const access=useFleetAccess();
   const [driverId, setDriverId]    = useState(ann.driver_staff_id || (!access.manage_reports?access.staff_id:''));
   const [fuelLiters, setFuelLiters] = useState(ann.fuel_liters != null ? String(ann.fuel_liters) : '');
@@ -700,6 +710,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
         expected_version: ann.updated_at || "new",
         purpose,
         purpose_note: purpose === 'other' ? (purposeNote.trim() || null) : null,
+        company_purpose_id: companyPurposeId ? Number(companyPurposeId) : null,
         driver_staff_id: driverId ? parseInt(driverId, 10) : null,
         fuel_liters: fuelLiters.trim() ? parseFloat(fuelLiters) : null,
         fuel_cost:   ann.fuel_expense_id ? null : fuelCost.trim() ? parseInt(fuelCost, 10) : null,
@@ -756,6 +767,7 @@ function TripEditorModal({ trip, staff, deviceId, onClose, onSaved }) {
             )}
           </Field>
 
+          <CompanyPurposePicker value={companyPurposeId} onChange={setCompanyPurposeId} initialId={ann.company_purpose_id} initialName={ann.company_purpose_name}/>
           {/* 운전자 */}
           <Field label="운전자">
             {staff.length === 0 ? (
@@ -874,6 +886,9 @@ function bookingsOn(list, day) {
   return list.filter(r=>Date.parse(r.starts_at)<start+86400_000 && Date.parse(r.ends_at)>start);
 }
 
+function bookingPurpose(row) {
+  return [row.company_purpose_name,row.purpose].filter(Boolean).join(' · ');
+}
 function ReservationsTab({ devices, request,requestsOnly=false }) {
   const access=useFleetAccess(),canWrite=access.write_reservations!==false;
   const [statusFilter, setStatusFilter] = useState(requestsOnly?'pending':'active');
@@ -930,7 +945,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
   const { data: allReservations, isLoading: loading, error: qError, refetch } = useReservations(resvParams, {enabled:!invalidPeriod,refetchInterval: 60_000});
   const searched = allReservations?.filter(r => (!requestsOnly||(r.approval_required&&r.can_review))&&(!vehicleFilter||String(r.vehicle_id)===vehicleFilter) &&
     (!driverFilter||(driverFilter==='unassigned'?r.driver_staff_id==null:String(r.driver_staff_id)===driverFilter)) &&
-    [r.vehicle_name,r.device_name,r.license_plate,r.driver_name,r.purpose,r.note].join(' ').toLocaleLowerCase('ko-KR').includes(query.trim().toLocaleLowerCase('ko-KR')));
+    [r.vehicle_name,r.device_name,r.license_plate,r.driver_name,bookingPurpose(r),r.note].join(' ').toLocaleLowerCase('ko-KR').includes(query.trim().toLocaleLowerCase('ko-KR')));
   const list = searched?.filter(r => viewMode !== 'list' || statusFilter === 'all' || (statusFilter === 'active' ? ['planned', 'in_progress'].includes(r.status) : r.status === statusFilter));
   const error = qError?.message || null;
 
@@ -943,7 +958,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
   const report=shown&&{
     title:'차량 예약',filename:`차량_예약_${businessDate(resvParams.from)}_${businessDate(Date.parse(resvParams.to)-1)}`,
     columns:[['vehicle','차량'],['plate','차량번호'],['driver','운전자'],['start','시작 일시'],['end','종료 일시'],['purpose','목적'],['note','메모'],['status','상태']].map(([key,label])=>({key,label})),
-    rows:shown.map(r=>({vehicle:r.vehicle_name||r.device_name,plate:r.license_plate,driver:r.driver_name,start:kstDateTime(r.starts_at),end:kstDateTime(r.ends_at),purpose:r.purpose,note:r.note,status:RESV_STATUS[r.status]?.label||r.status})),
+    rows:shown.map(r=>({vehicle:r.vehicle_name||r.device_name,plate:r.license_plate,driver:r.driver_name,start:kstDateTime(r.starts_at),end:kstDateTime(r.ends_at),purpose:bookingPurpose(r),note:r.note,status:RESV_STATUS[r.status]?.label||r.status})),
   };
   return (
     <div className="corporate-reservations">
@@ -1031,7 +1046,7 @@ function ReservationRow({r,onEdit,onDelete,readOnly=false}) {
     <td data-label="상태"><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>
     <td data-label="차량"><strong>{r.vehicle_name||r.device_name||'차량'}</strong>{r.license_plate&&<small>{r.license_plate}</small>}</td>
     <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="시작">{kstDateTime(r.starts_at)}</td><td data-label="종료">{kstDateTime(r.ends_at)}</td>
-    <td data-label="목적·메모"><span>{r.purpose||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
+    <td data-label="목적·메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
     <td><div className="corporate-reservation-row-actions"><BusinessButton onClick={onEdit} aria-label={`예약 ${r.id} ${detailsOnly?'상세':'상세·수정'}`}>{detailsOnly?'상세':'상세·수정'}</BusinessButton>{!readOnly&&!['cancelled','rejected'].includes(r.status)&&<BusinessButton onClick={onDelete} aria-label={`예약 ${r.id} 취소`}>취소</BusinessButton>}</div></td>
   </tr>;
 }
@@ -1116,7 +1131,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
                   <button type="button" className="corporate-calendar-event" key={r.id} aria-haspopup="dialog"
                     onClick={event => showBooking(event, r)} style={{
                     background: s.bg, color: s.color,
-                  }} title={`${r.license_plate || r.device_name || ''} · ${r.purpose || ''} · ${s.label}`}>
+                  }} title={`${r.license_plate || r.device_name || ''} · ${bookingPurpose(r)} · ${s.label}`}>
                     {['pending','rejected'].includes(r.status)&&<strong>{s.label} · </strong>}
                     {[r.license_plate,r.vehicle_name].filter(Boolean).join(' · ') || '차량'}
                   </button>
@@ -1153,7 +1168,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
           <span className="corporate-reservation-badge" style={{ color: state.color, background: state.bg }}>{state.label}</span>
           <span className="corporate-calendar-booking-vehicle">{vehicleLabel}</span>
           <span className="corporate-calendar-booking-driver">사용자 {r.driver_name || '미지정'}</span>
-          {r.purpose?.trim() && <span className="corporate-calendar-booking-purpose">목적 {r.purpose.trim()}</span>}
+          {bookingPurpose(r) && <span className="corporate-calendar-booking-purpose">목적 {bookingPurpose(r)}</span>}
         </button></li>;
       })}</ul> : <BusinessEmpty title="이 날짜에 표시할 예약이 없습니다."/>}
     </Modal>}
@@ -1191,6 +1206,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
   const [endsAt,   setEndsAt]   = useState(init ? isoToLocal(init.ends_at)   : isoToLocal(new Date(defaultStart().getTime() + 3600_000).toISOString()));
   const [purpose,  setPurpose]  = useState(init?.purpose ?? '');
   const [reportPurpose,setReportPurpose]=useState(init?.report_purpose || '');
+  const [companyPurposeId,setCompanyPurposeId]=useState(init?.company_purpose_id??'');
   const [note,     setNote]     = useState(init?.note ?? '');
   const [status,   setStatus]   = useState(init?.status ?? 'planned');
   // (F2-c) mutations — 성공 시 자동 invalidate.
@@ -1221,6 +1237,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
       ends_at:         end,
       purpose:         purpose.trim() || null,
       report_purpose: reportPurpose || null,
+      company_purpose_id: companyPurposeId ? Number(companyPurposeId) : null,
       note:            note.trim() || null,
       status,
       ...(init?.updated_at?{updated_at:init.updated_at}:{}),
@@ -1265,6 +1282,8 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
         </FormField>
 
         <p className="business-note">예약 일시는 한국시간(KST) 기준입니다.</p>
+        {!locked && <FleetBookingHours hintOnly start={startsAt} end={endsAt}
+          checkInterval={!init || init.vehicle_id!==Number(deviceId) || isoToLocal(init.starts_at)!==startsAt || isoToLocal(init.ends_at)!==endsAt}/>}
         <div className="business-datetime-fields">
           <FormField label="시작">
             <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} />
@@ -1277,6 +1296,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
         <FormField label="운행기록부 용무 (선택)">
           <Select value={reportPurpose} onChange={e=>setReportPurpose(e.target.value)}><option value="">미지정</option><option value="commute">출퇴근</option><option value="business">업무</option><option value="other">기타</option></Select>
         </FormField>
+        <CompanyPurposePicker value={companyPurposeId} onChange={setCompanyPurposeId} initialId={init?.company_purpose_id} initialName={init?.company_purpose_name}/>
         <FormField label="예약 목적">
           <input value={purpose} onChange={e => setPurpose(e.target.value)}
             placeholder="거래처 방문, 외근..." />

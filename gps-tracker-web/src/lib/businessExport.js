@@ -18,7 +18,8 @@ export function filterTrips(trips, { driver = 'all', purpose = 'all', minHours =
   const minutes = Math.max(0, num(minHours) * 60);
   return trips.filter(t => (driver === 'all' || (driver === 'unassigned'
     ? t.annotation?.driver_staff_id == null && !t.annotation?.driver_name?.trim() : String(t.annotation?.driver_staff_id) === String(driver)))
-    && (purpose === 'all' || (t.annotation?.purpose || 'unspecified') === purpose)
+    && (purpose === 'all' || (t.annotation?.purpose || 'unspecified') === purpose
+      || (t.annotation?.company_purpose_id!=null && purpose==='company:'+t.annotation.company_purpose_id))
     && num(t.duration_min) >= minutes);
 }
 
@@ -42,7 +43,7 @@ export function monthDateBounds(ym) {
 export function tripReport(trips, { device, info, from, to, filterText = '' }) {
   const rows = trips.map(t => ({
     start: kstDateTime(t.started_at), end: kstDateTime(t.ended_at) || qualityLabel(t),
-    minutes: money(t.duration_min), purpose: purposeLabel[t.annotation?.purpose || 'unspecified'],
+    minutes: money(t.duration_min), purpose: [purposeLabel[t.annotation?.purpose || 'unspecified'],t.annotation?.company_purpose_name].filter(Boolean).join(' · '),
     origin: t.start_address || coordinates(t.start_lat, t.start_lng),
     destination: t.end_address || coordinates(t.end_lat, t.end_lng),
     originCoord: coordinates(t.start_lat,t.start_lng), destinationCoord: coordinates(t.end_lat,t.end_lng),

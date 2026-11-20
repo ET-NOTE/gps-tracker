@@ -21,10 +21,13 @@ use sqlx::{Postgres, Transaction};
 mod staff_import;
 #[path = "fleet_permission_groups.rs"]
 mod permission_groups;
+#[path = "fleet_notifications.rs"]
+mod notifications;
 
 pub fn router() -> Router<AppState> {
     Router::new()
         .merge(permission_groups::router())
+        .merge(notifications::router())
         .route("/corporate/workspaces", get(workspaces))
         .route("/corporate/join", post(join))
         .route("/corporate/access", get(access))

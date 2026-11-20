@@ -59,6 +59,8 @@ impl IntoResponse for AppError {
                     "internal error".to_string(),
                 )
             }
+            AppError::Database(e) if e.as_database_error().and_then(|e| e.constraint())==Some("fleet_booking_hours_interval") =>
+                (StatusCode::BAD_REQUEST, "회사에서 허용한 요일과 시간 안에서 예약해 주세요. 예약 시간은 한국시간 기준입니다.".to_owned()),
             AppError::Database(e) => {
                 tracing::error!("database: {:#}", e);
                 (

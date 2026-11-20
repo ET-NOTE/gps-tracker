@@ -28,9 +28,12 @@ use crate::{
 };
 
 const SUB_KIND: &str = "corporate_report";
+#[path = "fleet_trip_purposes.rs"]
+pub(super) mod trip_purposes;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .merge(trip_purposes::router())
         // 회사 정보
         .route("/corporate/info", get(get_info).put(put_info))
         // 운행
@@ -162,6 +165,10 @@ pub(super) struct TripAnnotation {
     trip_started_at: DateTime<Utc>,
     purpose: String,
     purpose_note: Option<String>,
+    #[serde(default)]
+    company_purpose_id: Option<i64>,
+    #[serde(default)]
+    company_purpose_name: Option<String>,
     driver_staff_id: Option<i64>,
     driver_name: Option<String>,
     driver_department: Option<String>,
@@ -178,6 +185,14 @@ pub(super) struct TripAnnotation {
     #[serde(default)]
     odometer_after_km: Option<f64>,
     note: Option<String>,
+}
+
+impl TripAnnotation {
+    fn report_note(&self) -> Option<String> {
+        let parts = [self.company_purpose_name.as_deref(), self.note.as_deref()]
+            .into_iter().flatten().filter(|s| !s.is_empty()).collect::<Vec<_>>();
+        (!parts.is_empty()).then(|| parts.join(" / "))
+    }
 }
 
 async fn list_trips(
@@ -701,12 +716,14 @@ pub(super) async fn load_annotations(
 ) -> AppResult<Vec<TripAnnotation>> {
     let rows = sqlx::query_as::<_, TripAnnotation>(
         r#"SELECT a.id, a.trip_started_at, a.purpose, a.purpose_note,
+                  a.company_purpose_id,p.name AS company_purpose_name,
                   a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
                   CASE WHEN a.fuel_expense_id IS NULL THEN a.fuel_cost WHEN e.status='approved' THEN e.amount_krw END AS fuel_cost,
                   a.fuel_expense_id,e.status AS fuel_expense_status,a.note,a.updated_at,a.assignment_source,
                   a.odometer_before_km::FLOAT8 AS odometer_before_km,a.odometer_after_km::FLOAT8 AS odometer_after_km
              FROM trip_annotations a
+        LEFT JOIN fleet_trip_purposes p ON p.owner_id=a.user_id AND p.id=a.company_purpose_id
         LEFT JOIN fleet_expenses e ON e.id=a.fuel_expense_id AND e.owner_id=a.user_id
         LEFT JOIN staff s ON s.id = a.driver_staff_id
             WHERE a.device_id = $1 AND a.user_id = $4
@@ -730,6 +747,8 @@ pub(super) struct AnnotationPayload {
     expected_version: Option<String>,
     purpose: Option<String>, // commute|business|other|unspecified
     purpose_note: Option<String>,
+    #[serde(default, deserialize_with = "trip_purposes::read_link")]
+    company_purpose_id: Option<Option<i64>>,
     pub(super) driver_staff_id: Option<i64>,
     fuel_liters: Option<f64>,
     fuel_cost: Option<i32>,
@@ -786,6 +805,12 @@ pub(super) async fn save_annotation(
 
     let mut tx = state.db.begin().await?;
     super::fleet_expenses::lock(&mut tx, user.user_id).await?;
+    if let Some(Some(target)) = req.company_purpose_id {
+        let previous = sqlx::query_scalar::<_,Option<i64>>(
+            "SELECT company_purpose_id FROM trip_annotations WHERE user_id=$1 AND device_id=$2 AND trip_started_at=$3"
+        ).bind(user.user_id).bind(device_id).bind(req.trip_started_at).fetch_optional(&mut *tx).await?.flatten();
+        trip_purposes::validate_link(&mut tx,user.user_id,Some(target),previous).await?;
+    }
     sqlx::query("SELECT set_config('app.fleet_actor',$1,true)")
         .bind(actor.unwrap_or(user.user_id).to_string())
         .execute(&mut *tx)
@@ -842,12 +867,13 @@ pub(super) async fn save_annotation(
     }
     let count=sqlx::query(
         r#"INSERT INTO trip_annotations
-              (device_id, user_id, trip_started_at, purpose, purpose_note, driver_staff_id, fuel_liters, fuel_cost, note, odometer_before_km, odometer_after_km)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $12::float8::numeric, $13::float8::numeric)
+              (device_id, user_id, trip_started_at, purpose, purpose_note, driver_staff_id, fuel_liters, fuel_cost, note, odometer_before_km, odometer_after_km, company_purpose_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $12::float8::numeric, $13::float8::numeric, $15)
            ON CONFLICT (device_id, user_id, trip_started_at) DO UPDATE SET
               assignment_source = CASE WHEN trip_annotations.driver_staff_id IS DISTINCT FROM EXCLUDED.driver_staff_id OR trip_annotations.purpose IS DISTINCT FROM EXCLUDED.purpose OR trip_annotations.purpose_note IS DISTINCT FROM EXCLUDED.purpose_note THEN NULL ELSE trip_annotations.assignment_source END,
               purpose         = EXCLUDED.purpose,
               purpose_note    = EXCLUDED.purpose_note,
+              company_purpose_id = CASE WHEN $14 THEN EXCLUDED.company_purpose_id ELSE trip_annotations.company_purpose_id END,
               driver_staff_id = EXCLUDED.driver_staff_id,
               fuel_liters     = EXCLUDED.fuel_liters,
               fuel_cost       = EXCLUDED.fuel_cost,
@@ -860,6 +886,7 @@ pub(super) async fn save_annotation(
     .bind(device_id).bind(user.user_id).bind(req.trip_started_at).bind(purpose).bind(req.purpose_note)
     .bind(req.driver_staff_id).bind(req.fuel_liters).bind(req.fuel_cost).bind(req.note)
     .bind(self_driver).bind(update_odometer).bind(odometer_before).bind(odometer_after)
+    .bind(req.company_purpose_id.is_some()).bind(req.company_purpose_id.flatten())
     .execute(&mut *tx).await?.rows_affected();
     if count == 0 {
         return Err(AppError::Forbidden);
@@ -867,12 +894,14 @@ pub(super) async fn save_annotation(
 
     let row: TripAnnotation = sqlx::query_as(
         r#"SELECT a.id, a.trip_started_at, a.purpose, a.purpose_note,
+                  a.company_purpose_id,p.name AS company_purpose_name,
                   a.driver_staff_id, COALESCE(a.driver_name_snapshot,s.name) AS driver_name, a.driver_department_snapshot AS driver_department,
                   a.fuel_liters::FLOAT8 AS fuel_liters,
                   CASE WHEN a.fuel_expense_id IS NULL THEN a.fuel_cost WHEN e.status='approved' THEN e.amount_krw END AS fuel_cost,
                   a.fuel_expense_id,e.status AS fuel_expense_status,a.note,a.updated_at,a.assignment_source,
                   a.odometer_before_km::FLOAT8 AS odometer_before_km,a.odometer_after_km::FLOAT8 AS odometer_after_km
              FROM trip_annotations a
+        LEFT JOIN fleet_trip_purposes p ON p.owner_id=a.user_id AND p.id=a.company_purpose_id
         LEFT JOIN fleet_expenses e ON e.id=a.fuel_expense_id AND e.owner_id=a.user_id
         LEFT JOIN staff s ON s.id = a.driver_staff_id
             WHERE a.device_id = $1 AND a.user_id = $2 AND a.trip_started_at = $3"#,
@@ -955,7 +984,7 @@ async fn trips_csv(
             .and_then(|a| a.fuel_cost)
             .map(|v| v.to_string())
             .unwrap_or_default();
-        let note = ann.and_then(|a| a.note.clone()).unwrap_or_default();
+        let note = ann.and_then(TripAnnotation::report_note).unwrap_or_default();
         let s_addr = t.start_address.clone().unwrap_or_default();
         let e_addr = t.end_address.clone().unwrap_or_default();
         let s_coord = match (t.start_lat, t.start_lng) {
@@ -1502,7 +1531,7 @@ async fn report_xlsx(
                     end_address: t.end_address,
                     purpose: Some(purpose),
                     purpose_note: t.annotation.as_ref().and_then(|a| a.purpose_note.clone()),
-                    note: t.annotation.as_ref().and_then(|a| a.note.clone()),
+                    note: t.annotation.as_ref().and_then(TripAnnotation::report_note),
                     driver_name: t.annotation.as_ref().and_then(|a| a.driver_name.clone()),
                     driver_department: t
                         .annotation
