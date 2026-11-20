@@ -1,0 +1,19 @@
+{
+  "sms_mock": true,
+  "checked_kst": "2026-11-20 18:35:05.999296",
+  "schema": 128,
+  "fleet_vehicles": 5,
+  "active_primary_bindings": 4,
+  "sites": 0,
+  "visits": 0,
+  "devices_reporting_valid_fix_in_last_24h": 0,
+  "last_valid_fix_kst_day": "2026-09-28",
+  "owners_with_active_report_and_vehicle": 0,
+  "recent_pairs_since_20261119_kst": {
+    "events": 2,
+    "devices": 2,
+    "phone_kind": 2,
+    "iccid_present": 0,
+    "valid_fix_after": 0
+  }
+}
