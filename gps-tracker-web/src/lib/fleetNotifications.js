@@ -1,5 +1,5 @@
 export const notificationTopics = [
-  { key: 'reservation', label: '차량 예약', hint: '예약 승인·반려 결과', icon: 'calendar' },
+  { key: 'reservation', label: '차량 예약', hint: '예약 승인·반려 결과', icon: 'clock' },
   { key: 'trip', label: '운행 시작·종료', hint: '예약 운행 상태 변경 및 운행기록부에 감지된 운행', icon: 'route' },
   { key: 'maintenance', label: '점검 일정', hint: '정비·보험·검사 예정일', icon: 'wrench' },
   { key: 'connection', label: '단말 수신 이상', hint: '연결된 단말기의 통신·배터리 상태', icon: 'link' },
