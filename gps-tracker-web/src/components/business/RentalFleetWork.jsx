@@ -36,7 +36,7 @@ function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) 
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   }
   const title = incident ? '사고·고장 접수' : initial ? '작업 일정 수정' : '세차·정비 일정 등록';
-  return <Modal open title={title} onClose={busy ? undefined : onClose} size="lg">
+  return <Modal open mobileForm title={title} onClose={busy ? undefined : onClose} size="lg">
     <form className="rfl-form" onSubmit={save} aria-busy={busy}>
       <div className="rfl-form-fields">
         <label>차량<select required disabled={!!initial} value={form.device} onChange={e => change('device', e.target.value)}>

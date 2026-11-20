@@ -32,6 +32,7 @@ export default function Modal({
   size = 'md',
   closeOnBackdrop = true,
   closeOnEsc = true,
+  mobileForm = false,
   footer,
   children,
   bodyStyle,
@@ -41,9 +42,31 @@ export default function Modal({
   options.current = { onClose, closeOnEsc };
   useLayoutEffect(() => {
     if (!open || !dialog.current) return;
-    backdrop.current.classList.toggle('gps-business-modal', !!anchor.current?.closest('.business-workspace, .business-drawer, .gps-business-modal'));
-    return lockModalFocus(dialog.current, backdrop.current, () => options.current);
-  }, [open]);
+    const layer = backdrop.current;
+    layer.classList.toggle('gps-business-modal', !!anchor.current?.closest('.business-workspace, .business-drawer, .gps-business-modal'));
+    const touchForm = mobileForm && window.matchMedia('(pointer: coarse) and (max-width: 950px)').matches;
+    const unlock = lockModalFocus(dialog.current, layer, () => ({ ...options.current, initialFocus: touchForm ? dialog : undefined }));
+    const viewport = touchForm && window.visualViewport;
+    if (!viewport) return unlock;
+
+    // Android can resize and pan only the visual viewport when the keyboard opens.
+    layer.style.setProperty('--form-dialog-max-height', 'min(92dvh, 100%)');
+    const fit = () => {
+      layer.style.setProperty('--form-viewport-top', `${viewport.offsetTop}px`);
+      layer.style.setProperty('--form-viewport-height', `${viewport.height}px`);
+    };
+    fit();
+    viewport.addEventListener('resize', fit);
+    viewport.addEventListener('scroll', fit);
+    return () => {
+      viewport.removeEventListener('resize', fit);
+      viewport.removeEventListener('scroll', fit);
+      layer.style.removeProperty('--form-dialog-max-height');
+      layer.style.removeProperty('--form-viewport-top');
+      layer.style.removeProperty('--form-viewport-height');
+      unlock();
+    };
+  }, [open, mobileForm]);
 
   if (!open) return null;
 
@@ -56,6 +79,7 @@ export default function Modal({
       onClick={closeOnBackdrop ? onClose : undefined}
       style={{
         position: 'fixed', inset: 0,
+        ...(mobileForm && { top: 'var(--form-viewport-top, 0px)', height: 'var(--form-viewport-height, auto)', boxSizing: 'border-box' }),
         background: 'rgba(0,0,0,0.5)',
         zIndex: 'var(--z-modal)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -77,7 +101,7 @@ export default function Modal({
           padding: 'var(--modal-padding, var(--space-4))',
           width: '100%',
           maxWidth,
-          maxHeight: '92dvh',
+          maxHeight: mobileForm ? 'var(--form-dialog-max-height, 92dvh)' : '92dvh',
           display: 'flex',
           flexDirection: 'column',
           gap: 'var(--modal-gap, var(--space-3))',

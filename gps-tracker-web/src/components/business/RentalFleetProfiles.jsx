@@ -32,7 +32,7 @@ export default function RentalFleetProfileEditor({ device, onClose, onDevicesCha
       onClose();
     } catch (err) { setError(err.message); qc.invalidateQueries({ queryKey: profileKey() }); } finally { setBusy(false); }
   }
-  return <Modal open size="lg" title="차량 정보 수정" subtitle={rentalFleetLabel(device)} onClose={busy ? undefined : onClose}>
+  return <Modal open mobileForm size="lg" title="차량 정보 수정" subtitle={rentalFleetLabel(device)} onClose={busy ? undefined : onClose}>
     <div className="rfl-switch">{[['rental', '렌트카 운영'], ['vehicle', '차량·점검']].map(([key, label]) => <button key={key} type="button" className="rfl-profile-tab" aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>)}</div>
     {tab === 'vehicle' ? <VehicleCarePanel device={device} onUpdated={onDevicesChange} /> : <form className="rfl-form" onSubmit={save}>
       <div className="rfl-form-fields">

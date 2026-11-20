@@ -62,6 +62,7 @@
   .ro-charts{grid-template-columns:minmax(0,1fr)}
   .ro-period{width:100%;gap:8px}.ro-period>.ro-field{flex:1 1 100px}
   .ro-filters>.ro-field{flex:1 1 130px;max-width:none}
+  .ro-filters>.ro-field:has(>input[type=search]){flex-basis:100%}
   .ro-field input,.ro-field select,.ro-field textarea{font-size:16px;min-height:44px}
   .ro-table-box{overflow:visible}
   .ro-table,.ro-table tbody{display:block}
