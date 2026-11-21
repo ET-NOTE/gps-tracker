@@ -3,6 +3,8 @@
   --fleet-faint: #7d8795;
   --fleet-table-head: #f8f9fc;
   --fleet-filter-bg: #fafbfd;
+  --fleet-search-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23919dab' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m16 16 5 5'/%3E%3C/svg%3E");
+  --fleet-select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238894a5' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
 }
 [data-theme="dark"] .pt-member-shell .rnt-shell {
   --fleet-caption: var(--text-2);
@@ -333,4 +335,55 @@
   .rnt-shell .fr-ledger .fr-filters {display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
   .fr-ledger .fr-filters :is(.rental-stage-period,.is-wide) {grid-column:1/-1;width:100%}
   .fr-ledger .fr-filters>.fr-btn {grid-column:1/-1;justify-self:end}
+}
+.rnt-shell .business-export-disclosure {position:relative;max-width:100%}
+.rnt-shell .fr-stat-unit {font-size:12px;margin-left:5px;font-weight:400;color:var(--fleet-caption)}
+.rnt-shell .rental-workflow-toolbar .business-export:has(.business-export-disclosure) {display:contents}
+.rnt-shell .rental-workflow-toolbar .business-export:has(.business-export-disclosure)>:is([role="status"],[role="alert"]) {
+  order:1;flex-basis:100%;text-align:end;
+}
+.rnt-shell .business-export-options:not([hidden]) {
+  position:absolute;z-index:4;top:calc(100% + 5px);left:0;display:grid;gap:2px;
+  width:max-content;max-width:calc(100vw - 32px);padding:5px;border:1px solid var(--border);
+  background:var(--surface);border-radius:9px;box-shadow:0 5px 14px #212f4514;
+}
+.pt-member-shell .rnt-shell .business-export-options .business-button {border:0;background:none;justify-content:flex-start;min-height:36px}
+.pt-member-shell .rnt-shell .business-export-options .business-button:is(:hover,:focus-visible) {background:var(--fleet-filter-bg);color:var(--primary)}
+.rnt-shell .fr-workflow .rental-stage-period {border:0;padding:0;margin:0;min-width:0}
+.rnt-shell .fr-workflow .rental-stage-period legend {padding:0;margin:0 0 6px;font:400 11px/17px var(--fleet-font);color:var(--fleet-caption)}
+.pt-member-shell .rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters,.rfl-filters,.rfl-branch,.fr-dashboard-tools) select {
+  appearance:none;padding-inline:11px 31px;background-image:var(--fleet-select-chevron);background-repeat:no-repeat;
+  background-position:right 11px center;background-size:12px 12px;
+}
+.pt-member-shell .rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters) input[type="search"] {
+  padding-left:33px;height:37px;min-height:37px;font:400 12px/18.6px var(--fleet-font);color:var(--text-2);
+  background:var(--surface) var(--fleet-search-icon) no-repeat 11px center / 14px 14px;border:1px solid var(--border);border-radius:8px;
+}
+.pt-member-shell .rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters) input[type="date"] {
+  font:400 13px/19.5px var(--fleet-font);padding:9px 11px;height:42px;min-height:0;max-width:100%;
+  color:var(--fleet-caption);border:1px solid var(--border);background:var(--surface);border-radius:8px;
+}
+.rnt-shell :is(.rental-workflow-filters,.fr-workflow .fr-filters)>.business-button svg,
+.rnt-shell .fr-workflow .fr-filters>.fr-btn svg {width:13px;height:13px;flex:none}
+.pt-member-shell .rnt-shell .rental-workflow-filters>.business-button {background:transparent;border-color:transparent;color:var(--text-2)}
+@media(max-width:760px) {
+  .rnt-shell .rental-workflow-toolbar:has(.business-export-disclosure)>span {flex-basis:100%}
+  .pt-member-shell .rnt-shell .rental-workflow-toolbar:has(.business-export-disclosure)>div:last-child {justify-content:flex-end}
+  .rnt-shell .rental-workflow-toolbar:has(.business-export-disclosure) {margin-bottom:8px}
+  .rnt-shell .rental-workflow-toolbar:has(.business-export-disclosure)+.rental-workflow-filters {margin-bottom:10px}
+  .rnt-shell .fr-workflow .fr-filters>.fr-field:has(+.is-wide):nth-child(2n),
+  .rnt-shell .rental-dispatch-week .rental-workflow-filters>label:has(+.rental-stage-search) {grid-column:1/-1}
+  .pt-member-shell .rnt-shell .fr-workflow .fr-toolbar>.fr-actions {width:100%;flex-wrap:wrap;justify-content:flex-end}
+  .pt-member-shell .rnt-shell .fr-workflow>.fr-stats {margin-bottom:0}
+  .pt-member-shell .rnt-shell .fr-workflow>.fr-filters+.fr-list {margin-top:-6px}
+}
+@media(max-width:600px) {
+  /* List filters mirror the reference scale. Creation and editing forms retain their own touch sizing. */
+  .pt-member-shell .gps-user-panel.rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters,.rfl-filters,.rfl-branch,.fr-dashboard-tools,.fr-candidate-filters) select,
+  .pt-member-shell .gps-user-panel.rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters,.rfl-search) input[type="search"] {font-size:12px!important}
+  .pt-member-shell .gps-user-panel.rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters) input[type="date"] {font-size:13px!important}
+}
+@media(max-width:360px){
+  .pt-member-shell .rnt-shell :is(.rental-workflow-filters,.fr-workflow .fr-filters) {grid-template-columns:minmax(0,1fr)}
+  .pt-member-shell .rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters) input[type="date"] {padding-inline:6px}
 }

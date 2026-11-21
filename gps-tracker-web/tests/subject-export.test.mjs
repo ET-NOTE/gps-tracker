@@ -9,17 +9,33 @@ import {transform} from 'esbuild';
 import {subjectReport,subjectScopeNote} from '../src/lib/subjectReport.js';
 import {reportCsv,reportPdfDefinition} from '../src/lib/businessExport.js';
 
-async function mount(prepareExport,save) {
- const context=vm.createContext({console});
+async function mount(prepareExport,save,props={}) {
+ const context=vm.createContext({console,document:new EventTarget()});
  const source=await readFile(new URL('../src/components/business/ExportButtons.jsx',import.meta.url),'utf8');
  const m=new vm.SourceTextModule((await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
  await m.link(async name=>{
-  const values=name==='react'?React:name==='react/jsx-runtime'?jsx:name.includes('BusinessWorkspace')?{BusinessButton:p=>React.createElement('button',p,p.children)}:name.includes('downloadReport')?{downloadReport:save}:{Modal:p=>React.createElement('aside',{},p.children)};
+  const values=name==='react'?React:name==='react/jsx-runtime'?jsx:name.includes('BusinessWorkspace')?{BusinessButton:p=>React.createElement('button',p,p.children)}:name.includes('downloadReport')?{downloadReport:save}:name==='../Icon'?{default:()=>null}:{Modal:p=>React.createElement('aside',{},p.children)};
   return new vm.SyntheticModule(Object.keys(values),function(){for(const[k,v]of Object.entries(values))this.setExport(k,v);},{context});
  });await m.evaluate();let r;
- await act(async()=>{r=create(React.createElement(m.namespace.default,{report:{rows:[{secret:'previous-scope'}]},prepareExport}));});
+ await act(async()=>{r=create(React.createElement(m.namespace.default,{report:{rows:[{secret:'previous-scope'}]},prepareExport,...props}));});
  return r;
 }
+test('the download disclosure exposes each format and closes after selecting its matching report',async()=>{
+ const saves=[];
+ const r=await mount(undefined,async(report,format)=>{saves.push([report.title,format]);return {};},
+   {grouped:true,csvReport:{title:'표 데이터'},pdfReport:{title:'인쇄 서식'}});
+ const trigger=()=>r.root.findByProps({className:'business-button business-export-trigger'});
+ const options=()=>r.root.findByProps({role:'group','aria-label':'파일 형식'});
+ assert.equal(trigger().props['aria-controls'],options().props.id);
+ for(const [index,label] of ['CSV 다운로드','PDF 다운로드'].entries()){
+   assert.equal(trigger().props['aria-expanded'],false);assert.equal(options().props.hidden,true);
+   await act(async()=>trigger().props.onClick());assert.equal(trigger().props['aria-expanded'],true);assert.equal(options().props.hidden,false);
+   const button=options().findAllByType('button')[index];assert.equal(button.props.children,label);
+   await act(async()=>button.props.onClick());
+ }
+ assert.deepEqual(saves,[['표 데이터','csv'],['인쇄 서식','pdf']]);assert.equal(options().props.hidden,true);
+ await act(async()=>r.unmount());
+});
 test('CSV and PDF save only the newly authorized response, including a now-empty scope',async()=>{
  const formats=[],saves=[];const r=await mount(async format=>{formats.push(format);return {rows:[],scope:'rechecked'};},async(report,format)=>{saves.push({report,format});return {};});
  for (const i of [0,1]) await act(async()=>r.root.findAllByType('button')[i].props.onClick());

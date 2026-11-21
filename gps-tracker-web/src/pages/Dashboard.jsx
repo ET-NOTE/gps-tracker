@@ -16,6 +16,7 @@ import { makeWsEventHandler } from '../lib/wsEventHandler';
 import { makeDeviceLoaders } from '../lib/deviceLoader';
 import KakaoMap from '../components/KakaoMap';
 import { PlatformRail, PlatformHeader, PortalDeviceList, PortalAccount } from '../components/portal/Portal';
+import {WorkspaceHeaderContext} from '../components/business/WorkspaceHeader';
 import DeviceServiceSettings from '../components/portal/DeviceServiceSettings';
 import { rememberFleetOwner } from '../lib/fleetSession';
 import { ownerServices, businessServices, rememberView, classifyOwnedDevices } from '../lib/platformNavigation';
@@ -25,6 +26,7 @@ import { sideRailItems } from '../components/SideRail';
 import MapTopOverlay from '../components/MapTopOverlay';
 import MapControls from '../components/MapControls';
 import MapDeviceCard from '../components/portal/MapDeviceCard';
+import DeviceMapMarkers from '../components/portal/DeviceMapMarkers';
 import Modal from '../components/ui/Modal';
 import MapActions from '../components/MapActions';
 import { useHomeMapTools } from '../hooks/useHomeMapTools';
@@ -607,14 +609,14 @@ export default function Dashboard({ onLogout }) {
   // 새로고침 사이에 PATCH 가 날아가지 않도록 디바운스 X.
   // 사용자가 단말기를 선택하면 라이브 추적도 자동 ON (단말기 따라가기 자연스러움).
   const persistFilterDevice = useCallback((id) => {
+    // An explicit choice wins even if an older saved selection or history is still loading.
+    filterAppliedRef.current = true;
     setFilterDeviceId(id);
     mapRef.current?.filterToDevice(id);
     if (id !== null) setUserTrackPref(true);
-    if (filterAppliedRef.current) {
-      api.patchMyPrefs({ filter_device_id: id })
-        .then(p => setUserPrefs(p))
-        .catch(() => {});
-    }
+    api.patchMyPrefs({ filter_device_id: id })
+      .then(p => setUserPrefs(p))
+      .catch(() => {});
   }, []);
 
   const openCorporateMap = (deviceId, detail) => {
@@ -1024,6 +1026,10 @@ export default function Dashboard({ onLogout }) {
       <PlatformRail {...portalProps} onShowGuide={() => setShowOnboarding(true)}/>
       <div style={{display:'flex',flexDirection:'column',flex:1,minWidth:0,minHeight:0}}>
         {coreView && <PlatformHeader {...portalProps} me={me} devices={portalDevices} meta={lastMetaRef.current} onDevice={id => {persistFilterDevice(id); setDetailId(id); setView('devices');}}/>}
+      <WorkspaceHeaderContext.Provider value={{name:me?.display_name?.trim()||me?.email,options:scopeOptions,selected:'company',onChange:value=>{
+        changePortalScope(value);
+        if(value==='personal')navigate('/devices');
+      }}}>
       <main className="pt-main-area" style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
 
         {routeProblem && <RouteNotice kind={routeProblem} onRetry={routeProblem === 'error' ? () => accessQuery.refetch() : undefined} />}
@@ -1111,6 +1117,7 @@ export default function Dashboard({ onLogout }) {
           {returnToVehicle && <nav className="map-vehicle-return-bar" aria-label="차량 지도 탐색"><button type="button" className="map-return-vehicle" onClick={returnToVehicle}><Icon name="chevron-left" size={16}/>차량 상세로 돌아가기</button></nav>}
           <div style={{ position: 'relative', flex: 1, minHeight: 0, visibility: mapVisible ? 'visible' : 'hidden' }}>
             <KakaoMap ref={mapRef} visibleDeviceIds={visibleIds} onReady={handleMapReady}
+              deviceMap={view === 'devices' ? {devices:portalDevices, selectedId:filterDeviceId, onSelect:persistFilterDevice, history:seekerPaused, markerLayer:DeviceMapMarkers} : null}
               onRoadview={({ lat, lng }) => tryOpenRoadview(lat, lng)}
               // 지도 마커 클릭 → 모바일: 컴팩트 PointInfoSheet + 간이 시커 슬롯 동기화 동시.
               // 데스크톱 기본: kakao InfoWindow 유지 (onPointInfo 미제공 → KakaoMap 내부 fallback).
@@ -1267,7 +1274,7 @@ export default function Dashboard({ onLogout }) {
             </div>
           )}
         </div>
-      </main>
+      </main></WorkspaceHeaderContext.Provider>
 
       </div>
 

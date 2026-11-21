@@ -265,3 +265,16 @@
   .business-workspace--corporate .business-content .fleet-dashboard-metrics .fleet-metric-more {font-size:0}
   .business-workspace--corporate .business-content .fleet-record-metrics dd {font-size:21px}
 }
+@media(max-width:600px){
+  .business-workspace--corporate .business-content .fleet-expense-query .expense-output-actions{display:flex;justify-content:flex-end;align-items:center;gap:6px}
+  .business-workspace--corporate .business-content .fleet-expense-query .expense-output-actions>:is(.expense-download,.expense-settings){flex:0 0 auto}
+  .business-workspace--corporate .business-content .fleet-expense-query .expense-output-actions>.business-button{flex:0 0 auto;width:auto}
+  .business-workspace--corporate .business-content .fleet-expense-query .expense-settings>button{padding:0;width:34px;min-width:34px;min-height:36px}
+  .business-workspace--corporate .fleet-expense-query .expense-settings>button :is(span,svg:last-child){display:none}
+  .business-workspace--corporate .business-content :is(.fleet-record-fields,.fleet-record-query,.fleet-analytics-filters,.fleet-record-filterfoot) :is(input[type=search],select):not(:focus){font-size:12px!important}
+  .business-workspace--corporate .business-content :is(.fleet-record-fields,.fleet-analytics-filters) input[type=date]:not(:focus){font-size:13px!important}
+}
+@media(max-width:359px){
+  .business-workspace--corporate .business-content .fleet-expense-query .expense-output-actions{gap:4px}
+  .business-workspace--corporate .business-content .fleet-expense-query .expense-output-actions :is(.expense-download>button,.business-button.is-primary){padding-inline:7px}
+}

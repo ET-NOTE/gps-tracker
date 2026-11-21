@@ -13,6 +13,7 @@ import BusinessMap from './BusinessMap';
 import BusinessVehicleDetail from './BusinessVehicleDetail';
 import useCorporatePhone from '../../useCorporatePhone';
 import CorporateMobileHeader from './CorporateMobileHeader';
+import {WorkspaceAvatar,WorkspaceScope} from './WorkspaceHeader';
 import FleetQuickPanel from './FleetQuickPanel';
 import './business.css';
 
@@ -119,12 +120,13 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
       </nav>
       {corporate && phone ? <CorporateMobileHeader active={active} groups={groups} tabs={tabs} section={section} sections={sections}
         onTab={visit} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation} onQuick={setQuick}/>
-      : corporate ? <header className="business-topbar no-print">
+      : corporate ? <header className="business-topbar ws-member-top no-print">
         <div className="fleet-topbar-inner"><div className="fleet-breadcrumb"><span>법인운행</span><Icon name="chevron-right" size={13}/><span>{groupLabel}</span>{groupLabel!==pageLabel&&<><Icon name="chevron-right" size={13}/><strong>{pageLabel}</strong></>}</div>
+        <WorkspaceScope fallback={toolbar}/>
         <div className="fleet-width" role="group" aria-label="화면 폭 선택"><span>화면 폭</span>{[[false,'기본'],[true,'넓게']].map(([value,label])=><button key={label} type="button" aria-pressed={wide===value} onClick={()=>chooseWidth(value)}>{label}</button>)}</div>
-        <button className="fleet-top-search" type="button" onClick={()=>setQuick('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
-        <button className="fleet-top-search" type="button" onClick={()=>setQuick('alerts')} aria-label="운영 알림"><Icon name="bell" size={18}/></button>
-        {toolbar && <div className="business-topbar-account">{toolbar}</div>}</div>
+        <button className="ws-wide-search" type="button" onClick={()=>setQuick('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
+        <button className="ws-icon" type="button" onClick={()=>setQuick('alerts')} aria-label="운영 알림"><Icon name="bell" size={17}/></button>
+        {onNavigate&&<WorkspaceAvatar label="회사 및 계정 메뉴" expanded={accountMenu} onClick={()=>setAccountMenu(true)}/>}</div>
       </header> : subNavigation}
       <div className="business-content" key={tab}>
         {corporate && <header className="fleet-page-title fleet-member-heading no-print"><div><h1>{pageLabel}</h1><p>{corporatePageHint(tab,section)}</p></div><time>{calendarLabel}</time></header>}
@@ -155,7 +157,7 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
         {corporate ? accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setMore(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>) : <><button className="business-button" onClick={() => { setMore(false); onNavigate('devices'); }}>단말기 관리</button><button className="business-button" onClick={() => { setMore(false); onNavigate('profile'); }}>내정보·계정 유형</button></>}
       </div>
     </BusinessDrawer>}
-    {accountMenu && onNavigate && <BusinessDrawer title="계정 메뉴" onClose={() => setAccountMenu(false)}><div className="business-more-menu">{accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setAccountMenu(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>)}</div></BusinessDrawer>}
+    {accountMenu && onNavigate && <BusinessDrawer title="계정 메뉴" onClose={() => setAccountMenu(false)}><div className="business-more-menu">{toolbar}{accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setAccountMenu(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>)}</div></BusinessDrawer>}
     {quick&&<FleetQuickPanel mode={quick} tabs={tabs} groups={navigation} sections={sections} devices={devices} vehicleStatus={vehicleStatus} onVehicle={openVehicle} onClose={()=>setQuick(null)} onVisit={visit}/>}
     {selected && (renderVehicleDetail ? renderVehicleDetail(selected,()=>setSelectedId(null)) : <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} onUpdated={onVehiclesChange} />)}
   </section></VehicleContext.Provider></SelectionContext.Provider>;

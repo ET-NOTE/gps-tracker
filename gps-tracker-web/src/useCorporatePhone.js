@@ -6,7 +6,7 @@ const phone = typeof window !== 'undefined' && window.matchMedia
   : null;
 
 const compactNav = typeof window !== 'undefined' && window.matchMedia
-  ? window.matchMedia('screen and (max-width: 899px)') : null;
+  ? window.matchMedia('screen and (max-width: 1000px)') : null;
 function watch(query) {
   return [notify => {
     query?.addEventListener('change', notify);

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import Icon from '../Icon';
 import { Modal } from '../ui';
 import { vehicleName } from '../../lib/business';
+import {useCorporateInfo} from '../../state';
 import { useBusinessVehicle } from './BusinessWorkspace';
 import BusinessDrawer from './BusinessDrawer';
+import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope} from './WorkspaceHeader';
 import './rental-workspace.css';
 import './fleet-workspace-layout.css';
 
@@ -50,6 +52,7 @@ function WorkspaceSearch({devices, onTab, onClose, menu, onDevice}) {
 }
 
 export default function RentalWorkspace({page,onTab,onNavigate,destinations,devices,children,menu=rentalMenu,serviceLabel='렌트카',heading='렌트카 운영',widthKey='rental.area.width',onSearchDevice,headerAction}) {
+  const ownCompany=useCorporateInfo({staleTime:60000,retry:false});
   const landing=menu[0].pages[0][0];
   const group = menu.find(g => g.pages.some(([id])=>id===page)) || menu[0];
   const pageLabel = group.pages.find(([id]) => id === page)?.[1];
@@ -78,17 +81,19 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
       {nav}
       {onNavigate&&<button className="rnt-account" onClick={()=>setDialog('account')}><Icon name="user"/>계정 메뉴<Icon name="chevron-right" size={15}/></button>}
     </aside>
-    <div className="rnt-main"><header className="rnt-top no-print">
-      <button className="rnt-menu-trigger rnt-icon" aria-label="전체 메뉴" onClick={()=>setDialog('nav')}><Icon name="menu"/></button>
-      <div className="rnt-breadcrumb"><span>{heading}</span><Icon name="chevron-right" size={13}/><strong>{group.label}</strong>{group.pages.length>1&&<span className="rnt-leaf"><Icon name="chevron-right" size={13}/>{group.pages.find(([id])=>id===page)?.[1]}</span>}</div>
+    <div className="rnt-main"><header className="rnt-top ws-member-top no-print">
+      <button className="ws-icon ws-menu" type="button" aria-label="전체 메뉴" onClick={()=>setDialog('nav')}><Icon name="menu"/></button>
+      <WorkspaceBreadcrumb service={heading} group={group.label} page={pageLabel}/><WorkspaceScope ownName={ownCompany.data?.company_name?.trim()}/>
       <div className="rnt-width" role="group" aria-label="화면 폭"><span>화면 폭</span>{[[false,'기본'],[true,'넓게']].map(([v,s])=><button className="rnt-width-option" key={s} aria-pressed={v===wide} onClick={()=>{setWide(v);try{localStorage.setItem(widthKey,v?'wide':'normal');}catch{/* private browser */}}}>{s}</button>)}</div>
-      <button className="rnt-search" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
-      {headerAction}<button className="rnt-icon" aria-label="계정 메뉴 열기" onClick={()=>setDialog('account')}><Icon name="user"/></button>
+      <button className="ws-wide-search" type="button" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
+      {headerAction&&<div className="ws-alert-action">{headerAction}</div>}<WorkspaceAvatar label="계정 메뉴 열기" expanded={dialog==='account'} onClick={()=>setDialog('account')}/>
     </header><div className="rnt-scroller" ref={content}><div className="rnt-content">
       <div className="rnt-title"><div><h1>{title}</h1>{description && <p>{description}</p>}</div><div className="rnt-title-actions"><time>{today}</time></div></div>
       {children}
     </div></div></div>
-    {dialog==='nav'&&<BusinessDrawer navigation title={heading} onClose={()=>setDialog(null)}>{nav}</BusinessDrawer>}
+    {dialog==='nav'&&<BusinessDrawer navigation title={heading} onClose={()=>setDialog(null)}>{nav}
+      {headerAction&&<div className="rnt-nav ws-menu-shortcuts"><button type="button" className="rnt-group ws-menu-search" onClick={()=>setDialog('search')}><Icon name="search" size={17}/>차량·메뉴 검색</button></div>}
+    </BusinessDrawer>}
     {dialog==='account'&&<BusinessDrawer title="계정 메뉴" onClose={()=>setDialog(null)}><div className="rnt-nav">{accountLinks}</div></BusinessDrawer>}
     {dialog==='search'&&<WorkspaceSearch menu={menu} onDevice={onSearchDevice} devices={devices} onTab={choose} onClose={()=>setDialog(null)}/>}
   </section>;

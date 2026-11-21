@@ -28,8 +28,8 @@ export function FreightForm({title,subtitle,onClose,onSubmit,submitLabel='저장
     <form id={id} onSubmit={submit} className="fr-form">{children}</form>
   </Modal>;
 }
-export function FreightStats({items}){
-  return <dl className="fr-stats">{items.map(([label,value,note])=><div key={label}><dt>{label}</dt><dd>{value}{note&&<small className="fr-metric-note">{note}</small>}</dd></div>)}</dl>;
+export function FreightStats({items,unit}){
+  return <dl className="fr-stats">{items.map(([label,value,note])=><div key={label}><dt>{label}</dt><dd>{value}{unit&&<small className="fr-stat-unit">{unit}</small>}{note&&<small className="fr-metric-note">{note}</small>}</dd></div>)}</dl>;
 }
 export function FreightBadge({children,tone='neutral'}) {
   return <span className={'fr-badge is-'+tone}>{children}</span>;
@@ -52,7 +52,7 @@ export function FreightTable({columns,rows,empty='조회된 내역이 없습니�
 }
 export function FreightFilters({query,onQuery,placeholder,children,onReset}){
   return <div className="fr-filters">{children}<FreightField label="검색" wide>
-    <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField>{onReset&&<FreightButton onClick={onReset}>조회 조건 초기화</FreightButton>}</div>;
+    <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField>{onReset&&<FreightButton icon="refresh" onClick={onReset}>조회 조건 초기화</FreightButton>}</div>;
 }
 export function FreightOptions({rows,blank,label='name'}){
   return <>{blank!==undefined&&<option value="">{blank}</option>}{rows.map(r=><option key={r.id} value={r.id}>{r[label]||r.id}</option>)}</>;

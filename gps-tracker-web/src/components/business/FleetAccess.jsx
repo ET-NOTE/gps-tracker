@@ -3,9 +3,11 @@ import {QueryClient,QueryClientProvider,useQuery,useQueryClient} from '@tanstack
 import {api} from '../../api';
 import {setFleetOwner,rememberFleetOwner,preferredFleetOwner,resolveFleetOwner} from '../../lib/fleetSession';
 import {authScope,AUTH_CHANGED} from '../../authSession';
+import {useCorporateInfo} from '../../state';
 import {Modal,Input,Button,FormField} from '../ui';
 import {BusinessError} from './BusinessWorkspace';
 import Icon from '../Icon';
+import {WorkspaceCompanyContext} from './WorkspaceHeader';
 import './fleet-team.css';
 
 export const fleetRoles={owner:'소유자',admin:'관리자',department_manager:'부서 관리자',member:'일반 사용자'};
@@ -45,13 +47,14 @@ function ScopedCompany({owner,allowOwn,onChoose,onJoined,children}) {
 function AccessGate({owner,allowOwn,onChoose,onJoined,children}) {
  const spaces=useQuery({queryKey:['fleet-workspaces'],queryFn:()=>api.fleetWorkspaces()});
  const access=useQuery({queryKey:['fleet-access'],queryFn:()=>api.fleetAccess(),refetchInterval:15000});
+ const ownCompany=useCorporateInfo({enabled:allowOwn&&owner==null&&access.data?.role==='owner',staleTime:60000,retry:false});
  const [join,setJoin]=useState(false);
  const previous=useRef(null),signature=access.data?JSON.stringify(access.data):null;
  useEffect(()=>{if(signature&&previous.current&&previous.current!==signature){onChoose(owner);}previous.current=signature;},[signature]);
  const roleId=useId();
  const memberships=spaces.data?.memberships ?? [];
  const membership=memberships.find(m=>Number(m.owner_id)===owner);
- let companyName='내 회사';
+ let companyName=ownCompany.data?.company_name?.trim()||'내 회사';
  if(membership) companyName=membership.company_name?.trim() || '회사명 미등록';
  else if(owner!=null) companyName=spaces.isPending ? '회사 확인 중…' : '선택한 회사';
  const roleName=fleetRoles[access.data?.role];
@@ -78,7 +81,12 @@ function AccessGate({owner,allowOwn,onChoose,onJoined,children}) {
  );
  if(access.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={access.refetch}>회사에 접근할 수 없습니다. 초대·활성 상태를 확인하거나 다른 회사를 선택해 주세요.</BusinessError></div>;
  if(!access.data)return <p>접근 권한 확인 중…</p>;
- return <Context.Provider value={access.data}>{children(toolbar,companyName)}</Context.Provider>;
+ const companyOptions=[...(allowOwn?[{value:'company',label:companyName&&owner==null?companyName:'내 회사'}]:[]),
+   ...memberships.map(m=>({value:'fleet:'+m.owner_id,label:m.company_name?.trim()||'회사명 미등록'}))];
+ if(owner!=null&&!membership)companyOptions.push({value:'fleet:'+owner,label:companyName});
+ return <Context.Provider value={access.data}><WorkspaceCompanyContext.Provider value={{
+   selected:owner==null?'company':'fleet:'+owner,options:companyOptions,onChange:value=>onChoose(value==='company'?null:Number(value.slice(5))),
+ }}>{children(toolbar,companyName)}</WorkspaceCompanyContext.Provider></Context.Provider>;
 }
 export function FleetJoin({onClose,onJoined}) {
  const [code,setCode]=useState(''),[preview,setPreview]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('');

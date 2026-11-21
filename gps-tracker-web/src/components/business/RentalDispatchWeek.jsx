@@ -57,7 +57,7 @@ export default function RentalDispatchWeek({vehicles,inventoryReady,inventoryErr
       <label>차종<select aria-label="차종" value={vehicleClass} onChange={e=>setVehicleClass(e.target.value)}><option value="">전체 차종</option>{classNames.map(n=><option key={n}>{n}</option>)}</select></label>
       <label>배차 상태<select aria-label="배차 상태" value={assignment} onChange={e=>setAssignment(e.target.value)}><option value="">전체</option><option value="waiting">배차 대기</option><option value="assigned">배차 완료</option></select></label>
       <label className="rental-stage-search">검색<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="고객, 차량, 예약번호"/></label>
-      <BusinessButton onClick={()=>{setBranch('');setVehicleClass('');setAssignment('');setQuery('');}}>조건 초기화</BusinessButton>
+      <BusinessButton icon="refresh" onClick={()=>{setBranch('');setVehicleClass('');setAssignment('');setQuery('');}}>조건 초기화</BusinessButton>
     </div>
     {rentals.isError&&<BusinessError onRetry={rentals.refetch}>대여 일정을 불러오지 못했습니다.</BusinessError>}
     {service.isError&&<BusinessError onRetry={service.refetch}>차량 준비 일정을 불러오지 못했습니다.</BusinessError>}

@@ -1,0 +1,73 @@
+.ws-member-top .ws-crumb {display:flex;align-items:center;gap:9px;min-width:0;flex:1;margin:0;white-space:nowrap;overflow:hidden;color:var(--fleet-caption,var(--text-2));font:400 12px/1.55 var(--fleet-font)}
+.ws-crumb span {min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ws-crumb span:last-child {color:var(--text-2)}
+.ws-crumb svg {flex:none}
+.pt-member-shell .ws-member-top .ws-scope {display:flex;flex:none;align-items:center;position:relative;min-width:105px;height:36px;max-width:176px;margin:0;gap:0;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text-2)}
+.ws-member-top .ws-scope svg {pointer-events:none;position:absolute;right:7px}
+.pt-member-shell .ws-member-top .ws-scope select {appearance:none;width:100%;max-width:100%;min-width:0;height:100%!important;min-height:0!important;border:0;box-shadow:none;border-radius:8px;background:transparent;padding:4px 22px 4px 10px;color:inherit;cursor:pointer;font:400 11px/1.5 var(--fleet-font)!important;text-overflow:ellipsis}
+.pt-member-shell .ws-member-top button.ws-avatar {display:inline-grid;place-items:center;flex:0 0 auto;width:30px;min-width:30px;height:30px;min-height:30px;padding:0;border:0;border-radius:50%;background:var(--fleet-selected,#e9f0fa);color:var(--primary);font:400 11px/1.2 var(--fleet-font);box-shadow:none;cursor:pointer}
+.pt-member-shell .ws-member-top .ws-icon {display:inline-flex;align-items:center;justify-content:center;flex:none;width:32px;height:32px;min-width:0;min-height:32px;padding:0;gap:0;border:0;border-radius:7px;box-shadow:none;background:transparent;color:var(--text-2);cursor:pointer}
+.pt-member-shell .ws-member-top .ws-icon:hover,.pt-member-shell .ws-member-top .ws-icon:focus-visible {background:var(--surface-2)}
+.pt-member-shell .ws-member-top .ws-icon svg {width:17px;height:17px}
+.pt-member-shell .ws-member-top .ws-wide-search {display:flex;align-items:center;gap:8px;width:clamp(132px,15.6vw,225px);height:35px;min-height:35px;padding:0 11px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;color:var(--text-2);font:400 12px var(--fleet-font)}
+.pt-member-shell .ws-member-top .ws-menu {display:none}
+.ws-alert-action {display:flex;flex:none;align-items:center}
+.pt-member-shell .ws-member-top :is(.fleet-width,.rnt-width) {height:35px;min-height:35px;padding:3px;border-radius:7px}
+.pt-member-shell .ws-member-top :is(.fleet-width,.rnt-width) button {height:27px;min-height:27px;border:0;padding:3px 8px;font:400 12px/1.4 var(--fleet-font)}
+.rnt-nav.ws-menu-shortcuts {display:none}
+@media(max-width:1000px){
+  .pt-member-shell :is(.rnt-shell .rnt-top,.business-workspace--corporate .corporate-phone-header).ws-member-top {height:58px;min-height:58px;display:flex;align-items:center;gap:7px;padding:0 12px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .pt-member-shell .ws-member-top .ws-menu {display:inline-flex}
+  .pt-member-shell .ws-member-top .ws-crumb {gap:4px;font-size:11px;line-height:1.35;container-type:inline-size}
+  .ws-member-top .ws-crumb .ws-crumb-service {display:none}
+  .ws-member-top .ws-crumb span {white-space:normal;word-break:break-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}
+  .ws-member-top .ws-crumb .ws-crumb-group {flex:0 1 auto}
+  .pt-member-shell .ws-member-top .ws-scope {width:105px;max-width:105px}
+  .pt-member-shell .ws-member-top button.ws-avatar {width:29px;height:29px;min-height:29px;min-width:29px;font-size:10px}
+  .pt-member-shell .ws-member-top .ws-wide-search {width:26px;height:32px;min-height:32px;justify-content:center;border:0;background:none;padding:0}
+  .ws-member-top .ws-wide-search span {display:none}
+  .pt-member-shell .ws-member-top .ws-secondary {display:none}
+}
+@container (max-width:65px){
+  .ws-member-top .ws-crumb[data-has-page="true"] :is(.ws-crumb-group,svg) {display:none}
+}
+@media(max-width:374px){
+  .pt-member-shell :is(.rnt-shell .rnt-top,.business-workspace--corporate .corporate-phone-header).ws-member-top {gap:4px;padding-inline:8px}
+  .pt-member-shell .ws-member-top .ws-scope {width:87px;min-width:87px;max-width:87px}
+  .pt-member-shell .ws-member-top .ws-icon.ws-menu {width:26px}
+  .ws-member-top .ws-crumb[data-has-page="true"] :is(.ws-crumb-group,svg) {display:none}
+  .ws-member-top .ws-crumb[data-has-page="true"] span[aria-current] {width:100%}
+}
+@media(max-width:480px){
+  .pt-member-shell .rnt-top:has(.ws-alert-action) .ws-wide-search {display:none}
+  .rnt-nav.ws-menu-shortcuts {display:block}
+}
+
+/* Keep the two navigation columns and the content gutter aligned across workspaces. */
+@media screen and (min-width:1001px) and (max-width:1200px) {
+  .pt-member-shell .business-workspace--corporate .business-layout,
+  .pt-member-shell .rnt-shell {grid-template-columns:195px minmax(0,1fr)}
+}
+@media screen and (min-width:1001px) and (max-width:1023px) {
+  .pt-member-shell {--pt-rail-width:72px}
+}
+@media screen and (min-width:900px) and (max-width:1000px) {
+  .pt-member-shell .business-workspace--corporate .business-layout {display:flex;flex-direction:column}
+  .pt-member-shell .rnt-shell {display:flex;flex-direction:column}
+  .pt-member-shell .rnt-shell .rnt-main {flex:1}
+  .pt-member-shell .business-workspace--corporate .business-layout>.business-nav,
+  .pt-member-shell .rnt-shell :is(.rnt-sidebar,.rnt-width) {display:none}
+}
+@media screen and (min-width:701px) and (max-width:1000px) {
+  .pt-member-shell :is(.rnt-shell .rnt-top,.business-workspace--corporate .corporate-phone-header).ws-member-top {height:64px;min-height:64px}
+}
+@media screen and (max-width:1000px) {
+  .pt-member-shell .business-workspace--corporate .business-layout>.business-content,
+  .pt-member-shell .gps-user-panel.rnt-shell .rnt-content {padding-top:25px}
+}
+@media screen and (min-width:761px) and (max-width:1000px) {
+  .pt-member-shell .business-workspace--corporate .business-layout>.business-content,
+  .pt-member-shell .rnt-shell .rnt-content {padding-inline:20px}
+  .pt-member-shell .business-workspace--corporate .fleet-member-heading h1,
+  .pt-member-shell .rnt-shell .rnt-title h1 {font-size:25px}
+}

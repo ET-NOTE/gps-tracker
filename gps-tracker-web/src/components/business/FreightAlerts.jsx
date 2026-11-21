@@ -19,7 +19,7 @@ export function freightTasks(data,ships,fleet,terminals,now) {
 export default function FreightAlerts({data,devices,onPage}){
   const [open,setOpen]=useState(false),tasks=freightTasks(data,data.shipments,data.vehicles,devices,Date.now()).filter(([, ,n])=>n>0);
   const visit=p=>{setOpen(false);onPage(p);};
-  return <><button type="button" className="rnt-icon" aria-label={'업무 알림 '+tasks.reduce((n,t)=>n+t[2],0)+'건'} onClick={()=>setOpen(true)}><Icon name="bell" size={19}/></button>
+  return <><button type="button" className="rnt-icon ws-icon" aria-label={'업무 알림 '+tasks.reduce((n,t)=>n+t[2],0)+'건'} onClick={()=>setOpen(true)}><Icon name="bell" size={17}/></button>
     {open&&<BusinessDrawer title="업무 알림" onClose={()=>setOpen(false)}><div className="fr-page">
       {tasks.map(([,label,count,to,hint])=><button type="button" className="fr-pick" key={label} onClick={()=>visit(to)}>{label} <strong>{count}건</strong>{hint&&<small>{hint}</small>}</button>)}
       {!tasks.length&&<p className="fr-empty">현재 확인할 알림이 없습니다.</p>}

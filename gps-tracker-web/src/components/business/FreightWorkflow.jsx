@@ -131,20 +131,20 @@ function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback}) {
     });
     try{await downloadCsv(names[page]+'_'+stamp().slice(0,10),[header,...body]);}catch(e){setFeedback(e.message);}
   }
-  const setup=(rows,key,label)=><FreightField label={label}><select value={f[key]} onChange={e=>change(key,e.target.value)}><FreightOptions rows={rows} blank="전체"/></select></FreightField>;
+  const setup=(rows,key,label)=><FreightField label={label}><select value={f[key]} onChange={e=>change(key,e.target.value)}><FreightOptions rows={rows} blank={key==='branch'?'전체 지점':'전체 '+label}/></select></FreightField>;
   const filterBar=<FreightFilters onReset={()=>setFilters(allFilters)} query={f.query} onQuery={q=>change('query',q)} placeholder={recurring?'정기 주문·화주·화물 검색':'주문·화주·차량·기사 검색'}>
       {!recurring&&!schedule&&page!=='dispatch'&&<fieldset className="rental-stage-period"><legend>{proofs?'하차 완료 기간':'상차 예정 기간'}</legend><div><input type="date" aria-label="조회 시작일" max={f.end||undefined} value={f.start} onChange={e=>change('start',e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" min={f.start||undefined} value={f.end} onChange={e=>change('end',e.target.value)}/></div></fieldset>}
-      {setup(data.branches,'branch','지점')}{(recurring||isOrder)&&setup(data.shippers,'shipper','화주')}
+      {setup(data.branches,'branch','담당 지점')}{(recurring||isOrder)&&setup(data.shippers,'shipper','화주')}
       {recurring&&<FreightField label="사용 여부"><select aria-label="사용 여부" value={f.status} onChange={e=>change('status',e.target.value)}><option value="">전체</option><option value="active">사용 중</option><option value="inactive">사용 중지</option></select></FreightField>}
-      {isOrder&&<FreightField label="필요 차량"><select value={f.type} onChange={e=>change('type',e.target.value)}><option value="">전체</option>{data.codes.vehicleTypes.map(t=><option key={t}>{t}</option>)}</select></FreightField>}
+      {isOrder&&<FreightField label="필요 차량"><select value={f.type} onChange={e=>change('type',e.target.value)}><option value="">전체 차량 형태</option>{data.codes.vehicleTypes.map(t=><option key={t}>{t}</option>)}</select></FreightField>}
       {page==='shipments'&&<FreightField label="운송사"><select value={f.carrier} onChange={e=>change('carrier',e.target.value)}><option value="">전체</option><option value="own">직영</option><FreightOptions rows={data.carriers}/></select></FreightField>}
       {(schedule||shipList)&&<FreightField label="운송 단계"><select value={f.status} onChange={e=>change('status',e.target.value)}><option value="">전체</option>{Object.entries(shipStates).filter(([k])=>!schedule||k!=='cancelled').map(([key,val])=><option key={key} value={key}>{val}</option>)}</select></FreightField>}
     </FreightFilters>;
   return <div className="fr-page fr-workflow">
-    {!schedule&&!recurring&&page!=='dispatch'&&<FreightStats items={summary}/>}
+    {!schedule&&!recurring&&page!=='dispatch'&&<FreightStats items={summary} unit="건"/>}
     {!schedule&&<div className="fr-toolbar">{recurring&&<span className="fr-recurring-summary">{summary.map(([label,count])=>label+' '+count.toLocaleString('ko-KR')+'건').join(' · ')}</span>}{page==='dispatch'&&<div className="fr-tabs"><button type="button" className="fr-tab" aria-pressed={!f.scope} onClick={()=>change('scope','')}>전체 미배차</button><button type="button" className="fr-tab" aria-pressed={f.scope==='today'} onClick={()=>change('scope','today')}>오늘 상차</button></div>}{page!=='dispatch'&&!schedule&&!recurring&&<div className="fr-tabs"><button className="fr-tab" aria-pressed={!f[tabKey]} onClick={()=>change(tabKey,'')}>전체</button>{Object.entries(tabs).map(([k,l])=><button key={k} className="fr-tab" aria-pressed={f[tabKey]===k} onClick={()=>change(tabKey,k)}>{l}</button>)}</div>}
-      <div className="fr-actions">{!schedule&&<FreightButton onClick={exportRows}>CSV 다운로드</FreightButton>}{page==='orders'&&<FreightButton onClick={()=>form('import','orders')}>일괄 등록</FreightButton>}
-        {(isOrder||recurring)&&<FreightButton primary onClick={()=>form('new',recurring?'recurring':'orders')}>{recurring?'정기 주문 등록':'주문 등록'}</FreightButton>}</div>
+      <div className="fr-actions">{!schedule&&<FreightButton icon="download" onClick={exportRows}>CSV 다운로드</FreightButton>}{page==='orders'&&<FreightButton icon="upload" onClick={()=>form('import','orders')}>일괄 등록</FreightButton>}
+        {(isOrder||recurring)&&<FreightButton primary icon="plus" onClick={()=>form('new',recurring?'recurring':'orders')}>{recurring?'정기 주문 등록':'주문 등록'}</FreightButton>}</div>
     </div>}
     {!schedule&&filterBar}
     {feedback&&<p role="status" className="fr-note">{feedback}</p>}

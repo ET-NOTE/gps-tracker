@@ -215,6 +215,7 @@
 .pt-map-command-stack .map-tools-menu {right:calc(100% + 8px)}
 .pt-member-shell[data-view=devices] .pt-map-command-stack .pt-map-scale button {height:25px;border:0}
 .pt-member-shell[data-view=devices] .pt-map-command-stack .pt-map-scale .pt-scale-options {font-size:9px}
+.pt-map-command-stack .pt-map-locate {pointer-events:auto}
 .pt-member-shell[data-view=devices] .map-action:disabled {opacity:.55;cursor:default}
 .pt-member-shell[data-view=devices] .pt-fence-add {border-color:var(--pt-line)!important;color:var(--pt-label)!important}
 
@@ -337,3 +338,25 @@
   .pt-map-command-stack .map-action,.pt-map-command-stack .pt-map-controls > button {height:33px!important}
   .pt-member-shell .pt-map-command-stack .pt-map-scale button {height:26px}
 }
+.pt-location-anchor { width:59px; height:59px; display:grid; place-items:center; pointer-events:none; }
+.pt-location-marker {
+  display:grid; place-items:center; padding:8px; border:0; background:transparent; color:#fff;
+  position:relative; cursor:pointer; font:inherit; overflow:visible; pointer-events:auto;
+}
+.pt-location-symbol {
+  box-sizing:border-box; width:31px; height:31px; border-radius:50%; display:grid; place-items:center;
+  border:3px solid #fff; background:#6a98c4; box-shadow:0 3px 12px #566c8a29;
+}
+.pt-location-marker[aria-pressed=true] .pt-location-symbol {
+  width:43px; height:43px; background:#4d7fd1; box-shadow:0 0 0 8px #5a8bdd1b,0 5px 18px #355f9f26;
+}
+.pt-location-marker.is-last-known .pt-location-symbol { background:#b5a07c; }
+.pt-location-marker.is-last-known[aria-pressed=true] .pt-location-symbol { box-shadow:0 0 0 8px #b5a07c20,0 5px 18px #355f9f18; }
+.pt-location-marker:focus-visible .pt-location-symbol { outline:3px solid #315cac; outline-offset:3px; }
+.pt-location-caption {
+  position:absolute; top:calc(100% - 2px); left:50%; transform:translateX(-50%); display:grid; gap:2px;
+  max-width:180px; padding:5px 9px; background:#fffffff5; color:#52657b; border:1px solid #e2e7ed;
+  border-radius:6px; text-align:center; font-size:11px; line-height:1.3; box-shadow:0 3px 10px #54657f0a;
+}
+.pt-location-caption strong { font:inherit; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pt-location-caption small { font:inherit; color:#6c6251; white-space:nowrap; }

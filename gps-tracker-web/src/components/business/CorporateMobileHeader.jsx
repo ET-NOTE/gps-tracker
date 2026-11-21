@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Icon from '../Icon';
 import BusinessDrawer from './BusinessDrawer';
+import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope} from './WorkspaceHeader';
 import './corporate-mobile-shell.css';
 
 export default function CorporateMobileHeader({ active, groups, tabs, sections = {}, section, onTab, toolbar, destinations, onNavigate, onQuick }) {
@@ -27,15 +28,13 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
     onNavigate(id);
   }
   return <>
-    <header className="corporate-phone-header no-print">
-      <button type="button" className="corporate-phone-tool" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'navigation'} onClick={openMenu}><Icon name="menu" size={22}/></button>
-      {active.id === 'overview' ? <span className="corporate-phone-brand">법인운행</span>
-        : <span className="corporate-phone-location"><Icon name={groupId === 'vehicles' ? 'car' : group.icon} size={17}/><span>{group.label}</span>
-          {crumb !== group.label && <><Icon name="chevron-right" size={13}/><strong>{crumb}</strong></>}
-        </span>}
-      <button type="button" className="corporate-phone-tool" aria-label="차량·메뉴 검색" onClick={()=>onQuick('search')}><Icon name="search" size={19}/></button>
-      {onNavigate && map && <button type="button" className="corporate-phone-tool" aria-label={map.label} onClick={() => leave(map.id)}><Icon name="map" size={21}/></button>}
-      <button type="button" className="corporate-phone-tool" aria-label="회사 및 계정 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'account'} onClick={() => setPanel('account')}><Icon name="more" size={22}/></button>
+    <header className="corporate-phone-header ws-member-top no-print">
+      <button type="button" className="ws-icon ws-menu" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'navigation'} onClick={openMenu}><Icon name="menu" size={17}/></button>
+      <WorkspaceBreadcrumb service="법인운행" group={group.label} page={crumb}/>
+      <WorkspaceScope/>
+      <button type="button" className="ws-wide-search" aria-label="차량·메뉴 검색" onClick={()=>onQuick('search')}><Icon name="search" size={16}/></button>
+      {onNavigate && map && <button type="button" className="ws-icon ws-secondary" aria-label={map.label} onClick={() => leave(map.id)}><Icon name="map" size={16}/></button>}
+      <WorkspaceAvatar label="회사 및 계정 메뉴" expanded={panel==='account'} onClick={()=>setPanel('account')}/>
     </header>
     {panel === 'navigation' && <BusinessDrawer title="전체 메뉴" navigation onClose={close}>
       <nav className="corporate-phone-links" aria-label="법인차 화면 이동">
