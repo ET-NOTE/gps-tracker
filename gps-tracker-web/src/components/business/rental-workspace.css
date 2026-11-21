@@ -37,6 +37,21 @@
 .rnt-shell[data-wide=true] .rnt-content {max-width:none}
 .rnt-title {display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:42px;margin:0 0 18px}
 .rnt-title h1 {margin:0;color:var(--rnt-ink);font-size:25px;letter-spacing:-.04em;line-height:1.4;font-weight:400}
+.rnt-brand>span {display:grid;gap:2px;text-align:left}
+.rnt-brand small,.rnt-title p,.rnt-title time {font-size:13px;font-weight:400;color:var(--text-2);line-height:1.55}
+.rnt-title p {margin:4px 0 0}
+.rnt-title-actions,.rnt-title time {display:flex;align-items:center;gap:7px}
+.rnt-title-actions {flex-wrap:wrap}
+.rnt-title time {white-space:nowrap}
+.rnt-title {flex-wrap:wrap}
+.rnt-main,.rnt-content,.rnt-title>div {min-width:0}
+@media(min-width:900px){.rnt-content {padding-inline:20px}}
+@media(max-width:470px){
+  .pt-member-shell .rnt-breadcrumb {overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .pt-member-shell .rnt-breadcrumb>span:first-child,.pt-member-shell .rnt-breadcrumb>svg:first-of-type {display:none}
+  .pt-member-shell .rnt-top {gap:4px;padding-inline:6px}
+  .pt-member-shell .rnt-content {padding-inline:10px}
+}
 .rnt-shell .business-button {font-size:14px;min-height:38px;border-radius:7px}
 .rnt-search-results {display:grid;gap:2px}.rnt-search-results input,.rnt-policy input:not([type=checkbox]) {min-height:42px;border:1px solid var(--border);border-radius:7px;padding:8px 11px;background:var(--surface);color:var(--text);font:inherit}
 .rnt-search-results input {margin-bottom:9px}.rnt-search-results button {min-height:38px;display:flex;gap:12px;text-align:left;justify-content:space-between;padding:7px;border-radius:5px}

@@ -11,7 +11,18 @@ export const agreementTotal = c => {
   const [step,divisor] = {hourly:[60000,60],monthly:[86400000,30]}[c.rate_type] || [3600000,24];
   return Math.max(1, Math.ceil(Math.trunc(duration / step) / divisor)) * Number(c.rate_amount_krw || 0);
 };
-export function workflowRows(rows, stage, { query='', status='', branch='', from='', to='', device='' } = {}, now = Date.now()) {
+
+export function rentalMilestones(contract) {
+  return [
+    ['예약 등록',contract.created_at],
+    ['계약 조건 확인',contract.rental_terms?.confirmed_at],
+    ['차량 인도',contract.rental_terms?.checkout_at],
+    ['차량 반납',contract.returned_at],
+    ['정산 확정',contract.settled_at],
+  ].filter(([,time])=>time && Number.isFinite(Date.parse(time)))
+    .sort((a,b)=>Date.parse(a[1])-Date.parse(b[1]));
+}
+export function workflowRows(rows, stage, { query='', status='', branch='', from='', to='', device='', model='', channel='', subset='' } = {}, now = Date.now()) {
   const q = query.trim().toLocaleLowerCase();
   return rows.filter(c => {
     const state = rentalStatus(c,now);
@@ -21,7 +32,13 @@ export function workflowRows(rows, stage, { query='', status='', branch='', from
     if (stage==='returns' && !['active','overdue','returned'].includes(state)) return false;
     if (status && workflowStatus(c,now)!==status) return false;
     if ((branch && c.pickup_location!==branch) || (device && String(c.device_id)!==String(device))) return false;
+    if (model && model !== c.rental_terms?.requested_model || channel && channel !== c.rental_terms?.channel) return false;
     const start = businessDate(c.starts_at), end = businessDate(c.ends_at);
+    const today = businessDate(now);
+    if (subset==='pickup' && start!==today) return false;
+    if (subset==='due' && end!==today) return false;
+    if (subset==='late' && state!=='overdue') return false;
+    if (subset==='open' && state==='returned' || subset==='returned' && state!=='returned') return false;
     if ((from && end<from) || (to && start>to)) return false;
     return !q || [c.id, 'R-'+c.id, c.license_plate,c.device_name,c.renter_name,c.renter_phone,c.rental_terms?.driver_name,c.rental_terms?.requested_model]
       .some(v=>String(v ?? '').toLocaleLowerCase().includes(q));

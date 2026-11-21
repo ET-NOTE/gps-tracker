@@ -4,6 +4,7 @@ import CarImage from '../CarImage';
 import { classifyDevice, ageString } from '../../colors';
 import { vehicleName } from '../../lib/business';
 import { corporateVehicleName, terminalName, locationState, locationSummary } from '../../lib/corporateOverview';
+import { corporatePageHint } from '../../lib/corporateNavigation';
 import { kstDateTime } from '../../lib/businessExport';
 import { useBusinessClock } from './useBusinessData';
 import { openPalette } from '../ui/CommandPalette';
@@ -33,7 +34,7 @@ export function RentalVehicleScope({devices, meta, onMap, onVehicleAction, onMan
     </VehicleContext.Provider>
   </SelectionContext.Provider>;
 }
-export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail, title, description, tabs, groups, tab, section, sections, onSection, onTab, action, mobileAction, toolbar, globalNavigation, children, devices = [], vehicleStatus='ready', kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
+export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail, title, description, tabs, groups, tab, section, sections, onSection, companyLabel, onTab, action, mobileAction, toolbar, globalNavigation, children, devices = [], vehicleStatus='ready', kind, onMap, onVehicleAction, onManageVehicle, onNavigate, onVehiclesChange, meta = {} }) {
   const workspaceRef = useRef(null);
   const phone = useCorporatePhone('navigation');
   // Mobile scrolls the persistent workspace; desktop's keyed content remounts
@@ -80,8 +81,15 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
   const accountNavigation = (globalNavigation || [{ id: 'home', label: '지도', icon: 'mapPin' }, { id: 'devices', label: '단말기 관리', icon: 'list' }, { id: 'profile', label: '내정보', icon: 'user' }])
     .map(item => corporate && item.id === 'home' ? { ...item, label: '실시간 지도', icon: 'mapPin' } : item);
   const mapNavigation = corporate && accountNavigation.find(item => item.id === 'home');
+  function visit(page,child) {
+    if (child && onSection) {onTab(page); onSection(page,child);}
+    else onTab(page,child);
+  }
   const groupLabel = navigation.find(item=>item.id===activeGroup)?.label || active.label;
   const pageLabel = sections?.[active.id]?.find(([id])=>section===id)?.[1] || active.label;
+  const company = companyLabel || '내 회사';
+  const day = useBusinessClock();
+  const calendarLabel = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'long'}).format(day);
   const subNavigation = subTabs.length > 1 && <nav className="business-subnav no-print" aria-label={`${subnavLabel} 하위 메뉴`}>{subTabs.map(item => <button className="business-subnav-item" key={item.id} type="button" aria-current={tab === item.id ? 'page' : undefined} onClick={() => onTab(item.id)}>{item.label}</button>)}</nav>;
   return <SelectionContext.Provider value={{ focusedId, focusVehicle: d => setFocusedId(d.id), kind }}><VehicleContext.Provider value={openVehicle}><section ref={workspaceRef} data-view-width={corporate ? (wide ? 'wide' : 'normal') : undefined} className={`gps-user-panel gps-business-panel business-workspace${kind === 'corporate' ? ' business-workspace--corporate' : ''}${onNavigate ? ' has-mobile-nav' : ''}`}>
     {!corporate && <header className="business-header no-print">
@@ -90,7 +98,7 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
     </header>}
     <div className={`business-layout${subTabs.length > 1 ? ' has-subnav' : ''}`}>
       <nav className="business-nav no-print" aria-label={`${title} 메뉴`}>
-        {corporate && <button type="button" className="fleet-brand-home" aria-label="시리얼링크 운영 현황" onClick={()=>onTab('overview')}><span className="fleet-brand-symbol"><Icon name="car" size={19}/></span>시리얼링크</button>}
+        {corporate && <div className="fleet-member-brand"><button type="button" className="fleet-brand-home" aria-label="시리얼링크 운영 현황" onClick={()=>onTab('overview')}><span className="fleet-brand-symbol"><Icon name="car" size={19}/></span>법인운행</button><small>{company} · 업무 공간</small></div>}
         {corporate ? navigation.map(item=>{
           const pages=tabs.filter(t=>(t.group || t.id)===item.id);
           const links=pages.flatMap(p=>sections?.[p.id]?.length ? sections[p.id].map(([id,label])=>({page:p.id,id,label})) : [{page:p.id,label:p.label}]);
@@ -101,7 +109,7 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
             onTab(lastInGroup[item.id] && pages.some(p=>p.id===lastInGroup[item.id]) ? lastInGroup[item.id] : pages[0].id);
             setExpanded(item.id);
           }}><Icon name={item.icon} size={18}/><span>{item.label}</span>{nested&&<Icon name={open?'chevron-down':'chevron-right'} size={14}/>}</button>
-            {nested&&open&&<nav className="fleet-nav-children" aria-label={`${item.label} 하위 메뉴`}>{links.map(link=><button key={link.page+(link.id||'')} type="button" aria-current={tab===link.page&&(!link.id||section===link.id)?'page':undefined} onClick={()=>{onTab(link.page);if(link.id)onSection?.(link.page,link.id);}}>{link.label}</button>)}</nav>}
+            {nested&&open&&<nav className="fleet-nav-children" aria-label={`${item.label} 하위 메뉴`}>{links.map(link=><button key={link.page+(link.id||'')} type="button" aria-current={tab===link.page&&(!link.id||section===link.id)?'page':undefined} onClick={()=>visit(link.page,link.id)}>{link.label}</button>)}</nav>}
           </div>;
         }) : navigation.map(item => <button className="business-nav-item" key={item.id} type="button" aria-current={(groups ? activeGroup : tab) === item.id ? 'page' : undefined} onClick={() => onTab(groups ? lastInGroup[item.id] || tabs.find(t => t.group === item.id).id : item.id)}>
           <Icon name={item.icon} size={18} /><span>{item.label}</span>
@@ -110,16 +118,16 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
         {corporate && <div className="business-nav-tools">{action}{onNavigate && <button className="business-button" type="button" aria-expanded={accountMenu} onClick={() => setAccountMenu(true)}><Icon name="user" size={18} />계정 메뉴</button>}</div>}
       </nav>
       {corporate && phone ? <CorporateMobileHeader active={active} groups={groups} tabs={tabs} section={section} sections={sections}
-        onSection={onSection} onTab={onTab} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation} onQuick={setQuick}/>
+        onTab={visit} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation} onQuick={setQuick}/>
       : corporate ? <header className="business-topbar no-print">
-        <div className="fleet-topbar-inner"><div className="fleet-breadcrumb"><span>법인차 운영</span><Icon name="chevron-right" size={13}/><span>{groupLabel}</span>{groupLabel!==pageLabel&&<><Icon name="chevron-right" size={13}/><strong>{pageLabel}</strong></>}</div>
-        <div className="fleet-width" role="group" aria-label="화면 폭 선택">{[[false,'기본'],[true,'넓게']].map(([value,label])=><button key={label} type="button" aria-pressed={wide===value} onClick={()=>chooseWidth(value)}>{label}</button>)}</div>
+        <div className="fleet-topbar-inner"><div className="fleet-breadcrumb"><span>법인운행</span><Icon name="chevron-right" size={13}/><span>{groupLabel}</span>{groupLabel!==pageLabel&&<><Icon name="chevron-right" size={13}/><strong>{pageLabel}</strong></>}</div>
+        <div className="fleet-width" role="group" aria-label="화면 폭 선택"><span>화면 폭</span>{[[false,'기본'],[true,'넓게']].map(([value,label])=><button key={label} type="button" aria-pressed={wide===value} onClick={()=>chooseWidth(value)}>{label}</button>)}</div>
         <button className="fleet-top-search" type="button" onClick={()=>setQuick('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
         <button className="fleet-top-search" type="button" onClick={()=>setQuick('alerts')} aria-label="운영 알림"><Icon name="bell" size={18}/></button>
         {toolbar && <div className="business-topbar-account">{toolbar}</div>}</div>
       </header> : subNavigation}
       <div className="business-content" key={tab}>
-        {corporate && !phone && <header className="fleet-page-title no-print"><h1>{pageLabel}</h1></header>}
+        {corporate && <header className="fleet-page-title fleet-member-heading no-print"><div><h1>{pageLabel}</h1><p>{corporatePageHint(tab,section)}</p></div><time>{calendarLabel}</time></header>}
         {!corporate && <div className="business-page-heading no-print"><h2>{active.label}</h2>{active.description && <p>{active.description}</p>}</div>}
         {children}
       </div>
@@ -148,7 +156,7 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
       </div>
     </BusinessDrawer>}
     {accountMenu && onNavigate && <BusinessDrawer title="계정 메뉴" onClose={() => setAccountMenu(false)}><div className="business-more-menu">{accountNavigation.map(item => <button className="business-button" key={item.id} onClick={() => { setAccountMenu(false); onNavigate(item.id); }}><Icon name={item.icon} size={18} />{item.label}</button>)}</div></BusinessDrawer>}
-    {quick&&<FleetQuickPanel mode={quick} tabs={tabs} groups={navigation} sections={sections} devices={devices} vehicleStatus={vehicleStatus} onVehicle={openVehicle} onClose={()=>setQuick(null)} onVisit={(page,id)=>{onTab(page);if(id)onSection?.(page,id);}}/>}
+    {quick&&<FleetQuickPanel mode={quick} tabs={tabs} groups={navigation} sections={sections} devices={devices} vehicleStatus={vehicleStatus} onVehicle={openVehicle} onClose={()=>setQuick(null)} onVisit={visit}/>}
     {selected && (renderVehicleDetail ? renderVehicleDetail(selected,()=>setSelectedId(null)) : <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} onUpdated={onVehiclesChange} />)}
   </section></VehicleContext.Provider></SelectionContext.Provider>;
 }
@@ -186,7 +194,11 @@ export function BusinessMetrics({ items }) {
     {item.hint && <p>{item.hint}</p>}
   </div>)}</div>;
 }
-export function BusinessTask({ title, description, label, tone = '', action, onClick }) {
+export function BusinessTask({ title, description, label, tone = '', action, onClick, icon }) {
+  if (icon && onClick) return <button type="button" className={'fleet-member-task '+tone} aria-label={action+' · '+title} onClick={onClick}>
+    <i><Icon name={icon} size={16}/></i><span><strong>{title}</strong><small>{description}</small></span>
+    {label&&<span className={'business-badge '+tone}>{label}</span>}<Icon name="chevron-right" size={13}/>
+  </button>;
   return <div className="business-task"><span className={`business-task-mark ${tone}`} /><div className="business-task-copy"><strong>{title}</strong><p>{description}</p></div>{label && <span className={`business-badge ${tone}`}>{label}</span>}{onClick && <BusinessButton onClick={onClick}>{action || '확인'}</BusinessButton>}</div>;
 }
 export function BusinessSettings({ company, subscription, activeTab, onTab, hideNavigation=false }) {

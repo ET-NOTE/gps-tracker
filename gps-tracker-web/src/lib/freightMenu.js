@@ -12,3 +12,32 @@ export const freightMenu = [
   ['settings','관리 설정','settings',[['cargo-policies','배차·운송 정책'],['cargo-codes','기준정보'],['cargo-integrations','알림·연동'],['company','회사 정보']]]
 ].map(([id,label,icon,pages])=>({id,label,icon,pages}));
 export const freightPages=new Map(freightMenu.flatMap(g=>g.pages));
+
+export const freightPageHeadings = {
+  'cargo-orders': {title: '운송 주문', description: '화물과 작업 조건을 접수하고 배차에 연결합니다.'},
+  'cargo-recurring': {title: '정기·반복 주문', description: '반복 운송 조건을 저장하고 날짜별 주문을 생성합니다.'},
+  'cargo-dispatch': {title: '통합 배차', description: '미배차 주문과 차량·기사 후보를 함께 확인합니다.'},
+  'cargo-schedule': {title: '배차 일정', description: '주간 배차와 정비 일정을 확인합니다.'},
+  'cargo-shipments': {title: '운송 현황', description: '배차 수락부터 상·하차까지 현장 진행을 기록합니다.'},
+  'cargo-proofs': {title: '인수증·완료 확인', description: '수령 확인과 증빙을 검토하고 정산에 연결합니다.'},
+  'cargo-shippers': {title: '화주 목록', description: '주문·청구 대상 화주와 담당 정보를 관리합니다.'},
+  'cargo-carriers': {title: '협력 운송사', description: '운송 위탁과 지급 대상, 소속 차량·기사를 관리합니다.'},
+  'cargo-locations': {title: '상·하차지', description: '주소와 현장 담당자, 작업 시간 및 진입 조건을 관리합니다.'},
+  'cargo-rates': {title: '운임표·계약 요율', description: '구간과 차량 조건별 참고 운임을 관리합니다.'},
+  'cargo-billing': {title: '화주 청구·수납', description: '합의 운임과 청구 확인, 수납·환불 기록을 관리합니다.'},
+  'cargo-payables': {title: '운송비 정산·지급', description: '운송사·차주의 지급 대상과 지급·환수 기록을 관리합니다.'},
+  'cargo-charges': {title: '추가 비용', description: '대기료·경유료·작업비를 확인하고 청구·지급에 반영합니다.'},
+  'cargo-policies': {title: '배차·운송 정책', description: '배차 확인, 인수증 확인과 수신 알림 기준을 설정합니다.'},
+  'cargo-codes': {title: '기준정보', description: '차량 형태와 화물 단위, 추가 비용 항목을 관리합니다.'},
+  'cargo-integrations': {title: '알림·연동', description: '업무 알림 항목과 단말기 연결 상태를 확인합니다.'},
+  'cargo-dashboard': {title: '운영현황', description: '오늘의 주문과 배차, 현장 진행 상황을 확인하세요.'},
+  'cargo-vehicles': {title: '차량 목록', description: '차량 조건과 소속, 배차 준비 상태를 관리합니다.'},
+  'cargo-drivers': {title: '기사 목록', description: '실제 운전자와 소속, 배차 가능 여부를 관리합니다.'},
+  'cargo-maintenance': {title: '정비·보험', description: '차량 관리 일정과 비용, 배차 제한 상태를 확인합니다.'},
+  'cargo-incidents': {title: '지연·사고 처리', description: '현장 문제와 조치 결과를 운송 건에 연결해 관리합니다.'},
+  'cargo-devices': {title: '단말기 관리', description: '차량 연결과 마지막 수신 정보를 확인합니다.'},
+  'cargo-live': {title: '실시간 관제', description: '위치·이동·수신 정보와 운송 진행 상태를 함께 확인합니다.'},
+  'cargo-reports': {title: '주문·배차 실적', description: '화주와 운송 상태별 실적을 확인합니다.'},
+  'cargo-profit': {title: '운송 손익', description: '청구·지급 운임과 추가 비용을 비교합니다.'},
+  'cargo-utilization': {title: '차량 가동·공차', description: '배차 일정과 차량 관리비를 기준으로 운영 현황을 확인합니다.'},
+};

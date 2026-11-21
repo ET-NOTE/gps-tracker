@@ -54,14 +54,9 @@ function OrderActionForm({action,row,commit,onClose}){
   </FreightForm>;
 }
 
-export default function FreightWorkflow({page,...props}){
-  const key=page.replace(/^cargo-/,'');
-  return <WorkflowPage key={key} page={key} {...props}/>;
-}
-function WorkflowPage({page,data,save,onPage}){
-  const [filters,setFilters]=useState(allFilters),[detail,setDetail]=useState(null),[dialog,setDialog]=useState(null),[feedback,setFeedback]=useState('');
+export function FreightRecordActions({data,save,onPage,children}) {
+  const [detail,setDetail]=useState(null),[dialog,setDialog]=useState(null),[feedback,setFeedback]=useState('');
   const currentData=useRef(data);currentData.current=data;
-  const isOrder=page==='orders'||page==='dispatch',recurring=page==='recurring',isShipment=!recurring&&!isOrder,proofs=page==='proofs',schedule=page==='schedule';
   const open=(kind,id)=>setDetail({kind,id});
   const form=(action,kind,id,vehicle)=>{setFeedback('');setDialog({action,kind,id,vehicle,base:data});};
   const close=()=>setDialog(null);
@@ -73,6 +68,25 @@ function WorkflowPage({page,data,save,onPage}){
     if(dialog.action==='deleteTemplate')setDetail(null);
     close();setFeedback('저장했습니다.');
   }
+  const chosen=detail&&getRow(data,detail.kind,detail.id),d=dialog,r=d&&getRow(data,d.kind,d.id);
+  return <>{children({open,form,navigate,feedback,setFeedback})}
+    {chosen&&!d&&<FreightDetail kind={detail.kind} row={chosen} data={data} form={form} open={open} onClose={()=>setDetail(null)} onPage={navigate}/>}
+    {d&&(['new','edit'].includes(d.action)?<FreightOrderForm data={data} row={r} recurring={d.kind==='recurring'} onClose={close} commit={commit} onPage={navigate}/>:
+      d.action==='assign'?<FreightAssignForm data={data} order={d.kind==='orders'?r:firstOrder(data,r)} shipment={d.kind==='shipments'?r:null} initialVehicle={d.vehicle} onClose={close} commit={commit}/>:
+      d.action==='proof'?<FreightProofForm shipment={r} onClose={close} commit={commit}/>:
+      d.action==='import'?<BulkForm onClose={close} commit={commit}/>:
+      ['cancelOrder','generate','deleteTemplate'].includes(d.action)?<OrderActionForm action={d.action} row={r} commit={commit} onClose={close}/>:
+      <FreightActionForm action={d.action} data={data} shipment={r} onClose={close} commit={commit}/>)}
+  </>;
+}
+
+export default function FreightWorkflow({page,...props}) {
+  const key=page.replace(/^cargo-/, '');
+  return <FreightRecordActions key={key} {...props}>{actions=><WorkflowPage page={key} data={props.data} {...actions}/>}</FreightRecordActions>;
+}
+function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback}) {
+  const [filters,setFilters]=useState(allFilters);
+  const isOrder=page==='orders'||page==='dispatch',recurring=page==='recurring',isShipment=!recurring&&!isOrder,proofs=page==='proofs',schedule=page==='schedule';
   const stateLabels=proofs?proofStates:recurring?{active:'사용 중',inactive:'사용 중지'}:isOrder?orderStates:shipStates;
   const shipList=page==='shipments';
   const tabs=shipList?{today:'오늘 상차',active:'운송 진행',late:'하차 지연'}:stateLabels;
@@ -95,6 +109,12 @@ function WorkflowPage({page,data,save,onPage}){
       &&(!f.start||date>=f.start)&&(!f.end||date<=f.end)&&contains(r.number,r.name,o.number,o.externalRef,o.cargoName,routeName(data,o),nameOf(data,'shippers',o.shipperId),vehicleName(data,r.vehicleId),nameOf(data,'drivers',r.driverId),r.proof?.receiver);
   });
   if(!recurring)rows.sort((a,b)=>epoch(a.start)-epoch(b.start));
+  const requests=page==='dispatch'?data.shipments.filter(s=>{
+    const o=firstOrder(data,s);
+    return s.status==='requested' && (!f.branch||s.branchId===f.branch) && (!f.shipper||o?.shipperId===f.shipper)
+      && (!f.type||o?.vehicleType===f.type) && (!f.scope||inputTime(s.start).slice(0,10)===stamp().slice(0,10))
+      && contains(s.number,o?.number,o?.cargoName,nameOf(data,'shippers',o?.shipperId),routeName(data,o),vehicleName(data,s.vehicleId),nameOf(data,'drivers',s.driverId));
+  }):[];
   const services=schedule&&!f.status?data.services.filter(s=>(!f.branch||getRow(data,'vehicles',s.vehicleId)?.branchId===f.branch)&&contains(s.type,vehicleName(data,s.vehicleId),s.note)):[];
   const count=status=>rows.filter(r=>r.status===status).length;
   const summary=recurring?[['정기 주문',rows.length],['사용 중',rows.filter(r=>r.active).length],['사용 중지',rows.filter(r=>!r.active).length]]:
@@ -112,7 +132,6 @@ function WorkflowPage({page,data,save,onPage}){
     try{await downloadCsv(names[page]+'_'+stamp().slice(0,10),[header,...body]);}catch(e){setFeedback(e.message);}
   }
   const setup=(rows,key,label)=><FreightField label={label}><select value={f[key]} onChange={e=>change(key,e.target.value)}><FreightOptions rows={rows} blank="전체"/></select></FreightField>;
-  const chosen=detail&&getRow(data,detail.kind,detail.id),d=dialog,r=d&&getRow(data,d.kind,d.id);
   return <div className="fr-page">
     {!schedule&&page!=='dispatch'&&<FreightStats items={summary}/>}
     <div className="fr-toolbar">{page!=='dispatch'&&!schedule&&<div className="fr-tabs"><button className="fr-tab" aria-pressed={!f[tabKey]} onClick={()=>change(tabKey,'')}>전체</button>{Object.entries(tabs).map(([k,l])=><button key={k} className="fr-tab" aria-pressed={f[tabKey]===k} onClick={()=>change(tabKey,k)}>{l}</button>)}</div>}
@@ -128,15 +147,8 @@ function WorkflowPage({page,data,save,onPage}){
     </FreightFilters>
     {Object.values(f).some(Boolean)&&<div className="fr-actions"><FreightButton onClick={()=>setFilters(allFilters)}>조회 조건 초기화</FreightButton></div>}
     {feedback&&<p role="status" className="fr-note">{feedback}</p>}
-    {page==='dispatch'?<DispatchView data={data} orders={rows} scope={f.scope} setScope={value=>change('scope',value)} form={form} open={open}/>:schedule?<ScheduleView data={data} rows={rows} services={services} open={open} onDispatch={()=>navigate('cargo-dispatch')} onExport={async(week,entries)=>{
+    {page==='dispatch'?<DispatchView data={data} orders={rows} requests={requests} scope={f.scope} setScope={value=>change('scope',value)} form={form} open={open}/>:schedule?<ScheduleView data={data} rows={rows} services={services} open={open} onDispatch={()=>navigate('cargo-dispatch')} onExport={async(week,entries)=>{
       try{await downloadCsv('배차일정_'+week,[['구분','운송번호 / 작업','구간 / 차량','시작','종료'],...entries.map(e=>[e.kind==='services'?'정비·보험':'운송',e.title,e.info,timeLabel(e.row.start),timeLabel(e.row.end)])]);}catch(e){setFeedback(e.message);}
     }}/>:<WorkflowTable page={page} data={data} rows={rows} open={open} form={form}/>}
-    {chosen&&!d&&<FreightDetail kind={detail.kind} row={chosen} data={data} form={form} open={open} onClose={()=>setDetail(null)} onPage={navigate}/>}
-    {d&&(['new','edit'].includes(d.action)?<FreightOrderForm data={data} row={r} recurring={d.kind==='recurring'} onClose={close} commit={commit} onPage={navigate}/>:
-      d.action==='assign'?<FreightAssignForm data={data} order={d.kind==='orders'?r:firstOrder(data,r)} shipment={d.kind==='shipments'?r:null} initialVehicle={d.vehicle} onClose={close} commit={commit}/>:
-      d.action==='proof'?<FreightProofForm shipment={r} onClose={close} commit={commit}/>:
-      d.action==='import'?<BulkForm onClose={close} commit={commit}/>:
-      ['cancelOrder','generate','deleteTemplate'].includes(d.action)?<OrderActionForm action={d.action} row={r} commit={commit} onClose={close}/>:
-      <FreightActionForm action={d.action} data={data} shipment={r} onClose={close} commit={commit}/>)}
   </div>;
 }

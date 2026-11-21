@@ -43,7 +43,7 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
   const [detail, setDetail] = useState(null);
   const own = ownerServices(settings);
   return <>
-    <div className="pt-section-head pt-services-heading"><h2>이용 서비스</h2></div>
+    <div className="pt-section-head pt-services-heading"><h2>이용 서비스</h2><span className="pt-tag">{availableServices.length}개 이용 중</span></div>
     <section className="pt-base-service">
       <span className="pt-service-icon"><Icon name="mapPin" size={22}/></span>
       <div><h3>기본 위치관리</h3><p>단말기 위치와 이동 기록을 확인합니다.</p></div>
@@ -53,10 +53,10 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
       {SERVICES.map(service => {
         const enabled = own.includes(service.key);
         const accessible = enabled || availableServices.includes(service.key);
-        return <article className="pt-service-card" key={service.key} data-service={service.key}>
+        return <article className="pt-service-card" key={service.key} data-service={service.key} data-enabled={accessible}>
           <div className="pt-section-head"><span className="pt-service-icon"><Icon name={service.icon} size={22}/></span>
             <span className={'pt-tag' + (accessible ? ' pt-tag-active' : '')}>{enabled ? '사용 중' : accessible ? '직원 권한' : '사용 가능'}</span></div>
-          <h3>{service.label}</h3><p>{service.description}</p>
+          <h3><button type="button" className="pt-service-title" aria-label={service.label + ' 기능 보기'} onClick={() => setDetail(service)}>{service.label}</button></h3><p>{service.description}</p>
           <div className="pt-card-actions"><span className="pt-toggle"><Switch label={service.label + ' 사용 설정'}
             checked={enabled} disabled={busy} onChange={value => update({service:service.key, enabled:value})}/>{accessible && !enabled ? '내 사업장 사용' : '사용'}</span>
             {accessible
@@ -79,9 +79,11 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
     </div>
     <Modal open={!!detail} title={detail?.label} onClose={() => setDetail(null)}>
       {detail && <><p className="pt-info-copy">{detail.description}</p><ul className="pt-feature-list">{detail.features.map(feature => <li key={feature}>{feature}</li>)}</ul>
-        <button type="button" className="pt-button pt-primary" disabled={busy} onClick={async () => {
+        {availableServices.includes(detail.key) || own.includes(detail.key)
+          ? <Link to={servicePaths[detail.key] || detail.path} className="pt-button pt-primary" onClick={() => setDetail(null)}>서비스 열기</Link>
+          : <button type="button" className="pt-button pt-primary" disabled={busy} onClick={async () => {
           setDetail(null); await update({service:detail.key, enabled:true});
-        }}>서비스 사용하기</button></>}
+        }}>서비스 사용하기</button>}</>}
     </Modal>
   </>;
 }

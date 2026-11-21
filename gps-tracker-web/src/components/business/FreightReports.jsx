@@ -4,9 +4,9 @@ import {freightPages} from '../../lib/freightMenu';
 import {stamp,costLabel} from '../../lib/freightWorkflow';
 import {csvCell} from '../../lib/businessExport';
 import {saveBlob} from '../../lib/fileDownload';
-import {FreightField,FreightOptions,FreightStats,FreightTable,FreightButton} from './FreightKit';
+import {FreightField,FreightOptions,FreightStats,FreightTable,FreightButton,FreightStageChart} from './FreightKit';
 
-export default function FreightReports({page,data}){
+export default function FreightReports({page,data,onPage}){
   const today=stamp().slice(0,10), defaults={start:today.slice(0,7)+'-01',end:today,branch:'',carrier:'*'};
   const [filters,set]=useState(defaults),[failure,fail]=useState('');
   const update=k=>e=>set({...filters,[k]:e.target.value}),r=freightReport(data,filters);
@@ -39,8 +39,14 @@ export default function FreightReports({page,data}){
     <FreightField label="운영 지점"><select value={filters.branch} onChange={update('branch')}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
     <FreightField label="소속"><select value={filters.carrier} onChange={update('carrier')}><option value="*">전체 소속</option><option value="">자사</option><FreightOptions rows={data.carriers}/></select></FreightField>
     <FreightButton onClick={()=>set(defaults)}>조건 초기화</FreightButton></div>
-    {r.error?<p role="alert">{r.error}</p>:<><FreightStats items={stats}/><div className="fr-toolbar"><strong>{util?'차량별 배차일':profit?'운송별 운임 차익':'화주별 운송 실적'}</strong><FreightButton icon="download" onClick={download}>CSV 다운로드</FreightButton></div>
-      <FreightTable columns={columns} rows={rows.map(r=>({...r,cells:r.cells.map((v,i)=>amounts.includes(i)?costLabel(v):v)}))}/>
+    {r.error?<p role="alert">{r.error}</p>:<><FreightStats items={stats}/>
+      <div className={!util&&!profit?'fr-overview-grid secondary':'fr-section'}>
+        <section className="fr-dashboard-card"><header><h2>{util?'차량별 배차일 비율':profit?'운송별 운임 차익':'화주별 운송 실적'}</h2><FreightButton icon="download" onClick={download}>CSV 다운로드</FreightButton></header>
+          <FreightTable columns={columns} rows={rows.map(row=>({...row,cells:row.cells.map((v,i)=>amounts.includes(i)?costLabel(v):v)}))}/></section>
+        {!util&&!profit&&<section className="fr-dashboard-card"><header><h2>진행 상태</h2></header><FreightStageChart ships={r.shipments}/></section>}
+        {profit&&<section className="fr-dashboard-card"><header><h2>별도 차량 관리비</h2><FreightButton onClick={()=>onPage('cargo-maintenance')}>정비·보험 내역</FreightButton></header>
+          <div className="fr-live-detail">조회 기간 완료 정비·보험 비용 <strong>{costLabel(r.utilization.reduce((n,v)=>n+v.cost,0))}</strong></div></section>}
+      </div>
       <p className="fr-note">{util?'배차일은 차량별로 운송 일정이 잡힌 날짜를 한 번씩 집계합니다.':'상차 예정일 기준으로 승인된 추가 비용을 포함합니다. 양쪽 운임이 확정된 '+r.totals.known+'건의 차익을 집계했습니다.'}</p></>}
     {failure&&<p role="alert">{failure}</p>}
   </div>;

@@ -1,5 +1,6 @@
 import DeviceFilter from './DeviceFilter';
 import MapControls from './MapControls';
+import Icon from './Icon';
 import { liveMotion } from '../lib/liveMotion';
 import { useVisibleNow } from '../hooks/useVisibleNow';
 import './MapTopOverlay.css';
@@ -14,7 +15,7 @@ export function mapCacheNotice(sources, selected) {
   return null;
 }
 
-export default function MapTopOverlay({ devices, selected, onSelect, mapRef, onOpenRoadview,
+export default function MapTopOverlay({ devices, selected, onSelect, onPair, mapRef, onOpenRoadview,
   showSpeed, liveSpeed, now, historyMode = false, cachedSources = {}, children }) {
   const clock = useVisibleNow(now == null && showSpeed && selected != null);
   now = now ?? clock;
@@ -31,7 +32,8 @@ export default function MapTopOverlay({ devices, selected, onSelect, mapRef, onO
   return <div className="map-top-overlay">
     <div className="map-top-main">
       {devices.length > 0 && <div className="map-device-card">
-        <DeviceFilter devices={devices} selected={selected} onChange={onSelect} integrated />
+        <div className="pt-map-selector-row"><DeviceFilter devices={devices} selected={selected} onChange={onSelect} integrated />
+          {onPair && <button type="button" aria-label="단말기 등록" title="단말기 등록" onClick={onPair}><Icon name="plus" size={17}/></button>}</div>
         {showSpeed && device ? <div className="map-live-summary" aria-label="실시간 운행 정보">
           <div className="map-live-reading">
             <strong>{motion.speedKmh == null ? '--' : Math.round(motion.speedKmh)}</strong>

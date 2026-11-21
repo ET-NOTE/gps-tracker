@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { agreementTotal, workflowRows, workflowStatus } from '../src/lib/rentalWorkflow.js';
+import { agreementTotal, rentalMilestones, workflowRows, workflowStatus } from '../src/lib/rentalWorkflow.js';
 import { computeSettlementPreview } from '../src/lib/rentalReturn.js';
+
+test('계약 진행 기록은 예약 시간이나 상태에서 실제 인도·반납 시각을 추정하지 않는다',()=>{
+  const created='2026-11-19T01:00:00Z',returned='2026-11-20T03:00:00Z',settled='2026-11-20T04:00:00Z';
+  assert.deepEqual(rentalMilestones({status:'returned',starts_at:created,ends_at:returned}),[]);
+  assert.deepEqual(rentalMilestones({created_at:created,rental_terms:{confirmed_at:'invalid'},returned_at:returned,settled_at:settled}),
+    [['예약 등록',created],['차량 반납',returned],['정산 확정',settled]]);
+});
 
 const booking = {id:1, status:'draft', device_id:null, starts_at:'2026-11-18T14:30:00Z', ends_at:'2026-11-19T14:31:00Z', renter_name:'고객',
   rate_type:'daily', rate_amount_krw:50000, rental_terms:{requested_model:'경차', driver_name:'실운전자',late_hourly:1200}};

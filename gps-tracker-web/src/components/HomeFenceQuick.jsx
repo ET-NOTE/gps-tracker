@@ -91,13 +91,13 @@ function FenceToggle({ on, onClick, count, fabBottom }) {
     <button onClick={onClick}
       aria-label={on ? '펜스 표시 끄기' : '펜스 표시 켜기'} aria-pressed={on}
       title={on ? '펜스 표시 끄기' : '펜스 표시 켜기'}
-      className="btn-bounce"
+      className="btn-bounce pt-fence-toggle"
       style={{
         ...ts.btn,
         bottom: fabBottom,
-        background: on ? 'var(--primary)' : 'var(--surface)',
-        color: on ? 'var(--primary-fg, white)' : 'var(--primary)',
-        border: on ? 'none' : '1px solid var(--border)',
+        background: on ? 'var(--status-info-bg)' : 'var(--surface)',
+        color: on ? 'var(--primary)' : 'var(--text-2)',
+        border: '1px solid var(--border)',
       }}>
       <Icon name="fence" size={18} /><span>펜스 표시</span>
       {on && count > 0 && <span style={ts.badge}>{count}</span>}
@@ -220,7 +220,7 @@ function FenceCreator({ mapRef, filterDeviceId, onCreated, fabBottom }) {
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="btn-bounce"
+        className="btn-bounce pt-fence-add"
         style={{ ...cs.fab, bottom: fabBottom + 60 }}
         title="새 지오펜스">
         <Icon name="plus" size={18} /><span>펜스 추가</span>
@@ -229,7 +229,7 @@ function FenceCreator({ mapRef, filterDeviceId, onCreated, fabBottom }) {
   }
 
   return (
-    <div style={{ ...cs.popover, bottom: fabBottom + 16 }}>
+    <div className="pt-fence-create" role="region" aria-label="새 펜스" style={{ ...cs.popover, bottom: fabBottom + 16 }}>
       <div style={cs.popHeader}>
         <span style={cs.popTitle}>새 펜스</span>
         <button onClick={closeAndReset} style={cs.popClose} title="취소">
@@ -289,6 +289,7 @@ function FenceCreator({ mapRef, filterDeviceId, onCreated, fabBottom }) {
 // ────────────────────────────────────────────────────────────
 function FenceList({ fences, devices, mapRef, onChange, bottomLift, side = 'left' }) {
   const [, force] = useState(0);   // 디바이스 위치 갱신 시 안/밖 재계산용
+  const [open, setOpen] = useState(false);
   useEffect(() => { force(x => x + 1); }, [devices]);
 
   if (fences.length === 0) return null;
@@ -317,12 +318,12 @@ function FenceList({ fences, devices, mapRef, onChange, bottomLift, side = 'left
     : { left: dateBoxPresent ? 116 : 8, bottom: `calc(${bottomLift}px + 8px)`,
         maxHeight: dateBoxPresent ? 'calc(100% - 300px)' : 'calc(100% - 220px)' };
   return (
-    <div style={{ ...ls.wrap, ...positionStyle }}>
-      <div style={ls.head}>
+    <div className="pt-fence-list" style={{ ...ls.wrap, ...positionStyle }}>
+      <button className="pt-fence-heading" type="button" aria-expanded={open} onClick={() => setOpen(value => !value)}>
         <Icon name="fence" size={11} style={{ color: 'var(--text-3)' }} />
-        <span>펜스 ({fences.length})</span>
-      </div>
-      <div style={ls.scroll}>
+        <span>펜스 목록 ({fences.length})</span><Icon name={open ? 'chevron-up' : 'chevron-down'} size={13}/>
+      </button>
+      <div hidden={!open} style={open ? ls.scroll : undefined}>
         {fences.map(f => {
           const inside = isAnyInside(f, devices);
           const dot = f.active ? (inside ? 'var(--status-warning-text)' : 'var(--status-success-text)') : 'var(--text-3)';

@@ -12,9 +12,9 @@ export function Options({items}) {
   return Object.entries(items).map(([value,label])=><option key={value} value={value}>{label}</option>);
 }
 export function Table({columns,rows,empty}) {
-  if (!rows.length) return <p className="ro-empty">{empty}</p>;
-  return <div className="ro-table-box"><table className="ro-table"><thead><tr>{columns.map(([label])=><th key={label} scope="col">{label}</th>)}</tr></thead>
-    <tbody>{rows.map(row=><tr key={row.id}>{columns.map(([label,render])=><td key={label} data-label={label}><div>{render(row) ?? '—'}</div></td>)}</tr>)}</tbody></table></div>;
+  return <div className="ro-table-box" role="region" aria-label={columns[0][0]+'별 목록'} tabIndex={0}><table className="ro-table"><thead><tr>{columns.map(([label])=><th key={label} scope="col">{label}</th>)}</tr></thead>
+    <tbody>{rows.length ? rows.map(row=><tr key={row.id}>{columns.map(([label,render])=><td key={label} data-label={label}><div>{render(row) ?? '—'}</div></td>)}</tr>) :
+      <tr><td className="rental-list-empty" colSpan={columns.length}>{empty}</td></tr>}</tbody></table></div>;
 }
 export function Toolbar({count,unit='건',children}) {
   return <div className="ro-toolbar"><strong>{count.toLocaleString('ko-KR')}{unit}</strong><div>{children}</div></div>;

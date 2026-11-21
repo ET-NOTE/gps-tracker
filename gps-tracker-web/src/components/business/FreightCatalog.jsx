@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Modal } from '../ui';
-import { FreightButton, FreightFacts, FreightFilters, FreightForm, FreightTable } from './FreightKit';
+import { FreightDrawer } from './FreightKit';
+import { FreightButton, FreightFacts, FreightFilters, FreightForm, FreightStats, FreightTable } from './FreightKit';
 import { FormField, formValues, OfficeFilter, downloadRows } from './FreightOfficeFields';
 import { catalogFields, catalogFilters, catalogTable } from './FreightCatalogFields';
 import { catalogNames, catalogInUse, saveCatalog, removeCatalog, finishService } from '../../lib/freightCatalog';
@@ -54,20 +54,22 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage}) {
   }
   const related=row?relatedRows(data,kind,row.id):[];
   return <section className="fr-section">
+    {['shippers','carriers'].includes(kind)&&<FreightStats items={[[kind==='shippers'?'조회 화주':'조회 협력 운송사',rows.length+'곳'],['사용 중',rows.filter(r=>r.active!==false).length+'곳'],['월합산 정산',rows.filter(r=>(r.billing||r.settlement)==='월합산').length+'곳']]}/>}
     <div className="fr-toolbar"><strong>{title} {rows.length.toLocaleString('ko-KR')}건</strong><div className="fr-actions">
       <FreightButton onClick={()=>downloadRows(title,headings,rows.map(row=>columns.map(([,cell])=>cell(row))))} disabled={!rows.length}>CSV 다운로드</FreightButton>
       <FreightButton primary onClick={()=>setView({action:'form'})} disabled={!!missing}>{title} 등록</FreightButton></div></div>
     {missing&&<div className="fr-card fr-toolbar"><span>{missing}</span><FreightButton onClick={()=>onPage(!readyBranch?'organization':'cargo-vehicles')}>{!readyBranch?'지점 관리':'차량 목록'}</FreightButton></div>}
-    <FreightFilters query={query} onQuery={setQuery} placeholder={title+' 검색'}>{filters.map(f=><OfficeFilter key={f.field} {...f} value={filter[f.field]} onChange={v=>setFilter({...filter,[f.field]:v})}/>)}</FreightFilters>
-    <FreightTable columns={headings} rows={rows.map(row=>({id:row.id,cells:columns.map(([,cell],i)=>i===0?<button type="button" className="fr-link" onClick={()=>toDetail(row.id)}>{cell(row)}</button>:cell(row))}))} empty={data[kind].length?'조회 조건에 맞는 항목이 없습니다.':'등록된 '+title+' 정보가 없습니다.'}/>
-    {view?.action==='detail'&&row&&<Modal open size="lg" title={title+' 상세'} subtitle={row.plate||row.name||row.type} onClose={close}
+    <FreightFilters query={query} onQuery={setQuery} placeholder={title+' 검색'}>{filters.map(f=><OfficeFilter key={f.field} {...f} value={filter[f.field]} onChange={v=>setFilter({...filter,[f.field]:v})}/>)}
+      <FreightButton onClick={()=>{setFilter({});setQuery('');}}>조건 초기화</FreightButton></FreightFilters>
+    <FreightTable columns={headings} rows={rows.map(row=>({id:row.id,onOpen:()=>toDetail(row.id),cells:columns.map(([,cell],i)=>i===0?<button type="button" className="fr-link" onClick={()=>toDetail(row.id)}>{cell(row)}</button>:cell(row))}))} empty={data[kind].length?'조회 조건에 맞는 항목이 없습니다.':'등록된 '+title+' 정보가 없습니다.'}/>
+    {view?.action==='detail'&&row&&<FreightDrawer title={title+' 상세'} subtitle={row.plate||row.name||row.type} onClose={close}
       footer={<div className="fr-actions"><FreightButton onClick={close}>닫기</FreightButton>
         {kind!=='services'&&!catalogInUse(data,kind,row.id)&&<FreightButton onClick={()=>setView({action:'delete',id:row.id})}>삭제</FreightButton>}
         {kind==='services'&&row.status!=='done'&&<FreightButton onClick={()=>setView({action:'done',id:row.id})}>작업 완료</FreightButton>}
         {(kind!=='services'||row.status!=='done')&&<FreightButton primary onClick={()=>setView({action:'form',id:row.id})}>정보 수정</FreightButton>}</div>}>
       <FreightFacts items={[...facts(fields,row),...(row.completedAt?[['완료 일시',timeLabel(row.completedAt)]]:[])]}/>
       {related.length>0&&<section className="fr-card"><h3>연결 내역 {related.length}건</h3><FreightFacts items={related}/></section>}
-    </Modal>}
+    </FreightDrawer>}
     {view?.action==='form'&&<FreightForm title={title+(row?' 수정':' 등록')} onClose={closeForm} onSubmit={submit}>
       {fields.map(f=><FormField key={f.key} field={f} initial={row||{}}/>)}
     </FreightForm>}

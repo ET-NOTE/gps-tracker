@@ -214,7 +214,7 @@ test('reservation forms and query boundaries remain Korean time in a Los Angeles
   assert.equal(r.root.findByProps({'aria-label':'예약 조회 월'}).props.value,'2026-11');
   assert.equal(c.queries.at(-1).from,'2026-10-24T15:00:00.000Z');
   assert.equal(c.queries.at(-1).to,'2026-12-07T15:00:00.000Z');
-  await act(async()=>button(r,'목록').props.onClick());
+  await act(async()=>button(r,'예약 목록').props.onClick());
   assert.equal(c.queries.at(-1).from,'2026-11-09T15:00:00.000Z');
   assert.equal(c.queries.at(-1).to,'2027-01-16T15:00:00.000Z');
  } finally {

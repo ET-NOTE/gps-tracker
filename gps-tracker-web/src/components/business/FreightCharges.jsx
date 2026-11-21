@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal } from '../ui';
+import { FreightDrawer } from './FreightKit';
 import { FreightBadge, FreightButton, FreightFacts, FreightFilters, FreightForm, FreightStats, FreightTable } from './FreightKit';
 import { choices, choicesFrom, downloadRows, FormField, formValues, OfficeFilter } from './FreightOfficeFields';
 import { currentPeriod, inPeriod, PeriodFilter } from './FreightLedger';
@@ -38,14 +38,14 @@ export default function FreightCharges({data,save,onPage}) {
       <FreightButton primary disabled={!data.shipments.length||!data.codes.chargeTypes.length} onClick={()=>setView({action:'form'})}>추가 비용 등록</FreightButton></div></div>
     {!data.shipments.length&&<div className="fr-card fr-toolbar"><span>배차한 운송 건에 추가 비용을 등록할 수 있습니다.</span><FreightButton onClick={()=>onPage('cargo-dispatch')}>통합 배차</FreightButton></div>}
     <FreightTable columns={headings} rows={rows.map(x=>{const cells=values(x);
-      cells[0]=<button className="fr-link" onClick={()=>setView({action:'detail',id:x.id})}>{cells[0]}</button>;cells[cells.length-1]=<FreightBadge tone={tones[x.status]}>{chargeStates[x.status]}</FreightBadge>;return {id:x.id,cells};
+      cells[0]=<button className="fr-link" onClick={()=>setView({action:'detail',id:x.id})}>{cells[0]}</button>;cells[cells.length-1]=<FreightBadge tone={tones[x.status]}>{chargeStates[x.status]}</FreightBadge>;return {id:x.id,onOpen:()=>setView({id:x.id,action:'detail'}),cells};
     })} empty="조회 조건에 해당하는 추가 비용이 없습니다."/>
-    {row&&view.action==='detail'&&<Modal open title="추가 비용 상세" subtitle={shipments.get(row.shipmentId)?.number+' · '+row.kind} onClose={close} footer={<div className="fr-actions">
+    {row&&view.action==='detail'&&<FreightDrawer title="추가 비용 상세" subtitle={shipments.get(row.shipmentId)?.number+' · '+row.kind} onClose={close} footer={<div className="fr-actions">
       <FreightButton onClick={close}>닫기</FreightButton>{row.status!=='approved'&&<FreightButton onClick={()=>setView({action:'form',id:row.id})}>정보 수정</FreightButton>}
       {row.status==='pending'&&<><FreightButton onClick={()=>setView({action:'rejected',id:row.id})}>반려</FreightButton><FreightButton primary onClick={()=>setView({action:'approved',id:row.id})}>승인</FreightButton></>}</div>}>
       <FreightFacts items={[['상태',chargeStates[row.status]],['발생 일시',timeLabel(row.at)],...amounts.map(([k,l])=>[l,costLabel(row[k])]),['발생 사유',row.note],
         ...(row.reviewedAt?[['검토 일시',timeLabel(row.reviewedAt)],['검토 메모',row.reviewNote||'—']]:[])]}/>
-    </Modal>}
+    </FreightDrawer>}
     {view?.action==='form'&&<FreightForm title={'추가 비용 '+(row?'수정':'등록')} onClose={detail} onSubmit={submit}>{fields.map(f=><FormField key={f.key} field={f} initial={row||{}}/>)}</FreightForm>}
     {row&&['approved','rejected'].includes(view?.action)&&<FreightForm title={'추가 비용 '+chargeStates[view.action]} subtitle={row.kind} onClose={detail} onSubmit={submit} submitLabel={chargeStates[view.action]}>
       <p className="fr-note">{amounts.map(([k,l])=>l+' '+costLabel(row[k])).join(' · ')}</p><FormField field={{key:'note',label:view.action==='rejected'?'반려 사유':'검토 메모',type:'textarea',maxLength:500,required:view.action==='rejected'}}/>

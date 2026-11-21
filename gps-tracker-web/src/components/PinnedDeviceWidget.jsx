@@ -4,7 +4,7 @@ import { liveMotion } from '../lib/liveMotion';
 import { deviceBattery } from '../lib/battery';
 import BatteryRuntime from './BatteryRuntime';
 
-export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, deviceStatus, onPress, onUnpin, bottomOffset = 0 }) {
+export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, deviceStatus, onPress, onUnpin, bottomOffset = 0, embedded = false }) {
   if (!device) return null;
 
   const speed = liveMotion(deviceMeta?.speedKmh,deviceMeta?.recordedAt).speedKmh;
@@ -14,7 +14,7 @@ export default function PinnedDeviceWidget({ device, deviceColor, deviceMeta, de
 
   return (
     <div style={{
-      position: 'absolute',
+      position: embedded ? 'static' : 'absolute',
       bottom: bottomOffset + 14,
       left: 14, right: 88, maxWidth: 360,
       zIndex: 20,

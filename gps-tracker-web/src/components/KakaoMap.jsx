@@ -1849,7 +1849,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     },
   }));
 
-  return <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+  return <div style={{ position: 'relative', isolation: 'isolate', width: '100%', height: '100%' }}>
     <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
     {mapStatus !== 'ready' && <div role={mapStatus === 'error' ? 'alert' : 'status'}
       style={{ position: 'absolute', inset: 0, zIndex: 35, display: 'grid', placeItems: 'center',

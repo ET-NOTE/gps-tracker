@@ -25,22 +25,44 @@ export default function FleetExpenses(props){
  const access=useFleetAccess();
  const roleCanReview=['owner','admin','department_manager'].includes(access.role);
  const canExpenses=access.review_expenses??roleCanReview,canReservations=access.review_reservations??roleCanReview;
- const [kind,setKind]=useState('expense');
+ const [kind,setKind]=useState('all'),[selected,setSelected]=useState(null);
+ const choose=value=>{setSelected(null);setKind(value);};
  if(props.approvalsOnly&&props.reservationInbox){
   if(!canExpenses&&!canReservations)return null;
-  const reservation=canReservations&&(!canExpenses||kind==='reservation');
+  const mode = !canExpenses ? 'reservation' : !canReservations ? 'expense' : kind;
   return <div className="fleet-approval-inbox">
-   {canExpenses&&canReservations&&<div className="corporate-view-switch" role="group" aria-label="승인 요청 종류"><button type="button" className="corporate-view-option" aria-pressed={!reservation} onClick={()=>setKind('expense')}>지출 요청</button><button type="button" className="corporate-view-option" aria-pressed={reservation} onClick={()=>setKind('reservation')}>예약 요청</button></div>}
-   {reservation?props.reservationInbox:<ExpenseWorkspace approvalsOnly/>}
+   {canExpenses&&canReservations&&<div className="corporate-view-switch" role="group" aria-label="승인 요청 종류">{[['all','전체 요청'],['reservation','예약 요청'],['expense','지출 요청']].map(([key,name])=><button key={key} type="button" className="corporate-view-option" aria-pressed={mode===key} onClick={()=>choose(key)}>{name}</button>)}</div>}
+   {mode==='all'?<CombinedApprovals onOpen={(type,row)=>{setSelected(row);setKind(type);}}/>:mode==='reservation'?React.cloneElement(props.reservationInbox,{request:selected?{reservation:selected}:undefined}):<ExpenseWorkspace approvalsOnly initialDetail={selected?.id}/>}
+
   </div>;
  }
  return <ExpenseWorkspace key={props.approvalsOnly?'approval':props.categoriesOnly?'categories':'expenses'} {...props}/>;
 }
-function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCategories}){
+function CombinedApprovals({onOpen}) {
+ const today=businessDate();
+ const [month,setMonth]=useState(()=>today.slice(0,7));
+ const valid=/^\d{4}-(0[1-9]|1[0-2])$/.test(month);
+ const [year,num]=month.split('-').map(Number);
+ const from=valid?month+'-01':'',to=valid?month+'-'+String(new Date(Date.UTC(year,num,0)).getUTCDate()).padStart(2,'0'):'';
+ const expenseFilter={from,to,status:'pending'};
+ const expenses=useQuery({queryKey:['fleet-expenses',expenseFilter],queryFn:()=>api.listExpenses(expenseFilter),enabled:valid});
+ const bookingFilter=valid?{from:new Date(from+'T00:00:00+09:00').toISOString(),to:new Date(Date.parse(to+'T00:00:00+09:00')+86400000).toISOString()}:{};
+ const bookings=useQuery({queryKey:['business','corporate','vehicle-reservations',bookingFilter],queryFn:()=>api.listFleetReservations(bookingFilter),enabled:valid});
+ const rows=[...(bookings.data||[]).filter(r=>r.status==='pending'&&r.approval_required&&r.can_review).map(r=>({type:'reservation',id:r.id,date:kstDateTime(r.starts_at),person:r.driver_name,title:r.vehicle_name||r.license_plate||r.device_name,detail:r.company_purpose_name||r.purpose,row:r})),
+   ...(expenses.data?.items||[]).filter(r=>r.status==='pending'&&r.can_review).map(r=>({type:'expense',id:r.id,date:r.spent_on,person:r.staff_name,title:r.category_name,detail:expenseMoney(r.amount_krw)+'원',row:r}))].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+ const error=bookings.error||expenses.error;
+ return <section className="fleet-member-approvals">
+   <header><div><h2>승인 대기 요청</h2><p>선택한 월의 차량 이용일과 지출일 기준입니다.</p></div><label>조회 월<input type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label></header>
+   {!valid?<p role="status">조회할 월을 선택해 주세요.</p>:error?<BusinessError onRetry={()=>{bookings.refetch();expenses.refetch();}}>{error.message||'승인 요청을 불러오지 못했습니다.'}</BusinessError>:
+    (expenses.isFetching||bookings.isFetching)?<p role="status">승인 요청 조회 중…</p>:!rows.length?<BusinessEmpty compact title="승인 대기 요청이 없습니다."/>:
+    <ul>{rows.map(r=><li key={r.type+r.id}><button type="button" onClick={()=>onOpen(r.type,r.row)}><span className="business-badge">{r.type==='reservation'?'차량 예약':'지출'}</span><span><strong>{r.title||'미지정'}</strong><small>{[r.person,r.detail].filter(Boolean).join(' · ')}</small></span><time>{r.date}</time><Icon name="chevron-right" size={16}/></button></li>)}</ul>}
+ </section>;
+}
+function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCategories,initialDetail=null}){
  const mobile=useCorporatePhone(),[datesOpen,setDatesOpen]=useState(false);
  const [toolsOpen,setToolsOpen]=useState(false);
  const access=useFleetAccess(),qc=useQueryClient(),cats=useQuery({queryKey:['expense-categories'],queryFn:()=>api.expenseCategories()}),assets=useFleetAssets(),staff=useStaff(),org=useFleetOrganization();
- const today=businessDate(),[filters,setFilters]=useState({from:`${today.slice(0,7)}-01`,to:today}),[page,setPage]=useState(0),[groupBy,setGroupBy]=useState('month'),[edit,setEdit]=useState(null),[detail,setDetail]=useState(null),[category,setCategory]=useState(null);
+ const today=businessDate(),[filters,setFilters]=useState({from:`${today.slice(0,7)}-01`,to:today}),[page,setPage]=useState(0),[groupBy,setGroupBy]=useState('month'),[edit,setEdit]=useState(null),[detail,setDetail]=useState(initialDetail),[category,setCategory]=useState(null);
  const [query,setQuery]=useState(''),[status,setStatus]=useState(approvalsOnly?'pending':''),[filtersOpen,setFiltersOpen]=useState(false),[draftFilters,setDraftFilters]=useState({}),[summaryOpen,setSummaryOpen]=useState(false),[downloadsOpen,setDownloadsOpen]=useState(false);
  const [memo,setMemo]=useState(null),[settingsOpen,setSettingsOpen]=useState(false);
  const [picked,setPicked]=useState(new Map()),[batch,setBatch]=useState(null),[batchResult,setBatchResult]=useState(null);
@@ -157,7 +179,7 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
      {r.note?.trim()&&<button type="button" className="expense-mobile-shortcut" aria-label={`지출 ${r.id} 메모 보기`} onClick={()=>setMemo(r)}><Icon name="message" size={17}/></button>}
      {r.receipt_count>0&&<button type="button" className="expense-mobile-shortcut" aria-label={`지출 ${r.id} 첨부파일 ${r.receipt_count}개 보기`} onClick={()=>setDetail(r.id)}><Icon name="paperclip" size={17}/>{r.receipt_count}</button>}
    </div>
- </li>)}</ul></>:<div className="fleet-asset-table-wrap" role="region" aria-label="지출 목록 · 좌우 스크롤" tabIndex={0}><table className="fleet-asset-table expense-table"><thead><tr>{approvalsOnly&&status==='pending'&&<th scope="col">선택</th>}{['지출일','상태','사용자 · 부서','차량','지출 항목','결제수단','금액','메모','첨부파일'].map(h=><th key={h} scope="col" className={h==='금액'?'number':''}>{h}</th>)}</tr></thead><tbody>{pageRows.map(r=><tr key={r.id}>
+ </li>)}</ul></>:<div className="fleet-asset-table-wrap" role="region" aria-label="지출 목록 · 좌우 스크롤" tabIndex={0}><table className="fleet-asset-table expense-table"><thead><tr>{approvalsOnly&&status==='pending'&&<th scope="col">선택</th>}{['지출일','상태','사용자 · 부서','차량','지출 항목','결제수단','금액','메모','첨부파일'].map(h=><th key={h} scope="col" className={h==='금액'?'number':''}>{h}</th>)}</tr></thead><tbody>{pageRows.map(r=><tr key={r.id} tabIndex={0} aria-label={`지출 ${r.id} 상세 열기`} onClick={e=>{if(!e.target.closest('button,input,a,label'))setDetail(r.id);}} onKeyDown={e=>{if(e.target===e.currentTarget && ['Enter',' '].includes(e.key)){e.preventDefault();setDetail(r.id);}}}>
   {approvalsOnly&&status==='pending'&&<td data-label="선택">{picker(r)}</td>}
   <td data-label="지출일"><button type="button" className="expense-detail-link" title="지출 상세 보기" aria-label={`지출 ${r.id} 상세${r.receipt_count?` · 첨부 ${r.receipt_count}개`:''}`} onClick={()=>setDetail(r.id)}>{r.spent_on}</button></td>
   <td data-label="상태"><span className={`business-badge expense-status-${r.status}`}>{expenseStatus[r.status]}</span></td><td data-label="사용자 · 부서"><strong>{r.staff_name||'미지정'}</strong><small>{r.department_name||'부서 미지정'}</small></td><td data-label="차량">{r.vehicle_name}</td><td data-label="지출 항목">{r.category_name}<small>{r.group_name}{r.trip_started_at?' · 운행 연결':''}</small></td><td data-label="결제수단">{paymentMethods[r.payment_method]}</td><td data-label="금액" className="number">{expenseMoney(r.amount_krw)}원</td>

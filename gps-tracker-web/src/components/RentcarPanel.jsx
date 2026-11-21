@@ -27,6 +27,7 @@ import {
   qk,
 } from '../state';
 import { useQueryClient } from '@tanstack/react-query';
+import './business/rental-reference.css';
 
 function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, destinations, onManageVehicle, onDevicesChange }) {
   const [localTab, setLocalTab] = useState('fleet');

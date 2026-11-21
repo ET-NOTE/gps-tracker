@@ -801,6 +801,8 @@ export const api = {
     if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||r.statusText);}return r.json();
   },
   listFleetVehicles: () => req('GET','/corporate/vehicles'),
+  fleetVehicleGroups: () => req('GET','/corporate/vehicle-groups'),
+  createFleetVehicleGroup: name => req('POST','/corporate/vehicle-groups',{name}),
   createFleetVehicle: body => req('POST','/corporate/vehicles',body),
   updateFleetVehicle: (id,body) => req('PUT',`/corporate/vehicles/${id}`,body),
   fleetVehicleBindings: id => req('GET',`/corporate/vehicles/${id}/bindings`),

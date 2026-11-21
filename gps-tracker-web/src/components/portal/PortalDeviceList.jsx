@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import Icon from '../Icon';
-import { classifyDevice, ageString } from '../../colors';
+import { classifyDevice } from '../../colors';
+import Modal from '../ui/Modal';
+import BatteryStatus from '../BatteryStatus';
+import DeviceReadingTime from './DeviceReadingTime';
 import { deviceBattery } from '../../lib/battery';
 import { terminalName } from '../../lib/corporateOverview';
 import { useVisibleNow } from '../../hooks/useVisibleNow';
@@ -25,22 +28,24 @@ export default function PortalDeviceList({ devices = [], meta = {}, selectedId, 
     deviceMatches(device, term) && (filter === 'all' || deviceBucket(status) === filter)
       && (!selectedService || device.portalServices?.includes(selectedService)));
   const activeDetail = detailId === undefined ? expanded : detailId;
+  const detail = devices.find(device => device.id === activeDetail);
   function showDetail(id) {
     setExpanded(activeDetail === id ? null : id);
     onDetail?.(id);
   }
   return <section className="pt-device-pane" aria-label="단말기 관리">
-    <div className="pt-device-heading"><div><span className="pt-overline">{scopeLabel || '내 단말기'}</span><h1>단말기 <span>{devices.length}</span></h1></div>
+    <div className="pt-device-heading"><div><h1>{scope === 'personal' ? '내 단말기' : scopeLabel || '단말기'} <span>{devices.length}</span></h1></div>
       {onPair && <button className="pt-button pt-primary" type="button" onClick={onPair}><Icon name="plus" size={16}/>단말기 등록</button>}
     </div>
     {children}
     <div className="pt-device-filters">
-      <label className="pt-search-field"><Icon name="search" size={17}/><input type="search" aria-label="단말기 검색" placeholder="단말기 이름 또는 등록 번호" value={term} onChange={e => setTerm(e.target.value)}/></label>
+      <label className="pt-search-field"><Icon name="search" size={17}/><input type="search" aria-label="단말기 검색" placeholder="이름·번호·차량 검색" value={term} onChange={e => setTerm(e.target.value)}/></label>
       <label className="pt-filter"><Icon name="filter" size={14}/><select aria-label="단말기 상태 필터" value={filter} onChange={e => setFilter(e.target.value)}>{FILTERS.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label>
       {showServices && serviceOptions.length > 0 && <label className="pt-filter"><select aria-label="업무 구분" value={selectedService} onChange={e => setService(e.target.value)}>
         <option value="">전체 업무</option>{serviceOptions.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
       </select></label>}
     </div>
+    {!error && !loading && <div className="pt-device-result-count">단말기 {filtered.length}개</div>}
     {error ? <div className="pt-empty" role="alert">단말기를 불러오지 못했습니다. {onRetry && <button className="pt-text-button" type="button" onClick={onRetry}>다시 시도</button>}</div>
       : loading ? <p className="pt-empty" role="status">단말기를 불러오는 중입니다.</p>
       : !filtered.length ? <p className="pt-empty">{devices.length ? '조건에 맞는 단말기가 없습니다.' : '이 범위에 등록된 단말기가 없습니다.'}</p>
@@ -50,21 +55,23 @@ export default function PortalDeviceList({ devices = [], meta = {}, selectedId, 
         const name = terminalName(device);
         const battery = deviceBattery(device, meta[device.id]);
         return <li key={device.id} className={'pt-device-card' + (selected ? ' is-selected' : '')}>
-          <button type="button" className="pt-device-pick" onClick={() => onSelect?.(device.id)} aria-pressed={selected} aria-label={name + ' 지도에서 보기'}>
-            <span className="pt-device-symbol"><Icon name="antenna" size={21}/></span>
+          <div className="pt-device-pick">
             <span className="pt-device-identity"><strong>{name}</strong>
               {device.device_uid && device.device_uid !== name && <small>{device.device_uid}</small>}
             </span>
             <span className="pt-state" style={{color:status.color,background:status.background}}>{status.label}</span>
-          </button>
-          <div className="pt-device-meta"><span><Icon name="clock" size={14}/>{device.last_seen_at ? ageString(device.last_seen_at) : '수신 전'}</span>
-            {battery.percent != null && <span><Icon name="battery" size={15}/>약 {battery.percent}%</span>}
-            {showServices && device.portalServices?.length > 0 && <span>{SERVICES.filter(s => device.portalServices.includes(s.key)).map(s => s.label).join(' · ')}</span>}
-            {(onDetail || renderTools) && <button type="button" className="pt-text-button" aria-label={name + ' 상세'} aria-expanded={renderTools ? open : undefined}
-              onClick={() => showDetail(device.id)}>상세<Icon name={open ? 'chevron-up' : 'chevron-right'} size={13}/></button>}
           </div>
-          {open && renderTools && <div className="pt-device-tools">{renderTools(device)}</div>}
+          {showServices && device.portalServices?.length > 0 && <small>{SERVICES.filter(s => device.portalServices.includes(s.key)).map(s => s.label).join(' · ')}</small>}
+          <BatteryStatus reading={battery} showRuntime={false}/>
+          <dl className="pt-device-times"><div><dt>최근 통신</dt><dd><DeviceReadingTime value={device.last_seen_at}/></dd></div><div><dt>최근 위치</dt><dd><DeviceReadingTime value={device.last_fix_at}/></dd></div></dl>
+          <div className="pt-device-buttons">
+            <button type="button" className={'pt-button' + (selected ? ' pt-selected-button' : '')} onClick={() => onSelect?.(device.id)} aria-label={name + ' 지도에서 보기'}><Icon name="mapPin" size={14}/>지도 보기</button>
+            {(onDetail || renderTools) && <button type="button" className="pt-button" aria-label={name + ' 상세·설정'} aria-expanded={open} onClick={() => showDetail(device.id)}>상세·설정</button>}
+          </div>
         </li>;
       })}</ul>}
+    {detail && renderTools && <Modal open mobileForm placement="end" size="lg" title={terminalName(detail)} subtitle="단말기 상세·설정" onClose={() => showDetail(detail.id)}>
+      <div className="pt-device-tools">{renderTools(detail)}</div>
+    </Modal>}
   </section>;
 }

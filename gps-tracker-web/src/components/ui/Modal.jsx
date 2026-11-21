@@ -33,6 +33,7 @@ export default function Modal({
   closeOnBackdrop = true,
   closeOnEsc = true,
   mobileForm = false,
+  placement = 'center',
   footer,
   children,
   bodyStyle,
@@ -43,6 +44,7 @@ export default function Modal({
   useLayoutEffect(() => {
     if (!open || !dialog.current) return;
     const layer = backdrop.current;
+    layer.classList.toggle('gps-member-modal', !!anchor.current?.closest('.pt-member-shell, .gps-member-modal, .business-drawer'));
     layer.classList.toggle('gps-business-modal', !!anchor.current?.closest('.business-workspace, .business-drawer, .gps-business-modal'));
     const touchForm = mobileForm && window.matchMedia('(pointer: coarse) and (max-width: 950px)').matches;
     const unlock = lockModalFocus(dialog.current, layer, () => ({ ...options.current, initialFocus: touchForm ? dialog : undefined }));
@@ -76,14 +78,15 @@ export default function Modal({
     <div
       ref={backdrop}
       className="gps-modal-backdrop"
+      data-placement={placement}
       onClick={closeOnBackdrop ? onClose : undefined}
       style={{
         position: 'fixed', inset: 0,
         ...(mobileForm && { top: 'var(--form-viewport-top, 0px)', height: 'var(--form-viewport-height, auto)', boxSizing: 'border-box' }),
         background: 'rgba(0,0,0,0.5)',
         zIndex: 'var(--z-modal)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 'var(--space-2)',
+        display: 'flex', alignItems: placement === 'end' ? 'stretch' : 'center', justifyContent: placement === 'end' ? 'flex-end' : 'center',
+        padding: placement === 'end' ? 0 : 'var(--space-2)',
       }}
     >
       <div
@@ -97,11 +100,11 @@ export default function Modal({
         style={{
           background: 'var(--surface)',
           color: 'var(--text)',
-          borderRadius: 'var(--radius-xl)',
+          borderRadius: placement === 'end' ? 0 : 'var(--radius-xl)',
           padding: 'var(--modal-padding, var(--space-4))',
           width: '100%',
           maxWidth,
-          maxHeight: mobileForm ? 'var(--form-dialog-max-height, 92dvh)' : '92dvh',
+          maxHeight: placement === 'end' ? '100%' : mobileForm ? 'var(--form-dialog-max-height, 92dvh)' : '92dvh',
           display: 'flex',
           flexDirection: 'column',
           gap: 'var(--modal-gap, var(--space-3))',
@@ -113,7 +116,7 @@ export default function Modal({
           <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: 'var(--space-2)' }}>
             <div style={{ minWidth: 0, flex: 1, overflowWrap: 'anywhere' }}>
               {title != null && (
-                <div style={{ fontSize: 'var(--modal-title-size, 15px)', fontWeight: 800, color: 'var(--text)' }}>{title}</div>
+                <div style={{ fontSize: 'var(--modal-title-size, 15px)', fontWeight: 'var(--modal-title-weight, 800)', color: 'var(--text)' }}>{title}</div>
               )}
               {subtitle != null && (
                 <div style={{ fontSize: 'var(--modal-subtitle-size, 12px)', color: 'var(--text-2)', marginTop: 4 }}>{subtitle}</div>

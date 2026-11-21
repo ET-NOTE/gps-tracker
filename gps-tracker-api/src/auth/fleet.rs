@@ -76,7 +76,7 @@ impl FleetScope {
             ["corporate", "vehicles", _, "documents"] | ["documents", _] => {
                 self.permits("write_vehicle_documents")
             }
-            ["corporate", "vehicles", ..] => self.permits("manage_vehicles"),
+            ["corporate", "vehicles", ..] | ["corporate", "vehicle-groups"] => self.permits("manage_vehicles"),
             ["corporate", "vehicle-reservations", _, "review"] => {
                 self.permits("review_reservations")
             }
@@ -150,7 +150,7 @@ mod permission_tests {
     fn assigned_groups_enforce_action_boundaries_even_for_base_admins() {
         let read_only=scope("admin",&[]);
         for route in ["corporate/staff","corporate/organization/items","corporate/invites","corporate/subject-mappings",
-            "corporate/permission-groups/assignment","corporate/subscription","corporate/vehicle-reservations",
+            "corporate/permission-groups/assignment","corporate/vehicle-groups","corporate/subscription","corporate/vehicle-reservations",
             "corporate/vehicles/8/trips/assign","corporate/vehicles/8/bindings","documents/18","corporate/expenses/1/review"] {
             let parts:Vec<_>=route.split('/').collect();
             assert!(!read_only.group_allows_request(&Method::POST,&parts),"{route}");
@@ -231,7 +231,7 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
         ["corporate", "subject-mappings", _, "locations"] => read,
         ["corporate", "info"] => read || admin,
         ["corporate", "subscription"] | ["corporate", "fuel-prices"] => read,
-        ["corporate", "vehicles"] => read || admin,
+        ["corporate", "vehicles"] | ["corporate", "vehicle-groups"] => read || admin,
         ["corporate", "vehicles", "bindings", "batch"] => method == Method::PUT && admin,
         ["corporate", "terminals"]
         | ["corporate", "maintenance-history"]

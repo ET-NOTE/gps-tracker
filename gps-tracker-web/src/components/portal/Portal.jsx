@@ -1,4 +1,5 @@
 import './portal.css';
+import './memberWorkspace.css';
 
 export { PlatformHeader, PlatformRail } from './PlatformChrome';
 export { default as PortalDeviceList } from './PortalDeviceList';

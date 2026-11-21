@@ -12,7 +12,7 @@ import {useRentalProfiles} from './RentalFleetProfiles';
 const sum=(rows,fn)=>rows.reduce((n,row)=>n+fn(row),0);
 const vehicle=d=>d.license_plate||d.display_name||('차량 '+d.id);
 const label=c=>'#'+c.id+' · '+c.renter_name;
-function LedgerEditor({book,initial,close}) {
+export function LedgerEditor({book,initial,close}) {
   const qc=useQueryClient(),kind0=initial.kind||'payment';
   const c0=initial.contract||book.contracts.find(c=>recordLimit(c,kind0)>0)||book.contracts[0];
   const [id,setId]=useState(c0?.id),[kind,setKind]=useState(kind0),[method,setMethod]=useState('card');

@@ -3,7 +3,7 @@ import Icon from '../Icon';
 import BusinessDrawer from './BusinessDrawer';
 import './corporate-mobile-shell.css';
 
-export default function CorporateMobileHeader({ active, groups, tabs, sections = {}, section, onSection, onTab, toolbar, destinations, onNavigate, onQuick }) {
+export default function CorporateMobileHeader({ active, groups, tabs, sections = {}, section, onTab, toolbar, destinations, onNavigate, onQuick }) {
   const [panel, setPanel] = useState(null);
   const [expanded, setExpanded] = useState(null);
   const groupId = active.group || active.id;
@@ -19,8 +19,7 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
     setPanel('navigation');
   }
   function visit(pageId, sectionId) {
-    onTab(pageId);
-    if (sectionId) onSection(pageId, sectionId);
+    onTab(pageId, sectionId);
     close();
   }
   function leave(id) {
@@ -30,10 +29,10 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
   return <>
     <header className="corporate-phone-header no-print">
       <button type="button" className="corporate-phone-tool" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'navigation'} onClick={openMenu}><Icon name="menu" size={22}/></button>
-      {active.id === 'overview' ? <h1 className="corporate-phone-brand"><span className="fleet-brand-symbol"><Icon name="car" size={17}/></span>시리얼링크</h1>
-        : <h1 className="corporate-phone-location"><Icon name={groupId === 'vehicles' ? 'car' : group.icon} size={17}/><span>{group.label}</span>
+      {active.id === 'overview' ? <span className="corporate-phone-brand">법인운행</span>
+        : <span className="corporate-phone-location"><Icon name={groupId === 'vehicles' ? 'car' : group.icon} size={17}/><span>{group.label}</span>
           {crumb !== group.label && <><Icon name="chevron-right" size={13}/><strong>{crumb}</strong></>}
-        </h1>}
+        </span>}
       <button type="button" className="corporate-phone-tool" aria-label="차량·메뉴 검색" onClick={()=>onQuick('search')}><Icon name="search" size={19}/></button>
       {onNavigate && map && <button type="button" className="corporate-phone-tool" aria-label={map.label} onClick={() => leave(map.id)}><Icon name="map" size={21}/></button>}
       <button type="button" className="corporate-phone-tool" aria-label="회사 및 계정 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'account'} onClick={() => setPanel('account')}><Icon name="more" size={22}/></button>

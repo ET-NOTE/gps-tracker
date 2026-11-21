@@ -9,7 +9,7 @@ function detailLink(label,click){return <button className="fr-link" onClick={cli
 export function WorkflowTable({page,data,rows,open,form}){
   const orders=page==='orders',recurring=page==='recurring',proofs=page==='proofs';
   if(orders||recurring)return <FreightTable columns={recurring?['정기 주문 / 화주','운송 구간','반복 일정','화물 / 차량','상태','업무 처리']:['주문번호 / 화주','운송 구간','상차 / 하차 예정','화물 / 차량','청구 / 지급 운임','상태','업무 처리']} empty={recurring?'조회된 정기 주문이 없습니다.':'조회된 운송 주문이 없습니다.'} rows={rows.map(o=>({
-    id:o.id,cells:[mainCell(detailLink(recurring?o.name:o.number,()=>open(page,o.id)),nameOf(data,'shippers',o.shipperId)),routeName(data,o),
+    id:o.id,onOpen:()=>open(page,o.id),cells:[mainCell(detailLink(recurring?o.name:o.number,()=>open(page,o.id)),nameOf(data,'shippers',o.shipperId)),routeName(data,o),
       recurring?mainCell(o.weekdays.map(d=>weekdays[d]).join(' · '),o.startTime+' ~ '+o.endTime):mainCell(timeLabel(o.start),timeLabel(o.end)),
       mainCell(o.cargoName,o.vehicleType+' · '+num(o.weightKg)+' kg'),...(!recurring?[mainCell(costLabel(o.sellAmount),costLabel(o.buyAmount))]:[]),
       recurring?<FreightBadge tone={o.active?'blue':'neutral'}>{o.active?'사용 중':'중지'}</FreightBadge>:<Status value={o.status} labels={orderStates}/>,
@@ -18,13 +18,13 @@ export function WorkflowTable({page,data,rows,open,form}){
   }))}/>;
   return <FreightTable columns={proofs?['운송 / 화주','운송 구간','차량 / 기사','수령인 / 확인 시각','인수증','업무 처리']:['운송 / 화주','운송 구간','차량 / 기사','상차 / 하차 예정','운송 단계','인수증','업무 처리']} empty={proofs?'하차를 완료한 운송이 없습니다.':'조회된 운송이 없습니다.'} rows={rows.map(s=>{
     const o=firstOrder(data,s),next=nextAction(s);
-    return {id:s.id,cells:[mainCell(detailLink(s.number,()=>open('shipments',s.id)),nameOf(data,'shippers',o?.shipperId)),routeName(data,o),mainCell(vehicleName(data,s.vehicleId),nameOf(data,'drivers',s.driverId)),
+    return {id:s.id,onOpen:()=>open('shipments',s.id),cells:[mainCell(detailLink(s.number,()=>open('shipments',s.id)),nameOf(data,'shippers',o?.shipperId)),routeName(data,o),mainCell(vehicleName(data,s.vehicleId),nameOf(data,'drivers',s.driverId)),
       proofs?mainCell(s.proof.receiver||'—',timeLabel(s.proof.at)):mainCell(timeLabel(s.start),timeLabel(s.end)),...(!proofs?[<Status value={s.status} labels={shipStates}/>]:[]),<Status value={s.proof.status} labels={proofStates}/>,
       <div className="fr-actions">{next?<FreightButton onClick={()=>form(next[0],'shipments',s.id)}>{next[1]}</FreightButton>:<FreightButton onClick={()=>open('shipments',s.id)}>상세</FreightButton>}{proofs&&s.proof.status==='submitted'&&<FreightButton onClick={()=>form('rework','shipments',s.id)}>보완 요청</FreightButton>}</div>]};
   })}/>;
 }
 
-export function DispatchView({data,orders:shown,scope,setScope,form,open}){
+export function DispatchView({data,orders:shown,requests,scope,setScope,form,open}){
   const [orderId,setOrderId]=useState(''),[owner,setOwner]=useState(''),[possible,setPossible]=useState(false);
   const order=shown.find(o=>o.id===orderId)||shown[0];
   const candidates=order?data.vehicles.map(v=>candidate(data,order,v)).filter(c=>(!owner||(owner==='own')===!c.vehicle.carrierId)&&(!possible||!c.reason)).sort((a,b)=>Number(!!a.reason)-Number(!!b.reason)):[];
@@ -45,6 +45,14 @@ export function DispatchView({data,orders:shown,scope,setScope,form,open}){
         {!order&&<p className="fr-empty">주문을 선택하면 후보 차량을 확인할 수 있습니다.</p>}
       </section>
     </div>
+    <section className="fr-dashboard-card"><header><h2>배차 수락 대기</h2><span>{requests.length}건</span></header>
+      <FreightTable columns={['운송 / 화주','경로','차량 / 기사','상차 예정','업무 처리']} empty="수락 대기 중인 배차가 없습니다." rows={requests.map(s=>{
+        const o=firstOrder(data,s);
+        return {id:s.id,onOpen:()=>open('shipments',s.id),cells:[mainCell(detailLink(s.number,()=>open('shipments',s.id)),nameOf(data,'shippers',o?.shipperId)),routeName(data,o),
+          mainCell(vehicleName(data,s.vehicleId),nameOf(data,'drivers',s.driverId)),timeLabel(s.start),
+          <div className="fr-actions"><FreightButton primary onClick={()=>form('accept','shipments',s.id)}>수락 확인</FreightButton><FreightButton onClick={()=>form('decline','shipments',s.id)}>거절 기록</FreightButton></div>]};
+      })}/>
+    </section>
   </>;
 }
 

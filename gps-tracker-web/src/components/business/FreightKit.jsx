@@ -1,6 +1,8 @@
 import { useId, useRef, useState } from 'react';
 import { Modal } from '../ui';
 import Icon from '../Icon';
+import BusinessDrawer from './BusinessDrawer';
+import { shipStates } from '../../lib/freightWorkflow';
 import './freight.css';
 
 export function FreightButton({primary=false, children, icon, ...rest}) {
@@ -35,9 +37,16 @@ export function FreightBadge({children,tone='neutral'}) {
 export function FreightFacts({items}){
   return <dl className="fr-facts">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value??'—'}</dd></div>)}</dl>;
 }
+export function FreightDrawer({title,subtitle,onClose,footer,children}) {
+  return <BusinessDrawer title={title} subtitle={subtitle} onClose={onClose}>
+    <div className="fr-drawer-inner"><div>{children}</div><footer>{footer}</footer></div>
+  </BusinessDrawer>;
+}
 export function FreightTable({columns,rows,empty='조회된 내역이 없습니다.'}){
   return <div className="fr-list"><table className="fr-table"><thead><tr>{columns.map(c=><th scope="col" key={c}>{c}</th>)}</tr></thead>
-    <tbody>{rows.map(({id,cells})=><tr key={id}>{cells.map((cell,i)=><td data-label={columns[i]} key={columns[i]}>{cell}</td>)}</tr>)}</tbody></table>
+    <tbody>{rows.map(({id,cells,onOpen})=><tr key={id} className={onOpen?'fr-open-row':undefined} onClick={onOpen?event=>{
+      if(!event.target.closest('button,a,input,select,textarea,label')&&!window.getSelection()?.toString())onOpen();
+    }:undefined}>{cells.map((cell,i)=><td data-label={columns[i]} key={columns[i]}>{cell}</td>)}</tr>)}</tbody></table>
     {!rows.length&&<p className="fr-empty">{empty}</p>}
   </div>;
 }
@@ -47,4 +56,13 @@ export function FreightFilters({query,onQuery,placeholder,children}){
 }
 export function FreightOptions({rows,blank,label='name'}){
   return <>{blank!==undefined&&<option value="">{blank}</option>}{rows.map(r=><option key={r.id} value={r.id}>{r[label]||r.id}</option>)}</>;
+}
+
+export function FreightStageChart({ships}) {
+  const counts = Object.entries(shipStates).filter(([status])=>status!=='cancelled').map(([status,label])=>({status,label,count:ships.filter(s=>s.status===status).length}));
+  const max = Math.max(1,...counts.map(item=>item.count));
+  return <div className="fr-stage-chart" aria-label="운송 단계별 건수">
+    {counts.map(({status,label,count})=><div key={status}><span>{count}건</span>
+      <div className="fr-stage-track" aria-hidden="true"><i style={{height: (100*count/max)+'%'}}/></div><small>{label}</small></div>)}
+  </div>;
 }

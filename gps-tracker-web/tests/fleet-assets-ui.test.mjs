@@ -29,7 +29,7 @@ async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVeh
  const noop=()=>null,tag=type=>({children,...props})=>React.createElement(type,props,children);
  const connections=[],vehicleUpdates=[],invalidations=[];
  const save=async(id,body)=>{vehicleUpdates.push({id,body});return saveVehicle?.(id,body);};
- const common={default:noop,api:{connectFleetVehicle:async(...args)=>{connections.push(args);},updateFleetVehicle:save,createFleetVehicle:body=>save(undefined,body)},useFleetAccess:()=>({manage_vehicles:manage,manage_reports:manage}),useFleetOrganization:()=>({data:[]}),
+ const common={default:noop,VehicleGroupForm:noop,useVehicleGroups:()=>({data:[{id:45,name:'영업차량'},{id:46,name:'관리차량'}]}),api:{connectFleetVehicle:async(...args)=>{connections.push(args);},updateFleetVehicle:save,createFleetVehicle:body=>save(undefined,body)},useFleetAccess:()=>({manage_vehicles:manage,manage_reports:manage}),useFleetOrganization:()=>({data:[]}),
   useStaff:()=>({data:[{id:1,name:'김영업',active:true},{id:2,name:'이관리',active:true}]}),
   useQuery:({queryKey})=>queryKey.at(-1)==='stats'?{data:{per_device:[]}}:{data},useMutation:noop,useQueryClient:()=>({invalidateQueries:options=>invalidations.push(options.queryKey)}),fleetDistance:noop,useBusinessClock:noop,kstDateTime:value=>value,
   downloadReport:noop,classifyDevice:device=>({label:device.source_device_id?'오프라인':'미연결'}),ageString:noop,deviceBattery:noop,
@@ -177,60 +177,46 @@ test('a vehicle update that finishes after leaving the screen refreshes the list
  assert.equal(refreshes,0);assert.deepEqual(invalidations.map(key=>Array.from(key)),[['business','corporate','vehicles']]);
 });
 
-test('vehicle status counts follow search scope and switching status preserves search and sort',async t=>{
+const statusLabel='등록 차량 운영 상태',departmentLabel='등록 차량 부서';
+const selectValue=(r,label,value)=>act(async()=>r.root.findByProps({'aria-label':label}).props.onChange({target:{value}}));
+const countOption=(r,label,value)=>Number(text(r.root.findByProps({'aria-label':label}).find(n=>n.type==='option'&&n.props.value===value).children).match(/\((\d+)\)$/)[1]);
+
+test('vehicle availability preserves search and sorting and reports counts within the current search',async t=>{
  const {r}=await mount(t);
- assert.equal(groupButton(r,'전체').props['aria-pressed'],true);assert.equal(groupCount(r,'전체'),3);
- await act(async()=>r.root.findByProps({'aria-label':'등록 차량 검색'}).props.onChange({target:{value:'김영업'}}));
- assert.equal(groupCount(r,'전체'),2);assert.equal(groupCount(r,'사용 가능'),1);assert.equal(groupCount(r,'사용 정지'),1);
- await act(async()=>r.root.findByProps({'aria-label':'등록 차량 정렬'}).props.onChange({target:{value:'distanceDesc'}}));
- assert.match(rowNames(r)[0],/영업 2호/);
- await act(async()=>groupButton(r,'사용 정지').props.onClick());
- assert.deepEqual(rowNames(r),['123나4567영업 2호']);
+ assert.equal(groupButton(r,'전체 차량').props['aria-pressed'],true);assert.equal(groupCount(r,'전체 차량'),3);
+ await selectValue(r,'등록 차량 검색','김영업');
+ assert.equal(groupCount(r,'전체 차량'),2);assert.equal(countOption(r,statusLabel,'enabled'),1);assert.equal(countOption(r,statusLabel,'disabled'),1);
+ await selectValue(r,'등록 차량 정렬','distanceDesc');assert.match(rowNames(r)[0],/영업 2호/);
+ await selectValue(r,statusLabel,'disabled');assert.deepEqual(rowNames(r),['123나4567영업 2호']);
  assert.equal(r.root.findByProps({'aria-label':'등록 차량 검색'}).props.value,'김영업');
  await act(async()=>button(r,'필터 초기화').props.onClick());
  assert.equal(rowNames(r).length,3);assert.equal(r.root.findByProps({'aria-label':'등록 차량 정렬'}).props.value,'name');
- assert.equal(groupButton(r,'전체').props['aria-pressed'],true);
+ assert.equal(groupButton(r,'전체 차량').props['aria-pressed'],true);
 });
 
-test('vehicle department groups keep search-scoped counts and switch without losing query or sort',async t=>{
- const {r}=await mount(t);
- assert.equal(groupCount(r,'영업팀'),2);assert.equal(groupCount(r,'관리팀'),1);assert.equal(groupCount(r,'미지정'),0);
- await act(async()=>groupButton(r,'영업팀').props.onClick());
- assert.equal(rowNames(r).length,2);assert.equal(groupButton(r,'전체').props['aria-pressed'],false);
- await act(async()=>r.root.findByProps({'aria-label':'등록 차량 검색'}).props.onChange({target:{value:'관리'}}));
- assert.equal(rowNames(r).length,0);assert.equal(groupCount(r,'영업팀'),0);assert.equal(groupCount(r,'관리팀'),1);
- assert.equal(groupButton(r,'영업팀').props['aria-pressed'],true);
- await act(async()=>r.root.findByProps({'aria-label':'등록 차량 정렬'}).props.onChange({target:{value:'created'}}));
- await act(async()=>groupButton(r,'관리팀').props.onClick());
- assert.deepEqual(rowNames(r),['123다4567관리 차량']);
- assert.equal(r.root.findByProps({'aria-label':'등록 차량 검색'}).props.value,'관리');
+test('department selection keeps query and sort and combines with vehicle availability',async t=>{
+ const {r}=await mount(t),sales='department-name:영업팀',office='department-name:관리팀';
+ assert.equal(countOption(r,departmentLabel,sales),2);assert.equal(countOption(r,departmentLabel,office),1);assert.equal(countOption(r,departmentLabel,'unassigned'),0);
+ await selectValue(r,departmentLabel,sales);assert.equal(rowNames(r).length,2);
+ await selectValue(r,'등록 차량 검색','관리');assert.equal(rowNames(r).length,0);
+ assert.equal(countOption(r,departmentLabel,sales),0);assert.equal(countOption(r,departmentLabel,office),1);
+ await selectValue(r,'등록 차량 정렬','created');await selectValue(r,departmentLabel,office);
+ assert.deepEqual(rowNames(r),['123다4567관리 차량']);assert.equal(r.root.findByProps({'aria-label':'등록 차량 검색'}).props.value,'관리');
  assert.equal(r.root.findByProps({'aria-label':'등록 차량 정렬'}).props.value,'created');
- await act(async()=>groupButton(r,'사용 정지').props.onClick());
- assert.equal(rowNames(r).length,0);assert.equal(groupButton(r,'관리팀').props['aria-pressed'],false);
- await act(async()=>button(r,'필터 초기화').props.onClick());
- assert.equal(rowNames(r).length,3);assert.equal(groupButton(r,'전체').props['aria-pressed'],true);
+ await selectValue(r,statusLabel,'disabled');assert.equal(rowNames(r).length,0);assert.equal(r.root.findByProps({'aria-label':departmentLabel}).props.value,office);
+ await act(async()=>button(r,'필터 초기화').props.onClick());assert.equal(rowNames(r).length,3);
 });
 
-test('vehicle groups use registered departments and include vehicles without a department or a terminal',async t=>{
- const {r}=await mount(t,{data:[
-  {...vehicles[0],department_id:10},
-  {...vehicles[1],department_id:10},
-  {...vehicles[2],department:'  ',department_id:null},
- ]});
- assert.equal(groupCount(r,'영업팀'),2);assert.equal(groupCount(r,'미지정'),1);
- await act(async()=>groupButton(r,'미지정').props.onClick());
- assert.deepEqual(rowNames(r),['123다4567관리 차량']);
- assert.match(text(r.root.findByType('tbody').children),/미연결/);
- await act(async()=>groupButton(r,'사용 정지').props.onClick());
- assert.deepEqual(rowNames(r),['123나4567영업 2호']);
- await act(async()=>groupButton(r,'영업팀').props.onClick());
- assert.equal(rowNames(r).length,2);assert.equal(groupButton(r,'사용 정지').props['aria-pressed'],false);
- await act(async()=>button(r,'필터').props.onClick());
- await act(async()=>r.root.findByProps({'aria-label':'최대 거리'}).props.onChange({target:{value:'0'}}));
- await act(async()=>button(r,'적용').props.onClick());
- assert.equal(groupCount(r,'영업팀'),1);assert.equal(groupCount(r,'미지정'),0);
- await act(async()=>button(r,'필터 초기화').props.onClick());
- assert.equal(rowNames(r).length,3);assert.equal(groupCount(r,'영업팀'),2);assert.equal(groupCount(r,'미지정'),1);
+test('company vehicle groups are independent from department IDs and include older ungrouped vehicles',async t=>{
+ const {r}=await mount(t,{data:[{...vehicles[0],department_id:10,group_id:45},{...vehicles[1],department_id:10,group_id:46},{...vehicles[2],department:'  ',department_id:null}]});
+ assert.equal(countOption(r,departmentLabel,'department:10'),2);assert.equal(countOption(r,departmentLabel,'unassigned'),1);
+ assert.equal(groupCount(r,'영업차량'),1);assert.equal(groupCount(r,'관리차량'),1);assert.equal(groupCount(r,'그룹 미지정'),1);
+ await act(async()=>groupButton(r,'그룹 미지정').props.onClick());assert.deepEqual(rowNames(r),['123다4567관리 차량']);assert.match(text(r.root.findByType('tbody').children),/미연결/);
+ await act(async()=>groupButton(r,'전체 차량').props.onClick());await selectValue(r,departmentLabel,'department:10');assert.equal(rowNames(r).length,2);
+ await act(async()=>groupButton(r,'영업차량').props.onClick());assert.deepEqual(rowNames(r),['123가4567영업 1호']);
+ await act(async()=>button(r,'필터').props.onClick());await selectValue(r,'최대 거리','0');await act(async()=>button(r,'적용').props.onClick());
+ assert.equal(groupCount(r,'영업차량'),1);assert.equal(groupCount(r,'관리차량'),0);
+ await act(async()=>button(r,'필터 초기화').props.onClick());assert.equal(rowNames(r).length,3);assert.equal(groupCount(r,'그룹 미지정'),1);
 });
 
 test('vehicle filter modal isolates drafts and validates before applying ranges',async t=>{
@@ -248,7 +234,7 @@ test('vehicle filter modal isolates drafts and validates before applying ranges'
  await act(async()=>r.root.findByProps({'aria-label':'최소 거리'}).props.onChange({target:{value:'0'}}));
  await act(async()=>button(r,'적용').props.onClick());
  assert.equal(r.root.findAllByProps({role:'dialog'}).length,0);assert.deepEqual(rowNames(r),['123가4567영업 1호']);
- assert.equal(groupCount(r,'전체'),1);assert.equal(groupCount(r,'사용 정지'),0);
+ assert.equal(groupCount(r,'전체 차량'),1);assert.equal(countOption(r,statusLabel,'disabled'),0);
  await act(async()=>button(r,'필터').props.onClick());
  await act(async()=>r.root.findByProps({'aria-label':'계기판 거리 등록 여부'}).props.onChange({target:{value:'missing'}}));
  assert.equal(r.root.findByProps({'aria-label':'최소 거리'}).props.disabled,true);

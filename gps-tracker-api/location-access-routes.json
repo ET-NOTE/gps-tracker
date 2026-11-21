@@ -727,6 +727,14 @@
     "class": "non_location",
     "reason": "Vehicle maintenance dates, types and notes scoped to the selected company and permitted vehicles."
   },
+  "fleet_vehicles.rs GET /corporate/vehicle-groups": {
+    "class": "non_location",
+    "reason": "Company vehicle classification names scoped to permitted vehicles; no telemetry."
+  },
+  "fleet_vehicles.rs POST /corporate/vehicle-groups": {
+    "class": "non_location",
+    "reason": "Vehicle manager creates an owner-scoped classification name."
+  },
   "fleet_vehicles.rs GET /corporate/vehicle-stats": {
     "class": "ledger",
     "reason": "Location or derived record response; durable intent before handler."

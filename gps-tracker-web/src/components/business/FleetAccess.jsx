@@ -78,7 +78,7 @@ function AccessGate({owner,allowOwn,onChoose,onJoined,children}) {
  );
  if(access.error)return <div className="fleet-access-error">{toolbar}<BusinessError onRetry={access.refetch}>회사에 접근할 수 없습니다. 초대·활성 상태를 확인하거나 다른 회사를 선택해 주세요.</BusinessError></div>;
  if(!access.data)return <p>접근 권한 확인 중…</p>;
- return <Context.Provider value={access.data}>{children(toolbar)}</Context.Provider>;
+ return <Context.Provider value={access.data}>{children(toolbar,companyName)}</Context.Provider>;
 }
 export function FleetJoin({onClose,onJoined}) {
  const [code,setCode]=useState(''),[preview,setPreview]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('');

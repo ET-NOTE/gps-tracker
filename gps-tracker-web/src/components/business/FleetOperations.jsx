@@ -10,7 +10,7 @@ import {maintenanceScheduleFields} from '../../lib/fleetAssetFilters';
 import {useBusinessClock} from './useBusinessData';
 import {CompletionEditor,MaintenanceHistory} from './FleetMaintenanceHistory';
 
-export default function FleetOperations({mode,assets,devices,canManage,openDetail,editSchedule,refreshAssets}){
+export default function FleetOperations({mode,assets,devices,canManage,canRegisterTerminal,openDetail,editSchedule,refreshAssets}){
   const now=useBusinessClock(),today=businessDate(now),terminals=mode==='devices';
   const client=useQueryClient();
   const [completion,setCompletion]=useState(null),[historyRevision,setHistoryRevision]=useState(0);
@@ -35,12 +35,12 @@ export default function FleetOperations({mode,assets,devices,canManage,openDetai
   const matchingAsset=asset=>(!vehicle||String(asset?.id)===vehicle);
   const contains=(...values)=>values.some(v=>String(v||'').toLocaleLowerCase('ko').includes(query.trim().toLocaleLowerCase('ko')));
   const visibleTerminals=terminalRows.filter(r=>matchingAsset(r.asset)&&contains(r.name,r.asset?.name,r.asset?.license_plate,r.asset?.department)
-    &&(status==='all'||(status==='linked'&&r.asset)||(status==='unlinked'&&!r.asset)||(status==='check'&&r.offline)));
+    &&(status==='all'||(status==='linked'&&r.asset)||(status==='receiving'&&r.device.last_seen_at && !r.device.unavailable && now-Date.parse(r.device.last_seen_at)<=300000)||(status==='unlinked'&&!r.asset)||(status==='check'&&r.offline)));
   const schedules=assets.flatMap(asset=>maintenanceScheduleFields.map(([key,label])=>({asset,key,label,date:asset.profile?.[key]||''})))
     .filter(r=>matchingAsset(r.asset)&&contains(r.asset.name,r.asset.license_plate,r.asset.car_model,r.asset.department,r.label)
       &&(status==='all'&&r.date||status==='overdue'&&r.date&&r.date<today||status==='missing'&&!r.date))
     .sort((a,b)=>a.date.localeCompare(b.date)||fleetAssetLabel(a.asset).localeCompare(fleetAssetLabel(b.asset),'ko',{numeric:true}));
-  const options=terminals?[['all','전체'],['linked','연결'],['check','수신 확인'],['unlinked','미연결']]:[['all','등록 일정'],['overdue','기한 경과'],['missing','미등록'],['completed','완료 이력']];
+  const options=terminals?[['all','전체'],['receiving','정상 수신'],['check','수신 확인'],['unlinked','미연결'],['linked','차량 연결']]:[['all','등록 일정'],['overdue','기한 경과'],['missing','미등록'],['completed','완료 이력']];
   const showHistory=!terminals&&status==='completed';
   function savedCompletion(id){
     setCompletion(null);
@@ -55,11 +55,14 @@ export default function FleetOperations({mode,assets,devices,canManage,openDetai
     const asset=assets.find(a=>String(a.id)===chosen);
     if(!asset)return;
     if(picker==='schedule')editSchedule(asset);
+    else if (picker==='history')openDetail(asset.id,'history');
     else openDetail(asset.id,'connections',picker.device.id);
     setPicker(null);
   }
   return <div className="fleet-operations">
     <div className="fleet-operations-toolbar"><div className="fleet-operations-status" aria-label={terminals?'단말 상태':'일정 상태'}>{options.map(([id,label])=><button type="button" key={id} aria-pressed={status===id} onClick={()=>setStatus(id)}>{label}</button>)}</div>
+    {terminals&&<div className="fleet-maintenance-actions">{canManage&&assets.length>0&&<button className="business-button" type="button" onClick={()=>chooseVehicle('history')}><Icon name="clock" size={16}/>연결 이력</button>}
+      {canRegisterTerminal&&<a className="business-button is-primary" href={(import.meta.env.BASE_URL||'/')+'devices/pair'}><Icon name="plus" size={16}/>단말기 등록</a>}</div>}
     {!terminals&&canManage&&assets.length>0&&<div className="fleet-maintenance-actions">
       <button type="button" className={showHistory?'business-button':'business-button is-primary'} onClick={()=>chooseVehicle('schedule')}><Icon name="plus" size={16}/>일정 등록</button>
       <button type="button" className={showHistory?'business-button is-primary':'business-button'} onClick={()=>setCompletion({})}>완료 이력 등록</button>
@@ -85,7 +88,7 @@ export default function FleetOperations({mode,assets,devices,canManage,openDetai
     {!(terminals?visibleTerminals:schedules).length&&<div className="business-empty"><strong>{terminals?'표시할 단말기가 없습니다.':'해당하는 일정이 없습니다.'}</strong></div>}
     </>}
     {completion&&<CompletionEditor assets={assets} initialVehicle={vehicle} schedule={completion.schedule} today={today} onClose={()=>setCompletion(null)} onSaved={savedCompletion} onConflict={refreshAssets}/>}
-    {picker&&<Modal open title={picker==='schedule'?'일정을 등록할 차량':'단말기를 연결할 차량'} onClose={()=>setPicker(null)} footer={<div className="fleet-assets-filter-footer"><button type="button" className="business-button" onClick={()=>setPicker(null)}>취소</button><button type="button" className="business-button is-primary" disabled={!chosen} onClick={confirm}>다음</button></div>}>
+    {picker&&<Modal open title={picker==='schedule'?'일정을 등록할 차량':picker==='history'?'연결 이력을 확인할 차량':'단말기를 연결할 차량'} onClose={()=>setPicker(null)} footer={<div className="fleet-assets-filter-footer"><button type="button" className="business-button" onClick={()=>setPicker(null)}>취소</button><button type="button" className="business-button is-primary" disabled={!chosen} onClick={confirm}>다음</button></div>}>
       <label className="fleet-operations-vehicle-picker">차량<select value={chosen} onChange={e=>setChosen(e.target.value)}>{assets.map(a=><option key={a.id} value={a.id}>{fleetAssetLabel(a)}</option>)}</select></label>
     </Modal>}
   </div>;

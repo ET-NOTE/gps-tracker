@@ -10,8 +10,8 @@ import VehicleCarePanel from '../VehicleCarePanel';
 export const profileKey = () => [authScope(), 'rental-vehicle-profiles'];
 export const useRentalProfiles = () => useQuery({ queryKey: profileKey(), queryFn: api.rentalFleetProfiles, staleTime: 15000 });
 
-export default function RentalFleetProfileEditor({ device, onClose, onDevicesChange, branches = [] }) {
-  const [tab, setTab] = useState('rental'), profile = device.rental_profile || {};
+export default function RentalFleetProfileEditor({ device, onClose, onDevicesChange, branches = [], initialTab = 'rental' }) {
+  const [tab, setTab] = useState(initialTab), profile = device.rental_profile || {};
   const [revision] = useState(() => profile.revision || 0);
   const [form, setForm] = useState(() => ({
     branch: profile.branch || '', class_name: profile.class_name || '', readiness: profile.readiness || 'ready',

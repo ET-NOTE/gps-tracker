@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal } from '../ui';
+import { FreightDrawer } from './FreightKit';
 import { validPosition } from '../../lib/businessWorkspace';
 import { deviceBattery } from '../../lib/battery';
 import { terminalName } from '../../lib/corporateOverview';
@@ -37,15 +37,15 @@ export default function FreightDevices({data,save,devices=[],onMap,onRegisterDev
     </FreightFilters>
     <FreightTable columns={['단말기','연결 차량','운영 지점','수신 상태','마지막 수신']} rows={list.map(item=>{
       const vehicle=vehicleFor(item.id);
-      return {id:item.id,cells:[<button className="fr-link" onClick={()=>setView({id:item.id,action:'detail'})}>{terminalName(item)}</button>,
+      return {id:item.id,onOpen:()=>setView({action:'detail',id:item.id}),cells:[<button className="fr-link" onClick={()=>setView({id:item.id,action:'detail'})}>{terminalName(item)}</button>,
         vehicle?.plate||'차량 미연결',nameOf(data,'branches',vehicle?.branchId),terminalState(item,data.policies).label,timeLabel(item.last_seen_at)]};
     })} empty={devices.length?'조회 조건에 맞는 단말기가 없습니다.':'계정에 등록된 단말기가 없습니다.'}/>
-    {dev&&view.action==='detail'&&<Modal open title="화물 단말기 상세" subtitle={terminalName(dev)} onClose={close} footer={<div className="fr-actions">
+    {dev&&view.action==='detail'&&<FreightDrawer title="화물 단말기 상세" subtitle={terminalName(dev)} onClose={close} footer={<div className="fr-actions">
       <FreightButton onClick={close}>닫기</FreightButton>{onMap&&validPosition(dev)&&<FreightButton onClick={()=>onMap(dev.id)}>지도 보기</FreightButton>}
       <FreightButton primary onClick={()=>setView({action:'link',id:dev.id})} disabled={!data.vehicles.length}>차량 연결 관리</FreightButton></div>}>
       <FreightFacts items={[['단말기 식별자',dev.device_uid||String(dev.id)],['연결 차량',vehicle?.plate||'미연결'],['수신 상태',terminalState(dev,data.policies).label],
         ['마지막 수신',timeLabel(dev.last_seen_at)],['마지막 위치 수신',timeLabel(dev.last_fix_at)],['배터리',battery.percent==null?'미수신':battery.percent+'% · '+battery.voltage]]}/>
-    </Modal>}
+    </FreightDrawer>}
     {dev&&view.action==='link'&&<FreightForm title="단말기 차량 연결" subtitle={terminalName(dev)} onClose={detail} onSubmit={change}>
       <FreightField label="연결 차량" wide><select name="vehicleId" defaultValue={vehicle?.id||''}><option value="">연결 해제</option>{options.map(v=><option key={v.id} value={v.id}>{v.plate} · {v.model}</option>)}</select></FreightField>
     </FreightForm>}

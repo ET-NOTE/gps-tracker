@@ -12,3 +12,9 @@ export const rentalMenu = [
 ];
 
 export const rentalPages = new Map(rentalMenu.flatMap(g => g.pages));
+
+export const rentalPageHeadings = {
+  "rent-customers": "고객 관리", "rent-accounts": "법인 거래처", "rent-rates": "요금표",
+  "rent-payments": "청구·결제 기록", "rent-costs": "차량 운영비", policy: "대여 운영 정책",
+  service: "세차·정비", incidents: "사고·고장", devices: "단말기 관리",
+};

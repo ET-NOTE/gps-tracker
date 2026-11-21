@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Modal } from '../ui';
+import { FreightDrawer } from './FreightKit';
 import { FreightBadge, FreightButton, FreightFacts, FreightField, FreightFilters, FreightForm, FreightStats, FreightTable } from './FreightKit';
 import { choices, choicesFrom, downloadRows, FormField, OfficeFilter } from './FreightOfficeFields';
 import { costLabel, getRow, inputTime, nameOf, shipStates, stamp, timeLabel, vehicleName } from '../../lib/freightWorkflow';
@@ -42,11 +42,12 @@ function matchesStatus(r,state) {
     default:return true;
   }
 }
-function TransactionForm({r,billing,onClose,onSubmit}) {
+function TransactionForm({r,billing,onClose,onSubmit,candidates,onSelect}) {
   const sideBase=billing?'receipt':'payout', [side,setSide]=useState(sideBase);
   const limit=paymentLimit(r.fin,side);
   const excess=r.total==null?0:Math.max(0,r.net-r.total);
   return <FreightForm title={billing?'수납·환불 기록':'지급·환수 기록'} subtitle={r.s.number} onClose={onClose} onSubmit={onSubmit} submitLabel="거래 기록">
+    {candidates&&<FreightField label="운송 건" wide><select value={r.id} onChange={e=>onSelect(e.target.value)}>{candidates.map(item=><option key={item.id} value={item.id}>{item.s.number} · {item.party}</option>)}</select></FreightField>}
     <FreightField label="거래 구분"><select name="side" value={side} onChange={e=>setSide(e.target.value)}>
       {[sideBase,sideBase+'_refund'].map(v=><option value={v} key={v}>{paymentNames[v]}</option>)}</select></FreightField>
     <FormField field={{key:'method',label:'거래 방식',options:choices(paymentMethods),required:true}}/>
@@ -78,6 +79,7 @@ export default function FreightLedger({kind,data,save,onPage}) {
   const receipts=r?.fin.receipts.filter(x=>x.side.startsWith(billing?'receipt':'payout')).sort((a,b)=>b.at.localeCompare(a.at));
   const awaitingProof=r&&billing&&r.s.status!=='cancelled'&&data.policies.requireProofForBilling&&r.s.proof?.status!=='approved';
   const canConfirm=r&&!r.confirmed&&r.total!=null&&(!billing||['cancelled','delivered'].includes(r.s.status))&&!awaitingProof;
+  const eligible=rows.filter(item=>item.balance>0||item.net>0);
   return <section className="fr-section">
     <FreightStats items={[[totalLabel,sum('total')],[netLabel,sum('net')],[balanceLabel,sum('balance')],['운임 미정',rows.filter(r=>r.total==null).length+'건']]}/>
     <FreightFilters query={query} onQuery={setQuery} placeholder="운송번호·거래처·차량 검색"><PeriodFilter period={period} setPeriod={setPeriod}/>
@@ -85,12 +87,15 @@ export default function FreightLedger({kind,data,save,onPage}) {
       <OfficeFilter label={partyLabel} options={billing?choicesFrom(data.shippers):{own:'자사 운송',...choicesFrom(data.carriers)}} value={party} onChange={setParty}/>
       <OfficeFilter label="정산 상태" options={states} value={state} onChange={setState}/>
     </FreightFilters>
-    <div className="fr-toolbar"><strong>운송 {rows.length}건</strong><FreightButton disabled={!rows.length} onClick={()=>downloadRows(billing?'화주 청구수납':'운송비 정산지급',headings,rows.map(values))}>CSV 다운로드</FreightButton></div>
+    <div className="fr-toolbar"><strong>운송 {rows.length}건</strong><div className="fr-actions">
+      <FreightButton onClick={()=>{setPeriod(currentPeriod());setState('');setBranch('');setParty('');setQuery('');}}>조건 초기화</FreightButton>
+      <FreightButton disabled={!rows.length} onClick={()=>downloadRows(billing?'화주 청구수납':'운송비 정산지급',headings,rows.map(values))}>CSV 다운로드</FreightButton>
+      <FreightButton primary disabled={!eligible.length} onClick={()=>setView({id:eligible[0].id,action:'payment',fromList:true})}>{billing?'수납 기록':'지급 기록'}</FreightButton></div></div>
     <FreightTable columns={headings} rows={rows.map(r=>{const cells=values(r),[label,tone]=describe(r,billing);
       cells[0]=<button className="fr-link" onClick={()=>setView({id:r.id,action:'detail'})}>{r.s.number}</button>;
-      cells[cells.length-1]=<FreightBadge tone={tone}>{label}</FreightBadge>; return {id:r.id,cells};
+      cells[cells.length-1]=<FreightBadge tone={tone}>{label}</FreightBadge>; return {id:r.id,onOpen:()=>setView({id:r.id,action:'detail'}),cells};
     })} empty="조회 조건에 해당하는 운송 건이 없습니다."/>
-    {r&&view.action==='detail'&&<Modal open size="lg" title="운송 정산 상세" subtitle={r.s.number+' · '+r.party} onClose={close} footer={<div className="fr-actions">
+    {r&&view.action==='detail'&&<FreightDrawer title="운송 정산 상세" subtitle={r.s.number+' · '+r.party} onClose={close} footer={<div className="fr-actions">
       <FreightButton onClick={close}>닫기</FreightButton><FreightButton onClick={()=>open('agreement')}>합의 운임</FreightButton>
       {!r.confirmed&&<FreightButton disabled={!canConfirm} onClick={()=>open('confirm')}>{billing?'청구 확인':'지급 대상 확인'}</FreightButton>}
       <FreightButton primary disabled={!(r.balance>0||r.net>0)} onClick={()=>open('payment')}>{billing?'수납·환불 기록':'지급·환수 기록'}</FreightButton></div>}>
@@ -102,8 +107,9 @@ export default function FreightLedger({kind,data,save,onPage}) {
         <section><h3>거래 기록</h3><FreightTable columns={['거래 구분','금액','일시','방식','메모']} rows={receipts.map(p=>({id:p.id,cells:[paymentNames[p.side],costLabel(p.amount),timeLabel(p.at),p.method,p.note||'—']}))} empty="기록된 거래가 없습니다."/></section>
         <div className="fr-actions"><FreightButton onClick={()=>onPage('cargo-charges')}>추가 비용 관리</FreightButton></div>
       </section>
-    </Modal>}
-    {r&&view.action==='payment'&&<TransactionForm r={r} billing={billing} onClose={toDetail} onSubmit={submit}/>}
+    </FreightDrawer>}
+    {r&&view.action==='payment'&&<TransactionForm key={r.id} r={r} billing={billing} onClose={view.fromList?close:toDetail} onSubmit={submit}
+      candidates={view.fromList?eligible:undefined} onSelect={id=>setView({id,action:'payment',fromList:true})}/>}
     {r&&view.action==='agreement'&&<FreightForm title="합의 운임 확인" subtitle={r.s.number} onClose={toDetail} onSubmit={submit}>
       <FormField field={{key:'sellAmount',label:'화주 합의 운임 (원)',type:'number',min:0,max:1e9,readOnly:r.s.invoiceStatus==='issued'||r.fin.received!==0}} initial={r.s}/>
       <FormField field={{key:'buyAmount',label:'운송사·자사 운송비 (원)',type:'number',min:0,max:1e9,readOnly:r.s.payableStatus==='confirmed'||r.fin.paid!==0}} initial={r.s}/>

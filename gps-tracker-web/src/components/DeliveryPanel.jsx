@@ -9,6 +9,8 @@ import RentalTeam from './business/RentalTeam';
 import FreightOffice from './business/FreightOffice';
 import FreightWorkflow from './business/FreightWorkflow';
 import FreightOverview from './business/FreightOverview';
+import FreightDashboard from './business/FreightDashboard';
+import { qk } from '../state/keys';
 import FreightAlerts from './business/FreightAlerts';
 import FreightAdmin from './business/FreightAdmin';
 import FreightReports from './business/FreightReports';
@@ -51,7 +53,8 @@ function OwnerWorkspace({page,onPage,devices,onMap,onNavigate,destinations,onReg
   else if(office.has(id)) body=<FreightOffice {...props}/>;
   else if(reports.has(id)) body=<FreightReports {...props}/>;
   else if(id==='cargo-incidents') body=<FreightIncidents {...props}/>;
-  else if(id==='cargo-dashboard'||id==='cargo-live') body=<FreightOverview {...props}/>;
+  else if(id==='cargo-dashboard') body=<FreightDashboard {...props}/>;
+  else if(id==='cargo-live') body=<FreightOverview {...props} refreshing={q.isFetching} onRefresh={()=>Promise.all([q.refetch(),qc.invalidateQueries({queryKey:qk.devices()})])}/>;
   else if(id==='users'||id==='permissions') body=<RentalTeam cargo page={id==='users'?'staff':'groups'} onTab={p=>onPage(({branches:'organization',groups:'permissions',staff:'users'})[p])}/>;
   else body=<FreightAdmin {...props}/>;
   return <RentalWorkspace page={id} onTab={onPage} menu={freightMenu} headerAction={snapshot&&<FreightAlerts data={snapshot.data} devices={devices} onPage={onPage}/>} heading="화물배차" serviceLabel="화물배차" widthKey="cargo.area.width" devices={devices} onSearchDevice={d=>onMap(d.id)} onNavigate={onNavigate} destinations={destinations}>

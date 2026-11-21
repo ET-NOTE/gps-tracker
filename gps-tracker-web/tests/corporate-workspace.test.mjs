@@ -6,7 +6,7 @@ import * as React from 'react';
 import * as jsx from 'react/jsx-runtime';
 import {create,act} from 'react-test-renderer';
 import {transform} from 'esbuild';
-import {corporateGroups,corporateTabs} from '../src/lib/corporateNavigation.js';
+import {corporateGroups,corporateTabs,corporatePageHint} from '../src/lib/corporateNavigation.js';
 import {vehicleName} from '../src/lib/business.js';
 import {corporateVehicleName,terminalName,locationState,locationSummary} from '../src/lib/corporateOverview.js';
 
@@ -26,7 +26,7 @@ async function modules(globals={},phone=false){
    if(name.endsWith('BusinessDrawer'))return synthetic({default:drawer});
    if(name.endsWith('/useCorporatePhone'))return synthetic({default:()=>phone});
    if(name==='./CorporateMobileHeader')return synthetic({default:(await load('../src/components/business/CorporateMobileHeader.jsx')).default});
-   return synthetic({default:noop,classifyDevice:()=>({color:'#64748b',label:'수신 이력 없음'}),ageString:noop,vehicleName,
+   return synthetic({default:noop,corporatePageHint,classifyDevice:()=>({color:'#64748b',label:'수신 이력 없음'}),ageString:noop,vehicleName,
     corporateVehicleName,terminalName,locationState,locationSummary,kstDateTime:noop,useBusinessClock:()=>Date.parse('2026-11-17T03:00:00Z'),openPalette:noop});
   });
   await mod.evaluate();return mod.namespace;
@@ -75,7 +75,7 @@ test('design navigation exposes live, vehicle tools, and booking as a direct des
  assert.deepEqual(navGroups.map(n=>text(n.children)),corporateGroups.map(g=>g.label));
  await act(async()=>findButton(primary(),'차량 관리').props.onClick());
  const vehicleTabs=()=>r.root.findByProps({'aria-label':'차량 관리 하위 메뉴'});
- assert.deepEqual(buttons(vehicleTabs()),['차량 목록','차량·단말기 연결','정비·보험']);
+ assert.deepEqual(buttons(vehicleTabs()),['차량 목록','단말기 관리','정비·보험']);
  await act(async()=>findButton(vehicleTabs(),'정비·보험').props.onClick());
  await act(async()=>findButton(primary(),'차량 예약').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'reservations');
@@ -117,7 +117,7 @@ test('corporate company controls appear once above the body and remain interacti
  assert.equal(topbar.findAllByType('select').length,1);
  assert.equal(body.findAllByType('select').length,0);
  assert.equal(r.root.findByProps({'aria-label':'지출 관리 하위 메뉴'}).type,'nav');
- assert.equal(text(classNode(r.root,'fleet-breadcrumb').children),'법인차 운영지출 관리지출 내역');
+ assert.equal(text(classNode(r.root,'fleet-breadcrumb').children),'법인운행지출 관리지출 내역');
  const width=topbar.findByProps({'aria-label':'화면 폭 선택'});
  await act(async()=>findButton(width,'넓게').props.onClick());
  assert.equal(classNode(r.root,'business-workspace').props['data-view-width'],'wide');

@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api';
-import { businessDate } from '../../lib/business';
+import { businessDate, businessPeriod } from '../../lib/business';
 import { kstDateTime, rentalReport } from '../../lib/businessExport';
 import { fillTemplate } from '../../lib/rentalOffice';
 import { officeBookKey, officeCatalogKey } from './rentalOfficeKeys';
 import { profileKey } from './RentalFleetProfiles';
-import { agreementTotal, rentalStageNames, workflowRows, workflowStatus } from '../../lib/rentalWorkflow';
+import { agreementTotal, rentalMilestones, rentalStageNames, workflowRows, workflowStatus } from '../../lib/rentalWorkflow';
 import { useUpdateRental, qk } from '../../state';
 import { confirmDialog } from '../Dialog';
 import { Button, FormField, Input, Modal, Select, Textarea } from '../ui';
 import { RentalDialog, HandoffTokenDialog, SettlementSummary } from '../RentcarPanel';
 import { useRentalCatalog } from './RentalBookingForm';
-import { BusinessButton, BusinessEmpty, BusinessError } from './BusinessWorkspace';
+import { BusinessButton, BusinessError } from './BusinessWorkspace';
 import { useBusinessClock, useRentalOperations } from './useBusinessData';
 import ExportButtons from './ExportButtons';
+import RentalStageTable, {StageBadge} from './RentalStageTable';
+import { LedgerEditor } from './RentalOfficeBook';
+import { policyKey } from './RentalPolicy';
 import ReturnWizard from './ReturnWizard';
 import PhotoGalleryModal from './PhotoGalleryModal';
 import BusinessDrawer from './BusinessDrawer';
@@ -23,9 +26,25 @@ import './rental-workflow.css';
 const templateText = c => (c.rental_terms?.template_body || '').replaceAll('{{고객연락처}}',c.renter_phone || '—');
 const won = value => Number(value || 0).toLocaleString('ko-KR')+'원';
 const carLabel = c => c.license_plate || c.device_name || (c.device_id ? '차량 '+c.device_id : '차량 미배정');
-const baseFilters = {query:'',status:'',branch:'',from:'',to:'',device:''};
-const tagTone = {'배차 대기':'amber','예약 접수':'blue','출고 준비':'green','대여 중':'blue','반납 지연':'red'};
-function StageBadge({ c, now }) {const name=workflowStatus(c,now);return <span className={'rental-status '+(tagTone[name] || '')}>{name}</span>;}
+const baseFilters = {query:'',status:'',branch:'',from:'',to:'',device:'',model:'',channel:'',subset:''};
+const stageTabs = {
+  checkout:[['','전체 출고 예정'],['pickup','오늘 출고']],
+  active:[['','전체 대여 중'],['due','오늘 반납'],['late','반납 지연']],
+  returns:[['','전체'],['open','반납 대기'],['returned','반납 완료']],
+};
+
+function bookQuery(period) {
+  return {queryKey:officeBookKey(period),queryFn:()=>api.rentalOffice('GET','/book?'+new URLSearchParams(period)),staleTime:15000};
+}
+
+function ContractLedger({contract,onClose}) {
+  const day=businessDate(contract.starts_at);
+  const query=useQuery(bookQuery({from:day,to:day}));
+  const current=query.data?.contracts.find(c=>c.id===contract.id);
+  if (current) return <LedgerEditor book={{contracts:[current]}} initial={{contract:current}} close={onClose}/>;
+  return <Modal open title="결제·보증금 기록" onClose={onClose}>{query.isLoading?<p role="status">결제 내역을 불러오는 중…</p>:
+    <BusinessError onRetry={query.refetch}>이 계약의 청구액과 수납 내역을 확인하지 못했습니다.</BusinessError>}</Modal>;
+}
 
 export default function RentalWorkflow({ stage='reservations', devices=[], branches: configuredBranches=[], request }) {
   const now=useBusinessClock(), qc=useQueryClient(), update=useUpdateRental();
@@ -33,6 +52,18 @@ export default function RentalWorkflow({ stage='reservations', devices=[], branc
   const invalid=filters.from && filters.to && filters.from>filters.to;
   const period=filters.from && filters.to && !invalid ? {from:filters.from+'T00:00:00+09:00',to:new Date(Date.parse(filters.to+'T00:00:00+09:00')+86400000).toISOString()}:null;
   const result=useRentalOperations(now,period,!invalid), all=result.data || [];
+  const defaultPeriod=businessPeriod(now);
+  const bookPeriod={from:filters.from || businessDate(defaultPeriod.from),to:filters.to || businessDate(Date.parse(defaultPeriod.to)-1)};
+  const bookRange=Date.parse(bookPeriod.to)-Date.parse(bookPeriod.from);
+  const book=useQuery({...bookQuery(bookPeriod),enabled:!invalid && bookRange>=0 && bookRange<=366*86400000});
+  const policy=useQuery({queryKey:policyKey(),queryFn:api.rentalOperatingPolicy,enabled:stage==='checkout'});
+  const balances=new Map((book.data?.contracts || []).map(c=>[c.id,c]));
+  function checksFor(c) {
+    const p=policy.data,terms=c.rental_terms || {},balance=balances.get(c.id);
+    if (!p || (p.require_payment && !balance)) return null;
+    return [!c.device_id && '차량 배정',p.require_license && !terms.license_checked && '면허 확인',
+      p.require_contract && !terms.confirmed_at && '계약 확인',p.require_payment && balance.paid_krw<agreementTotal(c) && '대여료 수납'].filter(Boolean);
+  }
   useEffect(()=>{
     const initial={...baseFilters,device:request?.deviceId || ''};
     initial.status=({overdue:'반납 지연',returned:'반납 완료',active:'대여 중',draft:'예약 접수'})[request?.status] || '';
@@ -58,10 +89,20 @@ export default function RentalWorkflow({ stage='reservations', devices=[], branc
     try {const saved=await update.mutateAsync({id:c.id,body:{...c,status:'cancelled'}});await refreshed(saved);}
     catch(e){setError(e.message);}
   }
-  const day=businessDate(now), count=fn=>stageRows.filter(fn).length;
-  const metrics = stage==='active' || stage==='returns' ?
-    [['조회 대여',stageRows.length],['오늘 반납',count(c=>c.status!=='returned' && businessDate(c.ends_at)===day)],['반납 지연',count(c=>workflowStatus(c,now)==='반납 지연')],['반납 완료',count(c=>c.status==='returned')]] :
-    [['조회 내역',stageRows.length],['배차 대기',count(c=>c.status==='draft' && !c.device_id)],['출고 대기',count(c=>c.status==='draft' && c.device_id)],['계약 확인',count(c=>!!c.rental_terms?.confirmed_at)]];
+  const day=businessDate(now), count=fn=>shown.filter(fn).length;
+  const unpaid=items=>items.every(c=>balances.has(c.id)) ? items.reduce((sum,c)=>{
+    const b=balances.get(c.id);return sum+Math.max(0,b.billed_krw-b.paid_krw);
+  },0):null;
+  const assigned=count(c=>c.device_id!=null && c.status==='draft');
+  const ready=stage==='checkout' && shown.every(c=>checksFor(c)!=null) ? count(c=>checksFor(c).length===0):null;
+  const metrics={
+    reservations:[['조회 예약',shown.length],['미배정 예약',count(c=>!c.device_id && c.status==='draft')],['출고 준비',assigned],['예약 대여료',shown.filter(c=>c.status!=='cancelled').reduce((sum,c)=>sum+agreementTotal(c),0),'원']],
+    contracts:[['조회 계약',shown.length],['계약 확인 전',count(c=>c.status==='draft' && !c.rental_terms?.confirmed_at)],['대여 중',count(c=>['active','overdue'].includes(c.status))],['대여료 미수',unpaid(shown),'원']],
+    checkout:[['출고 예정',shown.length],['오늘 인수 예정',count(c=>businessDate(c.starts_at)===day)],['사전 확인 완료',ready],['확인 필요',ready==null?null:shown.length-ready]],
+    active:[['대여 중',shown.length],['오늘 반납 예정',count(c=>businessDate(c.ends_at)===day)],['반납 지연',count(c=>workflowStatus(c,now)==='반납 지연')],['대여료 미수',unpaid(shown),'원']],
+    returns:[['조회 반납 대상',shown.length],['반납 대기',count(c=>c.status!=='returned')],['반납 완료',count(c=>c.status==='returned')],['반납 후 대여료 미수',unpaid(shown.filter(c=>c.status==='returned')),'원']],
+    dispatch:[['조회 대여 일정',shown.length],['배차 대기',count(c=>!c.device_id)],['배차 완료',count(c=>!!c.device_id)]],
+  }[stage];
   const action=focused && <>
     {focused.status==='draft' && <><BusinessButton onClick={()=>open('edit',focused)}>{focused.device_id?'예약·배차 변경':'차량 배정'}</BusinessButton>
       {focused.rental_terms && <><BusinessButton onClick={()=>open('review',focused)}>계약·면허 확인</BusinessButton><BusinessButton primary disabled={!focused.device_id} onClick={()=>open('checkout',focused)}>출고 점검</BusinessButton></>}
@@ -69,42 +110,42 @@ export default function RentalWorkflow({ stage='reservations', devices=[], branc
     {['active','overdue'].includes(focused.status) && <><BusinessButton onClick={()=>open('edit',focused)}>기간 연장</BusinessButton><BusinessButton primary onClick={()=>open('return',focused)}>반납 접수</BusinessButton></>}
     {focused.device_id && ['draft','active','overdue'].includes(focused.status) && <BusinessButton onClick={()=>open('handoff',focused)}>인수·반납 링크</BusinessButton>}
     <BusinessButton onClick={()=>open('photos',focused)}>인수·반납 사진</BusinessButton>
+    <BusinessButton onClick={()=>open('ledger',focused)}>결제·보증금 기록</BusinessButton>
   </>;
   const recipient=focused?.rental_terms?.driver_name || focused?.renter_name;
+  const milestones=focused ? rentalMilestones(focused) : [];
   return <div className="rental-workflow">
-    <div className="rental-stage-metrics">{metrics.map(([label,value])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid?'—':value}<small>건</small></strong></div>)}</div>
+    <div className="rental-stage-metrics">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid || value==null ? "—" : <>{value.toLocaleString("ko-KR")}<small>{unit || "건"}</small></>}</strong></div>)}</div>
+    <div className="rental-workflow-toolbar">
+      {stageTabs[stage] ? <div className="rental-stage-tabs" aria-label="업무 범위">{stageTabs[stage].map(([key,label])=><button type="button" key={key} aria-pressed={filters.subset===key} onClick={()=>change("subset",key)}>{label}</button>)}</div> : <span>{shown.length.toLocaleString()}건 조회</span>}
+      <div><ExportButtons report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==="returns" && (filters.status==="반납 완료" || filters.subset==="returned")})} disabled={!!result.error || invalid || result.isLoading}/>
+        {["reservations","dispatch","contracts"].includes(stage) && <BusinessButton primary icon="plus" onClick={()=>open("edit",null)}>예약 등록</BusinessButton>}</div></div>
+    <div className="rental-workflow-filters">
+      <fieldset className="rental-stage-period"><legend>이용 기간</legend><div><input type="date" aria-label="조회 시작일" value={filters.from} onChange={e=>change("from",e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" value={filters.to} onChange={e=>change("to",e.target.value)}/></div></fieldset>
+      <label>인수 지점<select value={filters.branch} onChange={e=>change("branch",e.target.value)}><option value="">전체 지점</option>{branches.map(x=><option key={x}>{x}</option>)}</select></label>
+      <label>차종<select value={filters.model} onChange={e=>change("model",e.target.value)}><option value="">전체 차종</option>{[...new Set(stageRows.map(c=>c.rental_terms?.requested_model).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>
+      <label>진행 상태<select value={filters.status} onChange={e=>change("status",e.target.value)}><option value="">전체 상태</option>{[...new Set([...states,...(filters.status?[filters.status]:[])])].map(x=><option key={x}>{x}</option>)}</select></label>
+      {stage==="reservations" && <label>예약 경로<select value={filters.channel} onChange={e=>change("channel",e.target.value)}><option value="">전체 경로</option>{[...new Set(stageRows.map(c=>c.rental_terms?.channel).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>}
+      <label className="rental-stage-search">검색<input type="search" value={filters.query} onChange={e=>change("query",e.target.value)} placeholder="고객, 운전자, 차량, 예약번호"/></label>
+      <BusinessButton onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton>
+    </div>
     <section className="rental-workflow-box">
-      <div className="rental-workflow-toolbar"><h2>{rentalStageNames[stage] || '대여 계약'}</h2><div>
-        <ExportButtons report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==='returns' && filters.status==='반납 완료'})} disabled={!!result.error || invalid || result.isLoading}/>
-        {['reservations','dispatch','contracts'].includes(stage) && <BusinessButton primary icon="plus" onClick={()=>open('edit',null)}>예약 등록</BusinessButton>}
-      </div></div>
-      <div className="rental-workflow-filters">
-        <label>검색<input type="search" value={filters.query} onChange={e=>change('query',e.target.value)} placeholder="고객·차량·예약번호"/></label>
-        <label>진행 상태<select value={filters.status} onChange={e=>change('status',e.target.value)}><option value="">전체 상태</option>{[...new Set([...states,...(filters.status?[filters.status]:[])])].map(x=><option key={x}>{x}</option>)}</select></label>
-        <label>인수 지점<select value={filters.branch} onChange={e=>change('branch',e.target.value)}><option value="">전체 지점</option>{branches.map(x=><option key={x}>{x}</option>)}</select></label>
-        <label>조회 시작일<input type="date" value={filters.from} onChange={e=>change('from',e.target.value)}/></label>
-        <label>조회 종료일<input type="date" value={filters.to} onChange={e=>change('to',e.target.value)}/></label>
-        <BusinessButton onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton>
-      </div>
-      {invalid?<p className="business-error" role="alert">조회 종료일이 시작일보다 빠릅니다.</p>:result.error?<BusinessError onRetry={result.refetch}>대여 내역을 불러오지 못했습니다.</BusinessError>:result.isLoading?<p role="status">대여 내역을 불러오는 중…</p>:shown.length?<>
-        <div className="rental-workflow-desktop"><table><thead><tr>{['예약번호','고객 · 운전자','차량 · 차종','이용 기간','약정 대여료','진행 상태',''].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>
-          {shown.map(c=><tr key={c.id}><td><button onClick={()=>setDetail(c)}>R-{c.id}</button><small>{c.rental_terms?.channel}</small></td>
-            <td>{c.renter_name}<small>{c.rental_terms?.driver_name && c.rental_terms.driver_name!==c.renter_name ? '운전자 '+c.rental_terms.driver_name : c.renter_phone}</small></td>
-            <td>{carLabel(c)}<small>{c.rental_terms?.requested_model}</small></td><td>{kstDateTime(c.starts_at)}<small>{kstDateTime(c.ends_at)} 반납</small></td>
-            <td>{won(agreementTotal(c))}</td><td><StageBadge c={c} now={now}/></td><td><BusinessButton aria-label={'R-'+c.id+' 상세'} onClick={()=>setDetail(c)}>상세</BusinessButton></td></tr>)}
-        </tbody></table></div>
-        <div className="rental-workflow-mobile">{shown.map(c=><button key={c.id} onClick={()=>setDetail(c)}><span><small>R-{c.id}</small><StageBadge c={c} now={now}/></span><strong>{c.renter_name} · {carLabel(c)}</strong><span>{kstDateTime(c.starts_at)} ~ {kstDateTime(c.ends_at)}</span><span>{won(agreementTotal(c))}</span></button>)}</div>
-      </>:<BusinessEmpty title="조건에 맞는 대여 내역이 없습니다."/>}
+      {invalid?<p className="business-error" role="alert">조회 종료일이 시작일보다 빠릅니다.</p>:result.error?<BusinessError onRetry={result.refetch}>대여 내역을 불러오지 못했습니다.</BusinessError>:result.isLoading?<p role="status">대여 내역을 불러오는 중…</p>:
+        <RentalStageTable stage={stage} rows={shown} now={now} balances={balances} devices={devices} checksFor={checksFor} onDetail={setDetail} onAction={(kind,c)=>{setDetail(c);open(kind,c);}}/>
+        }
     </section>
     {focused && !dialog && <BusinessDrawer title="대여 계약 상세" subtitle={'예약 R-'+focused.id} onClose={()=>setDetail(null)}>
-      <div className="rental-detail"><div className="rental-detail-top"><h3>{carLabel(focused)}</h3><StageBadge c={focused} now={now}/></div>
+      <div className="rental-detail"><div className="rental-detail-top"><h3>{carLabel(focused)}</h3><StageBadge contract={focused} now={now}/></div>
         <dl>{[['계약 고객',focused.renter_name],['실운전자',recipient],['인수 예정',kstDateTime(focused.starts_at)],['반납 예정',kstDateTime(focused.ends_at)],['인수 / 반납 지점',(focused.pickup_location || '미지정')+' / '+(focused.return_location || '미지정')],['약정 대여료',won(agreementTotal(focused))],['약정 보증금',won(focused.deposit_krw)],['계약 확인',focused.rental_terms?.confirmed_at?kstDateTime(focused.rental_terms.confirmed_at):'확인 전'],['메모',focused.note || '없음']].map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
         {focused.rental_terms?.template_body && <details><summary>확인한 계약 내용</summary><p className="rental-terms-text">{templateText(focused)}</p></details>}
         {focused.pickup_odometer_km!=null && <section><h3>인도 점검</h3><p>{focused.pickup_odometer_km.toLocaleString()} km {focused.rental_terms?.pickup_fuel!=null?' · 연료·충전량 '+focused.rental_terms.pickup_fuel+'%':''}</p>{focused.rental_terms?.pickup_note && <p>{focused.rental_terms.pickup_note}</p>}</section>}
         {focused.status==='returned' && <section><h3>반납 정산</h3><SettlementSummary c={focused}/></section>}
+        {milestones.length>0 && <section><h3>계약 진행 기록</h3><ol className="rental-milestones">{milestones.map(([label,time])=>
+          <li key={label}><span>{label}</span><time dateTime={time}>{kstDateTime(time)}</time></li>)}</ol></section>}
         {error && <p className="business-error" role="alert">{error}</p>}<div className="rental-detail-actions">{action}</div>
       </div>
     </BusinessDrawer>}
+    {dialog?.kind==='ledger' && <ContractLedger contract={dialog.contract} onClose={close}/>}
     {dialog?.kind==='edit' && <RentalDialog init={dialog.contract} devices={devices} branches={configuredBranches} presetDate={dialog.date} presetDeviceId={dialog.deviceId} onClose={close} onSaved={refreshed}/>}
     {dialog?.kind==='return' && <ReturnWizard contract={dialog.contract} onClose={close} onDone={()=>refreshed()}/>}
     {dialog?.kind==='handoff' && <HandoffTokenDialog contract={dialog.contract} onClose={close}/>}

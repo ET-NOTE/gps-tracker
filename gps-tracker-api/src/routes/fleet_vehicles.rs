@@ -14,10 +14,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::{FromRow, Postgres, Transaction};
 mod maintenance;
+mod groups;
 
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/corporate/vehicles", get(list).post(create))
+        .route("/corporate/vehicle-groups", get(groups::list).post(groups::create))
         .route(
             "/corporate/vehicles/bindings/batch",
             axum::routing::put(connect_batch),
@@ -47,6 +49,7 @@ pub struct Vehicle {
     pub car_model: Option<String>,
     pub department: Option<String>,
     pub department_id: Option<i64>,
+    pub group_id: Option<i64>,
     pub manager_staff_id: Option<i64>,
     pub enabled: bool,
     pub profile: Value,
@@ -76,11 +79,30 @@ struct VehicleInput {
     car_model: Option<String>,
     department: Option<String>,
     department_id: Option<i64>,
+    #[serde(default, deserialize_with = "present_group")]
+    group_id: Option<Option<i64>>,
     manager_staff_id: Option<i64>,
     enabled: bool,
     #[serde(default = "empty_profile")]
     profile: Value,
     updated_at: Option<DateTime<Utc>>,
+}
+// Older clients omit this field. Explicit null removes an existing assignment.
+fn present_group<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Option<i64>>, D::Error> {
+    Option::<i64>::deserialize(d).map(Some)
+}
+#[cfg(test)]
+mod group_assignment_tests {
+    use super::*;
+    #[test]
+    fn older_clients_preserve_groups_and_null_clears_them() {
+        let mut body=json!({"name":"Test vehicle","enabled":true});
+        assert_eq!(serde_json::from_value::<VehicleInput>(body.clone()).unwrap().group_id,None);
+        body["group_id"]=Value::Null;
+        assert_eq!(serde_json::from_value::<VehicleInput>(body.clone()).unwrap().group_id,Some(None));
+        body["group_id"]=json!(17);
+        assert_eq!(serde_json::from_value::<VehicleInput>(body).unwrap().group_id,Some(Some(17)));
+    }
 }
 fn empty_profile() -> Value {
     json!({})
@@ -262,8 +284,10 @@ async fn create(
             "사진은 차량 사진 업로드에서 등록해 주세요.".into(),
         ));
     }
-    let id:i64=sqlx::query_scalar("INSERT INTO fleet_vehicles(owner_id,name,license_plate,car_model,department,manager_staff_id,enabled,profile,department_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id")
-        .bind(user.user_id).bind(p.name).bind(p.license_plate).bind(p.car_model).bind(p.department).bind(p.manager_staff_id).bind(p.enabled).bind(p.profile).bind(p.department_id).fetch_one(&mut *tx).await.map_err(db_error)?;
+    let group = p.group_id.flatten();
+    groups::validate_assignment(&mut tx,user.user_id,group).await?;
+    let id:i64=sqlx::query_scalar("INSERT INTO fleet_vehicles(owner_id,name,license_plate,car_model,department,manager_staff_id,enabled,profile,department_id,group_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id")
+        .bind(user.user_id).bind(p.name).bind(p.license_plate).bind(p.car_model).bind(p.department).bind(p.manager_staff_id).bind(p.enabled).bind(p.profile).bind(p.department_id).bind(group).fetch_one(&mut *tx).await.map_err(db_error)?;
     let after: Value = sqlx::query_scalar("SELECT to_jsonb(v) FROM fleet_vehicles v WHERE id=$1")
         .bind(id)
         .fetch_one(&mut *tx)
@@ -308,8 +332,10 @@ async fn update(
     if p.manager_staff_id != before["manager_staff_id"].as_i64() {
         check_staff(&mut tx, user.user_id, p.manager_staff_id).await?;
     }
-    let count=sqlx::query("UPDATE fleet_vehicles SET name=$3,license_plate=$4,car_model=$5,department=$6,manager_staff_id=$7,enabled=$8,profile=$9,department_id=$11,updated_at=clock_timestamp() WHERE id=$1 AND owner_id=$2 AND updated_at=$10")
-        .bind(id).bind(user.user_id).bind(p.name).bind(p.license_plate).bind(p.car_model).bind(p.department).bind(p.manager_staff_id).bind(p.enabled).bind(p.profile).bind(expected).bind(p.department_id).execute(&mut *tx).await.map_err(db_error)?.rows_affected();
+    let group=p.group_id.flatten();
+    groups::validate_assignment(&mut tx,user.user_id,group).await?;
+    let count=sqlx::query("UPDATE fleet_vehicles SET name=$3,license_plate=$4,car_model=$5,department=$6,manager_staff_id=$7,enabled=$8,profile=$9,department_id=$11,group_id=CASE WHEN $12 THEN $13::bigint ELSE group_id END,updated_at=clock_timestamp() WHERE id=$1 AND owner_id=$2 AND updated_at=$10")
+        .bind(id).bind(user.user_id).bind(p.name).bind(p.license_plate).bind(p.car_model).bind(p.department).bind(p.manager_staff_id).bind(p.enabled).bind(p.profile).bind(expected).bind(p.department_id).bind(p.group_id.is_some()).bind(group).execute(&mut *tx).await.map_err(db_error)?.rows_affected();
     if count == 0 {
         return Err(AppError::Conflict(
             "다른 곳에서 차량 정보가 변경됐습니다. 새로고침 후 다시 저장해 주세요.".into(),

@@ -130,7 +130,7 @@ test('calendar navigation preserves list filters and day selection presets a new
  const dateInputs=dialog.findAll(n=>n.type==='input'&&n.props.type==='datetime-local');
  assert.equal(dateInputs[0].props.value,'2026-11-20T09:00');assert.equal(dateInputs[1].props.value,'2026-11-20T10:00');
  await act(async()=>dialog.findByType('footer').findAllByType('button')[0].props.onClick());
- await act(async()=>button(r,'목록').props.onClick());
+ await act(async()=>button(r,'예약 목록').props.onClick());
  assert.equal(storage.get('resv_view'),'list');assert.equal(button(r,'완료 (2)').props['aria-pressed'],true);assert.equal(rowIds(r).length,2);
 });
 

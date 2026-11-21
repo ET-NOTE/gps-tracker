@@ -4,7 +4,7 @@ import { api } from '../../api';
 import { authScope } from '../../authSession';
 import { BusinessError } from './BusinessWorkspace';
 
-const policyKey = () => [authScope(), 'rentcar', 'operating-policy'];
+export const policyKey = () => [authScope(), 'rentcar', 'operating-policy'];
 const checks = [
   ['require_license','운전면허 확인'],
   ['require_contract','계약 내용 확인'],

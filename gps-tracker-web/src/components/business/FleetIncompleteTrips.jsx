@@ -66,7 +66,7 @@ export default function FleetIncompleteTrips({devices,onReport,now,onSummary}){
  const description=`${from} ~ ${to} · ${checked}/${devices.length}대 조회${!finished?' 중…':''}${errors?` · ${errors}대 조회 실패`:''}${finished&&remaining?` · ${remaining}대 미조회`:''}${permission?' · 권한·이용권 확인 필요':''}`;
  const label=!devices.length?'—':!finished?'조회 중':partial?(checked?'일부 조회':'조회 실패'):count?'작성 필요':'미작성 없음';
  return <div className="fleet-incomplete" aria-label="이번 달 미작성 운행" aria-busy={!finished}>
-  <div role="status" aria-live="polite"><BusinessTask title={title} description={description} label={label} tone={count||errors?'info':''} action={open?'차량별 접기':'차량별 보기'} onClick={devices.length?()=>setOpen(value=>!value):undefined}/></div>
+  <div role="status" aria-live="polite"><BusinessTask icon="route" title={title} description={description} label={label} tone={count||errors?'info':''} action={open?'차량별 접기':'차량별 보기'} onClick={devices.length?()=>setOpen(value=>!value):undefined}/></div>
   {open&&<div style={{maxHeight:320,overflowY:'auto'}}>
    {devices.map(d=>result[d.id]&&{device:d,...result[d.id]}).filter(Boolean).sort((a,b)=>Number(b.error)-Number(a.error)||b.missing-a.missing).map(row=><BusinessTask key={row.id} title={reportVehicleLabel(row.device)} description={row.error?(row.permission?'권한·이용권을 확인한 뒤 다시 조회해 주세요.':'조회하지 못했습니다. 다시 확인해 주세요.'):`미작성 ${row.missing} / 전체 ${row.total}건`} label={row.error?'조회 실패':row.missing?'작성 필요':row.total?'입력 완료':'운행 없음'} action="운행기록부" onClick={()=>onReport(row.device,{incomplete:true,from,to})}/>)}
   </div>}

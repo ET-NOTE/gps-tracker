@@ -23,6 +23,8 @@ import DeviceDetail from '../components/DeviceDetail';
 import DeviceCardSummary from '../components/DeviceCardSummary';
 import { sideRailItems } from '../components/SideRail';
 import MapTopOverlay from '../components/MapTopOverlay';
+import MapDeviceCard from '../components/portal/MapDeviceCard';
+import Modal from '../components/ui/Modal';
 import MapActions from '../components/MapActions';
 import { useHomeMapTools } from '../hooks/useHomeMapTools';
 import { useNativeTracking } from '../hooks/useNativeTracking';
@@ -137,6 +139,8 @@ export default function Dashboard({ onLogout }) {
   const [pairDeepLinkPending, setPairDeepLinkPending] = useState(false);
   useEffect(() => {
     if (location.pathname.startsWith('/devices/pair')) {
+      setDetailId(null);
+      setPairError('');
       setPairDeepLinkPending(true);
       setPairOpen(true);
       navigate('/devices' + location.search, { replace: true });
@@ -861,7 +865,7 @@ export default function Dashboard({ onLogout }) {
     || view === 'delivery' && (isDelivery || cargoStaffEntry);
   const routeProblem = !view ? 'missing' : specialized && (accessQuery.isPending ? 'loading' : accessQuery.isError ? 'error'
     : !(view === 'admin' ? routeAccess(view, me, accountType) : businessAllowed) ? 'denied' : null);
-  const mapVisible = !routeProblem && (view === 'home' || isDesktop && view === 'devices');
+  const mapVisible = !routeProblem && (view === 'home' || view === 'devices');
   useEffect(() => {
     if (!routeProblem && accountQuery.isSuccess) rememberView(me?.id, location.pathname, location.search);
   }, [routeProblem, accountQuery.isSuccess, me?.id, location.pathname, location.search]);
@@ -902,7 +906,7 @@ export default function Dashboard({ onLogout }) {
           <>
             <DeviceCardSummary embedded device={d} meta={meta} status={status} color={color}
               pinned={pinnedId === d.id} detailOpen={detailId === d.id}
-              onView={() => { if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}
+              onView={() => { setDetailId(null); if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}
               onDetail={() => setDetailId(detailId === d.id ? null : d.id)}
               onPin={() => togglePin(d.id)}
               onReceive={() => window.open('/diagnostic/device?uid=' + encodeURIComponent(d.device_uid), '_blank')}
@@ -952,8 +956,9 @@ export default function Dashboard({ onLogout }) {
         meta={lastMetaRef.current} selectedId={filterDeviceId} detailId={detailId} loading={deviceQuery.isPending} error={deviceQuery.isError} onRetry={deviceQuery.refetch}
         onSelect={id => { if (!isDesktop) setView('home'); persistFilterDevice(id); }}
         onDetail={id => setDetailId(detailId === id ? null : id)} renderTools={renderDeviceTools}
-        onPair={() => {setPairOpen(v => !v); setPairError('');}}>
-        {pairOpen && <div className="pt-pair-form"><div className="pt-section-head"><h3>단말기 연결</h3><button type="button" className="pt-text-button" onClick={() => setPairOpen(false)}>닫기</button></div>
+        onPair={() => {setDetailId(null); setPairOpen(true); setPairError('');}}>
+        {pairOpen && <Modal open mobileForm title="단말기 등록" onClose={() => setPairOpen(false)}>
+          <form className="pt-pair-form" onSubmit={async event => {event.preventDefault(); if (!pairLoading && await handlePair()) setPairOpen(false);}}>
                 {companyMap && <label>업무 구분<select value={enabledServices.includes(pairService) ? pairService : enabledServices[0]} onChange={e=>setPairService(e.target.value)}>
                   {enabledServices.map(key=><option key={key} value={key}>{{corporate_fleet:'법인운행',rentcar:'렌트카 운영',delivery:'화물배차'}[key]}</option>)}
                 </select></label>}
@@ -966,9 +971,8 @@ export default function Dashboard({ onLogout }) {
                     onChange={e=>setPairLabel(e.target.value)} style={{...s.input,marginTop:6}} />
                 </label>
                 {pairError && <div role="alert" style={{color:'var(--danger)',fontSize:12,marginTop:4}}>{pairError}</div>}
-                <button onClick={async()=>{if(await handlePair())setPairOpen(false)}} disabled={pairLoading}
-                  style={{...s.btn,marginTop:8}}>{pairLoading?'연결 중…':'내 계정에 연결'}</button>
-        </div>}
+                <div className="pt-pair-actions"><button type="button" className="pt-button" onClick={() => setPairOpen(false)}>취소</button><button type="submit" disabled={pairLoading} className="pt-button pt-primary">{pairLoading?'연결 중…':'내 계정에 연결'}</button></div>
+          </form></Modal>}
       </PortalDeviceList>}
       {view === 'profile' && <PortalAccount {...portalProps}/>}
         {/* 관리자 비-admin 시 권한 안내 (admin 본 화면은 main 레벨에서 풀-화면으로 따로 렌더) */}
@@ -986,7 +990,7 @@ export default function Dashboard({ onLogout }) {
 
   if (routeProblem === 'denied' && view !== 'admin') return <Navigate replace to="/profile?tab=services" />;
   return (
-    <div className="dashboard-layout" style={{ height: '100dvh', display: 'flex', flexDirection: isDesktop ? 'row' : 'column' }}>
+    <div className="dashboard-layout pt-member-shell" data-view={view} style={{ height: '100dvh', display: 'flex' }}>
 
       {deviceLink.notice && <div role="alert" style={{ position: 'fixed', zIndex: 45,
         left: isDesktop ? 84 : 12, right: 12, bottom: isDesktop ? 20 : 'calc(76px + env(safe-area-inset-bottom, 0px))',
@@ -999,10 +1003,10 @@ export default function Dashboard({ onLogout }) {
         </div>
       </div>}
 
-      {(isDesktop || coreView || view === 'admin') && <PlatformRail {...portalProps} onShowGuide={() => setShowOnboarding(true)}/>}
+      <PlatformRail {...portalProps} onShowGuide={() => setShowOnboarding(true)}/>
       <div style={{display:'flex',flexDirection:'column',flex:1,minWidth:0,minHeight:0}}>
         {coreView && <PlatformHeader {...portalProps} me={me} devices={portalDevices} meta={lastMetaRef.current} onDevice={id => {persistFilterDevice(id); setDetailId(id); setView('devices');}}/>}
-      <main style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
+      <main className="pt-main-area" style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
 
         {routeProblem && <RouteNotice kind={routeProblem} onRetry={routeProblem === 'error' ? () => accessQuery.refetch() : undefined} />}
 
@@ -1024,6 +1028,14 @@ export default function Dashboard({ onLogout }) {
           }}>
             <Suspense fallback={<LazyPanelFallback />}>
               <CorporatePanel defaultOwner={corporateOwner ? undefined : memberships.data?.memberships?.[0]?.owner_id} allowedMemberships={memberships.data?.memberships} devices={devices} onNavigate={setView} globalNavigation={sideRailItems({isAdmin,isCorporate,isRentcar,isDelivery}).filter(item=>item.id!=='corporate')} meta={lastMetaRef.current} onMap={openCorporateMap}
+                routeSearch={location.search}
+                onRoute={(page,section)=>{
+                  const query=new URLSearchParams(location.search);
+                  query.set('page',page);
+                  if(section)query.set('section',section);else query.delete('section');
+                  const search='?'+query.toString();
+                  if(search!==location.search) navigate({pathname:location.pathname,search},{state:location.state,preventScrollReset:true});
+                }}
                 mapReturn={restoredVehicle}
                 onMapReturnUsed={consumeMapReturn} onDevice={id => { setRequestedScope('personal'); setDetailId(id); setView('devices'); }} onVehiclesChange={reloadDevicesAfterMutation} />
             </Suspense>
@@ -1059,9 +1071,9 @@ export default function Dashboard({ onLogout }) {
 
         {/* 데스크톱 사이드바 패널 — SideRail 바로 옆에서 확장.
             홈/관리/법인 외 탭일 때만 슬라이드 인. */}
-        {!routeProblem && view !== 'admin' && view !== 'corporate' && view !== 'rentcar' && view !== 'delivery' && isDesktop && view !== 'home' && (
-          <aside style={{
-            width: view === 'profile' ? '100%' : 'clamp(330px, 30vw, 440px)', flexShrink: 0, minHeight:0,
+        {!routeProblem && (view === 'devices' || view === 'profile' && isDesktop) && (
+          <aside className={view === 'devices' ? 'pt-device-sidebar' : undefined} style={{
+            width: view === 'profile' ? '100%' : undefined, flexShrink: 0, minHeight:0,
             background: 'var(--surface)',
             borderRight: '1px solid var(--border)',
             display: 'flex', flexDirection: 'column',
@@ -1073,7 +1085,7 @@ export default function Dashboard({ onLogout }) {
 
         {/* 지도 영역 — admin 이면 display:none (마운트 유지, 화면에서 제거).
             데스크톱은 항상, 모바일/태블릿은 home 일 때만 시각적 노출 */}
-        <div style={{
+        <div className="pt-live-map-area" style={{
           flex: 1, position: 'relative', minWidth: 0,
           display: (routeProblem || specialized || isDesktop && view === 'profile') ? 'none' : 'flex', flexDirection: 'column',
         }}>
@@ -1100,6 +1112,7 @@ export default function Dashboard({ onLogout }) {
               onViewChange={handleMapViewChange} />
             {!fullToolOpen && !pointInfo && <MapTopOverlay
               devices={portalDevices} selected={filterDeviceId} onSelect={persistFilterDevice}
+              onPair={() => navigate('/devices/pair')}
               mapRef={mapRef} onOpenRoadview={openRoadview}
               showSpeed={view === 'home' && trackLive && filterDeviceId !== null}
               historyMode={showMiniSeeker}
@@ -1156,11 +1169,15 @@ export default function Dashboard({ onLogout }) {
             )}
 
             {showRoutePlanner && view === 'home' && <RoutePlannerSheet mapRef={mapRef} onClose={() => closeTool()} />}
-            {view === 'home' && !showMiniSeeker && !fullToolOpen && !pointInfo && <PinnedDeviceWidget
+            {mapVisible && !showMiniSeeker && !fullToolOpen && !pointInfo && <div className="pt-map-card-stack">
+              <MapDeviceCard vehicles={portalDevices} device={portalDevices.find(d => d.id === filterDeviceId)} meta={lastMetaRef.current[filterDeviceId]}
+                onDetail={id => {setDetailId(id); setView('devices');}} onList={() => setView('devices')}/>
+            {view === 'home' && <PinnedDeviceWidget embedded
               device={portalDevices.find(d => d.id === pinnedId)} deviceColor={getDeviceColor(devices.find(d => d.id === pinnedId) || {})}
               deviceMeta={lastMetaRef.current[pinnedId]} deviceStatus={devices.find(d => d.id === pinnedId) ? classifyDevice(devices.find(d => d.id === pinnedId), lastMetaRef.current[pinnedId]) : null}
               onPress={() => { const d = devices.find(d => d.id === pinnedId); if (d?.last_lat != null) mapRef.current?.panToCoord?.(d.last_lat, d.last_lng); }}
               onUnpin={() => togglePin(pinnedId)} />}
+            </div>}
             {/* 홈 운행 도구: 한 번에 한 패널만 열어 지도와 상단 정보의 겹침 방지. */}
             {showGeofence && view === 'home' && (
               <GeofenceSheet
@@ -1214,7 +1231,7 @@ export default function Dashboard({ onLogout }) {
           </div>
 
           {/* 모바일/태블릿: 홈 지도 외 탭은 전체 화면 패널로 표시. */}
-          {!routeProblem && !isDesktop && !['home', 'admin', 'corporate', 'rentcar', 'delivery'].includes(view) && (
+          {!routeProblem && !isDesktop && view === 'profile' && (
             <div style={{
               position: 'absolute', inset: 0,
               background: 'var(--surface)',
