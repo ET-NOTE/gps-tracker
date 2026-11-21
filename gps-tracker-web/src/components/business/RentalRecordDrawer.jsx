@@ -22,7 +22,6 @@ export function CustomerFields({person, accounts=[]}) {
     <RecordFields rows={[
       ['구분',person.kind==='business'?'법인 고객':'개인'],['연락처',person.phone],['이메일',person.email],
       ['법인 거래처',account?.name],['운전면허',person.license_type],['면허 확인',person.license_checked?'확인 완료':'확인 필요'],
-      ...(person.contracts_count!=null?[['대여 이력',person.contracts_count.toLocaleString()+'건']]:[]),
     ]}/>
     {person.memo && <section><h3>메모</h3><p className="rental-record-text">{person.memo}</p></section>}
   </>;

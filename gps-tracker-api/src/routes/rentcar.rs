@@ -54,7 +54,7 @@ pub fn router() -> Router<AppState> {
         )
         .route(
             "/rentcar/contracts/:id",
-            patch(update_contract).delete(delete_contract),
+            get(get_contract).patch(update_contract).delete(delete_contract),
         )
         .route("/rentcar/contracts/:id/return", post(return_contract))
         .route("/rentcar/contracts/:id/invoice.xlsx", get(invoice_xlsx))
@@ -358,6 +358,20 @@ async fn lock_device_rental(
         .execute(&mut **tx)
         .await?;
     Ok(())
+}
+
+async fn get_contract(
+    State(state): State<AppState>,
+    owner: super::rentcar_office::RentalOwner,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Contract>> {
+    let row = sqlx::query_as(SQL_INVOICE_SELECT)
+        .bind(id)
+        .bind(owner.user_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
+    Ok(Json(row))
 }
 
 async fn list_contracts(

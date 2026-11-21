@@ -66,3 +66,14 @@
   .rental-record-body {padding:20px var(--record-inset)}
   .rental-record-footer {padding:15px var(--record-inset) max(15px,env(safe-area-inset-bottom)); max-height:34dvh; overflow-y:auto}
 }
+
+.rental-customer-history {margin-top:20px}
+.rental-customer-history ul {list-style:none;padding:0;margin:0}
+.rental-customer-history li {margin:0;padding:0}
+.rental-customer-history .rental-record-related {align-items:flex-start;padding:10px 0}
+.rental-customer-history .rental-record-related>span:first-child {min-width:0;display:grid;gap:3px;overflow-wrap:anywhere}
+.rental-customer-history .rental-record-related strong {font:500 13px/1.55 var(--fleet-font)}
+.rental-customer-history .rental-record-related small {font:400 12px/1.55 var(--fleet-font)}
+.rental-customer-history .rental-record-related .ro-status {flex-shrink:0;font-size:11px}
+.rental-customer-history>p {font:400 13px/1.55 var(--fleet-font);color:var(--text-2)}
+.rental-customer-history>button {margin-top:10px}

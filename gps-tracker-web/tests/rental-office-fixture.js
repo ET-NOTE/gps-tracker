@@ -1,5 +1,6 @@
 // Isolated browser preview. All records live for the lifetime of this page only.
 import { agreedPrice, priceTotal } from '../src/lib/rentalInventory.js';
+import { matchOfficeCustomer } from '../src/lib/rentalOffice.js';
 export function installRentalOfficeFixture(api, { rentals, devices, empty, failed, day }) {
   const catalog = {
     customers:empty?[]:[{id:1,revision:1,active:true,name:'운영 고객',kind:'person',phone:'010-0000-0001',email:'',license_checked:true,license_type:'2종 보통'}],
@@ -23,9 +24,30 @@ export function installRentalOfficeFixture(api, { rentals, devices, empty, faile
   }
   const billed=c=>c.status==='cancelled' ? c.rental_terms?.cancellation_fee_krw??0 : agreedPrice(c)?priceTotal(agreedPrice(c)):c.settled_amount_krw??c.rate_amount_krw;
   api.rentalBalance=async id=>{const c=rentals.find(r=>r.id===id);return {...totals(id),billed_krw:billed(c),extensions:[]};};
+  function customerContracts(id) {
+    const rows=[];
+    for(const contract of rentals) {
+      const terms=contract.rental_terms||{};
+      const customer=matchOfficeCustomer({customer_id:terms.customer_id,renter_phone:contract.renter_phone},catalog)?.id===id;
+      const driver=terms.driver_id===id;
+      if(customer||driver)rows.push({...contract,driver_name:terms.driver_name,requested_model:terms.requested_model,vehicle_name:contract.device_name,role:driver?(customer?'both':'driver'):'customer'});
+    }
+    return rows.sort((a,b)=>Date.parse(b.starts_at)-Date.parse(a.starts_at)||b.id-a.id);
+  }
+  api.rentalCustomerContracts=async(id,cursor)=>{
+    if(failed)throw Error('대여 이력 조회 실패');
+    const rows=customerContracts(id),start=Number(cursor)||0;
+    return {total:rows.length,items:rows.slice(start,start+10),next_cursor:start+10<rows.length?String(start+10):null};
+  };
+  api.getRentalContract=async id=>{
+    const row=rentals.find(contract=>contract.id===id);
+    if(failed||!row)throw Error('계약 상세 조회 실패');
+    return structuredClone(row);
+  };
   api.rentalOffice=async(method,route,body)=>{
     if(failed)throw Error('렌트카 정보 조회 실패');
-    if(route==='/catalog'||route==='/catalog?summary=true')return structuredClone(catalog);
+    if(route==='/catalog')return structuredClone(catalog);
+    if(route==='/catalog?summary=true')return structuredClone({...catalog,customers:catalog.customers.map(c=>({...c,contracts_count:customerContracts(c.id).length}))});
     if(route.startsWith('/catalog/')){
       const [, ,kind,id]=route.split('/');
       const current=id&&catalog[kind].find(c=>c.id===Number(id));

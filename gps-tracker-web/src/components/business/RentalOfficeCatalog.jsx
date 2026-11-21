@@ -6,6 +6,7 @@ import {BusinessRenters} from './BusinessPeople';
 import {Field,FormModal,Metrics,Options,PeriodFields,Search,Table,Toolbar} from './RentalOfficeKit';
 import {fillTemplate,initialPeriod,periodOk,templateKeys,won} from '../../lib/rentalOffice';
 import {officeBookKey,officeCatalogKey} from './rentalOfficeKeys';
+import RentalCustomerHistory from './RentalCustomerHistory';
 import RentalRecordDrawer,{RecordFields,CustomerFields} from './RentalRecordDrawer';
 
 const titles={customers:'고객',accounts:'법인 거래처',rates:'요금표',templates:'계약서 양식'};
@@ -101,7 +102,7 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
     </>}
     {selected&&<RentalRecordDrawer title={titles[kind]+' 상세'} subtitle={selected.name} onClose={()=>setSelectedId(null)}
       footer={<Button variant="primary" onClick={()=>setEdit(selected)}>{kind==='accounts'?'거래처':'고객'} 수정</Button>}>
-      {kind==='customers'?<CustomerFields person={selected} accounts={catalog.accounts}/>:<>
+      {kind==='customers'?<><CustomerFields person={selected} accounts={catalog.accounts}/><RentalCustomerHistory key={selected.id} customerId={selected.id}/></>:<>
         <RecordFields rows={[['사업자등록번호',selected.business_number],['담당자',selected.contact],['연락처',selected.phone],
           ['정산 방식',billing[selected.billing]],['현재 미수금',won(selected.outstanding_krw)]]}/>
         <section><h3>연결 고객 · {selected.customers_count||0}명</h3>{catalog.customers.filter(c=>String(c.account_id)===String(selected.id)).map(c=>
@@ -111,7 +112,7 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
     </RentalRecordDrawer>}
     {related&&<RentalRecordDrawer title="고객 상세" subtitle={related.name} onClose={()=>setRelatedId(null)}
       footer={<Button variant="primary" onClick={()=>setEdit(related)}>고객 수정</Button>}>
-      <CustomerFields person={related} accounts={catalog.accounts}/>
+      <CustomerFields person={related} accounts={catalog.accounts}/><RentalCustomerHistory key={related.id} customerId={related.id}/>
     </RentalRecordDrawer>}
     {edit!==undefined&&<Editor row={edit} kind={related?'customers':kind} catalog={catalog} close={()=>setEdit(undefined)}/>}
     {preview&&<Preview row={preview} devices={devices} close={()=>setPreview(null)}/>}

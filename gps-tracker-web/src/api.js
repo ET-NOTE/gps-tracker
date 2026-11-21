@@ -963,6 +963,12 @@ export const api = {
   rentalOperatingPolicy: () => req('GET', '/rentcar/operating-policy'),
   saveRentalOperatingPolicy: body => req('PUT', '/rentcar/operating-policy', body),
   rentalBalance: id => req('GET', `/rentcar/contracts/${id}/balance`),
+  rentalCustomerContracts: (id,cursor,signal) => {
+    const query=new URLSearchParams({limit:'10'});
+    if(cursor)query.set('cursor',cursor);
+    return req('GET',`/rentcar/office/customers/${id}/contracts?${query}`,undefined,true,{signal});
+  },
+  getRentalContract: (id,signal) => req('GET',`/rentcar/contracts/${id}`,undefined,true,{signal}),
   rentalHistory: id => req('GET', `/rentcar/contracts/${id}/history`),
   rentalAssets: () => req('GET', '/rentcar/assets'),
   saveRentalAsset: (id, body) => req(id ? 'PATCH' : 'POST', id ? `/rentcar/assets/${id}` : '/rentcar/assets', body),

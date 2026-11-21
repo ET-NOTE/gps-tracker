@@ -1,20 +1,13 @@
-WITH masters AS (
+, masters AS (
     SELECT * FROM rental_office_catalog WHERE user_id=$1
-), customers AS (
-    SELECT id,(details->>'account_id')::bigint AS account_id,
-           regexp_replace(details->>'phone','[^0-9]','','g') AS phone FROM masters WHERE kind='customers'
 ), payments AS (
     SELECT contract_id,sum(CASE kind WHEN 'payment' THEN amount_krw WHEN 'refund' THEN -amount_krw ELSE 0 END) AS paid
     FROM rental_office_ledger WHERE user_id=$1 GROUP BY contract_id
 ), contracts AS (
-    SELECT c.id, coalesce((c.rental_terms->>'customer_id')::bigint,matched.id) AS customer_id,
-           (c.rental_terms->>'driver_id')::bigint AS driver_id,
-           greatest(0,rental_office_contract_fee(c)
+    SELECT c.id,c.customer_id,c.driver_id,
+           greatest(0,rental_office_contract_fee(c.rental)
              -coalesce(p.paid,0)) AS outstanding
-    FROM rental_contracts c LEFT JOIN payments p ON p.contract_id=c.id
-    LEFT JOIN customers matched ON c.rental_terms->>'customer_id' IS NULL
-       AND matched.phone=regexp_replace(c.renter_phone,'[^0-9]','','g')
-    WHERE c.user_id=$1
+    FROM contract_parties c LEFT JOIN payments p ON p.contract_id=c.id
 ), counts AS (
     SELECT id,count(*) AS total FROM (
         SELECT id AS contract,customer_id AS id FROM contracts

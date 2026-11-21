@@ -51,6 +51,7 @@ pub fn router() -> Router<AppState> {
         .route("/rentcar/office/catalog", get(catalog))
         .route("/rentcar/office/catalog/:kind", post(create_master))
         .route("/rentcar/office/catalog/:kind/:id", patch(edit_master))
+        .route("/rentcar/office/customers/:id/contracts", get(customer_history))
         .route("/rentcar/office/book", get(book))
         .route("/rentcar/office/ledger", post(record))
         .route("/rentcar/office/costs", post(create_cost))
@@ -76,9 +77,18 @@ fn db_error(e: sqlx::Error) -> AppError {
 #[derive(Deserialize)]
 struct CatalogOptions { summary: Option<bool> }
 
+const CATALOG_SUMMARY_SQL: &str = concat!(
+    include_str!("rentcar_office_parties.sql"),
+    include_str!("rentcar_office_catalog.sql")
+);
+const CUSTOMER_HISTORY_SQL: &str = concat!(
+    include_str!("rentcar_office_parties.sql"),
+    include_str!("rentcar_customer_history.sql")
+);
+
 async fn catalog(State(s): State<AppState>, u: RentalOwner, Query(options):Query<CatalogOptions>) -> AppResult<Json<Value>> {
     let sql = if options.summary.unwrap_or(false) {
-        include_str!("rentcar_office_catalog.sql")
+        CATALOG_SUMMARY_SQL
     } else {
         "SELECT coalesce(jsonb_object_agg(kind, rows),'{}') FROM (
             SELECT kind, jsonb_agg(details || jsonb_build_object('id',id,'name',name,
@@ -96,6 +106,44 @@ async fn catalog(State(s): State<AppState>, u: RentalOwner, Query(options):Query
         }
     }
     Ok(Json(result))
+}
+
+#[derive(Deserialize)]
+struct HistoryQuery {
+    limit: Option<i64>,
+    cursor: Option<String>,
+}
+
+fn history_cursor(raw: &str) -> AppResult<(DateTime<Utc>, i64)> {
+    let invalid = || bad("대여 이력 페이지 위치가 올바르지 않습니다.");
+    let (time, id) = raw.split_once('|').ok_or_else(invalid)?;
+    let time = DateTime::parse_from_rfc3339(time).map_err(|_| invalid())?;
+    let id = id.parse::<i64>().ok().filter(|id| *id > 0).ok_or_else(invalid)?;
+    Ok((time.with_timezone(&Utc), id))
+}
+
+async fn customer_history(
+    State(state): State<AppState>,
+    owner: RentalOwner,
+    Path(customer_id): Path<i64>,
+    Query(query): Query<HistoryQuery>,
+) -> AppResult<Json<Value>> {
+    let limit = query.limit.unwrap_or(10);
+    if !(1..=50).contains(&limit) {
+        return Err(bad("조회 건수는 1~50건으로 입력해 주세요."));
+    }
+    let cursor = query.cursor.as_deref().map(history_cursor).transpose()?;
+    let (before_start, before_id) = cursor.unzip();
+    let page = sqlx::query_scalar(CUSTOMER_HISTORY_SQL)
+    .bind(owner.user_id)
+    .bind(customer_id)
+    .bind(before_start)
+    .bind(before_id)
+    .bind(limit)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+    Ok(Json(page))
 }
 
 fn text(raw: &Value, key: &str, limit: usize, required: bool) -> AppResult<String> {
@@ -454,6 +502,16 @@ async fn edit_cost(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn history_cursor_preserves_tied_start_times_and_validates_ids() {
+        let (start, id) = history_cursor("2021-01-09T11:59:01.123456Z|152").unwrap();
+        assert_eq!(start.timestamp_subsec_micros(), 123456);
+        assert_eq!(id, 152);
+        for value in ["", "2021-01-09|5", "a|1", "2021-01-09T01:00:00Z|0",
+                      "2021-01-09T01:00:00Z|-1", "2021-01-09T01:00:00Z|1|2"] {
+            assert!(history_cursor(value).is_err());
+        }
+    }
     #[test]
     fn balances_are_independent_and_cancellation_allows_refunds() {
         assert_eq!(limit("payment", 900, 100, 600, 80, false), 300);

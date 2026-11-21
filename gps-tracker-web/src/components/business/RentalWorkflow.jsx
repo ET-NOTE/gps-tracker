@@ -9,30 +9,26 @@ import { profileKey } from './RentalFleetProfiles';
 import { agreementTotal, needsContractReconfirmation, rentalStageNames, workflowRows, workflowStatus } from '../../lib/rentalWorkflow';
 import { qk } from '../../state';
 import { Button, FormField, Input, Modal, Select, Textarea } from '../ui';
-import CarImage from '../CarImage';
-import Icon from '../Icon';
-import { RentalDialog, HandoffTokenDialog, SettlementSummary } from '../RentcarPanel';
+import { RentalDialog, HandoffTokenDialog } from '../RentcarPanel';
 import { useRentalCatalog } from './RentalBookingForm';
 import { BusinessButton, BusinessError } from './BusinessWorkspace';
 import { useBusinessClock, useRentalOperations } from './useBusinessData';
 import ExportButtons from './ExportButtons';
-import RentalStageTable, {StageBadge} from './RentalStageTable';
+import RentalStageTable from './RentalStageTable';
 import { LedgerEditor } from './RentalOfficeBook';
 import { policyKey } from './RentalPolicy';
 import ReturnWizard from './ReturnWizard';
 import PhotoGalleryModal from './PhotoGalleryModal';
 import RentalRecordDrawer,{RecordFields,CustomerFields} from './RentalRecordDrawer';
-import RentalContractHistory from './RentalContractHistory';
-import { AgreementDetail, FinalizeRental, RentalExtension, fundsKey } from './RentalAgreementActions';
+import RentalContractDetails,{carLabel,ContractTerms,driverLabel,templateText} from './RentalContractDetails';
+import RentalCustomerHistory from './RentalCustomerHistory';
+import { FinalizeRental, RentalExtension, fundsKey } from './RentalAgreementActions';
 import { assetKey } from './RentalAssets';
 import { agreedPrice, isAssigned, matchesVehicle } from '../../lib/rentalInventory';
 import RentalCancellation from './RentalCancellation';
 import { ContractPhotos } from './RentalPhotos';
 import './rental-workflow.css';
 
-const templateText = c => (c.rental_terms?.template_body || '').replaceAll('{{고객연락처}}',c.renter_phone || '—');
-const won = value => Number(value || 0).toLocaleString('ko-KR')+'원';
-const carLabel = c => c.license_plate || c.device_name || (isAssigned(c) ? '차량 '+(c.vehicle_id ?? c.device_id) : '차량 미배정');
 const baseFilters = {query:'',status:'',branch:'',from:'',to:'',device:'',vehicle:'',model:'',channel:'',subset:'',review:'',readiness:''};
 const stageTabs = {
   checkout:[['','전체 출고 예정'],['pickup','오늘 출고']],
@@ -60,14 +56,14 @@ function ContractLedger({contract,onClose}) {
 function ContractPerson({contract,driver,onClose}) {
   const terms=contract.rental_terms||{};
   const id=driver?terms.driver_id:terms.customer_id;
-  const name=driver?(terms.driver_name||contract.renter_name):contract.renter_name;
+  const name=driver?driverLabel(contract):contract.renter_name;
   const query=useQuery({queryKey:officeCatalogKey(),queryFn:()=>api.rentalOffice('GET','/catalog'),enabled:id!=null});
   const person=query.data?.customers?.find(row=>String(row.id)===String(id));
   const samePerson=driver && id!=null && terms.customer_id!=null && String(id)===String(terms.customer_id);
   return <RentalRecordDrawer title={driver?'실운전자 상세':'고객 상세'} subtitle={name} onClose={onClose}>
     {id!=null&&query.isPending?<p role="status">고객 정보를 불러오는 중…</p>
       :id!=null&&query.error?<BusinessError onRetry={query.refetch}>고객 정보를 불러오지 못했습니다.</BusinessError>
-      :person?<CustomerFields person={person} accounts={query.data.accounts}/>
+      :person?<><CustomerFields person={person} accounts={query.data.accounts}/><RentalCustomerHistory key={person.id} customerId={person.id}/></>
       :<RecordFields rows={[
         [driver?'실운전자':'계약 고객',name],
         ...(!driver||samePerson?[['계약 연락처',contract.renter_phone]]:[]),
@@ -145,7 +141,6 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
     {focused.status==='returned' && agreedPrice(focused) && !focused.settled_at && <BusinessButton primary onClick={()=>open('settle',focused)}>대여료 정산 완료</BusinessButton>}
     <BusinessButton onClick={()=>open('ledger',focused)}>결제·보증금 기록</BusinessButton>
   </>;
-  const recipient=focused?.rental_terms?.driver_name || focused?.renter_name;
   const assignedVehicle=focused&&vehicles.find(v=>matchesVehicle(focused,v));
   return <div className="rental-workflow">
     <div className="rental-stage-metrics">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid || value==null ? "—" : <>{value.toLocaleString("ko-KR")}<small>{unit || "건"}</small></>}</strong></div>)}</div>
@@ -170,36 +165,14 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
         }
     </section>
     {focused && <RentalRecordDrawer title="대여 계약 상세" subtitle={'예약 R-'+focused.id} onClose={()=>setDetail(null)} footer={action}>
-      <div className="rental-detail"><div className="rental-detail-top">
-        <div className="rental-contract-car"><span aria-hidden="true"><CarImage deviceId={assignedVehicle?.device_id} version={assignedVehicle?.device_id&&assignedVehicle.car_image_url} fallback={<Icon name="car" size={24}/>}/></span>
-          <div><h3>{carLabel(focused)}</h3>{(assignedVehicle?.car_model||focused.rental_terms?.requested_model)&&<small>{assignedVehicle?.car_model||focused.rental_terms.requested_model}</small>}</div>
-        </div><StageBadge contract={focused} now={now}/></div>
-        <RecordFields rows={[['계약 고객',focused.renter_name],['실운전자',recipient],['운전자 면허',focused.rental_terms?.license_checked?'확인 완료':'확인 전'],
-          ['인수 예정',kstDateTime(focused.starts_at)],['반납 예정',kstDateTime(focused.ends_at)],['인수 / 반납 지점',(focused.pickup_location || '미지정')+' / '+(focused.return_location || '미지정')],
-          ['계약 확인',focused.rental_terms?.confirmed_at?kstDateTime(focused.rental_terms.confirmed_at):'확인 전']]}/>
-        <div className="rental-record-links">
+      <RentalContractDetails contract={focused} now={now} assignedVehicle={assignedVehicle} reconfirm={focused.id===reconfirmId}
+        links={<div className="rental-record-links">
           <BusinessButton icon="user" onClick={()=>open('customer',focused)}>고객 정보</BusinessButton>
           <BusinessButton icon="user" onClick={()=>open('driver',focused)}>실운전자 정보</BusinessButton>
           {isAssigned(focused)&&<BusinessButton icon="car" onClick={()=>open('vehicle',focused)}>차량 정보</BusinessButton>}
           <BusinessButton icon="file" onClick={()=>open('terms',focused)}>계약 내용</BusinessButton>
-        </div>
-        {agreedPrice(focused) && <AgreementDetail contract={focused}/>}
-        <section><h3>대여료와 보증금</h3><RecordFields rows={[['약정 대여료',won(agreementTotal(focused))],['약정 보증금',won(focused.deposit_krw)]]}/></section>
-        <section><h3>인도·반납 점검</h3>
-          {focused.pickup_odometer_km!=null && <p>{focused.pickup_odometer_km.toLocaleString()} km {focused.rental_terms?.pickup_fuel!=null?' · 연료·충전량 '+focused.rental_terms.pickup_fuel+'%':''}</p>}
-          {focused.rental_terms?.pickup_note && <p>{focused.rental_terms.pickup_note}</p>}
-          <div className="rental-record-links"><BusinessButton onClick={()=>open('photos',focused)}>인수·반납 사진</BusinessButton>
-            {isAssigned(focused)&&['draft','active','overdue'].includes(focused.status)&&<BusinessButton onClick={()=>open('handoff',focused)}>인수·반납 링크</BusinessButton>}</div>
-        </section>
-        {focused.status==='returned' && (!agreedPrice(focused) || focused.settled_at) && <section><h3>반납 정산</h3><SettlementSummary c={focused}/></section>}
-        {focused.status==='cancelled' && focused.rental_terms?.cancel_outcome && <section><h3>{focused.rental_terms.cancel_outcome==='no_show'?'미방문':'예약 취소'} 처리</h3>
-          <dl><div><dt>취소 수수료</dt><dd>{won(focused.rental_terms.cancellation_fee_krw)}</dd></div>
-            <div><dt>처리 사유</dt><dd>{focused.rental_terms.cancel_reason}</dd></div>
-            <div><dt>처리 일시</dt><dd>{kstDateTime(focused.rental_terms.cancelled_at)}</dd></div></dl></section>}
-        {focused.id===reconfirmId && !focused.rental_terms?.confirmed_at && <p role="status">예약이 변경됐습니다. 계약 조건을 다시 확인해 주세요.</p>}
-        <section><h3>메모</h3><p className="rental-record-text">{focused.note||'등록된 메모가 없습니다.'}</p></section>
-        <section><h3>처리 이력</h3><RentalContractHistory key={focused.id} contractId={focused.id}/></section>
-      </div>
+        </div>} inspectionLinks={<div className="rental-record-links"><BusinessButton onClick={()=>open('photos',focused)}>인수·반납 사진</BusinessButton>
+            {isAssigned(focused)&&['draft','active','overdue'].includes(focused.status)&&<BusinessButton onClick={()=>open('handoff',focused)}>인수·반납 링크</BusinessButton>}</div>}/>
     </RentalRecordDrawer>}
     {(dialog?.kind==='customer'||dialog?.kind==='driver')&&<ContractPerson contract={dialog.contract} driver={dialog.kind==='driver'} onClose={close}/>}
     {dialog?.kind==='vehicle'&&<RentalRecordDrawer title="차량 정보" subtitle={carLabel(dialog.contract)} onClose={close}>
@@ -207,9 +180,7 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
         ['차종',assignedVehicle?.car_model||dialog.contract.rental_terms?.requested_model],
         ['소속 지점',assignedVehicle?.branch],['단말기',assignedVehicle?.device_name||dialog.contract.device_name]]}/>
     </RentalRecordDrawer>}
-    {dialog?.kind==='terms'&&<RentalRecordDrawer title="계약 내용" subtitle={'예약 R-'+dialog.contract.id} onClose={close}>
-      <p className="rental-record-text">{templateText(dialog.contract)||'이 계약에 등록된 계약서 내용이 없습니다.'}</p>
-    </RentalRecordDrawer>}
+    {dialog?.kind==='terms'&&<ContractTerms contract={dialog.contract} onClose={close}/>}
     {dialog?.kind==='ledger' && <ContractLedger contract={dialog.contract} onClose={close}/>}
     {dialog?.kind==='cancel' && <RentalCancellation contract={dialog.contract} onClose={close} onSaved={refreshed}/>}
     {dialog?.kind==='extend' && <RentalExtension contract={dialog.contract} onClose={close} onSaved={refreshed}/>}
