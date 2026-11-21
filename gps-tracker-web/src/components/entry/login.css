@@ -26,7 +26,7 @@
   flex: 1 0 auto; width: 100%; display: grid; align-items: center;
   grid-template-columns: minmax(0, 1fr) 440px; gap: 64px; padding: 24px 0 26px;
 }
-.entry-intro { min-width: 0; padding: 45px 0 10px 12px; }
+.entry-intro { min-width: 0; padding: 44.6px 0 10px 12px; }
 .entry-intro h2 { margin: 0; color: #465262; font-size: 27px; font-weight: 400; line-height: 1.6; letter-spacing: -.9px; }
 .entry-intro > p { margin: 17px 0 0; color: #8a94a1; font-size: 13px; line-height: 1.85; }
 .entry-art { position: relative; height: 244px; margin: 13px -24px 15px -29px; overflow: hidden; }

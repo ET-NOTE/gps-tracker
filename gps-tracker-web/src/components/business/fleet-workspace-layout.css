@@ -251,7 +251,16 @@
   .pt-member-shell .rnt-shell .fr-catalog .fr-filters>label {min-width:0}
   .pt-member-shell .rnt-shell .fr-catalog .fr-filters>.is-wide {grid-column:auto}
   .rnt-content:has(.rfl-list-card,.rental-workflow>.rental-workflow-box,.fr-workflow>.fr-list,.fr-section>.fr-list) {
-    display:flex;flex-direction:column;min-height:100%;
+    display:flex;flex-direction:column;
+  }
+  /* Reserve the full work area for the primary registers. Task and reference lists end after their rows. */
+  .rnt-shell:is(
+    [data-page="reservations"],[data-page="contracts"],[data-page="vehicles"],[data-page="devices"],
+    [data-page="cargo-orders"],[data-page="cargo-shipments"],[data-page="cargo-locations"],
+    [data-page="cargo-billing"],[data-page="cargo-payables"],[data-page="cargo-vehicles"],
+    [data-page="cargo-drivers"],[data-page="cargo-devices"]
+  ) .rnt-content:has(.rfl-list-card,.rental-workflow>.rental-workflow-box,.fr-workflow>.fr-list,.fr-section>.fr-list) {
+    min-height:100%;
   }
   .rnt-content:has(.rfl-list-card,.rental-workflow>.rental-workflow-box,.fr-workflow>.fr-list,.fr-section>.fr-list)>:last-child,
   .rnt-content :is(.rfl-page:has(.rfl-list-card),.rental-workflow:has(>.rental-workflow-box),.fr-workflow:has(>.fr-list),.fr-section:has(>.fr-list)) {

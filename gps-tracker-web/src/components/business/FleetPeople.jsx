@@ -51,14 +51,16 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
    <div className="fleet-record-toolbar fleet-people-filters" aria-label="사용자 조회 조건">
     <div className="fleet-record-query">
      <label className="fleet-inline-search"><Icon name="search" size={15}/><input type="search" aria-label="사용자 검색" placeholder="이름, 이메일 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-     <select aria-label="사용자 부서" value={department} onChange={e=>setDepartment(e.target.value)}>{departmentItems.map(i=><option key={i.id} value={i.id}>{i.id?i.label:'전체 부서'}</option>)}</select>
-     <select aria-label="사용자 상태" value={status} onChange={e=>setStatus(e.target.value)}>{[['all','전체 상태'],['active','활성'],['inactive','비활성']].map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>{roleSelect}
+     <select className="fleet-people-department-filter" aria-label="사용자 부서" value={department} onChange={e=>setDepartment(e.target.value)}>{departmentItems.map(i=><option key={i.id} value={i.id}>{i.id?i.label:'전체 부서'}</option>)}</select>
+     <select className="fleet-people-status-filter" aria-label="사용자 상태" value={status} onChange={e=>setStatus(e.target.value)}>{[['all','전체 상태'],['active','활성'],['inactive','비활성']].map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>{roleSelect}
     </div>
     {access.manage_team&&<div className="fleet-record-actions"><button type="button" className="business-button" onClick={()=>setImporting(true)}>CSV 일괄 등록</button><button type="button" className="business-button is-primary" onClick={()=>setEdit({})}><Icon name="plus" size={15}/>사용자 등록</button></div>}
    </div>
 
    <section className="fleet-people-ledger" aria-label="사용자 목록">
-    <header className="fleet-member-recordhead"><h2>사용자 <small>{ready?rows.length:'—'}명</small></h2>{access.manage_team&&<button type="button" className="business-button" aria-label="부서·직책 관리" onClick={()=>setTab('organization')}>부서·직책 관리</button>}</header>
+    <header className="fleet-member-recordhead"><div><h2>사용자 {ready?rows.length:'—'}명</h2>
+     <p className="fleet-people-count">{department ? departmentItems.find(item=>item.id===department)?.label||'선택 부서' : '전체 부서'} · 전체 {ready?(staff.data?.length||0)+'명':'—'}</p></div>
+     {access.manage_team&&<button type="button" className="business-button" aria-label="부서·직책 관리" onClick={()=>setTab('organization')}>부서·직책 관리</button>}</header>
     {mobile?<>
     {staff.error?<BusinessError onRetry={staff.refetch}/>:staff.isPending?<p className="fleet-team-empty">사용자를 불러오는 중…</p>:rows.length?
       <div className="fleet-mobile-people-scroll" role="region" aria-label="사용자 목록 · 좌우 스크롤" tabIndex={0}>

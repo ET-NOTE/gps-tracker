@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import DeviceFilter from './DeviceFilter';
 import MapControls from './MapControls';
 import Icon from './Icon';
@@ -17,6 +18,25 @@ export function mapCacheNotice(sources, selected) {
 
 export default function MapTopOverlay({ devices, selected, onSelect, onPair, mapRef, onOpenRoadview, externalControls = false,
   showSpeed, liveSpeed, now, historyMode = false, following = false, cachedSources = {}, children }) {
+  const overlayRef = useRef(null);
+  useLayoutEffect(() => {
+    const overlay = overlayRef.current;
+    if (!externalControls || !overlay) return;
+    const surface = overlay.parentElement;
+    function positionFenceList() {
+      surface.style.setProperty('--pt-fence-top', (overlay.offsetTop + overlay.offsetHeight + 8) + 'px');
+      surface.style.setProperty('--pt-fence-left', overlay.offsetLeft + 'px');
+    }
+    positionFenceList();
+    const observer = new ResizeObserver(positionFenceList);
+    observer.observe(overlay);
+    observer.observe(surface);
+    return () => {
+      observer.disconnect();
+      surface.style.removeProperty('--pt-fence-top');
+      surface.style.removeProperty('--pt-fence-left');
+    };
+  }, [externalControls]);
   const clock = useVisibleNow(now == null && showSpeed && selected != null);
   now = now ?? clock;
   const device = devices.find(d => d.id === selected);
@@ -29,7 +49,7 @@ export default function MapTopOverlay({ devices, selected, onSelect, onPair, map
   const ageText = !Number.isFinite(ageMs) ? null : ageMs < 60_000 ? '방금'
     : ageMs < 3600_000 ? `${Math.floor(ageMs / 60_000)}분 전`
     : ageMs < 86400_000 ? `${Math.floor(ageMs / 3600_000)}시간 전` : `${Math.floor(ageMs / 86400_000)}일 전`;
-  return <div className="map-top-overlay">
+  return <div className="map-top-overlay" ref={overlayRef}>
     <div className="map-top-main">
       {devices.length > 0 && <div className="map-device-card">
         <div className="pt-map-selector-row"><DeviceFilter devices={devices} selected={selected} onChange={onSelect} integrated />

@@ -166,14 +166,19 @@ export function BusinessLocation({ devices, onLive }) {
   const openVehicle = useContext(VehicleContext);
   const selection = useContext(SelectionContext), now = useBusinessClock();
   const counts = locationSummary(devices, now);
+  const corporate = selection?.kind === 'corporate';
   const selected = devices.find(d => String(d.id) === String(selection?.focusedId));
   let selectedLocation = '지도에 표시할 위치가 없습니다.';
   if (selected && locationState(selected, now) !== 'none') {
     selectedLocation = selected.last_fix_at ? `마지막 위치 ${kstDateTime(selected.last_fix_at)}` : '마지막 위치 수신 시각 없음';
   }
-  return <BusinessSection title="차량 위치" description={`현재 수신 ${counts.current} · 오래된 위치 ${counts.old} · 위치 없음 ${counts.none}`} action={onLive&&<button className="fleet-dashboard-link" type="button" onClick={onLive}>실시간 관제 <Icon name="chevron-right" size={14}/></button>}>
+  const positions = `현재 수신 ${counts.current} · 오래된 위치 ${counts.old} · 위치 없음 ${counts.none}`;
+  return <BusinessSection title="차량 위치" className={corporate ? 'fleet-location-panel' : undefined} description={corporate ? `위치 표시 ${counts.current + counts.old}대 · 전체 ${devices.length}대` : positions}
+    action={onLive && <button className="fleet-dashboard-link" type="button" aria-label="실시간 관제" onClick={onLive}>{corporate ? '더보기' : '실시간 관제'} <Icon name="chevron-right" size={14}/></button>}>
     <BusinessMap devices={devices} onSelect={selection?.focusVehicle || openVehicle} selectedId={selection?.focusedId} />
-    {selection?.kind !== 'corporate' && <p className="business-map-note">현재 수신: 최근 5분 내 위치 · 지도는 마지막 수신 위치를 표시합니다.</p>}
+    {corporate ? <div className="fleet-location-counts" aria-label="차량 위치 수신 현황">
+      <span>현재 수신 <b>{counts.current}</b></span><span>오래된 위치 <b>{counts.old}</b></span><span>위치 없음 <b>{counts.none}</b></span>
+    </div> : <p className="business-map-note">현재 수신: 최근 5분 내 위치 · 지도는 마지막 수신 위치를 표시합니다.</p>}
     {selected && <div className="business-map-selection"><div><strong>{corporateVehicleName(selected)}</strong><p>{terminalName(selected)} · {selectedLocation}</p></div><BusinessButton onClick={() => openVehicle?.(selected)}>차량 상세</BusinessButton></div>}
   </BusinessSection>;
 }
@@ -186,8 +191,8 @@ export function BusinessError({ children = '정보를 불러오지 못했습니�
 export function BusinessEmpty({ title = '표시할 항목이 없습니다.', children, compact = false }) {
   return <div className={`business-empty${compact ? ' is-compact' : ''}`}><strong>{title}</strong>{children && <p>{children}</p>}</div>;
 }
-export function BusinessSection({ title, description, action, children }) {
-  return <section className="business-section"><div className="business-section-title"><div><h3>{title}</h3>{description && <p>{description}</p>}</div>{action}</div>{children}</section>;
+export function BusinessSection({ title, description, action, children, className }) {
+  return <section className={className ? 'business-section ' + className : 'business-section'}><div className="business-section-title"><div><h3>{title}</h3>{description && <p>{description}</p>}</div>{action}</div>{children}</section>;
 }
 export function BusinessMetrics({ items }) {
   return <div className="business-metrics">{items.map(item => <div className={`business-metric ${item.tone || ''}`} key={item.label} title={item.detail}>
