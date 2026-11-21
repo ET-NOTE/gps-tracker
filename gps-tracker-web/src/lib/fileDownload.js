@@ -10,17 +10,19 @@ async function nativeFiles() {
   });
 }
 
-export async function saveBlob(blob, filename) {
+export async function saveBlob(blob, filename, assertCurrent) {
   // Keep the extension and stay below common UTF-8 filesystem name limits.
   const extension = /\.(csv|pdf|jpe?g|png|webp)$/i.exec(String(filename))?.[0] || '';
   const stem = extension ? String(filename).slice(0, -extension.length) : String(filename);
   const name = ([...safeFilename(stem)].slice(0, 60).join('').replace(/^\.+/, '_') || '보고서') + extension;
   const bridge = await nativeFiles();
+  assertCurrent?.();
   if (bridge) {
     if (!blob.size || blob.size > MAX_NATIVE_BYTES) throw new Error('파일이 너무 큽니다. 조회 기간을 줄여 다시 시도해 주세요.');
     const bytes = new Uint8Array(await blob.arrayBuffer());
     let binary = '';
     for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    assertCurrent?.();
     const result = await bridge.exportReport({filename: name, mime: blob.type.split(';')[0], base64: btoa(binary)});
     if (!result?.ok) throw new Error(result?.error === 'busy' ? '다른 파일을 처리 중입니다. 열린 파일 화면을 먼저 닫아주세요.' : '파일을 저장하거나 공유하지 못했습니다. 다시 시도해 주세요.');
     return result;

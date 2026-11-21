@@ -310,3 +310,35 @@
   .business-workspace--corporate .business-content .fleet-people-filters .fleet-people-status-filter {flex:0 0 104px}
   .business-workspace--corporate .business-content .fleet-people-filters .fleet-people-role-filter {flex:0 0 115px}
 }
+.business-workspace--corporate .fleet-user-reset {
+  border:0; background:transparent; color:var(--text-2); font:inherit; font-size:12px; min-height:34px; padding:4px 9px; cursor:pointer;
+}
+.business-workspace--corporate .business-content .fleet-people-filters .fleet-user-export {
+  border-color:transparent; background:transparent; min-width:32px; padding:5px; color:var(--text-2);
+}
+.business-workspace--corporate .fleet-person-check-cell {width:44px}
+.business-workspace--corporate .business-content input.fleet-user-checkbox {
+  box-sizing:border-box; display:block; width:16px; height:16px; min-height:0; min-width:0;
+  padding:0; margin:0; accent-color:var(--primary); cursor:pointer;
+}
+.business-workspace--corporate .fleet-person-check-cell .fleet-user-checkbox {margin-inline:auto}
+.business-workspace--corporate .fleet-people-scopes>button {margin:10px 14px 0}
+@media(max-width:768px) {
+  .business-workspace--corporate .fleet-mobile-people-scroll.has-selection .fleet-people-columns,
+  .business-workspace--corporate .fleet-people-ledger .fleet-mobile-people-scroll.has-selection .mobile-fleet-row {
+    grid-template-columns:32px 124px 95px 100px 60px; gap:12px; min-width:480px; padding-inline:16px;
+  }
+  .fleet-mobile-people-scroll.has-selection .mobile-fleet-rows {min-width:480px}
+  .fleet-mobile-people-scroll.has-selection .mobile-fleet-row-main {grid-column:2}
+  .fleet-mobile-people-scroll.has-selection .mobile-fleet-rows>li {position:relative}
+  .business-workspace--corporate .fleet-mobile-people-scroll.has-selection li>.fleet-user-checkbox {
+    position:absolute; left:16px; top:23px; z-index:1;
+  }
+}
+.business-workspace--corporate .business-content .fleet-people-ledger .fleet-member-recordhead>button:disabled {
+  background:var(--surface-2); color:var(--text-3); border-color:transparent;
+}
+@media(max-width:359px) {
+  .business-workspace--corporate .business-content .fleet-people-filters>.fleet-record-actions {display:flex;flex-wrap:nowrap;gap:4px;justify-content:flex-end;width:100%}
+  .business-workspace--corporate .business-content .fleet-people-filters>.fleet-record-actions>.business-button {padding-inline:7px;flex:none;min-width:0}
+}

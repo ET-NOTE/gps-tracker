@@ -11,6 +11,7 @@ import * as business from '../src/lib/business.js';
 import * as businessExport from '../src/lib/businessExport.js';
 import * as sites from '../src/lib/fleetSites.js';
 import * as assets from '../src/lib/fleetAssets.js';
+import * as peopleReport from '../src/lib/fleetPeopleReport.js';
 
 const people=[
  {id:1,name:'김영업',department:'영업팀',department_id:1,position:'팀장',phone:'010-1111-1111',access_role:'member',active:true,account_id:11,created_at:'2026-11-01T00:00:00Z',updated_at:'people-v1'},
@@ -31,7 +32,7 @@ async function ready(check){for(let i=0;i<100;i++){if(check())return;await act(a
 async function mount(name,{access={manage_team:true,role:'owner'},phone=false,props={},staffData=people,siteData=places,organization={},groupQuery,assetQuery={},siteServices={},apiOverrides={},waitForData=true}={}){
  const calls={visits:[],updates:[],unlinks:[],revocations:[]};
  const qc=new query.QueryClient({defaultOptions:{queries:{retry:false,staleTime:Infinity,gcTime:Infinity}}});
- const api={fleetInvites:async()=>[],fleetTeamAudit:async()=>[],
+ const api={fleetPermissionGroups:async()=>[],fleetInvites:async()=>[],fleetTeamAudit:async()=>[],
   listFleetSites:async()=>siteData,listFleetSiteGroups:groupQuery|| (async()=>[{id:1,name:'본사',active:true},{id:2,name:'지사',active:true}]),
   listFleetSiteVisits:async params=>{calls.visits.push({...params});return {items:[{id:1,site_name:'서울 본사',vehicle_name:'영업 차량',first_inside_at:'2026-11-17T00:00:00Z',last_inside_at:'2026-11-17T00:05:00Z',observed_seconds:300,status:'inside'}],next_before:params.before?null:'visit-cursor'};},
   updateStaff:async(id,body)=>calls.updates.push({id,body}),unlinkFleetStaff:async id=>calls.unlinks.push(id),revokeFleetInvite:async id=>calls.revocations.push(id),...apiOverrides};
@@ -42,14 +43,18 @@ async function mount(name,{access={manage_team:true,role:'owner'},phone=false,pr
  const mod=new vm.SourceTextModule(code,{context});
  const tag=type=>({children,...props})=>React.createElement(type,props,children);
  const noop=()=>null;
- const common={default:noop,api,qk:{staff:()=>['staff']},useStaff:()=>({data:staffData,isPending:false}),
+ const common={default:noop,api,authScope:()=>'',assertSession:noop,fleetRequestScope:()=>({assert:noop}),saveBlob:noop,qk:{staff:()=>['staff']},useStaff:()=>({data:staffData,isPending:false}),
   useFleetAccess:()=>access,useFleetOrganization:()=>({data:[{id:1,name:'영업팀',kind:'department',active:true},{id:2,name:'관리팀',kind:'department',active:true}],...organization}),
   useFleetAssets:()=>({data:[{id:100,name:'영업 차량'},{id:101,name:'관리 차량'}],...assetQuery}),fleetRoles:{member:'일반 사용자',admin:'관리자'},confirmDialog:async()=>true,
   BusinessSection:({children,action,title})=>React.createElement('section',{},React.createElement('h3',{},title),action,children),
   BusinessButton:tag('button'),BusinessEmpty:({title})=>React.createElement('p',{},title),BusinessError:({children})=>React.createElement('div',{role:'alert'},children),
   Modal:({children,title})=>React.createElement('section',{role:'dialog','aria-label':title},children),
   FormField:tag('label'),Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
- const real={'react':React,'react/jsx-runtime':jsx,'@tanstack/react-query':query,'../../lib/business':business,'../../lib/businessExport':businessExport,'../../lib/fleetSites':{...sites,...siteServices},'../../lib/fleetAssets':assets};
+ const real={'react':React,'react/jsx-runtime':jsx,'@tanstack/react-query':query,'../../lib/business':business,'../../lib/businessExport':businessExport,'../../lib/fleetSites':{...sites,...siteServices},'../../lib/fleetAssets':assets,'../../lib/fleetPeopleReport':peopleReport};
+ const assignmentSource=await readFile(new URL('../src/components/business/FleetGroupAssignment.jsx',import.meta.url),'utf8');
+ const assignmentModule=new vm.SourceTextModule((await transform(assignmentSource,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
+ await assignmentModule.link(spec=>moduleOf(real[spec]||common));await assignmentModule.evaluate();
+ real['./FleetGroupAssignment']=assignmentModule.namespace;
  const directorySource=await readFile(new URL('../src/components/business/DirectoryLayout.jsx',import.meta.url),'utf8');
  const directoryCode=(await transform(directorySource,{loader:'jsx',jsx:'automatic',format:'esm'})).code;
  const directoryModule=new vm.SourceTextModule(directoryCode,{context});
@@ -121,6 +126,57 @@ test('people administration remains unavailable to members and admin accounts re
  const admin=await mount('FleetPeople',{access:{manage_team:true,role:'admin'}});
  try{assert.equal(tableRows(admin.r)[0].findAllByType('summary').length,1);assert.equal(tableRows(admin.r)[2].findAllByType('summary').length,0);}
  finally{await admin.close();}
+});
+
+test('only owners can select current staff, and selecting a filtered list preserves previously selected people',async()=>{
+ const data=people.map((s,i)=>({...s,updated_at:new Date(1700000000000+i).toISOString()}));
+ const owner=await mount('FleetPeople',{staffData:data});
+ try{
+   const byLabel=label=>owner.r.root.find(n=>n.type==='input'&&n.props['aria-label']===label);
+   await act(async()=>byLabel('김영업 선택').props.onChange({target:{checked:true}}));
+   await act(async()=>byLabel('사용자 검색').props.onChange({target:{value:'이관리'}}));
+   await act(async()=>byLabel('현재 목록 전체 선택').props.onChange({target:{checked:true}}));
+   await act(async()=>owner.r.root.find(n=>n.type==='button'&&n.props['aria-label']==='권한 그룹 적용').props.onClick());
+   const dlg=owner.r.root.findByProps({role:'dialog'});assert.match(text(dlg.children),/2명 선택/);
+   assert.match(text(dlg.children),/김영업/);assert.match(text(dlg.children),/이관리/);assert.doesNotMatch(text(dlg.children),/박퇴사/);
+ }finally{await owner.close();}
+ const admin=await mount('FleetPeople',{access:{role:'admin',manage_team:true},staffData:data,phone:true});
+ try {assert.equal(admin.r.root.findAll(n=>n.type==='input'&&n.props.type==='checkbox').length,0);}
+ finally{await admin.close();}
+});
+
+test('assignment retries an atomic conflict with freshly confirmed member versions',async()=>{
+ const group=[{id:6,name:'조회'}],a='2026-01-01T00:00:00Z',b='2026-01-02T00:00:00Z';
+ const base=people.slice(0,2).map(s=>({...s,updated_at:a})),updated=base.map((s,i)=>({...s,updated_at:i===0?b:a}));
+ const requests=[],applied=[];
+ const {r,close}=await mount('FleetGroupAssignment',{waitForData:false,
+   props:{staff:{data:updated,refetch:async()=>({isSuccess:true,data:updated})},groups:{data:group,refetch:async()=>({isSuccess:true,data:group})},selectedRows:base,onClose:()=>{},onApplied:value=>applied.push(value)},
+   apiOverrides:{assignFleetPermissionGroup:async body=>{requests.push(body);if(requests.length===1)throw Object.assign(new Error('버전 충돌'),{status:409});return {count:2};}}});
+ try{
+   await act(async()=>r.root.findByType('select').props.onChange({target:{value:'6'}}));
+   await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
+   assert.equal(applied.length,0);assert.match(text(r.toJSON()),/새로 조회한 대상 2명/);
+   await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
+   assert.deepEqual(requests.map(v=>Array.from(v.members,m=>m.updated_at)),[[a,a],[b,a]]);
+   assert.deepEqual(requests.map(v=>v.group_id),[6,6]);assert.equal(applied[0].confirmed,2);
+ }finally{await close();}
+});
+
+test('staff CSV reapplies filters to fresh authorized rows and stops on a scope change',async()=>{
+ const access={role:'department_manager',actor_id:2,department_id:4},rows=[{...people[0],account_email:'new@example.test'},{...people[2],department_id:1}];
+ const opts={access,filters:{query:'new@',department:'1',status:'active',role:''},assertCurrent(){},onAccessChange(){},roles:{member:'일반 사용자'}};
+ let groups=0;
+ const api={fleetAccess:async()=>access,listStaff:async()=>rows,fleetPermissionGroups:async()=>{groups++;return [];}};
+ const result=await peopleReport.freshPeopleReport({...opts,api});assert.equal(groups,0);assert.equal(result.rows.length,1);
+ assert.equal(result.rows[0].이메일,'new@example.test');assert.ok(!JSON.stringify(result).includes(people[0].phone));
+ assert.deepEqual(peopleReport.scopedStaff([{id:1,user_id:9},{id:1,user_id:8},{id:3,user_id:9}],{owner_id:9,role:'member',staff_ids:[1]}),[{id:1,user_id:9}]);
+ let read=0,changed;
+ await assert.rejects(peopleReport.freshPeopleReport({...opts,api:{...api,fleetAccess:async()=>++read===1?access:{...access,department_id:9}},
+   onAccessChange:a=>changed=a}),/권한이 변경/);assert.equal(changed.department_id,9);
+ let current=true;
+ await assert.rejects(peopleReport.freshPeopleReport({...opts,api:{...api,listStaff:async()=>{current=false;return rows;}},
+   assertCurrent(){if(!current)throw new Error('회사 변경');}}),/회사 변경/);
+ await assert.rejects(peopleReport.freshPeopleReport({...opts,api:{...api,listStaff:async()=>{throw new Error('권한 없음');}}}),/권한 없음/);
 });
 
 test('site group and search scope preserve active defaults and status counts',async()=>{
@@ -253,7 +309,9 @@ test('multiple assigned vehicles remain readable without expanding the default p
  for(const [assetQuery,expected] of [[{data:undefined,isPending:true},'조회 중…'],[{data:undefined,error:Error('offline')},'차량 조회 실패']]){
   const directory=await mount('FleetPeople',{staffData:[people[0]],assetQuery});
   try{
-   assert.equal(text(tableRows(directory.r)[0].findAllByType('td')[4].children),expected);
+   const vehicleColumn=directory.r.root.findByType('thead').findAllByType('th').findIndex(th=>text(th.children)==='운행 가능 차량');
+   assert.ok(vehicleColumn>=0);
+   assert.equal(text(tableRows(directory.r)[0].findAllByType('td')[vehicleColumn].children),expected);
   }finally{await directory.close();}
  }
 });
