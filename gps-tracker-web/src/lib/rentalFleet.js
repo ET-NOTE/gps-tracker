@@ -1,5 +1,6 @@
 import { businessDate, rentalStatus, rentalSummary, vehicleName } from './business.js';
 import { rentalAttention } from './businessAttention.js';
+import { isAssigned, matchesVehicle } from './rentalInventory.js';
 import { addBusinessDays } from './businessWorkspace.js';
 
 export const repairNames = { cleaning: '세차', maintenance: '정비', inspection: '점검', accident: '사고', breakdown: '고장' };
@@ -11,7 +12,7 @@ export const rentalFleetLabel = device => device.car_plate || device.license_pla
 export const sameId = (one, two) => one != null && two != null && String(one) === String(two);
 
 export function vehicleReadiness(device, work, summary, now) {
-  const pending = work.filter(item => sameId(item.device_id, device.id) && workState(item) !== 'done');
+  const pending = work.filter(item => matchesVehicle(item,device) && workState(item) !== 'done');
   const incident = pending.find(item => isIncident(item.kind) && !item.closed_at);
   const review = pending.some(item => workState(item) === 'review');
   const service = pending.find(item => !isIncident(item.kind) && Date.parse(item.starts_at) <= now && (item.return_inspection || Date.parse(item.ends_at) > now));
@@ -40,7 +41,7 @@ export function fleetDashboard(contracts, devices, work, now) {
   }
   const attention = rentalAttention(retained, devices, now);
   const actions = [
-    { key: 'assign', label: '배차가 필요한 예약', icon: 'car', rows: retained.filter(row => row.status === 'draft' && !row.device_id).map(contract => ({ contract })) },
+    { key: 'assign', label: '배차가 필요한 예약', icon: 'car', rows: retained.filter(row => row.status === 'draft' && !isAssigned(row)).map(contract => ({ contract })) },
     { key: 'pickup', label: '오늘 출고 확인', icon: 'file', rows: pickups.filter(event => event.row.status === 'draft').map(event => ({ contract: event.row })) },
     { key: 'return', label: '반납 시간이 지난 차량', icon: 'clock', rows: summary.overdue.map(contract => ({ contract })) },
     { key: 'care', label: '세차·점검 및 사고 조치', icon: 'wrench', rows: work.filter(item => workState(item) !== 'done' && Date.parse(item.starts_at) <= now).map(item => ({ item })).concat(attention.filter(task => task.category === 'maintenance')) },
@@ -54,7 +55,7 @@ export function fleetDashboard(contracts, devices, work, now) {
 
 export function contractStage(row, now) {
   const status = rentalStatus(row, now);
-  return ({ draft: row.device_id ? '출고 준비' : '배차 대기', active: '대여 중', overdue: '반납 지연', returned: '반납 완료', cancelled: '취소' })[status] || status;
+  return ({ draft: isAssigned(row) ? '출고 준비' : '배차 대기', active: '대여 중', overdue: '반납 지연', returned: '반납 완료', cancelled: '취소' })[status] || status;
 }
 
 export function kstInput(value) {

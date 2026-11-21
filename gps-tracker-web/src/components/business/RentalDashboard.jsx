@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { isAssigned, matchesVehicle } from '../../lib/rentalInventory';
 import Icon from '../Icon';
 import { businessDate } from '../../lib/business';
 import { kstDateTime } from '../../lib/businessExport';
-import { contractStage, fleetDashboard, rentalFleetLabel, repairNames, isIncident, sameId } from '../../lib/rentalFleet';
+import { contractStage, fleetDashboard, rentalFleetLabel, repairNames, isIncident } from '../../lib/rentalFleet';
 import { BusinessButton, BusinessEmpty, useBusinessVehicle } from './BusinessWorkspace';
 import BusinessDrawer from './BusinessDrawer';
 
@@ -15,9 +16,9 @@ export default function RentalDashboard({ devices, contracts, work, now, onTab, 
   const openVehicle = useBusinessVehicle(), filteredDevices = devices.filter(d => !branch || d.rental_profile?.branch === branch);
   const branches = [...new Set([...configuredBranches.map(b=>typeof b==='string'?b:b.name),
     ...devices.map(d=>d.rental_profile?.branch), ...contracts.map(c=>c.pickup_location)].filter(Boolean))].sort();
-  const filteredContracts = contracts.filter(c => !branch || filteredDevices.some(d => sameId(d.id, c.device_id))
-    || (!c.device_id && c.pickup_location === branch));
-  const filteredWork = work.filter(row => !branch || filteredDevices.some(d => sameId(d.id, row.device_id)));
+  const filteredContracts = contracts.filter(c => !branch || filteredDevices.some(d => matchesVehicle(c,d))
+    || (!isAssigned(c) && c.pickup_location === branch));
+  const filteredWork = work.filter(row => !branch || filteredDevices.some(d => matchesVehicle(row,d)));
   const data = fleetDashboard(filteredContracts, filteredDevices, filteredWork, now);
   const metrics = [
     ['active', '대여 중', data.summary.occupied.size, '대', 'car', '현재 대여 차량'], ['pickup', '오늘 출고', data.pickups.length, '건', 'route', '오늘 인도·출고 예정'],
@@ -25,7 +26,7 @@ export default function RentalDashboard({ devices, contracts, work, now, onTab, 
   ];
   const groups = detail === 'tasks' ? data.actions : data.actions.filter(task => detail === 'task-' + task.key);
   const groupRows = groups.flatMap(group => group.rows.map(item => ({ ...item, label: group.label, key: group.key })));
-  const contractsToOpen = detail === 'active' ? data.summary.open.filter(c => data.summary.occupied.has(String(c.device_id))) :
+  const contractsToOpen = detail === 'active' ? data.summary.open.filter(c => filteredDevices.some(v=>matchesVehicle(c,v) && data.summary.occupied.has(String(v.id)))) :
     detail === 'pickup' ? data.pickups.map(e => e.row) : detail === 'return' ? data.returns.map(e => e.row) : [];
   const drawerTitle = (metrics.find(([key]) => key === detail) || [])[1] || groups[0]?.label;
   const trendMax = Math.max(1, ...data.trend.map(x => x.count)), countMax = Math.max(1, ...Object.values(data.counts));
@@ -33,7 +34,7 @@ export default function RentalDashboard({ devices, contracts, work, now, onTab, 
     setDetail('');
     if (item.contract) onContracts(item.key === 'return' && ['active', 'overdue'].includes(item.contract.status) ? { returning: item.contract } : { contract: item.contract });
     else if (item.item) onWork(isIncident(item.item.kind) ? 'incidents' : 'service', item.item.id);
-    else if (item.device) openVehicle?.(item.device);
+    else if (item.device) item.device.terminal ? openVehicle?.(item.device.terminal) : onTab('vehicles');
   }
   return <div className="rfl-page">
     <div className="rfl-toolbar"><div className="rfl-inline"><span className="rfl-date"><Icon name="clock" size={16} />{businessDate(now).replaceAll('-', '.')} · 오늘</span>
@@ -64,7 +65,7 @@ export default function RentalDashboard({ devices, contracts, work, now, onTab, 
       <div className="rfl-drawer-list">
         {contractsToOpen.map(c => <button type="button" className="rfl-record" key={c.id} onClick={() => { setDetail(''); onContracts({contract:c}); }}><strong>{c.renter_name} · {c.license_plate || c.device_name || '배차 대기'}</strong><small>{kstDateTime(c.starts_at)} ~ {kstDateTime(c.ends_at)} · {contractStage(c, now)}</small></button>)}
         {groupRows.map((row, i) => <button type="button" className="rfl-record" key={row.key + (row.contract?.id || row.item?.id || i)} onClick={() => action(row)}><strong>{row.contract?.renter_name || (row.device && rentalFleetLabel(row.device)) || repairNames[row.item?.kind]} · {row.label}</strong>
-          <small>{row.item ? [filteredDevices.find(d => sameId(d.id, row.item.device_id))?.car_plate, kstDateTime(row.item.starts_at), row.item.note].filter(Boolean).join(' · ') : row.description || kstDateTime(row.contract?.starts_at)}</small></button>)}
+          <small>{row.item ? [filteredDevices.find(d => matchesVehicle(row.item,d))?.car_plate, kstDateTime(row.item.starts_at), row.item.note].filter(Boolean).join(' · ') : row.description || kstDateTime(row.contract?.starts_at)}</small></button>)}
         {!contractsToOpen.length && !groupRows.length && <BusinessEmpty compact title="해당 내역이 없습니다." />}
       </div>
     </BusinessDrawer>}

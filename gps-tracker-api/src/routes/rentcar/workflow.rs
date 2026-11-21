@@ -45,6 +45,8 @@ pub(super) fn router() -> Router<AppState> {
         .route("/rentcar/contracts/:id/cancel", post(cancel))
         .route("/rentcar/contracts/:id/balance", get(balance))
         .route("/rentcar/contracts/:id/history", get(history))
+        .route("/rentcar/contracts/:id/extend", post(pricing::extend))
+        .route("/rentcar/contracts/:id/settle", post(pricing::settle))
 }
 
 async fn history(
@@ -105,11 +107,19 @@ async fn cancel(
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct BookingTerms {
+    pricing: Option<pricing::PriceInput>,
     customer_id: Option<i64>,
     driver_id: Option<i64>,
     requested_model: String,
     driver_name: String,
     channel: String,
+}
+
+pub(super) fn require_agreed_booking(req: &ContractPayload) -> AppResult<()> {
+    if req.rental_terms.as_ref().and_then(|terms|terms.pricing.as_ref()).is_none() {
+        return Err(AppError::Conflict("새 계약은 기본 대여료·옵션·할인을 확인한 약정 방식으로 등록합니다. 화면을 새로고침하고 새 예약 양식을 열어 주세요.".into()));
+    }
+    Ok(())
 }
 
 pub(super) async fn owner_lock(tx: &mut Transaction<'_, Postgres>, owner: i64) -> AppResult<()> {
@@ -118,7 +128,7 @@ pub(super) async fn owner_lock(tx: &mut Transaction<'_, Postgres>, owner: i64) -
     Ok(())
 }
 
-async fn lock_contract(tx: &mut Transaction<'_, Postgres>, owner: i64, id: i64) -> AppResult<Contract> {
+pub(super) async fn lock_contract(tx: &mut Transaction<'_, Postgres>, owner: i64, id: i64) -> AppResult<Contract> {
     let sql = format!("{SQL_INVOICE_SELECT} FOR UPDATE OF c");
     sqlx::query_as(&sql).bind(id).bind(owner).fetch_optional(&mut **tx).await?.ok_or(AppError::NotFound)
 }
@@ -127,17 +137,17 @@ async fn lock_contract(tx: &mut Transaction<'_, Postgres>, owner: i64, id: i64) 
 async fn check_capacity(tx: &mut Transaction<'_, Postgres>, owner: i64, id: Option<i64>,
     model: &str, start: DateTime<Utc>, end: DateTime<Utc>, buffer: i32, branch: Option<&str>) -> AppResult<()> {
     let available: i64 = sqlx::query_scalar("SELECT
-      (SELECT count(*) FROM gps_read_devices d LEFT JOIN rental_vehicle_profile p ON p.device_id=d.id AND p.owner_id=d.owner_id WHERE d.owner_id=$1 AND COALESCE(d.enabled,true) AND COALESCE(p.readiness,'ready')='ready'
-        AND COALESCE(NULLIF(trim(p.class_name),''),NULLIF(trim(d.car_model),''),'차종 미지정')=$2
+      (SELECT count(*) FROM rental_asset_directory p WHERE p.owner_id=$1 AND p.enabled AND p.readiness='ready'
+        AND COALESCE(NULLIF(trim(p.class_name),''),NULLIF(trim(p.model),''),'차종 미지정')=$2
         AND ($7::text IS NULL OR NULLIF(trim(p.branch),'')=$7 OR NOT EXISTS(SELECT 1 FROM rental_vehicle_profile v WHERE v.owner_id=$1 AND NULLIF(trim(v.branch),'') IS NOT NULL))
-        AND NOT EXISTS (SELECT 1 FROM rental_contracts c WHERE c.device_id=d.id
+        AND NOT EXISTS (SELECT 1 FROM rental_contracts c WHERE c.vehicle_id=p.vehicle_id
           AND (c.status IN ('active','overdue') OR (c.status='draft' AND c.rental_terms IS NOT NULL))
           AND ($3::bigint IS NULL OR c.id<>$3) AND ((c.status IN ('overdue','active') AND c.ends_at<=now()) OR
           (c.starts_at<$5::timestamptz+make_interval(mins=>$6) AND c.ends_at+make_interval(mins=>$6)>$4::timestamptz)))
-        AND NOT EXISTS(SELECT 1 FROM rental_fleet_work w WHERE w.owner_id=$1 AND w.device_id=d.id AND
+        AND NOT EXISTS(SELECT 1 FROM rental_fleet_work w WHERE w.owner_id=$1 AND w.vehicle_id=p.vehicle_id AND
           ((w.kind IN ('accident','breakdown') AND w.inspection_released_at IS NULL) OR
           (w.return_inspection AND w.closed_at IS NULL) OR (w.ends_at IS NOT NULL AND w.closed_at IS NULL AND w.starts_at<$5::timestamptz+make_interval(mins=>$6) AND w.ends_at>$4))))
-      - (SELECT count(*) FROM rental_contracts c WHERE c.user_id=$1 AND c.status='draft' AND c.device_id IS NULL
+      - (SELECT count(*) FROM rental_contracts c WHERE c.user_id=$1 AND c.status='draft' AND c.vehicle_id IS NULL
         AND c.rental_terms->>'requested_model'=$2 AND ($7::text IS NULL OR c.pickup_location=$7 OR NOT EXISTS(SELECT 1 FROM rental_vehicle_profile v WHERE v.owner_id=$1 AND NULLIF(trim(v.branch),'') IS NOT NULL)) AND ($3::bigint IS NULL OR c.id<>$3)
         AND c.starts_at<$5::timestamptz+make_interval(mins=>$6) AND c.ends_at+make_interval(mins=>$6)>$4::timestamptz)")
         .bind(owner).bind(model).bind(id).bind(start).bind(end).bind(buffer).bind(branch).fetch_one(&mut **tx).await?;
@@ -147,6 +157,11 @@ async fn check_capacity(tx: &mut Transaction<'_, Postgres>, owner: i64, id: Opti
 
 pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i64, req: &ContractPayload,
     id: Option<i64>, status: &str) -> AppResult<Option<Value>> {
+    prepare_booking_operation(tx,owner,req,id,status,false).await
+}
+
+pub(super) async fn prepare_booking_operation(tx: &mut Transaction<'_, Postgres>, owner: i64,
+    req: &ContractPayload,id: Option<i64>, status: &str, extension: bool) -> AppResult<Option<Value>> {
     owner_lock(tx, owner).await?;
     let current = if let Some(id) = id { Some(lock_contract(tx, owner, id).await?) } else { None };
     let old_terms = current.as_ref().and_then(|c| c.rental_terms.as_ref());
@@ -155,8 +170,16 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
         let allowed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1 AND gps_owner_service(users,'rentcar'))").bind(owner).fetch_one(&mut **tx).await?;
         if !allowed {return Err(AppError::Forbidden);}
     }
-    if !modern && req.device_id.is_none() { return Err(AppError::BadRequest("차량을 선택해 주세요.".into())); }
+    if !modern && req.vehicle_id.is_none() { return Err(AppError::BadRequest("차량을 선택해 주세요.".into())); }
     if let Some(current) = &current {
+        if pricing::agreed(old_terms) && !extension && current.status=="draft" && req.ends_at!=current.ends_at {
+            let extended:bool=sqlx::query_scalar("SELECT EXISTS(SELECT FROM rental_agreement_extensions WHERE contract_id=$1)")
+                .bind(current.id).fetch_one(&mut **tx).await?;
+            if extended {return Err(AppError::Conflict("연장 기록이 있는 예약의 종료 시각은 기간 연장에서 변경해 주세요.".into()));}
+        }
+        if pricing::agreed(old_terms) && matches!(current.status.as_str(),"active"|"overdue") && !extension {
+            return Err(AppError::Conflict("약정 계약은 기간 연장 메뉴를 사용해 주세요.".into()));
+        }
         if modern && (matches!(current.status.as_str(), "cancelled"|"returned")
            || (current.status != status && !(current.status == "draft" && status == "cancelled"))) {
             return Err(AppError::Conflict("현재 계약 단계에서 사용할 수 없는 변경입니다.".into()));
@@ -164,7 +187,7 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
         if modern && matches!(current.status.as_str(), "active"|"overdue") &&
             req.ends_at<=current.ends_at { return Err(AppError::BadRequest("현재 반납 예정 시각보다 늦게 선택해 주세요.".into())); }
         if modern && matches!(current.status.as_str(), "active"|"overdue") &&
-            (current.device_id != req.device_id || current.starts_at != req.starts_at ||
+            (current.vehicle_id != req.vehicle_id || current.starts_at != req.starts_at ||
              current.rate_amount_krw != req.rate_amount_krw.unwrap_or(0) || current.rate_type != req.rate_type.as_deref().unwrap_or("daily")
              || current.deposit_krw != req.deposit_krw.unwrap_or(0) || current.renter_name != req.renter_name.trim()
              || current.pickup_odometer_km != req.pickup_odometer_km) {
@@ -198,6 +221,7 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
             terms["channel"] = json!(fields.channel.trim());
         }
     }
+    pricing::apply_price(&mut terms,current.as_ref(),req.rental_terms.as_ref().and_then(|t|t.pricing.as_ref()))?;
     if modern && (req.renter_name.trim().is_empty() || req.renter_name.chars().count()>100 ||
        !(0..=1_000_000_000).contains(&req.rate_amount_krw.unwrap_or(0)) || !(0..=1_000_000_000).contains(&req.deposit_krw.unwrap_or(0)) || !(0..=1_000_000).contains(&req.included_km_per_day.unwrap_or(0)) || !(0..=1_000_000).contains(&req.over_km_price_krw.unwrap_or(0)) || (req.ends_at-req.starts_at)>chrono::Duration::days(3650) || req.pickup_odometer_km.is_some_and(|v| v<0)) {
         return Err(AppError::BadRequest("고객명·금액·계기판 값을 확인해 주세요.".into()));
@@ -205,9 +229,9 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
     if modern && status=="draft" {
         let p = policy(tx,owner).await?;
         if old_terms.is_none() { terms["late_hourly"] = json!(p.late_hourly); }
-        if let Some(d)=req.device_id {
-            let model: Option<String> = sqlx::query_scalar("SELECT COALESCE(NULLIF(trim(p.class_name),''),NULLIF(trim(d.car_model),''),'차종 미지정')
-                FROM gps_read_devices d LEFT JOIN rental_vehicle_profile p ON p.device_id=d.id AND p.owner_id=d.owner_id WHERE d.owner_id=$1 AND d.id=$2 AND COALESCE(d.enabled,true) AND COALESCE(p.readiness,'ready')='ready'
+        if let Some(d)=req.vehicle_id {
+            let model: Option<String> = sqlx::query_scalar("SELECT COALESCE(NULLIF(trim(p.class_name),''),NULLIF(trim(p.model),''),'차종 미지정')
+                FROM rental_asset_directory p WHERE p.owner_id=$1 AND p.vehicle_id=$2 AND p.enabled AND p.readiness='ready'
                 AND ($3::text IS NULL OR NULLIF(trim(p.branch),'')=$3 OR NOT EXISTS(SELECT 1 FROM rental_vehicle_profile v WHERE v.owner_id=$1 AND NULLIF(trim(v.branch),'') IS NOT NULL))")
                 .bind(owner).bind(d).bind(req.pickup_location.as_deref()).fetch_optional(&mut **tx).await?;
             if model.as_deref() != terms["requested_model"].as_str() { return Err(AppError::BadRequest("선택한 차종의 사용 가능한 차량을 배정해 주세요.".into())); }
@@ -218,7 +242,7 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
                 c.renter_id_last4 != req.renter_id_last4 || ["customer_id","driver_id","driver_name"].iter().any(|key|
                     old_terms.and_then(|t|t.get(*key)).unwrap_or(&Value::Null) != &terms[*key]);
             if identity_changed { terms["license_checked"] = json!(false); }
-            if identity_changed || c.starts_at!=req.starts_at || c.ends_at!=req.ends_at || c.device_id!=req.device_id ||
+            if identity_changed || c.starts_at!=req.starts_at || c.ends_at!=req.ends_at || c.vehicle_id!=req.vehicle_id ||
                 c.rate_type!=req.rate_type.as_deref().unwrap_or("daily") ||
                 c.rate_amount_krw!=req.rate_amount_krw.unwrap_or(0) || c.deposit_krw!=req.deposit_krw.unwrap_or(0)
                 || c.pickup_location!=req.pickup_location || c.return_location!=req.return_location ||
@@ -236,7 +260,7 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
                 req.ends_at,p.buffer_minutes,req.pickup_location.as_deref()).await?;
         }
     }
-    if let Some(d)=req.device_id {
+    if let Some(d)=req.vehicle_id {
         if matches!(status,"active"|"overdue") || (modern && status=="draft") {
             lock_device_rental(tx,d).await?;
             check_contract_overlap(tx,owner,d,req.starts_at,req.ends_at,id).await?;
@@ -273,7 +297,7 @@ async fn review(State(s): State<AppState>, u: RentalOwner, Path(id): Path<i64>, 
 }
 
 async fn check_release(tx: &mut Transaction<'_, Postgres>, owner:i64, c:&Contract, odometer:i32) -> AppResult<()> {
-    let d=c.device_id.ok_or_else(||AppError::Conflict("실제 차량을 먼저 배정해 주세요.".into()))?;
+    let d=c.vehicle_id.ok_or_else(||AppError::Conflict("실제 차량을 먼저 배정해 주세요.".into()))?;
     if odometer<0 { return Err(AppError::BadRequest("인수 주행거리를 확인해 주세요.".into())); }
     if let Some(t)=&c.rental_terms {
         if c.status!="draft" || Utc::now()>=c.ends_at { return Err(AppError::Conflict("출고할 수 있는 예약 기간과 상태를 확인해 주세요.".into())); }
@@ -283,16 +307,16 @@ async fn check_release(tx: &mut Transaction<'_, Postgres>, owner:i64, c:&Contrac
         if p.require_payment {
             let paid:i64=sqlx::query_scalar("SELECT COALESCE(SUM(CASE kind WHEN 'payment' THEN amount_krw WHEN 'refund' THEN -amount_krw ELSE 0 END),0)::bigint
               FROM rental_office_ledger WHERE user_id=$1 AND contract_id=$2").bind(owner).bind(c.id).fetch_one(&mut **tx).await?;
-            let units=charge_units(c.starts_at,c.ends_at,&c.rate_type);
-            if paid < c.rate_amount_krw.saturating_mul(units.max(1)) { return Err(AppError::Conflict("대여료 수납을 먼저 완료해 주세요.".into())); }
+            let due=pricing::billed(tx,owner,c.id).await?;
+            if paid < due { return Err(AppError::Conflict("대여료 수납을 먼저 완료해 주세요.".into())); }
         }
     }
     lock_device_rental(tx,d).await?;
-    let owned:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM gps_read_devices WHERE id=$1 AND owner_id=$2 AND COALESCE(enabled,true))")
+    let owned:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM rental_asset_directory WHERE vehicle_id=$1 AND owner_id=$2 AND enabled AND readiness='ready')")
         .bind(d).bind(owner).fetch_one(&mut **tx).await?;
     if !owned {return Err(AppError::Conflict("현재 배차할 수 없는 차량입니다.".into()));}
     // Early pickup occupies the car from the actual handover. Another active holder also blocks it.
-    let occupied:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM rental_contracts WHERE device_id=$1 AND id<>$2 AND status IN ('active','overdue') AND (starts_at<=now() OR rental_terms->>'checkout_at' IS NOT NULL))").bind(d).bind(c.id).fetch_one(&mut **tx).await?;
+    let occupied:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM rental_contracts WHERE vehicle_id=$1 AND id<>$2 AND status IN ('active','overdue') AND (starts_at<=now() OR rental_terms->>'checkout_at' IS NOT NULL))").bind(d).bind(c.id).fetch_one(&mut **tx).await?;
     if occupied {return Err(AppError::Conflict("이 차량의 이전 대여가 아직 반납되지 않았습니다.".into()));}
     check_contract_overlap(tx,owner,d,c.starts_at.min(Utc::now()),c.ends_at,Some(c.id)).await
 }
@@ -309,7 +333,7 @@ async fn checkout(State(s): State<AppState>,u: RentalOwner,Path(id): Path<i64>,J
         return Err(AppError::BadRequest("연료·충전량 또는 점검 메모를 확인해 주세요.".into()));
     }
     check_release(&mut tx,u.user_id,&c,input.odometer_km).await?;
-    let device=c.device_id.ok_or_else(||AppError::Conflict("차량을 먼저 배정해 주세요.".into()))?;
+    let device=c.vehicle_id.ok_or_else(||AppError::Conflict("차량을 먼저 배정해 주세요.".into()))?;
     fleet_work::after_checkout(&mut tx,u.user_id,device,input.odometer_km,input.fuel_percent).await?;
     let info=json!({"checkout_at":Utc::now(),"pickup_fuel":input.fuel_percent,"pickup_note":input.note});
     sqlx::query("UPDATE rental_contracts SET rental_terms=rental_terms || $1, status='active',pickup_odometer_km=$2,updated_at=now() WHERE id=$3 AND user_id=$4")
@@ -344,10 +368,17 @@ pub(super) async fn ledger(db: &mut PgConnection, owner:i64, id:i64)->AppResult<
 }
 
 async fn balance(State(s):State<AppState>,u:RentalOwner,Path(id):Path<i64>)->AppResult<Json<Value>> {
-    let own:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM rental_contracts WHERE user_id=$1 AND id=$2)").bind(u.user_id).bind(id).fetch_one(&s.db).await?;
-    if !own{return Err(AppError::NotFound);}
-    let (paid,held)=ledger(&mut *s.db.acquire().await?,u.user_id,id).await?;
-    Ok(Json(json!({"paid_krw":paid,"held_krw":held})))
+    let mut tx=s.db.begin().await?;
+    // The contract lock is shared with all ledger writes, extensions, and final settlement.
+    lock_contract(&mut tx,u.user_id,id).await?;
+    let due=pricing::billed(&mut tx,u.user_id,id).await?;
+    let (paid,held)=ledger(&mut tx,u.user_id,id).await?;
+    let extensions: Vec<Value> = sqlx::query_scalar("SELECT jsonb_build_object('ends_before',ends_before,'ends_after',ends_after,
+        'additional_krw',additional_krw,'reason',reason,'created_at',created_at) FROM rental_agreement_extensions
+        WHERE owner_id=$1 AND contract_id=$2 ORDER BY id DESC")
+        .bind(u.user_id).bind(id).fetch_all(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(Json(json!({"billed_krw":due,"paid_krw":paid,"held_krw":held,"extensions":extensions})))
 }
 
 pub(super) async fn return_balance(tx:&mut Transaction<'_,Postgres>,owner:i64,id:i64,settlement:&mut Value,subtotal:i64)->AppResult<i64>{

@@ -1,13 +1,17 @@
 import { businessDate, rentalStatus } from './business.js';
+import { agreedPrice, isAssigned, priceTotal } from './rentalInventory.js';
 
 export const rentalStageNames = { reservations:'예약 접수', dispatch:'배차 목록', contracts:'대여 계약', checkout:'출고 점검', active:'대여 중 차량', returns:'반납·정산' };
 export const workflowStatus = (c, now) => {
   const status = rentalStatus(c, now);
   if (status === 'cancelled' && c.rental_terms?.cancel_outcome === 'no_show') return '미방문';
-  if (status === 'draft') return c.device_id == null ? '배차 대기' : c.rental_terms?.confirmed_at ? '출고 준비' : '예약 접수';
+  if (status === 'returned' && agreedPrice(c) && c.settled_at) return '정산 완료';
+  if (status === 'draft') return !isAssigned(c) ? '배차 대기' : c.rental_terms?.confirmed_at ? '출고 준비' : '예약 접수';
   return ({active:'대여 중',overdue:'반납 지연',returned:'반납 완료',cancelled:'취소'})[status] || status;
 };
 export const agreementTotal = c => {
+  const price=agreedPrice(c);
+  if(price) return priceTotal(price);
   const duration = new Date(c.ends_at) - new Date(c.starts_at);
   const [step,divisor] = {hourly:[60000,60],monthly:[86400000,30]}[c.rate_type] || [3600000,24];
   return Math.max(1, Math.ceil(Math.trunc(duration / step) / divisor)) * Number(c.rate_amount_krw || 0);
@@ -17,7 +21,7 @@ export function needsContractReconfirmation(before, saved) {
   return !!before?.rental_terms?.confirmed_at && saved?.id === before.id
     && saved.status === 'draft' && !!saved.rental_terms && !saved.rental_terms.confirmed_at;
 }
-export function workflowRows(rows, stage, { query='', status='', branch='', from='', to='', device='', model='', channel='', subset='', review='' } = {}, now = Date.now()) {
+export function workflowRows(rows, stage, { query='', status='', branch='', from='', to='', device='', vehicle='', model='', channel='', subset='', review='' } = {}, now = Date.now()) {
   const q = query.trim().toLocaleLowerCase();
   return rows.filter(c => {
     const state = rentalStatus(c,now);
@@ -28,6 +32,7 @@ export function workflowRows(rows, stage, { query='', status='', branch='', from
     if (status && workflowStatus(c,now)!==status) return false;
     if (review && !!c.rental_terms?.confirmed_at !== (review==='yes')) return false;
     if ((branch && c.pickup_location!==branch) || (device && String(c.device_id)!==String(device))) return false;
+    if (vehicle && String(c.vehicle_id)!==String(vehicle)) return false;
     if (model && model !== c.rental_terms?.requested_model || channel && channel !== c.rental_terms?.channel) return false;
     const start = businessDate(c.starts_at), end = businessDate(c.ends_at);
     const today = businessDate(now);

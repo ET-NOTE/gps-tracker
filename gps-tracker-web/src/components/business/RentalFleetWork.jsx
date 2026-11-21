@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api';
 import { authScope } from '../../authSession';
 import { kstDateTime } from '../../lib/businessExport';
+import { matchesVehicle } from '../../lib/rentalInventory';
 import { isIncident, kstInput, rentalFleetLabel, repairNames, sameId, workStageName, workState } from '../../lib/rentalFleet';
 import { Modal } from '../ui';
 import { BusinessButton, BusinessEmpty } from './BusinessWorkspace';
@@ -14,7 +15,7 @@ function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) 
   const start = Date.now();
   const [requestKey] = useState(() => incident && !initial ? crypto.randomUUID() : undefined);
   const [form, setForm] = useState(() => ({
-    device: String(initial?.device_id || devices[0]?.id || ''), contract: String(initial?.contract_id || ''),
+    device: String(initial?.vehicle_id || devices.find(d=>matchesVehicle(initial,d))?.id || devices[0]?.id || ''), contract: String(initial?.contract_id || ''),
     kind: initial?.kind || (incident ? 'accident' : 'cleaning'), note: initial?.note || '',
     from: kstInput(initial?.starts_at || new Date(start).toISOString()),
     to: kstInput(initial?.ends_at || new Date(start + 3600000).toISOString()),
@@ -30,7 +31,7 @@ function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) 
     try {
       const result = await api.saveRentalFleetWork(initial?.id, {
         request_key: requestKey,
-        device_id: Number(form.device), contract_id: form.contract ? Number(form.contract) : null,
+        vehicle_id: Number(form.device), device_id:devices.find(v=>sameId(v.id,form.device))?.device_id ?? null, contract_id: form.contract ? Number(form.contract) : null,
         kind: form.kind, starts_at: new Date(form.from + ':00+09:00').toISOString(),
         ends_at: incident ? null : new Date(form.to + ':00+09:00').toISOString(), note: form.note.trim(),
       });
@@ -48,7 +49,7 @@ function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) 
           {Object.entries(repairNames).filter(([key]) => isIncident(key) === incident).map(([key, label]) => <option value={key} key={key}>{label}</option>)}
         </select></label>
         {incident && <label className="rfl-wide">연결 계약<select value={form.contract} onChange={e => change('contract', e.target.value)}>
-          <option value="">계약 연결 안 함</option>{contracts.filter(c => sameId(c.device_id, form.device) && c.status !== 'cancelled').map(c => <option key={c.id} value={c.id}>#{c.id} · {c.renter_name} · {kstDateTime(c.starts_at)}</option>)}
+          <option value="">계약 연결 안 함</option>{contracts.filter(c => matchesVehicle(c,devices.find(v=>sameId(v.id,form.device))) && c.status !== 'cancelled').map(c => <option key={c.id} value={c.id}>#{c.id} · {c.renter_name} · {kstDateTime(c.starts_at)}</option>)}
         </select></label>}
         <label>{incident ? '발생 일시' : '시작 일시'}<input required type="datetime-local" value={form.from} onChange={e => change('from', e.target.value)} /></label>
         {!incident && <label>종료 일시<input required type="datetime-local" value={form.to} onChange={e => change('to', e.target.value)} /></label>}
@@ -60,15 +61,15 @@ function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) 
   </Modal>;
 }
 
-export default function RentalFleetWork({ incident, devices, contracts, work, now, initialId, onNavigate }) {
+export default function RentalFleetWork({ incident, devices, contracts, work, now, initialId, onVehicles }) {
   const qc = useQueryClient();
   const [status, setStatus] = useState(initialId ? 'all' : 'open'), [deviceId, setDeviceId] = useState(''), [kind, setKind] = useState('');
   const [edit, setEdit] = useState(null), [id, setId] = useState(initialId), [closing, setClosing] = useState(false);
   const [note, setNote] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const current = work.find(row => sameId(row.id, id)), matching = work.filter(row => isIncident(row.kind) === incident);
-  const rows = matching.filter(row => (!kind || row.kind === kind) && (!deviceId || sameId(row.device_id, deviceId))
+  const rows = matching.filter(row => (!kind || row.kind === kind) && (!deviceId || matchesVehicle(row,devices.find(v=>sameId(v.id,deviceId))))
     && (status === 'all' || (status === 'open' ? workState(row) !== 'done' : workState(row) === 'done')));
-  const names = new Map(devices.map(d => [Number(d.id), rentalFleetLabel(d)]));
+  const nameOf = row => { const vehicle=devices.find(v=>matchesVehicle(row,v)); return vehicle ? rentalFleetLabel(vehicle) : '이전 차량'; };
   function saved(row) {
     qc.setQueryData(fleetWorkKey(), old => [row, ...(old || []).filter(item => item.id !== row.id)].sort((a,b) => Date.parse(b.starts_at) - Date.parse(a.starts_at) || b.id - a.id));
     qc.invalidateQueries({ queryKey: fleetWorkKey() });
@@ -86,7 +87,7 @@ export default function RentalFleetWork({ incident, devices, contracts, work, no
   return <div className="rfl-page">
     <div className="rfl-toolbar"><span className="rfl-total">{incident ? '사고·고장' : '세차·정비 일정'} <b>{rows.length}</b></span>
       {devices.length ? <BusinessButton primary icon="plus" onClick={() => setEdit({})}>{incident ? '사고·고장 접수' : '일정 등록'}</BusinessButton>
-        : onNavigate && <BusinessButton icon="antenna" onClick={() => onNavigate('devices')}>단말기 등록</BusinessButton>}</div>
+        : <BusinessButton icon="car" onClick={onVehicles}>차량 목록</BusinessButton>}</div>
     <div className="rfl-filters">
       <label>차량<select value={deviceId} onChange={e => setDeviceId(e.target.value)}><option value="">전체 차량</option>{devices.map(d => <option key={d.id} value={d.id}>{rentalFleetLabel(d)}</option>)}</select></label>
       <label>작업 구분<select value={kind} onChange={e => setKind(e.target.value)}><option value="">전체 구분</option>{Object.entries(repairNames).filter(([k]) => isIncident(k) === incident).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
@@ -94,15 +95,15 @@ export default function RentalFleetWork({ incident, devices, contracts, work, no
     </div>
     <section className="rfl-card" aria-label={incident ? '사고·고장 내역' : '세차·정비 내역'}>
       {rows.length > 0 ? <table className="rfl-table"><thead><tr><th>차량</th><th>구분</th><th>{incident ? '발생 일시' : '작업 기간'}</th><th>내용</th><th>상태</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}>
-        <td data-label="차량"><button className="rfl-link" onClick={() => setId(row.id)}>{names.get(row.device_id) || '이전 차량'} <span aria-hidden="true">›</span></button></td>
+        <td data-label="차량"><button className="rfl-link" onClick={() => setId(row.id)}>{nameOf(row)} <span aria-hidden="true">›</span></button></td>
         <td data-label="구분">{repairNames[row.kind]}</td><td data-label="일시">{kstDateTime(row.starts_at)}{row.ends_at && <small>{kstDateTime(row.ends_at)} 종료</small>}</td>
         <td data-label="내용">{row.note || '—'}</td><td data-label="상태"><span className="rfl-badge" data-tone={row.closed_at ? 'ready' : 'service'}>{workStageName(row)}</span></td>
       </tr>)}</tbody></table> : <BusinessEmpty title={devices.length ? '조회된 내역이 없습니다.' : '연결된 렌트카 차량이 없습니다.'} />}
     </section>
-    {current && <BusinessDrawer title={repairNames[current.kind] + ' 상세'} subtitle={names.get(current.device_id) || '이전 차량'} onClose={() => setId(null)}>
+    {current && <BusinessDrawer title={repairNames[current.kind] + ' 상세'} subtitle={nameOf(current)} onClose={() => setId(null)}>
       <dl className="rfl-facts">
         {[
-          ['상태', workStageName(current)], ['차량', names.get(current.device_id) || '이전 차량'],
+          ['상태', workStageName(current)], ['차량', nameOf(current)],
           [incident ? '발생 일시' : '시작 일시', kstDateTime(current.starts_at)], ['종료 예정', kstDateTime(current.ends_at)],
           ['연결 계약', current.contract_id && '#' + current.contract_id], ['내용', current.note], ['처리 완료', kstDateTime(current.closed_at)],
           ['처리 내용', current.resolution], ['점검 완료', kstDateTime(current.inspection_released_at)],
@@ -117,7 +118,7 @@ export default function RentalFleetWork({ incident, devices, contracts, work, no
     {closing && current && <Modal open title={action} onClose={busy ? undefined : () => setClosing(false)}>
       <form className="rfl-form" onSubmit={complete}>
         <div className="rfl-form-fields">
-          <p className="rfl-wide">{names.get(current.device_id)} · {stage === 'review' ? '차량 점검을 완료하고 배차 보류를 해제합니다.' : kstDateTime(current.starts_at)}</p>
+          <p className="rfl-wide">{nameOf(current)} · {stage === 'review' ? '차량 점검을 완료하고 배차 보류를 해제합니다.' : kstDateTime(current.starts_at)}</p>
           {incident && stage === 'open' && <label className="rfl-wide">처리 내용<textarea required maxLength={800} rows={3} value={note} onChange={e => setNote(e.target.value)} /></label>}
           {error && <p role="alert" className="rfl-error rfl-wide">{error}</p>}
         </div>

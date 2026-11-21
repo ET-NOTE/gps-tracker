@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api';
 import { officeBookKey, officeCatalogKey } from './rentalOfficeKeys';
+import { assetKey } from './RentalAssets';
+import { agreedPrice } from '../../lib/rentalInventory';
 import { profileKey } from './RentalFleetProfiles';
 import { authScope } from '../../authSession';
 import { Modal, FormField, Input, Textarea, Button } from '../ui';
@@ -14,6 +16,7 @@ const steps = ['반납 정보', '사진·요금 확인', '최종 확인'];
 const localNow = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
 
 export default function ReturnWizard({ contract, onClose, onDone }) {
+  const agreed=!!agreedPrice(contract);
   const [step, setStep] = useState(0), [error, setError] = useState('');
   const [form, setForm] = useState(() => ({ returnedAt: localNow(), odometer: contract.return_odometer_km ?? '', location: contract.return_location ?? '', fuel:'', extraFee: '', extraLabel: '', note: '' }));
   const title = useRef(null), submitting = useRef(false);
@@ -28,6 +31,7 @@ export default function ReturnWizard({ contract, onClose, onDone }) {
   }
   const issues = validateReturn(contract, form);
   if(contract.rental_terms && !form.odometer) issues.information ||= '반납 주행거리를 입력해 주세요.';
+  if(agreed && form.fuel==='') issues.information ||= '반납 연료·충전량을 입력해 주세요.';
   if(form.fuel!=='' && (!Number.isInteger(Number(form.fuel)) || Number(form.fuel)<0 || Number(form.fuel)>100)) issues.information ||= '연료·충전량을 0~100 사이로 입력해 주세요.';
   useEffect(() => { title.current?.focus(); title.current?.closest('.gps-modal-body')?.scrollTo(0, 0); }, [step]);
   function next() {
@@ -40,7 +44,7 @@ export default function ReturnWizard({ contract, onClose, onDone }) {
     const issue = issues.information || issues.charges;
     if (issue) { setError(issue); return; }
     submitting.current = true; setError('');
-    try { await mutation.mutateAsync({ id: contract.id, body: { ...returnPayload(form), fuel_percent: form.fuel===''?null:Number(form.fuel) } }); await Promise.all([officeBookKey(),officeCatalogKey(true),profileKey()].map(queryKey=>qc.invalidateQueries({queryKey}))); onDone(); }
+    try { const saved=await mutation.mutateAsync({ id: contract.id, body: { ...returnPayload(form), fuel_percent: form.fuel===''?null:Number(form.fuel) } }); await Promise.all([officeBookKey(),officeCatalogKey(true),profileKey(),assetKey()].map(queryKey=>qc.invalidateQueries({queryKey}))); onDone(saved); }
     catch (e) { setError(e.message || '반납 처리에 실패했습니다. 입력한 내용을 유지했습니다. 다시 시도해 주세요.'); }
     finally { submitting.current = false; }
   }
@@ -48,7 +52,7 @@ export default function ReturnWizard({ contract, onClose, onDone }) {
   return <Modal open onClose={busy ? undefined : close} closeOnBackdrop={false} closeOnEsc={!busy} size="lg" title="반납 처리"
     subtitle={`${contract.license_plate || contract.device_name} · ${contract.renter_name}`}
     footer={<><Button variant="ghost" disabled={busy || photoDraft} onClick={() => { setError(''); step ? setStep(v => v - 1) : close(); }} style={{ flex: 1 }}>{step ? '이전' : '취소'}</Button>
-      <Button variant="primary" size="lg" busy={busy} disabled={photoDraft || (!!contract.rental_terms && !funds.data)} onClick={step === 2 ? submit : next} style={{ flex: 2 }}>{step === 2 ? '확인 후 반납·정산 완료' : '다음 단계'}</Button></>}>
+      <Button variant="primary" size="lg" busy={busy} disabled={photoDraft || (!!contract.rental_terms && !funds.data)} onClick={step === 2 ? submit : next} style={{ flex: 2 }}>{step === 2 ? (agreed?'반납 접수 완료':'확인 후 반납·정산 완료') : '다음 단계'}</Button></>}>
     <ol className="business-return-steps" aria-label="반납 진행 단계">{steps.map((label, i) => <li key={label} aria-current={i === step ? 'step' : undefined}><span>{i + 1}</span>{label}</li>)}</ol>
     <h3 className="business-return-title" ref={title} tabIndex={-1}>{step + 1}. {steps[step]}</h3>
     {error && <p className="business-error" role="alert">{error}</p>}
@@ -66,9 +70,9 @@ export default function ReturnWizard({ contract, onClose, onDone }) {
       <FormField label="메모 (선택)"><Textarea value={form.note} onChange={update('note')} /></FormField>
     </>}
     {step === 1 && <>
-      <div className="business-return-contract"><strong>계약 요금 기준</strong><p>{kstDateTime(contract.starts_at)} ~ {kstDateTime(contract.ends_at)}</p><p>계약 기간 기본 요금에 초과 주행·지연 반납·입력한 기타 요금이 합산됩니다.</p></div>
-      <FormField label="기타 요금 사유 (세차·파손·연료 등)"><Input value={form.extraLabel} onChange={update('extraLabel')} placeholder="예: 세차비 / 할인 사유" /></FormField>
-      <FormField label="기타 금액 (원)" hint="할인은 음수로 입력하세요. 0원이 아니면 사유를 적어 주세요."><Input type="number" step="1" value={form.extraFee} onChange={update('extraFee')} placeholder="0" /></FormField>
+      <div className="business-return-contract"><strong>계약 요금 기준</strong><p>{kstDateTime(contract.starts_at)} ~ {kstDateTime(contract.ends_at)}</p><p>{agreed?'합의 대여료에 연장 금액과 이번에 확인한 반납 추가 요금을 합산합니다.':'계약 기간 기본 요금에 초과 주행·지연 반납·입력한 기타 요금이 합산됩니다.'}</p></div>
+      <FormField label={agreed?'추가 요금 사유':'기타 요금 사유 (세차·파손·연료 등)'}><Input value={form.extraLabel} onChange={update('extraLabel')} placeholder={agreed?'예: 연료 보충':'예: 세차비 / 할인 사유'} /></FormField>
+      <FormField label={agreed?'반납 추가 요금 (원)':'기타 금액 (원)'} hint={agreed?'추가 요금이 있으면 고객과 확인한 금액 및 사유를 입력해 주세요.':'할인은 음수로 입력하세요. 0원이 아니면 사유를 적어 주세요.'}><Input type="number" min={agreed?0:undefined} step="1" value={form.extraFee} onChange={update('extraFee')} placeholder="0" /></FormField>
       <Settlement preview={preview} deposit={contract.deposit_krw} />
       <details className="business-return-photos"><summary>인수·반납 사진 확인 및 추가</summary><ContractPhotos contractId={contract.id} editable defaultPhase="return" onBusyChange={setPhotoBusy} onDraftChange={setPhotoDraft} /></details>
     </>}
@@ -76,7 +80,7 @@ export default function ReturnWizard({ contract, onClose, onDone }) {
       <dl className="business-detail-facts"><div><dt>실제 반납</dt><dd>{kstDateTime(form.returnedAt)} (한국 시간)</dd></div><div><dt>반납 오도미터</dt><dd>{form.odometer === '' ? '미입력' : `${Number(form.odometer).toLocaleString()} km`}</dd></div><div><dt>반납 장소</dt><dd>{form.location || '미입력'}</dd></div><div><dt>메모</dt><dd>{form.note || '없음'}</dd></div></dl>
       {form.odometer === '' && <p className="business-return-notice">오도미터를 입력하지 않아 초과 주행 요금은 포함되지 않았습니다.</p>}
       <Settlement preview={preview} deposit={contract.deposit_krw} />
-      <p className="business-note">완료하면 계약이 반납 완료로 바뀌고 정산 내역이 저장됩니다. 실제 결제나 환급 송금은 수행하지 않습니다.</p>
+      <p className="business-note">{agreed?'반납 접수 후 수납·환불 내역을 확인하고 대여료 정산을 확정해 주세요.':'완료하면 계약이 반납 완료로 바뀌고 정산 내역이 저장됩니다. 실제 결제나 환급 송금은 수행하지 않습니다.'}</p>
     </>}
   </Modal>;
 }

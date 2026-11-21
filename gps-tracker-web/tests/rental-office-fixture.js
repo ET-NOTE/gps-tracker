@@ -1,4 +1,5 @@
 // Isolated browser preview. All records live for the lifetime of this page only.
+import { agreedPrice, priceTotal } from '../src/lib/rentalInventory.js';
 export function installRentalOfficeFixture(api, { rentals, devices, empty, failed, day }) {
   const catalog = {
     customers:empty?[]:[{id:1,revision:1,active:true,name:'운영 고객',kind:'person',phone:'010-0000-0001',email:'',license_checked:true,license_type:'2종 보통'}],
@@ -20,6 +21,8 @@ export function installRentalOfficeFixture(api, { rentals, devices, empty, faile
       return v;
     },{paid_krw:0,held_krw:0});
   }
+  const billed=c=>c.status==='cancelled' ? c.rental_terms?.cancellation_fee_krw??0 : agreedPrice(c)?priceTotal(agreedPrice(c)):c.settled_amount_krw??c.rate_amount_krw;
+  api.rentalBalance=async id=>{const c=rentals.find(r=>r.id===id);return {...totals(id),billed_krw:billed(c),extensions:[]};};
   api.rentalOffice=async(method,route,body)=>{
     if(failed)throw Error('렌트카 정보 조회 실패');
     if(route==='/catalog'||route==='/catalog?summary=true')return structuredClone(catalog);
@@ -36,13 +39,13 @@ export function installRentalOfficeFixture(api, { rentals, devices, empty, faile
       const inRange=value=>value>=p.get('from')&&value<=p.get('to');
       const contracts=rentals.map(c=>({...c,vehicle_name:c.license_plate||c.device_name,
         cancel_outcome:c.rental_terms?.cancel_outcome,cancellation_fee_krw:c.rental_terms?.cancellation_fee_krw,
-        billed_krw:c.status==='cancelled' ? c.rental_terms?.cancellation_fee_krw??0 : c.settled_amount_krw??c.rate_amount_krw,...totals(c.id)}));
+        settlement_finalized:!!agreedPrice(c) && !!c.settled_at,billed_krw:billed(c),...totals(c.id)}));
       return structuredClone({company_name:'시리얼링크',contracts,entries:entries.filter(e=>inRange(e.day)),costs:costs.filter(c=>inRange(c.occurred_on))});
     }
     if(route==='/ledger'){
       const c=rentals.find(c=>c.id===body.contract_id);
       if(!c)throw Error('계약을 찾을 수 없습니다.');
-      entries.unshift({...body,id:++serial,renter_name:c.renter_name,device_id:c.device_id,day:new Date(new Date(body.recorded_at).getTime()+9*3600000).toISOString().slice(0,10)});
+      entries.unshift({...body,id:++serial,renter_name:c.renter_name,vehicle_id:c.vehicle_id,device_id:c.device_id,day:new Date(new Date(body.recorded_at).getTime()+9*3600000).toISOString().slice(0,10)});
       return {id:serial};
     }
     if(route.startsWith('/costs')){

@@ -1511,6 +1511,14 @@
     "class": "non_location",
     "reason": "Rental policy, contractual handover, confirmation or settlement amounts. No telemetry or coordinates."
   },
+  "workflow.rs POST /rentcar/contracts/:id/extend": {
+    "class": "non_location",
+    "reason": "Rental agreement deadline and negotiated financial adjustment without position data."
+  },
+  "workflow.rs POST /rentcar/contracts/:id/settle": {
+    "class": "non_location",
+    "reason": "Owner-scoped rental fee and existing financial ledger reconciliation."
+  },
   "workflow.rs POST /rentcar/contracts/:id/review": {
     "class": "non_location",
     "reason": "Rental policy, contractual handover, confirmation or settlement amounts. No telemetry or coordinates."
@@ -1562,5 +1570,21 @@
   "cargo_team.rs POST /cargo/team/desk/:owner/:shipment/notes": {
     "class": "non_location",
     "reason": "Owner or branch-scoped personnel, planned shipments and notes. No telemetry."
+  },
+  "assets.rs GET /rentcar/assets": {
+    "class": "non_location",
+    "reason": "Owner-scoped rental inventory and optional terminal association. No telemetry or coordinates."
+  },
+  "assets.rs POST /rentcar/assets": {
+    "class": "non_location",
+    "reason": "Owner-scoped rental inventory and optional terminal association. No telemetry or coordinates."
+  },
+  "assets.rs PATCH /rentcar/assets/:id": {
+    "class": "non_location",
+    "reason": "Owner-scoped rental inventory and optional terminal association. No telemetry or coordinates."
+  },
+  "assets.rs PUT /rentcar/assets/:id/device": {
+    "class": "non_location",
+    "reason": "Owner-scoped rental inventory and optional terminal association. No telemetry or coordinates."
   }
 }

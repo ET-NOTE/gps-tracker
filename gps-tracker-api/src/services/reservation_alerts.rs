@@ -281,7 +281,7 @@ async fn run_rental_ending_alerts(db: &PgPool) -> anyhow::Result<()> {
             WHERE (r.status='active' OR (r.status='draft' AND r.rental_terms IS NULL))
               AND COALESCE((SELECT notify_return FROM rental_operating_policies p WHERE p.user_id=r.user_id),true)
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)
-              AND r.ending_alerted_at IS NULL
+              AND r.device_id IS NOT NULL AND r.ending_alerted_at IS NULL
               AND r.ends_at BETWEEN $1 AND $2"#,
     )
     .bind(now)
@@ -344,7 +344,7 @@ async fn run_rental_overdue_alerts(db: &PgPool) -> anyhow::Result<()> {
                   d.display_name AS device_name, d.license_plate
              FROM rental_contracts r
         LEFT JOIN gps_read_devices d ON d.id = r.device_id
-            WHERE r.status = 'overdue' AND r.overdue_alerted_at IS NULL
+            WHERE r.status = 'overdue' AND r.device_id IS NOT NULL AND r.overdue_alerted_at IS NULL
               AND COALESCE((SELECT notify_return FROM rental_operating_policies p WHERE p.user_id=r.user_id),true)
               AND NOT EXISTS (SELECT 1 FROM privacy_account_controls c WHERE c.user_id=r.user_id AND c.restricted)"#,
     )

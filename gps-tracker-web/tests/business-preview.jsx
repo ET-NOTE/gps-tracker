@@ -41,7 +41,19 @@ for (const key of Object.keys(api)) api[key] = async () => { throw Error('미리
 const read = value => async () => { if (failed) throw Error('의도한 조회 오류'); return value; };
 let rentalProfiles = devices.map((d, i) => ({device_id:d.id, branch:i < 2 ? '서울' : '수원',class_name:d.car_model,readiness:'ready',fuel_level:null,odometer_km:null,revision:1}));
 let rentalWork = [];
+let rentalAssets=devices.map(d=>({id:8000+d.id,device_id:d.id,plate:d.car_plate || d.license_plate,model:d.car_model||'',display_name:d.display_name,
+  ...rentalProfiles.find(p=>p.device_id===d.id)}));
+for(const c of rentals)c.vehicle_id=rentalAssets.find(v=>v.device_id===c.device_id)?.id;
 Object.assign(api, {
+  rentalAssets:async()=>{if(failed)throw Error('차량 조회 실패');return structuredClone(rentalAssets);},
+  saveRentalAsset:async(id,body)=>{
+    const existing=id && rentalAssets.find(v=>v.id===id);if(id && !existing)throw Error('차량을 찾을 수 없습니다.');
+    const row={device_id:null,...existing,...body,id:id??Math.max(8000,...rentalAssets.map(v=>v.id))+1,revision:(existing?.revision??0)+1};
+    rentalAssets=[...rentalAssets.filter(v=>v.id!==row.id),row];return {...row};
+  },
+  linkRentalDevice:async(id,{device_id})=>{const row=rentalAssets.find(v=>v.id===id);
+    if(device_id!=null && rentalAssets.some(v=>v.id!==id && v.device_id===device_id))throw Error('다른 차량에 연결된 단말기입니다.');
+    row.device_id=device_id;row.revision++;return {...row};},
   rentalFleetProfiles: async () => (await read(rentalProfiles)()).slice(), rentalFleetWork: async () => (await read(rentalWork)()).slice(),
   saveRentalFleetProfile: async (device_id, data) => {
     const row={...data,device_id,revision:data.revision+1}; rentalProfiles=[...rentalProfiles.filter(p=>p.device_id!==device_id),row];return row;
@@ -55,7 +67,7 @@ Object.assign(api, {
     rentalWork=rentalWork.map(w=>w.id===id?row:w);return row;
   },
   listRentals: read(rentals), listReservations: async (p = {}) => { if (failed) throw Error('의도한 조회 오류'); return reservations.filter(r => (!p.from || new Date(r.ends_at) >= new Date(p.from)) && (!p.to || new Date(r.starts_at) < new Date(p.to))); }, listStaff: read(empty ? [] : [{id:1,name:'미리보기 운전자',role:'영업',active:true}]),
-  returnRental: async (id, body) => { window.__returnCalls.push({ id, body }); if (!params.has('return-success')) throw Error('미리보기 반납 저장 실패'); const c = rentals.find(r => r.id === id); c.status = 'returned'; return c; },
+  returnRental: async (id, body) => { window.__returnCalls.push({ id, body }); if (!params.has('return-success')) throw Error('미리보기 반납 저장 실패'); const c = rentals.find(r => r.id === id); c.status = 'returned'; c.returned_at=body.returned_at; if(c.rental_terms?.pricing)c.rental_terms.pricing.return_extra_krw=Number(body.extra_fee_krw || 0);return {...c}; },
   getCorporateInfo: read({company_name:'미리보기 회사',business_number:'000-00-00000',representative:'미리보기'}),
   getCorporateSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
   getRentcarSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
@@ -105,8 +117,8 @@ if ((params.get('kind') || 'rental') === 'rental' && !params.has('account')) {
   if (!empty) rentals[2].rental_terms = { requested_model:devices[2].car_model, driver_name:rentals[2].renter_name, channel:'전화' };
   const writeRental = (c, body) => {
     if (failed) throw Error('미리보기 저장 실패');
-    const d = devices.find(v => v.id === body.device_id);
-    Object.assign(c, body, {device_name:d?.display_name || null,license_plate:d?.license_plate || d?.car_plate || null});
+    const v=rentalAssets.find(v=>v.id===body.vehicle_id),d=devices.find(v=>v.id===body.device_id);
+    Object.assign(c,body,{device_name:v?.display_name || d?.display_name || null,license_plate:v?.plate || d?.license_plate || d?.car_plate || null});
     return {...c};
   };
   Object.assign(api, {
@@ -122,7 +134,10 @@ if ((params.get('kind') || 'rental') === 'rental' && !params.has('account')) {
       return {...contract};
     },
     reviewRental:async (id,input)=>{const c=findRental(id);Object.assign(c.rental_terms,{license_checked:input.license_checked,confirmed_at:input.contract_confirmed?new Date().toISOString():null,template_body:input.template_body});return c.rental_terms;},
-    checkoutRental:async (id,input)=>{const c=findRental(id);if (!c.device_id || c.status!=='draft')throw Error('출고 대기 차량을 배정해 주세요.');c.status='active';c.pickup_odometer_km=input.odometer_km;c.rental_terms.pickup_fuel=input.fuel_percent;return {ok:true};},
+    checkoutRental:async (id,input)=>{const c=findRental(id);if (!c.vehicle_id || c.status!=='draft')throw Error('출고 대기 차량을 배정해 주세요.');c.status='active';c.pickup_odometer_km=input.odometer_km;c.rental_terms.checkout_at=new Date().toISOString();c.rental_terms.pickup_fuel=input.fuel_percent;return {ok:true};},
+    extendRental:async(id,body)=>{const c=findRental(id);if(c.ends_at!==body.expected_ends_at)throw Error('반납 예정이 변경됐습니다.');c.ends_at=body.ends_at;
+      c.rental_terms.pricing.extension_krw=(c.rental_terms.pricing.extension_krw || 0)+body.additional_krw;return {...c};},
+    settleRental:async id=>{const c=findRental(id);c.settled_at=new Date().toISOString();return {...c};},
     rentalBalance:read({paid_krw:0,held_krw:0}),checkBlacklist:read({blacklisted:false,visits:0}),
   });
 }

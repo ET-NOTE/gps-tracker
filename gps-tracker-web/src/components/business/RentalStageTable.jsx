@@ -2,6 +2,7 @@ import CarImage from '../CarImage';
 import Icon from '../Icon';
 import { kstDateTime } from '../../lib/businessExport';
 import { agreementTotal, workflowStatus } from '../../lib/rentalWorkflow';
+import { agreedPrice, isAssigned } from '../../lib/rentalInventory';
 import { won } from '../../lib/rentalOffice';
 import { BusinessButton } from './BusinessWorkspace';
 
@@ -42,12 +43,12 @@ export default function RentalStageTable({stage, rows, now, balances, devices, c
     if (stage==='checkout') {
       const checks=checksFor(c);
       return [...head,kstDateTime(c.starts_at),checks==null?'확인 중':checks.length ? checks.join(' · ') : '사전 확인 완료',bill,
-        button(c.rental_terms && c.device_id?'출고 점검':'상세',c.rental_terms && c.device_id?'checkout':null)];
+        button(c.rental_terms && isAssigned(c)?'출고 점검':'상세',c.rental_terms && isAssigned(c)?'checkout':null)];
     }
     if (stage==='active') return [...head,<>{kstDateTime(c.rental_terms?.checkout_at || c.starts_at)}<small>~ {kstDateTime(c.ends_at)}</small></>,
       c.return_location || '—', payment,button('반납 접수','return')];
     if (stage==='returns') return [...head,<>{kstDateTime(c.ends_at)}<small>{c.returned_at?kstDateTime(c.returned_at):'반납 대기'}</small></>,badge,
-      <>{bill}<small>{balance ? '보증금 '+won(balance.held_krw):'보증금 확인 전'}</small></>,button(c.status==='returned'?'정산 상세':'반납 접수',c.status==='returned'?null:'return')];
+      <>{bill}<small>{balance ? '보증금 '+won(balance.held_krw):'보증금 확인 전'}</small></>,button(c.status==='returned'?(agreedPrice(c) && !c.settled_at?'대여료 정산':'정산 상세'):'반납 접수',c.status==='returned'?(agreedPrice(c) && !c.settled_at?'settle':null):'return')];
     return [...head,period,bill,badge,payment];
   }
   return <div className="rental-stage-table" role="region" aria-label={columns[stage][0]+'별 목록'} tabIndex={0}>

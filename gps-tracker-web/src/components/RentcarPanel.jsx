@@ -1,4 +1,7 @@
 import RentalBookingForm from './business/RentalBookingForm';
+import { useRentalAssets } from './business/RentalAssets';
+import { RentalExtension } from './business/RentalAgreementActions';
+import { agreedPrice, priceTotal, rentalInventory } from '../lib/rentalInventory';
 import React, { useEffect, useMemo, useState } from 'react';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
@@ -37,6 +40,8 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
   const subscription = useBusinessSubscription('rentcar');
   const company = useRentalTeamConfig(['vehicles','fleet','reservations','contracts','checkout','active','returns','schedule'].includes(tab));
   const branches = company.data?.branches || [];
+  const assets=useRentalAssets();
+  const vehicles=useMemo(()=>rentalInventory(assets.data || [],devices),[assets.data,devices]);
   const qc = useQueryClient();
   const setTab = onPage || setLocalTab;
   function visit(id,workId) {setRequest(typeof workId==='number'?{stage:id,workId}:null);setTab(id);}
@@ -47,13 +52,15 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
   useEffect(()=>{if(request && request.stage!==tab)setRequest(null);},[tab,request]);
   const activeRequest = request?.stage === tab ? request : null;
   return <RentalVehicleScope devices={devices} meta={meta} onMap={onMap} onManageVehicle={onManageVehicle} onVehicleAction={d=>openContracts({deviceId:d.id})}>
-    <RentalWorkspace page={tab} onTab={visit} devices={devices} onNavigate={onNavigate} destinations={destinations} onNew={()=>openContracts({new:true})}>
-      {['fleet','vehicles','service','incidents','devices','live'].includes(tab)&&<RentalFleet key={tab} view={tab} devices={devices} onMap={onMap} onContracts={openContracts} onTab={visit} onNavigate={onNavigate} onDevicesChange={onDevicesChange} branches={branches} initialWorkId={activeRequest?.workId}/>}
-      {['reservations','contracts','checkout','active','returns'].includes(tab)&&<RentalWorkflow key={tab} stage={tab} devices={devices} request={activeRequest} branches={branches}/>}
-      {tab==='schedule'&&<ScheduleTab devices={devices} onContracts={openContracts} branches={branches}/>}
+    <RentalWorkspace page={tab} onTab={visit} devices={vehicles} onSearchDevice={v=>{setRequest({stage:'vehicles',vehicleId:v.id,searchKey:crypto.randomUUID()});setTab('vehicles');}}
+      onNavigate={onNavigate} destinations={destinations} onNew={()=>openContracts({new:true})}>
+      {assets.error && <BusinessError onRetry={assets.refetch}>렌트 차량 목록을 불러오지 못했습니다.</BusinessError>}
+      {['fleet','vehicles','service','incidents','devices','live'].includes(tab)&&<RentalFleet key={activeRequest?.searchKey ?? tab} view={tab} devices={devices} vehicles={vehicles} onMap={onMap} onContracts={openContracts} onTab={visit} onNavigate={onNavigate} onDevicesChange={onDevicesChange} branches={branches} initialWorkId={activeRequest?.workId} initialVehicleId={activeRequest?.vehicleId}/>}
+      {['reservations','contracts','checkout','active','returns'].includes(tab)&&<RentalWorkflow key={tab} stage={tab} devices={devices} vehicles={vehicles} request={activeRequest} branches={branches}/>}
+      {tab==='schedule'&&<ScheduleTab devices={devices} vehicles={vehicles} onContracts={openContracts} branches={branches}/>}
       {['staff','branches','groups'].includes(tab)&&<RentalTeam key={tab} page={tab} onTab={visit}/>}
-      {tab.startsWith('rent-')&&<RentalOffice key={tab} page={tab} devices={devices}/>}
-      {tab==='history'&&<RentalsTab devices={devices} request={activeRequest}/>}
+      {tab.startsWith('rent-')&&<RentalOffice key={tab} page={tab} devices={vehicles}/>}
+      {tab==='history'&&<RentalsTab devices={devices} vehicles={vehicles} request={activeRequest}/>}
       {tab==='policy'&&<RentalPolicy/>}
       {tab==='notifications'&&<NotificationSettings/>}
       {tab==='settings'&&<BusinessSettings hideNavigation subscription={subscription.error
@@ -71,12 +78,12 @@ export default React.memo(RentcarPanel);
 // 각 셀: 그 날 진행중이거나 반납 예정인 계약. 반납 날짜 셀은 강조.
 // 셀 클릭 → 그 날 preset 신규 계약. 계약 pill 클릭 → 편집.
 // ═══════════════════════════════════════════════════════
-function ScheduleTab({ devices, onContracts, branches }) {
+function ScheduleTab({ devices, vehicles, onContracts, branches }) {
   const [mode, setMode] = useState('board');
   const now = useBusinessClock();
   return <div className="business-schedule">
     <div className="business-switch">{[['board','차량별 배차표'],['month','월간 달력'],['dispatch','배차 목록']].map(([id,label])=><button key={id} className="business-switch-item" aria-pressed={mode===id} onClick={()=>setMode(id)}>{label}</button>)}</div>
-    {mode === 'board' ? <RentalBoard devices={devices} now={now} onNew={(deviceId, day) => onContracts({ new: true, deviceId, day })} onEdit={contract=>onContracts({contract})} /> : mode==='month'?<MonthScheduleTab devices={devices} onContracts={onContracts}/>:<RentalWorkflow stage="dispatch" devices={devices} branches={branches}/>}
+    {mode === 'board' ? <RentalBoard devices={vehicles} now={now} onNew={(vehicleId, day) => onContracts({ new: true, vehicleId, day })} onEdit={contract=>onContracts({contract})} /> : mode==='month'?<MonthScheduleTab devices={vehicles} onContracts={onContracts}/>:<RentalWorkflow stage="dispatch" devices={devices} vehicles={vehicles} branches={branches}/>}
   </div>;
 }
 function MonthScheduleTab({ devices, onContracts }) {
@@ -271,7 +278,7 @@ const RENTAL_STATUS = {
 };
 const RATE_TYPE_LABEL = { hourly: '시간', daily: '일', monthly: '월' };
 
-export function RentalsTab({ devices, request }) {
+export function RentalsTab({ devices, vehicles, request }) {
   const [statusFilter, setStatusFilter] = useState('active');   // active | overdue | returned | all
   const [editing, setEditing] = useState(null);       // null | 'new' | contract
   const [returning, setReturning] = useState(null);   // contract to return
@@ -352,7 +359,7 @@ export function RentalsTab({ devices, request }) {
       {list && !operations.error && list.length === 0 && <BusinessEmpty title="조건에 맞는 계약이 없습니다.">검색 조건을 변경하거나 새 계약을 등록해 주세요.</BusinessEmpty>}
 
       {list && list.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px,100%), 1fr))', gap: 8 }}>
           {list.map(c => <RentalCard key={c.id} c={{ ...c, status: rentalStatus(c, now) }}
             onEdit={() => setEditing(c)}
             onReturn={() => setReturning(c)}
@@ -368,7 +375,7 @@ export function RentalsTab({ devices, request }) {
       )}
 
       {editing && (
-        <RentalDialog init={editing === 'new' ? null : editing} devices={devices}
+        <RentalDialog init={editing === 'new' ? null : editing} devices={devices} vehicles={vehicles}
           onClose={() => setEditing(null)}
           onSaved={() => setEditing(null)} />
       )}
@@ -410,7 +417,7 @@ function RentalCard({ c, onEdit, onReturn, onDelete, onHandoff, onPhotos }) {
           background: s.bg, color: s.color, fontWeight: 700,
         }}>{s.label}</span>
         <span style={{ fontWeight: 800, fontSize: 14 }}>
-          {c.license_plate || c.device_name || `#${c.device_id}`}
+          {c.license_plate || c.device_name || '차량 미배정'}
         </span>
         <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{c.renter_name}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
@@ -438,7 +445,7 @@ function RentalCard({ c, onEdit, onReturn, onDelete, onHandoff, onPhotos }) {
 
       <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-2)', flexWrap: 'wrap' }}>
         <span><Icon name="clock" size={11} /> {fmtDate(start)} ~ {fmtDate(end)}</span>
-        <span>· {c.rate_amount_krw.toLocaleString()}원/{RATE_TYPE_LABEL[c.rate_type] || c.rate_type}</span>
+        <span>· {agreedPrice(c) ? '합의 대여료 '+priceTotal(agreedPrice(c)).toLocaleString()+'원' : c.rate_amount_krw.toLocaleString()+'원/'+(RATE_TYPE_LABEL[c.rate_type] || c.rate_type)}</span>
         {c.deposit_krw > 0 && <span>· 보증금 {c.deposit_krw.toLocaleString()}</span>}
         {c.renter_phone && <span>· {c.renter_phone}</span>}
       </div>
@@ -537,6 +544,7 @@ function isoToLocal(iso) {
 function localToIso(v) { return v ? new Date(v).toISOString() : null; }
 
 export function RentalDialog(props) {
+  if (agreedPrice(props.init) && ['active','overdue'].includes(props.init?.status)) return <RentalExtension contract={props.init} onClose={props.onClose} onSaved={props.onSaved}/>;
   return !props.init || props.init.rental_terms ? <RentalBookingForm {...props} /> : <LegacyRentalDialog {...props} />;
 }
 

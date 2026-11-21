@@ -100,8 +100,7 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
         "UPDATE rental_contracts
             SET renter_id_last4 = NULL
           WHERE status = 'returned'
-            AND settled_at IS NOT NULL
-            AND settled_at < NOW() - interval '180 days'
+            AND rental_retention_anchor(rental_terms,returned_at,settled_at) < NOW() - interval '180 days'
             AND renter_id_last4 IS NOT NULL",
     )
     .execute(pool)
@@ -116,8 +115,7 @@ async fn run_once(pool: &PgPool) -> anyhow::Result<()> {
         "UPDATE rental_contracts
             SET renter_phone = NULL
           WHERE status = 'returned'
-            AND settled_at IS NOT NULL
-            AND settled_at < NOW() - interval '1095 days'
+            AND rental_retention_anchor(rental_terms,returned_at,settled_at) < NOW() - interval '1095 days'
             AND renter_phone IS NOT NULL",
     )
     .execute(pool)

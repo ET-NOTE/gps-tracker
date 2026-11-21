@@ -1,3 +1,4 @@
+import { matchesVehicle } from './rentalInventory.js';
 export const entryKinds = { payment: '이용료 수납', refund: '이용료 환불', deposit_in: '보증금 수납', deposit_out: '보증금 반환' };
 export const methods = { card: '카드', cash: '현금', transfer: '계좌이체' };
 export const costKinds = { wash: '세차', repair: '정비', fuel: '주유·충전', insurance: '보험', other: '기타' };
@@ -16,6 +17,7 @@ export const periodOk = ({from,to}) => {
 };
 export function recordLimit(c, kind) {
   if (!c) return 0;
+  if (c.settlement_finalized && (kind==='payment' || kind==='refund')) return 0;
   if (kind === 'refund') return c.paid_krw;
   if (kind === 'deposit_out') return c.held_krw;
   if (c.status === 'cancelled') return kind==='payment' ? Math.max(0,(c.cancellation_fee_krw ?? 0)-c.paid_krw) : 0;
@@ -35,7 +37,7 @@ export function matchOfficeCustomer(c, catalog) {
 export const templateKeys = ['회사명','계약번호','고객명','고객연락처','차량번호','차종','대여시작','반납예정','대여지점','반납지점','대여요금','보증금'];
 export function fillTemplate(body, c, company, devices = []) {
   if (!c) return body;
-  const device = devices.find(d => d.id === c.device_id);
+  const device = devices.find(d => matchesVehicle(c,d));
   const fields = [company, '#' + c.id, c.renter_name, c.renter_phone, device?.license_plate || device?.car_plate || c.vehicle_name,
     c.requested_model || device?.car_model, readTime(c.starts_at), readTime(c.ends_at), c.pickup_location,
     c.return_location, won(c.billed_krw), won(c.deposit_krw)];
@@ -61,15 +63,17 @@ export function vehicleUsage(book, devices, period, now = Date.now()) {
     return rows.get(key);
   };
   devices.forEach(d => ensure(d.id,d.license_plate || d.display_name || '차량 '+d.id));
-  book.contracts.filter(c => c.device_id && ['active','overdue','returned'].includes(c.status)).forEach(c => {
+  const rowId = r => r.vehicle_id ?? devices.find(d=>matchesVehicle(r,d))?.id ?? (r.device_id==null ? null : 'device:'+r.device_id);
+  book.contracts.filter(c => rowId(c)!=null && ['active','overdue','returned'].includes(c.status)).forEach(c => {
     const from = Math.max(start,Date.parse(c.starts_at));
     const to = Math.min(end,c.status === 'returned' ? Date.parse(c.returned_at || c.ends_at) : now);
-    if (to>from) ensure(c.device_id,c.vehicle_name).intervals.push([from,to]);
+    if (to>from) ensure(rowId(c),c.vehicle_name).intervals.push([from,to]);
   });
-  book.costs.forEach(k => { ensure(k.device_id,k.vehicle_name).cost += k.amount_krw; });
-  book.entries.filter(e => e.device_id && ['payment','refund'].includes(e.kind)).forEach(e => {
+  book.costs.forEach(k => { ensure(rowId(k),k.vehicle_name).cost += k.amount_krw; });
+  book.entries.filter(e => ['payment','refund'].includes(e.kind)).forEach(e => {
     const c = book.contracts.find(c => c.id === e.contract_id);
-    ensure(e.device_id,c?.vehicle_name).revenue += (e.kind === 'refund' ? -1 : 1) * e.amount_krw;
+    const id=rowId(e) ?? (c && rowId(c)); if(id==null)return;
+    ensure(id,c?.vehicle_name).revenue += (e.kind === 'refund' ? -1 : 1) * e.amount_krw;
   });
   return [...rows.values()].map(r => {
     const time = unionDuration(r.intervals);

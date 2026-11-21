@@ -7,6 +7,7 @@ import * as jsx from 'react/jsx-runtime';
 import {create, act} from 'react-test-renderer';
 import {transform} from 'esbuild';
 import * as business from '../src/lib/business.js';
+import * as rentalInventory from '../src/lib/rentalInventory.js';
 import * as businessExport from '../src/lib/businessExport.js';
 import * as businessWorkspace from '../src/lib/businessWorkspace.js';
 import * as businessAttention from '../src/lib/businessAttention.js';
@@ -29,6 +30,9 @@ async function calendar(file, name) {
   const code = (await transform(source + `\nexport { ${name} };`, {loader:'jsx', jsx:'automatic', format:'esm'})).code;
   const mod = new vm.SourceTextModule(code, {context});
   await mod.link(specifier => {
+    if (specifier==='../lib/rentalInventory') return moduleOf(rentalInventory);
+    if (specifier==='./business/RentalAssets') return moduleOf({useRentalAssets:noop});
+    if (specifier==='./business/RentalAgreementActions') return moduleOf({RentalExtension:noop});
     if(specifier==='./SubjectProvision')return moduleOf({CompanySubjectMappings:noop});
     if (specifier==='react') return moduleOf(React);
     if (specifier==='react/jsx-runtime') return moduleOf(jsx);

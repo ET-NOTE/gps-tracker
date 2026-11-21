@@ -23,10 +23,16 @@ WITH masters AS (
 ), accounts AS (
     SELECT c.account_id,count(DISTINCT c.id) AS customers,coalesce(sum(t.outstanding),0) AS outstanding
     FROM customers c LEFT JOIN contracts t ON t.customer_id=c.id GROUP BY c.account_id
+), inventory AS (
+    SELECT coalesce(nullif(trim(a.class_name),''),nullif(trim(a.model),''),'차종 미지정') AS name
+    FROM rental_asset_directory a WHERE a.owner_id=$1
+    UNION ALL
+    SELECT coalesce(nullif(trim(d.car_model),''),'차종 미지정')
+    FROM gps_read_devices d WHERE d.owner_id=$1 AND NOT EXISTS (
+        SELECT FROM rental_imported_devices i WHERE i.owner_id=d.owner_id AND i.device_id=d.id
+    )
 ), cars AS (
-    SELECT coalesce(nullif(trim(p.class_name),''),nullif(trim(d.car_model),''),'차종 미지정') AS name,count(*) AS total
-    FROM gps_read_devices d LEFT JOIN rental_vehicle_profile p ON p.device_id=d.id AND p.owner_id=d.owner_id
-    WHERE d.owner_id=$1 GROUP BY 1
+    SELECT name,count(*) AS total FROM inventory GROUP BY name
 ), sections AS (
     SELECT m.kind,jsonb_agg(m.details || jsonb_build_object('id',m.id,'name',m.name,'active',m.active,'revision',m.revision)
         || CASE m.kind WHEN 'customers' THEN jsonb_build_object('contracts_count',coalesce(n.total,0))

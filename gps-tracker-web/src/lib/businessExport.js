@@ -2,6 +2,7 @@ import {monthlyStatus,monthlyDistance,monthlyExportDistance} from './monthlySumm
 import {reportIncluded,qualityLabel} from './tripQuality.js';
 import { businessDate, rentalStatus, vehicleName } from './business.js';
 import { ntsReportPdfDefinition } from './ntsReportPdf.js';
+import { agreedPrice, priceTotal } from './rentalInventory.js';
 
 export const purposeLabel = { business: '업무', commute: '출퇴근', other: '기타', unspecified: '미지정' };
 const statusLabel = { draft: '초안', active: '임대 중', overdue: '반납 지연', returned: '반납 완료', cancelled: '취소' };
@@ -59,10 +60,12 @@ export function tripReport(trips, { device, info, from, to, filterText = '' }) {
 function coordinates(lat,lng) { return lat == null || lng == null ? '' : `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`; }
 
 export function rentalReport(contracts, { settlement = false, filterText = '', now = Date.now() } = {}) {
-  const selected = settlement ? contracts.filter(c => c.status === 'returned') : contracts;
+  const selected = settlement ? contracts.filter(c => c.status === 'returned' && (!agreedPrice(c) || c.settled_at)) : contracts;
   const rows = selected.map(c => ({
     id: c.id, vehicle: c.license_plate || c.device_name || (c.device_id == null ? `미배정 · ${c.rental_terms?.requested_model || "차종 미지정"}` : `차량 ${c.device_id}`), renter: c.renter_name,
-    start: kstDateTime(c.starts_at), end: kstDateTime(c.ends_at), status: c.status==='cancelled' && c.rental_terms?.cancel_outcome==='no_show' ? '미방문' : statusLabel[rentalStatus(c, now)] || c.status,
+    start: kstDateTime(c.starts_at), end: kstDateTime(c.ends_at), status: c.status==='cancelled' && c.rental_terms?.cancel_outcome==='no_show' ? '미방문' : c.status==='returned' && agreedPrice(c) && c.settled_at ? '정산 완료' : statusLabel[rentalStatus(c, now)] || c.status,
+    agreedBase:money(agreedPrice(c)?.base_krw),agreedOption:money(agreedPrice(c)?.option_krw),agreedDiscount:money(agreedPrice(c)?.discount_krw),
+    agreedExtension:money(agreedPrice(c)?.extension_krw),agreedReturn:money(agreedPrice(c)?.return_extra_krw),agreedTotal:agreedPrice(c)?priceTotal(agreedPrice(c)):'',
     cancellation: money(c.rental_terms?.cancellation_fee_krw),
     deposit: money(c.deposit_krw), amount: money(c.settled_amount_krw), settled: kstDateTime(c.settled_at),
     base: money(c.base_fee_krw), late: money(c.late_fee_krw), excess: money(c.over_km_fee_krw), extra: money(c.extra_fee_krw),
@@ -70,6 +73,7 @@ export function rentalReport(contracts, { settlement = false, filterText = '', n
   }));
   const title = settlement ? '렌트카 정산 내역' : '렌트카 계약 목록';
   const common = [column('id','계약 번호'),column('vehicle','차량'),column('renter','임차인')];
+  if(selected.some(agreedPrice)) common.push(...[['agreedBase','합의 기본료'],['agreedOption','옵션'],['agreedDiscount','할인'],['agreedExtension','연장 추가금'],['agreedReturn','반납 추가금'],['agreedTotal','합의 요금 합계']].map(([key,label])=>column(key,label+'(원)',true)));
   const columns = settlement
     ? [...common,column('settled','정산 일시'),column('base','기본료(원)',true),column('late','지연료(원)',true),column('excess','초과 거리(원)',true),column('extra','기타(원)',true),column('deposit','보증금(원)',true),column('amount','정산액(원)',true),column('refund','환급/추가 청구(원)',true),column('note','메모')]
     : [...common,column('start','대여 시작'),column('end','반납 예정'),column('status','상태'),column('deposit','보증금(원)',true),column('amount','정산액(원)',true),column('cancellation','취소 수수료(원)',true),column('note','메모')];

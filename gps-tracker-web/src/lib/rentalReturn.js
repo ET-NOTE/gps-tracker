@@ -1,6 +1,17 @@
 // Match rentcar.rs whole-minute/hour/day truncation before ceiling units.
 // The server remains authoritative for the saved settlement.
+import { agreedPrice } from './rentalInventory.js';
 export function computeSettlementPreview(c, { returnOdometerKm, extraFeeKrw, extraLabel, returnedAt }) {
+  const price=agreedPrice(c);
+  if(price){
+    const lines=[{kind:'base',label:'합의 대여료',amount:Number(price.base_krw)},
+      {kind:'option',label:'옵션 금액',amount:Number(price.option_krw||0)},
+      {kind:'discount',label:'할인',amount:-Number(price.discount_krw||0)},
+      {kind:'extension',label:'합의한 연장 추가 요금',amount:Number(price.extension_krw||0)},
+      {kind:'extra',label:extraLabel || '반납 추가 요금',amount:Number(extraFeeKrw||0)}].filter(row=>row.kind==='base' || row.amount!==0);
+    const subtotal=lines.reduce((sum,row)=>sum+row.amount,0);
+    return {lines,subtotal,balance:0};
+  }
   const dur = new Date(c.ends_at) - new Date(c.starts_at); // ms
   const hours = dur / 3600_000;
   let units, unitLabel;
@@ -61,6 +72,7 @@ export function validateReturn(contract, form, now = Date.now()) {
   else if (form.odometer !== '' && contract.pickup_odometer_km != null && odometer < contract.pickup_odometer_km) information ||= '반납 오도미터가 인수 때보다 작습니다. 계기판을 다시 확인해 주세요.';
   const extra = Number(form.extraFee);
   if (!Number.isSafeInteger(extra)) charges = '기타 금액은 원 단위 정수로 입력해 주세요.';
+  else if(agreedPrice(contract) && (extra<0 || extra>1_000_000_000)) charges='반납 추가 요금은 0원부터 10억 원까지 입력할 수 있습니다.';
   else if (extra !== 0 && !form.extraLabel.trim()) charges = '기타 요금이나 할인의 사유를 입력해 주세요.';
   return { information, charges };
 }

@@ -20,6 +20,7 @@ test('contract payment and deposit ceilings remain independent including cancell
   const noShow={...c,status:'cancelled',cancel_outcome:'no_show',cancellation_fee_krw:15000,billed_krw:15000};
   assert.deepEqual(['payment','refund','deposit_in','deposit_out'].map(k=>recordLimit(noShow,k)),[3000,12000,0,8000]);
   assert.equal(suggestedRecordAmount({...noShow,paid_krw:20000},'refund'),5000);
+  assert.deepEqual(['payment','refund','deposit_in','deposit_out'].map(k=>recordLimit({...c,settlement_finalized:true},k)),[0,0,12000,8000]);
 });
 test('actual overlapping rental hours are counted only once, clipped to KST window and today',()=>{
   const book={entries:[],costs:[],contracts:[

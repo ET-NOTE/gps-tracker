@@ -7,14 +7,19 @@ import {costKinds,dailyFigures,entryKinds,kstDay,kstInput,matchOfficeCustomer,me
 import ExportButtons from './ExportButtons';
 import {officeBookKey,officeCatalogKey} from './rentalOfficeKeys';
 import RentalOfficeCharts from './RentalOfficeCharts';
-import {useRentalProfiles} from './RentalFleetProfiles';
+import {matchesVehicle} from '../../lib/rentalInventory';
 
 const sum=(rows,fn)=>rows.reduce((n,row)=>n+fn(row),0);
 const vehicle=d=>d.license_plate||d.display_name||('차량 '+d.id);
 const label=c=>'#'+c.id+' · '+c.renter_name;
+function availableEntryKind(contract,kind) {
+  if (contract?.settlement_finalized && (kind==='payment'||kind==='refund')) return contract.held_krw>0?'deposit_out':'deposit_in';
+  return kind;
+}
 export function LedgerEditor({book,initial,close}) {
-  const qc=useQueryClient(),kind0=initial.kind||'payment';
-  const c0=initial.contract||book.contracts.find(c=>recordLimit(c,kind0)>0)||book.contracts[0];
+  const qc=useQueryClient(),requestedKind=initial.kind||'payment';
+  const c0=initial.contract||book.contracts.find(c=>recordLimit(c,requestedKind)>0)||book.contracts[0];
+  const kind0=availableEntryKind(c0,requestedKind);
   const [id,setId]=useState(c0?.id),[kind,setKind]=useState(kind0),[method,setMethod]=useState('card');
   const [amount,setAmount]=useState(suggestedRecordAmount(c0,kind0)),[at,setAt]=useState(()=>kstInput()),[memo,setMemo]=useState('');
   const [key]=useState(()=>crypto.randomUUID());
@@ -24,9 +29,9 @@ export function LedgerEditor({book,initial,close}) {
     await Promise.all([qc.invalidateQueries({queryKey:officeBookKey()}),qc.invalidateQueries({queryKey:officeCatalogKey(true)})]);
   }
   return <FormModal title="결제 기록" onClose={close} save={save} canSave={!!c&&max>0&&Number(amount)>0&&Number(amount)<=max}>
-    <Field label="예약·계약" wide><select value={id??''} required onChange={e=>{const next=book.contracts.find(r=>r.id===Number(e.target.value));setId(next?.id);setAmount(suggestedRecordAmount(next,kind));}}>
+    <Field label="예약·계약" wide><select value={id??''} required onChange={e=>{const next=book.contracts.find(r=>r.id===Number(e.target.value));const nextKind=availableEntryKind(next,kind);setId(next?.id);setKind(nextKind);setAmount(suggestedRecordAmount(next,nextKind));}}>
       {!c0&&<option value="">선택 가능한 계약 없음</option>}{book.contracts.map(r=><option key={r.id} value={r.id}>{label(r)}</option>)}</select></Field>
-    <Field label="기록 구분"><select value={kind} onChange={e=>{setKind(e.target.value);setAmount(suggestedRecordAmount(c,e.target.value));}}><Options items={entryKinds}/></select></Field>
+    <Field label="기록 구분"><select value={kind} onChange={e=>{setKind(e.target.value);setAmount(suggestedRecordAmount(c,e.target.value));}}>{Object.entries(entryKinds).map(([value,name])=><option key={value} value={value} disabled={availableEntryKind(c,value)!==value}>{name}</option>)}</select></Field>
     <Field label="거래 수단"><select value={method} onChange={e=>setMethod(e.target.value)}><Options items={methods}/></select></Field>
     <Field label="금액 (원)"><input type="number" required min="1" max={Math.min(max,1000000000)} step="1" value={amount} onChange={e=>setAmount(e.target.value)}/><small>기록 가능 금액 {won(max)}</small></Field>
     <Field label="거래 일시 (한국시간)"><input type="datetime-local" required value={at} onChange={e=>setAt(e.target.value)}/></Field>
@@ -36,16 +41,16 @@ export function LedgerEditor({book,initial,close}) {
 }
 function CostEditor({devices,row,close}) {
   const qc=useQueryClient(),[key]=useState(()=>crypto.randomUUID());
-  const [form,setForm]=useState(()=>({device_id:devices[0]?.id??'',occurred_on:kstDay(),category:'wash',amount_krw:'',
+  const [form,setForm]=useState(()=>({vehicle_id:row ? devices.find(v=>matchesVehicle(row,v))?.id ?? '' : devices[0]?.id??'',occurred_on:kstDay(),category:'wash',amount_krw:'',
     vendor:'',memo:'',...row}));
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   async function save(){
     await api.rentalOffice(row?'PATCH':'POST','/costs'+(row?'/'+row.id:''),{...form,
-      device_id:Number(form.device_id),amount_krw:Number(form.amount_krw),request_key:key});
+      vehicle_id:Number(form.vehicle_id),device_id:devices.find(v=>String(v.id)===String(form.vehicle_id))?.device_id ?? null,amount_krw:Number(form.amount_krw),request_key:key});
     await qc.invalidateQueries({queryKey:officeBookKey()});
   }
-  return <FormModal title={'차량 운영비 '+(row?'수정':'등록')} save={save} onClose={close} canSave={!!form.device_id&&Number(form.amount_krw)>0}>
-    <Field label="차량"><select value={form.device_id||''} required onChange={e=>set('device_id',e.target.value)}>
+  return <FormModal title={'차량 운영비 '+(row?'수정':'등록')} save={save} onClose={close} canSave={!!form.vehicle_id&&Number(form.amount_krw)>0}>
+    <Field label="차량"><select value={form.vehicle_id||''} required onChange={e=>set('vehicle_id',e.target.value)}>
       <option value="">차량 선택</option>{devices.map(d=><option key={d.id} value={d.id}>{vehicle(d)}</option>)}</select></Field>
     <Field label="지출일"><input type="date" required value={form.occurred_on} onChange={e=>set('occurred_on',e.target.value)}/></Field>
     <Field label="비용 구분"><select value={form.category} onChange={e=>set('category',e.target.value)}><Options items={costKinds}/></select></Field>
@@ -58,16 +63,14 @@ const entryCols=[['거래 일시',e=>readTime(e.recorded_at)],['예약·계약',
   ['수단',e=>methods[e.method]],['금액',e=><strong>{won(e.amount_krw)}</strong>],['메모',e=>e.memo||'—']];
 function Figures({book:all,devices:allVehicles,period,dates,pending,usage}){
   const [branch,setBranch]=useState(''),[model,setModel]=useState('');
-  const profiles=useRentalProfiles();
-  const profileById=new Map((profiles.data||[]).map(p=>[p.device_id,p]));
-  const vehicleById=new Map(allVehicles.map(d=>[d.id,d]));
-  const modelOf=c=>c.requested_model||profileById.get(c.device_id)?.class_name||vehicleById.get(c.device_id)?.car_model||'차종 미지정';
-  const branchOf=c=>c.pickup_location||profileById.get(c.device_id)?.branch||'';
+  const profileOf=row=>allVehicles.find(v=>matchesVehicle(row,v));
+  const modelOf=c=>c.requested_model||profileOf(c)?.class_name||profileOf(c)?.car_model||'차종 미지정';
+  const branchOf=c=>c.pickup_location||profileOf(c)?.branch||'';
   const matches=c=>(!branch||branch===branchOf(c))&&(!model||model===modelOf(c));
   const contractRows=all.contracts.filter(matches), ids=new Set(contractRows.map(c=>c.id));
-  const devices=allVehicles.filter(d=>matches({device_id:d.id}));
+  const devices=allVehicles.filter(d=>matches({vehicle_id:d.id,device_id:d.device_id}));
   const book={contracts:contractRows,costs:all.costs.filter(matches),entries:all.entries.filter(e=>ids.has(e.contract_id))};
-  const source=[...all.contracts,...allVehicles.map(d=>({device_id:d.id}))];
+  const source=[...all.contracts,...allVehicles.map(d=>({vehicle_id:d.id,device_id:d.device_id}))];
   const branches=[...new Set(source.map(branchOf).filter(Boolean))].sort(),models=[...new Set(source.map(modelOf))].sort();
   const start=Date.parse(period.from+'T00:00:00+09:00'),end=Date.parse(period.to+'T00:00:00+09:00')+86400000;
   const periodContracts=contractRows.filter(c=>c.status!=='cancelled'&&Date.parse(c.starts_at)<end&&Date.parse(c.ends_at)>start);
@@ -87,7 +90,6 @@ function Figures({book:all,devices:allVehicles,period,dates,pending,usage}){
   const title=usage?'차량 가동·운영비':'대여·매출 통계';
   return <><div className="ro-filters">{dates}<Field label="소속 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{branches.map(b=><option key={b}>{b}</option>)}</select></Field>
     <Field label="차종"><select value={model} onChange={e=>setModel(e.target.value)}><option value="">전체 차종</option>{models.map(m=><option key={m}>{m}</option>)}</select></Field></div>
-    {profiles.error&&<p role="alert" className="ro-error">차량의 소속 지점과 차종을 불러오지 못했습니다. <button type="button" onClick={()=>profiles.refetch()}>다시 조회</button></p>}
     <Metrics items={metrics}/>{!usage&&<RentalOfficeCharts figures={rows} contracts={periodContracts} period={period} modelOf={modelOf}/>}
     <section className="ro-panel"><Toolbar count={rows.length} unit={usage?'대':'일'}><ExportButtons csvOnly disabled={pending} report={{title,filename:title+'_'+period.from+'_'+period.to,columns:cols.map(([label],key)=>({key,label})),rows:reportRows}}/></Toolbar>
     <Table columns={cols} rows={rows} empty="조회 기간에 집계할 내역이 없습니다."/></section></>;
@@ -105,7 +107,7 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
     (filter==='all'||(filter==='pending'?balance(c)>0:filter==='excess'?balance(c)<0:balance(c)===0)));
   const entries=book.entries.filter(e=>(isPayments||e.kind!=='payment')&&matches(e.contract_id,e.renter_name,e.memo)&&
     (isPayments || filter==='all'||e.kind===filter));
-  const costs=book.costs.filter(c=>(filter==='all'||c.category===filter)&&(device==='all'||String(c.device_id)===device)&&matches(c.vehicle_name,c.vendor,c.memo));
+  const costs=book.costs.filter(c=>(filter==='all'||c.category===filter)&&(device==='all'||matchesVehicle(c,devices.find(v=>String(v.id)===device)))&&matches(c.vehicle_name,c.vendor,c.memo));
   const cols=isCost?[['지출일',k=>k.occurred_on],['차량',k=><strong>{k.vehicle_name}</strong>],['구분',k=>costKinds[k.category]],['거래처',k=>k.vendor||'—'],['금액',k=>won(k.amount_krw)],['메모',k=>k.memo||'—'],['관리',k=><Button size="sm" variant="ghost" onClick={()=>setEditing(k)}>수정</Button>]]
     :isPayments?[['예약·계약',c=><strong>{label(c)}</strong>],['차량',c=>c.vehicle_name||'차량 미배정'],['약정·정산액',c=>won(c.billed_krw)],['순수납',c=>won(c.paid_krw)],
       ['미수금',c=>won(Math.max(0,balance(c)))],['보증금 잔액',c=>won(c.held_krw)],['관리',c=><Button size="sm" variant="ghost" onClick={()=>setDetail(c)}>상세</Button>]]:entryCols;

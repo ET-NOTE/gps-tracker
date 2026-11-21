@@ -4,12 +4,12 @@ export const RENTAL_SIGNAL_DELAY_MS = 6 * 3600_000;
 export function rentalAttention(contracts, devices, now = Date.now()) {
   const summary = rentalSummary(contracts, devices, now);
   const task = (c, category, label, tone, date, action, priority) => ({
-    id: `${category}-${c.id}`, category, title: c.license_plate || c.device_name || `차량 ${c.device_id}`,
+    id: `${category}-${c.id}`, category, title: c.license_plate || c.device_name || (c.vehicle_id != null || c.device_id != null ? `차량 ${c.vehicle_id ?? c.device_id}` : '차량 미배정'),
     description: c.renter_name, contract: c, label, tone, date, action, priority,
   });
   const tasks = summary.overdue.map(c => task(c, 'return', '반납 지연', 'urgent', c.ends_at, '반납 처리', 0));
   for (const device of devices) {
-    if (device.enabled === false || !summary.occupied.has(String(device.id))) continue;
+    if (device.enabled === false || (device.vehicle_id!=null && device.device_id==null) || !summary.occupied.has(String(device.id))) continue;
     const seen = device.last_seen_at ? Date.parse(device.last_seen_at) : NaN;
     if (Number.isFinite(seen) && now - seen < RENTAL_SIGNAL_DELAY_MS) continue;
     tasks.push({ id: `signal-${device.id}`, category: 'signal', title: vehicleName(device), device,

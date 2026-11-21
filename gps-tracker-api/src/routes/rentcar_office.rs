@@ -308,8 +308,9 @@ async fn record(
     validate_key(&e.request_key)?;
     let mut tx = s.db.begin().await?;
     // Every record for a contract checks the committed balance after taking the same lock.
-    let (billed,deposit,status): (i64,i64,String) = sqlx::query_as(
-        "SELECT rental_office_contract_fee(c)::bigint,deposit_krw,status FROM rental_contracts c
+    let (billed,deposit,status,finalized): (i64,i64,String,bool) = sqlx::query_as(
+        "SELECT rental_office_contract_fee(c)::bigint,deposit_krw,status,settlement_request_key IS NOT NULL
+           FROM rental_contracts c
             WHERE user_id=$1 AND id=$2 FOR UPDATE")
         .bind(u.user_id).bind(e.contract_id).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
     let old: Option<(i64, bool)> = sqlx::query_as(
@@ -332,6 +333,9 @@ async fn record(
         } else {
             Err(changed())
         };
+    }
+    if finalized && matches!(e.kind.as_str(),"payment"|"refund") {
+        return Err(AppError::Conflict("정산이 끝난 약정 계약입니다. 보증금 기록은 별도로 처리할 수 있습니다.".into()));
     }
     let (paid,held): (i64,i64) = sqlx::query_as("SELECT
         coalesce(sum(CASE kind WHEN 'payment' THEN amount_krw WHEN 'refund' THEN -amount_krw ELSE 0 END),0)::bigint,
@@ -365,7 +369,8 @@ async fn record(
 
 #[derive(Deserialize)]
 struct Cost {
-    device_id: i64,
+    vehicle_id: Option<i64>,
+    device_id: Option<i64>,
     occurred_on: NaiveDate,
     category: String,
     amount_krw: i64,
@@ -386,24 +391,25 @@ async fn save_cost(db: &PgPool, uid: i64, id: Option<i64>, c: Cost) -> AppResult
         return Err(bad("비용 구분, 금액, 메모를 확인해 주세요."));
     }
     let mut tx = db.begin().await?;
+    let (vehicle,device) = super::rentcar::assets::resolve(&mut tx, uid, c.vehicle_id, c.device_id).await?
+        .ok_or_else(||bad("비용을 기록할 차량을 선택해 주세요."))?;
     let car: String = sqlx::query_scalar(
-        "SELECT coalesce(nullif(license_plate,''),nullif(display_name,''),'차량 '||id::text)
-        FROM gps_read_devices WHERE owner_id=$1 AND id=$2",
+        "SELECT coalesce(nullif(plate,''),nullif(display_name,''),'차량 '||vehicle_id::text)
+        FROM rental_asset_directory WHERE owner_id=$1 AND vehicle_id=$2",
     )
     .bind(uid)
-    .bind(c.device_id)
-    .fetch_optional(&mut *tx)
-    .await?
-    .ok_or(AppError::NotFound)?;
+    .bind(vehicle)
+    .fetch_one(&mut *tx)
+    .await?;
     let saved: Option<i64> = if let Some(id) = id {
         sqlx::query_scalar(
             "UPDATE rental_office_costs SET device_id=$3,vehicle_name=$4,occurred_on=$5,
-            category=$6,amount_krw=$7,vendor=$8,memo=$9,revision=revision+1
+            category=$6,amount_krw=$7,vendor=$8,memo=$9,vehicle_id=$11,revision=revision+1
             WHERE user_id=$1 AND id=$2 AND revision=$10 RETURNING id",
         )
         .bind(uid)
         .bind(id)
-        .bind(c.device_id)
+        .bind(device)
         .bind(car)
         .bind(c.occurred_on)
         .bind(c.category)
@@ -411,17 +417,18 @@ async fn save_cost(db: &PgPool, uid: i64, id: Option<i64>, c: Cost) -> AppResult
         .bind(c.vendor.trim())
         .bind(c.memo.trim())
         .bind(c.revision)
+        .bind(vehicle)
         .fetch_optional(&mut *tx)
         .await?
     } else {
         sqlx::query_scalar("INSERT INTO rental_office_costs AS c
-            (user_id,request_key,device_id,vehicle_name,occurred_on,category,amount_krw,vendor,memo)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (user_id,request_key)
-            DO UPDATE SET request_key=c.request_key WHERE (c.device_id,c.occurred_on,c.category,c.amount_krw,c.vendor,c.memo)
-                = (excluded.device_id,excluded.occurred_on,excluded.category,excluded.amount_krw,excluded.vendor,excluded.memo)
+            (user_id,request_key,device_id,vehicle_name,occurred_on,category,amount_krw,vendor,memo,vehicle_id)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (user_id,request_key)
+            DO UPDATE SET request_key=c.request_key WHERE (c.vehicle_id,c.occurred_on,c.category,c.amount_krw,c.vendor,c.memo)
+                = (excluded.vehicle_id,excluded.occurred_on,excluded.category,excluded.amount_krw,excluded.vendor,excluded.memo)
             RETURNING id")
-            .bind(uid).bind(c.request_key).bind(c.device_id).bind(car).bind(c.occurred_on)
-            .bind(c.category).bind(c.amount_krw).bind(c.vendor.trim()).bind(c.memo.trim())
+            .bind(uid).bind(c.request_key).bind(device).bind(car).bind(c.occurred_on)
+            .bind(c.category).bind(c.amount_krw).bind(c.vendor.trim()).bind(c.memo.trim()).bind(vehicle)
             .fetch_optional(&mut *tx).await?
     };
     let id = saved.ok_or_else(changed)?;

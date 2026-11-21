@@ -21,14 +21,17 @@ import ReturnWizard from './ReturnWizard';
 import PhotoGalleryModal from './PhotoGalleryModal';
 import BusinessDrawer from './BusinessDrawer';
 import RentalContractHistory from './RentalContractHistory';
+import { AgreementDetail, FinalizeRental, RentalExtension, fundsKey } from './RentalAgreementActions';
+import { assetKey } from './RentalAssets';
+import { agreedPrice, isAssigned } from '../../lib/rentalInventory';
 import RentalCancellation from './RentalCancellation';
 import { ContractPhotos } from './RentalPhotos';
 import './rental-workflow.css';
 
 const templateText = c => (c.rental_terms?.template_body || '').replaceAll('{{고객연락처}}',c.renter_phone || '—');
 const won = value => Number(value || 0).toLocaleString('ko-KR')+'원';
-const carLabel = c => c.license_plate || c.device_name || (c.device_id ? '차량 '+c.device_id : '차량 미배정');
-const baseFilters = {query:'',status:'',branch:'',from:'',to:'',device:'',model:'',channel:'',subset:'',review:'',readiness:''};
+const carLabel = c => c.license_plate || c.device_name || (isAssigned(c) ? '차량 '+(c.vehicle_id ?? c.device_id) : '차량 미배정');
+const baseFilters = {query:'',status:'',branch:'',from:'',to:'',device:'',vehicle:'',model:'',channel:'',subset:'',review:'',readiness:''};
 const stageTabs = {
   checkout:[['','전체 출고 예정'],['pickup','오늘 출고']],
   active:[['','전체 대여 중'],['due','오늘 반납'],['late','반납 지연']],
@@ -42,13 +45,17 @@ function bookQuery(period) {
 function ContractLedger({contract,onClose}) {
   const day=businessDate(contract.starts_at);
   const query=useQuery(bookQuery({from:day,to:day}));
-  const current=query.data?.contracts.find(c=>c.id===contract.id);
-  if (current) return <LedgerEditor book={{contracts:[current]}} initial={{contract:current}} close={onClose}/>;
+  const bookRow=query.data?.contracts.find(c=>c.id===contract.id);
+  if (bookRow) {
+    const finalized=bookRow.settlement_finalized || Boolean(agreedPrice(contract) && contract.settled_at);
+    const current={...bookRow,settlement_finalized:finalized};
+    return <LedgerEditor key={String(finalized)} book={{contracts:[current]}} initial={{contract:current}} close={onClose}/>;
+  }
   return <Modal open title="결제·보증금 기록" onClose={onClose}>{query.isLoading?<p role="status">결제 내역을 불러오는 중…</p>:
     <BusinessError onRetry={query.refetch}>이 계약의 청구액과 수납 내역을 확인하지 못했습니다.</BusinessError>}</Modal>;
 }
 
-export default function RentalWorkflow({ stage='reservations', devices=[], branches: configuredBranches=[], request }) {
+export default function RentalWorkflow({ stage='reservations', devices=[], vehicles=[], branches: configuredBranches=[], request }) {
   const now=useBusinessClock(), qc=useQueryClient();
   const [filters,setFilters]=useState(baseFilters), [detail,setDetail]=useState(null), [dialog,setDialog]=useState(null);
   const [reconfirmId,setReconfirmId]=useState(null);
@@ -65,14 +72,14 @@ export default function RentalWorkflow({ stage='reservations', devices=[], branc
   function checksFor(c) {
     const p=policy.data,terms=c.rental_terms || {},balance=balances.get(c.id);
     if (!p || (p.require_payment && !balance)) return null;
-    return [!c.device_id && '차량 배정',p.require_license && !terms.license_checked && '면허 확인',
+    return [!isAssigned(c) && '차량 배정',p.require_license && !terms.license_checked && '면허 확인',
       p.require_contract && !terms.confirmed_at && '계약 확인',p.require_payment && balance.paid_krw<agreementTotal(c) && '대여료 수납'].filter(Boolean);
   }
   useEffect(()=>{
-    const initial={...baseFilters,device:request?.deviceId || ''};
+    const initial={...baseFilters,device:request?.deviceId || '',vehicle:request?.vehicleId || ''};
     initial.status=({overdue:'반납 지연',returned:'반납 완료',active:'대여 중',draft:'예약 접수'})[request?.status] || '';
     setFilters(initial);setDialog(null);setDetail(null);setReconfirmId(null);
-    if(request?.new)setDialog({kind:'edit',deviceId:request.deviceId,date:request.day});
+    if(request?.new)setDialog({kind:'edit',deviceId:request.deviceId,vehicleId:request.vehicleId,date:request.day});
     else if(request?.returning)setDialog({kind:'return',contract:request.returning});
     else if(request?.contract)setDetail(request.contract);
   },[stage,request]);
@@ -88,32 +95,34 @@ export default function RentalWorkflow({ stage='reservations', devices=[], branc
   const open=(kind,c)=>setDialog({kind,contract:c});
   const close=()=>setDialog(null);
   async function refreshed(saved) {
-    if (dialog?.kind==='edit') setReconfirmId(needsContractReconfirmation(dialog.contract,saved) ? saved.id : null);
+    if (dialog?.kind==='edit' || dialog?.kind==='extend') setReconfirmId(needsContractReconfirmation(dialog.contract,saved) ? saved.id : null);
     if (dialog?.kind==='review') setReconfirmId(null);
     close();
     if (saved?.id) setDetail(saved);
-    await Promise.all([qk.rentals(),qk.renters(),officeBookKey(),officeCatalogKey(true),profileKey()].map(queryKey=>qc.invalidateQueries({queryKey})));
+    await Promise.all([qk.rentals(),qk.renters(),assetKey(),...(saved?.id || dialog?.contract?.id ? [fundsKey(saved?.id || dialog.contract.id)] : []),officeBookKey(),officeCatalogKey(true),profileKey()].map(queryKey=>qc.invalidateQueries({queryKey})));
   }
   const day=businessDate(now), count=fn=>shown.filter(fn).length;
   const unpaid=items=>items.every(c=>balances.has(c.id)) ? items.reduce((sum,c)=>{
     const b=balances.get(c.id);return sum+Math.max(0,b.billed_krw-b.paid_krw);
   },0):null;
-  const assigned=count(c=>c.device_id!=null && c.status==='draft');
+  const assigned=count(c=>isAssigned(c) && c.status==='draft');
   const ready=stage==='checkout' && shown.every(c=>checksFor(c)!=null) ? count(c=>checksFor(c).length===0):null;
   const metrics={
-    reservations:[['조회 예약',shown.length],['미배정 예약',count(c=>!c.device_id && c.status==='draft')],['출고 준비',assigned],['예약 대여료',shown.filter(c=>c.status!=='cancelled').reduce((sum,c)=>sum+agreementTotal(c),0),'원']],
+    reservations:[['조회 예약',shown.length],['미배정 예약',count(c=>!isAssigned(c) && c.status==='draft')],['출고 준비',assigned],['예약 대여료',shown.filter(c=>c.status!=='cancelled').reduce((sum,c)=>sum+agreementTotal(c),0),'원']],
     contracts:[['조회 계약',shown.length],['계약 확인 전',count(c=>c.status==='draft' && !c.rental_terms?.confirmed_at)],['대여 중',count(c=>['active','overdue'].includes(c.status))],['대여료 미수',unpaid(shown),'원']],
     checkout:[['출고 예정',shown.length],['오늘 인수 예정',count(c=>businessDate(c.starts_at)===day)],['사전 확인 완료',ready],['확인 필요',ready==null?null:shown.length-ready]],
     active:[['대여 중',shown.length],['오늘 반납 예정',count(c=>businessDate(c.ends_at)===day)],['반납 지연',count(c=>workflowStatus(c,now)==='반납 지연')],['대여료 미수',unpaid(shown),'원']],
     returns:[['조회 반납 대상',shown.length],['반납 대기',count(c=>c.status!=='returned')],['반납 완료',count(c=>c.status==='returned')],['반납 후 대여료 미수',unpaid(shown.filter(c=>c.status==='returned')),'원']],
-    dispatch:[['조회 대여 일정',shown.length],['배차 대기',count(c=>!c.device_id)],['배차 완료',count(c=>!!c.device_id)]],
+    dispatch:[['조회 대여 일정',shown.length],['배차 대기',count(c=>!isAssigned(c))],['배차 완료',count(isAssigned)]],
   }[stage];
   const action=focused && <>
-    {focused.status==='draft' && <><BusinessButton onClick={()=>open('edit',focused)}>{focused.device_id?'예약·배차 변경':'차량 배정'}</BusinessButton>
-      {focused.rental_terms && <><BusinessButton onClick={()=>open('review',focused)}>계약·면허 확인</BusinessButton><BusinessButton primary disabled={!focused.device_id} onClick={()=>open('checkout',focused)}>출고 점검</BusinessButton></>}
+    {focused.status==='draft' && <><BusinessButton onClick={()=>open('edit',focused)}>{isAssigned(focused)?'예약·배차 변경':'차량 배정'}</BusinessButton>
+      {focused.rental_terms && <><BusinessButton onClick={()=>open('review',focused)}>계약·면허 확인</BusinessButton><BusinessButton primary disabled={!isAssigned(focused)} onClick={()=>open('checkout',focused)}>출고 점검</BusinessButton></>}
+      {agreedPrice(focused) && <BusinessButton onClick={()=>open('extend',focused)}>기간 연장</BusinessButton>}
       <BusinessButton onClick={()=>open('cancel',focused)}>취소·미방문</BusinessButton></>}
-    {['active','overdue'].includes(focused.status) && <><BusinessButton onClick={()=>open('edit',focused)}>기간 연장</BusinessButton><BusinessButton primary onClick={()=>open('return',focused)}>반납 접수</BusinessButton></>}
-    {focused.device_id && ['draft','active','overdue'].includes(focused.status) && <BusinessButton onClick={()=>open('handoff',focused)}>인수·반납 링크</BusinessButton>}
+    {['active','overdue'].includes(focused.status) && <><BusinessButton onClick={()=>open(agreedPrice(focused)?'extend':'edit',focused)}>기간 연장</BusinessButton><BusinessButton primary onClick={()=>open('return',focused)}>반납 접수</BusinessButton></>}
+    {isAssigned(focused) && ['draft','active','overdue'].includes(focused.status) && <BusinessButton onClick={()=>open('handoff',focused)}>인수·반납 링크</BusinessButton>}
+    {focused.status==='returned' && agreedPrice(focused) && !focused.settled_at && <BusinessButton primary onClick={()=>open('settle',focused)}>대여료 정산 완료</BusinessButton>}
     <BusinessButton onClick={()=>open('photos',focused)}>인수·반납 사진</BusinessButton>
     <BusinessButton onClick={()=>open('ledger',focused)}>결제·보증금 기록</BusinessButton>
   </>;
@@ -145,7 +154,8 @@ export default function RentalWorkflow({ stage='reservations', devices=[], branc
         <dl>{[['계약 고객',focused.renter_name],['실운전자',recipient],['인수 예정',kstDateTime(focused.starts_at)],['반납 예정',kstDateTime(focused.ends_at)],['인수 / 반납 지점',(focused.pickup_location || '미지정')+' / '+(focused.return_location || '미지정')],['약정 대여료',won(agreementTotal(focused))],['약정 보증금',won(focused.deposit_krw)],['계약 확인',focused.rental_terms?.confirmed_at?kstDateTime(focused.rental_terms.confirmed_at):'확인 전'],['메모',focused.note || '없음']].map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
         {focused.rental_terms?.template_body && <details><summary>확인한 계약 내용</summary><p className="rental-terms-text">{templateText(focused)}</p></details>}
         {focused.pickup_odometer_km!=null && <section><h3>인도 점검</h3><p>{focused.pickup_odometer_km.toLocaleString()} km {focused.rental_terms?.pickup_fuel!=null?' · 연료·충전량 '+focused.rental_terms.pickup_fuel+'%':''}</p>{focused.rental_terms?.pickup_note && <p>{focused.rental_terms.pickup_note}</p>}</section>}
-        {focused.status==='returned' && <section><h3>반납 정산</h3><SettlementSummary c={focused}/></section>}
+        {agreedPrice(focused) && <AgreementDetail contract={focused}/>}
+        {focused.status==='returned' && (!agreedPrice(focused) || focused.settled_at) && <section><h3>반납 정산</h3><SettlementSummary c={focused}/></section>}
         {focused.status==='cancelled' && focused.rental_terms?.cancel_outcome && <section><h3>{focused.rental_terms.cancel_outcome==='no_show'?'미방문':'예약 취소'} 처리</h3>
           <dl><div><dt>취소 수수료</dt><dd>{won(focused.rental_terms.cancellation_fee_krw)}</dd></div>
             <div><dt>처리 사유</dt><dd>{focused.rental_terms.cancel_reason}</dd></div>
@@ -157,8 +167,10 @@ export default function RentalWorkflow({ stage='reservations', devices=[], branc
     </BusinessDrawer>}
     {dialog?.kind==='ledger' && <ContractLedger contract={dialog.contract} onClose={close}/>}
     {dialog?.kind==='cancel' && <RentalCancellation contract={dialog.contract} onClose={close} onSaved={refreshed}/>}
-    {dialog?.kind==='edit' && <RentalDialog init={dialog.contract} devices={devices} branches={configuredBranches} presetDate={dialog.date} presetDeviceId={dialog.deviceId} onClose={close} onSaved={refreshed}/>}
-    {dialog?.kind==='return' && <ReturnWizard contract={dialog.contract} onClose={close} onDone={()=>refreshed()}/>}
+    {dialog?.kind==='extend' && <RentalExtension contract={dialog.contract} onClose={close} onSaved={refreshed}/>}
+    {dialog?.kind==='settle' && <FinalizeRental contract={dialog.contract} onClose={close} onSaved={refreshed}/>}
+    {dialog?.kind==='edit' && <RentalDialog init={dialog.contract} devices={devices} vehicles={vehicles} branches={configuredBranches} presetVehicleId={dialog.vehicleId} presetDate={dialog.date} presetDeviceId={dialog.deviceId} onClose={close} onSaved={refreshed}/>}
+    {dialog?.kind==='return' && <ReturnWizard contract={dialog.contract} onClose={close} onDone={refreshed}/>}
     {dialog?.kind==='handoff' && <HandoffTokenDialog contract={dialog.contract} onClose={close}/>}
     {dialog?.kind==='photos' && <PhotoGalleryModal contract={dialog.contract} onClose={close}/>}
     {['checkout','review'].includes(dialog?.kind) && <WorkflowAction kind={dialog.kind} c={dialog.contract} onClose={close} onSaved={()=>refreshed()}/>}

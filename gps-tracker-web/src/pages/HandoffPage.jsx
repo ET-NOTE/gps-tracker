@@ -24,6 +24,7 @@ export default function HandoffPage({ token }) {
   const [submitError, setSubmitError] = useState(null);
   // (R9-b) 반납 자동 정산 결과 (제출 후 표시)
   const [settlement, setSettlement] = useState(null);
+  const [settlementPending,setSettlementPending]=useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -60,6 +61,7 @@ export default function HandoffPage({ token }) {
         extra_photos:           extraPhotos.map(p => ({ kind: p.kind, data_url: p.data_url })),
       });
       setSettlement(res?.settlement || null);
+      setSettlementPending(res?.settlement_pending===true);
       setStep('done');
     } catch (e) {
       setSubmitError(e.message);
@@ -123,7 +125,7 @@ export default function HandoffPage({ token }) {
         {step === 'submitting' && <div style={sx.loading}>제출 중...</div>}
 
         {step === 'done' && (
-          <DoneScreen purpose={view.purpose} settlement={settlement} />
+          <DoneScreen purpose={view.purpose} settlement={settlement} pending={settlementPending}/>
         )}
       </div>
     </div>
@@ -138,7 +140,7 @@ function ContractSummary({ view }) {
       <Row label="기간"
         value={`${fmt(view.starts_at)} ~ ${fmt(view.ends_at)}`} />
       <Row label="요금"
-        value={`${(view.rate_amount_krw || 0).toLocaleString()}원 / ${RATE_LABEL[view.rate_type] || view.rate_type}`} />
+        value={view.agreed_amount_krw!=null ? `합의 대여료 ${view.agreed_amount_krw.toLocaleString()}원` : `${(view.rate_amount_krw || 0).toLocaleString()}원 / ${RATE_LABEL[view.rate_type] || view.rate_type}`} />
       {view.deposit_krw > 0 && (
         <Row label="보증금" value={`${view.deposit_krw.toLocaleString()}원`} />
       )}
@@ -264,7 +266,7 @@ function ExtrasStep({ purpose, extraPhotos, setExtraPhotos, onBack, onNext }) {
 }
 
 // ─── DONE — 반납이면 정산 breakdown 표시 ─────────
-function DoneScreen({ purpose, settlement }) {
+function DoneScreen({ purpose, settlement, pending }) {
   const purposeLabel = purpose === 'pickup' ? '차량 인수' : '차량 반납';
   return (
     <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -273,7 +275,8 @@ function DoneScreen({ purpose, settlement }) {
         <div style={{ fontSize: 18, fontWeight: 800, margin: '8px 0' }}>{purposeLabel} 완료</div>
         <div style={{ fontSize: 13, color: '#666' }}>임대인에게 자동으로 알림이 전송되었습니다.</div>
       </div>
-      {purpose === 'return' && settlement && (
+      {purpose==='return' && pending && <p>반납이 접수됐습니다. 대여료 정산은 담당자가 수납 내역을 확인한 뒤 확정합니다.</p>}
+      {purpose === 'return' && !pending && settlement && (
         <div style={{
           background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8, padding: 12,
           display: 'flex', flexDirection: 'column', gap: 6,

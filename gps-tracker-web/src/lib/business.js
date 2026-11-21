@@ -1,3 +1,5 @@
+import { matchesVehicle } from './rentalInventory.js';
+
 const DAY = 86400_000;
 export const businessDate = (value = Date.now()) => new Date(new Date(value).getTime() + 9 * 3600_000).toISOString().slice(0, 10);
 export function businessPeriod(now = Date.now()) {
@@ -13,7 +15,7 @@ export function rentalSummary(contracts, devices, now = Date.now()) {
   const overdue = open.filter(c => rentalStatus(c, now) === 'overdue');
   const occupied = new Set(open.filter(c => rentalStatus(c, now) === 'overdue'
     || new Date(c.rental_terms?.checkout_at || c.starts_at).getTime() <= now)
-    .map(c => String(c.device_id)).filter(id => devices.some(d => String(d.id) === id)));
+    .map(c => devices.find(d => matchesVehicle(c,d))?.id).filter(id=>id!=null).map(String));
   // A draft is a request, not a dispatched vehicle. Disabled vehicles cannot be offered.
   const available = devices.filter(d => d.enabled !== false && !occupied.has(String(d.id)));
   const todayReturns = open.filter(c => businessDate(c.ends_at) === period.day);
